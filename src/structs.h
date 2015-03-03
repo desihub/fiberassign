@@ -35,11 +35,11 @@ struct onplate { // The position of a galaxy in plate coordinates
 };
 class Onplates : public std::vector<struct onplate> {};
 
-class plate { // Will contain lots of plate information one day.
+class plate {
 	public:
 	int idp;
-	double nhat[3]; //unit vector pointing to plate; radius of plate in radians
-	int ipass;
+	double nhat[3]; // Unit vector pointing to plate
+	int ipass; // Pass
 	Table av_gals; // av_gals[k] : available galaxies of fiber k
 
 	void print_plate() const;
@@ -51,7 +51,7 @@ Plates read_plate_centers(const char center_name[], int m = 1);
 // galaxy -------------------------------------------------
 class galaxy {
 	public:
-	double nhat[3],priority;
+	double nhat[3], priority;
 	int id, nobs;
 	double ra, dec, z;
 	std::vector<pair> av_tfs; // available tile/fibers
@@ -59,7 +59,6 @@ class galaxy {
 	void print_av_tfs();
 };
 
-// We need methods of vector (maybe in the future, so we don't use typedef)
 class Gals : public std::vector<struct galaxy> {};
 Gals read_galaxies(const char fname[], int n = 1);
 void collect_available_tilefibers(Gals& G, const Plates& P);
@@ -70,7 +69,7 @@ class Assignment {
 	public:
 	Table TF; // TF for tile fiber, #tiles X #fibers
 	std::vector<std::vector<pair> > PG; // PG for pass galaxy, #passes X #galaxies
-	int na; // number of assignments
+	int na; // Number of assignments
 
 	Assignment();
 	~Assignment();

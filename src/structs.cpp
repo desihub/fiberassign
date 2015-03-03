@@ -322,8 +322,8 @@ inline struct onplate change_coords(const struct galaxy& O, const struct plate& 
 	return(obj);
 }
 
-// Fast because no big function is called ! Don't change that
-// For each ~5700 plate, finds ~25000 galaxies reachable by the plate,
+// Fast because no big function is called ! Keep it in only 1 function
+// For each ~10,000 plate, finds ~25,000 galaxies reachable by the plate,
 // Projects them, and for each fiber, finds reachable ones
 void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Plates& P, const PP& pp, Time &t) {
 	List permut = random_permut(MaxPlate);
@@ -413,7 +413,6 @@ int find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plate
 }
 
 // Assign fibers naively
-// assign_fibers is outside of parallel section because of interaction between plates
 void assign_fibers(const Gals& G, const Plates& P, const PP& pp, Assignment& A) {
 	for (int ipass=0; ipass<MaxPass; ipass++) {
 		List randPlates = random_permut(MaxPlate);
@@ -426,7 +425,7 @@ void assign_fibers(const Gals& G, const Plates& P, const PP& pp, Assignment& A) 
 					int best=-1; float minp=1e30;
 					// Need to shuffle available galaxies
 					std::vector<int> av_gals = P[j].av_gals[k];
-					List randGals = random_permut(av_gals.size()); // <-need to be different each time ?
+					List randGals = random_permut(av_gals.size());
 					for (int n=0; n<av_gals.size(); n++) { 
 						int g = av_gals[randGals[n]];
 						int m = nobs(g,G,A);
