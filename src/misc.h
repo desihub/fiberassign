@@ -35,7 +35,7 @@ List random_permut(int n); // Return a random permutation
 void print_hist(List hist_petal);
 
 // Table -----------------------------------------------------
-class Table : public std::vector<std::vector <int> > {};
+class Table : public std::vector<List> {};
 Table initTable(int l, int c, int val = 0); 
 void print_table(std::string s, const Table& T, bool b = false);
 void print_table(std::string s, const std::vector<std::vector<pair> >& T);

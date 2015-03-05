@@ -10,9 +10,8 @@
 
 #define     MaxPass      5
 #define     MaxObs       5  //goal for Ly-a
-#define     GalaxyCategories    6//QSOI, QSOII, LRG, ELG, badQSO, badLRG
+#define     Categories    6 //QSOI, QSOII, LRG, ELG, badQSO, badLRG
 #define     collide  2.1 // stay-clear for fiber collisions in mm
-#define	    galaxy_samples 6 //QSO-Ly-a, QSO tracer, LRG, ELG, badQSO, badLRG
 #define     ntimes 10 //number of intervals (on tiles) for time plot
 #define     ASCIICENTERS 1//read tile locations in sky in ASCII format
 

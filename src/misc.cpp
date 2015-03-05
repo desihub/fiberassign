@@ -92,7 +92,7 @@ void print_table(std::string s, const Table& T, bool b) {
 	printf(s.c_str()); if (b) printf(" with total"); printf("\n");
 	int l = T.size();
 	if (l==0) {
-		printf("   ! Empty table");
+		printf("   ! Empty table\n");
 		return;
 	}
 	int c = T[0].size();
@@ -121,7 +121,7 @@ void print_table(std::string s, const std::vector<std::vector<pair> >& T) {
 	printf(s.c_str());
 	int l = T.size();
 	if (l==0) {
-		printf("   ! Empty table");
+		printf("   ! Empty table\n");
 		return;
 	}
 	int c = T[0].size();
@@ -143,7 +143,6 @@ void print_table(std::string s, const std::vector<std::vector<pair> >& T) {
 	}
 	printf("\n");
 }
-
 // Time ------------------------------------------------------
 Time::Time() {
 	s = get_time();
