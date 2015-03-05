@@ -19,7 +19,7 @@
 #define     NeighbourRad 11. //number of pass
 #define     MinUnused 50 // Number of minimum unused fibers by petals
 #define     BinSizePet 5 // Binsize petal
-
+#define     TotalArea 15789. 
 extern int MaxPlate;
 extern int Ngal;
 #endif

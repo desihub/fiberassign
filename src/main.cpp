@@ -12,8 +12,9 @@
 #include	"modules/htmTree.h"
 #include	"modules/kdTree.h"
 #include        "macros.h"
-#include        "structs.h"
 #include        "misc.h"
+#include        "structs.h"
+#include        "global.h"
 
 int MaxPlate;
 int Ngal;
@@ -28,17 +29,13 @@ int main(int argc, char **argv) {
 	Feat F;
 	F.prio[0]=2; F.prio[1]=2; F.prio[2]=3; F.prio[3]=4; F.prio[4]=2; F.prio[5]=3;
 	F.goal.assign(6,1); F.goal[0]=5; F.goal[2]=2;
-	//print_list("prio",F.prio);
-	//print_list("goal",F.goal);
+	F.kind[0]="QSO Ly-a"; F.kind[1]="QSO Tracer"; F.kind[2]="LRG"; F.kind[3]="ELG"; F.kind[4]="Fake QSO"; F.kind[5]="Fake LRG";
+
 	// Galaxies
 	Gals G;
 	G = read_galaxies(argv[1],1); // ! Reads all galaxies iff arg2=1
 	Ngal = G.size();
 	printf("# Read %s galaxies from %s \n",f(Ngal),argv[1]);
-
-	printf("  TEST : Print 100 G[i].priority :\n");
-	for (int i=0; i<100; i++) printf(" %d ",G[i].priority); // priority doesn't work
-	printf("\n");
 
 	// Read fiber center positions and compute things
 	PP pp;
@@ -68,6 +65,7 @@ int main(int argc, char **argv) {
 	collect_available_tilefibers(G,P);
 	print_time(time,"# ... took :");
 
+	results_on_inputs(G,P,F);
 	//P[0].print_plate();
 
 	////// Assignment -----------------------------------------------------
@@ -88,12 +86,12 @@ int main(int argc, char **argv) {
 	//print_free_fibers(pp,A);
 
 	//init_time_at(time,"# Begin redistribute",t);
-	//redistribute(G,P,pp,A);
+	//redistribute(G,P,pp,F,A);
 	//print_time(time,"# ... took :"); 
 	//print_free_fibers(pp,A);
 
 	//init_time_at(time,"# Begin redistribute",t);
-	//redistribute(G,P,pp,A);
+	//redistribute(G,P,pp,F,A);
 	//print_time(time,"# ... took :"); 
 	//print_free_fibers(pp,A);
 
@@ -104,14 +102,14 @@ int main(int argc, char **argv) {
 	Assignment A0;
 	// Order : verificate that passes are increasing
 	init_time_at(time,"# Begin real time assignment",t);
-	for (int j=0; j<MaxPlate; j++) {
+	for (int j=0; j<MaxPlate && j<1000; j++) {
 		printf(" - Plate %d : ",j);
 		assign_fibers_for_one(j,G,P,pp,F,A0);
 		if (A0.unused_f(j)>MinUnused*MaxPetal) {
 			//assign_fibers_for_one(j,G,P,pp,F,A0);
 			//improve_for_one(j,G,P,pp,F,A0);
-			redistribute_for_one(j,G,P,pp,A0);
-			assign_fibers_for_one(j,G,P,pp,F,A0);
+			//redistribute_for_one(j,G,P,pp,F,A0);
+			//assign_fibers_for_one(j,G,P,pp,F,A0);
 		}
 		printf("\n");
 	}

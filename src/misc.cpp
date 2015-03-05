@@ -56,6 +56,17 @@ void print_list(std::string s, const List& L) {
 	for (int i=0; i<n; i++) printf("%5d : %s \n",i,f(L[i]));
 	printf("\n");
 }
+
+void print_list(std::string s, std::vector<std::string> L) {
+	printf(s.c_str()); printf("\n"); int n = L.size();
+	//if (n==0) { // doesn't want to be compiled... mystery
+		//printf("   ! Empty list\n"); 
+		//return;
+	//}
+	for (int i=0; i<n; i++) printf("%5d : %s \n",i,L[i].c_str());
+	printf("\n");
+}
+
 bool isnull(const List& L) { // Test if the list is null
 	for (int i=0; i<L.size(); i++) if (L[i]!=0) return false;
 	return true;
@@ -66,6 +77,7 @@ int sumlist(const List& L) { // Sum of the list
 	for (int i=0; i<L.size(); i++) s += L[i];
 	return s;
 }
+
 void print_hist(List hist_petal) {
 	for (int i=0;i<hist_petal.size();i++) {
 		printf("%5d , ",hist_petal[i]);
@@ -107,11 +119,11 @@ void print_table(std::string s, const Table& T, bool b) {
 	printf(space);
 	for (int j=0; j<c; j++) printf("%11d",j);
 	printf("\n");
-	int begin = (isnull(initList(T[0]))) ? 1 : 0;
+	int begin = (isnull(T[0])) ? 1 : 0;
 	for (int i=begin; i<l; i++) {
 		printf("%4d",i);
 		for (int j=0; j<c; j++) printf("%11s",f(T[i][j]));
-		if (b) printf("%11s",f(sumlist(initList(T[i]))));
+		if (b) printf("%11s",f(sumlist(T[i])));
 		printf("\n");
 	}
 	printf("\n");
@@ -258,6 +270,13 @@ void check_args(int n) { // Check if the arguments of the executable are right
 		std::cerr << "Usage: assign <ObjFile> <PlateFile> <FiberFile> <OutFile>" << std::endl;
 		myexit(1);
 	}
+}
+
+void print_stats(std::string s, int cnt, int avg, int std, int min, int max) {
+	double avg1 = ((double)avg)/((double) cnt);
+	double std1 = sqrt(((double) std)/((double) cnt)-sq(avg1)); 
+	printf("%s %.1f +/- %.1f [%d,%d] -",s.c_str(),avg1,std1,min,max);
+	std::cout << std::endl << std::flush;
 }
 
 int sq(int n) { return(n*n); }

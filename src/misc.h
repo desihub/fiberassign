@@ -29,6 +29,7 @@ class List : public std::vector<int> {};
 List initList(int l, int val = 0);
 List initList(std::vector<int> l);
 void print_list(std::string s, const List& L);
+void print_list(std::string s, std::vector<std::string> L);
 bool isnull(const List& L); // Test if the list is null
 int sumlist(const List& L); // Sum of the list
 List random_permut(int n); // Return a random permutation
@@ -69,6 +70,7 @@ std::string siz(const std::vector<std::vector<pair> >& T);
 
 // Other ------------------------------------------------------
 void check_args(int n); 
+void print_stats(std::string s, int cnt, int std, int avg, int min, int max);
 int sq(int n); // n*n
 double sq(double n);
 double sq(double a,double b); // a*a+b*b
