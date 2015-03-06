@@ -23,6 +23,12 @@ Feat::Feat() {
 	kind.resize(Categories);
 }
 
+int Feat::id(str s) const {
+	for (int i=0; i<Categories; i++) if (kind[i]==s) return i;
+	std::cout << "ERROR in Feat id(), string not found in kind" << std::endl;
+	return -1;
+}
+
 // Galaxies ------------------------------------------------------------------
 void galaxy::print_av_tfs() { // Used to debug
 	if (av_tfs.size() == 0) printf("Print av tfs : no av tf \n");
@@ -98,7 +104,7 @@ int galaxy::prio(const Feat& F) const {
 	return(F.prio[id]);
 }
 
-std::string galaxy::kind(const Feat& F) const {
+str galaxy::kind(const Feat& F) const {
 	return(F.kind[id]);
 }
 // PP ----------------------------------------------------------------------------
@@ -106,7 +112,7 @@ std::string galaxy::kind(const Feat& F) const {
 // of fiberpos.txt produced by "randomize_fibers".
 // need also to get the petal, i.e. spectrometer  rnc 1/16/15  added S
 void PP::read_fiber_positions(const char pos_name[]) {
-	std::string buf;
+	str buf;
 	std::ifstream fs(pos_name);
 	if (!fs) { // An error occurred opening the file.
 		std::cerr << "Unable to open file " << pos_name << std::endl;
@@ -185,7 +191,7 @@ List plate::av_gals_plate() const {
 // There is a version of this function (to adapt) for non ASCII files, ask to Robert Cahn
 Plates read_plate_centers(const char center_name[], int modulo) {
 	Plates P;
-	std::string buf;
+	str buf;
 	std::ifstream fs(center_name);
 	if (!fs) {  // An error occurred opening the file.
 		std::cerr << "Unable to open file " << center_name << std::endl;
@@ -207,7 +213,7 @@ Plates read_plate_centers(const char center_name[], int modulo) {
 		getline(fs,buf);
 		//gymnastics to read line with string in first column
 		std::istringstream ss(buf);
-		std::string start;
+		str start;
 		ss>> start;
 		ss>>tileid>>ra >> dec >> ipass>>in_desi>>ebv>>airmass>>exposefac;	
 		//only keep those in footprint, fix ra to lie between 0 and 360
@@ -252,13 +258,13 @@ List gals_range_fibers(const Plates& P) {
 Assignment::Assignment() {
 	TF = initTable(MaxPlate,MaxFiber,-1);
 	PG = initTable_pair(Npass,Ngal); // Doesn't work if defined directly
-	na = 0;
+	kinds = initCube(MaxPlate,MaxPetal,Categories);
 }
 
 Assignment::~Assignment() {}
 
 // Assign g with tile/fiber (j,k), and check for duplicates
-void Assignment::assign(int j, int k, int g, const Plates& P) {
+void Assignment::assign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp) {
 	// Assign (j,k)
 	int ipass = P[j].ipass;
 	int q = TF[j][k];
@@ -268,13 +274,14 @@ void Assignment::assign(int j, int k, int g, const Plates& P) {
 	pair p = PG[ipass][g];
 	if (!p.isnull()) printf("### !!! ### DUPLICATE (ipass,g) = (%d,%d) assigned with (j,k) = (%d,%d) and (%d,%d) ---> information on first (j,k) lost \n",ipass,g,p.f,p.s,j,k);
 	PG[ipass][g] = pair(j,k);
-	na++;
+	// Kinds
+	kinds[j][pp.spectrom[k]][G[g].id]++;
 }
 
-void Assignment::unassign(int j, int k, int g, const Plates& P) {
+void Assignment::unassign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp) {
 	TF[j][k] = -1;
 	PG[P[j].ipass][g].setnull();
-	na--;
+	kinds[j][pp.spectrom[k]][G[g].id]--;
 }
 
 bool Assignment::is_assigned_pg(int ip, int g) const {
@@ -285,6 +292,16 @@ bool Assignment::is_assigned_pg(int ip, int g) const {
 
 bool Assignment::is_assigned_tf(int j, int k) const {return (TF[j][k] != -1);}
 
+int Assignment::na() {
+	int cnt(0);
+	for (int j=0; j<MaxPlate; j++) {
+		for (int k=0; k<MaxFiber; k++) {
+			if (TF[j][k]!=-1) cnt++;
+		}
+	}
+	return cnt;
+}
+
 std::vector<pair> Assignment::chosen_tfs(int g) const {
 	std::vector<pair> chosen;
 	for(int ip=0; ip<Npass; ip++) {
@@ -294,7 +311,7 @@ std::vector<pair> Assignment::chosen_tfs(int g) const {
 	return chosen;
 }
 
-List Assignment::unused_fibers() const {
+List Assignment::unused_f() const {
 	List unused = initList(MaxPlate);
 	for(int j=0; j<MaxPlate; j++) {
 		for (int k=0; k<MaxFiber; k++) {
@@ -304,7 +321,7 @@ List Assignment::unused_fibers() const {
 	return unused;
 }
 
-Table Assignment::unused_fibers_by_petal(const PP& pp) const {
+Table Assignment::unused_fbp(const PP& pp) const {
 	Table unused = initTable(MaxPlate,MaxPetal);
 	List Sp = pp.spectrom;
 	for(int j=0; j<MaxPlate; j++) {
@@ -315,12 +332,12 @@ Table Assignment::unused_fibers_by_petal(const PP& pp) const {
 	return unused;
 }
 
-Table Assignment::used_by_kind(std::string kind, const Gals& G, const Feat& F) const {
+Table Assignment::used_by_kind(str kind, const Gals& G, const PP& pp, const Feat& F) const {
 	Table used = initTable(MaxPlate,MaxPetal);
 	for(int j=0; j<MaxPlate; j++) {
-		for (int k=0; k<MaxPetal; k++) {
+		for (int k=0; k<MaxFiber; k++) {
 			int g = TF[j][k];
-			if (g!=-1 && G[g].kind(F)==kind) used[j][k]++;
+			if (g!=-1 && G[g].kind(F)==kind) used[j][pp.spectrom[k]]++;
 		}
 	}
 	return used;
@@ -346,15 +363,16 @@ bool Assignment::once_obs(int g) {
 	return false;
 }
 
-int Assignment::nkind(int j, int k, std::string kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const {
-	List fibers = pp.fibs_of_same_pet(k);
-	int cnt(0);
-	for (int i=0; i<fibers.size(); i++) {
-		int kk = fibers[i];
-		int g = TF[j][kk];
-		if (g!=-1 && G[g].kind(F)==kind) cnt++;
-	}
-	return cnt;
+int Assignment::nkind(int j, int k, str kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const {
+	return kinds[j][pp.spectrom[k]][F.id(kind)];
+	//List fibers = pp.fibs_of_same_pet(k);
+	//int cnt(0);
+	//for (int i=0; i<fibers.size(); i++) {
+		//int kk = fibers[i];
+		//int g = TF[j][kk];
+		//if (g!=-1 && G[g].kind(F)==kind) cnt++;
+	//}
+	//return cnt;
 }
 // Write some files -----------------------------------------------------------------------
 // Write very large binary file of P[j].av_gals[k]

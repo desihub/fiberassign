@@ -21,9 +21,10 @@ class Feat { // F for features
 	public:
 	List prio; // Priorities 
 	List goal;
-	std::vector<std::string> kind;
+	std::vector<str> kind;
 
 	Feat();
+	int id(str s) const;
 };
 
 // PP ---------------------------------------------------
@@ -73,7 +74,7 @@ class galaxy {
 
 	void print_av_tfs();
 	int prio(const Feat& F) const;
-	std::string kind(const Feat& F) const;
+	str kind(const Feat& F) const;
 };
 
 class Gals : public std::vector<struct galaxy> {};
@@ -85,24 +86,24 @@ class Assignment {
 	public:
 	Table TF; // TF for tile fiber, #tiles X #fibers
 	std::vector<std::vector<pair> > PG; // PG for pass galaxy, #passes X #galaxies
-	int na; // Number of assignments
 	/*List Nobs; // Nobs[g] : number of times left g has to be observed*/
-	/*Cube kinds;*/
+	Cube kinds; // Cube[j][sp][id] : number of fibers of spectrometer sp and plate j that have the kind id. Redundtant information, but optimizes computations
 
 	Assignment();
 	~Assignment();
-	void assign(int j, int k, int g, const Plates& P);
-	void unassign(int j, int k, int g, const Plates& P);
+	void assign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp);
+	void unassign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp);
 	bool is_assigned_pg(int ip, int g) const;
 	bool is_assigned_tf(int j, int k) const; 
+	int na(); // Number of assignments
 	std::vector<pair> chosen_tfs(int g) const; // Pairs (j,k) chosen by g in the Npass passes
-	List unused_fibers() const;
-	Table unused_fibers_by_petal(const PP& pp) const;
-	Table used_by_kind(std::string kind, const Gals& G, const Feat& F) const;
+	List unused_f() const;
 	int unused_f(int j);
+	Table unused_fbp(const PP& pp) const; // Unused fibers  by petal
 	int unused_fbp(int j, int k, const PP& pp) const; // Number of unassigned fibers of the petal corresponding to (j,k)
+	Table used_by_kind(str kind, const Gals& G, const PP& pp, const Feat& F) const;
 	bool once_obs(int g); // Already observed ?
-	int nkind(int j, int k, std::string kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const; // Number of fibers assigned to the kind "kind" on the petal of (j,k)
+	int nkind(int j, int k, str kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const; // Number of fibers assigned to the kind "kind" on the petal of (j,k)
 };
 
 void writeTFfile(const Plates& P, std::ofstream TFfile);

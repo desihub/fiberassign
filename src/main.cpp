@@ -18,6 +18,7 @@
 
 int MaxPlate;
 int Ngal;
+int MaxPrio;
 
 int main(int argc, char **argv) {
 	//// Initialization ---------------------------------------------------
@@ -27,10 +28,10 @@ int main(int argc, char **argv) {
 	init_time(t);
 
 	// Kinds, number of observations desired, and priorities
-	std::string kind[] = {"QSO Ly-a","QSO Tracer","LRG","ELG","Fake QSO","Fake LRG","SS","SF"};
-	int prio[] = {1,1,3,5,1,3,2,4};
+	str kind[] = {"QSO Ly-a","QSO Tracer","LRG","ELG","Fake QSO","Fake LRG","SS","SF"};
+	int prio[] = {1,1,3,5,1,3,2,4}; // has to be >= 0
 	int goal[] = {5,1,2,1,1,1,1,1};
-	Feat F; F.kind = initList(kind); F.prio = initList(prio); F.goal = initList(goal);
+	Feat F; F.kind = initList(kind); F.prio = initList(prio); F.goal = initList(goal); MaxPrio = max(F.prio);
 
 	// Read galaxies
 	Gals G;
@@ -74,7 +75,7 @@ int main(int argc, char **argv) {
 	// Order : verificate that passes are increasing
 	init_time_at(time,"# Begin real time assignment",t);
 	for (int j=0; j<MaxPlate; j++) {
-		printf(" - Plate %d : ",j);
+		printf(" - Plate %d : ",j); std::cout.flush();
 		assign_fibers_for_one(j,G,P,pp,F,A0);
 		if (A0.unused_f(j)>MinUnused*MaxPetal) {
 			//assign_fibers_for_one(j,G,P,pp,F,A0);
@@ -86,7 +87,7 @@ int main(int argc, char **argv) {
 	}
 	print_time(time,"# ... took :");
 
-	display_results(G,P,F,A0);
+	display_results(G,P,pp,F,A0);
 	print_free_fibers(pp,A0);	
 
 	////// Assignment global --------------------------------------------
@@ -97,13 +98,13 @@ int main(int argc, char **argv) {
 	//print_time(time,"# ... took");
 
 	//Table Q = conflicts(G,P,pp,A);
-	//display_results(G,P,F,A);
+	//display_results(G,P,pp,F,A);
 
 	//// Improve --------------------------------------------------------
 	//init_time_at(time,"# Begin improve",t);
 	//improve(G,P,pp,F,A);
 	//print_time(time,"# ... took :");
-	//display_results(G,P,F,A);
+	//display_results(G,P,pp,F,A);
 	//print_free_fibers(pp,A);
 
 	//init_time_at(time,"# Begin redistribute",t);

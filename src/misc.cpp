@@ -46,8 +46,8 @@ List initList(int l[]) {
 	return L;
 }
 
-std::vector<std::string> initList(std::string l[]) {
-	std::vector<std::string> L;
+std::vector<str> initList(str l[]) {
+	std::vector<str> L;
 	int size = sizeof(l);
 	L.resize(size);
 	for (int i=0; i<size; i++) L[i] = l[i];
@@ -63,7 +63,7 @@ List random_permut(int n) { // Return a random permutation
 	return(L);
 }
 
-void print_list(std::string s, const List& L) {
+void print_list(str s, const List& L) {
 	printf("%s \n",s.c_str());
 	int n = L.size();
 	//if (n==0) { // doesn't want to be compiled... mystery
@@ -74,7 +74,7 @@ void print_list(std::string s, const List& L) {
 	printf("\n");
 }
 
-void print_list(std::string s, std::vector<std::string> L) {
+void print_list(str s, std::vector<str> L) {
 	printf(s.c_str()); printf("\n"); int n = L.size();
 	//if (n==0) { // doesn't want to be compiled... mystery
 		//printf("   ! Empty list\n"); 
@@ -95,7 +95,13 @@ int sumlist(const List& L) { // Sum of the list
 	return s;
 }
 
-void print_hist(std::string s, int i, List hist_petal) {
+int max(const List& L) {
+	int m(-1e8);
+	for (int i=0; i<L.size(); i++) if (L[i]>m) m = L[i];
+	return m;
+}
+
+void print_hist(str s, int i, List hist_petal) {
 	std::cout << s << " (interval " << i << ")" << std::endl;
 	for (int i=0; i<hist_petal.size(); i++) {
 		printf("%5d",hist_petal[i]);
@@ -120,7 +126,7 @@ std::vector<std::vector<pair> > initTable_pair(int l, int c) {
 	return(T);
 }
 
-void print_table(std::string s, const Table& T, bool b) {
+void print_table(str s, const Table& T, bool b) {
 	printf(s.c_str()); if (b) printf(" with total"); printf("\n");
 	int l = T.size();
 	if (l==0) {
@@ -134,7 +140,7 @@ void print_table(std::string s, const Table& T, bool b) {
 			return;
 		}
 	}
-	std::string s0(" ",10);
+	str s0(" ",10);
 	const char* space = s0.c_str();
 	printf(space);
 	for (int j=0; j<c; j++) printf("%11d",j);
@@ -149,7 +155,7 @@ void print_table(std::string s, const Table& T, bool b) {
 	printf("\n");
 }
 
-void print_table(std::string s, const std::vector<std::vector<pair> >& T) {
+void print_table(str s, const std::vector<std::vector<pair> >& T) {
 	printf(s.c_str());
 	int l = T.size();
 	if (l==0) {
@@ -163,7 +169,7 @@ void print_table(std::string s, const std::vector<std::vector<pair> >& T) {
 			return;
 		}
 	}
-	std::string s0(" ",10);
+	str s0(" ",10);
 	const char* space = s0.c_str();
 	printf(space);
 	for (int j=0; j<c; j++) printf("%11d",j);
@@ -177,27 +183,27 @@ void print_table(std::string s, const std::vector<std::vector<pair> >& T) {
 }
 
 List histogram(const Table& T, int interval) {
-	List hist;
-	int l = T.size(); int c = T[0].size();
-	for(int i=0; i<l; i++){ 
+	List hist; int l = T.size(); int c = T[0].size();
+	for(int i=0; i<l; i++) { 
 		for(int j=0; j<c; j++) {
 			int n = floor(T[i][j]/interval);
-			if (n>=hist.size()) {hist.resize(n+1); hist[n] = 0;}
-			hist[T[i][j]/interval]++;
+			if (n>=hist.size()) { hist.resize(n+1); hist[n] = 0;}
+			hist[n]++;
 		}
 	}
 	return hist;
 }
+
 // Cube ------------------------------------------------------
-//Cube initCube(int l, int c, int d, int val = 0) {
-	//Cube C;
-	//Cube.resize(l);
-	//for (int i=0; i<l; i++) {
-		//C[i].resize(c);
-		//for (int j=0; j<c; j++) C[i][j].resize(d,val);
-	//}
-	//return(C);
-//}
+Cube initCube(int l, int c, int d, int val) {
+	Cube C;
+	C.resize(l);
+	for (int i=0; i<l; i++) {
+		C[i].resize(c);
+		for (int j=0; j<c; j++) C[i][j].resize(d,val);
+	}
+	return C;
+}
 
 // Time ------------------------------------------------------
 Time::Time() {
@@ -217,18 +223,18 @@ double time_diff(Time t) {
 	return (t.e - t.s);
 }
 
-void init_time(Time& t, const std::string s) {
+void init_time(Time& t, const str s) {
 	t.s = get_time();
 	if (s.size() != 0) std::cout << s << std::endl;
 }
 
-void init_time_at(Time& time, const std::string s, Time& t) {
+void init_time_at(Time& time, const str s, Time& t) {
 	time.s = get_time();
 	std::cout << s;
 	print_time(t," at");
 }
 
-void print_time(Time& t, const std::string s) {
+void print_time(Time& t, const str s) {
 	t.e = get_time();
 	double d = time_diff(t);
 	if (d<60.) std::cout << s << " " << std::setprecision(3) << d << " s\n" << std::flush;
@@ -260,7 +266,7 @@ void myexception(std::exception& e) {
 	exit(1);
 }
 
-void error(std::string s) {
+void error(str s) {
 	std::cout << "Error : " << s << std::endl;
 	std::cout.flush();
 	std::cerr.flush();
@@ -278,8 +284,8 @@ void deb(int a, int b) { // debug
 const char* f(int i) { // int 1526879 -> const char* 1,526,879
 	std::stringstream ss;
 	ss << i;
-	std::string s = ss.str();
-	std::string str("");
+	str s = ss.str();
+	str str("");
 	int n = s.size();
 	for (int l=0; l<n; l++) {
 		str.push_back(s[l]);
@@ -288,30 +294,30 @@ const char* f(int i) { // int 1526879 -> const char* 1,526,879
 	return str.c_str();
 }
 
-std::string i2s(int i) {
+str i2s(int i) {
 	std::stringstream ss;
 	ss << i;
-	std::string s = ss.str();
+	str s = ss.str();
 	return s;
 }
 
-std::string p2s(int j, int k) {
+str p2s(int j, int k) {
 	std::stringstream ss;
 	ss << "(" << j << "," << k << ")";
-	std::string s = ss.str();
+	str s = ss.str();
 	return s;
 }
 
-std::string p2s(pair p) {
+str p2s(pair p) {
 	return(p2s(p.f,p.s));
 }
 
-std::string siz(const Table& T) {
+str siz(const Table& T) {
 	std::stringstream ss;
 	ss << " size " << T.size() << "x" << T[0].size();
 	return ss.str();
 }
-std::string siz(const std::vector<std::vector<pair> >& T) {
+str siz(const std::vector<std::vector<pair> >& T) {
 	std::stringstream ss;
 	ss << " size " << T.size() << "x" << T[0].size();
 	return ss.str();
@@ -324,11 +330,11 @@ void check_args(int n) { // Check if the arguments of the executable are right
 	}
 }
 
-void print_stats(std::string s, int cnt, int avg, int std, int min, int max) {
+void print_stats(str s, int cnt, int avg, int std, int min, int max) {
 	double avg1 = ((double)avg)/((double) cnt);
 	double std1 = sqrt(((double) std)/((double) cnt)-sq(avg1)); 
 	printf("%s %.1f +/- %.1f [%d,%d]",s.c_str(),avg1,std1,min,max);
-	std::cout << std::endl << std::flush;
+	std::cout << std::endl;
 }
 
 int sq(int n) { return(n*n); }

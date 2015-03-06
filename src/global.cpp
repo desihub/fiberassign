@@ -177,9 +177,9 @@ void assign_fibers(const Gals& G, const Plates& P, const PP& pp, const Feat& F, 
 						}
 					}
 					// Assign best galaxy to this fiber
-					if (best!=-1 && (nobs(best,G,F,A)>0)) A.assign(j,k,best,P);
+					if (best!=-1 && (nobs(best,G,F,A)>0)) A.assign(j,k,best,G,P,pp);
 					}}}}
-	printf("  %s assignments\n",f(A.na));
+	printf("  %s assignments\n",f(A.na()));
 }
 
 // Try to use unused fibers by reassigning some used ones
@@ -187,7 +187,7 @@ void assign_fibers(const Gals& G, const Plates& P, const PP& pp, const Feat& F, 
 // After : (j,k) <-> g & (jp,kp) <-> gp
 // Prints the number of additional assigned galaxies
 void improve(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A) {
-	int na_start = A.na;
+	int na_start = A.na();
 	//List randPlates = random_permut(MaxPlate);
 	for (int jj=0; jj<MaxPlate; jj++) {
 		int j = MaxPlate-jj-1;
@@ -209,9 +209,9 @@ void improve(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignm
 								int gp = av_g2[m]; // gp : another possibility for (jp,kp)
 								if (nobs(gp,G,F,A)>=1 && ok_assign_g_to_jk(gp,jp,kp,P,G,pp,F,A) && !A.is_assigned_pg(P[jp].ipass,g)) {
 									// Modify assignment
-									A.unassign(jp,kp,g,P);
-									A.assign(j,k,g,P);
-									A.assign(jp,kp,gp,P);
+									A.unassign(jp,kp,g,G,P,pp);
+									A.assign(j,k,g,G,P,pp);
+									A.assign(jp,kp,gp,G,P,pp);
 									finished = true; 
 								}
 								//if(nobs(gp,G,F,A)>0){
@@ -226,7 +226,8 @@ void improve(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignm
 									//}
 								//}
 							}}}}}}}
-	printf("  %s more assignments (%f %% improvement)\n",f(A.na-na_start),percent(A.na-na_start,na_start));
+	int na_end(A.na());
+	printf("  %s more assignments (%f %% improvement)\n",f(na_end-na_start),percent(na_end-na_start,na_start));
 }
 
 // Redistrubte assignments trying to get at least 500 free fibers on each plate/tile
@@ -238,7 +239,7 @@ void improve(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignm
 void redistribute(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A) {
 	int redistributions(0);
 	List Sp = pp.spectrom;
-	Table unused_fbp = A.unused_fibers_by_petal(pp);
+	Table unused_fbp = A.unused_fbp(pp);
 	//print_table("unused",unused_fbp);
 	List randPlates = random_permut(MaxPlate);
 	// Consider all petals with too few free fibers
@@ -269,13 +270,13 @@ void redistribute(const Gals& G, const Plates&P, const PP& pp, const Feat& F, As
 				}
 				if (mostunused > nfree) {
 					//printf("%d %d %d %d %d %d %d\n",mostunused, nfree, j,k,jreassign,kreassign,g);
-					A.unassign(j,k,g,P);
-					A.assign(jreassign,kreassign,g,P);
+					A.unassign(j,k,g,G,P,pp);
+					A.assign(jreassign,kreassign,g,G,P,pp);
 					//unused_fbp[j][Sp[k]]++;
 					//unused_fbp[jreassign][Sp[kreassign]]--;		
 					redistributions++; 
 				}}}}
-	printf("  %s redistributions (~%.4f %% redistributed)\n",f(redistributions),percent(redistributions,A.na));
+	printf("  %s redistributions (~%.4f %% redistributed)\n",f(redistributions),percent(redistributions,A.na()));
 }
 
 // Assignment "for one" --------------------------------------------------------------------------------
@@ -308,7 +309,7 @@ void assign_fibers_for_one(int j, const Gals& G, const Plates& P, const PP& pp, 
 			}
 		}
 		// Assign best galaxy to this fiber
-		if (best!=-1 && nobs(best,G,F,A)>=1) { A.assign(j,k,best,P); as++; }
+		if (best!=-1 && nobs(best,G,F,A)>=1) { A.assign(j,k,best,G,P,pp); as++; }
 	}
 	printf(" %5s assignments",f(as));
 }
@@ -335,9 +336,9 @@ void improve_for_one(int j, const Gals& G, const Plates&P, const PP& pp, const F
 							int gp = av_g2[m]; // gp : another possibility for (jp,kp)
 							if (ok_assign_tot(gp,j,kp,P,G,pp,F,A) && nobs(gp,G,F,A)>=1 /*>=0 if never observed yet*/ && A.unused_fbp(j,k,pp)>MinUnused && A.unused_fbp(j,kp,pp)>MinUnused) {
 								// Modify assignment
-								A.unassign(j,kp,g,P);
-								A.assign(j,k,g,P);
-								A.assign(j,kp,gp,P);
+								A.unassign(j,kp,g,G,P,pp);
+								A.assign(j,k,g,G,P,pp);
+								A.assign(j,kp,gp,G,P,pp);
 								improvement++;
 								finished = true; }}}}}}}
 	printf(" %5s more",f(improvement));
@@ -359,8 +360,8 @@ void redistribute_for_one(int j, const Gals& G, const Plates&P, const PP& pp, co
 				int jp = tfs[c].f;
 				int kp = tfs[c].s;
 				if (jp==j && ok_assign_tot(g,j,kp,P,G,pp,F,A) && A.unused_fbp(j,kp,pp)>MinUnused) {
-					A.unassign(j,k,g,P);
-					A.assign(j,kp,g,P);
+					A.unassign(j,k,g,G,P,pp);
+					A.assign(j,kp,g,G,P,pp);
 					changed_gals[g] = 1;
 					redistributions++; 
 					finished = true; }}}}
@@ -373,21 +374,9 @@ void redistribute_for_one(int j, const Gals& G, const Plates&P, const PP& pp, co
 // Count how many free fibers there are beyond 500 in each plate
 void print_free_fibers(const PP& pp, const Assignment& A) {
 	printf("# Free fibers statistics\n");
-
-	// Create histogram of free fibers
-	Table unused_fibers_by_petal = A.unused_fibers_by_petal(pp);
-	List hist_petal = histogram(unused_fibers_by_petal,5);
-	print_hist("  Petals with this many free fiber",5,hist_petal);
-
-	int counter(0); int beyond_counter(0); int npetal_upper(0); int npetal_under(0); // Do not initialize like int a,b = 0; or there are bugs
-	for (int j=0; j<MaxPlate; j++) {
-		for (int l=0; l<MaxPetal; l++) {
-			if (unused_fibers_by_petal[j][l]<MinUnused) npetal_under++;
-			else npetal_upper++;
-		}
-	}
-	printf("  Number of petals which (number of free fibers < %d) : %s (%.4f %%)\n",MinUnused,f(npetal_under),percent(npetal_under,MaxPlate*MaxPetal));
-	printf("  Number of petals which (number of free fibers >= %d) : %s (%.4f %%)\n",MinUnused,f(npetal_upper),percent(npetal_upper,MaxPlate*MaxPetal));
+	// Prints histogram of free fibers
+	Table unused_fbp = A.unused_fbp(pp);
+	print_hist("  Number of petals with this many free fiber",5,histogram(unused_fbp,5));
 }
 
 void results_on_inputs(const Gals& G, const Plates& P, const Feat& F) {
@@ -438,16 +427,16 @@ void results_on_inputs(const Gals& G, const Plates& P, const Feat& F) {
 }
 
 
-void display_results(const Gals& G, const Plates& P, const Feat& F, const Assignment& A) {
+void display_results(const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
 	printf("# Results :\n");
 
 	// Histogram of SS
-	Table usedSS = A.used_by_kind("SS",G,F);
-	print_hist("  UsedSS",1,histogram(usedSS,1));
+	Table usedSS = A.used_by_kind("SS",G,pp,F);
+	print_hist("  UsedSS (number of petals)",1,histogram(usedSS,1));
 
 	// Histogram of SF
-	Table usedSF = A.used_by_kind("SF",G,F);
-	print_hist("  UsedSF",1,histogram(usedSF,1));
+	Table usedSF = A.used_by_kind("SF",G,pp,F);
+	print_hist("  UsedSF (number of petals)",1,histogram(usedSF,1));
 
 	// Raw numbers of galaxies by id and number of remaining observations
 	Table hist2 = initTable(Categories,MaxObs+1);
@@ -458,9 +447,10 @@ void display_results(const Gals& G, const Plates& P, const Feat& F, const Assign
 	}
 	print_table("  Remaining observations (id on lines, nobs left on rows)",hist2,true);
 
-	Table done = initTable(Categories+1,MaxObs+1);
-	List fibers_used = initList(Categories+1);
-	List targets = initList(Categories+1);
+	// Per sq deg in tex format
+	Table done = initTable(Categories,MaxObs+1);
+	List fibers_used = initList(Categories);
+	List targets = initList(Categories);
 
 	for (int id=0; id<Categories; id++) {
 		List hist = initList(hist2[id]);
@@ -475,19 +465,6 @@ void display_results(const Gals& G, const Plates& P, const Feat& F, const Assign
 			}
 		}
 	}
-
-	printf("\n By priority number, how many targets, how many reached\n");
-	for (int pri=1; pri<=6; pri++) {
-		int ntot(0); int nass(0);
-		for (int g=0; g<Ngal; g++) {
-			if (fabs(F.prio[G[g].id]-pri)<0.5) {
-				if (nobs(g,G,F,A)==0) nass++;
-				ntot++;
-			}
-		}
-		printf("Priority %2d : %10s of %10s assigned fibers \n",pri,f(nass),f(ntot));
-	}
-	// Per sq deg in tex format
 	printf("\n tex format, per sq deg\n");
 	printf("id| obsv'd  0         1          2          3          4          5        total fibers used    avail   pct obsvd \n");
 	for (int id=0; id<Categories; id++) {
@@ -498,10 +475,10 @@ void display_results(const Gals& G, const Plates& P, const Feat& F, const Assign
 	}
 }
 
-void plot_freefibers(std::string s, const Plates& P, const Assignment& A) {
+void plot_freefibers(str s, const Plates& P, const Assignment& A) {
 	printf("# Plot free fibers positions\n");
 	double pi = 3.1415926535;
-	List unused_fibers = A.unused_fibers();
+	List unused_fibers = A.unused_f();
 	FILE * fplot;
 	const char * c = s.c_str();
 	fplot = fopen(c,"w");

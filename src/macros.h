@@ -19,9 +19,10 @@
 #define     NeighbourRad 11. //number of pass
 #define     MinUnused 50 // Number of minimum unused fibers by petals
 #define     TotalArea 15789. 
-#define     MaxSS 10 
-#define     MaxSF 40 
+#define     MaxSS 10
+#define     MaxSF 40
 
 extern int MaxPlate;
 extern int Ngal;
+extern int MaxPrio;
 #endif
