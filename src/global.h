@@ -35,7 +35,7 @@ void improve_for_one(int j, const Gals& G, const Plates&P, const PP& pp, const F
 
 void redistribute_for_one(int j, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A);
 
-// Other available functions ------------------------------------
+// Other useful functions ------------------------------------
 List gals_range_fibers(const Plates& P); // How many galaxies in range of a fiber
 void results_on_inputs(const Gals& G, const Plates& P, const Feat& F);
 void display_results(const Gals& G, const Plates &P, const Feat& F, const Assignment& A);

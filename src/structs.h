@@ -38,6 +38,7 @@ class PP { // PP for plate parameters
 	void read_fiber_positions(const char pos_name[]);
 	void get_neighbors();
 	void compute_fibsofsp(); // Computes fibers_of_sp
+	List fibs_of_same_pet(int k) const;
 };
 
 // Plate -------------------------------------------------
@@ -86,6 +87,7 @@ class Assignment {
 	std::vector<std::vector<pair> > PG; // PG for pass galaxy, #passes X #galaxies
 	int na; // Number of assignments
 	/*List Nobs; // Nobs[g] : number of times left g has to be observed*/
+	/*Cube kinds;*/
 
 	Assignment();
 	~Assignment();
@@ -96,10 +98,11 @@ class Assignment {
 	std::vector<pair> chosen_tfs(int g) const; // Pairs (j,k) chosen by g in the Npass passes
 	List unused_fibers() const;
 	Table unused_fibers_by_petal(const PP& pp) const;
-	List hist_petal(int binsize_petal, const PP& pp) const;
+	Table used_by_kind(std::string kind, const Gals& G, const Feat& F) const;
 	int unused_f(int j);
-	int unused_fbp(int j, int k, const PP& pp); // Number of unassigned fibers of the petal corresponding to (j,k)
+	int unused_fbp(int j, int k, const PP& pp) const; // Number of unassigned fibers of the petal corresponding to (j,k)
 	bool once_obs(int g); // Already observed ?
+	int nkind(int j, int k, std::string kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const; // Number of fibers assigned to the kind "kind" on the petal of (j,k)
 };
 
 void writeTFfile(const Plates& P, std::ofstream TFfile);

@@ -38,6 +38,22 @@ List initList(std::vector<int> l) {
 	return L;
 }
 
+List initList(int l[]) {
+	List L;
+	int size = sizeof(l);
+	L.resize(size);
+	for (int i=0; i<size; i++) L[i] = l[i];
+	return L;
+}
+
+std::vector<std::string> initList(std::string l[]) {
+	std::vector<std::string> L;
+	int size = sizeof(l);
+	L.resize(size);
+	for (int i=0; i<size; i++) L[i] = l[i];
+	return L;
+}
+
 List random_permut(int n) { // Return a random permutation
 	List L;
 	try { L.resize(n); } 
@@ -48,7 +64,8 @@ List random_permut(int n) { // Return a random permutation
 }
 
 void print_list(std::string s, const List& L) {
-	printf(s.c_str()); printf("\n"); int n = L.size();
+	printf("%s \n",s.c_str());
+	int n = L.size();
 	//if (n==0) { // doesn't want to be compiled... mystery
 		//printf("   ! Empty list\n"); 
 		//return;
@@ -78,11 +95,14 @@ int sumlist(const List& L) { // Sum of the list
 	return s;
 }
 
-void print_hist(List hist_petal) {
-	for (int i=0;i<hist_petal.size();i++) {
-		printf("%5d , ",hist_petal[i]);
-		if(((i+1)/10)*10==i+1) printf("\n"); //<- ?
+void print_hist(std::string s, int i, List hist_petal) {
+	std::cout << s << " (interval " << i << ")" << std::endl;
+	for (int i=0; i<hist_petal.size(); i++) {
+		printf("%5d",hist_petal[i]);
+		if ((i+1)%10==0) printf("\n");
+		else if (i!=hist_petal.size()-1) printf(" | ");
 	}
+	std::cout << std::endl;
 }
 
 // Table -----------------------------------------------------
@@ -155,6 +175,30 @@ void print_table(std::string s, const std::vector<std::vector<pair> >& T) {
 	}
 	printf("\n");
 }
+
+List histogram(const Table& T, int interval) {
+	List hist;
+	int l = T.size(); int c = T[0].size();
+	for(int i=0; i<l; i++){ 
+		for(int j=0; j<c; j++) {
+			int n = floor(T[i][j]/interval);
+			if (n>=hist.size()) {hist.resize(n+1); hist[n] = 0;}
+			hist[T[i][j]/interval]++;
+		}
+	}
+	return hist;
+}
+// Cube ------------------------------------------------------
+//Cube initCube(int l, int c, int d, int val = 0) {
+	//Cube C;
+	//Cube.resize(l);
+	//for (int i=0; i<l; i++) {
+		//C[i].resize(c);
+		//for (int j=0; j<c; j++) C[i][j].resize(d,val);
+	//}
+	//return(C);
+//}
+
 // Time ------------------------------------------------------
 Time::Time() {
 	s = get_time();
@@ -222,6 +266,14 @@ void error(std::string s) {
 	std::cerr.flush();
 	exit(1);
 }
+
+void deb(int a) { // debug
+	std::cout << " " << a << " " << std::endl;
+}
+
+void deb(int a, int b) { // debug
+	std::cout << " " << a << "," << b << " " << std::endl;
+}
 // To String --------------------------------------------------
 const char* f(int i) { // int 1526879 -> const char* 1,526,879
 	std::stringstream ss;
@@ -275,7 +327,7 @@ void check_args(int n) { // Check if the arguments of the executable are right
 void print_stats(std::string s, int cnt, int avg, int std, int min, int max) {
 	double avg1 = ((double)avg)/((double) cnt);
 	double std1 = sqrt(((double) std)/((double) cnt)-sq(avg1)); 
-	printf("%s %.1f +/- %.1f [%d,%d] -",s.c_str(),avg1,std1,min,max);
+	printf("%s %.1f +/- %.1f [%d,%d]",s.c_str(),avg1,std1,min,max);
 	std::cout << std::endl << std::flush;
 }
 

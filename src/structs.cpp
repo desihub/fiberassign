@@ -36,7 +36,6 @@ void galaxy::print_av_tfs() { // Used to debug
 Gals read_galaxies(const char fname[], int n) {
 	// Read galaxies from binary file--format is ra, dec, z, priority and nobs
 	// with ra/dec in degrees
-	//  1 = Ly-a QSO ; 2 = QSO tracer ; 3 = LRG ; 4 = ELG ; 5 = fake qsos ; 6 = fake lrgs
 	//  Reads every n galaxies (to test quicker)
 	Gals P;
 	std::ifstream fs(fname,std::ios::binary);
@@ -157,6 +156,9 @@ void PP::compute_fibsofsp() {
 	for (int k=0; k<MaxFiber; k++) fibers_of_sp[spectrom[k]].push_back(k);
 }
 
+List PP::fibs_of_same_pet(int k) const {
+	return(fibers_of_sp[spectrom[k]]);
+}
 // plate ---------------------------------------------------------------------------
 void plate::print_plate() const {
 	printf("  Plate : %d - pass %d\n",idp,ipass); printf("%f %f %f\n",nhat[0],nhat[1],nhat[2]);
@@ -313,14 +315,15 @@ Table Assignment::unused_fibers_by_petal(const PP& pp) const {
 	return unused;
 }
 
-List Assignment::hist_petal(int binsize_petal, const PP& pp) const {
-	List hist = initList(100);
-	Table unused = unused_fibers_by_petal(pp);
-	for(int j=0;j<MaxPlate; j++){ 
-		for(int l=0;l<MaxPetal; l++) 
-			hist[unused[j][l]/binsize_petal]++;
+Table Assignment::used_by_kind(std::string kind, const Gals& G, const Feat& F) const {
+	Table used = initTable(MaxPlate,MaxPetal);
+	for(int j=0; j<MaxPlate; j++) {
+		for (int k=0; k<MaxFiber; k++) {
+			int g = TF[j][k];
+			if (g!=-1 && G[g].kind(F)==kind) used[j][k]++;
+		}
 	}
-	return hist;
+	return used;
 }
 
 int Assignment::unused_f(int j) {
@@ -329,7 +332,7 @@ int Assignment::unused_f(int j) {
 	return unused;
 }
 
-int Assignment::unused_fbp(int j, int k, const PP& pp) {
+int Assignment::unused_fbp(int j, int k, const PP& pp) const {
 	List fibs = pp.fibers_of_sp[pp.spectrom[k]];
 	int unused(0);
 	for (int i=0; i<fibs.size(); i++) {
@@ -343,7 +346,16 @@ bool Assignment::once_obs(int g) {
 	return false;
 }
 
-
+int Assignment::nkind(int j, int k, std::string kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const {
+	List fibers = pp.fibs_of_same_pet(k);
+	int cnt(0);
+	for (int i=0; i<fibers.size(); i++) {
+		int kk = fibers[i];
+		int g = TF[j][kk];
+		if (g!=-1 && G[g].kind(F)==kind) cnt++;
+	}
+	return cnt;
+}
 // Write some files -----------------------------------------------------------------------
 // Write very large binary file of P[j].av_gals[k]
 void writeTFfile(const Plates& P, std::ofstream TFfile) {

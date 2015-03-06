@@ -28,12 +28,14 @@ class pair {
 class List : public std::vector<int> {};
 List initList(int l, int val = 0);
 List initList(std::vector<int> l);
+List initList(int l[]);
+std::vector<std::string> initList(std::string l[]);
 void print_list(std::string s, const List& L);
 void print_list(std::string s, std::vector<std::string> L);
 bool isnull(const List& L); // Test if the list is null
 int sumlist(const List& L); // Sum of the list
 List random_permut(int n); // Return a random permutation
-void print_hist(List hist_petal);
+void print_hist(std::string s, int i, List hist_petal);
 
 // Table -----------------------------------------------------
 class Table : public std::vector<List> {};
@@ -42,6 +44,11 @@ void print_table(std::string s, const Table& T, bool b = false);
 void print_table(std::string s, const std::vector<std::vector<pair> >& T);
 // Other constr wouldn't work if we would define a constructor in class Table
 std::vector<std::vector<pair> > initTable_pair(int l, int c);
+List histogram(const Table& T, int interval);
+
+// Cube -----------------------------------------------------
+class Cube : public std::vector<Table> {};
+Cube initCube(int l, int c, int d, int val = 0); 
 
 // Time ------------------------------------------------------
 struct Time { // Tstart, Tend (t.s & t.e)
@@ -59,6 +66,8 @@ void myexit(const int i);
 void myexception(const std::exception& e);
 void myexception(std::exception& e); // Intel compiler needs this version too ...
 void error(std::string s);
+void deb(int a);
+void deb(int a, int b);
 
 // To String --------------------------------------------------
 const char* f(int i); // int 1526879 -> const char* 1,526,879

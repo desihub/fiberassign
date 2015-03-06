@@ -9,5 +9,5 @@ export OMP_NUM_THREADS=24
 #
 echo "# Running assign."
 
-aprun -n 1 -N 1 -d 24 ./assign /project/projectdirs/desi/mocks/preliminary/objects0.rdzipn \
+aprun -n 1 -N 1 -d 24 ./assign /project/projectdirs/desi/mocks/preliminary/objects_ss_sf0.rdzipn \
   $DESIMODEL/data/footprint/desi-tiles.par  $DESIMODEL/data/focalplane/fiberpos.txt assignment
