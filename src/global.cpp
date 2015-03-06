@@ -372,7 +372,6 @@ void redistribute_for_one(int j, const Gals& G, const Plates&P, const PP& pp, co
 // Detemine how many galaxies need to be dropped to guarantee 40 free fibers for each petal
 // Count how many free fibers there are beyond 500 in each plate
 void print_free_fibers(const PP& pp, const Assignment& A) {
-	deb(1);
 	printf("# Free fibers statistics\n");
 
 	// Create histogram of free fibers
@@ -443,19 +442,12 @@ void display_results(const Gals& G, const Plates& P, const Feat& F, const Assign
 	printf("# Results :\n");
 
 	// Histogram of SS
-	//.used_by_kind creates issues of memory, doesn't seem to manage to delete at the end of a function
-	//Table usedSS = A.used_by_kind("SS",G,F);
-	Table* usedSS = NULL;
-	deb(1);
-	usedSS = new Table;
-	deb(2);
-	*usedSS = A.used_by_kind("SS",G,F);
-	deb(3);
-	List histSS = histogram(*usedSS,1);
-	deb(4);
-	print_hist("UsedSS",1,histSS);
-	deb(5);
-	//print_hist("UsedSS",1,histogram(A.used_by_kind("SS",G,F),1));
+	Table usedSS = A.used_by_kind("SS",G,F);
+	print_hist("  UsedSS",1,histogram(usedSS,1));
+
+	// Histogram of SF
+	Table usedSF = A.used_by_kind("SF",G,F);
+	print_hist("  UsedSF",1,histogram(usedSF,1));
 
 	// Raw numbers of galaxies by id and number of remaining observations
 	Table hist2 = initTable(Categories,MaxObs+1);
@@ -504,7 +496,6 @@ void display_results(const Gals& G, const Plates& P, const Feat& F, const Assign
 		for (int i=F.goal[id]+1; i<MaxObs+1; i++) printf("%10d &",0);
 		printf("%8.1f &%8.1f &%8.1f &%8.4f \\ \n",(targets[id]-done[id][0])/TotalArea,fibers_used[id]/TotalArea,targets[id]/TotalArea,percent(targets[id]-done[id][0],targets[id]));
 	}
-	deb(2);
 }
 
 void plot_freefibers(std::string s, const Plates& P, const Assignment& A) {

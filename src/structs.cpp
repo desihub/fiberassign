@@ -318,7 +318,7 @@ Table Assignment::unused_fibers_by_petal(const PP& pp) const {
 Table Assignment::used_by_kind(std::string kind, const Gals& G, const Feat& F) const {
 	Table used = initTable(MaxPlate,MaxPetal);
 	for(int j=0; j<MaxPlate; j++) {
-		for (int k=0; k<MaxFiber; k++) {
+		for (int k=0; k<MaxPetal; k++) {
 			int g = TF[j][k];
 			if (g!=-1 && G[g].kind(F)==kind) used[j][k]++;
 		}

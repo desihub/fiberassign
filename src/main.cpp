@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
 
 	// Read galaxies
 	Gals G;
-	G = read_galaxies(argv[1],1000); // ! Reads all galaxies iff arg2=1
+	G = read_galaxies(argv[1],1); // ! Reads all galaxies iff arg2=1
 	Ngal = G.size();
 	printf("# Read %s galaxies from %s \n",f(Ngal),argv[1]);
 
@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
 	Assignment A0;
 	// Order : verificate that passes are increasing
 	init_time_at(time,"# Begin real time assignment",t);
-	for (int j=0; j<MaxPlate && j<10; j++) {
+	for (int j=0; j<MaxPlate; j++) {
 		printf(" - Plate %d : ",j);
 		assign_fibers_for_one(j,G,P,pp,F,A0);
 		if (A0.unused_f(j)>MinUnused*MaxPetal) {
@@ -87,7 +87,6 @@ int main(int argc, char **argv) {
 	print_time(time,"# ... took :");
 
 	display_results(G,P,F,A0);
-	deb(1);
 	print_free_fibers(pp,A0);	
 
 	////// Assignment global --------------------------------------------
