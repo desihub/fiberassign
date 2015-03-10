@@ -27,7 +27,7 @@ void pair::print_pair() {printf("(%d,%d) ",f,s); std::cout.flush();}
 List initList(int l, int val) {
 	List L;
 	L.resize(l,val);
-	return (L);
+	return L;
 }
 
 List initList(std::vector<int> l) {
@@ -43,6 +43,12 @@ List initList(int l[]) {
 	int size = sizeof(l);
 	L.resize(size);
 	for (int i=0; i<size; i++) L[i] = l[i];
+	return L;
+}
+
+Dlist initDlist(int l, double val) {
+	Dlist L;
+	L.resize(l,val);
 	return L;
 }
 
@@ -101,16 +107,39 @@ int max(const List& L) {
 	return m;
 }
 
-void print_hist(str s, int i, List hist_petal, bool latex) {
-	str slat = latex ? " & " : " | "; const char* lat = slat.c_str();
-	std::cout << s << " (interval " << i << ")" << std::endl;
-	for (int i=0; i<hist_petal.size(); i++) {
-		printf("%5d",hist_petal[i]);
-		if ((i+1)%10==0) printf("\n");
-		else if (i!=hist_petal.size()-1) printf(lat);
+bool isfound(int n, const List& L) {
+	if (L.size()==0) return false;
+	for (int i=0; i<L.size(); i++) if (L[i]==n) return true;
+	return false;
+}
+
+List values(const List& L) {
+	List l;
+	for (int i=0; i<L.size(); i++) {
+		int n = L[i];
+		if (!isfound(n,l)) l.push_back(n);
 	}
+	return l;
+}
+
+void print_hist(str s, int i, List hist_petal, bool latex) {
+	str set = latex ? " & " : " | "; const char* et = set.c_str();
+	str sslash = latex ? " \\\\ \n" : "\n"; const char* slash = sslash.c_str();
+
+	//str rrr(10,'r');
+	//if (latex) printf("\\begin{table}[h]\\begin{center} \n \\caption{%s} \n \\begin{tabular}{%s} \n",s.c_str(),rrr.c_str());
+	//else printf(s.c_str()); printf("\n");
+
+	std::cout << s << " (interval " << i << ")" << std::endl;
+	int size = hist_petal.size();
+	for (int i=0; i<size; i++) {
+		const char* s = ((i+1)%10==0 || i==size-1) ? slash : et;
+		printf("%5d %s",hist_petal[i],s);
+	}
+	if (latex) printf("\\end{tabular}\\end{center}\\end{table}");
 	std::cout << std::endl;
 }
+
 
 // Table -----------------------------------------------------
 Table initTable(int l, int c, int val) {
@@ -134,9 +163,7 @@ std::vector<std::vector<double> > initTable_double(int l, int c, double val) {
 	return(T);
 }
 
-void print_table(str s, const Table& T, bool b, bool latex) {
-	str slat = latex ? " & " : ""; const char* lat = slat.c_str();
-	printf(s.c_str()); if (b) printf(" with total"); printf("\n");
+void verif(const Table& T) {
 	int l = T.size();
 	if (l==0) {
 		printf("   ! Empty table\n");
@@ -149,51 +176,65 @@ void print_table(str s, const Table& T, bool b, bool latex) {
 			return;
 		}
 	}
-	str s0(" ",10);
-	const char* space = s0.c_str();
+}
+
+void print_table(str s, const Table& T, bool latex) {
+	verif(T);
+	int l = T.size();
+	int c = T[0].size();
+
+	str set = latex ? " & " : ""; const char* et = set.c_str();
+	str sslash = latex ? " \\\\ \n" : "\n"; const char* slash = sslash.c_str();
+
+	str rrr(T[0].size(),'r');
+	if (latex) printf("\\begin{table}[h]\\begin{center} \n\\caption{%s} \n\\begin{tabular}{%s} \n",s.c_str(),rrr.c_str());
+	else printf(s.c_str()); printf("\n");
+
+	str s0(" ",10); const char* space = s0.c_str();
 	printf(space);
-	for (int j=0; j<c; j++) printf("%11d %s",j,lat);
-	printf("\n");
-	int begin = (isnull(T[0])) ? 1 : 0;
-	for (int i=begin; i<l; i++) {
-		printf("%4d %s",i,lat);
-		for (int j=0; j<c; j++) printf("%11s %s",f(T[i][j]),lat);
-		if (b) printf("%11s",f(sumlist(T[i])));
-		printf("\n");
+	for (int j=0; j<c; j++) {
+		const char* s = (j==c-1) ? slash : et;
+		printf("%11d %s",j,s);
 	}
+	for (int i=0; i<l; i++) {
+		printf("%4d %s",i,et);
+		for (int j=0; j<c; j++) {
+			const char* s = (j==c-1) ? slash : et;
+			printf("%11s %s",f(T[i][j]),s);
+		}
+	}
+	if (latex) printf("\\end{tabular}\\end{center}\\end{table}");
 	printf("\n");
 }
 
 void print_table(str s, const std::vector<std::vector<double> >& T, bool latex) {
-	str slat = latex ? " & " : ""; const char* lat = slat.c_str();
-	printf(s.c_str());
-	printf("\n");
+	//verif(T);
 	int l = T.size();
-	if (l==0) {
-		printf("   ! Empty table\n");
-		return;
-	}
 	int c = T[0].size();
+
+	str set = latex ? " & " : ""; const char* et = set.c_str();
+	str sslash = latex ? " \\\\ \n" : "\n"; const char* slash = sslash.c_str();
+
+	str rrr(T[0].size(),'r');
+	if (latex) printf("\\begin{table}[h]\\begin{center} \n\\caption{%s} \n\\begin{tabular}{%s} \n",s.c_str(),rrr.c_str());
+	else printf(s.c_str()); printf("\n");
+
+	str s0(" ",10); const char* space = s0.c_str();
+	printf(space);
+	for (int j=0; j<c; j++) {
+		const char* s = (j==c-1) ? slash : et;
+		printf("%11d %s",j,s);
+	}
 	for (int i=0; i<l; i++) {
-		if (T[i].size()!=c) {
-			printf("   ! Table has different number of columns depending to the lines\n");
-			return;
+		printf("%4d %s",i,et);
+		for (int j=0; j<c; j++) {
+			const char* s = (j==c-1) ? slash : et;
+			printf("%11s %s",f(T[i][j]),s);
 		}
 	}
-	str s0(" ",10);
-	const char* space = s0.c_str();
-	printf(space);
-	for (int j=0; j<c; j++) printf("%11d %s",j,lat);
-	printf("\n");
-	for (int i=0; i<l; i++) {
-		printf("%4d %s",i,lat);
-		for (int j=0; j<c; j++) printf("%11s %s",f(T[i][j]),lat);
-		printf("\n");
-	}
+	if (latex) printf("\\end{tabular}\\end{center}\\end{table}");
 	printf("\n");
 }
-
-
 
 void print_table(str s, const std::vector<std::vector<pair> >& T) {
 	printf(s.c_str()); printf("\n");
@@ -234,6 +275,12 @@ List histogram(const Table& T, int interval) {
 		}
 	}
 	return hist;
+}
+
+Table with_tot(const Table& T) {
+	Table M = T;
+	for (int i=0; i<M.size(); i++) M[i].push_back(sumlist(M[i]));
+	return M;
 }
 
 // Cube ------------------------------------------------------

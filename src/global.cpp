@@ -141,6 +141,7 @@ bool ok_assign_tot(int g, int j, int k, const Plates& P, const Gals& G, const PP
 	if (!ok_assign_g_to_jk(g,j,k,P,G,pp,F,A)) return false;
 	if (A.is_assigned_tf(j,k)) return false;
 	if (A.is_assigned_pg(P[j].ipass,g)) return false;
+	if (nobs(g,G,F,A)==0) return false;
 	return true;
 }
 
@@ -280,12 +281,13 @@ void redistribute(const Gals& G, const Plates&P, const PP& pp, const Feat& F, As
 
 // Assignment "for one" --------------------------------------------------------------------------------
 
+// There is not problem with the fact that we only have knowledge on previous assignment, because when we call nobs (the only moment it can raise a problem) there can't be crossings with this plate, because g can only be assigned once
 void assign_fibers_for_one(int j, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
 	List randFibers = random_permut(Nfiber);
 	int as(0);
 	for (int kk=0; kk<Nfiber; kk++) {
 		int k = randFibers[kk];
-		int best = -1; int mbest = -1; float minp = 1e30;
+		int best = -1; int mbest = -1; float pbest = 1e30;
 		List av_gals = P[j].av_gals[k];
 		List randGals = random_permut(av_gals.size());
 		for (int gg=0; gg<av_gals.size(); gg++) { 
@@ -293,22 +295,15 @@ void assign_fibers_for_one(int j, const Gals& G, const Plates& P, const PP& pp, 
 			int prio = G[g].prio(F);
 			int m = nobs(g,G,F,A);
 			if (ok_assign_tot(g,j,k,P,G,pp,F,A)) {
-				if (!A.once_obs(g)) {
-					if (m>=1 && prio<minp) {
-						best = g;
-						minp = prio;
-						mbest = m;
-					}
-				}
-				else if (m>=1 && prio<minp || best!=-1 && m>mbest) {
+				if (prio<pbest || A.once_obs(g) && m>mbest) {
 					best = g;
-					minp = prio;
+					pbest = prio;
 					mbest = m;
 				}
 			}
 		}
 		// Assign best galaxy to this fiber
-		if (best!=-1 && nobs(best,G,F,A)>=1) { A.assign(j,k,best,G,P,pp); as++; }
+		if (best!=-1) { A.assign(j,k,best,G,P,pp); as++; }
 	}
 	printf(" %5s assignments",f(as));
 }
@@ -333,7 +328,7 @@ void improve_for_one(int j, const Gals& G, const Plates&P, const PP& pp, const F
 						List av_g2 = P[j].av_gals[kp];
 						for(int m=0; m<av_g2.size() && !finished; m++) {
 							int gp = av_g2[m]; // gp : another possibility for (jp,kp)
-							if (ok_assign_tot(gp,j,kp,P,G,pp,F,A) && nobs(gp,G,F,A)>=1 /*>=0 if never observed yet*/ && A.unused_fbp(j,k,pp)>MinUnused && A.unused_fbp(j,kp,pp)>MinUnused) {
+							if (ok_assign_tot(gp,j,kp,P,G,pp,F,A)/*>=0 if never observed yet*/) {
 								// Modify assignment
 								A.unassign(j,kp,g,G,P,pp);
 								A.assign(j,k,g,G,P,pp);
@@ -441,7 +436,7 @@ void display_results(const Gals& G, const Plates& P, const PP& pp, const Feat& F
 		if (n>=0 && n<=MaxObs) hist2[G[g].id][n]++;
 		else printf(" !!! Error in display_result : observation beyond limits\n");
 	}
-	print_table("  Remaining observations (id on lines, nobs left on rows)",hist2,true,latex);
+	print_table("  Remaining observations (id on lines, nobs left on rows), with total",with_tot(hist2),latex);
 
 	// Some stats
 	Table done = initTable(Categories,MaxObs+1);
@@ -460,7 +455,7 @@ void display_results(const Gals& G, const Plates& P, const PP& pp, const Feat& F
 			}
 		}
 	}
-	print_table("  0 to MaxObs ",done,false,latex);
+	print_table("  0 to MaxObs ",done,latex);
 
 	std::vector<std::vector<double> > stats = initTable_double(Categories,4);
 	for (int id=0; id<Categories; id++) {

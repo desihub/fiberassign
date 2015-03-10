@@ -28,28 +28,35 @@ class pair {
 
 // List ------------------------------------------------------
 class List : public std::vector<int> {};
+class Dlist : public std::vector<double> {};
 List initList(int l, int val = 0);
 List initList(std::vector<int> l);
 List initList(int l[]);
+Dlist initDlist(int l, double val = 0.0);
 std::vector<str> initList(str l[]);
 void print_list(str s, const List& L);
 void print_list(str s, std::vector<str> L);
 bool isnull(const List& L); // Test if the list is null
 int sumlist(const List& L); // Sum of the list
 int max(const List& L);
+bool isfound(int n, const List& L); // True iff i is found in L
+List values(const List& L); // Different taken values
 List random_permut(int n); // Return a random permutation
 void print_hist(str s, int i, List hist_petal, bool latex=false);
 
 // Table -----------------------------------------------------
 class Table : public std::vector<List> {};
 Table initTable(int l, int c, int val = 0); 
-void print_table(str s, const Table& T, bool b = false, bool latex = false);
+Table initTable(const Table& T); 
+void verif(const Table& T); // Verifies it's square
+void print_table(str s, const Table& T, bool latex = false);
 void print_table(str s, const std::vector<std::vector<pair> >& T);
 // Other constr wouldn't work if we would define a constructor in class Table
 std::vector<std::vector<pair> > initTable_pair(int l, int c);
 std::vector<std::vector<double> > initTable_double(int l, int c, double val=0.0);
 void print_table(str s, const std::vector<std::vector<double> >& T, bool latex = false);
 List histogram(const Table& T, int interval);
+Table with_tot(const Table& T); // Add a row with sum of lines
 
 // Cube ------------------------------------------------------
 class Cube : public std::vector<Table> {};

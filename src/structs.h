@@ -87,6 +87,8 @@ class Assignment {
 	Table TF; // TF for tile fiber, #tiles X #fibers
 	std::vector<std::vector<pair> > PG; // PG for pass galaxy, #passes X #galaxies
 	Cube kinds; // Cube[j][sp][id] : number of fibers of spectrometer sp and plate j that have the kind id. Redundtant information, but optimizes computations
+	Dlist probas; // Probas to get this type, provided we know the basic type (p(fake QSO | QSO) for example)
+	List plates_done; // List of done plates
 
 	Assignment();
 	~Assignment();
@@ -103,7 +105,9 @@ class Assignment {
 	Table used_by_kind(str kind, const Gals& G, const PP& pp, const Feat& F) const;
 	bool once_obs(int g); // Already observed ?
 	int nkind(int j, int k, str kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const; // Number of fibers assigned to the kind "kind" on the petal of (j,k)
+	void update_probas(const Gals& G, const Feat& F);
 };
+// Probabilities ---------------------------------------------
 
 void writeTFfile(const Plates& P, std::ofstream TFfile);
 void writeGfile(Gals& G, std::ofstream Gfile);

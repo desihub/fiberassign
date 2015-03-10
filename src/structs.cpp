@@ -252,6 +252,7 @@ Assignment::Assignment() {
 	TF = initTable(Nplate,Nfiber,-1);
 	PG = initTable_pair(Npass,Ngal); // Doesn't work if defined directly
 	kinds = initCube(Nplate,Npetal,Categories);
+	probas = initDlist(Categories);
 }
 
 Assignment::~Assignment() {}
@@ -367,6 +368,24 @@ int Assignment::nkind(int j, int k, str kind, const Gals& G, const Plates& P, co
 	//}
 	//return cnt;
 }
+
+void Assignment::update_probas(const Gals& G, const Feat& F) {
+	List L = initList(Categories);
+	int np = plates_done.size();
+	for (int j=0; j<np; j++) {
+		for (int k=0; k<Nfiber; k++) {
+			int g = TF[j][k];
+			if (g!=-1) L[G[g].id]++;
+		}
+	}
+	for (int i=0; i<Categories; i++) {
+		int tot(0);
+		int kind = F.prio[i];
+		for (int l=0; l<Categories; l++) if (F.prio[l]==kind) tot += L[l];
+		probas[i] = ((double) L[i])/((double) tot);
+	}
+}
+
 // Write some files -----------------------------------------------------------------------
 // Write very large binary file of P[j].av_gals[k]. Not checked for a long time, should not work anymore !
 void writeTFfile(const Plates& P, std::ofstream TFfile) {

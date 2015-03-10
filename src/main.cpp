@@ -88,8 +88,9 @@ int main(int argc, char **argv) {
 	for (int j=0; j<Nplate; j++) {
 		printf(" - Plate %d : ",j); std::cout.flush();
 		assign_fibers_for_one(j,G,P,pp,F,A0);
+		//A0.plates_done.push_back(j);
+		//A0.update_probas(G,F);
 		if (A0.unused_f(j)>0) {
-			//assign_fibers_for_one(j,G,P,pp,F,A0);
 			//improve_for_one(j,G,P,pp,F,A0);
 			//redistribute_for_one(j,G,P,pp,F,A0);
 			//assign_fibers_for_one(j,G,P,pp,F,A0);
@@ -98,8 +99,8 @@ int main(int argc, char **argv) {
 	}
 	print_time(time,"# ... took :");
 
-	display_results(G,P,pp,F,A0,false);
-	print_free_fibers(G,pp,F,A0,false);
+	display_results(G,P,pp,F,A0,true);
+	print_free_fibers(G,pp,F,A0,true);
 
 	////// Assignment global --------------------------------------------
 	//Assignment A;
