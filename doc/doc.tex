@@ -4,6 +4,13 @@
 \usepackage{multicol}
 \usepackage{indentfirst}
 \usepackage{pstricks,pstricks-add,pst-math,pst-xkey}
+\usepackage{amsmath}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\makeatletter
+\def\BState{\State\hskip-\ALG@thistlm}
+\makeatother
+
 \def\begeq{\begin{equation}}
 \def\endeq{\end{equation}}
 \def\begeqar{\begin{eqnarray}}
@@ -30,7 +37,7 @@ The samples are taken from Martin's mocks in stored on NERSC at $/project/projec
   The code needs to know the locations of the positioners in the focal plane.  They are given in :
   
   $ \$DESIMODEL/data/focalplane/fiberpos.txt$
-  It also needs to know the locations of the centers of the fields in the sky, i.e. the plates, and their order.  The original code written by Martin White provided the option of having the plate centers given in a binary file or an ASCII file.  We are now using the ASCII option by defining ASCIICENTERS at the outset.  If one wants to use the previous binary format, he has to ask it to Robert and adapt it to the new structure. The format is that of $\$DESIMODEL/data/footprint/desi-tiles.par$, but an alternative ASCII file can be provided.  If the executable is {\tt assign} then the calling sequence will look like :
+  It also needs to know the locations of the centers of the fields in the sky, i.e. the plates, and their order.  The original code written by Martin White provided the option of having the plate centers given in a binary file or an ASCII file.  We are now using the ASCII option by defining ASCIICENTERS at the outset.  If one wants to use the previous binary format, he has to ask it to Robert and adapt it to the new structure. The format is that of $\$DESIMODEL/data/footprint/desi-tiles.par$, but an alternative ASCII file can be provided. If the executable is {\tt assign} then the calling sequence will look like :
   
   {\tt./assign objects0.rdzipn desi-tiles.par fiberpos.txt assignment}
  
@@ -67,7 +74,22 @@ The samples are taken from Martin's mocks in stored on NERSC at $/project/projec
 	       \item global : main high-level functions and algorithms used in the program to collect information, assign fibers and print statistics. Important ones are described further
 	       \item main : neat and quickly understandable code that sum up all steps
        \end{itemize} 
-  
+
+       \section{Parameters}
+       They are defined at the begining of the file main.
+       \begin{itemize} 
+	       \item parameters sumed-up in the table \ref{tab:characteristics},
+	       \item Npass = 5 number of passes
+	       \item MinUnused = 50 (not used anymore for the moment) minimum number of unused fibers on each petal
+	       \item MaxSS = 10 ; MaxSF = 40 maximum number of fibers assigned to SS and SF on a petal
+	       \item PlateRadius = 1.65 radius of the plate
+	       \item TotalArea = 15789.0 total scrutinised area of the sky
+	       \item Collide = 2.1 minimum distance allowed on plate projection of two assigned galaxies on the same plate
+	       \item NeighborRad = 11.0 maximum distance to consider that two fibers are neighbors
+	       \item PatrolRad = 6.0 maximum distance, on plate coordinates, that allows a fiber to watch at a galaxy
+       \end{itemize} 
+
+
  \section{Classes and structures}
 They are build in order to be independent from one to another, flexible, quickly understandable, in a logical way, and with no redundant information.
 
@@ -93,8 +115,11 @@ Carries maping of tile-fibers to galaxies, its inverse, galaxies to tile-fibers,
 
 \section{Functions of global}
   {\tt plate\_dist(const double theta)} turns radians into mm on the focal plane, i.e. it is the plate scale as a function of angle.
+
   {\tt change\_coords} is a critical function that combines a galaxy and a particular plate to give the coordinates the galaxy will have in the focal plane when observed as with this tile. It's a rotation in angular coordinates. This ought to be rigorously checked.
+
  {\tt int find\_collision} returns the fiber number of a fiber that conflicts with tiblefiber (j,k).  Conflict is defined by two observed galaxies being separated by less than {\tt Collide}, current set to 2.1 mm.
+
 {\tt bool  ok\_assign\_g\_to\_jk\_nobs} checks to see if we can assign g to the tile-fiber jk, according to assigning rules described further
 
 \subsection{Collecting}
@@ -132,6 +157,37 @@ Here are algorithms that know all information and are able to compute the assign
 \item there can't be more than 10 fibers assigned to SS on a petal
 \item there can't be more than 40 fibers assigned to SF on a petal
        \end{itemize}
+
+       In reality we only know the basic type (QSO, LRG, ELG, SS, SF) of the galaxies of the catalog. The precise type is only infered by a simulation coded in python, but is generated with randomness. So in the algorithms, we can know the nature of the object only when it has been watched once at least.
+The algorithm of assignment plate after plate works like that on a plate :
+
+\begin{algorithm}
+\caption{Assign for one plate}\label{euclid}
+\begin{algorithmic}[1]
+\Procedure{Assign for one plate}{}
+\State Take a new random order of fibers, initialize a fictive galaxy to -1, called best
+\For {each fiber k}
+\State Take all available galaxies for this fiber, in a random order
+\For {each galaxy g}
+\If {g checks rules}
+\If {g has never been scrutinised}
+\If {$\textit{priority}(g) < \textit{priority}(best)$}
+\State $best \gets g$.
+\EndIf
+\ElsIf {$\textit{priority}(g) < \textit{priority}(best)$ or $(best\ne-1$ \& $\textit{nobs}(g) > \textit{nobs}(best))$}
+\State $best \gets g$.
+\EndIf
+\EndIf
+\EndIf
+\EndFor
+\If {$best\ne-1$  \&  $\textit{nobs}(best) \ge 1$}
+\State assign k to g
+\EndIf
+\EndFor
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
 
 \section{Main}
 
