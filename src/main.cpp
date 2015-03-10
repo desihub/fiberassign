@@ -16,7 +16,7 @@
 #include        "structs.h"
 #include        "global.h"
 
-int Nplate; int MaxSS; int MaxSF; double PlateRadius; double Collide; double NeighborRad; double PatrolMinRad; double PatrolMaxRad; double TotalArea; int Ngal; int MaxPrio; int MaxObs; int Categories; int Npass; int Nfiber; int MinUnused; int Npetal;
+int Nplate; int MaxSS; int MaxSF; double PlateRadius; double Collide; double NeighborRad; double PatrolRad; double TotalArea; int Ngal; int MaxPrio; int MaxObs; int Categories; int Npass; int Nfiber; int MinUnused; int Npetal;
 
 int main(int argc, char **argv) {
 	//// Initialization ---------------------------------------------------
@@ -33,8 +33,7 @@ int main(int argc, char **argv) {
 	TotalArea = 15789.0;
 	Collide = 2.1;
 	NeighborRad = 11.0;
-	PatrolMinRad = 0.0;
-	PatrolMaxRad = 6.0;
+	PatrolRad = 6.0;
 
 	str kind[] = {"QSO Ly-a","QSO Tracer","LRG","ELG","Fake QSO","Fake LRG","SS","SF"};
 	int prio[] = {1,1,3,5,1,3,2,4}; // has to be >= 0
@@ -89,7 +88,7 @@ int main(int argc, char **argv) {
 	for (int j=0; j<Nplate; j++) {
 		printf(" - Plate %d : ",j); std::cout.flush();
 		assign_fibers_for_one(j,G,P,pp,F,A0);
-		if (A0.unused_f(j)>MinUnused*Npetal) {
+		if (A0.unused_f(j)>0) {
 			//assign_fibers_for_one(j,G,P,pp,F,A0);
 			//improve_for_one(j,G,P,pp,F,A0);
 			//redistribute_for_one(j,G,P,pp,F,A0);
@@ -99,8 +98,8 @@ int main(int argc, char **argv) {
 	}
 	print_time(time,"# ... took :");
 
-	display_results(G,P,pp,F,A0,true);
-	print_free_fibers(G,pp,F,A0,true);
+	display_results(G,P,pp,F,A0,false);
+	print_free_fibers(G,pp,F,A0,false);
 
 	////// Assignment global --------------------------------------------
 	//Assignment A;

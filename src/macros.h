@@ -16,6 +16,5 @@ extern double PlateRadius;
 extern double TotalArea;
 extern double NeighborRad;
 extern double Collide;
-extern double PatrolMaxRad;
-extern double PatrolMinRad;
+extern double PatrolRad;
 #endif

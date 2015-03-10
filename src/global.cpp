@@ -87,7 +87,7 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 			// For each fiber, finds all reachable galaxies
 			KDtree<struct onplate> kdT(O,2);
 			for (int k=0; k<Nfiber; k++) {
-				std::vector<int> gals = kdT.near(&(pp.fp[2*k]),PatrolMinRad,PatrolMaxRad);
+				std::vector<int> gals = kdT.near(&(pp.fp[2*k]),0.0,PatrolRad);
 				P[j].av_gals[k] = initList(gals);
 			}
 			// Avancement 
