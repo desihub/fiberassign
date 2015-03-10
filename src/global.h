@@ -28,19 +28,18 @@ void assign_fibers(const Gals& G, const Plates& P, const PP& pp, const Feat& F, 
 void improve(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A);
 
 void redistribute(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A);
-// Assignment "for one" -----------------------------------------
+
+// Assignment "for one" ---------------------------------------
 void assign_fibers_for_one(int j, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A);
 
 void improve_for_one(int j, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A);
 
 void redistribute_for_one(int j, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A);
 
-// Other useful functions ------------------------------------
-List gals_range_fibers(const Plates& P); // How many galaxies in range of a fiber
-void results_on_inputs(const Gals& G, const Plates& P, const Feat& F);
-void display_results(const Gals& G, const Plates &P, const PP& pp, const Feat& F, const Assignment& A);
+// Other useful functions -------------------------------------
 Table conflicts(const Gals& G, const Plates& P, const PP& pp, const Assignment& A);
+void results_on_inputs(const Gals& G, const Plates& P, const Feat& F);
+void display_results(const Gals& G, const Plates &P, const PP& pp, const Feat& F, const Assignment& A, bool latex=false);
+void print_free_fibers(const Gals& G, const PP& pp, const Feat& F, const Assignment& A, bool latex=false);
 void plot_freefibers(str s, const Plates&P, const Assignment& A);
-void print_free_fibers(const PP& pp, const Assignment& A);
-void time_line(const Gals& G, const Feat& F, const Assignment& A);
 #endif

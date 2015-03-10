@@ -32,7 +32,7 @@ class PP { // PP for plate parameters
 	public:
 	std::vector<double> fp; // All fiber positions (x,y) in mm
 	List spectrom; // All spectrometer assignments of fibers
-	Table fibers_of_sp; // Inv map of spectrom, fibers_of_sp[sp] are fibers of spectrom sp
+	Table fibers_of_sp; // Inv map of spectrom, fibers_of_sp[sp] are fibers of spectrom sp, redundant but optimizes
 	Table N; // Identify neighboring positionners : neighb of fiber k are N[k]
 	
 	PP();
@@ -44,8 +44,8 @@ class PP { // PP for plate parameters
 
 // Plate -------------------------------------------------
 struct onplate { // The position of a galaxy in plate coordinates
-	double pos[2];
 	int id;
+	double pos[2];
 };
 class Onplates : public std::vector<struct onplate> {};
 
@@ -67,8 +67,8 @@ List gals_range_fibers(const Plates& P);
 // galaxy -------------------------------------------------
 class galaxy {
 	public:
+	int id;
 	double nhat[3];
-	int id, nobs, priority;
 	double ra, dec, z;
 	std::vector<pair> av_tfs; // available tile/fibers
 
@@ -86,7 +86,6 @@ class Assignment {
 	public:
 	Table TF; // TF for tile fiber, #tiles X #fibers
 	std::vector<std::vector<pair> > PG; // PG for pass galaxy, #passes X #galaxies
-	/*List Nobs; // Nobs[g] : number of times left g has to be observed*/
 	Cube kinds; // Cube[j][sp][id] : number of fibers of spectrometer sp and plate j that have the kind id. Redundtant information, but optimizes computations
 
 	Assignment();

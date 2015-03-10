@@ -38,15 +38,17 @@ bool isnull(const List& L); // Test if the list is null
 int sumlist(const List& L); // Sum of the list
 int max(const List& L);
 List random_permut(int n); // Return a random permutation
-void print_hist(str s, int i, List hist_petal);
+void print_hist(str s, int i, List hist_petal, bool latex=false);
 
 // Table -----------------------------------------------------
 class Table : public std::vector<List> {};
 Table initTable(int l, int c, int val = 0); 
-void print_table(str s, const Table& T, bool b = false);
+void print_table(str s, const Table& T, bool b = false, bool latex = false);
 void print_table(str s, const std::vector<std::vector<pair> >& T);
 // Other constr wouldn't work if we would define a constructor in class Table
 std::vector<std::vector<pair> > initTable_pair(int l, int c);
+std::vector<std::vector<double> > initTable_double(int l, int c, double val=0.0);
+void print_table(str s, const std::vector<std::vector<double> >& T, bool latex = false);
 List histogram(const Table& T, int interval);
 
 // Cube ------------------------------------------------------
@@ -74,6 +76,7 @@ void deb(int a, int b);
 
 // To String --------------------------------------------------
 const char* f(int i); // int 1526879 -> const char* 1,526,879
+const char* f(double i);
 str i2s(int i);
 str p2s(pair p);
 str p2s(int j, int k);

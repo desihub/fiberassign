@@ -39,10 +39,10 @@ void galaxy::print_av_tfs() { // Used to debug
 	}
 }
 // There is a version of this function (to adapt) for ASCII files, ask to Robert Cahn
+// Read galaxies from binary file--format is ra, dec, z, priority and nobs
+// with ra/dec in degrees. Priority and nobs information are treated diffenrently now, by Feat, and should be removed here.
+//  Reads every n galaxies (to test quicker)
 Gals read_galaxies(const char fname[], int n) {
-	// Read galaxies from binary file--format is ra, dec, z, priority and nobs
-	// with ra/dec in degrees
-	//  Reads every n galaxies (to test quicker)
 	Gals P;
 	std::ifstream fs(fname,std::ios::binary);
 	if (!fs) {  // An error occurred opening the file.
@@ -83,14 +83,10 @@ Gals read_galaxies(const char fname[], int n) {
 		double theta = (90 - (double)dc[i])*M_PI/180;
 		double phi   = ((double)ra[i]     )*M_PI/180;
 		struct galaxy Q;
+		Q.id         = id[i]-1; // -1 added
 		Q.nhat[0]    = sin(theta)*cos(phi);
 		Q.nhat[1]    = sin(theta)*sin(phi);
 		Q.nhat[2]    = cos(theta);
-		Q.id         = id[i]-1; // -1 added
-		Q.priority   = pr[i];
-		Q.nobs       = no[i];
-		// I only added this part to the binary input option.
-		// Could add a similar thing to ascii input option if ever necessary [L Samushia].
 		Q.ra = ra[i];
 		Q.dec = dc[i];
 		Q.z = zz[i];
@@ -138,28 +134,22 @@ void PP::read_fiber_positions(const char pos_name[]) {
 		getline(fs,buf);
 	}
 	fs.close();
-	// Verification
-	if (MaxFiber != fp.size()/2) {
-		std::cerr << "Max Fiber does not correspond to the number of fibers in input file" << std::endl;
-		myexit(1);
-	}
 }
 
-PP::PP() {
-	N.resize(MaxFiber);
-	fibers_of_sp.resize(MaxPetal);
-}
+PP::PP() {}
 
 void PP::get_neighbors() {
-	for(int i=0; i<MaxFiber; i++) {
-		for(int j=0; j<MaxFiber; j++) {
+	N.resize(Nfiber);
+	for(int i=0; i<Nfiber; i++) {
+		for (int j=0; j<Nfiber; j++) {
 			if(i!=j) {
-				if(sq(fp[2*i]-fp[2*j],fp[2*i+1]-fp[2*j+1]) < sq(NeighbourRad)) {
+				if(sq(fp[2*i]-fp[2*j],fp[2*i+1]-fp[2*j+1]) < sq(NeighborRad)) {
 					N[i].push_back(j); }}}}
 }
 
 void PP::compute_fibsofsp() {
-	for (int k=0; k<MaxFiber; k++) fibers_of_sp[spectrom[k]].push_back(k);
+	fibers_of_sp.resize(Npetal);
+	for (int k=0; k<Nfiber; k++) fibers_of_sp[spectrom[k]].push_back(k);
 }
 
 List PP::fibs_of_same_pet(int k) const {
@@ -168,14 +158,14 @@ List PP::fibs_of_same_pet(int k) const {
 // plate ---------------------------------------------------------------------------
 void plate::print_plate() const {
 	printf("  Plate : %d - pass %d\n",idp,ipass); printf("%f %f %f\n",nhat[0],nhat[1],nhat[2]);
-	int r = rand() % MaxFiber;
+	int r = rand() % Nfiber;
 	print_list("Available galaxies of a random fiber :",av_gals[r]);
 }
 
 List plate::av_gals_plate() const {
 	List gals = initList(Ngal);
 	List L = initList(0);
-	for (int k=0; k<MaxFiber; k++) {
+	for (int k=0; k<Nfiber; k++) {
 		for (int i=0; i<av_gals[k].size(); i++) {
 			if (gals[av_gals[k][i]] == 0) {
 				gals[av_gals[k][i]] = 1;
@@ -190,6 +180,7 @@ List plate::av_gals_plate() const {
 // Read positions of the plate centers from an ascii file "center_name", and fill in a structure
 // There is a version of this function (to adapt) for non ASCII files, ask to Robert Cahn
 Plates read_plate_centers(const char center_name[], int modulo) {
+	int pass(0);
 	Plates P;
 	str buf;
 	std::ifstream fs(center_name);
@@ -233,7 +224,9 @@ Plates read_plate_centers(const char center_name[], int modulo) {
 			Q.nhat[1]    = sin(theta)*sin(phi);
 			Q.nhat[2]    = cos(theta);
 			Q.ipass      = ipass-1; // <- be careful, format of input file
-			Q.av_gals.resize(MaxFiber); // <- added
+			if (ipass-1<pass) printf("ERROR reading plate centers : passes are not in an inscreasing order !\n");
+			pass = ipass-1;
+			Q.av_gals.resize(Nfiber); // <- added
 			if (l%modulo == 0) {
 				try {P.push_back(Q);} catch(std::exception& e) {myexception(e);}
 			}
@@ -245,8 +238,8 @@ Plates read_plate_centers(const char center_name[], int modulo) {
 
 List gals_range_fibers(const Plates& P) {
 	List L;
-	for (int j=0; j<MaxPlate; j++) {
-		for (int k=0; k<MaxFiber; k++) {
+	for (int j=0; j<Nplate; j++) {
+		for (int k=0; k<Nfiber; k++) {
 			int s = P[j].av_gals[k].size();
 			if (s>=L.size()) {L.resize(s+1); L[s] = 0;}
 			L[s]++;
@@ -256,9 +249,9 @@ List gals_range_fibers(const Plates& P) {
 }
 // Assignment -----------------------------------------------------------------------------
 Assignment::Assignment() {
-	TF = initTable(MaxPlate,MaxFiber,-1);
+	TF = initTable(Nplate,Nfiber,-1);
 	PG = initTable_pair(Npass,Ngal); // Doesn't work if defined directly
-	kinds = initCube(MaxPlate,MaxPetal,Categories);
+	kinds = initCube(Nplate,Npetal,Categories);
 }
 
 Assignment::~Assignment() {}
@@ -294,8 +287,8 @@ bool Assignment::is_assigned_tf(int j, int k) const {return (TF[j][k] != -1);}
 
 int Assignment::na() {
 	int cnt(0);
-	for (int j=0; j<MaxPlate; j++) {
-		for (int k=0; k<MaxFiber; k++) {
+	for (int j=0; j<Nplate; j++) {
+		for (int k=0; k<Nfiber; k++) {
 			if (TF[j][k]!=-1) cnt++;
 		}
 	}
@@ -312,9 +305,9 @@ std::vector<pair> Assignment::chosen_tfs(int g) const {
 }
 
 List Assignment::unused_f() const {
-	List unused = initList(MaxPlate);
-	for(int j=0; j<MaxPlate; j++) {
-		for (int k=0; k<MaxFiber; k++) {
+	List unused = initList(Nplate);
+	for(int j=0; j<Nplate; j++) {
+		for (int k=0; k<Nfiber; k++) {
 			if (!is_assigned_tf(j,k)) unused[j]++;
 		}
 	}
@@ -322,10 +315,10 @@ List Assignment::unused_f() const {
 }
 
 Table Assignment::unused_fbp(const PP& pp) const {
-	Table unused = initTable(MaxPlate,MaxPetal);
+	Table unused = initTable(Nplate,Npetal);
 	List Sp = pp.spectrom;
-	for(int j=0; j<MaxPlate; j++) {
-		for (int k=0; k<MaxFiber; k++) {
+	for(int j=0; j<Nplate; j++) {
+		for (int k=0; k<Nfiber; k++) {
 			if (!is_assigned_tf(j,k)) unused[j][Sp[k]]++;
 		}
 	}
@@ -333,9 +326,9 @@ Table Assignment::unused_fbp(const PP& pp) const {
 }
 
 Table Assignment::used_by_kind(str kind, const Gals& G, const PP& pp, const Feat& F) const {
-	Table used = initTable(MaxPlate,MaxPetal);
-	for(int j=0; j<MaxPlate; j++) {
-		for (int k=0; k<MaxFiber; k++) {
+	Table used = initTable(Nplate,Npetal);
+	for(int j=0; j<Nplate; j++) {
+		for (int k=0; k<Nfiber; k++) {
 			int g = TF[j][k];
 			if (g!=-1 && G[g].kind(F)==kind) used[j][pp.spectrom[k]]++;
 		}
@@ -345,7 +338,7 @@ Table Assignment::used_by_kind(str kind, const Gals& G, const PP& pp, const Feat
 
 int Assignment::unused_f(int j) {
 	int unused(0);
-	for (int k=0; k<MaxFiber; k++) 	if (!is_assigned_tf(j,k)) unused++;
+	for (int k=0; k<Nfiber; k++) 	if (!is_assigned_tf(j,k)) unused++;
 	return unused;
 }
 
@@ -359,7 +352,7 @@ int Assignment::unused_fbp(int j, int k, const PP& pp) const {
 }
 
 bool Assignment::once_obs(int g) {
-	for (int i=0; i<MaxPass; i++) if (!PG[i][g].isnull()) return true;
+	for (int i=0; i<Npass; i++) if (!PG[i][g].isnull()) return true;
 	return false;
 }
 
@@ -375,11 +368,11 @@ int Assignment::nkind(int j, int k, str kind, const Gals& G, const Plates& P, co
 	//return cnt;
 }
 // Write some files -----------------------------------------------------------------------
-// Write very large binary file of P[j].av_gals[k]
+// Write very large binary file of P[j].av_gals[k]. Not checked for a long time, should not work anymore !
 void writeTFfile(const Plates& P, std::ofstream TFfile) {
 	TFfile.open ("TFout.txt", std::ios::binary);
-	for(int j=0;j<MaxPlate;j++){
-		for(int k=0;k<MaxFiber;k++){
+	for(int j=0;j<Nplate;j++){
+		for(int k=0;k<Nfiber;k++){
 			TFfile.write(reinterpret_cast<char*>(&j),sizeof(int));TFfile.write(reinterpret_cast<char*>(&k),sizeof(int));
 			std::vector<int> gals = P[j].av_gals[k];
 			int siz = gals.size();
@@ -399,8 +392,8 @@ void writeGfile(Gals& G, std::ofstream Gfile) {
 	std::cout<<G.size()<<std::endl;
 	for(int i=0;i<G.size();i++){
 		Gfile.write(reinterpret_cast<char*>(&G[i].ra),sizeof(double));Gfile.write(reinterpret_cast<char*>(&G[i].dec),sizeof(double));
-		Gfile.write(reinterpret_cast<char*>(&G[i].z),sizeof(double));Gfile.write(reinterpret_cast<char*>(&G[i].nobs),sizeof(int));	
-		Gfile.write(reinterpret_cast<char*>(&G[i].id),sizeof(int));Gfile.write(reinterpret_cast<char*>(&G[i].priority),sizeof(int));		
+		Gfile.write(reinterpret_cast<char*>(&G[i].z),sizeof(double));
+		Gfile.write(reinterpret_cast<char*>(&G[i].id),sizeof(int));
 	}
 	Gfile.close();
 }
@@ -409,8 +402,8 @@ void readGfile(Gals& G, galaxy Gtemp, std::ifstream GXfile) {
 	GXfile.open("Gout.bn", std::ios::binary);
 	for(int i=0;!GXfile.eof();i++){
 		GXfile.read(reinterpret_cast<char*>(&Gtemp.ra),sizeof(double));GXfile.read(reinterpret_cast<char*>(&Gtemp.dec),sizeof(double));
-		GXfile.read(reinterpret_cast<char*>(&Gtemp.z),sizeof(double));GXfile.read(reinterpret_cast<char*>(&Gtemp.nobs),sizeof(int));	
-		GXfile.read(reinterpret_cast<char*>(&Gtemp.id),sizeof(int));GXfile.read(reinterpret_cast<char*>(&Gtemp.priority),sizeof(int));
+		GXfile.read(reinterpret_cast<char*>(&Gtemp.z),sizeof(double));
+		GXfile.read(reinterpret_cast<char*>(&Gtemp.id),sizeof(int));
 		G.push_back(Gtemp);
 		if((i/1000000)*1000000==i) std::cout<<i<<std::endl;
 	}

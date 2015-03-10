@@ -101,12 +101,13 @@ int max(const List& L) {
 	return m;
 }
 
-void print_hist(str s, int i, List hist_petal) {
+void print_hist(str s, int i, List hist_petal, bool latex) {
+	str slat = latex ? " & " : " | "; const char* lat = slat.c_str();
 	std::cout << s << " (interval " << i << ")" << std::endl;
 	for (int i=0; i<hist_petal.size(); i++) {
 		printf("%5d",hist_petal[i]);
 		if ((i+1)%10==0) printf("\n");
-		else if (i!=hist_petal.size()-1) printf(" | ");
+		else if (i!=hist_petal.size()-1) printf(lat);
 	}
 	std::cout << std::endl;
 }
@@ -126,7 +127,15 @@ std::vector<std::vector<pair> > initTable_pair(int l, int c) {
 	return(T);
 }
 
-void print_table(str s, const Table& T, bool b) {
+std::vector<std::vector<double> > initTable_double(int l, int c, double val) {
+	std::vector<std::vector<double> > T;
+	T.resize(l);
+	for (int i=0; i<l; i++) T[i].resize(c,val);
+	return(T);
+}
+
+void print_table(str s, const Table& T, bool b, bool latex) {
+	str slat = latex ? " & " : ""; const char* lat = slat.c_str();
 	printf(s.c_str()); if (b) printf(" with total"); printf("\n");
 	int l = T.size();
 	if (l==0) {
@@ -143,20 +152,51 @@ void print_table(str s, const Table& T, bool b) {
 	str s0(" ",10);
 	const char* space = s0.c_str();
 	printf(space);
-	for (int j=0; j<c; j++) printf("%11d",j);
+	for (int j=0; j<c; j++) printf("%11d %s",j,lat);
 	printf("\n");
 	int begin = (isnull(T[0])) ? 1 : 0;
 	for (int i=begin; i<l; i++) {
-		printf("%4d",i);
-		for (int j=0; j<c; j++) printf("%11s",f(T[i][j]));
+		printf("%4d %s",i,lat);
+		for (int j=0; j<c; j++) printf("%11s %s",f(T[i][j]),lat);
 		if (b) printf("%11s",f(sumlist(T[i])));
 		printf("\n");
 	}
 	printf("\n");
 }
 
-void print_table(str s, const std::vector<std::vector<pair> >& T) {
+void print_table(str s, const std::vector<std::vector<double> >& T, bool latex) {
+	str slat = latex ? " & " : ""; const char* lat = slat.c_str();
 	printf(s.c_str());
+	printf("\n");
+	int l = T.size();
+	if (l==0) {
+		printf("   ! Empty table\n");
+		return;
+	}
+	int c = T[0].size();
+	for (int i=0; i<l; i++) {
+		if (T[i].size()!=c) {
+			printf("   ! Table has different number of columns depending to the lines\n");
+			return;
+		}
+	}
+	str s0(" ",10);
+	const char* space = s0.c_str();
+	printf(space);
+	for (int j=0; j<c; j++) printf("%11d %s",j,lat);
+	printf("\n");
+	for (int i=0; i<l; i++) {
+		printf("%4d %s",i,lat);
+		for (int j=0; j<c; j++) printf("%11s %s",f(T[i][j]),lat);
+		printf("\n");
+	}
+	printf("\n");
+}
+
+
+
+void print_table(str s, const std::vector<std::vector<pair> >& T) {
+	printf(s.c_str()); printf("\n");
 	int l = T.size();
 	if (l==0) {
 		printf("   ! Empty table\n");
@@ -181,6 +221,8 @@ void print_table(str s, const std::vector<std::vector<pair> >& T) {
 	}
 	printf("\n");
 }
+
+
 
 List histogram(const Table& T, int interval) {
 	List hist; int l = T.size(); int c = T[0].size();
@@ -290,6 +332,26 @@ const char* f(int i) { // int 1526879 -> const char* 1,526,879
 	for (int l=0; l<n; l++) {
 		str.push_back(s[l]);
 		if ((n-1-l)%3==0 && n-l-1!=0) str.push_back(',');
+	}
+	return str.c_str();
+}
+
+const char* f(double i) { // Be careful : double 1523.5412 -> 1,523.54 (max 6 numbers)
+	std::stringstream ss;
+	ss << i;
+	str s = ss.str();
+	str str("");
+	int n = s.size();
+	bool dot(true);
+	int dec(0);
+	int dot_pos(-1);
+	for (int a=0; a<n; a++) if (s[a]=='.') dot_pos = a;
+	int bef(n-dot_pos);
+	for (int l=0; l<n; l++) {
+		if (s[l]=='.') dot = false;
+		if (dot) str.push_back(s[l]);
+		else if (dec <= 3) { dec++; str.push_back(s[l]); }
+		if ((n-bef-1-l)%3==0 && n-bef-l-1!=0 && dot) str.push_back(',');
 	}
 	return str.c_str();
 }
