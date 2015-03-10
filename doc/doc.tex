@@ -1,0 +1,239 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{graphics}
+\usepackage{multicol}
+\usepackage{indentfirst}
+\usepackage{pstricks,pstricks-add,pst-math,pst-xkey}
+\usepackage{amsmath}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\makeatletter
+\def\BState{\State\hskip-\ALG@thistlm}
+\makeatother
+
+\def\begeq{\begin{equation}}
+\def\endeq{\end{equation}}
+\def\begeqar{\begin{eqnarray}}
+\def\endeqar{\end{eqnarray}}
+\def\Rmm{R_{\rm mm}}
+\def\Rdeg{R_{\rm deg}}
+\def\micron{\mu{\rm m}}
+\def\lya{Ly-$\alpha$\ }
+
+\usepackage{geometry}
+\geometry{hscale=0.85,vscale=0.85,centering}
+\title{Description of fiber assignment code for Mocks}
+\author{Robert Cahn and Louis Garrigue}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+Martin White developed C++ code for fiber assignment over the full 14k sq. deg. footprint.  We first modified Martin's code to incorporate features from Robert's python code, which ran on a restricted 480 sq. deg.. We included the improvement and redistribution steps, which switches fiber assignments to increase the number of galaxies observed. We then adapted the code to compute assignments not globally anymore "knowing all information on galaxies" but plate after plate, as in real experiment.
+The samples are taken from Martin's mocks in stored on NERSC at $/project/projectdirs/desi/mocks/preliminary/$.  From these files we create a single file containing the appropriate mix of ELG, LRG, QSO, SS (Standard Stars) and SF (Sky Fibers) using the python script in svn $/code/survey/fiberassignment/FA\_Bob/trunk/bin/make\_catalog\_rnc.py$.  In the same place there is python code to produce a mixture of galaxies without any correlations, but with the correct dn/dz.  
+  
+  The code needs to know the locations of the positioners in the focal plane.  They are given in :
+  
+  $ \$DESIMODEL/data/focalplane/fiberpos.txt$
+  It also needs to know the locations of the centers of the fields in the sky, i.e. the plates, and their order.  The original code written by Martin White provided the option of having the plate centers given in a binary file or an ASCII file.  We are now using the ASCII option by defining ASCIICENTERS at the outset.  If one wants to use the previous binary format, he has to ask it to Robert and adapt it to the new structure. The format is that of $\$DESIMODEL/data/footprint/desi-tiles.par$, but an alternative ASCII file can be provided. If the executable is {\tt assign} then the calling sequence will look like :
+  
+  {\tt./assign objects0.rdzipn desi-tiles.par fiberpos.txt assignment}
+ 
+ Here the catalog of targets is in the NERSC directory :
+  $/projects/projectdirs/desi/mocks/preliminary/objects.rdzipn$ the binary file created by {\tt make\_catalog}.  The plate centers are provided here by  $\$DESIMODEL/data/footprint/desi-tiles.par$    The locations of the positioners are given in $ \$DESIMODEL/data/footprint/desi-tiles.par$  An option not now used is to write the actual assignments to a file here called {\tt assignment}.
+  
+  
+  README.rst gives instructions for running on NERSC.  The problem of colliding fiber positioners is addressed in a simplified way.  Two galaxies observed on the same plate (tile) cannot be within "Collide" (2.1) mm of each other.  This is enforced at the outset. A fiber assignment is not allowed if it uses a galaxy too close to one already assigned for this plate.  Of course the assignments then depend on the order in which the plates are considered.  
+  
+  We summarize here the various components of the code to facilitate their modification later. It has been written so as it is as flexible as possible to modify.
+
+  \begin{table}\begin{center}
+  \caption{Characteristics of galaxy samples as set in make\_catalog\_rnc.py}\label{tab:characteristics}
+  \begin{tabular}{lcccr}\\ \hline
+  type&id&priority&nobs&density/sq.deg.\\ \hline
+  Ly-A QSO & 0 & 1 & 5 &  50\\
+  tracer QSO & 1 & 1 & 1& 120\\
+  LRG & 2 & 3 &2 & 300\\
+  ELG & 3 & 5 & 1 & 2400\\
+  fake QSO & 4 & 1 & 1& 90\\
+  fake LRG & 5 & 3 & 1 & 50\\
+  SS & 6 & 2 & 1&  ?\\
+  SF & 7 & 4 & 1& ?\\ \hline
+    \end{tabular}\end{center}
+  \end{table}
+
+
+ \section{Source files}
+ They all consist in a .h and a .cpp file and are in this inscreasing dependency order :
+       \begin{itemize} 
+	       \item macros : set as global some parameters of the program
+	       \item misc : a home-made library of structures (and functions on them) needed to manipulate concerning datas, but independent of them. There are pair (of int), List (of int), Table, Cube, and timing, printing, string conversion, error report items.
+	       \item structs : structures of the manipulated datas and their members
+	       \item global : main high-level functions and algorithms used in the program to collect information, assign fibers and print statistics. Important ones are described further
+	       \item main : neat and quickly understandable code that sum up all steps
+       \end{itemize} 
+
+       \section{Parameters}
+       They are defined at the begining of the file main.
+       \begin{itemize} 
+	       \item parameters sumed-up in the table \ref{tab:characteristics},
+	       \item Npass = 5 number of passes
+	       \item MinUnused = 50 (not used anymore for the moment) minimum number of unused fibers on each petal
+	       \item MaxSS = 10 ; MaxSF = 40 maximum number of fibers assigned to SS and SF on a petal
+	       \item PlateRadius = 1.65 radius of the plate
+	       \item TotalArea = 15789.0 total scrutinised area of the sky
+	       \item Collide = 2.1 minimum distance allowed on plate projection of two assigned galaxies on the same plate
+	       \item NeighborRad = 11.0 maximum distance to consider that two fibers are neighbors
+	       \item PatrolRad = 6.0 maximum distance, on plate coordinates, that allows a fiber to watch at a galaxy
+       \end{itemize} 
+
+
+ \section{Classes and structures}
+They are build in order to be independent from one to another, flexible, quickly understandable, in a logical way, and with no redundant information.
+
+ \subsection{Features of galaxies (Feat)}
+Initialized in the main function, memories priorities, number of observations wished, and types of different galaxies.
+ 
+\subsection{Plate Parameters (PP)}
+Carries positions of fiber positions on the plate, spectrometer correspondence, and neighboring fibers information.
+
+\subsection{Plate}
+
+\subsubsection{Plate coordinates (onplate)}
+  Is used for coordinates in the focal plane in mm.  The member {\tt id} is used to give the identity of a galaxy. Onplates is vector of onplate.
+
+\subsubsection{A plate (plate)}
+Peculiarly describes both the location in the sky of the tile in terms of a unit vector derived from RA and DEC. Carries also the Id of the tile, its pass, and the available galaxies it is able to reach. Then Plates is vector of plate, and has all information on tiles.
+
+\subsection{Galaxy (galaxy)}
+Information on a galaxy : an {\tt id} that corresponds to table \ref{tab:characteristics}, a position in the sky (in 2 differents ways), and the available tile-fibers that can watch at it. Gals is vector of galaxy and carries all information on galaxies.
+
+\subsection{Assignments (Assignment)}
+Carries maping of tile-fibers to galaxies, its inverse, galaxies to tile-fibers, and the cube (3d-matrix) of assigned fibers for a kind, a petal and a plate (useful to have fast computations).
+
+\section{Functions of global}
+  {\tt plate\_dist(const double theta)} turns radians into mm on the focal plane, i.e. it is the plate scale as a function of angle.
+
+  {\tt change\_coords} is a critical function that combines a galaxy and a particular plate to give the coordinates the galaxy will have in the focal plane when observed as with this tile. It's a rotation in angular coordinates. This ought to be rigorously checked.
+
+ {\tt int find\_collision} returns the fiber number of a fiber that conflicts with tiblefiber (j,k).  Conflict is defined by two observed galaxies being separated by less than {\tt Collide}, current set to 2.1 mm.
+
+{\tt bool  ok\_assign\_g\_to\_jk\_nobs} checks to see if we can assign g to the tile-fiber jk, according to assigning rules described further
+
+\subsection{Collecting}
+  {\tt collect\_galaxies\_for\_all} is written for multithreaded, and for each fiber of each tile, collects reachable galaxies. It uses kdTree and htmTree libraries written by Martin White, that as absolutelly necessary to do computations in a reasonnable time with supercomputers.
+  
+  {\tt collect\_available\_tilefibers} computes, using the previous work, available tile-fibers for each galaxy (inverse map)
+  
+\subsection{Assigning with all information}
+Here are algorithms that know all information and are able to compute the assignment crossing between plates (so unrealistic, but interesting to compare its "ideal" results to real assignment ones)
+
+{\tt assign\_fibers} makes a first assignment of all fibers of all plates, in a shuffled order
+
+{\tt improve} improves the previously made first assignment. In a shuffled order, try to use unused fibers by reassigning some used one. Before : (jp,kp) - g ; (j,k) \& gp free. After : (j,k) - g \& (jp,kp) - gp.
+
+{\tt redistribute} redistrubte assignments trying to get at least 500 free fibers on each plate. We look first at plates with too few free fibers. Before : (j,k) - g, with Sp(k) too much used. After : (jreassign,kreassign) - g \& (j,k) free, such that (jreassign,kreassign) comes from most unused (ji,ki). Reassign if this is improvement.
+
+\subsection{Assigning tile after tile}
+{\tt assign\_fibers\_for\_one} makes a first assignment of all fibers on one plate, with only information on previous watched galaxies
+
+\subsection{Displaying results}
+{\tt void results\_on\_inputs} displays some statistics on treated input files (recall input features, print statistics on the number of fibers with 0 galaxies within reach, 1 galaxy within reach etc. out to 19 galaxies within reach ; number of available tile-fibers for a galaxy, ...)
+
+{\tt void display\_results} writes some statistics and provides the tex-formatted results to make Table \ref{tab:full14k}
+
+ {\tt print\_free\_fibers} print histograms on free fibers towards/regarding petals, for everything, for on ly SS and for only SF
+
+ {\tt conflicts} returns a complete list of all conflicts display them, a list of triplets (j,k,kp). There are no conflicts engendered by our algorithms.
+ 
+\section{Rules of assignment}
+       \begin{itemize}
+\item of course, a tile-fiber is only assigned once
+\item a galaxy can't be assigned more than once in a pass
+\item two observed galaxies can't be separated by less than {\tt Collide} (set by find\_collision)
+\item in last pass, only ELG, SS and SF are scrutinised
+\item there can't be more than 10 fibers assigned to SS on a petal
+\item there can't be more than 40 fibers assigned to SF on a petal
+       \end{itemize}
+
+       In reality we only know the basic type (QSO, LRG, ELG, SS, SF) of the galaxies of the catalog. The precise type is only infered by a simulation coded in python, but is generated with randomness. So in the algorithms, we can know the nature of the object only when it has been watched once at least.
+The algorithm of assignment plate after plate works like that on a plate :
+
+\begin{algorithm}
+\caption{Assign for one plate}\label{euclid}
+\begin{algorithmic}[1]
+\Procedure{Assign for one plate}{}
+\State Take a new random order of fibers, initialize a fictive galaxy to -1, called best
+\For {each fiber k}
+\State Take all available galaxies for this fiber, in a random order
+\For {each galaxy g}
+\If {g checks rules}
+\If {g has never been scrutinised}
+\If {$\textit{priority}(g) < \textit{priority}(best)$}
+\State $best \gets g$.
+\EndIf
+\ElsIf {$\textit{priority}(g) < \textit{priority}(best)$ or $(best\ne-1$ \& $\textit{nobs}(g) > \textit{nobs}(best))$}
+\State $best \gets g$.
+\EndIf
+\EndIf
+\EndIf
+\EndFor
+\If {$best\ne-1$  \&  $\textit{nobs}(best) \ge 1$}
+\State assign k to g
+\EndIf
+\EndFor
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+
+\section{Main}
+
+ The calling sequence is {\tt assign  <galaxy> <plate\_centers> <fiberpos> <assignment>}.  The last of these is the file to which we would write all the final galaxy assignments, but this is generally suppressed since we aren't using it yet.
+ 
+ {\tt main} proceeds by taking important parameters, features of galaxies, reading in the galaxies to make G, the positions of the fibers on the plate to make pp, the plate centers and positioner locations to make P. 
+ 
+
+We then collect available galaxies for each fiber for each plate, and compute the inverse map.
+ 
+ We next, tile after tile, do the assignment of galaxies, by calling {\tt assign\_fibers\_for\_one}. The results are then written using {\tt display\_results} and {\tt print\_free\_fibers}.
+ 
+ \begin{verbatim}
+
+\end{verbatim}
+ 
+ 
+\begin{table}[h]\begin{center}
+\caption{Remaining observations (id on lines, nobs left on rows) with total}\label{tab:full14k}
+\begin{tabular}{l|rrrrrrr}
+	Id &      0  &           1  &           2  &           3  &           4  &           5  & total\\ \hline
+   0  &           0  &     443,259  &     240,890  &      72,694  &      24,033  &       7,767  &     788,643\\
+   1  &   1,867,438  &      27,182  &           0  &           0  &           0  &           0  &   1,894,620\\
+   2  &   3,873,418  &     602,268  &     240,657  &           0  &           0  &           0  &   4,716,343\\
+   3  &  26,925,090  &  11,147,890  &           0  &           0  &           0  &           0  &  38,072,980\\
+   4  &   1,400,629  &      20,383  &           0  &           0  &           0  &           0  &   1,421,012\\
+   5  &     753,676  &      35,774  &           0  &           0  &           0  &           0  &     789,450\\
+   6  &   1,066,600  &   1,143,862  &           0  &           0  &           0  &           0  &   2,210,462\\
+   7  &   4,266,400  &  17,838,234  &           0  &           0  &           0  &           0  &  22,104,634\\
+\end{tabular}\end{center}
+ \end{table}
+
+
+\begin{table}[h]\begin{center}
+\caption{Id on lines. (Per square degrees) Total, Fibers Used, Available, Percent of observations}
+\begin{tabular}{l|rrrr} 
+	Id &          0  &           1  &           2  &           3 \\ \hline
+   0  &      49.457  &     168.796  &      49.948  &      99.015   \\
+   1  &     118.275  &     118.275  &     119.996  &      98.565   \\
+   2  &     283.469  &     528.792  &     298.711  &      94.897   \\
+   3  &    1,705.31  &    1,705.31  &    2,411.36  &      70.719   \\
+   4  &      88.709  &      88.709  &      90.000  &      98.565   \\
+   5  &      47.734  &      47.734  &         50,  &      95.468   \\
+   6  &      67.553  &      67.553  &        14,0  &      48.252   \\
+   7  &     270.213  &     270.213  &       14,00  &      19.300   \\
+\end{tabular}\end{center}
+ \end{table}
+
+\end{document}
