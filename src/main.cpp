@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
 	int prio[] = {1,1,3,5,1,3,2,4}; // has to be >= 0
 	int goal[] = {5,1,2,1,1,1,1,1};
 
-	// Kinds, number of observations desired, and priorities
+	// Taking previous features into account
 	Feat F; F.kind = initList(kind); F.prio = initList(prio); F.goal = initList(goal); MaxPrio = max(F.prio); MaxObs = max(F.goal); Categories = F.kind.size();
 
 	// Read galaxies
@@ -90,7 +90,7 @@ int main(int argc, char **argv) {
 		assign_fibers_for_one(j,G,P,pp,F,A0);
 		//A0.plates_done.push_back(j);
 		//A0.update_probas(G,F);
-		if (A0.unused_f(j)>0) {
+		if (A0.unused_f(j)>500) {
 			//improve_for_one(j,G,P,pp,F,A0);
 			//redistribute_for_one(j,G,P,pp,F,A0);
 			//assign_fibers_for_one(j,G,P,pp,F,A0);

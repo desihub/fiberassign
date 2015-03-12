@@ -353,7 +353,7 @@ void redistribute_for_one(int j, const Gals& G, const Plates&P, const PP& pp, co
 			for (int c=0; c<tfs.size() && !finished; c++) {
 				int jp = tfs[c].f;
 				int kp = tfs[c].s;
-				if (jp==j && ok_assign_tot(g,j,kp,P,G,pp,F,A) && A.unused_fbp(j,kp,pp)>MinUnused) {
+				if (jp==j && ok_assign_tot(g,j,kp,P,G,pp,F,A)) {
 					A.unassign(j,k,g,G,P,pp);
 					A.assign(j,kp,g,G,P,pp);
 					changed_gals[g] = 1;

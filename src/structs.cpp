@@ -252,7 +252,7 @@ Assignment::Assignment() {
 	TF = initTable(Nplate,Nfiber,-1);
 	PG = initTable_pair(Npass,Ngal); // Doesn't work if defined directly
 	kinds = initCube(Nplate,Npetal,Categories);
-	probas = initDlist(Categories);
+	probas = initList(Categories);
 }
 
 Assignment::~Assignment() {}
@@ -270,12 +270,15 @@ void Assignment::assign(int j, int k, int g, const Gals& G, const Plates& P, con
 	PG[ipass][g] = pair(j,k);
 	// Kinds
 	kinds[j][pp.spectrom[k]][G[g].id]++;
+	// Probas
+	probas[G[g].id]++;
 }
 
 void Assignment::unassign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp) {
 	TF[j][k] = -1;
 	PG[P[j].ipass][g].setnull();
 	kinds[j][pp.spectrom[k]][G[g].id]--;
+	probas[G[g].id]--;
 }
 
 bool Assignment::is_assigned_pg(int ip, int g) const {
@@ -369,21 +372,11 @@ int Assignment::nkind(int j, int k, str kind, const Gals& G, const Plates& P, co
 	//return cnt;
 }
 
-void Assignment::update_probas(const Gals& G, const Feat& F) {
-	List L = initList(Categories);
-	int np = plates_done.size();
-	for (int j=0; j<np; j++) {
-		for (int k=0; k<Nfiber; k++) {
-			int g = TF[j][k];
-			if (g!=-1) L[G[g].id]++;
-		}
-	}
-	for (int i=0; i<Categories; i++) {
-		int tot(0);
-		int kind = F.prio[i];
-		for (int l=0; l<Categories; l++) if (F.prio[l]==kind) tot += L[l];
-		probas[i] = ((double) L[i])/((double) tot);
-	}
+double Assignment::get_proba(int i, const Gals& G, const Feat& F) {
+	int tot(0);
+	int kind = F.prio[i];
+	for (int l=0; l<Categories; l++) if (F.prio[l]==kind) tot += probas[l];
+	return ((double) probas[i])/((double) tot);
 }
 
 // Write some files -----------------------------------------------------------------------
