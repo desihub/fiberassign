@@ -27,7 +27,9 @@ void assign_fibers(const Gals& G, const Plates& P, const PP& pp, const Feat& F, 
 
 void improve(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A);
 
-void redistribute(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A);
+void redistribute_tf(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A);
+void redistribute_g(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A);
+void redistribute_g_by_kind(str kind, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A);
 
 // Assignment "for one" ---------------------------------------
 void assign_fibers_for_one(int j, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A);

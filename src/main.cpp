@@ -19,6 +19,8 @@
 int Nplate; int MaxSS; int MaxSF; double PlateRadius; double Collide; double NeighborRad; double PatrolRad; double TotalArea; int Ngal; int MaxPrio; int MaxObs; int Categories; int Npass; int Nfiber; int MinUnused; int Npetal;
 
 int main(int argc, char **argv) {
+	//std::cout << (false || true && true || false) << std::endl;
+	//std::cout << (false || true && true || false || false || true) << std::endl;
 	//// Initialization ---------------------------------------------------
 	check_args(argc);
 	srand48(1234); // Make sure we have reproducability
@@ -82,52 +84,75 @@ int main(int argc, char **argv) {
 	//results_on_inputs(G,P,F);
 
 	////// Assignment plate per plate -----------------------------------
-	Assignment A0;
-	// Order : verificate that passes are increasing
-	init_time_at(time,"# Begin real time assignment",t);
-	for (int j=0; j<Nplate; j++) {
-		printf(" - Plate %d : ",j); std::cout.flush();
-		assign_fibers_for_one(j,G,P,pp,F,A0);
-		//A0.plates_done.push_back(j);
-		//A0.update_probas(G,F);
-		if (A0.unused_f(j)>500) {
-			//improve_for_one(j,G,P,pp,F,A0);
-			//redistribute_for_one(j,G,P,pp,F,A0);
-			//assign_fibers_for_one(j,G,P,pp,F,A0);
-		}
-		std::cout << std::endl;
-	}
-	print_time(time,"# ... took :");
+	//Assignment A0;
+	//// Order : verificate that passes are increasing
+	//init_time_at(time,"# Begin real time assignment",t);
+	//for (int j=0; j<Nplate; j++) {
+		//printf(" - Plate %d : ",j); std::cout.flush();
+		//assign_fibers_for_one(j,G,P,pp,F,A0);
+		////A0.plates_done.push_back(j);
+		////A0.update_probas(G,F);
+		//if (A0.unused_f(j)>500) {
+			////improve_for_one(j,G,P,pp,F,A0);
+			////redistribute_for_one(j,G,P,pp,F,A0);
+			////assign_fibers_for_one(j,G,P,pp,F,A0);
+		//}
+		//std::cout << std::endl;
+	//}
+	//print_time(time,"# ... took :");
 
-	display_results(G,P,pp,F,A0,true);
-	print_free_fibers(G,pp,F,A0,true);
+	//display_results(G,P,pp,F,A0,true);
+	//print_free_fibers(G,pp,F,A0,true);
 
 	////// Assignment global --------------------------------------------
-	//Assignment A;
-	//Naive assignment
-		//init_time_at(time,"# Begin naive assignment",t);
-	//assign_fibers(G,P,pp,F,A);
-	//print_time(time,"# ... took");
+	Assignment A;
+	// Naive assignment
+	init_time_at(time,"# Begin naive assignment",t);
+	assign_fibers(G,P,pp,F,A);
+	print_time(time,"# ... took");
 
-	//Table Q = conflicts(G,P,pp,A);
-	//display_results(G,P,pp,F,A);
+	init_time_at(time,"# Begin display results and free fibers",t);
+	display_results(G,P,pp,F,A,false);
+	print_free_fibers(G,pp,F,A,false);
+	print_time(time,"# ... took");
 
-	//// Improve --------------------------------------------------------
-	//init_time_at(time,"# Begin improve",t);
-	//improve(G,P,pp,F,A);
-	//print_time(time,"# ... took :");
-	//display_results(G,P,pp,F,A);
-	//print_free_fibers(G,pp,F,A);
+	// Improve --------------------------------------------------------
+	init_time_at(time,"# Begin improve",t);
+	improve(G,P,pp,F,A);
+	print_time(time,"# ... took :");
+	display_results(G,P,pp,F,A,false);
+	print_free_fibers(G,pp,F,A,false);
 
-	//init_time_at(time,"# Begin redistribute",t);
-	//redistribute(G,P,pp,F,A);
-	//print_time(time,"# ... took :"); 
-	//print_free_fibers(G,pp,F,A);
+	init_time_at(time,"# Begin redistribute galaxies",t);
+	redistribute_g(G,P,pp,F,A);
+	print_time(time,"# ... took :"); 
+	display_results(G,P,pp,F,A,false);
+	print_free_fibers(G,pp,F,A,false);
 
-	//init_time_at(time,"# Begin redistribute",t);
-	//redistribute(G,P,pp,F,A);
-	//print_time(time,"# ... took :"); 
-	//print_free_fibers(G,pp,F,A);
+	init_time_at(time,"# Begin redistribute SF",t);
+	redistribute_g_by_kind("SF",G,P,pp,F,A);
+	print_time(time,"# ... took :"); 
+	display_results(G,P,pp,F,A,false);
+	print_free_fibers(G,pp,F,A,false);
+
+	init_time_at(time,"# Begin improve",t);
+	improve(G,P,pp,F,A);
+	print_time(time,"# ... took :");
+	display_results(G,P,pp,F,A,false);
+	print_free_fibers(G,pp,F,A,false);
+
+	init_time_at(time,"# Begin redistribute TF",t);
+	redistribute_tf(G,P,pp,F,A);
+	print_time(time,"# ... took :"); 
+	display_results(G,P,pp,F,A,false);
+	print_free_fibers(G,pp,F,A,false);
+
+	init_time_at(time,"# Begin improve",t);
+	improve(G,P,pp,F,A);
+	print_time(time,"# ... took :");
+	display_results(G,P,pp,F,A,false);
+	print_free_fibers(G,pp,F,A,false);
+
 
 	//plot_freefibers("free_fiber_plot.txt",P,A);   
 	//time_line(G,F,A);
