@@ -16,7 +16,7 @@
 #include        "structs.h"
 #include        "global.h"
 
-int Nplate; int MaxSS; int MaxSF; double PlateRadius; double Collide; double NeighborRad; double PatrolRad; double TotalArea; int Ngal; int MaxPrio; int MaxObs; int Categories; int Npass; int Nfiber; int MinUnused; int Npetal;
+int Nplate; int MaxSS; int MaxSF; double PlateRadius; double Collide; double NeighborRad; double PatrolRad; double TotalArea; int Ngal; int MaxPrio; int MaxObs; int Categories; int Npass; int Nfiber; int MinUnused; int Npetal; int Nfbp;
 
 int main(int argc, char **argv) {
 	//std::cout << (false || true && true || false) << std::endl;
@@ -55,6 +55,7 @@ int main(int argc, char **argv) {
 	pp.read_fiber_positions(argv[3]); 
 	Nfiber = pp.fp.size()/2;
 	Npetal = max(pp.spectrom)+1; // spectrom has to be identified from 0 to Npetal-1
+	Nfbp = (int) (Nfiber/Npetal);
 	pp.get_neighbors(); 
 	pp.compute_fibsofsp();
 
@@ -110,6 +111,17 @@ int main(int argc, char **argv) {
 	init_time_at(time,"# Begin naive assignment",t);
 	assign_fibers(G,P,pp,F,A);
 	print_time(time,"# ... took");
+	
+	print_table("Petal",A.infos_petal(1000,5,G,P,pp,F));
+	print_table("Petal",A.infos_petal(2000,5,G,P,pp,F));
+	print_table("Petal",A.infos_petal(3000,5,G,P,pp,F));
+	print_table("Petal",A.infos_petal(4000,5,G,P,pp,F));
+	print_table("Petal",A.infos_petal(5000,5,G,P,pp,F));
+	print_table("Petal",A.infos_petal(6000,5,G,P,pp,F));
+	print_table("Petal",A.infos_petal(7000,5,G,P,pp,F));
+	print_table("Petal",A.infos_petal(8000,5,G,P,pp,F));
+	print_table("Petal",A.infos_petal(9000,5,G,P,pp,F));
+	print_table("Petal",A.infos_petal(10000,5,G,P,pp,F));
 
 	init_time_at(time,"# Begin display results and free fibers",t);
 	display_results(G,P,pp,F,A,false);
@@ -123,11 +135,17 @@ int main(int argc, char **argv) {
 	display_results(G,P,pp,F,A,false);
 	print_free_fibers(G,pp,F,A,false);
 
-	init_time_at(time,"# Begin redistribute galaxies",t);
-	redistribute_g(G,P,pp,F,A);
-	print_time(time,"# ... took :"); 
+	init_time_at(time,"# Begin improve2",t);
+	improve2("SF",G,P,pp,F,A);
+	print_time(time,"# ... took :");
 	display_results(G,P,pp,F,A,false);
 	print_free_fibers(G,pp,F,A,false);
+
+	//init_time_at(time,"# Begin redistribute galaxies",t);
+	//redistribute_g(G,P,pp,F,A);
+	//print_time(time,"# ... took :"); 
+	//display_results(G,P,pp,F,A,false);
+	//print_free_fibers(G,pp,F,A,false);
 
 	init_time_at(time,"# Begin redistribute SF",t);
 	redistribute_g_by_kind("SF",G,P,pp,F,A);

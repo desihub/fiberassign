@@ -247,6 +247,17 @@ List gals_range_fibers(const Plates& P) {
 	}
 	return L;
 }
+
+List av_gals_of_kind(int kind, int j, int k, const Gals& G, const Plates& P, const Feat& F) {
+	List L;
+	List av_gals = P[j].av_gals[k];
+	for (int gg=0; gg<av_gals.size(); gg++) {
+		int g = av_gals[gg];
+		if (G[g].id==kind) L.push_back(g);
+	}
+	return L;
+}
+
 // Assignment -----------------------------------------------------------------------------
 Assignment::Assignment() {
 	TF = initTable(Nplate,Nfiber,-1);
@@ -377,6 +388,48 @@ double Assignment::get_proba(int i, const Gals& G, const Feat& F) {
 	int kind = F.prio[i];
 	for (int l=0; l<Categories; l++) if (F.prio[l]==kind) tot += probas[l];
 	return ((double) probas[i])/((double) tot);
+}
+	
+Table Assignment::infos_petal(int j, int pet, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const {
+	int pass = P[j].ipass;
+	Table T;
+	List fibs = pp.fibers_of_sp[pet];
+	for (int kk=0; kk<fibs.size(); kk++) {
+		List L;
+		int k = fibs[kk];
+		int g0 = TF[j][k];
+		L.push_back(g0==-1 ? -1 : G[g0].id);
+		List av_gals = P[j].av_gals[k];
+		for (int gg=0; gg<av_gals.size(); gg++) {
+			int g = av_gals[gg];
+			L.push_back(G[g].id);
+			L.push_back(is_assigned_pg(pass,g));
+		}
+		T.push_back(L);
+	}
+	return T;
+}
+
+List Assignment::fibs_of_kind(str kind, int j, int pet, const Gals& G, const PP& pp, const Feat& F) const {
+	List L;
+	int id = F.id(kind);
+	List fibs = pp.fibers_of_sp[pet];
+	for (int kk=0; kk<Nfbp; kk++) {
+		int k = fibs[kk];
+		int g = TF[j][k];
+		if (g!=-1 && G[g].id==id) L.push_back(k);
+	}
+	return L;
+}
+
+List Assignment::fibs_unassigned(int j, int pet, const Gals& G, const PP& pp, const Feat& F) const {
+	List L;
+	List fibs = pp.fibers_of_sp[pet];
+	for (int kk=0; kk<Nfbp; kk++) {
+		int k = fibs[kk];
+		if (!is_assigned_tf(j,k)) L.push_back(k);
+	}
+	return L;
 }
 
 // Write some files -----------------------------------------------------------------------

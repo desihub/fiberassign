@@ -42,6 +42,22 @@ class PP { // PP for plate parameters
 	List fibs_of_same_pet(int k) const;
 };
 
+// galaxy -------------------------------------------------
+class galaxy {
+	public:
+	int id;
+	double nhat[3];
+	double ra, dec, z;
+	std::vector<pair> av_tfs; // available tile/fibers
+
+	void print_av_tfs();
+	int prio(const Feat& F) const;
+	str kind(const Feat& F) const;
+};
+
+class Gals : public std::vector<struct galaxy> {};
+Gals read_galaxies(const char fname[], int n = 1);
+
 // Plate -------------------------------------------------
 struct onplate { // The position of a galaxy in plate coordinates
 	int id;
@@ -63,22 +79,7 @@ class plate {
 class Plates : public std::vector<struct plate> {};
 Plates read_plate_centers(const char center_name[], int m = 1);
 List gals_range_fibers(const Plates& P);
-
-// galaxy -------------------------------------------------
-class galaxy {
-	public:
-	int id;
-	double nhat[3];
-	double ra, dec, z;
-	std::vector<pair> av_tfs; // available tile/fibers
-
-	void print_av_tfs();
-	int prio(const Feat& F) const;
-	str kind(const Feat& F) const;
-};
-
-class Gals : public std::vector<struct galaxy> {};
-Gals read_galaxies(const char fname[], int n = 1);
+List av_gals_of_kind(int kind, int j, int k, const Gals& G, const Plates& P, const Feat& F);
 
 // Assignment ---------------------------------------------
 // 2 mappings of assignments : (j,k) -> id(gal) ; id(gal)[5] -> (j,k)
@@ -106,6 +107,9 @@ class Assignment {
 	bool once_obs(int g); // Already observed ?
 	int nkind(int j, int k, str kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const; // Number of fibers assigned to the kind "kind" on the petal of (j,k)
 	double get_proba(int i, const Gals& G, const Feat& F); // p(fake QSO | QSO) for example
+	Table infos_petal(int j, int pet, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const;
+	List fibs_of_kind(str kind, int j, int pet, const Gals& G, const PP& pp, const Feat& F) const; // Sublist of fibers assigned to a galaxy of type kind for this petal
+	List fibs_unassigned(int j, int pet, const Gals& G, const PP& pp, const Feat& F) const;
 };
 
 void writeTFfile(const Plates& P, std::ofstream TFfile);

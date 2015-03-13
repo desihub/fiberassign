@@ -262,6 +262,7 @@ void redistribute_tf(const Gals& G, const Plates&P, const PP& pp, const Feat& F,
 	List randPlates = random_permut(Nplate);
 	for (int jj=0; jj<Nplate; jj++) {
 		printf("%d ",jj); std::cout.flush();
+		int red(0);
 		int j = randPlates[jj];
 		for (int kk=0; kk<Nfiber; kk++) {
 			List randFibers = random_permut(Nfiber);
@@ -272,10 +273,11 @@ void redistribute_tf(const Gals& G, const Plates&P, const PP& pp, const Feat& F,
 				if (best!=-1) {
 					A.unassign(j,k,g,G,P,pp);
 					A.assign(j,k,best,G,P,pp);
-					redistributions++;
+					redistributions++; red++;
 				}
 			}
 		}
+		printf("%d ",red);
 	}
 	printf("  %s redistributions (~%.4f %% of TF redistributed)\n",f(redistributions),percent(redistributions,Nfiber*Nplate));
 }
@@ -294,7 +296,7 @@ void redistribute_g(const Gals& G, const Plates&P, const PP& pp, const Feat& F, 
 			for (int tf=0; tf<av_tfs.size() && !finished; tf++) {
 				int jp = tfs[p].f;
 				int kp = tfs[p].s; 
-				if (ok_assign_g_to_jk(g,jp,kp,P,G,pp,F,A) && P[j].ipass==P[jp].ipass) {
+				if (find_collision(jp,kp,g,pp,G,P,A)==-1 && !A.is_assigned_tf(jp,kp) && P[j].ipass==P[jp].ipass) {
 					A.unassign(j,k,g,G,P,pp);
 					A.assign(jp,kp,g,G,P,pp);
 					redistributions++;
@@ -306,7 +308,65 @@ void redistribute_g(const Gals& G, const Plates&P, const PP& pp, const Feat& F, 
 	printf("  %s redistributions (~%.4f %% of galaxies redistributed)\n",f(redistributions),percent(redistributions,Ngal));
 }
 
-// Redistribuer SS et SK
+int best4(int kind, int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) { // Can't take g
+	int best = -1; int mbest = -1; float pbest = 1e30;
+	List av_gals = P[j].av_gals[k];
+	List randGals = random_permut(av_gals.size());
+	for (int gg=0; gg<av_gals.size(); gg++) { 
+		int g = av_gals[randGals[gg]];
+		int prio = G[g].prio(F);
+		int m = nobs(g,G,F,A);
+		if (G[g].id!=kind && nobs(g,G,F,A)>=1 && find_collision(j,k,g,pp,G,P,A)==-1) {
+			if (prio<pbest || m>mbest) {
+				best = g;
+				pbest = prio;
+				mbest = m;
+			}
+		}
+	}
+	return best;
+}
+
+// Try to use unused fibers by reassigning some used ones
+// Before : (jp,kp) <-> g ; (j,k) & gp free
+// After : (j,k) <-> g & (jp,kp) <-> gp
+// Prints the number of additional assigned galaxies
+void improve2(str kind, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A) {
+	int na_start(A.na());
+	int id = F.id(kind);
+	List randPlates = random_permut(Nplate);
+	for (int jj=0; jj<Nplate; jj++) {
+		int j = randPlates[jj];
+		List randPetals = random_permut(Npetal);
+		for (int ppet=0; ppet<Npetal; ppet++) {
+			int p = randPetals[ppet];
+			// Take sublist of fibers assigned to kind, and unassigned ones
+			List fibskind = A.fibs_of_kind(kind,j,p,G,pp,F);
+			List fibsunas = A.fibs_unassigned(j,p,G,pp,F);
+			for (int k=0; k<fibsunas.size(); k++) {
+				bool finished(false);
+				List av_gals = av_gals_of_kind(id,j,k,G,P,F);
+				for (int i=0; i<av_gals.size() && !finished; i++) {
+					int g = av_gals[i];
+					if (find_collision(j,k,g,pp,G,P,A)==-1) {
+						for (int kkp=0; kkp<fibskind.size() && !finished; kkp++) {
+							int kp = fibskind[kkp];
+							int gp = A.TF[j][kp];
+							int best = best4(id,j,k,G,P,pp,F,A);
+							if (best!=-1) {
+								A.unassign(j,kp,gp,G,P,pp);
+								A.assign(j,k,g,G,P,pp);
+								A.assign(j,kp,best,G,P,pp);
+								finished = true;
+								erase(kkp,fibskind);
+							}}}}}}
+	if (jj%10==0) { printf("%d ",jj); std::cout.flush(); }
+	}
+	int na_end(A.na());
+	printf("  %s more assignments (%.3f %% improvement)\n",f(na_end-na_start),percent(na_end-na_start,na_start));
+}
+
+// Redistribute by kind
 void redistribute_g_by_kind(str kind, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A) {
 	int redistributions(0);
 	int id = F.id(kind);
@@ -325,7 +385,8 @@ void redistribute_g_by_kind(str kind, const Gals& G, const Plates&P, const PP& p
 					for (int tf=0; tf<av_tfs.size() && !finished; tf++) {
 						int jp = tfs[p].f;
 						int kp = tfs[p].s; 
-						if (Done[jp][kp]==0 && ok_assign_g_to_jk(g,jp,kp,P,G,pp,F,A) && P[j].ipass==P[jp].ipass) {
+						// Ce qui bloque est assigned(jp,kp), déjà assigné !
+						if (Done[jp][kp]==0 && find_collision(jp,kp,g,pp,G,P,A)==-1 && !A.is_assigned_tf(jp,kp) && P[j].ipass==P[jp].ipass) {
 							A.unassign(j,k,g,G,P,pp);
 							A.assign(jp,kp,g,G,P,pp);
 							redistributions++;
@@ -340,6 +401,8 @@ void redistribute_g_by_kind(str kind, const Gals& G, const Plates&P, const PP& p
 	}
 	printf("  %s redistributions (~%.4f %% of galaxies redistributed)\n",f(redistributions),percent(redistributions,Ngal));
 }
+
+
 
 // Assignment "for one" --------------------------------------------------------------------------------
 

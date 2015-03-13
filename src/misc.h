@@ -43,6 +43,7 @@ bool isfound(int n, const List& L); // True iff i is found in L
 List values(const List& L); // Different taken values
 List random_permut(int n); // Return a random permutation
 void print_hist(str s, int i, List hist_petal, bool latex=false);
+void erase(int i, List& L); // Erase i th element
 
 // Table -----------------------------------------------------
 class Table : public std::vector<List> {};
@@ -57,6 +58,7 @@ std::vector<std::vector<double> > initTable_double(int l, int c, double val=0.0)
 void print_table(str s, const std::vector<std::vector<double> >& T, bool latex = false);
 List histogram(const Table& T, int interval);
 Table with_tot(const Table& T); // Add a row with sum of lines
+int max_row(const Table& T); // Max number of rows
 
 // Cube ------------------------------------------------------
 class Cube : public std::vector<Table> {};

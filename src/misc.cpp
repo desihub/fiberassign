@@ -139,6 +139,8 @@ void print_hist(str s, int i, List hist_petal, bool latex) {
 	std::cout << std::endl;
 }
 
+void erase(int i, List& L) { L.erase (L.begin()+i); }
+
 
 // Table -----------------------------------------------------
 Table initTable(int l, int c, int val) {
@@ -177,12 +179,20 @@ void verif(const Table& T) {
 	}
 }
 
-void print_table(str s, const Table& T, bool latex) {
-	verif(T);
-	int l = T.size();
-	int c = T[0].size();
+int max_row(const Table& T) {
+	int max(0);
+	for (int i=0; i<T.size(); i++) {
+		int c = T[i].size();
+		if (c>max) max = c;
+	}
+	return max;
+}
 
-	str et = latex ? " & " : " | ";
+void print_table(str s, const Table& T, bool latex) {
+	//verif(T);
+	int l = T.size();
+
+	str et = latex ? " &" : " |";
 	str slash = latex ? " \\\\ \n" : "\n";
 
 	str rrr(T[0].size(),'r');
@@ -192,15 +202,17 @@ void print_table(str s, const Table& T, bool latex) {
 
 	str space(" ",10);
 	printf(space.c_str());
-	for (int j=0; j<c; j++) {
-		str s = (j==c-1) ? slash : et;
-		printf("%11d %s",j,s.c_str());
+	int max = max_row(T);
+	for (int j=0; j<max; j++) {
+		str s = (j==max-1) ? slash : et;
+		printf("%2d %s",j,s.c_str());
 	}
-	for (int i=0; i<l; i++) {
+	for (int i=0; i<l && i<50; i++) {
 		printf("%4d %s",i,et.c_str());
+		int c = T[i].size();
 		for (int j=0; j<c; j++) {
 			str s = (j==c-1) ? slash : et;
-			printf("%11s %s",f(T[i][j]),s.c_str());
+			printf("%2s %s",(T[i][j]==-1 ? "" : f(T[i][j])),s.c_str());
 		}
 	}
 	if (latex) printf("\\end{tabular}\\end{center}\\end{table}");

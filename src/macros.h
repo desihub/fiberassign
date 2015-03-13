@@ -17,4 +17,5 @@ extern double TotalArea;
 extern double NeighborRad;
 extern double Collide;
 extern double PatrolRad;
+extern int Nfbp; // Number of fibers by petals
 #endif
