@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
 	//results_on_inputs(G,P,F);
 
 	////// Assignment plate per plate -----------------------------------
-	//Assignment A0;
+	//Assignment A0(G,F);
 	//// Order : verificate that passes are increasing
 	//init_time_at(time,"# Begin real time assignment",t);
 	//for (int j=0; j<Nplate; j++) {
@@ -106,7 +106,7 @@ int main(int argc, char **argv) {
 	//print_free_fibers(G,pp,F,A0,true);
 
 	////// Assignment global --------------------------------------------
-	Assignment A;
+	Assignment A(G,F);
 	// Naive assignment
 	init_time_at(time,"# Begin naive assignment",t);
 	assign_fibers(G,P,pp,F,A);
@@ -129,17 +129,20 @@ int main(int argc, char **argv) {
 	print_time(time,"# ... took");
 
 	// Improve --------------------------------------------------------
+	
+	init_time_at(time,"# Begin improve2",t);
+	improve2("SF",G,P,pp,F,A);
+	print_time(time,"# ... took :");
+	display_results(G,P,pp,F,A,false);
+	print_free_fibers(G,pp,F,A,false);
+
 	init_time_at(time,"# Begin improve",t);
 	improve(G,P,pp,F,A);
 	print_time(time,"# ... took :");
 	display_results(G,P,pp,F,A,false);
 	print_free_fibers(G,pp,F,A,false);
 
-	init_time_at(time,"# Begin improve2",t);
-	improve2("SF",G,P,pp,F,A);
-	print_time(time,"# ... took :");
-	display_results(G,P,pp,F,A,false);
-	print_free_fibers(G,pp,F,A,false);
+
 
 	//init_time_at(time,"# Begin redistribute galaxies",t);
 	//redistribute_g(G,P,pp,F,A);
@@ -153,23 +156,23 @@ int main(int argc, char **argv) {
 	display_results(G,P,pp,F,A,false);
 	print_free_fibers(G,pp,F,A,false);
 
-	init_time_at(time,"# Begin improve",t);
-	improve(G,P,pp,F,A);
-	print_time(time,"# ... took :");
-	display_results(G,P,pp,F,A,false);
-	print_free_fibers(G,pp,F,A,false);
+	//init_time_at(time,"# Begin improve",t);
+	//improve(G,P,pp,F,A);
+	//print_time(time,"# ... took :");
+	//display_results(G,P,pp,F,A,false);
+	//print_free_fibers(G,pp,F,A,false);
 
-	init_time_at(time,"# Begin redistribute TF",t);
-	redistribute_tf(G,P,pp,F,A);
-	print_time(time,"# ... took :"); 
-	display_results(G,P,pp,F,A,false);
-	print_free_fibers(G,pp,F,A,false);
+	//init_time_at(time,"# Begin redistribute TF",t);
+	//redistribute_tf(G,P,pp,F,A);
+	//print_time(time,"# ... took :"); 
+	//display_results(G,P,pp,F,A,false);
+	//print_free_fibers(G,pp,F,A,false);
 
-	init_time_at(time,"# Begin improve",t);
-	improve(G,P,pp,F,A);
-	print_time(time,"# ... took :");
-	display_results(G,P,pp,F,A,false);
-	print_free_fibers(G,pp,F,A,false);
+	//init_time_at(time,"# Begin improve",t);
+	//improve(G,P,pp,F,A);
+	//print_time(time,"# ... took :");
+	//display_results(G,P,pp,F,A,false);
+	//print_free_fibers(G,pp,F,A,false);
 
 
 	//plot_freefibers("free_fiber_plot.txt",P,A);   

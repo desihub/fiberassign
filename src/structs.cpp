@@ -259,11 +259,13 @@ List av_gals_of_kind(int kind, int j, int k, const Gals& G, const Plates& P, con
 }
 
 // Assignment -----------------------------------------------------------------------------
-Assignment::Assignment() {
+Assignment::Assignment(const Gals& G, const Feat& F) {
 	TF = initTable(Nplate,Nfiber,-1);
 	PG = initTable_pair(Npass,Ngal); // Doesn't work if defined directly
 	kinds = initCube(Nplate,Npetal,Categories);
 	probas = initList(Categories);
+	nobsv = initList(Ngal);
+	for (int g=0; g<Ngal; g++) nobsv[g] = F.goal[G[g].id];
 }
 
 Assignment::~Assignment() {}
@@ -271,31 +273,37 @@ Assignment::~Assignment() {}
 // Assign g with tile/fiber (j,k), and check for duplicates
 void Assignment::assign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp) {
 	// Assign (j,k)
-	int ipass = P[j].ipass;
+	int ip = P[j].ipass;
 	int q = TF[j][k];
 	if (q != -1) printf("### !!! ### DUPLICATE (j,k) = (%d,%d) assigned with g = %d and %d ---> information on first g lost \n",j,k,q,g);
 	TF[j][k] = g;
 	// Assign (ipass,g)
-	pair p = PG[ipass][g];
-	if (!p.isnull()) printf("### !!! ### DUPLICATE (ipass,g) = (%d,%d) assigned with (j,k) = (%d,%d) and (%d,%d) ---> information on first (j,k) lost \n",ipass,g,p.f,p.s,j,k);
-	PG[ipass][g] = pair(j,k);
+	pair p = PG[ip][g];
+	if (!p.isnull()) printf("### !!! ### DUPLICATE (ipass,g) = (%d,%d) assigned with (j,k) = (%d,%d) and (%d,%d) ---> information on first (j,k) lost \n",ip,g,p.f,p.s,j,k);
+	PG[ip][g] = pair(j,k);
 	// Kinds
 	kinds[j][pp.spectrom[k]][G[g].id]++;
 	// Probas
 	probas[G[g].id]++;
+	// Nobs
+	nobsv[g]--;
 }
 
 void Assignment::unassign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp) {
+	int ip = P[j].ipass;
+	if (TF[j][k]==-1) printf("### !!! ### TF (j,k) = (%d,%d) gets unassigned but was already not assigned\n",j,k);
+	if (PG[ip][g].isnull()) printf("### !!! ### Galaxy (ipass,g) = (%d,%d) gets unassigned but was already not assigned\n",ip,g);
+
 	TF[j][k] = -1;
-	PG[P[j].ipass][g].setnull();
+	PG[ip][g].setnull();
 	kinds[j][pp.spectrom[k]][G[g].id]--;
 	probas[G[g].id]--;
+	nobsv[g]++;
 }
 
 bool Assignment::is_assigned_pg(int ip, int g) const {
 	//printf(("is_assigned"+p2s(ip,g)+siz(PG)).c_str());
-	pair p = PG[ip][g];
-	return (!p.isnull());
+	return (PG[ip][g].f != -1);
 }
 
 bool Assignment::is_assigned_tf(int j, int k) const {return (TF[j][k] != -1);}
@@ -340,20 +348,9 @@ Table Assignment::unused_fbp(const PP& pp) const {
 	return unused;
 }
 
-Table Assignment::used_by_kind(str kind, const Gals& G, const PP& pp, const Feat& F) const {
-	Table used = initTable(Nplate,Npetal);
-	for(int j=0; j<Nplate; j++) {
-		for (int k=0; k<Nfiber; k++) {
-			int g = TF[j][k];
-			if (g!=-1 && G[g].kind(F)==kind) used[j][pp.spectrom[k]]++;
-		}
-	}
-	return used;
-}
-
 int Assignment::unused_f(int j) {
 	int unused(0);
-	for (int k=0; k<Nfiber; k++) 	if (!is_assigned_tf(j,k)) unused++;
+	for (int k=0; k<Nfiber; k++) if (!is_assigned_tf(j,k)) unused++;
 	return unused;
 }
 
@@ -364,6 +361,17 @@ int Assignment::unused_fbp(int j, int k, const PP& pp) const {
 		if (!is_assigned_tf(j,fibs[i])) unused++;
 	}
 	return unused;
+}
+
+Table Assignment::used_by_kind(str kind, const Gals& G, const PP& pp, const Feat& F) const {
+	Table used = initTable(Nplate,Npetal);
+	for(int j=0; j<Nplate; j++) {
+		for (int k=0; k<Nfiber; k++) {
+			int g = TF[j][k];
+			if (g!=-1 && G[g].kind(F)==kind) used[j][pp.spectrom[k]]++;
+		}
+	}
+	return used;
 }
 
 bool Assignment::once_obs(int g) {
@@ -391,7 +399,7 @@ double Assignment::get_proba(int i, const Gals& G, const Feat& F) {
 }
 	
 Table Assignment::infos_petal(int j, int pet, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const {
-	int pass = P[j].ipass;
+	int ip = P[j].ipass;
 	Table T;
 	List fibs = pp.fibers_of_sp[pet];
 	for (int kk=0; kk<fibs.size(); kk++) {
@@ -403,7 +411,8 @@ Table Assignment::infos_petal(int j, int pet, const Gals& G, const Plates& P, co
 		for (int gg=0; gg<av_gals.size(); gg++) {
 			int g = av_gals[gg];
 			L.push_back(G[g].id);
-			L.push_back(is_assigned_pg(pass,g));
+			L.push_back(is_assigned_pg(ip,g));
+			L.push_back(nobs(g,G,F));
 		}
 		T.push_back(L);
 	}
@@ -431,6 +440,16 @@ List Assignment::fibs_unassigned(int j, int pet, const Gals& G, const PP& pp, co
 	}
 	return L;
 }
+
+
+
+int Assignment::nobs(int g, const Gals& G, const Feat& F) const {
+	//int cnt(F.goal[G[g].id]);
+	//for (int i=0; i<Npass; i++) if (is_assigned_pg(i,g)) cnt--;
+	//return cnt;
+	return nobsv[g]; // optimization
+}
+// Global functions -----------------------------------------------------------------------
 
 // Write some files -----------------------------------------------------------------------
 // Write very large binary file of P[j].av_gals[k]. Not checked for a long time, should not work anymore !

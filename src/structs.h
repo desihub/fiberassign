@@ -90,14 +90,16 @@ class Assignment {
 	Cube kinds; // Cube[j][sp][id] : number of fibers of spectrometer sp and plate j that have the kind id. Redundtant information, but optimizes computations
 	List probas; // Number of galaxies of this kind
 	List plates_done; // List of done plates
+	List nobsv; // List of nobs, redundant but optimizes
 
-	Assignment();
+	Assignment(const Gals& G, const Feat& F);
 	~Assignment();
 	void assign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp);
 	void unassign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp);
 	bool is_assigned_pg(int ip, int g) const;
 	bool is_assigned_tf(int j, int k) const; 
 	int na(); // Number of assignments
+	int nobs(int g, const Gals& G, const Feat& F) const; // Counts how many time ob should be observed else more
 	std::vector<pair> chosen_tfs(int g) const; // Pairs (j,k) chosen by g in the Npass passes
 	List unused_f() const;
 	int unused_f(int j);
@@ -111,6 +113,8 @@ class Assignment {
 	List fibs_of_kind(str kind, int j, int pet, const Gals& G, const PP& pp, const Feat& F) const; // Sublist of fibers assigned to a galaxy of type kind for this petal
 	List fibs_unassigned(int j, int pet, const Gals& G, const PP& pp, const Feat& F) const;
 };
+
+// Global functions -----------------------------------------
 
 void writeTFfile(const Plates& P, std::ofstream TFfile);
 void writeGfile(Gals& G, std::ofstream Gfile);
