@@ -37,6 +37,7 @@ std::vector<str> initList(str l[]);
 void print_list(str s, const List& L);
 void print_list(str s, std::vector<str> L);
 void print_list_line(const List& L);
+void print_Dlist(str s, const Dlist& L);
 bool isnull(const List& L); // Test if the list is null
 int sumlist(const List& L); // Sum of the list
 int max(const List& L);
@@ -46,7 +47,8 @@ List random_permut(int n); // Return a random permutation
 List random_permut(const List& L);
 void print_hist(str s, int i, List hist_petal, bool latex=false);
 void erase(int i, List& L); // Erase i th element
-List complementary(int size, const List& L); // Complementary list (when L is a subset of [0,size-1])
+List complementary(int size, const List& L); // Complementary list (provided L is a subset of [0,size-1])
+List sublist(int begin, int size, const List& L);
 
 // Table -----------------------------------------------------
 class Table : public std::vector<List> {};

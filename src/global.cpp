@@ -162,12 +162,12 @@ int best1(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat
 }
 
 // Assign fibers naively
-void assign_fibers(const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, bool tmp) {
-	List remain = complementary(Nplate,A.plates_done);
-	int n(remain.size());
-	List randPlates = random_permut(remain);
-	for (int i=0; i<n; i++) {
-		int j = randPlates[i];
+void assign_fibers(int next, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, bool tmp) {
+	int n = next==-1 ? Nplate-A.next_plate : next;
+	List plates = sublist(A.next_plate,n,A.order);
+	List randPlates = random_permut(plates);
+	for (int jj=0; jj<plates.size(); jj++) {
+		int j = randPlates[jj];
 		List randFibers = random_permut(Nfiber);
 		for (int kk=0; kk<Nfiber; kk++) { // Fiber
 			int k = randFibers[kk];
@@ -175,7 +175,7 @@ void assign_fibers(const Gals& G, const Plates& P, const PP& pp, const Feat& F, 
 			if (best!=-1) A.assign(j,k,best,G,P,pp);
 		}
 	}
-	printf("  %s assignments\n",f(A.na()).c_str());
+	printf("  %s assignments on %s next plates\n",f(A.na()).c_str(),f(next).c_str());
 }
 
 int best2(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, bool tmp) { // Can't take g
@@ -201,12 +201,12 @@ int best2(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat
 // Before : (jp,kp) <-> g ; (j,k) & gp free
 // After : (j,k) <-> g & (jp,kp) <-> gp
 // Prints the number of additional assigned galaxies
-void improve(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, bool tmp) {
+void improve(int next, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, bool tmp) {
 	int na_start = A.na();
-	List remain = complementary(Nplate,A.plates_done);
-	int n(remain.size());
-	List randPlates = random_permut(remain);
-	for (int jj=0; jj<Nplate; jj++) {
+	int n = next==-1 ? Nplate-A.next_plate : next;
+	List plates = sublist(A.next_plate,n,A.order);
+	List randPlates = random_permut(plates);
+	for (int jj=0; jj<plates.size(); jj++) {
 		int j = randPlates[jj];
 		for(int k=0; k<Nfiber; k++) {
 			if (!A.is_assigned_tf(j,k)) { // Unused tilefiber (j,k)
@@ -233,7 +233,7 @@ void improve(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignm
 					else A.assign(j,k,g,G,P,pp); // Doesn't add anything in practice
 				}}}}
 	int na_end(A.na());
-	printf("  %s more assignments (%.3f %% improvement)\n",f(na_end-na_start).c_str(),percent(na_end-na_start,na_start));
+	printf("  %s more assignments (%.3f %% improvement)\n",f(na_end-na_start).c_str(),percent(na_end-na_start,na_start-A.na(0,A.next_plate-1)));
 }
 
 int best3(int g_no, int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) { // Can't take g
@@ -600,41 +600,52 @@ void results_on_inputs(const Gals& G, const Plates& P, const Feat& F) {
 void display_results(const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, bool latex, bool tmp) {
 	printf("# Results :\n");
 	// Raw numbers of galaxies by id and number of remaining observations
-	Table hist2 = initTable(Categories,MaxObs+2);
+	Table hist2 = initTable(Categories,MaxObs+1);
+	Table ob = initTable(Categories+1,2*MaxObs+1);
+	List maxobs = F.maxgoal();
 	for (int g=0; g<Ngal; g++) {
 		int n = A.nobs(g,G,F,tmp);
 		if (n>=0 && n<=MaxObs) hist2[G[g].id][n]++;
-		else printf(" !!! Error in display_result : observation beyond limits\n");
+		int m = A.nobs(g,G,F,false);
+		ob[G[g].id][m+MaxObs]++;
 	}
-	print_table("  Remaining observations (id on lines, nobs left on rows), with total",with_tot(hist2),latex);
+	for (int m=0; m<2*MaxObs+1; m++) ob[Categories][m] = m-MaxObs;
+	print_table("  Simulated remaining observations, with total",with_tot(hist2),latex);
+	print_table("  Real remaining observations",with_tot(ob),latex);
 
-	// Some stats
-	Table done = initTable(Categories,MaxObs+1);
-	List fibers_used = initList(Categories);
-	List targets = initList(Categories);
+	Dlist percents = initDlist(Categories);
 	for (int id=0; id<Categories; id++) {
-		List hist = hist2[id];
-		for (int i=0; i<=MaxObs; i++) {
-			//i here is number of observations lacking  i = goal -done
-			//done=goal -i for i<=goal
-			//0 for done>goal, i.e. i<0
-			if (i<=F.goal[id]) {
-				done[id][i]=hist[F.goal[id]-i];
-				fibers_used[id]+=i*done[id][i];
-				targets[id] += done[id][i];
-			}
-		}
+		int tot = sumlist(ob[id]);
+		percents[id] = percent(tot-ob[id][MaxObs+F.goal[id]],tot);
 	}
-	print_table("  0 to MaxObs ",done,latex);
+	print_Dlist("Percentages of observation",percents);
 
-	std::vector<std::vector<double> > stats = initTable_double(Categories,4);
-	for (int id=0; id<Categories; id++) {
-		stats[id][0] = (targets[id]-done[id][0])/TotalArea;
-		stats[id][1] = fibers_used[id]/TotalArea;
-		stats[id][2] = targets[id]/TotalArea;
-		stats[id][3] = percent(targets[id]-done[id][0],targets[id]);
-	}
-	print_table("  Id on lines. (Per square degrees) Total, Fibers Used, Available, Percent of observations",stats,latex);
+	//// Some stats
+	//Table done = initTable(Categories,MaxObs+1);
+	//List fibers_used = initList(Categories);
+	//List targets = initList(Categories);
+	//for (int id=0; id<Categories; id++) {
+		//List hist = hist2[id];
+		//for (int i=0; i<=MaxObs; i++) {
+			////i here is number of observations lacking  i = goal -done
+			////done=goal -i for i<=goal
+			////0 for done>goal, i.e. i<0
+			//if (i<=F.goal[id]) {
+				//done[id][i]=hist[F.goal[id]-i];
+				//fibers_used[id]+=i*done[id][i];
+				//targets[id] += done[id][i];
+			//}
+		//}
+	//}
+
+	//std::vector<std::vector<double> > stats = initTable_double(Categories,4);
+	//for (int id=0; id<Categories; id++) {
+		//stats[id][0] = (targets[id]-done[id][0])/TotalArea;
+		//stats[id][1] = fibers_used[id]/TotalArea;
+		//stats[id][2] = targets[id]/TotalArea;
+		//stats[id][3] = percent(targets[id]-done[id][0],targets[id]);
+	//}
+	//print_table("  Id on lines. (Per square degrees) Total, Fibers Used, Available, Percent of observations",stats,latex);
 }
 
 // Make list of all conflicts assuming no three-way conflicts

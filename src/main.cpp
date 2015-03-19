@@ -86,12 +86,14 @@ int main(int argc, char **argv) {
 
 	//// Assignment plate per plate -----------------------------------
 	Assignment A0(G,F);
+	for (int i=0; i<Nplate; i++) A0.order[i] = i;
 	// Order : verificate that passes are increasing
 	init_time_at(time,"# Begin real time assignment",t);
-	for (int j=0; j<Nplate && j<2000; j++) {
-		printf(" - Plate %d : ",j); std::cout.flush();
+	for (int jj=0; jj<Nplate && jj<2000; jj++) {
+		printf(" - Plate %d : ",jj); std::cout.flush();
+		int j = A0.order[jj];
 		assign_fibers_for_one(j,G,P,pp,F,A0);
-		A0.plates_done.push_back(j);
+		A0.next_plate++;
 		//A0.update_probas(G,F);
 		if (A0.unused_f(j)>500) {
 			//improve_for_one(j,G,P,pp,F,A0);
@@ -100,24 +102,56 @@ int main(int argc, char **argv) {
 		}
 		std::cout << std::endl;
 	}
+	print_time(time,"# ... took :");
+
+	init_time_at(time,"# Begin display results",t);
 	display_results(G,P,pp,F,A0,false);
 	print_time(time,"# ... took :");
 
 	A0.update_nobsv_tmp();
 
-	init_time_at(time,"# Begin assignment",t);
-	assign_fibers(G,P,pp,F,A0,true);
+	init_time_at(time,"# Begin global assignment ------------",t);
+	assign_fibers(3000,G,P,pp,F,A0,true);
 	print_time(time,"# ... took :");
 	display_results(G,P,pp,F,A0,false,true);
-	print_free_fibers(G,pp,F,A0,false);
 
 	init_time_at(time,"# Begin improve",t);
-	improve(G,P,pp,F,A0,true);
+	improve(3000,G,P,pp,F,A0,true);
 	print_time(time,"# ... took :");
 	display_results(G,P,pp,F,A0,false,true);
+
+	A0.update_nobsv_tmp();
+	A0.next_plate += 3000;
+
+
+
+	init_time_at(time,"# Begin global  assignment ------------",t);
+	assign_fibers(3000,G,P,pp,F,A0,true);
+	print_time(time,"# ... took :");
+	display_results(G,P,pp,F,A0,false,true);
+
+	init_time_at(time,"# Begin improve",t);
+	improve(3000,G,P,pp,F,A0,true);
+	print_time(time,"# ... took :");
+	display_results(G,P,pp,F,A0,false,true);
+
+	A0.update_nobsv_tmp();
+	A0.next_plate += 3000;
+
+
+
+	init_time_at(time,"# Begin global  assignment ------------",t);
+	assign_fibers(-1,G,P,pp,F,A0,true);
+	print_time(time,"# ... took :");
+	display_results(G,P,pp,F,A0,false,true);
+
+	init_time_at(time,"# Begin improve",t);
+	improve(-1,G,P,pp,F,A0,true);
+	print_time(time,"# ... took :");
+	display_results(G,P,pp,F,A0,false,true);
+
+
 	print_free_fibers(G,pp,F,A0,false);
-
-
 
 
 	//// Assignment global --------------------------------------------

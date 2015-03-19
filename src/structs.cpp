@@ -274,6 +274,8 @@ List av_gals_of_kind(int kind, int j, int k, const Gals& G, const Plates& P, con
 Assignment::Assignment(const Gals& G, const Feat& F) {
 	TF = initTable(Nplate,Nfiber,-1);
 	PG = initTable_pair(Npass,Ngal); // Doesn't work if defined directly
+	order.resize(Nplate);
+	next_plate = 0;
 	kinds = initCube(Nplate,Npetal,Categories);
 	probas = initList(Categories);
 	nobsv = initList(Ngal);
@@ -325,9 +327,9 @@ bool Assignment::is_assigned_pg(int ip, int g) const {
 
 bool Assignment::is_assigned_tf(int j, int k) const {return (TF[j][k] != -1);}
 
-int Assignment::na() {
+int Assignment::na(int begin, int end) {
 	int cnt(0);
-	for (int j=0; j<Nplate; j++) {
+	for (int j=begin; j<=end; j++) {
 		for (int k=0; k<Nfiber; k++) {
 			if (TF[j][k]!=-1) cnt++;
 		}
@@ -394,6 +396,12 @@ Table Assignment::used_by_kind(str kind, const Gals& G, const PP& pp, const Feat
 bool Assignment::once_obs(int g) {
 	for (int i=0; i<Npass; i++) if (!PG[i][g].isnull()) return true;
 	return false;
+}
+
+int Assignment::num_obs(int g) {
+	int n(0);
+	for (int i=0; i<Npass; i++) if (!PG[i][g].isnull()) n++;
+	return n;
 }
 
 int Assignment::nkind(int j, int k, str kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const {

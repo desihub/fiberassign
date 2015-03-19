@@ -23,9 +23,10 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 void collect_available_tilefibers(Gals& G, const Plates& P);
 
 // Assignment "global" ----------------------------------------
-void assign_fibers(const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, bool tmp=false);
+// Assign next "next" fibers
+void assign_fibers(int next, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, bool tmp=false);
 
-void improve(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, bool tmp=false);
+void improve(int next, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, bool tmp=false);
 void improve2(str kind, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A);
 
 void redistribute_tf(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A);

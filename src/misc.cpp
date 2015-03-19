@@ -106,6 +106,13 @@ void print_list_line(const List& L) {
 	printf(") "); std::cout.flush();
 }
 
+void print_Dlist(str s, const Dlist& L) {
+	printf("%s \n",s.c_str());
+	int n = L.size();
+	for (int i=0; i<n; i++) printf("%5d : %.3f\n",i,L[i]);
+	printf("\n");
+}
+
 bool isnull(const List& L) { // Test if the list is null
 	for (int i=0; i<L.size(); i++) if (L[i]!=0) return false;
 	return true;
@@ -221,14 +228,14 @@ void print_table(str s, const Table& T, bool latex) {
 	int max = max_row(T);
 	for (int j=0; j<max; j++) {
 		str s = (j==max-1) ? slash : et;
-		printf("%2d %s",j,s.c_str());
+		printf("%6d %s",j,s.c_str());
 	}
 	for (int i=0; i<l && i<50; i++) {
-		printf("%4d %s",i,et.c_str());
+		printf("%5d %s",i,et.c_str());
 		int c = T[i].size();
 		for (int j=0; j<c; j++) {
 			str s = (j==c-1) ? slash : et;
-			printf("%2s %s",(T[i][j]==-1 ? "" : f(T[i][j]).c_str()),s.c_str());
+			printf("%5s %s",(T[i][j]==-1 ? "" : f(T[i][j]).c_str()),s.c_str());
 		}
 	}
 	if (latex) printf("\\end{tabular}\\end{center}\\end{table}");
@@ -316,6 +323,12 @@ List complementary(int size, const List& L) {
 	List l = initList(size);
 	for (int i=0; i<size; i++) l.push_back(i);
 	for (int i=0; i<L.size(); i++) erase(L[i],l);
+	return l;
+}
+
+List sublist(int begin, int size, const List& L) {
+	List l = initList(size);
+	for (int i=0; i<size; i++) l[i] = L[begin+i];
 	return l;
 }
 
