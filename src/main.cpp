@@ -125,20 +125,6 @@ int main(int argc, char **argv) {
 
 
 
-	init_time_at(time,"# Begin global  assignment ------------",t);
-	assign_fibers(3000,G,P,pp,F,A0,true);
-	print_time(time,"# ... took :");
-	display_results(G,P,pp,F,A0,false,true);
-
-	init_time_at(time,"# Begin improve",t);
-	improve(3000,G,P,pp,F,A0,true);
-	print_time(time,"# ... took :");
-	display_results(G,P,pp,F,A0,false,true);
-
-	A0.update_nobsv_tmp();
-	A0.next_plate += 3000;
-
-
 
 	init_time_at(time,"# Begin global  assignment ------------",t);
 	assign_fibers(-1,G,P,pp,F,A0,true);

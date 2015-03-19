@@ -64,6 +64,7 @@ void print_table(str s, const std::vector<std::vector<double> >& T, bool latex =
 List histogram(const Table& T, int interval);
 Table with_tot(const Table& T); // Add a row with sum of lines
 int max_row(const Table& T); // Max number of rows
+List max_on_row(const Table& T); // List of max on each row
 
 // Cube ------------------------------------------------------
 class Cube : public std::vector<Table> {};
@@ -96,6 +97,7 @@ str p2s(pair p);
 str p2s(int j, int k);
 str siz(const Table& T);
 str siz(const std::vector<std::vector<pair> >& T);
+str format(int size, str s);
 
 // Other ------------------------------------------------------
 void check_args(int n); 

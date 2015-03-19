@@ -169,7 +169,8 @@ List PP::fibs_of_same_pet(int k) const {
 }
 // plate ---------------------------------------------------------------------------
 void plate::print_plate() const {
-	printf("  Plate : %d - pass %d\n",idp,ipass); printf("%f %f %f\n",nhat[0],nhat[1],nhat[2]);
+	printf("  Plate : %d - pass %d\n",idp,ipass); 
+	printf("%f %f %f\n",nhat[0],nhat[1],nhat[2]);
 	int r = rand() % Nfiber;
 	print_list("Available galaxies of a random fiber :",av_gals[r]);
 }

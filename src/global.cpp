@@ -314,7 +314,7 @@ int best4(int kind0, int j, int k, const Gals& G, const Plates& P, const PP& pp,
 		int g = av_gals[randGals[gg]];
 		int prio = G[g].prio(F);
 		int m = A.nobs(g,G,F);
-		cn[0]++; 
+		cn[0]++;
 		//printf("%d ",aa); std::cout.flush();
 		if (G[g].id!=kind0 && !A.is_assigned_pg(P[j].ipass,g) && A.nobs(g,G,F)>=1) {
 			bool bo(true);

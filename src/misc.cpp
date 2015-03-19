@@ -164,6 +164,18 @@ void print_hist(str s, int i, List hist_petal, bool latex) {
 
 void erase(int i, List& L) { L.erase (L.begin()+i); }
 
+List complementary(int size, const List& L) {
+	List l = initList(size);
+	for (int i=0; i<size; i++) l.push_back(i);
+	for (int i=0; i<L.size(); i++) erase(L[i],l);
+	return l;
+}
+
+List sublist(int begin, int size, const List& L) {
+	List l = initList(size);
+	for (int i=0; i<size; i++) l[i] = L[begin+i];
+	return l;
+}
 
 // Table -----------------------------------------------------
 Table initTable(int l, int c, int val) {
@@ -212,10 +224,14 @@ int max_row(const Table& T) {
 }
 
 void print_table(str s, const Table& T, bool latex) {
-	//verif(T);
-	int l = T.size();
+	int SIZE = 7;
 
-	str et = latex ? " &" : " |";
+	bool square(true);
+	int l = T.size();
+	int cc = T[0].size();
+	for (int i=0; i<l; i++) if (T[i].size()!=cc) square = false;
+
+	str et = latex ? " &" : "|";
 	str slash = latex ? " \\\\ \n" : "\n";
 
 	str rrr(T[0].size(),'r');
@@ -223,19 +239,32 @@ void print_table(str s, const Table& T, bool latex) {
 	else printf(s.c_str());
 	printf("\n");
 
-	str space(" ",10);
+	List maxRow = initList(cc);
+	if (square) {
+		Table sizestr = initTable(l,cc);
+		for (int i=0; i<l; i++) {
+			for (int j=0; j<cc; j++) {
+				sizestr[i][j] = f(T[i][j]).size()+1;
+			}
+		}
+		maxRow = max_on_row(sizestr);
+	}
+	else maxRow = initList(cc,7);
+
+	str space(" ",15);
 	printf(space.c_str());
 	int max = max_row(T);
 	for (int j=0; j<max; j++) {
 		str s = (j==max-1) ? slash : et;
-		printf("%6d %s",j,s.c_str());
+		printf("%s%s",format(maxRow[j],f(j)).c_str(),s.c_str());
 	}
 	for (int i=0; i<l && i<50; i++) {
-		printf("%5d %s",i,et.c_str());
+		printf("%3d  %s",i,et.c_str());
 		int c = T[i].size();
 		for (int j=0; j<c; j++) {
 			str s = (j==c-1) ? slash : et;
-			printf("%5s %s",(T[i][j]==-1 ? "" : f(T[i][j]).c_str()),s.c_str());
+			str num = T[i][j]==-1 ? "" : f(T[i][j]).c_str();
+			printf("%s%s",format(maxRow[j],num).c_str(),s.c_str());
 		}
 	}
 	if (latex) printf("\\end{tabular}\\end{center}\\end{table}");
@@ -299,8 +328,6 @@ void print_table(str s, const std::vector<std::vector<pair> >& T) {
 	printf("\n");
 }
 
-
-
 List histogram(const Table& T, int interval) {
 	List hist; int l = T.size(); int c = T[0].size();
 	for(int i=0; i<l; i++) { 
@@ -319,17 +346,18 @@ Table with_tot(const Table& T) {
 	return M;
 }
 
-List complementary(int size, const List& L) {
-	List l = initList(size);
-	for (int i=0; i<size; i++) l.push_back(i);
-	for (int i=0; i<L.size(); i++) erase(L[i],l);
-	return l;
-}
-
-List sublist(int begin, int size, const List& L) {
-	List l = initList(size);
-	for (int i=0; i<size; i++) l[i] = L[begin+i];
-	return l;
+List max_on_row(const Table& T) {
+	verif(T);
+	int l = T.size();
+	int c = T[0].size();
+	List L = initList(c,-1e7);
+	for (int i=0; i<l; i++) {
+		for (int j=0; j<c; j++) {
+			int a = T[i][j];
+			if (a>L[j]) L[j] = a;
+		}
+	}
+	return L;
 }
 
 // Cube ------------------------------------------------------
@@ -418,6 +446,7 @@ void deb(int a) { // debug
 void deb(int a, int b) { // debug
 	std::cout << " " << a << "," << b << " " << std::endl;
 }
+
 // To String --------------------------------------------------
 str f(int i) { // int 1526879 -> const char* 1,526,879
 	std::stringstream ss;
@@ -475,11 +504,20 @@ str siz(const Table& T) {
 	ss << " size " << T.size() << "x" << T[0].size();
 	return ss.str();
 }
+
 str siz(const std::vector<std::vector<pair> >& T) {
 	std::stringstream ss;
 	ss << " size " << T.size() << "x" << T[0].size();
 	return ss.str();
 }
+
+str format(int size, str s) {
+	str S = s; str sp = "";
+	int n = s.size();
+	if (size>n) for (int h=0; h<size-n; h++) sp.push_back(' ');
+	return (sp+s);
+}
+
 // Other ------------------------------------------------------
 void check_args(int n) { // Check if the arguments of the executable are right
 	if (n != 5) {
@@ -497,5 +535,5 @@ void print_stats(str s, int cnt, int avg, int std, int min, int max) {
 
 int sq(int n) { return(n*n); }
 double sq(double n) { return(n*n); }
-double sq(double a,double b) { return(a*a + b*b); }
+double sq(double a, double b) { return(a*a + b*b); }
 double percent(int a, int b) { return(a*100./b); }
