@@ -26,6 +26,7 @@ class Feat { // F for features
 	Feat();
 	int id(str s) const;
 	int maxgoal(int kind) const; // Gives max goal for a galaxy of this kind (goal(Ly-a) for all QSO for example)
+	List maxgoal() const;
 };
 
 // PP ---------------------------------------------------

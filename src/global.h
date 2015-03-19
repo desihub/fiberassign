@@ -42,7 +42,7 @@ void redistribute_for_one(int j, const Gals& G, const Plates&P, const PP& pp, co
 // Other useful functions -------------------------------------
 Table conflicts(const Gals& G, const Plates& P, const PP& pp, const Assignment& A);
 void results_on_inputs(const Gals& G, const Plates& P, const Feat& F);
-void display_results(const Gals& G, const Plates &P, const PP& pp, const Feat& F, const Assignment& A, bool latex=false);
+void display_results(const Gals& G, const Plates &P, const PP& pp, const Feat& F, const Assignment& A, bool latex=false, bool tmp=false);
 void print_free_fibers(const Gals& G, const PP& pp, const Feat& F, const Assignment& A, bool latex=false);
 void plot_freefibers(str s, const Plates&P, const Assignment& A);
 #endif

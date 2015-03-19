@@ -35,6 +35,12 @@ int Feat::maxgoal(int kind) const {
 	return max;
 }
 
+List Feat::maxgoal() const {
+	List max = initList(Categories,-1);
+	for (int i=0; i<Categories; i++) max[i] = maxgoal(i);
+	return max;
+}
+
 // Galaxies ------------------------------------------------------------------
 void galaxy::print_av_tfs() { // Used to debug
 	if (av_tfs.size() == 0) printf("Print av tfs : no av tf \n");
@@ -273,7 +279,8 @@ Assignment::Assignment(const Gals& G, const Feat& F) {
 	nobsv = initList(Ngal);
 	nobsv_tmp = initList(Ngal);
 	for (int g=0; g<Ngal; g++) nobsv[g] = F.goal[G[g].id];
-	for (int g=0; g<Ngal; g++) nobsv_tmp[g] = F.maxgoal(G[g].id);
+	List l = F.maxgoal();
+	for (int g=0; g<Ngal; g++) nobsv_tmp[g] = l[G[g].id];
 }
 
 Assignment::~Assignment() {}

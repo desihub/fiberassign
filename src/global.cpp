@@ -556,6 +556,7 @@ void results_on_inputs(const Gals& G, const Plates& P, const Feat& F) {
 	print_list("  Kinds corresponding :",F.kind);
 	print_list("  Priorities :",F.prio);
 	print_list("  Goals of observations :",F.goal);
+	print_list("  Max goals of observations :",F.maxgoal());
 
 	// How many galaxies in range of a fiber ?
 	print_list("  How many galaxies in range of a fiber :",gals_range_fibers(P));
@@ -596,14 +597,14 @@ void results_on_inputs(const Gals& G, const Plates& P, const Feat& F) {
 	}
 }
 
-void display_results(const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, bool latex) {
+void display_results(const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, bool latex, bool tmp) {
 	printf("# Results :\n");
 	// Raw numbers of galaxies by id and number of remaining observations
-	Table hist2 = initTable(Categories,MaxObs+1);
+	Table hist2 = initTable(Categories,MaxObs+2);
 	for (int g=0; g<Ngal; g++) {
-		int n = A.nobs(g,G,F);
+		int n = A.nobs(g,G,F,tmp);
 		if (n>=0 && n<=MaxObs) hist2[G[g].id][n]++;
-		else { printf(" !!! Error in display_result : observation beyond limits\n"); continue; }
+		else printf(" !!! Error in display_result : observation beyond limits\n");
 	}
 	print_table("  Remaining observations (id on lines, nobs left on rows), with total",with_tot(hist2),latex);
 

@@ -102,18 +102,19 @@ int main(int argc, char **argv) {
 	}
 	display_results(G,P,pp,F,A0,false);
 	print_time(time,"# ... took :");
+
 	A0.update_nobsv_tmp();
 
 	init_time_at(time,"# Begin assignment",t);
 	assign_fibers(G,P,pp,F,A0,true);
 	print_time(time,"# ... took :");
-	display_results(G,P,pp,F,A0,false);
+	display_results(G,P,pp,F,A0,false,true);
 	print_free_fibers(G,pp,F,A0,false);
 
 	init_time_at(time,"# Begin improve",t);
 	improve(G,P,pp,F,A0,true);
 	print_time(time,"# ... took :");
-	display_results(G,P,pp,F,A0,false);
+	display_results(G,P,pp,F,A0,false,true);
 	print_free_fibers(G,pp,F,A0,false);
 
 
