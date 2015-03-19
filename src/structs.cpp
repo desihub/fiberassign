@@ -29,6 +29,12 @@ int Feat::id(str s) const {
 	return -1;
 }
 
+int Feat::maxgoal(int kind) const {
+	int max(goal[kind]); int prio0= prio[kind];
+	for (int i=0; i<Categories; i++) if (prio[i]==prio0 && goal[i]>max) max = goal[i];
+	return max;
+}
+
 // Galaxies ------------------------------------------------------------------
 void galaxy::print_av_tfs() { // Used to debug
 	if (av_tfs.size() == 0) printf("Print av tfs : no av tf \n");
@@ -265,7 +271,9 @@ Assignment::Assignment(const Gals& G, const Feat& F) {
 	kinds = initCube(Nplate,Npetal,Categories);
 	probas = initList(Categories);
 	nobsv = initList(Ngal);
+	nobsv_tmp = initList(Ngal);
 	for (int g=0; g<Ngal; g++) nobsv[g] = F.goal[G[g].id];
+	for (int g=0; g<Ngal; g++) nobsv_tmp[g] = F.maxgoal(G[g].id);
 }
 
 Assignment::~Assignment() {}
@@ -285,8 +293,9 @@ void Assignment::assign(int j, int k, int g, const Gals& G, const Plates& P, con
 	kinds[j][pp.spectrom[k]][G[g].id]++;
 	// Probas
 	probas[G[g].id]++;
-	// Nobs
+	// Nobsv
 	nobsv[g]--;
+	nobsv_tmp[g]--;
 }
 
 void Assignment::unassign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp) {
@@ -299,6 +308,7 @@ void Assignment::unassign(int j, int k, int g, const Gals& G, const Plates& P, c
 	kinds[j][pp.spectrom[k]][G[g].id]--;
 	probas[G[g].id]--;
 	nobsv[g]++;
+	nobsv_tmp[g]++;
 }
 
 bool Assignment::is_assigned_pg(int ip, int g) const {
@@ -441,13 +451,16 @@ List Assignment::fibs_unassigned(int j, int pet, const Gals& G, const PP& pp, co
 	return L;
 }
 
-
-
-int Assignment::nobs(int g, const Gals& G, const Feat& F) const {
+int Assignment::nobs(int g, const Gals& G, const Feat& F, bool tmp) const {
 	//int cnt(F.goal[G[g].id]);
 	//for (int i=0; i<Npass; i++) if (is_assigned_pg(i,g)) cnt--;
 	//return cnt;
-	return nobsv[g]; // optimization
+	int obs = tmp ? nobsv_tmp[g] : nobsv[g]; // optimization
+	return obs;
+}
+
+void Assignment::update_nobsv_tmp() {
+	for (int g=0; g<Ngal; g++) if (once_obs(g)) nobsv_tmp[g] = nobsv[g];
 }
 // Global functions -----------------------------------------------------------------------
 

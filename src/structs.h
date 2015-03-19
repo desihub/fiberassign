@@ -25,6 +25,7 @@ class Feat { // F for features
 
 	Feat();
 	int id(str s) const;
+	int maxgoal(int kind) const; // Gives max goal for a galaxy of this kind (goal(Ly-a) for all QSO for example)
 };
 
 // PP ---------------------------------------------------
@@ -91,6 +92,7 @@ class Assignment {
 	List probas; // Number of galaxies of this kind
 	List plates_done; // List of done plates
 	List nobsv; // List of nobs, redundant but optimizes
+	List nobsv_tmp; // List of nobs, redundant but optimizes
 
 	Assignment(const Gals& G, const Feat& F);
 	~Assignment();
@@ -99,7 +101,7 @@ class Assignment {
 	bool is_assigned_pg(int ip, int g) const;
 	bool is_assigned_tf(int j, int k) const; 
 	int na(); // Number of assignments
-	int nobs(int g, const Gals& G, const Feat& F) const; // Counts how many time ob should be observed else more
+	int nobs(int g, const Gals& G, const Feat& F, bool b=false) const; // Counts how many time ob should be observed else more. If b=true, return Maxobs for this kind
 	std::vector<pair> chosen_tfs(int g) const; // Pairs (j,k) chosen by g in the Npass passes
 	List unused_f() const;
 	int unused_f(int j);
@@ -112,6 +114,7 @@ class Assignment {
 	Table infos_petal(int j, int pet, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const;
 	List fibs_of_kind(str kind, int j, int pet, const Gals& G, const PP& pp, const Feat& F) const; // Sublist of fibers assigned to a galaxy of type kind for this petal
 	List fibs_unassigned(int j, int pet, const Gals& G, const PP& pp, const Feat& F) const;
+	void update_nobsv_tmp();
 };
 
 // Global functions -----------------------------------------

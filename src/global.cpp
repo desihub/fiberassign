@@ -84,7 +84,7 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 				P[j].av_gals[k] = initList(gals);
 			}
 			// Avancement 
-			if (cnt==quarter && id==0) {printf("  Thread 0 has done 1/4 of his job"); print_time(t," at");}
+			//if (cnt==quarter && id==0) {printf("  Thread 0 has done 1/4 of his job"); print_time(t," at");}
 		}
 		//printf("  Thread %2d finished",id); print_time(t," at");
 	} // End parallel
@@ -130,33 +130,27 @@ inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const Gals& 
 	return true;
 }
 
-inline bool ok_assign_tot(int g, int j, int k, const Plates& P, const Gals& G, const PP& pp, const Feat& F, const Assignment& A) {
+bool ok_assign_tot(int g, int j, int k, const Plates& P, const Gals& G, const PP& pp, const Feat& F, const Assignment& A, bool tmp=false) {
 	// No collision, only ELG in last pass
 	if (!ok_assign_g_to_jk(g,j,k,P,G,pp,F,A)) return false;
 	if (A.is_assigned_tf(j,k)) return false;
 	if (A.is_assigned_pg(P[j].ipass,g)) return false;
-	if (A.nobs(g,G,F)==0) return false;
+	if (A.nobs(g,G,F,tmp)==0) return false;
 	return true;
 }
 
-inline bool ok_assign_g(int g, int j, int k, const Plates& P, const Gals& G, const PP& pp, const Feat& F, const Assignment& A) {
-	if (find_collision(j,k,g,pp,G,P,A)!=-1) return false;
-	if (A.is_assigned_pg(P[j].ipass,g)) return false;
-	if (A.nobs(g,G,F)==0) return false;
-	return true;
-}
 
 // Assignment "global" -------------------------------------------------------------------------------------
 
-int best1(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
+int best1(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, bool tmp) {
 	int best = -1; int mbest = -1; float pbest = 1e30;
 	List av_gals = P[j].av_gals[k];
 	List randGals = random_permut(av_gals.size());
 	for (int gg=0; gg<av_gals.size(); gg++) { 
 		int g = av_gals[randGals[gg]];
 		int prio = G[g].prio(F);
-		int m = A.nobs(g,G,F);
-		if (ok_assign_tot(g,j,k,P,G,pp,F,A)) {
+		int m = A.nobs(g,G,F,tmp);
+		if (ok_assign_tot(g,j,k,P,G,pp,F,A,tmp)) {
 			if (prio<pbest || m>mbest) {
 				best = g;
 				pbest = prio;
@@ -168,29 +162,31 @@ int best1(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat
 }
 
 // Assign fibers naively
-void assign_fibers(const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
-	List randPlates = random_permut(Nplate);
-	for (int i=0; i<Nplate; i++) {
+void assign_fibers(const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, bool tmp) {
+	List remain = complementary(Nplate,A.plates_done);
+	int n(remain.size());
+	List randPlates = random_permut(remain);
+	for (int i=0; i<n; i++) {
 		int j = randPlates[i];
 		List randFibers = random_permut(Nfiber);
 		for (int kk=0; kk<Nfiber; kk++) { // Fiber
 			int k = randFibers[kk];
-			int best = best1(j,k,G,P,pp,F,A);
+			int best = best1(j,k,G,P,pp,F,A,tmp);
 			if (best!=-1) A.assign(j,k,best,G,P,pp);
 		}
 	}
-	printf("  %s assignments\n",f(A.na()));
+	printf("  %s assignments\n",f(A.na()).c_str());
 }
 
-int best2(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) { // Can't take g
+int best2(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, bool tmp) { // Can't take g
 	int best = -1; int mbest = -1; float pbest = 1e30;
 	List av_gals = P[j].av_gals[k];
 	List randGals = random_permut(av_gals.size());
 	for (int gg=0; gg<av_gals.size(); gg++) { 
 		int g = av_gals[randGals[gg]];
 		int prio = G[g].prio(F);
-		int m = A.nobs(g,G,F);
-		if (ok_assign_g_to_jk(g,j,k,P,G,pp,F,A) && !A.is_assigned_pg(P[j].ipass,g) && A.nobs(g,G,F)>=1) {
+		int m = A.nobs(g,G,F,tmp);
+		if (ok_assign_g_to_jk(g,j,k,P,G,pp,F,A) && !A.is_assigned_pg(P[j].ipass,g) && A.nobs(g,G,F,tmp)>=1) {
 			if (prio<pbest || m>mbest) {
 				best = g;
 				pbest = prio;
@@ -205,11 +201,13 @@ int best2(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat
 // Before : (jp,kp) <-> g ; (j,k) & gp free
 // After : (j,k) <-> g & (jp,kp) <-> gp
 // Prints the number of additional assigned galaxies
-void improve(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A) {
+void improve(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, bool tmp) {
 	int na_start = A.na();
-	//List randPlates = random_permut(Nplate);
+	List remain = complementary(Nplate,A.plates_done);
+	int n(remain.size());
+	List randPlates = random_permut(remain);
 	for (int jj=0; jj<Nplate; jj++) {
-		int j = Nplate-jj-1;
+		int j = randPlates[jj];
 		for(int k=0; k<Nfiber; k++) {
 			if (!A.is_assigned_tf(j,k)) { // Unused tilefiber (j,k)
 				bool finished(false);
@@ -221,10 +219,10 @@ void improve(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignm
 						if (ok_assign_g_to_jk(g,j,k,P,G,pp,F,A)) {
 							// What tfs have taken g ? Could they take someone else ?
 							std::vector<pair> tfs = A.chosen_tfs(g);
-							for (int p=0; p<tfs.size() && !finished; p++){
+							for (int p=0; p<tfs.size() && !finished; p++) {
 								int jp = tfs[p].f;
 								int kp = tfs[p].s; // (jp,kp) currently assigned to galaxy g
-								int best = best2(jp,kp,G,P,pp,F,A); // best!=g because !A.assigned_pg(best)
+								int best = best2(jp,kp,G,P,pp,F,A,tmp); // best!=g because !A.assigned_pg(best)
 								if (best!=-1 && (P[jp].ipass==P[j].ipass || !A.is_assigned_pg(P[j].ipass,g))) { // If j and jp are not on the same ip, g has to be unassgned
 									// Modify assignment
 									A.unassign(jp,kp,g,G,P,pp);
@@ -235,7 +233,7 @@ void improve(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignm
 					else A.assign(j,k,g,G,P,pp); // Doesn't add anything in practice
 				}}}}
 	int na_end(A.na());
-	printf("  %s more assignments (%.3f %% improvement)\n",f(na_end-na_start),percent(na_end-na_start,na_start));
+	printf("  %s more assignments (%.3f %% improvement)\n",f(na_end-na_start).c_str(),percent(na_end-na_start,na_start));
 }
 
 int best3(int g_no, int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) { // Can't take g
@@ -279,7 +277,7 @@ void redistribute_tf(const Gals& G, const Plates&P, const PP& pp, const Feat& F,
 		}
 		printf("%d ",red);
 	}
-	printf("  %s redistributions (~%.4f %% of TF redistributed)\n",f(redistributions),percent(redistributions,Nfiber*Nplate));
+	printf("  %s redistributions (~%.4f %% of TF redistributed)\n",f(redistributions).c_str(),percent(redistributions,Nfiber*Nplate));
 }
 
 void redistribute_g(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A) {
@@ -305,33 +303,33 @@ void redistribute_g(const Gals& G, const Plates&P, const PP& pp, const Feat& F, 
 			}
 		}
 	}
-	printf("  %s redistributions (~%.4f %% of galaxies redistributed)\n",f(redistributions),percent(redistributions,Ngal));
+	printf("  %s redistributions (~%.4f %% of galaxies redistributed)\n",f(redistributions).c_str(),percent(redistributions,Ngal));
 }
 
-int best4(int kind, int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, int& aa, int& b, int& c, int& d, int& e, int& f, int&g ,int& h,int& l, int& m) { // Can't take kind
+int best4(int kind0, int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, List& cn) { // Can't take kind
 	int best = -1; int mbest = -1; float pbest = 1e30;
 	List av_gals = P[j].av_gals[k];
 	List randGals = random_permut(av_gals.size());
-	for (int gg=0; gg<av_gals.size(); gg++) { 
+	for (int gg=0; gg<av_gals.size(); gg++) {
 		int g = av_gals[randGals[gg]];
 		int prio = G[g].prio(F);
 		int m = A.nobs(g,G,F);
-		aa++;
-		if (G[g].id!=kind && !A.is_assigned_pg(P[j].ipass,g) && A.nobs(g,G,F)>=1) {
+		cn[0]++; 
+		//printf("%d ",aa); std::cout.flush();
+		if (G[g].id!=kind0 && !A.is_assigned_pg(P[j].ipass,g) && A.nobs(g,G,F)>=1) {
 			bool bo(true);
 			str kind = G[g].kind(F);
-			b++;
-			if (P[j].ipass==Npass-1 && !(kind=="ELG" || kind=="SS" || kind=="SF")) { e++; bo = false; } // Only ELG, SF, SS at the last pass
-			else if (find_collision(j,k,g,pp,G,P,A)!=-1) { f++; bo = false; }
-			else if (kind=="SS" && A.nkind(j,k,"SS",G,P,pp,F)>=MaxSS) { g++; bo = false; }
-			else if (kind=="SF" && A.nkind(j,k,"SF",G,P,pp,F)>=MaxSF) { h++; bo = false; }
-			else l++;
-			m++;
+			cn[1]++;
+			if (P[j].ipass==Npass-1 && !(kind=="ELG" || kind=="SS" || kind=="SF")) { cn[2]++; bo = false; } // Only ELG, SF, SS at the last pass
+			else if (find_collision(j,k,g,pp,G,P,A)!=-1) { cn[3]++; bo = false; }
+			else if (kind=="SS" && A.nkind(j,k,"SS",G,P,pp,F)>=MaxSS) { cn[4]++; bo = false; }
+			else if (kind=="SF" && A.nkind(j,k,"SF",G,P,pp,F)>=MaxSF) { cn[5]++; bo = false; }
+			else cn[6]++;
 
 			if (bo/*ok_assign_g_to_jk(g,j,k,P,G,pp,F,A)*/) {
-				c++;
+				cn[7]++;
 				if (prio<pbest || m>mbest) {
-					d++;
+					cn[8]++;
 					best = g;
 					pbest = prio;
 					mbest = m;
@@ -343,7 +341,9 @@ int best4(int kind, int j, int k, const Gals& G, const Plates& P, const PP& pp, 
 }
 
 void improve2(str kind, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A) {
-	int cnt(0); int cnt2(0); int cnt3(0); int aa = 0; int b(0); int c(0); int d(0); int e(0); int v(0); int g(0); int h(0); int l(0); int m(0);
+	int cnt = 0; 
+	List cn = initList(9,0);
+
 	int na_start(A.na());
 	int id = F.id(kind);
 	List randPlates = random_permut(Nplate);
@@ -362,14 +362,13 @@ void improve2(str kind, const Gals& G, const Plates&P, const PP& pp, const Feat&
 				List av_gals = P[j].av_gals[k];
 				for (int i=0; i<av_gals.size() && !finished; i++) {
 					int g = av_gals[i];
-					cnt2++;
 					if (G[g].id==id && find_collision(j,k,g,pp,G,P,A)==-1 && !A.is_assigned_pg(P[j].ipass,g) && A.nobs(g,G,F)>=1) {
-						cnt++;
 						for (int kkp=0; kkp<fibskind.size() && !finished; kkp++) {
 							int kp = fibskind[kkp];
 							int gp = A.TF[j][kp];
-							int best = best4(id,j,k,G,P,pp,F,A,aa,b,c,d,e,v,g,h,l,m);
-							cnt3++;
+							int best = best4(id,j,k,G,P,pp,F,A,cn);
+							cnt++;
+							if (cnt%100000==0) print_list_line(cn);
 							if (best!=-1) {
 								A.unassign(j,kp,gp,G,P,pp);
 								A.assign(j,k,g,G,P,pp);
@@ -380,8 +379,8 @@ void improve2(str kind, const Gals& G, const Plates&P, const PP& pp, const Feat&
 	if (jj%100==0) { printf("%d ",jj); std::cout.flush(); }
 	}
 	int na_end(A.na());
-	printf("  %s more assignments (%.3f %% improvement)\n",f(na_end-na_start),percent(na_end-na_start,na_start));
-	printf("%d %d %d %d %d %d %d %d %d %d %d %d %d\n",cnt2,cnt,cnt3,aa,b,c,d,e,v,g,h,l,m);
+	printf("  %s more assignments (%.3f %% improvement)\n",f(na_end-na_start).c_str(),percent(na_end-na_start,na_start));
+	print_list_line(cn);
 }
 
 			//if (!A.is_assigned_tf(j,k)) { // Unused tilefiber (j,k)
@@ -444,7 +443,7 @@ void redistribute_g_by_kind(str kind, const Gals& G, const Plates&P, const PP& p
 			}
 		}
 	}
-	printf("  %s redistributions (~%.4f %% of galaxies redistributed)\n",f(redistributions),percent(redistributions,Ngal));
+	printf("  %s redistributions (~%.4f %% of galaxies redistributed)\n",f(redistributions).c_str(),percent(redistributions,Ngal));
 }
 
 
@@ -475,7 +474,7 @@ void assign_fibers_for_one(int j, const Gals& G, const Plates& P, const PP& pp, 
 		// Assign best galaxy to this fiber
 		if (best!=-1) { A.assign(j,k,best,G,P,pp); as++; }
 	}
-	printf(" %5s assignments",f(as));
+	printf(" %5s assignments",f(as).c_str());
 }
 
 void improve_for_one(int j, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A) {
@@ -505,7 +504,7 @@ void improve_for_one(int j, const Gals& G, const Plates&P, const PP& pp, const F
 								A.assign(j,kp,gp,G,P,pp);
 								improvement++;
 								finished = true; }}}}}}}
-	printf(" %5s more",f(improvement));
+	printf(" %5s more",f(improvement).c_str());
 }
 					
 void redistribute_for_one(int j, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A) {
@@ -529,7 +528,7 @@ void redistribute_for_one(int j, const Gals& G, const Plates&P, const PP& pp, co
 					changed_gals[g] = 1;
 					redistributions++; 
 					finished = true; }}}}
-	printf(" %5s redistributions",f(redistributions));
+	printf(" %5s redistributions",f(redistributions).c_str());
 }
 
 // Other useful functions ---------------------------------------------------------------------
@@ -604,7 +603,7 @@ void display_results(const Gals& G, const Plates& P, const PP& pp, const Feat& F
 	for (int g=0; g<Ngal; g++) {
 		int n = A.nobs(g,G,F);
 		if (n>=0 && n<=MaxObs) hist2[G[g].id][n]++;
-		else printf(" !!! Error in display_result : observation beyond limits\n");
+		else { printf(" !!! Error in display_result : observation beyond limits\n"); continue; }
 	}
 	print_table("  Remaining observations (id on lines, nobs left on rows), with total",with_tot(hist2),latex);
 

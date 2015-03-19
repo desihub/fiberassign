@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
 	Gals G;
 	G = read_galaxies(argv[1],1); // ! Reads all galaxies iff arg2=1
 	Ngal = G.size();
-	printf("# Read %s galaxies from %s \n",f(Ngal),argv[1]);
+	printf("# Read %s galaxies from %s \n",f(Ngal).c_str(),argv[1]);
 
 	// Read fiber center positions and compute things
 	PP pp;
@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
 	// Read plates
 	Plates P = read_plate_centers(argv[2],1); // ! Reads all galaxies iff arg2=1
 	Nplate = P.size();
-	printf("# Read %s plate centers from %s and %d fibers from %s\n",f(Nplate),argv[2],Nfiber,argv[3]);
+	printf("# Read %s plate centers from %s and %d fibers from %s\n",f(Nplate).c_str(),argv[2],Nfiber,argv[3]);
 
 	//// Collect available galaxies <-> tilefibers ----------------------
 	// HTM Tree of galaxies
@@ -84,63 +84,80 @@ int main(int argc, char **argv) {
 
 	//results_on_inputs(G,P,F);
 
-	////// Assignment plate per plate -----------------------------------
-	//Assignment A0(G,F);
-	//// Order : verificate that passes are increasing
-	//init_time_at(time,"# Begin real time assignment",t);
-	//for (int j=0; j<Nplate; j++) {
-		//printf(" - Plate %d : ",j); std::cout.flush();
-		//assign_fibers_for_one(j,G,P,pp,F,A0);
-		////A0.plates_done.push_back(j);
-		////A0.update_probas(G,F);
-		//if (A0.unused_f(j)>500) {
-			////improve_for_one(j,G,P,pp,F,A0);
-			////redistribute_for_one(j,G,P,pp,F,A0);
-			////assign_fibers_for_one(j,G,P,pp,F,A0);
-		//}
-		//std::cout << std::endl;
-	//}
-	//print_time(time,"# ... took :");
-
-	//display_results(G,P,pp,F,A0,true);
-	//print_free_fibers(G,pp,F,A0,true);
-
-	////// Assignment global --------------------------------------------
-	Assignment A(G,F);
-	// Naive assignment
-	init_time_at(time,"# Begin naive assignment",t);
-	assign_fibers(G,P,pp,F,A);
-	print_time(time,"# ... took");
-	
-	print_table("Petal",A.infos_petal(1000,5,G,P,pp,F));
-	print_table("Petal",A.infos_petal(2000,5,G,P,pp,F));
-	print_table("Petal",A.infos_petal(3000,5,G,P,pp,F));
-	print_table("Petal",A.infos_petal(4000,5,G,P,pp,F));
-	print_table("Petal",A.infos_petal(5000,5,G,P,pp,F));
-	print_table("Petal",A.infos_petal(6000,5,G,P,pp,F));
-	print_table("Petal",A.infos_petal(7000,5,G,P,pp,F));
-	print_table("Petal",A.infos_petal(8000,5,G,P,pp,F));
-	print_table("Petal",A.infos_petal(9000,5,G,P,pp,F));
-	print_table("Petal",A.infos_petal(10000,5,G,P,pp,F));
-
-	init_time_at(time,"# Begin display results and free fibers",t);
-	display_results(G,P,pp,F,A,false);
-	print_free_fibers(G,pp,F,A,false);
-	print_time(time,"# ... took");
-
-	// Improve --------------------------------------------------------
-	
-	init_time_at(time,"# Begin improve2",t);
-	improve2("SF",G,P,pp,F,A);
+	//// Assignment plate per plate -----------------------------------
+	Assignment A0(G,F);
+	// Order : verificate that passes are increasing
+	init_time_at(time,"# Begin real time assignment",t);
+	for (int j=0; j<Nplate && j<2000; j++) {
+		printf(" - Plate %d : ",j); std::cout.flush();
+		assign_fibers_for_one(j,G,P,pp,F,A0);
+		A0.plates_done.push_back(j);
+		//A0.update_probas(G,F);
+		if (A0.unused_f(j)>500) {
+			//improve_for_one(j,G,P,pp,F,A0);
+			//redistribute_for_one(j,G,P,pp,F,A0);
+			//assign_fibers_for_one(j,G,P,pp,F,A0);
+		}
+		std::cout << std::endl;
+	}
+	display_results(G,P,pp,F,A0,false);
 	print_time(time,"# ... took :");
-	display_results(G,P,pp,F,A,false);
-	print_free_fibers(G,pp,F,A,false);
+	A0.update_nobsv_tmp();
+
+	init_time_at(time,"# Begin assignment",t);
+	assign_fibers(G,P,pp,F,A0,true);
+	print_time(time,"# ... took :");
+	display_results(G,P,pp,F,A0,false);
+	print_free_fibers(G,pp,F,A0,false);
 
 	init_time_at(time,"# Begin improve",t);
-	improve(G,P,pp,F,A);
+	improve(G,P,pp,F,A0,true);
 	print_time(time,"# ... took :");
-	display_results(G,P,pp,F,A,false);
-	print_free_fibers(G,pp,F,A,false);
+	display_results(G,P,pp,F,A0,false);
+	print_free_fibers(G,pp,F,A0,false);
+
+
+
+
+	//// Assignment global --------------------------------------------
+	//Assignment A(G,F);
+	//// Naive assignment
+	//init_time_at(time,"# Begin naive assignment",t);
+	//assign_fibers(G,P,pp,F,A);
+	//print_time(time,"# ... took");
+
+	////Table T0 = A.infos_petal(1000,5,G,P,pp,F);
+	////print_table("Petal",T0);
+	////print_table("Petal",A.infos_petal(2000,5,G,P,pp,F));
+	////print_table("Petal",A.infos_petal(3000,5,G,P,pp,F));
+	////print_table("Petal",A.infos_petal(4000,5,G,P,pp,F));
+	////print_table("Petal",A.infos_petal(5000,5,G,P,pp,F));
+	////print_table("Petal",A.infos_petal(6000,5,G,P,pp,F));
+	////print_table("Petal",A.infos_petal(7000,5,G,P,pp,F));
+	////print_table("Petal",A.infos_petal(8000,5,G,P,pp,F));
+	////print_table("Petal",A.infos_petal(9000,5,G,P,pp,F));
+	////print_table("Petal",A.infos_petal(10000,5,G,P,pp,F));
+
+	//init_time_at(time,"# Begin display results and free fibers",t);
+	//display_results(G,P,pp,F,A,false);
+	//print_free_fibers(G,pp,F,A,false);
+	//print_time(time,"# ... took");
+
+	//// Improve --------------------------------------------------------
+
+	//init_time_at(time,"# Begin improve",t);
+	//improve(G,P,pp,F,A);
+	//print_time(time,"# ... took :");
+	//display_results(G,P,pp,F,A,false);
+	//print_free_fibers(G,pp,F,A,false);
+
+
+	//init_time_at(time,"# Begin improve2",t);
+	//improve2("SF",G,P,pp,F,A);
+	//print_time(time,"# ... took :");
+	//display_results(G,P,pp,F,A,false);
+	//print_free_fibers(G,pp,F,A,false);
+
 
 
 
@@ -150,11 +167,11 @@ int main(int argc, char **argv) {
 	//display_results(G,P,pp,F,A,false);
 	//print_free_fibers(G,pp,F,A,false);
 
-	init_time_at(time,"# Begin redistribute SF",t);
-	redistribute_g_by_kind("SF",G,P,pp,F,A);
-	print_time(time,"# ... took :"); 
-	display_results(G,P,pp,F,A,false);
-	print_free_fibers(G,pp,F,A,false);
+	//init_time_at(time,"# Begin redistribute SF",t);
+	//redistribute_g_by_kind("SF",G,P,pp,F,A);
+	//print_time(time,"# ... took :"); 
+	//display_results(G,P,pp,F,A,false);
+	//print_free_fibers(G,pp,F,A,false);
 
 	//init_time_at(time,"# Begin improve",t);
 	//improve(G,P,pp,F,A);

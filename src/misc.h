@@ -36,14 +36,17 @@ Dlist initDlist(int l, double val = 0.0);
 std::vector<str> initList(str l[]);
 void print_list(str s, const List& L);
 void print_list(str s, std::vector<str> L);
+void print_list_line(const List& L);
 bool isnull(const List& L); // Test if the list is null
 int sumlist(const List& L); // Sum of the list
 int max(const List& L);
 bool isfound(int n, const List& L); // True iff i is found in L
 List values(const List& L); // Different taken values
 List random_permut(int n); // Return a random permutation
+List random_permut(const List& L);
 void print_hist(str s, int i, List hist_petal, bool latex=false);
 void erase(int i, List& L); // Erase i th element
+List complementary(int size, const List& L); // Complementary list (when L is a subset of [0,size-1])
 
 // Table -----------------------------------------------------
 class Table : public std::vector<List> {};
@@ -84,8 +87,8 @@ void deb(int a);
 void deb(int a, int b);
 
 // To String --------------------------------------------------
-const char* f(int i); // int 1526879 -> const char* 1,526,879
-const char* f(double i);
+str f(int i); // int 1526879 -> const char* 1,526,879
+str f(double i);
 str i2s(int i);
 str p2s(pair p);
 str p2s(int j, int k);

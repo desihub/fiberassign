@@ -60,13 +60,23 @@ std::vector<str> initList(str l[]) {
 	return L;
 }
 
-List random_permut(int n) { // Return a random permutation
+List random_permut(int n) {
 	List L;
 	try { L.resize(n); } 
 	catch(std::exception& e) {myexception(e);}
 	for (int i=0; i<n; i++) L[i]=i;
 	std::random_shuffle(L.begin(),L.end());
-	return(L);
+	return L;
+}
+
+List random_permut(const List& L) {
+	int n = L.size();
+	List perm = random_permut(n);
+	List l;
+	try { l.resize(n); } 
+	catch(std::exception& e) {myexception(e);}
+	for (int i=0; i<n; i++) l[i]=L[perm[i]];
+	return l;
 }
 
 void print_list(str s, const List& L) {
@@ -76,7 +86,7 @@ void print_list(str s, const List& L) {
 		//printf("   ! Empty list\n"); 
 		//return;
 	//}
-	for (int i=0; i<n; i++) printf("%5d : %s \n",i,f(L[i]));
+	for (int i=0; i<n; i++) printf("%5d : %s \n",i,f(L[i]).c_str());
 	printf("\n");
 }
 
@@ -88,6 +98,12 @@ void print_list(str s, std::vector<str> L) {
 	//}
 	for (int i=0; i<n; i++) printf("%5d : %s \n",i,L[i].c_str());
 	printf("\n");
+}
+
+void print_list_line(const List& L) {
+	printf("(");
+	for (int i=0; i<L.size(); i++) printf("%d,",L[i]);
+	printf(") "); std::cout.flush();
 }
 
 bool isnull(const List& L) { // Test if the list is null
@@ -212,7 +228,7 @@ void print_table(str s, const Table& T, bool latex) {
 		int c = T[i].size();
 		for (int j=0; j<c; j++) {
 			str s = (j==c-1) ? slash : et;
-			printf("%2s %s",(T[i][j]==-1 ? "" : f(T[i][j])),s.c_str());
+			printf("%2s %s",(T[i][j]==-1 ? "" : f(T[i][j]).c_str()),s.c_str());
 		}
 	}
 	if (latex) printf("\\end{tabular}\\end{center}\\end{table}");
@@ -242,7 +258,7 @@ void print_table(str s, const std::vector<std::vector<double> >& T, bool latex) 
 		printf("%4d %s",i,et.c_str());
 		for (int j=0; j<c; j++) {
 			str s = (j==c-1) ? slash : et;
-			printf("%11s %s",f(T[i][j]),s.c_str());
+			printf("%11s %s",f(T[i][j]).c_str(),s.c_str());
 		}
 	}
 	if (latex) printf("\\end{tabular}\\end{center}\\end{table}");
@@ -294,6 +310,13 @@ Table with_tot(const Table& T) {
 	Table M = T;
 	for (int i=0; i<M.size(); i++) M[i].push_back(sumlist(M[i]));
 	return M;
+}
+
+List complementary(int size, const List& L) {
+	List l = initList(size);
+	for (int i=0; i<size; i++) l.push_back(i);
+	for (int i=0; i<L.size(); i++) erase(L[i],l);
+	return l;
 }
 
 // Cube ------------------------------------------------------
@@ -383,7 +406,7 @@ void deb(int a, int b) { // debug
 	std::cout << " " << a << "," << b << " " << std::endl;
 }
 // To String --------------------------------------------------
-const char* f(int i) { // int 1526879 -> const char* 1,526,879
+str f(int i) { // int 1526879 -> const char* 1,526,879
 	std::stringstream ss;
 	ss << i;
 	str s = ss.str();
@@ -396,7 +419,7 @@ const char* f(int i) { // int 1526879 -> const char* 1,526,879
 	return str.c_str();
 }
 
-const char* f(double i) { // Be careful : double 1523.5412 -> 1,523.54 (max 6 numbers)
+str f(double i) { // Be careful : double 1523.5412 -> 1,523.54 (max 6 numbers)
 	std::stringstream ss;
 	ss << i;
 	str s = ss.str();
