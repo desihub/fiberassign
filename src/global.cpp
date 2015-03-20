@@ -175,7 +175,8 @@ void assign_fibers(int next, const Gals& G, const Plates& P, const PP& pp, const
 			if (best!=-1) A.assign(j,k,best,G,P,pp);
 		}
 	}
-	printf("  %s assignments on %s next plates\n",f(A.na()).c_str(),f(next).c_str());
+	str next_str = next==-1 ? "all left" : f(next);
+	printf("  %s assignments on %s next plates\n",f(A.na()).c_str(),next_str.c_str());
 }
 
 int best2(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, bool tmp) { // Can't take g
@@ -306,30 +307,17 @@ void redistribute_g(const Gals& G, const Plates&P, const PP& pp, const Feat& F, 
 	printf("  %s redistributions (~%.4f %% of galaxies redistributed)\n",f(redistributions).c_str(),percent(redistributions,Ngal));
 }
 
-int best4(int kind0, int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, List& cn) { // Can't take kind
+int best4(int kind0, int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, bool tmp) { // Can't take kind
 	int best = -1; int mbest = -1; float pbest = 1e30;
 	List av_gals = P[j].av_gals[k];
 	List randGals = random_permut(av_gals.size());
 	for (int gg=0; gg<av_gals.size(); gg++) {
 		int g = av_gals[randGals[gg]];
 		int prio = G[g].prio(F);
-		int m = A.nobs(g,G,F);
-		cn[0]++;
-		//printf("%d ",aa); std::cout.flush();
-		if (G[g].id!=kind0 && !A.is_assigned_pg(P[j].ipass,g) && A.nobs(g,G,F)>=1) {
-			bool bo(true);
-			str kind = G[g].kind(F);
-			cn[1]++;
-			if (P[j].ipass==Npass-1 && !(kind=="ELG" || kind=="SS" || kind=="SF")) { cn[2]++; bo = false; } // Only ELG, SF, SS at the last pass
-			else if (find_collision(j,k,g,pp,G,P,A)!=-1) { cn[3]++; bo = false; }
-			else if (kind=="SS" && A.nkind(j,k,"SS",G,P,pp,F)>=MaxSS) { cn[4]++; bo = false; }
-			else if (kind=="SF" && A.nkind(j,k,"SF",G,P,pp,F)>=MaxSF) { cn[5]++; bo = false; }
-			else cn[6]++;
-
-			if (bo/*ok_assign_g_to_jk(g,j,k,P,G,pp,F,A)*/) {
-				cn[7]++;
+		int m = A.nobs(g,G,F,tmp);
+		if (G[g].id!=kind0 && !A.is_assigned_pg(P[j].ipass,g) && A.nobs(g,G,F,tmp)>=1) {
+			if (ok_assign_g_to_jk(g,j,k,P,G,pp,F,A)) {
 				if (prio<pbest || m>mbest) {
-					cn[8]++;
 					best = g;
 					pbest = prio;
 					mbest = m;
@@ -340,13 +328,12 @@ int best4(int kind0, int j, int k, const Gals& G, const Plates& P, const PP& pp,
 	return best;
 }
 
-void improve2(str kind, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A) {
-	int cnt = 0; 
-	List cn = initList(9,0);
-
-	int na_start(A.na());
+void improve2(int next, str kind, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, bool tmp) {
 	int id = F.id(kind);
-	List randPlates = random_permut(Nplate);
+	int na_start(A.na());
+	int n = next==-1 ? Nplate-A.next_plate : next;
+	List plates = sublist(A.next_plate,n,A.order);
+	List randPlates = random_permut(plates);
 	for (int jj=0; jj<Nplate; jj++) {
 		int j = randPlates[jj];
 		List randPetals = random_permut(Npetal);
@@ -362,13 +349,11 @@ void improve2(str kind, const Gals& G, const Plates&P, const PP& pp, const Feat&
 				List av_gals = P[j].av_gals[k];
 				for (int i=0; i<av_gals.size() && !finished; i++) {
 					int g = av_gals[i];
-					if (G[g].id==id && find_collision(j,k,g,pp,G,P,A)==-1 && !A.is_assigned_pg(P[j].ipass,g) && A.nobs(g,G,F)>=1) {
+					if (G[g].id==id && find_collision(j,k,g,pp,G,P,A)==-1 && !A.is_assigned_pg(P[j].ipass,g) && A.nobs(g,G,F,tmp)>=1) {
 						for (int kkp=0; kkp<fibskind.size() && !finished; kkp++) {
 							int kp = fibskind[kkp];
 							int gp = A.TF[j][kp];
-							int best = best4(id,j,k,G,P,pp,F,A,cn);
-							cnt++;
-							if (cnt%100000==0) print_list_line(cn);
+							int best = best4(id,j,kp,G,P,pp,F,A,tmp);
 							if (best!=-1) {
 								A.unassign(j,kp,gp,G,P,pp);
 								A.assign(j,k,g,G,P,pp);
@@ -376,12 +361,56 @@ void improve2(str kind, const Gals& G, const Plates&P, const PP& pp, const Feat&
 								finished = true;
 								erase(kkp,fibskind);
 							}}}}}}
-	if (jj%100==0) { printf("%d ",jj); std::cout.flush(); }
 	}
 	int na_end(A.na());
 	printf("  %s more assignments (%.3f %% improvement)\n",f(na_end-na_start).c_str(),percent(na_end-na_start,na_start));
-	print_list_line(cn);
 }
+
+//void improve2(int next, str kind, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, bool tmp) {
+	//int cnt = 0; 
+	//List cn = initList(8,0);
+
+	//int id = F.id(kind);
+	//int na_start(A.na());
+	//int n = next==-1 ? Nplate-A.next_plate : next;
+	//List plates = sublist(A.next_plate,n,A.order);
+	//List randPlates = random_permut(plates);
+	//for (int jj=0; jj<Nplate; jj++) {
+		//int j = randPlates[jj];
+		//List randPetals = random_permut(Npetal);
+		//for (int ppet=0; ppet<Npetal; ppet++) {
+			//int p = randPetals[ppet];
+			//// Take sublist of fibers assigned to kind, and unassigned ones
+			//List fibskind = A.fibs_of_kind(kind,j,p,G,pp,F);
+			//List fibsunas = A.fibs_unassigned(j,p,G,pp,F);
+			//for (int kk=0; kk<fibsunas.size(); kk++) {
+				//// Take an unassigned tf and its available galaxies
+				//int k = fibsunas[kk];
+				//bool finished(false);
+				//List av_gals = P[j].av_gals[k];
+				//for (int i=0; i<av_gals.size() && !finished; i++) {
+					//int g = av_gals[i];
+					//if (G[g].id==id && find_collision(j,k,g,pp,G,P,A)==-1 && !A.is_assigned_pg(P[j].ipass,g) && A.nobs(g,G,F,tmp)>=1) {
+						//for (int kkp=0; kkp<fibskind.size() && !finished; kkp++) {
+							//int kp = fibskind[kkp];
+							//int gp = A.TF[j][kp];
+							//int best = best4(id,j,k,G,P,pp,F,A,cn,tmp);
+							//cnt++;
+							//if (cnt%10000000==0) print_list_line(cn);
+							//if (best!=-1) {
+								//A.unassign(j,kp,gp,G,P,pp);
+								//A.assign(j,k,g,G,P,pp);
+								//A.assign(j,kp,best,G,P,pp);
+								//finished = true;
+								//erase(kkp,fibskind);
+							//}}}}}}
+		//if (jj%100==0) { printf("%d ",jj); std::cout.flush(); }
+	//}
+	//int na_end(A.na());
+	//printf("  %s more assignments (%.3f %% improvement)\n",f(na_end-na_start).c_str(),percent(na_end-na_start,na_start));
+	//print_list_line(cn);
+//}
+
 
 			//if (!A.is_assigned_tf(j,k)) { // Unused tilefiber (j,k)
 				//bool finished(false);

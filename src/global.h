@@ -27,7 +27,7 @@ void collect_available_tilefibers(Gals& G, const Plates& P);
 void assign_fibers(int next, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, bool tmp=false);
 
 void improve(int next, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, bool tmp=false);
-void improve2(str kind, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A);
+void improve2(int next, str kind, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, bool tmp=false);
 
 void redistribute_tf(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A);
 void redistribute_g(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A);

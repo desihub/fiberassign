@@ -276,6 +276,7 @@ Assignment::Assignment(const Gals& G, const Feat& F) {
 	TF = initTable(Nplate,Nfiber,-1);
 	PG = initTable_pair(Npass,Ngal); // Doesn't work if defined directly
 	order.resize(Nplate);
+	for (int i=0; i<Nplate; i++) order[i] = i;
 	next_plate = 0;
 	kinds = initCube(Nplate,Npetal,Categories);
 	probas = initList(Categories);

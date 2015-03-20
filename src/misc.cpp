@@ -102,7 +102,10 @@ void print_list(str s, std::vector<str> L) {
 
 void print_list_line(const List& L) {
 	printf("(");
-	for (int i=0; i<L.size(); i++) printf("%d,",L[i]);
+	for (int i=0; i<L.size(); i++) {
+		str s = i==L.size()-1 ? "" : ",";
+		printf("%d%s",L[i],s.c_str());
+	}
 	printf(") "); std::cout.flush();
 }
 
@@ -231,14 +234,6 @@ void print_table(str s, const Table& T, bool latex) {
 	int cc = T[0].size();
 	for (int i=0; i<l; i++) if (T[i].size()!=cc) square = false;
 
-	str et = latex ? " &" : "|";
-	str slash = latex ? " \\\\ \n" : "\n";
-
-	str rrr(T[0].size(),'r');
-	if (latex) printf("\n\\begin{table}[h]\\begin{center} \n\\caption{%s} \n\\begin{tabular}{%s}",s.c_str(),rrr.c_str());
-	else printf(s.c_str());
-	printf("\n");
-
 	List maxRow = initList(cc);
 	if (square) {
 		Table sizestr = initTable(l,cc);
@@ -251,7 +246,15 @@ void print_table(str s, const Table& T, bool latex) {
 	}
 	else maxRow = initList(cc,7);
 
-	str space(" ",15);
+	str et = latex ? " &" : "|";
+	str slash = latex ? " \\\\ \n" : "\n";
+
+	str rrr(T[0].size(),'r');
+	if (latex) printf("\n\\begin{table}[h]\\begin{center} \n\\caption{%s} \n\\begin{tabular}{%s}",s.c_str(),rrr.c_str());
+	else printf(s.c_str());
+	printf("\n");
+
+	str space(6,' ');
 	printf(space.c_str());
 	int max = max_row(T);
 	for (int j=0; j<max; j++) {
