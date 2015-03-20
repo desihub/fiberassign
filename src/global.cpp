@@ -166,7 +166,7 @@ void assign_fibers(int next, const Gals& G, const Plates& P, const PP& pp, const
 	int n = next==-1 ? Nplate-A.next_plate : next;
 	List plates = sublist(A.next_plate,n,A.order);
 	List randPlates = random_permut(plates);
-	for (int jj=0; jj<plates.size(); jj++) {
+	for (int jj=0; jj<n; jj++) {
 		int j = randPlates[jj];
 		List randFibers = random_permut(Nfiber);
 		for (int kk=0; kk<Nfiber; kk++) { // Fiber
@@ -207,7 +207,7 @@ void improve(int next, const Gals& G, const Plates&P, const PP& pp, const Feat& 
 	int n = next==-1 ? Nplate-A.next_plate : next;
 	List plates = sublist(A.next_plate,n,A.order);
 	List randPlates = random_permut(plates);
-	for (int jj=0; jj<plates.size(); jj++) {
+	for (int jj=0; jj<n; jj++) {
 		int j = randPlates[jj];
 		for(int k=0; k<Nfiber; k++) {
 			if (!A.is_assigned_tf(j,k)) { // Unused tilefiber (j,k)
@@ -334,7 +334,7 @@ void improve2(int next, str kind, const Gals& G, const Plates&P, const PP& pp, c
 	int n = next==-1 ? Nplate-A.next_plate : next;
 	List plates = sublist(A.next_plate,n,A.order);
 	List randPlates = random_permut(plates);
-	for (int jj=0; jj<Nplate; jj++) {
+	for (int jj=0; jj<n; jj++) {
 		int j = randPlates[jj];
 		List randPetals = random_permut(Npetal);
 		for (int ppet=0; ppet<Npetal; ppet++) {

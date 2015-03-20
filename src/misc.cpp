@@ -75,7 +75,7 @@ List random_permut(const List& L) {
 	List l;
 	try { l.resize(n); } 
 	catch(std::exception& e) {myexception(e);}
-	for (int i=0; i<n; i++) l[i]=L[perm[i]];
+	for (int i=0; i<n; i++) l[i] = L[perm[i]];
 	return l;
 }
 
@@ -228,6 +228,7 @@ int max_row(const Table& T) {
 
 void print_table(str s, const Table& T, bool latex) {
 	int SIZE = 7;
+	int MAXSIZE = 9;
 
 	bool square(true);
 	int l = T.size();
@@ -239,7 +240,8 @@ void print_table(str s, const Table& T, bool latex) {
 		Table sizestr = initTable(l,cc);
 		for (int i=0; i<l; i++) {
 			for (int j=0; j<cc; j++) {
-				sizestr[i][j] = f(T[i][j]).size()+1;
+				int sz = f(T[i][j]).size()+1;
+				sizestr[i][j] = sz<MAXSIZE ? sz : MAXSIZE;
 			}
 		}
 		maxRow = max_on_row(sizestr);
@@ -261,7 +263,7 @@ void print_table(str s, const Table& T, bool latex) {
 		str s = (j==max-1) ? slash : et;
 		printf("%s%s",format(maxRow[j],f(j)).c_str(),s.c_str());
 	}
-	for (int i=0; i<l && i<50; i++) {
+	for (int i=0; i<l && i<100; i++) {
 		printf("%3d  %s",i,et.c_str());
 		int c = T[i].size();
 		for (int j=0; j<c; j++) {

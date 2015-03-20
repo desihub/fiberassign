@@ -102,31 +102,29 @@ int main(int argc, char **argv) {
 		std::cout << std::endl;
 	}
 	print_time(time,"# ... took :");
-
-	init_time_at(time,"# Begin display results",t);
 	display_results(G,P,pp,F,A0,false);
-	print_time(time,"# ... took :");
 
 	A0.update_nobsv_tmp();
 
 	init_time_at(time,"# Begin global assignment ------------",t);
 	assign_fibers(3000,G,P,pp,F,A0,true);
 	print_time(time,"# ... took :");
-	display_results(G,P,pp,F,A0,false,true);
 
 	init_time_at(time,"# Begin improve",t);
 	improve(3000,G,P,pp,F,A0,true);
 	print_time(time,"# ... took :");
-	display_results(G,P,pp,F,A0,false,true);
 
-	init_time_at(time,"# Begin improve2",t);
+	init_time_at(time,"# Begin improve SF",t);
 	improve2(3000,"SF",G,P,pp,F,A0,true);
 	print_time(time,"# ... took :");
-	display_results(G,P,pp,F,A0,false,true);
 
+	init_time_at(time,"# Begin improve SS",t);
+	improve2(3000,"SS",G,P,pp,F,A0,true);
+	print_time(time,"# ... took :");
+
+	display_results(G,P,pp,F,A0,false);
 	A0.update_nobsv_tmp();
 	A0.next_plate += 3000;
-
 
 
 
@@ -140,13 +138,17 @@ int main(int argc, char **argv) {
 	print_time(time,"# ... took :");
 	display_results(G,P,pp,F,A0,false,true);
 
-	init_time_at(time,"# Begin improve2",t);
+	init_time_at(time,"# Begin improve SF",t);
 	improve2(-1,"SF",G,P,pp,F,A0,true);
 	print_time(time,"# ... took :");
 	display_results(G,P,pp,F,A0,false,true);
 
-	print_free_fibers(G,pp,F,A0,false);
+	init_time_at(time,"# Begin improve SS",t);
+	improve2(-1,"SS",G,P,pp,F,A0,true);
+	print_time(time,"# ... took :");
+	display_results(G,P,pp,F,A0,false,true);
 
+	print_free_fibers(G,pp,F,A0,false);
 
 	for (int i=1; i<=10; i++) {
 		print_table("Petal"+i2s(i),A0.infos_petal(1000*i,5,G,P,pp,F));
