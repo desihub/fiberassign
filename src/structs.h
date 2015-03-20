@@ -88,13 +88,14 @@ List av_gals_of_kind(int kind, int j, int k, const Gals& G, const Plates& P, con
 class Assignment {
 	public:
 	Table TF; // TF for tile fiber, #tiles X #fibers
-	std::vector<std::vector<pair> > PG; // PG for pass galaxy, #passes X #galaxies
+	Ptable PG; // PG for pass galaxy, #passes X #galaxies
 	List order; // Order of tiles we want to assign
 	int next_plate; // Next plate in the order
-	Cube kinds; // Cube[j][sp][id] : number of fibers of spectrometer sp and plate j that have the kind id. Redundtant information, but optimizes computations
+	Cube kinds; // Cube[j][sp][id] : number of fibers of spectrometer sp and plate j that have the kind id. Redundant information, but optimizes computations
 	List probas; // Number of galaxies of this kind
 	List nobsv; // List of nobs, redundant but optimizes
 	List nobsv_tmp; // List of nobs, redundant but optimizes
+	List once_obs;
 
 	Assignment(const Gals& G, const Feat& F);
 	~Assignment();
@@ -104,13 +105,12 @@ class Assignment {
 	bool is_assigned_tf(int j, int k) const; 
 	int na(int begin=0, int end=Nplate-1); // Number of assignments within plates begin to end
 	int nobs(int g, const Gals& G, const Feat& F, bool b=false) const; // Counts how many time ob should be observed else more. If b=true, return Maxobs for this kind
-	std::vector<pair> chosen_tfs(int g) const; // Pairs (j,k) chosen by g in the Npass passes
+	Plist chosen_tfs(int g, int begin=0, int size=Nplate-1) const; // Pairs (j,k) chosen by g in the Npass passes
 	List unused_f() const;
 	int unused_f(int j);
 	Table unused_fbp(const PP& pp) const; // Unused fibers  by petal
 	int unused_fbp(int j, int k, const PP& pp) const; // Number of unassigned fibers of the petal corresponding to (j,k)
 	Table used_by_kind(str kind, const Gals& G, const PP& pp, const Feat& F) const;
-	bool once_obs(int g); // Already observed ?
 	int num_obs(int g); // How many times observed
 	int nkind(int j, int k, str kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const; // Number of fibers assigned to the kind "kind" on the petal of (j,k)
 	double get_proba(int i, const Gals& G, const Feat& F); // p(fake QSO | QSO) for example
@@ -118,6 +118,7 @@ class Assignment {
 	List fibs_of_kind(str kind, int j, int pet, const Gals& G, const PP& pp, const Feat& F) const; // Sublist of fibers assigned to a galaxy of type kind for this petal
 	List fibs_unassigned(int j, int pet, const Gals& G, const PP& pp, const Feat& F) const;
 	void update_nobsv_tmp();
+	void update_nobsv_tmp_for_one(int j);
 };
 
 // Global functions -----------------------------------------

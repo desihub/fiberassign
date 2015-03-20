@@ -285,6 +285,7 @@ Assignment::Assignment(const Gals& G, const Feat& F) {
 	for (int g=0; g<Ngal; g++) nobsv[g] = F.goal[G[g].id];
 	List l = F.maxgoal();
 	for (int g=0; g<Ngal; g++) nobsv_tmp[g] = l[G[g].id];
+	once_obs = initList(Ngal);
 }
 
 Assignment::~Assignment() {}
@@ -327,7 +328,7 @@ bool Assignment::is_assigned_pg(int ip, int g) const {
 	return (PG[ip][g].f != -1);
 }
 
-bool Assignment::is_assigned_tf(int j, int k) const {return (TF[j][k] != -1);}
+bool Assignment::is_assigned_tf(int j, int k) const { return (TF[j][k] != -1); }
 
 int Assignment::na(int begin, int end) {
 	int cnt(0);
@@ -339,11 +340,11 @@ int Assignment::na(int begin, int end) {
 	return cnt;
 }
 
-std::vector<pair> Assignment::chosen_tfs(int g) const {
-	std::vector<pair> chosen;
+Plist Assignment::chosen_tfs(int g, int begin, int size) const {
+	Plist chosen;
 	for(int ip=0; ip<Npass; ip++) {
 		pair tf = PG[ip][g];
-		if (!tf.isnull()) chosen.push_back(tf);
+		if (!tf.isnull() && tf.f>=begin && tf.f<=begin+size) chosen.push_back(tf);
 	}
 	return chosen;
 }
@@ -393,11 +394,6 @@ Table Assignment::used_by_kind(str kind, const Gals& G, const PP& pp, const Feat
 		}
 	}
 	return used;
-}
-
-bool Assignment::once_obs(int g) {
-	for (int i=0; i<Npass; i++) if (!PG[i][g].isnull()) return true;
-	return false;
 }
 
 int Assignment::num_obs(int g) {
@@ -477,8 +473,16 @@ int Assignment::nobs(int g, const Gals& G, const Feat& F, bool tmp) const {
 }
 
 void Assignment::update_nobsv_tmp() {
-	for (int g=0; g<Ngal; g++) if (once_obs(g)) nobsv_tmp[g] = nobsv[g];
+	for (int g=0; g<Ngal; g++) if (once_obs[g]) nobsv_tmp[g] = nobsv[g];
 }
+
+void Assignment::update_nobsv_tmp_for_one(int j) {
+	for (int k=0; k<Nfiber; k++) {
+		int g = TF[j][k];
+		if (g=!-1) nobsv_tmp[g] = nobsv[g];
+	}
+}
+
 // Global functions -----------------------------------------------------------------------
 
 // Write some files -----------------------------------------------------------------------

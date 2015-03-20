@@ -29,6 +29,7 @@ class pair {
 // List ------------------------------------------------------
 class List : public std::vector<int> {};
 class Dlist : public std::vector<double> {};
+class Plist : public std::vector<pair> {};
 List initList(int l, int val = 0);
 List initList(std::vector<int> l);
 List initList(int l[]);
@@ -52,15 +53,17 @@ List sublist(int begin, int size, const List& L);
 
 // Table -----------------------------------------------------
 class Table : public std::vector<List> {};
+class Dtable : public std::vector<Dlist> {};
+class Ptable : public std::vector<Plist> {};
 Table initTable(int l, int c, int val = 0); 
 Table initTable(const Table& T); 
+Ptable initTable_pair(int l, int c);
+Dtable initTable_double(int l, int c, double val=0.0);
 void verif(const Table& T); // Verifies it's square
-void print_table(str s, const Table& T, bool latex = false);
-void print_table(str s, const std::vector<std::vector<pair> >& T);
+void print_table(str s, const Table& T, bool latex=false);
+void print_table(str s, const Dtable& T, bool latex=false);
+void print_table(str s, const Ptable& T);
 // Other constr wouldn't work if we would define a constructor in class Table
-std::vector<std::vector<pair> > initTable_pair(int l, int c);
-std::vector<std::vector<double> > initTable_double(int l, int c, double val=0.0);
-void print_table(str s, const std::vector<std::vector<double> >& T, bool latex = false);
 List histogram(const Table& T, int interval);
 Table with_tot(const Table& T); // Add a row with sum of lines
 int max_row(const Table& T); // Max number of rows

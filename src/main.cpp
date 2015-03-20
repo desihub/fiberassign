@@ -46,7 +46,7 @@ int main(int argc, char **argv) {
 
 	// Read galaxies
 	Gals G;
-	G = read_galaxies(argv[1],1); // ! Reads all galaxies iff arg2=1
+	G = read_galaxies(argv[1],1000); // ! Reads all galaxies iff arg2=1
 	Ngal = G.size();
 	printf("# Read %s galaxies from %s \n",f(Ngal).c_str(),argv[1]);
 
@@ -85,73 +85,86 @@ int main(int argc, char **argv) {
 	//results_on_inputs(G,P,F);
 
 	//// Assignment plate per plate -----------------------------------
-	Assignment A0(G,F);
+	Assignment A(G,F);
 	// Order : verificate that passes are increasing
 	init_time_at(time,"# Begin real time assignment",t);
-	for (int jj=0; jj<Nplate && jj<2000; jj++) {
-		printf(" - Plate %d : ",jj); std::cout.flush();
-		int j = A0.order[jj];
-		assign_fibers_for_one(j,G,P,pp,F,A0);
-		A0.next_plate++;
-		//A0.update_probas(G,F);
-		if (A0.unused_f(j)>500) {
-			//improve_for_one(j,G,P,pp,F,A0);
-			//redistribute_for_one(j,G,P,pp,F,A0);
-			//assign_fibers_for_one(j,G,P,pp,F,A0);
-		}
-		std::cout << std::endl;
+	for (int jj=0; jj<2000; jj++) {
+		printf(" - Plate %d : ",jj);
+		int j = A.order[jj];
+		assign_fibers_for_one(j,G,P,pp,F,A,true);
+		A.update_nobsv_tmp_for_one(j); // <-- here is the real observation time
+		A.next_plate++;
+		if (A.unused_f(j)>500) {}
 	}
 	print_time(time,"# ... took :");
-	display_results(G,P,pp,F,A0,false);
-
-	A0.update_nobsv_tmp();
+	display_results(G,P,pp,F,A,false);
 
 	init_time_at(time,"# Begin global assignment ------------",t);
-	assign_fibers(3000,G,P,pp,F,A0,true);
+	assign_fibers(3000,G,P,pp,F,A,true);
 	print_time(time,"# ... took :");
 
 	init_time_at(time,"# Begin improve",t);
-	improve(3000,G,P,pp,F,A0,true);
+	improve(2000,3000,G,P,pp,F,A,true);
 	print_time(time,"# ... took :");
 
 	init_time_at(time,"# Begin improve SF",t);
-	improve2(3000,"SF",G,P,pp,F,A0,true);
+	improve2(3000,"SF",G,P,pp,F,A,true);
 	print_time(time,"# ... took :");
 
 	init_time_at(time,"# Begin improve SS",t);
-	improve2(3000,"SS",G,P,pp,F,A0,true);
+	improve2(3000,"SS",G,P,pp,F,A,true);
 	print_time(time,"# ... took :");
 
-	display_results(G,P,pp,F,A0,false);
-	A0.update_nobsv_tmp();
-	A0.next_plate += 3000;
+
+	init_time_at(time,"# Begin real time assignment",t);
+	for (int jj=2000; jj<5000; jj++) {
+		printf(" - Plate %d : ",jj);
+		int j = A.order[jj];
+		// here is observation time, we have then access to nobsv 
+		update_plan_from_one_obs(4999,G,P,pp,F,A);
+		A.update_nobsv_tmp_for_one(j);
+		A.next_plate++;
+	}
+	print_time(time,"# ... took :");
+	display_results(G,P,pp,F,A,false);
 
 
 
 	init_time_at(time,"# Begin global  assignment ------------",t);
-	assign_fibers(-1,G,P,pp,F,A0,true);
+	assign_fibers(-1,G,P,pp,F,A,true);
 	print_time(time,"# ... took :");
-	display_results(G,P,pp,F,A0,false,true);
+	display_results(G,P,pp,F,A,false,true);
 
 	init_time_at(time,"# Begin improve",t);
-	improve(-1,G,P,pp,F,A0,true);
+	improve(5000,-1,G,P,pp,F,A,true);
 	print_time(time,"# ... took :");
-	display_results(G,P,pp,F,A0,false,true);
+	display_results(G,P,pp,F,A,false,true);
 
 	init_time_at(time,"# Begin improve SF",t);
-	improve2(-1,"SF",G,P,pp,F,A0,true);
+	improve2(-1,"SF",G,P,pp,F,A,true);
 	print_time(time,"# ... took :");
-	display_results(G,P,pp,F,A0,false,true);
+	display_results(G,P,pp,F,A,false,true);
 
 	init_time_at(time,"# Begin improve SS",t);
-	improve2(-1,"SS",G,P,pp,F,A0,true);
+	improve2(-1,"SS",G,P,pp,F,A,true);
 	print_time(time,"# ... took :");
-	display_results(G,P,pp,F,A0,false,true);
+	display_results(G,P,pp,F,A,false,true);
 
-	print_free_fibers(G,pp,F,A0,false);
+	init_time_at(time,"# Begin real time assignment",t);
+	for (int jj=5000; jj<Nplate; jj++) {
+		printf(" - Plate %d : ",jj);
+		int j = A.order[jj];
+		// here is observation time, we have then access to nobsv 
+		update_plan_from_one_obs(Nplate-1,G,P,pp,F,A);
+		A.update_nobsv_tmp_for_one(j);
+		A.next_plate++;
+	}
+	print_time(time,"# ... took :");
 
+
+	print_free_fibers(G,pp,F,A,false);
 	for (int i=1; i<=10; i++) {
-		print_table("Petal"+i2s(i),A0.infos_petal(1000*i,5,G,P,pp,F));
+		print_table("Petal "+i2s(i),A.infos_petal(1000*i,5,G,P,pp,F));
 	}
 
 

@@ -185,21 +185,21 @@ Table initTable(int l, int c, int val) {
 	Table T;
 	T.resize(l);
 	for (int i=0; i<l; i++) T[i].resize(c,val);
-	return(T);
+	return T;
 }
 
-std::vector<std::vector<pair> > initTable_pair(int l, int c) {
-	std::vector<std::vector<pair> > T;
+Ptable initTable_pair(int l, int c) {
+	Ptable T;
 	T.resize(l);
 	for (int i=0; i<l; i++) T[i].resize(c,pair());
-	return(T);
+	return T;
 }
 
-std::vector<std::vector<double> > initTable_double(int l, int c, double val) {
-	std::vector<std::vector<double> > T;
+Dtable initTable_double(int l, int c, double val) {
+	Dtable T;
 	T.resize(l);
 	for (int i=0; i<l; i++) T[i].resize(c,val);
-	return(T);
+	return T;
 }
 
 void verif(const Table& T) {
@@ -228,7 +228,7 @@ int max_row(const Table& T) {
 
 void print_table(str s, const Table& T, bool latex) {
 	int SIZE = 7;
-	int MAXSIZE = 9;
+	int MAXSIZE = 10;
 
 	bool square(true);
 	int l = T.size();
@@ -263,7 +263,7 @@ void print_table(str s, const Table& T, bool latex) {
 		str s = (j==max-1) ? slash : et;
 		printf("%s%s",format(maxRow[j],f(j)).c_str(),s.c_str());
 	}
-	for (int i=0; i<l && i<100; i++) {
+	for (int i=0; i<l && i<10; i++) {
 		printf("%3d  %s",i,et.c_str());
 		int c = T[i].size();
 		for (int j=0; j<c; j++) {
@@ -276,7 +276,7 @@ void print_table(str s, const Table& T, bool latex) {
 	printf("\n");
 }
 
-void print_table(str s, const std::vector<std::vector<double> >& T, bool latex) {
+void print_table(str s, const Dtable& T, bool latex) {
 	//verif(T);
 	int l = T.size();
 	int c = T[0].size();
@@ -306,7 +306,7 @@ void print_table(str s, const std::vector<std::vector<double> >& T, bool latex) 
 	printf("\n");
 }
 
-void print_table(str s, const std::vector<std::vector<pair> >& T) {
+void print_table(str s, const Ptable& T) {
 	printf(s.c_str()); printf("\n");
 	int l = T.size();
 	if (l==0) {

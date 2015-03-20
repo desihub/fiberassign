@@ -202,46 +202,51 @@ int best2(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat
 // Before : (jp,kp) <-> g ; (j,k) & gp free
 // After : (j,k) <-> g & (jp,kp) <-> gp
 // Prints the number of additional assigned galaxies
-void improve(int next, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, bool tmp) {
+void improve_fiber(int begin, int next, int j, int k, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, bool tmp) {
+	if (!A.is_assigned_tf(j,k)) { // Unused tilefiber (j,k)
+		bool finished(false);
+		List av_g = P[j].av_gals[k];
+		for (int i=0; i<av_g.size() && !finished; i++) { // Not shuffled
+			int g = av_g[i]; // g : possible galaxy for (j,k)
+			if (g!=-1) {
+				// Is it allowed for jk to take g ?
+				if (ok_assign_g_to_jk(g,j,k,P,G,pp,F,A)) {
+					// What tfs have taken g ? Could they take someone else ?
+					Plist tfs = A.chosen_tfs(g,begin,next);
+					for (int p=0; p<tfs.size() && !finished; p++) {
+						int jp = tfs[p].f;
+						int kp = tfs[p].s; // (jp,kp) currently assigned to galaxy g
+						int best = best2(jp,kp,G,P,pp,F,A,tmp); // best!=g because !A.assigned_pg(best)
+						if (best!=-1 && (P[jp].ipass==P[j].ipass || !A.is_assigned_pg(P[j].ipass,g))) { // If j and jp are not on the same ip, g has to be unassgned
+							// Modify assignment
+							A.unassign(jp,kp,g,G,P,pp);
+							A.assign(j,k,g,G,P,pp);
+							A.assign(jp,kp,best,G,P,pp);
+							finished = true; 
+						}}}}
+			else A.assign(j,k,g,G,P,pp); // Doesn't add anything in practice
+		}
+	}
+}
+
+void improve(int begin, int next, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, bool tmp) {
 	int na_start = A.na();
-	int n = next==-1 ? Nplate-A.next_plate : next;
-	List plates = sublist(A.next_plate,n,A.order);
+	int n = next==-1 ? Nplate-begin : next;
+	List plates = sublist(begin,n,A.order);
 	List randPlates = random_permut(plates);
 	for (int jj=0; jj<n; jj++) {
 		int j = randPlates[jj];
-		for(int k=0; k<Nfiber; k++) {
-			if (!A.is_assigned_tf(j,k)) { // Unused tilefiber (j,k)
-				bool finished(false);
-				List av_g = P[j].av_gals[k];
-				for (int i=0; i<av_g.size() && !finished; i++) { // Not shuffled
-					int g = av_g[i]; // g : possible galaxy for (j,k)
-					if (g!=-1) {
-						// Is it allowed for jk to take g ?
-						if (ok_assign_g_to_jk(g,j,k,P,G,pp,F,A)) {
-							// What tfs have taken g ? Could they take someone else ?
-							std::vector<pair> tfs = A.chosen_tfs(g);
-							for (int p=0; p<tfs.size() && !finished; p++) {
-								int jp = tfs[p].f;
-								int kp = tfs[p].s; // (jp,kp) currently assigned to galaxy g
-								int best = best2(jp,kp,G,P,pp,F,A,tmp); // best!=g because !A.assigned_pg(best)
-								if (best!=-1 && (P[jp].ipass==P[j].ipass || !A.is_assigned_pg(P[j].ipass,g))) { // If j and jp are not on the same ip, g has to be unassgned
-									// Modify assignment
-									A.unassign(jp,kp,g,G,P,pp);
-									A.assign(j,k,g,G,P,pp);
-									A.assign(jp,kp,best,G,P,pp);
-									finished = true; 
-							}}}}
-					else A.assign(j,k,g,G,P,pp); // Doesn't add anything in practice
-				}}}}
+		for (int k=0; k<Nfiber; k++) improve_fiber(begin,n,j,k,G,P,pp,F,A,tmp);
+	}
 	int na_end(A.na());
-	printf("  %s more assignments (%.3f %% improvement)\n",f(na_end-na_start).c_str(),percent(na_end-na_start,na_start-A.na(0,A.next_plate-1)));
+	printf("  %s more assignments (%.3f %% improvement)\n",f(na_end-na_start).c_str(),percent(na_end-na_start,na_start-A.na(0,begin-1)));
 }
 
 int best3(int g_no, int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) { // Can't take g
 	int best = -1; int mbest = -1; float pbest = 1e30;
 	List av_gals = P[j].av_gals[k];
 	List randGals = random_permut(av_gals.size());
-	for (int gg=0; gg<av_gals.size(); gg++) { 
+	for (int gg=0; gg<av_gals.size(); gg++) {
 		int g = av_gals[randGals[gg]];
 		int prio = G[g].prio(F);
 		int m = A.nobs(g,G,F);
@@ -366,79 +371,6 @@ void improve2(int next, str kind, const Gals& G, const Plates&P, const PP& pp, c
 	printf("  %s more assignments (%.3f %% improvement)\n",f(na_end-na_start).c_str(),percent(na_end-na_start,na_start));
 }
 
-//void improve2(int next, str kind, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, bool tmp) {
-	//int cnt = 0; 
-	//List cn = initList(8,0);
-
-	//int id = F.id(kind);
-	//int na_start(A.na());
-	//int n = next==-1 ? Nplate-A.next_plate : next;
-	//List plates = sublist(A.next_plate,n,A.order);
-	//List randPlates = random_permut(plates);
-	//for (int jj=0; jj<Nplate; jj++) {
-		//int j = randPlates[jj];
-		//List randPetals = random_permut(Npetal);
-		//for (int ppet=0; ppet<Npetal; ppet++) {
-			//int p = randPetals[ppet];
-			//// Take sublist of fibers assigned to kind, and unassigned ones
-			//List fibskind = A.fibs_of_kind(kind,j,p,G,pp,F);
-			//List fibsunas = A.fibs_unassigned(j,p,G,pp,F);
-			//for (int kk=0; kk<fibsunas.size(); kk++) {
-				//// Take an unassigned tf and its available galaxies
-				//int k = fibsunas[kk];
-				//bool finished(false);
-				//List av_gals = P[j].av_gals[k];
-				//for (int i=0; i<av_gals.size() && !finished; i++) {
-					//int g = av_gals[i];
-					//if (G[g].id==id && find_collision(j,k,g,pp,G,P,A)==-1 && !A.is_assigned_pg(P[j].ipass,g) && A.nobs(g,G,F,tmp)>=1) {
-						//for (int kkp=0; kkp<fibskind.size() && !finished; kkp++) {
-							//int kp = fibskind[kkp];
-							//int gp = A.TF[j][kp];
-							//int best = best4(id,j,k,G,P,pp,F,A,cn,tmp);
-							//cnt++;
-							//if (cnt%10000000==0) print_list_line(cn);
-							//if (best!=-1) {
-								//A.unassign(j,kp,gp,G,P,pp);
-								//A.assign(j,k,g,G,P,pp);
-								//A.assign(j,kp,best,G,P,pp);
-								//finished = true;
-								//erase(kkp,fibskind);
-							//}}}}}}
-		//if (jj%100==0) { printf("%d ",jj); std::cout.flush(); }
-	//}
-	//int na_end(A.na());
-	//printf("  %s more assignments (%.3f %% improvement)\n",f(na_end-na_start).c_str(),percent(na_end-na_start,na_start));
-	//print_list_line(cn);
-//}
-
-
-			//if (!A.is_assigned_tf(j,k)) { // Unused tilefiber (j,k)
-				//bool finished(false);
-				//List av_g = P[j].av_gals[k];
-				//for (int i=0; i<av_g.size() && !finished; i++) { // Not shuffled
-					//int g = av_g[i]; // g : possible galaxy for (j,k)
-					//if (g!=-1) {
-						//// Is it allowed for jk to take g ?
-						//if (ok_assign_g_to_jk(g,j,k,P,G,pp,F,A)) {
-							//// What tfs have taken g ? Could they take someone else ?
-							//std::vector<pair> tfs = A.chosen_tfs(g);
-							//for (int p=0; p<tfs.size() && !finished; p++){
-								//int jp = tfs[p].f;
-								//int kp = tfs[p].s; // (jp,kp) currently assigned to galaxy g
-								//int best = best2(jp,kp,G,P,pp,F,A); // best!=g because !A.assigned_pg(best)
-								//if (best!=-1 && (P[jp].ipass==P[j].ipass || !A.is_assigned_pg(P[j].ipass,g))) { // If j and jp are not on the same ip, g has to be unassgned
-									//// Modify assignment
-									//A.unassign(jp,kp,g,G,P,pp);
-									//A.assign(j,k,g,G,P,pp);
-									//A.assign(jp,kp,best,G,P,pp);
-									//finished = true; 
-							//}}}}
-					//else { A.assign(j,k,g,G,P,pp); simple++; } // Doesn't add anything in practice
-				//}}}}
-
-
-
-
 // Redistribute by kind
 void redistribute_g_by_kind(str kind, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A) {
 	int redistributions(0);
@@ -475,35 +407,64 @@ void redistribute_g_by_kind(str kind, const Gals& G, const Plates&P, const PP& p
 	printf("  %s redistributions (~%.4f %% of galaxies redistributed)\n",f(redistributions).c_str(),percent(redistributions,Ngal));
 }
 
-
-
 // Assignment "for one" --------------------------------------------------------------------------------
 
 // There is not problem with the fact that we only have knowledge on previous assignment, because when we call nobs (the only moment it can raise a problem) there can't be crossings with this plate, because g can only be assigned once
-void assign_fibers_for_one(int j, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
-	List randFibers = random_permut(Nfiber);
+int best5(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, bool tmp) { // Can't take kind
+	int best = -1; int mbest = -1; float pbest = 1e30;
+	List av_gals = P[j].av_gals[k];
+	List randGals = random_permut(av_gals.size());
+	for (int gg=0; gg<av_gals.size(); gg++) { 
+		int g = av_gals[randGals[gg]];
+		int prio = G[g].prio(F);
+		int m = A.nobs(g,G,F,tmp);
+		if (ok_assign_tot(g,j,k,P,G,pp,F,A)) {
+			if (prio<pbest || A.once_obs[g] && m>mbest) { // Then best>=0 because prio>=pbest
+				best = g;
+				pbest = prio;
+				mbest = m;
+			}
+		}
+	}
+}
+
+void assign_fibers_for_one(int j, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, bool tmp) {
 	int as(0);
+	List randFibers = random_permut(Nfiber);
 	for (int kk=0; kk<Nfiber; kk++) {
 		int k = randFibers[kk];
-		int best = -1; int mbest = -1; float pbest = 1e30;
-		List av_gals = P[j].av_gals[k];
-		List randGals = random_permut(av_gals.size());
-		for (int gg=0; gg<av_gals.size(); gg++) { 
-			int g = av_gals[randGals[gg]];
-			int prio = G[g].prio(F);
-			int m = A.nobs(g,G,F);
-			if (ok_assign_tot(g,j,k,P,G,pp,F,A)) {
-				if (prio<pbest || A.once_obs(g) && m>mbest) { // Then best>=0 because prio>=pbest
-					best = g;
-					pbest = prio;
-					mbest = m;
+		int best = best5(j,k,G,P,pp,F,A,tmp);
+		if (best!=-1) { 
+			A.assign(j,k,best,G,P,pp); 
+			A.once_obs[best] = 1; 
+			as++; 
+		}
+	}
+	printf(" %5s assignments\n",f(as).c_str()); std::cout.flush();
+}
+
+// If there are galaxies discovered as fake for example, they won't be observed several times in the plan
+void update_plan_from_one_obs(int end, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A) {
+	int new_as(0);
+	int j = A.next_plate;
+	int ip = P[j].ipass;
+	int na_start = A.na();
+	for (int k=0; k<Nfiber; k++) {
+		int g = A.TF[j][k];
+		if (g=!-1) {
+			A.once_obs[g] = 1;
+			if (A.nobsv_tmp[g]=!A.nobsv[g]) {
+				Plist tfs = A.chosen_tfs(g,j,end);
+				for (int i=0; i<tfs.size(); i++) {
+					int jp = tfs[i].f; int kp = tfs[i].s;
+					A.unassign(jp,kp,g,G,P,pp);
+					improve_fiber(j,end-j+1,jp,kp,G,P,pp,F,A,true);
+					new_as++;
 				}
 			}
 		}
-		// Assign best galaxy to this fiber
-		if (best!=-1) { A.assign(j,k,best,G,P,pp); as++; }
 	}
-	printf(" %5s assignments",f(as).c_str());
+	printf(" %5s new assignments from update\n",f(new_as).c_str()); std::cout.flush();
 }
 
 void improve_for_one(int j, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A) {
