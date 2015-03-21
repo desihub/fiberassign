@@ -119,6 +119,7 @@ class Assignment {
 	List fibs_unassigned(int j, int pet, const Gals& G, const PP& pp, const Feat& F) const;
 	void update_nobsv_tmp();
 	void update_nobsv_tmp_for_one(int j);
+	void update_once_obs(int j);
 };
 
 // Global functions -----------------------------------------

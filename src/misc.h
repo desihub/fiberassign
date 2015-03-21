@@ -109,4 +109,5 @@ int sq(int n); // n*n
 double sq(double n);
 double sq(double a,double b); // a*a+b*b
 double percent(int a, int b);
+void fl();
 #endif

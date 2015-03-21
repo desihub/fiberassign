@@ -542,3 +542,4 @@ int sq(int n) { return(n*n); }
 double sq(double n) { return(n*n); }
 double sq(double a, double b) { return(a*a + b*b); }
 double percent(int a, int b) { return(a*100./b); }
+void fl() { std::cout.flush(); }

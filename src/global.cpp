@@ -163,10 +163,11 @@ int best1(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat
 
 // Assign fibers naively
 void assign_fibers(int next, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, bool tmp) {
-	int n = next==-1 ? Nplate-A.next_plate : next;
+	int n = next==-1 ? Nplate-A.next_plate+1 : next;
 	List plates = sublist(A.next_plate,n,A.order);
 	List randPlates = random_permut(plates);
 	for (int jj=0; jj<n; jj++) {
+		printf("%d ",jj); fl();
 		int j = randPlates[jj];
 		List randFibers = random_permut(Nfiber);
 		for (int kk=0; kk<Nfiber; kk++) { // Fiber
@@ -231,7 +232,7 @@ void improve_fiber(int begin, int next, int j, int k, const Gals& G, const Plate
 
 void improve(int begin, int next, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, bool tmp) {
 	int na_start = A.na();
-	int n = next==-1 ? Nplate-begin : next;
+	int n = next==-1 ? Nplate-begin+1 : next;
 	List plates = sublist(begin,n,A.order);
 	List randPlates = random_permut(plates);
 	for (int jj=0; jj<n; jj++) {
@@ -336,7 +337,7 @@ int best4(int kind0, int j, int k, const Gals& G, const Plates& P, const PP& pp,
 void improve2(int next, str kind, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, bool tmp) {
 	int id = F.id(kind);
 	int na_start(A.na());
-	int n = next==-1 ? Nplate-A.next_plate : next;
+	int n = next==-1 ? Nplate-A.next_plate+1 : next;
 	List plates = sublist(A.next_plate,n,A.order);
 	List randPlates = random_permut(plates);
 	for (int jj=0; jj<n; jj++) {
@@ -418,7 +419,7 @@ int best5(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat
 		int g = av_gals[randGals[gg]];
 		int prio = G[g].prio(F);
 		int m = A.nobs(g,G,F,tmp);
-		if (ok_assign_tot(g,j,k,P,G,pp,F,A)) {
+		if (ok_assign_tot(g,j,k,P,G,pp,F,A,tmp)) {
 			if (prio<pbest || A.once_obs[g] && m>mbest) { // Then best>=0 because prio>=pbest
 				best = g;
 				pbest = prio;
@@ -426,6 +427,7 @@ int best5(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat
 			}
 		}
 	}
+	return best;
 }
 
 void assign_fibers_for_one(int j, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, bool tmp) {
@@ -436,35 +438,37 @@ void assign_fibers_for_one(int j, const Gals& G, const Plates& P, const PP& pp, 
 		int best = best5(j,k,G,P,pp,F,A,tmp);
 		if (best!=-1) { 
 			A.assign(j,k,best,G,P,pp); 
-			A.once_obs[best] = 1; 
 			as++; 
 		}
 	}
-	printf(" %5s assignments\n",f(as).c_str()); std::cout.flush();
+	printf(" %5s assignments\n",f(as).c_str()); fl();
 }
 
 // If there are galaxies discovered as fake for example, they won't be observed several times in the plan
 void update_plan_from_one_obs(int end, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A) {
-	int new_as(0);
+	int cnt(0);
+	int cnt2(0);
+	int cnt3(0);
 	int j = A.next_plate;
+	int na_start(A.na(j,end));
 	int ip = P[j].ipass;
-	int na_start = A.na();
 	for (int k=0; k<Nfiber; k++) {
 		int g = A.TF[j][k];
 		if (g=!-1) {
-			A.once_obs[g] = 1;
 			if (A.nobsv_tmp[g]=!A.nobsv[g]) {
+				cnt++;
 				Plist tfs = A.chosen_tfs(g,j,end);
 				for (int i=0; i<tfs.size(); i++) {
 					int jp = tfs[i].f; int kp = tfs[i].s;
 					A.unassign(jp,kp,g,G,P,pp);
 					improve_fiber(j,end-j+1,jp,kp,G,P,pp,F,A,true);
-					new_as++;
 				}
 			}
+			else cnt2++;
 		}
+		else cnt3++;
 	}
-	printf(" %5s new assignments from update\n",f(new_as).c_str()); std::cout.flush();
+	printf(" %5s new assignments from update, %d %d %d\n",f(A.na(j,end)-na_start).c_str(),cnt,cnt2,cnt3); fl();
 }
 
 void improve_for_one(int j, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A) {

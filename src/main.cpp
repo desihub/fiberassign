@@ -46,7 +46,7 @@ int main(int argc, char **argv) {
 
 	// Read galaxies
 	Gals G;
-	G = read_galaxies(argv[1],1000); // ! Reads all galaxies iff arg2=1
+	G = read_galaxies(argv[1],1); // ! Reads all galaxies iff arg2=1
 	Ngal = G.size();
 	printf("# Read %s galaxies from %s \n",f(Ngal).c_str(),argv[1]);
 
@@ -92,7 +92,10 @@ int main(int argc, char **argv) {
 		printf(" - Plate %d : ",jj);
 		int j = A.order[jj];
 		assign_fibers_for_one(j,G,P,pp,F,A,true);
-		A.update_nobsv_tmp_for_one(j); // <-- here is the real observation time
+		improve2(1,"SF",G,P,pp,F,A,true);
+		// <-- here is the real observation moment
+		A.update_once_obs(j);
+		A.update_nobsv_tmp_for_one(j);
 		A.next_plate++;
 		if (A.unused_f(j)>500) {}
 	}
@@ -117,11 +120,13 @@ int main(int argc, char **argv) {
 
 
 	init_time_at(time,"# Begin real time assignment",t);
+	deb(A.next_plate);
 	for (int jj=2000; jj<5000; jj++) {
 		printf(" - Plate %d : ",jj);
 		int j = A.order[jj];
 		// here is observation time, we have then access to nobsv 
 		update_plan_from_one_obs(4999,G,P,pp,F,A);
+		A.update_once_obs(j);
 		A.update_nobsv_tmp_for_one(j);
 		A.next_plate++;
 	}
@@ -129,110 +134,43 @@ int main(int argc, char **argv) {
 	display_results(G,P,pp,F,A,false);
 
 
-
-	init_time_at(time,"# Begin global  assignment ------------",t);
+	deb(A.next_plate);
+	init_time_at(time,"# Begin global assignment ------------",t);
 	assign_fibers(-1,G,P,pp,F,A,true);
 	print_time(time,"# ... took :");
-	display_results(G,P,pp,F,A,false,true);
 
 	init_time_at(time,"# Begin improve",t);
 	improve(5000,-1,G,P,pp,F,A,true);
 	print_time(time,"# ... took :");
-	display_results(G,P,pp,F,A,false,true);
 
 	init_time_at(time,"# Begin improve SF",t);
 	improve2(-1,"SF",G,P,pp,F,A,true);
 	print_time(time,"# ... took :");
-	display_results(G,P,pp,F,A,false,true);
 
 	init_time_at(time,"# Begin improve SS",t);
 	improve2(-1,"SS",G,P,pp,F,A,true);
 	print_time(time,"# ... took :");
-	display_results(G,P,pp,F,A,false,true);
 
+	deb(A.next_plate);
 	init_time_at(time,"# Begin real time assignment",t);
 	for (int jj=5000; jj<Nplate; jj++) {
 		printf(" - Plate %d : ",jj);
 		int j = A.order[jj];
 		// here is observation time, we have then access to nobsv 
 		update_plan_from_one_obs(Nplate-1,G,P,pp,F,A);
+		A.update_once_obs(j);
 		A.update_nobsv_tmp_for_one(j);
 		A.next_plate++;
 	}
 	print_time(time,"# ... took :");
 
-
+	display_results(G,P,pp,F,A,false,true);
 	print_free_fibers(G,pp,F,A,false);
-	for (int i=1; i<=10; i++) {
-		print_table("Petal "+i2s(i),A.infos_petal(1000*i,5,G,P,pp,F));
-	}
-
-
-	//// Assignment global --------------------------------------------
-	//Assignment A(G,F);
-	//// Naive assignment
-	//init_time_at(time,"# Begin naive assignment",t);
-	//assign_fibers(-1,G,P,pp,F,A);
-	//print_time(time,"# ... took");
 
 	//for (int i=1; i<=10; i++) {
-		//print_table("Petal"+i2s(i),A.infos_petal(1000*i,5,G,P,pp,F));
+		//print_table("Petal "+i2s(i),A.infos_petal(1000*i,5,G,P,pp,F));
 	//}
-
-	//init_time_at(time,"# Begin display results and free fibers",t);
-	//display_results(G,P,pp,F,A,false);
-	//print_free_fibers(G,pp,F,A,false);
-	//print_time(time,"# ... took");
-
-	//// Improve --------------------------------------------------------
-
-	//init_time_at(time,"# Begin improve2",t);
-	//improve2(-1,"SF",G,P,pp,F,A);
-	//print_time(time,"# ... took :");
-	//display_results(G,P,pp,F,A,false);
-	//print_free_fibers(G,pp,F,A,false);
-
-	//init_time_at(time,"# Begin improve",t);
-	//improve(-1,G,P,pp,F,A);
-	//print_time(time,"# ... took :");
-	//display_results(G,P,pp,F,A,false);
-	//print_free_fibers(G,pp,F,A,false);
-
-	//for (int i=1; i<=10; i++) {
-		//print_table("Petal"+i2s(i),A.infos_petal(1000*i,5,G,P,pp,F));
-	//}
-
-	//init_time_at(time,"# Begin redistribute galaxies",t);
-	//redistribute_g(G,P,pp,F,A);
-	//print_time(time,"# ... took :"); 
-	//display_results(G,P,pp,F,A,false);
-	//print_free_fibers(G,pp,F,A,false);
-
-	//init_time_at(time,"# Begin redistribute SF",t);
-	//redistribute_g_by_kind("SF",G,P,pp,F,A);
-	//print_time(time,"# ... took :"); 
-	//display_results(G,P,pp,F,A,false);
-	//print_free_fibers(G,pp,F,A,false);
-
-	//init_time_at(time,"# Begin improve",t);
-	//improve(G,P,pp,F,A);
-	//print_time(time,"# ... took :");
-	//display_results(G,P,pp,F,A,false);
-	//print_free_fibers(G,pp,F,A,false);
-
-	//init_time_at(time,"# Begin redistribute TF",t);
-	//redistribute_tf(G,P,pp,F,A);
-	//print_time(time,"# ... took :"); 
-	//display_results(G,P,pp,F,A,false);
-	//print_free_fibers(G,pp,F,A,false);
-
-	//init_time_at(time,"# Begin improve",t);
-	//improve(G,P,pp,F,A);
-	//print_time(time,"# ... took :");
-	//display_results(G,P,pp,F,A,false);
-	//print_free_fibers(G,pp,F,A,false);
-
-
+	
 	//plot_freefibers("free_fiber_plot.txt",P,A);   
 	//time_line(G,F,A);
 

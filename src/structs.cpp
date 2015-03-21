@@ -295,11 +295,17 @@ void Assignment::assign(int j, int k, int g, const Gals& G, const Plates& P, con
 	// Assign (j,k)
 	int ip = P[j].ipass;
 	int q = TF[j][k];
-	if (q != -1) printf("### !!! ### DUPLICATE (j,k) = (%d,%d) assigned with g = %d and %d ---> information on first g lost \n",j,k,q,g);
+	if (q != -1) {
+		printf("### !!! ### DUPLICATE (j,k) = (%d,%d) assigned with g = %d and %d ---> information on first g lost \n",j,k,q,g);
+		myexit(1);
+	}
 	TF[j][k] = g;
 	// Assign (ipass,g)
 	pair p = PG[ip][g];
-	if (!p.isnull()) printf("### !!! ### DUPLICATE (ipass,g) = (%d,%d) assigned with (j,k) = (%d,%d) and (%d,%d) ---> information on first (j,k) lost \n",ip,g,p.f,p.s,j,k);
+	if (!p.isnull()) {
+		printf("### !!! ### DUPLICATE (ipass,g) = (%d,%d) assigned with (j,k) = (%d,%d) and (%d,%d) ---> information on first (j,k) lost \n",ip,g,p.f,p.s,j,k);
+		myexit(1);
+	}
 	PG[ip][g] = pair(j,k);
 	// Kinds
 	kinds[j][pp.spectrom[k]][G[g].id]++;
@@ -480,6 +486,13 @@ void Assignment::update_nobsv_tmp_for_one(int j) {
 	for (int k=0; k<Nfiber; k++) {
 		int g = TF[j][k];
 		if (g=!-1) nobsv_tmp[g] = nobsv[g];
+	}
+}
+
+void Assignment::update_once_obs(int j) {
+	for (int k=0; k<Nfiber; k++) {
+		int g = TF[j][k];
+		if (g=!-1) once_obs[g] = 1;
 	}
 }
 
