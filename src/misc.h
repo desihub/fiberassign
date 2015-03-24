@@ -22,14 +22,15 @@ class pair {
 	pair();
 	pair(int a, int b);
 	void setnull();
-	bool isnull();
-	void print_pair();
+	bool isnull() const;
+	void print_pair() const;
 };
 
 // List ------------------------------------------------------
 class List : public std::vector<int> {};
 class Dlist : public std::vector<double> {};
 class Plist : public std::vector<pair> {};
+List Null();
 List initList(int l, int val = 0);
 List initList(std::vector<int> l);
 List initList(int l[]);
@@ -39,6 +40,7 @@ void print_list(str s, const List& L);
 void print_list(str s, std::vector<str> L);
 void print_list_line(const List& L);
 void print_Dlist(str s, const Dlist& L);
+void print_Plist(str s, const Plist& L);
 bool isnull(const List& L); // Test if the list is null
 int sumlist(const List& L); // Sum of the list
 int max(const List& L);
@@ -48,6 +50,7 @@ List random_permut(int n); // Return a random permutation
 List random_permut(const List& L);
 void print_hist(str s, int i, List hist_petal, bool latex=false);
 void erase(int i, List& L); // Erase i th element
+void erase(int i, Plist& L); // Erase i th element
 List complementary(int size, const List& L); // Complementary list (provided L is a subset of [0,size-1])
 List sublist(int begin, int size, const List& L);
 
@@ -91,6 +94,7 @@ void myexception(std::exception& e); // Intel compiler needs this version too ..
 void error(str s);
 void deb(int a);
 void deb(int a, int b);
+void debl(int a);
 
 // To String --------------------------------------------------
 str f(int i); // int 1526879 -> const char* 1,526,879

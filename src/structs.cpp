@@ -329,6 +329,29 @@ void Assignment::unassign(int j, int k, int g, const Gals& G, const Plates& P, c
 	nobsv_tmp[g]++;
 }
 
+int Assignment::tf(int j, int k) const {
+	return TF[j][k];
+}
+
+void Assignment::verif(const Plates& P) const {
+	for(int ip=0; ip<Npass; ip++) {
+		for (int g=0; g<Ngal; g++) {
+			pair tf = PG[ip][g];
+			if (!tf.isnull() && TF[tf.f][tf.s]!=g) { printf("ERROR in verification of correspondance of galaxies !\n"); fl(); }
+		}
+	}
+	for(int j=0; j<Nplate; j++) {
+		for (int k=0; k<Nfiber; k++) {
+			int g = TF[j][k];
+			if (g!=-1) {
+				int f = PG[P[j].ipass][g].f;
+				int s = PG[P[j].ipass][g].s;
+				if (f!=j || s!=k) { printf("ERROR in verification of correspondance of tfs !\n"); fl(); }
+			}
+		}
+	}
+}
+
 bool Assignment::is_assigned_pg(int ip, int g) const {
 	//printf(("is_assigned"+p2s(ip,g)+siz(PG)).c_str());
 	return (PG[ip][g].f != -1);
@@ -336,9 +359,9 @@ bool Assignment::is_assigned_pg(int ip, int g) const {
 
 bool Assignment::is_assigned_tf(int j, int k) const { return (TF[j][k] != -1); }
 
-int Assignment::na(int begin, int end) {
+int Assignment::na(int begin, int size) const {
 	int cnt(0);
-	for (int j=begin; j<=end; j++) {
+	for (int j=begin; j<begin+size; j++) {
 		for (int k=0; k<Nfiber; k++) {
 			if (TF[j][k]!=-1) cnt++;
 		}
@@ -350,7 +373,10 @@ Plist Assignment::chosen_tfs(int g, int begin, int size) const {
 	Plist chosen;
 	for(int ip=0; ip<Npass; ip++) {
 		pair tf = PG[ip][g];
-		if (!tf.isnull() && tf.f>=begin && tf.f<=begin+size) chosen.push_back(tf);
+		if (!tf.isnull() && tf.f>=begin && tf.f<begin+size) {
+			if (TF[tf.f][tf.s]!=g) { printf("ERROR in chosen_tfs\n"); fl(); }
+			chosen.push_back(tf);
+		}
 	}
 	return chosen;
 }
@@ -376,7 +402,7 @@ Table Assignment::unused_fbp(const PP& pp) const {
 	return unused;
 }
 
-int Assignment::unused_f(int j) {
+int Assignment::unused_f(int j) const {
 	int unused(0);
 	for (int k=0; k<Nfiber; k++) if (!is_assigned_tf(j,k)) unused++;
 	return unused;
@@ -402,7 +428,7 @@ Table Assignment::used_by_kind(str kind, const Gals& G, const PP& pp, const Feat
 	return used;
 }
 
-int Assignment::num_obs(int g) {
+int Assignment::num_obs(int g) const {
 	int n(0);
 	for (int i=0; i<Npass; i++) if (!PG[i][g].isnull()) n++;
 	return n;
@@ -485,14 +511,14 @@ void Assignment::update_nobsv_tmp() {
 void Assignment::update_nobsv_tmp_for_one(int j) {
 	for (int k=0; k<Nfiber; k++) {
 		int g = TF[j][k];
-		if (g=!-1) nobsv_tmp[g] = nobsv[g];
+		if (g!=-1) nobsv_tmp[g] = nobsv[g];
 	}
 }
 
 void Assignment::update_once_obs(int j) {
 	for (int k=0; k<Nfiber; k++) {
 		int g = TF[j][k];
-		if (g=!-1) once_obs[g] = 1;
+		if (g!=-1) once_obs[g] = 1;
 	}
 }
 

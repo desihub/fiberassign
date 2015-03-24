@@ -19,11 +19,9 @@
 int Nplate; int MaxSS; int MaxSF; double PlateRadius; double Collide; double NeighborRad; double PatrolRad; double TotalArea; int Ngal; int MaxPrio; int MaxObs; int Categories; int Npass; int Nfiber; int MinUnused; int Npetal; int Nfbp;
 
 int main(int argc, char **argv) {
-	//std::cout << (false || true && true || false) << std::endl;
-	//std::cout << (false || true && true || false || false || true) << std::endl;
 	//// Initialization ---------------------------------------------------
-	check_args(argc);
 	srand48(1234); // Make sure we have reproducability
+	check_args(argc);
 	Time t,time; // t for global, time for local
 	init_time(t);
 
@@ -46,7 +44,7 @@ int main(int argc, char **argv) {
 
 	// Read galaxies
 	Gals G;
-	G = read_galaxies(argv[1],1); // ! Reads all galaxies iff arg2=1
+	G = read_galaxies(argv[1],atoi(argv[5])); // ! Reads all galaxies iff arg2=1
 	Ngal = G.size();
 	printf("# Read %s galaxies from %s \n",f(Ngal).c_str(),argv[1]);
 
@@ -93,7 +91,9 @@ int main(int argc, char **argv) {
 		int j = A.order[jj];
 		assign_fibers_for_one(j,G,P,pp,F,A,true);
 		improve2(1,"SF",G,P,pp,F,A,true);
-		// <-- here is the real observation moment
+		improve2(1,"SS",G,P,pp,F,A,true);
+		printf("  %s not assigned\n",f(Nfiber-A.na(j,1)).c_str());
+		// here is the real observation moment
 		A.update_once_obs(j);
 		A.update_nobsv_tmp_for_one(j);
 		A.next_plate++;
@@ -101,13 +101,15 @@ int main(int argc, char **argv) {
 	}
 	print_time(time,"# ... took :");
 	display_results(G,P,pp,F,A,false);
+	
+	A.verif(P);
 
 	init_time_at(time,"# Begin global assignment ------------",t);
 	assign_fibers(3000,G,P,pp,F,A,true);
 	print_time(time,"# ... took :");
 
 	init_time_at(time,"# Begin improve",t);
-	improve(2000,3000,G,P,pp,F,A,true);
+	improve(3000,G,P,pp,F,A,true);
 	print_time(time,"# ... took :");
 
 	init_time_at(time,"# Begin improve SF",t);
@@ -118,15 +120,16 @@ int main(int argc, char **argv) {
 	improve2(3000,"SS",G,P,pp,F,A,true);
 	print_time(time,"# ... took :");
 
-
+	A.verif(P);
 	init_time_at(time,"# Begin real time assignment",t);
-	deb(A.next_plate);
 	for (int jj=2000; jj<5000; jj++) {
-		printf(" - Plate %d : ",jj);
+		printf(" - Plate %d : ",jj); fl();
+		//A.verif(P);
 		int j = A.order[jj];
 		// here is observation time, we have then access to nobsv 
-		update_plan_from_one_obs(4999,G,P,pp,F,A);
+		printf("  %s not assigned\n",f(Nfiber-A.na(j,1)).c_str());
 		A.update_once_obs(j);
+		update_plan_from_one_obs(4999,G,P,pp,F,A);
 		A.update_nobsv_tmp_for_one(j);
 		A.next_plate++;
 	}
@@ -134,13 +137,12 @@ int main(int argc, char **argv) {
 	display_results(G,P,pp,F,A,false);
 
 
-	deb(A.next_plate);
 	init_time_at(time,"# Begin global assignment ------------",t);
 	assign_fibers(-1,G,P,pp,F,A,true);
 	print_time(time,"# ... took :");
 
 	init_time_at(time,"# Begin improve",t);
-	improve(5000,-1,G,P,pp,F,A,true);
+	improve(-1,G,P,pp,F,A,true);
 	print_time(time,"# ... took :");
 
 	init_time_at(time,"# Begin improve SF",t);
@@ -151,14 +153,14 @@ int main(int argc, char **argv) {
 	improve2(-1,"SS",G,P,pp,F,A,true);
 	print_time(time,"# ... took :");
 
-	deb(A.next_plate);
 	init_time_at(time,"# Begin real time assignment",t);
 	for (int jj=5000; jj<Nplate; jj++) {
-		printf(" - Plate %d : ",jj);
+		printf(" - Plate %d : ",jj); fl();
 		int j = A.order[jj];
-		// here is observation time, we have then access to nobsv 
-		update_plan_from_one_obs(Nplate-1,G,P,pp,F,A);
+		// here is observation time
+		printf("  %s not assigned\n",f(Nfiber-A.na(j,1)).c_str());
 		A.update_once_obs(j);
+		update_plan_from_one_obs(Nplate-1,G,P,pp,F,A);
 		A.update_nobsv_tmp_for_one(j);
 		A.next_plate++;
 	}

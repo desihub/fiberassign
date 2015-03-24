@@ -6,19 +6,19 @@ OBJ = macros.o misc.o structs.o global.o main.o
 all: $(OBJ)
 	$(CC) -o ../assign $(OBJ) $(CFLAGS)
 
-macros.o: macros.h macros.cpp
-	$(CC) -c macros.cpp $(CFLAGS)
-
-misc.o: macros.h misc.h misc.cpp
+misc.o: misc.h misc.cpp
 	$(CC) -c misc.cpp $(CFLAGS)
 
-structs.o: macros.h misc.h structs.h structs.cpp
+macros.o: misc.h macros.h macros.cpp
+	$(CC) -c macros.cpp $(CFLAGS)
+
+structs.o: misc.h macros.h structs.h structs.cpp
 	$(CC) -c structs.cpp $(CFLAGS)
 
-global.o: macros.h misc.h structs.h global.h global.cpp
+global.o: misc.h macros.h structs.h global.h global.cpp
 	$(CC) -c global.cpp $(CFLAGS)
 
-main.o: macros.h misc.h structs.h global.h main.cpp 
+main.o: misc.h macros.h structs.h global.h main.cpp 
 	$(CC) -c main.cpp $(CFLAGS)
 
 clean:

@@ -101,17 +101,19 @@ class Assignment {
 	~Assignment();
 	void assign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp);
 	void unassign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp);
+	int tf(int j, int k) const;
+	void verif(const Plates& P) const; // Verif mappings are right
 	bool is_assigned_pg(int ip, int g) const;
 	bool is_assigned_tf(int j, int k) const; 
-	int na(int begin=0, int end=Nplate-1); // Number of assignments within plates begin to end
+	int na(int begin=0, int size=Nplate) const; // Number of assignments within plates begin to begin+size
 	int nobs(int g, const Gals& G, const Feat& F, bool b=false) const; // Counts how many time ob should be observed else more. If b=true, return Maxobs for this kind
-	Plist chosen_tfs(int g, int begin=0, int size=Nplate-1) const; // Pairs (j,k) chosen by g in the Npass passes
+	Plist chosen_tfs(int g, int begin=0, int size=Nplate) const; // Pairs (j,k) chosen by g in the Npass passes
 	List unused_f() const;
-	int unused_f(int j);
+	int unused_f(int j) const;
 	Table unused_fbp(const PP& pp) const; // Unused fibers  by petal
 	int unused_fbp(int j, int k, const PP& pp) const; // Number of unassigned fibers of the petal corresponding to (j,k)
 	Table used_by_kind(str kind, const Gals& G, const PP& pp, const Feat& F) const;
-	int num_obs(int g); // How many times observed
+	int num_obs(int g) const; // How many times observed
 	int nkind(int j, int k, str kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const; // Number of fibers assigned to the kind "kind" on the petal of (j,k)
 	double get_proba(int i, const Gals& G, const Feat& F); // p(fake QSO | QSO) for example
 	Table infos_petal(int j, int pet, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const;

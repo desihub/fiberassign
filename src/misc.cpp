@@ -17,13 +17,15 @@
 pair::pair() {f = -1; s = -1;}
 pair::pair(int a, int b) {f = a; s = b;}
 void pair::setnull() {f = -1; s = -1;}
-bool pair::isnull() {
+bool pair::isnull() const {
 	if (f==-1 && s==-1) return true;
 	return false;
 }
-void pair::print_pair() {printf("(%d,%d) ",f,s); std::cout.flush();}
+void pair::print_pair() const {printf("(%d,%d) ",f,s); fl();}
 
 // List ------------------------------------------------------
+List Null() { List L; return L; }
+
 List initList(int l, int val) {
 	List L;
 	L.resize(l,val);
@@ -91,7 +93,8 @@ void print_list(str s, const List& L) {
 }
 
 void print_list(str s, std::vector<str> L) {
-	printf(s.c_str()); printf("\n"); int n = L.size();
+	printf("%s \n",s.c_str());
+	int n = L.size();
 	//if (n==0) { // doesn't want to be compiled... mystery
 		//printf("   ! Empty list\n"); 
 		//return;
@@ -113,6 +116,13 @@ void print_Dlist(str s, const Dlist& L) {
 	printf("%s \n",s.c_str());
 	int n = L.size();
 	for (int i=0; i<n; i++) printf("%5d : %.3f\n",i,L[i]);
+	printf("\n");
+}
+
+void print_Plist(str s, const Plist& L) {
+	printf("%s \n",s.c_str());
+	int n = L.size();
+	for (int i=0; i<n; i++) printf("%5d : (%d,%d)\n",i,L[i].f,L[i].s);
 	printf("\n");
 }
 
@@ -166,6 +176,8 @@ void print_hist(str s, int i, List hist_petal, bool latex) {
 }
 
 void erase(int i, List& L) { L.erase (L.begin()+i); }
+
+void erase(int i, Plist& L) { L.erase (L.begin()+i); }
 
 List complementary(int size, const List& L) {
 	List l = initList(size);
@@ -452,6 +464,10 @@ void deb(int a, int b) { // debug
 	std::cout << " " << a << "," << b << " " << std::endl;
 }
 
+void debl(int a) { // debug
+	std::cout << " " << a << std::flush;
+}
+
 // To String --------------------------------------------------
 str f(int i) { // int 1526879 -> const char* 1,526,879
 	std::stringstream ss;
@@ -525,8 +541,8 @@ str format(int size, str s) {
 
 // Other ------------------------------------------------------
 void check_args(int n) { // Check if the arguments of the executable are right
-	if (n != 5) {
-		std::cerr << "Usage: assign <ObjFile> <PlateFile> <FiberFile> <OutFile>" << std::endl;
+	if (n != 6) {
+		std::cerr << "Usage: assign <ObjFile> <PlateFile> <FiberFile> <OutFile> <Modulo galaxies>" << std::endl;
 		myexit(1);
 	}
 }
