@@ -455,7 +455,7 @@ void assign_fibers_for_one(int j, const Gals& G, const Plates& P, const PP& pp, 
 	}
 	printf(" %5s assignments\n",f(as).c_str()); fl();
 }
-
+ 
 // If there are galaxies discovered as fake for example, they won't be observed several times in the plan
 void update_plan_from_one_obs(int end, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A) {
 	int cnt(0);
