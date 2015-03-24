@@ -114,7 +114,7 @@ class Assignment {
 	int unused_fbp(int j, int k, const PP& pp) const; // Number of unassigned fibers of the petal corresponding to (j,k)
 	Table used_by_kind(str kind, const Gals& G, const PP& pp, const Feat& F) const;
 	int num_obs(int g) const; // How many times observed
-	int nkind(int j, int k, str kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const; // Number of fibers assigned to the kind "kind" on the petal of (j,k)
+	int nkind(int j, int k, str kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F, bool pet=false) const; // Number of fibers assigned to the kind "kind" on the petal of (j,k). If pet=true, we don't take k but the petal directly instead
 	double get_proba(int i, const Gals& G, const Feat& F); // p(fake QSO | QSO) for example
 	Table infos_petal(int j, int pet, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const;
 	List fibs_of_kind(str kind, int j, int pet, const Gals& G, const PP& pp, const Feat& F) const; // Sublist of fibers assigned to a galaxy of type kind for this petal

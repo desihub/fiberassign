@@ -102,39 +102,37 @@ int main(int argc, char **argv) {
 	print_time(time,"# ... took :");
 	display_results(G,P,pp,F,A,false);
 	
-	A.verif(P);
 
-	init_time_at(time,"# Begin global assignment ------------",t);
-	assign_fibers(3000,G,P,pp,F,A,true);
-	print_time(time,"# ... took :");
+	//init_time_at(time,"# Begin global assignment ------------",t);
+	//assign_fibers(3000,G,P,pp,F,A,true);
+	//print_time(time,"# ... took :");
 
-	init_time_at(time,"# Begin improve",t);
-	improve(3000,G,P,pp,F,A,true);
-	print_time(time,"# ... took :");
+	//init_time_at(time,"# Begin improve",t);
+	//improve(3000,G,P,pp,F,A,true);
+	//print_time(time,"# ... took :");
 
-	init_time_at(time,"# Begin improve SF",t);
-	improve2(3000,"SF",G,P,pp,F,A,true);
-	print_time(time,"# ... took :");
+	//init_time_at(time,"# Begin improve SF",t);
+	//improve2(3000,"SF",G,P,pp,F,A,true);
+	//print_time(time,"# ... took :");
 
-	init_time_at(time,"# Begin improve SS",t);
-	improve2(3000,"SS",G,P,pp,F,A,true);
-	print_time(time,"# ... took :");
+	//init_time_at(time,"# Begin improve SS",t);
+	//improve2(3000,"SS",G,P,pp,F,A,true);
+	//print_time(time,"# ... took :");
 
-	A.verif(P);
-	init_time_at(time,"# Begin real time assignment",t);
-	for (int jj=2000; jj<5000; jj++) {
-		printf(" - Plate %d : ",jj); fl();
-		//A.verif(P);
-		int j = A.order[jj];
-		// here is observation time, we have then access to nobsv 
-		printf("  %s not assigned\n",f(Nfiber-A.na(j,1)).c_str());
-		A.update_once_obs(j);
-		update_plan_from_one_obs(4999,G,P,pp,F,A);
-		A.update_nobsv_tmp_for_one(j);
-		A.next_plate++;
-	}
-	print_time(time,"# ... took :");
-	display_results(G,P,pp,F,A,false);
+	//init_time_at(time,"# Begin real time assignment",t);
+	//for (int jj=2000; jj<5000; jj++) {
+		//printf(" - Plate %d : ",jj); fl();
+		////A.verif(P);
+		//int j = A.order[jj];
+		//// here is observation time, we have then access to nobsv 
+		//printf("  %s not assigned\n",f(Nfiber-A.na(j,1)).c_str());
+		//A.update_once_obs(j);
+		//update_plan_from_one_obs(4999,G,P,pp,F,A);
+		//A.update_nobsv_tmp_for_one(j);
+		//A.next_plate++;
+	//}
+	//print_time(time,"# ... took :");
+	//display_results(G,P,pp,F,A,false);
 
 
 	init_time_at(time,"# Begin global assignment ------------",t);
@@ -154,7 +152,7 @@ int main(int argc, char **argv) {
 	print_time(time,"# ... took :");
 
 	init_time_at(time,"# Begin real time assignment",t);
-	for (int jj=5000; jj<Nplate; jj++) {
+	for (int jj=2000; jj<Nplate; jj++) {
 		printf(" - Plate %d : ",jj); fl();
 		int j = A.order[jj];
 		// here is observation time
@@ -166,8 +164,10 @@ int main(int argc, char **argv) {
 	}
 	print_time(time,"# ... took :");
 
+	A.verif(P);
 	display_results(G,P,pp,F,A,false,true);
 	print_free_fibers(G,pp,F,A,false);
+	printf("  %s assignments in total (%.4f %%)\n",f(A.na()).c_str(),percent(A.na(),Npetal*Nfiber));
 
 	//for (int i=1; i<=10; i++) {
 		//print_table("Petal "+i2s(i),A.infos_petal(1000*i,5,G,P,pp,F));

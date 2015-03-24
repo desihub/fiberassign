@@ -466,9 +466,7 @@ void update_plan_from_one_obs(int end, const Gals& G, const Plates&P, const PP& 
 		int g = A.TF[j0][k];
 		if (g!=-1 && A.nobsv_tmp[g]!=A.nobsv[g] && A.once_obs[g]) { // Only if once_obs, we delete all further assignment. obs!=obs_tmp means that the galaxy is a fake one for example (same priority but different goal)
 			Plist tfs = A.chosen_tfs(g,j0+1,n); // Begin at j0+1, because we can't change assignment at j0 (already watched)
-			int lim(tfs.size());
-			int it(0);
-			while (tfs.size()!=0 && it<lim) {
+			while (tfs.size()!=0) {
 				//print_Plist("Before",tfs); // Debug
 				int jp = tfs[0].f; int kp = tfs[0].s;
 				A.unassign(jp,kp,g,G,P,pp);
@@ -476,7 +474,6 @@ void update_plan_from_one_obs(int end, const Gals& G, const Plates&P, const PP& 
 				erase(0,tfs);
 				//print_Plist("After",tfs); // Debug
 				cnt++;
-				it++;
 			}
 		}
 	}
@@ -485,6 +482,11 @@ void update_plan_from_one_obs(int end, const Gals& G, const Plates&P, const PP& 
 }
 
 //For each petal, assign QSOs, LRGs, ELGs, ignoring SS and SF. Then if there are free fibers, try to assign them first to SS and then SF. Now if we don't have 10 SS and 40 SF in a petal, take SS and SF at random from those that are available to the petal and if their fiber is assigned to an ELG, remove that assignment and give it instead to the SS or SF.
+void replace(int kind, int p, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, bool tmp) {
+	int A.nkind(j,k,"SS",G,P,pp,F)>=MaxSS 
+	if (kind=="SS" && A.nkind(j,k,"SS",G,P,pp,F)>=MaxSS) return false;
+	while 
+}
  
 void new_assign_fibers(int next, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, bool tmp) {
 	int n = next==-1 ? Nplate-A.next_plate : next; // Not Nplate-A.next_plate+1
@@ -511,6 +513,7 @@ void new_assign_fibers(int next, const Gals& G, const Plates& P, const PP& pp, c
 				assign_fiber(j,k,G,P,pp,F,A,tmp,-1,no_reg);
 			}
 			// If no enough SS and SF, remove ELG an replace to SS-SF
+			if (kind=="SS" && A.nkind(j,k,"SS",G,P,pp,F)>=MaxSS) return false;
 		}
 		str next_str = next==-1 ? "all left" : f(next);
 		printf("  %s assignments on %s next plates\n",f(A.na()).c_str(),next_str.c_str());

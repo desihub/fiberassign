@@ -434,8 +434,9 @@ int Assignment::num_obs(int g) const {
 	return n;
 }
 
-int Assignment::nkind(int j, int k, str kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const {
-	return kinds[j][pp.spectrom[k]][F.id(kind)];
+int Assignment::nkind(int j, int k, str kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F, bool pet) const {
+	if (!pet) return kinds[j][pp.spectrom[k]][F.id(kind)];
+	else return kinds[j][k][F.id(kind)];
 	//List fibers = pp.fibs_of_same_pet(k);
 	//int cnt(0);
 	//for (int i=0; i<fibers.size(); i++) {
