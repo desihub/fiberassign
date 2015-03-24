@@ -485,7 +485,7 @@ void update_plan_from_one_obs(int end, const Gals& G, const Plates&P, const PP& 
 }
 
 //For each petal, assign QSOs, LRGs, ELGs, ignoring SS and SF. Then if there are free fibers, try to assign them first to SS and then SF. Now if we don't have 10 SS and 40 SF in a petal, take SS and SF at random from those that are available to the petal and if their fiber is assigned to an ELG, remove that assignment and give it instead to the SS or SF.
-
+ 
 void new_assign_fibers(int next, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, bool tmp) {
 	int n = next==-1 ? Nplate-A.next_plate : next; // Not Nplate-A.next_plate+1
 	List plates = sublist(A.next_plate,n,A.order);
