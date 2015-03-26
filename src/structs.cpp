@@ -271,6 +271,7 @@ List av_gals_of_kind(int kind, int j, int k, const Gals& G, const Plates& P, con
 	return L;
 }
 
+
 // Assignment -----------------------------------------------------------------------------
 Assignment::Assignment(const Gals& G, const Feat& F) {
 	TF = initTable(Nplate,Nfiber,-1);
@@ -475,14 +476,13 @@ Table Assignment::infos_petal(int j, int pet, const Gals& G, const Plates& P, co
 	return T;
 }
 
-List Assignment::fibs_of_kind(str kind, int j, int pet, const Gals& G, const PP& pp, const Feat& F) const {
+List Assignment::fibs_of_kind(int kind, int j, int pet, const Gals& G, const PP& pp, const Feat& F) const {
 	List L;
-	int id = F.id(kind);
 	List fibs = pp.fibers_of_sp[pet];
 	for (int kk=0; kk<Nfbp; kk++) {
 		int k = fibs[kk];
 		int g = TF[j][k];
-		if (g!=-1 && G[g].id==id) L.push_back(k);
+		if (g!=-1 && G[g].id==kind) L.push_back(k);
 	}
 	return L;
 }

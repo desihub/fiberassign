@@ -27,13 +27,16 @@ void collect_available_tilefibers(Gals& G, const Plates& P);
 void assign_fibers(int next, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, bool tmp=false);
 
 void improve(int next, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, bool tmp=false);
-void improve2(int next, str kind, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, bool tmp=false);
+
+void improve_from_kind(int next, str kind, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, bool tmp=false);
 
 void redistribute_tf(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A);
 
 void redistribute_g(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A);
 
 void redistribute_g_by_kind(str kind, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A);
+
+void new_assign_fibers(int next, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, bool tmp=false);
 
 // Assignment "for one" ---------------------------------------
 void assign_fibers_for_one(int j, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, bool tmp=false);
@@ -42,8 +45,12 @@ void update_plan_from_one_obs(int end, const Gals& G, const Plates&P, const PP& 
 
 // Other useful functions -------------------------------------
 Table conflicts(const Gals& G, const Plates& P, const PP& pp, const Assignment& A);
+
 void results_on_inputs(const Gals& G, const Plates& P, const Feat& F);
+
 void display_results(const Gals& G, const Plates &P, const PP& pp, const Feat& F, const Assignment& A, bool latex=false, bool tmp=false);
+
 void print_free_fibers(const Gals& G, const PP& pp, const Feat& F, const Assignment& A, bool latex=false);
+
 void plot_freefibers(str s, const Plates&P, const Assignment& A);
 #endif

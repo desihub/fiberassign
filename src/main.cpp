@@ -19,7 +19,7 @@
 int Nplate; int MaxSS; int MaxSF; double PlateRadius; double Collide; double NeighborRad; double PatrolRad; double TotalArea; int Ngal; int MaxPrio; int MaxObs; int Categories; int Npass; int Nfiber; int MinUnused; int Npetal; int Nfbp;
 
 int main(int argc, char **argv) {
-	//// Initialization ---------------------------------------------------
+	//// Initializations -------------------------------------------------
 	srand48(1234); // Make sure we have reproducability
 	check_args(argc);
 	Time t,time; // t for global, time for local
@@ -82,16 +82,17 @@ int main(int argc, char **argv) {
 
 	//results_on_inputs(G,P,F);
 
-	//// Assignment plate per plate -----------------------------------
+	//// Assignment ----------------------------------------------------
 	Assignment A(G,F);
 	// Order : verificate that passes are increasing
+	// Assign in a simple way firsts plates, and observe ----------------
 	init_time_at(time,"# Begin real time assignment",t);
 	for (int jj=0; jj<2000; jj++) {
 		printf(" - Plate %d : ",jj);
 		int j = A.order[jj];
 		assign_fibers_for_one(j,G,P,pp,F,A,true);
-		improve2(1,"SF",G,P,pp,F,A,true);
-		improve2(1,"SS",G,P,pp,F,A,true);
+		improve_from_kind(1,"SF",G,P,pp,F,A,true);
+		improve_from_kind(1,"SS",G,P,pp,F,A,true);
 		printf("  %s not assigned\n",f(Nfiber-A.na(j,1)).c_str());
 		// here is the real observation moment
 		A.update_once_obs(j);
@@ -101,56 +102,30 @@ int main(int argc, char **argv) {
 	}
 	print_time(time,"# ... took :");
 	display_results(G,P,pp,F,A,false);
-	
+
+	// Make a plan ----------------------------------------------------
+	init_time_at(time,"# Begin new global assignment ------------",t);
+	new_assign_fibers(-1,G,P,pp,F,A,true);
+	print_time(time,"# ... took :");
 
 	//init_time_at(time,"# Begin global assignment ------------",t);
-	//assign_fibers(3000,G,P,pp,F,A,true);
+	//assign_fibers(-1,G,P,pp,F,A,true);
 	//print_time(time,"# ... took :");
 
 	//init_time_at(time,"# Begin improve",t);
-	//improve(3000,G,P,pp,F,A,true);
+	//improve(-1,G,P,pp,F,A,true);
 	//print_time(time,"# ... took :");
 
 	//init_time_at(time,"# Begin improve SF",t);
-	//improve2(3000,"SF",G,P,pp,F,A,true);
+	//improve_from_kind(-1,"SF",G,P,pp,F,A,true);
 	//print_time(time,"# ... took :");
 
 	//init_time_at(time,"# Begin improve SS",t);
-	//improve2(3000,"SS",G,P,pp,F,A,true);
+	//improve2(-1,"SS",G,P,pp,F,A,true);
 	//print_time(time,"# ... took :");
 
-	//init_time_at(time,"# Begin real time assignment",t);
-	//for (int jj=2000; jj<5000; jj++) {
-		//printf(" - Plate %d : ",jj); fl();
-		////A.verif(P);
-		//int j = A.order[jj];
-		//// here is observation time, we have then access to nobsv 
-		//printf("  %s not assigned\n",f(Nfiber-A.na(j,1)).c_str());
-		//A.update_once_obs(j);
-		//update_plan_from_one_obs(4999,G,P,pp,F,A);
-		//A.update_nobsv_tmp_for_one(j);
-		//A.next_plate++;
-	//}
-	//print_time(time,"# ... took :");
-	//display_results(G,P,pp,F,A,false);
 
-
-	init_time_at(time,"# Begin global assignment ------------",t);
-	assign_fibers(-1,G,P,pp,F,A,true);
-	print_time(time,"# ... took :");
-
-	init_time_at(time,"# Begin improve",t);
-	improve(-1,G,P,pp,F,A,true);
-	print_time(time,"# ... took :");
-
-	init_time_at(time,"# Begin improve SF",t);
-	improve2(-1,"SF",G,P,pp,F,A,true);
-	print_time(time,"# ... took :");
-
-	init_time_at(time,"# Begin improve SS",t);
-	improve2(-1,"SS",G,P,pp,F,A,true);
-	print_time(time,"# ... took :");
-
+	// Assign one plate, real observation, update plan taking observation into account ----------------------------------------------------
 	init_time_at(time,"# Begin real time assignment",t);
 	for (int jj=2000; jj<Nplate; jj++) {
 		printf(" - Plate %d : ",jj); fl();
@@ -164,10 +139,12 @@ int main(int argc, char **argv) {
 	}
 	print_time(time,"# ... took :");
 
+	// Results ----------------------------------------------------
 	A.verif(P);
 	display_results(G,P,pp,F,A,false,true);
 	print_free_fibers(G,pp,F,A,false);
 	printf("  %s assignments in total (%.4f %%)\n",f(A.na()).c_str(),percent(A.na(),Npetal*Nfiber));
+
 
 	//for (int i=1; i<=10; i++) {
 		//print_table("Petal "+i2s(i),A.infos_petal(1000*i,5,G,P,pp,F));

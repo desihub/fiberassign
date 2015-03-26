@@ -169,8 +169,9 @@ int assign_fiber(int j, int k, const Gals& G, const Plates& P, const PP& pp, con
 
 // Assign fibers naively
 void assign_fibers(int next, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, bool tmp) {
-	int n = next==-1 ? Nplate-A.next_plate : next; // Not Nplate-A.next_plate+1
-	List plates = sublist(A.next_plate,n,A.order);
+	int j0 = A.next_plate;
+	int n = next==-1 ? Nplate-j0 : next; // Not Nplate-A.next_plate+1
+	List plates = sublist(j0,n,A.order);
 	List randPlates = random_permut(plates);
 	for (int jj=0; jj<n; jj++) {
 		int j = randPlates[jj];
@@ -181,7 +182,7 @@ void assign_fibers(int next, const Gals& G, const Plates& P, const PP& pp, const
 		}
 	}
 	str next_str = next==-1 ? "all left" : f(next);
-	printf("  %s assignments on %s next plates\n",f(A.na()).c_str(),next_str.c_str());
+	printf("  %s assignments on %s next plates\n",f(A.na(j0,next)).c_str(),next_str.c_str());
 }
 
 int best2(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, bool tmp) { // Can't take g
@@ -232,11 +233,7 @@ int improve_fiber(int begin, int next, int j, int k, const Gals& G, const Plates
 								A.assign(j,k,g,G,P,pp);
 								A.assign(jp,kp,best,G,P,pp);
 								return g;
-							}}}}
-
-			}
-		}
-	}
+							}}}}}}}
 	else return -1;
 }
 
@@ -345,7 +342,7 @@ int best4(int kind0, int j, int k, const Gals& G, const Plates& P, const PP& pp,
 	return best;
 }
 
-void improve2(int next, str kind, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, bool tmp) {
+void improve_from_kind(int next, str kind, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, bool tmp) {
 	int id = F.id(kind);
 	int j0 = A.next_plate;
 	int n = next==-1 ? Nplate-A.next_plate : next;
@@ -358,7 +355,7 @@ void improve2(int next, str kind, const Gals& G, const Plates&P, const PP& pp, c
 		for (int ppet=0; ppet<Npetal; ppet++) {
 			int p = randPetals[ppet];
 			// Take sublist of fibers assigned to kind, and unassigned ones
-			List fibskind = A.fibs_of_kind(kind,j,p,G,pp,F);
+			List fibskind = A.fibs_of_kind(id,j,p,G,pp,F);
 			List fibsunas = A.fibs_unassigned(j,p,G,pp,F);
 			for (int kk=0; kk<fibsunas.size(); kk++) {
 				// Take an unassigned tf and its available galaxies
@@ -378,8 +375,7 @@ void improve2(int next, str kind, const Gals& G, const Plates&P, const PP& pp, c
 								A.assign(j,kp,best,G,P,pp);
 								finished = true;
 								erase(kkp,fibskind);
-							}}}}}}
-	}
+							}}}}}}}
 	int na_end(A.na(j0,n));
 	printf("  %s more assignments (%.3f %% improvement)\n",f(na_end-na_start).c_str(),percent(na_end-na_start,na_start));
 }
@@ -467,8 +463,8 @@ void update_plan_from_one_obs(int end, const Gals& G, const Plates&P, const PP& 
 		if (g!=-1 && A.nobsv_tmp[g]!=A.nobsv[g] && A.once_obs[g]) { // Only if once_obs, we delete all further assignment. obs!=obs_tmp means that the galaxy is a fake one for example (same priority but different goal)
 			Plist tfs = A.chosen_tfs(g,j0+1,n); // Begin at j0+1, because we can't change assignment at j0 (already watched)
 			while (tfs.size()!=0) {
-				//print_Plist("Before",tfs); // Debug
 				int jp = tfs[0].f; int kp = tfs[0].s;
+				//print_Plist("Before",tfs); // Debug
 				A.unassign(jp,kp,g,G,P,pp);
 				improve_fiber(j0,n,jp,kp,G,P,pp,F,A,false,g);
 				erase(0,tfs);
@@ -482,15 +478,32 @@ void update_plan_from_one_obs(int end, const Gals& G, const Plates&P, const PP& 
 }
 
 //For each petal, assign QSOs, LRGs, ELGs, ignoring SS and SF. Then if there are free fibers, try to assign them first to SS and then SF. Now if we don't have 10 SS and 40 SF in a petal, take SS and SF at random from those that are available to the petal and if their fiber is assigned to an ELG, remove that assignment and give it instead to the SS or SF.
-void replace(int kind, int p, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, bool tmp) {
-	int A.nkind(j,k,"SS",G,P,pp,F)>=MaxSS 
-	if (kind=="SS" && A.nkind(j,k,"SS",G,P,pp,F)>=MaxSS) return false;
-	while 
+void replace(int old_kind, int new_kind, int j, int p, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, bool tmp) {
+	int m = A.nkind(j,p,F.kind[new_kind],G,P,pp,F,true);
+	List fibskindd = A.fibs_of_kind(old_kind,j,p,G,pp,F); // <-- ELG
+	List fibskind = random_permut(fibskindd);
+	while (m<MaxSS && fibskind.size()!=0) {
+		bool fin(false);
+		int k = fibskind[0];
+		List av_g = P[j].av_gals[k];
+		for (int gg=0; gg<av_g.size() && !fin; gg++) {
+			int g = av_g[gg];
+			if (G[g].id==new_kind && find_collision(j,k,g,pp,G,P,A)==-1 && A.nobs(g,G,F,tmp)>=1 && pp.spectrom[k]==p) {
+				int g0 = A.TF[j][k];
+				A.unassign(j,k,g0,G,P,pp);
+				A.assign(j,k,g,G,P,pp);
+				fin = true;
+				m++;
+			}
+		}
+		erase(0,fibskind);
+	}
 }
- 
+
 void new_assign_fibers(int next, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, bool tmp) {
-	int n = next==-1 ? Nplate-A.next_plate : next; // Not Nplate-A.next_plate+1
-	List plates = sublist(A.next_plate,n,A.order);
+	int j0 = A.next_plate;
+	int n = next==-1 ? Nplate-j0 : next; // Not Nplate-A.next_plate+1
+	List plates = sublist(j0,n,A.order);
 	List randPlates = random_permut(plates);
 	List no_kind; no_kind.push_back(F.id("SS")); no_kind.push_back(F.id("SF")); 
 	List no_reg; no_reg.push_back(F.id("QSO Ly-a")); no_reg.push_back(F.id("QSO Tracer"));  no_reg.push_back(F.id("LRG")); no_reg.push_back(F.id("ELG")); no_reg.push_back(F.id("Fake QSO")); no_reg.push_back(F.id("Fake LRG"));
@@ -513,13 +526,15 @@ void new_assign_fibers(int next, const Gals& G, const Plates& P, const PP& pp, c
 				assign_fiber(j,k,G,P,pp,F,A,tmp,-1,no_reg);
 			}
 			// If no enough SS and SF, remove ELG an replace to SS-SF
-			if (kind=="SS" && A.nkind(j,k,"SS",G,P,pp,F)>=MaxSS) return false;
+			replace(F.id("ELG"),F.id("SS"),j,p,G,P,pp,F,A,tmp);
+			replace(F.id("ELG"),F.id("SF"),j,p,G,P,pp,F,A,tmp);
+			replace(F.id("LRG"),F.id("SS"),j,p,G,P,pp,F,A,tmp);
+			replace(F.id("LRG"),F.id("SF"),j,p,G,P,pp,F,A,tmp);
 		}
-		str next_str = next==-1 ? "all left" : f(next);
-		printf("  %s assignments on %s next plates\n",f(A.na()).c_str(),next_str.c_str());
 	}
+	str next_str = next==-1 ? "all left" : f(next);
+	printf("  %s assignments on %s next plates\n",f(A.na(j0,next)).c_str(),next_str.c_str());
 }
-
 
 // Other useful functions ---------------------------------------------------------------------
 
