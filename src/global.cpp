@@ -480,9 +480,10 @@ void update_plan_from_one_obs(int end, const Gals& G, const Plates&P, const PP& 
 //For each petal, assign QSOs, LRGs, ELGs, ignoring SS and SF. Then if there are free fibers, try to assign them first to SS and then SF. Now if we don't have 10 SS and 40 SF in a petal, take SS and SF at random from those that are available to the petal and if their fiber is assigned to an ELG, remove that assignment and give it instead to the SS or SF.
 void replace(int old_kind, int new_kind, int j, int p, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, bool tmp) {
 	int m = A.nkind(j,p,F.kind[new_kind],G,P,pp,F,true);
-	List fibskindd = A.fibs_of_kind(old_kind,j,p,G,pp,F); // <-- ELG
+	List fibskindd = A.fibs_of_kind(old_kind,j,p,G,pp,F);
 	List fibskind = random_permut(fibskindd);
-	while (m<MaxSS && fibskind.size()!=0) {
+	int Max = new_kind==F.id("SS") ? MaxSS : MaxSF;
+	while (m<Max && fibskind.size()!=0) {
 		bool fin(false);
 		int k = fibskind[0];
 		List av_g = P[j].av_gals[k];
