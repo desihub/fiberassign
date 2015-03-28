@@ -124,44 +124,134 @@ They are build in order to be independent to each other, flexible, quickly under
 	\end{tabular}\end{center}
 \end{table}
 
-
-
-\section{Functions of global}
-{\tt plate\_dist(const double theta)} turns radians into mm on the focal plane, i.e. it is the plate scale as a function of angle.
-
-{\tt change\_coords} is a critical function that combines a galaxy and a particular plate to give the coordinates the galaxy will have in the focal plane when observed as with this tile. It's a rotation in angular coordinates. This ought to be rigorously checked.
-
-{\tt int find\_collision} returns the fiber number of a fiber that conflicts with tiblefiber (j,k).  Conflict is defined by two observed galaxies being separated by less than {\tt Collide}, current set to 2.1 mm.
-
-{\tt bool  ok\_assign\_g\_to\_jk\_nobs} checks to see if we can assign g to the tile-fiber (j,k), according to assigning rules described further
+\section{Functions}
+In algorithms, j stands for a plate, k for a fiber, p for a petal, g for a galaxy.
 
 \subsection{Collecting}
-{\tt collect\_galaxies\_for\_all} is written for multithreaded, and for each fiber of each tile, collects reachable galaxies. It uses kdTree and htmTree libraries written by Martin White, that as absolutelly necessary to do computations in a reasonnable time with supercomputers.
+{\tt collect\_galaxies\_for\_all} is multithreaded, and for each fiber of each tile, collects reachable galaxies. It uses kdTree and htmTree libraries written by Martin White, because it's absolutelly necessary to do computations in a reasonnable time with supercomputers.
 
 {\tt collect\_available\_tilefibers} computes, using the previous work, available tile-fibers for each galaxy (inverse map)
 
-\subsection{Assigning with all information}
-Here are algorithms that know all information and are able to compute the assignment crossing between plates (so unrealistic, but interesting to compare its "ideal" results to real assignment ones)
+\subsection{Useful sub-functions for global functions}
+{\tt plate\_dist} turns radians into mm on the focal plane, i.e. it is the plate scale as a function of angle.
 
-{\tt assign\_fibers} makes a first assignment of all fibers of all plates, in a shuffled order
+{\tt change\_coords} is a critical function that combines a galaxy and a particular plate to give the coordinates the galaxy will have in the focal plane when observed as with this tile. It's a rotation in angular coordinates. This ought to be rigorously checked.
 
-{\tt improve} improves the previously made first assignment. In a shuffled order, try to use unused fibers by reassigning some used one. Before : (jp,kp) - g ; (j,k) \& gp free. After : (j,k) - g \& (jp,kp) - gp.
+{\tt find\_collision} returns the fiber number of a fiber that conflicts with tiblefiber (j,k).  Conflict is defined by two observed galaxies being separated by less than {\tt Collide}, currently set to 2.1 mm.
 
-{\tt redistribute} redistrubte assignments trying to get at least 500 free fibers on each plate. We look first at plates with too few free fibers. Before : (j,k) - g, with Sp(k) too much used. After : (jreassign,kreassign) - g \& (j,k) free, such that (jreassign,kreassign) comes from most unused (ji,ki). Reassign if this is improvement.
+{\tt ok\_assign\_g\_to\_jk\_nobs and ok\_assign\_tot} checks to see if we can assign g to the tile-fiber (j,k), according to assigning rules described further
 
-\subsection{Assigning tile after tile}
-{\tt assign\_fibers\_for\_one} makes a first assignment of all fibers on one plate, with only information on previous watched galaxies
+{\tt find\_best (j,k)} finds the best reachable galaxy for this fiber, according to assignment rules
+
+\begin{algorithm}
+	\caption{Find best(j,k)}\label{euclid}
+	\begin{algorithmic}[1]
+		\State Initialize a fictive galaxy to -1, called best
+		\For {each galaxy available galaxy (for this fiber) g}
+		\If {g is better}
+		\State $best \gets g$
+		\EndIf
+		\EndFor
+	\end{algorithmic}
+\end{algorithm}
+
+{\tt improve\_fiber (j0,n,j,k)} if this fiber is unused, tries first to simply assign it, and if it doesn't work, tries to reassigning some used one (jp,kp) where $j0\le jp \le j0+n$. Before : (jp,kp) - g ; (j,k) \& gp free. After : (j,k) - g \& (jp,kp) - gp. The power of this function lies in the fact that j and jp can correspond to different passes.
+
+
+
+
+\subsection{Assigning making a plan}
+Here are algorithms that know all information and are able to compute the assignment crossing between plates. It does a plan with only information available by the catalog and by previous seen galaxies. One can use them with size 1 if one wants to do an assignment plate after plate for instance (which shouldn t be called a plan anymore).
+
+The tmp boolean in argument of those functions means that we use temporary information (so we don t have information on precise kind of galaxies, as in real life). We let it changeable in order to see in what extent results would be improved if we would know everything in advance.
+
+The "next" argument means that we treat (in a shuffle order) all next "next" plates (in the right order of tiles) in the plan we make. If it is $-1$, it will deal with all left plates.
+
+{\tt assign\_fibers} makes a first simple assignment plan : for each fiber assign to the best available galaxy
+
+\begin{algorithm}
+	\caption{Assign\_fibers(j0,n)}\label{euclid}
+	\begin{algorithmic}[1]
+		\For {each plate j from j0 to j0+n in a random order}
+		\For {each fiber k in a random order}
+		\State try to assign\_(j,k)
+		\EndFor
+		\EndFor
+	\end{algorithmic}
+\end{algorithm}
+
+{\tt new\_assign\_fibers} makes a first assignment plan trying to assign without SS nor SF, then trying to assign them replacing other kinds
+
+\begin{algorithm}
+	\caption{New\_assign\_fibers(j0,n)}\label{euclid}
+	\begin{algorithmic}[1]
+		\For {each plate j from j0 to j0+n in a random order}
+		\For {each petal p of this plate, in a random order}
+		\For {each fiber k of this petal, in a random order}
+		\State Try assign\_fiber(j,k) where SS and SF are not allowed
+		\EndFor
+		\For {each unassigned fiber k of this petal}
+		\State Try assign\_fiber(j,k) to only SS or SF
+		\EndFor
+		\If {Number of SS $\le$ 10}
+		\State Replace ELG (then LRG) to an SS until there are 10 SS
+		\EndIf
+		\If {Number of SF $\le$ 40}
+		\State Replace ELG (then LRG) to an SF until there are 40 SF
+		\EndIf
+		\EndFor
+		\EndFor
+	\end{algorithmic}
+\end{algorithm}
+
+{\tt improve} improves the plan applying improve\_fiber to all of the fibers that concern it
+
+{\tt improve\_from\_kind (kind)} for every petal, tries to assign unassigned fibers to SS or SF, to release an other fiber (formerly assigned to a SS or SF) that would be reassigned to a regular galaxy (kind is SS or SF when we call it)
+
+\begin{algorithm}
+	\caption{improve\_from\_kind (kind,j0,n)}\label{euclid}
+	\begin{algorithmic}[1]
+		\For {each plate j from j0 to j0+n in a random order}
+		\For {each petal p of this plate, in a random order}
+		\For {each unassigned fiber k}
+		\For {each available galaxies g of k}
+		\For {each fiber kp of p assigned to a galaxy of kind}
+		\If {no conflict}
+		\State Reassign kp to g
+		\State Assign k to a galaxy of kind kind
+		\EndIf
+		\EndFor
+		\EndFor
+		\EndFor
+		\EndFor
+		\EndFor
+	\end{algorithmic}
+\end{algorithm}
+
+{\tt update\_plan\_from\_one\_obs} updates the plan formerly made so that if for example on the previous observation we've watched at a fake QSO, it won't be observed anymore in case it was planed to be observed once or several times again. Released tile-fibers will then be tryed to be reassigned with improve\_fiber
+
+\begin{algorithm}
+	\caption{Update\_plan\_from\_one\_observation(j)}\label{euclid}
+	\begin{algorithmic}[1]
+		\For {each fiber k in a random order}
+		\If {k was assigned, in j, to an actually fake (or target) galaxy g}
+		\State unassign g from (jp,kp) in further plates in the current assignment plan, and try to reassign (jp,kp) (to a best galaxy)
+		\EndIf
+		\EndFor
+	\end{algorithmic}
+\end{algorithm}
+
 
 \subsection{Displaying results}
-{\tt void results\_on\_inputs} displays some statistics on treated input files (recall input features, print statistics on the number of fibers with 0 galaxies within reach, 1 galaxy within reach etc. out to 19 galaxies within reach ; number of available tile-fibers for a galaxy, ...)
+{\tt results\_on\_inputs} displays some statistics on treated input files (recall input features, print statistics on the number of fibers with 0 galaxies within reach, 1 galaxy within reach etc. out to 19 galaxies within reach ; number of available tile-fibers for a galaxy, ...)
 
-{\tt void display\_results} writes some statistics and provides the tex-formatted results to make Table \ref{tab:full14k}
+{\tt display\_results} writes some statistics and provides the tex-formatted results to make Table \ref{tab:full14k}
 
-{\tt print\_free\_fibers} print histograms on free fibers towards/regarding petals, for everything, for on ly SS and for only SF
-
-{\tt conflicts} returns a complete list of all conflicts display them, a list of triplets (j,k,kp). There are no conflicts engendered by our algorithms.
+{\tt print\_free\_fibers} print histograms on free fibers towards/regarding petals, for everything, for only SS and for only SF
 
 
+\subsection{Other not used anymore functions}
+They are redistribution function (redistribution of galaxies (simply or by kind), tile-fibers) used in previous development of the program. We let them here because they can be useful for further develop,ent of the code (redistributing assignment can add new degrees of freedom for an other improvement function execution for example).
 
 
 \section{Rules of assignment}
@@ -180,67 +270,17 @@ There are two way of assignment : either watch tile after tile and foresee the a
 
 The idea is to get most information possible in the first pass, assigning independently tile after tile, and then, after this first pass, make a plan for everything else, when we have information on most of the QSO and LRG (the only kinds we want to observe several times). The plan will be better that way, because we do less mistakes than if we would do it from the begining.
 
-In algorithms, j stands for a plate, k for a fiber, p for a petal, g for a galaxy.
-
-\begin{algorithm}
-	\caption{Assign for one plate}\label{euclid}
-	\begin{algorithmic}[1]
-		\Procedure{best}{$j,k$}
-		\State Initialize a fictive galaxy to -1, called best
-		\State Take all available galaxies for this fiber
-		\For {each galaxy g}
-		\If {g is better}
-		\State $best \gets g$
-		\EndIf
-		\EndFor
-		\EndProcedure
-
-		\Procedure{Assign for one plate}{$j$}
-		\For {each fiber k in a random order}
-		\State Take g = best(j,k)
-		\If {$g\ne-1$}
-		\State Assign g to (j,k)
-		\EndIf
-		\EndFor
-		\EndProcedure
-	\end{algorithmic}
-\end{algorithm}
-
-\begin{algorithm}
-	\caption{Algorithms for plan}\label{euclid}
-	\begin{algorithmic}[1]
-		\Procedure{Improve kind}{}
-		\For {each fiber k in a random order}
-		\State Take g = best(j,k)
-		\If {$g\ne-1$}
-		\State Assign g to (j,k)
-		\EndIf
-		\EndFor
-		\EndProcedure
-
-		\Procedure{Update\_plan\_from\_one\_observation}{$j$}
-		\For {each fiber k in a random order}
-		\If {k was assigned, in j, to an actually fake (or target) galaxy g}
-		\State unassign g from (jp,kp) in further plates in the current assignment plan, and try to reassign (jp,kp) (to a best galaxy)
-		\EndIf
-		\EndFor
-		\EndProcedure
-	\end{algorithmic}
-\end{algorithm}
-
-
-
-
 
 \section{Main}
  The calling sequence is {\tt assign  <galaxy> <plate\_centers> <fiberpos> <assignment>}. The last of these is the file to which we would write all the final galaxy assignments, but this is generally suppressed since we aren't using it yet.
  
+
  {\tt main} proceeds by taking important parameters, features of galaxies, reading in the galaxies to make G, the positions of the fibers on the plate to make pp, the plate centers and positioner locations to make P. 
  
-
 We then collect available galaxies for each fiber for each plate, and compute the inverse map.
  
-We next, tile after tile, do the assignment of galaxies, by calling {\tt assign\_fibers\_for\_one}.
+We next, tile after tile, do the assignment of galaxies. We have tried several strategies : making several plans, use simple assignment, use complexe one, improve several times, in several ways, etc... Here is the one which gives the best results.
+
 
 \begin{algorithm}
 	\caption{Assignment in main program}\label{euclid}
@@ -273,6 +313,7 @@ We next, tile after tile, do the assignment of galaxies, by calling {\tt assign\
 	\end{algorithmic}
 \end{algorithm}
 
+\section{Results}
 The results are then written using {\tt display\_results} and {\tt print\_free\_fibers}.
  
 \begin{table}[h]\begin{center}
@@ -304,6 +345,7 @@ The results are then written using {\tt display\_results} and {\tt print\_free\_
    7  &     270.213  &     270.213  &       14,00  &      19.300   \\
 \end{tabular}\end{center}
  \end{table}
+
 
 \section{Possible improvements}
 The optimum would be closer if we would replan globally every left tile after each update of information on galaxies (after observation). It's not possible because that would be long to compute (several hours).
