@@ -281,12 +281,14 @@ Assignment::Assignment(const Gals& G, const Feat& F) {
 	next_plate = 0;
 	kinds = initCube(Nplate,Npetal,Categories);
 	probas = initList(Categories);
+	once_obs = initList(Ngal);
 	nobsv = initList(Ngal);
 	nobsv_tmp = initList(Ngal);
-	for (int g=0; g<Ngal; g++) nobsv[g] = F.goal[G[g].id];
 	List l = F.maxgoal();
-	for (int g=0; g<Ngal; g++) nobsv_tmp[g] = l[G[g].id];
-	once_obs = initList(Ngal);
+	for (int g=0; g<Ngal; g++) {
+		nobsv[g] = F.goal[G[g].id];
+		nobsv_tmp[g] = l[G[g].id];
+	}
 }
 
 Assignment::~Assignment() {}
@@ -330,10 +332,6 @@ void Assignment::unassign(int j, int k, int g, const Gals& G, const Plates& P, c
 	nobsv_tmp[g]++;
 }
 
-int Assignment::tf(int j, int k) const {
-	return TF[j][k];
-}
-
 void Assignment::verif(const Plates& P) const {
 	for(int ip=0; ip<Npass; ip++) {
 		for (int g=0; g<Ngal; g++) {
@@ -372,6 +370,7 @@ int Assignment::na(int begin, int size) const {
 
 Plist Assignment::chosen_tfs(int g, int begin, int size) const {
 	Plist chosen;
+	if (Nplate<begin+size) { printf("ERROR in chosen_tfs - size\n"); fl(); }
 	for(int ip=0; ip<Npass; ip++) {
 		pair tf = PG[ip][g];
 		if (!tf.isnull() && tf.f>=begin && tf.f<begin+size) {
@@ -382,22 +381,22 @@ Plist Assignment::chosen_tfs(int g, int begin, int size) const {
 	return chosen;
 }
 
-List Assignment::unused_f() const {
-	List unused = initList(Nplate);
-	for(int j=0; j<Nplate; j++) {
-		for (int k=0; k<Nfiber; k++) {
-			if (!is_assigned_tf(j,k)) unused[j]++;
-		}
-	}
-	return unused;
-}
-
 Table Assignment::unused_fbp(const PP& pp) const {
 	Table unused = initTable(Nplate,Npetal);
 	List Sp = pp.spectrom;
 	for(int j=0; j<Nplate; j++) {
 		for (int k=0; k<Nfiber; k++) {
 			if (!is_assigned_tf(j,k)) unused[j][Sp[k]]++;
+		}
+	}
+	return unused;
+}
+
+List Assignment::unused_f() const {
+	List unused = initList(Nplate);
+	for(int j=0; j<Nplate; j++) {
+		for (int k=0; k<Nfiber; k++) {
+			if (!is_assigned_tf(j,k)) unused[j]++;
 		}
 	}
 	return unused;
@@ -427,12 +426,6 @@ Table Assignment::used_by_kind(str kind, const Gals& G, const PP& pp, const Feat
 		}
 	}
 	return used;
-}
-
-int Assignment::num_obs(int g) const {
-	int n(0);
-	for (int i=0; i<Npass; i++) if (!PG[i][g].isnull()) n++;
-	return n;
 }
 
 int Assignment::nkind(int j, int k, str kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F, bool pet) const {

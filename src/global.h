@@ -17,38 +17,26 @@
 #include        "misc.h"
 #include        "structs.h"
 
-// Collect -----------------------------------------------------
-void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Plates& P, const PP& pp, Time &t);
+// Collect -----------------------------------------------------------
+void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Plates& P, const PP& pp);
 
 void collect_available_tilefibers(Gals& G, const Plates& P);
 
-// Assignment "global" ----------------------------------------
-// Assign next "next" fibers
-void assign_fibers(int next, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, bool tmp=false);
+// Assignment functions ----------------------------------------------
+void simple_assign(const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int next=-1);
 
-void improve(int next, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, bool tmp=false);
+void new_assign_fibers(const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int next=-1);
 
-void improve_from_kind(int next, str kind, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, bool tmp=false);
+void improve(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int next=-1);
 
-void redistribute_tf(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A);
+void improve_from_kind(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, str kind, int next=-1);
 
-void redistribute_g(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A);
+void update_plan_from_one_obs(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int end);
 
-void redistribute_g_by_kind(str kind, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A);
-
-void new_assign_fibers(int next, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, bool tmp=false);
-
-// Assignment "for one" ---------------------------------------
-void assign_fibers_for_one(int j, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, bool tmp=false);
-
-void update_plan_from_one_obs(int end, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A);
-
-// Other useful functions -------------------------------------
-Table conflicts(const Gals& G, const Plates& P, const PP& pp, const Assignment& A);
-
+// Results functions --------------------------------------------------
 void results_on_inputs(const Gals& G, const Plates& P, const Feat& F);
 
-void display_results(const Gals& G, const Plates &P, const PP& pp, const Feat& F, const Assignment& A, bool latex=false, bool tmp=false);
+void display_results(const Gals& G, const Plates &P, const PP& pp, const Feat& F, const Assignment& A, bool latex=false);
 
 void print_free_fibers(const Gals& G, const PP& pp, const Feat& F, const Assignment& A, bool latex=false);
 

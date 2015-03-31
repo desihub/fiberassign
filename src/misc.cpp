@@ -247,18 +247,19 @@ void print_table(str s, const Table& T, bool latex) {
 	int cc = T[0].size();
 	for (int i=0; i<l; i++) if (T[i].size()!=cc) square = false;
 
-	List maxRow = initList(cc);
+	int max = max_row(T);
+	List maxRow = initList(max);
 	if (square) {
-		Table sizestr = initTable(l,cc);
+		Table sizestr = initTable(l,max);
 		for (int i=0; i<l; i++) {
-			for (int j=0; j<cc; j++) {
+			for (int j=0; j<max; j++) {
 				int sz = f(T[i][j]).size()+1;
 				sizestr[i][j] = sz<MAXSIZE ? sz : MAXSIZE;
 			}
 		}
 		maxRow = max_on_row(sizestr);
 	}
-	else maxRow = initList(cc,7);
+	else maxRow = initList(max,7);
 
 	str et = latex ? " &" : "|";
 	str slash = latex ? " \\\\ \n" : "\n";
@@ -270,7 +271,6 @@ void print_table(str s, const Table& T, bool latex) {
 
 	str space(6,' ');
 	printf(space.c_str());
-	int max = max_row(T);
 	for (int j=0; j<max; j++) {
 		str s = (j==max-1) ? slash : et;
 		printf("%s%s",format(maxRow[j],f(j)).c_str(),s.c_str());
@@ -346,12 +346,16 @@ void print_table(str s, const Ptable& T) {
 }
 
 List histogram(const Table& T, int interval) {
-	List hist; int l = T.size(); int c = T[0].size();
-	for(int i=0; i<l; i++) { 
+	List hist; int l = T.size();
+	for(int i=0; i<l; i++) {
+		int c = T[i].size();
 		for(int j=0; j<c; j++) {
-			int n = floor(T[i][j]/interval);
-			if (n>=hist.size()) { hist.resize(n+1); hist[n] = 0;}
-			hist[n]++;
+			int a = T[i][j];
+			if (a!=-1) {
+				int n = floor(a/interval);
+				if (n>=hist.size()) { hist.resize(n+1); hist[n] = 0;}
+				hist[n]++;
+			}
 		}
 	}
 	return hist;
