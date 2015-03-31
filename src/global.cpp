@@ -148,7 +148,8 @@ bool ok_assign_tot(int g, int j, int k, const Plates& P, const Gals& G, const PP
 
 // Assignment sub-functions -------------------------------------------------------------------------------------
 // There is not problem with the fact that we only have knowledge on previous assignment, because when we call nobs (the only moment it can raise a problem) there can't be crossings with this plate, because g can only be assigned once
-int find_best(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, bool as_tf=false, int no_g=-1, List no_kind=Null(), bool debug=false) {
+// Be very careful of (j,k) calling this function in other ! (if improvement function doesn't work anymore it's likely that bad argu,ent where called
+int find_best(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, bool as_tf=false, int no_g=-1, List no_kind=Null()) {
 	int best = -1; int mbest = -1; float pbest = 1e30;
 	List av_gals = P[j].av_gals[k];
 	List randGals = random_permut(av_gals.size());
@@ -157,44 +158,8 @@ int find_best(int j, int k, const Gals& G, const Plates& P, const PP& pp, const 
 		int prio = G[g].prio(F);
 		int m = A.nobs(g,G,F);
 		bool tfb = as_tf ? !A.is_assigned_tf(j,k) : true;
-		if (debug) {
-			str kind = G[g].kind(F);
-			//debl(tfb);
-			//debl(!(P[j].ipass==Npass-1 && !(kind=="ELG" || kind=="SS" || kind=="SF")));
-			debl(find_collision(j,k,g,pp,G,P,A)==-1);
-			//debl(!(kind=="SS" && A.nkind(j,k,"SS",G,P,pp,F)>=MaxSS));
-			debl(ok_assign_g_to_jk(g,j,k,P,G,pp,F,A));
-			debl(!A.is_assigned_pg(P[j].ipass,g));
-			//debl(!isfound(G[g].id,no_kind));
-			debl(A.nobs(g,G,F));
-			//debl(A.once_obs[g]);
-			//debl(prio<pbest);
-			//debl(m>mbest);
-			//debl(tfb && ok_assign_g_to_jk(g,j,k,P,G,pp,F,A) && !A.is_assigned_pg(P[j].ipass,g) && A.nobs(g,G,F)>=1 && g!=no_g && !isfound(G[g].id,no_kind));
-			//debl(g);
-			printf(" -");
-		}
 		if (tfb && ok_assign_g_to_jk(g,j,k,P,G,pp,F,A) && !A.is_assigned_pg(P[j].ipass,g) && A.nobs(g,G,F)>=1 && g!=no_g && !isfound(G[g].id,no_kind)) {
 			if (prio<pbest || A.once_obs[g] && m>mbest) { // Then g!=-1 because prio sup pbest
-				best = g;
-				pbest = prio;
-				mbest = m;
-			}
-		}
-	}
-	return best;
-}
-
-int best2(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) { // Can't take g
-	int best = -1; int mbest = -1; float pbest = 1e30;
-	List av_gals = P[j].av_gals[k];
-	List randGals = random_permut(av_gals.size());
-	for (int gg=0; gg<av_gals.size(); gg++) {
-		int g = av_gals[randGals[gg]];
-		int prio = G[g].prio(F);
-		int m = A.nobs(g,G,F);
-		if (ok_assign_g_to_jk(g,j,k,P,G,pp,F,A) && !A.is_assigned_pg(P[j].ipass,g) && A.nobs(g,G,F)>=1) {
-			if (prio<pbest || m>mbest) {
 				best = g;
 				pbest = prio;
 				mbest = m;
@@ -228,8 +193,9 @@ int improve_fiber(int begin, int next, int j, int k, const Gals& G, const Plates
 						for (int p=0; p<tfs.size(); p++) {
 							int jp = tfs[p].f;
 							int kp = tfs[p].s; // (jp,kp) currently assigned to galaxy g
-							//int best = find_best(j,k,G,P,pp,F,A,false,-1,Null(),false); // best!=g because !A.assigned_pg(best)
-							int best = best2(j,k,G,P,pp,F,A); // best!=g because !A.assigned_pg(best)
+							// FIND BEST JP KP !!!
+							int best = find_best(jp,kp,G,P,pp,F,A,false,-1,Null()); // best!=g because !A.assigned_pg(best)
+							//int best = best2(j,k,G,P,pp,F,A); // best!=g because !A.assigned_pg(best)
 							if (best!=-1 &&(P[jp].ipass==P[j].ipass || !A.is_assigned_pg(P[j].ipass,g))) { // If j and jp are not on the same ip, g has to be unassgned
 								// Modify assignment
 								A.unassign(jp,kp,g,G,P,pp);
@@ -253,7 +219,7 @@ int improve_fiber_from_kind(int id, int j, int k, const Gals& G, const Plates&P,
 				for (int kkp=0; kkp<fibskind.size() && !finished; kkp++) {
 					int kp = fibskind[kkp];
 					int gp = A.TF[j][kp];
-					int best = find_best(j,k,G,P,pp,F,A,false,-1,no_kind);
+					int best = find_best(j,kp,G,P,pp,F,A,false,-1,no_kind);
 					if (best!=-1) {
 						A.unassign(j,kp,gp,G,P,pp);
 						A.assign(j,k,g,G,P,pp);
@@ -336,7 +302,7 @@ void improve_from_kind(const Gals& G, const Plates&P, const PP& pp, const Feat& 
 						for (int kkp=0; kkp<fibskind.size() && !finished; kkp++) {
 							int kp = fibskind[kkp];
 							int gp = A.TF[j][kp];
-							int best = find_best(j,k,G,P,pp,F,A,false,-1,no_kind);
+							int best = find_best(j,kp,G,P,pp,F,A,false,-1,no_kind);
 							if (best!=-1) {
 								A.unassign(j,kp,gp,G,P,pp);
 								A.assign(j,k,g,G,P,pp);

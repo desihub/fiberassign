@@ -101,9 +101,9 @@ int main(int argc, char **argv) {
 
 	// Make a plan ----------------------------------------------------
 	//new_assign_fibers(G,P,pp,F,A,-1,true);
-	simple_assign(G,P,pp,F,A,1000);
-	improve(G,P,pp,F,A,1000);
-	//improve_from_kind(G,P,pp,F,A,"SF");
+	simple_assign(G,P,pp,F,A);
+	improve(G,P,pp,F,A);
+	improve_from_kind(G,P,pp,F,A,"SF");
 	improve_from_kind(G,P,pp,F,A,"SS");
 	A.verif(P);
 
@@ -116,7 +116,7 @@ int main(int argc, char **argv) {
 		improve_from_kind(G,P,pp,F,A,"SS",1);
 		// here is observation time
 		printf("  %s not assigned\n",f(Nfiber-A.na(j,1)).c_str());
-		update_plan_from_one_obs(G,P,pp,F,A,1000);
+		update_plan_from_one_obs(G,P,pp,F,A,Nplate-1);
 		A.next_plate++;
 	}
 	print_time(time,"# ... took :");
