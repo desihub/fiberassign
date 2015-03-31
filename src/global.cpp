@@ -341,11 +341,10 @@ void update_plan_from_one_obs(const Gals& G, const Plates&P, const PP& pp, const
 			int jp = tfs[0].f; int kp = tfs[0].s;
 			//print_Plist("Before",tfs); // Debug
 			A.unassign(jp,kp,g,G,P,pp);
-			int g = -1;
-			g = improve_fiber(j0+1,n-1,jp,kp,G,P,pp,F,A,g);
-			if (g==-1) g = improve_fiber_from_kind(F.id("SF"),jp,kp,G,P,pp,F,A);
-			if (g==-1) g = improve_fiber_from_kind(F.id("SS"),jp,kp,G,P,pp,F,A);
-			// ALSO TRY WITH IMPROVE FROM KIND
+			int ggg = -1;
+			ggg = improve_fiber(j0+1,n-1,jp,kp,G,P,pp,F,A,g);
+			//if (ggg==-1) ggg = improve_fiber_from_kind(F.id("SF"),jp,kp,G,P,pp,F,A);
+			//if (ggg==-1) ggg = improve_fiber_from_kind(F.id("SS"),jp,kp,G,P,pp,F,A);
 			erase(0,tfs);
 			//print_Plist("After",tfs); // Debug
 			cnt++;

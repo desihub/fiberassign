@@ -81,7 +81,29 @@ int main(int argc, char **argv) {
 	//// Assignment ||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 	Assignment A(G,F);
 	print_time(t,"# Start assignment at : ");
-	//Assign in a simple way firsts plates, and observe ----------------
+	// Make a plan ----------------------------------------------------
+	//new_assign_fibers(G,P,pp,F,A,-1,true);
+	simple_assign(G,P,pp,F,A,2000);
+	improve(G,P,pp,F,A,2000);
+	improve_from_kind(G,P,pp,F,A,"SF",2000);
+	improve_from_kind(G,P,pp,F,A,"SS",2000);
+	A.verif(P);
+
+	// Apply and update the plan --------------------------------------
+	init_time_at(time,"# Begin real time assignment",t);
+	for (int jj=0; jj<2000; jj++) {
+		int j = A.next_plate;
+		printf(" - Plate %d : ",j); fl();
+		//improve_from_kind(G,P,pp,F,A,"SF",1);
+		//improve_from_kind(G,P,pp,F,A,"SS",1);
+		// here is observation time
+		printf("        %s not assigned\n",f(Nfiber-A.na(j,1)).c_str());
+		update_plan_from_one_obs(G,P,pp,F,A,1999);
+		A.next_plate++;
+	}
+	print_time(time,"# ... took :");
+
+	////Assign in a simple way firsts plates, and observe ----------------
 		//init_time_at(time,"# Begin real time assignment",t);
 	//for (int jj=0; jj<2000; jj++) {
 		//int j = A.next_plate;
@@ -89,7 +111,7 @@ int main(int argc, char **argv) {
 		//simple_assign(G,P,pp,F,A,1); // Assign for 1 plate
 		//improve_from_kind(G,P,pp,F,A,"SF",1);
 		//improve_from_kind(G,P,pp,F,A,"SS",1);
-		//printf("  %s not assigned\n",f(Nfiber-A.na(j,1)).c_str());
+		//printf("        %s not assigned\n",f(Nfiber-A.na(j,1)).c_str());
 		//// here is the real observation moment
 		//A.update_once_obs(j);
 		//A.update_nobsv_tmp_for_one(j);
@@ -97,7 +119,7 @@ int main(int argc, char **argv) {
 		//if (A.unused_f(j)>500) {}
 	//}
 	//print_time(time,"# ... took :");
-	//display_results(G,P,pp,F,A,false);
+	//display_results(G,P,pp,F,A,true);
 
 	// Make a plan ----------------------------------------------------
 	//new_assign_fibers(G,P,pp,F,A,-1,true);
@@ -109,13 +131,13 @@ int main(int argc, char **argv) {
 
 	// Apply and update the plan --------------------------------------
 	init_time_at(time,"# Begin real time assignment",t);
-	for (int jj=0; jj<Nplate; jj++) {
+	for (int jj=2000; jj<Nplate; jj++) {
 		int j = A.next_plate;
 		printf(" - Plate %d : ",j); fl();
-		improve_from_kind(G,P,pp,F,A,"SF",1);
-		improve_from_kind(G,P,pp,F,A,"SS",1);
+		//improve_from_kind(G,P,pp,F,A,"SF",1);
+		//improve_from_kind(G,P,pp,F,A,"SS",1);
 		// here is observation time
-		printf("  %s not assigned\n",f(Nfiber-A.na(j,1)).c_str());
+		printf("        %s not assigned\n",f(Nfiber-A.na(j,1)).c_str());
 		update_plan_from_one_obs(G,P,pp,F,A,Nplate-1);
 		A.next_plate++;
 	}
@@ -127,9 +149,9 @@ int main(int argc, char **argv) {
 	print_free_fibers(G,pp,F,A,true);
 	printf("  %s assignments in total (%.4f %%)\n",f(A.na()).c_str(),percent(A.na(),Nplate*Nfiber));
 
-	for (int i=1; i<=10; i++) {
-		print_table("Petal "+i2s(i),A.infos_petal(1000*i,5,G,P,pp,F));
-	}
+	//for (int i=1; i<=10; i++) {
+		//print_table("Petal "+i2s(i),A.infos_petal(1000*i,5,G,P,pp,F));
+	//}
 	//plot_freefibers("free_fiber_plot.txt",P,A);   
 	print_time(t,"# Finished !... in");
 	return(0);

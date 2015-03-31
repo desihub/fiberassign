@@ -1,4 +1,9 @@
-\documentclass{article}
+\documentclass[10pt]{extarticle}
+%\usepackage[7pt]{moresize}
+%\fontfamily{<familyname>}\selectfont
+\renewcommand{\sfdefault}{phv}
+\usepackage{anyfontsize}
+\usepackage{authblk}
 \usepackage{graphicx}
 \usepackage{graphics}
 \usepackage{multicol}
@@ -7,6 +12,9 @@
 \usepackage{amsmath}
 \usepackage{algorithm}
 \usepackage[noend]{algpseudocode}
+\usepackage[T1]{fontenc}          %% permet d'utiliser les caractères accentués
+\usepackage[utf8]{inputenc} %% permet d'utiliser les caractères accentué
+\usepackage{float}
 
 \newcommand\Algphasee[1]{%
 \Statex\hspace*{-\algorithmicindent}\textbf{#1}%
@@ -35,14 +43,37 @@
 \usepackage{geometry}
 \geometry{hscale=0.85,vscale=0.85,centering}
 \title{Description of fiber assignment code for Mocks}
-\author{Robert Cahn and Louis Garrigue}
+%\author{Robert Cahn and Louis Garrigue}
+\author[1]{Robert N. Cahn\thanks{rncahn@lbl.gov}}
+\author[2]{Louis Garrigue\thanks{louis.garrigue@ens.fr}}
+\affil[1]{Department of Cosmological Physics, LBNL, Berkeley}
+\affil[2]{Département de physique, École normale supérieure, Paris}
 \date{\today}
 
 \begin{document}
+%\begin{titlepage}
+%\end{titlepage}
+
+
 \maketitle
+\begin{center}
+  \includegraphics[width = 20mm]{logodesi.jpg} \hfill
+  \includegraphics[width = 20mm]{logoens.png} \hfill
+  \includegraphics[width = 20mm]{logolbl.jpeg}
+\end{center}
+
+\section{Rules for fiber assignment}
+We know the repartition of matter (by repartition of H matter) by pics.
+The original catalog of 50M galaxies has only information on the position and the type of the galaxy, which is LRG, ELG or QSO. Those information were given by a previous survey, only based on colors, the redshift wasn't then computed. But there are different types of each one. QSO can be $Ly-\alpha$, target or fake (actually fake ones can be stars for example). A python code generates the file of galaxies, simulating with appropriate probabilities each type, taking into account the fact that there are correlations between positions of galaxies (accordingly with BAO and gravition). When we watch at a QSO and we see that it's a fake or a target, we don't watch at it anymore. But if it's a real one, we try to see it 5 times if it is possible.
+The absorption spectrum shows a pic at $\lambda = 1216 Å$. We can deduced the redshift because we receive a wavelenght $\lambda(1+z)$. As spectrometers can only see wavelenghts in the range 380 nm (under, no enough energy is received) - 980 nm, the minimum redshift we can reach is 2.2.
+At first, there was as code written by Martin White then Robert Cahn that did an assignment of tilefibers - galaxies in a global way : naïve assignment, improvement (try to reassign some fibers to other ones to assign free ones) and redistribution (do not assign more, but it's to have a better repartition of free fibers on each petal).
+We have to avoid correlation not mastered. That's why we don't (at first sight), when we take a new tile, associate 50 free fibers to regions of low QSO density. We would rather assign until there are only 50 free fibers left.
+We have to reserve 10 fibers by petal to Standard Stars and 40 to Sky Fibers.
+We do the compuation in real time. That means that we do it tile by tile. We can't access the information of all the galaxies because we only have past watched galaxies information. That adds a new constrain. So I rewrote algorithms so that they would compute an optimal assignment for one plate, knowing information on previous one assignments, and knowing information on previously watched galaxies.
+
 
 \section{Introduction}
-
+\begin{multicols}{2}
 Martin White developed C++ code for fiber assignment over the full 14k sq. deg. footprint.  We first modified Martin's code to incorporate features from Robert's python code, which ran on a restricted 480 sq. deg.. We included the improvement and redistribution steps, which switches fiber assignments to increase the number of galaxies observed. We then adapted the code to compute assignments not globally anymore "knowing all information on galaxies" but plate after plate, as in real experiment.
 The samples are taken from Martin's mocks in stored on NERSC at $/project/projectdirs/desi/mocks/preliminary/$.  From these files we create a single file containing the appropriate mix of ELG, LRG, QSO, SS (Standard Stars) and SF (Sky Fibers) using the python script in svn $/code/survey/fiberassignment/FA\_Bob/trunk/bin/make\_catalog\_rnc.py$.  In the same place there is python code to produce a mixture of galaxies without any correlations, but with the correct dn/dz.  
   
@@ -61,7 +92,7 @@ The samples are taken from Martin's mocks in stored on NERSC at $/project/projec
   We summarize here the various components of the code to facilitate their modification later.
 Here are some features on input galaxies simulated catalog :
 
-\begin{table}\begin{center}
+\begin{table}[H]\begin{center}
 	\caption{Characteristics of galaxy samples as set in make\_catalog\_rnc.py}\label{tab:characteristics}
 	\begin{tabular}{lcccr}\\ \hline
 		Kind&Id&Priority&Nobs&Density/sq.deg.\\ \hline
@@ -105,10 +136,11 @@ They are defined at the begining of the file main.
 \section{Classes and structures}
 They are build in order to be independent to each other, flexible, quickly understandable, in a logical way, and with no redundant information.
 
-\begin{table}\begin{center}
+\end{multicols}
+\begin{table}[H]\begin{center}
 	\caption{Classes and structures}\label{tab:structures}
 	\begin{tabular}{|l|l|p{12cm}|}\\ \hline
-		Structure name & Meaning & Description \\ \hline\hline
+		Structure name & Meaning & Description \\ \hline \hline
 
 		Feat & Features of galaxies & Initialized in the main function, memories priorities, number of observations wished, and types of different galaxies.\\ \hline
 
@@ -123,6 +155,7 @@ They are build in order to be independent to each other, flexible, quickly under
 		Assignment & An entire assignment & Carries maping of tile-fibers to galaxies, its inverse, galaxies to tile-fibers, and the cube (3d-matrix) of assigned fibers for a kind, a petal and a plate (useful to have fast computations).\\ \hline
 	\end{tabular}\end{center}
 \end{table}
+\begin{multicols}{2}
 
 \section{Functions}
 In algorithms, j stands for a plate, k for a fiber, p for a petal, g for a galaxy.
@@ -143,7 +176,7 @@ In algorithms, j stands for a plate, k for a fiber, p for a petal, g for a galax
 
 {\tt find\_best (j,k)} finds the best reachable galaxy for this fiber, according to assignment rules
 
-\begin{algorithm}
+\begin{algorithm}[H]
 	\caption{Find best(j,k)}\label{euclid}
 	\begin{algorithmic}[1]
 		\State Initialize a fictive galaxy to -1, called best
@@ -155,26 +188,47 @@ In algorithms, j stands for a plate, k for a fiber, p for a petal, g for a galax
 	\end{algorithmic}
 \end{algorithm}
 
+{\tt assign\_fiber(j,k)} tries to assign this fiber using find\_best
+
 {\tt improve\_fiber (j0,n,j,k)} if this fiber is unused, tries first to simply assign it, and if it doesn't work, tries to reassigning some used one (jp,kp) where $j0\le jp \le j0+n$. Before : (jp,kp) - g ; (j,k) \& gp free. After : (j,k) - g \& (jp,kp) - gp. The power of this function lies in the fact that j and jp can correspond to different passes.
 
-
+\begin{algorithm}[H]
+	\caption{Improve\_fiber(j0,n,j,k)}\label{euclid}
+	\begin{algorithmic}[1]
+		\If {k is not assigned}
+		\State try to assign\_(j,k)
+		\If {k couldn't just be assigned}
+		\For {each available galaxy g}
+		\If {it's possible to assign g with k}
+		\For {each chosen tile-fibers (jp,kp) which choosed g (where $j0\le jp \le j0+n$)}
+		\State $gp\leftarrow find\_best(jp,kp)$
+		\If {$gp \ne -1$}
+		\State Unassign $(jp,kp) \longleftrightarrow g$
+		\State Assign $(j,k) \longleftrightarrow g$
+		\State Assign $(jp,kp) \longleftrightarrow gp$
+		\EndIf
+		\EndFor
+		\EndIf
+		\EndFor
+		\EndIf
+		\EndIf
+	\end{algorithmic}
+\end{algorithm}
 
 
 \subsection{Assigning making a plan}
 Here are algorithms that know all information and are able to compute the assignment crossing between plates. It does a plan with only information available by the catalog and by previous seen galaxies. One can use them with size 1 if one wants to do an assignment plate after plate for instance (which shouldn t be called a plan anymore).
 
-The tmp boolean in argument of those functions means that we use temporary information (so we don t have information on precise kind of galaxies, as in real life). We let it changeable in order to see in what extent results would be improved if we would know everything in advance.
-
 The "next" argument means that we treat (in a shuffle order) all next "next" plates (in the right order of tiles) in the plan we make. If it is $-1$, it will deal with all left plates.
 
-{\tt assign\_fibers} makes a first simple assignment plan : for each fiber assign to the best available galaxy
+{\tt simple\_assign} makes a first simple assignment plan : for each fiber assign to the best available galaxy
 
-\begin{algorithm}
-	\caption{Assign\_fibers(j0,n)}\label{euclid}
+\begin{algorithm}[H]
+	\caption{Simple\_assign(j0,n)}\label{euclid}
 	\begin{algorithmic}[1]
 		\For {each plate j from j0 to j0+n in a random order}
 		\For {each fiber k in a random order}
-		\State try to assign\_(j,k)
+		\State try to assign\_fiber(j,k)
 		\EndFor
 		\EndFor
 	\end{algorithmic}
@@ -182,7 +236,7 @@ The "next" argument means that we treat (in a shuffle order) all next "next" pla
 
 {\tt new\_assign\_fibers} makes a first assignment plan trying to assign without SS nor SF, then trying to assign them replacing other kinds
 
-\begin{algorithm}
+\begin{algorithm}[H]
 	\caption{New\_assign\_fibers(j0,n)}\label{euclid}
 	\begin{algorithmic}[1]
 		\For {each plate j from j0 to j0+n in a random order}
@@ -208,8 +262,8 @@ The "next" argument means that we treat (in a shuffle order) all next "next" pla
 
 {\tt improve\_from\_kind (kind)} for every petal, tries to assign unassigned fibers to SS or SF, to release an other fiber (formerly assigned to a SS or SF) that would be reassigned to a regular galaxy (kind is SS or SF when we call it)
 
-\begin{algorithm}
-	\caption{improve\_from\_kind (kind,j0,n)}\label{euclid}
+\begin{algorithm}[H]
+	\caption{Improve\_from\_kind (kind,j0,n)}\label{euclid}
 	\begin{algorithmic}[1]
 		\For {each plate j from j0 to j0+n in a random order}
 		\For {each petal p of this plate, in a random order}
@@ -230,13 +284,16 @@ The "next" argument means that we treat (in a shuffle order) all next "next" pla
 
 {\tt update\_plan\_from\_one\_obs} updates the plan formerly made so that if for example on the previous observation we've watched at a fake QSO, it won't be observed anymore in case it was planed to be observed once or several times again. Released tile-fibers will then be tryed to be reassigned with improve\_fiber
 
-\begin{algorithm}
-	\caption{Update\_plan\_from\_one\_observation(j)}\label{euclid}
+\begin{algorithm}[H]
+	\caption{Update\_plan\_from\_one\_observation(j0,end\_plan)}\label{euclid}
 	\begin{algorithmic}[1]
-		\For {each fiber k in a random order}
-		\If {k was assigned, in j, to an actually fake (or target) galaxy g}
-		\State unassign g from (jp,kp) in further plates in the current assignment plan, and try to reassign (jp,kp) (to a best galaxy)
-		\EndIf
+		\State get the list of galaxies watched by this plate that are discovered fake or target
+		\For {each of those galaxies g}
+		\State get the list of planed tile-fibers watching this galaxy further in the plan $j0\le jp \le end$
+		\For {each of those tile-fibers (jp,kp)}
+		\State Unassign $(jp,kp) \longleftrightarrow g$
+		\State run improve\_fiber(j0+1,end-j0,jp,kp)
+		\EndFor
 		\EndFor
 	\end{algorithmic}
 \end{algorithm}
@@ -262,7 +319,7 @@ They are redistribution function (redistribution of galaxies (simply or by kind)
 	\item in last pass, only ELG, SS and SF are scrutinised
 	\item there can't be more than 10 fibers assigned to SS on a petal
 	\item there can't be more than 40 fibers assigned to SF on a petal
-	\item basically, we choose best galaxy from at the same time available, watched less than maxgoal(kind) times and unassigned ones. Amongts them, we take those which has the least priority, and then the one which has been seen the least number of times
+	\item basically, we choose best galaxy from at the same time available, watched less than maxgoal(kind) times and unassigned ones. Amongst them, we take those which has the least priority, and then the one which has been seen the least number of times
 \end{itemize}
 
 In reality we only know the basic type (QSO, LRG, ELG, SS, SF) of the galaxies of the catalog. The precise type is only infered by a simulation coded in python, but is generated with randomness. So in the algorithms, we can know the nature of the object only when it has been watched once at least.
@@ -282,7 +339,7 @@ We then collect available galaxies for each fiber for each plate, and compute th
 We next, tile after tile, do the assignment of galaxies. We have tried several strategies : making several plans, use simple assignment, use complexe one, improve several times, in several ways, etc... Here is the one which gives the best results.
 
 
-\begin{algorithm}
+\begin{algorithm}[H]
 	\caption{Assignment in main program}\label{euclid}
 	\begin{algorithmic}[1]
 		\Algphasee{Phase I - Assigning plates after plates}
@@ -314,9 +371,15 @@ We next, tile after tile, do the assignment of galaxies. We have tried several s
 \end{algorithm}
 
 \section{Results}
+We run the program with all information (prior knowledge of information on fake, target, etc) to compare with realistic simulation, this result is interesting.
+
 The results are then written using {\tt display\_results} and {\tt print\_free\_fibers}.
+
+We present several strategies and can compare results from one to another. Here is the strategy where we first look at 2000 tiles, tile after tile runing simple\_assign on each tile without plan, and we then do a plan for all left tiles.
+
+We present percentage of improvement in function of iteration of improvement functions.
  
-\begin{table}[h]\begin{center}
+\begin{table}[H]\begin{center}
 \caption{Remaining observations (id on lines, nobs left on rows) with total}\label{tab:full14k}
 \begin{tabular}{l|rrrrrrr}
 	Id &      0  &           1  &           2  &           3  &           4  &           5  & total\\ \hline
@@ -331,7 +394,7 @@ The results are then written using {\tt display\_results} and {\tt print\_free\_
 \end{tabular}\end{center}
  \end{table}
 
-\begin{table}[h]\begin{center}
+\begin{table}[H]\begin{center}
 \caption{Id on lines. (Per square degrees) Total, Fibers Used, Available, Percent of observations}
 \begin{tabular}{l|rrrr} 
    Id &          0  &           1  &           2  &           3 \\ \hline
@@ -349,5 +412,6 @@ The results are then written using {\tt display\_results} and {\tt print\_free\_
 
 \section{Possible improvements}
 The optimum would be closer if we would replan globally every left tile after each update of information on galaxies (after observation). It's not possible because that would be long to compute (several hours).
-
+We could seek for the best galaxy in improve\_fiber instead of taking the first one which fits.
+\end{multicols}
 \end{document}
