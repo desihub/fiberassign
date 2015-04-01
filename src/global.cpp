@@ -343,8 +343,8 @@ void update_plan_from_one_obs(const Gals& G, const Plates&P, const PP& pp, const
 			A.unassign(jp,kp,g,G,P,pp);
 			int ggg = -1;
 			ggg = improve_fiber(j0+1,n-1,jp,kp,G,P,pp,F,A,g);
-			//if (ggg==-1) ggg = improve_fiber_from_kind(F.id("SF"),jp,kp,G,P,pp,F,A);
-			//if (ggg==-1) ggg = improve_fiber_from_kind(F.id("SS"),jp,kp,G,P,pp,F,A);
+			if (ggg==-1) ggg = improve_fiber_from_kind(F.id("SF"),jp,kp,G,P,pp,F,A);
+			if (ggg==-1) ggg = improve_fiber_from_kind(F.id("SS"),jp,kp,G,P,pp,F,A);
 			erase(0,tfs);
 			//print_Plist("After",tfs); // Debug
 			cnt++;
@@ -496,15 +496,26 @@ void display_results(const Gals& G, const Plates& P, const PP& pp, const Feat& F
 		ob[G[g].id][m+MaxObs]++;
 	}
 	for (int m=0; m<2*MaxObs+1; m++) ob[Categories][m] = m-MaxObs;
-	print_table("  Simulated remaining observations, with total",with_tot(hist2),latex);
+	//print_table("  Simulated remaining observations, with total",with_tot(hist2),latex);
 	print_table("  Real remaining observations",with_tot(ob),latex);
 
+	// Percentages of observation
 	Dlist percents = initDlist(Categories);
 	for (int id=0; id<Categories; id++) {
 		int tot = sumlist(ob[id]);
 		percents[id] = percent(tot-ob[id][MaxObs+F.goal[id]],tot);
 	}
-	print_Dlist("Percentages of observation",percents);
+	print_Dlist("Percentages of once observed",percents);
+
+	Dlist percents2 = initDlist(Categories);
+	for (int id=0; id<Categories; id++) {
+		int tot = sumlist(ob[id]);
+		int goal = F.goal[id];
+		double d(0.0);
+		for (int i=0; i<MaxObs; i++) d += ob[id][MaxObs+i]*(goal-i);
+		percents2[id] = percent(d,tot*goal);
+	}
+	print_Dlist("Percentages with ponderation",percents);
 
 	// Histogram of time between 2 obs of Ly a
 	Table deltas;
@@ -523,6 +534,15 @@ void display_results(const Gals& G, const Plates& P, const PP& pp, const Feat& F
 		}
 	}
 	print_hist("  Plate interval between 2 consecutive obs of Ly-a",100,histogram(deltas,100),latex);
+
+	// Some petal
+	//for (int i=1; i<=10; i++) {
+		//print_table("Petal "+i2s(i),A.infos_petal(1000*i,5,G,P,pp,F));
+	//}
+	//plot_freefibers("free_fiber_plot.txt",P,A);   
+
+	// Percentage of fiber assigned
+	printf("  %s assignments in total (%.4f %% of all fibers)\n",f(A.na()).c_str(),percent(A.na(),Nplate*Nfiber));
 
 	//// Some stats
 	//Table done = initTable(Categories,MaxObs+1);

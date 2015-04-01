@@ -193,7 +193,6 @@ List plate::av_gals_plate() const {
 // Read positions of the plate centers from an ascii file "center_name", and fill in a structure
 // There is a version of this function (to adapt) for non ASCII files, ask to Robert Cahn
 Plates read_plate_centers(const char center_name[], int modulo) {
-	int pass(0);
 	Plates P;
 	str buf;
 	std::ifstream fs(center_name);
@@ -237,8 +236,6 @@ Plates read_plate_centers(const char center_name[], int modulo) {
 			Q.nhat[1]    = sin(theta)*sin(phi);
 			Q.nhat[2]    = cos(theta);
 			Q.ipass      = ipass-1; // <- be careful, format of input file
-			if (ipass-1<pass) printf("ERROR reading plate centers : passes are not in an inscreasing order !\n");
-			pass = ipass-1;
 			Q.av_gals.resize(Nfiber); // <- added
 			if (l%modulo == 0) {
 				try {P.push_back(Q);} catch(std::exception& e) {myexception(e);}

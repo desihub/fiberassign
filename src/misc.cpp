@@ -163,7 +163,7 @@ void print_hist(str s, int i, List hist_petal, bool latex) {
 	str slash = latex ? " \\\\ \n" : "\n";
 
 	str rrr(10,'r');
-	if (latex) printf("\\begin{table}[h]\\begin{center} \n \\caption{%s (interval %d)} \n \\begin{tabular}{%s}",s.c_str(),i,rrr.c_str());
+	if (latex) printf("\\begin{table}[H]\\begin{center} \n \\caption{%s (interval %d)} \n \\begin{tabular}{%s}\n",s.c_str(),i,rrr.c_str());
 	else printf("%s (interval %d)\n",s.c_str(),i);
 
 	int size = hist_petal.size();
@@ -265,7 +265,7 @@ void print_table(str s, const Table& T, bool latex) {
 	str slash = latex ? " \\\\ \n" : "\n";
 
 	str rrr(T[0].size(),'r');
-	if (latex) printf("\n\\begin{table}[h]\\begin{center} \n\\caption{%s} \n\\begin{tabular}{%s}",s.c_str(),rrr.c_str());
+	if (latex) printf("\n\\begin{table}[H]\\begin{center} \n\\caption{%s} \n\\begin{tabular}{%s}",s.c_str(),rrr.c_str());
 	else printf(s.c_str());
 	printf("\n");
 
