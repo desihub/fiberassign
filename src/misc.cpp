@@ -54,8 +54,8 @@ Dlist initDlist(int l, double val) {
 	return L;
 }
 
-std::vector<str> initList(str l[]) {
-	std::vector<str> L;
+Slist initList(str l[]) {
+	Slist L;
 	int size = sizeof(l);
 	L.resize(size);
 	for (int i=0; i<size; i++) L[i] = l[i];
@@ -92,7 +92,7 @@ void print_list(str s, const List& L) {
 	printf("\n");
 }
 
-void print_list(str s, std::vector<str> L) {
+void print_list(str s, Slist L) {
 	printf("%s \n",s.c_str());
 	int n = L.size();
 	//if (n==0) { // doesn't want to be compiled... mystery
@@ -169,10 +169,25 @@ void print_hist(str s, int i, List hist_petal, bool latex) {
 	int size = hist_petal.size();
 	for (int i=0; i<size; i++) {
 		str s = ((i+1)%10==0 || i==size-1) ? slash : et;
-		printf("%5d %s",hist_petal[i],s.c_str());
+		printf("%4s %s",f(hist_petal[i]).c_str(),s.c_str());
 	}
-	if (latex) printf("\\end{tabular}\\end{center}\\end{table}");
-	std::cout << std::endl;
+	if (latex) printf("\\end{tabular}\\end{center}\\end{table} \n");
+	fl();
+}
+
+void print_mult_hist_latex(str s, int i, Table hist) {
+	printf("%s interval %d \n\n",s.c_str(),i);
+	printf("\\begin{figure}\\centering\\begin{tikzpicture}[scale=1]\\begin{axis}[const plot, stack plots=y, enlarge x limits=false,xlabel={},ylabel={},cycle list name=mycolorlist] \n");
+	for (int h=0; h<hist.size(); h++) {
+		int nhist = hist[h].size();
+		printf("\\addplot coordinates{");
+		for (int i=0; i<nhist; i++) {
+			printf("(%d,%d)",i,hist[h][i]);
+		}
+		printf("(%d,0)}; \n",nhist);
+	}
+	printf("\\end{axis}\\end{tikzpicture}\\caption{%s}\\end{figure} \n\n",s.c_str());
+	fl();
 }
 
 void erase(int i, List& L) { L.erase (L.begin()+i); }
@@ -207,7 +222,7 @@ Ptable initTable_pair(int l, int c) {
 	return T;
 }
 
-Dtable initTable_double(int l, int c, double val) {
+Dtable initDtable(int l, int c, double val) {
 	Dtable T;
 	T.resize(l);
 	for (int i=0; i<l; i++) T[i].resize(c,val);
@@ -230,6 +245,15 @@ void verif(const Table& T) {
 }
 
 int max_row(const Table& T) {
+	int max(0);
+	for (int i=0; i<T.size(); i++) {
+		int c = T[i].size();
+		if (c>max) max = c;
+	}
+	return max;
+}
+
+int max_row(const Dtable& T) {
 	int max(0);
 	for (int i=0; i<T.size(); i++) {
 		int c = T[i].size();
@@ -289,29 +313,49 @@ void print_table(str s, const Table& T, bool latex) {
 }
 
 void print_table(str s, const Dtable& T, bool latex) {
-	//verif(T);
-	int l = T.size();
-	int c = T[0].size();
+	int SIZE = 7;
+	int MAXSIZE = 10;
 
-	str et = latex ? " & " : " | ";
+	bool square(true);
+	int l = T.size();
+	int cc = T[0].size();
+	for (int i=0; i<l; i++) if (T[i].size()!=cc) square = false;
+
+	int max = max_row(T);
+	List maxRow = initList(max);
+	if (square) {
+		Table sizestr = initTable(l,max);
+		for (int i=0; i<l; i++) {
+			for (int j=0; j<max; j++) {
+				int sz = f(T[i][j]).size()+1;
+				sizestr[i][j] = sz<MAXSIZE ? sz : MAXSIZE;
+			}
+		}
+		maxRow = max_on_row(sizestr);
+	}
+	else maxRow = initList(max,7);
+
+	str et = latex ? " &" : "|";
 	str slash = latex ? " \\\\ \n" : "\n";
 
 	str rrr(T[0].size(),'r');
-	if (latex) printf("\n\\begin{table}[h]\\begin{center} \n\\caption{%s} \n\\begin{tabular}{%s}",s.c_str(),rrr.c_str());
+	if (latex) printf("\n\\begin{table}[H]\\begin{center} \n\\caption{%s} \n\\begin{tabular}{%s}",s.c_str(),rrr.c_str());
 	else printf(s.c_str());
 	printf("\n");
 
-	str space(" ",10);
+	str space(6,' ');
 	printf(space.c_str());
-	for (int j=0; j<c; j++) {
-		str s = (j==c-1) ? slash : et;
-		printf("%11d %s",j,s.c_str());
+	for (int j=0; j<max; j++) {
+		str s = (j==max-1) ? slash : et;
+		printf("%s%s",format(maxRow[j],f(j)).c_str(),s.c_str());
 	}
-	for (int i=0; i<l; i++) {
-		printf("%4d %s",i,et.c_str());
+	for (int i=0; i<l && i<10; i++) {
+		printf("%3d  %s",i,et.c_str());
+		int c = T[i].size();
 		for (int j=0; j<c; j++) {
 			str s = (j==c-1) ? slash : et;
-			printf("%11s %s",f(T[i][j]).c_str(),s.c_str());
+			str num = T[i][j]==-1 ? "" : f(T[i][j]).c_str();
+			printf("%s%s",format(maxRow[j],num).c_str(),s.c_str());
 		}
 	}
 	if (latex) printf("\\end{tabular}\\end{center}\\end{table}");
@@ -356,6 +400,19 @@ List histogram(const Table& T, int interval) {
 				if (n>=hist.size()) { hist.resize(n+1); hist[n] = 0;}
 				hist[n]++;
 			}
+		}
+	}
+	return hist;
+}
+
+List histogram(const List& L, int interval) {
+	List hist; int l = L.size();
+	for(int i=0; i<l; i++) {
+		int a = L[i];
+		if (a!=-1) {
+			int n = floor(a/interval);
+			if (n>=hist.size()) { hist.resize(n+1); hist[n] = 0;}
+			hist[n]++;
 		}
 	}
 	return hist;

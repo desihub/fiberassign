@@ -34,7 +34,7 @@ void improve_from_kind(const Gals& G, const Plates&P, const PP& pp, const Feat& 
 void update_plan_from_one_obs(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int end);
 
 // Results functions --------------------------------------------------
-void results_on_inputs(const Gals& G, const Plates& P, const Feat& F);
+void results_on_inputs(const Gals& G, const Plates& P, const Feat& F, bool latex=false);
 
 void display_results(const Gals& G, const Plates &P, const PP& pp, const Feat& F, const Assignment& A, bool latex=false);
 

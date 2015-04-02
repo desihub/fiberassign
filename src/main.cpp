@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
 	// For each galaxy, computes available tilefibers
 	collect_available_tilefibers(G,P);
 
-	//results_on_inputs(G,P,F);
+	results_on_inputs(G,P,F,true);
 
 	//// Assignment ||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 	Assignment A(G,F);
@@ -100,7 +100,7 @@ int main(int argc, char **argv) {
 		//improve_from_kind(G,P,pp,F,A,"SF",1);
 		//improve_from_kind(G,P,pp,F,A,"SS",1);
 		// here is observation time
-		printf("        %s not assigned\n",f(Nfiber-A.na(j,1)).c_str());
+		printf("  %s not assigned  - ",format(5,f(Nfiber-A.na(j,1))).c_str());
 		update_plan_from_one_obs(G,P,pp,F,A,1999);
 		A.next_plate++;
 	}
@@ -125,7 +125,7 @@ int main(int argc, char **argv) {
 		//improve_from_kind(G,P,pp,F,A,"SF",1);
 		//improve_from_kind(G,P,pp,F,A,"SS",1);
 		// here is observation time
-		printf("        %s not assigned\n",f(Nfiber-A.na(j,1)).c_str());
+		printf("  %s not assigned  - ",format(5,f(Nfiber-A.na(j,1))).c_str());
 		update_plan_from_one_obs(G,P,pp,F,A,Nplate-1);
 		A.next_plate++;
 	}

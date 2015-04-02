@@ -3,6 +3,7 @@
 %\fontfamily{<familyname>}\selectfont
 \renewcommand{\sfdefault}{phv}
 \usepackage{anyfontsize}
+\usepackage{verbatim}
 \usepackage{authblk}
 \usepackage{graphicx}
 \usepackage{graphics}
@@ -15,16 +16,76 @@
 \usepackage[T1]{fontenc}          %% permet d'utiliser les caractères accentués
 \usepackage[utf8]{inputenc} %% permet d'utiliser les caractères accentué
 \usepackage{float}
+\usepackage{filecontents}
+%PGF plot
+\usepackage{pgfplots, pgfplotstable}
+\usepgfplotslibrary{statistics}
+\pgfplotscreateplotcyclelist{mycolorlist}{%
+blue\\%
+red\\%
+brown\\%
+teal\\%
+violet\\%
+cyan\\%
+purple\\%
+magenta\\%
+black\\%
+}
+\pgfplotscreateplotcyclelist{mylegend}{Ly-a,Target,LRG,ELG,Fake,Fake,SS,SF}
 
+\usepackage{xifthen}
+\newcommand{\getsizes}[2]% width, height
+{   \path (current bounding box.south west);
+    \pgfgetlastxy{\xsw}{\ysw}
+    \path (current bounding box.north east);
+    \pgfgetlastxy{\xne}{\yne}
+    \pgfmathsetmacro{\picwidth}{(\xne-\xsw)/28.453}
+    \pgfmathsetmacro{\picheight}{(\yne-\ysw)/28.453}
+    \pgfmathsetmacro{\picxscale}{#1/\picwidth}
+    \pgfmathsetmacro{\picyscale}{#2/\picheight}
+    \xdef\xsca{\picxscale}
+    \xdef\ysca{\picyscale}
+}
+
+\newcommand{\xyscaledtikz}[3]% draw commands, width, height
+{ \smash{\vphantom{
+    \begin{tikzpicture}
+        #1
+        \getsizes{#2}{#3}
+    \end{tikzpicture}
+    }}
+    \begin{tikzpicture}[xscale=\xsca,yscale=\ysca]
+        #1
+    \end{tikzpicture}
+}
+
+%%%% debut macro %%%%
+\newenvironment{changemargin}[2]{\begin{list}{}{%
+\setlength{\topsep}{0pt}%
+\setlength{\leftmargin}{0pt}%
+\setlength{\rightmargin}{0pt}%
+\setlength{\listparindent}{\parindent}%
+\setlength{\itemindent}{\parindent}%
+\setlength{\parsep}{0pt plus 1pt}%
+\addtolength{\leftmargin}{#1}%
+\addtolength{\rightmargin}{#2}%
+}\item }{\end{list}}
+
+%\begin{changemargin}{0cm}{0cm}
+%\end{changemargin}
+
+%%%% fin macro %%%%
+
+%Dash lines
 \newcommand\Algphasee[1]{%
 \Statex\hspace*{-\algorithmicindent}\textbf{#1}%
-\vspace*{-.7\baselineskip}\Statex\hspace*{\dimexpr-\algorithmicindent-2pt\relax}\rule{\textwidth}{0.4pt}%
+\vspace*{-.7\baselineskip}\Statex\hspace*{\dimexpr-\algorithmicindent-2pt\relax}\rule{\linewidth}{0.4pt}%
 }
 
 \newcommand\Algphase[1]{%
-\vspace*{-.7\baselineskip}\Statex\hspace*{\dimexpr-\algorithmicindent-2pt\relax}\rule{\textwidth}{0.4pt}%
+\vspace*{-.7\baselineskip}\Statex\hspace*{\dimexpr-\algorithmicindent-2pt\relax}\rule{\linewidth}{0.4pt}%
 \Statex\hspace*{-\algorithmicindent}\textbf{#1}%
-\vspace*{-.7\baselineskip}\Statex\hspace*{\dimexpr-\algorithmicindent-2pt\relax}\rule{\textwidth}{0.4pt}%
+\vspace*{-.7\baselineskip}\Statex\hspace*{\dimexpr-\algorithmicindent-2pt\relax}\rule{\linewidth}{0.4pt}%
 }
 
 \makeatletter
@@ -62,6 +123,7 @@
   \includegraphics[width = 20mm]{figs/logoens.png} 
 \end{center}
 
+\begin{comment}
 \section{Rules for fiber assignment}
 We know the repartition of matter (by repartition of H matter) by pics.
 The original catalog of 50M galaxies has only information on the position and the type of the galaxy, which is LRG, ELG or QSO. Those information were given by a previous survey, only based on colors, the redshift wasn't then computed. But there are different types of each one. QSO can be $Ly-\alpha$, target or fake (actually fake ones can be stars for example). A python code generates the file of galaxies, simulating with appropriate probabilities each type, taking into account the fact that there are correlations between positions of galaxies (accordingly with BAO and gravition). When we watch at a QSO and we see that it's a fake or a target, we don't watch at it anymore. But if it's a real one, we try to see it 5 times if it is possible.
@@ -70,25 +132,21 @@ At first, there was as code written by Martin White then Robert Cahn that did an
 We have to avoid correlation not mastered. That's why we don't (at first sight), when we take a new tile, associate 50 free fibers to regions of low QSO density. We would rather assign until there are only 50 free fibers left.
 We have to reserve 10 fibers by petal to Standard Stars and 40 to Sky Fibers.
 We do the compuation in real time. That means that we do it tile by tile. We can't access the information of all the galaxies because we only have past watched galaxies information. That adds a new constrain. So I rewrote algorithms so that they would compute an optimal assignment for one plate, knowing information on previous one assignments, and knowing information on previously watched galaxies.
-
+\end{comment}
 
 \section{Introduction}
 \begin{multicols}{2}
 Martin White developed C++ code for fiber assignment over the full 14k sq. deg. footprint.  We first modified Martin's code to incorporate features from Robert's python code, which ran on a restricted 480 sq. deg.. We included the improvement and redistribution steps, which switches fiber assignments to increase the number of galaxies observed. We then adapted the code to compute assignments not globally anymore "knowing all information on galaxies" but plate after plate, as in real experiment.
-The samples are taken from Martin's mocks in stored on NERSC at $/project/projectdirs/desi/mocks/preliminary/$.  From these files we create a single file containing the appropriate mix of ELG, LRG, QSO, SS (Standard Stars) and SF (Sky Fibers) using the python script in svn $/code/survey/fiberassignment/FA\_Bob/trunk/bin/make\_catalog\_rnc.py$.  In the same place there is python code to produce a mixture of galaxies without any correlations, but with the correct dn/dz.  
+The samples are taken from Martin's mocks in stored on NERSC at /project/projectdirs/desi/mocks/preliminary/.  From these files we create a single file containing the appropriate mix of ELG, LRG, QSO, SS (Standard Stars) and SF (Sky Fibers) using the python script in git fiberassign/bin/make\_catalog\_starsandsky.py.  In the same place there is python code to produce a mixture of galaxies without any correlations, but with the correct dn/dz.  
   
-  The code needs to know the locations of the positioners in the focal plane.  They are given in :
-  
-  $ \$DESIMODEL/data/focalplane/fiberpos.txt$
-  It also needs to know the locations of the centers of the fields in the sky, i.e. the plates, and their order.  The original code written by Martin White provided the option of having the plate centers given in a binary file or an ASCII file.  We are now using the ASCII option by defining ASCIICENTERS at the outset.  If one wants to use the previous binary format, he has to ask it to Robert and adapt it to the new structure. The format is that of $\$DESIMODEL/data/footprint/desi-tiles.par$, but an alternative ASCII file can be provided. If the executable is {\tt assign} then the calling sequence will look like :
-  
-  {\tt./assign objects0.rdzipn desi-tiles.par fiberpos.txt assignment}
- 
+  The code needs to know the locations of the positioners in the focal plane.  They are given in : \$DESIMODEL/data/focalplane/fiberpos.txt.
+  It also needs to know the locations of the centers of the fields in the sky, i.e. the plates, and their order.  The original code written by Martin White provided the option of having the plate centers given in a binary file or an ASCII file.  We are now using the ASCII option by defining ASCIICENTERS at the outset.  If one wants to use the previous binary format, he has to ask it to Robert and adapt it to the new structure. The format is that of \$DESIMODEL/data/footprint/desi-tiles.par, but an alternative ASCII file can be provided. If the executable is {\tt assign} then the calling sequence will look like :
+  {\tt./assign galaxies.rdzipn desi-tiles.par fiberpos.txt assignment}
  Here the catalog of targets is in the NERSC directory :
-  $/projects/projectdirs/desi/mocks/preliminary/objects\_ss\_sf0.rdzipn$ the binary file created by {\tt make\_catalog}.  The plate centers are provided here by  $\$DESIMODEL/data/footprint/desi-tiles.par$    The locations of the positioners are given in $ \$DESIMODEL/data/footprint/desi-tiles.par$  An option not now used is to write the actual assignments to a file here called {\tt assignment}.
+  /projects/projectdirs/desi/mocks/ preliminary/objects\_ss\_sf0.rdzipn the binary file created by {\tt make\_catalog}. The plate centers are provided here by \$DESIMODEL/data/footprint/desi-tiles.par The locations of the positioners are given in \$DESIMODEL/data/focalplane/fiberpos.txt An option not now used is to write the actual assignments to a file here called {\tt assignment}.
   
   
-  README.rst gives instructions for running on NERSC.  The problem of colliding fiber positioners is addressed in a simplified way. 
+  README.rst gives instructions for running on NERSC. The problem of colliding fiber positioners is addressed in a simplified way. 
   We summarize here the various components of the code to facilitate their modification later.
 Here are some features on input galaxies simulated catalog :
 
@@ -371,6 +429,62 @@ We next, tile after tile, do the assignment of galaxies. We have tried several s
 \end{algorithm}
 
 \section{Results}
+\subsection{Results on the input catalog}
+
+\begin{figure}[H]\begin{center}\begin{tikzpicture}[scale=1.1]\begin{semilogyaxis}[const plot, stack plots=y, enlarge x limits=false,xlabel={},ylabel={},cycle list name=mycolorlist,legend entries={Ly-a,Target,LRG,ELG,Fake,Fake,SS,SF}] 
+\addplot coordinates{(0,48860818)(1,4272723)(2,190374)(3,5927)(4,154)(5,4)(6,0)} 
+ ; 
+\addplot coordinates{(0,43223771)(1,9067745)(2,965034)(3,69390)(4,3866)(5,185)(6,9)(7,0)} 
+ ; 
+\addplot coordinates{(0,32284811)(1,15577500)(2,4321212)(3,931734)(4,176391)(5,31521)(6,5554)(7,1058)(8,166)(9,46)(10,6)(11,1
+)(12,0)} 
+ ; 
+\addplot coordinates{(0,1023976)(1,3785704)(2,7247666)(3,9560878)(4,9736045)(5,8168407)(6,5881360)(7,3734704)(8,2133759)(9,11
+13331)(10,536458)(11,240432)(12,102174)(13,40878)(14,15616)(15,5658)(16,1914)(17,715)(18,227)(19,66)(20,24)(21,7)(22,0)(23,0)
+(24,0)(25,0)(26,1)(27,0)} 
+ ; 
+\addplot coordinates{(0,45554172)(1,7176220)(2,568334)(3,29999)(4,1229)(5,44)(6,2)(7,0)} 
+ ; 
+\addplot coordinates{(0,48857531)(1,4278420)(2,188192)(3,5725)(4,131)(5,1)(6,0)} 
+ ; 
+\addplot coordinates{(0,41728443)(1,10233745)(2,1258373)(3,102934)(4,6208)(5,280)(6,15)(7,2)(8,0)} 
+ ; 
+\addplot coordinates{(0,4616745)(1,11260225)(2,13774643)(3,11257056)(4,6913988)(5,3403210)(6,1399769)(7,494264)(8,153927)(9,4
+2449)(10,10742)(11,2354)(12,523)(13,87)(14,16)(15,2)(16,0)} 
+ ; 
+\end{axis}\end{tikzpicture}\end{center}\caption{Available galaxies (by kind) for a TF}\end{figure}
+
+
+\begin{figure}[H]\begin{center}\begin{tikzpicture}[scale=1.1]\begin{semilogyaxis}[const plot, stack plots=y, enlarge x limits=false,xlabel={},
+ylabel={},cycle list name=mycolorlist] 
+\addplot coordinates{(0,1221)(1,10791)(2,12456)(3,22479)(4,68609)(5,178598)(6,221698)(7,160186)(8,76194)(9,26755)(10,7327)(11
+,1848)(12,389)(13,73)(14,15)(15,4)(16,0)} 
+ \closedcycle; 
+\addplot coordinates{(0,3026)(1,25933)(2,30158)(3,53496)(4,164665)(5,430022)(6,533620)(7,382218)(8,184066)(9,63875)(10,18081)
+(11,4322)(12,919)(13,181)(14,36)(15,1)(16,0)(17,0)(18,1)(19,0)} 
+ \closedcycle; 
+\addplot coordinates{(0,7827)(1,65268)(2,75612)(3,133924)(4,411745)(5,1070352)(6,1325440)(7,952661)(8,454940)(9,159962)(10,44
+925)(11,10781)(12,2357)(13,443)(14,88)(15,15)(16,3)(17,0)} 
+ \closedcycle; 
+\addplot coordinates{(0,62377)(1,525986)(2,608551)(3,1082678)(4,3324320)(5,8631364)(6,10712696)(7,7694215)(8,3674573)(9,12877
+29)(10,359236)(11,86042)(12,18611)(13,3706)(14,732)(15,130)(16,32)(17,2)(18,0)} 
+ \closedcycle; 
+\addplot coordinates{(0,2275)(1,19738)(2,22979)(3,40711)(4,124605)(5,322045)(6,399710)(7,286461)(8,136996)(9,47975)(10,13427)
+(11,3229)(12,692)(13,137)(14,27)(15,3)(16,2)(17,0)} 
+ \closedcycle; 
+\addplot coordinates{(0,1211)(1,10884)(2,12706)(3,22600)(4,68818)(5,178630)(6,222554)(7,160085)(8,75931)(9,26473)(10,7337)(11
+,1763)(12,367)(13,77)(14,12)(15,2)(16,0)} 
+ \closedcycle; 
+\addplot coordinates{(0,3625)(1,30274)(2,35024)(3,63126)(4,193433)(5,500614)(6,623090)(7,446163)(8,213512)(9,74612)(10,20670)
+(11,4996)(12,1077)(13,197)(14,38)(15,8)(16,2)(17,1)(18,0)} 
+ \closedcycle; 
+\addplot coordinates{(0,35713)(1,303217)(2,353577)(3,629933)(4,1932755)(5,5008249)(6,6217942)(7,4470161)(8,2134168)(9,747845)
+(10,207971)(11,49733)(12,10758)(13,2121)(14,409)(15,70)(16,10)(17,2)(18,0)} 
+ \closedcycle; 
+\end{axis}\end{tikzpicture}\end{center}\caption{Available tile-fibers for a galaxy (by kind)}\end{figure}
+
+
+\subsection{Results of the assignment}
 We run the program with all information (prior knowledge of information on fake, target, etc) to compare with realistic simulation, this result is interesting.
 
 The results are then written using {\tt display\_results} and {\tt print\_free\_fibers}.
@@ -378,6 +492,17 @@ The results are then written using {\tt display\_results} and {\tt print\_free\_
 We present several strategies and can compare results from one to another. Here is the strategy where we first look at 2000 tiles, tile after tile runing simple\_assign on each tile without plan, and we then do a plan for all left tiles.
 
 We present percentage of improvement in function of iteration of improvement functions.
+
+
+\begin{figure}[H]\begin{center}\begin{tikzpicture}[scale=1]\begin{semilogyaxis}[const plot, stack plots=y, enlarge x limits=false,xlabel={},
+ylabel={},cycle list name=mycolorlist] 
+\addplot coordinates{(0,31955)(1,10887)(2,6656)(3,5517)(4,4927)(5,4573)(6,4183)(7,3870)(8,3566)(9,3333)(10,3114)(11,2827)(12,
+2511)(13,2299)(14,2096)(15,1905)(16,1744)(17,1555)(18,1346)(19,1186)(20,1054)(21,940)(22,748)(23,663)(24,563)(25,448)(26,388)
+(27,332)(28,267)(29,235)(30,187)(31,159)(32,138)(33,91)(34,80)(35,53)(36,55)(37,34)(38,30)(39,22)(40,28)(41,18)(42,19)(43,7)(
+44,6)(45,10)(46,7)(47,1)(48,3)(49,3)(50,1)(51,2)(52,1)(53,1)(54,4)(55,1)(56,0)(57,1)(58,3)(59,1)(60,2)(61,0)(62,2)(63,1)(64,0
+)(65,0)(66,0)(67,0)(68,0)(69,0)(70,0)(71,0)(72,0)(73,0)(74,0)(75,1)(76,0)} 
+ ; 
+\end{axis}\end{tikzpicture}\end{center}\caption{Free fibers}\end{figure}
  
 \begin{table}[H]\begin{center}
 \caption{Remaining observations (id on lines, nobs left on rows) with total}\label{tab:full14k}
@@ -409,6 +534,7 @@ We present percentage of improvement in function of iteration of improvement fun
 \end{tabular}\end{center}
  \end{table}
 
+ Besides, we have indeed exactly 10 SS and 40 SF per petal.
 
 \section{Possible improvements}
 The optimum would be closer if we would replan globally every left tile after each update of information on galaxies (after observation). It's not possible because that would be long to compute (several hours).

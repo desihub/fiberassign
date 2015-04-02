@@ -30,14 +30,15 @@ class pair {
 class List : public std::vector<int> {};
 class Dlist : public std::vector<double> {};
 class Plist : public std::vector<pair> {};
+class Slist : public std::vector<str> {};
 List Null();
 List initList(int l, int val = 0);
 List initList(std::vector<int> l);
 List initList(int l[]);
 Dlist initDlist(int l, double val = 0.0);
-std::vector<str> initList(str l[]);
+Slist initList(str l[]);
 void print_list(str s, const List& L);
-void print_list(str s, std::vector<str> L);
+void print_list(str s, Slist L);
 void print_list_line(const List& L);
 void print_Dlist(str s, const Dlist& L);
 void print_Plist(str s, const Plist& L);
@@ -61,15 +62,18 @@ class Ptable : public std::vector<Plist> {};
 Table initTable(int l, int c, int val = 0); 
 Table initTable(const Table& T); 
 Ptable initTable_pair(int l, int c);
-Dtable initTable_double(int l, int c, double val=0.0);
+Dtable initDtable(int l, int c, double val=0.0);
 void verif(const Table& T); // Verifies it's square
 void print_table(str s, const Table& T, bool latex=false);
 void print_table(str s, const Dtable& T, bool latex=false);
 void print_table(str s, const Ptable& T);
 // Other constr wouldn't work if we would define a constructor in class Table
 List histogram(const Table& T, int interval);
+List histogram(const List& L, int interval);
+void print_mult_hist_latex(str s, int i, Table hist);
 Table with_tot(const Table& T); // Add a row with sum of lines
 int max_row(const Table& T); // Max number of rows
+int max_row(const Dtable& T);
 List max_on_row(const Table& T); // List of max on each row
 
 // Cube ------------------------------------------------------

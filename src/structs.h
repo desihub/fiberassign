@@ -21,7 +21,7 @@ class Feat { // F for features
 	public:
 	List prio; // Priorities 
 	List goal;
-	std::vector<str> kind;
+	Slist kind;
 
 	Feat();
 	int id(str s) const;

@@ -351,7 +351,7 @@ void update_plan_from_one_obs(const Gals& G, const Plates&P, const PP& pp, const
 		}
 	}
 	int na_end(A.na(j0,n));
-	printf(" %d unassignments and %d replaced by update\n",cnt,na_end-na_start+cnt); fl();
+	printf(" %4d unassignments and %4d replaced by update\n",cnt,na_end-na_start+cnt); fl();
 }
 
 // If no enough SS and SF, remove old_kind an replace to SS-SF (new_kind) on petal (j,p)
@@ -419,7 +419,7 @@ void new_assign_fibers(const Gals& G, const Plates& P, const PP& pp, const Feat&
 }
 
 // Other useful functions --------------------------------------------------------------------------------------------
-void results_on_inputs(const Gals& G, const Plates& P, const Feat& F) {
+void results_on_inputs(const Gals& G, const Plates& P, const Feat& F, bool latex) {
 	printf("# Results on inputs :\n");
 	// Print features
 	print_list("  Kinds corresponding :",F.kind);
@@ -430,40 +430,27 @@ void results_on_inputs(const Gals& G, const Plates& P, const Feat& F) {
 	// How many galaxies in range of a fiber ?
 	print_list("  How many galaxies in range of a fiber :",gals_range_fibers(P));
 
-	// Stats on number of av gals per plate and per fiber
-	if (false) { // Takes a lot of time !
-	int avg(0); int std(0); int min(1e7); int max(0);
-	int avgf(0); int stdf(0); int minf(1e7); int maxf(0);
+	// Histograms on number of av gals per plate and per fiber
+	Cube T = initCube(Categories,Nplate,Nfiber);
 	for (int j=0; j<Nplate; j++) {
-		printf(" %d",j); std::cout.flush();
-		// Plates
-		List L = P[j].av_gals_plate();
-		int n = L.size();
-		avg += n; std += n*n;
-		if (n>max) max=n;
-		if (n<min) min=n;
-		// Fibers
 		for (int k=0; k<Nfiber; k++) {
-			int nf = P[j].av_gals[k].size();
-			avgf += nf; stdf += nf*nf;
-			if (nf>maxf) maxf=nf;
-			if (nf<minf) minf=nf;
+			List gals = P[j].av_gals[k];
+			for (int g=0; g<gals.size(); g++) T[G[gals[g]].id][j][k]++;
 		}
 	}
-	print_stats("  Available galaxies for a plate :",Nplate,avg,std,min,max);
-	printf("  %d %d ",avg,std);
-	print_stats("  Available galaxies for a fiber :",Nplate*Nfiber,avgf,stdf,minf,maxf);
+	Table hist1;
+	for (int id=0; id<Categories; id++) hist1.push_back(histogram(T[id],1));
+	print_mult_hist_latex("  Available galaxies (by kind) for a TF",1,hist1);
 
-	// Stats on number of av tfs per galaxy
-	int avgg(0); int stdg(0); int ming(1e7); int maxg(0);
+	// Histograms on number of av tfs per galaxy
+	Table Tg = initTable(Categories,0);
 	for (int g=0; g<Ngal; g++) {
 		int n = G[g].av_tfs.size();
-		avgg += n; stdg += n*n;
-		if (n>maxg) maxg=n;
-		if (n<ming) ming=n;
+		Tg[G[g].id].push_back(n); 
 	}
-	print_stats("  Available tile-fibers for a galaxy :",Ngal,avgg,stdg,ming,maxg);
-	}
+	Table hist2;
+	for (int id=0; id<Categories; id++) hist2.push_back(histogram(Tg[id],1));
+	print_mult_hist_latex("   Available tile-fibers for a galaxy (by kind)",1,hist2);
 }
 
 // Detemine how many galaxies need to be dropped to guarantee 40 free fibers for each petal
@@ -472,15 +459,16 @@ void print_free_fibers(const Gals& G, const PP& pp, const Feat& F, const Assignm
 	printf("# Free fibers statistics\n");
 	// Prints histogram of free fibers
 	Table unused_fbp = A.unused_fbp(pp);
-	print_hist("  Number of petals with this many free fiber",5,histogram(unused_fbp,5),latex);
+	Table hist; hist.push_back(histogram(unused_fbp,5));
+	print_mult_hist_latex("  Number of petals with this many free fiber",5,hist);
 
 	// Histogram of SS
 	Table usedSS = A.used_by_kind("SS",G,pp,F);
-	print_hist("  UsedSS (number of petals)",1,histogram(usedSS,1),latex);
+	print_hist("  UsedSS (number of petals)",1,histogram(usedSS,1));
 
 	// Histogram of SF
 	Table usedSF = A.used_by_kind("SF",G,pp,F);
-	print_hist("  UsedSF (number of petals)",1,histogram(usedSF,1),latex);
+	print_hist("  UsedSF (number of petals)",1,histogram(usedSF,1));
 }
 
 void display_results(const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, bool latex) {
@@ -500,22 +488,18 @@ void display_results(const Gals& G, const Plates& P, const PP& pp, const Feat& F
 	print_table("  Real remaining observations",with_tot(ob),latex);
 
 	// Percentages of observation
-	Dlist percents = initDlist(Categories);
-	for (int id=0; id<Categories; id++) {
-		int tot = sumlist(ob[id]);
-		percents[id] = percent(tot-ob[id][MaxObs+F.goal[id]],tot);
-	}
-	print_Dlist("Percentages of once observed",percents);
-
-	Dlist percents2 = initDlist(Categories);
+	Dtable percents = initDtable(Categories,2);
 	for (int id=0; id<Categories; id++) {
 		int tot = sumlist(ob[id]);
 		int goal = F.goal[id];
+
+		percents[id][0] = percent(tot-ob[id][MaxObs+goal],tot);
+
 		double d(0.0);
 		for (int i=0; i<MaxObs; i++) d += ob[id][MaxObs+i]*(goal-i);
-		percents2[id] = percent(d,tot*goal);
+		percents[id][1] = percent(d,tot*goal);
 	}
-	print_Dlist("Percentages with ponderation",percents);
+	print_table("Percentages of once observed, and with ponderation",percents);
 
 	// Histogram of time between 2 obs of Ly a
 	Table deltas;
@@ -562,7 +546,7 @@ void display_results(const Gals& G, const Plates& P, const PP& pp, const Feat& F
 		//}
 	//}
 
-	//std::vector<std::vector<double> > stats = initTable_double(Categories,4);
+	//Dtable stats = initDtable(Categories,4);
 	//for (int id=0; id<Categories; id++) {
 		//stats[id][0] = (targets[id]-done[id][0])/TotalArea;
 		//stats[id][1] = fibers_used[id]/TotalArea;
