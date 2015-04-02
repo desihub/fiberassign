@@ -88,11 +88,11 @@ List av_gals_of_kind(int kind, int j, int k, const Gals& G, const Plates& P, con
 class Assignment {
 	public:
 	Table TF; // TF for tile fiber, #tiles X #fibers
-	Ptable PG; // PG for pass galaxy, #passes X #galaxies
 	List order; // Order of tiles we want to assign
 	int next_plate; // Next plate in the order
 
 	// Redundant information (optimizes computation time)
+	Ptable GL; // GL for galaxy - list : #galaxies X (variable) #chosen TF
 	Cube kinds; // Cube[j][sp][id] : number of fibers of spectrometer sp and plate j that have the kind id
 	List nobsv; // List of nobs, redundant but optimizes
 	List nobsv_tmp; // List of nobs, redundant but optimizes
@@ -106,7 +106,8 @@ class Assignment {
 	void assign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp);
 	void unassign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp);
 	void verif(const Plates& P) const; // Verif mappings are right
-	bool is_assigned_pg(int ip, int g) const;
+	int is_assigned_jg(int j, int g) const;
+	int is_assigned_jg(int j, int g, int interplate) const;
 	bool is_assigned_tf(int j, int k) const; 
 	int na(int begin=0, int size=Nplate) const; // Number of assignments within plates begin to begin+size
 	int nobs(int g, const Gals& G, const Feat& F, bool tmp=true) const; // Counts how many time ob should be observed else more. If tmp=true, return Maxobs for this kind (temporary information)

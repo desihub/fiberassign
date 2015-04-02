@@ -41,11 +41,12 @@ void print_list(str s, const List& L);
 void print_list(str s, Slist L);
 void print_list_line(const List& L);
 void print_Dlist(str s, const Dlist& L);
-void print_Plist(str s, const Plist& L);
+void print_Plist(const Plist& L, str s="");
 bool isnull(const List& L); // Test if the list is null
 int sumlist(const List& L); // Sum of the list
 int max(const List& L);
 bool isfound(int n, const List& L); // True iff i is found in L
+int isfound(pair p, const Plist& L); // Return the position of where it's found, -1 if not
 List values(const List& L); // Different taken values
 List random_permut(int n); // Return a random permutation
 List random_permut(const List& L);
@@ -61,7 +62,7 @@ class Dtable : public std::vector<Dlist> {};
 class Ptable : public std::vector<Plist> {};
 Table initTable(int l, int c, int val = 0); 
 Table initTable(const Table& T); 
-Ptable initTable_pair(int l, int c);
+Ptable initPtable(int l, int c);
 Dtable initDtable(int l, int c, double val=0.0);
 void verif(const Table& T); // Verifies it's square
 void print_table(str s, const Table& T, bool latex=false);
@@ -70,7 +71,7 @@ void print_table(str s, const Ptable& T);
 // Other constr wouldn't work if we would define a constructor in class Table
 List histogram(const Table& T, int interval);
 List histogram(const List& L, int interval);
-void print_mult_hist_latex(str s, int i, Table hist);
+void print_mult_hist_latex(str s, int i, Table hist, bool zero=false);
 Table with_tot(const Table& T); // Add a row with sum of lines
 int max_row(const Table& T); // Max number of rows
 int max_row(const Dtable& T);
@@ -107,11 +108,13 @@ str i2s(int i);
 str p2s(pair p);
 str p2s(int j, int k);
 str siz(const Table& T);
-str siz(const std::vector<std::vector<pair> >& T);
+str siz(const Ptable& T);
 str format(int size, str s);
 
 // Other ------------------------------------------------------
 void check_args(int n); 
+int max(int a, int b);
+int min(int a, int b);
 void print_stats(str s, int cnt, int std, int avg, int min, int max);
 int sq(int n); // n*n
 double sq(double n);

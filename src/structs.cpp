@@ -272,7 +272,7 @@ List av_gals_of_kind(int kind, int j, int k, const Gals& G, const Plates& P, con
 // Assignment -----------------------------------------------------------------------------
 Assignment::Assignment(const Gals& G, const Feat& F) {
 	TF = initTable(Nplate,Nfiber,-1);
-	PG = initTable_pair(Npass,Ngal); // Doesn't work if defined directly
+	GL = initPtable(Ngal,0); // Doesn't work if defined directly
 	order.resize(Nplate);
 	for (int i=0; i<Nplate; i++) order[i] = i;
 	next_plate = 0;
@@ -293,20 +293,22 @@ Assignment::~Assignment() {}
 // Assign g with tile/fiber (j,k), and check for duplicates
 void Assignment::assign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp) {
 	// Assign (j,k)
-	int ip = P[j].ipass;
 	int q = TF[j][k];
 	if (q != -1) {
 		printf("### !!! ### DUPLICATE (j,k) = (%d,%d) assigned with g = %d and %d ---> information on first g lost \n",j,k,q,g);
 		myexit(1);
 	}
 	TF[j][k] = g;
-	// Assign (ipass,g)
-	pair p = PG[ip][g];
-	if (!p.isnull()) {
-		printf("### !!! ### DUPLICATE (ipass,g) = (%d,%d) assigned with (j,k) = (%d,%d) and (%d,%d) ---> information on first (j,k) lost \n",ip,g,p.f,p.s,j,k);
-		myexit(1);
+	// Assign g
+	Plist pl = GL[g];
+	pair p = pair(j,k);
+	int a = isfound(p,pl); // Can be erased for optimization once there is no duplicate
+	if (a!=-1) {
+		printf("### !!! ### DUPLICATE g = %d assigned with (j,k) = (%d,%d) and (%d,%d) ---> information on first (j,k) lost \n",g,pl[a].f,pl[a].s,j,k);
+		erase(a,GL[g]);
+		myexit(1); // Can be commented if want to force continuing
 	}
-	PG[ip][g] = pair(j,k);
+	GL[g].push_back(p);
 	// Kinds
 	kinds[j][pp.spectrom[k]][G[g].id]++;
 	// Probas
@@ -317,12 +319,12 @@ void Assignment::assign(int j, int k, int g, const Gals& G, const Plates& P, con
 }
 
 void Assignment::unassign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp) {
-	int ip = P[j].ipass;
 	if (TF[j][k]==-1) printf("### !!! ### TF (j,k) = (%d,%d) gets unassigned but was already not assigned\n",j,k);
-	if (PG[ip][g].isnull()) printf("### !!! ### Galaxy (ipass,g) = (%d,%d) gets unassigned but was already not assigned\n",ip,g);
+	int a = isfound(pair(j,k),GL[g]);
+	if (a==-1) printf("### !!! ### Galaxy g = %d gets unassigned but was already not assigned\n",g);
 
 	TF[j][k] = -1;
-	PG[ip][g].setnull();
+	if (a!=-1) erase(a,GL[g]);
 	kinds[j][pp.spectrom[k]][G[g].id]--;
 	probas[G[g].id]--;
 	nobsv[g]++;
@@ -330,27 +332,38 @@ void Assignment::unassign(int j, int k, int g, const Gals& G, const Plates& P, c
 }
 
 void Assignment::verif(const Plates& P) const {
-	for(int ip=0; ip<Npass; ip++) {
-		for (int g=0; g<Ngal; g++) {
-			pair tf = PG[ip][g];
-			if (!tf.isnull() && TF[tf.f][tf.s]!=g) { printf("ERROR in verification of correspondance of galaxies !\n"); fl(); }
+	for (int g=0; g<Ngal; g++) {
+		Plist tfs = GL[g];
+		int j0(0); int j1(0);
+		for (int i=0; i<tfs.size(); i++) {
+			pair tf = tfs[i];
+			int j0 = j1;
+			int j1 = tf.f;
+			// Verif on TF
+			if (TF[tf.f][tf.s]!=g) { printf("ERROR in verification of correspondance of galaxies !\n"); fl(); }
+			// No 2 assignments within an interval of InterPlate
+			if (i!=0 && fabs(j1-j0)<InterPlate) { printf("ERROR in verification of interplate g=%d with j=%d and %d\n",g,j0,j1); fl(); }
 		}
 	}
-	for(int j=0; j<Nplate; j++) {
+	for (int j=0; j<Nplate; j++) {
 		for (int k=0; k<Nfiber; k++) {
 			int g = TF[j][k];
-			if (g!=-1) {
-				int f = PG[P[j].ipass][g].f;
-				int s = PG[P[j].ipass][g].s;
-				if (f!=j || s!=k) { printf("ERROR in verification of correspondance of tfs !\n"); fl(); }
-			}
+			// Verif on GL
+			if (g!=-1 && isfound(pair(j,k),GL[g])==-1) { printf("ERROR in verification of correspondance of tfs !\n"); fl(); }
 		}
 	}
 }
 
-bool Assignment::is_assigned_pg(int ip, int g) const {
-	//printf(("is_assigned"+p2s(ip,g)+siz(PG)).c_str());
-	return (PG[ip][g].f != -1);
+int Assignment::is_assigned_jg(int j, int g) const {
+	for (int i=0; i<GL[g].size(); i++) if (GL[g][i].f == j) return i;
+	return -1;
+}
+
+int Assignment::is_assigned_jg(int j, int g, int InterPlate) const {
+	for (int i=0; i<GL[g].size(); i++) {
+		if (max(j-InterPlate,0)<=GL[g][i].f && GL[g][i].f<=min(j+InterPlate,Nplate-1)) return i;
+	}
+	return -1;
 }
 
 bool Assignment::is_assigned_tf(int j, int k) const { return (TF[j][k] != -1); }
@@ -368,9 +381,9 @@ int Assignment::na(int begin, int size) const {
 Plist Assignment::chosen_tfs(int g, int begin, int size) const {
 	Plist chosen;
 	if (Nplate<begin+size) { printf("ERROR in chosen_tfs - size\n"); fl(); }
-	for(int ip=0; ip<Npass; ip++) {
-		pair tf = PG[ip][g];
-		if (!tf.isnull() && tf.f>=begin && tf.f<begin+size) {
+	for (int i=0; i<GL[g].size(); i++) {
+		pair tf = GL[g][i];
+		if (begin<=tf.f && tf.f<begin+size) {
 			if (TF[tf.f][tf.s]!=g) { printf("ERROR in chosen_tfs\n"); fl(); }
 			chosen.push_back(tf);
 		}
@@ -446,7 +459,6 @@ double Assignment::get_proba(int i, const Gals& G, const Feat& F) {
 }
 	
 Table Assignment::infos_petal(int j, int pet, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const {
-	int ip = P[j].ipass;
 	Table T;
 	List fibs = pp.fibers_of_sp[pet];
 	for (int kk=0; kk<fibs.size(); kk++) {
@@ -458,7 +470,7 @@ Table Assignment::infos_petal(int j, int pet, const Gals& G, const Plates& P, co
 		for (int gg=0; gg<av_gals.size(); gg++) {
 			int g = av_gals[gg];
 			L.push_back(G[g].id);
-			L.push_back(is_assigned_pg(ip,g));
+			L.push_back(is_assigned_jg(j,g));
 			L.push_back(nobs(g,G,F));
 		}
 		T.push_back(L);

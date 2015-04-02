@@ -27,8 +27,7 @@ brown\\%
 teal\\%
 violet\\%
 cyan\\%
-purple\\%
-magenta\\%
+green\\%
 black\\%
 }
 \pgfplotscreateplotcyclelist{mylegend}{Ly-a,Target,LRG,ELG,Fake,Fake,SS,SF}
@@ -151,7 +150,7 @@ The samples are taken from Martin's mocks in stored on NERSC at /project/project
 Here are some features on input galaxies simulated catalog :
 
 \begin{table}[H]\begin{center}
-	\caption{Characteristics of galaxy samples as set in make\_catalog\_rnc.py}\label{tab:characteristics}
+	\caption{Characteristics of galaxy samples as set in make\_catalog\_rnc.py}\label{table:characteristics}
 	\begin{tabular}{lcccr}\\ \hline
 		Kind&Id&Priority&Nobs&Density/sq.deg.\\ \hline
 		Ly-A QSO & 0 & 1 & 5 &  50\\
@@ -179,7 +178,7 @@ They all consist in a .h and a .cpp file and are in this inscreasing dependency 
 \section{Parameters}
 They are defined at the begining of the file main.
 \begin{itemize} 
-	\item parameters sumed-up in the table \ref{tab:characteristics},
+	\item parameters sumed-up in the table \ref{table:characteristics}
 	\item Npass = 5 number of passes
 	\item MinUnused = 50 (not used anymore for the moment) minimum number of unused fibers on each petal
 	\item MaxSS = 10 ; MaxSF = 40 maximum number of fibers assigned to SS and SF on a petal
@@ -188,6 +187,8 @@ They are defined at the begining of the file main.
 	\item Collide = 2.1 minimum distance allowed on plate projection of two assigned galaxies on the same plate
 	\item NeighborRad = 11.0 maximum distance to consider that two fibers are neighbors
 	\item PatrolRad = 6.0 maximum distance, on plate coordinates, that allows a fiber to watch at a galaxy
+	\item InterPlate = 200 minimal plate distance between two plates observing the same galaxy
+	\item Randomize = false randomize order of plates in making plans
 \end{itemize} 
 
 
@@ -431,7 +432,7 @@ We next, tile after tile, do the assignment of galaxies. We have tried several s
 \section{Results}
 \subsection{Results on the input catalog}
 
-\begin{figure}[H]\begin{center}\begin{tikzpicture}[scale=1.1]\begin{semilogyaxis}[const plot, stack plots=y, enlarge x limits=false,xlabel={},ylabel={},cycle list name=mycolorlist,legend entries={Ly-a,Target,LRG,ELG,Fake,Fake,SS,SF}] 
+\begin{figure}[H]\begin{center}\begin{tikzpicture}[scale=1.1]\begin{semilogyaxis}[const plot, stack plots=y, enlarge x limits=false,xlabel={},ylabel={},cycle list name=mycolorlist,legend entries={QSO Ly-$\alpha$,QSO Tracer,LRG,ELG,Fake QSO,Fake LRG,SS,SF}] 
 \addplot coordinates{(0,48860818)(1,4272723)(2,190374)(3,5927)(4,154)(5,4)(6,0)} 
  ; 
 \addplot coordinates{(0,43223771)(1,9067745)(2,965034)(3,69390)(4,3866)(5,185)(6,9)(7,0)} 
@@ -458,29 +459,21 @@ We next, tile after tile, do the assignment of galaxies. We have tried several s
 \begin{figure}[H]\begin{center}\begin{tikzpicture}[scale=1.1]\begin{semilogyaxis}[const plot, stack plots=y, enlarge x limits=false,xlabel={},
 ylabel={},cycle list name=mycolorlist] 
 \addplot coordinates{(0,1221)(1,10791)(2,12456)(3,22479)(4,68609)(5,178598)(6,221698)(7,160186)(8,76194)(9,26755)(10,7327)(11
-,1848)(12,389)(13,73)(14,15)(15,4)(16,0)} 
- \closedcycle; 
+,1848)(12,389)(13,73)(14,15)(15,4)(16,0)}; 
 \addplot coordinates{(0,3026)(1,25933)(2,30158)(3,53496)(4,164665)(5,430022)(6,533620)(7,382218)(8,184066)(9,63875)(10,18081)
-(11,4322)(12,919)(13,181)(14,36)(15,1)(16,0)(17,0)(18,1)(19,0)} 
- \closedcycle; 
+(11,4322)(12,919)(13,181)(14,36)(15,1)(16,0)(17,0)(18,1)(19,0)}; 
 \addplot coordinates{(0,7827)(1,65268)(2,75612)(3,133924)(4,411745)(5,1070352)(6,1325440)(7,952661)(8,454940)(9,159962)(10,44
-925)(11,10781)(12,2357)(13,443)(14,88)(15,15)(16,3)(17,0)} 
- \closedcycle; 
+925)(11,10781)(12,2357)(13,443)(14,88)(15,15)(16,3)(17,0)}; 
 \addplot coordinates{(0,62377)(1,525986)(2,608551)(3,1082678)(4,3324320)(5,8631364)(6,10712696)(7,7694215)(8,3674573)(9,12877
-29)(10,359236)(11,86042)(12,18611)(13,3706)(14,732)(15,130)(16,32)(17,2)(18,0)} 
- \closedcycle; 
+29)(10,359236)(11,86042)(12,18611)(13,3706)(14,732)(15,130)(16,32)(17,2)(18,0)}; 
 \addplot coordinates{(0,2275)(1,19738)(2,22979)(3,40711)(4,124605)(5,322045)(6,399710)(7,286461)(8,136996)(9,47975)(10,13427)
-(11,3229)(12,692)(13,137)(14,27)(15,3)(16,2)(17,0)} 
- \closedcycle; 
+(11,3229)(12,692)(13,137)(14,27)(15,3)(16,2)(17,0)}; 
 \addplot coordinates{(0,1211)(1,10884)(2,12706)(3,22600)(4,68818)(5,178630)(6,222554)(7,160085)(8,75931)(9,26473)(10,7337)(11
-,1763)(12,367)(13,77)(14,12)(15,2)(16,0)} 
- \closedcycle; 
+,1763)(12,367)(13,77)(14,12)(15,2)(16,0)}; 
 \addplot coordinates{(0,3625)(1,30274)(2,35024)(3,63126)(4,193433)(5,500614)(6,623090)(7,446163)(8,213512)(9,74612)(10,20670)
-(11,4996)(12,1077)(13,197)(14,38)(15,8)(16,2)(17,1)(18,0)} 
- \closedcycle; 
+(11,4996)(12,1077)(13,197)(14,38)(15,8)(16,2)(17,1)(18,0)}; 
 \addplot coordinates{(0,35713)(1,303217)(2,353577)(3,629933)(4,1932755)(5,5008249)(6,6217942)(7,4470161)(8,2134168)(9,747845)
-(10,207971)(11,49733)(12,10758)(13,2121)(14,409)(15,70)(16,10)(17,2)(18,0)} 
- \closedcycle; 
+(10,207971)(11,49733)(12,10758)(13,2121)(14,409)(15,70)(16,10)(17,2)(18,0)}; 
 \end{axis}\end{tikzpicture}\end{center}\caption{Available tile-fibers for a galaxy (by kind)}\end{figure}
 
 
@@ -494,7 +487,7 @@ We present several strategies and can compare results from one to another. Here 
 We present percentage of improvement in function of iteration of improvement functions.
 
 
-\begin{figure}[H]\begin{center}\begin{tikzpicture}[scale=1]\begin{semilogyaxis}[const plot, stack plots=y, enlarge x limits=false,xlabel={},
+\begin{figure}[H]\begin{center}\begin{tikzpicture}[scale=1.1]\begin{semilogyaxis}[const plot, stack plots=y, enlarge x limits=false,xlabel={},
 ylabel={},cycle list name=mycolorlist] 
 \addplot coordinates{(0,31955)(1,10887)(2,6656)(3,5517)(4,4927)(5,4573)(6,4183)(7,3870)(8,3566)(9,3333)(10,3114)(11,2827)(12,
 2511)(13,2299)(14,2096)(15,1905)(16,1744)(17,1555)(18,1346)(19,1186)(20,1054)(21,940)(22,748)(23,663)(24,563)(25,448)(26,388)
@@ -502,22 +495,40 @@ ylabel={},cycle list name=mycolorlist]
 44,6)(45,10)(46,7)(47,1)(48,3)(49,3)(50,1)(51,2)(52,1)(53,1)(54,4)(55,1)(56,0)(57,1)(58,3)(59,1)(60,2)(61,0)(62,2)(63,1)(64,0
 )(65,0)(66,0)(67,0)(68,0)(69,0)(70,0)(71,0)(72,0)(73,0)(74,0)(75,1)(76,0)} 
  ; 
-\end{axis}\end{tikzpicture}\end{center}\caption{Free fibers}\end{figure}
+\end{axis}\end{tikzpicture}\end{center}\caption{$#$ of petals with that many free fibers}\end{figure}
  
 \begin{table}[H]\begin{center}
-\caption{Remaining observations (id on lines, nobs left on rows) with total}\label{tab:full14k}
 \begin{tabular}{l|rrrrrrr}
-	Id &      0  &           1  &           2  &           3  &           4  &           5  & total\\ \hline
-   0  &           0  &     443,259  &     240,890  &      72,694  &      24,033  &       7,767  &     788,643\\
-   1  &   1,867,438  &      27,182  &           0  &           0  &           0  &           0  &   1,894,620\\
-   2  &   3,873,418  &     602,268  &     240,657  &           0  &           0  &           0  &   4,716,343\\
-   3  &  26,925,090  &  11,147,890  &           0  &           0  &           0  &           0  &  38,072,980\\
-   4  &   1,400,629  &      20,383  &           0  &           0  &           0  &           0  &   1,421,012\\
-   5  &     753,676  &      35,774  &           0  &           0  &           0  &           0  &     789,450\\
-   6  &   1,066,600  &   1,143,862  &           0  &           0  &           0  &           0  &   2,210,462\\
-   7  &   4,266,400  &  17,838,234  &           0  &           0  &           0  &           0  &  22,104,634\\
-\end{tabular}\end{center}
+	~ &               0 &         1 &       2 &      3 &      4 &     5 &         6 \\ \hline
+  0   &    22,837 &   414,719 & 238,589 & 75,637 & 28,393 & 8,468 &   788,643 \\ 
+  1   & 1,874,315 &    20,305 &       0 &      0 &      0 &     0 & 1,894,620 \\ 
+  2   & 3,901,902 &   567,892 & 246,549 &      0 &      0 &     0 & 4,716,343 \\ 
+  3   &29,404,671 & 8,668,309 &       0 &      0 &      0 &     0 &38,072,980 \\ 
+  4   & 1,405,734 &    15,278 &       0 &      0 &      0 &     0 & 1,421,012 \\ 
+  5   &   753,347 &    36,103 &       0 &      0 &      0 &     0 &   789,450 \\ 
+  6   & 1,066,600 & 1,143,862 &       0 &      0 &      0 &     0 & 2,210,462 \\ 
+  7   & 4,266,400 &17,838,234 &       0 &      0 &      0 &     0 &22,104,634 \\ 
+\end{tabular}
+\caption{Remaining observations (id on lines, nobs left on rows) with total}\label{tab:full14k}
+\end{center}
  \end{table}
+
+
+\begin{table}[H]\begin{center} 
+\begin{tabular}{l|rr}
+	~ &         0 &      1 \\ \hline
+  0   & 98.926 & 67.673 \\ 
+  1   & 98.928 & 98.928 \\ 
+  2   & 94.772 & 88.752 \\ 
+  3   & 77.232 & 77.232 \\ 
+  4   & 98.924 & 98.924 \\ 
+  5   & 95.426 & 95.426 \\ 
+  6   & 48.252 & 48.252 \\ 
+  7   & 19.300 & 19.300 \\ 
+\end{tabular}
+\caption{Percentages of once observed, and with ponderation} 
+\end{center}\end{table}
+
 
 \begin{table}[H]\begin{center}
 \caption{Id on lines. (Per square degrees) Total, Fibers Used, Available, Percent of observations}

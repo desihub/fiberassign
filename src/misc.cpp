@@ -119,7 +119,7 @@ void print_Dlist(str s, const Dlist& L) {
 	printf("\n");
 }
 
-void print_Plist(str s, const Plist& L) {
+void print_Plist(const Plist& L, str s) {
 	printf("%s \n",s.c_str());
 	int n = L.size();
 	for (int i=0; i<n; i++) printf("%5d : (%d,%d)\n",i,L[i].f,L[i].s);
@@ -149,6 +149,13 @@ bool isfound(int n, const List& L) {
 	return false;
 }
 
+int isfound(pair p, const Plist& L) {
+	int j = p.f; int k = p.s;
+	if (L.size()==0) return -1;
+	for (int i=0; i<L.size(); i++) if (L[i].f==j && L[i].s==k) return i;
+	return -1;
+}
+
 List values(const List& L) {
 	List l;
 	for (int i=0; i<L.size(); i++) {
@@ -175,16 +182,17 @@ void print_hist(str s, int i, List hist_petal, bool latex) {
 	fl();
 }
 
-void print_mult_hist_latex(str s, int i, Table hist) {
+void print_mult_hist_latex(str s, int i, Table hist, bool zero) {
 	printf("%s interval %d \n\n",s.c_str(),i);
-	printf("\\begin{figure}\\centering\\begin{tikzpicture}[scale=1]\\begin{axis}[const plot, stack plots=y, enlarge x limits=false,xlabel={},ylabel={},cycle list name=mycolorlist] \n");
+	printf("\\begin{figure}[H]\\centering\\begin{tikzpicture}[scale=1]\\begin{semilogyaxis}[const plot, stack plots=y, enlarge x limits=false,xlabel={},ylabel={},cycle list name=mycolorlist,legend entries={QSO Ly-$\\alpha$,QSO Tracer,LRG,ELG,Fake QSO,Fake LRG,SS,SF}]\n");
 	for (int h=0; h<hist.size(); h++) {
 		int nhist = hist[h].size();
 		printf("\\addplot coordinates{");
 		for (int i=0; i<nhist; i++) {
 			printf("(%d,%d)",i,hist[h][i]);
 		}
-		printf("(%d,0)}; \n",nhist);
+		if (zero) printf("(%d,0)");
+		printf("}; \n",nhist);
 	}
 	printf("\\end{axis}\\end{tikzpicture}\\caption{%s}\\end{figure} \n\n",s.c_str());
 	fl();
@@ -211,11 +219,11 @@ List sublist(int begin, int size, const List& L) {
 Table initTable(int l, int c, int val) {
 	Table T;
 	T.resize(l);
-	for (int i=0; i<l; i++) T[i].resize(c,val);
+	for (int i=0; i<l; i++) { if (i%100000==0) debl(i); T[i].resize(c,val);}
 	return T;
 }
 
-Ptable initTable_pair(int l, int c) {
+Ptable initPtable(int l, int c) {
 	Ptable T;
 	T.resize(l);
 	for (int i=0; i<l; i++) T[i].resize(c,pair());
@@ -606,6 +614,16 @@ void check_args(int n) { // Check if the arguments of the executable are right
 		std::cerr << "Usage: assign <ObjFile> <PlateFile> <FiberFile> <OutFile> <Modulo galaxies>" << std::endl;
 		myexit(1);
 	}
+}
+
+int max(int a, int b) {
+	if (a>b) return a;
+	return b;
+}
+
+int min(int a, int b) {
+	if (a>b) return b;
+	return a;
 }
 
 void print_stats(str s, int cnt, int avg, int std, int min, int max) {

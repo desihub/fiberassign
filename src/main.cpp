@@ -16,7 +16,8 @@
 #include        "structs.h"
 #include        "global.h"
 
-int Nplate; int MaxSS; int MaxSF; double PlateRadius; double Collide; double NeighborRad; double PatrolRad; double TotalArea; int Ngal; int MaxPrio; int MaxObs; int Categories; int Npass; int Nfiber; int MinUnused; int Npetal; int Nfbp;
+int Nplate; int MaxSS; int MaxSF; double PlateRadius; double Collide; double NeighborRad; double PatrolRad; double TotalArea; int Ngal; int MaxPrio; int MaxObs; int Categories; int Npass; int Nfiber; int MinUnused; int Npetal; int Nfbp; int InterPlate; bool Randomize;
+
 
 int main(int argc, char **argv) {
 	//// Initializations -------------------------------------------------
@@ -34,6 +35,8 @@ int main(int argc, char **argv) {
 	Collide = 2.1;
 	NeighborRad = 11.0;
 	PatrolRad = 6.0;
+	InterPlate = 200;
+	Randomize = true;
 
 	str kind[] = {"QSO Ly-a","QSO Tracer","LRG","ELG","Fake QSO","Fake LRG","SS","SF"};
 	int prio[] = {1,1,3,5,1,3,2,4}; // has to be >= 0
@@ -76,7 +79,7 @@ int main(int argc, char **argv) {
 	// For each galaxy, computes available tilefibers
 	collect_available_tilefibers(G,P);
 
-	results_on_inputs(G,P,F,true);
+	//results_on_inputs(G,P,F,true);
 
 	//// Assignment ||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 	Assignment A(G,F);

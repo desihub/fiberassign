@@ -18,4 +18,6 @@ extern double NeighborRad;
 extern double Collide;
 extern double PatrolRad;
 extern int Nfbp; // Number of fibers by petals
+extern int InterPlate; 
+extern bool Randomize; 
 #endif
