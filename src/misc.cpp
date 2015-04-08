@@ -4,6 +4,7 @@
 #include	<sstream>
 #include	<iostream>
 #include	<iomanip>
+#include        <stdio.h>
 #include	<string>
 #include	<vector>
 #include	<algorithm>
@@ -25,6 +26,8 @@ void pair::print_pair() const {printf("(%d,%d) ",f,s); fl();}
 
 // List ------------------------------------------------------
 List Null() { List L; return L; }
+
+Slist Snull() { Slist L; return L; }
 
 List initList(int l, int val) {
 	List L;
@@ -143,6 +146,14 @@ int max(const List& L) {
 	return m;
 }
 
+Dlist percents(const List& L, int n) {
+	Dlist Dl;
+	for (int i=0; i<L.size(); i++) {
+		Dl.push_back(percent(L[i],n));
+	}
+	return Dl;
+}
+
 bool isfound(int n, const List& L) {
 	if (L.size()==0) return false;
 	for (int i=0; i<L.size(); i++) if (L[i]==n) return true;
@@ -167,7 +178,7 @@ List values(const List& L) {
 
 void print_hist(str s, int i, List hist_petal, bool latex) {
 	str et = latex ? " & " : " | ";
-	str slash = latex ? " \\\\ \n" : "\n";
+	str slash = latex ? "\\\\ \n" : "\n";
 
 	str rrr(10,'r');
 	if (latex) printf("\\begin{table}[H]\\begin{center} \n \\caption{%s (interval %d)} \n \\begin{tabular}{%s}\n",s.c_str(),i,rrr.c_str());
@@ -182,20 +193,52 @@ void print_hist(str s, int i, List hist_petal, bool latex) {
 	fl();
 }
 
-void print_mult_hist_latex(str s, int i, Table hist, bool zero) {
-	printf("%s interval %d \n\n",s.c_str(),i);
-	printf("\\begin{figure}[H]\\centering\\begin{tikzpicture}[scale=1]\\begin{semilogyaxis}[const plot, stack plots=y, enlarge x limits=false,xlabel={},ylabel={},cycle list name=mycolorlist,legend entries={QSO Ly-$\\alpha$,QSO Tracer,LRG,ELG,Fake QSO,Fake LRG,SS,SF}]\n");
-	for (int h=0; h<hist.size(); h++) {
-		int nhist = hist[h].size();
-		printf("\\addplot coordinates{");
-		for (int i=0; i<nhist; i++) {
-			printf("(%d,%d)",i,hist[h][i]);
-		}
-		if (zero) printf("(%d,0)");
-		printf("}; \n",nhist);
+void print_mult_table_latex(str s, str ss, Table T, int multX) {
+	printf("# %s \n  Output data in %s \n\n",s.c_str(),ss.c_str());
+	FILE* pFile;
+	pFile = fopen(ss.c_str(),"w");
+	if (!pFile) {
+		printf("File opening failed \n"); fl();
+		myexit(1);
 	}
-	printf("\\end{axis}\\end{tikzpicture}\\caption{%s}\\end{figure} \n\n",s.c_str());
-	fl();
+
+	int maxrow = max_row(T);
+	fprintf(pFile,"x ");
+	for (int i=0; i<maxrow; i++) fprintf(pFile,"%d ",i);
+	fprintf(pFile,"\n");
+	for (int j=0; j<maxrow; j++) {
+		fprintf(pFile,"%d ",j*multX);
+		for (int i=0; i<T.size(); i++) {
+			if (j<T[i].size()) fprintf(pFile,"%d ",T[i][j]);
+			else fprintf(pFile,"0 ");
+		}
+		fprintf(pFile,"\n");
+	}
+	fclose(pFile);
+}
+
+void print_mult_Dtable_latex(str s, str ss, Dtable T, int multX) {
+	printf("# %s \n  Output data in %s \n\n",s.c_str(),ss.c_str());
+	FILE* pFile;
+	pFile = fopen(ss.c_str(),"w");
+	if (!pFile) {
+		printf("File opening failed \n"); fl();
+		myexit(1);
+	}
+
+	int maxrow = max_row(T);
+	fprintf(pFile,"x ");
+	for (int i=0; i<maxrow; i++) fprintf(pFile,"%d ",i);
+	fprintf(pFile,"\n");
+	for (int j=0; j<maxrow; j++) {
+		fprintf(pFile,"%d ",j*multX);
+		for (int i=0; i<T.size(); i++) {
+			if (j<T[i].size()) fprintf(pFile,"%f ",T[i][j]);
+			else fprintf(pFile,"0 ");
+		}
+		fprintf(pFile,"\n");
+	}
+	fclose(pFile);
 }
 
 void erase(int i, List& L) { L.erase (L.begin()+i); }
@@ -215,11 +258,24 @@ List sublist(int begin, int size, const List& L) {
 	return l;
 }
 
+void switch_elmts(int a, int b, List& L) {
+	if (L.size()<=a || L.size()<=b) { printf("Error in switch elmts\n"); fl(); }
+	int tmp = L[a];
+	L[a] = L[b];
+	L[b] = tmp;
+}
+
+List sort(const List& L) {
+	List l = L;
+	std::sort(l.begin(), l.end());  
+	return l;
+}
+
 // Table -----------------------------------------------------
 Table initTable(int l, int c, int val) {
 	Table T;
 	T.resize(l);
-	for (int i=0; i<l; i++) { if (i%100000==0) debl(i); T[i].resize(c,val);}
+	for (int i=0; i<l; i++) T[i].resize(c,val);
 	return T;
 }
 
@@ -270,12 +326,14 @@ int max_row(const Dtable& T) {
 	return max;
 }
 
+
 void print_table(str s, const Table& T, bool latex) {
 	int SIZE = 7;
 	int MAXSIZE = 10;
 
 	bool square(true);
 	int l = T.size();
+	if (MAXSIZE<l) printf("Cautious, table is of size %d, only %d will be displayed \n",l,MAXSIZE);
 	int cc = T[0].size();
 	for (int i=0; i<l; i++) if (T[i].size()!=cc) square = false;
 
@@ -326,6 +384,7 @@ void print_table(str s, const Dtable& T, bool latex) {
 
 	bool square(true);
 	int l = T.size();
+	if (MAXSIZE<l) printf("Cautious, table is of size %d, only %d will be displayed \n",l,MAXSIZE);
 	int cc = T[0].size();
 	for (int i=0; i<l; i++) if (T[i].size()!=cc) square = false;
 
@@ -404,7 +463,9 @@ List histogram(const Table& T, int interval) {
 		for(int j=0; j<c; j++) {
 			int a = T[i][j];
 			if (a!=-1) {
+				if (a<0) { printf("Error in print_hist, neg\n"); fl(); }
 				int n = floor(a/interval);
+				//printf("%d %d %d %d-",n,a,i,j);
 				if (n>=hist.size()) { hist.resize(n+1); hist[n] = 0;}
 				hist[n]++;
 			}
@@ -418,6 +479,7 @@ List histogram(const List& L, int interval) {
 	for(int i=0; i<l; i++) {
 		int a = L[i];
 		if (a!=-1) {
+			if (a<0) { printf("Error in print_hist, neg\n"); fl(); }
 			int n = floor(a/interval);
 			if (n>=hist.size()) { hist.resize(n+1); hist[n] = 0;}
 			hist[n]++;
@@ -444,6 +506,13 @@ List max_on_row(const Table& T) {
 		}
 	}
 	return L;
+}
+
+void make_square(Table& T) {
+	int max = max_row(T);
+	for (int i=0; i<T.size(); i++) {
+		if (T[i].size()<max) T[i].resize(max);
+	}
 }
 
 // Cube ------------------------------------------------------
@@ -608,10 +677,16 @@ str format(int size, str s) {
 	return (sp+s);
 }
 
+str erase_spaces(str s) {
+	str ss = "";
+	for (int h=0; h<s.size(); h++) if (s[h]!=' ') ss.push_back(s[h]);
+	return ss;
+}
+
 // Other ------------------------------------------------------
 void check_args(int n) { // Check if the arguments of the executable are right
-	if (n != 6) {
-		std::cerr << "Usage: assign <ObjFile> <PlateFile> <FiberFile> <OutFile> <Modulo galaxies>" << std::endl;
+	if (n != 7) {
+		std::cerr << "Usage: assign <ObjFile> <PlateFile> <FiberFile> <OutFile> <Modulo galaxies> <Modulo fibers>" << std::endl;
 		myexit(1);
 	}
 }

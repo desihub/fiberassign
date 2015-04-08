@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
 	NeighborRad = 11.0;
 	PatrolRad = 6.0;
 	InterPlate = 200;
-	Randomize = true;
+	Randomize = false;
 
 	str kind[] = {"QSO Ly-a","QSO Tracer","LRG","ELG","Fake QSO","Fake LRG","SS","SF"};
 	int prio[] = {1,1,3,5,1,3,2,4}; // has to be >= 0
@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
 
 	// Read fiber center positions and compute things
 	PP pp;
-	pp.read_fiber_positions(argv[3]); 
+	pp.read_fiber_positions(argv[3],atoi(argv[6])); 
 	Nfiber = pp.fp.size()/2;
 	Npetal = max(pp.spectrom)+1; // spectrom has to be identified from 0 to Npetal-1
 	Nfbp = (int) (Nfiber/Npetal);
@@ -65,7 +65,7 @@ int main(int argc, char **argv) {
 	Nplate = P.size();
 	printf("# Read %s plate centers from %s and %d fibers from %s\n",f(Nplate).c_str(),argv[2],Nfiber,argv[3]);
 
-	//// Collect available galaxies <-> tilefibers ----------------------
+	//// Collect available galaxies <-> tilefibers --------------------
 	// HTM Tree of galaxies
 	const double MinTreeSize = 0.01; // <--- ?
 	init_time_at(time,"# Start building HTM tree",t);
@@ -79,9 +79,9 @@ int main(int argc, char **argv) {
 	// For each galaxy, computes available tilefibers
 	collect_available_tilefibers(G,P);
 
-	//results_on_inputs(G,P,F,true);
+	//results_on_inputs("doc/figs/",G,P,F,true);
 
-	//// Assignment ||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+	//// Assignment ||||||||||||||||||||||||||||||||||||||||||||||||||||
 	Assignment A(G,F);
 	print_time(t,"# Start assignment at : ");
 	// Make a plan ----------------------------------------------------
@@ -93,7 +93,6 @@ int main(int argc, char **argv) {
 	//improve(G,P,pp,F,A,2000); // Improves almost nothing
 	//improve_from_kind(G,P,pp,F,A,"SF",2000);
 	//improve_from_kind(G,P,pp,F,A,"SS",2000);
-	A.verif(P);
 
 	// Apply and update the plan --------------------------------------
 	init_time_at(time,"# Begin real time assignment",t);
@@ -115,10 +114,10 @@ int main(int argc, char **argv) {
 	improve(G,P,pp,F,A);
 	improve_from_kind(G,P,pp,F,A,"SF");
 	improve_from_kind(G,P,pp,F,A,"SS");
+	improve_from_kind(G,P,pp,F,A,"ELG");
 	//improve(G,P,pp,F,A);
 	//improve_from_kind(G,P,pp,F,A,"SF");
 	//improve_from_kind(G,P,pp,F,A,"SS");
-	A.verif(P);
 
 	// Apply and update the plan --------------------------------------
 	init_time_at(time,"# Begin real time assignment",t);
@@ -134,11 +133,9 @@ int main(int argc, char **argv) {
 	}
 	print_time(time,"# ... took :");
 
-	// Results ----------------------------------------------------
+	// Results --------------------------------------------------------
 	A.verif(P);
-	display_results(G,P,pp,F,A,true);
-	print_free_fibers(G,pp,F,A,true);
-
+	display_results("doc/figs/",G,P,pp,F,A,true);
 	print_time(t,"# Finished !... in");
 	return(0);
 }

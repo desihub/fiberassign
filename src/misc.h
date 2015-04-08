@@ -32,6 +32,7 @@ class Dlist : public std::vector<double> {};
 class Plist : public std::vector<pair> {};
 class Slist : public std::vector<str> {};
 List Null();
+Slist Snull();
 List initList(int l, int val = 0);
 List initList(std::vector<int> l);
 List initList(int l[]);
@@ -45,6 +46,7 @@ void print_Plist(const Plist& L, str s="");
 bool isnull(const List& L); // Test if the list is null
 int sumlist(const List& L); // Sum of the list
 int max(const List& L);
+Dlist percents(const List& L, int n); // Percents list of L/n
 bool isfound(int n, const List& L); // True iff i is found in L
 int isfound(pair p, const Plist& L); // Return the position of where it's found, -1 if not
 List values(const List& L); // Different taken values
@@ -55,6 +57,8 @@ void erase(int i, List& L); // Erase i th element
 void erase(int i, Plist& L); // Erase i th element
 List complementary(int size, const List& L); // Complementary list (provided L is a subset of [0,size-1])
 List sublist(int begin, int size, const List& L);
+void switch_elmts(int a, int b, List& L); // Switch elements a and b
+List sort(const List& L); // Sort by increasing order
 
 // Table -----------------------------------------------------
 class Table : public std::vector<List> {};
@@ -71,11 +75,13 @@ void print_table(str s, const Ptable& T);
 // Other constr wouldn't work if we would define a constructor in class Table
 List histogram(const Table& T, int interval);
 List histogram(const List& L, int interval);
-void print_mult_hist_latex(str s, int i, Table hist, bool zero=false);
+void print_mult_table_latex(str s, str ss, Table T, int multX=1);
+void print_mult_Dtable_latex(str s, str ss, Dtable T, int multX=1);
 Table with_tot(const Table& T); // Add a row with sum of lines
 int max_row(const Table& T); // Max number of rows
 int max_row(const Dtable& T);
 List max_on_row(const Table& T); // List of max on each row
+void make_square(Table& T); // Make it square, filling with zeros
 
 // Cube ------------------------------------------------------
 class Cube : public std::vector<Table> {};
@@ -110,6 +116,7 @@ str p2s(int j, int k);
 str siz(const Table& T);
 str siz(const Ptable& T);
 str format(int size, str s);
+str erase_spaces(str s); // Same str without spaces
 
 // Other ------------------------------------------------------
 void check_args(int n); 

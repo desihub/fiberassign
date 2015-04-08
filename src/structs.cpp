@@ -119,7 +119,7 @@ str galaxy::kind(const Feat& F) const {
 // Read the positions of the fibers on each plate.  Assumes the format
 // of fiberpos.txt produced by "randomize_fibers".
 // need also to get the petal, i.e. spectrometer  rnc 1/16/15  added S
-void PP::read_fiber_positions(const char pos_name[]) {
+void PP::read_fiber_positions(const char pos_name[], int n) {
 	str buf;
 	std::ifstream fs(pos_name);
 	if (!fs) { // An error occurred opening the file.
@@ -135,15 +135,19 @@ void PP::read_fiber_positions(const char pos_name[]) {
 	while (fs.eof()==0 && ( (buf[0]=='#') || (buf.size()==0) )) {
 		getline(fs,buf);
 	}
+	int i(0);
 	while (fs.eof()==0) {
 		double x,y; int fiber,positioner,spectro,remove; 
 		std::istringstream(buf) >> fiber >> positioner >> spectro >> x >> y;
+		if (i%n == 0) {
 		try{
 			fp.push_back(x);
 			fp.push_back(y);
 			spectrom.push_back(spectro);  
 		} catch(std::exception& e) {myexception(e);}
+		}
 		getline(fs,buf);
+		i++;
 	}
 	fs.close();
 }
@@ -334,7 +338,7 @@ void Assignment::unassign(int j, int k, int g, const Gals& G, const Plates& P, c
 void Assignment::verif(const Plates& P) const {
 	for (int g=0; g<Ngal; g++) {
 		Plist tfs = GL[g];
-		int j0(0); int j1(0);
+		int j0(-1); int j1(-1);
 		for (int i=0; i<tfs.size(); i++) {
 			pair tf = tfs[i];
 			int j0 = j1;
@@ -342,7 +346,7 @@ void Assignment::verif(const Plates& P) const {
 			// Verif on TF
 			if (TF[tf.f][tf.s]!=g) { printf("ERROR in verification of correspondance of galaxies !\n"); fl(); }
 			// No 2 assignments within an interval of InterPlate
-			if (i!=0 && fabs(j1-j0)<InterPlate) { printf("ERROR in verification of interplate g=%d with j=%d and %d\n",g,j0,j1); fl(); }
+			if (j0!=-1 && fabs(j1-j0)<=InterPlate) { printf("ERROR in verification of interplate g=%d with j=%d and %d\n",g,j0,j1); fl(); }
 		}
 	}
 	for (int j=0; j<Nplate; j++) {

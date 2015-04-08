@@ -416,7 +416,7 @@ void new_assign_fibers(const Gals& G, const Plates& P, const PP& pp, const Feat&
 }
 
 // Other useful functions --------------------------------------------------------------------------------------------
-void results_on_inputs(const Gals& G, const Plates& P, const Feat& F, bool latex) {
+void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F, bool latex) {
 	printf("# Results on inputs :\n");
 	// Print features
 	print_list("  Kinds corresponding :",F.kind);
@@ -437,40 +437,26 @@ void results_on_inputs(const Gals& G, const Plates& P, const Feat& F, bool latex
 	}
 	Table hist1;
 	for (int id=0; id<Categories; id++) hist1.push_back(histogram(T[id],1));
-	print_mult_hist_latex("  Available galaxies (by kind) for a TF",1,hist1,true);
+	print_mult_table_latex("Available galaxies (by kind) for a TF",outdir+"avgalhist.dat",hist1,1,F.kind);
 
 	// Histograms on number of av tfs per galaxy
 	Table Tg = initTable(Categories,0);
 	for (int g=0; g<Ngal; g++) {
 		int n = G[g].av_tfs.size();
-		Tg[G[g].id].push_back(n); 
+		Tg[G[g].id].push_back(n);
 	}
 	Table hist2;
 	for (int id=0; id<Categories; id++) hist2.push_back(histogram(Tg[id],1));
-	print_mult_hist_latex("   Available tile-fibers for a galaxy (by kind)",1,hist2,true);
+	print_mult_table_latex("Available tile-fibers for a galaxy (by kind)",outdir+"avtfhist.dat",hist2,1,F.kind);
 }
 
-// Detemine how many galaxies need to be dropped to guarantee 40 free fibers for each petal
-// Count how many free fibers there are beyond 500 in each plate
-void print_free_fibers(const Gals& G, const PP& pp, const Feat& F, const Assignment& A, bool latex) {
-	printf("# Free fibers statistics\n");
-	// Prints histogram of free fibers
-	Table unused_fbp = A.unused_fbp(pp);
-	Table hist; hist.push_back(histogram(unused_fbp,5));
-	print_mult_hist_latex("  Number of petals with this many free fiber",5,hist,true);
-
-	// Histogram of SS
-	Table usedSS = A.used_by_kind("SS",G,pp,F);
-	print_hist("  UsedSS (number of petals)",1,histogram(usedSS,1));
-
-	// Histogram of SF
-	Table usedSF = A.used_by_kind("SF",G,pp,F);
-	print_hist("  UsedSF (number of petals)",1,histogram(usedSF,1));
-}
-
-void display_results(const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, bool latex) {
+void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, bool latex) {
 	printf("# Results :\n");
-	// Raw numbers of galaxies by id and number of remaining observations
+	// 0 List of total number of galaxies
+	List tots = initList(Categories);
+	for (int g=0; g<Ngal; g++) tots[G[g].id]++;
+	
+	// 1 Raw numbers of galaxies by id and number of remaining observations
 	Table hist2 = initTable(Categories,MaxObs+1);
 	Table ob = initTable(Categories+1,2*MaxObs+1);
 	List maxobs = F.maxgoal();
@@ -483,61 +469,100 @@ void display_results(const Gals& G, const Plates& P, const PP& pp, const Feat& F
 	print_table("  Remaining observations (without negative obs ones)",with_tot(hist2),latex);
 	print_table("  Real remaining observations",with_tot(ob));
 
-	// Percentages of observation
-	Dtable percents = initDtable(Categories,2);
+	// 2 Percentages of observation
+	Dtable perc = initDtable(Categories,2);
 	for (int id=0; id<Categories; id++) {
 		int tot = sumlist(ob[id]);
 		int goal = F.goal[id];
 
-		percents[id][0] = percent(tot-ob[id][MaxObs+goal],tot);
+		perc[id][0] = percent(tot-ob[id][MaxObs+goal],tot);
 
 		double d(0.0);
 		for (int i=0; i<MaxObs; i++) d += ob[id][MaxObs+i]*(goal-i);
-		percents[id][1] = percent(d,tot*goal);
+		perc[id][1] = percent(d,tot*goal);
 	}
-	print_table("Percentages of once observed, and with ponderation",percents,latex);
+	print_table("Percentages of once observed, and with ponderation",perc,latex);
 	
-	// Observed galaxies in function of time
-	Table Ttime_scaled = initTable(Categories,Nplate);
-	Table Ttime = initTable(Categories,Nplate);
+	// 3 Observed galaxies in function of time (depends on 0)
+	int interval = 1; // Interval of plates for graphic
+	Dtable Ttime_scaled = initDtable(Categories,0);
+	Table Ttime = initTable(Categories,0);
 	for (int id=0; id<Categories; id++) {
-		int n(0);
+		List l;
+		int n = 0;
 		for (int j=0; j<Nplate; j++) {
 			for (int p=0; p<Npetal; p++) n += A.nkind(j,p,F.kind[id],G,P,pp,F,true);
-			Ttime[id][j] = n;
-			Ttime_scaled[id][j] = n;
+			if (j%interval==0) l.push_back(n);
 		}
-		for (int j=0; j<Ttime[id].size(); j++) Ttime_scaled[id][j] /= n;
+		Ttime[id] = l;
+		Ttime_scaled[id] = percents(l,tots[id]);
 	}
-	print_mult_hist_latex("Observed galaxies in function of time (scaled)",1,Ttime_scaled);
-	print_mult_hist_latex("Observed galaxies in function of time",1,Ttime);
+	print_mult_Dtable_latex("Observed galaxies in function of time (scaled) (interval 100)",outdir+"time.dat",Ttime_scaled,interval,F.kind);
+	//print_mult_table_latex("Observed galaxies in function of time",,F.kind,Ttime);
+	
+	// 4 Histogramme of percentages of seen Ly-a
+	int id = F.id("QSO Ly-a");
+	int goal = F.goal[id];
+	Table Percseen = initTable(goal+1,0);
+	for (int g=0; g<Ngal; g++) {
+		if (G[g].id==id) {
+			int n = G[g].av_tfs.size();
+			int p = A.chosen_tfs(g).size();
+			if (n>=Percseen[p].size()) Percseen[p].resize(n+1);
+			Percseen[p][n]++;
+		}
+	}
+	make_square(Percseen);
+	print_table("Number of QSO Ly-a : x - Number of available TF - y - Number of observations",Percseen);
+	for (int j=0; j<Percseen[0].size(); j++) {
+		for (int i=Percseen.size()-1; i!=0; i--) {
+			Percseen[i-1][j] += Percseen[i][j];
+		}
+	}
+	print_mult_table_latex("Available tile-fibers for a galaxy (by kind)",outdir+"obsly.dat",Percseen,1);
 
-	// Histogram of time between 2 obs of Ly a
+	// 5 Histogram of time between 2 obs of Ly a
 	Table deltas;
 	for (int g=0; g<Ngal; g++) {
 		if (G[g].id == F.id("QSO Ly-a")) {
 			Plist tfs = A.chosen_tfs(g);
 			if (tfs.size()>=2) {
+				List unsorted;
 				List del;
-				for (int i=0; i<tfs.size()-1; i++) {
-					int p1 = tfs[i].f;
-					int p2 = tfs[i+1].f;
+				for (int i=0; i<tfs.size(); i++) {
+					unsorted.push_back(tfs[i].f);
+				}
+				List sorted = sort(unsorted);
+				for (int i=0; i<sorted.size()-1; i++) {
+					int p1 = sorted[i];
+					int p2 = sorted[i+1];
 					del.push_back(p2-p1);
 				}
 				deltas.push_back(del);
 			}
 		}
 	}
-	deb(99999);
-	List h1 = histogram(deltas,100);
-	deb(555);
-	print_mult_hist_latex("Plate interval between 2 consecutive obs of Ly-a (interval 100)",100,histogram(deltas,100),true);
+	print_hist("Plate interval between 2 consecutive obs of Ly-a (interval 100)",100,histogram(deltas,100));
+	Table delts; delts.push_back(histogram(deltas,1));
+	print_mult_table_latex("Plate interval between 2 consecutive obs of Ly-a (interval 10)",outdir+"dist2ly.dat",delts,1);
+
+	// 6 Free fibers histogram
+	Table unused_fbp = A.unused_fbp(pp);
+	make_square(unused_fbp);
+	Table hist0; hist0.push_back(histogram(unused_fbp,5));
+	print_mult_table_latex("Number of petals with this many free fiber (interval 5)",outdir+"freefib.dat",hist0,5,F.kind);
+
+	// 7 Misc
+	// Histogram of SS
+	Table usedSS = A.used_by_kind("SS",G,pp,F);
+	print_hist("UsedSS (number of petals)",1,histogram(usedSS,1));
+
+	// Histogram of SF
+	Table usedSF = A.used_by_kind("SF",G,pp,F);
+	print_hist("UsedSF (number of petals)",1,histogram(usedSF,1));
 
 	// Some petal
-	//for (int i=1; i<=10; i++) {
-		//print_table("Petal "+i2s(i),A.infos_petal(1000*i,5,G,P,pp,F));
-	//}
-	//plot_freefibers("free_fiber_plot.txt",P,A);   
+	//for (int i=1; i<=10; i++) print_table("Petal "+i2s(i),A.infos_petal(1000*i,5,G,P,pp,F));
 
 	// Percentage of fiber assigned
 	printf("  %s assignments in total (%.4f %% of all fibers)\n",f(A.na()).c_str(),percent(A.na(),Nplate*Nfiber));
@@ -568,24 +593,6 @@ void display_results(const Gals& G, const Plates& P, const PP& pp, const Feat& F
 		//stats[id][3] = percent(targets[id]-done[id][0],targets[id]);
 	//}
 	//print_table("  Id on lines. (Per square degrees) Total, Fibers Used, Available, Percent of observations",stats,latex);
-}
-
-void plot_freefibers(str s, const Plates& P, const Assignment& A) { // ? Not rechecked
-	printf("# Plot free fibers positions\n");
-	double pi = 3.1415926535;
-	List unused_fibers = A.unused_f();
-	FILE * fplot;
-	const char * c = s.c_str();
-	fplot = fopen(c,"w");
-	fprintf(fplot,"j --- ra --- dec --- unused fibers \n");
-	for (int j=0; j<Nplate; j++) {
-		double phi = atan2(P[j].nhat[1],P[j].nhat[0]);
-		double theta = acos(P[j].nhat[2]);
-		double ra = 180.*phi/pi;
-		double dec = 90.*(1.-2.*theta/pi);
-		fprintf(fplot,"%d  %2d  %2d  %4d \n",j,ra,dec,unused_fibers[j]);
-	}
-	fclose(fplot);
 }
 
 // Wreck functions - could be useful later... or not ----------------------------------------------------------------------------

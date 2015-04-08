@@ -34,11 +34,8 @@ void improve_from_kind(const Gals& G, const Plates&P, const PP& pp, const Feat& 
 void update_plan_from_one_obs(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int end);
 
 // Results functions --------------------------------------------------
-void results_on_inputs(const Gals& G, const Plates& P, const Feat& F, bool latex=false);
+void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F, bool latex=false);
 
-void display_results(const Gals& G, const Plates &P, const PP& pp, const Feat& F, const Assignment& A, bool latex=false);
+void display_results(str outdir, const Gals& G, const Plates &P, const PP& pp, const Feat& F, const Assignment& A, bool latex=false);
 
-void print_free_fibers(const Gals& G, const PP& pp, const Feat& F, const Assignment& A, bool latex=false);
-
-void plot_freefibers(str s, const Plates&P, const Assignment& A);
 #endif

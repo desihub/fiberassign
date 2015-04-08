@@ -38,7 +38,7 @@ class PP { // PP for plate parameters
 	Table N; // Identify neighboring positionners : neighb of fiber k are N[k]
 	
 	PP();
-	void read_fiber_positions(const char pos_name[]);
+	void read_fiber_positions(const char pos_name[], int n=1);
 	void get_neighbors();
 	void compute_fibsofsp(); // Computes fibers_of_sp
 	List fibs_of_same_pet(int k) const;
@@ -98,7 +98,6 @@ class Assignment {
 	List nobsv_tmp; // List of nobs, redundant but optimizes
 	List once_obs;
 	List probas; // Number of galaxies of this kind (not used but could be useful for some strategy)
-
 
 	// Members
 	Assignment(const Gals& G, const Feat& F);
