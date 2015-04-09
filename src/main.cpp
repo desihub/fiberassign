@@ -90,9 +90,9 @@ int main(int argc, char **argv) {
 	improve(G,P,pp,F,A,2000);
 	improve_from_kind(G,P,pp,F,A,"SF",2000);
 	improve_from_kind(G,P,pp,F,A,"SS",2000);
-	//improve(G,P,pp,F,A,2000); // Improves almost nothing
-	//improve_from_kind(G,P,pp,F,A,"SF",2000);
-	//improve_from_kind(G,P,pp,F,A,"SS",2000);
+
+	redistribute_tf(G,P,pp,F,A,2000);
+	improve(G,P,pp,F,A,2000);
 
 	// Apply and update the plan --------------------------------------
 	init_time_at(time,"# Begin real time assignment",t);
@@ -108,16 +108,16 @@ int main(int argc, char **argv) {
 	}
 	print_time(time,"# ... took :");
 
+
 	// Make a plan ----------------------------------------------------
 	//new_assign_fibers(G,P,pp,F,A,-1,true);
 	simple_assign(G,P,pp,F,A);
 	improve(G,P,pp,F,A);
 	improve_from_kind(G,P,pp,F,A,"SF");
 	improve_from_kind(G,P,pp,F,A,"SS");
-	improve_from_kind(G,P,pp,F,A,"ELG");
-	//improve(G,P,pp,F,A);
-	//improve_from_kind(G,P,pp,F,A,"SF");
-	//improve_from_kind(G,P,pp,F,A,"SS");
+
+	//redistribute_tf(G,P,pp,F,A);
+	improve(G,P,pp,F,A);
 
 	// Apply and update the plan --------------------------------------
 	init_time_at(time,"# Begin real time assignment",t);

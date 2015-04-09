@@ -202,10 +202,10 @@ void print_mult_table_latex(str s, str ss, Table T, int multX) {
 		myexit(1);
 	}
 
-	int maxrow = max_row(T);
 	fprintf(pFile,"x ");
-	for (int i=0; i<maxrow; i++) fprintf(pFile,"%d ",i);
+	for (int i=0; i<T.size(); i++) fprintf(pFile,"%d ",i);
 	fprintf(pFile,"\n");
+	int maxrow = max_row(T);
 	for (int j=0; j<maxrow; j++) {
 		fprintf(pFile,"%d ",j*multX);
 		for (int i=0; i<T.size(); i++) {
@@ -226,10 +226,10 @@ void print_mult_Dtable_latex(str s, str ss, Dtable T, int multX) {
 		myexit(1);
 	}
 
-	int maxrow = max_row(T);
 	fprintf(pFile,"x ");
-	for (int i=0; i<maxrow; i++) fprintf(pFile,"%d ",i);
+	for (int i=0; i<T.size(); i++) fprintf(pFile,"%d ",i);
 	fprintf(pFile,"\n");
+	int maxrow = max_row(T);
 	for (int j=0; j<maxrow; j++) {
 		fprintf(pFile,"%d ",j*multX);
 		for (int i=0; i<T.size(); i++) {

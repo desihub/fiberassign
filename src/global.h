@@ -33,6 +33,8 @@ void improve_from_kind(const Gals& G, const Plates&P, const PP& pp, const Feat& 
 
 void update_plan_from_one_obs(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int end);
 
+void redistribute_tf(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int next=-1);
+
 // Results functions --------------------------------------------------
 void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F, bool latex=false);
 

@@ -415,6 +415,46 @@ void new_assign_fibers(const Gals& G, const Plates& P, const PP& pp, const Feat&
 	if (next!=1) print_time(t,"# ... took :");
 }
 
+void redistribute_tf(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int next) {
+	Time t;
+	if (next!=1) init_time(t,"# Begin redistribute TF :");
+	int j0 = A.next_plate;
+	int n = next==-1 ? Nplate-A.next_plate : next;
+	List plates = sublist(j0,n,A.order);
+	List randPlates = Randomize ? random_permut(plates) : plates;
+	int red(0);
+	Table Done = initTable(Nplate,Nfiber);
+	for (int jj=0; jj<n; jj++) {
+		int j = randPlates[jj];
+		List randFiber = random_permut(Nfiber);
+		for (int kk=0; kk<Nfiber; kk++) {
+			int k = randFiber[kk];
+			if (Done[j][k]==0) {
+				int g = A.TF[j][k];
+				if (g!=-1) {
+					bool finished = false;
+					Plist av_tfs = G[g].av_tfs;
+					for (int i=0; i<av_tfs.size() && !finished; i++) {
+						int jp = av_tfs[i].f;
+						int kp = av_tfs[i].s;
+						if (j0<=jp && jp<j0+n && !A.is_assigned_tf(jp,kp) && Done[jp][kp]==0 && ok_assign_g_to_jk(g,jp,kp,P,G,pp,F,A) && A.is_assigned_jg(jp,g,InterPlate)==-1) {
+							A.unassign(j,k,g,G,P,pp);
+							A.assign(jp,kp,g,G,P,pp);
+							finished = true;
+							Done[j][k] = 1;
+							Done[jp][kp] = 1;
+							red++;
+						}
+					}
+				}
+			}
+		}
+		//printf("%d ",red);
+	}
+	printf("  %s redistributions of couples of TF\n",f(red).c_str());
+	if (next!=1) print_time(t,"# ... took :");
+}
+
 // Other useful functions --------------------------------------------------------------------------------------------
 void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F, bool latex) {
 	printf("# Results on inputs :\n");
@@ -437,7 +477,7 @@ void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F
 	}
 	Table hist1;
 	for (int id=0; id<Categories; id++) hist1.push_back(histogram(T[id],1));
-	print_mult_table_latex("Available galaxies (by kind) for a TF",outdir+"avgalhist.dat",hist1,1,F.kind);
+	print_mult_table_latex("Available galaxies (by kind) for a TF",outdir+"avgalhist.dat",hist1,1);
 
 	// Histograms on number of av tfs per galaxy
 	Table Tg = initTable(Categories,0);
@@ -447,7 +487,7 @@ void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F
 	}
 	Table hist2;
 	for (int id=0; id<Categories; id++) hist2.push_back(histogram(Tg[id],1));
-	print_mult_table_latex("Available tile-fibers for a galaxy (by kind)",outdir+"avtfhist.dat",hist2,1,F.kind);
+	print_mult_table_latex("Available tile-fibers for a galaxy (by kind)",outdir+"avtfhist.dat",hist2,1);
 }
 
 void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, bool latex) {
@@ -482,9 +522,9 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 		perc[id][1] = percent(d,tot*goal);
 	}
 	print_table("Percentages of once observed, and with ponderation",perc,latex);
-	
-	// 3 Observed galaxies in function of time (depends on 0)
-	int interval = 1; // Interval of plates for graphic
+
+	// 3 Observed galaxies in function of time
+	int interval = 10; // Interval of plates for graphic
 	Dtable Ttime_scaled = initDtable(Categories,0);
 	Table Ttime = initTable(Categories,0);
 	for (int id=0; id<Categories; id++) {
@@ -495,9 +535,9 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 			if (j%interval==0) l.push_back(n);
 		}
 		Ttime[id] = l;
-		Ttime_scaled[id] = percents(l,tots[id]);
+		Ttime_scaled[id] = percents(l,l[l.size()-1]);
 	}
-	print_mult_Dtable_latex("Observed galaxies in function of time (scaled) (interval 100)",outdir+"time.dat",Ttime_scaled,interval,F.kind);
+	print_mult_Dtable_latex("Observed galaxies in function of time (scaled) (interval 10)",outdir+"time.dat",Ttime_scaled,interval);
 	//print_mult_table_latex("Observed galaxies in function of time",,F.kind,Ttime);
 	
 	// 4 Histogramme of percentages of seen Ly-a
@@ -543,14 +583,14 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 		}
 	}
 	print_hist("Plate interval between 2 consecutive obs of Ly-a (interval 100)",100,histogram(deltas,100));
-	Table delts; delts.push_back(histogram(deltas,1));
-	print_mult_table_latex("Plate interval between 2 consecutive obs of Ly-a (interval 10)",outdir+"dist2ly.dat",delts,1);
+	Table delts; delts.push_back(histogram(deltas,10));
+	print_mult_table_latex("Plate interval between 2 consecutive obs of Ly-a (interval 10)",outdir+"dist2ly.dat",delts,10);
 
 	// 6 Free fibers histogram
 	Table unused_fbp = A.unused_fbp(pp);
 	make_square(unused_fbp);
 	Table hist0; hist0.push_back(histogram(unused_fbp,5));
-	print_mult_table_latex("Number of petals with this many free fiber (interval 5)",outdir+"freefib.dat",hist0,5,F.kind);
+	print_mult_table_latex("Number of petals with this many free fiber (interval 5)",outdir+"freefib.dat",hist0,5);
 
 	// 7 Misc
 	// Histogram of SS
@@ -596,91 +636,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 }
 
 // Wreck functions - could be useful later... or not ----------------------------------------------------------------------------
-// Redistrubte assignments trying to get at least 500 free fibers on each plate/tile
-// Redo so we look first at plates with too few free fibers
-// Before : (j,k) <-> g, with Sp(k) too much used
-// After : (jreassign,kreassign) <-> g & (j,k) free, such that (jreassign,kreassign) comes from most unused (ji,ki)
-// Reassign if this is improvement
-void redistribute(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A) {
-	int redistributions(0);
-	List Sp = pp.spectrom;
-	Table unused_fbp = A.unused_fbp(pp); // We manipulate our own one to make computations quicker
-	//print_table("unused",unused_fbp);
-	List randPlates = random_permut(Nplate);
-	// Consider all petals with too few free fibers
-	for (int jj=0; jj<Nplate; jj++) {
-		int j = randPlates[jj];
-		List randFibers = random_permut(Nfiber);
-		for (int kk=0; kk<Nfiber; kk++) {
-			int k = randFibers[kk];
-			int nfree = unused_fbp[j][Sp[k]];
-			//int nfree = A.unused_fbp(j,k,pp);
-			int g = A.TF[j][k];
-			if (g!=-1 && nfree<MinUnused/* && G[g].id==4*/) { // Only ELG
-				// Consider other ways to observe this galaxy
-				std::vector<pair> tfs = G[g].av_tfs;
-				int jreassign(-1); int kreassign(-1); int mostunused(-1);
-				for (int c=0; c<tfs.size(); c++) {
-					int jp = tfs[c].f;
-					int kp = tfs[c].s;
-					int nfreep = unused_fbp[jp][Sp[kp]];
-					//int nfreep = A.unused_fbp(jp,kp,pp);
-					// Use freest plate and petal
-					if (nfreep>mostunused && ok_assign_g_to_jk(g,jp,kp,P,G,pp,F,A)) {
-						mostunused = nfreep;
-						jreassign = jp;
-						kreassign = kp; 
-					}
-				}
-				if (mostunused > nfree) {
-					//printf("%d %d %d %d %d %d %d\n",mostunused, nfree, j,k,jreassign,kreassign,g);
-					A.unassign(j,k,g,G,P,pp);
-					A.assign(jreassign,kreassign,g,G,P,pp);
-					unused_fbp[j][Sp[k]]++;
-					unused_fbp[jreassign][Sp[kreassign]]--;		
-					redistributions++; 
-				}}}}
-				printf("  %s redistributions (~%.4f %% redistributed)\n",f(redistributions).c_str(),percent(redistributions,A.na()));
-}
 
-void redistribute_tf(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A) {
-	int redistributions(0);
-	List randPlates = random_permut(Nplate);
-	for (int jj=0; jj<Nplate; jj++) {
-		printf("%d ",jj); std::cout.flush();
-		int red(0);
-		int j = randPlates[jj];
-		for (int kk=0; kk<Nfiber; kk++) {
-			List randFibers = random_permut(Nfiber);
-			int k = randFibers[kk];
-			int g = A.TF[j][k];
-			if (g!=-1) {
-				int best = -1; int mbest = -1; float pbest = 1e30;
-				List av_gals = P[j].av_gals[k];
-				List randGals = random_permut(av_gals.size());
-				for (int gg=0; gg<av_gals.size(); gg++) {
-					int g = av_gals[randGals[gg]];
-					int prio = G[g].prio(F);
-					int m = A.nobs(g,G,F);
-					if (/*g!=g_no &&*/ ok_assign_g_to_jk(g,j,k,P,G,pp,F,A) && A.is_assigned_jg(j,g,InterPlate)==-1 && A.nobs(g,G,F)>=1) {
-						if (prio<pbest || A.once_obs[g] && m>mbest) {
-							best = g;
-							pbest = prio;
-							mbest = m;
-						}
-					}
-				}
-				if (best!=-1) {
-					A.unassign(j,k,g,G,P,pp);
-					A.assign(j,k,best,G,P,pp);
-					redistributions++; red++;
-				}
-			}
-		}
-		printf("%d ",red);
-	}
-	printf("  %s redistributions (~%.4f %% of TF redistributed)\n",f(redistributions).c_str(),percent(redistributions,Nfiber*Nplate));
-}
 
 void redistribute_g(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A) {
 	int redistributions(0);
