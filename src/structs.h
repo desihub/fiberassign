@@ -12,6 +12,7 @@
 #include	<algorithm>
 #include	<exception>
 #include	<sys/time.h>
+#include        <map>
 #include        "omp.h"
 #include        "macros.h"
 #include        "misc.h"
@@ -22,11 +23,13 @@ class Feat { // F for features
 	List prio; // Priorities 
 	List goal;
 	Slist kind;
+	Smap ids; // Redundtant but optimizes (inv of kind)
 
 	Feat();
 	int id(str s) const;
 	int maxgoal(int kind) const; // Gives max goal for a galaxy of this kind (goal(Ly-a) for all QSO for example)
 	List maxgoal() const; // List (function of kind) of max goals according to the kind (defined by prio)
+	void init_ids();
 };
 
 // PP ---------------------------------------------------
@@ -88,7 +91,7 @@ List av_gals_of_kind(int kind, int j, int k, const Gals& G, const Plates& P, con
 class Assignment {
 	public:
 	Table TF; // TF for tile fiber, #tiles X #fibers
-	List order; // Order of tiles we want to assign
+	List order; // Order of tiles we want to assign, only 1-n in simple increasing order for the moment
 	int next_plate; // Next plate in the order
 
 	// Redundant information (optimizes computation time)
@@ -99,7 +102,7 @@ class Assignment {
 	List once_obs;
 	List probas; // Number of galaxies of this kind (not used but could be useful for some strategy)
 
-	// Members
+	//// Members
 	Assignment(const Gals& G, const Feat& F);
 	~Assignment();
 	void assign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp);
@@ -113,17 +116,20 @@ class Assignment {
 	Plist chosen_tfs(int g, int begin=0, int size=Nplate) const; // Pairs (j,k) chosen by g, amongst size plates from begin
 	int unused_f(int j) const; // Number of unused fiber on the j'th plate
 	int unused_fbp(int j, int k, const PP& pp) const; // Number of unassigned fibers of the petal corresponding to (j,k)
-	int nkind(int j, int k, str kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F, bool pet=false) const; // Number of fibers assigned to the kind "kind" on the petal of (j,k). If pet=true, we don't take k but the petal directly instead
+	int nkind(int j, int k, int kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F, bool pet=false) const; // Number of fibers assigned to the kind "kind" on the petal of (j,k). If pet=true, we don't take k but the petal directly instead
 	List fibs_of_kind(int kind, int j, int pet, const Gals& G, const PP& pp, const Feat& F) const; // Sublist of fibers assigned to a galaxy of type kind for (j,p)
 	List fibs_unassigned(int j, int pet, const Gals& G, const PP& pp, const Feat& F) const; // Subist of unassigned fibers for (j,p)
+
 	// Update information
 	void update_nobsv_tmp_for_one(int j);
 	void update_once_obs(int j);
+
 	// Used to compute results at the end
 	Table infos_petal(int j, int pet, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const;
 	List unused_f() const;
 	Table unused_fbp(const PP& pp) const; // Unused fibers by petal
 	Table used_by_kind(str kind, const Gals& G, const PP& pp, const Feat& F) const; // Table (j X p) with numbers of assigned TF to a galaxy of kind
+
 	// Not used (but could be useful)
 	double get_proba(int i, const Gals& G, const Feat& F); // p(fake QSO | QSO) for example
 	void update_nobsv_tmp();

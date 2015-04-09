@@ -1,8 +1,12 @@
 \documentclass[10pt]{extarticle}
+\usepackage{etex}
 %\usepackage[7pt]{moresize}
 %\fontfamily{<familyname>}\selectfont
 \renewcommand{\sfdefault}{phv}
 \usepackage{anyfontsize}
+\usepackage{textcomp}
+\usepackage{multirow}
+\usepackage{standalone}
 \usepackage{verbatim}
 \usepackage{authblk}
 \usepackage{graphicx}
@@ -13,51 +17,25 @@
 \usepackage{amsmath}
 \usepackage{algorithm}
 \usepackage[noend]{algpseudocode}
-\usepackage[T1]{fontenc}          %% permet d'utiliser les caractères accentués
-\usepackage[utf8]{inputenc} %% permet d'utiliser les caractères accentué
 \usepackage{float}
 \usepackage{filecontents}
+%Lettres françaises
+\usepackage[cyr]{aeguill}
+\usepackage[francais]{babel}
+\usepackage[T1]{fontenc}          %% permet d'utiliser les caractères accentués
+\usepackage[utf8]{inputenc} %% permet d'utiliser les caractères accentué
 %PGF plot
 \usepackage{pgfplots, pgfplotstable}
+\pgfplotsset{compat=newest}
 \usepgfplotslibrary{statistics}
-\pgfplotscreateplotcyclelist{mycolorlist}{%
-blue\\%
-red\\%
-brown\\%
-teal\\%
-violet\\%
-cyan\\%
-green\\%
-black\\%
-}
+\pgfplotscreateplotcyclelist{mycolorlist}{blue,red,brown,teal,violet,cyan,green,black}
 \pgfplotscreateplotcyclelist{mylegend}{Ly-a,Target,LRG,ELG,Fake,Fake,SS,SF}
-
 \usepackage{xifthen}
-\newcommand{\getsizes}[2]% width, height
-{   \path (current bounding box.south west);
-    \pgfgetlastxy{\xsw}{\ysw}
-    \path (current bounding box.north east);
-    \pgfgetlastxy{\xne}{\yne}
-    \pgfmathsetmacro{\picwidth}{(\xne-\xsw)/28.453}
-    \pgfmathsetmacro{\picheight}{(\yne-\ysw)/28.453}
-    \pgfmathsetmacro{\picxscale}{#1/\picwidth}
-    \pgfmathsetmacro{\picyscale}{#2/\picheight}
-    \xdef\xsca{\picxscale}
-    \xdef\ysca{\picyscale}
-}
 
-\newcommand{\xyscaledtikz}[3]% draw commands, width, height
-{ \smash{\vphantom{
-    \begin{tikzpicture}
-        #1
-        \getsizes{#2}{#3}
-    \end{tikzpicture}
-    }}
-    \begin{tikzpicture}[xscale=\xsca,yscale=\ysca]
-        #1
-    \end{tikzpicture}
-}
 
+%Debug box warnings
+\showboxdepth=\maxdimen
+\showboxbreadth=\maxdimen
 %%%% debut macro %%%%
 \newenvironment{changemargin}[2]{\begin{list}{}{%
 \setlength{\topsep}{0pt}%
@@ -107,15 +85,14 @@ black\\%
 \author[1]{Robert N. Cahn\thanks{rncahn@lbl.gov}}
 \author[2]{Louis Garrigue\thanks{louis.garrigue@ens.fr}}
 \affil[1]{Department of Cosmological Physics, LBNL, Berkeley}
-\affil[2]{Département de physique, École normale supérieure, Paris}
+\affil[2]{Departement de physique, Ecole normale superieure, Paris}
 \date{\today}
 
 \begin{document}
 %\begin{titlepage}
 %\end{titlepage}
-
-
 \maketitle
+
 \begin{center}
   \includegraphics[width = 20mm]{figs/logolbnl.png}\hfill
   \includegraphics[width = 20mm]{figs/logodesi.jpg} \hfill
@@ -123,15 +100,22 @@ black\\%
 \end{center}
 
 \begin{comment}
+	\section{DESI (Dark Energy Spectroscopic Instrument}
+The Dark Energy Spectroscopic Instrument (DESI) is a Stage IV experiment that will study baryon acoustic oscillations (BAO) and the growth of structure through redshift-space distortions. The DESI instrument consists of a new wide-field (3.2 deg. linear field of view) corrector plus a multi-object spectrometer with up to 5000 robotically positioned optical fibers, with a resolving power of R = 5000.
+It will be installed on the Mayall telescope in Arizona. The fibers feed 10 three-arm spectrographs producing spectra that cover a wavelength range from 360-980 nm and have resolution of 2000-5500 depending on the wavelength. It will watch at 14,000 sq. deg. during 5 years, for targets that trace the evolution of dark energy from redshift 0.2 out to 3.5 using three kinds of celestial objects : luminous red galaxies (LRG), emission line galaxies (ELG) and quasars. 
+This survey is the successor of the Stage-III BigBOSS survey and complements imaging surveys such as the Stage-III Dark Energy Survey (DES, currently operating) and the Stage-IV Large Synoptic Survey Telescope (LSST, planned start in the next decade).
+
 \section{Rules for fiber assignment}
 We know the repartition of matter (by repartition of H matter) by pics.
 The original catalog of 50M galaxies has only information on the position and the type of the galaxy, which is LRG, ELG or QSO. Those information were given by a previous survey, only based on colors, the redshift wasn't then computed. But there are different types of each one. QSO can be $Ly-\alpha$, target or fake (actually fake ones can be stars for example). A python code generates the file of galaxies, simulating with appropriate probabilities each type, taking into account the fact that there are correlations between positions of galaxies (accordingly with BAO and gravition). When we watch at a QSO and we see that it's a fake or a target, we don't watch at it anymore. But if it's a real one, we try to see it 5 times if it is possible.
 The absorption spectrum shows a pic at $\lambda = 1216 Å$. We can deduced the redshift because we receive a wavelenght $\lambda(1+z)$. As spectrometers can only see wavelenghts in the range 380 nm (under, no enough energy is received) - 980 nm, the minimum redshift we can reach is 2.2.
 At first, there was as code written by Martin White then Robert Cahn that did an assignment of tilefibers - galaxies in a global way : naïve assignment, improvement (try to reassign some fibers to other ones to assign free ones) and redistribution (do not assign more, but it's to have a better repartition of free fibers on each petal).
-We have to avoid correlation not mastered. That's why we don't (at first sight), when we take a new tile, associate 50 free fibers to regions of low QSO density. We would rather assign until there are only 50 free fibers left.
 We have to reserve 10 fibers by petal to Standard Stars and 40 to Sky Fibers.
+We have to avoid unmastered correlations. That's why we don't (at first sight), when we take a new tile, associate 50 free fibers to regions of low QSO density. We would rather assign until there are only 50 free fibers left.
 We do the compuation in real time. That means that we do it tile by tile. We can't access the information of all the galaxies because we only have past watched galaxies information. That adds a new constrain. So I rewrote algorithms so that they would compute an optimal assignment for one plate, knowing information on previous one assignments, and knowing information on previously watched galaxies.
 \end{comment}
+
+
 
 \section{Introduction}
 \begin{multicols}{2}
@@ -144,24 +128,23 @@ The samples are taken from Martin's mocks in stored on NERSC at /project/project
  Here the catalog of targets is in the NERSC directory :
   /projects/projectdirs/desi/mocks/ preliminary/objects\_ss\_sf0.rdzipn the binary file created by {\tt make\_catalog}. The plate centers are provided here by \$DESIMODEL/data/footprint/desi-tiles.par The locations of the positioners are given in \$DESIMODEL/data/focalplane/fiberpos.txt An option not now used is to write the actual assignments to a file here called {\tt assignment}.
   
-  
   README.rst gives instructions for running on NERSC. The problem of colliding fiber positioners is addressed in a simplified way. 
   We summarize here the various components of the code to facilitate their modification later.
 Here are some features on input galaxies simulated catalog :
 
-\begin{table}[H]\begin{center}
-	\caption{Characteristics of galaxy samples as set in make\_catalog\_rnc.py}\label{table:characteristics}
-	\begin{tabular}{lcccr}\\ \hline
+\begin{table}[H]\centering
+	\begin{tabular}{lcccr} \hline
 		Kind&Id&Priority&Nobs&Density/sq.deg.\\ \hline
-		Ly-A QSO & 0 & 1 & 5 &  50\\
-		Tracer QSO & 1 & 1 & 1& 120\\
+		QSO Ly-$\alpha$& 0 & 1 & 5 &  50\\
+		QSO Tracer & 1 & 1 & 1& 120\\
 		LRG & 2 & 3 &2 & 300\\
 		ELG & 3 & 5 & 1 & 2400\\
 		Fake QSO & 4 & 1 & 1& 90\\
 		Fake LRG & 5 & 3 & 1 & 50\\
-		SS & 6 & 2 & 1&  ?\\
-		SF & 7 & 4 & 1& ?\\ \hline
-	\end{tabular}\end{center}
+		Standard Star & 6 & 2 & 1&  ?\\
+		Sky Fiber & 7 & 4 & 1& ?\\ \hline
+	\end{tabular}
+	\caption{Characteristics of galaxy samples as set in make\_catalog\_rnc.py}\label{table:characteristics}
 \end{table}
 
 
@@ -197,8 +180,7 @@ They are build in order to be independent to each other, flexible, quickly under
 
 \end{multicols}
 \begin{table}[H]\begin{center}
-	\caption{Classes and structures}\label{tab:structures}
-	\begin{tabular}{|l|l|p{12cm}|}\\ \hline
+	\begin{tabular}{|l|l|p{12cm}|} \hline
 		Structure name & Meaning & Description \\ \hline \hline
 
 		Feat & Features of galaxies & Initialized in the main function, memories priorities, number of observations wished, and types of different galaxies.\\ \hline
@@ -209,10 +191,11 @@ They are build in order to be independent to each other, flexible, quickly under
 
 		plate & A plate & Peculiarly describes both the location in the sky of the tile in terms of a unit vector derived from RA and DEC. Carries also the Id of the tile, its pass, and the available galaxies it is able to reach. Then Plates is vector of plate, and has all information on tiles.\\ \hline
 
-		galaxy & A galaxy & Information on a galaxy : an {\tt id} that corresponds to table \ref{tab:characteristics}, a position in the sky (in 2 differents ways), and the available tile-fibers that can watch at it. Gals is vector of galaxy and carries all information on galaxies.\\ \hline
+		galaxy & A galaxy & Information on a galaxy : an {\tt id} that corresponds to table \ref{table:characteristics}, a position in the sky (in 2 differents ways), and the available tile-fibers that can watch at it. Gals is vector of galaxy and carries all information on galaxies.\\ \hline
 
 		Assignment & An entire assignment & Carries maping of tile-fibers to galaxies, its inverse, galaxies to tile-fibers, and the cube (3d-matrix) of assigned fibers for a kind, a petal and a plate (useful to have fast computations).\\ \hline
 	\end{tabular}\end{center}
+	\caption{Classes and structures}\label{tab:structures}
 \end{table}
 \begin{multicols}{2}
 
@@ -293,7 +276,7 @@ The "next" argument means that we treat (in a shuffle order) all next "next" pla
 	\end{algorithmic}
 \end{algorithm}
 
-{\tt new\_assign\_fibers} makes a first assignment plan trying to assign without SS nor SF, then trying to assign them replacing other kinds
+{\tt new\_assign\_fibers} makes a first assignment plan trying to assign only QSO, then ELG and LRG, then trying to assign SF and SS replacing other kinds if there are not enough available fibers. This way, a QSO could can't be lost because of a collision. With the current value of Collision, it's not very useful, but could be for bugger values.
 
 \begin{algorithm}[H]
 	\caption{New\_assign\_fibers(j0,n)}\label{euclid}
@@ -301,7 +284,10 @@ The "next" argument means that we treat (in a shuffle order) all next "next" pla
 		\For {each plate j from j0 to j0+n in a random order}
 		\For {each petal p of this plate, in a random order}
 		\For {each fiber k of this petal, in a random order}
-		\State Try assign\_fiber(j,k) where SS and SF are not allowed
+		\State Try assign\_fiber(j,k) only allowing QSO
+		\EndFor
+		\For {each fiber k of this petal, in a random order}
+		\State Try assign\_fiber(j,k) only allowing ELG and LRG
 		\EndFor
 		\For {each unassigned fiber k of this petal}
 		\State Try assign\_fiber(j,k) to only SS or SF
@@ -387,9 +373,9 @@ There are two way of assignment : either watch tile after tile and foresee the a
 The idea is to get most information possible in the first pass, assigning independently tile after tile, and then, after this first pass, make a plan for everything else, when we have information on most of the QSO and LRG (the only kinds we want to observe several times). The plan will be better that way, because we do less mistakes than if we would do it from the begining.
 
 
-\section{Main}
- The calling sequence is {\tt assign  <galaxy> <plate\_centers> <fiberpos> <assignment>}. The last of these is the file to which we would write all the final galaxy assignments, but this is generally suppressed since we aren't using it yet.
- 
+\section{Algorithm}
+
+The calling sequence is {\tt assign galaxy plate\_centers fiberpos assignment}. The last of these is the file to which we would write all the final galaxy assignments, but this is generally suppressed since we aren't using it yet.
 
  {\tt main} proceeds by taking important parameters, features of galaxies, reading in the galaxies to make G, the positions of the fibers on the plate to make pp, the plate centers and positioner locations to make P. 
  
@@ -397,143 +383,181 @@ We then collect available galaxies for each fiber for each plate, and compute th
  
 We next, tile after tile, do the assignment of galaxies. We have tried several strategies : making several plans, use simple assignment, use complexe one, improve several times, in several ways, etc... Here is the one which gives the best results.
 
+We present the strategy that produced the best results, which will be the strategy of reference,
+We tried a strategy where we make then apply a plan for the first 2000, then for the following 2000, then for the left, but it's not better.
+
+Simple assign fibers and new assign, even if there structure are quite different, give almost the same results. Simple assign is a little bit quicker so we will use this one.
 
 \begin{algorithm}[H]
-	\caption{Assignment in main program}\label{euclid}
+	\caption{Assignment of reference in main program}\label{euclid}
 	\begin{algorithmic}[1]
-		\Algphasee{Phase I - Assigning plates after plates}
-		\For {each plate j until 2000}
-		\State Assign for one plate(j)
-		\State Improve SS
-		\State Improve SF
-		\State Real observation is here
-		\EndFor
-	\end{algorithmic}
-
-	\begin{algorithmic}[1]
-		\Algphase{Phase II - Make a plan}
-		\State Run, globally, on the list plates from j0 to j :
+		\Algphasee{Phase I - Make a plan for the first 2000 plates}
+		\State Run, globally, on the list plates from 0 to 1999 :
 		\State Assign fibers
-		\State Improve
 		\State Improve SF
-		\State Improve SS
 	\end{algorithmic}
-
 	\begin{algorithmic}[1]
-		\Algphase{Phase III - Applying the plan}
+		\Algphase{Phase II - Applying the plan}
 		\For {each plate j of the plan, in order}
 		\State Real observation is here
 		\State Update information collected on previous just watched tile
 		\State Update\_plan\_from\_one\_observation(j)
 		\EndFor
 	\end{algorithmic}
+
+	\begin{algorithmic}[1]
+		\Algphase{Phase III - Make a plan for all left plates}
+		\State Run, globally, on the list plates from 2000 to the end :
+		\State Assign fibers
+		\State Improve
+		\State Improve SF
+		\State Improve SS
+		\State Redistribute
+		\State Improve
+		\State Redistribute
+		\State Improve
+	\end{algorithmic}
+
+	\begin{algorithmic}[1]
+		\Algphase{Phase IV - Applying the plan}
+	\end{algorithmic}
 \end{algorithm}
+
+
+A standard output display of an execution look like that (for assignment plan and applying):
+{\tt 
+ - Plate 1998 :      9 not as -     0 unas \&    0 replaced
+
+ - Plate 1999 :      8 not as -     0 unas \&    0 replaced
+
+\# ... took : 10.5 s
+
+\# Begin simple assignment :
+
+  37,635,165 assignments on all left next plates
+
+\# ... took : 2 mn 17.3 s
+
+\# Begin improve :
+
+  921,594 more assignments (2.449 \% improvement)
+
+\# ... took : 42.1 s
+
+\# Begin improve SF :
+
+  1,386,726 more assignments (3.597 \% improvement)
+
+\# ... took : 3 mn 13.8 s
+
+\# Begin improve SS :
+
+  194,603 more assignments (0.487 \% improvement)
+
+\# ... took : 6.99 s
+
+\# Begin redistribute TF :
+
+  2,202,483 redistributions of couples of TF
+
+\# ... took : 16.8 s
+
+\# Begin improve :
+
+  167,146 more assignments (0.416 \% improvement)
+
+\# ... took : 23.3 s
+
+\# Begin redistribute TF :
+
+  2,058,702 redistributions of couples of TF
+
+\# ... took : 16.8 s
+
+\# Begin improve :
+
+  76,484 more assignments (0.190 \% improvement)
+
+\# ... took : 22.1 s
+
+\# Begin real time assignment at 11 mn 34.7 s
+
+ - Plate 2000 : SF-imp + 38 (+0.769 \%) SS-imp +  1 (+0.020 \%)    22 not as -  2630 unas \& 1985 replaced
+
+ - Plate 2001 : SF-imp + 37 (+0.750 \%) SS-imp +  1 (+0.020 \%)    29 not as -  3227 unas \& 2619 replaced
+
+ - Plate 2002 : SF-imp + 34 (+0.691 \%) SS-imp +  2 (+0.040 \%)    44 not as -  3296 unas \& 2632 replaced
+
+ - Plate 2003 : SF-imp + 13 (+0.262 \%) SS-imp +  1 (+0.020 \%)    17 not as -  2797 unas \& 2526 replaced
+}
 
 \section{Results}
 \subsection{Results on the input catalog}
+Here are some statistics on the input galaxies catalog :
 
-\begin{figure}[H]\begin{center}\begin{tikzpicture}[scale=1.1]\begin{semilogyaxis}[const plot, stack plots=y, enlarge x limits=false,xlabel={},ylabel={},cycle list name=mycolorlist,legend entries={QSO Ly-$\alpha$,QSO Tracer,LRG,ELG,Fake QSO,Fake LRG,SS,SF}] 
-\addplot coordinates{(0,48860818)(1,4272723)(2,190374)(3,5927)(4,154)(5,4)(6,0)} 
- ; 
-\addplot coordinates{(0,43223771)(1,9067745)(2,965034)(3,69390)(4,3866)(5,185)(6,9)(7,0)} 
- ; 
-\addplot coordinates{(0,32284811)(1,15577500)(2,4321212)(3,931734)(4,176391)(5,31521)(6,5554)(7,1058)(8,166)(9,46)(10,6)(11,1
-)(12,0)} 
- ; 
-\addplot coordinates{(0,1023976)(1,3785704)(2,7247666)(3,9560878)(4,9736045)(5,8168407)(6,5881360)(7,3734704)(8,2133759)(9,11
-13331)(10,536458)(11,240432)(12,102174)(13,40878)(14,15616)(15,5658)(16,1914)(17,715)(18,227)(19,66)(20,24)(21,7)(22,0)(23,0)
-(24,0)(25,0)(26,1)(27,0)} 
- ; 
-\addplot coordinates{(0,45554172)(1,7176220)(2,568334)(3,29999)(4,1229)(5,44)(6,2)(7,0)} 
- ; 
-\addplot coordinates{(0,48857531)(1,4278420)(2,188192)(3,5725)(4,131)(5,1)(6,0)} 
- ; 
-\addplot coordinates{(0,41728443)(1,10233745)(2,1258373)(3,102934)(4,6208)(5,280)(6,15)(7,2)(8,0)} 
- ; 
-\addplot coordinates{(0,4616745)(1,11260225)(2,13774643)(3,11257056)(4,6913988)(5,3403210)(6,1399769)(7,494264)(8,153927)(9,4
-2449)(10,10742)(11,2354)(12,523)(13,87)(14,16)(15,2)(16,0)} 
- ; 
-\end{axis}\end{tikzpicture}\end{center}\caption{Available galaxies (by kind) for a TF}\end{figure}
+\begin{figure}[H]\begin{center}
+	\begin{tikzpicture}[scale=1.1]\begin{semilogyaxis}[const plot,enlarge x limits=false,xlabel={},ylabel={},cycle list name=mycolorlist,legend entries={QSO Ly-$\alpha$,QSO Tracer,LRG,ELG,Fake QSO,Fake LRG,SS,SF}] 
+		\addplot table[x=x,y=0] {figs/avgalhist.dat};
+		\addplot table[x=x,y=1] {figs/avgalhist.dat};
+		\addplot table[x=x,y=2] {figs/avgalhist.dat};
+		\addplot table[x=x,y=3] {figs/avgalhist.dat};
+		\addplot table[x=x,y=4] {figs/avgalhist.dat};
+		\addplot table[x=x,y=5] {figs/avgalhist.dat};
+		\addplot table[x=x,y=6] {figs/avgalhist.dat};
+		\addplot table[x=x,y=7] {figs/avgalhist.dat};
+\end{semilogyaxis}\end{tikzpicture}
+\end{center}\caption{Available galaxies (by kind) for a TF}\end{figure}
 
 
-\begin{figure}[H]\begin{center}\begin{tikzpicture}[scale=1.1]\begin{semilogyaxis}[const plot, stack plots=y, enlarge x limits=false,xlabel={},
-ylabel={},cycle list name=mycolorlist] 
-\addplot coordinates{(0,1221)(1,10791)(2,12456)(3,22479)(4,68609)(5,178598)(6,221698)(7,160186)(8,76194)(9,26755)(10,7327)(11
-,1848)(12,389)(13,73)(14,15)(15,4)(16,0)}; 
-\addplot coordinates{(0,3026)(1,25933)(2,30158)(3,53496)(4,164665)(5,430022)(6,533620)(7,382218)(8,184066)(9,63875)(10,18081)
-(11,4322)(12,919)(13,181)(14,36)(15,1)(16,0)(17,0)(18,1)(19,0)}; 
-\addplot coordinates{(0,7827)(1,65268)(2,75612)(3,133924)(4,411745)(5,1070352)(6,1325440)(7,952661)(8,454940)(9,159962)(10,44
-925)(11,10781)(12,2357)(13,443)(14,88)(15,15)(16,3)(17,0)}; 
-\addplot coordinates{(0,62377)(1,525986)(2,608551)(3,1082678)(4,3324320)(5,8631364)(6,10712696)(7,7694215)(8,3674573)(9,12877
-29)(10,359236)(11,86042)(12,18611)(13,3706)(14,732)(15,130)(16,32)(17,2)(18,0)}; 
-\addplot coordinates{(0,2275)(1,19738)(2,22979)(3,40711)(4,124605)(5,322045)(6,399710)(7,286461)(8,136996)(9,47975)(10,13427)
-(11,3229)(12,692)(13,137)(14,27)(15,3)(16,2)(17,0)}; 
-\addplot coordinates{(0,1211)(1,10884)(2,12706)(3,22600)(4,68818)(5,178630)(6,222554)(7,160085)(8,75931)(9,26473)(10,7337)(11
-,1763)(12,367)(13,77)(14,12)(15,2)(16,0)}; 
-\addplot coordinates{(0,3625)(1,30274)(2,35024)(3,63126)(4,193433)(5,500614)(6,623090)(7,446163)(8,213512)(9,74612)(10,20670)
-(11,4996)(12,1077)(13,197)(14,38)(15,8)(16,2)(17,1)(18,0)}; 
-\addplot coordinates{(0,35713)(1,303217)(2,353577)(3,629933)(4,1932755)(5,5008249)(6,6217942)(7,4470161)(8,2134168)(9,747845)
-(10,207971)(11,49733)(12,10758)(13,2121)(14,409)(15,70)(16,10)(17,2)(18,0)}; 
-\end{axis}\end{tikzpicture}\end{center}\caption{Available tile-fibers for a galaxy (by kind)}\end{figure}
+\begin{figure}[H]\begin{center}\begin{tikzpicture}[scale=1.1]\begin{semilogyaxis}[const plot,enlarge x limits=false,label={},ylabel={},cycle list name=mycolorlist] 
+		\addplot table[x=x,y=0] {figs/avtfhist.dat};
+		\addplot table[x=x,y=1] {figs/avtfhist.dat};
+		\addplot table[x=x,y=2] {figs/avtfhist.dat};
+		\addplot table[x=x,y=3] {figs/avtfhist.dat};
+		\addplot table[x=x,y=4] {figs/avtfhist.dat};
+		\addplot table[x=x,y=5] {figs/avtfhist.dat};
+		\addplot table[x=x,y=6] {figs/avtfhist.dat};
+		\addplot table[x=x,y=7] {figs/avtfhist.dat};
+\end{semilogyaxis}\end{tikzpicture}\caption{Available tile-fibers for a galaxy (by kind)}\end{center}\end{figure}
 
 
 \subsection{Results of the assignment}
 We run the program with all information (prior knowledge of information on fake, target, etc) to compare with realistic simulation, this result is interesting.
 
-The results are then written using {\tt display\_results} and {\tt print\_free\_fibers}.
+The results are then written using {\tt display\_results}, and each assignment/improvement function display its own statistics.
 
-We present several strategies and can compare results from one to another. Here is the strategy where we first look at 2000 tiles, tile after tile runing simple\_assign on each tile without plan, and we then do a plan for all left tiles.
+ and from it, we change parameters to see the effects of them on the program. We also compare to other strategies. The best strategy (discovered until now) is the one where is the strategy where we first look at 2000 tiles, tile after tile runing simple\_assign on each tile without plan, and we then do a plan for all left tiles.
 
-We present percentage of improvement in function of iteration of improvement functions.
+In the second plan, we can experimentally see that after a first SF-improvement ($+\sim 3.6\%$), even if we redistribute, a second one is almost useless ($+\sim 0.1\%$), whereas a second simple-improve is still efficient after a redistribution ($+\sim 0.4\%$), but useless without a redistribution step ($+\sim 0.01\%$). An other kind of kind-improvement (instead of SF and SS ($+\sim 0.5\%$)) is also almost useless. Furthermore, the computation time is far bigger for SF-improvement (5 mn) than for other.
 
+The most results-sensible feature in it is the number of plan/applying and their plates sets. One could try to find a better one.
 
-\begin{figure}[H]\begin{center}\begin{tikzpicture}[scale=1.1]\begin{semilogyaxis}[const plot, stack plots=y, enlarge x limits=false,xlabel={},
-ylabel={},cycle list name=mycolorlist] 
-\addplot coordinates{(0,31955)(1,10887)(2,6656)(3,5517)(4,4927)(5,4573)(6,4183)(7,3870)(8,3566)(9,3333)(10,3114)(11,2827)(12,
-2511)(13,2299)(14,2096)(15,1905)(16,1744)(17,1555)(18,1346)(19,1186)(20,1054)(21,940)(22,748)(23,663)(24,563)(25,448)(26,388)
-(27,332)(28,267)(29,235)(30,187)(31,159)(32,138)(33,91)(34,80)(35,53)(36,55)(37,34)(38,30)(39,22)(40,28)(41,18)(42,19)(43,7)(
-44,6)(45,10)(46,7)(47,1)(48,3)(49,3)(50,1)(51,2)(52,1)(53,1)(54,4)(55,1)(56,0)(57,1)(58,3)(59,1)(60,2)(61,0)(62,2)(63,1)(64,0
-)(65,0)(66,0)(67,0)(68,0)(69,0)(70,0)(71,0)(72,0)(73,0)(74,0)(75,1)(76,0)} 
- ; 
-\end{axis}\end{tikzpicture}\end{center}\caption{$#$ of petals with that many free fibers}\end{figure}
- 
+\end{multicols}
+
+\subsection{Sum-up of assigned galaxies}
+In the reference strategy, we have 50,095,513 assignments in total (93.9350\% of all fibers).
+
 \begin{table}[H]\begin{center}
-\begin{tabular}{l|rrrrrrr}
-	~ &               0 &         1 &       2 &      3 &      4 &     5 &         6 \\ \hline
-  0   &    22,837 &   414,719 & 238,589 & 75,637 & 28,393 & 8,468 &   788,643 \\ 
-  1   & 1,874,315 &    20,305 &       0 &      0 &      0 &     0 & 1,894,620 \\ 
-  2   & 3,901,902 &   567,892 & 246,549 &      0 &      0 &     0 & 4,716,343 \\ 
-  3   &29,404,671 & 8,668,309 &       0 &      0 &      0 &     0 &38,072,980 \\ 
-  4   & 1,405,734 &    15,278 &       0 &      0 &      0 &     0 & 1,421,012 \\ 
-  5   &   753,347 &    36,103 &       0 &      0 &      0 &     0 &   789,450 \\ 
-  6   & 1,066,600 & 1,143,862 &       0 &      0 &      0 &     0 & 2,210,462 \\ 
-  7   & 4,266,400 &17,838,234 &       0 &      0 &      0 &     0 &22,104,634 \\ 
+\begin{tabular}{l|rrrrrrrrr}
+	~   &         0 &         1 &       2 &      3 &      4 &     5 &         Total & $\%$ observed & $\%$ ponderated\\ \hline
+  0   &    22,915 &   414,720 & 238,413 & 75,600 & 28,497 & 8,498 &   788,643 & 98.922 & 67.670\\ 
+  1   & 1,874,187 &    20,433 &       0 &      0 &      0 &     0 & 1,894,620 & 98.921 & 98.921\\ 
+  2   & 3,909,020 &   562,287 & 245,036 &      0 &      0 &     0 & 4,716,343 & 94.804 & 88.843\\ 
+  3   &29,680,067 & 8,392,913 &       0 &      0 &      0 &     0 &38,072,980 & 77.955 & 77.955\\ 
+  4   & 1,405,670 &    15,342 &       0 &      0 &      0 &     0 & 1,421,012 & 98.920 & 98.920\\ 
+  5   &   753,871 &    35,579 &       0 &      0 &      0 &     0 &   789,450 & 95.493 & 95.493\\ 
+  6   & 1,066,600 & 1,143,862 &       0 &      0 &      0 &     0 & 2,210,462 & 48.252 & 48.252\\ 
+  7   & 4,266,400 &17,838,234 &       0 &      0 &      0 &     0 &22,104,634 & 19.300 & 19.300\\ 
 \end{tabular}
-\caption{Remaining observations (id on lines, nobs left on rows) with total}\label{tab:full14k}
+\caption{Remaining observations (id on lines, nobs left on rows) with total}
+\label{tab:full14k}
 \end{center}
  \end{table}
-
-
-\begin{table}[H]\begin{center} 
-\begin{tabular}{l|rr}
-	~ &         0 &      1 \\ \hline
-  0   & 98.926 & 67.673 \\ 
-  1   & 98.928 & 98.928 \\ 
-  2   & 94.772 & 88.752 \\ 
-  3   & 77.232 & 77.232 \\ 
-  4   & 98.924 & 98.924 \\ 
-  5   & 95.426 & 95.426 \\ 
-  6   & 48.252 & 48.252 \\ 
-  7   & 19.300 & 19.300 \\ 
-\end{tabular}
-\caption{Percentages of once observed, and with ponderation} 
-\end{center}\end{table}
-
 
 \begin{table}[H]\begin{center}
 \caption{Id on lines. (Per square degrees) Total, Fibers Used, Available, Percent of observations}
 \begin{tabular}{l|rrrr} 
-   Id &          0  &           1  &           2  &           3 \\ \hline
+   Id &           0  &           1  &           2  &           3   \\ \hline
    0  &      49.457  &     168.796  &      49.948  &      99.015   \\
    1  &     118.275  &     118.275  &     119.996  &      98.565   \\
    2  &     283.469  &     528.792  &     298.711  &      94.897   \\
@@ -545,10 +569,87 @@ ylabel={},cycle list name=mycolorlist]
 \end{tabular}\end{center}
  \end{table}
 
- Besides, we have indeed exactly 10 SS and 40 SF per petal.
+\begin{multicols}{2}
+
+\subsection{Free fibers}
+Here is the histogram of petals as a function of free fibers.
+\begin{figure}[H]\begin{center}\begin{tikzpicture}[scale=1.1]\begin{semilogyaxis}[const plot,enlarge x limits=false,xlabel={},ylabel={},xmax=50] 
+		\addplot table[x=x,y=0] {figs/freefib.dat};
+\end{semilogyaxis}\end{tikzpicture}\caption{\# of petals with that many free fibers}
+\end{center}\end{figure}
+ 
+
+\subsection{Redistribution-Improvement step}
+We see, in the second plan, what is the effect of several redistribution-improvement executions. Here is presented the number of redistributions, number of additionnal assignments, with the improvement in \%\% and the total time taken for until this step.
+
+\begin{table}[H]\centering
+	\begin{tabular}{c|cccc}
+		Step & \# red & \# +as & + \%\% & Time \\ \hline
+		1 & 2,204,977 & 167,741 & 4.18 & 40s\\
+		2 & 2,060,851 & 76,509 & 1.90 & 1mn 20s\\
+		3 & 1,965,994 & 19,273 & 0.48 & 2mn\\
+		4 & 1,945,418 & 10,738 & 0.27 & 2mn 40s\\
+		5 & 1,929,917 & 7,999 & 0.20 & 3mn 20s\\
+		6 & 1,921,331 & 5,745 & 0.14 & 4mn\\
+	\end{tabular}
+\end{table}
+
+\begin{figure}[H]\begin{center}
+\begin{tikzpicture}
+	\begin{axis}[const plot,stack plots=y,enlarge x limits=false,enlarge y limits=false,xlabel={},ylabel={},cycle list name=mycolorlist,legend entries={0,1,2,3,4,5}]
+		\addplot [fill,fill opacity=0.5,color=blue] table[x=x,y=0] {figs/obsly.dat};
+		\addplot [fill,fill opacity=0.5,color=red] table[x=x,y=1] {figs/obsly.dat};
+		\addplot [fill,fill opacity=0.5,color=brown] table[x=x,y=2] {figs/obsly.dat};
+		\addplot [fill,fill opacity=0.5,color=teal] table[x=x,y=3] {figs/obsly.dat};
+		\addplot [fill,fill opacity=0.5,color=violet] table[x=x,y=4] {figs/obsly.dat};
+		\addplot [fill,fill opacity=0.5,color=black] table[x=x,y=5] {figs/obsly.dat};
+	\end{axis}
+\end{tikzpicture}
+\caption{\# of QSO Ly-$\alpha$ (with their number of observation) in function of available tile-fibers}
+\end{center}\end{figure}
+
+
+\begin{figure}[H]\begin{center}
+	\begin{tikzpicture}
+		\begin{semilogyaxis}[const plot,enlarge x limits=false,xlabel={},ylabel={},cycle list name=mycolorlist]
+			\addplot table[x=x,y=0] {figs/dist2ly.dat};
+		\end{semilogyaxis}
+	\end{tikzpicture}
+	\caption{Histogram of distances (in number of plates) between two consecutive observed QSO Ly-$\alpha$}
+\end{center}\end{figure}
+
+
+\begin{figure}[H]\begin{center}
+	\begin{tikzpicture}
+		\begin{axis}[const plot,enlarge x limits=false,enlarge y limits=false,xlabel={},ylabel={},cycle list name=mycolorlist]
+			\addplot table[x=x,y=0] {figs/fft.dat};
+		\end{axis}
+	\end{tikzpicture}
+	\caption{Free fibers in function of time (plates)}
+\end{center}\end{figure}
+
+
+\begin{figure}[H]\begin{center}
+\begin{tikzpicture}
+	\begin{axis}[enlarge y limits=false,enlarge x limits=false,label={},ylabel={},cycle list name=mycolorlist]
+		\addplot table[x=x,y=0] {figs/time.dat};
+		\addplot table[x=x,y=1] {figs/time.dat};
+		\addplot table[x=x,y=2] {figs/time.dat};
+		\addplot table[x=x,y=3] {figs/time.dat};
+		\addplot table[x=x,y=4] {figs/time.dat};
+		\addplot table[x=x,y=5] {figs/time.dat};
+		\addplot table[x=x,y=6] {figs/time.dat};
+		\addplot table[x=x,y=7] {figs/time.dat};
+	\end{axis}
+\end{tikzpicture}
+\caption{Observed galaxy kind in function of time (plates seen)}\end{center}\end{figure}
+
+Besides, we have indeed exactly 10 SS and 40 SF per petal.
 
 \section{Possible improvements}
-The optimum would be closer if we would replan globally every left tile after each update of information on galaxies (after observation). It's not possible because that would be long to compute (several hours).
-We could seek for the best galaxy in improve\_fiber instead of taking the first one which fits.
+We havn't tried all possible strategies, so it is possible that an other combination of runing of the functions could lead to better results.
+One could also try to search for an "orthogonal" (of the 3 other ones) improvement function.
+To make plans, we could use an automaton, which would be automatically able to use all kinds of assigment/improvement functions, and would go through all fibers at random to assign/improve randomly, and the controlable parameter would only be the time we want it to work.
+Nevertheless, a lot of efforts now lead to little improvements of the results. It is likely that we are almost at the global optimum. We only have a doubt on the number of plans/applying and their sets of plates that could improve significantly.
 \end{multicols}
 \end{document}

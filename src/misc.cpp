@@ -664,7 +664,7 @@ str siz(const Table& T) {
 	return ss.str();
 }
 
-str siz(const std::vector<std::vector<pair> >& T) {
+str siz(const Ptable& T) {
 	std::stringstream ss;
 	ss << " size " << T.size() << "x" << T[0].size();
 	return ss.str();

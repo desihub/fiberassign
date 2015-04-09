@@ -9,6 +9,7 @@
 #include	<algorithm>
 #include	<exception>
 #include	<sys/time.h>
+#include        <map>
 #include        <stdlib.h>     /* srand, rand */
 #include	"modules/htmTree.h"
 #include	"modules/kdTree.h"
@@ -39,6 +40,10 @@ List Feat::maxgoal() const {
 	List max = initList(Categories,-1);
 	for (int i=0; i<Categories; i++) max[i] = maxgoal(i);
 	return max;
+}
+
+void Feat::init_ids() {
+	for (int i=0; i<Categories; i++) ids[kind[i]] = i;
 }
 
 // Galaxies ------------------------------------------------------------------
@@ -442,9 +447,9 @@ Table Assignment::used_by_kind(str kind, const Gals& G, const PP& pp, const Feat
 	return used;
 }
 
-int Assignment::nkind(int j, int k, str kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F, bool pet) const {
-	if (!pet) return kinds[j][pp.spectrom[k]][F.id(kind)];
-	else return kinds[j][k][F.id(kind)];
+int Assignment::nkind(int j, int k, int kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F, bool pet) const {
+	if (!pet) return kinds[j][pp.spectrom[k]][kind];
+	else return kinds[j][k][kind];
 	//List fibers = pp.fibs_of_same_pet(k);
 	//int cnt(0);
 	//for (int i=0; i<fibers.size(); i++) {

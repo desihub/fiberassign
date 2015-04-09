@@ -43,7 +43,7 @@ int main(int argc, char **argv) {
 	int goal[] = {5,1,2,1,1,1,1,1};
 
 	// Taking previous features into account
-	Feat F; F.kind = initList(kind); F.prio = initList(prio); F.goal = initList(goal); MaxPrio = max(F.prio); MaxObs = max(F.goal); Categories = F.kind.size();
+	Feat F; F.kind = initList(kind); F.prio = initList(prio); F.goal = initList(goal); MaxPrio = max(F.prio); MaxObs = max(F.goal); Categories = F.kind.size(); F.init_ids();
 
 	// Read galaxies
 	Gals G;
@@ -85,14 +85,9 @@ int main(int argc, char **argv) {
 	Assignment A(G,F);
 	print_time(t,"# Start assignment at : ");
 	// Make a plan ----------------------------------------------------
-	//new_assign_fibers(G,P,pp,F,A,-1,true);
+	//new_assign_fibers(G,P,pp,F,A,2000);
 	simple_assign(G,P,pp,F,A,2000);
-	improve(G,P,pp,F,A,2000);
 	improve_from_kind(G,P,pp,F,A,"SF",2000);
-	improve_from_kind(G,P,pp,F,A,"SS",2000);
-
-	redistribute_tf(G,P,pp,F,A,2000);
-	improve(G,P,pp,F,A,2000);
 
 	// Apply and update the plan --------------------------------------
 	init_time_at(time,"# Begin real time assignment",t);
@@ -102,7 +97,7 @@ int main(int argc, char **argv) {
 		//improve_from_kind(G,P,pp,F,A,"SF",1);
 		//improve_from_kind(G,P,pp,F,A,"SS",1);
 		// here is observation time
-		printf("  %s not assigned  - ",format(5,f(Nfiber-A.na(j,1))).c_str());
+		printf(" %s not as - ",format(5,f(Nfiber-A.na(j,1))).c_str());
 		update_plan_from_one_obs(G,P,pp,F,A,1999);
 		A.next_plate++;
 	}
@@ -110,24 +105,26 @@ int main(int argc, char **argv) {
 
 
 	// Make a plan ----------------------------------------------------
-	//new_assign_fibers(G,P,pp,F,A,-1,true);
+	//new_assign_fibers(G,P,pp,F,A);
 	simple_assign(G,P,pp,F,A);
 	improve(G,P,pp,F,A);
 	improve_from_kind(G,P,pp,F,A,"SF");
 	improve_from_kind(G,P,pp,F,A,"SS");
 
-	//redistribute_tf(G,P,pp,F,A);
+	redistribute_tf(G,P,pp,F,A);
+	improve(G,P,pp,F,A);
+	redistribute_tf(G,P,pp,F,A);
 	improve(G,P,pp,F,A);
 
 	// Apply and update the plan --------------------------------------
 	init_time_at(time,"# Begin real time assignment",t);
 	for (int jj=2000; jj<Nplate; jj++) {
 		int j = A.next_plate;
-		printf(" - Plate %d : ",j); fl();
-		//improve_from_kind(G,P,pp,F,A,"SF",1);
-		//improve_from_kind(G,P,pp,F,A,"SS",1);
+		printf(" - Plate %d :",j); fl();
+		improve_from_kind(G,P,pp,F,A,"SF",1);
+		improve_from_kind(G,P,pp,F,A,"SS",1);
 		// here is observation time
-		printf("  %s not assigned  - ",format(5,f(Nfiber-A.na(j,1))).c_str());
+		printf(" %s not as - ",format(5,f(Nfiber-A.na(j,1))).c_str());
 		update_plan_from_one_obs(G,P,pp,F,A,Nplate-1);
 		A.next_plate++;
 	}

@@ -12,8 +12,10 @@
 #include	<algorithm>
 #include	<exception>
 #include	<sys/time.h>
+#include        <map>
 
 typedef std::string str;
+typedef std::map<str,int> Smap;
 // pair ------------------------------------------------------
 class pair {
 	public:
