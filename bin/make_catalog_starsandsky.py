@@ -378,8 +378,7 @@ def write_catalog(icat=0, fitsoutput=False):
         c6=fits.Column(name='OBJTYPE', format='8A', array=types)
 
         print("PACK")
-#        targetcat=fits.ColDefs([c0,c1,c2,c3,c4,c5,c6])
-        targetcat=fits.ColDefs([c0,c1,c2,c3])
+        targetcat=fits.ColDefs([c0,c1,c2,c3,c4,c5,c6])
         table_targetcat_hdu=fits.TableHDU.from_columns(targetcat)
     
         hdu=fits.PrimaryHDU()
