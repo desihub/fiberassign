@@ -103,7 +103,7 @@ def write_catalog(icat=0, fitsoutput=False):
     """
     
     if(fitsoutput):
-        print "Sale en FITS"
+        print "FITS output enabled"
 
     goal_qsoI=120.
     goal_qsoII=50.
@@ -368,15 +368,14 @@ def write_catalog(icat=0, fitsoutput=False):
             os.remove(fitsname)
     
 
-        print("ID")
+
         c0=fits.Column(name='ID', format='I', array=Nt)
         c1=fits.Column(name='TARGETID', format='I', array=id)
         c2=fits.Column(name='RA', format='D', array=ra)
         c3=fits.Column(name='DEC', format='D', array=dc)
-#        c4=fits.Column(name='PRIORITY', format='D', array=pp)
-#        c5=fits.Column(name='NOBS', format='D', array=no)
-        print("OBJTIPE")
-#        c6=fits.Column(name='OBJTYPE', format='8A', array=types)
+        c4=fits.Column(name='PRIORITY', format='D', array=pp)
+        c5=fits.Column(name='NOBS', format='D', array=no)
+        c6=fits.Column(name='OBJTYPE', format='8A', array=types)
 
         print("PACK")
 #        targetcat=fits.ColDefs([c0,c1,c2,c3,c4,c5,c6])
