@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# revised 4/10/15
+# writes output in FITS format 
+#
 # revised 7/29/14
 # Generates a catalog by combining existing mock catalogs
 # for each type into a binary format accepted by "assign".
@@ -26,7 +29,8 @@
 import numpy  as N
 import fitsio as F
 import sys
-
+from astropy.io import fits
+import os.path
 
 __author__ = "Martin White modified by Robert Cahn  6/30/14"
 __version__ = "1.0"
@@ -35,7 +39,7 @@ __email__  = "mjwhite@lbl.gov/rncahn@lbl.gov"
 dbase = "/project/projectdirs/desi/mocks/preliminary/"
 
 footprint_area=20.*45.*N.sin(45.*N.pi/180.)/(45.*N.pi/180.)
-print footprint_area
+print("fotprint area %f"%(footprint_area))
 
 total_area=0.
 def read_objects(fn):
@@ -89,7 +93,7 @@ def reduce(ra,dec,zz,frac):
     
     return( (yra,ydec,yzz))
 
-def write_catalog(icat=0):
+def write_catalog(icat=0, fitsoutput=False):
     """
     write_catalog(icat=0):
     Writes the catalog information to a file.
@@ -98,6 +102,9 @@ def write_catalog(icat=0):
     catalog files.
     """
     
+    if(fitsoutput):
+        print "Sale en FITS"
+
     goal_qsoI=120.
     goal_qsoII=50.
     goal_badqso=90.
@@ -108,8 +115,9 @@ def write_catalog(icat=0):
     goal_standardstar=140.
     goal_skyfiber=1400.
     
-    
-    
+    possible_types = ['ELG', 'LRG', 'QSO', 'STDSTAR', 'GAL', 'OTHER']
+    types = N.empty((0))
+
     # LyA QSOs are priority 1, other QSOs are priority 2.
     xra,xdc,xzz,density = read_objects(dbase+"v2_qso_%d.fits"%icat)
 
@@ -151,6 +159,11 @@ def write_catalog(icat=0):
     pp       = N.append(pp,npp)
     no       = N.append(no,nno)
     print 'qsoIIs',len(nra)
+
+    tmp_type = N.chararray(nra.size, itemsize=8)
+    tmp_type[:] = 'QSO'
+    types = N.append(types, tmp_type)
+
     
     # get extra qsos for qsoI
     icatp=icat+1
@@ -171,6 +184,10 @@ def write_catalog(icat=0):
     pp       = N.append(pp,npp)
     no       = N.append(no,nno)
     
+    tmp_type = N.chararray(nra.size, itemsize=8)
+    tmp_type[:] = 'QSO'
+    types = N.append(types, tmp_type)
+
     print' added qsoIs', len(nra)
 
     # LRGs are priority 3.
@@ -187,6 +204,11 @@ def write_catalog(icat=0):
     id       = N.append(id,nid)
     pp       = N.append(pp,npp)
     no       = N.append(no,nno)
+
+    tmp_type = N.chararray(nra.size, itemsize=8)
+    tmp_type[:] = 'LRG'
+    types = N.append(types, tmp_type)
+
     print 'lrgs added',len(nra)
     print 'lrg density',len(nra)/total_area
 
@@ -209,6 +231,10 @@ def write_catalog(icat=0):
     id       = N.append(id,nid)
     pp       = N.append(pp,npp)
     no       = N.append(no,nno)
+
+    tmp_type = N.chararray(nra.size, itemsize=8)
+    tmp_type[:] = 'ELG'
+    types = N.append(types, tmp_type)
     
     print 'elgs added',len(nra)
     print 'elg density',len(nra)/total_area
@@ -240,6 +266,11 @@ def write_catalog(icat=0):
     pp       = N.append(pp,npp)
     no       = N.append(no,nno)
     density=len(nra)/total_area
+
+    tmp_type = N.chararray(nra.size, itemsize=8)
+    tmp_type[:] = 'QSO'
+    types = N.append(types, tmp_type)
+
     print 'fake qso density',density
 
     print 'fake qsos',len(nra)
@@ -258,6 +289,11 @@ def write_catalog(icat=0):
     pp       = N.append(pp,npp)
     no       = N.append(no,nno)
     density=len(nra)/total_area
+
+    tmp_type = N.chararray(nra.size, itemsize=8)
+    tmp_type[:] = 'LRG'
+    types = N.append(types, tmp_type)
+
     print 'fake lrg density',density
     
     print 'fake lrgs added', len(nra)
@@ -276,6 +312,12 @@ def write_catalog(icat=0):
     pp       = N.append(pp,npp)
     no       = N.append(no,nno)
     density=len(nra)/total_area
+
+
+    tmp_type = N.chararray(nra.size, itemsize=8)
+    tmp_type[:] = 'STDSTAR'
+    types = N.append(types, tmp_type)
+
     print 'standardstar density',density
     
     print 'standardstar added', len(nra)
@@ -296,6 +338,9 @@ def write_catalog(icat=0):
     no       = N.append(no,nno)
     density=len(nra)/total_area
     
+    tmp_type = N.chararray(nra.size, itemsize=8)
+    tmp_type[:] = 'SKY'
+    types = N.append(types, tmp_type)
     
     print 'sky fiber density',density
     
@@ -317,7 +362,41 @@ def write_catalog(icat=0):
     #
 
 
+    if(fitsoutput):
+        fitsname="objects_ss_sf%d.fits"%icat
+        if(os.path.exists(fitsname)):
+            os.remove(fitsname)
+    
 
+        print("ID")
+        c0=fits.Column(name='ID', format='I', array=Nt)
+        c1=fits.Column(name='TARGETID', format='I', array=id)
+        c2=fits.Column(name='RA', format='D', array=ra)
+        c3=fits.Column(name='DEC', format='D', array=dc)
+#        c4=fits.Column(name='PRIORITY', format='D', array=pp)
+#        c5=fits.Column(name='NOBS', format='D', array=no)
+        print("OBJTIPE")
+#        c6=fits.Column(name='OBJTYPE', format='8A', array=types)
+
+        print("PACK")
+#        targetcat=fits.ColDefs([c0,c1,c2,c3,c4,c5,c6])
+        targetcat=fits.ColDefs([c0,c1,c2,c3])
+        table_targetcat_hdu=fits.TableHDU.from_columns(targetcat)
+    
+        hdu=fits.PrimaryHDU()
+        hdulist=fits.HDUList([hdu])
+        hdulist.append(table_targetcat_hdu)
+        print("VERIFY")
+        hdulist.verify()
+        print("WRITING")
+        hdulist.writeto(fitsname)
+        print("DONE!")
 
 if __name__=="__main__":
-    write_catalog()
+    args = sys.argv
+
+    fitsoutput = False
+    if ('-fits' in args):
+        fitsoutput = True
+
+    write_catalog(fitsoutput=fitsoutput)
