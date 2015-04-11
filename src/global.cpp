@@ -517,9 +517,6 @@ void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F
 	print_list("  Goals of observations :",F.goal);
 	print_list("  Max goals of observations :",F.maxgoal());
 
-	// Print parameters
-	printf("Npass=%d MinUnused=%d MaxSS=%d MaxSF=%d PlateRadius=%.3f TotalArea=%.6f Collide=%.3f NeighborRad=%.3f PatrolRad=%.3f InterPlate=%d Randomize=%d",Npass,MinUnused,MaxSS,MaxSF,PlateRadius,TotalArea,Collide,NeighborRad,PatrolRad,InterPlate,Randomize);
-
 	// How many galaxies in range of a fiber ?
 	print_list("  How many galaxies in range of a fiber :",gals_range_fibers(P));
 
@@ -653,8 +650,12 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	for (int j=0; j<Nplate; j++) freefibtime[j] = A.unused_f(j);
 	Table fft; fft.push_back(freefibtime);
 	print_mult_table_latex("Free fibers in function of time (plates)",outdir+"fft.dat",fft);
+ 
+	// 8 Percentage of seen objects as a function of density of objects
+	
 
-	// 8 Misc
+
+	// Misc
 	// Histogram of SS
 	Table usedSS = A.used_by_kind("SS",G,pp,F);
 	print_hist("UsedSS (number of petals)",1,histogram(usedSS,1));

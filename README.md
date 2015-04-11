@@ -1,4 +1,4 @@
 # fiberassign
 Fiber assignment code for DESI
 
-Compile tex file with lulatex
+Compile tex file with luatex

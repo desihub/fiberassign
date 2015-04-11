@@ -20,7 +20,7 @@ int Nplate; int MaxSS; int MaxSF; double PlateRadius; double Collide; double Nei
 
 
 int main(int argc, char **argv) {
-	//// Initializations -------------------------------------------------
+	//// Initializations ---------------------------------------------
 	srand48(1234); // Make sure we have reproducability
 	check_args(argc);
 	Time t,time; // t for global, time for local
@@ -80,8 +80,9 @@ int main(int argc, char **argv) {
 	collect_available_tilefibers(G,P);
 
 	//results_on_inputs("doc/figs/",G,P,F,true);
+	printf("Npass=%d MinUnused=%d MaxSS=%d MaxSF=%d PlateRadius=%.3f TotalArea=%.6f Collide=%.3f NeighborRad=%.3f PatrolRad=%.3f InterPlate=%d Randomize=%d \n",Npass,MinUnused,MaxSS,MaxSF,PlateRadius,TotalArea,Collide,NeighborRad,PatrolRad,InterPlate,Randomize);
 
-	//// Assignment ||||||||||||||||||||||||||||||||||||||||||||||||||||
+	//// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
 	Assignment A(G,F);
 	print_time(t,"# Start assignment at : ");
 	// Make a plan ----------------------------------------------------

@@ -1,4 +1,4 @@
-\documentclass[10pt]{extarticle}
+\documentclass{extarticle}
 \usepackage{etex}
 %\usepackage[7pt]{moresize}
 %\fontfamily{<familyname>}\selectfont
@@ -22,7 +22,7 @@
 %Lettres françaises
 \usepackage[cyr]{aeguill}
 \usepackage[francais]{babel}
-\usepackage[T1]{fontenc}          %% permet d'utiliser les caractères accentués
+\usepackage[T1]{fontenc}    %% permet d'utiliser les caractères accentués
 \usepackage[utf8]{inputenc} %% permet d'utiliser les caractères accentué
 %PGF plot
 \usepackage{pgfplots, pgfplotstable}
@@ -53,6 +53,8 @@
 
 %%%% fin macro %%%%
 
+%Bilio
+\usepackage[nottoc,notlof,notlot]{tocbibind}
 %Dash lines
 \newcommand\Algphasee[1]{%
 \Statex\hspace*{-\algorithmicindent}\textbf{#1}%
@@ -80,45 +82,70 @@
 
 \usepackage{geometry}
 \geometry{hscale=0.85,vscale=0.85,centering}
-\title{Description of fiber assignment code for Mocks}
+\title{Description of fiber assignment code for Mocks in DESI experiment}
 %\author{Robert Cahn and Louis Garrigue}
 \author[1]{Robert N. Cahn\thanks{rncahn@lbl.gov}}
 \author[2]{Louis Garrigue\thanks{louis.garrigue@ens.fr}}
 \affil[1]{Department of Cosmological Physics, LBNL, Berkeley}
 \affil[2]{Departement de physique, Ecole normale superieure, Paris}
 \date{\today}
-
+%--------------------------------------------------------------------------------------------
 \begin{document}
-%\begin{titlepage}
-%\end{titlepage}
+\begin{titlepage}
 \maketitle
-
 \begin{center}
-  \includegraphics[width = 20mm]{figs/logolbnl.png}\hfill
+  \includegraphics[width = 100mm]{figs/black.jpg}
+
+  \includegraphics[width = 20mm]{figs/logolbnl.png} \hfill
   \includegraphics[width = 20mm]{figs/logodesi.jpg} \hfill
   \includegraphics[width = 20mm]{figs/logoens.png} 
 \end{center}
+\end{titlepage}
+
 
 \begin{comment}
-	\section{DESI (Dark Energy Spectroscopic Instrument}
-The Dark Energy Spectroscopic Instrument (DESI) is a Stage IV experiment that will study baryon acoustic oscillations (BAO) and the growth of structure through redshift-space distortions. The DESI instrument consists of a new wide-field (3.2 deg. linear field of view) corrector plus a multi-object spectrometer with up to 5000 robotically positioned optical fibers, with a resolving power of R = 5000.
-It will be installed on the Mayall telescope in Arizona. The fibers feed 10 three-arm spectrographs producing spectra that cover a wavelength range from 360-980 nm and have resolution of 2000-5500 depending on the wavelength. It will watch at 14,000 sq. deg. during 5 years, for targets that trace the evolution of dark energy from redshift 0.2 out to 3.5 using three kinds of celestial objects : luminous red galaxies (LRG), emission line galaxies (ELG) and quasars. 
+
+Dark energy study began in 1998, when two independent teams, led by Adam Riess and Saul Perlmutter, found out, using quasars measurements, that the universe was still expanding. The then standard cosmological model, which components were baryonic and dark matter ruled by general relativity, had to be changed. The $\Lambda$-CDM model now include dark energy, a component explaining the fact that gravity is weaker than expected, and compatible with the exponentially accelerating rate of the universe. It is still today the standard model. One of the main goals of cosmology is then to understand how the universe has been evolving until today, from the oldest times we can reach thanks to the Planck satellite which scrutinizes the Cosmic Microwave Background, picture of the sky 378,000 after the big bang. This study needs to understand the nature of dark energy and has to get information on the distribution of matter over time. This thus involves to scrutinize millions of galaxies and quasars, their spectrum and redshift carrying a lot of data. Such a work needs huge surveys, like BOSS, BigBOSS, and now DESI, heir of the previous ones. DESI will then significantly improve the knowledge on caracteristic features, espacially the power spectrum (Fourier transform of the correlation function of the matter density) which permits to understand baryon acoustic oscillations (BAO) which went through the early universe and which signature has always been remaining. One of the pivotal points of the DESI experiment is the assignment of its 5000 fibers on 10666 different tiles, watching galaxies in a mock catalog of 70M ones. Indeed, the efficiency of DESI will directly depend on multiple features of this assignment algorithm : number of unassigned fibers, number of times a QSO \lya will be observed (5 times goal), etc. Here is a brief presentation of the standard cosmological model and the DESI experiment. We then describe the principles used, rules, C++ code organisation and results of the assignment we created, run on the Edison NERSC Supercomputer.
+
+
+\begin{multicols}{2}
+\tableofcontents
+
+There is a growing consensus among cosmologists that the total density of matter is equal to the critical density, so that the universe is spatially flat. Approximately 24\% of this is in the form of a low pressure matter, most of which is thought to be “non-baryonic” dark matter, while the remaining 71\% is thought to be in the form of a negative pressure “dark energy”, like the cosmological constant. If this is true, then dark energy is the major driving force behind the fate of the universe and it will expand forever exponentially.
+
+
+	\section{DESI}
+	The Dark Energy Spectroscopic Instrument (DESI) is a Stage IV experiment that will make the next major advance in dark energy. \cite{Levi:2013gra}
+
+	\subsection{Material features}
+The DESI instrument, that will be installed on the Mayall telescope in Arizona, consists of a new wide-field (3.2 deg. linear field of view) corrector plus a multi-object spectrometer with up to 5000 robotically positioned optical fibers, with a resolving power of R = 5000. The fibers feed 10 three-arm spectrographs producing spectra that cover a wavelength range from 360-980 nm and have resolution of 2000-5500 depending on the wavelength. It will watch at 14,000 sq. deg. in 10666 tiles from 2018 to 2022, with roughly 7 different tiles each night.
+
+\subsection{Aspects}
+It will study baryon acoustic oscillations (BAO) and the growth of structure through redshift-space distortions. 
+
+for targets that trace the evolution of dark energy from redshift 0.2 out to 3.5 using three kinds of celestial objects : luminous red galaxies (LRG), emission line galaxies (ELG) and quasars. 
 This survey is the successor of the Stage-III BigBOSS survey and complements imaging surveys such as the Stage-III Dark Energy Survey (DES, currently operating) and the Stage-IV Large Synoptic Survey Telescope (LSST, planned start in the next decade).
+
+On the Mayall telescope, DESI will obtain spectra and redshifts for at least 18 million emission-line galaxies, 4 million luminous red galaxies and 3 million quasi-stellar objects, in order to : i) probe the effects of dark energy on the expansion history using baryon acoustic oscillations (BAO), ii) measure the gravitational growth history through redshift-space distortions, iii) measure the sum of neutrino masses, and iv) investigate the signatures of primordial inflation. The resulting 3-D galaxy maps at z < 2 and Lyman-alpha forest at z > 2 will make 1\%-level measurements of the distance scale in 35 redshift bins. This will provide unprecedented constraints on cosmological models.
+
 
 \section{Rules for fiber assignment}
 We know the repartition of matter (by repartition of H matter) by pics.
-The original catalog of 50M galaxies has only information on the position and the type of the galaxy, which is LRG, ELG or QSO. Those information were given by a previous survey, only based on colors, the redshift wasn't then computed. But there are different types of each one. QSO can be $Ly-\alpha$, target or fake (actually fake ones can be stars for example). A python code generates the file of galaxies, simulating with appropriate probabilities each type, taking into account the fact that there are correlations between positions of galaxies (accordingly with BAO and gravition). When we watch at a QSO and we see that it's a fake or a target, we don't watch at it anymore. But if it's a real one, we try to see it 5 times if it is possible.
-The absorption spectrum shows a pic at $\lambda = 1216 Å$. We can deduced the redshift because we receive a wavelenght $\lambda(1+z)$. As spectrometers can only see wavelenghts in the range 380 nm (under, no enough energy is received) - 980 nm, the minimum redshift we can reach is 2.2.
-At first, there was as code written by Martin White then Robert Cahn that did an assignment of tilefibers - galaxies in a global way : naïve assignment, improvement (try to reassign some fibers to other ones to assign free ones) and redistribution (do not assign more, but it's to have a better repartition of free fibers on each petal).
+The original catalog of 50M galaxies has only information on the position and the type of the galaxy, which is LRG, ELG or QSO. Those information were given by a previous survey, only based on colors, the redshift wasn't then computed. But there are different types of each one. QSO can be \lya, target or fake (actually fake ones can be stars for example). A python code generates the file of galaxies, simulating with appropriate probabilities each type, taking into account the fact that there are correlations between positions of galaxies (accordingly with BAO and gravition). When we watch at a QSO and we see that it's a fake or a target, we don't watch at it anymore. But if it's a real one, we try to see it 5 times if it is possible.
+The absorption spectrum shows a pic at $\lambda = 1216$ \AA. We can deduced the redshift because we receive a wavelenght $\lambda(1+z)$. As spectrometers can only see wavelenghts in the range 380 nm (under, no enough energy is received) - 980 nm, the minimum redshift we can reach is 2.2.
+At first, there was as code written by Martin White then Robert Cahn that did an assignment of tilefibers - galaxies in a global way : naive assignment, improvement (try to reassign some fibers to other ones to assign free ones) and redistribution (do not assign more, but it's to have a better repartition of free fibers on each petal).
 We have to reserve 10 fibers by petal to Standard Stars and 40 to Sky Fibers.
 We have to avoid unmastered correlations. That's why we don't (at first sight), when we take a new tile, associate 50 free fibers to regions of low QSO density. We would rather assign until there are only 50 free fibers left.
 We do the compuation in real time. That means that we do it tile by tile. We can't access the information of all the galaxies because we only have past watched galaxies information. That adds a new constrain. So I rewrote algorithms so that they would compute an optimal assignment for one plate, knowing information on previous one assignments, and knowing information on previously watched galaxies.
+
+
+\end{multicols}
 \end{comment}
 
 
 
-\section{Introduction}
 \begin{multicols}{2}
+\section{Introduction}
 Martin White developed C++ code for fiber assignment over the full 14k sq. deg. footprint.  We first modified Martin's code to incorporate features from Robert's python code, which ran on a restricted 480 sq. deg.. We included the improvement and redistribution steps, which switches fiber assignments to increase the number of galaxies observed. We then adapted the code to compute assignments not globally anymore "knowing all information on galaxies" but plate after plate, as in real experiment.
 The samples are taken from Martin's mocks in stored on NERSC at /project/projectdirs/desi/mocks/preliminary/.  From these files we create a single file containing the appropriate mix of ELG, LRG, QSO, SS (Standard Stars) and SF (Sky Fibers) using the python script in git fiberassign/bin/make\_catalog\_starsandsky.py.  In the same place there is python code to produce a mixture of galaxies without any correlations, but with the correct dn/dz.  
   
@@ -646,10 +673,129 @@ We see, in the second plan, what is the effect of several redistribution-improve
 
 Besides, we have indeed exactly 10 SS and 40 SF per petal.
 
+
+\begin{comment}
+0.0
+  0   & 99.017 & 68.572 \\ 
+  1   & 99.018 & 99.018 \\ 
+  2   & 95.275 & 89.627 \\ 
+  3   & 78.301 & 78.301 \\ 
+  4   & 99.003 & 99.003 \\ 
+  5   & 95.874 & 95.874 \\ 
+1.8
+  0   & 98.948 & 67.963 \\ 
+  1   & 98.947 & 98.947 \\ 
+  2   & 94.926 & 89.046 \\ 
+  3   & 77.999 & 77.999 \\ 
+  4   & 98.949 & 98.949 \\ 
+  5   & 95.567 & 95.567 \\ 
+
+2.0
+  0   & 98.928 & 67.774 \\ 
+  1   & 98.936 & 98.936 \\ 
+  2   & 94.852 & 88.918 \\ 
+  3   & 77.970 & 77.970 \\ 
+  4   & 98.929 & 98.929 \\ 
+  5   & 95.506 & 95.506 \\ 
+
+2.2
+  0   & 98.909 & 67.545 \\ 
+  1   & 98.921 & 98.921 \\ 
+  2   & 94.771 & 88.775 \\ 
+  3   & 77.937 & 77.937 \\ 
+  4   & 98.904 & 98.904 \\ 
+  5   & 95.433 & 95.433 \\ 
+
+2.4
+  0   & 98.879 & 67.278 \\ 
+  1   & 98.892 & 98.892 \\ 
+  2   & 94.679 & 88.605 \\ 
+  3   & 77.894 & 77.894 \\ 
+  4   & 98.890 & 98.890 \\ 
+  5   & 95.353 & 95.353 \\ 
+
+Interplate
+1
+            0 &      1 \\ 
+  0   & 98.903 & 70.172 \\ 
+  1   & 98.905 & 98.905 \\ 
+  2   & 94.667 & 88.819 \\ 
+  3   & 77.851 & 77.851 \\ 
+  4   & 98.904 & 98.904 \\ 
+  5   & 95.314 & 95.314 \\ 
+
+20
+  0   & 98.916 & 68.022 \\ 
+  1   & 98.920 & 98.920 \\ 
+  2   & 94.792 & 88.847 \\ 
+  3   & 77.939 & 77.939 \\ 
+  4   & 98.917 & 98.917 \\ 
+  5   & 95.441 & 95.441 \\ 
+
+50
+  0   & 98.915 & 67.961 \\ 
+  1   & 98.921 & 98.921 \\ 
+  2   & 94.794 & 88.848 \\ 
+  3   & 77.942 & 77.942 \\ 
+  4   & 98.919 & 98.919 \\ 
+  5   & 95.449 & 95.449 \\ 
+
+100
+  0   & 98.915 & 67.905 \\ 
+  1   & 98.926 & 98.926 \\ 
+  2   & 94.796 & 88.845 \\ 
+  3   & 77.946 & 77.946 \\ 
+  4   & 98.912 & 98.912 \\ 
+  5   & 95.449 & 95.449 \\ 
+
+200
+  0   & 98.922 & 67.670 \\ 
+  1   & 98.921 & 98.921 \\ 
+  2   & 94.804 & 88.843 \\ 
+  3   & 77.955 & 77.955 \\ 
+  4   & 98.920 & 98.920 \\ 
+  5   & 95.493 & 95.493 \\ 
+
+400
+  0   & 98.925 & 67.461 \\ 
+  1   & 98.925 & 98.925 \\ 
+  2   & 94.825 & 88.853 \\ 
+  3   & 77.966 & 77.966 \\ 
+  4   & 98.921 & 98.921 \\ 
+  5   & 95.479 & 95.479 \\ 
+
+1000
+  0   & 98.921 & 66.888 \\ 
+  1   & 98.934 & 98.934 \\ 
+  2   & 94.869 & 88.852 \\ 
+  3   & 77.990 & 77.990 \\ 
+  4   & 98.921 & 98.921 \\ 
+  5   & 95.508 & 95.508 \\ 
+
+2000
+  0   & 98.936 & 65.660 \\ 
+  1   & 98.944 & 98.944 \\ 
+  2   & 94.953 & 88.785 \\ 
+  3   & 78.047 & 78.047 \\ 
+  4   & 98.935 & 98.935 \\ 
+  5   & 95.595 & 95.595 \\ 
+
+
+
+\end{comment}
+
+
+
+
+
 \section{Possible improvements}
 We havn't tried all possible strategies, so it is possible that an other combination of runing of the functions could lead to better results.
 One could also try to search for an "orthogonal" (of the 3 other ones) improvement function.
 To make plans, we could use an automaton, which would be automatically able to use all kinds of assigment/improvement functions, and would go through all fibers at random to assign/improve randomly, and the controlable parameter would only be the time we want it to work.
 Nevertheless, a lot of efforts now lead to little improvements of the results. It is likely that we are almost at the global optimum. We only have a doubt on the number of plans/applying and their sets of plates that could improve significantly.
+
+\bibliographystyle{plain}
+\bibliography{papers}{}
+
 \end{multicols}
 \end{document}
