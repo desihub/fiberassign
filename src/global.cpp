@@ -18,41 +18,6 @@
 #include        "structs.h"
 #include        "global.h"
 
-// Useful sub-functions -------------------------------------------------------------------------------------------------
-// Returns the radial distance on the plate (mm) given the angle,
-// theta (radians).  This is simply a fit to the data provided.
-inline double plate_dist(const double theta) {
-	const double p[4] = {8.297e5,-1750.,1.394e4,0.0};
-	double rr=0;
-	for (int i=0; i<4; i++) rr = theta*rr + p[i];
-	return(rr);
-}
-
-// Returns the x-y position on the plate centered at P for galaxy O.
-inline struct onplate change_coords(const struct galaxy& O, const struct plate& P) {
-	struct onplate obj;
-	// Rotate the "galaxy" vector so that the plate center is at z-hat.
-	double nhat1[3],nhat2[3];
-	const double ct=P.nhat[2],st=sqrt(1-P.nhat[2]*P.nhat[2])+1e-30;
-	const double cp=P.nhat[0]/st,sp=P.nhat[1]/st;
-	// First rotate by -(Phi-Pi/2) about z. Note sin(Phi-Pi/2)=-cos(Phi)
-	// and cos(Phi-Pi/2)=sin(Phi).
-	nhat1[0] =  O.nhat[0]*sp - O.nhat[1]*cp;
-	nhat1[1] =  O.nhat[0]*cp + O.nhat[1]*sp;
-	nhat1[2] =  O.nhat[2];
-	// then rotate by Theta about x
-	nhat2[0] =  nhat1[0];
-	nhat2[1] =  nhat1[1]*ct - nhat1[2]*st;
-	nhat2[2] =  nhat1[1]*st + nhat1[2]*ct;
-	// now work out the "radius" on the plate
-	double tht=sqrt(sq(nhat2[0],nhat2[1]));
-	double rad=plate_dist(tht);
-	// the x-y position is given by our nhat's scaled by this
-	obj.pos[0] = nhat2[0]/tht * rad;
-	obj.pos[1] = nhat2[1]/tht * rad;
-	return(obj);
-}
-
 // Collecting information from input -------------------------------------------------------------------------------------
 // Fast because no big function is called ! Keep it in only 1 function
 // For each ~10,000 plate, finds ~25,000 galaxies reachable by the plate,
@@ -110,38 +75,12 @@ void collect_available_tilefibers(Gals& G, const Plates& P) {
 	print_time(t,"# ... took :");
 }
 
-// (On plate p) finds if there is a collision if fiber k would watch at galaxy g (collision with neighb)
-inline int find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plates& P, const Assignment& A) {
-	struct onplate op = change_coords(G[g],P[j]);
-	double x = op.pos[0];
-	double y = op.pos[1];
-	for (int i=0; i<pp.N[k].size(); i++) {
-		int kn = pp.N[k][i];
-		int gn = A.TF[j][kn];
-		if (gn!=-1) {
-			struct onplate opn = change_coords(G[gn],P[j]);
-			double xn = opn.pos[0];
-			double yn = opn.pos[1];
-			if (sq(x-xn,y-yn) < sq(Collide)) return kn;
-		}
-	}
-	return -1;
-}
-
 inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const Gals& G, const PP& pp, const Feat& F, const Assignment& A) {
 	int kind = G[g].id;
-	if (find_collision(j,k,g,pp,G,P,A)!=-1) return false;
+	if (A.find_collision(j,k,g,pp,G,P)!=-1) return false;
 	if (kind==F.ids.at("SF") && A.nkind(j,k,F.ids.at("SF"),G,P,pp,F)>=MaxSF) return false;
 	if (kind==F.ids.at("SS") && A.nkind(j,k,F.ids.at("SS"),G,P,pp,F)>=MaxSS) return false;
 	if (P[j].ipass==Npass-1 && !(kind==F.ids.at("ELG") || kind==F.ids.at("SS") || kind==F.ids.at("SF"))) return false; // Only ELG, SF, SS at the last pass
-	return true;
-}
-
-inline bool ok_assign_tot(int g, int j, int k, const Plates& P, const Gals& G, const PP& pp, const Feat& F, const Assignment& A) {
-	if (A.nobs(g,G,F)==0) return false;
-	if (!ok_assign_g_to_jk(g,j,k,P,G,pp,F,A)) return false;
-	if (A.is_assigned_tf(j,k)) return false;
-	if (A.is_assigned_jg(j,g,InterPlate)!=-1) return false;
 	return true;
 }
 
@@ -237,7 +176,7 @@ int improve_fiber_from_kind(int id, int j, int k, const Gals& G, const Plates&P,
 		List av_gals = P[j].av_gals[k];
 		for (int i=0; i<av_gals.size(); i++) {
 			int g = av_gals[i];
-			if (G[g].id==id && find_collision(j,k,g,pp,G,P,A)==-1 && A.is_assigned_jg(j,g,InterPlate)==-1 && A.nobs(g,G,F)>=1) {
+			if (G[g].id==id && A.find_collision(j,k,g,pp,G,P)==-1 && A.is_assigned_jg(j,g,InterPlate)==-1 && A.nobs(g,G,F)>=1) {
 				for (int kkp=0; kkp<fibskind.size(); kkp++) {
 					int kp = fibskind[kkp];
 					int gp = A.TF[j][kp];
@@ -331,7 +270,7 @@ void improve_from_kind(const Gals& G, const Plates&P, const PP& pp, const Feat& 
 				List av_gals = P[j].av_gals[k];
 				for (int i=0; i<av_gals.size(); i++) {
 					int g = av_gals[i];
-					if (G[g].id==id && A.nobs(g,G,F)>=1 && A.is_assigned_jg(j,g,InterPlate)==-1 && find_collision(j,k,g,pp,G,P,A)==-1) {
+					if (G[g].id==id && A.nobs(g,G,F)>=1 && A.is_assigned_jg(j,g,InterPlate)==-1 && A.find_collision(j,k,g,pp,G,P)==-1) {
 						// If the av gal is of the good kind, try to assign it, and improving an other one
 						for (int kkp=0; kkp<fibskind.size(); kkp++) {
 							int kp = fibskind[kkp];
@@ -417,7 +356,7 @@ void replace(int old_kind, int new_kind, int j, int p, const Gals& G, const Plat
 		List av_g = P[j].av_gals[k];
 		for (int gg=0; gg<av_g.size() && !fin; gg++) {
 			int g = av_g[gg];
-			if (G[g].id==new_kind && find_collision(j,k,g,pp,G,P,A)==-1 && A.nobs(g,G,F)>=1 && pp.spectrom[k]==p) {
+			if (G[g].id==new_kind && A.find_collision(j,k,g,pp,G,P)==-1 && A.nobs(g,G,F)>=1 && pp.spectrom[k]==p) {
 				int g0 = A.TF[j][k];
 				A.unassign(j,k,g0,G,P,pp);
 				A.assign(j,k,g,G,P,pp);
@@ -665,7 +604,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	print_hist("UsedSF (number of petals)",1,histogram(usedSF,1));
 
 	// Some petal
-	//for (int i=1; i<=10; i++) print_table("Petal "+i2s(i),A.infos_petal(1000*i,5,G,P,pp,F));
+	for (int i=1; i<=10; i++) print_table("Petal of plate "+i2s(i),A.infos_petal(1000*i,5,G,P,pp,F));
 
 	// Percentage of fiber assigned
 	printf("  %s assignments in total (%.4f %% of all fibers)\n",f(A.na()).c_str(),percent(A.na(),Nplate*Nfiber));

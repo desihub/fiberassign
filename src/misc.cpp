@@ -330,10 +330,12 @@ int max_row(const Dtable& T) {
 void print_table(str s, const Table& T, bool latex) {
 	int SIZE = 7;
 	int MAXSIZE = 10;
+	int MAXLINE = 50;
+	int STANDARDSIZE = 3;
 
 	bool square(true);
 	int l = T.size();
-	if (MAXSIZE<l) printf("Cautious, table is of size %d, only %d will be displayed \n",l,MAXSIZE);
+	if (MAXLINE<l) printf("Cautious, table is of size %d, only %d will be displayed \n",l,MAXLINE);
 	int cc = T[0].size();
 	for (int i=0; i<l; i++) if (T[i].size()!=cc) square = false;
 
@@ -349,7 +351,7 @@ void print_table(str s, const Table& T, bool latex) {
 		}
 		maxRow = max_on_row(sizestr);
 	}
-	else maxRow = initList(max,7);
+	else maxRow = initList(max,STANDARDSIZE);
 
 	str et = latex ? " &" : "|";
 	str slash = latex ? " \\\\ \n" : "\n";
@@ -365,7 +367,7 @@ void print_table(str s, const Table& T, bool latex) {
 		str s = (j==max-1) ? slash : et;
 		printf("%s%s",format(maxRow[j],f(j)).c_str(),s.c_str());
 	}
-	for (int i=0; i<l && i<10; i++) {
+	for (int i=0; i<l && i<MAXLINE; i++) {
 		printf("%3d  %s",i,et.c_str());
 		int c = T[i].size();
 		for (int j=0; j<c; j++) {
@@ -381,10 +383,12 @@ void print_table(str s, const Table& T, bool latex) {
 void print_table(str s, const Dtable& T, bool latex) {
 	int SIZE = 7;
 	int MAXSIZE = 10;
+	int MAXLINE = 50;
+	int STANDARDSIZE = 3;
 
 	bool square(true);
 	int l = T.size();
-	if (MAXSIZE<l) printf("Cautious, table is of size %d, only %d will be displayed \n",l,MAXSIZE);
+	if (MAXLINE<l) printf("Cautious, table is of size %d, only %d will be displayed \n",l,MAXLINE);
 	int cc = T[0].size();
 	for (int i=0; i<l; i++) if (T[i].size()!=cc) square = false;
 
@@ -400,7 +404,7 @@ void print_table(str s, const Dtable& T, bool latex) {
 		}
 		maxRow = max_on_row(sizestr);
 	}
-	else maxRow = initList(max,7);
+	else maxRow = initList(max,STANDARDSIZE);
 
 	str et = latex ? " &" : "|";
 	str slash = latex ? " \\\\ \n" : "\n";
@@ -416,7 +420,7 @@ void print_table(str s, const Dtable& T, bool latex) {
 		str s = (j==max-1) ? slash : et;
 		printf("%s%s",format(maxRow[j],f(j)).c_str(),s.c_str());
 	}
-	for (int i=0; i<l && i<10; i++) {
+	for (int i=0; i<l && i<MAXLINE; i++) {
 		printf("%3d  %s",i,et.c_str());
 		int c = T[i].size();
 		for (int j=0; j<c; j++) {

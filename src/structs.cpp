@@ -478,8 +478,11 @@ Table Assignment::infos_petal(int j, int pet, const Gals& G, const Plates& P, co
 		List av_gals = P[j].av_gals[k];
 		for (int gg=0; gg<av_gals.size(); gg++) {
 			int g = av_gals[gg];
+			L.push_back(g==g0);
 			L.push_back(G[g].id);
 			L.push_back(is_assigned_jg(j,g));
+			L.push_back(is_assigned_jg(j,g,InterPlate));
+			L.push_back(find_collision(j,k,g,pp,G,P));
 			L.push_back(nobs(g,G,F));
 		}
 		T.push_back(L);
@@ -534,7 +537,58 @@ void Assignment::update_once_obs(int j) {
 	}
 }
 
-// Global functions -----------------------------------------------------------------------
+// Useful sub-functions -------------------------------------------------------------------------------------------------
+// Returns the radial distance on the plate (mm) given the angle,
+// theta (radians).  This is simply a fit to the data provided.
+double plate_dist(const double theta) {
+	const double p[4] = {8.297e5,-1750.,1.394e4,0.0};
+	double rr=0;
+	for (int i=0; i<4; i++) rr = theta*rr + p[i];
+	return rr;
+}
+
+// Returns the x-y position on the plate centered at P for galaxy O.
+struct onplate change_coords(const struct galaxy& O, const struct plate& P) {
+	struct onplate obj;
+	// Rotate the "galaxy" vector so that the plate center is at z-hat.
+	double nhat1[3],nhat2[3];
+	const double ct=P.nhat[2],st=sqrt(1-P.nhat[2]*P.nhat[2])+1e-30;
+	const double cp=P.nhat[0]/st,sp=P.nhat[1]/st;
+	// First rotate by -(Phi-Pi/2) about z. Note sin(Phi-Pi/2)=-cos(Phi)
+	// and cos(Phi-Pi/2)=sin(Phi).
+	nhat1[0] =  O.nhat[0]*sp - O.nhat[1]*cp;
+	nhat1[1] =  O.nhat[0]*cp + O.nhat[1]*sp;
+	nhat1[2] =  O.nhat[2];
+	// then rotate by Theta about x
+	nhat2[0] =  nhat1[0];
+	nhat2[1] =  nhat1[1]*ct - nhat1[2]*st;
+	nhat2[2] =  nhat1[1]*st + nhat1[2]*ct;
+	// now work out the "radius" on the plate
+	double tht=sqrt(sq(nhat2[0],nhat2[1]));
+	double rad=plate_dist(tht);
+	// the x-y position is given by our nhat's scaled by this
+	obj.pos[0] = nhat2[0]/tht * rad;
+	obj.pos[1] = nhat2[1]/tht * rad;
+	return obj;
+}
+
+// (On plate p) finds if there is a collision if fiber k would watch at galaxy g (collision with neighb)
+int Assignment::find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plates& P) const {
+	struct onplate op = change_coords(G[g],P[j]);
+	double x = op.pos[0];
+	double y = op.pos[1];
+	for (int i=0; i<pp.N[k].size(); i++) {
+		int kn = pp.N[k][i];
+		int gn = TF[j][kn];
+		if (gn!=-1) {
+			struct onplate opn = change_coords(G[gn],P[j]);
+			double xn = opn.pos[0];
+			double yn = opn.pos[1];
+			if (sq(x-xn,y-yn) < sq(Collide)) return kn;
+		}
+	}
+	return -1;
+}
 
 // Write some files -----------------------------------------------------------------------
 // Write very large binary file of P[j].av_gals[k]. Not checked for a long time, should not work anymore !

@@ -107,6 +107,7 @@ class Assignment {
 	~Assignment();
 	void assign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp);
 	void unassign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp);
+	int find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plates& P) const;
 	void verif(const Plates& P) const; // Verif mappings are right
 	int is_assigned_jg(int j, int g) const;
 	int is_assigned_jg(int j, int g, int interplate) const;
@@ -135,6 +136,8 @@ class Assignment {
 	void update_nobsv_tmp();
 };
 
+double plate_dist(const double theta);
+struct onplate change_coords(const struct galaxy& O, const struct plate& P);
 // Some (old) writing functions -----------------------------------
 void writeTFfile(const Plates& P, std::ofstream TFfile);
 void writeGfile(Gals& G, std::ofstream Gfile);
