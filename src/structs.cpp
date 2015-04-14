@@ -478,12 +478,12 @@ Table Assignment::infos_petal(int j, int pet, const Gals& G, const Plates& P, co
 		List av_gals = P[j].av_gals[k];
 		for (int gg=0; gg<av_gals.size(); gg++) {
 			int g = av_gals[gg];
-			L.push_back(g==g0);
+			L.push_back(g==g0 ? -3 : -2);
 			L.push_back(G[g].id);
+			L.push_back(nobs(g,G,F));
 			L.push_back(is_assigned_jg(j,g));
 			L.push_back(is_assigned_jg(j,g,InterPlate));
 			L.push_back(find_collision(j,k,g,pp,G,P));
-			L.push_back(nobs(g,G,F));
 		}
 		T.push_back(L);
 	}

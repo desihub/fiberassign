@@ -331,7 +331,7 @@ void print_table(str s, const Table& T, bool latex) {
 	int SIZE = 7;
 	int MAXSIZE = 10;
 	int MAXLINE = 50;
-	int STANDARDSIZE = 3;
+	int STANDARDSIZE = 1;
 
 	bool square(true);
 	int l = T.size();
@@ -384,7 +384,7 @@ void print_table(str s, const Dtable& T, bool latex) {
 	int SIZE = 7;
 	int MAXSIZE = 10;
 	int MAXLINE = 50;
-	int STANDARDSIZE = 3;
+	int STANDARDSIZE = 1;
 
 	bool square(true);
 	int l = T.size();

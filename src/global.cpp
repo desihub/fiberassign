@@ -609,30 +609,30 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	// Percentage of fiber assigned
 	printf("  %s assignments in total (%.4f %% of all fibers)\n",f(A.na()).c_str(),percent(A.na(),Nplate*Nfiber));
 
-	//// Some stats
-	//Table done = initTable(Categories,MaxObs+1);
-	//List fibers_used = initList(Categories);
-	//List targets = initList(Categories);
-	//for (int id=0; id<Categories; id++) {
-		//List hist = hist2[id];
-		//for (int i=0; i<=MaxObs; i++) {
-			////i here is number of observations lacking  i = goal -done
-			////done=goal -i for i<=goal
-			////0 for done>goal, i.e. i<0
-			//if (i<=F.goal[id]) {
-				//done[id][i]=hist[F.goal[id]-i];
-				//fibers_used[id]+=i*done[id][i];
-				//targets[id] += done[id][i];
-			//}
-		//}
-	//}
+	// Some stats
+	Table done = initTable(Categories,MaxObs+1);
+	List fibers_used = initList(Categories);
+	List targets = initList(Categories);
+	for (int id=0; id<Categories; id++) {
+		List hist = hist2[id];
+		for (int i=0; i<=MaxObs; i++) {
+			//i here is number of observations lacking  i = goal -done
+			//done=goal -i for i<=goal
+			//0 for done>goal, i.e. i<0
+			if (i<=F.goal[id]) {
+				done[id][i]=hist[F.goal[id]-i];
+				fibers_used[id]+=i*done[id][i];
+				targets[id] += done[id][i];
+			}
+		}
+	}
 
-	//Dtable stats = initDtable(Categories,4);
-	//for (int id=0; id<Categories; id++) {
-		//stats[id][0] = (targets[id]-done[id][0])/TotalArea;
-		//stats[id][1] = fibers_used[id]/TotalArea;
-		//stats[id][2] = targets[id]/TotalArea;
-		//stats[id][3] = percent(targets[id]-done[id][0],targets[id]);
-	//}
-	//print_table("  Id on lines. (Per square degrees) Total, Fibers Used, Available, Percent of observations",stats,latex);
+	Dtable stats = initDtable(Categories,4);
+	for (int id=0; id<Categories; id++) {
+		stats[id][0] = (targets[id]-done[id][0])/TotalArea;
+		stats[id][1] = fibers_used[id]/TotalArea;
+		stats[id][2] = targets[id]/TotalArea;
+		stats[id][3] = percent(targets[id]-done[id][0],targets[id]);
+	}
+	print_table("  Id on lines. (Per square degrees) Total, Fibers Used, Available, Percent of observations",stats,latex);
 }
