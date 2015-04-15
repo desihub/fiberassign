@@ -24,6 +24,7 @@
 \usepackage[francais]{babel}
 \usepackage[T1]{fontenc}    %% permet d'utiliser les caractères accentués
 \usepackage[utf8]{inputenc} %% permet d'utiliser les caractères accentué
+\usepackage{gensymb}
 %PGF plot
 \usepackage{pgfplots, pgfplotstable}
 \pgfplotsset{compat=newest}
@@ -108,7 +109,6 @@
 Dark energy study began in 1998, when two independent teams, led by Adam Riess and Saul Perlmutter, found out, using quasars measurements, that the universe was still expanding. The then standard cosmological model, which components were baryonic and dark matter ruled by general relativity, had to be changed. The $\Lambda$-CDM model now include dark energy, a component explaining the fact that gravity is weaker than expected, and compatible with the exponentially accelerating rate of the universe. It is still today the standard model. One of the main goals of cosmology is then to understand how the universe has been evolving until today, from the oldest times we can reach thanks to the Planck satellite which scrutinizes the Cosmic Microwave Background, picture of the sky 378,000 after the big bang. This study needs to understand the nature of dark energy and has to get information on the distribution of matter over time. This thus involves to scrutinize millions of galaxies and quasars, their spectrum and redshift carrying a lot of data. Such a work needs huge surveys, like BOSS, BigBOSS, and now DESI, heir of the previous ones. DESI will then significantly improve the knowledge on caracteristic features, espacially the power spectrum (Fourier transform of the correlation function of the matter density) which permits to understand baryon acoustic oscillations (BAO) which went through the early universe and which signature has always been remaining. One of the pivotal points of the DESI experiment is the assignment of its 5000 fibers on 10666 different tiles, watching galaxies in a mock catalog of 70M ones. Indeed, the efficiency of DESI will directly depend on multiple features of this assignment algorithm : number of unassigned fibers, number of times a QSO \lya will be observed (5 times goal), etc. Here is a brief presentation of the standard cosmological model and the DESI experiment. We then describe the principles used, rules, C++ code organisation and results of the assignment we created, run on the Edison NERSC Supercomputer.
 
 
-\begin{multicols}{2}
 \tableofcontents
 
 
@@ -117,7 +117,6 @@ Dark energy study began in 1998, when two independent teams, led by Adam Riess a
 
 
 	\section{Cosmology today}
-
 
 	\subsection{Dark matter}
 	Dark matter is invisible (doesn't react with electromagnetic radiations), and has been discovered when physicists noticed that there must be additional matter in clusters of matter. It accounts for 27\% of the totality of matter and implies that the standard model of particle physics must be incomplete. Through gravitational interaction with baryonic matter, they influence the large scale structure formation, but also small-scale clustering of galaxies lying in host dark matter halos.
@@ -130,50 +129,69 @@ Dark energy study began in 1998, when two independent teams, led by Adam Riess a
 
 There is a growing consensus among cosmologists that the total density of matter is equal to the critical density, so that the universe is spatially flat. Approximately 24\% of this is in the form of a low pressure matter, most of which is thought to be “non-baryonic” dark matter, while the remaining 71\% is thought to be in the form of a negative pressure “dark energy”, like the cosmological constant. If this is true, then dark energy is the major driving force behind the fate of the universe and it will expand forever exponentially.
 
+	\subsection{Dark energy}
+	Becoming aware that the expanding rate of the universe is still inscreasing, theorists needed a new component in the universe to explain it. 
 
 	\section{DESI}
 	The Dark Energy Spectroscopic Instrument (DESI) is a Stage IV experiment that will make the next major advance in dark energy. \cite{Levi:2013gra}
 
 	\subsection{Material features}
-The DESI instrument, that will be installed on the Mayall telescope in Arizona, consists of a new wide-field (3.2 deg. linear field of view) corrector plus a multi-object spectrometer with up to 5000 robotically positioned optical fibers, with a resolving power of R = 5000. The fibers feed 10 three-arm spectrographs producing spectra that cover a wavelength range from 360-980 nm and have resolution of 2000-5500 depending on the wavelength. It will watch at 14,000 sq. deg. in 10666 tiles from 2018 to 2022, with roughly 7 different tiles each night.
+	The DESI instrument, that will be installed on the Mayall telescope in Arizona, consists of a new wide-field (3.2 deg. linear field of view) corrector plus a multi-object spectrometer with up to 5000 robotically positioned optical fibers, with a resolving power of R = 5000. The fibers feed 10 three-arm spectrographs (500 fibers for each spectrographs, also called petals) producing spectra that cover a wavelength range from 360-980 nm and have resolution of 2000-5500 depending on the wavelength. It will watch at 14,000 sq. deg. in 10666 tiles from 2018 to 2022, with roughly 7 different tiles each night. Fiber positioners will have a reach of $\sim$6 mm from their central position.
 
-\subsection{Aspects}
-It will study baryon acoustic oscillations (BAO) and the growth of structure through redshift-space distortions. 
+\subsection{General aspects}
+It will study baryon acoustic oscillations (BAO) and the growth of structure through redshift-space distortions.
+The goals are : i) probe the effects of dark energy on the expansion history using BAO, ii) measure the gravitational growth history through redshift-space distortions, iii) measure the sum of neutrino masses, and iv) study the signatures of primordial inflation. The resulting 3-D galaxy maps at z < 2 and Lyman-alpha forest at z > 2 will make 1\%-level measurements of the distance scale in 35 redshift bins. This will provide unprecedented constraints on cosmological models.
 
-for targets that trace the evolution of dark energy from redshift 0.2 out to 3.5 using three kinds of celestial objects : luminous red galaxies (LRG), emission line galaxies (ELG) and quasars. 
 This survey is the successor of the Stage-III BigBOSS survey and complements imaging surveys such as the Stage-III Dark Energy Survey (DES, currently operating) and the Stage-IV Large Synoptic Survey Telescope (LSST, planned start in the next decade).
 
-On the Mayall telescope, DESI will obtain spectra and redshifts for at least 18 million emission-line galaxies, 4 million luminous red galaxies and 3 million quasi-stellar objects, in order to : i) probe the effects of dark energy on the expansion history using baryon acoustic oscillations (BAO), ii) measure the gravitational growth history through redshift-space distortions, iii) measure the sum of neutrino masses, and iv) investigate the signatures of primordial inflation. The resulting 3-D galaxy maps at z < 2 and Lyman-alpha forest at z > 2 will make 1\%-level measurements of the distance scale in 35 redshift bins. This will provide unprecedented constraints on cosmological models.
+\subsection{Tiles}
+In average, a galaxy is covered 5.24 times (by different fibers), with only 2.6\% of the footprint having a coverage of 3 or less. 
+Figure du tilling. Figure des fibers.
+
+
+\subsection{Targets}
+It will seek for targets that trace the evolution of dark energy from redshift 0.2 out to 3.5 using 3 kinds of celestial objects : 4 million luminous red galaxies (LRG), 18 million emission line galaxies (ELG) and 3 million quasars. QSO \lya are the most important targets. Then comes LRG, then ELG. For each petal (of 500 fibers), 10 are dedicated to Standard Stars and 40 to Sky Fibers.
+\begin{itemize} 
+	\item QSO (quasi stellar object) targets are divided into three categories. There are those at $z < 2.1$ (QSO-I), which are used as tracers only, and as those at $z > 2.1$ which are used for the \lya forest. Finally, there are false one, objects that are a priori believed QSO but are actually not (known once observed). Quasars are extremely luminous, there spectra is very large and doesn't correspond to a star's one. They are likely central regions of massive galaxies surrounding a supermassive black hole, and their energy release must be caused by mass falling onto the accretion disc of the black hole. They are excellent tracer population at redshifts $1 < z < 2$. QSO \lya with $z > 2.1$ are espacially important because it is the only opportunity for DESI to get information on dark energy at so high redshifts.
+	\item LRG (luminous red galaxy) are the most luminous and red galaxies in the universe at $z < 1$ \cite{Eisenstein:2001cq}
+	\item ELG (emission line galaxy) are galaxies where stars are creating. They have strong emission lines and characteristic OII and OIII doublets at a rest frame 327 nm and 500nm, which fits the DESI redshift survey.
+	\item Sky Fibers
+	\item Standard Stars
+\end{itemize} 
+
+
+
+\subsection{Fiber assignment}
+Fiber assignment is the correspondance between fibers of each tile to objects. It tells us which fiber is assigned to which galaxy, or unassigned (in regions where there are not enough galaxies). It depends upon fiber locations on the plate, and on the tilling pattern of the sky. One has to make prioritizations because there are several possibilities to target selection for each fiber. 
+
+
 
 
 \section{Rules for fiber assignment}
 We know the repartition of matter (by repartition of H matter) by pics.
 The original catalog of 50M galaxies has only information on the position and the type of the galaxy, which is LRG, ELG or QSO. Those information were given by a previous survey, only based on colors, the redshift wasn't then computed. But there are different types of each one. QSO can be \lya, target or fake (actually fake ones can be stars for example). A python code generates the file of galaxies, simulating with appropriate probabilities each type, taking into account the fact that there are correlations between positions of galaxies (accordingly with BAO and gravition). When we watch at a QSO and we see that it's a fake or a target, we don't watch at it anymore. But if it's a real one, we try to see it 5 times if it is possible.
 The absorption spectrum shows a pic at $\lambda = 1216$ \AA. We can deduced the redshift because we receive a wavelenght $\lambda(1+z)$. As spectrometers can only see wavelenghts in the range 380 nm (under, no enough energy is received) - 980 nm, the minimum redshift we can reach is 2.2.
-At first, there was as code written by Martin White then Robert Cahn that did an assignment of tilefibers - galaxies in a global way : naive assignment, improvement (try to reassign some fibers to other ones to assign free ones) and redistribution (do not assign more, but it's to have a better repartition of free fibers on each petal).
+At first, there was as code written by Martin White then Bob Cahn that did an assignment of tilefibers - galaxies in a global way : naive assignment, improvement (try to reassign some fibers to other ones to assign free ones) and redistribution (do not assign more, but it's to have a better repartition of free fibers on each petal).
 We have to reserve 10 fibers by petal to Standard Stars and 40 to Sky Fibers.
 We have to avoid unmastered correlations. That's why we don't (at first sight), when we take a new tile, associate 50 free fibers to regions of low QSO density. We would rather assign until there are only 50 free fibers left.
 We do the compuation in real time. That means that we do it tile by tile. We can't access the information of all the galaxies because we only have past watched galaxies information. That adds a new constrain. So I rewrote algorithms so that they would compute an optimal assignment for one plate, knowing information on previous one assignments, and knowing information on previously watched galaxies.
 
 
-\end{multicols}
 \end{comment}
 
 
 
-\begin{multicols}{2}
 \section{Introduction}
-Martin White developed C++ code for fiber assignment over the full 14k sq. deg. footprint.  We first modified Martin's code to incorporate features from Robert's python code, which ran on a restricted 480 sq. deg.. We included the improvement and redistribution steps, which switches fiber assignments to increase the number of galaxies observed. We then adapted the code to compute assignments not globally anymore "knowing all information on galaxies" but plate after plate, as in real experiment.
-The samples are taken from Martin's mocks in stored on NERSC at /project/projectdirs/desi/mocks/preliminary/.  From these files we create a single file containing the appropriate mix of ELG, LRG, QSO, SS (Standard Stars) and SF (Sky Fibers) using the python script in git fiberassign/bin/make\_catalog\_starsandsky.py.  In the same place there is python code to produce a mixture of galaxies without any correlations, but with the correct dn/dz.  
+Martin White developed C++ code for fiber assignment over the full 14k sq. deg. footprint.  We first modified Martin's code to incorporate features from Bob Cahn's python code, which ran on a restricted 480 sq. deg.. We included the improvement and redistribution steps, which switch fiber assignments to increase the number of galaxies observed. We then adapted the code to compute assignments not globally "knowing all information on galaxies yet to be observed" but plate after plate, as in the real experiment.
+The samples are taken from Martin's mocks in stored on NERSC at /project/projectdirs/desi/mocks/preliminary/.  From these files we create a single file containing the appropriate mix of ELG, LRG, QSO, SS (Standard Stars) and SF (Sky Fibers) using the python script in git fiberassign/bin/make\_catalog\_starsandsky.py.  In the same place there is python code to produce a mixture of galaxies without any correlations, but with the correct $\frac{dn}{dz}$  
   
-  The code needs to know the locations of the positioners in the focal plane.  They are given in : \$DESIMODEL/data/focalplane/fiberpos.txt.
-  It also needs to know the locations of the centers of the fields in the sky, i.e. the plates, and their order.  The original code written by Martin White provided the option of having the plate centers given in a binary file or an ASCII file.  We are now using the ASCII option by defining ASCIICENTERS at the outset.  If one wants to use the previous binary format, he has to ask it to Robert and adapt it to the new structure. The format is that of \$DESIMODEL/data/footprint/desi-tiles.par, but an alternative ASCII file can be provided. If the executable is {\tt assign} then the calling sequence will look like :
-  {\tt./assign galaxies.rdzipn desi-tiles.par fiberpos.txt assignment}
- Here the catalog of targets is in the NERSC directory :
-  /projects/projectdirs/desi/mocks/ preliminary/objects\_ss\_sf0.rdzipn the binary file created by {\tt make\_catalog}. The plate centers are provided here by \$DESIMODEL/data/footprint/desi-tiles.par The locations of the positioners are given in \$DESIMODEL/data/focalplane/fiberpos.txt An option not now used is to write the actual assignments to a file here called {\tt assignment}.
+The code needs to know the locations of the positioners in the focal plane. They are given in : \$DESIMODEL/data/focalplane/fiberpos.txt.
+It also needs to know the locations of the centers of the fields in the sky, i.e. the plates, and their order.  The original code written by Martin White provided the option of having the plate centers given in a binary file or an ASCII file.  We are now using the ASCII option by defining ASCIICENTERS at the outset. The format is that of \$DESIMODEL/data/footprint/desi-tiles.par, but an alternative ASCII file can be provided. If the executable is {\tt assign} then the calling sequence will look like :
+{\tt./assign galaxies.rdzipn desi-tiles.par fiberpos.txt assignment}
+ Here the catalog of targets is in the NERSC directory : /projects/projectdirs/desi/mocks/ preliminary/objects\_ss\_sf0.rdzipn the binary file created by {\tt make\_catalog}. An option not now used is to write the actual assignments to a file here called {\tt assignment}
   
-  README.rst gives instructions for running on NERSC. The problem of colliding fiber positioners is addressed in a simplified way. 
-  We summarize here the various components of the code to facilitate their modification later.
+README.rst gives instructions for running on NERSC.
+We summarize here the various components of the code to facilitate their modification later.
 Here are some features on input galaxies simulated catalog :
 
 \begin{table}[H]\centering
@@ -185,15 +203,15 @@ Here are some features on input galaxies simulated catalog :
 		ELG & 3 & 5 & 1 & 2400\\
 		Fake QSO & 4 & 1 & 1& 90\\
 		Fake LRG & 5 & 3 & 1 & 50\\
-		Standard Star & 6 & 2 & 1&  ?\\
-		Sky Fiber & 7 & 4 & 1& ?\\ \hline
+		Standard Star & 6 & 2 & 1&  140\\
+		Sky Fiber & 7 & 4 & 1& 1400\\ \hline
 	\end{tabular}
 	\caption{Characteristics of galaxy samples as set in make\_catalog\_rnc.py}\label{table:characteristics}
 \end{table}
 
 
 \section{Source files}
-They all consist in a .h and a .cpp file and are in this inscreasing dependency order :
+Source files are file.h and file.cpp and are in this inscreasing dependency order :
 \begin{itemize} 
 	\item macros : set as global some parameters of the program
 	\item misc : a home-made library of structures (and functions on them) needed to manipulate concerning datas, but independent of them. There are pair (of int), List (of int), Table, Cube, and timing, printing, string conversion, error report items.
@@ -203,60 +221,61 @@ They all consist in a .h and a .cpp file and are in this inscreasing dependency 
 \end{itemize} 
 
 \section{Parameters}
-They are defined at the begining of the file main.
+A number of parameters are defined at the begining of the file main.
 \begin{itemize} 
-	\item parameters sumed-up in the table \ref{table:characteristics}
+	\item parameters summed-up in the Table \ref{table:characteristics}
 	\item Npass = 5 number of passes
 	\item MinUnused = 50 (not used anymore for the moment) minimum number of unused fibers on each petal
 	\item MaxSS = 10 ; MaxSF = 40 maximum number of fibers assigned to SS and SF on a petal
-	\item PlateRadius = 1.65 radius of the plate
-	\item TotalArea = 15789.0 total scrutinised area of the sky
-	\item Collide = 2.1 minimum distance allowed on plate projection of two assigned galaxies on the same plate
-	\item NeighborRad = 11.0 maximum distance to consider that two fibers are neighbors
-	\item PatrolRad = 6.0 maximum distance, on plate coordinates, that allows a fiber to watch at a galaxy
-	\item InterPlate = 200 minimal plate distance between two plates observing the same galaxy
+	\item PlateRadius = $1.65^{\circ}$ radius of the plate
+	\item TotalArea = $15789.0 sq \cdot deg^{-1}$ total area of the sky considered
+	\item Collide = 2.1 mm minimum distance allowed on plate projection of two assigned galaxies on the same plate
+	\item NeighborRad = 11.0 mm maximum distance to consider that two fibers are neighbors
+	\item PatrolRad = 6.0 mm maximum distance, on plate coordinates, that allows a fiber to a galaxy
+	\item InterPlate = 200 minimal number of plates between two observations of the same galaxy
 	\item Randomize = false randomize order of plates in making plans
 \end{itemize} 
 
 
 \section{Classes and structures}
-They are build in order to be independent to each other, flexible, quickly understandable, in a logical way, and with no redundant information.
+Classes and structures are built to be independent of each other, flexible, quickly understandable, logical, and with no redundant information as much as possible.
 
-\end{multicols}
 \begin{table}[H]\begin{center}
 	\begin{tabular}{|l|l|p{12cm}|} \hline
 		Structure name & Meaning & Description \\ \hline \hline
 
-		Feat & Features of galaxies & Initialized in the main function, memories priorities, number of observations wished, and types of different galaxies.\\ \hline
+		Feat & Features of galaxies & Initialized in the main function. Gives priority and number of observations desired for each galaxy type.\\ \hline
 
-		PP & Plate Parameters & Carries positions of fiber positions on the plate, spectrometer correspondence, and neighboring fibers information.\\ 
+		PP & Plate Parameters & Carries locations of fiber positions on the plate, spectrometer correspondence, and neighboring fibers information.\\ 
 
-		onplate & Plate coordinates & Is used for coordinates in the focal plane in mm. The member {\tt id} is used to give the identity of a galaxy. Onplates is vector of onplate.\\ 
+		onplate & Plate coordinates & Used for coordinates in the focal plane in mm. The member {\tt id} is used to give the identity of a galaxy. Onplates is vector of onplate.\\ 
 
-		plate & A plate & Peculiarly describes both the location in the sky of the tile in terms of a unit vector derived from RA and DEC. Carries also the Id of the tile, its pass, and the available galaxies it is able to reach. Then Plates is vector of plate, and has all information on tiles.\\ \hline
+		plate & A plate & Locations in the sky of the tile in terms of a unit vector derived from RA and DEC. Carries also the Id of the tile, its pass, and the available galaxies it is able to reach. Plates is vector of plate, and has all information on tiles.\\ \hline
 
-		galaxy & A galaxy & Information on a galaxy : an {\tt id} that corresponds to table \ref{table:characteristics}, a position in the sky (in 2 differents ways), and the available tile-fibers that can watch at it. Gals is vector of galaxy and carries all information on galaxies.\\ \hline
+		galaxy & A galaxy & Information on a galaxy : an {\tt id} that corresponds to Table \ref{table:characteristics}, a position in the sky (in two differents ways), and the available tile-fibers that can observe it. Gals is vector of galaxy and carries all information on galaxies.\\ \hline
 
-		Assignment & An entire assignment & Carries maping of tile-fibers to galaxies, its inverse, galaxies to tile-fibers, and the cube (3d-matrix) of assigned fibers for a kind, a petal and a plate (useful to have fast computations).\\ \hline
+		Assignment & An entire assignment & Carries mapping of tile-fibers to galaxies, its inverse, galaxies to tile-fibers, and the cube (3d-matrix) of assigned fibers for a kind, a petal and a plate (useful for fast computations).\\ \hline
 	\end{tabular}\end{center}
 	\caption{Classes and structures}\label{tab:structures}
 \end{table}
-\begin{multicols}{2}
+
 
 \section{Functions}
 In algorithms, j stands for a plate, k for a fiber, p for a petal, g for a galaxy.
 
+\subsection{Some functions in structs.cpp}
+{\tt plate\_dist} turns radians into mm on the focal plane, i.e. it is the plate scale as a function of angle.
+
+{\tt change\_coords} combines a galaxy and a particular plate to give the coordinates the galaxy will have in the focal plane when observed as with this tile. It's a rotation in angular coordinates. This ought to be rigorously checked.
+
+{\tt find\_collision} returns the fiber number of a fiber that conflicts with tiblefiber (j,k).  Conflict is defined by two observed galaxies being separated by less than {\tt Collide}, currently set to 2.1 mm (variable).
+
 \subsection{Collecting}
-{\tt collect\_galaxies\_for\_all} is multithreaded, and for each fiber of each tile, collects reachable galaxies. It uses kdTree and htmTree libraries written by Martin White, because it's absolutelly necessary to do computations in a reasonnable time with supercomputers.
+{\tt collect\_galaxies\_for\_all} is multithreaded, and for each fiber of each tile, collects reachable galaxies. It uses kdTree and htmTree libraries written by Martin White, because it's absolutely necessary to do computations in a reasonable time with supercomputers.
 
 {\tt collect\_available\_tilefibers} computes, using the previous work, available tile-fibers for each galaxy (inverse map)
 
 \subsection{Useful sub-functions for global functions}
-{\tt plate\_dist} turns radians into mm on the focal plane, i.e. it is the plate scale as a function of angle.
-
-{\tt change\_coords} is a critical function that combines a galaxy and a particular plate to give the coordinates the galaxy will have in the focal plane when observed as with this tile. It's a rotation in angular coordinates. This ought to be rigorously checked.
-
-{\tt find\_collision} returns the fiber number of a fiber that conflicts with tiblefiber (j,k).  Conflict is defined by two observed galaxies being separated by less than {\tt Collide}, currently set to 2.1 mm.
 
 {\tt ok\_assign\_g\_to\_jk\_nobs and ok\_assign\_tot} checks to see if we can assign g to the tile-fiber (j,k), according to assigning rules described further
 
@@ -265,9 +284,9 @@ In algorithms, j stands for a plate, k for a fiber, p for a petal, g for a galax
 \begin{algorithm}[H]
 	\caption{Find best(j,k)}\label{euclid}
 	\begin{algorithmic}[1]
-		\State Initialize a fictive galaxy to -1, called best
+		\State Initialize a fictional galaxy with $ID=-1$, called best
 		\For {each galaxy available galaxy (for this fiber) g}
-		\If {g is better}
+		\If {g is better (according to priority and number of observations)}
 		\State $best \gets g$
 		\EndIf
 		\EndFor
@@ -282,20 +301,22 @@ In algorithms, j stands for a plate, k for a fiber, p for a petal, g for a galax
 	\caption{Improve\_fiber(j0,n,j,k)}\label{euclid}
 	\begin{algorithmic}[1]
 		\If {k is not assigned}
-		\State try to assign\_(j,k)
-		\If {k couldn't just be assigned}
-		\For {each available galaxy g}
+		\State try to assign running assign\_fiber(j,k)
+		\If {k couldn't be assigned this way}
+		\State initialize a set of variables jp, kp, g, gp
+		\For {each galaxy g available to (j,k)}
 		\If {it's possible to assign g with k}
-		\For {each chosen tile-fibers (jp,kp) which choosed g (where $j0\le jp \le j0+n$)}
+		\For {each chosen tile-fibers (jp,kp) which chose g (where $j0\le jp \le j0+n$)}
 		\State $gp\leftarrow find\_best(jp,kp)$
+		\State memorize jp, kp, g, gp if it's a better set (gp is more worthy) than previous one
+		\EndFor
+		\EndIf
+		\EndFor
 		\If {$gp \ne -1$}
 		\State Unassign $(jp,kp) \longleftrightarrow g$
 		\State Assign $(j,k) \longleftrightarrow g$
 		\State Assign $(jp,kp) \longleftrightarrow gp$
 		\EndIf
-		\EndFor
-		\EndIf
-		\EndFor
 		\EndIf
 		\EndIf
 	\end{algorithmic}
@@ -303,16 +324,18 @@ In algorithms, j stands for a plate, k for a fiber, p for a petal, g for a galax
 
 
 \subsection{Assigning making a plan}
-Here are algorithms that know all information and are able to compute the assignment crossing between plates. It does a plan with only information available by the catalog and by previous seen galaxies. One can use them with size 1 if one wants to do an assignment plate after plate for instance (which shouldn t be called a plan anymore).
+In the simulated catalog, we know all information on objects (if a QSO is a real one for example). During the real study, one won't have access to this information prior to the observation. Thus, in the code, we have to simulate that we have this infotmation only when we have at least once observed the object.
 
-The "next" argument means that we treat (in a shuffle order) all next "next" plates (in the right order of tiles) in the plan we make. If it is $-1$, it will deal with all left plates.
+Thus, algorithms do a plan with only information available by the catalog and by previously seen galaxies. A plan consists of an assignment on a set of consecutive tiles (from 0 to 2000 for instance). One can use algorithms on size-one plans if one wants to do an assignment plate after plate for example (which shouldn't be called a plan anymore).
+
+The argument "next" (integer) in following functions means that we treat all next "next" plates (in the right order of tiles) in the plan we make. If it is $-1$, it will deal with all left plates. For example, if next plate in the program is 10 and one launch a function with $next = 100$, this function is going to do his job on plates from 10 to 110.
 
 {\tt simple\_assign} makes a first simple assignment plan : for each fiber assign to the best available galaxy
 
 \begin{algorithm}[H]
 	\caption{Simple\_assign(j0,n)}\label{euclid}
 	\begin{algorithmic}[1]
-		\For {each plate j from j0 to j0+n in a random order}
+		\For {each plate j from j0 to j0+n}
 		\For {each fiber k in a random order}
 		\State try to assign\_fiber(j,k)
 		\EndFor
@@ -320,12 +343,12 @@ The "next" argument means that we treat (in a shuffle order) all next "next" pla
 	\end{algorithmic}
 \end{algorithm}
 
-{\tt new\_assign\_fibers} makes a first assignment plan trying to assign only QSO, then ELG and LRG, then trying to assign SF and SS replacing other kinds if there are not enough available fibers. This way, a QSO could can't be lost because of a collision. With the current value of Collision, it's not very useful, but could be for bugger values.
+{\tt new\_assign\_fibers} makes a first assignment plan trying to assign first QSO, then ELG and LRG, then trying to assign SF and SS replacing other kinds if there are not enough available fibers. This way, a QSO can't be lost because of a collision. With the current value of Collision, it's not very useful, but could be for bigger values.
 
 \begin{algorithm}[H]
 	\caption{New\_assign\_fibers(j0,n)}\label{euclid}
 	\begin{algorithmic}[1]
-		\For {each plate j from j0 to j0+n in a random order}
+		\For {each plate j from j0 to j0+n}
 		\For {each petal p of this plate, in a random order}
 		\For {each fiber k of this petal, in a random order}
 		\State Try assign\_fiber(j,k) only allowing QSO
@@ -349,22 +372,26 @@ The "next" argument means that we treat (in a shuffle order) all next "next" pla
 
 {\tt improve} improves the plan applying improve\_fiber to all of the fibers that concern it
 
-{\tt improve\_from\_kind (kind)} for every petal, tries to assign unassigned fibers to SS or SF, to release an other fiber (formerly assigned to a SS or SF) that would be reassigned to a regular galaxy (kind is SS or SF when we call it)
+{\tt improve\_from\_kind (kind)} for every concerned petal, tries to assign unassigned fibers to SS or SF, to release an other fiber (formerly assigned to a SS or SF) that would be reassigned to a regular galaxy (kind is SS or SF when we call it). There is also the function {\tt improve\_fiber\_from\_kind} that does the same but on only a fiber.
 
 \begin{algorithm}[H]
 	\caption{Improve\_from\_kind (kind,j0,n)}\label{euclid}
 	\begin{algorithmic}[1]
-		\For {each plate j from j0 to j0+n in a random order}
+		\For {each plate j from j0 to j0+n}
 		\For {each petal p of this plate, in a random order}
 		\For {each unassigned fiber k}
+		\State initialize a set of variables kp, g, gp
 		\For {each available galaxies g of k}
 		\For {each fiber kp of p assigned to a galaxy of kind}
-		\If {no conflict}
-		\State Reassign kp to g
-		\State Assign k to a galaxy of kind kind
+		\If {no conflict \& g is worthier than previous one}
+		\State memorize kp, g, gp
 		\EndIf
 		\EndFor
 		\EndFor
+		\If {$g \ne -1$}
+		\State Reassign kp to g
+		\State Assign k to a galaxy gp of kind kind
+		\EndIf
 		\EndFor
 		\EndFor
 		\EndFor
@@ -376,12 +403,18 @@ The "next" argument means that we treat (in a shuffle order) all next "next" pla
 \begin{algorithm}[H]
 	\caption{Update\_plan\_from\_one\_observation(j0,end\_plan)}\label{euclid}
 	\begin{algorithmic}[1]
-		\State get the list of galaxies watched by this plate that are discovered fake or target
+		\State get the list of galaxies observed by this plate that are discovered fake or target
 		\For {each of those galaxies g}
-		\State get the list of planed tile-fibers watching this galaxy further in the plan $j0\le jp \le end$
+		\State get the list of tile-fibers that are supposed to observed this galaxy further in the plan $j0\le jp \le end$
 		\For {each of those tile-fibers (jp,kp)}
 		\State Unassign $(jp,kp) \longleftrightarrow g$
 		\State run improve\_fiber(j0+1,end-j0,jp,kp)
+		\If {jp, kp hasn't been assigned}
+		\State run improve\_fiber\_from\_kind(SF,j0+1,end-j0,jp,kp)
+		\EndIf
+		\If {jp, kp hasn't been assigned}
+		\State run improve\_fiber\_from\_kind(SS,j0+1,end-j0,jp,kp)
+		\EndIf
 		\EndFor
 		\EndFor
 	\end{algorithmic}
@@ -389,30 +422,26 @@ The "next" argument means that we treat (in a shuffle order) all next "next" pla
 
 
 \subsection{Displaying results}
-{\tt results\_on\_inputs} displays some statistics on treated input files (recall input features, print statistics on the number of fibers with 0 galaxies within reach, 1 galaxy within reach etc. out to 19 galaxies within reach ; number of available tile-fibers for a galaxy, ...)
+{\tt results\_on\_inputs} displays some statistics on input files (recall input features, print statistics on the number of fibers with 0 galaxies within reach, 1 galaxy within reach etc. out to 19 galaxies within reach ; number of available tile-fibers for a galaxy, ...)
 
 {\tt display\_results} writes some statistics and provides the tex-formatted results to make Table \ref{tab:full14k}
 
 {\tt print\_free\_fibers} print histograms on free fibers towards/regarding petals, for everything, for only SS and for only SF
 
 
-\subsection{Other not used anymore functions}
-They are redistribution function (redistribution of galaxies (simply or by kind), tile-fibers) used in previous development of the program. We let them here because they can be useful for further develop,ent of the code (redistributing assignment can add new degrees of freedom for an other improvement function execution for example).
-
-
 \section{Rules of assignment}
 \begin{itemize}
-	\item of course, a tile-fiber is only assigned once
-	\item a galaxy can't be assigned more than once in a pass
+	\item Of course, a tile-fiber is only assigned once
+	\item two observations of a galaxy can't be separated by less than {\tt InterPlate} (200) plates
 	\item two observed galaxies can't be separated by less than {\tt Collide} (set by find\_collision)
-	\item in last pass, only ELG, SS and SF are scrutinised
+	\item in last pass, only ELG, SS and SF are considered
 	\item there can't be more than 10 fibers assigned to SS on a petal
 	\item there can't be more than 40 fibers assigned to SF on a petal
-	\item basically, we choose best galaxy from at the same time available, watched less than maxgoal(kind) times and unassigned ones. Amongst them, we take those which has the least priority, and then the one which has been seen the least number of times
+	\item basically, we choose best galaxy from at the same time available, observed less than maxgoal(kind) times and unassigned ones. Among them, we take those with highest priority, and then the one which has been seen the least number of times
 \end{itemize}
 
-In reality we only know the basic type (QSO, LRG, ELG, SS, SF) of the galaxies of the catalog. The precise type is only infered by a simulation coded in python, but is generated with randomness. So in the algorithms, we can know the nature of the object only when it has been watched once at least.
-There are two way of assignment : either watch tile after tile and foresee the assignment of the tile just before watching it ; otherwise, we can make a plan for a definite number of next tiles. In such a plan, we try to optimize assignment, but of course, we can't know the precise type (fake, ...) so it is possible to foresee to observe for example 4 times a fake QSO. We won't do it, so after having planed, when we begin to apply it and do the real observation, if we have just previously observed a fake QSO, we will remove further observations in this plan. We then try to assign the released tile-fibers. In the code, a difficulty was optimization at this point : we could have replaned everything in the plan after an update of information, but we can't because that would take too much time. So we only try to reassign released tile-fibers.
+In nature we only know the basic type (QSO, LRG, ELG, SS, SF) of the galaxies of the catalog. The precise type is only infered by a simulation coded in python, but is generated with randomness. So in the algorithms, we can know the nature of the object only when it has been observed once at least.
+There are two way of assignment : either observe tile after tile and foresee the assignment of the tile just before observing it ; otherwise, we can make a plan for a definite number of succeeding tiles. In such a plan, we try to optimize assignment, but of course, we can't know the precise type (fake, ...) so it is possible to foresee observing for example 4 times a fake QSO. We won't do it, so after having planned, when we begin to apply it and do the real observation, if we have just previously observed a fake QSO, we will remove further observations in this plan. We then try to assign the released tile-fibers. In the code, a difficulty was optimization at this point : we could have replanned everything in the plan after an update of information, but we can't because that would take too much time. So we only try to reassign released tile-fibers.
 
 The idea is to get most information possible in the first pass, assigning independently tile after tile, and then, after this first pass, make a plan for everything else, when we have information on most of the QSO and LRG (the only kinds we want to observe several times). The plan will be better that way, because we do less mistakes than if we would do it from the begining.
 
@@ -573,13 +602,13 @@ In the second plan, we can experimentally see that after a first SF-improvement 
 
 The most results-sensible feature in it is the number of plan/applying and their plates sets. One could try to find a better one.
 
-\end{multicols}
 
 \subsection{Sum-up of assigned galaxies}
 In the reference strategy, we have 50,095,513 assignments in total (93.94\% of all fibers). The weighted score of a certain kind is defined as : 
 \vspace{1\baselineskip}
 $Score(kind) = 100\cdot \frac{\sum\nolimits_{g \in kind} obs(g)}{\sum\nolimits_{g \in kind} goal}$ where $obs(g)$ is the number of times g is observed.
 
+\begin{comment}
 \begin{table}[H]\begin{center}
 \begin{tabular}{r|rrrrrrrcc}
 	~   &         0 &         1 &       2 &      3 &      4 &     5 &         Total &  observed $\%$ & weighted $\%$ \\ \hline
@@ -596,8 +625,29 @@ $Score(kind) = 100\cdot \frac{\sum\nolimits_{g \in kind} obs(g)}{\sum\nolimits_{
 \label{tab:full14k}
 \end{center}
  \end{table}
+\end{comment}
 
-\begin{multicols}{2}
+\begin{table}[H]\begin{center}
+\begin{tabular}{r|rrrrrrrcc}
+	~ &           0 &     1 &  2 & 3 & 4 & 5 &     Total &  observed $\%$ & weighted $\%$ \\ \hline
+  QSO \lya   &     1 &    26 & 15 & 4 & 1 & 0 &    49 & 98.922 & 67.670\\ 
+  QSO Tracer   &   118 &     1 &  0 & 0 & 0 & 0 &   119 & 98.921 & 98.921\\ 
+  LRG   &   247 &    35 & 15 & 0 & 0 & 0 &   298 & 94.804 & 88.843\\ 
+  ELG   & 1,879 &   531 &  0 & 0 & 0 & 0 & 2,411 & 77.955 & 77.955\\ 
+  Fake QSO   &    89 &     0 &  0 & 0 & 0 & 0 &    90 & 98.920 & 98.920\\ 
+  Fake LRG   &    47 &     2 &  0 & 0 & 0 & 0 &    50 & 95.493 & 95.493\\ 
+  SS   &    67 &    72 &  0 & 0 & 0 & 0 &   140 & 48.252 & 48.252\\ 
+  SF   &   270 & 1,129 &  0 & 0 & 0 & 0 & 1,400 & 19.300 & 19.300\\ 
+\end{tabular}
+\caption{Densities}
+\caption{Density per sqdeg as as a function of \# of observations (with total), and \% observed, once and weighted}
+\label{tab:full14k}
+\end{center}
+ \end{table}
+
+
+
+
 
 \subsection{Free fibers}
 Here is the histogram of petals as a function of free fibers.
@@ -695,7 +745,7 @@ Besides, we have indeed exactly 10 SS and 40 SF per petal.
 \begin{figure}[H]\begin{center}
 	\begin{tikzpicture}[scale=1.1]
 		\begin{axis}[enlarge x limits=false,xlabel={InterPlate},ylabel={},cycle list name=mycolorlist]
-			\addplot [mark=x] coordinates {(1,70.172)(20,68.022)(50,67.961)(100,67.905)(200,67.670)(400,67.461)(1000,66.888)(2000,65.660)};
+			\addplot [mark=x] coordinates {(0,73.317)(1,70.172)(20,68.022)(50,67.961)(100,67.905)(200,67.670)(400,67.461)(1000,66.888)(2000,65.660)};
 			\draw [densely dashed] (axis cs:200,\pgfkeysvalueof{/pgfplots/ymin}) -- (axis cs:200,\pgfkeysvalueof{/pgfplots/ymax});
 		\end{axis}
 	\end{tikzpicture}
@@ -713,8 +763,11 @@ One could also try to search for an "orthogonal" (of the 3 other ones) improveme
 To make plans, we could use an automaton, which would be automatically able to use all kinds of assigment/improvement functions, and would go through all fibers at random to assign/improve randomly, and the controlable parameter would only be the time we want it to work.
 Nevertheless, a lot of efforts now lead to little improvements of the results. It is likely that we are almost at the global optimum. We only have a doubt on the number of plans/applying and their sets of plates that could improve significantly.
 
+The problem of colliding fiber positioners is addressed in a simplified way (circles around a fiber) which can be precised.
+
+We can adapt a little bit the code in order to do assignment and improvements without SS and SF, and only add SS and SF just before launching the observation, using the "replace" function in global.cpp. It's not likely to improve a lot because improve-SS and SF must already improve this way.
+
 \bibliographystyle{plain}
 \bibliography{papers}{}
 
-\end{multicols}
 \end{document}

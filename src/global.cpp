@@ -484,6 +484,9 @@ void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F
 
 void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, bool latex) {
 	printf("# Results :\n");
+	// Some petal
+	for (int i=1; i<=10; i++) print_table("Petal of plate "+i2s(i),A.infos_petal(1000*i,5,G,P,pp,F));
+
 	// 0 List of total number of galaxies
 	List tots = initList(Categories);
 	for (int g=0; g<Ngal; g++) tots[G[g].id]++;
@@ -498,8 +501,17 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 		ob[G[g].id][m+MaxObs]++;
 	}
 	for (int m=0; m<2*MaxObs+1; m++) ob[Categories][m] = m-MaxObs;
-	print_table("  Remaining observations (without negative obs ones)",with_tot(hist2),latex);
+	Table with_tot0 = with_tot(hist2);
+	print_table("  Remaining observations (without negative obs ones)",with_tot0,latex);
 	print_table("  Real remaining observations",with_tot(ob));
+
+	Table per_sqd = with_tot0;
+	for (int i=0; i<per_sqd.size(); i++) {
+		for (int j=0; j<per_sqd[i].size(); j++) {
+			per_sqd[i][j] /= TotalArea;
+		}
+	}
+	print_table("  Remaining observations per sq deg",per_sqd,latex);
 
 	// 2 Percentages of observation
 	Dtable perc = initDtable(Categories,2);
@@ -591,6 +603,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	print_mult_table_latex("Free fibers in function of time (plates)",outdir+"fft.dat",fft);
  
 	// 8 Percentage of seen objects as a function of density of objects
+	// 9 Percentage of TF that have at least 1 QSO av and that are not assigned to a QSO
 	
 
 
@@ -603,8 +616,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	Table usedSF = A.used_by_kind("SF",G,pp,F);
 	print_hist("UsedSF (number of petals)",1,histogram(usedSF,1));
 
-	// Some petal
-	for (int i=1; i<=10; i++) print_table("Petal of plate "+i2s(i),A.infos_petal(1000*i,5,G,P,pp,F));
+
 
 	// Percentage of fiber assigned
 	printf("  %s assignments in total (%.4f %% of all fibers)\n",f(A.na()).c_str(),percent(A.na(),Nplate*Nfiber));
