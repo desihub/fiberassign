@@ -20,4 +20,5 @@ extern double PatrolRad;
 extern int Nfbp; // Number of fibers by petals
 extern int InterPlate; 
 extern bool Randomize; 
+extern bool Pacman; 
 #endif

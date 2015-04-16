@@ -569,7 +569,7 @@ A standard output display of an execution look like that (for assignment plan an
 \subsection{Results on the input catalog}
 Here are some statistics on the input galaxies catalog :
 
-\begin{figure}[H]\begin{center}
+\begin{figure}[H]\begin{center}\begin{minipage}{.5\textwidth}
 	\begin{tikzpicture}[scale=1.1]\begin{semilogyaxis}[const plot,enlarge x limits=false,xmax=10,xlabel={\# of accessible galaxies},ylabel={},cycle list name=mycolorlist,legend entries={QSO \lya,QSO Tracer,LRG,ELG,Fake QSO,Fake LRG}] 
 		\addplot table[x=x,y=0] {figs/avgalhist.dat};
 		\addplot table[x=x,y=1] {figs/avgalhist.dat};
@@ -578,17 +578,20 @@ Here are some statistics on the input galaxies catalog :
 		\addplot table[x=x,y=4] {figs/avgalhist.dat};
 		\addplot table[x=x,y=5] {figs/avgalhist.dat};
 \end{semilogyaxis}\end{tikzpicture}
-\end{center}\caption{Available galaxies (by kind) for a single fiber on a single tile}\end{figure}
-
-
-\begin{figure}[H]\begin{center}\begin{tikzpicture}[scale=1.1]\begin{semilogyaxis}[const plot,enlarge x limits=false,xlabel={\# of TF that can access a given galaxy},xmax=13,ylabel={},cycle list name=mycolorlist,legend entries={QSO \lya,QSO Tracer,LRG,ELG,Fake QSO,Fake LRG},legend pos=south west]
+\caption{Available galaxies (by kind) for a single fiber on a single tile}
+\end{minipage}%
+\begin{minipage}{.5\textwidth}
+\begin{tikzpicture}[scale=1.1]\begin{semilogyaxis}[const plot,enlarge x limits=false,xlabel={\# of TF that can access a given galaxy},xmax=13,ylabel={},cycle list name=mycolorlist,legend pos=south west]
 		\addplot table[x=x,y=0] {figs/avtfhist.dat};
 		\addplot table[x=x,y=1] {figs/avtfhist.dat};
 		\addplot table[x=x,y=2] {figs/avtfhist.dat};
 		\addplot table[x=x,y=3] {figs/avtfhist.dat};
 		\addplot table[x=x,y=4] {figs/avtfhist.dat};
 		\addplot table[x=x,y=5] {figs/avtfhist.dat};
-\end{semilogyaxis}\end{tikzpicture}\caption{Available tile-fibers for a galaxy (by kind)}\end{center}\end{figure}
+\end{semilogyaxis}\end{tikzpicture}
+\caption{Available tile-fibers for a galaxy (by kind)}
+\end{minipage}
+\end{center}\end{figure}
 
 
 \subsection{Results of the assignment}
@@ -596,7 +599,9 @@ We run the program with all information (prior knowledge of information on fake,
 
 The results are then written using {\tt display\_results}, and each assignment/improvement function display its own statistics.
 
- and from it, we change parameters to see the effects of them on the program. We also compare to other strategies. The best strategy (discovered until now) is the one where is the strategy where we first look at 2000 tiles, tile after tile runing simple\_assign on each tile without plan, and we then do a plan for all left tiles.
+We precise that we have indeed exactly 10 SS and 40 SF per petal. We have taken a reference strategy, which was a trade-off between computation time and quality of results. We use improvement functions in a way such that they are still efficient given the time they take (because the more improvement execution we launch, the less they are efficent). And from this reference strategy, we change parameters to see the effects of them on the program. We also compare to other strategies. 
+
+The best strategy (discovered until now) is the one where we first look at 2000 tiles, tile after tile runing simple\_assign on each tile without plan, and we then do a plan for all left tiles, before improving it only with an SF-improve.
 
 In the second plan, we can experimentally see that after a first SF-improvement ($+\sim 3.6\%$), even if we redistribute, a second one is almost useless ($+\sim 0.1\%$), whereas a second simple-improve is still efficient after a redistribution ($+\sim 0.4\%$), but useless without a redistribution step ($+\sim 0.01\%$). An other kind of kind-improvement (instead of SF and SS ($+\sim 0.5\%$)) is also almost useless. Furthermore, the computation time is far bigger for SF-improvement (5 mn) than for other.
 
@@ -623,8 +628,7 @@ $Score(kind) = 100\cdot \frac{\sum\nolimits_{g \in kind} obs(g)}{\sum\nolimits_{
 \end{tabular}
 \caption{Remaining observations (id on lines, nobs left on rows) with total}
 \label{tab:full14k}
-\end{center}
- \end{table}
+\end{center}\end{table}
 \end{comment}
 
 \begin{table}[H]\begin{center}
@@ -639,29 +643,39 @@ $Score(kind) = 100\cdot \frac{\sum\nolimits_{g \in kind} obs(g)}{\sum\nolimits_{
   SS   &    67 &    72 &  0 & 0 & 0 & 0 &   140 & 48.252 & 48.252\\ 
   SF   &   270 & 1,129 &  0 & 0 & 0 & 0 & 1,400 & 19.300 & 19.300\\ 
 \end{tabular}
-\caption{Densities}
-\caption{Density per sqdeg as as a function of \# of observations (with total), and \% observed, once and weighted}
-\label{tab:full14k}
-\end{center}
- \end{table}
+\caption{Densities per sqdeg as as a function of \# of observations (with total), and \% observed, once and weighted}\label{tab:full14k}
+\end{center}\end{table}
 
-
-
+\subsection{Pacman plate}
+On the Table \ref{histastf}, we present results of the assignment taking for input the fiber locations files of the pacman (plate deprived of 4 petals) used in case of run out of money.
 
 
 \subsection{Free fibers}
-Here is the histogram of petals as a function of free fibers.
-\begin{figure}[H]\begin{center}\begin{tikzpicture}[scale=1.1]\begin{semilogyaxis}[const plot,enlarge x limits=false,xlabel={\# of free fibers},ylabel={},xmax=160] 
+Here are the histogram of petals as a function of free fibers on Figure \ref{freefib} and the number of free fibers for each plate, in inscreasing order on Figure \ref{fft}.
+
+
+\begin{figure}[H]\begin{center}\begin{minipage}{.5\textwidth}
+	\begin{tikzpicture}[scale=1.1]\begin{semilogyaxis}[const plot,enlarge x limits=false,xlabel={\# of free fibers},ylabel={},xmax=160] 
 	\addplot [mark=none] table [x=x,y=0] {figs/freefib.dat};
-\end{semilogyaxis}\end{tikzpicture}\caption{\# of petals with that many free fibers}
+\end{semilogyaxis}\end{tikzpicture}
+\caption{\# of petals with that many free fibers}\label{freefib}
+ \end{minipage}%
+\begin{minipage}{.5\textwidth}
+	\begin{tikzpicture}[scale=1.1]
+		\begin{axis}[const plot,enlarge x limits=false,enlarge y limits=false,xlabel={Plate},ylabel={},cycle list name=mycolorlist]
+			\addplot table[x=x,y=0] {figs/fft.dat};
+		\end{axis}
+	\end{tikzpicture}
+	\caption{Free fibers as a function of time (plates)}\label{fft}
+ \end{minipage}
 \end{center}\end{figure}
- 
+
 
 \subsection{Redistribution-Improvement step}
-We see, in the second plan, what is the effect of several redistribution-improvement executions. Here is presented the number of redistributions, number of additionnal assignments, with the improvement in \% and the total time taken for until this step.
+We see, in the second plan, what is the effect of several redistribution-improvement executions. Here is presented, in the Table \ref{ris}, the number of redistributions, number of additionnal assignments, with the improvement in \% and the total time taken for until this step.
 
 \begin{table}[H]\centering
-	\begin{tabular}{c|cccc}
+	\begin{tabular}{c|cccl}
 		Step & \# red & \# +as & + \% & Time \\ \hline
 		1 & 2,204,977 & 167,741 & .418 & 40s\\
 		2 & 2,060,851 & 76,509 & .190 & 1mn 20s\\
@@ -670,9 +684,14 @@ We see, in the second plan, what is the effect of several redistribution-improve
 		5 & 1,929,917 & 7,999 & 0.020 & 3mn 20s\\
 		6 & 1,921,331 & 5,745 & 0.014 & 4mn\\
 	\end{tabular}
+	\caption{Results of several redistribution-improvement steps}\label{ris}
 \end{table}
 
-\begin{figure}[H]\begin{center}
+
+\subsection{Results on \lya particularly}
+The figure \ref{histastf} gives the histogram of proportion of assigned \lya and the number of observations as a function of available TF.
+
+\begin{figure}[H]\begin{center}\begin{minipage}{.5\textwidth}
 \begin{tikzpicture}[scale=1.1]
 	\begin{axis}[const plot,stack plots=y,enlarge x limits=false,enlarge y limits=false,xlabel={Number of available TF},ylabel={},cycle list name=mycolorlist,legend entries={0,1,2,3,4,5}]
 		\addplot [fill,fill opacity=0.5,color=blue] table[x=x,y=0] {figs/obsly.dat};
@@ -683,28 +702,21 @@ We see, in the second plan, what is the effect of several redistribution-improve
 		\addplot [fill,fill opacity=0.5,color=black] table[x=x,y=5] {figs/obsly.dat};
 	\end{axis}
 \end{tikzpicture}
-\caption{\# of QSO Ly-$\alpha$ (with their number of observation) as a function of available tile-fibers}
-\end{center}\end{figure}
-
-
-\begin{figure}[H]\begin{center}
+\caption{\# of QSO \lya (with their number of observation) as a function of available tile-fibers}\label{histastf}
+ \end{minipage}%
+\begin{minipage}{.5\textwidth}
 	\begin{tikzpicture}[scale=1.1]
-		\begin{semilogyaxis}[const plot,enlarge x limits=false,xlabel={},ylabel={},cycle list name=mycolorlist]
+		\begin{semilogyaxis}[const plot,enlarge x limits=false,xlabel={Distance between plates},ylabel={},cycle list name=mycolorlist]
 			\addplot table[x=x,y=0] {figs/dist2ly.dat};
 		\end{semilogyaxis}
 	\end{tikzpicture}
-	\caption{Histogram of distances (in number of plates) between two consecutive observed QSO Ly-$\alpha$}
+	\caption{Histogram of distances (in number of plates) between two consecutive observed QSO \lya}
+ \end{minipage}
 \end{center}\end{figure}
 
 
-\begin{figure}[H]\begin{center}
-	\begin{tikzpicture}[scale=1.1]
-		\begin{axis}[const plot,enlarge x limits=false,enlarge y limits=false,xlabel={Plate},ylabel={},cycle list name=mycolorlist]
-			\addplot table[x=x,y=0] {figs/fft.dat};
-		\end{axis}
-	\end{tikzpicture}
-	\caption{Free fibers as a function of time (plates)}
-\end{center}\end{figure}
+\subsection{Study on evolution over time}
+
 
 
 \begin{figure}[H]\begin{center}
@@ -720,31 +732,32 @@ We see, in the second plan, what is the effect of several redistribution-improve
 \end{tikzpicture}
 \caption{Observed galaxy kind as a function of time (plates seen)}\end{center}\end{figure}
 
-Besides, we have indeed exactly 10 SS and 40 SF per petal.
 
-\begin{figure}[H]\begin{center}
+\subsection{Shifting parameters}
+In the following, we change a little bit parameters around the references values to observe their influences on results.
+
+\begin{figure}[H]\begin{center}\begin{minipage}{.5\textwidth}
 	\begin{tikzpicture}[scale=1.1]
-		\begin{axis}[enlarge x limits=false,xlabel={Collide (mm)},ylabel={},cycle list name=mycolorlist]
+		\begin{axis}[enlarge x limits=false,xlabel={Collide (mm)},ylabel={Weighted \% of \lya},cycle list name=mycolorlist]
 			\addplot [mark=x] coordinates {(0,68.572)(1,68.414)(1.8,67.963)(2.0,67.774)(2.1,67.670)(2.2,67.545)(2.4,67.278)(2.8,66.606)(3,66.187)(3.2,65.741)};
 			\draw [densely dashed] (axis cs:2.1,\pgfkeysvalueof{/pgfplots/ymin}) -- (axis cs:2.1,\pgfkeysvalueof{/pgfplots/ymax});
 		\end{axis}
 	\end{tikzpicture}
-	\caption{Weighted \% of \lya observed as a function of required stay-clear}
-\end{center}\end{figure}
-
-\begin{figure}[H]\begin{center}
+\end{minipage}%
+\begin{minipage}{.5\textwidth}
 	\begin{tikzpicture}[scale=1.1]
-		\begin{axis}[enlarge x limits=false,xlabel={Collide (mm)},ylabel={},cycle list name=mycolorlist]
+		\begin{axis}[enlarge x limits=false,xlabel={Collide (mm)},ylabel={\% of ELG},cycle list name=mycolorlist]
 			\addplot [mark=x] coordinates {(0,78.301)(1,78.073)(1.8,77.999)(2.0,77.970)(2.1,77.955)(2.2,77.937)(2.4,77.894)(2.8,77.777)(3,77.703)(3.2,77.612)};
 			\draw [densely dashed] (axis cs:2.1,\pgfkeysvalueof{/pgfplots/ymin}) -- (axis cs:2.1,\pgfkeysvalueof{/pgfplots/ymax});
 		\end{axis}
 	\end{tikzpicture}
-	\caption{\% of ELG observed as a function of required stay-clear}
+\end{minipage}
+	\caption{Weighted \% of \lya and \% of ELG observed as a function of required stay-clear}
 \end{center}\end{figure}
 
 \begin{figure}[H]\begin{center}
 	\begin{tikzpicture}[scale=1.1]
-		\begin{axis}[enlarge x limits=false,xlabel={InterPlate},ylabel={},cycle list name=mycolorlist]
+		\begin{axis}[enlarge x limits=false,xlabel={InterPlate},ylabel={Weighted \% of \lya},cycle list name=mycolorlist]
 			\addplot [mark=x] coordinates {(0,73.317)(1,70.172)(20,68.022)(50,67.961)(100,67.905)(200,67.670)(400,67.461)(1000,66.888)(2000,65.660)};
 			\draw [densely dashed] (axis cs:200,\pgfkeysvalueof{/pgfplots/ymin}) -- (axis cs:200,\pgfkeysvalueof{/pgfplots/ymax});
 		\end{axis}
@@ -766,6 +779,8 @@ Nevertheless, a lot of efforts now lead to little improvements of the results. I
 The problem of colliding fiber positioners is addressed in a simplified way (circles around a fiber) which can be precised.
 
 We can adapt a little bit the code in order to do assignment and improvements without SS and SF, and only add SS and SF just before launching the observation, using the "replace" function in global.cpp. It's not likely to improve a lot because improve-SS and SF must already improve this way.
+
+The update function might still be improved to lead to more reassignments, and an improvement execution on the current plan could be efficient after several hundred updatings, since some "redistribution" happened with updatings.
 
 \bibliographystyle{plain}
 \bibliography{papers}{}

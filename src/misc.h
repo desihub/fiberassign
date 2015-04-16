@@ -37,15 +37,16 @@ List Null();
 Slist Snull();
 List initList(int l, int val = 0);
 List initList(std::vector<int> l);
-List initList(int l[]);
+List initList(int l[], int size);
 Dlist initDlist(int l, double val = 0.0);
-Slist initList(str l[]);
+Slist initList(str l[], int size);
 void print_list(str s, const List& L);
 void print_list(str s, Slist L);
 void print_list_line(const List& L);
 void print_Dlist(str s, const Dlist& L);
 void print_Plist(const Plist& L, str s="");
 bool isnull(const List& L); // Test if the list is null
+bool isnull(const Slist& L); // Test if the list is null ("")
 int sumlist(const List& L); // Sum of the list
 int max(const List& L);
 Dlist percents(const List& L, int n); // Percents list of L/n
@@ -61,6 +62,7 @@ List complementary(int size, const List& L); // Complementary list (provided L i
 List sublist(int begin, int size, const List& L);
 void switch_elmts(int a, int b, List& L); // Switch elements a and b
 List sort(const List& L); // Sort by increasing order
+List inverse(const List& L);
 
 // Table -----------------------------------------------------
 class Table : public std::vector<List> {};
@@ -71,8 +73,8 @@ Table initTable(const Table& T);
 Ptable initPtable(int l, int c);
 Dtable initDtable(int l, int c, double val=0.0);
 void verif(const Table& T); // Verifies it's square
-void print_table(str s, const Table& T, bool latex=false);
-void print_table(str s, const Dtable& T, bool latex=false);
+void print_table(str s, const Table& T, bool latex=false, Slist labels=Snull());
+void print_table(str s, const Dtable& T, bool latex=false, Slist labels=Snull());
 void print_table(str s, const Ptable& T);
 // Other constr wouldn't work if we would define a constructor in class Table
 List histogram(const Table& T, int interval);

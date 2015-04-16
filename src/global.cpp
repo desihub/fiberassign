@@ -485,7 +485,7 @@ void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F
 void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, bool latex) {
 	printf("# Results :\n");
 	// Some petal
-	for (int i=1; i<=10; i++) print_table("Petal of plate "+i2s(i),A.infos_petal(1000*i,5,G,P,pp,F));
+	//for (int i=1; i<=10; i++) print_table("Petal of plate "+i2s(i),A.infos_petal(1000*i,5,G,P,pp,F));
 
 	// 0 List of total number of galaxies
 	List tots = initList(Categories);
@@ -496,11 +496,14 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	Table ob = initTable(Categories+1,2*MaxObs+1);
 	List maxobs = F.maxgoal();
 	for (int g=0; g<Ngal; g++) {
+		int id = G[g].id;
 		int m = A.nobs(g,G,F,false);
-		if (m>=0 && m<=MaxObs) hist2[G[g].id][m]++;
-		ob[G[g].id][m+MaxObs]++;
+		if (!(m>=0 && m<=MaxObs)) { printf("Error obs beyond limits \n"); fl(); }
+		if (m>=0 && m<=MaxObs) hist2[id][m]++;
+		ob[id][m+MaxObs]++;
 	}
 	for (int m=0; m<2*MaxObs+1; m++) ob[Categories][m] = m-MaxObs;
+
 	Table with_tot0 = with_tot(hist2);
 	print_table("  Remaining observations (without negative obs ones)",with_tot0,latex);
 	print_table("  Real remaining observations",with_tot(ob));
@@ -511,7 +514,15 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 			per_sqd[i][j] /= TotalArea;
 		}
 	}
-	print_table("  Remaining observations per sq deg",per_sqd,latex);
+	print_table("  Remaining observations per sq deg",per_sqd,latex,F.kind);
+
+	Table obsvr = initTable(Categories,MaxObs+2);
+	for (int i=0; i<Categories; i++) {
+		int max = F.goal[i];
+		for (int j=0; j<=max; j++) obsvr[i][j] = per_sqd[i][max-j];
+		obsvr[i][MaxObs+1] = per_sqd[i][MaxObs+1];
+	}
+	print_table("  Observations per sq deg",obsvr,latex,F.kind);
 
 	// 2 Percentages of observation
 	Dtable perc = initDtable(Categories,2);
@@ -525,7 +536,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 		for (int i=0; i<MaxObs; i++) d += ob[id][MaxObs+i]*(goal-i);
 		perc[id][1] = percent(d,tot*goal);
 	}
-	print_table("Percentages of once observed, and with ponderation",perc,latex);
+	print_table("Percentages of once observed, and with ponderation",perc,latex,F.kind);
 
 	// 3 Observed galaxies in function of time
 	int interval = 10; // Interval of plates for graphic

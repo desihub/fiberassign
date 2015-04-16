@@ -43,9 +43,8 @@ List initList(std::vector<int> l) {
 	return L;
 }
 
-List initList(int l[]) {
+List initList(int l[], int size) {
 	List L;
-	int size = sizeof(l);
 	L.resize(size);
 	for (int i=0; i<size; i++) L[i] = l[i];
 	return L;
@@ -57,9 +56,8 @@ Dlist initDlist(int l, double val) {
 	return L;
 }
 
-Slist initList(str l[]) {
+Slist initList(str l[], int size) {
 	Slist L;
-	int size = sizeof(l);
 	L.resize(size);
 	for (int i=0; i<size; i++) L[i] = l[i];
 	return L;
@@ -131,6 +129,11 @@ void print_Plist(const Plist& L, str s) {
 
 bool isnull(const List& L) { // Test if the list is null
 	for (int i=0; i<L.size(); i++) if (L[i]!=0) return false;
+	return true;
+}
+
+bool isnull(const Slist& L) {
+	for (int i=0; i<L.size(); i++) if (L[i]!="") return false;
 	return true;
 }
 
@@ -271,6 +274,12 @@ List sort(const List& L) {
 	return l;
 }
 
+List inverse(const List& L) {
+	List l = initList(max(L));
+	for (int i=0; i<L.size(); i++) l[L[i]] = i;
+	return l;
+}
+
 // Table -----------------------------------------------------
 Table initTable(int l, int c, int val) {
 	Table T;
@@ -327,7 +336,7 @@ int max_row(const Dtable& T) {
 }
 
 
-void print_table(str s, const Table& T, bool latex) {
+void print_table(str s, const Table& T, bool latex, Slist labels) {
 	int SIZE = 7;
 	int MAXSIZE = 10;
 	int MAXLINE = 50;
@@ -357,10 +366,10 @@ void print_table(str s, const Table& T, bool latex) {
 	str slash = latex ? " \\\\ \n" : "\n";
 
 	str rrr(T[0].size(),'r');
-	if (latex) printf("\n\\begin{table}[H]\\begin{center} \n\\caption{%s} \n\\begin{tabular}{%s}",s.c_str(),rrr.c_str());
-	else printf(s.c_str());
+	printf(s.c_str());
 	printf("\n");
 
+	bool labelsB = isnull(labels);
 	str space(6,' ');
 	printf(space.c_str());
 	for (int j=0; j<max; j++) {
@@ -368,7 +377,8 @@ void print_table(str s, const Table& T, bool latex) {
 		printf("%s%s",format(maxRow[j],f(j)).c_str(),s.c_str());
 	}
 	for (int i=0; i<l && i<MAXLINE; i++) {
-		printf("%3d  %s",i,et.c_str());
+		str pre = labelsB ? f(i) : format(11,labels[i]);
+		printf("%3s  %s",pre.c_str(),et.c_str());
 		int c = T[i].size();
 		for (int j=0; j<c; j++) {
 			str s = (j==c-1) ? slash : et;
@@ -376,11 +386,10 @@ void print_table(str s, const Table& T, bool latex) {
 			printf("%s%s",format(maxRow[j],num).c_str(),s.c_str());
 		}
 	}
-	if (latex) printf("\\end{tabular}\\end{center}\\end{table}");
 	printf("\n");
 }
 
-void print_table(str s, const Dtable& T, bool latex) {
+void print_table(str s, const Dtable& T, bool latex, Slist labels) {
 	int SIZE = 7;
 	int MAXSIZE = 10;
 	int MAXLINE = 50;
@@ -410,10 +419,10 @@ void print_table(str s, const Dtable& T, bool latex) {
 	str slash = latex ? " \\\\ \n" : "\n";
 
 	str rrr(T[0].size(),'r');
-	if (latex) printf("\n\\begin{table}[H]\\begin{center} \n\\caption{%s} \n\\begin{tabular}{%s}",s.c_str(),rrr.c_str());
-	else printf(s.c_str());
+	printf(s.c_str());
 	printf("\n");
 
+	bool labelsB = isnull(labels);
 	str space(6,' ');
 	printf(space.c_str());
 	for (int j=0; j<max; j++) {
@@ -421,7 +430,8 @@ void print_table(str s, const Dtable& T, bool latex) {
 		printf("%s%s",format(maxRow[j],f(j)).c_str(),s.c_str());
 	}
 	for (int i=0; i<l && i<MAXLINE; i++) {
-		printf("%3d  %s",i,et.c_str());
+		str pre = labelsB ? f(i) : format(11,labels[i]);
+		printf("%3s  %s",pre.c_str(),et.c_str());
 		int c = T[i].size();
 		for (int j=0; j<c; j++) {
 			str s = (j==c-1) ? slash : et;
@@ -429,7 +439,6 @@ void print_table(str s, const Dtable& T, bool latex) {
 			printf("%s%s",format(maxRow[j],num).c_str(),s.c_str());
 		}
 	}
-	if (latex) printf("\\end{tabular}\\end{center}\\end{table}");
 	printf("\n");
 }
 

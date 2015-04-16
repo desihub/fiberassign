@@ -120,6 +120,7 @@ int galaxy::prio(const Feat& F) const {
 str galaxy::kind(const Feat& F) const {
 	return(F.kind[id]);
 }
+
 // PP ----------------------------------------------------------------------------
 // Read the positions of the fibers on each plate.  Assumes the format
 // of fiberpos.txt produced by "randomize_fibers".
@@ -141,15 +142,21 @@ void PP::read_fiber_positions(const char pos_name[], int n) {
 		getline(fs,buf);
 	}
 	int i(0);
+	int petals_pac[] = {0,1,2,7,8,9};
+	List petals_pacL = initList(petals_pac,6);
+	List inv = inverse(petals_pacL);
 	while (fs.eof()==0) {
 		double x,y; int fiber,positioner,spectro,remove; 
 		std::istringstream(buf) >> fiber >> positioner >> spectro >> x >> y;
 		if (i%n == 0) {
+		if (!Pacman || isfound(spectro,petals_pacL)) {
 		try{
 			fp.push_back(x);
 			fp.push_back(y);
-			spectrom.push_back(spectro);  
+			int sp = Pacman ? inv[spectro] : spectro;
+			spectrom.push_back(sp);  
 		} catch(std::exception& e) {myexception(e);}
+		}
 		}
 		getline(fs,buf);
 		i++;
@@ -176,6 +183,7 @@ void PP::compute_fibsofsp() {
 List PP::fibs_of_same_pet(int k) const {
 	return(fibers_of_sp[spectrom[k]]);
 }
+
 // plate ---------------------------------------------------------------------------
 void plate::print_plate() const {
 	printf("  Plate : %d - pass %d\n",idp,ipass); 

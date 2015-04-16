@@ -16,7 +16,7 @@
 #include        "structs.h"
 #include        "global.h"
 
-int Nplate; int MaxSS; int MaxSF; double PlateRadius; double Collide; double NeighborRad; double PatrolRad; double TotalArea; int Ngal; int MaxPrio; int MaxObs; int Categories; int Npass; int Nfiber; int MinUnused; int Npetal; int Nfbp; int InterPlate; bool Randomize;
+int Nplate; int MaxSS; int MaxSF; double PlateRadius; double Collide; double NeighborRad; double PatrolRad; double TotalArea; int Ngal; int MaxPrio; int MaxObs; int Categories; int Npass; int Nfiber; int MinUnused; int Npetal; int Nfbp; int InterPlate; bool Randomize; bool Pacman;
 
 
 int main(int argc, char **argv) {
@@ -37,13 +37,14 @@ int main(int argc, char **argv) {
 	PatrolRad = 6.0;
 	InterPlate = 200;
 	Randomize = false;
+	Pacman = true;
 
 	str kind[] = {"QSO Ly-a","QSO Tracer","LRG","ELG","Fake QSO","Fake LRG","SS","SF"};
 	int prio[] = {1,1,3,5,1,3,2,4}; // has to be >= 0
 	int goal[] = {5,1,2,1,1,1,1,1};
 
 	// Taking previous features into account
-	Feat F; F.kind = initList(kind); F.prio = initList(prio); F.goal = initList(goal); MaxPrio = max(F.prio); MaxObs = max(F.goal); Categories = F.kind.size(); F.init_ids();
+	Feat F; F.kind = initList(kind,8); F.prio = initList(prio,8); F.goal = initList(goal,8); MaxPrio = max(F.prio); MaxObs = max(F.goal); Categories = F.kind.size(); F.init_ids();
 
 	// Read galaxies
 	Gals G;
@@ -80,7 +81,7 @@ int main(int argc, char **argv) {
 	collect_available_tilefibers(G,P);
 
 	//results_on_inputs("doc/figs/",G,P,F,true);
-	printf("Npass=%d MinUnused=%d MaxSS=%d MaxSF=%d PlateRadius=%.3f TotalArea=%.6f Collide=%.3f NeighborRad=%.3f PatrolRad=%.3f InterPlate=%d Randomize=%d \n",Npass,MinUnused,MaxSS,MaxSF,PlateRadius,TotalArea,Collide,NeighborRad,PatrolRad,InterPlate,Randomize);
+	printf("Npass=%d MinUnused=%d MaxSS=%d MaxSF=%d PlateRadius=%.3f TotalArea=%.6f Collide=%.3f NeighborRad=%.3f PatrolRad=%.3f InterPlate=%d Randomize=%d Pacman=%d\n",Npass,MinUnused,MaxSS,MaxSF,PlateRadius,TotalArea,Collide,NeighborRad,PatrolRad,InterPlate,Randomize,Pacman);
 
 	//// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
 	Assignment A(G,F);
@@ -104,7 +105,6 @@ int main(int argc, char **argv) {
 		A.next_plate++;
 	}
 	print_time(time,"# ... took :");
-
 
 	// Make a plan ----------------------------------------------------
 	//new_assign_fibers(G,P,pp,F,A);
