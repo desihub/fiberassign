@@ -119,12 +119,7 @@ inline int improve_fiber(int begin, int next, int j, int k, const Gals& G, const
 		int g_try = assign_fiber(j,k,G,P,pp,F,A,no_g); // Doesn't add anything in practice, if there was an assignment first, though it can be useful in other cases
 		if (g_try!=-1) return g_try;
 		else { // Improve
-			int gb = -1;
-			int bb = -1;
-			int jpb = -1;
-			int kpb = -1;
-			int mb = -1;
-			int pb = 1e3;
+			int gb = -1; int bb = -1; int jpb = -1; int kpb = -1; int mb = -1; int pb = 1e3;
 			List av_g = P[j].av_gals[k];
 			for (int i=0; i<av_g.size(); i++) { // Not shuffled
 				int g = av_g[i]; // g : possible galaxy for (j,k)
@@ -143,12 +138,7 @@ inline int improve_fiber(int begin, int next, int j, int k, const Gals& G, const
 								int prio = G[best].prio(F);
 								int m = A.nobs(best,G,F);
 								if (prio<pb || A.once_obs[g] && m>mb) {
-									gb = g;
-									bb = best;
-									jpb = jp;
-									kpb = kp;
-									mb = m;
-									pb = prio;
+									gb = g; bb = best; jpb = jp; kpb = kp; mb = m; pb = prio;
 							}}}}}}
 			// Modify assignment
 			if (gb!=-1) {
@@ -167,12 +157,7 @@ int improve_fiber_from_kind(int id, int j, int k, const Gals& G, const Plates&P,
 		int p = pp.spectrom[k];
 		List fibskind = A.fibs_of_kind(id,j,p,G,pp,F);
 		List no_kind; no_kind.push_back(id);
-		int gb = -1;
-		int gpb = -1;
-		int bb = -1;
-		int kpb = -1;
-		int mb = -1;
-		int pb = 1e3;
+		int gb = -1; int gpb = -1; int bb = -1; int kpb = -1; int mb = -1; int pb = 1e3;
 		List av_gals = P[j].av_gals[k];
 		for (int i=0; i<av_gals.size(); i++) {
 			int g = av_gals[i];
@@ -185,12 +170,7 @@ int improve_fiber_from_kind(int id, int j, int k, const Gals& G, const Plates&P,
 						int prio = G[best].prio(F);
 						int m = A.nobs(best,G,F);
 						if (prio<pb || A.once_obs[g] && m>mb) {
-							gb = g;
-							gpb = gp;
-							bb = best;
-							kpb = kp;
-							mb = m;
-							pb = prio;
+							gb = g; gpb = gp; bb = best; kpb = kp; mb = m; pb = prio;
 		}}}}}
 		// Modify assignment
 		if (gb!=-1) {
@@ -260,13 +240,7 @@ void improve_from_kind(const Gals& G, const Plates&P, const PP& pp, const Feat& 
 			for (int kk=0; kk<fibsunas.size(); kk++) {
 				// Take an unassigned tf and its available galaxies
 				int k = fibsunas[kk];
-				int gb = -1;
-				int gpb = -1;
-				int bb = -1;
-				int kpb = -1;
-				int kkpb = -1;
-				int mb = -1;
-				int pb = 1e3;
+				int gb = -1; int gpb = -1; int bb = -1; int kpb = -1; int kkpb = -1; int mb = -1; int pb = 1e3;
 				List av_gals = P[j].av_gals[k];
 				for (int i=0; i<av_gals.size(); i++) {
 					int g = av_gals[i];
@@ -280,13 +254,7 @@ void improve_from_kind(const Gals& G, const Plates&P, const PP& pp, const Feat& 
 								int prio = G[best].prio(F);
 								int m = A.nobs(best,G,F);
 								if (prio<pb || A.once_obs[g] && m>mb) {
-									gb = g;
-									gpb = gp;
-									bb = best;
-									kpb = kp;
-									kkpb = kkp;
-									mb = m;
-									pb = prio;
+									gb = g; gpb = gp; bb = best; kpb = kp; kkpb = kkp; mb = m; pb = prio;
 							}}}}}
 			// Modify assignment
 				if (gb!=-1) {
@@ -506,7 +474,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 
 	Table with_tot0 = with_tot(hist2);
 	print_table("  Remaining observations (without negative obs ones)",with_tot0,latex);
-	print_table("  Real remaining observations",with_tot(ob));
+	//print_table("  Real remaining observations",with_tot(ob));
 
 	Table per_sqd = with_tot0;
 	for (int i=0; i<per_sqd.size(); i++) {
@@ -514,7 +482,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 			per_sqd[i][j] /= TotalArea;
 		}
 	}
-	print_table("  Remaining observations per sq deg",per_sqd,latex,F.kind);
+	//print_table("  Remaining observations per sq deg",per_sqd,latex,F.kind);
 
 	Table obsvr = initTable(Categories,MaxObs+2);
 	for (int i=0; i<Categories; i++) {

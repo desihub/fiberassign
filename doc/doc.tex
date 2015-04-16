@@ -613,6 +613,8 @@ In the reference strategy, we have 50,095,513 assignments in total (93.94\% of a
 \vspace{1\baselineskip}
 $Score(kind) = 100\cdot \frac{\sum\nolimits_{g \in kind} obs(g)}{\sum\nolimits_{g \in kind} goal}$ where $obs(g)$ is the number of times g is observed.
 
+A sum-up table of general results on assignment is provided on Table \ref{res}.
+
 \begin{comment}
 \begin{table}[H]\begin{center}
 \begin{tabular}{r|rrrrrrrcc}
@@ -626,28 +628,44 @@ $Score(kind) = 100\cdot \frac{\sum\nolimits_{g \in kind} obs(g)}{\sum\nolimits_{
 	SS         & 1,066,600 & 1,143,862 &       0 &      0 &      0 &     0 & 2,210,462 & 48.252 & 48.252\\ 
 	SF         & 4,266,400 &17,838,234 &       0 &      0 &      0 &     0 &22,104,634 & 19.300 & 19.300\\ 
 \end{tabular}
-\caption{Remaining observations (id on lines, nobs left on rows) with total}
-\label{tab:full14k}
+\caption{Remaining observations (id on lines, nobs left on rows) with total}\label{gen}
 \end{center}\end{table}
 \end{comment}
 
 \begin{table}[H]\begin{center}
 \begin{tabular}{r|rrrrrrrcc}
 	~ &           0 &     1 &  2 & 3 & 4 & 5 &     Total &  observed $\%$ & weighted $\%$ \\ \hline
-  QSO \lya   &     1 &    26 & 15 & 4 & 1 & 0 &    49 & 98.922 & 67.670\\ 
-  QSO Tracer   &   118 &     1 &  0 & 0 & 0 & 0 &   119 & 98.921 & 98.921\\ 
-  LRG   &   247 &    35 & 15 & 0 & 0 & 0 &   298 & 94.804 & 88.843\\ 
-  ELG   & 1,879 &   531 &  0 & 0 & 0 & 0 & 2,411 & 77.955 & 77.955\\ 
-  Fake QSO   &    89 &     0 &  0 & 0 & 0 & 0 &    90 & 98.920 & 98.920\\ 
-  Fake LRG   &    47 &     2 &  0 & 0 & 0 & 0 &    50 & 95.493 & 95.493\\ 
-  SS   &    67 &    72 &  0 & 0 & 0 & 0 &   140 & 48.252 & 48.252\\ 
-  SF   &   270 & 1,129 &  0 & 0 & 0 & 0 & 1,400 & 19.300 & 19.300\\ 
+   QSO Ly-a   &     0 &     1 &   4 & 15 & 26 & 1 &    49 & 98.927 & 67.667\\ 
+ QSO Tracer   &     1 &   118 &   0 &  0 &  0 & 0 &   119 & 98.927 & 98.927\\ 
+        LRG   &    15 &    35 & 247 &  0 &  0 & 0 &   298 & 94.810 & 88.844\\ 
+        ELG   &   531 & 1,879 &   0 &  0 &  0 & 0 & 2,411 & 77.958 & 77.958\\ 
+   Fake QSO   &     0 &    89 &   0 &  0 &  0 & 0 &    90 & 98.914 & 98.914\\ 
+   Fake LRG   &     2 &    47 &   0 &  0 &  0 & 0 &    50 & 95.470 & 95.470\\ 
+         SS   &    72 &    67 &   0 &  0 &  0 & 0 &   140 & 48.252 & 48.252\\ 
+         SF   & 1,129 &   270 &   0 &  0 &  0 & 0 & 1,400 & 19.300 & 19.300\\ 
 \end{tabular}
-\caption{Densities per sqdeg as as a function of \# of observations (with total), and \% observed, once and weighted}\label{tab:full14k}
+\caption{Densities per sqdeg as as a function of \# of observations (with total), and \% observed, once and weighted}\label{res}
 \end{center}\end{table}
 
 \subsection{Pacman plate}
-On the Table \ref{histastf}, we present results of the assignment taking for input the fiber locations files of the pacman (plate deprived of 4 petals) used in case of run out of money.
+On the Table \ref{pac}, we present results of the assignment taking for input the fiber locations files of the pacman (plate deprived of 4 petals) used in case of run out of money. As one can notice, they are quite similar to regular ones.
+
+\begin{table}[H]\begin{center}
+\begin{tabular}{r|rrrrrrrcc}
+	~ &           0 &     1 &  2 & 3 & 4 & 5 &     Total &  observed $\%$ & weighted $\%$ \\ \hline
+   QSO Ly-a   &     1 &     1 &   4 & 14 & 28 & 0 &    49 & 97.889 & 67.703\\ 
+ QSO Tracer   &     2 &   117 &   0 &  0 &  0 & 0 &   119 & 97.864 & 97.864\\ 
+        LRG   &    16 &    31 & 250 &  0 &  0 & 0 &   298 &  94.41 & 89.205\\ 
+        ELG   &   487 & 1,924 &   0 &  0 &  0 & 0 & 2,411 & 79.794 & 79.794\\ 
+   Fake QSO   &     1 &    88 &   0 &  0 &  0 & 0 &    90 & 97.856 & 97.856\\ 
+   Fake LRG   &     2 &    47 &   0 &  0 &  0 & 0 &    50 & 94.977 & 94.977\\ 
+         SS   &    70 &    69 &   0 &  0 &  0 & 0 &   140 & 49.576 & 49.576\\ 
+         SF   & 1,122 &   277 &   0 &  0 &  0 & 0 & 1,400 & 19.830 & 19.830\\ 
+\end{tabular}
+\caption{Densities per sqdeg as as a function of \# of observations (with total), and \% observed, once and weighted}\label{pac}
+\end{center}\end{table}
+
+Furthermore, there are 50,938,132 assignments in total (92.9358 \% of all fibers).
 
 
 \subsection{Free fibers}
