@@ -86,6 +86,8 @@ int max_row(const Table& T); // Max number of rows
 int max_row(const Dtable& T);
 List max_on_row(const Table& T); // List of max on each row
 void make_square(Table& T); // Make it square, filling with zeros
+Dtable divide(const Table& T, double d);
+Table divide_floor(const Table& T, double d);
 
 // Cube ------------------------------------------------------
 class Cube : public std::vector<Table> {};

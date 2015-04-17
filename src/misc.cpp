@@ -528,6 +528,30 @@ void make_square(Table& T) {
 	}
 }
 
+Dtable divide(const Table& T, double d) {
+	Dtable t;
+	for (int i=0; i<T.size(); i++) {
+		Dlist l;
+		for (int j=0; j<T[i].size(); j++) {
+			l.push_back(T[i][j]/d);
+		}
+		t.push_back(l);
+	}
+	return t;
+}
+
+Table divide_floor(const Table& T, double d) {
+	Table t;
+	for (int i=0; i<T.size(); i++) {
+		List l;
+		for (int j=0; j<T[i].size(); j++) {
+			l.push_back(T[i][j]/d);
+		}
+		t.push_back(l);
+	}
+	return t;
+}
+
 // Cube ------------------------------------------------------
 Cube initCube(int l, int c, int d, int val) {
 	Cube C;

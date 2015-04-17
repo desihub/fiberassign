@@ -111,7 +111,6 @@ Dark energy study began in 1998, when two independent teams, led by Adam Riess a
 
 \tableofcontents
 
-
 	\section{Cosmology today}
 \subsection{Recent breakthroughts}
 
@@ -130,7 +129,15 @@ Dark energy study began in 1998, when two independent teams, led by Adam Riess a
 There is a growing consensus among cosmologists that the total density of matter is equal to the critical density, so that the universe is spatially flat. Approximately 24\% of this is in the form of a low pressure matter, most of which is thought to be “non-baryonic” dark matter, while the remaining 71\% is thought to be in the form of a negative pressure “dark energy”, like the cosmological constant. If this is true, then dark energy is the major driving force behind the fate of the universe and it will expand forever exponentially.
 
 	\subsection{Dark energy}
-	Becoming aware that the expanding rate of the universe is still inscreasing, theorists needed a new component in the universe to explain it. 
+	Becoming aware that the expanding rate of the universe is still inscreasing, theorists needed a new component in the universe to explain it. Several theoretical solutions \cite{Mortonson:2013zfa} are possible. It's a catch-all term for the origin of cosmic acceleration, and could be either a modification of general relativity, or a new kind of energy. 
+Here are several possibilities of modified gravity :
+\begin{itemize} 
+	\item replace the Ricci scalar $\mathcal{R}$ with a function $\mathcal{R} + f(\mathcal{R})$.
+\end{itemize} 
+	
+	Two possible new energies are the cosmological constant (a constant energy density filling space, and which can be formulated to be equivalent to vacuum energy, with repulsive gravitational effects) and scalar fields such as quintessence or moduli, dynamic quantities whose energy density can vary in time and space. Scalar fields that do change in space can be difficult to distinguish from a cosmological constant because the change may be extremely slow.
+	The density of dark energy, $7 × 10ˆ{−27} kg \cdot mˆ{3}$ (with mass-energy equivalence), is much lower than the density of ordinary and matter within galaxies. It comes to dominate the mass–energy of the universe because it is uniform in space. 
+
 
 	\section{DESI}
 	The Dark Energy Spectroscopic Instrument (DESI) is a Stage IV experiment that will make the next major advance in dark energy. \cite{Levi:2013gra}
@@ -138,7 +145,7 @@ There is a growing consensus among cosmologists that the total density of matter
 	\subsection{Material features}
 	The DESI instrument, that will be installed on the Mayall telescope in Arizona, consists of a new wide-field (3.2 deg. linear field of view) corrector plus a multi-object spectrometer with up to 5000 robotically positioned optical fibers, with a resolving power of R = 5000. The fibers feed 10 three-arm spectrographs (500 fibers for each spectrographs, also called petals) producing spectra that cover a wavelength range from 360-980 nm and have resolution of 2000-5500 depending on the wavelength. It will watch at 14,000 sq. deg. in 10666 tiles from 2018 to 2022, with roughly 7 different tiles each night. Fiber positioners will have a reach of $\sim$6 mm from their central position.
 
-\subsection{General aspects}
+	\subsection{General aspects}
 It will study baryon acoustic oscillations (BAO) and the growth of structure through redshift-space distortions.
 The goals are : i) probe the effects of dark energy on the expansion history using BAO, ii) measure the gravitational growth history through redshift-space distortions, iii) measure the sum of neutrino masses, and iv) study the signatures of primordial inflation. The resulting 3-D galaxy maps at z < 2 and Lyman-alpha forest at z > 2 will make 1\%-level measurements of the distance scale in 35 redshift bins. This will provide unprecedented constraints on cosmological models.
 
@@ -146,7 +153,8 @@ This survey is the successor of the Stage-III BigBOSS survey and complements ima
 
 \subsection{Tiles}
 In average, a galaxy is covered 5.24 times (by different fibers), with only 2.6\% of the footprint having a coverage of 3 or less. 
-Figure du tilling. Figure des fibers.
+Figure du tiling. Figure des fibers.
+There are different tiling strategies 
 
 
 \subsection{Targets}
@@ -155,8 +163,7 @@ It will seek for targets that trace the evolution of dark energy from redshift 0
 	\item QSO (quasi stellar object) targets are divided into three categories. There are those at $z < 2.1$ (QSO-I), which are used as tracers only, and as those at $z > 2.1$ which are used for the \lya forest. Finally, there are false one, objects that are a priori believed QSO but are actually not (known once observed). Quasars are extremely luminous, there spectra is very large and doesn't correspond to a star's one. They are likely central regions of massive galaxies surrounding a supermassive black hole, and their energy release must be caused by mass falling onto the accretion disc of the black hole. They are excellent tracer population at redshifts $1 < z < 2$. QSO \lya with $z > 2.1$ are espacially important because it is the only opportunity for DESI to get information on dark energy at so high redshifts.
 	\item LRG (luminous red galaxy) are the most luminous and red galaxies in the universe at $z < 1$ \cite{Eisenstein:2001cq}
 	\item ELG (emission line galaxy) are galaxies where stars are creating. They have strong emission lines and characteristic OII and OIII doublets at a rest frame 327 nm and 500nm, which fits the DESI redshift survey.
-	\item Sky Fibers
-	\item Standard Stars
+	\item Sky Fibers and Standard Stars are calibration targets, necessary to have a reference during measurements. There have to be 10 Standard Stars and 40 Sky Fibers on each petal
 \end{itemize} 
 
 
@@ -234,6 +241,7 @@ A number of parameters are defined at the begining of the file main.
 	\item PatrolRad = 6.0 mm maximum distance, on plate coordinates, that allows a fiber to a galaxy
 	\item InterPlate = 200 minimal number of plates between two observations of the same galaxy
 	\item Randomize = false randomize order of plates in making plans
+	\item Pacman = false selects only spectrometers 0,1,2,7,8,9
 \end{itemize} 
 
 
@@ -633,40 +641,47 @@ A sum-up table of general results on assignment is provided on Table \ref{res}.
 \end{comment}
 
 \begin{table}[H]\begin{center}
-\begin{tabular}{r|rrrrrrrcc}
-	~ &           0 &     1 &  2 & 3 & 4 & 5 &     Total &  observed $\%$ & weighted $\%$ \\ \hline
-   QSO Ly-a   &     0 &     1 &   4 & 15 & 26 & 1 &    49 & 98.927 & 67.667\\ 
- QSO Tracer   &     1 &   118 &   0 &  0 &  0 & 0 &   119 & 98.927 & 98.927\\ 
-        LRG   &    15 &    35 & 247 &  0 &  0 & 0 &   298 & 94.810 & 88.844\\ 
-        ELG   &   531 & 1,879 &   0 &  0 &  0 & 0 & 2,411 & 77.958 & 77.958\\ 
-   Fake QSO   &     0 &    89 &   0 &  0 &  0 & 0 &    90 & 98.914 & 98.914\\ 
-   Fake LRG   &     2 &    47 &   0 &  0 &  0 & 0 &    50 & 95.470 & 95.470\\ 
-         SS   &    72 &    67 &   0 &  0 &  0 & 0 &   140 & 48.252 & 48.252\\ 
-         SF   & 1,129 &   270 &   0 &  0 &  0 & 0 & 1,400 & 19.300 & 19.300\\ 
+\begin{tabular}{rrrrrrrrrrcc}
+\hline
+\multicolumn{6}{r}{Times observed} \\
+	~ &           0 &     1 &  2 & 3 & 4 & 5 &  Total & Fiber used & Once observed & observed $\%$ & weighted $\%$ \\ \hline
+   QSO Ly-a   &     0 &     1 &   4 & 15 & 26 & 1 &    49 &   169 &    49 & 98.927 & 67.667\\ 
+ QSO Tracer   &     1 &   118 &   0 &  0 &  0 & 0 &   119 &   118 &   118 & 98.927 & 98.927\\ 
+        LRG   &    15 &    35 & 247 &  0 &  0 & 0 &   298 &   530 &   283 & 94.810 & 88.844\\ 
+        ELG   &   531 & 1,879 &   0 &  0 &  0 & 0 & 2,411 & 1,879 & 1,879 & 77.958 & 77.958\\ 
+   Fake QSO   &     0 &    89 &   0 &  0 &  0 & 0 &    90 &    89 &    89 & 98.914 & 98.914\\ 
+   Fake LRG   &     2 &    47 &   0 &  0 &  0 & 0 &    50 &    47 &    47 & 95.470 & 95.470\\ 
+         SS   &    72 &    67 &   0 &  0 &  0 & 0 &   140 &    67 &    67 & 48.252 & 48.252\\ 
+         SF   & 1,129 &   270 &   0 &  0 &  0 & 0 & 1,400 &   270 &   270 & 19.300 & 19.300\\ 
+\hline
 \end{tabular}
 \caption{Densities per sqdeg as as a function of \# of observations (with total), and \% observed, once and weighted}\label{res}
 \end{center}\end{table}
 
+
+
 \subsection{Pacman plate}
-On the Table \ref{pac}, we present results of the assignment taking for input the fiber locations files of the pacman (plate deprived of 4 petals) used in case of run out of money. As one can notice, they are quite similar to regular ones.
+On the Table \ref{pac}, we present results of the assignment taking for input the fiber locations files of the pacman (plate deprived of 4 petals) used in case of run out of money. Every parameter is the same. As one can notice, they are quite similar to regular ones.
 
 \begin{table}[H]\begin{center}
-\begin{tabular}{r|rrrrrrrcc}
-	~ &           0 &     1 &  2 & 3 & 4 & 5 &     Total &  observed $\%$ & weighted $\%$ \\ \hline
-   QSO Ly-a   &     1 &     1 &   4 & 14 & 28 & 0 &    49 & 97.889 & 67.703\\ 
- QSO Tracer   &     2 &   117 &   0 &  0 &  0 & 0 &   119 & 97.864 & 97.864\\ 
-        LRG   &    16 &    31 & 250 &  0 &  0 & 0 &   298 &  94.41 & 89.205\\ 
-        ELG   &   487 & 1,924 &   0 &  0 &  0 & 0 & 2,411 & 79.794 & 79.794\\ 
-   Fake QSO   &     1 &    88 &   0 &  0 &  0 & 0 &    90 & 97.856 & 97.856\\ 
-   Fake LRG   &     2 &    47 &   0 &  0 &  0 & 0 &    50 & 94.977 & 94.977\\ 
-         SS   &    70 &    69 &   0 &  0 &  0 & 0 &   140 & 49.576 & 49.576\\ 
-         SF   & 1,122 &   277 &   0 &  0 &  0 & 0 & 1,400 & 19.830 & 19.830\\ 
+\begin{tabular}{rrrrrrrrrrcc}
+\hline
+\multicolumn{6}{r}{Times observed} \\
+	~ &           0 &     1 &  2 & 3 & 4 & 5 &  Total & Fiber used & Once observed & observed $\%$ & weighted $\%$ \\ \hline
+   QSO Ly-a   &     1 &     1 &   4 & 14 & 28 & 0 &    49 &   169 &    48 & 97.889 & 67.703\\ 
+ QSO Tracer   &     2 &   117 &   0 &  0 &  0 & 0 &   119 &   117 &   117 & 97.864 & 97.864\\ 
+        LRG   &    16 &    31 & 250 &  0 &  0 & 0 &   298 &   532 &   282 &  94.41 & 89.205\\ 
+        ELG   &   487 & 1,924 &   0 &  0 &  0 & 0 & 2,411 & 1,924 & 1,924 & 79.794 & 79.794\\ 
+   Fake QSO   &     1 &    88 &   0 &  0 &  0 & 0 &    90 &    88 &    88 & 97.856 & 97.856\\ 
+   Fake LRG   &     2 &    47 &   0 &  0 &  0 & 0 &    50 &    47 &    47 & 94.977 & 94.977\\ 
+         SS   &    70 &    69 &   0 &  0 &  0 & 0 &   140 &    69 &    69 & 49.576 & 49.576\\ 
+         SF   & 1,122 &   277 &   0 &  0 &  0 & 0 & 1,400 &   277 &   277 & 19.830 & 19.830\\ 
+\hline
 \end{tabular}
-\caption{Densities per sqdeg as as a function of \# of observations (with total), and \% observed, once and weighted}\label{pac}
+\caption{Same than Table \ref{res} but with the pacman}\label{pac}
 \end{center}\end{table}
 
 Furthermore, there are 50,938,132 assignments in total (92.9358 \% of all fibers).
-
 
 \subsection{Free fibers}
 Here are the histogram of petals as a function of free fibers on Figure \ref{freefib} and the number of free fibers for each plate, in inscreasing order on Figure \ref{fft}.
@@ -799,6 +814,8 @@ The problem of colliding fiber positioners is addressed in a simplified way (cir
 We can adapt a little bit the code in order to do assignment and improvements without SS and SF, and only add SS and SF just before launching the observation, using the "replace" function in global.cpp. It's not likely to improve a lot because improve-SS and SF must already improve this way.
 
 The update function might still be improved to lead to more reassignments, and an improvement execution on the current plan could be efficient after several hundred updatings, since some "redistribution" happened with updatings.
+
+We could make plans with only \lya assigned, launching improve function, and then adding separately LRG then improving, and adding again ELG and improving. It's likely that it won't increase results because as we saw before, doing assignments separately in new\_assign already didn't improved results. This kind of optimization must actually be already done by selecting with priorities and executing improvement functions.
 
 \bibliographystyle{plain}
 \bibliography{papers}{}

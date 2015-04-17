@@ -472,25 +472,24 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	}
 	for (int m=0; m<2*MaxObs+1; m++) ob[Categories][m] = m-MaxObs;
 
-	Table with_tot0 = with_tot(hist2);
-	print_table("  Remaining observations (without negative obs ones)",with_tot0,latex);
-	//print_table("  Real remaining observations",with_tot(ob));
-
-	Table per_sqd = with_tot0;
-	for (int i=0; i<per_sqd.size(); i++) {
-		for (int j=0; j<per_sqd[i].size(); j++) {
-			per_sqd[i][j] /= TotalArea;
-		}
-	}
-	//print_table("  Remaining observations per sq deg",per_sqd,latex,F.kind);
-
-	Table obsvr = initTable(Categories,MaxObs+2);
+	Table obsvr = initTable(Categories,MaxObs+1);
 	for (int i=0; i<Categories; i++) {
 		int max = F.goal[i];
-		for (int j=0; j<=max; j++) obsvr[i][j] = per_sqd[i][max-j];
-		obsvr[i][MaxObs+1] = per_sqd[i][MaxObs+1];
+		for (int j=0; j<=max; j++) obsvr[i][j] = hist2[i][max-j];
 	}
-	print_table("  Observations per sq deg",obsvr,latex,F.kind);
+
+	Table with_tots = obsvr;
+	for (int i=0; i<Categories; i++) {
+		int fibs = 0; int obs = 0; int tot =0;
+		for (int j=0; j<=MaxObs; j++) tot += obsvr[i][j];
+		for (int j=0; j<=MaxObs; j++) fibs += obsvr[i][j]*j;
+		for (int j=1; j<=MaxObs; j++) obs += obsvr[i][j];
+		with_tots[i].push_back(tot);
+		with_tots[i].push_back(fibs);
+		with_tots[i].push_back(obs);
+	}
+	//print_table("  Remaining observations (without negative obs ones)",with_tots,latex,F.kind);
+	print_table("  Remaining observations per sq deg",divide_floor(with_tots,TotalArea),latex,F.kind);
 
 	// 2 Percentages of observation
 	Dtable perc = initDtable(Categories,2);
@@ -583,8 +582,6 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
  
 	// 8 Percentage of seen objects as a function of density of objects
 	// 9 Percentage of TF that have at least 1 QSO av and that are not assigned to a QSO
-	
-
 
 	// Misc
 	// Histogram of SS
@@ -595,35 +592,6 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	Table usedSF = A.used_by_kind("SF",G,pp,F);
 	print_hist("UsedSF (number of petals)",1,histogram(usedSF,1));
 
-
-
-	// Percentage of fiber assigned
+	// Percentage of fibers assigned
 	printf("  %s assignments in total (%.4f %% of all fibers)\n",f(A.na()).c_str(),percent(A.na(),Nplate*Nfiber));
-
-	// Some stats
-	Table done = initTable(Categories,MaxObs+1);
-	List fibers_used = initList(Categories);
-	List targets = initList(Categories);
-	for (int id=0; id<Categories; id++) {
-		List hist = hist2[id];
-		for (int i=0; i<=MaxObs; i++) {
-			//i here is number of observations lacking  i = goal -done
-			//done=goal -i for i<=goal
-			//0 for done>goal, i.e. i<0
-			if (i<=F.goal[id]) {
-				done[id][i]=hist[F.goal[id]-i];
-				fibers_used[id]+=i*done[id][i];
-				targets[id] += done[id][i];
-			}
-		}
-	}
-
-	Dtable stats = initDtable(Categories,4);
-	for (int id=0; id<Categories; id++) {
-		stats[id][0] = (targets[id]-done[id][0])/TotalArea;
-		stats[id][1] = fibers_used[id]/TotalArea;
-		stats[id][2] = targets[id]/TotalArea;
-		stats[id][3] = percent(targets[id]-done[id][0],targets[id]);
-	}
-	print_table("  Id on lines. (Per square degrees) Total, Fibers Used, Available, Percent of observations",stats,latex);
 }

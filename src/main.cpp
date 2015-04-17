@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
 	PatrolRad = 6.0;
 	InterPlate = 200;
 	Randomize = false;
-	Pacman = true;
+	Pacman = false;
 
 	str kind[] = {"QSO Ly-a","QSO Tracer","LRG","ELG","Fake QSO","Fake LRG","SS","SF"};
 	int prio[] = {1,1,3,5,1,3,2,4}; // has to be >= 0
