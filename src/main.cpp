@@ -16,7 +16,7 @@
 #include        "structs.h"
 #include        "global.h"
 
-int Nplate; int MaxSS; int MaxSF; double PlateRadius; double Collide; double NeighborRad; double PatrolRad; double TotalArea; int Ngal; int MaxPrio; int MaxObs; int Categories; int Npass; int Nfiber; int MinUnused; int Npetal; int Nfbp; int InterPlate; bool Randomize; bool Pacman;
+int Nplate; int MaxSS; int MaxSF; double PlateRadius; double Collide; double NeighborRad; double PatrolRad; double TotalArea; double invFibArea; int Ngal; int MaxPrio; int MaxObs; int Categories; int Npass; int Nfiber; int MinUnused; int Npetal; int Nfbp; int InterPlate; bool Randomize; bool Pacman;
 
 
 int main(int argc, char **argv) {
@@ -32,6 +32,7 @@ int main(int argc, char **argv) {
 	MaxSS = 10; MaxSF = 40;
 	PlateRadius = 1.65;
 	TotalArea = 15789.0;
+	invFibArea = 700.;
 	Collide = 2.1;
 	NeighborRad = 11.0;
 	PatrolRad = 6.0;
@@ -81,7 +82,7 @@ int main(int argc, char **argv) {
 	collect_available_tilefibers(G,P);
 
 	//results_on_inputs("doc/figs/",G,P,F,true);
-	printf("Npass=%d MinUnused=%d MaxSS=%d MaxSF=%d PlateRadius=%.3f TotalArea=%.6f Collide=%.3f NeighborRad=%.3f PatrolRad=%.3f InterPlate=%d Randomize=%d Pacman=%d\n",Npass,MinUnused,MaxSS,MaxSF,PlateRadius,TotalArea,Collide,NeighborRad,PatrolRad,InterPlate,Randomize,Pacman);
+	printf("Npass=%d MinUnused=%d MaxSS=%d MaxSF=%d PlateRadius=%.3f TotalArea=%.6f invFibArea=%.6f Collide=%.3f NeighborRad=%.3f PatrolRad=%.3f InterPlate=%d Randomize=%d Pacman=%d\n",Npass,MinUnused,MaxSS,MaxSF,PlateRadius,TotalArea,invFibArea,Collide,NeighborRad,PatrolRad,InterPlate,Randomize,Pacman);
 
 	//// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
 	Assignment A(G,F);

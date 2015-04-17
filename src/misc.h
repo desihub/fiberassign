@@ -48,6 +48,7 @@ void print_Plist(const Plist& L, str s="");
 bool isnull(const List& L); // Test if the list is null
 bool isnull(const Slist& L); // Test if the list is null ("")
 int sumlist(const List& L); // Sum of the list
+double sumlist(const Dlist& L);
 int max(const List& L);
 Dlist percents(const List& L, int n); // Percents list of L/n
 bool isfound(int n, const List& L); // True iff i is found in L

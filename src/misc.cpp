@@ -143,6 +143,12 @@ int sumlist(const List& L) { // Sum of the list
 	return s;
 }
 
+double sumlist(const Dlist& L) {
+	double d = 0;
+	for (int l=0; l<L.size(); l++) d += L[l];
+	return d;
+}
+
 int max(const List& L) {
 	int m(-1e8);
 	for (int i=0; i<L.size(); i++) if (L[i]>m) m = L[i];
@@ -280,6 +286,8 @@ List inverse(const List& L) {
 	return l;
 }
 
+
+
 // Table -----------------------------------------------------
 Table initTable(int l, int c, int val) {
 	Table T;
@@ -380,6 +388,7 @@ void print_table(str s, const Table& T, bool latex, Slist labels) {
 		str pre = labelsB ? f(i) : format(11,labels[i]);
 		printf("%3s  %s",pre.c_str(),et.c_str());
 		int c = T[i].size();
+		if (c==0) printf("\n");
 		for (int j=0; j<c; j++) {
 			str s = (j==c-1) ? slash : et;
 			str num = T[i][j]==-1 ? "" : f(T[i][j]).c_str();
@@ -433,6 +442,7 @@ void print_table(str s, const Dtable& T, bool latex, Slist labels) {
 		str pre = labelsB ? f(i) : format(11,labels[i]);
 		printf("%3s  %s",pre.c_str(),et.c_str());
 		int c = T[i].size();
+		if (c==0) printf("\n");
 		for (int j=0; j<c; j++) {
 			str s = (j==c-1) ? slash : et;
 			str num = T[i][j]==-1 ? "" : f(T[i][j]).c_str();
@@ -666,7 +676,9 @@ str f(double i) { // Be careful : double 1523.5412 -> 1,523.54 (max 6 numbers)
 	bool dot(true);
 	int dec(0);
 	int dot_pos(-1);
+	//for (int a=0; a<n; a++) printf("%c",s[a]);
 	for (int a=0; a<n; a++) if (s[a]=='.') dot_pos = a;
+	if (dot_pos==-1) dot_pos = n;
 	int bef(n-dot_pos);
 	for (int l=0; l<n; l++) {
 		if (s[l]=='.') dot = false;

@@ -14,6 +14,7 @@ extern int MaxSS;
 extern int MaxSF;
 extern double PlateRadius;
 extern double TotalArea;
+extern double invFibArea;
 extern double NeighborRad;
 extern double Collide;
 extern double PatrolRad;

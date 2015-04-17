@@ -80,6 +80,8 @@
 \def\Rdeg{R_{\rm deg}}
 \def\micron{\mu{\rm m}}
 \def\lya{Ly-$\alpha$\ }
+\def\sqd{$deg^{2}$}
+\def\psqd{$obj \cdot deg^{-2}$}
 
 \usepackage{geometry}
 \geometry{hscale=0.85,vscale=0.85,centering}
@@ -122,11 +124,24 @@ Dark energy study began in 1998, when two independent teams, led by Adam Riess a
 
 
 	\subsection{\Lambda-CDM model}
-	This is the currently standard model. It assumes that the universe is ruled by regular general relativity, and assumes the existence of dark matter and of the Einsein's cosmological constant \Lambda.
-	It  respects the cosmological principle : our observational location in the Universe is not unusual or special ; on a large-enough scale, the Universe looks the same in all directions (isotropy) and from every location (homogeneity).
+	This is the currently standard model. It assumes that the universe is ruled by regular general relativity, and that the existence of dark matter and of the Einsein's cosmological constant \Lambda.
+It respects the cosmological principle : our observational location in the Universe is not unusual or special ; on a large-enough scale (much greater than the typical size of galactic clusters), the Universe looks the same in all directions (isotropy) and from every location (homogeneity). Then comes the well-known FLRW metric : $g_{\mu\nu}dx^{\mu}dx^{\nu} = -c^{2}dt^{2}+a(t)^{2}(\frac{dr^{2}}{1-kr^{2}}+r^{2}d\Omega}$
 
+There is a growing consensus among cosmologists that the total density of matter is equal to the critical density, so that the universe is spatially flat ($k = 0$). Approximately 24\% of this is in the form of a low pressure matter, most of which is thought to be “non-baryonic” dark matter, while the remaining 71\% is thought to be in the form of a negative pressure “dark energy”, like the cosmological constant. If this is true, then dark energy is the major driving force behind the fate of the universe and it will expand forever exponentially.
+Dynamical equation used is Einstein's field equation :
+\begin{equation}
+$R_{\mu \nu} - {1 \over 2}g_{\mu \nu}\,R + g_{\mu \nu} \Lambda = {8 \pi G \over c^4} T_{\mu \nu}$
+\end{equation}
 
-There is a growing consensus among cosmologists that the total density of matter is equal to the critical density, so that the universe is spatially flat. Approximately 24\% of this is in the form of a low pressure matter, most of which is thought to be “non-baryonic” dark matter, while the remaining 71\% is thought to be in the form of a negative pressure “dark energy”, like the cosmological constant. If this is true, then dark energy is the major driving force behind the fate of the universe and it will expand forever exponentially.
+We apply it to the FLRW metric, on a perfect fluid of energy density $\ro$ and pressure $p$  to get Friedmann equations :
+\begin{equation}
+$(\frac{\dot{a(t)}}{a(t)}}^{2} + \frac{c^{2}k}{a^{2}} = \frac{8 \pi G}{3}\ro + \frac{c^{2}\Lambda}{3}$
+
+$\frac{\ddot{a(t)}}{a(t)}} = - \frac{4\pi G}{3}(\ro + 3\frac{p}{c^{2}}) + \frac{c^{2}\Lambda}{3}$
+\end{equation}
+
+Since it's a perfect fluid, we also use $p = w\ro c^{2}$. One of the most interesting thing to compute from them is the scale factor $a(t)$. Using those Friedmann equations, one easily gets :
+$\frac{\dot{\ro}}{\ro} = -3(1+w)\frac{\dot{a}}{a}$, and then, if $w$ is a constant : $\ro \propto a^{-3(1+w)}$
 
 	\subsection{Dark energy}
 	Becoming aware that the expanding rate of the universe is still inscreasing, theorists needed a new component in the universe to explain it. Several theoretical solutions \cite{Mortonson:2013zfa} are possible. It's a catch-all term for the origin of cosmic acceleration, and could be either a modification of general relativity, or a new kind of energy. 
@@ -136,25 +151,24 @@ Here are several possibilities of modified gravity :
 \end{itemize} 
 	
 	Two possible new energies are the cosmological constant (a constant energy density filling space, and which can be formulated to be equivalent to vacuum energy, with repulsive gravitational effects) and scalar fields such as quintessence or moduli, dynamic quantities whose energy density can vary in time and space. Scalar fields that do change in space can be difficult to distinguish from a cosmological constant because the change may be extremely slow.
-	The density of dark energy, $7 × 10ˆ{−27} kg \cdot mˆ{3}$ (with mass-energy equivalence), is much lower than the density of ordinary and matter within galaxies. It comes to dominate the mass–energy of the universe because it is uniform in space. 
-
+	The density of dark energy, $7 × 10^{−27} kg \cdot m^{3}$ (with mass-energy equivalence), is much lower than the density of ordinary and matter within galaxies. It comes to dominate the mass–energy of the universe because it is uniform in space. 
 
 	\section{DESI}
 	The Dark Energy Spectroscopic Instrument (DESI) is a Stage IV experiment that will make the next major advance in dark energy. \cite{Levi:2013gra}
 
 	\subsection{Material features}
-	The DESI instrument, that will be installed on the Mayall telescope in Arizona, consists of a new wide-field (3.2 deg. linear field of view) corrector plus a multi-object spectrometer with up to 5000 robotically positioned optical fibers, with a resolving power of R = 5000. The fibers feed 10 three-arm spectrographs (500 fibers for each spectrographs, also called petals) producing spectra that cover a wavelength range from 360-980 nm and have resolution of 2000-5500 depending on the wavelength. It will watch at 14,000 sq. deg. in 10666 tiles from 2018 to 2022, with roughly 7 different tiles each night. Fiber positioners will have a reach of $\sim$6 mm from their central position.
+	The DESI instrument, that will be installed on the Mayall telescope in Arizona, consists of a new wide-field (3.2 deg. linear field of view) corrector plus a multi-object spectrometer with up to 5000 robotically positioned optical fibers, with a resolving power of R = 5000. The fibers feed 10 three-arm spectrographs (500 fibers for each spectrographs, also called petals) producing spectra that cover a wavelength range from 360-980 nm and have resolution of 2000-5500 depending on the wavelength. It will watch at 14,000 \sqd in 10666 tiles from 2018 to 2022, with roughly 7 different tiles each night. Fiber positioners will have a reach of $\sim$6 mm from their central position.
 
 	\subsection{General aspects}
-It will study baryon acoustic oscillations (BAO) and the growth of structure through redshift-space distortions.
-The goals are : i) probe the effects of dark energy on the expansion history using BAO, ii) measure the gravitational growth history through redshift-space distortions, iii) measure the sum of neutrino masses, and iv) study the signatures of primordial inflation. The resulting 3-D galaxy maps at z < 2 and Lyman-alpha forest at z > 2 will make 1\%-level measurements of the distance scale in 35 redshift bins. This will provide unprecedented constraints on cosmological models.
+	It will study baryon acoustic oscillations (BAO) and the growth of structure through redshift-space distortions.
+	The goals are : i) probe the effects of dark energy on the expansion history using BAO, ii) measure the gravitational growth history through redshift-space distortions, iii) measure the sum of neutrino masses, and iv) study the signatures of primordial inflation. The resulting 3-D galaxy maps at z < 2 and Lyman-alpha forest at z > 2 will make 1\%-level measurements of the distance scale in 35 redshift bins. This will provide unprecedented constraints on cosmological models.
 
-This survey is the successor of the Stage-III BigBOSS survey and complements imaging surveys such as the Stage-III Dark Energy Survey (DES, currently operating) and the Stage-IV Large Synoptic Survey Telescope (LSST, planned start in the next decade).
+	This survey is the successor of the Stage-III BigBOSS survey and complements imaging surveys such as the Stage-III Dark Energy Survey (DES, currently operating) and the Stage-IV Large Synoptic Survey Telescope (LSST, planned start in the next decade).
 
-\subsection{Tiles}
-In average, a galaxy is covered 5.24 times (by different fibers), with only 2.6\% of the footprint having a coverage of 3 or less. 
-Figure du tiling. Figure des fibers.
-There are different tiling strategies 
+	\subsection{Tiles}
+	In average, a galaxy is covered 5.24 times (by different fibers), with only 2.6\% of the footprint having a coverage of 3 or less. 
+	Figure du tiling. Figure des fibers.
+	There are different tiling strategies 
 
 
 \subsection{Targets}
@@ -166,12 +180,8 @@ It will seek for targets that trace the evolution of dark energy from redshift 0
 	\item Sky Fibers and Standard Stars are calibration targets, necessary to have a reference during measurements. There have to be 10 Standard Stars and 40 Sky Fibers on each petal
 \end{itemize} 
 
-
-
 \subsection{Fiber assignment}
 Fiber assignment is the correspondance between fibers of each tile to objects. It tells us which fiber is assigned to which galaxy, or unassigned (in regions where there are not enough galaxies). It depends upon fiber locations on the plate, and on the tilling pattern of the sky. One has to make prioritizations because there are several possibilities to target selection for each fiber. 
-
-
 
 
 \section{Rules for fiber assignment}
@@ -183,13 +193,11 @@ We have to reserve 10 fibers by petal to Standard Stars and 40 to Sky Fibers.
 We have to avoid unmastered correlations. That's why we don't (at first sight), when we take a new tile, associate 50 free fibers to regions of low QSO density. We would rather assign until there are only 50 free fibers left.
 We do the compuation in real time. That means that we do it tile by tile. We can't access the information of all the galaxies because we only have past watched galaxies information. That adds a new constrain. So I rewrote algorithms so that they would compute an optimal assignment for one plate, knowing information on previous one assignments, and knowing information on previously watched galaxies.
 
-
 \end{comment}
 
 
-
 \section{Introduction}
-Martin White developed C++ code for fiber assignment over the full 14k sq. deg. footprint.  We first modified Martin's code to incorporate features from Bob Cahn's python code, which ran on a restricted 480 sq. deg.. We included the improvement and redistribution steps, which switch fiber assignments to increase the number of galaxies observed. We then adapted the code to compute assignments not globally "knowing all information on galaxies yet to be observed" but plate after plate, as in the real experiment.
+Martin White developed C++ code for fiber assignment over the full 14k \sqd footprint.  We first modified Martin's code to incorporate features from Bob Cahn's python code, which ran on a restricted 480 \sqd... We included the improvement and redistribution steps, which switch fiber assignments to increase the number of galaxies observed. We then adapted the code to compute assignments not globally "knowing all information on galaxies yet to be observed" but plate after plate, as in the real experiment.
 The samples are taken from Martin's mocks in stored on NERSC at /project/projectdirs/desi/mocks/preliminary/.  From these files we create a single file containing the appropriate mix of ELG, LRG, QSO, SS (Standard Stars) and SF (Sky Fibers) using the python script in git fiberassign/bin/make\_catalog\_starsandsky.py.  In the same place there is python code to produce a mixture of galaxies without any correlations, but with the correct $\frac{dn}{dz}$  
   
 The code needs to know the locations of the positioners in the focal plane. They are given in : \$DESIMODEL/data/focalplane/fiberpos.txt.
@@ -203,7 +211,7 @@ Here are some features on input galaxies simulated catalog :
 
 \begin{table}[H]\centering
 	\begin{tabular}{rcccl} \hline
-		Kind&Id&Priority&Nobs&Density/sq.deg.\\ \hline
+		Kind&Id&Priority&Nobs&Density (objects/\sqd)\\ \hline
 		QSO Ly-$\alpha$& 0 & 1 & 5 &  50\\
 		QSO Tracer & 1 & 1 & 1& 120\\
 		LRG & 2 & 3 &2 & 300\\
@@ -235,7 +243,8 @@ A number of parameters are defined at the begining of the file main.
 	\item MinUnused = 50 (not used anymore for the moment) minimum number of unused fibers on each petal
 	\item MaxSS = 10 ; MaxSF = 40 maximum number of fibers assigned to SS and SF on a petal
 	\item PlateRadius = $1.65^{\circ}$ radius of the plate
-	\item TotalArea = $15789.0 sq \cdot deg^{-1}$ total area of the sky considered
+	\item TotalArea = 15789.0 \sqd total area of the sky considered
+	\item invFibArea = 700 inverse of area in \sqd accessible to a fiber (fiber density for a \sqd)
 	\item Collide = 2.1 mm minimum distance allowed on plate projection of two assigned galaxies on the same plate
 	\item NeighborRad = 11.0 mm maximum distance to consider that two fibers are neighbors
 	\item PatrolRad = 6.0 mm maximum distance, on plate coordinates, that allows a fiber to a galaxy
@@ -655,7 +664,7 @@ A sum-up table of general results on assignment is provided on Table \ref{res}.
          SF   & 1,129 &   270 &   0 &  0 &  0 & 0 & 1,400 &   270 &   270 & 19.300 & 19.300\\ 
 \hline
 \end{tabular}
-\caption{Densities per sqdeg as as a function of \# of observations (with total), and \% observed, once and weighted}\label{res}
+\caption{Densities (objects/\sqd) as as a function of \# of observations (with total), and \% observed, once and weighted}\label{res}
 \end{center}\end{table}
 
 
@@ -704,6 +713,16 @@ Here are the histogram of petals as a function of free fibers on Figure \ref{fre
 \end{center}\end{figure}
 
 
+\begin{comment}
+\begin{figure}[H]\begin{center}
+\begin{tikzpicture}[scale=1.1]
+	\begin{axis}[enlarge y limits=false,enlarge x limits=false,xlabel={Objects/\sqd},ylabel={},cycle list name=mycolorlist,legend pos=south east]
+		\addplot table[x=x,y=0] {figs/seendens.dat};
+	\end{axis}
+\end{tikzpicture}
+\caption{\% of observed galaxies as a function of objects density}\end{center}\end{figure}
+\end{comment}
+
 \subsection{Redistribution-Improvement step}
 We see, in the second plan, what is the effect of several redistribution-improvement executions. Here is presented, in the Table \ref{ris}, the number of redistributions, number of additionnal assignments, with the improvement in \% and the total time taken for until this step.
 
@@ -749,8 +768,6 @@ The figure \ref{histastf} gives the histogram of proportion of assigned \lya and
 
 
 \subsection{Study on evolution over time}
-
-
 
 \begin{figure}[H]\begin{center}
 \begin{tikzpicture}[scale=1.1]

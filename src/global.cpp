@@ -27,15 +27,13 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 	init_time(t,"# Begin collecting available galaxies");
 	List permut = random_permut(Nplate);
 	double rad = PlateRadius*M_PI/180.;
-	int i;
+	int jj;
 	//omp_set_num_threads(24);
 #pragma omp parallel
 	{ 	int id = omp_get_thread_num();
-		double quarter = floor(Nplate/(4*omp_get_num_threads()));
-		double cnt, avg, std; int max = 0; int min = 1e7; 
 		// Collects for each plate ; shuffle order of plates (useless !?)
-		for (i=id; i<Nplate; i++) { // <- begins at id, otherwise all begin at 0 -> conflict. Do all plates anyway
-			int j = permut[i];
+		for (jj=id; jj<Nplate; jj++) { // <- begins at id, otherwise all begin at 0 -> conflict. Do all plates anyway
+			int j = permut[jj];
 			plate p = P[j];
 			// Takes neighboring ~25000 galaxies that can be reached by this plate
 			std::vector<int> nbr = T.near(G,p.nhat,rad); // nbr for neighbours
@@ -53,10 +51,7 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 				std::vector<int> gals = kdT.near(&(pp.fp[2*k]),0.0,PatrolRad);
 				P[j].av_gals[k] = initList(gals);
 			}
-			// Avancement 
-			//if (cnt==quarter && id==0) {printf("  Thread 0 has done 1/4 of his job"); print_time(t," at");}
 		}
-		//printf("  Thread %2d finished",id); print_time(t," at");
 	} // End parallel
 	print_time(t,"# ... took :");
 }
@@ -581,6 +576,26 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	print_mult_table_latex("Free fibers in function of time (plates)",outdir+"fft.dat",fft);
  
 	// 8 Percentage of seen objects as a function of density of objects
+	Dtable densities;
+	for (int j=0; j<Nplate; j++) {
+		for (int k=0; k<Nfiber; k++) {
+			int size = P[j].av_gals[k].size();
+			int oc = 0;
+			for (int i=0; i<size; i++) if (A.is_assigned_jg(j,P[j].av_gals[k][i])) oc++;
+			if (size!=0 && 1<=oc) { 
+				double d = percent(oc,size);
+				double x = size;
+				//printf("%f %f %f %d %d %d \n",d,x,invFibArea,size,oc,densities.size()); fl();
+				if (x>=densities.size()) densities.resize(x+1);
+				densities[x].push_back(d);
+			}
+		}
+	}
+	Dlist densit = initDlist(densities.size());
+	for (int i=0; i<densities.size(); i++) densit[i] = sumlist(densities[i])/densities[i].size();
+	Dtable ds; ds.push_back(densit);
+	print_mult_Dtable_latex("Perc of seen obj as a fun of dens of objs",outdir+"seendens.dat",ds,1);
+	
 	// 9 Percentage of TF that have at least 1 QSO av and that are not assigned to a QSO
 
 	// Misc
