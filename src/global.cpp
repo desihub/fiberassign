@@ -517,6 +517,31 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	print_mult_Dtable_latex("Observed galaxies in function of time (scaled) (interval 10)",outdir+"time.dat",Ttime_scaled,interval);
 	//print_mult_table_latex("Observed galaxies in function of time",,F.kind,Ttime);
 	
+	// Lya 1,2,3,4,5, LRG 1,2
+	int nk = 9;
+	Table Ttim = initTable(nk,0);
+	List galaxs = initList(Ngal);
+	for (int j=0; j<Nplate; j++) {
+		for (int k=0; k<Nfiber; k++) {
+			int g = A.TF[j][k];
+			if (g!=-1) galaxs[g]++;
+		}
+		if (j%interval==0) {
+			List l = initList(9);
+			for (int g=0; g<Ngal; g++) {
+				int n = galaxs[g];
+				if (1<=n) {
+					if (G[g].id == 0) l[n-1]++;
+					if (G[g].id == 2) l[n-1+5]++;
+					if (G[g].id == 1) l[n+6]++;
+					if (G[g].id == 3) l[n+7]++;
+				}
+			}
+			for (int id=0; id<nk; id++) Ttim[id].push_back(l[id]);
+		}
+	}
+	print_mult_table_latex("Observed galaxies complete (interval 10)",outdir+"time2.dat",Ttim,interval);
+
 	// 4 Histogramme of percentages of seen Ly-a
 	int id = F.ids.at("QSO Ly-a");
 	int goal = F.goal[id];

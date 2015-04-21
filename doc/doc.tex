@@ -170,14 +170,14 @@ Here are several possibilities of modified gravity :
 	\subsection{Tiles}
 	In average, a galaxy is covered 5.24 times (by different fibers), with only 2.6\% of the footprint having a coverage of 3 or less. 
 	Figure du tiling. Figure des fibers.
-	There are different tiling strategies 
+	There are different tiling strategies, depending on what 
 
 
 \subsection{Targets}
 It will seek for targets that trace the evolution of dark energy from redshift 0.2 out to 3.5 using 3 kinds of celestial objects : 4 million luminous red galaxies (LRG), 18 million emission line galaxies (ELG) and 3 million quasars. QSO \lya are the most important targets. Then comes LRG, then ELG. For each petal (of 500 fibers), 10 are dedicated to Standard Stars and 40 to Sky Fibers.
 \begin{itemize} 
-	\item QSO (quasi stellar object) targets are divided into three categories. There are those at $z < 2.1$ (QSO-I), which are used as tracers only, and as those at $z > 2.1$ which are used for the \lya forest. Finally, there are false one, objects that are a priori believed QSO but are actually not (known once observed). Quasars are extremely luminous, there spectra is very large and doesn't correspond to a star's one. They are likely central regions of massive galaxies surrounding a supermassive black hole, and their energy release must be caused by mass falling onto the accretion disc of the black hole. They are excellent tracer population at redshifts $1 < z < 2$. QSO \lya with $z > 2.1$ are espacially important because it is the only opportunity for DESI to get information on dark energy at so high redshifts.
-	\item LRG (luminous red galaxy) are the most luminous and red galaxies in the universe at $z < 1$ \cite{Eisenstein:2001cq}
+	\item QSO (quasi stellar object) targets are divided into three categories. There are those at $z < 2.1$ (QSO-I), which are used as tracers only, and as those at $z > 2.1$ which are used for the \lya forest. Finally, there are false one, objects that are a priori believed QSO but are actually not (known once observed). Quasars are extremely luminous, there spectra is very large and doesn't correspond to a star's one. They are likely central regions of massive galaxies surrounding a supermassive black hole, and their energy release must be caused by mass falling onto the accretion disc of the black hole. They are excellent tracer population at redshifts $1 < z < 2$. QSO \lya with $z > 2.1$ are espacially important because it is the only opportunity for DESI to get information on dark energy at so high redshifts. We want to observe them 5 times ideally
+	\item LRG (luminous red galaxy) are the most luminous and red galaxies in the universe at $z < 1$ \cite{Eisenstein:2001cq}. We want to observe them twice.
 	\item ELG (emission line galaxy) are galaxies where stars are creating. They have strong emission lines and characteristic OII and OIII doublets at a rest frame 327 nm and 500nm, which fits the DESI redshift survey.
 	\item Sky Fibers and Standard Stars are calibration targets, necessary to have a reference during measurements. There have to be 10 Standard Stars and 40 Sky Fibers on each petal
 \end{itemize} 
@@ -702,7 +702,7 @@ Here are the histogram of petals as a function of free fibers on Figure \ref{fre
 
 \begin{figure}[H]\begin{center}\begin{minipage}{.5\textwidth}
 	\tikzsetnextfilename{freefib}
-	\begin{tikzpicture}[scale=1.1]\begin{semilogyaxis}[const plot,enlarge x limits=false,xlabel={\# of free fibers},ylabel={},xmax=160] 
+	\begin{tikzpicture}[scale=1.1]\begin{semilogyaxis}[const plot,enlarge x limits=false,xlabel={\# of free fibers},ylabel={\# of petals},xmax=160] 
 	\addplot [mark=none] table [x=x,y=0] {figs/freefib.dat};
 \end{semilogyaxis}\end{tikzpicture}
 \caption{\# of petals with that many free fibers}\label{freefib}
@@ -710,7 +710,7 @@ Here are the histogram of petals as a function of free fibers on Figure \ref{fre
 \begin{minipage}{.5\textwidth}
 	\tikzsetnextfilename{fft}
 	\begin{tikzpicture}[scale=1.1]
-		\begin{axis}[const plot,enlarge x limits=false,enlarge y limits=false,xlabel={Plate},ylabel={},cycle list name=mycolorlist]
+		\begin{axis}[const plot,enlarge x limits=false,enlarge y limits=false,xlabel={Tiles observed},ylabel={\# of free fibers},cycle list name=mycolorlist]
 			\addplot table[x=x,y=0] {figs/fft.dat};
 		\end{axis}
 	\end{tikzpicture}
@@ -808,23 +808,25 @@ The figure \ref{histastf} gives the histogram of proportion of assigned \lya and
 \end{center}\end{figure}
 
 
-
-
 \subsection{Study on evolution over time}
 
 \begin{figure}[H]\begin{center}
-	\tikzsetnextfilename{time}
-\begin{tikzpicture}[scale=1.1]
-	\begin{axis}[enlarge y limits=false,enlarge x limits=false,xlabel={Plate},ylabel={},cycle list name=mycolorlist,legend entries={QSO \lya,QSO Tracer,LRG,ELG,Fake QSO,Fake LRG},legend pos=south east]
-		\addplot table[x=x,y=0] {figs/time.dat};
-		\addplot table[x=x,y=1] {figs/time.dat};
-		\addplot table[x=x,y=2] {figs/time.dat};
-		\addplot table[x=x,y=3] {figs/time.dat};
-		\addplot table[x=x,y=4] {figs/time.dat};
-		\addplot table[x=x,y=5] {figs/time.dat};
-	\end{axis}
+	\tikzsetnextfilename{time2}
+\begin{tikzpicture}[scale=1.5]
+	\begin{semilogyaxis}[enlarge y limits=false,enlarge x limits=false,xlabel={Tiles observed},ylabel={\# of objects},legend entries={QSO \lya 1 obs,QSO \lya 2 obs,QSO \lya 3 obs,QSO \lya 4 obs,QSO \lya 5 obs,LRG 1 obs,LRG 2 obs,QSO Tracer,ELG},legend style={at={(1.3,0.9)}, anchor=north}]
+		\addplot [color=red,loosely dashed] table[x=x,y=0] {figs/time2.dat};
+		\addplot [color=red,dashed] table[x=x,y=1] {figs/time2.dat};
+		\addplot [color=red,dashdotted] table[x=x,y=2] {figs/time2.dat};
+		\addplot [color=red,densely dashdotted] table[x=x,y=3] {figs/time2.dat};
+		\addplot [color=red] table[x=x,y=4] {figs/time2.dat};
+		\addplot [color=blue,densely dashed] table[x=x,y=5] {figs/time2.dat};
+		\addplot [color=blue] table[x=x,y=6] {figs/time2.dat};
+		\addplot [color=green] table[x=x,y=7] {figs/time2.dat};
+		\addplot [color=cyan] table[x=x,y=8] {figs/time2.dat};
+	\end{semilogyaxis}
 \end{tikzpicture}
-\caption{Observed galaxy kind as a function of time (plates seen)}\end{center}\end{figure}
+\caption{Observed galaxy kind as a function of time (plates seen)}
+\end{center}\end{figure}
 
 
 \subsection{Shifting parameters}
