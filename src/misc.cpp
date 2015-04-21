@@ -286,7 +286,15 @@ List inverse(const List& L) {
 	return l;
 }
 
-
+List cumulate(const List& L) {
+	List l = initList(L.size());
+	int a = 0;
+	for (int i=0; i<L.size(); i++) {
+		a += L[i];
+		l[i] = a;
+	}
+	return l;
+}
 
 // Table -----------------------------------------------------
 Table initTable(int l, int c, int val) {
@@ -571,6 +579,25 @@ Cube initCube(int l, int c, int d, int val) {
 		for (int j=0; j<c; j++) C[i][j].resize(d,val);
 	}
 	return C;
+}
+
+Dcube initDcube(int l, int c, int d, double val) {
+	Dcube C;
+	C.resize(l);
+	for (int i=0; i<l; i++) {
+		C[i].resize(c);
+		for (int j=0; j<c; j++) C[i][j].resize(d,val);
+	}
+	return C;
+}
+
+int max_row(const Dcube& C) {
+	int max(0);
+	for (int i=0; i<C.size(); i++) {
+		int c = C[i].size();
+		if (c>max) max = c;
+	}
+	return max;
 }
 
 // Time ------------------------------------------------------

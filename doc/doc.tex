@@ -29,11 +29,13 @@
 \usepackage{pgfplots, pgfplotstable}
 \pgfplotsset{compat=newest}
 \usepgfplotslibrary{statistics}
-\pgfplotscreateplotcyclelist{mycolorlist}{blue,red,brown,teal,violet,cyan,green,black}
+\pgfplotscreateplotcyclelist{mycolorlist}{blue,red,brown,teal,violet,cyan,green,scarletred1,black}
 \pgfplotscreateplotcyclelist{mylegend}{Ly-a,Target,LRG,ELG,Fake,Fake,SS,SF}
 \usepackage{xifthen}
 
-
+\usepgfplotslibrary{external}
+\usetikzlibrary{pgfplots.external} 
+\tikzexternalize[prefix=figs/graph/]% activate with a name prefix
 %Debug box warnings
 \showboxdepth=\maxdimen
 \showboxbreadth=\maxdimen
@@ -202,8 +204,8 @@ The samples are taken from Martin's mocks in stored on NERSC at /project/project
   
 The code needs to know the locations of the positioners in the focal plane. They are given in : \$DESIMODEL/data/focalplane/fiberpos.txt.
 It also needs to know the locations of the centers of the fields in the sky, i.e. the plates, and their order.  The original code written by Martin White provided the option of having the plate centers given in a binary file or an ASCII file.  We are now using the ASCII option by defining ASCIICENTERS at the outset. The format is that of \$DESIMODEL/data/footprint/desi-tiles.par, but an alternative ASCII file can be provided. If the executable is {\tt assign} then the calling sequence will look like :
-{\tt./assign galaxies.rdzipn desi-tiles.par fiberpos.txt assignment}
- Here the catalog of targets is in the NERSC directory : /projects/projectdirs/desi/mocks/ preliminary/objects\_ss\_sf0.rdzipn the binary file created by {\tt make\_catalog}. An option not now used is to write the actual assignments to a file here called {\tt assignment}
+{\tt./assign galaxies.rdzipn desi-tiles.par fiberpos.txt assignment 1 1}
+Here the catalog of targets is in the NERSC directory : /projects/projectdirs/desi/mocks/ preliminary/objects\_ss\_sf0.rdzipn the binary file created by {\tt make\_catalog}. An option not now used is to write the actual assignments to a file here called {\tt assignment}. The two last numbers stand respectively for the fraction of galaxies and fibers we take (if one write 2 5 for instance, the program will read only half of the galaxies and one fiber over two in the fiber locations file).
   
 README.rst gives instructions for running on NERSC.
 We summarize here the various components of the code to facilitate their modification later.
@@ -212,14 +214,14 @@ Here are some features on input galaxies simulated catalog :
 \begin{table}[H]\centering
 	\begin{tabular}{rcccl} \hline
 		Kind&Id&Priority&Nobs&Density (objects/\sqd)\\ \hline
-		QSO Ly-$\alpha$& 0 & 1 & 5 &  50\\
-		QSO Tracer & 1 & 1 & 1& 120\\
-		LRG & 2 & 3 &2 & 300\\
+		QSO Ly-$\alpha$ & 0 & 1 & 5 & 50\\
+		QSO Tracer & 1 & 1 & 1 & 120\\
+		LRG & 2 & 3 & 2 & 300\\
 		ELG & 3 & 5 & 1 & 2400\\
-		Fake QSO & 4 & 1 & 1& 90\\
+		Fake QSO & 4 & 1 & 1 & 90\\
 		Fake LRG & 5 & 3 & 1 & 50\\
-		Standard Star & 6 & 2 & 1&  140\\
-		Sky Fiber & 7 & 4 & 1& 1400\\ \hline
+		Standard Star & 6 & 2 & 1 & 140\\
+		Sky Fiber & 7 & 4 & 1 & 1400\\ \hline
 	\end{tabular}
 	\caption{Characteristics of galaxy samples as set in make\_catalog\_rnc.py}\label{table:characteristics}
 \end{table}
@@ -250,7 +252,7 @@ A number of parameters are defined at the begining of the file main.
 	\item PatrolRad = 6.0 mm maximum distance, on plate coordinates, that allows a fiber to a galaxy
 	\item InterPlate = 200 minimal number of plates between two observations of the same galaxy
 	\item Randomize = false randomize order of plates in making plans
-	\item Pacman = false selects only spectrometers 0,1,2,7,8,9
+	\item Pacman = false selects only spectrometers 0, 1, 2, 7, 8, 9 of the pacman
 \end{itemize} 
 
 
@@ -465,7 +467,7 @@ The idea is to get most information possible in the first pass, assigning indepe
 
 \section{Algorithm}
 
-The calling sequence is {\tt assign galaxy plate\_centers fiberpos assignment}. The last of these is the file to which we would write all the final galaxy assignments, but this is generally suppressed since we aren't using it yet.
+The calling sequence is {\tt assign galaxy plate\_centers fiberpos assignment 1 1}. The last of these is the file to which we would write all the final galaxy assignments, but this is generally suppressed since we aren't using it yet.
 
  {\tt main} proceeds by taking important parameters, features of galaxies, reading in the galaxies to make G, the positions of the fibers on the plate to make pp, the plate centers and positioner locations to make P. 
  
@@ -587,6 +589,7 @@ A standard output display of an execution look like that (for assignment plan an
 Here are some statistics on the input galaxies catalog :
 
 \begin{figure}[H]\begin{center}\begin{minipage}{.5\textwidth}
+	\tikzsetnextfilename{avgalhist}
 	\begin{tikzpicture}[scale=1.1]\begin{semilogyaxis}[const plot,enlarge x limits=false,xmax=10,xlabel={\# of accessible galaxies},ylabel={},cycle list name=mycolorlist,legend entries={QSO \lya,QSO Tracer,LRG,ELG,Fake QSO,Fake LRG}] 
 		\addplot table[x=x,y=0] {figs/avgalhist.dat};
 		\addplot table[x=x,y=1] {figs/avgalhist.dat};
@@ -595,9 +598,10 @@ Here are some statistics on the input galaxies catalog :
 		\addplot table[x=x,y=4] {figs/avgalhist.dat};
 		\addplot table[x=x,y=5] {figs/avgalhist.dat};
 \end{semilogyaxis}\end{tikzpicture}
-\caption{Available galaxies (by kind) for a single fiber on a single tile}
+\caption{Available galaxies (by kind) for a single fiber on a single tile}\label{avgalhist}
 \end{minipage}%
 \begin{minipage}{.5\textwidth}
+	\tikzsetnextfilename{avtfhist}
 \begin{tikzpicture}[scale=1.1]\begin{semilogyaxis}[const plot,enlarge x limits=false,xlabel={\# of TF that can access a given galaxy},xmax=13,ylabel={},cycle list name=mycolorlist,legend pos=south west]
 		\addplot table[x=x,y=0] {figs/avtfhist.dat};
 		\addplot table[x=x,y=1] {figs/avtfhist.dat};
@@ -606,7 +610,7 @@ Here are some statistics on the input galaxies catalog :
 		\addplot table[x=x,y=4] {figs/avtfhist.dat};
 		\addplot table[x=x,y=5] {figs/avtfhist.dat};
 \end{semilogyaxis}\end{tikzpicture}
-\caption{Available tile-fibers for a galaxy (by kind)}
+\caption{Available tile-fibers for a galaxy (by kind)}\label{avtfhist}
 \end{minipage}
 \end{center}\end{figure}
 
@@ -697,12 +701,14 @@ Here are the histogram of petals as a function of free fibers on Figure \ref{fre
 
 
 \begin{figure}[H]\begin{center}\begin{minipage}{.5\textwidth}
+	\tikzsetnextfilename{freefib}
 	\begin{tikzpicture}[scale=1.1]\begin{semilogyaxis}[const plot,enlarge x limits=false,xlabel={\# of free fibers},ylabel={},xmax=160] 
 	\addplot [mark=none] table [x=x,y=0] {figs/freefib.dat};
 \end{semilogyaxis}\end{tikzpicture}
 \caption{\# of petals with that many free fibers}\label{freefib}
  \end{minipage}%
 \begin{minipage}{.5\textwidth}
+	\tikzsetnextfilename{fft}
 	\begin{tikzpicture}[scale=1.1]
 		\begin{axis}[const plot,enlarge x limits=false,enlarge y limits=false,xlabel={Plate},ylabel={},cycle list name=mycolorlist]
 			\addplot table[x=x,y=0] {figs/fft.dat};
@@ -713,15 +719,38 @@ Here are the histogram of petals as a function of free fibers on Figure \ref{fre
 \end{center}\end{figure}
 
 
-\begin{comment}
-\begin{figure}[H]\begin{center}
+On the Figure \ref{seendens}, one can seen the proportion of observed objects as a function of their density. "usq" stands for unity of square degrees, its the area of the sky reachable by a single fiber. Keep Figure \ref{avgalhist} in mind while reading this one.
+\begin{figure}[H]\begin{center}\begin{minipage}{.5\textwidth}
+	\tikzsetnextfilename{seendens}
 \begin{tikzpicture}[scale=1.1]
-	\begin{axis}[enlarge y limits=false,enlarge x limits=false,xlabel={Objects/\sqd},ylabel={},cycle list name=mycolorlist,legend pos=south east]
+	\begin{axis}[enlarge y limits=false,enlarge x limits=false,xlabel={Objects/usq},ylabel={},cycle list name=mycolorlist,legend entries={QSO \lya,QSO Tracer,LRG,ELG,Fake QSO,Fake LRG,All},legend pos=south east]
 		\addplot table[x=x,y=0] {figs/seendens.dat};
+		\addplot table[x=x,y=1] {figs/seendens.dat};
+		\addplot table[x=x,y=2] {figs/seendens.dat};
+		\addplot table[x=x,y=3] {figs/seendens.dat};
+		\addplot table[x=x,y=4] {figs/seendens.dat};
+		\addplot table[x=x,y=5] {figs/seendens.dat};
+		\addplot table[x=x,y=8] {figs/seendens.dat};
 	\end{axis}
 \end{tikzpicture}
-\caption{\% of observed galaxies as a function of objects density}\end{center}\end{figure}
-\end{comment}
+\end{minipage}%
+\begin{minipage}{.5\textwidth}
+	\tikzsetnextfilename{seendenszoom}
+\begin{tikzpicture}[scale=1.1]
+	\begin{axis}[xmax=7,ymin=65,enlarge y limits=false,enlarge x limits=false,xlabel={Objects/usq},ylabel={},cycle list name=mycolorlist]
+		\addplot table[x=x,y=0] {figs/seendens.dat};
+		\addplot table[x=x,y=1] {figs/seendens.dat};
+		\addplot table[x=x,y=2] {figs/seendens.dat};
+		\addplot table[x=x,y=3] {figs/seendens.dat};
+		\addplot table[x=x,y=4] {figs/seendens.dat};
+		\addplot table[x=x,y=5] {figs/seendens.dat};
+		\addplot table[x=x,y=8] {figs/seendens.dat};
+	\end{axis}
+\end{tikzpicture}
+ \end{minipage}
+\caption{\% of observed galaxies as a function of objects density, wide and zoom}\label{seendens}
+\end{center}\end{figure}
+
 
 \subsection{Redistribution-Improvement step}
 We see, in the second plan, what is the effect of several redistribution-improvement executions. Here is presented, in the Table \ref{ris}, the number of redistributions, number of additionnal assignments, with the improvement in \% and the total time taken for until this step.
@@ -743,7 +772,8 @@ We see, in the second plan, what is the effect of several redistribution-improve
 \subsection{Results on \lya particularly}
 The figure \ref{histastf} gives the histogram of proportion of assigned \lya and the number of observations as a function of available TF.
 
-\begin{figure}[H]\begin{center}\begin{minipage}{.5\textwidth}
+\begin{figure}[H]\begin{center}
+	\tikzsetnextfilename{obsly}
 \begin{tikzpicture}[scale=1.1]
 	\begin{axis}[const plot,stack plots=y,enlarge x limits=false,enlarge y limits=false,xlabel={Number of available TF},ylabel={},cycle list name=mycolorlist,legend entries={0,1,2,3,4,5}]
 		\addplot [fill,fill opacity=0.5,color=blue] table[x=x,y=0] {figs/obsly.dat};
@@ -755,21 +785,35 @@ The figure \ref{histastf} gives the histogram of proportion of assigned \lya and
 	\end{axis}
 \end{tikzpicture}
 \caption{\# of QSO \lya (with their number of observation) as a function of available tile-fibers}\label{histastf}
- \end{minipage}%
-\begin{minipage}{.5\textwidth}
-	\begin{tikzpicture}[scale=1.1]
-		\begin{semilogyaxis}[const plot,enlarge x limits=false,xlabel={Distance between plates},ylabel={},cycle list name=mycolorlist]
-			\addplot table[x=x,y=0] {figs/dist2ly.dat};
+\end{center}\end{figure}
+
+
+\begin{figure}[H]\begin{center}\begin{minipage}{.5\textwidth}
+	\tikzsetnextfilename{dist2ly}
+\begin{tikzpicture}[scale=1.1]
+		\begin{semilogyaxis}[const plot,enlarge x limits=false,xlabel={Distance between plates},ylabel={}]
+			\addplot [color=blue,mark=none] table[x=x,y=0] {figs/dist2ly.dat};
 		\end{semilogyaxis}
 	\end{tikzpicture}
-	\caption{Histogram of distances (in number of plates) between two consecutive observed QSO \lya}
+\end{minipage}%
+\begin{minipage}{.5\textwidth}
+	\tikzsetnextfilename{dist2lyint}
+	\begin{tikzpicture}[scale=1.1]
+		\begin{axis}[const plot,enlarge x limits=false,enlarge y limits=false,xlabel={Distance between plates},ylabel={}]
+			\addplot [mark=none] table[x=x,y=1] {figs/dist2ly.dat};
+		\end{axis}
+	\end{tikzpicture}
  \end{minipage}
+	\caption{Histogram of distances (in number of plates) between two consecutive observed QSO \lya and integral}
 \end{center}\end{figure}
+
+
 
 
 \subsection{Study on evolution over time}
 
 \begin{figure}[H]\begin{center}
+	\tikzsetnextfilename{time}
 \begin{tikzpicture}[scale=1.1]
 	\begin{axis}[enlarge y limits=false,enlarge x limits=false,xlabel={Plate},ylabel={},cycle list name=mycolorlist,legend entries={QSO \lya,QSO Tracer,LRG,ELG,Fake QSO,Fake LRG},legend pos=south east]
 		\addplot table[x=x,y=0] {figs/time.dat};
@@ -787,6 +831,7 @@ The figure \ref{histastf} gives the histogram of proportion of assigned \lya and
 In the following, we change a little bit parameters around the references values to observe their influences on results.
 
 \begin{figure}[H]\begin{center}\begin{minipage}{.5\textwidth}
+	\tikzsetnextfilename{colllya}
 	\begin{tikzpicture}[scale=1.1]
 		\begin{axis}[enlarge x limits=false,xlabel={Collide (mm)},ylabel={Weighted \% of \lya},cycle list name=mycolorlist]
 			\addplot [mark=x] coordinates {(0,68.572)(1,68.414)(1.8,67.963)(2.0,67.774)(2.1,67.670)(2.2,67.545)(2.4,67.278)(2.8,66.606)(3,66.187)(3.2,65.741)};
@@ -795,6 +840,7 @@ In the following, we change a little bit parameters around the references values
 	\end{tikzpicture}
 \end{minipage}%
 \begin{minipage}{.5\textwidth}
+	\tikzsetnextfilename{collelg}
 	\begin{tikzpicture}[scale=1.1]
 		\begin{axis}[enlarge x limits=false,xlabel={Collide (mm)},ylabel={\% of ELG},cycle list name=mycolorlist]
 			\addplot [mark=x] coordinates {(0,78.301)(1,78.073)(1.8,77.999)(2.0,77.970)(2.1,77.955)(2.2,77.937)(2.4,77.894)(2.8,77.777)(3,77.703)(3.2,77.612)};
@@ -806,6 +852,7 @@ In the following, we change a little bit parameters around the references values
 \end{center}\end{figure}
 
 \begin{figure}[H]\begin{center}
+	\tikzsetnextfilename{intlya}
 	\begin{tikzpicture}[scale=1.1]
 		\begin{axis}[enlarge x limits=false,xlabel={InterPlate},ylabel={Weighted \% of \lya},cycle list name=mycolorlist]
 			\addplot [mark=x] coordinates {(0,73.317)(1,70.172)(20,68.022)(50,67.961)(100,67.905)(200,67.670)(400,67.461)(1000,66.888)(2000,65.660)};

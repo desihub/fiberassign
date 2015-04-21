@@ -559,15 +559,16 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 			}
 		}
 	}
+	List histo0 = histogram(deltas,10);
 	print_hist("Plate interval between 2 consecutive obs of Ly-a (interval 100)",100,histogram(deltas,100));
-	Table delts; delts.push_back(histogram(deltas,10));
+	Table delts; delts.push_back(histo0); delts.push_back(cumulate(histo0));
 	print_mult_table_latex("Plate interval between 2 consecutive obs of Ly-a (interval 10)",outdir+"dist2ly.dat",delts,10);
 
 	// 6 Free fibers histogram
 	Table unused_fbp = A.unused_fbp(pp);
 	make_square(unused_fbp);
-	Table hist0; hist0.push_back(histogram(unused_fbp,5));
-	print_mult_table_latex("Number of petals with this many free fiber (interval 5)",outdir+"freefib.dat",hist0,5);
+	Table hist0; hist0.push_back(histogram(unused_fbp,1));
+	print_mult_table_latex("Number of petals with this many free fiber (interval 1)",outdir+"freefib.dat",hist0,1);
 
 	// 7 Free fibers in function of time (plates)
 	List freefibtime = initList(Nplate);
@@ -576,25 +577,43 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	print_mult_table_latex("Free fibers in function of time (plates)",outdir+"fft.dat",fft);
  
 	// 8 Percentage of seen objects as a function of density of objects
-	Dtable densities;
+	Dcube densities = initDcube(Categories+1,0,0);
 	for (int j=0; j<Nplate; j++) {
 		for (int k=0; k<Nfiber; k++) {
+			// For all
 			int size = P[j].av_gals[k].size();
 			int oc = 0;
 			for (int i=0; i<size; i++) if (A.is_assigned_jg(j,P[j].av_gals[k][i])) oc++;
 			if (size!=0 && 1<=oc) { 
 				double d = percent(oc,size);
-				double x = size;
 				//printf("%f %f %f %d %d %d \n",d,x,invFibArea,size,oc,densities.size()); fl();
-				if (x>=densities.size()) densities.resize(x+1);
-				densities[x].push_back(d);
+				if (size>=densities[Categories].size()) densities[Categories].resize(size+1);
+				densities[Categories][size].push_back(d);
+			}
+
+			// For kind
+			for (int t=0; t<Categories; t++) {
+				int nkind = 0;
+				int ock = 0;
+				for (int i=0; i<size; i++) {
+					int g = P[j].av_gals[k][i];
+					if (G[g].id == t) {
+						nkind++;
+						if (A.is_assigned_jg(j,g)) ock++;
+					}
+				}
+				if (nkind!=0 && 1<=ock) { 
+					double d = percent(ock,nkind);
+					if (nkind>=densities[t].size()) densities[t].resize(nkind+1);
+					densities[t][nkind].push_back(d);
+				}
 			}
 		}
 	}
-	Dlist densit = initDlist(densities.size());
-	for (int i=0; i<densities.size(); i++) densit[i] = sumlist(densities[i])/densities[i].size();
-	Dtable ds; ds.push_back(densit);
-	print_mult_Dtable_latex("Perc of seen obj as a fun of dens of objs",outdir+"seendens.dat",ds,1);
+	Dtable densit = initDtable(Categories+1,max_row(densities));
+	for (int t=0; t<Categories+1; t++) for (int i=0; i<densities[t].size(); i++) densit[t][i] = sumlist(densities[t][i])/densities[t][i].size();
+	print_table("",densit);
+	print_mult_Dtable_latex("Perc of seen obj as a fun of dens of objs",outdir+"seendens.dat",densit,1);
 	
 	// 9 Percentage of TF that have at least 1 QSO av and that are not assigned to a QSO
 

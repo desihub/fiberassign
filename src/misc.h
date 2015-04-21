@@ -64,6 +64,7 @@ List sublist(int begin, int size, const List& L);
 void switch_elmts(int a, int b, List& L); // Switch elements a and b
 List sort(const List& L); // Sort by increasing order
 List inverse(const List& L);
+List cumulate(const List& L); // Cumulated sum
 
 // Table -----------------------------------------------------
 class Table : public std::vector<List> {};
@@ -93,6 +94,9 @@ Table divide_floor(const Table& T, double d);
 // Cube ------------------------------------------------------
 class Cube : public std::vector<Table> {};
 Cube initCube(int l, int c, int d, int val = 0); 
+class Dcube : public std::vector<Dtable> {};
+Dcube initDcube(int l, int c, int d, double val = 0.0); 
+int max_row(const Dcube& C); // Max size of 2nd dim
 
 // Time ------------------------------------------------------
 struct Time { // Tstart, Tend (t.s & t.e)
