@@ -143,7 +143,16 @@ $\frac{\ddot{a(t)}}{a(t)}} = - \frac{4\pi G}{3}(\ro + 3\frac{p}{c^{2}}) + \frac{
 \end{equation}
 
 Since it's a perfect fluid, we also use $p = w\ro c^{2}$. One of the most interesting thing to compute from them is the scale factor $a(t)$. Using those Friedmann equations, one easily gets :
-$\frac{\dot{\ro}}{\ro} = -3(1+w)\frac{\dot{a}}{a}$, and then, if $w$ is a constant : $\ro \propto a^{-3(1+w)}$
+$\frac{\dot{\ro}}{\ro} = -3(1+w)\frac{\dot{a}}{a}$, and then, if $w$ is a constant : $\ro \propto a^{-3(1+w)}$.
+
+For baryonic/leptonic matter, $w = 0$. For radiation, $w = 1/3$. The cosmological redshift is defined by $1+z \equiv 1/a$, the Hubble parameter by $H(z) \equiv \frac{\dot{a}}{a}$ and $H_{0}$ is the Hubble parameter today. 
+
+We define $\Omega \equiv \ro_{i}/\ro_{critic}$, where $\ro_{critic} \equiv \frac{3H_{0}^{2}}{8\pi G}$, which is the energy density parameter for matter and radiation. We also define $\Omega_{k} \equiv -c^{2}k/H_{0}^{2}$ and $\Omega_{\Lambda} \equiv c^{2}\Lambda/3H_{0}^{2}$, energy densities associated with curvature and cosmological constant \cite{2013PhR}.
+
+The first Friedmann equation can then be written :
+$\frac{H(z)^{2}}{H_{0}^{2}} = \Omega_{m}(1+z)^{3} + \Omega_{r}(1+z)^{4} + \Omega_{k}^{3} + \Omega_{\Lambda}$
+
+
 
 	\subsection{Dark energy}
 	Becoming aware that the expanding rate of the universe is still inscreasing, theorists needed a new component in the universe to explain it. Several theoretical solutions \cite{Mortonson:2013zfa} are possible. It's a catch-all term for the origin of cosmic acceleration, and could be either a modification of general relativity, or a new kind of energy. 
@@ -612,6 +621,16 @@ Here are some statistics on the input galaxies catalog :
 \end{semilogyaxis}\end{tikzpicture}
 \caption{Available tile-fibers for a galaxy (by kind)}\label{avtfhist}
 \end{minipage}
+\end{center}\end{figure}
+
+
+\begin{figure}[H]\begin{center}
+	\tikzsetnextfilename{reachplate}
+\begin{tikzpicture}[scale=1.1]\begin{axis}[const plot,enlarge x limits=false,enlarge y limits=false,xlabel={\# of plates that can access a given galaxy},ylabel={\%},cycle list name=mycolorlist,legend entries={Pacman,Normal},legend pos=north east]
+		\addplot table[x=x,y=0] {figs/reachplatepac.dat};
+		\addplot table[x=x,y=0] {figs/reachplate.dat};
+\end{axis}\end{tikzpicture}
+\caption{Available plates for a galaxy (without 5th pass)}\label{reachplate}
 \end{center}\end{figure}
 
 

@@ -9,7 +9,7 @@ all: $(OBJ)
 misc.o: misc.h misc.cpp
 	$(CC) -c misc.cpp $(CFLAGS)
 
-macros.o: misc.h macros.h macros.cpp
+macros.o: macros.h macros.cpp
 	$(CC) -c macros.cpp $(CFLAGS)
 
 structs.o: misc.h macros.h structs.h structs.cpp

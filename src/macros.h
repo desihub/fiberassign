@@ -22,4 +22,5 @@ extern int Nfbp; // Number of fibers by petals
 extern int InterPlate; 
 extern bool Randomize; 
 extern bool Pacman; 
+extern double pi2;
 #endif

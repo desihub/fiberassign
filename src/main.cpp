@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
 	PatrolRad = 6.0;
 	InterPlate = 200;
 	Randomize = false;
-	Pacman = false;
+	Pacman = true;
 
 	str kind[] = {"QSO Ly-a","QSO Tracer","LRG","ELG","Fake QSO","Fake LRG","SS","SF"};
 	int prio[] = {1,1,3,5,1,3,2,4}; // has to be >= 0
@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
 	// For each galaxy, computes available tilefibers
 	collect_available_tilefibers(G,P);
 
-	//results_on_inputs("doc/figs/",G,P,F,true);
+	results_on_inputs("doc/figs/",G,P,F,true);
 	printf("Npass=%d MinUnused=%d MaxSS=%d MaxSF=%d PlateRadius=%.3f TotalArea=%.6f invFibArea=%.6f Collide=%.3f NeighborRad=%.3f PatrolRad=%.3f InterPlate=%d Randomize=%d Pacman=%d\n",Npass,MinUnused,MaxSS,MaxSF,PlateRadius,TotalArea,invFibArea,Collide,NeighborRad,PatrolRad,InterPlate,Randomize,Pacman);
 
 	//// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||

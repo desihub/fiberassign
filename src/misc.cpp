@@ -1,5 +1,6 @@
 #include	<cstdlib>
 #include	<cmath>
+#include        <math.h>
 #include	<fstream>
 #include	<sstream>
 #include	<iostream>
@@ -23,6 +24,12 @@ bool pair::isnull() const {
 	return false;
 }
 void pair::print_pair() const {printf("(%d,%d) ",f,s); fl();}
+
+// dpair ------------------------------------------------------
+dpair::dpair() {f = 0; s = 0;}
+dpair::dpair(double a, double b) {f = a; s = b;}
+
+//void dpair::pair_rand(double a, double b) { return dpair(1,2); }
 
 // List ------------------------------------------------------
 List Null() { List L; return L; }
@@ -226,7 +233,7 @@ void print_mult_table_latex(str s, str ss, Table T, int multX) {
 	fclose(pFile);
 }
 
-void print_mult_Dtable_latex(str s, str ss, Dtable T, int multX) {
+void print_mult_Dtable_latex(str s, str ss, Dtable T, double multX) {
 	printf("# %s \n  Output data in %s \n\n",s.c_str(),ss.c_str());
 	FILE* pFile;
 	pFile = fopen(ss.c_str(),"w");
@@ -240,7 +247,7 @@ void print_mult_Dtable_latex(str s, str ss, Dtable T, int multX) {
 	fprintf(pFile,"\n");
 	int maxrow = max_row(T);
 	for (int j=0; j<maxrow; j++) {
-		fprintf(pFile,"%d ",j*multX);
+		fprintf(pFile,"%f ",j*multX);
 		for (int i=0; i<T.size(); i++) {
 			if (j<T[i].size()) fprintf(pFile,"%f ",T[i][j]);
 			else fprintf(pFile,"0 ");
@@ -509,6 +516,20 @@ List histogram(const List& L, int interval) {
 	List hist; int l = L.size();
 	for(int i=0; i<l; i++) {
 		int a = L[i];
+		if (a!=-1) {
+			if (a<0) { printf("Error in print_hist, neg\n"); fl(); }
+			int n = floor(a/interval);
+			if (n>=hist.size()) { hist.resize(n+1); hist[n] = 0;}
+			hist[n]++;
+		}
+	}
+	return hist;
+}
+
+Dlist histogram(const Dlist& L, double interval) {
+	Dlist hist; int l = L.size();
+	for(int i=0; i<l; i++) {
+		double a = L[i];
 		if (a!=-1) {
 			if (a<0) { printf("Error in print_hist, neg\n"); fl(); }
 			int n = floor(a/interval);
@@ -789,3 +810,20 @@ double sq(double n) { return(n*n); }
 double sq(double a, double b) { return(a*a + b*b); }
 double percent(int a, int b) { return(a*100./b); }
 void fl() { std::cout.flush(); }
+
+double fRand(double fMin, double fMax) {
+    double f = (double)rand() / RAND_MAX;
+    return fMin + f * (fMax - fMin);
+}
+
+dpair cartesian(double r, double theta) {
+	return dpair(r*cos(theta),r*sin(theta));
+}
+
+dpair sum(dpair p1, dpair p2) {
+	return dpair(p1.f+p2.f,p1.s+p2.s);
+}
+
+double dist(dpair c1, dpair c2) {
+	return sq(c1.f-c2.f,c1.s-c2.s);
+}

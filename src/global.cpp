@@ -422,7 +422,7 @@ void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F
 	// How many galaxies in range of a fiber ?
 	print_list("  How many galaxies in range of a fiber :",gals_range_fibers(P));
 
-	// Histograms on number of av gals per plate and per fiber
+	// 1 Histograms on number of av gals per plate and per fiber
 	Cube T = initCube(Categories,Nplate,Nfiber);
 	for (int j=0; j<Nplate; j++) {
 		for (int k=0; k<Nfiber; k++) {
@@ -434,7 +434,7 @@ void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F
 	for (int id=0; id<Categories; id++) hist1.push_back(histogram(T[id],1));
 	print_mult_table_latex("Available galaxies (by kind) for a TF",outdir+"avgalhist.dat",hist1,1);
 
-	// Histograms on number of av tfs per galaxy
+	// 2 Histograms on number of av tfs per galaxy
 	Table Tg = initTable(Categories,0);
 	for (int g=0; g<Ngal; g++) {
 		int n = G[g].av_tfs.size();
@@ -443,6 +443,48 @@ void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F
 	Table hist2;
 	for (int id=0; id<Categories; id++) hist2.push_back(histogram(Tg[id],1));
 	print_mult_table_latex("Available tile-fibers for a galaxy (by kind)",outdir+"avtfhist.dat",hist2,1);
+
+	// 3 Histogram of number of times (by different plates) reachable galaxies
+	List countgals;
+	List countgals_nopass;
+	for (int g=0; g<Ngal; g++) {
+		int id = G[g].id;
+		List plates;
+		for (int i=0; i<G[g].av_tfs.size(); i++) {
+			int j = G[g].av_tfs[i].f;
+			if (!isfound(j,plates) && P[j].ipass!=Npass-1) plates.push_back(j);
+		}
+		countgals.push_back(plates.size());
+	}
+	Dtable countstot;
+	List h00 = histogram(countgals,1);
+	countstot.push_back(percents(h00,sumlist(h00))); 
+	print_mult_Dtable_latex("Histogram of percents (by different plates) reachable galaxies (not 5th pass)",outdir+"reachplate.dat",countstot,1);
+	
+	// By kind
+	//Table countgals = initTable(Categories,0);
+	//Table countgals_nopass = initTable(Categories,0);
+	//for (int g=0; g<Ngal; g++) {
+		//int id = G[g].id;
+		//List plates; List plates_no;
+		//for (int i=0; i<G[g].av_tfs.size(); i++) {
+			//int j = G[g].av_tfs[i].f;
+			//if (!isfound(j,plates)) {
+				//plates.push_back(j);
+				//if (P[j].ipass!=Npass-1 || F.id("ELG")==id) plates_no.push_back(j);
+			//}
+		//}
+		//countgals[id].push_back(plates.size());
+		//countgals_nopass[id].push_back(plates_no.size());
+	//}
+	//Table countstot; 
+	//Table countstot_nopass; 
+	//for (int i=0; i<Categories; i++) {
+		//countstot.push_back(histogram(countgals[i],1)); 
+		//countstot_nopass.push_back(histogram(countgals_nopass[i],1));
+	//}
+	//print_mult_table_latex("Histogram of number of times (by different plates) reachable galaxies",outdir+"reachplate.dat",countstot,1);
+	//print_mult_table_latex("Histogram of number of times (by different plates) reachable galaxies without last pass",outdir+"reachplateno.dat",countstot_nopass,1);
 }
 
 void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, bool latex) {
@@ -637,10 +679,10 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	}
 	Dtable densit = initDtable(Categories+1,max_row(densities));
 	for (int t=0; t<Categories+1; t++) for (int i=0; i<densities[t].size(); i++) densit[t][i] = sumlist(densities[t][i])/densities[t][i].size();
-	print_table("",densit);
 	print_mult_Dtable_latex("Perc of seen obj as a fun of dens of objs",outdir+"seendens.dat",densit,1);
 	
 	// 9 Percentage of TF that have at least 1 QSO av and that are not assigned to a QSO
+
 
 	// Misc
 	// Histogram of SS

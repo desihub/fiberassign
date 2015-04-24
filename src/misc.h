@@ -28,10 +28,20 @@ class pair {
 	void print_pair() const;
 };
 
+class dpair {
+	public:
+	double f, s;
+
+	dpair();
+	dpair(double a, double b);
+	/*dpair pair_rand(double a, double b);*/
+};
+
 // List ------------------------------------------------------
 class List : public std::vector<int> {};
 class Dlist : public std::vector<double> {};
 class Plist : public std::vector<pair> {};
+class Dplist : public std::vector<dpair> {};
 class Slist : public std::vector<str> {};
 List Null();
 Slist Snull();
@@ -81,8 +91,9 @@ void print_table(str s, const Ptable& T);
 // Other constr wouldn't work if we would define a constructor in class Table
 List histogram(const Table& T, int interval);
 List histogram(const List& L, int interval);
+Dlist histogram(const Dlist& L, double interval);
 void print_mult_table_latex(str s, str ss, Table T, int multX=1);
-void print_mult_Dtable_latex(str s, str ss, Dtable T, int multX=1);
+void print_mult_Dtable_latex(str s, str ss, Dtable T, double multX=1);
 Table with_tot(const Table& T); // Add a row with sum of lines
 int max_row(const Table& T); // Max number of rows
 int max_row(const Dtable& T);
@@ -139,4 +150,8 @@ double sq(double n);
 double sq(double a,double b); // a*a+b*b
 double percent(int a, int b);
 void fl();
+double fRand(double fMin, double fMax);
+dpair cartesian(double r, double theta);
+dpair sum(dpair p1, dpair p2);
+double dist(dpair c1, dpair c2);
 #endif
