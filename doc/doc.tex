@@ -902,6 +902,19 @@ The update function might still be improved to lead to more reassignments, and a
 
 We could make plans with only \lya assigned, launching improve function, and then adding separately LRG then improving, and adding again ELG and improving. It's likely that it won't increase results because as we saw before, doing assignments separately in new\_assign already didn't improved results. This kind of optimization must actually be already done by selecting with priorities and executing improvement functions.
 
+\begin{figure}[H]\begin{center}
+	\tikzsetnextfilename{col}
+\begin{tikzpicture}[scale=1.1]
+	\begin{axis}[enlarge y limits=false,enlarge x limits=false,xlabel={Distance between fibers (mm)},ylabel={\# of collision cases}]
+		\addplot [mark=none] table[x=x,y=0] {figs/col.dat};
+	\end{axis}
+\end{tikzpicture}
+\caption{Histogram of cases of collision}
+\end{center}\end{figure}
+
+
+
+
 \bibliographystyle{plain}
 \bibliography{papers}{}
 
