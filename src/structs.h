@@ -21,6 +21,7 @@
 class Feat { // F for features
 	public:
 	List prio; // Priorities 
+	List priopost; // Priorities when we know the kind
 	List goal;
 	Slist kind;
 	Smap ids; // Redundtant but optimizes (inv of kind)
@@ -56,7 +57,6 @@ class galaxy {
 	Plist av_tfs; // available tile/fibers
 
 	void print_av_tfs();
-	int prio(const Feat& F) const;
 	str kind(const Feat& F) const;
 };
 class Gals : public std::vector<struct galaxy> {};
@@ -135,6 +135,8 @@ class Assignment {
 	double get_proba(int i, const Gals& G, const Feat& F); // p(fake QSO | QSO) for example
 	void update_nobsv_tmp();
 };
+
+int fprio(int g, const Gals& G, const Feat& F, const Assignment& A);
 
 double plate_dist(const double theta);
 struct onplate change_coords(const struct galaxy& O, const struct plate& P);

@@ -19,17 +19,17 @@ double pi2;
 int main(int argc, char **argv) {
 	srand(time(NULL)+getpid());
 	pi2 = 6.283185;
-	int times = 1000000;
+	int times = 10000000;
 	PosP posp(1.339,0.990,3.0,3.0,10.392);
 
-	Dlist cases;
+	Dplist cases;
 	int cnt = 0;
 	for (int i=0; i<times; i++) {
 		Schema sch = hexag(posp);
 		int col = colliding(0,sch,posp);
 		if (col!=-1) {
 			cnt++;
-			cases.push_back(dist(sch.poss[0].fibc(posp),sch.poss[col].fibc(posp)));
+			cases.push_back(dpair(sch.dist_fib(0,col,posp),cartesian_weight(sch.poss[0],sch.poss[col])));
 		} 
 	}
 	printf("%f \n",percent(cnt,times));

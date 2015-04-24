@@ -540,6 +540,20 @@ Dlist histogram(const Dlist& L, double interval) {
 	return hist;
 }
 
+Dlist histogram(const Dplist& L, double interval) {
+	Dlist hist; int l = L.size();
+	for(int i=0; i<l; i++) {
+		double a = L[i].f;
+		if (a!=-1) {
+			if (a<0) { printf("Error in print_hist, neg\n"); fl(); }
+			int n = floor(a/interval);
+			if (n>=hist.size()) { hist.resize(n+1); hist[n] = 0;}
+			hist[n] += L[i].s;
+		}
+	}
+	return hist;
+}
+
 Table with_tot(const Table& T) {
 	Table M = T;
 	for (int i=0; i<M.size(); i++) M[i].push_back(sumlist(M[i]));

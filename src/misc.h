@@ -92,6 +92,7 @@ void print_table(str s, const Ptable& T);
 List histogram(const Table& T, int interval);
 List histogram(const List& L, int interval);
 Dlist histogram(const Dlist& L, double interval);
+Dlist histogram(const Dplist& L, double interval);
 void print_mult_table_latex(str s, str ss, Table T, int multX=1);
 void print_mult_Dtable_latex(str s, str ss, Dtable T, double multX=1);
 Table with_tot(const Table& T); // Add a row with sum of lines

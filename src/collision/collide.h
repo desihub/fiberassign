@@ -43,10 +43,12 @@ class Schema {
 
 	void add(int a, int b, PosP posp);
 	void compute_neigh(PosP posp);
+	double dist_fib(int a, int b, PosP posp);
 };
 
 Schema hexag(PosP posp);
 bool colliding(dpair c1, double r1, dpair c2, double r2);
 bool colliding(pos p1, pos p2, PosP posp);
 int colliding(int i, Schema sch, PosP posp);
+double cartesian_weight(pos p1, pos p2);
 #endif

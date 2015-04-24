@@ -58,6 +58,10 @@ void Schema::compute_neigh(PosP posp) {
 	neighbors = T;
 }
 
+void Schema::dist_fib(int a, int b, PosP posp) {
+	dist(poss[a].fibc(posp),poss[b].fibc(posp));
+}
+
 Schema hexag(PosP posp) {
 	Schema sch;
 	sch.add(0,0,posp);
@@ -86,4 +90,8 @@ int colliding(int i, Schema sch, PosP posp) {
 		if (i!=j && colliding(sch.poss[i],sch.poss[j],posp)) return j;
 	}
 	return -1;
+}
+
+double cartesian_weight(pos p1, pos p2) {
+	return fabs(sin(p1.t-p1.l)*sin(p2.t-p2.l));
 }

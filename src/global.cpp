@@ -87,7 +87,7 @@ inline int find_best(int j, int k, const Gals& G, const Plates& P, const PP& pp,
 	List av_gals = P[j].av_gals[k];
 	for (int gg=0; gg<av_gals.size(); gg++) {
 		int g = av_gals[gg];
-		int prio = G[g].prio(F);
+		int prio = fprio(g,G,F,A);
 		int m = A.nobs(g,G,F);
 		bool tfb = as_tf ? !A.is_assigned_tf(j,k) : true;
 		if (m>=1 && tfb && ok_assign_g_to_jk(g,j,k,P,G,pp,F,A) && A.is_assigned_jg(j,g,InterPlate)==-1 && g!=no_g && !isfound(G[g].id,no_kind)) {
@@ -130,7 +130,7 @@ inline int improve_fiber(int begin, int next, int j, int k, const Gals& G, const
 							int best = find_best(jp,kp,G,P,pp,F,A,false,-1,Null()); // best!=g because !A.assigned_pg(best)
 
 							if (best!=-1 && (A.is_assigned_jg(j,g,InterPlate)==-1 || jp==j)) {
-								int prio = G[best].prio(F);
+								int prio = fprio(best,G,F,A);
 								int m = A.nobs(best,G,F);
 								if (prio<pb || A.once_obs[g] && m>mb) {
 									gb = g; bb = best; jpb = jp; kpb = kp; mb = m; pb = prio;
@@ -162,7 +162,7 @@ int improve_fiber_from_kind(int id, int j, int k, const Gals& G, const Plates&P,
 					int gp = A.TF[j][kp];
 					int best = find_best(j,kp,G,P,pp,F,A,false,-1,no_kind);
 					if (best!=-1) {
-						int prio = G[best].prio(F);
+						int prio = fprio(best,G,F,A);
 						int m = A.nobs(best,G,F);
 						if (prio<pb || A.once_obs[g] && m>mb) {
 							gb = g; gpb = gp; bb = best; kpb = kp; mb = m; pb = prio;
@@ -246,7 +246,7 @@ void improve_from_kind(const Gals& G, const Plates&P, const PP& pp, const Feat& 
 							int gp = A.TF[j][kp];
 							int best = find_best(j,kp,G,P,pp,F,A,false,-1,no_kind);
 							if (best!=-1) {
-								int prio = G[best].prio(F);
+								int prio = fprio(best,G,F,A);
 								int m = A.nobs(best,G,F);
 								if (prio<pb || A.once_obs[g] && m>mb) {
 									gb = g; gpb = gp; bb = best; kpb = kp; kkpb = kkp; mb = m; pb = prio;
@@ -559,6 +559,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	print_mult_Dtable_latex("Observed galaxies in function of time (scaled) (interval 10)",outdir+"time.dat",Ttime_scaled,interval);
 	//print_mult_table_latex("Observed galaxies in function of time",,F.kind,Ttime);
 	
+	/*
 	// Lya 1,2,3,4,5, LRG 1,2
 	int nk = 9;
 	Table Ttim = initTable(nk,0);
@@ -583,6 +584,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 		}
 	}
 	print_mult_table_latex("Observed galaxies complete (interval 10)",outdir+"time2.dat",Ttim,interval);
+	*/
 
 	// 4 Histogramme of percentages of seen Ly-a
 	int id = F.ids.at("QSO Ly-a");

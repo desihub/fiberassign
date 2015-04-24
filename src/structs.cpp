@@ -20,6 +20,7 @@
 // Features ------------------------------------------------------------------
 Feat::Feat() {
 	prio.resize(Categories);
+	priopost.resize(Categories);
 	goal.resize(Categories);
 	kind.resize(Categories);
 }
@@ -113,9 +114,6 @@ Gals read_galaxies(const char fname[], int n) {
 	return P;
 }
 
-int galaxy::prio(const Feat& F) const {
-	return(F.prio[id]);
-}
 
 str galaxy::kind(const Feat& F) const {
 	return(F.kind[id]);
@@ -549,6 +547,12 @@ void Assignment::update_once_obs(int j) {
 }
 
 // Useful sub-functions -------------------------------------------------------------------------------------------------
+
+int fprio(int g, const Gals& G, const Feat& F, const Assignment& A) {
+	if (A.once_obs[g]) return(F.priopost[G[g].id]);
+	else return(F.prio[G[g].id]);
+}
+
 // Returns the radial distance on the plate (mm) given the angle,
 // theta (radians).  This is simply a fit to the data provided.
 double plate_dist(const double theta) {
