@@ -170,6 +170,14 @@ Dlist percents(const List& L, int n) {
 	return Dl;
 }
 
+Dlist percents(const Dlist& L, double n) {
+	Dlist Dl;
+	for (int i=0; i<L.size(); i++) {
+		Dl.push_back(percent(L[i],n));
+	}
+	return Dl;
+}
+
 bool isfound(int n, const List& L) {
 	if (L.size()==0) return false;
 	for (int i=0; i<L.size(); i++) if (L[i]==n) return true;
@@ -301,6 +309,12 @@ List cumulate(const List& L) {
 		l[i] = a;
 	}
 	return l;
+}
+
+Dlist division(const Dlist& L, double d) {
+	Dlist Dl;
+	for (int i=0; i<L.size(); i++) Dl.push_back(L[i]/d);
+	return Dl;
 }
 
 // Table -----------------------------------------------------

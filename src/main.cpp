@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
 	Collide = 2.1;
 	NeighborRad = 11.0;
 	PatrolRad = 6.0;
-	InterPlate = 200;
+	InterPlate = 0;
 	Randomize = false;
 	Pacman = false;
 

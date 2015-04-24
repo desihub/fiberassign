@@ -61,6 +61,7 @@ int sumlist(const List& L); // Sum of the list
 double sumlist(const Dlist& L);
 int max(const List& L);
 Dlist percents(const List& L, int n); // Percents list of L/n
+Dlist percents(const Dlist& L, double n);
 bool isfound(int n, const List& L); // True iff i is found in L
 int isfound(pair p, const Plist& L); // Return the position of where it's found, -1 if not
 List values(const List& L); // Different taken values
@@ -75,6 +76,7 @@ void switch_elmts(int a, int b, List& L); // Switch elements a and b
 List sort(const List& L); // Sort by increasing order
 List inverse(const List& L);
 List cumulate(const List& L); // Cumulated sum
+Dlist division(const Dlist& L, double d);
 
 // Table -----------------------------------------------------
 class Table : public std::vector<List> {};

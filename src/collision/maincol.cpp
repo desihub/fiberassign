@@ -34,8 +34,9 @@ int main(int argc, char **argv) {
 	}
 	printf("%f \n",percent(cnt,times));
 	double interval = 0.01;
-
-	Dtable Dt; Dt.push_back(histogram(cases,interval));
+	
+	Dlist hist = histogram(cases,interval);
+	Dtable Dt; Dt.push_back(percents(hist,sumlist(hist)));
 	print_mult_Dtable_latex("collisions","doc/figs/col.dat",Dt,interval);
 
 	return(0);
