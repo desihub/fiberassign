@@ -1,10 +1,17 @@
 CC=CC
 CFLAGS= -fopenmp -funroll-loops -O2 -lm -lpthread -dynamic
-DEPS = structs.h macros.h misc.h structs.cpp main.cpp macros.cpp misc.cpp global.cpp global.h
+DEPS = structs.h macros.h misc.h structs.cpp main.cpp macros.cpp misc.cpp global.cpp global.h collision/collide.cpp collision/collide.h
 OBJ = macros.o misc.o structs.o global.o main.o
+OBJ2 = macros.o misc.o collision/collide.o collision/maincol.o
 
 all: $(OBJ)
 	$(CC) -o ../assign $(OBJ) $(CFLAGS)
+
+allcol: $(OBJ2)
+	$(CC) -o ../collide $(OBJ2) $(CFLAGS)
+
+
+
 
 misc.o: misc.h misc.cpp
 	$(CC) -c misc.cpp $(CFLAGS)
@@ -21,5 +28,15 @@ global.o: misc.h macros.h structs.h global.h global.cpp
 main.o: misc.h macros.h structs.h global.h main.cpp 
 	$(CC) -c main.cpp $(CFLAGS)
 
+
+
+
+collide.o: misc.h macros.h collision/collide.h collision/collide.cpp
+	$(CC) -c collision/collide.cpp $(CFLAGS) collision/collide.o
+
+maincol.o: misc.h macros.h collision/collide.h collision/maincol.cpp 
+	$(CC) -c collision/maincol.cpp $(CFLAGS) collision/maincol.o
+
 clean:
 	rm $(OBJ)
+	rm $(OBJ2)
