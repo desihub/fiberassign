@@ -808,6 +808,7 @@ void print_stats(str s, int cnt, int avg, int std, int min, int max) {
 int sq(int n) { return(n*n); }
 double sq(double n) { return(n*n); }
 double sq(double a, double b) { return(a*a + b*b); }
+double norm(double a, double b) { return(sqrt(a*a + b*b)); }
 double percent(int a, int b) { return(a*100./b); }
 void fl() { std::cout.flush(); }
 
@@ -825,5 +826,5 @@ dpair sum(dpair p1, dpair p2) {
 }
 
 double dist(dpair c1, dpair c2) {
-	return sq(c1.f-c2.f,c1.s-c2.s);
+	return norm(c1.f-c2.f,c1.s-c2.s);
 }

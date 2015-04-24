@@ -148,6 +148,7 @@ void print_stats(str s, int cnt, int std, int avg, int min, int max);
 int sq(int n); // n*n
 double sq(double n);
 double sq(double a,double b); // a*a+b*b
+double norm(double a,double b); // sqrt(a*a+b*b)
 double percent(int a, int b);
 void fl();
 double fRand(double fMin, double fMax);
