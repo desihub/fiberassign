@@ -527,7 +527,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 		with_tots[i].push_back(obs);
 	}
 	//print_table("  Remaining observations (without negative obs ones)",with_tots,latex,F.kind);
-	print_table("  Remaining observations per sq deg",divide_floor(with_tots,TotalArea),latex,F.kind);
+	Dtable obs_per_sqd = ddivide_floor(with_tots,TotalArea);
 
 	// 2 Percentages of observation
 	Dtable perc = initDtable(Categories,2);
@@ -541,7 +541,8 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 		for (int i=0; i<MaxObs; i++) d += ob[id][MaxObs+i]*(goal-i);
 		perc[id][1] = percent(d,tot*goal);
 	}
-	print_table("Percentages of once observed, and with ponderation",perc,latex,F.kind);
+
+	print_table("Obs per sqd and percentages",concatenate(obs_per_sqd,perc),latex,F.kind);
 
 	// 3 Observed galaxies in function of time
 	int interval = 10; // Interval of plates for graphic
@@ -600,7 +601,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 		}
 	}
 	make_square(Percseen);
-	print_table("Number of QSO Ly-a : x - Number of available TF - y - Number of observations",Percseen);
+	//print_table("Number of QSO Ly-a : x - Number of available TF - y - Number of observations",Percseen);
 	for (int j=0; j<Percseen[0].size(); j++) {
 		for (int i=Percseen.size()-1; i!=0; i--) {
 			Percseen[i-1][j] += Percseen[i][j];
@@ -630,7 +631,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 		}
 	}
 	List histo0 = histogram(deltas,10);
-	print_hist("Plate interval between 2 consecutive obs of Ly-a (interval 100)",100,histogram(deltas,100));
+	//print_hist("Plate interval between 2 consecutive obs of Ly-a (interval 100)",100,histogram(deltas,100));
 	Table delts; delts.push_back(histo0); delts.push_back(cumulate(histo0));
 	print_mult_table_latex("Plate interval between 2 consecutive obs of Ly-a (interval 10)",outdir+"dist2ly.dat",delts,10);
 

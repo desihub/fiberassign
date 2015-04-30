@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
 	PlateRadius = 1.65;
 	TotalArea = 15789.0;
 	invFibArea = 700.;
-	Collide = 2.9;
+	Collide = 2.1;
 	NeighborRad = 11.0;
 	PatrolRad = 6.0;
 	InterPlate = 200;

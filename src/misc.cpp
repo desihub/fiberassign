@@ -338,7 +338,7 @@ Dtable initDtable(int l, int c, double val) {
 	for (int i=0; i<l; i++) T[i].resize(c,val);
 	return T;
 }
-
+		
 void verif(const Table& T) {
 	int l = T.size();
 	if (l==0) {
@@ -617,6 +617,32 @@ Table divide_floor(const Table& T, double d) {
 		t.push_back(l);
 	}
 	return t;
+}
+
+Dtable ddivide_floor(const Table& T, double d) {
+	Dtable t;
+	for (int i=0; i<T.size(); i++) {
+		Dlist l;
+		for (int j=0; j<T[i].size(); j++) {
+			l.push_back(floor(T[i][j]/d));
+		}
+		t.push_back(l);
+	}
+	return t;
+}
+
+Dtable concatenate(const Dtable& T1, const Dtable& T2) {
+	if (T1.size()!=T2.size()) {
+		printf("Error in concatenation : different sizes \n");
+		myexit(1);
+	}
+	Dtable T3 = T1;
+	for (int i=0; i<T1.size(); i++) {
+		for (int j=0; j<T2[i].size(); j++) {
+			T3[i].push_back(T2[i][j]);
+		}
+	}
+	return T3;
 }
 
 // Cube ------------------------------------------------------

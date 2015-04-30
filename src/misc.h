@@ -104,6 +104,8 @@ List max_on_row(const Table& T); // List of max on each row
 void make_square(Table& T); // Make it square, filling with zeros
 Dtable divide(const Table& T, double d);
 Table divide_floor(const Table& T, double d);
+Dtable ddivide_floor(const Table& T, double d);
+Dtable concatenate(const Dtable& T1, const Dtable& T2); // Horizontal concatenation T1:T2
 
 // Cube ------------------------------------------------------
 class Cube : public std::vector<Table> {};

@@ -959,6 +959,48 @@ Notice that with collisions allowed, we get 94.4 \% of fibers assigned, instead 
 \end{table}
 
 Note here that the collision rate is less when we only take the first 2000 plates, though on those plates more fibers are assigned, so one should get a greater percentage than when we take all the plates. Still to understand.
+
+
+\begin{table}[H]\begin{center}
+\begin{tabular}{rrrrrrrrrrcc}
+\hline
+\multicolumn{6}{r}{Times observed} \\
+	~ &           0 &     1 &  2 & 3 & 4 & 5 &  Total & Fiber used & Once observed & observed $\%$ & weighted $\%$ \\ \hline
+   QSO Ly-a   &     0 &     2 &   4 & 14 & 25 & 1 &    49 &   167 &    49 & 98.434 & 67.032\\ 
+ QSO Tracer   &     1 &   118 &   0 &  0 &  0 & 0 &   119 &   118 &   118 & 98.454 & 98.454\\ 
+        LRG   &    16 &    37 & 244 &  0 &  0 & 0 &   298 &   526 &   281 & 94.376 & 88.069\\ 
+        ELG   &   537 & 1,874 &   0 &  0 &  0 & 0 & 2,411 & 1,874 & 1,874 & 77.721 & 77.721\\ 
+   Fake QSO   &     1 &    88 &   0 &  0 &  0 & 0 &    90 &    88 &    88 & 98.446 & 98.446\\ 
+   Fake LRG   &     2 &    47 &   0 &  0 &  0 & 0 &    50 &    47 &    47 & 95.063 & 95.063\\ 
+         SS   &    72 &    67 &   0 &  0 &  0 & 0 &   140 &    67 &    67 & 48.252 & 48.252\\ 
+         SF   & 1,129 &   270 &   0 &  0 &  0 & 0 & 1,400 &   270 &   270 & 19.300 & 19.300\\ 
+\hline
+\end{tabular}
+\caption{Results for collide = 2.9}\label{29}
+\end{center}\end{table}
+93.54 \% assigned of all fibers.
+
+
+
+\begin{table}[H]\begin{center}
+\begin{tabular}{rrrrrrrrrrcc}
+\hline
+\multicolumn{6}{r}{Times observed} \\
+	~ &           0 &     1 &  2 & 3 & 4 & 5 &  Total & Fiber used & Once observed & observed $\%$ & weighted $\%$ \\ \hline
+   QSO Ly-a   &     0 &     1 &   4 & 13 & 27 & 1 &    49 &   170 &    49 & 98.611 & 68.228\\ 
+ QSO Tracer   &     1 &   118 &   0 &  0 &  0 & 0 &   119 &   118 &   118 & 98.626 & 98.626\\ 
+        LRG   &    15 &    35 & 247 &  0 &  0 & 0 &   298 &   530 &   283 & 94.794 & 88.823\\ 
+        ELG   &   532 & 1,879 &   0 &  0 &  0 & 0 & 2,411 & 1,879 & 1,879 & 77.935 & 77.935\\ 
+   Fake QSO   &     1 &    88 &   0 &  0 &  0 & 0 &    90 &    88 &    88 & 98.617 & 98.617\\ 
+   Fake LRG   &     2 &    47 &   0 &  0 &  0 & 0 &    50 &    47 &    47 & 95.443 & 95.443\\ 
+         SS   &    72 &    67 &   0 &  0 &  0 & 0 &   140 &    67 &    67 & 48.252 & 48.252\\ 
+         SF   & 1,129 &   270 &   0 &  0 &  0 & 0 & 1,400 &   270 &   270 & 19.300 & 19.300\\ 
+\hline
+\end{tabular}
+\caption{Results for collide = 2.1}\label{21}
+\end{center}\end{table}
+93.93 \% assigned of all fibers.
+
 \bibliographystyle{plain}
 \bibliography{papers}{}
 
