@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
 	PlateRadius = 1.65;
 	TotalArea = 15789.0;
 	invFibArea = 700.;
-	Collide = 2.1;
+	Collide = 2.9;
 	NeighborRad = 11.0;
 	PatrolRad = 6.0;
 	InterPlate = 200;
@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
 	collect_available_tilefibers(G,P);
 
 	//results_on_inputs("doc/figs/",G,P,F,true);
-	printf("Npass=%d MinUnused=%d MaxSS=%d MaxSF=%d PlateRadius=%.3f TotalArea=%.6f invFibArea=%.6f Collide=%.3f NeighborRad=%.3f PatrolRad=%.3f InterPlate=%d Randomize=%d Pacman=%d\n",Npass,MinUnused,MaxSS,MaxSF,PlateRadius,TotalArea,invFibArea,Collide,NeighborRad,PatrolRad,InterPlate,Randomize,Pacman);
+	printf("Npass=%d MinUnused=%d MaxSS=%d MaxSF=%d PlateRadius=%.3f TotalArea=%.6f invFibArea=%.6f Collide=%.3f NeighborRad=%.3f PatrolRad=%.3f InterPlate=%d Randomize=%d Pacman=%d Collision=%d\n",Npass,MinUnused,MaxSS,MaxSF,PlateRadius,TotalArea,invFibArea,Collide,NeighborRad,PatrolRad,InterPlate,Randomize,Pacman,Collision);
 
 	//// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
 	Assignment A(G,F);
@@ -107,7 +107,7 @@ int main(int argc, char **argv) {
 		A.next_plate++;
 	}
 	print_time(time,"# ... took :");
-	printf("Collision rate : %f \% \n",A.colrate(pp,G,P,limit));
+	/*if (Collision)*/ printf("Collision rate : %lf \% \n",A.colrate(pp,G,P,limit));
 
 	// Make a plan ----------------------------------------------------
 	//new_assign_fibers(G,P,pp,F,A);

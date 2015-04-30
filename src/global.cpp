@@ -689,7 +689,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 
 	// Misc
 	// Collision rate
-	printf("Collision rate : %f \% \n",A.colrate(pp,G,P));
+	/*if (Collision)*/ printf("Collision rate : %f \% \n",A.colrate(pp,G,P));
 	// Histogram of SS
 	Table usedSS = A.used_by_kind("SS",G,pp,F);
 	print_hist("UsedSS (number of petals)",1,histogram(usedSS,1));

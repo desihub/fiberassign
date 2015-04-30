@@ -19,12 +19,18 @@
 \usepackage[noend]{algpseudocode}
 \usepackage{float}
 \usepackage{filecontents}
-%Lettres françaises
+\usepackage{flexisym} %% prime symbol
+%Lettres francaises
 \usepackage[cyr]{aeguill}
 \usepackage[francais]{babel}
 \usepackage[T1]{fontenc}    %% permet d'utiliser les caractères accentués
 \usepackage[utf8]{inputenc} %% permet d'utiliser les caractères accentué
 \usepackage{gensymb}
+%Needed for problems with bibtex
+\usepackage{hyperref}
+\usepackage{harvard}
+\usepackage{url}
+
 %PGF plot
 \usepackage{pgfplots, pgfplotstable}
 \pgfplotsset{compat=newest}
@@ -127,45 +133,64 @@ Dark energy study began in 1998, when two independent teams, led by Adam Riess a
 
 	\subsection{\Lambda-CDM model}
 	This is the currently standard model. It assumes that the universe is ruled by regular general relativity, and that the existence of dark matter and of the Einsein's cosmological constant \Lambda.
-It respects the cosmological principle : our observational location in the Universe is not unusual or special ; on a large-enough scale (much greater than the typical size of galactic clusters), the Universe looks the same in all directions (isotropy) and from every location (homogeneity). Then comes the well-known FLRW metric : $g_{\mu\nu}dx^{\mu}dx^{\nu} = -c^{2}dt^{2}+a(t)^{2}(\frac{dr^{2}}{1-kr^{2}}+r^{2}d\Omega}$
+	It respects the cosmological principle : our observational location in the Universe is not unusual or special ; on a large-enough scale (much greater than the typical size of galactic clusters), the Universe looks the same in all directions (isotropy) and from every location (homogeneity). Then comes the well-known FLRW metric : 
+	
+\begin{equation}\label{metric}
+	g_{\mu\nu}dx^{\mu}dx^{\nu} = -c^{2}dt^{2}+a(t)^{2}(\frac{dr^{2}}{1-kr^{2}}+r^{2}d\Omega)
+\end{equation}
+
+
 
 There is a growing consensus among cosmologists that the total density of matter is equal to the critical density, so that the universe is spatially flat ($k = 0$). Approximately 24\% of this is in the form of a low pressure matter, most of which is thought to be “non-baryonic” dark matter, while the remaining 71\% is thought to be in the form of a negative pressure “dark energy”, like the cosmological constant. If this is true, then dark energy is the major driving force behind the fate of the universe and it will expand forever exponentially.
 Dynamical equation used is Einstein's field equation :
-\begin{equation}
-$R_{\mu \nu} - {1 \over 2}g_{\mu \nu}\,R + g_{\mu \nu} \Lambda = {8 \pi G \over c^4} T_{\mu \nu}$
+\begin{equation}\label{eq1}
+R_{\mu \nu} - {1 \over 2}g_{\mu \nu}R + g_{\mu \nu} \Lambda = {8 \pi G \over c^4} T_{\mu \nu}
 \end{equation}
 
-We apply it to the FLRW metric, on a perfect fluid of energy density $\ro$ and pressure $p$  to get Friedmann equations :
-\begin{equation}
-$(\frac{\dot{a(t)}}{a(t)}}^{2} + \frac{c^{2}k}{a^{2}} = \frac{8 \pi G}{3}\ro + \frac{c^{2}\Lambda}{3}$
 
-$\frac{\ddot{a(t)}}{a(t)}} = - \frac{4\pi G}{3}(\ro + 3\frac{p}{c^{2}}) + \frac{c^{2}\Lambda}{3}$
+We apply it to the FLRW metric, on a perfect fluid of energy density $\rho$ and pressure $p$ to get Friedmann equations :
+\begin{equation}\label{eq2}
+	\bigg(\frac{\dot{a(t)}}{a(t)}\bigg)^{2} + \frac{c^{2}k}{a^{2}} = \frac{8 \pi G}{3}\rho + \frac{c^{2}\Lambda}{3}
 \end{equation}
 
-Since it's a perfect fluid, we also use $p = w\ro c^{2}$. One of the most interesting thing to compute from them is the scale factor $a(t)$. Using those Friedmann equations, one easily gets :
-$\frac{\dot{\ro}}{\ro} = -3(1+w)\frac{\dot{a}}{a}$, and then, if $w$ is a constant : $\ro \propto a^{-3(1+w)}$.
-
-For baryonic/leptonic matter, $w = 0$. For radiation, $w = 1/3$. The cosmological redshift is defined by $1+z \equiv 1/a$, the Hubble parameter by $H(z) \equiv \frac{\dot{a}}{a}$ and $H_{0}$ is the Hubble parameter today. 
-
-We define $\Omega \equiv \ro_{i}/\ro_{critic}$, where $\ro_{critic} \equiv \frac{3H_{0}^{2}}{8\pi G}$, which is the energy density parameter for matter and radiation. We also define $\Omega_{k} \equiv -c^{2}k/H_{0}^{2}$ and $\Omega_{\Lambda} \equiv c^{2}\Lambda/3H_{0}^{2}$, energy densities associated with curvature and cosmological constant \cite{2013PhR}.
-
-The first Friedmann equation can then be written :
-$\frac{H(z)^{2}}{H_{0}^{2}} = \Omega_{m}(1+z)^{3} + \Omega_{r}(1+z)^{4} + \Omega_{k}^{3} + \Omega_{\Lambda}$
+\begin{equation}\label{eq3}
+\frac{\ddot{a(t)}}{a(t)} = - \frac{4\pi G}{3}(\rho + 3\frac{p}{c^{2}}) + \frac{c^{2}\Lambda}{3}
+\end{equation}
 
 
+Since it's a perfect fluid, we also use $p = w\rho c^{2}$. One of the most interesting thing to compute from them is the scale factor $a(t)$. Using those Friedmann equations, one easily gets :
+$\frac{\dot{\rho}}{\rho} = -3(1+w)\frac{\dot{a}}{a}$, and then, if $w$ is a constant : $\rho \propto a^{-3(1+w)}$.
+
+For baryonic/leptonic matter, $w = 0$. For radiation, $w = 1/3$. The cosmological redshift $z$ is defined by $1+z \equiv 1/a$, the Hubble parameter by $H(z) \equiv \frac{\dot{a}}{a}$ and $H_{0}$ is the Hubble parameter today. 
+
+We define the energy density parameter for matter and radiation $\Omega \equiv \rho_{i}/\rho_{critic}$, where $\rho_{critic} \equiv \frac{3H_{0}^{2}}{8\pi G}$is the critical density of the universe, beyond which it would recollapse due to gravitation. We also define $\Omega_{k} \equiv -c^{2}k/H_{0}^{2}$ and $\Omega_{\Lambda} \equiv c^{2}\Lambda/3H_{0}^{2}$, energy densities associated with curvature and cosmological constant \cite{2013PhR}.
+
+The first Friedmann equation \ref{eq2} can then be written :
+\begin{equation}\label{eq4}
+\frac{H(z)^{2}}{H_{0}^{2}} = \Omega_{m}(1+z)^{3} + \Omega_{r}(1+z)^{4} + \Omega_{k}^{3} + \Omega_{\Lambda}
+\end{equation}
+
+This is the relation between dark energy (through its equation of state $w(z)$) and the expansion (through $H(z)$).
 
 	\subsection{Dark energy}
-	Becoming aware that the expanding rate of the universe is still inscreasing, theorists needed a new component in the universe to explain it. Several theoretical solutions \cite{Mortonson:2013zfa} are possible. It's a catch-all term for the origin of cosmic acceleration, and could be either a modification of general relativity, or a new kind of energy. 
-Here are several possibilities of modified gravity :
+Saul Perlmutter's investigations showed that $\ddot{a(t)}}$ is actually positive, which means that the expanding rate of the universe is still inscreasing and this was the beginning of dark energy hypothesis. That's why the cosmological constant was reintroduced. An other possibility is that the pressure of "dark energy" could be negative.
+
+	Several other theoretical solutions \cite{2013zfa} are possible. Dark energy is in fact a catch-all term for the origin of cosmic acceleration, and could be either a modification of general relativity, or a new kind of energy.
+
+In this equation, the cosmological constant is equivalent to a fluid with state parameter $w = −1$ and a repulsive gravitational effect, and we call it dark energy as we don’t know anything else about it. Now, let’s imagine that dark energy as a fluid that fills the whole Universe but with a parameter $w$ that can evolve in time, i.e. depending on the scale parameter $a$. We find then that equation is modified by $\Omega_{\Lambda} \leftarrow \Omega_{\Lambda}exp(3 \int_{0}^{z} \frac{1+w(z\textprime)}{1+z\textprime} dz\textprime)$
+
+Here are other several possibilities of modified gravity :
 \begin{itemize} 
 	\item replace the Ricci scalar $\mathcal{R}$ with a function $\mathcal{R} + f(\mathcal{R})$.
 \end{itemize} 
 	
 	Two possible new energies are the cosmological constant (a constant energy density filling space, and which can be formulated to be equivalent to vacuum energy, with repulsive gravitational effects) and scalar fields such as quintessence or moduli, dynamic quantities whose energy density can vary in time and space. Scalar fields that do change in space can be difficult to distinguish from a cosmological constant because the change may be extremely slow.
-	The density of dark energy, $7 × 10^{−27} kg \cdot m^{3}$ (with mass-energy equivalence), is much lower than the density of ordinary and matter within galaxies. It comes to dominate the mass–energy of the universe because it is uniform in space. 
+	The density of dark energy, $7 \cdot 10^{−27} kg \cdot m^{-3}$ (with mass-energy equivalence), is much lower than the density of ordinary and matter within galaxies. It comes to dominate the mass–energy of the universe because it is uniform in space.
+
+One can consider that 
 
 	\section{DESI}
-	The Dark Energy Spectroscopic Instrument (DESI) is a Stage IV experiment that will make the next major advance in dark energy. \cite{Levi:2013gra}
+	The Dark Energy Spectroscopic Instrument (DESI) is a Stage IV experiment that will make the next major advance in dark energy. \cite{2013gra}
 
 	\subsection{Material features}
 	The DESI instrument, that will be installed on the Mayall telescope in Arizona, consists of a new wide-field (3.2 deg. linear field of view) corrector plus a multi-object spectrometer with up to 5000 robotically positioned optical fibers, with a resolving power of R = 5000. The fibers feed 10 three-arm spectrographs (500 fibers for each spectrographs, also called petals) producing spectra that cover a wavelength range from 360-980 nm and have resolution of 2000-5500 depending on the wavelength. It will watch at 14,000 \sqd in 10666 tiles from 2018 to 2022, with roughly 7 different tiles each night. Fiber positioners will have a reach of $\sim$6 mm from their central position.
@@ -185,9 +210,9 @@ Here are several possibilities of modified gravity :
 \subsection{Targets}
 It will seek for targets that trace the evolution of dark energy from redshift 0.2 out to 3.5 using 3 kinds of celestial objects : 4 million luminous red galaxies (LRG), 18 million emission line galaxies (ELG) and 3 million quasars. QSO \lya are the most important targets. Then comes LRG, then ELG. For each petal (of 500 fibers), 10 are dedicated to Standard Stars and 40 to Sky Fibers.
 \begin{itemize} 
-	\item QSO (quasi stellar object) targets are divided into three categories. There are those at $z < 2.1$ (QSO-I), which are used as tracers only, and as those at $z > 2.1$ which are used for the \lya forest. Finally, there are false one, objects that are a priori believed QSO but are actually not (known once observed). Quasars are extremely luminous, there spectra is very large and doesn't correspond to a star's one. They are likely central regions of massive galaxies surrounding a supermassive black hole, and their energy release must be caused by mass falling onto the accretion disc of the black hole. They are excellent tracer population at redshifts $1 < z < 2$. QSO \lya with $z > 2.1$ are espacially important because it is the only opportunity for DESI to get information on dark energy at so high redshifts. We want to observe them 5 times ideally
-	\item LRG (luminous red galaxy) are the most luminous and red galaxies in the universe at $z < 1$ \cite{Eisenstein:2001cq}. We want to observe them twice.
-	\item ELG (emission line galaxy) are galaxies where stars are creating. They have strong emission lines and characteristic OII and OIII doublets at a rest frame 327 nm and 500nm, which fits the DESI redshift survey.
+	\item QSO (quasi stellar object) targets are divided into three categories. There are those at $z < 2.1$ (QSO-I), which are used as tracers only, and as those at $z > 2.1$ which are used for the \lya forest. Finally, there are false ones, objects that are a priori believed QSO but are actually not (known once observed). Quasars are extremely luminous, there spectra is very large and doesn't correspond to a star's one. They are likely central regions of massive galaxies surrounding a supermassive black hole, and their energy release must be caused by mass falling onto the accretion disc of the black hole. They are excellent tracer population at redshifts $1 < z < 2$. QSO \lya with $z > 2.1$ are espacially important because it is the only opportunity for DESI to get information on dark energy at so high redshifts, and get information on the matter distribution between us and the quasar. The Lyman-$\alpha$ forest represents the holes in the spectrum that correspond to an absorption ray of the hydrogen \cite{2003AIPC} (at different redshifts), and by this mean we can compute the matter distribution of hydrogen (consequently of all baryonic matter) along the line of sight.
+	\item LRG (luminous red galaxy) are the most luminous and red galaxies in the universe at $z < 1$ \cite{2001cq}.
+	\item ELG (emission line galaxy) are galaxies where stars are creating. They have strong emission lines and characteristic OII and OIII doublets at a rest frame 327 nm and 500nm, which enable to precisely get their redshift.
 	\item Sky Fibers and Standard Stars are calibration targets, necessary to have a reference during measurements. There have to be 10 Standard Stars and 40 Sky Fibers on each petal
 \end{itemize} 
 
@@ -262,6 +287,7 @@ A number of parameters are defined at the begining of the file main.
 	\item InterPlate = 200 minimal number of plates between two observations of the same galaxy
 	\item Randomize = false randomize order of plates in making plans
 	\item Pacman = false selects only spectrometers 0, 1, 2, 7, 8, 9 of the pacman
+	\item Collision = true when we want to allow collisions, to compute the collision rate for instance
 \end{itemize} 
 
 
@@ -296,7 +322,7 @@ In algorithms, j stands for a plate, k for a fiber, p for a petal, g for a galax
 
 {\tt change\_coords} combines a galaxy and a particular plate to give the coordinates the galaxy will have in the focal plane when observed as with this tile. It's a rotation in angular coordinates. This ought to be rigorously checked.
 
-{\tt find\_collision} returns the fiber number of a fiber that conflicts with tiblefiber (j,k).  Conflict is defined by two observed galaxies being separated by less than {\tt Collide}, currently set to 2.1 mm (variable).
+{\tt find\_collision} returns the fiber number of a fiber that conflicts with tiblefiber (j,k).  Conflict is defined by two observed galaxies being separated by less than {\tt Collide}, currently set to 2.9 mm.
 
 \subsection{Collecting}
 {\tt collect\_galaxies\_for\_all} is multithreaded, and for each fiber of each tile, collects reachable galaxies. It uses kdTree and htmTree libraries written by Martin White, because it's absolutely necessary to do computations in a reasonable time with supercomputers.
@@ -649,7 +675,7 @@ The most results-sensible feature in it is the number of plan/applying and their
 
 
 \subsection{Sum-up of assigned galaxies}
-In the reference strategy, we have 50,095,513 assignments in total (93.94\% of all fibers). The weighted score of a certain kind is defined as : 
+In the reference strategy, we have 50,095,513 assignments in total (93.54\% of all fibers). The weighted score of a certain kind is defined as : 
 \vspace{1\baselineskip}
 $Score(kind) = 100\cdot \frac{\sum\nolimits_{g \in kind} obs(g)}{\sum\nolimits_{g \in kind} goal}$ where $obs(g)$ is the number of times g is observed.
 
@@ -668,7 +694,7 @@ A sum-up table of general results on assignment is provided on Table \ref{res}.
 	SS         & 1,066,600 & 1,143,862 &       0 &      0 &      0 &     0 & 2,210,462 & 48.252 & 48.252\\ 
 	SF         & 4,266,400 &17,838,234 &       0 &      0 &      0 &     0 &22,104,634 & 19.300 & 19.300\\ 
 \end{tabular}
-\caption{Remaining observations (id on lines, nobs left on rows) with total}\label{gen}
+\caption{Remaining observations (id on lines, nobs left on rows) with total (old version with collide = 2.1)}\label{gen}
 \end{center}\end{table}
 \end{comment}
 
@@ -677,19 +703,18 @@ A sum-up table of general results on assignment is provided on Table \ref{res}.
 \hline
 \multicolumn{6}{r}{Times observed} \\
 	~ &           0 &     1 &  2 & 3 & 4 & 5 &  Total & Fiber used & Once observed & observed $\%$ & weighted $\%$ \\ \hline
-   QSO Ly-a   &     0 &     1 &   4 & 15 & 26 & 1 &    49 &   169 &    49 & 98.927 & 67.667\\ 
- QSO Tracer   &     1 &   118 &   0 &  0 &  0 & 0 &   119 &   118 &   118 & 98.927 & 98.927\\ 
-        LRG   &    15 &    35 & 247 &  0 &  0 & 0 &   298 &   530 &   283 & 94.810 & 88.844\\ 
-        ELG   &   531 & 1,879 &   0 &  0 &  0 & 0 & 2,411 & 1,879 & 1,879 & 77.958 & 77.958\\ 
-   Fake QSO   &     0 &    89 &   0 &  0 &  0 & 0 &    90 &    89 &    89 & 98.914 & 98.914\\ 
-   Fake LRG   &     2 &    47 &   0 &  0 &  0 & 0 &    50 &    47 &    47 & 95.470 & 95.470\\ 
+   QSO Ly-a   &     0 &     2 &   4 & 14 & 25 & 1 &    49 &   167 &    49 & 98.434 & 67.032\\ 
+ QSO Tracer   &     1 &   118 &   0 &  0 &  0 & 0 &   119 &   118 &   118 & 98.454 & 98.454\\ 
+        LRG   &    16 &    37 & 244 &  0 &  0 & 0 &   298 &   526 &   281 & 94.376 & 88.069\\ 
+        ELG   &   537 & 1,874 &   0 &  0 &  0 & 0 & 2,411 & 1,874 & 1,874 & 77.721 & 77.721\\ 
+   Fake QSO   &     1 &    88 &   0 &  0 &  0 & 0 &    90 &    88 &    88 & 98.446 & 98.446\\ 
+   Fake LRG   &     2 &    47 &   0 &  0 &  0 & 0 &    50 &    47 &    47 & 95.063 & 95.063\\ 
          SS   &    72 &    67 &   0 &  0 &  0 & 0 &   140 &    67 &    67 & 48.252 & 48.252\\ 
          SF   & 1,129 &   270 &   0 &  0 &  0 & 0 & 1,400 &   270 &   270 & 19.300 & 19.300\\ 
 \hline
 \end{tabular}
 \caption{Densities (objects/\sqd) as as a function of \# of observations (with total), and \% observed, once and weighted}\label{res}
 \end{center}\end{table}
-
 
 
 \subsection{Pacman plate}
@@ -710,7 +735,7 @@ On the Table \ref{pac}, we present results of the assignment taking for input th
          SF   & 1,122 &   277 &   0 &  0 &  0 & 0 & 1,400 &   277 &   277 & 19.830 & 19.830\\ 
 \hline
 \end{tabular}
-\caption{Same than Table \ref{res} but with the pacman}\label{pac}
+\caption{Same than Table \ref{res} but with the pacman (old version with collide = 2.1)}\label{pac}
 \end{center}\end{table}
 
 Furthermore, there are 50,938,132 assignments in total (92.9358 \% of all fibers).
@@ -872,6 +897,7 @@ In the following, we change a little bit parameters around the references values
 	\caption{Weighted \% of \lya and \% of ELG observed as a function of required stay-clear}
 \end{center}\end{figure}
 
+
 \begin{figure}[H]\begin{center}
 	\tikzsetnextfilename{intlya}
 	\begin{tikzpicture}[scale=1.1]
@@ -902,6 +928,7 @@ The update function might still be improved to lead to more reassignments, and a
 
 We could make plans with only \lya assigned, launching improve function, and then adding separately LRG then improving, and adding again ELG and improving. It's likely that it won't increase results because as we saw before, doing assignments separately in new\_assign already didn't improved results. This kind of optimization must actually be already done by selecting with priorities and executing improvement functions.
 
+\section{Collision problem}
 \begin{figure}[H]\begin{center}
 	\tikzsetnextfilename{col}
 \begin{tikzpicture}[scale=1.1]
@@ -912,9 +939,26 @@ We could make plans with only \lya assigned, launching improve function, and the
 \caption{Histogram of cases of collision}
 \end{center}\end{figure}
 
+We will forbid distance between two galaxies to be less than 2 times the radius of what we will further call the first disk (FD), which is the disk of radius 0.990 mm that incorporates the hole for fiber ferrule. 
+It is sure that it is a necessary condition (simple to convince oneself) and will avoid a good proportion of collisions (40\% ?) using a very cheap computation.
+There is also 3-collisions problem possible, even with this constrain.
+4-collision problem is possible without this constrain, but maybe impossible with the constrain.
 
 
+At the moment of the study, we need to have a good precision of the final assignment efficacity. Joe Silber wrote a collision code with the exact geometry of positionners, and found out that the collision rate is 8\%. To take it into account, we calibrate the $collide$ parameter to get this same collision rate. Of course, this is not exact and eventually needs to be so, but by this way we get results very close to the final ones. We experimentally found out that we have to take $collide = 2.9 mm$.
+Notice that with collisions allowed, we get 94.4 \% of fibers assigned, instead of 93.9 \% when they are not. A further improvement can be to do the assignment with collisions allowed and at the very end try to change the colliding ones, but it's likely to lead to the same results than now.
 
+
+\begin{table}[H]\centering
+	\begin{tabular}{r|ccc}
+		Collide (mm) & 2.1 & 3.0 & 2.9\\ 
+		Collision rate at 2000 (\%) & 3.58&8.44 & 7.75\\
+		Collision rate (\%) & 3.93 & ~ & 8.27\\
+	\end{tabular}
+	\caption{Collision rate as a function of Collide}\label{colrate}
+\end{table}
+
+Note here that the collision rate is less when we only take the first 2000 plates, though on those plates more fibers are assigned, so one should get a greater percentage than when we take all the plates. Still to understand.
 \bibliographystyle{plain}
 \bibliography{papers}{}
 

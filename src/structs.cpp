@@ -589,7 +589,7 @@ struct onplate change_coords(const struct galaxy& O, const struct plate& P) {
 
 // (On plate p) finds if there is a collision if fiber k would watch at galaxy g (collision with neighb)
 int Assignment::find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plates& P, bool col) const {
-	if (!col) return -1;
+	if (col) return -1;
 	struct onplate op = change_coords(G[g],P[j]);
 	double x = op.pos[0];
 	double y = op.pos[1];
@@ -608,7 +608,7 @@ int Assignment::find_collision(int j, int k, int g, const PP& pp, const Gals& G,
 
 int Assignment::find_collision(int j, int k, const PP& pp, const Gals& G, const Plates& P) const {
 	int g = TF[j][k];
-	if (g!=-1) return find_collision(j,k,g,pp,G,P,true);
+	if (g!=-1) return find_collision(j,k,g,pp,G,P,false);
 	else return -1;
 }
 
@@ -625,8 +625,8 @@ float Assignment::colrate(const PP& pp, const Gals& G, const Plates& P, int jend
 				}
 			}
 		}
-		return percent(col,jend*Nfiber);
 	}
+	return percent(col,jend*Nfiber);
 }
 
 // Write some files -----------------------------------------------------------------------
