@@ -32,12 +32,12 @@ int main(int argc, char **argv) {
 	PlateRadius = 1.65;
 	TotalArea = 15789.0;
 	invFibArea = 700.;
-	Collide = 2.1;
+	Collide = 2.9;
 	NeighborRad = 11.0;
 	PatrolRad = 6.0;
 	InterPlate = 200;
 	Randomize = false;
-	Pacman = false;
+	Pacman = true;
 	Collision = false;
 
 	str kind[] = {"QSO Ly-a","QSO Tracer","LRG","ELG","Fake QSO","Fake LRG","SS","SF"};
