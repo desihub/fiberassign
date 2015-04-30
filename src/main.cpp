@@ -16,8 +16,7 @@
 #include        "structs.h"
 #include        "global.h"
 
-int Nplate; int MaxSS; int MaxSF; double PlateRadius; double Collide; double NeighborRad; double PatrolRad; double TotalArea; double invFibArea; int Ngal; int MaxPrio; int MaxObs; int Categories; int Npass; int Nfiber; int MinUnused; int Npetal; int Nfbp; int InterPlate; bool Randomize; bool Pacman;
-
+int Nplate; int MaxSS; int MaxSF; double PlateRadius; double Collide; double NeighborRad; double PatrolRad; double TotalArea; double invFibArea; int Ngal; int MaxPrio; int MaxObs; int Categories; int Npass; int Nfiber; int MinUnused; int Npetal; int Nfbp; int InterPlate; bool Randomize; bool Pacman; bool Collision;
 
 int main(int argc, char **argv) {
 	//// Initializations ---------------------------------------------
@@ -36,9 +35,10 @@ int main(int argc, char **argv) {
 	Collide = 2.1;
 	NeighborRad = 11.0;
 	PatrolRad = 6.0;
-	InterPlate = 0;
+	InterPlate = 200;
 	Randomize = false;
 	Pacman = false;
+	Collision = false;
 
 	str kind[] = {"QSO Ly-a","QSO Tracer","LRG","ELG","Fake QSO","Fake LRG","SS","SF"};
 	int prio[] = {1,1,3,5,1,3,2,4}; // has to be >= 0
@@ -107,6 +107,7 @@ int main(int argc, char **argv) {
 		A.next_plate++;
 	}
 	print_time(time,"# ... took :");
+	printf("Collision rate : %f \% \n",A.colrate(pp,G,P,limit));
 
 	// Make a plan ----------------------------------------------------
 	//new_assign_fibers(G,P,pp,F,A);

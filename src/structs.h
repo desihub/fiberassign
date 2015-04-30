@@ -107,7 +107,8 @@ class Assignment {
 	~Assignment();
 	void assign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp);
 	void unassign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp);
-	int find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plates& P) const;
+	int find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plates& P, bool col=Collision) const;
+	int find_collision(int j, int k, const PP& pp, const Gals& G, const Plates& P) const;
 	void verif(const Plates& P) const; // Verif mappings are right
 	int is_assigned_jg(int j, int g) const;
 	int is_assigned_jg(int j, int g, int interplate) const;
@@ -130,6 +131,7 @@ class Assignment {
 	List unused_f() const;
 	Table unused_fbp(const PP& pp) const; // Unused fibers by petal
 	Table used_by_kind(str kind, const Gals& G, const PP& pp, const Feat& F) const; // Table (j X p) with numbers of assigned TF to a galaxy of kind
+	float colrate(const PP& pp, const Gals& G, const Plates& P, int j=Nplate) const; // Get collision rate, j = plate number, doesn't take into account 3-collisions
 
 	// Not used (but could be useful)
 	double get_proba(int i, const Gals& G, const Feat& F); // p(fake QSO | QSO) for example

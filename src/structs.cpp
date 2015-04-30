@@ -588,7 +588,8 @@ struct onplate change_coords(const struct galaxy& O, const struct plate& P) {
 }
 
 // (On plate p) finds if there is a collision if fiber k would watch at galaxy g (collision with neighb)
-int Assignment::find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plates& P) const {
+int Assignment::find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plates& P, bool col) const {
+	if (!col) return -1;
 	struct onplate op = change_coords(G[g],P[j]);
 	double x = op.pos[0];
 	double y = op.pos[1];
@@ -603,6 +604,29 @@ int Assignment::find_collision(int j, int k, int g, const PP& pp, const Gals& G,
 		}
 	}
 	return -1;
+}
+
+int Assignment::find_collision(int j, int k, const PP& pp, const Gals& G, const Plates& P) const {
+	int g = TF[j][k];
+	if (g!=-1) return find_collision(j,k,g,pp,G,P,true);
+	else return -1;
+}
+
+float Assignment::colrate(const PP& pp, const Gals& G, const Plates& P, int jend) const {
+	int col = 0;
+	for (int j=0; j<jend; j++) {
+		List done = initList(Nfiber);
+		for (int k=0; k<Nfiber; k++) {
+			if (done[k] == 0) {
+				int c = find_collision(j,k,pp,G,P);
+				if (c!=-1) {
+					done[c] = 1;
+					col += 2;
+				}
+			}
+		}
+		return percent(col,jend*Nfiber);
+	}
 }
 
 // Write some files -----------------------------------------------------------------------

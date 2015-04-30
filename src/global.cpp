@@ -499,6 +499,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	// 1 Raw numbers of galaxies by id and number of remaining observations
 	Table hist2 = initTable(Categories,MaxObs+1);
 	Table ob = initTable(Categories+1,2*MaxObs+1);
+
 	List maxobs = F.maxgoal();
 	for (int g=0; g<Ngal; g++) {
 		int id = G[g].id;
@@ -687,6 +688,8 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 
 
 	// Misc
+	// Collision rate
+	printf("Collision rate : %f \% \n",A.colrate(pp,G,P));
 	// Histogram of SS
 	Table usedSS = A.used_by_kind("SS",G,pp,F);
 	print_hist("UsedSS (number of petals)",1,histogram(usedSS,1));
