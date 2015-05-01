@@ -642,7 +642,6 @@ void writeTFfile(const Plates& P, std::ofstream TFfile) {
 			for (int q=0;q<siz;q++){
 				TFfile.write(reinterpret_cast<char*>(&gals[q]),sizeof(int));
 			}
-
 		}
 
 	}

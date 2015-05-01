@@ -28,7 +28,15 @@ void pair::print_pair() const {printf("(%d,%d) ",f,s); fl();}
 // dpair ------------------------------------------------------
 dpair::dpair() {f = 0; s = 0;}
 dpair::dpair(double a, double b) {f = a; s = b;}
-
+dpair operator+(dpair const& a, dpair const& b) {
+    return dpair(a.f+b.f,a.s+b.s);
+}
+dpair operator-(dpair const& a, dpair const& b) {
+    return dpair(a.f-b.f,a.s-b.s);
+}
+dpair operator-(dpair const& a, double b) {
+    return dpair(a.f-b,a.s-b);
+}
 //void dpair::pair_rand(double a, double b) { return dpair(1,2); }
 
 // List ------------------------------------------------------
@@ -863,6 +871,7 @@ int sq(int n) { return(n*n); }
 double sq(double n) { return(n*n); }
 double sq(double a, double b) { return(a*a + b*b); }
 double norm(double a, double b) { return(sqrt(a*a + b*b)); }
+double norm(dpair p) { return(sqrt(p.f*p.f + p.s*p.s)); }
 double percent(int a, int b) { return(a*100./b); }
 void fl() { std::cout.flush(); }
 
@@ -873,6 +882,14 @@ double fRand(double fMin, double fMax) {
 
 dpair cartesian(double r, double theta) {
 	return dpair(r*cos(theta),r*sin(theta));
+}
+
+dpair cartesian(dpair X) {
+	return dpair(X.f*cos(X.s),X.f*sin(X.s));
+}
+
+dpair polar(dpair X) {
+	return dpair(norm(X.f,X.s),atan(X.s/X.f));
 }
 
 dpair sum(dpair p1, dpair p2) {

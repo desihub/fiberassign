@@ -36,6 +36,9 @@ class dpair {
 	dpair(double a, double b);
 	/*dpair pair_rand(double a, double b);*/
 };
+dpair operator+(dpair const& a, dpair const& b);
+dpair operator-(dpair const& a, dpair const& b);
+dpair operator-(dpair const& a, double b);
 
 // List ------------------------------------------------------
 class List : public std::vector<int> {};
@@ -154,10 +157,13 @@ int sq(int n); // n*n
 double sq(double n);
 double sq(double a,double b); // a*a+b*b
 double norm(double a,double b); // sqrt(a*a+b*b)
+double norm(dpair p);
 double percent(int a, int b);
 void fl();
 double fRand(double fMin, double fMax);
 dpair cartesian(double r, double theta);
+dpair cartesian(dpair X);
+dpair polar(dpair X);
 dpair sum(dpair p1, dpair p2);
 double dist(dpair c1, dpair c2);
 #endif
