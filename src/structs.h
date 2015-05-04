@@ -16,6 +16,7 @@
 #include        "omp.h"
 #include        "macros.h"
 #include        "misc.h"
+#include        "collision.h"
 
 // Feat --------------------------------------------------
 class Feat { // F for features
@@ -46,6 +47,7 @@ class PP { // PP for plate parameters
 	void get_neighbors();
 	void compute_fibsofsp(); // Computes fibers_of_sp
 	List fibs_of_same_pet(int k) const;
+	dpair coords(int k) const; // Coords of fiber k
 };
 
 // galaxy -------------------------------------------------
@@ -107,7 +109,7 @@ class Assignment {
 	~Assignment();
 	void assign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp);
 	void unassign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp);
-	int find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plates& P, bool col=Collision) const;
+	int find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plates& P, bool col=Collision, bool exact=true) const;
 	int find_collision(int j, int k, const PP& pp, const Gals& G, const Plates& P) const;
 	void verif(const Plates& P) const; // Verif mappings are right
 	int is_assigned_jg(int j, int g) const;

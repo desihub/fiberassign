@@ -188,6 +188,7 @@ void simple_assign(const Gals& G, const Plates& P, const PP& pp, const Feat& F, 
 	List plates = sublist(j0,n,A.order);
 	List randPlates = Randomize ? random_permut(plates) : plates;
 	for (int jj=0; jj<n; jj++) {
+		debl(jj);
 		int j = randPlates[jj];
 		List randFibers = random_permut(Nfiber);
 		for (int kk=0; kk<Nfiber; kk++) { // Fiber

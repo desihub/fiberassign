@@ -17,6 +17,7 @@
 #include        "macros.h"
 #include        "misc.h"
 #include        "structs.h"
+#include        "collision.h"
 // Features ------------------------------------------------------------------
 Feat::Feat() {
 	prio.resize(Categories);
@@ -180,6 +181,10 @@ void PP::compute_fibsofsp() {
 
 List PP::fibs_of_same_pet(int k) const {
 	return(fibers_of_sp[spectrom[k]]);
+}
+
+dpair PP::coords(int k) const {
+	return dpair(fp[2*k],fp[2*k+1]);
 }
 
 // plate ---------------------------------------------------------------------------
@@ -588,19 +593,19 @@ struct onplate change_coords(const struct galaxy& O, const struct plate& P) {
 }
 
 // (On plate p) finds if there is a collision if fiber k would watch at galaxy g (collision with neighb)
-int Assignment::find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plates& P, bool col) const {
+
+int Assignment::find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plates& P, bool col, bool exact) const {
 	if (col) return -1;
 	struct onplate op = change_coords(G[g],P[j]);
-	double x = op.pos[0];
-	double y = op.pos[1];
+	dpair p = dpair(op.pos[0],op.pos[1]);
 	for (int i=0; i<pp.N[k].size(); i++) {
 		int kn = pp.N[k][i];
 		int gn = TF[j][kn];
 		if (gn!=-1) {
 			struct onplate opn = change_coords(G[gn],P[j]);
-			double xn = opn.pos[0];
-			double yn = opn.pos[1];
-			if (sq(x-xn,y-yn) < sq(Collide)) return kn;
+			dpair pn = dpair(opn.pos[0],opn.pos[1]);
+			bool b = exact ? collision(pp.coords(k),p,pp.coords(kn),pn) : (sq(p-pn) < sq(Collide));
+			if (b) return kn;
 		}
 	}
 	return -1;

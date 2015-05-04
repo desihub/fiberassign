@@ -18,13 +18,12 @@
 #include        "misc.h"
 
 class PosP {
+	public:
 	double r1, r2, d;
 	Dlist dimensions;
 
 	PosP(double r1, double r2, double d);
-	void get_Xdimensions();
-	void get_Ydimensions();
-}
+};
 
 class polygon {
 	public:
@@ -36,7 +35,11 @@ class polygon {
 	void rotation(double t);
 	void rotation_origin(double t);
 };
+polygon create_fh(PosP posp);
 
 class Pols : public std::vector<polygon> {};
 
+void rot_pt(dpair& A, dpair ax, double t);
+bool intersect(dpair p1, dpair q1, dpair p2, dpair q2);
+bool collision(dpair O1, dpair G1, dpair O2, dpair G2);
 #endif

@@ -14,6 +14,7 @@
 #include        "macros.h"
 #include        "misc.h"
 #include        "structs.h"
+#include        "collision.h"
 #include        "global.h"
 
 int Nplate; int MaxSS; int MaxSF; double PlateRadius; double Collide; double NeighborRad; double PatrolRad; double TotalArea; double invFibArea; int Ngal; int MaxPrio; int MaxObs; int Categories; int Npass; int Nfiber; int MinUnused; int Npetal; int Nfbp; int InterPlate; bool Randomize; bool Pacman; bool Collision;
@@ -37,7 +38,7 @@ int main(int argc, char **argv) {
 	PatrolRad = 6.0;
 	InterPlate = 200;
 	Randomize = false;
-	Pacman = true;
+	Pacman = false;
 	Collision = false;
 
 	str kind[] = {"QSO Ly-a","QSO Tracer","LRG","ELG","Fake QSO","Fake LRG","SS","SF"};

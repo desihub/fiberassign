@@ -870,6 +870,7 @@ void print_stats(str s, int cnt, int avg, int std, int min, int max) {
 int sq(int n) { return(n*n); }
 double sq(double n) { return(n*n); }
 double sq(double a, double b) { return(a*a + b*b); }
+double sq(dpair p) { return p.f*p.f + p.s*p.s; }
 double norm(double a, double b) { return(sqrt(a*a + b*b)); }
 double norm(dpair p) { return(sqrt(p.f*p.f + p.s*p.s)); }
 double percent(int a, int b) { return(a*100./b); }
