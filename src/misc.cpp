@@ -871,6 +871,10 @@ int sq(int n) { return(n*n); }
 double sq(double n) { return(n*n); }
 double sq(double a, double b) { return(a*a + b*b); }
 double sq(dpair p) { return p.f*p.f + p.s*p.s; }
+double sq(dpair p, dpair q) { return sq(p.f-q.f) + sq(p.s-q.s); }
+double scalar_prod(dpair p, dpair q, dpair d) {
+	return (q.f-p.f)*(d.f-p.f)+(q.s-p.s)*(d.s-p.s);
+}
 double norm(double a, double b) { return(sqrt(a*a + b*b)); }
 double norm(dpair p) { return(sqrt(p.f*p.f + p.s*p.s)); }
 double percent(int a, int b) { return(a*100./b); }

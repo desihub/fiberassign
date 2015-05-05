@@ -157,6 +157,8 @@ int sq(int n); // n*n
 double sq(double n);
 double sq(double a,double b); // a*a+b*b
 double sq(dpair p);
+double sq(dpair p, dpair q); // |vec(pq)|²
+double scalar_prod(dpair p, dpair q, dpair d); // vec(pq).vec(pd)
 double norm(double a,double b); // sqrt(a*a+b*b)
 double norm(dpair p);
 double percent(int a, int b);
