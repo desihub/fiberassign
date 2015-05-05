@@ -15,6 +15,8 @@
 #include        "misc.h"
 #include        "collision.h"
 
+// Angles are dpair (cos t, sin t)
+
 // PosP
 PosP::PosP(double r10, double r20, double d0) {
 	r1 = r10; r2 = r20; d = d0;
@@ -53,7 +55,7 @@ bool intersect_seg_circ(dpair A, dpair B, dpair O, double rad) {
 	double AO_sq = sq(A,O);
 	double BO_sq = sq(B,O);
 	double AB_sq = sq(A,B);
-	double AB_A0 = scalar_prod(A,B,O);
+	double AB_AO = scalar_prod(A,B,O);
 	double BA_BO = scalar_prod(B,A,O);
 	if (AB_AO<0) return BO_sq<rad_sq;
 	if (BA_BO<0) return AO_sq<rad_sq;
@@ -61,38 +63,36 @@ bool intersect_seg_circ(dpair A, dpair B, dpair O, double rad) {
 }
 
 // element
-element::element(bool b) {
-	element el;
-	el.is_seg = b;
-	return el;
-}
+element::element() {}
+
+element::element(bool b) { is_seg = b; }
 
 element::element(dpair Ocenter, double rad_) {
-	element el;
-	el.is_seg = false;
-	el.O = Ocenter;
-	el.rad = rad_;
-	return el;
+	is_seg = false;
+	O = Ocenter;
+	rad = rad_;
 }
 
 element::element(dpair A, dpair B) {
-	element el;
-	el.is_seg = true;
-	el.segs.push_back(A);
-	el.segs.push_back(B);
-	return el;
+	is_seg = true;
+	add(A);
+	add(B);
 }
 
 void element::add(double a, double b) {
 	segs.push_back(dpair(a,b));
 }
 
+void element::add(dpair p) {
+	segs.push_back(p);
+}
+
 void element::transl(dpair t) {
-	if (is_seg) for (int i=0; i<segs.size(); i++) segs[i] += segs[i]+t;
+	if (is_seg) for (int i=0; i<segs.size(); i++) segs[i] = segs[i]+t;
 	else O = O + t;
 }
 
-void element::rotation(double t, dpair axis) {
+void element::rotation(dpair t, dpair axis) {
 	if (is_seg) for (int i=0; i<segs.size(); i++) rot_pt(segs[i],axis,t);
 	else rot_pt(O,axis,t);
 }
@@ -101,7 +101,7 @@ bool intersect(element e1, element e2) {
 	if (e1.is_seg && e2.is_seg) {
 		for (int i=0; i<e1.segs.size()-1; i++) {
 			for (int j=0; j<e2.segs.size()-1; j++) {
-				bool b = intersect(e1.segs[i],e1.segs[i+1],p2.segs[j],p2.segs[j+1]);
+				bool b = intersect(e1.segs[i],e1.segs[i+1],e2.segs[j],e2.segs[j+1]);
 				if (b) return true;
 			}
 		}
@@ -130,13 +130,13 @@ void polygon::transl(dpair t) {
 	axis = axis + t;
 }
 
-void polygon::rotation(double t) {
+void polygon::rotation(dpair t) {
 	for (int i=0; i<elmts.size(); i++) {
 		elmts[i].rotation(t,axis);
 	}
 }
 
-void polygon::rotation_origin(double t) {
+void polygon::rotation_origin(dpair t) {
 	dpair origin = dpair();
 	for (int i=0; i<elmts.size(); i++) {
 		elmts[i].rotation(t,origin);
@@ -178,26 +178,30 @@ polygon create_cb(PosP posp) {
 }
 
 // Functions
-void rot_pt(dpair& A, dpair ax, double t) {
-	dpair po = polar(A-ax);
-	po.s += t;
-	A = cartesian(po);		
+void rot_pt(dpair& A, dpair ax, dpair angle) {
+	dpair P = A-ax;
+	double r = norm(P);
+	dpair cos_sin = cos_sin_angle(P);
+	dpair sum = sum_angles(cos_sin,angle);
+
+	A = dpair(r*sum.f,r*sum.s);		
 }
 
-dpair angles(dpair A, PosP posp) { // theta, phi for a galaxy that is in A
-	double tmp = acos(norm(A)/(2*posp.r1));
-	return dpair(atan(A.s/A.f)-tmp,2*tmp);
+Dlist angles(dpair A, PosP posp) { // cos sin theta and phi for a galaxy which is in A (ref to the origin)
+	double phi = 2*(acos(norm(A)/(2*posp.r1)));
+	double theta = atan(A.s/A.f)-phi/2;
+	Dlist ang; ang.push_back(cos(theta)); ang.push_back(sin(theta)); ang.push_back(cos(phi)); ang.push_back(sin(phi));
+	return ang;
 }
 
 void repos_cb_fh(polygon& cb, polygon& fh, dpair O, dpair G, PosP posp) { // G loc of galaxy, O origin. Repositions fh and cb for 0, G
 	dpair Gp = G-O;
-	if (posp.r1+posp.r2<norm(Gp)) {
-		printf("Error galaxy out of range of fiber in repos_fiber\n");
-	}
-	dpair tp = angles(Gp,posp);
-	fh.rotation_origin(tp.f);
-	cb.rotation_origin(tp.f);
-	fh.rotation(tp.s);
+	if (sq(posp.r1+posp.r2)<sq(Gp)) printf("Error galaxy out of range of fiber in repos_fiber\n");
+	Dlist anglesT = angles(Gp,posp);
+	dpair theta_ = dpair(anglesT[0],anglesT[1]);
+	dpair phi_ = dpair(anglesT[2],anglesT[3]);
+	cb.rotation_origin(theta_);
+	fh.rotation(sum_angles(theta_,phi_));
 	fh.transl(O);
 	cb.transl(O);
 }
@@ -212,6 +216,10 @@ bool collision(polygon& p1, polygon& p2) {
 }
 
 bool collision(dpair O1, dpair G1, dpair O2, dpair G2) {
+	double dist_sq = sq(G1,G2);
+	if (dist_sq < sq(Collide)) return true;
+	if (dist_sq > sq(NoCollide)) return false;
+	Count++;
 	PosP posp(3,3,10);
 	polygon fh1 = create_fh(posp);
 	polygon fh2 = create_fh(posp);

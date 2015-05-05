@@ -597,21 +597,21 @@ struct onplate change_coords(const struct galaxy& O, const struct plate& P) {
 int Assignment::find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plates& P, bool col, bool exact) const {
 	if (col) return -1;
 	struct onplate op = change_coords(G[g],P[j]);
-	dpair p = dpair(op.pos[0],op.pos[1]);
+	dpair G1 = dpair(op.pos[0],op.pos[1]);
 	for (int i=0; i<pp.N[k].size(); i++) {
 		int kn = pp.N[k][i];
 		int gn = TF[j][kn];
 		if (gn!=-1) {
 			struct onplate opn = change_coords(G[gn],P[j]);
-			dpair pn = dpair(opn.pos[0],opn.pos[1]);
-			bool b = exact ? collision(pp.coords(k),p,pp.coords(kn),pn) : (sq(p-pn) < sq(Collide));
+			dpair G2 = dpair(opn.pos[0],opn.pos[1]);
+			bool b = exact ? collision(pp.coords(k),G1,pp.coords(kn),G2) : (sq(G1,G2) < sq(AvCollide));
 			if (b) return kn;
 		}
 	}
 	return -1;
 }
 
-int Assignment::find_collision(int j, int k, const PP& pp, const Gals& G, const Plates& P) const {
+int Assignment::is_collision(int j, int k, const PP& pp, const Gals& G, const Plates& P) const {
 	int g = TF[j][k];
 	if (g!=-1) return find_collision(j,k,g,pp,G,P,false);
 	else return -1;
@@ -623,7 +623,7 @@ float Assignment::colrate(const PP& pp, const Gals& G, const Plates& P, int jend
 		List done = initList(Nfiber);
 		for (int k=0; k<Nfiber; k++) {
 			if (done[k] == 0) {
-				int c = find_collision(j,k,pp,G,P);
+				int c = is_collision(j,k,pp,G,P);
 				if (c!=-1) {
 					done[c] = 1;
 					col += 2;

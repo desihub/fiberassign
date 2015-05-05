@@ -17,10 +17,11 @@
 #include        "collision.h"
 #include        "global.h"
 
-int Nplate; int MaxSS; int MaxSF; double PlateRadius; double Collide; double NeighborRad; double PatrolRad; double TotalArea; double invFibArea; int Ngal; int MaxPrio; int MaxObs; int Categories; int Npass; int Nfiber; int MinUnused; int Npetal; int Nfbp; int InterPlate; bool Randomize; bool Pacman; bool Collision;
+int Nplate; int MaxSS; int MaxSF; double PlateRadius; double Collide; double NoCollide; double AvCollide; double NeighborRad; double PatrolRad; double TotalArea; double invFibArea; int Ngal; int MaxPrio; int MaxObs; int Categories; int Npass; int Nfiber; int MinUnused; int Npetal; int Nfbp; int InterPlate; bool Randomize; bool Pacman; bool Collision; int Count;
 
 int main(int argc, char **argv) {
 	//// Initializations ---------------------------------------------
+	Count = 0;
 	srand48(1234); // Make sure we have reproducability
 	check_args(argc);
 	Time t,time; // t for global, time for local
@@ -33,7 +34,9 @@ int main(int argc, char **argv) {
 	PlateRadius = 1.65;
 	TotalArea = 15789.0;
 	invFibArea = 700.;
-	Collide = 2.9;
+	AvCollide = 2.9;
+	Collide = 2.1;
+	NoCollide = 7.0;
 	NeighborRad = 11.0;
 	PatrolRad = 6.0;
 	InterPlate = 200;

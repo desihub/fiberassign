@@ -39,17 +39,22 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 			std::vector<int> nbr = T.near(G,p.nhat,rad); // nbr for neighbours
 			// Projects thoses galaxies on the focal plane
 			Onplates O;
-			for (int k=0; k<nbr.size(); k++) {
-				int g = nbr[k];
+			for (int gg=0; gg<nbr.size(); gg++) {
+				int g = nbr[gg];
 				struct onplate op = change_coords(G[g],p); 
 				op.id = g;
 				O.push_back(op);
 			}
-			// For each fiber, finds all reachable galaxies
 			KDtree<struct onplate> kdT(O,2);
+			// For each fiber, finds all reachable galaxies
 			for (int k=0; k<Nfiber; k++) {
+				dpair X = pp.coords(k);
 				std::vector<int> gals = kdT.near(&(pp.fp[2*k]),0.0,PatrolRad);
-				P[j].av_gals[k] = initList(gals);
+				for (int g=0; g<gals.size(); g++) {
+					struct onplate op = change_coords(G[gals[g]],p); 
+					dpair Xg = dpair(op.pos[0],op.pos[1]);
+					if (sq(Xg,X)<PatrolRad) P[j].av_gals[k].push_back(gals[g]);
+				}
 			}
 		}
 	} // End parallel
@@ -188,7 +193,6 @@ void simple_assign(const Gals& G, const Plates& P, const PP& pp, const Feat& F, 
 	List plates = sublist(j0,n,A.order);
 	List randPlates = Randomize ? random_permut(plates) : plates;
 	for (int jj=0; jj<n; jj++) {
-		debl(jj);
 		int j = randPlates[jj];
 		List randFibers = random_permut(Nfiber);
 		for (int kk=0; kk<Nfiber; kk++) { // Fiber
@@ -699,6 +703,9 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	// Histogram of SF
 	Table usedSF = A.used_by_kind("SF",G,pp,F);
 	print_hist("UsedSF (number of petals)",1,histogram(usedSF,1));
+
+	// Count
+	printf("Count = %d \n",Count);
 
 	// Percentage of fibers assigned
 	printf("  %s assignments in total (%.4f %% of all fibers)\n",f(A.na()).c_str(),percent(A.na(),Nplate*Nfiber));

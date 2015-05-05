@@ -752,7 +752,7 @@ void error(str s) {
 }
 
 void deb(int a) { // debug
-	std::cout << " " << a << " " << std::endl;
+	std::cout << " " << a << std::endl;
 }
 
 void deb(int a, int b) { // debug
@@ -763,6 +763,9 @@ void debl(int a) { // debug
 	std::cout << " " << a << std::flush;
 }
 
+void deb(double a) { // debug
+	std::cout << " " << a << std::endl;
+}
 // To String --------------------------------------------------
 str f(int i) { // int 1526879 -> const char* 1,526,879
 	std::stringstream ss;
@@ -897,8 +900,13 @@ dpair polar(dpair X) {
 	return dpair(norm(X.f,X.s),atan(X.s/X.f));
 }
 
-dpair sum(dpair p1, dpair p2) {
-	return dpair(p1.f+p2.f,p1.s+p2.s);
+dpair sum_angles(dpair t, dpair a) {
+	return dpair(t.f*a.f-t.s*a.s,t.s*a.f+t.f*a.s);
+}
+
+dpair cos_sin_angle(dpair P) {
+	double r_inv = 1/norm(P);
+	return dpair(P.f*r_inv,P.s*r_inv);
 }
 
 double dist(dpair c1, dpair c2) {
