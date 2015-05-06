@@ -37,6 +37,7 @@ dpair operator-(dpair const& a, dpair const& b) {
 dpair operator-(dpair const& a, double b) {
     return dpair(a.f-b,a.s-b);
 }
+void dpair::print() const {printf("(%f,%f) ",f,s); fl();}
 //void dpair::pair_rand(double a, double b) { return dpair(1,2); }
 
 // List ------------------------------------------------------

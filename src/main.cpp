@@ -21,6 +21,12 @@ int Nplate; int MaxSS; int MaxSF; double PlateRadius; double Collide; double NoC
 
 int main(int argc, char **argv) {
 	//// Initializations ---------------------------------------------
+	element e1(dpair(),dpair(2,1));
+	//element e2(dpair(1,0),dpair(1,4));
+	element e2(dpair(3,-1),2.1);
+	bool b = intersect(e1,e2);
+	printf("%d   %f \n",b,atan(-50));
+	
 	Count = 0;
 	srand48(1234); // Make sure we have reproducability
 	check_args(argc);
@@ -42,8 +48,9 @@ int main(int argc, char **argv) {
 	InterPlate = 200;
 	Randomize = false;
 	Pacman = false;
-	Collision = false;
+	Collision = true;
 	Exact = true;
+	printf("Npass=%d MinUnused=%d MaxSS=%d MaxSF=%d PlateRadius=%.3f TotalArea=%.6f invFibArea=%.6f Collide=%.3f NeighborRad=%.3f PatrolRad=%.3f InterPlate=%d Randomize=%d Pacman=%d Collision=%d\n",Npass,MinUnused,MaxSS,MaxSF,PlateRadius,TotalArea,invFibArea,Collide,NeighborRad,PatrolRad,InterPlate,Randomize,Pacman,Collision);
 
 	str kind[] = {"QSO Ly-a","QSO Tracer","LRG","ELG","Fake QSO","Fake LRG","SS","SF"};
 	int prio[] = {1,1,3,5,1,3,2,4}; // has to be >= 0
@@ -59,7 +66,7 @@ int main(int argc, char **argv) {
 	Ngal = G.size();
 	printf("# Read %s galaxies from %s \n",f(Ngal).c_str(),argv[1]);
 
-	// Read fiber center positions and compute things
+	// Read fiber center positions and compute related things
 	PP pp;
 	pp.read_fiber_positions(argv[3],atoi(argv[6])); 
 	Nfiber = pp.fp.size()/2;
@@ -88,7 +95,6 @@ int main(int argc, char **argv) {
 	collect_available_tilefibers(G,P);
 
 	//results_on_inputs("doc/figs/",G,P,F,true);
-	printf("Npass=%d MinUnused=%d MaxSS=%d MaxSF=%d PlateRadius=%.3f TotalArea=%.6f invFibArea=%.6f Collide=%.3f NeighborRad=%.3f PatrolRad=%.3f InterPlate=%d Randomize=%d Pacman=%d Collision=%d\n",Npass,MinUnused,MaxSS,MaxSF,PlateRadius,TotalArea,invFibArea,Collide,NeighborRad,PatrolRad,InterPlate,Randomize,Pacman,Collision);
 
 	//// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
 	Assignment A(G,F);

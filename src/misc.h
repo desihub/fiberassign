@@ -34,6 +34,7 @@ class dpair {
 
 	dpair();
 	dpair(double a, double b);
+	void print() const;
 	/*dpair pair_rand(double a, double b);*/
 };
 dpair operator+(dpair const& a, dpair const& b);

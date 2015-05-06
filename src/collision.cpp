@@ -157,12 +157,11 @@ polygon create_fh(PosP posp) {
 	//fh.add(el);
 
 	// Segments and disks
-	fh.add(element(dpair(-3.0,0),0.990)); // Big disk
-	fh.add(element(dpair(),0.967)); // Small disk
-	fh.add(element(dpair(-3.0,0.990),dpair(0,0.990))); // Upper segment
-	element set(true); // Lower segment
-	set.add(-2.944,-1.339); set.add(-2.944,-2.015); set.add(-1.981,-1.757); set.add(-1.844,-0.990);
-	fh.add(set);
+	fh.add(element(dpair(),0.967)); // Head
+	//fh.add(element(dpair(-3.0,0.990),dpair(0,0.990))); // Upper segment
+	//element set(true); // Lower segment
+	//set.add(-2.944,-1.339); set.add(-2.944,-2.015); set.add(-1.981,-1.757); set.add(-1.844,-0.990);
+	//fh.add(set);
 
 	fh.transl(dpair(posp.r2+posp.r1,0));
 	return fh;
@@ -173,10 +172,10 @@ polygon create_cb(PosP posp) {
 	cb.axis = dpair(3.0,0);
 
 	// Segments and disks
-	cb.add(element(dpair(3.0,0),3.990));
-	element set(true);
-	set.add(5.095,-0.474); set.add(4.358,-2.5); set.add(2.771,-2.5); set.add(1.759,-2.792); set.add(0.905,0.356);
-	cb.add(set);
+	cb.add(element(dpair(3.0,0),2.095));
+	//element set(true);
+	//set.add(5.095,-0.474); set.add(4.358,-2.5); set.add(2.771,-2.5); set.add(1.759,-2.792); set.add(0.905,0.356);
+	//cb.add(set);
 	return cb;
 }
 
@@ -230,6 +229,10 @@ bool collision(dpair O1, dpair G1, dpair O2, dpair G2) {
 	polygon cb2 = create_cb(posp);
 	repos_cb_fh(cb1,fh1,O1,G1,posp);
 	repos_cb_fh(cb2,fh2,O2,G2,posp);
+	//O1.print(); G1.print(); O2.print(); G2.print(); 
+	//printf("%f - ",sqrt(dist_sq));
+	//print_Dlist("1",angles(G1-O1,posp));
+	//print_Dlist("2",angles(G2-O2,posp));
 	if (collision(fh1,fh2)) return true;
 	if (collision(cb1,fh2)) return true;
 	if (collision(cb2,fh1)) return true;

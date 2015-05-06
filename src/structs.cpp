@@ -605,6 +605,7 @@ int Assignment::find_collision(int j, int k, int g, const PP& pp, const Gals& G,
 			struct onplate opn = change_coords(G[gn],P[j]);
 			dpair G2 = dpair(opn.pos[0],opn.pos[1]);
 			bool b = Exact ? collision(pp.coords(k),G1,pp.coords(kn),G2) : (sq(G1,G2) < sq(AvCollide));
+
 			if (b) return kn;
 		}
 	}
