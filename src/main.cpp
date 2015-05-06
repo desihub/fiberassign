@@ -17,7 +17,7 @@
 #include        "collision.h"
 #include        "global.h"
 
-int Nplate; int MaxSS; int MaxSF; double PlateRadius; double Collide; double NoCollide; double AvCollide; double NeighborRad; double PatrolRad; double TotalArea; double invFibArea; int Ngal; int MaxPrio; int MaxObs; int Categories; int Npass; int Nfiber; int MinUnused; int Npetal; int Nfbp; int InterPlate; bool Randomize; bool Pacman; bool Collision; int Count;
+int Nplate; int MaxSS; int MaxSF; double PlateRadius; double Collide; double NoCollide; double AvCollide; double NeighborRad; double PatrolRad; double TotalArea; double invFibArea; int Ngal; int MaxPrio; int MaxObs; int Categories; int Npass; int Nfiber; int MinUnused; int Npetal; int Nfbp; int InterPlate; bool Randomize; bool Pacman; bool Collision; int Count; bool Exact;
 
 int main(int argc, char **argv) {
 	//// Initializations ---------------------------------------------
@@ -43,6 +43,7 @@ int main(int argc, char **argv) {
 	Randomize = false;
 	Pacman = false;
 	Collision = true;
+	Exact = true;
 
 	str kind[] = {"QSO Ly-a","QSO Tracer","LRG","ELG","Fake QSO","Fake LRG","SS","SF"};
 	int prio[] = {1,1,3,5,1,3,2,4}; // has to be >= 0

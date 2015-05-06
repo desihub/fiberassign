@@ -27,4 +27,5 @@ extern int InterPlate;
 extern bool Randomize; 
 extern bool Pacman; 
 extern bool Collision; // True when we take collisions into account
+extern bool Exact;
 #endif

@@ -594,7 +594,7 @@ struct onplate change_coords(const struct galaxy& O, const struct plate& P) {
 
 // (On plate p) finds if there is a collision if fiber k would watch at galaxy g (collision with neighb)
 
-int Assignment::find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plates& P, bool col, bool exact) const {
+int Assignment::find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plates& P, bool col) const {
 	if (col) return -1;
 	struct onplate op = change_coords(G[g],P[j]);
 	dpair G1 = dpair(op.pos[0],op.pos[1]);
@@ -604,7 +604,7 @@ int Assignment::find_collision(int j, int k, int g, const PP& pp, const Gals& G,
 		if (gn!=-1) {
 			struct onplate opn = change_coords(G[gn],P[j]);
 			dpair G2 = dpair(opn.pos[0],opn.pos[1]);
-			bool b = exact ? collision(pp.coords(k),G1,pp.coords(kn),G2) : (sq(G1,G2) < sq(AvCollide));
+			bool b = Exact ? collision(pp.coords(k),G1,pp.coords(kn),G2) : (sq(G1,G2) < sq(AvCollide));
 			if (b) return kn;
 		}
 	}

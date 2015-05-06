@@ -109,7 +109,7 @@ class Assignment {
 	~Assignment();
 	void assign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp);
 	void unassign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp);
-	int find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plates& P, bool col=Collision, bool exact=true) const;
+	int find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plates& P, bool col=Collision) const;
 	int is_collision(int j, int k, const PP& pp, const Gals& G, const Plates& P) const;
 	void verif(const Plates& P) const; // Verif mappings are right
 	int is_assigned_jg(int j, int g) const;

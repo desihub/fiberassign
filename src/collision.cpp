@@ -53,13 +53,13 @@ bool intersect_seg_circ(dpair A, dpair B, dpair O, double rad) {
 	// Make a drawing, with C the projection of O on (AB), use scalar products
 	double rad_sq = sq(rad);
 
-	double BO_sq = sq(B,O);
-	double AB_AO = scalar_prod(A,B,O);
-	if (AB_AO<0) return AO_sq<rad_sq;
-
 	double AO_sq = sq(A,O);
+	double AB_AO = scalar_prod(A,B,O);
+	if (AB_AO<=0) return AO_sq<rad_sq;
+
+	double BO_sq = sq(B,O);
 	double BA_BO = scalar_prod(B,A,O);
-	if (BA_BO<0) return BO_sq<rad_sq;
+	if (BA_BO<=0) return BO_sq<rad_sq;
 
 	double AB_sq = sq(A,B);
 	return AO_sq*(1-sq(AB_AO)/(AO_sq*AB_sq))<rad_sq;
