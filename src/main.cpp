@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
 	InterPlate = 200;
 	Randomize = false;
 	Pacman = false;
-	Collision = true;
+	Collision = false;
 	Exact = true;
 
 	str kind[] = {"QSO Ly-a","QSO Tracer","LRG","ELG","Fake QSO","Fake LRG","SS","SF"};

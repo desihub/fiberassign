@@ -169,15 +169,15 @@ polygon create_fh(PosP posp) {
 }
 
 polygon create_cb(PosP posp) {
-	polygon fh;
-	fh.axis = dpair(3.0,0);
+	polygon cb;
+	cb.axis = dpair(3.0,0);
 
 	// Segments and disks
-	fh.add(element(dpair(3.0,0),3.990));
+	cb.add(element(dpair(3.0,0),3.990));
 	element set(true);
 	set.add(5.095,-0.474); set.add(4.358,-2.5); set.add(2.771,-2.5); set.add(1.759,-2.792); set.add(0.905,0.356);
-	fh.add(set);
-	return fh;
+	cb.add(set);
+	return cb;
 }
 
 // Functions
@@ -186,12 +186,11 @@ void rot_pt(dpair& A, dpair ax, dpair angle) {
 	double r = norm(P);
 	dpair cos_sin = cos_sin_angle(P);
 	dpair sum = sum_angles(cos_sin,angle);
-
-	A = dpair(r*sum.f,r*sum.s);		
+	A = ax+dpair(r*sum.f,r*sum.s);		
 }
 
 Dlist angles(dpair A, PosP posp) { // cos sin theta and phi for a galaxy which is in A (ref to the origin)
-	double phi = 2*(acos(norm(A)/(2*posp.r1)));
+	double phi = 2*acos(norm(A)/(2*posp.r1));
 	double theta = atan(A.s/A.f)-phi/2;
 	Dlist ang; ang.push_back(cos(theta)); ang.push_back(sin(theta)); ang.push_back(cos(phi)); ang.push_back(sin(phi));
 	return ang;
@@ -204,7 +203,8 @@ void repos_cb_fh(polygon& cb, polygon& fh, dpair O, dpair G, PosP posp) { // G l
 	dpair theta_ = dpair(anglesT[0],anglesT[1]);
 	dpair phi_ = dpair(anglesT[2],anglesT[3]);
 	cb.rotation_origin(theta_);
-	fh.rotation(sum_angles(theta_,phi_));
+	fh.rotation_origin(theta_);
+	fh.rotation(phi_);
 	fh.transl(O);
 	cb.transl(O);
 }

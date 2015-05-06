@@ -53,7 +53,7 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 				for (int g=0; g<gals.size(); g++) {
 					struct onplate op = change_coords(G[gals[g]],p); 
 					dpair Xg = dpair(op.pos[0],op.pos[1]);
-					if (sq(Xg,X)<PatrolRad) P[j].av_gals[k].push_back(gals[g]);
+					if (sq(Xg,X)<PatrolRad /*Needed*/) P[j].av_gals[k].push_back(gals[g]);
 				}
 			}
 		}
