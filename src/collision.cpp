@@ -52,13 +52,16 @@ bool intersect(dpair p1, dpair q1, dpair p2, dpair q2) {
 bool intersect_seg_circ(dpair A, dpair B, dpair O, double rad) {
 	// Make a drawing, with C the projection of O on (AB), use scalar products
 	double rad_sq = sq(rad);
-	double AO_sq = sq(A,O);
+
 	double BO_sq = sq(B,O);
-	double AB_sq = sq(A,B);
 	double AB_AO = scalar_prod(A,B,O);
+	if (AB_AO<0) return AO_sq<rad_sq;
+
+	double AO_sq = sq(A,O);
 	double BA_BO = scalar_prod(B,A,O);
-	if (AB_AO<0) return BO_sq<rad_sq;
-	if (BA_BO<0) return AO_sq<rad_sq;
+	if (BA_BO<0) return BO_sq<rad_sq;
+
+	double AB_sq = sq(A,B);
 	return AO_sq*(1-sq(AB_AO)/(AO_sq*AB_sq))<rad_sq;
 }
 
@@ -107,7 +110,7 @@ bool intersect(element e1, element e2) {
 		}
 		return false;
 	}
-	if (!e1.is_seg && !e2.is_seg) return (sq(e1.O-e2.O)<sq(e1.rad+e2.rad));
+	if (!e1.is_seg && !e2.is_seg) return (sq(e1.O,e2.O)<sq(e1.rad+e2.rad));
 	if (e1.is_seg && !e2.is_seg) {
 		for (int i=0; i<e1.segs.size()-1; i++) {
 			return intersect_seg_circ(e1.segs[i],e1.segs[i+1],e2.O,e2.rad);

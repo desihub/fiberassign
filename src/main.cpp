@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
 	InterPlate = 200;
 	Randomize = false;
 	Pacman = false;
-	Collision = false;
+	Collision = true;
 
 	str kind[] = {"QSO Ly-a","QSO Tracer","LRG","ELG","Fake QSO","Fake LRG","SS","SF"};
 	int prio[] = {1,1,3,5,1,3,2,4}; // has to be >= 0
