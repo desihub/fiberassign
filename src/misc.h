@@ -80,6 +80,7 @@ void switch_elmts(int a, int b, List& L); // Switch elements a and b
 List sort(const List& L); // Sort by increasing order
 List inverse(const List& L);
 List cumulate(const List& L); // Cumulated sum
+Dlist cumulate(const Dlist& L);
 Dlist division(const Dlist& L, double d);
 
 // Table -----------------------------------------------------
@@ -139,17 +140,22 @@ void deb(int a, int b);
 void debl(int a);
 void deb(double a);
 
-// To String --------------------------------------------------
+// Conversions ------------------------------------------------
 str f(int i); // int 1526879 -> const char* 1,526,879
 str f(double i);
 str i2s(int i);
 str p2s(pair p);
 str p2s(int j, int k);
+int s2i(str s);
+bool s2b(str s);
+double s2d(str s);
 str siz(const Table& T);
 str siz(const Ptable& T);
 str format(int size, str s);
 str erase_spaces(str s); // Same str without spaces
 
+// Parse ------------------------------------------------------
+Slist s2vec(str const& s, char const delimiter);
 // Other ------------------------------------------------------
 void check_args(int n); 
 int max(int a, int b);

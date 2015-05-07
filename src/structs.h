@@ -13,26 +13,9 @@
 #include	<exception>
 #include	<sys/time.h>
 #include        <map>
-#include        "omp.h"
-#include        "macros.h"
 #include        "misc.h"
+#include        "feat.h"
 #include        "collision.h"
-
-// Feat --------------------------------------------------
-class Feat { // F for features
-	public:
-	List prio; // Priorities 
-	List priopost; // Priorities when we know the kind
-	List goal;
-	Slist kind;
-	Smap ids; // Redundtant but optimizes (inv of kind)
-
-	Feat();
-	int id(str s) const;
-	int maxgoal(int kind) const; // Gives max goal for a galaxy of this kind (goal(Ly-a) for all QSO for example)
-	List maxgoal() const; // List (function of kind) of max goals according to the kind (defined by prio)
-	void init_ids();
-};
 
 // PP ---------------------------------------------------
 class PP { // PP for plate parameters
@@ -43,9 +26,9 @@ class PP { // PP for plate parameters
 	Table N; // Identify neighboring positionners : neighb of fiber k are N[k]
 	
 	PP();
-	void read_fiber_positions(const char pos_name[], int n=1);
-	void get_neighbors();
-	void compute_fibsofsp(); // Computes fibers_of_sp
+	void read_fiber_positions(const Feat& F);
+	void get_neighbors(const Feat& F);
+	void compute_fibsofsp(const Feat& F); // Computes fibers_of_sp
 	List fibs_of_same_pet(int k) const;
 	dpair coords(int k) const; // Coords of fiber k
 };
@@ -63,14 +46,14 @@ class galaxy {
 };
 class Gals : public std::vector<struct galaxy> {};
 
-Gals read_galaxies(const char fname[], int n = 1);
+Gals read_galaxies(const Feat& F);
 
 // Plate -------------------------------------------------
 struct onplate { // The position of a galaxy in plate coordinates
 	int id;
 	double pos[2];
 };
-class Onplates : public std::vector<struct onplate> {};
+class onplates : public std::vector<struct onplate> {};
 
 class plate {
 	public:
@@ -79,13 +62,13 @@ class plate {
 	int ipass; // Pass
 	Table av_gals; // av_gals[k] : available galaxies of fiber k
 
-	void print_plate() const;
-	List av_gals_plate() const; // Av gals of the plate
+	void print_plate(const Feat& F) const;
+	List av_gals_plate(const Feat& F) const; // Av gals of the plate
 };
 class Plates : public std::vector<struct plate> {};
 
-Plates read_plate_centers(const char center_name[], int m = 1);
-List gals_range_fibers(const Plates& P);
+Plates read_plate_centers(const Feat& F);
+List gals_range_fibers(const Plates& P, const Feat& F);
 List av_gals_of_kind(int kind, int j, int k, const Gals& G, const Plates& P, const Feat& F);
 
 // Assignment ---------------------------------------------
@@ -109,44 +92,40 @@ class Assignment {
 	~Assignment();
 	void assign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp);
 	void unassign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp);
-	int find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plates& P, bool col=Collision) const;
-	int is_collision(int j, int k, const PP& pp, const Gals& G, const Plates& P) const;
-	void verif(const Plates& P) const; // Verif mappings are right
+	int find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plates& P, const Feat& F, int col=-1) const;
+	int is_collision(int j, int k, const PP& pp, const Gals& G, const Plates& P, const Feat& F) const;
+	void verif(const Plates& P, const Feat& F) const; // Verif mappings are right
 	int is_assigned_jg(int j, int g) const;
-	int is_assigned_jg(int j, int g, int interplate) const;
+	int is_assigned_jg(int j, int g, const Feat& F) const;
 	bool is_assigned_tf(int j, int k) const; 
-	int na(int begin=0, int size=Nplate) const; // Number of assignments within plates begin to begin+size
-	int nobs(int g, const Gals& G, const Feat& F, bool tmp=true) const; // Counts how many time ob should be observed else more. If tmp=true, return Maxobs for this kind (temporary information)
-	Plist chosen_tfs(int g, int begin=0, int size=Nplate) const; // Pairs (j,k) chosen by g, amongst size plates from begin
-	int unused_f(int j) const; // Number of unused fiber on the j'th plate
-	int unused_fbp(int j, int k, const PP& pp) const; // Number of unassigned fibers of the petal corresponding to (j,k)
+	int na(const Feat& F, int begin=0, int size=-1) const; // Number of assignments within plates begin to begin+size
+	int nobs(int g, const Gals& G, const Feat& F, bool tmp=true) const; // Counts how many time ob should be observed else more. If tmp=true, return MaxObs for this kind (temporary information)
+	Plist chosen_tfs(int g, const Feat& F, int begin=0, int size=-1) const; // Pairs (j,k) chosen by g, amongst size plates from begin
 	int nkind(int j, int k, int kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F, bool pet=false) const; // Number of fibers assigned to the kind "kind" on the petal of (j,k). If pet=true, we don't take k but the petal directly instead
 	List fibs_of_kind(int kind, int j, int pet, const Gals& G, const PP& pp, const Feat& F) const; // Sublist of fibers assigned to a galaxy of type kind for (j,p)
 	List fibs_unassigned(int j, int pet, const Gals& G, const PP& pp, const Feat& F) const; // Subist of unassigned fibers for (j,p)
 
 	// Update information
-	void update_nobsv_tmp_for_one(int j);
-	void update_once_obs(int j);
+	void update_nobsv_tmp_for_one(int j, const Feat& F);
+	void update_once_obs(int j, const Feat& F);
 
 	// Used to compute results at the end
 	Table infos_petal(int j, int pet, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const;
-	List unused_f() const;
-	Table unused_fbp(const PP& pp) const; // Unused fibers by petal
+	List unused_f(const Feat& F) const;
+	Table unused_fbp(const PP& pp, const Feat& F) const; // Unused fibers by petal
 	Table used_by_kind(str kind, const Gals& G, const PP& pp, const Feat& F) const; // Table (j X p) with numbers of assigned TF to a galaxy of kind
-	float colrate(const PP& pp, const Gals& G, const Plates& P, int j=Nplate) const; // Get collision rate, j = plate number, doesn't take into account 3-collisions
+	float colrate(const PP& pp, const Gals& G, const Plates& P, const Feat& F, int j=-1) const; // Get collision rate, j = plate number, doesn't take into account 3-collisions
 
 	// Not used (but could be useful)
+	int unused_f(int j, const Feat& F) const; // Number of unused fiber on the j'th plate
+	int unused_fbp(int j, int k, const PP& pp, const Feat& F) const; // Number of unassigned fibers of the petal corresponding to (j,k)
 	double get_proba(int i, const Gals& G, const Feat& F); // p(fake QSO | QSO) for example
-	void update_nobsv_tmp();
+	void update_nobsv_tmp(const Feat& F);
 };
 
 int fprio(int g, const Gals& G, const Feat& F, const Assignment& A);
 
 double plate_dist(const double theta);
 struct onplate change_coords(const struct galaxy& O, const struct plate& P);
-// Some (old) writing functions -----------------------------------
-void writeTFfile(const Plates& P, std::ofstream TFfile);
-void writeGfile(Gals& G, std::ofstream Gfile);
-void readGfile(Gals& G, galaxy Gtemp, std::ifstream GXfile);
 
 #endif

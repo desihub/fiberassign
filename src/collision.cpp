@@ -8,18 +8,16 @@
 #include	<vector>
 #include	<algorithm>
 #include	<exception>
-#include	<sys/time.h>
 #include        <map>
-#include        "omp.h"
-#include        "macros.h"
 #include        "misc.h"
+#include        "feat.h"
 #include        "collision.h"
 
 // Angles are dpair (cos t, sin t)
 
 // PosP
-PosP::PosP(double r10, double r20, double d0) {
-	r1 = r10; r2 = r20; d = d0;
+PosP::PosP(double r10, double r20) {
+	r1 = r10; r2 = r20;
 }
 
 // Intersection of segments
@@ -217,12 +215,11 @@ bool collision(polygon& p1, polygon& p2) {
 	return false;
 }
 
-bool collision(dpair O1, dpair G1, dpair O2, dpair G2) {
+bool collision(dpair O1, dpair G1, dpair O2, dpair G2, const Feat& F) {
 	double dist_sq = sq(G1,G2);
-	if (dist_sq < sq(Collide)) return true;
-	if (dist_sq > sq(NoCollide)) return false;
-	Count++;
-	PosP posp(3,3,10);
+	if (dist_sq < sq(F.Collide)) return true;
+	if (dist_sq > sq(F.NoCollide)) return false;
+	PosP posp(3,3);
 	polygon fh1 = create_fh(posp);
 	polygon fh2 = create_fh(posp);
 	polygon cb1 = create_cb(posp);

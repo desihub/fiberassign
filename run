@@ -1,14 +1,14 @@
 #PBS -S /bin/bash
 #PBS -N Assign
-#PBS -l mppwidth=24,walltime=3:29:30
+#PBS -l mppwidth=24,walltime=0:29:30
 
-#PBS -q regular
+#PBS -q debug
 #
 cd $PBS_O_WORKDIR
 export OMP_NUM_THREADS=24
 #
 echo "# Running assign."
 
-aprun -n 1 -N 1 -d 24 ./assign /project/projectdirs/desi/mocks/preliminary/objects_ss_sf0.rdzipn /project/projectdirs/desi/software/edison/desimodel/0.3.1//data/footprint/desi-tiles.par /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt assignment 1 1
+aprun -n 1 -N 1 -d 24 ./assign /project/projectdirs/desi/mocks/preliminary/objects_ss_sf0.rdzipn /project/projectdirs/desi/software/edison/desimodel/0.3.1//data/footprint/desi-tiles.par /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt 1 1
 #$DESIMODEL/data/focalplane/fiberpos.txt
 # $DESIMODEL/data/footprint/desi-tiles.par 

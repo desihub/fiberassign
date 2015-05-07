@@ -11,9 +11,6 @@
 #include	<algorithm>
 #include	<exception>
 #include	<sys/time.h>
-#include	"modules/htmTree.h"
-#include	"modules/kdTree.h"
-#include        "macros.h"
 #include        "misc.h"
 // pair ------------------------------------------------------
 pair::pair() {f = -1; s = -1;}
@@ -313,6 +310,16 @@ List inverse(const List& L) {
 List cumulate(const List& L) {
 	List l = initList(L.size());
 	int a = 0;
+	for (int i=0; i<L.size(); i++) {
+		a += L[i];
+		l[i] = a;
+	}
+	return l;
+}
+
+Dlist cumulate(const Dlist& L) {
+	Dlist l = initDlist(L.size());
+	double a = 0;
 	for (int i=0; i<L.size(); i++) {
 		a += L[i];
 		l[i] = a;
@@ -767,7 +774,7 @@ void debl(int a) { // debug
 void deb(double a) { // debug
 	std::cout << " " << a << std::endl;
 }
-// To String --------------------------------------------------
+// Conversions ------------------------------------------------
 str f(int i) { // int 1526879 -> const char* 1,526,879
 	std::stringstream ss;
 	ss << i;
@@ -821,6 +828,20 @@ str p2s(pair p) {
 	return(p2s(p.f,p.s));
 }
 
+int s2i(str s) {
+	return atoi(s.c_str());
+}
+
+bool s2b(str s) {
+	if (s=="true") return true;
+	if (s=="false") return false;
+	printf("Error in s2b \n");
+}
+
+double s2d(str s) {
+	return atof(s.c_str());
+}
+
 str siz(const Table& T) {
 	std::stringstream ss;
 	ss << " size " << T.size() << "x" << T[0].size();
@@ -846,10 +867,42 @@ str erase_spaces(str s) {
 	return ss;
 }
 
+// Parse ------------------------------------------------------
+Slist s2vec(str const& s, char const delimiter) {
+	Slist vec;
+	str element;
+	for (int i=0; i<s.length(); i++) {
+		char ch = s[i];
+		if (ch!=delimiter) element+=ch;
+		else if (element.length()>0) {
+			vec.push_back(element);
+			element.clear();
+		}
+	}
+	// Push in the last element if the string does not end with the delimiter
+	if (element.length()>0){
+		vec.push_back(element);
+	}
+	return vec;
+}
+
+void printFile(const char file[]) {
+	int Mc = 512;
+	std::ifstream fIn;
+	fIn.open(file); // open a file
+	if (!fIn.good()) myexit(1); // Not found
+	while (!fIn.eof()) {
+		char buf[Mc];
+		fIn.getline(buf,Mc);
+		printf(buf);
+	}
+	fIn.close();
+}
+
 // Other ------------------------------------------------------
 void check_args(int n) { // Check if the arguments of the executable are right
-	if (n != 7) {
-		std::cerr << "Usage: assign <ObjFile> <PlateFile> <FiberFile> <OutFile> <Modulo galaxies> <Modulo fibers>" << std::endl;
+	if (n != 2) {
+		std::cerr << "Usage: assign <Parameters file>" << std::endl;
 		myexit(1);
 	}
 }

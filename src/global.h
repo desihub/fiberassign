@@ -18,9 +18,9 @@
 #include        "structs.h"
 
 // Collect -----------------------------------------------------------
-void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Plates& P, const PP& pp);
+void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Plates& P, const PP& pp, const Feat& F);
 
-void collect_available_tilefibers(Gals& G, const Plates& P);
+void collect_available_tilefibers(Gals& G, const Plates& P, const Feat& F);
 
 // Assignment functions ----------------------------------------------
 void simple_assign(const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int next=-1);

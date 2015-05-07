@@ -11,18 +11,16 @@
 #include	<vector>
 #include	<algorithm>
 #include	<exception>
-#include	<sys/time.h>
 #include        <map>
-#include        "omp.h"
-#include        "macros.h"
 #include        "misc.h"
+#include        "feat.h"
 
 class PosP {
 	public:
-	double r1, r2, d;
+	double r1, r2;
 	Dlist dimensions;
 
-	PosP(double r1, double r2, double d);
+	PosP(double r1, double r2);
 };
 
 class element { // List segments, or circles
@@ -61,5 +59,5 @@ class Pols : public std::vector<polygon> {};
 
 void rot_pt(dpair& A, dpair axis, dpair t); // Rotation of A (angle t) aroud axis
 bool intersect(dpair p1, dpair q1, dpair p2, dpair q2); // Intersection between segments p1-q1 and p2-q2
-bool collision(dpair O1, dpair G1, dpair O2, dpair G2); // Intersection of fh looking at galaxy G1 with fiber positionner centered in 01 and ...
+bool collision(dpair O1, dpair G1, dpair O2, dpair G2, const Feat& F); // Intersection of fh looking at galaxy G1 with fiber positionner centered in 01 and ...
 #endif
