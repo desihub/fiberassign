@@ -604,13 +604,32 @@ int Assignment::find_collision(int j, int k, int g, const PP& pp, const Gals& G,
 		if (gn!=-1) {
 			struct onplate opn = change_coords(G[gn],P[j]);
 			dpair G2 = dpair(opn.pos[0],opn.pos[1]);
+			//deb(sqrt(sq(G1,G2))); G1.print(); G2.print();
+//pp.coords(k).print(); pp.coords(kn).print();
 			bool b = Exact ? collision(pp.coords(k),G1,pp.coords(kn),G2) : (sq(G1,G2) < sq(AvCollide));
-
 			if (b) return kn;
 		}
 	}
 	return -1;
 }
+
+
+//int find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plates& P, const Assignment& A) {
+	//struct onplate op = change_coords(G[g],P[j]);
+	//double x = op.pos[0];
+	//double y = op.pos[1];
+	//for (int i=0; i<pp.N[k].size(); i++) {
+		//int kn = pp.N[k][i];
+		//int gn = A.TF[j][kn];
+		//if (gn!=-1) {
+			//struct onplate opn = change_coords(G[gn],P[j]);
+			//double xn = opn.pos[0];
+			//double yn = opn.pos[1];
+			//if (sq(x-xn,y-yn) < sq(Collide)) return kn;
+		//}
+	//}
+	//return -1;
+//}
 
 int Assignment::is_collision(int j, int k, const PP& pp, const Gals& G, const Plates& P) const {
 	int g = TF[j][k];

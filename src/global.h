@@ -40,4 +40,5 @@ void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F
 
 void display_results(str outdir, const Gals& G, const Plates &P, const PP& pp, const Feat& F, const Assignment& A, bool latex=false);
 
+void write_FAtile(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A);
 #endif

@@ -53,7 +53,7 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 				for (int g=0; g<gals.size(); g++) {
 					struct onplate op = change_coords(G[gals[g]],p); 
 					dpair Xg = dpair(op.pos[0],op.pos[1]);
-					if (sq(Xg,X)<PatrolRad /*Needed*/) P[j].av_gals[k].push_back(gals[g]);
+					if (sq(Xg,X)<sq(PatrolRad) /*Needed*/) P[j].av_gals[k].push_back(gals[g]);
 				}
 			}
 		}
@@ -709,4 +709,25 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 
 	// Percentage of fibers assigned
 	printf("  %s assignments in total (%.4f %% of all fibers)\n",f(A.na()).c_str(),percent(A.na(),Nplate*Nfiber));
+}
+
+void write_FAtile(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
+	FILE * FA;
+	str s = outdir+"tile"+i2s(j)+".fits";
+	FA = fopen(s.c_str(),"w");
+	for (int k=0; k<Nfiber; k++) {
+		int g = A.TF[j][k];
+		// k
+		fprintf(FA,"%d ",k);
+		// Potentials g
+		List av_gals = P[j].av_gals[k];
+		fprintf(FA,"%d ",av_gals.size());
+		for (int i=0; i<av_gals.size(); i++) {
+			fprintf(FA,"%d ",av_gals[i]);
+		}
+		// Object type, Target ID, ra, dec, x, y
+		struct onplate op = change_coords(G[g],P[j]);
+		fprintf(FA,"%s %d %f %f %f %f\n",F.kind[G[g].id].c_str(),g,G[g].ra,G[g].dec,op.pos[0],op.pos[1]);
+	}
+	fclose(FA);
 }
