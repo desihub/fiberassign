@@ -344,8 +344,8 @@ void new_assign_fibers(const Gals& G, const Plates& P, const PP& pp, const Feat&
 	int n = next==-1 ? F.Nplate-j0 : next; // Not F.Nplate-A.next_plate+1
 	List plates = sublist(j0,n,A.order);
 	List randPlates = F.Randomize ? random_permut(plates) : plates;
-	List no_kind; no_kind.push_back(F.ids.at("QSO Ly-a")); no_kind.push_back(F.ids.at("QSO Tracer")); no_kind.push_back(F.ids.at("Fake QSO")); no_kind.push_back(F.ids.at("SS")); no_kind.push_back(F.ids.at("SF")); 
-	List no_reg; no_reg.push_back(F.ids.at("QSO Ly-a")); no_reg.push_back(F.ids.at("QSO Tracer"));  no_reg.push_back(F.ids.at("LRG")); no_reg.push_back(F.ids.at("ELG")); no_reg.push_back(F.ids.at("Fake QSO")); no_reg.push_back(F.ids.at("Fake LRG"));
+	List no_kind; no_kind.push_back(F.ids.at("QSOLy-a")); no_kind.push_back(F.ids.at("QSOTracer")); no_kind.push_back(F.ids.at("FakeQSO")); no_kind.push_back(F.ids.at("SS")); no_kind.push_back(F.ids.at("SF")); 
+	List no_reg; no_reg.push_back(F.ids.at("QSOLy-a")); no_reg.push_back(F.ids.at("QSOTracer"));  no_reg.push_back(F.ids.at("LRG")); no_reg.push_back(F.ids.at("ELG")); no_reg.push_back(F.ids.at("FakeQSO")); no_reg.push_back(F.ids.at("Fake LRG"));
 	List only_qso; only_qso.push_back(F.ids.at("LRG")); only_qso.push_back(F.ids.at("ELG")); only_qso.push_back(F.ids.at("Fake LRG")); only_qso.push_back(F.ids.at("SS")); only_qso.push_back(F.ids.at("SF"));
 	for (int jj=0; jj<n; jj++) {
 		int j = randPlates[jj];
@@ -618,7 +618,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	*/
 
 	// 4 Histogramme of percentages of seen Ly-a
-	int id = F.ids.at("QSO Ly-a");
+	int id = F.ids.at("QSOLy-a");
 	int goal = F.goal[id];
 	Table Percseen = initTable(goal+1,0);
 	for (int g=0; g<F.Ngal; g++) {
@@ -641,7 +641,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	// 5 Histogram of time between 2 obs of Ly a
 	Table deltas;
 	for (int g=0; g<F.Ngal; g++) {
-		if (G[g].id == F.ids.at("QSO Ly-a")) {
+		if (G[g].id == F.ids.at("QSOLy-a")) {
 			Plist tfs = A.chosen_tfs(g,F);
 			if (tfs.size()>=2) {
 				List unsorted;
