@@ -1,9 +1,15 @@
 # fiberassign
 Fiber assignment code for DESI
 
-Compile assign with make all and launch it (on NERSC) with :
+------------------------------------------------------
+In a nutshell :
 
-qsub run
+make all
+./assign features.txt
+
+------------------------------------------------------
+
+"make all" creates an executable "assign", run it with "./assign features.txt". An example of running on NERSC is with the command "qsub run". "features.txt" contains all the parameters, input files included
 
 
 Compile tex file with luatex :

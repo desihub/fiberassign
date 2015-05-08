@@ -234,15 +234,39 @@ We do the compuation in real time. That means that we do it tile by tile. We can
 
 \section{Introduction}
 Martin White developed C++ code for fiber assignment over the full 14k \sqd footprint.  We first modified Martin's code to incorporate features from Bob Cahn's python code, which ran on a restricted 480 \sqd... We included the improvement and redistribution steps, which switch fiber assignments to increase the number of galaxies observed. We then adapted the code to compute assignments not globally "knowing all information on galaxies yet to be observed" but plate after plate, as in the real experiment.
-The samples are taken from Martin's mocks in stored on NERSC at /project/projectdirs/desi/mocks/preliminary/.  From these files we create a single file containing the appropriate mix of ELG, LRG, QSO, SS (Standard Stars) and SF (Sky Fibers) using the python script in git fiberassign/bin/make\_catalog\_starsandsky.py.  In the same place there is python code to produce a mixture of galaxies without any correlations, but with the correct $\frac{dn}{dz}$  
+The samples are taken from Martin's mocks in stored on NERSC at /project/projectdirs/desi/mocks/preliminary/. From these files we create a single file containing the appropriate mix of ELG, LRG, QSO, SS (Standard Stars) and SF (Sky Fibers) using the python script in git fiberassign/bin/make\_catalog\_starsandsky.py. In the same place there is python code to produce a mixture of galaxies without any correlations, but with the correct $\frac{dn}{dz}$  
   
-The code needs to know the locations of the positioners in the focal plane. They are given in : \$DESIMODEL/data/focalplane/fiberpos.txt.
-It also needs to know the locations of the centers of the fields in the sky, i.e. the plates, and their order.  The original code written by Martin White provided the option of having the plate centers given in a binary file or an ASCII file.  We are now using the ASCII option by defining ASCIICENTERS at the outset. The format is that of \$DESIMODEL/data/footprint/desi-tiles.par, but an alternative ASCII file can be provided. If the executable is {\tt assign} then the calling sequence will look like :
-{\tt./assign galaxies.rdzipn desi-tiles.par fiberpos.txt assignment 1 1}
-Here the catalog of targets is in the NERSC directory : /projects/projectdirs/desi/mocks/ preliminary/objects\_ss\_sf0.rdzipn the binary file created by {\tt make\_catalog}. An option not now used is to write the actual assignments to a file here called {\tt assignment}. The two last numbers stand respectively for the fraction of galaxies and fibers we take (if one write 2 5 for instance, the program will read only half of the galaxies and one fiber over two in the fiber locations file).
+The produced executable is {\tt assign}. The calling sequence will look like :
+{\tt./assign galaxies.rdzipn desi-tiles.par fiberpos.txt 1 1}
   
 README.rst gives instructions for running on NERSC.
-We summarize here the various components of the code to facilitate their modification later.
+
+https://desi.lbl.gov/trac/browser/code/survey/surveyplan/trunk/data/desi-tiles-full.par
+\section{In a nutshell}
+\subsection{Input files}
+Found in the NERSC repository.
+\begin{itemize} 
+	\item Target DB : information, before the study, on all possible targets : (NERSC rep) /projects/projectdirs/desi/mocks/preliminary/objects\_ss\_sf0.rdzipn, created by {\tt make\_catalog}
+	\item Obs DB : batabase constructed from the ongoing DESI observations after the data has been processed by the Spectroscopic pipeline. This DB has not been designed yet
+	\item Survey tiles : file containing the positions of all the tiles to be observed in /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/footprint/desi-tiles.par
+	\item Fiber positions : locations of the positioners in the focal plane in /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
+\end{itemize} 
+
+The produced executable is {\tt assign}. The calling sequence will look like :
+{\tt./assign galaxies.rdzipn desi-tiles.par fiberpos.txt 1 1}
+The two last numbers stand respectively for the fraction of galaxies and fibers we take (if one write 2 5 for instance, the program will read only half of the galaxies and one fiber over two in the fiber locations file). It is 
+
+\section{Source files}
+Source files are file.h and file.cpp and are in this inscreasing dependency order :
+\begin{itemize} 
+	\item macros : set as global some parameters of the program
+	\item misc : a home-made library of structures (and functions on them) needed to manipulate concerning datas, but independent of them. There are pair (of int), List (of int), Table, Cube, and timing, printing, string conversion, error report items.
+	\item structs : structures of the manipulated datas and their members
+	\item global : main high-level functions and algorithms used in the program to collect information, assign fibers and print statistics. Important ones are described further
+	\item main : neat and quickly understandable code that sum up all steps
+\end{itemize} 
+
+\section{Parameters}
 Here are some features on input galaxies simulated catalog :
 
 \begin{table}[H]\centering
@@ -260,18 +284,6 @@ Here are some features on input galaxies simulated catalog :
 	\caption{Characteristics of galaxy samples as set in make\_catalog\_rnc.py}\label{table:characteristics}
 \end{table}
 
-
-\section{Source files}
-Source files are file.h and file.cpp and are in this inscreasing dependency order :
-\begin{itemize} 
-	\item macros : set as global some parameters of the program
-	\item misc : a home-made library of structures (and functions on them) needed to manipulate concerning datas, but independent of them. There are pair (of int), List (of int), Table, Cube, and timing, printing, string conversion, error report items.
-	\item structs : structures of the manipulated datas and their members
-	\item global : main high-level functions and algorithms used in the program to collect information, assign fibers and print statistics. Important ones are described further
-	\item main : neat and quickly understandable code that sum up all steps
-\end{itemize} 
-
-\section{Parameters}
 A number of parameters are defined at the begining of the file main.
 \begin{itemize} 
 	\item parameters summed-up in the Table \ref{table:characteristics}
@@ -725,17 +737,17 @@ On the Table \ref{pac}, we present results of the assignment taking for input th
 \hline
 \multicolumn{6}{r}{Times observed} \\
 	~ &           0 &     1 &  2 & 3 & 4 & 5 &  Total & Fiber used & Once observed & observed $\%$ & weighted $\%$ \\ \hline
-   QSO Ly-a   &     1 &     1 &   4 & 14 & 28 & 0 &    49 &   169 &    48 & 97.889 & 67.703\\ 
- QSO Tracer   &     2 &   117 &   0 &  0 &  0 & 0 &   119 &   117 &   117 & 97.864 & 97.864\\ 
-        LRG   &    16 &    31 & 250 &  0 &  0 & 0 &   298 &   532 &   282 &  94.41 & 89.205\\ 
-        ELG   &   487 & 1,924 &   0 &  0 &  0 & 0 & 2,411 & 1,924 & 1,924 & 79.794 & 79.794\\ 
-   Fake QSO   &     1 &    88 &   0 &  0 &  0 & 0 &    90 &    88 &    88 & 97.856 & 97.856\\ 
-   Fake LRG   &     2 &    47 &   0 &  0 &  0 & 0 &    50 &    47 &    47 & 94.977 & 94.977\\ 
-         SS   &    70 &    69 &   0 &  0 &  0 & 0 &   140 &    69 &    69 & 49.576 & 49.576\\ 
-         SF   & 1,122 &   277 &   0 &  0 &  0 & 0 & 1,400 &   277 &   277 & 19.830 & 19.830\\ 
+   QSO Ly-a   &     1 &     1 &   4 & 14 & 27 & 0 &    49 &   166 &    48 & 97.593 & 66.818 \\ 
+ QSO Tracer   &     2 &   117 &   0 &  0 &  0 & 0 &   119 &   117 &   117 & 97.575 & 97.575 \\ 
+        LRG   &    17 &    33 & 247 &  0 &  0 & 0 &   298 &   528 &   280 & 93.987 & 88.411 \\ 
+        ELG   &   493 & 1,918 &   0 &  0 &  0 & 0 & 2,411 & 1,918 & 1,918 & 79.540 & 79.540 \\ 
+   Fake QSO   &     2 &    87 &   0 &  0 &  0 & 0 &    90 &    87 &    87 & 97.579 & 97.579 \\ 
+   Fake LRG   &     2 &    47 &   0 &  0 &  0 & 0 &    50 &    47 &    47 & 94.608 & 94.608 \\ 
+         SS   &    70 &    69 &   0 &  0 &  0 & 0 &   140 &    69 &    69 & 49.576 & 49.576 \\ 
+         SF   & 1,122 &   277 &   0 &  0 &  0 & 0 & 1,400 &   277 &   277 & 19.830 & 19.830 \\ 
 \hline
 \end{tabular}
-\caption{Same than Table \ref{res} but with the pacman (old version with collide = 2.1)}\label{pac}
+\caption{Same than Table \ref{res} but with the pacman}\label{pac}
 \end{center}\end{table}
 
 Furthermore, there are 50,938,132 assignments in total (92.9358 \% of all fibers).
@@ -1000,6 +1012,27 @@ Note here that the collision rate is less when we only take the first 2000 plate
 \caption{Results for collide = 2.1}\label{21}
 \end{center}\end{table}
 93.93 \% assigned of all fibers.
+
+\begin{figure}[H]\begin{center}\begin{minipage}{.5\textwidth}
+	\tikzsetnextfilename{coldist}
+\begin{tikzpicture}[scale=1.1]
+		\begin{axis}[const plot,enlarge x limits=false,xlabel={Distances between two colliding positioners},ylabel={}]
+			\addplot [color=blue,mark=none] table[x=x,y=0] {figs/coldist.dat};
+		\end{axis}
+	\end{tikzpicture}
+\end{minipage}%
+\begin{minipage}{.5\textwidth}
+	\tikzsetnextfilename{coldistint}
+	\begin{tikzpicture}[scale=1.1]
+		\begin{axis}[const plot,enlarge x limits=false,enlarge y limits=false,xlabel={Distances between two colliding positioners},ylabel={}]
+			\addplot [mark=none] table[x=x,y=1] {figs/coldist.dat};
+		\end{axis}
+	\end{tikzpicture}
+ \end{minipage}
+	\caption{Histogram of distances between two colliding positioners}
+\end{center}\end{figure}
+
+
 
 \bibliographystyle{plain}
 \bibliography{papers}{}

@@ -13,8 +13,8 @@
 #include	<exception>
 #include	<sys/time.h>
 #include        "omp.h"
-#include        "macros.h"
 #include        "misc.h"
+#include        "feat.h"
 #include        "structs.h"
 
 // Collect -----------------------------------------------------------

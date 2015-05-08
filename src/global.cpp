@@ -45,7 +45,7 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 				op.id = g;
 				O.push_back(op);
 			}
-			KDtree<struct oF.Nplate> kdT(O,2);
+			KDtree<struct onplate> kdT(O,2);
 			// For each fiber, finds all reachable galaxies
 			for (int k=0; k<F.Nfiber; k++) {
 				dpair X = pp.coords(k);
@@ -53,7 +53,7 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 				for (int g=0; g<gals.size(); g++) {
 					struct onplate op = change_coords(G[gals[g]],p); 
 					dpair Xg = dpair(op.pos[0],op.pos[1]);
-					if (sq(Xg,X)<sq(F.PatrolRad) /*Needed*/) P[j].av_gals[k].push_back(gals[g]);
+					if (sq(Xg,X)<sq(F.PatrolRad)/*Needed*/) P[j].av_gals[k].push_back(gals[g]);
 				}
 			}
 		}
@@ -80,7 +80,7 @@ inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const Gals& 
 	if (A.find_collision(j,k,g,pp,G,P,F)!=-1) return false;
 	if (kind==F.ids.at("SF") && A.nkind(j,k,F.ids.at("SF"),G,P,pp,F)>=F.MaxSF) return false;
 	if (kind==F.ids.at("SS") && A.nkind(j,k,F.ids.at("SS"),G,P,pp,F)>=F.MaxSS) return false;
-	if (P[j].ipass==Npass-1 && !(kind==F.ids.at("ELG") || kind==F.ids.at("SS") || kind==F.ids.at("SF"))) return false; // Only ELG, SF, SS at the last pass
+	if (P[j].ipass==F.Npass-1 && !(kind==F.ids.at("ELG") || kind==F.ids.at("SS") || kind==F.ids.at("SF"))) return false; // Only ELG, SF, SS at the last pass
 	return true;
 }
 
@@ -161,7 +161,7 @@ int improve_fiber_from_kind(int id, int j, int k, const Gals& G, const Plates&P,
 		List av_gals = P[j].av_gals[k];
 		for (int i=0; i<av_gals.size(); i++) {
 			int g = av_gals[i];
-			if (G[g].id==id && A.find_collision(j,k,g,pp,G,P,F)==-1 && A.is_assigned_jg(j,g,F.InterPlate)==-1 && A.nobs(g,G,F)>=1) {
+			if (G[g].id==id && A.find_collision(j,k,g,pp,G,P,F)==-1 && A.is_assigned_jg(j,g,F)==-1 && A.nobs(g,G,F)>=1) {
 				for (int kkp=0; kkp<fibskind.size(); kkp++) {
 					int kp = fibskind[kkp];
 					int gp = A.TF[j][kp];
@@ -457,7 +457,7 @@ void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F
 		List plates;
 		for (int i=0; i<G[g].av_tfs.size(); i++) {
 			int j = G[g].av_tfs[i].f;
-			if (!isfound(j,plates) && P[j].ipass!=Npass-1) plates.push_back(j);
+			if (!isfound(j,plates) && P[j].ipass!=F.Npass-1) plates.push_back(j);
 		}
 		countgals.push_back(plates.size());
 	}
@@ -476,7 +476,7 @@ void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F
 			//int j = G[g].av_tfs[i].f;
 			//if (!isfound(j,plates)) {
 				//plates.push_back(j);
-				//if (P[j].ipass!=Npass-1 || F.id("ELG")==id) plates_no.push_back(j);
+				//if (P[j].ipass!=F.Npass-1 || F.id("ELG")==id) plates_no.push_back(j);
 			//}
 		//}
 		//countgals[id].push_back(plates.size());
@@ -527,10 +527,11 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	for (int g=0; g<F.Ngal; g++) tots[G[g].id]++;
 	
 	// 1 Raw numbers of galaxies by id and number of remaining observations
-	Table hist2 = initTable(F.Categories,max(F.goal)+1);
-	Table ob = initTable(F.Categories+1,2*max(F.goal)+1);
+	int MaxObs = max(F.goal);
+	Table hist2 = initTable(F.Categories,MaxObs+1);
+	Table ob = initTable(F.Categories+1,2*MaxObs+1);
 
-	List MaxObs = F.maxgoal();
+	List maxobs = F.maxgoal();
 	for (int g=0; g<F.Ngal; g++) {
 		int id = G[g].id;
 		int m = A.nobs(g,G,F,false);
@@ -540,7 +541,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	}
 	for (int m=0; m<2*MaxObs+1; m++) ob[F.Categories][m] = m-MaxObs;
 
-	Table obsvr = initTable(F.Categories,F.MaxObs+1);
+	Table obsvr = initTable(F.Categories,MaxObs+1);
 	for (int i=0; i<F.Categories; i++) {
 		int max = F.goal[i];
 		for (int j=0; j<=max; j++) obsvr[i][j] = hist2[i][max-j];
@@ -549,15 +550,15 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	Table with_tots = obsvr;
 	for (int i=0; i<F.Categories; i++) {
 		int fibs = 0; int obs = 0; int tot =0;
-		for (int j=0; j<=F.MaxObs; j++) tot += obsvr[i][j];
-		for (int j=0; j<=F.MaxObs; j++) fibs += obsvr[i][j]*j;
-		for (int j=1; j<=F.MaxObs; j++) obs += obsvr[i][j];
+		for (int j=0; j<=MaxObs; j++) tot += obsvr[i][j];
+		for (int j=0; j<=MaxObs; j++) fibs += obsvr[i][j]*j;
+		for (int j=1; j<=MaxObs; j++) obs += obsvr[i][j];
 		with_tots[i].push_back(tot);
 		with_tots[i].push_back(fibs);
 		with_tots[i].push_back(obs);
 	}
 	//print_table("  Remaining observations (without negative obs ones)",with_tots,latex,F.kind);
-	Dtable obs_per_sqd = ddivide_floor(with_tots,TotalArea);
+	Dtable obs_per_sqd = ddivide_floor(with_tots,F.TotalArea);
 
 	// 2 Percentages of observation
 	Dtable perc = initDtable(F.Categories,2);
@@ -565,10 +566,10 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 		int tot = sumlist(ob[id]);
 		int goal = F.goal[id];
 
-		perc[id][0] = percent(tot-ob[id][F.MaxObs+goal],tot);
+		perc[id][0] = percent(tot-ob[id][MaxObs+goal],tot);
 
 		double d(0.0);
-		for (int i=0; i<F.MaxObs; i++) d += ob[id][F.MaxObs+i]*(goal-i);
+		for (int i=0; i<MaxObs; i++) d += ob[id][MaxObs+i]*(goal-i);
 		perc[id][1] = percent(d,tot*goal);
 	}
 	print_table("Obs per sqd and percentages",concatenate(obs_per_sqd,perc),latex,F.kind);
@@ -729,7 +730,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	print_hist("UsedSF (number of petals)",1,histogram(usedSF,1));
 
 	// Count
-	printf("Count = %d \n",Count);
+	printf("Count = %d \n",F.Count);
 
 	// Percentage of fibers assigned
 	printf("  %s assignments in total (%.4f %% of all fibers)\n",f(A.na(F)).c_str(),percent(A.na(F),F.Nplate*F.Nfiber));

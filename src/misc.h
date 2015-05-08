@@ -156,6 +156,8 @@ str erase_spaces(str s); // Same str without spaces
 
 // Parse ------------------------------------------------------
 Slist s2vec(str const& s, char const delimiter);
+void printFile(const char file[]);
+
 // Other ------------------------------------------------------
 void check_args(int n); 
 int max(int a, int b);

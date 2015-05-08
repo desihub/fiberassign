@@ -498,7 +498,7 @@ List Assignment::fibs_unassigned(int j, int pet, const Gals& G, const PP& pp, co
 
 int Assignment::nobs(int g, const Gals& G, const Feat& F, bool tmp) const {
 	//int cnt(F.goal[G[g].id]);
-	//for (int i=0; i<Npass; i++) if (is_assigned_pg(i,g)) cnt--;
+	//for (int i=0; i<F.Npass; i++) if (is_assigned_pg(i,g)) cnt--;
 	//return cnt;
 	int obs = tmp ? nobsv_tmp[g] : nobsv[g]; // optimization
 	return obs;

@@ -37,16 +37,15 @@ int main(int argc, char **argv) {
 
 	// Read fiber center positions and compute related things
 	PP pp;
-	pp.read_fiber_positions(F.fibFile.c_str(),F); 
-	F.Nfiber = pp.fp.size()/2;
+	pp.read_fiber_positions(F); 
+	F.Nfiber = pp.fp.size()/2; 
 	F.Npetal = max(pp.spectrom)+1; // spectrom has to be identified from 0 to F.Npetal-1
 	F.Nfbp = (int) (F.Nfiber/F.Npetal);
-	pp.get_neighbors(F); 
-	pp.compute_fibsofsp(F);
+	pp.get_neighbors(F); pp.compute_fibsofsp(F);
 
 	// Read plates
 	Plates P = read_plate_centers(F); // ! Reads all galaxies iff arg2=1
-	F.F.Nplate = P.size();
+	F.Nplate = P.size();
 	printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
 
 	//// Collect available galaxies <-> tilefibers --------------------
@@ -82,13 +81,13 @@ int main(int argc, char **argv) {
 		//improve_from_kind(G,P,pp,F,A,"SF",1);
 		//improve_from_kind(G,P,pp,F,A,"SS",1);
 		// here is observation time
-		printf(" %s not as - ",format(5,f(F.Nfiber-A.na(j,1))).c_str());
+		printf(" %s not as - ",format(5,f(F.Nfiber-A.na(F,j,1))).c_str());
 		update_plan_from_one_obs(G,P,pp,F,A,limit-1);
 		A.next_plate++;
 	}
 	print_time(time,"# ... took :");
-	init_time_at(time,"# Compute F.Collision rate",t);
-	printf("F.Collision rate : %lf \% \n",A.colrate(pp,G,P,F,limit));
+	init_time_at(time,"# Compute collision rate",t);
+	printf("Collision rate : %lf \% \n",A.colrate(pp,G,P,F,limit));
 	print_time(time,"# ... took :");
 
 	// Make a plan ----------------------------------------------------
@@ -111,7 +110,7 @@ int main(int argc, char **argv) {
 		improve_from_kind(G,P,pp,F,A,"SF",1);
 		improve_from_kind(G,P,pp,F,A,"SS",1);
 		// here is observation time
-		printf(" %s not as - ",format(5,f(F.Nfiber-A.na(j,1))).c_str());
+		printf(" %s not as - ",format(5,f(F.Nfiber-A.na(F,j,1))).c_str());
 		update_plan_from_one_obs(G,P,pp,F,A,F.Nplate-1);
 		A.next_plate++;
 	}

@@ -54,7 +54,6 @@ class Feat { // F for features
 	// Set after reading other input files
 	int Nplate;
 	int Ngal;
-	int MaxObs;
 	int Nfiber;
 	int Npetal;
 	int Nfbp; // Number of fibers by petals

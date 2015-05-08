@@ -15,7 +15,7 @@ MaxSS 10
 MaxSF 40
 PlateRadius 1.65
 
-NeighborRad = 11.0
+NeighborRad 11.0
 TotalArea 15789.0
 invFibArea 700
 moduloGal 1

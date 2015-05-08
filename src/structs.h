@@ -53,7 +53,7 @@ struct onplate { // The position of a galaxy in plate coordinates
 	int id;
 	double pos[2];
 };
-class onplates : public std::vector<struct onplate> {};
+class Onplates : public std::vector<struct onplate> {};
 
 class plate {
 	public:
