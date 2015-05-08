@@ -24,6 +24,6 @@ moduloFiber 1
 Collision true
 Exact true
 AvCollide 2.9
-Collide 2.1
+Collide 1.0
 NoCollide 7.0
 PatrolRad 6.0

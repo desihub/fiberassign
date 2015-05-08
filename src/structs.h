@@ -123,6 +123,8 @@ class Assignment {
 	void update_nobsv_tmp(const Feat& F);
 };
 
+bool collision(dpair O1, dpair G1, dpair O2, dpair G2, const Feat& F); // Intersection of fh looking at galaxy G1 with fiber positionner centered in 01 and ...
+
 int fprio(int g, const Gals& G, const Feat& F, const Assignment& A);
 
 double plate_dist(const double theta);

@@ -14,6 +14,7 @@
 #include	<sys/time.h>
 #include        <map>
 #include        "misc.h"
+#include        "collision.h"
 
 // Feat --------------------------------------------------
 class Feat { // F for features
@@ -58,9 +59,12 @@ class Feat { // F for features
 	int Npetal;
 	int Nfbp; // Number of fibers by petals
 
+	// Memorizes geometry of central body and fiber holder
+	polygon cb;
+	polygon fh;
+
 	// Permit to count some things
 	int Count;
-
 
 	// Methods
 	Feat();

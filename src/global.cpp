@@ -45,6 +45,7 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 				op.id = g;
 				O.push_back(op);
 			}
+			debl(id);
 			KDtree<struct onplate> kdT(O,2);
 			// For each fiber, finds all reachable galaxies
 			for (int k=0; k<F.Nfiber; k++) {
@@ -744,15 +745,17 @@ void write_FAtile(int j, str outdir, const Gals& G, const Plates& P, const PP& p
 		int g = A.TF[j][k];
 		// k
 		fprintf(FA,"%d ",k);
-		// Potentials g
 		List av_gals = P[j].av_gals[k];
+		// Number of potential galaxies
 		fprintf(FA,"%d ",av_gals.size());
-		for (int i=0; i<av_gals.size(); i++) {
-			fprintf(FA,"%d ",av_gals[i]);
-		}
+		// IDs of potential galaxies
+		for (int i=0; i<av_gals.size(); i++) fprintf(FA,"%d ",av_gals[i]);
 		// Object type, Target ID, ra, dec, x, y
-		struct onplate op = change_coords(G[g],P[j]);
-		fprintf(FA,"%s %d %f %f %f %f\n",F.kind[G[g].id].c_str(),g,G[g].ra,G[g].dec,op.pos[0],op.pos[1]);
+		if (g!=-1) {
+			struct onplate op = change_coords(G[g],P[j]);
+			fprintf(FA,"%s %d %f %f %f %f\n",F.kind[G[g].id].c_str(),g,G[g].ra,G[g].dec,op.pos[0],op.pos[1]);
+		}
+		else fprintf(FA,"-1\n");
 	}
 	fclose(FA);
 }

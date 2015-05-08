@@ -10,7 +10,6 @@
 #include	<exception>
 #include        <map>
 #include        "misc.h"
-#include        "feat.h"
 #include        "collision.h"
 
 // Angles are dpair (cos t, sin t)
@@ -22,7 +21,7 @@ PosP::PosP(double r10, double r20) {
 
 // Intersection of segments
 
-int orientation(dpair p, dpair q, dpair r) {
+int orientation(const dpair& p, const dpair& q, const dpair& r) {
     // See 10th slides from following link for derivation of the formula
     // http://www.dcs.gla.ac.uk/~pat/52233/slides/Geometry1x1.pdf
     double val = (q.s- p.s) * (r.f - q.f) - (q.f - p.f) * (r.s - q.s);
@@ -35,10 +34,10 @@ int orientation(dpair p, dpair q, dpair r) {
     return (val > 0) ? 1 : 2; // clock or counterclock wise
 }
  
-bool intersect(dpair p1, dpair q1, dpair p2, dpair q2) {
+bool intersect(const dpair& p1, const dpair& q1, const dpair& p2, const dpair& q2) {
     int o1 = orientation(p1, q1, p2);
     int o2 = orientation(p1, q1, q2);
-    if (o1 == o2) return false;
+    if (o1 == o2) return false; // terminate called after throwing an instance of 'std::bad_alloc'
     int o3 = orientation(p2, q2, p1);
     int o4 = orientation(p2, q2, q1);
     if (o3 == o4) return false;
@@ -68,37 +67,37 @@ element::element() {}
 
 element::element(bool b) { is_seg = b; }
 
-element::element(dpair Ocenter, double rad_) {
+element::element(const dpair& Ocenter, const double& rad0) {
 	is_seg = false;
 	O = Ocenter;
-	rad = rad_;
+	rad = rad0;
 }
 
-element::element(dpair A, dpair B) {
+element::element(const dpair& A, const dpair& B) {
 	is_seg = true;
 	add(A);
 	add(B);
 }
 
-void element::add(double a, double b) {
+void element::add(const double& a, const double& b) {
 	segs.push_back(dpair(a,b));
 }
 
-void element::add(dpair p) {
+void element::add(const dpair& p) {
 	segs.push_back(p);
 }
 
-void element::transl(dpair t) {
+void element::transl(const dpair& t) {
 	if (is_seg) for (int i=0; i<segs.size(); i++) segs[i] = segs[i]+t;
 	else O = O + t;
 }
 
-void element::rotation(dpair t, dpair axis) {
+void element::rotation(const dpair& t, const dpair& axis) {
 	if (is_seg) for (int i=0; i<segs.size(); i++) rot_pt(segs[i],axis,t);
 	else rot_pt(O,axis,t);
 }
 
-bool intersect(element e1, element e2) {
+bool intersect(const element& e1, const element& e2) {
 	if (e1.is_seg && e2.is_seg) {
 		for (int i=0; i<e1.segs.size()-1; i++) {
 			for (int j=0; j<e2.segs.size()-1; j++) {
@@ -122,22 +121,22 @@ bool intersect(element e1, element e2) {
 }
 
 // polygon
-void polygon::add(element el) {
+void polygon::add(const element& el) {
 	elmts.push_back(el);
 }
 
-void polygon::transl(dpair t) {
+void polygon::transl(const dpair& t) {
 	for (int i=0; i<elmts.size(); i++) elmts[i].transl(t);
 	axis = axis + t;
 }
 
-void polygon::rotation(dpair t) {
+void polygon::rotation(const dpair& t) {
 	for (int i=0; i<elmts.size(); i++) {
 		elmts[i].rotation(t,axis);
 	}
 }
 
-void polygon::rotation_origin(dpair t) {
+void polygon::rotation_origin(const dpair& t) {
 	dpair origin = dpair();
 	for (int i=0; i<elmts.size(); i++) {
 		elmts[i].rotation(t,origin);
@@ -145,9 +144,9 @@ void polygon::rotation_origin(dpair t) {
 	rot_pt(axis,origin,t);
 }
 
-polygon create_fh(PosP posp) {
+polygon create_fh() {
 	polygon fh;
-	fh.axis = dpair(-posp.r1,0);
+	fh.axis = dpair(-3.0,0);
 
 	// Only segments
 	//element el;
@@ -161,11 +160,11 @@ polygon create_fh(PosP posp) {
 	set.add(-2.944,-1.339); set.add(-2.944,-2.015); set.add(-1.981,-1.757); set.add(-1.844,-0.990);
 	fh.add(set);
 
-	fh.transl(dpair(posp.r2+posp.r1,0));
+	fh.transl(dpair(6.0,0));
 	return fh;
 }
 
-polygon create_cb(PosP posp) {
+polygon create_cb() {
 	polygon cb;
 	cb.axis = dpair(3.0,0);
 
@@ -178,22 +177,22 @@ polygon create_cb(PosP posp) {
 }
 
 // Functions
-void rot_pt(dpair& A, dpair ax, dpair angle) {
+void rot_pt(dpair& A, const dpair& ax, const dpair& angle) {
 	dpair P = A-ax;
 	double r = norm(P);
 	dpair cos_sin = cos_sin_angle(P);
 	dpair sum = sum_angles(cos_sin,angle);
-	A = ax+dpair(r*sum.f,r*sum.s);		
+	A = ax+dpair(r*sum.f,r*sum.s);
 }
 
-Dlist angles(dpair A, PosP posp) { // cos sin theta and phi for a galaxy which is in A (ref to the origin)
+Dlist angles(dpair A, const PosP& posp) {
 	double phi = 2*acos(norm(A)/(2*posp.r1));
 	double theta = atan(A.s/A.f)-phi/2;
 	Dlist ang; ang.push_back(cos(theta)); ang.push_back(sin(theta)); ang.push_back(cos(phi)); ang.push_back(sin(phi));
 	return ang;
 }
 
-void repos_cb_fh(polygon& cb, polygon& fh, dpair O, dpair G, PosP posp) { // G loc of galaxy, O origin. Repositions fh and cb for 0, G
+void repos_cb_fh(polygon& cb, polygon& fh, const dpair& O, const dpair& G, const PosP& posp) {
 	dpair Gp = G-O;
 	if (sq(posp.r1+posp.r2)<sq(Gp)) printf("Error galaxy out of range of fiber in repos_fiber\n");
 	Dlist anglesT = angles(Gp,posp);
@@ -206,28 +205,11 @@ void repos_cb_fh(polygon& cb, polygon& fh, dpair O, dpair G, PosP posp) { // G l
 	cb.transl(O);
 }
 
-bool collision(polygon& p1, polygon& p2) {
+bool collision(const polygon& p1, const polygon& p2) {
 	for (int i=0; i<p1.elmts.size(); i++) {
 		for (int j=0; j<p2.elmts.size(); j++) {
 			if (intersect(p1.elmts[i],p2.elmts[i])) return true;
 		}
 	}
-	return false;
-}
-
-bool collision(dpair O1, dpair G1, dpair O2, dpair G2, const Feat& F) {
-	double dist_sq = sq(G1,G2);
-	if (dist_sq < sq(F.Collide)) return true;
-	if (dist_sq > sq(F.NoCollide)) return false;
-	PosP posp(3,3);
-	polygon fh1 = create_fh(posp);
-	polygon fh2 = create_fh(posp);
-	polygon cb1 = create_cb(posp);
-	polygon cb2 = create_cb(posp);
-	repos_cb_fh(cb1,fh1,O1,G1,posp);
-	repos_cb_fh(cb2,fh2,O2,G2,posp);
-	if (collision(fh1,fh2)) return true;
-	if (collision(cb1,fh2)) return true;
-	if (collision(cb2,fh1)) return true;
 	return false;
 }

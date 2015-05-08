@@ -563,8 +563,25 @@ struct onplate change_coords(const struct galaxy& O, const struct plate& P) {
 	return obj;
 }
 
-// (On plate p) finds if there is a collision if fiber k would watch at galaxy g (collision with neighb)
 
+bool collision(dpair O1, dpair G1, dpair O2, dpair G2, const Feat& F) {
+	double dist_sq = sq(G1,G2);
+	if (dist_sq < sq(F.Collide)) return true;
+	if (dist_sq > sq(F.NoCollide)) return false;
+	PosP posp(3,3);
+	polygon fh1 = F.fh;
+	polygon fh2 = F.fh;
+	polygon cb1 = F.cb;
+	polygon cb2 = F.cb;
+	repos_cb_fh(cb1,fh1,O1,G1,posp);
+	repos_cb_fh(cb2,fh2,O2,G2,posp);
+	if (collision(fh1,fh2)) return true;
+	if (collision(cb1,fh2)) return true;
+	if (collision(cb2,fh1)) return true;
+	return false;
+}
+
+// (On plate p) finds if there is a collision if fiber k would watch at galaxy g (collision with neighb)
 int Assignment::find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plates& P, const Feat& F, int col) const {
 	bool bol = (col==-1) ? F.Collision : false;
 	if (bol) return -1;

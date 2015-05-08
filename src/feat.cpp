@@ -13,6 +13,7 @@
 #include        <map>
 #include        <stdlib.h>     /* srand, rand */
 #include        "misc.h"
+#include        "collision.h"
 #include        "feat.h"
 // Features ------------------------------------------------------------------
 Feat::Feat() { Count = 0; }
