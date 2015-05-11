@@ -122,7 +122,7 @@ int main(int argc, char **argv) {
 
 	// Results --------------------------------------------------------
 	A.verif(P,F); // Verification that the assignment is sane
-	for (int j=0; j<F.Nplate; j++) write_FAtile(j,"out/",G,P,pp,F,A);
+	//for (int j=0; j<F.Nplate; j++) write_FAtile(j,"out/",G,P,pp,F,A);
 	display_results("doc/figs/",G,P,pp,F,A,true);
 	print_time(t,"# Finished !... in");
 	return(0);

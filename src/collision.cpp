@@ -46,7 +46,7 @@ bool intersect(const dpair& p1, const dpair& q1, const dpair& p2, const dpair& q
 
 // Intersection of segment and circle
 
-bool intersect_seg_circ(dpair A, dpair B, dpair O, double rad) {
+bool intersect_seg_circ(const dpair& A, const dpair& B, const dpair& O, const double& rad) {
 	// Make a drawing, with C the projection of O on (AB), use scalar products
 	double rad_sq = sq(rad);
 
@@ -79,6 +79,10 @@ element::element(const dpair& A, const dpair& B) {
 	add(B);
 }
 
+bool element::isseg() const {
+	return is_seg;
+}
+
 void element::add(const double& a, const double& b) {
 	segs.push_back(dpair(a,b));
 }
@@ -97,6 +101,18 @@ void element::rotation(const dpair& t, const dpair& axis) {
 	else rot_pt(O,axis,t);
 }
 
+void element::print() const {
+	printf("seg ? %d",is_seg); fl();
+	if (!O.isnull() || rad!=0) printf(" - center (%f,%f) rad %f",O.f,O.s,rad); fl();
+	printf(" sizesegs= %d ",segs.size()); fl();
+	if (0<segs.size()) {
+		debl(" - segs : ");
+		for (int i=0; i<segs.size(); i++) segs[i].print();
+	}
+	else printf(" no seg ");
+	printf("\n"); fl();
+}
+
 bool intersect(const element& e1, const element& e2) {
 	if (e1.is_seg && e2.is_seg) {
 		for (int i=0; i<e1.segs.size()-1; i++) {
@@ -107,7 +123,6 @@ bool intersect(const element& e1, const element& e2) {
 		}
 		return false;
 	}
-	if (!e1.is_seg && !e2.is_seg) return (sq(e1.O,e2.O)<sq(e1.rad+e2.rad));
 	if (e1.is_seg && !e2.is_seg) {
 		for (int i=0; i<e1.segs.size()-1; i++) {
 			return intersect_seg_circ(e1.segs[i],e1.segs[i+1],e2.O,e2.rad);
@@ -118,6 +133,7 @@ bool intersect(const element& e1, const element& e2) {
 			return intersect_seg_circ(e2.segs[i],e2.segs[i+1],e1.O,e1.rad);
 		}
 	}
+	if (!e1.is_seg && !e2.is_seg) return (sq(e1.O,e2.O)<sq(e1.rad+e2.rad));
 }
 
 // polygon
@@ -131,17 +147,19 @@ void polygon::transl(const dpair& t) {
 }
 
 void polygon::rotation(const dpair& t) {
-	for (int i=0; i<elmts.size(); i++) {
-		elmts[i].rotation(t,axis);
-	}
+	for (int i=0; i<elmts.size(); i++) elmts[i].rotation(t,axis);
 }
 
 void polygon::rotation_origin(const dpair& t) {
 	dpair origin = dpair();
-	for (int i=0; i<elmts.size(); i++) {
-		elmts[i].rotation(t,origin);
-	}
+	for (int i=0; i<elmts.size(); i++) elmts[i].rotation(t,origin);
 	rot_pt(axis,origin,t);
+}
+
+void polygon::print() const {
+	debl("Print polygone :\n");
+	for (int i=0; i<elmts.size(); i++) elmts[i].print();
+	printf(" - axis : "); axis.print();
 }
 
 polygon create_fh() {
@@ -154,7 +172,7 @@ polygon create_fh() {
 	//fh.add(el);
 
 	// Segments and disks
-	fh.add(element(dpair(),0.967)); // Head
+	fh.add(element(dpair(),0.967)); // Head disk
 	fh.add(element(dpair(-3.0,0.990),dpair(0,0.990))); // Upper segment
 	element set(true); // Lower segment
 	set.add(-2.944,-1.339); set.add(-2.944,-2.015); set.add(-1.981,-1.757); set.add(-1.844,-0.990);
@@ -179,13 +197,14 @@ polygon create_cb() {
 // Functions
 void rot_pt(dpair& A, const dpair& ax, const dpair& angle) {
 	dpair P = A-ax;
+	if (P.isnull()) return;
 	double r = norm(P);
 	dpair cos_sin = cos_sin_angle(P);
 	dpair sum = sum_angles(cos_sin,angle);
 	A = ax+dpair(r*sum.f,r*sum.s);
 }
 
-Dlist angles(dpair A, const PosP& posp) {
+Dlist angles(const dpair& A, const PosP& posp) {
 	double phi = 2*acos(norm(A)/(2*posp.r1));
 	double theta = atan(A.s/A.f)-phi/2;
 	Dlist ang; ang.push_back(cos(theta)); ang.push_back(sin(theta)); ang.push_back(cos(phi)); ang.push_back(sin(phi));
@@ -206,9 +225,11 @@ void repos_cb_fh(polygon& cb, polygon& fh, const dpair& O, const dpair& G, const
 }
 
 bool collision(const polygon& p1, const polygon& p2) {
+	p1.print();
+	p2.print();
 	for (int i=0; i<p1.elmts.size(); i++) {
 		for (int j=0; j<p2.elmts.size(); j++) {
-			if (intersect(p1.elmts[i],p2.elmts[i])) return true;
+			if (intersect(p1.elmts[i],p2.elmts[j])) return true;
 		}
 	}
 	return false;

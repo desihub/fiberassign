@@ -18,8 +18,8 @@ PlateRadius 1.65
 NeighborRad 11.0
 TotalArea 15789.0
 invFibArea 700
-moduloGal 1
-moduloFiber 1
+moduloGal 10
+moduloFiber 10
 
 Collision true
 Exact true

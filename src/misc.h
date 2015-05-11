@@ -35,6 +35,7 @@ class dpair {
 	dpair();
 	dpair(double a, double b);
 	void print() const;
+	bool isnull() const;
 	/*dpair pair_rand(double a, double b);*/
 };
 dpair operator+(dpair const& a, dpair const& b);
@@ -136,8 +137,12 @@ void myexception(const std::exception& e);
 void myexception(std::exception& e); // Intel compiler needs this version too ...
 void error(str s);
 void deb(int a);
+void deb(str a);
 void deb(int a, int b);
 void debl(int a);
+void debl(str a);
+void debl(double a);
+/*void debl(bool a);*/
 void deb(double a);
 
 // Conversions ------------------------------------------------

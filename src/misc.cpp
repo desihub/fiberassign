@@ -35,6 +35,10 @@ dpair operator-(dpair const& a, double b) {
     return dpair(a.f-b,a.s-b);
 }
 void dpair::print() const {printf("(%f,%f) ",f,s); fl();}
+bool dpair::isnull() const {
+	if (f==0 && s==0) return true;
+	return false;
+}
 //void dpair::pair_rand(double a, double b) { return dpair(1,2); }
 
 // List ------------------------------------------------------
@@ -763,12 +767,28 @@ void deb(int a) { // debug
 	std::cout << " " << a << std::endl;
 }
 
+void deb(str a) { // debug
+	std::cout << " " << a << std::endl;
+}
+
 void deb(int a, int b) { // debug
 	std::cout << " " << a << "," << b << " " << std::endl;
 }
 
 void debl(int a) { // debug
-	std::cout << " " << a << std::flush;
+	std::cout << a << " " << std::flush;
+}
+
+void debl(str a) { // debug
+	std::cout << a << " " << std::flush;
+}
+
+void debl(double a) { // debug
+	std::cout << a << " " << std::flush;
+}
+
+void debl(bool a) { // debug
+	std::cout << (a ? "true" : "false") << " " << std::flush;
 }
 
 void deb(double a) { // debug

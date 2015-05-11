@@ -5,6 +5,7 @@ Fiber assignment code for DESI
 In a nutshell :
 
 make all
+
 ./assign features.txt
 
 ------------------------------------------------------
@@ -15,6 +16,7 @@ make all
 Compile tex file with luatex :
 
 lualatex -shell-escape doc.tex
-bibtex.doc
+
+bibtex doc
 
 

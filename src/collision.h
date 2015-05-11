@@ -25,6 +25,8 @@ class PosP {
 class element { // List segments, or circles
 	public:
 	bool is_seg; // True if segments, false if circle
+	
+	public:
 	Dplist segs;
 	dpair O; // Circle center
 	double rad; // Circle radius
@@ -33,10 +35,12 @@ class element { // List segments, or circles
 	element(bool b); // b : is_seg
 	element(const dpair& O, const double& rad); // Creates circle
 	element(const dpair& A, const dpair& B); // Creates segment list with only the segment AB
+	bool isseg() const;
 	void add(const double& a, const double& b); // Add points to segments list
 	void add(const dpair& p); // Add points to segments list
 	void transl(const dpair& t); // Translation
 	void rotation(const dpair& t, const dpair& axis); // Rotation around axis
+	void print() const;
 };
 class Elements : public std::vector<element> {};
 bool intersect(const element& e1, const element& e2); // Intersection between 2 elements
@@ -50,13 +54,14 @@ class polygon {
 	void transl(const dpair& t); // Translation
 	void rotation(const dpair& t); // Rotation aroud polygon's axis
 	void rotation_origin(const dpair& t); // Rotation around 0
+	void print() const;
 };
 polygon create_fh(); // fh = ferrule holder
 polygon create_cb(); // cb = central body
 
 class Pols : public std::vector<polygon> {};
 
-Dlist angles(dpair A, const PosP& posp); // cos sin theta and phi for a galaxy which is in A (ref to the origin)
+Dlist angles(const dpair& A, const PosP& posp); // cos sin theta and phi for a galaxy which is in A (ref to the origin)
 void repos_cb_fh(polygon& cb, polygon& fh, const dpair& O, const dpair& G, const PosP& posp); // G loc of galaxy, O origin. Repositions fh and cb for 0, G
 bool collision(const polygon& p1, const polygon& p2);
 void rot_pt(dpair& A, const dpair& ax, const dpair& angle); // Rotation of A (angle t) aroud axis
