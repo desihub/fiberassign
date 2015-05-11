@@ -157,7 +157,6 @@ void polygon::rotation_origin(const dpair& t) {
 }
 
 void polygon::print() const {
-	debl("Print polygone :\n");
 	for (int i=0; i<elmts.size(); i++) elmts[i].print();
 	printf(" - axis : "); axis.print();
 }
@@ -225,8 +224,6 @@ void repos_cb_fh(polygon& cb, polygon& fh, const dpair& O, const dpair& G, const
 }
 
 bool collision(const polygon& p1, const polygon& p2) {
-	p1.print();
-	p2.print();
 	for (int i=0; i<p1.elmts.size(); i++) {
 		for (int j=0; j<p2.elmts.size(); j++) {
 			if (intersect(p1.elmts[i],p2.elmts[j])) return true;
