@@ -560,7 +560,7 @@ struct onplate change_coords(const struct galaxy& O, const struct plate& P) {
 	// the x-y position is given by our nhat's scaled by this
 	obj.pos[0] = nhat2[0]/tht * rad;
 	obj.pos[1] = nhat2[1]/tht * rad;
-	return obj;
+	return obj; 
 }
 
 
