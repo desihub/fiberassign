@@ -41,6 +41,7 @@ class element { // List segments, or circles
 	void transl(const dpair& t); // Translation
 	void rotation(const dpair& t, const dpair& axis); // Rotation around axis
 	void print() const;
+	void limits(Dlist& lims) const;
 };
 class Elements : public std::vector<element> {};
 bool intersect(const element& e1, const element& e2); // Intersection between 2 elements
@@ -51,10 +52,12 @@ class polygon {
 	dpair axis;
 	
 	void add(const element& el);
+	void add(const polygon& p);
 	void transl(const dpair& t); // Translation
 	void rotation(const dpair& t); // Rotation aroud polygon's axis
 	void rotation_origin(const dpair& t); // Rotation around 0
 	void print() const;
+	Dlist limits() const;
 	void pythonplot(str fname) const;
 };
 polygon create_fh(); // fh = ferrule holder

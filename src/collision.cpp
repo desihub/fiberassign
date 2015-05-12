@@ -11,7 +11,6 @@
 #include        <map>
 #include        "misc.h"
 #include        "collision.h"
-#include <allegro.h>
 
 // Angles are dpair (cos t, sin t)
 
@@ -114,7 +113,7 @@ void element::rotation(const dpair& t, const dpair& axis) {
 
 void element::print() const {
 	printf("seg ? %d",is_seg); fl();
-	if (!O.isnull() || rad!=0) printf(" - center (%f,%f) rad %f",O.f,O.s,rad); fl();
+	if (!O.isnull() || rad!=0) { printf(" - center (%f,%f) rad %f",O.f,O.s,rad); fl(); }
 	printf(" sizesegs= %d ",segs.size()); fl();
 	if (0<segs.size()) {
 		debl(" - segs : ");
@@ -122,6 +121,21 @@ void element::print() const {
 	}
 	else printf(" no seg ");
 	printf("\n"); fl();
+}
+
+void element::limits(Dlist& lims) const {
+	if (is_seg) for (int i=0; i<segs.size(); i++) {
+		if (segs[i].f < lims[0]) lims[0] = segs[i].f;
+		if (segs[i].s < lims[2]) lims[2] = segs[i].s;
+		if (segs[i].f > lims[1]) lims[1] = segs[i].f;
+		if (segs[i].s > lims[3]) lims[3] = segs[i].s;
+	}
+	else {
+		if (O.f - rad < lims[0]) lims[0] = O.f - rad;
+		if (O.s - rad < lims[2]) lims[2] = O.s - rad;
+		if (O.f + rad > lims[1]) lims[1] = O.f + rad;
+		if (O.s + rad > lims[3]) lims[3] = O.s + rad;
+	}
 }
 
 bool intersect(const element& e1, const element& e2) {
@@ -152,6 +166,10 @@ void polygon::add(const element& el) {
 	elmts.push_back(el);
 }
 
+void polygon::add(const polygon& p) {
+	for (int i=0; i<p.elmts.size(); i++) elmts.push_back(p.elmts[i]);
+}
+
 void polygon::transl(const dpair& t) {
 	for (int i=0; i<elmts.size(); i++) elmts[i].transl(t);
 	axis = axis + t;
@@ -172,21 +190,34 @@ void polygon::print() const {
 	printf(" - axis : "); axis.print();
 }
 
+Dlist polygon::limits() const {
+	Dlist lims = initDlist(4);
+	lims[0] = 1e4;
+	lims[2] = 1e4;
+	lims[1] = -1e4;
+	lims[3] = -1e4;
+	for (int i=0; i<elmts.size(); i++) elmts[i].limits(lims);
+	return lims;
+}
+
 void polygon::pythonplot(str fname) const {
 	FILE * file;
 	file = fopen(fname.c_str(),"w");
-	fprintf(file,"import matplotlib.pyplot as plt \n");
+	Dlist lims = limits();
+	fprintf(file,"from pylab import * \nimport pylab as pl\nimport matplotlib.pyplot as plt \nfrom matplotlib import collections as mc\npl.figure(figsize=(70,70))\nax=subplot(aspect='equal') \naxes = plt.gca() \naxes.set_xlim([%f,%f]) \naxes.set_ylim([%f,%f]) \nfig = plt.gcf()\n\n",lims[0],lims[1],lims[2],lims[3]);
 	for (int i=0; i<elmts.size(); i++) {
 		element e = elmts[i];
 		if (e.is_seg) {
-			fprintf(file,"lines = [");
-			for (int j=0; j<segs.size(); j++) fprintf(file,"(%f,%f),",e.segs[j].f,e.segs[j].s);
-			fprintf(file,"]\n");
+			fprintf(file,"lines = [[");
+			for (int j=0; j<e.segs.size(); j++) fprintf(file,"(%f,%f),",e.segs[j].f,e.segs[j].s);
+			fprintf(file,"]]\nlc = mc.LineCollection(lines,linewidths=0.2)\nax.add_collection(lc)\n");
 		}
 		else {
-	fprintf(file,"circ=plt.Circle((%f,%f), radius=%f) \n fig.gca().add_artist(circle1)",e.O.f,e.O.s,rad);
+			fprintf(file,"circ=plt.Circle((%f,%f),%f,fill=False,linewidth=0.2)\nfig.gca().add_artist(circ)\n",e.O.f,e.O.s,e.rad);
 		}
 	}
+	str s = fname+".pdf";
+	fprintf(file,"\nfig.savefig('%s')",s.c_str());
 	fclose(file);
 }
 
@@ -203,7 +234,7 @@ polygon create_fh() {
 	fh.add(element(dpair(),0.967)); // Head disk
 	fh.add(element(dpair(-3.0,0.990),dpair(0,0.990))); // Upper segment
 	element set(true); // Lower segment
-	set.add(-2.944,-1.339); set.add(-2.944,-2.015); set.add(-1.981,-1.757); set.add(-1.844,-0.990);
+	set.add(-2.944,-1.339); set.add(-2.944,-2.015); set.add(-1.981,-1.757); set.add(-1.844,-0.990); set.add(0,-0.990);
 	fh.add(set);
 
 	fh.transl(dpair(6.0,0));

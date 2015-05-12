@@ -759,3 +759,22 @@ void write_FAtile(int j, str outdir, const Gals& G, const Plates& P, const PP& p
 	}
 	fclose(FA);
 }
+
+void pyplotTile(int j, str fname, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
+	polygon pol;
+	PosP posp(3,3);
+	for (int k=0; k<F.Nfiber; k++) {
+		int g = A.TF[j][k];
+		if (g!=-1) {
+			dpair O = pp.coords(k);
+			struct onplate op = change_coords(G[g],P[j]);
+			dpair G = dpair(op.pos[0],op.pos[1]);
+			polygon fh = F.fh;
+			polygon cb = F.cb;
+			repos_cb_fh(cb,fh,O,G,posp);
+			pol.add(cb);
+			pol.add(fh);
+		}
+	}
+	pol.pythonplot(fname);
+}

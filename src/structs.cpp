@@ -575,9 +575,27 @@ bool collision(dpair O1, dpair G1, dpair O2, dpair G2, const Feat& F) {
 	polygon cb2 = F.cb;
 	repos_cb_fh(cb1,fh1,O1,G1,posp);
 	repos_cb_fh(cb2,fh2,O2,G2,posp);
-	if (collision(fh1,fh2)) return true;
-	if (collision(cb1,fh2)) return true;
-	if (collision(cb2,fh1)) return true;
+	polygon p;
+	p.add(cb1);
+	p.add(cb2);
+	p.add(fh1);
+	p.add(fh2);
+	if (collision(fh1,fh2)) {
+		printf("1\n");fl();
+		p.pythonplot("pplot");
+		myexit(1);
+		return true;
+	}
+	if (collision(cb1,fh2)) {
+		printf("2\n");fl();
+		p.pythonplot("pplot");
+		myexit(1);return true;
+	}
+	if (collision(cb2,fh1)){
+		printf("3\n");fl();
+		p.pythonplot("pplot");
+		myexit(1); return true;
+	}
 	return false;
 }
 
