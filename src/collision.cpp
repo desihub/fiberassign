@@ -11,6 +11,7 @@
 #include        <map>
 #include        "misc.h"
 #include        "collision.h"
+#include <allegro.h>
 
 // Angles are dpair (cos t, sin t)
 
@@ -20,7 +21,17 @@ PosP::PosP(double r10, double r20) {
 }
 
 // Intersection of segments
+//Hello,
+	//I'm currently in Stebbins since the begining of fall. I planed and paid to go to Hoyt for the first part of the summer, but had some problem and would need to change as you may know. Here is my list of preference to transfer :
+	//First list :
+	//- Lothlorien
+	//- Davis
+	//- stay at Stebbins and board at
+	//- Cloynt 
 
+	//Second list :
+	//- Kingsman
+	//- Castro
 int orientation(const dpair& p, const dpair& q, const dpair& r) {
     // See 10th slides from following link for derivation of the formula
     // http://www.dcs.gla.ac.uk/~pat/52233/slides/Geometry1x1.pdf
@@ -161,6 +172,24 @@ void polygon::print() const {
 	printf(" - axis : "); axis.print();
 }
 
+void polygon::pythonplot(str fname) const {
+	FILE * file;
+	file = fopen(fname.c_str(),"w");
+	fprintf(file,"import matplotlib.pyplot as plt \n");
+	for (int i=0; i<elmts.size(); i++) {
+		element e = elmts[i];
+		if (e.is_seg) {
+			fprintf(file,"lines = [");
+			for (int j=0; j<segs.size(); j++) fprintf(file,"(%f,%f),",e.segs[j].f,e.segs[j].s);
+			fprintf(file,"]\n");
+		}
+		else {
+	fprintf(file,"circ=plt.Circle((%f,%f), radius=%f) \n fig.gca().add_artist(circle1)",e.O.f,e.O.s,rad);
+		}
+	}
+	fclose(file);
+}
+
 polygon create_fh() {
 	polygon fh;
 	fh.axis = dpair(-3.0,0);
@@ -188,7 +217,7 @@ polygon create_cb() {
 	// Segments and disks
 	cb.add(element(dpair(3.0,0),2.095));
 	element set(true);
-	set.add(5.095,-0.474); set.add(4.358,-2.5); set.add(2.771,-2.5); set.add(1.759,-2.792); set.add(0.905,0.356);
+	set.add(5.095,-0.474); set.add(4.358,-2.5); set.add(2.771,-2.5); set.add(1.759,-2.792); set.add(0.905,-0.356);
 	cb.add(set);
 	return cb;
 }

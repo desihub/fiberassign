@@ -236,31 +236,47 @@ We do the compuation in real time. That means that we do it tile by tile. We can
 Martin White developed C++ code for fiber assignment over the full 14k \sqd footprint.  We first modified Martin's code to incorporate features from Bob Cahn's python code, which ran on a restricted 480 \sqd... We included the improvement and redistribution steps, which switch fiber assignments to increase the number of galaxies observed. We then adapted the code to compute assignments not globally "knowing all information on galaxies yet to be observed" but plate after plate, as in the real experiment.
 The samples are taken from Martin's mocks in stored on NERSC at /project/projectdirs/desi/mocks/preliminary/. From these files we create a single file containing the appropriate mix of ELG, LRG, QSO, SS (Standard Stars) and SF (Sky Fibers) using the python script in git fiberassign/bin/make\_catalog\_starsandsky.py. In the same place there is python code to produce a mixture of galaxies without any correlations, but with the correct $\frac{dn}{dz}$  
   
-The produced executable is {\tt assign}. The calling sequence will look like :
-{\tt./assign galaxies.rdzipn desi-tiles.par fiberpos.txt 1 1}
-  
-README.rst gives instructions for running on NERSC.
-
-https://desi.lbl.gov/trac/browser/code/survey/surveyplan/trunk/data/desi-tiles-full.par
 \section{In a nutshell}
 \subsection{Input files}
-Found in the NERSC repository.
+Found in the NERSC repository (except for Parameters file features.txt).
+The produced executable is {\tt assign}. The calling sequence will look like :
+{\tt./assign features.txt}. An example of how runing it on NERSC is provided in the {\tt run} script, then call it with qsub run.
+
 \begin{itemize} 
+	\item Parameters : all parameters used in the fiber assignment are written in this file. It contains the adress of other input files
 	\item Target DB : information, before the study, on all possible targets : (NERSC rep) /projects/projectdirs/desi/mocks/preliminary/objects\_ss\_sf0.rdzipn, created by {\tt make\_catalog}
 	\item Obs DB : batabase constructed from the ongoing DESI observations after the data has been processed by the Spectroscopic pipeline. This DB has not been designed yet
 	\item Survey tiles : file containing the positions of all the tiles to be observed in /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/footprint/desi-tiles.par
 	\item Fiber positions : locations of the positioners in the focal plane in /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
 \end{itemize} 
 
-The produced executable is {\tt assign}. The calling sequence will look like :
-{\tt./assign galaxies.rdzipn desi-tiles.par fiberpos.txt 1 1}
-The two last numbers stand respectively for the fraction of galaxies and fibers we take (if one write 2 5 for instance, the program will read only half of the galaxies and one fiber over two in the fiber locations file). It is 
+To change the location of other input files, one can simply change it in the features file.
+
+\subsection{Output files}
+They are produced in an {\tt out/} directory, in the format {\tt tile54.fits} for example for the 54th tile. There are therefore 10666 such binary files. They consist in 5000 lines (fibers) with the following columns :
+
+\begin{itemize} 
+    \item fiber: [0-4999]
+    \item positioner: [0-4999] (not provided yet)
+    \item number of available objects
+    \item ID of available objects
+    \item objtype: ELG, LRG, QSO, SKY, STDSTAR, GAL, OTHER (actually QSOLy-a, or QSOFake etc for now) (-1 if fiber doesn't observe)
+    \item targetid: unique target identifier to get back to target selection info
+    \item desi target0: 64 bit mask of targeting info (not yet)
+    \item ra: degrees [0-360]
+    \item dec: degrees [-90 - +90]
+    \item xfocal: mm from center in positioner coordinate system
+    \item yfocal: mm from center in positioner coordinate system 
+\end{itemize} 
+
 
 \section{Source files}
 Source files are file.h and file.cpp and are in this inscreasing dependency order :
 \begin{itemize} 
 	\item macros : set as global some parameters of the program
 	\item misc : a home-made library of structures (and functions on them) needed to manipulate concerning datas, but independent of them. There are pair (of int), List (of int), Table, Cube, and timing, printing, string conversion, error report items.
+	\item collision : used to compute collision checkings and build polygons
+	\item features : stock all useful parameters
 	\item structs : structures of the manipulated datas and their members
 	\item global : main high-level functions and algorithms used in the program to collect information, assign fibers and print statistics. Important ones are described further
 	\item main : neat and quickly understandable code that sum up all steps
@@ -268,6 +284,7 @@ Source files are file.h and file.cpp and are in this inscreasing dependency orde
 
 \section{Parameters}
 Here are some features on input galaxies simulated catalog :
+
 
 \begin{table}[H]\centering
 	\begin{tabular}{rcccl} \hline
@@ -293,13 +310,17 @@ A number of parameters are defined at the begining of the file main.
 	\item PlateRadius = $1.65^{\circ}$ radius of the plate
 	\item TotalArea = 15789.0 \sqd total area of the sky considered
 	\item invFibArea = 700 inverse of area in \sqd accessible to a fiber (fiber density for a \sqd)
-	\item Collide = 2.1 mm minimum distance allowed on plate projection of two assigned galaxies on the same plate
 	\item NeighborRad = 11.0 mm maximum distance to consider that two fibers are neighbors
 	\item PatrolRad = 6.0 mm maximum distance, on plate coordinates, that allows a fiber to a galaxy
 	\item InterPlate = 200 minimal number of plates between two observations of the same galaxy
 	\item Randomize = false randomize order of plates in making plans
 	\item Pacman = false selects only spectrometers 0, 1, 2, 7, 8, 9 of the pacman
+
 	\item Collision = true when we want to allow collisions, to compute the collision rate for instance
+	\item Exact = true whether we want exact collision checking (exact geometry of components) or just circles
+	\item AvCollide = 2.9 mm in case of no exact collision checking, limit distance between two galaxies for their positioners to collide
+	\item Collide = 2.1 mm minimum distance allowed on plate projection of two assigned galaxies on the same plate (optimizes collision checking)
+	\item NoCollide = 7 mm maximum distance between two galaxies for the collision of their corresponding galaxies (optimizes collision checking)
 \end{itemize} 
 
 
@@ -309,8 +330,6 @@ Classes and structures are built to be independent of each other, flexible, quic
 \begin{table}[H]\begin{center}
 	\begin{tabular}{|l|l|p{12cm}|} \hline
 		Structure name & Meaning & Description \\ \hline \hline
-
-		Feat & Features of galaxies & Initialized in the main function. Gives priority and number of observations desired for each galaxy type.\\ \hline
 
 		PP & Plate Parameters & Carries locations of fiber positions on the plate, spectrometer correspondence, and neighboring fibers information.\\ 
 
@@ -1016,7 +1035,7 @@ Note here that the collision rate is less when we only take the first 2000 plate
 \begin{figure}[H]\begin{center}\begin{minipage}{.5\textwidth}
 	\tikzsetnextfilename{coldist}
 \begin{tikzpicture}[scale=1.1]
-		\begin{axis}[const plot,enlarge x limits=false,xlabel={Distances between two colliding positioners},ylabel={}]
+		\begin{axis}[const plot,enlarge x limits=false,enlarge y limits=false,xlabel={Distances between two colliding positioners},ylabel={}]
 			\addplot [color=blue,mark=none] table[x=x,y=0] {figs/coldist.dat};
 		\end{axis}
 	\end{tikzpicture}

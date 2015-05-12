@@ -55,6 +55,7 @@ class polygon {
 	void rotation(const dpair& t); // Rotation aroud polygon's axis
 	void rotation_origin(const dpair& t); // Rotation around 0
 	void print() const;
+	void pythonplot(str fname) const;
 };
 polygon create_fh(); // fh = ferrule holder
 polygon create_cb(); // cb = central body
