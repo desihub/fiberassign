@@ -761,20 +761,27 @@ void write_FAtile(int j, str outdir, const Gals& G, const Plates& P, const PP& p
 }
 
 void pyplotTile(int j, str fname, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
+	std::vector<char> colors;
+	colors.resize(F.Categories);
+	colors[0] = 'b'; colors[1] = 'g'; colors[2] = 'c'; colors[3] = 'm'; colors[4] = 'y'; colors[5] = 'w'; colors[6] = 'b'; colors[7] = 'r';
 	polygon pol;
 	PosP posp(3,3);
 	for (int k=0; k<F.Nfiber; k++) {
+		dpair O = pp.coords(k);
+		char color_center = 'k';
 		int g = A.TF[j][k];
 		if (g!=-1) {
-			dpair O = pp.coords(k);
 			struct onplate op = change_coords(G[g],P[j]);
-			dpair G = dpair(op.pos[0],op.pos[1]);
+			dpair Ga = dpair(op.pos[0],op.pos[1]);
 			polygon fh = F.fh;
 			polygon cb = F.cb;
-			repos_cb_fh(cb,fh,O,G,posp);
+			repos_cb_fh(cb,fh,O,Ga,posp);
 			pol.add(cb);
 			pol.add(fh);
+			pol.add(element(Ga,colors[G[g].id]));
+			if (A.is_collision(j,k,pp,G,P,F)!=-1) color_center = 'r';
 		}
+		pol.add(element(O,'k'));
 	}
 	pol.pythonplot(fname);
 }

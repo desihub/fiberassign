@@ -986,3 +986,9 @@ dpair cos_sin_angle(dpair P) {
 double dist(dpair c1, dpair c2) {
 	return norm(c1.f-c2.f,c1.s-c2.s);
 }
+
+int sign(double a) {
+	if (a<0) return -1;
+	else if (0<a) return 1;
+	else return 0;
+}

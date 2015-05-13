@@ -185,4 +185,5 @@ dpair polar(dpair X);
 dpair cos_sin_angle(dpair P); // Cos and sin of the angle xOP
 dpair sum_angles(dpair p1, dpair p2); // cos(t+a) = cos t * cos a + ... and sin(t+a) = ...
 double dist(dpair c1, dpair c2);
+int sign(double a);
 #endif

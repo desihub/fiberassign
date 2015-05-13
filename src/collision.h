@@ -30,11 +30,13 @@ class element { // List segments, or circles
 	Dplist segs;
 	dpair O; // Circle center
 	double rad; // Circle radius
+	char color; // For python plot
 
 	element();
 	element(bool b); // b : is_seg
 	element(const dpair& O, const double& rad); // Creates circle
 	element(const dpair& A, const dpair& B); // Creates segment list with only the segment AB
+	element(const dpair& A, char c); // Point with color
 	bool isseg() const;
 	void add(const double& a, const double& b); // Add points to segments list
 	void add(const dpair& p); // Add points to segments list

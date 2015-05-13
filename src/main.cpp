@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
 		printf(" %s not as - ",format(5,f(F.Nfiber-A.na(F,j,1))).c_str());
 		update_plan_from_one_obs(G,P,pp,F,A,limit-1);
 		A.next_plate++;
-		//if (j==0) {pyplotTile(j,"doc/figs/tile.py",G,P,pp,F,A);myexit(1);}
+		if (j==0) {pyplotTile(j,"doc/figs/tile.py",G,P,pp,F,A);}
 	}
 	print_time(time,"# ... took :");
 	init_time_at(time,"# Compute collision rate",t);

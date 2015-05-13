@@ -580,22 +580,9 @@ bool collision(dpair O1, dpair G1, dpair O2, dpair G2, const Feat& F) {
 	p.add(cb2);
 	p.add(fh1);
 	p.add(fh2);
-	if (collision(fh1,fh2)) {
-		printf("1\n");fl();
-		p.pythonplot("pplot");
-		myexit(1);
-		return true;
-	}
-	if (collision(cb1,fh2)) {
-		printf("2\n");fl();
-		p.pythonplot("pplot");
-		myexit(1);return true;
-	}
-	if (collision(cb2,fh1)){
-		printf("3\n");fl();
-		p.pythonplot("pplot");
-		myexit(1); return true;
-	}
+	if (collision(fh1,fh2)) return true;
+	if (collision(cb1,fh2)) return true;
+	if (collision(cb2,fh1)) return true;
 	return false;
 }
 

@@ -20,17 +20,7 @@ PosP::PosP(double r10, double r20) {
 }
 
 // Intersection of segments
-//Hello,
-	//I'm currently in Stebbins since the begining of fall. I planed and paid to go to Hoyt for the first part of the summer, but had some problem and would need to change as you may know. Here is my list of preference to transfer :
-	//First list :
-	//- Lothlorien
-	//- Davis
-	//- stay at Stebbins and board at
-	//- Cloynt 
 
-	//Second list :
-	//- Kingsman
-	//- Castro
 int orientation(const dpair& p, const dpair& q, const dpair& r) {
     // See 10th slides from following link for derivation of the formula
     // http://www.dcs.gla.ac.uk/~pat/52233/slides/Geometry1x1.pdf
@@ -87,6 +77,12 @@ element::element(const dpair& A, const dpair& B) {
 	is_seg = true;
 	add(A);
 	add(B);
+}
+
+element::element(const dpair& A, char c) {
+	is_seg = true;
+	add(A);
+	color = c;
 }
 
 bool element::isseg() const {
@@ -204,20 +200,23 @@ void polygon::pythonplot(str fname) const {
 	FILE * file;
 	file = fopen(fname.c_str(),"w");
 	Dlist lims = limits();
-	fprintf(file,"from pylab import * \nimport pylab as pl\nimport matplotlib.pyplot as plt \nfrom matplotlib import collections as mc\npl.figure(figsize=(70,70))\nax=subplot(aspect='equal') \naxes = plt.gca() \naxes.set_xlim([%f,%f]) \naxes.set_ylim([%f,%f]) \nfig = plt.gcf()\n\n",lims[0],lims[1],lims[2],lims[3]);
+	fprintf(file,"from pylab import * \nimport pylab as pl\nimport matplotlib.pyplot as plt \nfrom matplotlib import collections as mc\nax=subplot(aspect='equal') \naxes = plt.gca() \naxes.set_xlim([%f,%f]) \naxes.set_ylim([%f,%f]) \nfig = plt.gcf()\n\n",lims[0],lims[1],lims[2],lims[3]);
 	for (int i=0; i<elmts.size(); i++) {
 		element e = elmts[i];
 		if (e.is_seg) {
+			if (1<e.segs.size()) {
 			fprintf(file,"lines = [[");
 			for (int j=0; j<e.segs.size(); j++) fprintf(file,"(%f,%f),",e.segs[j].f,e.segs[j].s);
 			fprintf(file,"]]\nlc = mc.LineCollection(lines,linewidths=0.2)\nax.add_collection(lc)\n");
+			}
+			else if (e.segs.size()==1) fprintf(file,"plt.scatter(%f,%f,c='%c',s=1,linewidth=0.2)\n",e.segs[0].f,e.segs[0].s,e.color);
 		}
 		else {
 			fprintf(file,"circ=plt.Circle((%f,%f),%f,fill=False,linewidth=0.2)\nfig.gca().add_artist(circ)\n",e.O.f,e.O.s,e.rad);
 		}
 	}
 	str s = fname+".pdf";
-	fprintf(file,"\nfig.savefig('%s')",s.c_str());
+	fprintf(file,"\nfig.savefig('tile.pdf')");
 	fclose(file);
 }
 
@@ -265,7 +264,7 @@ void rot_pt(dpair& A, const dpair& ax, const dpair& angle) {
 
 Dlist angles(const dpair& A, const PosP& posp) {
 	double phi = 2*acos(norm(A)/(2*posp.r1));
-	double theta = atan(A.s/A.f)-phi/2;
+	double theta = atan(A.s/A.f)-phi/2 + (A.f<0 ? M_PI : 0);
 	Dlist ang; ang.push_back(cos(theta)); ang.push_back(sin(theta)); ang.push_back(cos(phi)); ang.push_back(sin(phi));
 	return ang;
 }
