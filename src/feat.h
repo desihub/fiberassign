@@ -23,6 +23,7 @@ class Feat { // F for features
 	str galFile;
 	str tileFile;
 	str fibFile;
+	str outDir;
 
 	List prio; // Priorities 
 	List priopost; // Priorities when we know the kind

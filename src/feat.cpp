@@ -56,6 +56,7 @@ void Feat::readInputFile(const char file[]) {
 			if (tok[0]=="galFile") galFile = tok[1];
 			if (tok[0]=="tileFile") tileFile= tok[1];
 			if (tok[0]=="fibFile") fibFile= tok[1];
+			if (tok[0]=="outDir") outDir= tok[1];
 
 			if (tok[0]=="kind") {
 				Categories = tok.size()-1;

@@ -253,14 +253,14 @@ The produced executable is {\tt assign}. The calling sequence will look like :
 To change the location of other input files, one can simply change it in the features file.
 
 \subsection{Output files}
-They are produced in an {\tt out/} directory, in the format {\tt tile54.fits} for example for the 54th tile. There are therefore 10666 such binary files. They consist in 5000 lines (fibers) with the following columns :
+They are produced in a directory defined in features.txt (/project/projectdirs/desi/users/rncahn/fa\_output/ for now), in the format {\tt tile54.fits} for example for the 54th tile. There are therefore 10666 such binary files. They consist in 5000 lines (fibers) with the following columns :
 
 \begin{itemize} 
     \item fiber: [0-4999]
     \item positioner: [0-4999] (not provided yet)
     \item number of available objects
     \item ID of available objects
-    \item objtype: ELG, LRG, QSO, SKY, STDSTAR, GAL, OTHER (actually QSOLy-a, or QSOFake etc for now) (-1 if fiber doesn't observe)
+    \item objtype: ELG, LRG, QSO, SKY, STDSTAR, GAL, OTHER (actually QSOLy-a, or QSOFake etc for now) (-1 if the fiber isn't assigned)
     \item targetid: unique target identifier to get back to target selection info
     \item desi target0: 64 bit mask of targeting info (not yet)
     \item ra: degrees [0-360]
@@ -269,17 +269,15 @@ They are produced in an {\tt out/} directory, in the format {\tt tile54.fits} fo
     \item yfocal: mm from center in positioner coordinate system 
 \end{itemize} 
 
-
 \section{Source files}
-Source files are file.h and file.cpp and are in this inscreasing dependency order :
+Source files are file.h and file.cpp and are in this increasing dependency order :
 \begin{itemize} 
-	\item macros : set as global some parameters of the program
 	\item misc : a home-made library of structures (and functions on them) needed to manipulate concerning datas, but independent of them. There are pair (of int), List (of int), Table, Cube, and timing, printing, string conversion, error report items.
 	\item collision : used to compute collision checkings and build polygons
-	\item features : stock all useful parameters
+	\item features : stocks all useful parameters
 	\item structs : structures of the manipulated datas and their members
 	\item global : main high-level functions and algorithms used in the program to collect information, assign fibers and print statistics. Important ones are described further
-	\item main : neat and quickly understandable code that sum up all steps
+	\item main : neat and quickly understandable code that sums up all steps
 \end{itemize} 
 
 \section{Parameters}
@@ -310,7 +308,7 @@ A number of parameters are defined at the begining of the file main.
 	\item PlateRadius = $1.65^{\circ}$ radius of the plate
 	\item TotalArea = 15789.0 \sqd total area of the sky considered
 	\item invFibArea = 700 inverse of area in \sqd accessible to a fiber (fiber density for a \sqd)
-	\item NeighborRad = 11.0 mm maximum distance to consider that two fibers are neighbors
+	\item NeighborRad = 14.0 mm maximum distance to consider that two fibers are neighbors
 	\item PatrolRad = 6.0 mm maximum distance, on plate coordinates, that allows a fiber to a galaxy
 	\item InterPlate = 200 minimal number of plates between two observations of the same galaxy
 	\item Randomize = false randomize order of plates in making plans
@@ -1051,11 +1049,13 @@ Note here that the collision rate is less when we only take the first 2000 plate
 	\caption{Histogram of distances between two colliding positioners}
 \end{center}\end{figure}
 
-\begin{figure}[H]\begin{center}
-\hspace*{-5cm}
-    \includegraphics[scale=0.15]{figs/tile.pdf}
+\begin{figure}[H]
+\hspace*{-9.2cm}
+    \includegraphics[scale=1.75]{python/tile.pdf}
 	\caption{Tile}
-\end{center}\end{figure}
+\end{figure}
+
+Polygons consist in segments and circles. Modelizing an arc by a circle is much better than by segments, because it needs only one circle, instead of several segments. Computationally cheap methods of collision checking between segments or circles can be read in collision.cpp.
 
 \bibliographystyle{plain}
 \bibliography{papers}{}

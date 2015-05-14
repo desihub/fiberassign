@@ -88,12 +88,12 @@ int main(int argc, char **argv) {
 		printf(" %s not as - ",format(5,f(F.Nfiber-A.na(F,j,1))).c_str());
 		update_plan_from_one_obs(G,P,pp,F,A,limit-1);
 		A.next_plate++;
-		if (j==0) {pyplotTile(j,"doc/figs/tile.py",G,P,pp,F,A);}
 	}
 	print_time(time,"# ... took :");
 	init_time_at(time,"# Compute collision rate",t);
 	printf("Collision rate : %lf \% \n",A.colrate(pp,G,P,F,limit));
 	print_time(time,"# ... took :");
+	pyplotTile(1500,"doc/figs/tile.py",G,P,pp,F,A); // Plot 1500th tile
 
 	// Make a plan ----------------------------------------------------
 	//new_assign_fibers(G,P,pp,F,A);
@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
 
 	// Results --------------------------------------------------------
 	//A.verif(P,F); // Verification that the assignment is sane
-	//for (int j=0; j<F.Nplate; j++) write_FAtile(j,"out/",G,P,pp,F,A);
+	for (int j=0; j<F.Nplate; j++) write_FAtile(j,F.outDir,G,P,pp,F,A);
 	display_results("doc/figs/",G,P,pp,F,A,true);
 	print_time(t,"# Finished !... in");
 	return(0);

@@ -781,7 +781,7 @@ void pyplotTile(int j, str fname, const Gals& G, const Plates& P, const PP& pp, 
 			pol.add(element(Ga,colors[G[g].id]));
 			if (A.is_collision(j,k,pp,G,P,F)!=-1) color_center = 'r';
 		}
-		pol.add(element(O,'k'));
+		pol.add(element(O,color_center));
 	}
 	pol.pythonplot(fname);
 }
