@@ -77,10 +77,10 @@ void collect_available_tilefibers(Gals& G, const Plates& P, const Feat& F) {
 
 inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const Gals& G, const PP& pp, const Feat& F, const Assignment& A) {
 	int kind = G[g].id;
-	if (A.find_collision(j,k,g,pp,G,P,F)!=-1) return false;
 	if (kind==F.ids.at("SF") && A.nkind(j,k,F.ids.at("SF"),G,P,pp,F)>=F.MaxSF) return false;
 	if (kind==F.ids.at("SS") && A.nkind(j,k,F.ids.at("SS"),G,P,pp,F)>=F.MaxSS) return false;
 	if (P[j].ipass==F.Npass-1 && !(kind==F.ids.at("ELG") || kind==F.ids.at("SS") || kind==F.ids.at("SF"))) return false; // Only ELG, SF, SS at the last pass
+	if (A.find_collision(j,k,g,pp,G,P,F)!=-1) return false;
 	return true;
 }
 
