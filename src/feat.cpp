@@ -75,7 +75,6 @@ void Feat::readInputFile(const char file[]) {
 			if (tok[0]=="MaxSF") MaxSF = s2i(tok[1]);
 			if (tok[0]=="PlateRadius") PlateRadius = s2d(tok[1]);
 
-			if (tok[0]=="NeighborRad") NeighborRad = s2d(tok[1]);
 			if (tok[0]=="TotalArea") TotalArea = s2d(tok[1]);
 			if (tok[0]=="invFibArea") invFibArea = s2d(tok[1]);
 			if (tok[0]=="moduloGal") moduloGal = s2i(tok[1]);
@@ -87,6 +86,7 @@ void Feat::readInputFile(const char file[]) {
 			if (tok[0]=="Collide") Collide = s2d(tok[1]);
 			if (tok[0]=="NoCollide") NoCollide = s2d(tok[1]);
 			if (tok[0]=="PatrolRad") PatrolRad = s2d(tok[1]);
+			if (tok[0]=="NeighborRad") NeighborRad = s2d(tok[1]);
 		}
 	}
 	fIn.close();

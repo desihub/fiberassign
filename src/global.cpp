@@ -52,8 +52,7 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 				dpair X = pp.coords(k);
 				std::vector<int> gals = kdT.near(&(pp.fp[2*k]),0.0,F.PatrolRad);
 				for (int g=0; g<gals.size(); g++) {
-					struct onplate op = change_coords(G[gals[g]],p); 
-					dpair Xg = dpair(op.pos[0],op.pos[1]);
+					dpair Xg = projection(gals[g],j,G,P);
 					if (sq(Xg,X)<sq(F.PatrolRad)/*Needed*/) P[j].av_gals[k].push_back(gals[g]);
 				}
 			}
@@ -96,7 +95,7 @@ inline int find_best(int j, int k, const Gals& G, const Plates& P, const PP& pp,
 		int prio = fprio(g,G,F,A);
 		int m = A.nobs(g,G,F);
 		bool tfb = as_tf ? !A.is_assigned_tf(j,k) : true;
-		if (m>=1 && tfb && ok_assign_g_to_jk(g,j,k,P,G,pp,F,A) && A.is_assigned_jg(j,g,F)==-1 && g!=no_g && !isfound(G[g].id,no_kind)) {
+		if (m>=1 && tfb && A.is_assigned_jg(j,g,F)==-1 && ok_assign_g_to_jk(g,j,k,P,G,pp,F,A) && g!=no_g && !isfound(G[g].id,no_kind)) {
 			if (prio<pbest || A.once_obs[g] && m>mbest) { // Then g!=-1 because prio sup pbest
 				best = g;
 				pbest = prio;
@@ -238,6 +237,9 @@ void improve_from_kind(const Gals& G, const Plates&P, const PP& pp, const Feat& 
 			// Take sublist of fibers assigned to kind, and unassigned ones
 			List fibskind = A.fibs_of_kind(id,j,p,G,pp,F);
 			List fibsunas = A.fibs_unassigned(j,p,G,pp,F);
+			//for (int kk=0; kk<fibsunas.size(); kk++) {
+				 //gp = improve_fiber_from_kind(F.ids.at(kind),jp,kp,G,P,pp,F,A);
+			//}
 			for (int kk=0; kk<fibsunas.size(); kk++) {
 				// Take an unassigned tf and its available galaxies
 				int k = fibsunas[kk];
@@ -256,7 +258,12 @@ void improve_from_kind(const Gals& G, const Plates&P, const PP& pp, const Feat& 
 								int m = A.nobs(best,G,F);
 								if (prio<pb || A.once_obs[g] && m>mb) {
 									gb = g; gpb = gp; bb = best; kpb = kp; kkpb = kkp; mb = m; pb = prio;
-							}}}}}
+							}}
+							else {
+								erase(kkp,fibskind); // Don't try to change this one anymore because it will always be -1
+								kkp--;
+							}
+						}}}
 			// Modify assignment
 				if (gb!=-1) {
 					A.unassign(j,kpb,gpb,G,P,pp);
@@ -503,15 +510,15 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	for (int j=0; j<F.Nplate; j++) {
 		List done = initList(F.Nfiber);
 		for (int k=0; k<F.Nfiber; k++) {
-			if (done[k] == 0) {
+			if (done[k]==0) {
 				int c = A.is_collision(j,k,pp,G,P,F);
 				if (c!=-1) {
 					done[c] = 1;
-					struct onplate op = change_coords(G[A.TF[j][k]],P[j]);
-					dpair G1 = dpair(op.pos[0],op.pos[1]);
-					struct onplate opn = change_coords(G[A.TF[j][c]],P[j]);
-					dpair G2 = dpair(opn.pos[0],opn.pos[1]);
-					coldist.push_back(norm(G2-G1));
+					dpair G1 = projection(A.TF[j][k],j,G,P);
+					dpair G2 = projection(A.TF[j][c],j,G,P);
+					double d = norm(G2-G1);
+					if (d==0) printf("SameGal ");
+					coldist.push_back(d);
 				}
 			}
 		}
@@ -752,8 +759,8 @@ void write_FAtile(int j, str outdir, const Gals& G, const Plates& P, const PP& p
 		for (int i=0; i<av_gals.size(); i++) fprintf(FA,"%d ",av_gals[i]);
 		// Object type, Target ID, ra, dec, x, y
 		if (g!=-1) {
-			struct onplate op = change_coords(G[g],P[j]);
-			fprintf(FA,"%s %d %f %f %f %f\n",F.kind[G[g].id].c_str(),g,G[g].ra,G[g].dec,op.pos[0],op.pos[1]);
+			dpair Gal = projection(g,j,G,P);
+			fprintf(FA,"%s %d %f %f %f %f\n",F.kind[G[g].id].c_str(),g,G[g].ra,G[g].dec,Gal.f,Gal.s);
 		}
 		else fprintf(FA,"-1\n");
 	}
@@ -771,8 +778,7 @@ void pyplotTile(int j, str fname, const Gals& G, const Plates& P, const PP& pp, 
 		char color_center = 'k';
 		int g = A.TF[j][k];
 		if (g!=-1) {
-			struct onplate op = change_coords(G[g],P[j]);
-			dpair Ga = dpair(op.pos[0],op.pos[1]);
+			dpair Ga = projection(g,j,G,P);
 			polygon fh = F.fh;
 			polygon cb = F.cb;
 			repos_cb_fh(cb,fh,O,Ga,posp);

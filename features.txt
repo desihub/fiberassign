@@ -16,7 +16,6 @@ MaxSS 10
 MaxSF 40
 PlateRadius 1.65
 
-NeighborRad 14.0
 TotalArea 15789.0
 invFibArea 700
 moduloGal 1
@@ -28,3 +27,37 @@ AvCollide 2.9
 Collide 1.98
 NoCollide 7.0
 PatrolRad 6.0
+NeighborRad 14.05
+
+-------------------------------------------------
+
+-galFile : input file of objects
+-tileFile : input file of tiles
+-fibFile : input file of centers of locations of fiber positioners
+-outDir : output directory
+
+-kind : kinds of objects
+-prio : corresponding priorities
+-priopost : corresponding priorities when one knows the real kind
+-goal : number of times we want to observe them
+
+-InterPlate : minimal distance (in number of tiles) between 2 observations of the same object
+-Randomize : whether the order of tiles is randomized in making plans
+-Pacman : pacman version with reduced number of petals
+-Npass : number of passes
+-MaxSS : number of standard stars in each petals
+-MaxSF : number of sky fibers in each petals
+-PlateRadius : radius of the plate
+
+-TotalArea : area of the sky observed
+-invFibArea : inverse of the reachable area (sqd) by a single fiber
+-moduloGal : if 2 for instance, reads only one object over two in galFile
+-moduloFiber : same for fibFile
+
+-Collision : whether we allow collisions
+-Exact : whether we use the exact shape of fiber holder and central body of positioners
+-AvCollide : (experimentaly calibrated) distance between 2 galaxies beyond which we consider there isn't a collision for the positioners, and before which we consider that there is (in case of Exact=false)
+-Collide : min distance between 2 galaxies so that positioners always collide
+-NoCollide : (experimental) max distance between 2 galaxies so that positioners never collide
+-PatrolRad : radius the disk of reachable objects around a location of a positioner, on the plate
+-NeighborRad : max distance between 2 positioner locations for possible collision

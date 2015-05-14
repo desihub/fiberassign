@@ -129,5 +129,6 @@ int fprio(int g, const Gals& G, const Feat& F, const Assignment& A);
 
 double plate_dist(const double theta);
 struct onplate change_coords(const struct galaxy& O, const struct plate& P);
+dpair projection(int g, int j, const Gals& G, const Plates& P); // Projection of g on j
 
 #endif

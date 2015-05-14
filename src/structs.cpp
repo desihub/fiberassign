@@ -180,7 +180,7 @@ List plate::av_gals_plate(const Feat& F) const {
 	return L;
 }
 
-// Plates -----------------------------------------------------------------------------
+// Plates ---------------------------------------------------------------------------
 // Read positions of the plate centers from an ascii file "center_name", and fill in a structure
 // There is a version of this function (to adapt) for non ASCII files, ask to Robert Cahn
 Plates read_plate_centers(const Feat& F) {
@@ -575,11 +575,6 @@ bool collision(dpair O1, dpair G1, dpair O2, dpair G2, const Feat& F) {
 	polygon cb2 = F.cb;
 	repos_cb_fh(cb1,fh1,O1,G1,posp);
 	repos_cb_fh(cb2,fh2,O2,G2,posp);
-	polygon p;
-	p.add(cb1);
-	p.add(cb2);
-	p.add(fh1);
-	p.add(fh2);
 	if (collision(fh1,fh2)) return true;
 	if (collision(cb1,fh2)) return true;
 	if (collision(cb2,fh1)) return true;
@@ -590,16 +585,12 @@ bool collision(dpair O1, dpair G1, dpair O2, dpair G2, const Feat& F) {
 int Assignment::find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plates& P, const Feat& F, int col) const {
 	bool bol = (col==-1) ? F.Collision : false;
 	if (bol) return -1;
-	struct onplate op = change_coords(G[g],P[j]);
-	dpair G1 = dpair(op.pos[0],op.pos[1]);
+	dpair G1 = projection(g,j,G,P);
 	for (int i=0; i<pp.N[k].size(); i++) {
 		int kn = pp.N[k][i];
 		int gn = TF[j][kn];
 		if (gn!=-1) {
-			struct onplate opn = change_coords(G[gn],P[j]);
-			dpair G2 = dpair(opn.pos[0],opn.pos[1]);
-			//deb(sqrt(sq(G1,G2))); G1.print(); G2.print();
-//pp.coords(k).print(); pp.coords(kn).print();
+			dpair G2 = projection(gn,j,G,P);
 			bool b = F.Exact ? collision(pp.coords(k),G1,pp.coords(kn),G2,F) : (sq(G1,G2) < sq(F.AvCollide));
 			if (b) return kn;
 		}
@@ -629,4 +620,9 @@ float Assignment::colrate(const PP& pp, const Gals& G, const Plates& P, const Fe
 		}
 	}
 	return percent(col,jend*F.Nfiber);
+}
+
+dpair projection(int g, int j, const Gals& G, const Plates& P) {
+	struct onplate op = change_coords(G[g],P[j]);
+	return dpair(op.pos[0],op.pos[1]);
 }
