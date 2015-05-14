@@ -63,26 +63,29 @@ bool intersect_seg_circ(const dpair& A, const dpair& B, const dpair& O, const do
 }
 
 // element
-element::element() {}
+element::element() { color = 'k'; }
 
-element::element(bool b) { is_seg = b; }
+element::element(bool b) { is_seg = b; color = 'k'; }
 
 element::element(const dpair& Ocenter, const double& rad0) {
 	is_seg = false;
 	O = Ocenter;
 	rad = rad0;
+	color = 'k';
 }
 
 element::element(const dpair& A, const dpair& B) {
 	is_seg = true;
 	add(A);
 	add(B);
+	color = 'k';
 }
 
-element::element(const dpair& A, char c) {
+element::element(const dpair& A, char c, bool big0) {
 	is_seg = true;
 	add(A);
 	color = c;
+	big = big0;
 }
 
 bool element::isseg() const {
@@ -186,6 +189,10 @@ void polygon::print() const {
 	printf(" - axis : "); axis.print();
 }
 
+void polygon::set_color(char c) {
+	for (int i=0; i<elmts.size(); i++) elmts[i].color = c;
+}
+
 Dlist polygon::limits() const {
 	Dlist lims = initDlist(4);
 	lims[0] = 1e4;
@@ -196,23 +203,27 @@ Dlist polygon::limits() const {
 	return lims;
 }
 
-void polygon::pythonplot(str fname) const {
+void polygon::pythonplot(str fname, int j) const {
 	FILE * file;
 	file = fopen(fname.c_str(),"w");
 	Dlist lims = limits();
-	fprintf(file,"from pylab import * \nimport pylab as pl\nimport matplotlib.pyplot as plt \nfrom matplotlib import collections as mc\nax=subplot(aspect='equal') \naxes = plt.gca() \naxes.set_xlim([%f,%f]) \naxes.set_ylim([%f,%f]) \nfig = plt.gcf()\n\n",lims[0],lims[1],lims[2],lims[3]);
+	fprintf(file,"from pylab import *\nimport pylab as pl\nimport matplotlib.pyplot as plt\nfrom matplotlib import collections as mc\nax=subplot(aspect='equal')\naxes = plt.gca()\naxes.set_xlim([%f,%f])\naxes.set_ylim([%f,%f])\nfig = plt.gcf()\n\n",lims[0],lims[1],lims[2],lims[3]);
+	if (j!=-1) fprintf(file,"plt.text(350,-350,'Tile %d',horizontalalignment='center',verticalalignment='center',size=5)\n\n",j);
 	for (int i=0; i<elmts.size(); i++) {
 		element e = elmts[i];
 		if (e.is_seg) {
 			if (1<e.segs.size()) {
 			fprintf(file,"lines = [[");
 			for (int j=0; j<e.segs.size(); j++) fprintf(file,"(%f,%f),",e.segs[j].f,e.segs[j].s);
-			fprintf(file,"]]\nlc = mc.LineCollection(lines,linewidths=0.2)\nax.add_collection(lc)\n");
+			fprintf(file,"]]\nlc = mc.LineCollection(lines,linewidths=0.2,color='%c')\nax.add_collection(lc)\n",e.color);
 			}
-			else if (e.segs.size()==1) fprintf(file,"plt.scatter(%f,%f,c='%c',s=1,linewidth=0.2)\n",e.segs[0].f,e.segs[0].s,e.color);
+			if (e.segs.size()==1) {
+				if (e.big) fprintf(file,"circ=plt.Circle((%f,%f),5,fill=True,linewidth=0.1,alpha=0.3,edgecolor='none',fc='%c')\nfig.gca().add_artist(circ)\n",e.segs[0].f,e.segs[0].s,e.color);
+				else fprintf(file,"circ=plt.Circle((%f,%f),0.5,fill=True,linewidth=0.1,alpha=1,edgecolor='none',fc='%c')\nfig.gca().add_artist(circ)\n",e.segs[0].f,e.segs[0].s,e.color);
+			}
 		}
 		else {
-			fprintf(file,"circ=plt.Circle((%f,%f),%f,fill=False,linewidth=0.2)\nfig.gca().add_artist(circ)\n",e.O.f,e.O.s,e.rad);
+			fprintf(file,"circ=plt.Circle((%f,%f),%f,fill=False,linewidth=0.2,color='%c')\nfig.gca().add_artist(circ)\n",e.O.f,e.O.s,e.rad,e.color);
 		}
 	}
 	str s = fname+".pdf";

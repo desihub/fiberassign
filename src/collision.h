@@ -31,12 +31,13 @@ class element { // List segments, or circles
 	dpair O; // Circle center
 	double rad; // Circle radius
 	char color; // For python plot
+	bool big; // For plotting big transparent points
 
 	element();
 	element(bool b); // b : is_seg
 	element(const dpair& O, const double& rad); // Creates circle
 	element(const dpair& A, const dpair& B); // Creates segment list with only the segment AB
-	element(const dpair& A, char c); // Point with color
+	element(const dpair& A, char c, bool big=0); // Point with color
 	bool isseg() const;
 	void add(const double& a, const double& b); // Add points to segments list
 	void add(const dpair& p); // Add points to segments list
@@ -59,8 +60,9 @@ class polygon {
 	void rotation(const dpair& t); // Rotation aroud polygon's axis
 	void rotation_origin(const dpair& t); // Rotation around 0
 	void print() const;
+	void set_color(char c);
 	Dlist limits() const;
-	void pythonplot(str fname) const;
+	void pythonplot(str fname, int j=-1) const;
 };
 polygon create_fh(); // fh = ferrule holder
 polygon create_cb(); // cb = central body

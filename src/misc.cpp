@@ -911,10 +911,11 @@ void printFile(const char file[]) {
 	std::ifstream fIn;
 	fIn.open(file); // open a file
 	if (!fIn.good()) myexit(1); // Not found
-	while (!fIn.eof()) {
+	while (!fIn.eof() /*&& buf[0]!='-'*/) {
 		char buf[Mc];
 		fIn.getline(buf,Mc);
 		printf(buf);
+		printf(" - ");
 	}
 	fIn.close();
 }

@@ -45,7 +45,7 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 				op.id = g;
 				O.push_back(op);
 			}
-			debl(id);
+			//debl(id);
 			KDtree<struct onplate> kdT(O,2);
 			// For each fiber, finds all reachable galaxies
 			for (int k=0; k<F.Nfiber; k++) {
@@ -75,11 +75,12 @@ void collect_available_tilefibers(Gals& G, const Plates& P, const Feat& F) {
 	print_time(t,"# ... took :");
 }
 
-inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const Gals& G, const PP& pp, const Feat& F, const Assignment& A) {
+inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const Gals& G, const PP& pp, const Feat& F, const Assignment& A) { // The order of tests matters for computation time
 	int kind = G[g].id;
 	if (kind==F.ids.at("SF") && A.nkind(j,k,F.ids.at("SF"),G,P,pp,F)>=F.MaxSF) return false;
 	if (kind==F.ids.at("SS") && A.nkind(j,k,F.ids.at("SS"),G,P,pp,F)>=F.MaxSS) return false;
 	if (P[j].ipass==F.Npass-1 && !(kind==F.ids.at("ELG") || kind==F.ids.at("SS") || kind==F.ids.at("SF"))) return false; // Only ELG, SF, SS at the last pass
+	for (int i=0; i<pp.N[k].size(); i++) if (g==A.TF[j][pp.N[k][i]]) return false;
 	if (A.find_collision(j,k,g,pp,G,P,F)!=-1) return false;
 	return true;
 }
@@ -500,7 +501,7 @@ void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F
 	//print_mult_table_latex("Histogram of number of times (by different plates) reachable galaxies without last pass",outdir+"reachplateno.dat",countstot_nopass,1);
 }
 
-void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, bool latex) {
+void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, Feat& F, const Assignment& A, bool latex) {
 	printf("# Results :\n");
 	// Some petal
 	//for (int i=1; i<=10; i++) print_table("Petal of plate "+i2s(i),A.infos_petal(1000*i,5,G,P,pp,F));
@@ -517,7 +518,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, c
 					dpair G1 = projection(A.TF[j][k],j,G,P);
 					dpair G2 = projection(A.TF[j][c],j,G,P);
 					double d = norm(G2-G1);
-					if (d==0) printf("SameGal ");
+					if (d==0) F.Count++;
 					coldist.push_back(d);
 				}
 			}
@@ -770,24 +771,32 @@ void write_FAtile(int j, str outdir, const Gals& G, const Plates& P, const PP& p
 void pyplotTile(int j, str fname, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
 	std::vector<char> colors;
 	colors.resize(F.Categories);
-	colors[0] = 'b'; colors[1] = 'g'; colors[2] = 'c'; colors[3] = 'm'; colors[4] = 'y'; colors[5] = 'w'; colors[6] = 'b'; colors[7] = 'r';
+	colors[0] = 'k'; colors[1] = 'g'; colors[2] = 'c'; colors[3] = 'b'; colors[4] = 'y'; colors[5] = 'm'; colors[6] = 'w'; colors[7] = 'r';
 	polygon pol;
 	PosP posp(3,3);
 	for (int k=0; k<F.Nfiber; k++) {
 		dpair O = pp.coords(k);
-		char color_center = 'k';
 		int g = A.TF[j][k];
 		if (g!=-1) {
 			dpair Ga = projection(g,j,G,P);
 			polygon fh = F.fh;
 			polygon cb = F.cb;
 			repos_cb_fh(cb,fh,O,Ga,posp);
+			if (A.is_collision(j,k,pp,G,P,F)!=-1) {
+				cb.set_color('r');
+				fh.set_color('r');
+			}
 			pol.add(cb);
 			pol.add(fh);
-			pol.add(element(Ga,colors[G[g].id]));
-			if (A.is_collision(j,k,pp,G,P,F)!=-1) color_center = 'r';
+			pol.add(element(O,colors[G[g].id],true));
 		}
-		pol.add(element(O,color_center));
+		List av_gals = P[j].av_gals[k];
+		for (int i=0; i<av_gals.size(); i++) {
+			int gg = av_gals[i];
+			dpair Ga = projection(gg,j,G,P);
+			pol.add(element(Ga,colors[G[gg].id]));
+		}
+		pol.add(element(O,'k'));
 	}
-	pol.pythonplot(fname);
+	pol.pythonplot(fname,j);
 }

@@ -38,7 +38,7 @@ void redistribute_tf(const Gals& G, const Plates&P, const PP& pp, const Feat& F,
 // Results functions --------------------------------------------------
 void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F, bool latex=false);
 
-void display_results(str outdir, const Gals& G, const Plates &P, const PP& pp, const Feat& F, const Assignment& A, bool latex=false);
+void display_results(str outdir, const Gals& G, const Plates &P, const PP& pp, Feat& F, const Assignment& A, bool latex=false);
 
 void write_FAtile(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A);
 
