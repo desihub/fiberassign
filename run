@@ -1,5 +1,5 @@
 #PBS -S /bin/bash
-#PBS -N FiberAssign
+#PBS -N Assign
 #PBS -l mppwidth=24,walltime=1:29:30
 
 #PBS -q premium

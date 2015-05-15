@@ -122,8 +122,9 @@ int main(int argc, char **argv) {
 	print_time(time,"# ... took :");
 
 	// Results --------------------------------------------------------
-	//A.verif(P,F); // Verification that the assignment is sane
-	for (int j=0; j<F.Nplate; j++) write_FAtile(j,F.outDir,G,P,pp,F,A);
+	A.verif(P,F); // Verification that the assignment is sane
+	//for (int j=0; j<F.Nplate; j++) write_FAtile(j,F.outDir,G,P,pp,F,A);
+	//overlappingTiles("overlaps.txt",F,A);
 	display_results("doc/figs/",G,P,pp,F,A,true);
 	print_time(t,"# Finished !... in");
 	return(0);

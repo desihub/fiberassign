@@ -748,7 +748,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 
 void write_FAtile(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
 	FILE * FA;
-	str s = outdir+"tile"+i2s(j)+".fits";
+	str s = outdir+"tile"+i2s(j)+".txt";
 	FA = fopen(s.c_str(),"w");
 	for (int k=0; k<F.Nfiber; k++) {
 		int g = A.TF[j][k];
@@ -772,7 +772,7 @@ void write_FAtile(int j, str outdir, const Gals& G, const Plates& P, const PP& p
 void pyplotTile(int j, str fname, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
 	std::vector<char> colors;
 	colors.resize(F.Categories);
-	colors[0] = 'k'; colors[1] = 'g'; colors[2] = 'c'; colors[3] = 'b'; colors[4] = 'y'; colors[5] = 'm'; colors[6] = 'w'; colors[7] = 'r';
+	colors[0] = 'k'; colors[1] = 'g'; colors[2] = 'r'; colors[3] = 'b'; colors[4] = 'm'; colors[5] = 'y'; colors[6] = 'w'; colors[7] = 'c';
 	polygon pol;
 	PosP posp(3,3);
 	for (int k=0; k<F.Nfiber; k++) {
@@ -802,4 +802,17 @@ void pyplotTile(int j, str fname, const Gals& G, const Plates& P, const PP& pp, 
 		pol.add(element(O,'k'));
 	}
 	pol.pythonplot(fname,j);
+}
+
+void overlappingTiles(str fname, const Feat& F, const Assignment& A) {
+	FILE * file;
+	file = fopen(fname.c_str(),"w");
+	for (int g=0; g<F.Ngal; g++) {
+		if (A.GL[g].size()==5) {
+			fprintf(file,"%d ",g);
+			for (int i=0; i<A.GL[g].size(); i++) fprintf(file,"(%d,%d) ",A.GL[g][i].f,A.GL[g][i].s);
+			fprintf(file,"\n");
+		}
+	}
+	fclose(file);
 }

@@ -939,7 +939,7 @@ int min(int a, int b) {
 }
 
 void print_stats(str s, int cnt, int avg, int std, int min, int max) {
-	double avg1 = ((double)avg)/((double) cnt);
+	double avg1 = ((double) avg)/((double) cnt);
 	double std1 = sqrt(((double) std)/((double) cnt)-sq(avg1)); 
 	printf("%s %.1f +/- %.1f [%d,%d]",s.c_str(),avg1,std1,min,max);
 	std::cout << std::endl;

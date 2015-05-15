@@ -286,7 +286,7 @@ Here are some features on input galaxies simulated catalog :
 
 \begin{table}[H]\centering
 	\begin{tabular}{rcccl} \hline
-		Kind&Id&Priority&Nobs&Density (objects/\sqd)\\ \hline
+		Kind&Id&Priority&Nobs&Density (\psqd)\\ \hline
 		QSO Ly-$\alpha$ & 0 & 1 & 5 & 50\\
 		QSO Tracer & 1 & 1 & 1 & 120\\
 		LRG & 2 & 3 & 2 & 300\\
@@ -710,36 +710,20 @@ $Score(kind) = 100\cdot \frac{\sum\nolimits_{g \in kind} obs(g)}{\sum\nolimits_{
 
 A sum-up table of general results on assignment is provided on Table \ref{res}.
 
-\begin{comment}
-\begin{table}[H]\begin{center}
-\begin{tabular}{r|rrrrrrrcc}
-	~   &         0 &         1 &       2 &      3 &      4 &     5 &         Total &  observed $\%$ & weighted $\%$ \\ \hline
-	QSO \lya   &    22,915 &   414,720 & 238,413 & 75,600 & 28,497 & 8,498 &   788,643 & 98.922 & 67.670\\ 
-	QSO Tracer & 1,874,187 &    20,433 &       0 &      0 &      0 &     0 & 1,894,620 & 98.921 & 98.921\\ 
-	LRG        & 3,909,020 &   562,287 & 245,036 &      0 &      0 &     0 & 4,716,343 & 94.804 & 88.843\\ 
-	ELG        &29,680,067 & 8,392,913 &       0 &      0 &      0 &     0 &38,072,980 & 77.955 & 77.955\\ 
-	Fake QSO   & 1,405,670 &    15,342 &       0 &      0 &      0 &     0 & 1,421,012 & 98.920 & 98.920\\ 
-	Fake LRG   &   753,871 &    35,579 &       0 &      0 &      0 &     0 &   789,450 & 95.493 & 95.493\\ 
-	SS         & 1,066,600 & 1,143,862 &       0 &      0 &      0 &     0 & 2,210,462 & 48.252 & 48.252\\ 
-	SF         & 4,266,400 &17,838,234 &       0 &      0 &      0 &     0 &22,104,634 & 19.300 & 19.300\\ 
-\end{tabular}
-\caption{Remaining observations (id on lines, nobs left on rows) with total (old version with collide = 2.1)}\label{gen}
-\end{center}\end{table}
-\end{comment}
 
 \begin{table}[H]\begin{center}
 \begin{tabular}{rrrrrrrrrrcc}
 \hline
 \multicolumn{6}{r}{Times observed} \\
 	~ &           0 &     1 &  2 & 3 & 4 & 5 &  Total & Fiber used & Once observed & observed $\%$ & weighted $\%$ \\ \hline
-   QSO Ly-a   &     0 &     2 &   4 & 14 & 25 & 1 &    49 &   167 &    49 & 98.434 & 67.032\\ 
- QSO Tracer   &     1 &   118 &   0 &  0 &  0 & 0 &   119 &   118 &   118 & 98.454 & 98.454\\ 
-        LRG   &    16 &    37 & 244 &  0 &  0 & 0 &   298 &   526 &   281 & 94.376 & 88.069\\ 
-        ELG   &   537 & 1,874 &   0 &  0 &  0 & 0 & 2,411 & 1,874 & 1,874 & 77.721 & 77.721\\ 
-   Fake QSO   &     1 &    88 &   0 &  0 &  0 & 0 &    90 &    88 &    88 & 98.446 & 98.446\\ 
-   Fake LRG   &     2 &    47 &   0 &  0 &  0 & 0 &    50 &    47 &    47 & 95.063 & 95.063\\ 
-         SS   &    72 &    67 &   0 &  0 &  0 & 0 &   140 &    67 &    67 & 48.252 & 48.252\\ 
-         SF   & 1,129 &   270 &   0 &  0 &  0 & 0 & 1,400 &   270 &   270 & 19.300 & 19.300\\ 
+    QSO \lya  &     0 &     2 &   5 & 15 & 25 & 1 &    49 &   166 &    49 & 98.468 & 66.747 \\ 
+  QSO Tracer   &     1 &   118 &   0 &  0 &  0 & 0 &   119 &   118 &   118 & 98.487 & 98.487 \\ 
+        LRG   &    16 &    38 & 243 &  0 &  0 & 0 &   298 &   524 &   281 & 94.352 & 87.854 \\ 
+        ELG   &   540 & 1,870 &   0 &  0 &  0 & 0 & 2,411 & 1,870 & 1,870 & 77.572 & 77.572 \\ 
+    Fake QSO   &     1 &    88 &   0 &  0 &  0 & 0 &    90 &    88 &    88 & 98.472 & 98.472 \\ 
+    Fake LRG   &     2 &    47 &   0 &  0 &  0 & 0 &    50 &    47 &    47 & 95.061 & 95.061 \\ 
+         SS   &    72 &    67 &   0 &  0 &  0 & 0 &   140 &    67 &    67 & 48.252 & 48.252 \\ 
+         SF   & 1,129 &   270 &   0 &  0 &  0 & 0 & 1,400 &   270 &   270 & 19.300 & 19.300 \\ 
 \hline
 \end{tabular}
 \caption{Densities (objects/\sqd) as as a function of \# of observations (with total), and \% observed, once and weighted}\label{res}

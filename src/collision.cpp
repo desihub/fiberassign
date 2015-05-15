@@ -223,11 +223,11 @@ void polygon::pythonplot(str fname, int j) const {
 			}
 		}
 		else {
-			fprintf(file,"circ=plt.Circle((%f,%f),%f,fill=False,linewidth=0.2,color='%c')\nfig.gca().add_artist(circ)\n",e.O.f,e.O.s,e.rad,e.color);
+			if (e.color!='w') fprintf(file,"circ=plt.Circle((%f,%f),%f,fill=False,linewidth=0.2,color='%c')\nfig.gca().add_artist(circ)\n",e.O.f,e.O.s,e.rad,e.color);
+			else fprintf(file,"circ=plt.Circle((%f,%f),%f,fill=False,linewidth=0.2,color='k',alpha=0.3)\nfig.gca().add_artist(circ)\n",e.O.f,e.O.s,e.rad);
 		}
 	}
-	str s = fname+".pdf";
-	fprintf(file,"\nfig.savefig('tile.pdf,bbox_inches='tight',pad_inches=0')");
+	fprintf(file,"\nfig.savefig('tile.pdf',bbox_inches='tight',pad_inches=0,dpi=(300))");
 	fclose(file);
 }
 
