@@ -80,7 +80,7 @@ inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const Gals& 
 	if (kind==F.ids.at("SF") && A.nkind(j,k,F.ids.at("SF"),G,P,pp,F)>=F.MaxSF) return false;
 	if (kind==F.ids.at("SS") && A.nkind(j,k,F.ids.at("SS"),G,P,pp,F)>=F.MaxSS) return false;
 	if (P[j].ipass==F.Npass-1 && !(kind==F.ids.at("ELG") || kind==F.ids.at("SS") || kind==F.ids.at("SF"))) return false; // Only ELG, SF, SS at the last pass
-	for (int i=0; i<pp.N[k].size(); i++) if (g==A.TF[j][pp.N[k][i]]) return false;
+	if (!F.Exact) for (int i=0; i<pp.N[k].size(); i++) if (g==A.TF[j][pp.N[k][i]]) return false;
 	if (A.find_collision(j,k,g,pp,G,P,F)!=-1) return false;
 	return true;
 }
@@ -531,6 +531,9 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 	Dtable Dtd; Dtd.push_back(redhistcol); Dtd.push_back(cumulate(redhistcol));
 	print_mult_Dtable_latex("Collision histogram of distances between galaxies",outdir+"coldist.dat",Dtd,intervaldist);
 
+	// Count
+	printf("Count = %d \n",F.Count);
+
 	// 0 List of total number of galaxies
 	List tots = initList(F.Categories);
 	for (int g=0; g<F.Ngal; g++) tots[G[g].id]++;
@@ -738,8 +741,6 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 	Table usedSF = A.used_by_kind("SF",G,pp,F);
 	print_hist("UsedSF (number of petals)",1,histogram(usedSF,1));
 
-	// Count
-	printf("Count = %d \n",F.Count);
 
 	// Percentage of fibers assigned
 	printf("  %s assignments in total (%.4f %% of all fibers)\n",f(A.na(F)).c_str(),percent(A.na(F),F.Nplate*F.Nfiber));
@@ -782,10 +783,12 @@ void pyplotTile(int j, str fname, const Gals& G, const Plates& P, const PP& pp, 
 			polygon fh = F.fh;
 			polygon cb = F.cb;
 			repos_cb_fh(cb,fh,O,Ga,posp);
-			if (A.is_collision(j,k,pp,G,P,F)!=-1) {
-				cb.set_color('r');
-				fh.set_color('r');
-			}
+			//if (A.is_collision(j,k,pp,G,P,F)!=-1) {
+				//cb.set_color('r');
+				//fh.set_color('r');
+			//}
+			cb.set_color(colors[G[g].id]);
+			fh.set_color(colors[G[g].id]);
 			pol.add(cb);
 			pol.add(fh);
 			pol.add(element(O,colors[G[g].id],true));

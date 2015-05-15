@@ -90,9 +90,9 @@ int main(int argc, char **argv) {
 		A.next_plate++;
 	}
 	print_time(time,"# ... took :");
-	init_time_at(time,"# Compute collision rate",t);
+	//init_time_at(time,"# Compute collision rate",t);
 	//printf("Collision rate : %lf \% \n",A.colrate(pp,G,P,F,limit));
-	print_time(time,"# ... took :");
+	//print_time(time,"# ... took :");
 	pyplotTile(1500,"doc/figs/tile.py",G,P,pp,F,A); // Plot 1500th tile
 
 	// Make a plan ----------------------------------------------------

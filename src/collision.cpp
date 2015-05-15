@@ -207,7 +207,7 @@ void polygon::pythonplot(str fname, int j) const {
 	FILE * file;
 	file = fopen(fname.c_str(),"w");
 	Dlist lims = limits();
-	fprintf(file,"from pylab import *\nimport pylab as pl\nimport matplotlib.pyplot as plt\nfrom matplotlib import collections as mc\nax=subplot(aspect='equal')\naxes = plt.gca()\naxes.set_xlim([%f,%f])\naxes.set_ylim([%f,%f])\nfig = plt.gcf()\n\n",lims[0],lims[1],lims[2],lims[3]);
+	fprintf(file,"from pylab import *\nimport pylab as pl\nimport matplotlib.pyplot as plt\nfrom matplotlib import collections as mc\nax=subplot(aspect='equal')\naxes = plt.gca()\naxes.set_xlim([%f,%f])\naxes.set_ylim([%f,%f])\nax.axis('off')\nax.get_xaxis().set_visible(False)\nax.get_yaxis().set_visible(False)\nset_cmap('hot')\nfig = plt.gcf()\n\n",lims[0],lims[1],lims[2],lims[3]);
 	if (j!=-1) fprintf(file,"plt.text(350,-350,'Tile %d',horizontalalignment='center',verticalalignment='center',size=5)\n\n",j);
 	for (int i=0; i<elmts.size(); i++) {
 		element e = elmts[i];
@@ -227,7 +227,7 @@ void polygon::pythonplot(str fname, int j) const {
 		}
 	}
 	str s = fname+".pdf";
-	fprintf(file,"\nfig.savefig('tile.pdf')");
+	fprintf(file,"\nfig.savefig('tile.pdf,bbox_inches='tight',pad_inches=0')");
 	fclose(file);
 }
 
