@@ -215,7 +215,8 @@ void polygon::pythonplot(str fname, int j) const {
 			if (1<e.segs.size()) {
 			fprintf(file,"lines = [[");
 			for (int j=0; j<e.segs.size(); j++) fprintf(file,"(%f,%f),",e.segs[j].f,e.segs[j].s);
-			fprintf(file,"]]\nlc = mc.LineCollection(lines,linewidths=0.2,color='%c')\nax.add_collection(lc)\n",e.color);
+			if (e.color!='w') fprintf(file,"]]\nlc = mc.LineCollection(lines,linewidths=0.2,color='%c')\nax.add_collection(lc)\n",e.color);
+			else fprintf(file,"]]\nlc = mc.LineCollection(lines,linewidths=0.2,color='k',alpha=0.4)\nax.add_collection(lc)\n");
 			}
 			if (e.segs.size()==1) {
 				if (e.big) fprintf(file,"circ=plt.Circle((%f,%f),5,fill=True,linewidth=0.1,alpha=0.3,edgecolor='none',fc='%c')\nfig.gca().add_artist(circ)\n",e.segs[0].f,e.segs[0].s,e.color);
@@ -224,7 +225,7 @@ void polygon::pythonplot(str fname, int j) const {
 		}
 		else {
 			if (e.color!='w') fprintf(file,"circ=plt.Circle((%f,%f),%f,fill=False,linewidth=0.2,color='%c')\nfig.gca().add_artist(circ)\n",e.O.f,e.O.s,e.rad,e.color);
-			else fprintf(file,"circ=plt.Circle((%f,%f),%f,fill=False,linewidth=0.2,color='k',alpha=0.3)\nfig.gca().add_artist(circ)\n",e.O.f,e.O.s,e.rad);
+			else fprintf(file,"circ=plt.Circle((%f,%f),%f,fill=False,linewidth=0.2,color='k',alpha=0.4)\nfig.gca().add_artist(circ)\n",e.O.f,e.O.s,e.rad);
 		}
 	}
 	fprintf(file,"\nfig.savefig('tile.pdf',bbox_inches='tight',pad_inches=0,dpi=(300))");
