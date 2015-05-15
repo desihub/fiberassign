@@ -467,7 +467,6 @@ Table Assignment::infos_petal(int j, int pet, const Gals& G, const Plates& P, co
 			L.push_back(is_assigned_jg(j,g));
 			L.push_back(is_assigned_jg(j,g,F));
 			L.push_back(find_collision(j,k,g,pp,G,P,F));
-
 			if (G[g].id==0) lya = true;
 		}
 		if (lya) T.push_back(L);
