@@ -80,7 +80,7 @@ inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const Gals& 
 	if (kind==F.ids.at("SF") && A.nkind(j,k,F.ids.at("SF"),G,P,pp,F)>=F.MaxSF) return false;
 	if (kind==F.ids.at("SS") && A.nkind(j,k,F.ids.at("SS"),G,P,pp,F)>=F.MaxSS) return false;
 	if (P[j].ipass==F.Npass-1 && !(kind==F.ids.at("ELG") || kind==F.ids.at("SS") || kind==F.ids.at("SF"))) return false; // Only ELG, SF, SS at the last pass
-	if (!F.Exact) for (int i=0; i<pp.N[k].size(); i++) if (g==A.TF[j][pp.N[k][i]]) return false;
+	if (F.Collision) for (int i=0; i<pp.N[k].size(); i++) if (g==A.TF[j][pp.N[k][i]]) return false;
 	if (A.find_collision(j,k,g,pp,G,P,F)!=-1) return false;
 	return true;
 }
@@ -171,8 +171,9 @@ int improve_fiber_from_kind(int id, int j, int k, const Gals& G, const Plates&P,
 						int prio = fprio(best,G,F,A);
 						int m = A.nobs(best,G,F);
 						if (prio<pb || A.once_obs[g] && m>mb) {
+							if (!A.find_collision(j,k,kp,g,best,pp,G,P,F)) { // Avoid that the choice of the 2 new objects collide
 							gb = g; gpb = gp; bb = best; kpb = kp; mb = m; pb = prio;
-		}}}}}
+		}}}}}}
 		// Modify assignment
 		if (gb!=-1) {
 			A.unassign(j,kpb,gpb,G,P,pp);
@@ -258,8 +259,9 @@ void improve_from_kind(const Gals& G, const Plates&P, const PP& pp, const Feat& 
 								int prio = fprio(best,G,F,A);
 								int m = A.nobs(best,G,F);
 								if (prio<pb || A.once_obs[g] && m>mb) {
+									if (!A.find_collision(j,k,kp,g,best,pp,G,P,F)) { // Avoid that the choice of the 2 new objects collide
 									gb = g; gpb = gp; bb = best; kpb = kp; kkpb = kkp; mb = m; pb = prio;
-							}}
+							}}}
 							else {
 								erase(kkp,fibskind); // Don't try to change this one anymore because it will always be -1
 								kkp--;
@@ -507,6 +509,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 	//for (int i=1; i<=10; i++) print_table("Petal of plate "+i2s(i),A.infos_petal(1000*i,5,G,P,pp,F));
 	
 	// Collision histogram of distances between galaxies
+	if (F.Collision) {
 	Dlist coldist;
 	for (int j=0; j<F.Nplate; j++) {
 		List done = initList(F.Nfiber);
@@ -530,6 +533,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 	Dlist redhistcol = percents(histcoldist,sumlist(histcoldist));
 	Dtable Dtd; Dtd.push_back(redhistcol); Dtd.push_back(cumulate(redhistcol));
 	print_mult_Dtable_latex("Collision histogram of distances between galaxies",outdir+"coldist.dat",Dtd,intervaldist);
+	}
 
 	// Count
 	printf("Count = %d \n",F.Count);

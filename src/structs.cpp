@@ -320,7 +320,7 @@ void Assignment::unassign(int j, int k, int g, const Gals& G, const Plates& P, c
 	nobsv_tmp[g]++;
 }
 
-void Assignment::verif(const Plates& P, const Feat& F) const {
+void Assignment::verif(const Plates& P, const Gals& G, const PP& pp, const Feat& F) const {
 	for (int g=0; g<F.Ngal; g++) {
 		Plist tfs = GL[g];
 		int j0(-1); int j1(-1);
@@ -335,10 +335,15 @@ void Assignment::verif(const Plates& P, const Feat& F) const {
 		}
 	}
 	for (int j=0; j<F.Nplate; j++) {
+		List gals = initList(F.Ngal);
 		for (int k=0; k<F.Nfiber; k++) {
 			int g = TF[j][k];
 			// Verif on GL
 			if (g!=-1 && isfound(pair(j,k),GL[g])==-1) { printf("ERROR in verification of correspondance of tfs !\n"); fl(); }
+			// Verif that a galaxy isn't observed twice
+			if (gals[g]==1) printf("ERROR in verification, twice the same galaxy !\n");
+			else gals[g] = 1;
+			if (!F.Collision && is_collision(j,k,pp,G,P,F)!=-1) printf("ERROR in verification : collisions\n");
 		}
 	}
 }
@@ -597,6 +602,14 @@ int Assignment::find_collision(int j, int k, int g, const PP& pp, const Gals& G,
 	return -1;
 }
 
+bool Assignment::find_collision(int j, int k, int kn, int g, int gn, const PP& pp, const Gals& G, const Plates& P, const Feat& F, int col) const {
+	bool bol = (col==-1) ? F.Collision : false;
+	if (bol) return -1;
+	dpair G1 = projection(g,j,G,P);
+	dpair G2 = projection(gn,j,G,P);
+	return F.Exact ? collision(pp.coords(k),G1,pp.coords(kn),G2,F) : (sq(G1,G2) < sq(F.AvCollide));
+}
+
 int Assignment::is_collision(int j, int k, const PP& pp, const Gals& G, const Plates& P, const Feat& F) const {
 	int g = TF[j][k];
 	if (g!=-1) return find_collision(j,k,g,pp,G,P,F,0);
@@ -632,7 +645,7 @@ float Assignment::colrate(const PP& pp, const Gals& G, const Plates& P, const Fe
 			}
 		}
 	}
-	pol.pythonplot("collisions.py");
+	//pol.pythonplot("collisions.py");
 	return percent(col,jend*F.Nfiber);
 }
 

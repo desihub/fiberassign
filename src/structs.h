@@ -93,8 +93,9 @@ class Assignment {
 	void assign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp);
 	void unassign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp);
 	int find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plates& P, const Feat& F, int col=-1) const;
+	bool find_collision(int j, int k, int kn, int g, int gn, const PP& pp, const Gals& G, const Plates& P, const Feat& F, int col=-1) const;
 	int is_collision(int j, int k, const PP& pp, const Gals& G, const Plates& P, const Feat& F) const;
-	void verif(const Plates& P, const Feat& F) const; // Verif mappings are right
+	void verif(const Plates& P, const Gals& G, const PP& pp, const Feat& F) const; // Verif mappings are right
 	int is_assigned_jg(int j, int g) const;
 	int is_assigned_jg(int j, int g, const Feat& F) const;
 	bool is_assigned_tf(int j, int k) const; 
