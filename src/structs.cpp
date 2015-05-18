@@ -604,7 +604,7 @@ int Assignment::find_collision(int j, int k, int g, const PP& pp, const Gals& G,
 
 bool Assignment::find_collision(int j, int k, int kn, int g, int gn, const PP& pp, const Gals& G, const Plates& P, const Feat& F, int col) const {
 	bool bol = (col==-1) ? F.Collision : false;
-	if (bol) return -1;
+	if (bol) return false;
 	dpair G1 = projection(g,j,G,P);
 	dpair G2 = projection(gn,j,G,P);
 	return F.Exact ? collision(pp.coords(k),G1,pp.coords(kn),G2,F) : (sq(G1,G2) < sq(F.AvCollide));
@@ -619,7 +619,6 @@ int Assignment::is_collision(int j, int k, const PP& pp, const Gals& G, const Pl
 float Assignment::colrate(const PP& pp, const Gals& G, const Plates& P, const Feat& F, int jend0) const {
 	int jend = (jend0==-1) ? F.Nplate : jend0;
 	int col = 0;
-	polygon pol;
 	for (int j=0; j<jend; j++) {
 		List done = initList(F.Nfiber);
 		for (int k=0; k<F.Nfiber; k++) {
@@ -628,24 +627,10 @@ float Assignment::colrate(const PP& pp, const Gals& G, const Plates& P, const Fe
 				if (c!=-1) {
 					done[c] = 1;
 					col += 2;
-					PosP posp(3,3);
-					dpair G1 = projection(TF[j][k],j,G,P);
-					dpair G2 = projection(TF[j][c],j,G,P);
-					polygon fh1 = F.fh;
-					polygon cb1 = F.cb;
-					polygon fh2 = F.fh;
-					polygon cb2 = F.cb;
-					repos_cb_fh(cb1,fh1,pp.coords(k),G1,posp);
-					repos_cb_fh(cb2,fh2,pp.coords(c),G2,posp);
-					pol.add(cb1);
-					pol.add(fh1);
-					pol.add(cb2);
-					pol.add(fh2);
 				}
 			}
 		}
 	}
-	//pol.pythonplot("collisions.py");
 	return percent(col,jend*F.Nfiber);
 }
 

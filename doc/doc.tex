@@ -32,16 +32,23 @@
 \usepackage{url}
 
 %PGF plot
-\usepackage{pgfplots, pgfplotstable}
-\pgfplotsset{compat=newest}
+\usepackage{pgfplots,pgfplotstable}
 \usepgfplotslibrary{statistics}
 \pgfplotscreateplotcyclelist{mycolorlist}{blue,red,brown,teal,violet,cyan,green,scarletred1,black}
 \pgfplotscreateplotcyclelist{mylegend}{Ly-a,Target,LRG,ELG,Fake,Fake,SS,SF}
 \usepackage{xifthen}
 
+\usepackage{tikz}
 \usepgfplotslibrary{external}
 \usetikzlibrary{pgfplots.external} 
-\tikzexternalize[prefix=figs/graph/]% activate with a name prefix
+\usetikzlibrary{shapes,shadows,arrows}
+%\tikzexternalize[prefix=figs/graph/]% activate with a name prefix
+\pgfplotsset{
+  compat=newest,
+  invoke before crossref tikzpicture={\tikzexternaldisable},
+  invoke after crossref tikzpicture={\tikzexternalenable},
+}
+%\tikzset{external/force next}
 %Debug box warnings
 \showboxdepth=\maxdimen
 \showboxbreadth=\maxdimen
@@ -173,7 +180,7 @@ The first Friedmann equation \ref{eq2} can then be written :
 This is the relation between dark energy (through its equation of state $w(z)$) and the expansion (through $H(z)$).
 
 	\subsection{Dark energy}
-Saul Perlmutter's investigations showed that $\ddot{a(t)}}$ is actually positive, which means that the expanding rate of the universe is still inscreasing and this was the beginning of dark energy hypothesis. That's why the cosmological constant was reintroduced. An other possibility is that the pressure of "dark energy" could be negative.
+Saul Perlmutter's investigations showed that $\ddot{a(t)}$ is actually positive, which means that the expanding rate of the universe is still inscreasing and this was the beginning of dark energy hypothesis. That's why the cosmological constant was reintroduced. An other possibility is that the pressure of "dark energy" could be negative.
 
 	Several other theoretical solutions \cite{2013zfa} are possible. Dark energy is in fact a catch-all term for the origin of cosmic acceleration, and could be either a modification of general relativity, or a new kind of energy.
 
@@ -209,12 +216,12 @@ One can consider that
 
 \subsection{Targets}
 It will seek for targets that trace the evolution of dark energy from redshift 0.2 out to 3.5 using 3 kinds of celestial objects : 4 million luminous red galaxies (LRG), 18 million emission line galaxies (ELG) and 3 million quasars. QSO \lya are the most important targets. Then comes LRG, then ELG. For each petal (of 500 fibers), 10 are dedicated to Standard Stars and 40 to Sky Fibers.
-\begin{itemize} 
+\begin{itemize}
 	\item QSO (quasi stellar object) targets are divided into three categories. There are those at $z < 2.1$ (QSO-I), which are used as tracers only, and as those at $z > 2.1$ which are used for the \lya forest. Finally, there are false ones, objects that are a priori believed QSO but are actually not (known once observed). Quasars are extremely luminous, there spectra is very large and doesn't correspond to a star's one. They are likely central regions of massive galaxies surrounding a supermassive black hole, and their energy release must be caused by mass falling onto the accretion disc of the black hole. They are excellent tracer population at redshifts $1 < z < 2$. QSO \lya with $z > 2.1$ are espacially important because it is the only opportunity for DESI to get information on dark energy at so high redshifts, and get information on the matter distribution between us and the quasar. The Lyman-$\alpha$ forest represents the holes in the spectrum that correspond to an absorption ray of the hydrogen \cite{2003AIPC} (at different redshifts), and by this mean we can compute the matter distribution of hydrogen (consequently of all baryonic matter) along the line of sight.
 	\item LRG (luminous red galaxy) are the most luminous and red galaxies in the universe at $z < 1$ \cite{2001cq}.
 	\item ELG (emission line galaxy) are galaxies where stars are creating. They have strong emission lines and characteristic OII and OIII doublets at a rest frame 327 nm and 500nm, which enable to precisely get their redshift.
 	\item Sky Fibers and Standard Stars are calibration targets, necessary to have a reference during measurements. There have to be 10 Standard Stars and 40 Sky Fibers on each petal
-\end{itemize} 
+\end{itemize}
 
 \subsection{Fiber assignment}
 Fiber assignment is the correspondance between fibers of each tile to objects. It tells us which fiber is assigned to which galaxy, or unassigned (in regions where there are not enough galaxies). It depends upon fiber locations on the plate, and on the tilling pattern of the sky. One has to make prioritizations because there are several possibilities to target selection for each fiber. 
@@ -255,7 +262,7 @@ To change the location of other input files, one can simply change it in the fea
 \subsection{Output files}
 They are produced in a directory defined in features.txt (/project/projectdirs/desi/users/rncahn/fa\_output/ for now), in the format {\tt tile54.fits} for example for the 54th tile. There are therefore 10666 such binary files. They consist in 5000 lines (fibers) with the following columns :
 
-\begin{itemize} 
+\begin{itemize}
     \item fiber: [0-4999]
     \item positioner: [0-4999] (not provided yet)
     \item number of available objects
@@ -267,18 +274,18 @@ They are produced in a directory defined in features.txt (/project/projectdirs/d
     \item dec: degrees [-90 - +90]
     \item xfocal: mm from center in positioner coordinate system
     \item yfocal: mm from center in positioner coordinate system 
-\end{itemize} 
+\end{itemize}
 
 \section{Source files}
 Source files are file.h and file.cpp and are in this increasing dependency order :
-\begin{itemize} 
+\begin{itemize}
 	\item misc : a home-made library of structures (and functions on them) needed to manipulate concerning datas, but independent of them. There are pair (of int), List (of int), Table, Cube, and timing, printing, string conversion, error report items.
 	\item collision : used to compute collision checkings and build polygons
 	\item features : stocks all useful parameters
 	\item structs : structures of the manipulated datas and their members
 	\item global : main high-level functions and algorithms used in the program to collect information, assign fibers and print statistics. Important ones are described further
 	\item main : neat and quickly understandable code that sums up all steps
-\end{itemize} 
+\end{itemize}
 
 \section{Parameters}
 Here are some features on input galaxies simulated catalog :
@@ -300,7 +307,7 @@ Here are some features on input galaxies simulated catalog :
 \end{table}
 
 A number of parameters are defined at the begining of the file main.
-\begin{itemize} 
+\begin{itemize}
 	\item parameters summed-up in the Table \ref{table:characteristics}
 	\item Npass = 5 number of passes
 	\item MinUnused = 50 (not used anymore for the moment) minimum number of unused fibers on each petal
@@ -319,7 +326,7 @@ A number of parameters are defined at the begining of the file main.
 	\item AvCollide = 2.9 mm in case of no exact collision checking, limit distance between two galaxies for their positioners to collide
 	\item Collide = 2.1 mm minimum distance allowed on plate projection of two assigned galaxies on the same plate (optimizes collision checking)
 	\item NoCollide = 7 mm maximum distance between two galaxies for the collision of their corresponding galaxies (optimizes collision checking)
-\end{itemize} 
+\end{itemize}
 
 
 \section{Classes and structures}
@@ -405,6 +412,14 @@ In algorithms, j stands for a plate, k for a fiber, p for a petal, g for a galax
 	\end{algorithmic}
 \end{algorithm}
 
+\begin{figure}[H]\begin{center}
+	\tikzsetnextfilename{idea}
+	\begin{tikzpicture}
+		\draw [->] (-2,0) -- (-1,3) (1,0) -- (2,3) (1,0) -- (4,3);
+		\draw (-3,0) -- (5,0);
+	\end{tikzpicture}
+	\caption{Ideas}\label{reachplate}
+\end{center}\end{figure}
 
 \subsection{Assigning making a plan}
 In the simulated catalog, we know all information on objects (if a QSO is a real one for example). During the real study, one won't have access to this information prior to the observation. Thus, in the code, we have to simulate that we have this infotmation only when we have at least once observed the object.
