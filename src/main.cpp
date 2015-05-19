@@ -48,6 +48,10 @@ int main(int argc, char **argv) {
 	F.Nplate = P.size();
 	printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
 
+	// Computes geometry of cb and fh
+	F.cb = create_cb();
+	F.fh = create_fh();
+
 	//// Collect available galaxies <-> tilefibers --------------------
 	// HTM Tree of galaxies
 	const double MinTreeSize = 0.01; // <--- ?
@@ -62,10 +66,6 @@ int main(int argc, char **argv) {
 	// For each galaxy, computes available tilefibers
 	collect_available_tilefibers(G,P,F);
 
-	// Computes geometry of cb and fh
-	F.cb = create_cb();
-	F.fh = create_fh();
-	
 	//results_on_inputs("doc/figs/",G,P,F,true);
 
 	//// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
