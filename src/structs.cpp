@@ -338,12 +338,15 @@ void Assignment::verif(const Plates& P, const Gals& G, const PP& pp, const Feat&
 		List gals = initList(F.Ngal);
 		for (int k=0; k<F.Nfiber; k++) {
 			int g = TF[j][k];
-			// Verif on GL
-			if (g!=-1 && isfound(pair(j,k),GL[g])==-1) { printf("ERROR in verification of correspondance of tfs !\n"); fl(); }
-			// Verif that a galaxy isn't observed twice
-			if (gals[g]==1) printf("ERROR in verification, twice the same galaxy !\n");
-			else gals[g] = 1;
-			if (!F.Collision && is_collision(j,k,pp,G,P,F)!=-1) printf("ERROR in verification : collisions\n");
+			if (g!=-1) {
+				// Verif on GL
+				if (isfound(pair(j,k),GL[g])==-1) { printf("ERROR in verification of correspondance of tfs !\n"); fl(); }
+				// Verif that a galaxy isn't observed twice
+				if (gals[g]==1) printf("ERROR in verification, twice the same galaxy by (%d,%d)\n",j,k);
+				else gals[g] = 1;
+				// Collision checking
+				if (!F.Collision && is_collision(j,k,pp,G,P,F)!=-1) printf("ERROR in verification : collisions\n");
+			}
 		}
 	}
 }
