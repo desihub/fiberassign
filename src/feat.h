@@ -57,6 +57,7 @@ class Feat { // F for features
 	bool PlotFreeFibHist;
 	bool PlotFreeFibTime;
 	bool PlotSeenDens;
+	bool Verif;
 	// Indirectly set by features file
 	int Categories;
 	Smap ids; // Redundtant but optimizes (inv of kind)

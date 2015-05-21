@@ -24,7 +24,7 @@ moduloFiber 1
 
 Collision false
 Exact true
-AvCollide 2.9
+AvCollide 3.2
 Collide 1.98
 NoCollide 7.0
 PatrolRad 6.0
@@ -36,6 +36,7 @@ PlotDistLya false
 PlotFreeFibHist false
 PlotFreeFibTime false
 PlotSeenDens false
+Verif false
 -------------------------------------------------
 
 -galFile : input file of objects
@@ -55,7 +56,7 @@ PlotSeenDens false
 -MaxSS : number of standard stars in each petals
 -MaxSF : number of sky fibers in each petals
 -PlateRadius : radius of the plate
--Analysis : number of tiles observed in a night (to update information, linked to the analysis that tell the exact kind of objects, on previously observed objects, by cluster of this number of tiles)
+-Analysis : number of tiles (time) between the observation of a tile and results on its analysis, which tells if for instance a QSO is a Ly-a or a fake, so that we can update the plan further such that we don't observe a fake again
 
 -TotalArea : area of the sky observed
 -invFibArea : inverse of the reachable area (sqd) by a single fiber
@@ -69,3 +70,6 @@ PlotSeenDens false
 -NoCollide : (experimental) max distance between 2 galaxies so that positioners never collide
 -PatrolRad : radius the disk of reachable objects around a location of a positioner, on the plate
 -NeighborRad : max distance between 2 positioner locations for possible collision
+
+-PlotObsTime PlotHistLya PlotDistLya PlotFreeFibHist PlotFreeFibTime PlotSeenDens : whether we compute and stock those information (takes around 5mn altogether)
+-Verif : whether we verificate that the assignment is sane (no collision, sane mapping, etc...)

@@ -84,6 +84,7 @@ int main(int argc, char **argv) {
 		printf(" - Plate %d : ",j);
 		//improve_from_kind(G,P,pp,F,A,"SF",1);
 		//improve_from_kind(G,P,pp,F,A,"SS",1);
+		if (j%500==0) pyplotTile(j,"doc/figs",G,P,pp,F,A);
 		// <-- here is the real observation time
 		printf(" %s not as - ",format(5,f(F.Nfiber-A.na(F,j,1))).c_str());
 		if (0<=j-F.Analysis) update_plan_from_one_obs(G,P,pp,F,A,limit-1);
@@ -111,7 +112,7 @@ int main(int argc, char **argv) {
 		printf(" - Plate %d :",j);
 		improve_from_kind(G,P,pp,F,A,"SF",1);
 		improve_from_kind(G,P,pp,F,A,"SS",1);
-		if (j==8000) pyplotTile(8000,"doc/figs/tile.py",G,P,pp,F,A); // Plot 1500th tile
+		if (j%500==0) pyplotTile(j,"doc/figs",G,P,pp,F,A);
 		// <-- here is the real observation time
 		printf(" %s not as - ",format(5,f(F.Nfiber-A.na(F,j,1))).c_str());
 		update_plan_from_one_obs(G,P,pp,F,A,F.Nplate-1);
@@ -125,7 +126,7 @@ int main(int argc, char **argv) {
 	init_time_at(time,"# Display results",t);
 	display_results("doc/figs/",G,P,pp,F,A,true);
 	print_time(time,"# ... took :");
-	//A.verif(P,G,pp,F); // Verification that the assignment is sane
+	if (F.Verif) A.verif(P,G,pp,F); // Verification that the assignment is sane
 	print_time(t,"# Finished !... in");
 	return(0);
 }

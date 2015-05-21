@@ -353,6 +353,119 @@ Classes and structures are built to be independent of each other, flexible, quic
 \section{Functions}
 In algorithms, j stands for a plate, k for a fiber, p for a petal, g for a galaxy.
 
+\subsection{Improvement functions ideas}
+A first assignment is done by the function simple\_assign, and is the same than in BOSS experiment.
+Here we present the three ideas of improvement of this first assignment, that increases the number of used fibers and the quality of the assignment. It represents the body, the main purpose of our work. They need to be somewhere "orthogonal", so that they don't loose efficiency when we call one of them after an other.
+Those three ideas are coded into the three following functions :
+
+
+\begin{figure}[H]
+	\hspace*{3cm}
+	\begin{minipage}{.5\textwidth}
+	\tikzsetnextfilename{idea}
+	\begin{tikzpicture}
+		\begin{axis}[width=50mm,height=30mm,axis lines=none,line width=1pt]
+			\addplot [only marks,mark=x] coordinates { (10,20) (40,20)};
+			\addplot [->,loosely dashed] coordinates {(-10,0) (10,20)};
+			\addplot [->] coordinates {(30,0) (10,20)};
+			\addplot [->,loosely dashed] coordinates {(30,0) (40,20)};
+			\addplot [] coordinates {(-20,0) (-5,0)};
+			\addplot [] coordinates {(20,0) (35,0)};
+			\node [left] at (axis cs:10,20){\small{ELG}};
+			\node [left] at (axis cs:40,20){\small{LRG}};
+		\end{axis}
+	\end{tikzpicture}
+ \end{minipage}%
+\begin{minipage}{.5\textwidth}
+	\tikzsetnextfilename{transf}
+	\begin{tikzpicture}
+		\begin{axis}[width=50mm,height=30mm,axis lines=none,line width=1pt]
+			\addplot [only marks,mark=x] coordinates { (10,20) (40,20)};
+			\addplot [->] coordinates {(-10,0) (10,20)};
+			\addplot [->,loosely dashed] coordinates {(30,0) (10,20)};
+			\addplot [->] coordinates {(30,0) (40,20)};
+			\addplot [] coordinates {(-20,0) (-5,0)};
+			\addplot [] coordinates {(20,0) (35,0)};
+			\node [left] at (axis cs:10,20){\small{ELG}};
+			\node [left] at (axis cs:40,20){\small{LRG}};
+		\end{axis}
+	\end{tikzpicture}
+ \end{minipage}
+	\caption{Improve}\label{transf}
+\end{figure}
+
+The idea is to take an unassigned fiber and to look at the galaxies it can reach and that are already assigned. We then look at the second fiber, which is observing this galaxy and try to reassign it to an other galaxy, and assign the first fiber to the first object. It is powerful because we use it when making a plan, and so the two fibers can (and are almost always) from different plates, that can be arbitrarily separated.
+
+
+\begin{figure}[H] 
+	\hspace*{3cm}
+	\begin{minipage}{.5\textwidth}
+	\tikzsetnextfilename{idea}
+	\begin{tikzpicture}
+		\begin{axis}[width=50mm,height=30mm,axis lines=none,line width=1pt]
+			\addplot [only marks,mark=x] coordinates { (10,20)};
+			\addplot [->,loosely dashed] coordinates {(-10,0) (10,20)};
+			\addplot [->] coordinates {(30,0) (10,20)};
+			\addplot [] coordinates {(-20,0) (-5,0)};
+			\addplot [] coordinates {(20,0) (35,0)};
+		\end{axis}
+	\end{tikzpicture}
+ \end{minipage}%
+\begin{minipage}{.5\textwidth}
+	\tikzsetnextfilename{transf}
+	\begin{tikzpicture}
+		\begin{axis}[width=50mm,height=30mm,axis lines=none,line width=1pt]
+			\addplot [only marks,mark=x] coordinates { (10,20)};
+			\addplot [->] coordinates {(-10,0) (10,20)};
+			\addplot [->,loosely dashed] coordinates {(30,0) (10,20)};
+			\addplot [] coordinates {(-20,0) (-5,0)};
+			\addplot [] coordinates {(20,0) (35,0)};
+		\end{axis}
+	\end{tikzpicture}
+ \end{minipage}
+	\caption{Redistribute}\label{transf}
+\end{figure}
+
+In redistribute, we look at an assigned fiber, and try to make the observed object observed by and other fiber, which can come from a different plate. It "recooks" the assignment. In this way, it doesn't improves anything, but we then apply the improve function again, which is more efficient. The idea is the improve, then redistribute, then improve again, redistribute etc. If there is no redistribution between a new improve, the improve is almost useless.
+
+\begin{figure}[H]
+	\hspace*{3cm}
+	\begin{minipage}{.5\textwidth}
+	\tikzsetnextfilename{idea2}
+	\begin{tikzpicture}
+		\begin{axis}[width=50mm,height=30mm,axis lines=none,line width=1pt]
+			\addplot [only marks,mark=x] coordinates { (-15,20) (15,20) (20,20) };
+			\addplot [->,loosely dashed] coordinates {(-10,0) (-15,20)};
+			\addplot [->] coordinates {(10,0) (15,20)};
+			\addplot [->,loosely dashed] coordinates {(10,0) (20,20)};
+			\addplot [] coordinates {(-20,0) (35,0)};
+			\node [left] at (axis cs:-15,20){\small{SF}};
+			\node [left] at (axis cs:15,20){\small{SF}};
+			\node [right] at (axis cs:20,20){\small{\lya}};
+		\end{axis}
+	\end{tikzpicture}
+ \end{minipage}%
+\begin{minipage}{.5\textwidth}
+	\tikzsetnextfilename{transf2}
+	\begin{tikzpicture}
+		\begin{axis}[width=50mm,height=30mm,axis lines=none,line width=1pt]
+			\addplot [only marks,mark=x] coordinates { (-15,20) (15,20) (20,20) };
+			\addplot [->] coordinates {(-10,0) (-15,20)};
+			\addplot [->,loosely dashed] coordinates {(10,0) (15,20)};
+			\addplot [->] coordinates {(10,0) (20,20)};
+			\addplot [] coordinates {(-20,0) (35,0)};
+			\node [left] at (axis cs:-15,20){\small{SF}};
+			\node [left] at (axis cs:15,20){\small{SF}};
+			\node [right] at (axis cs:20,20){\small{\lya}};
+		\end{axis}
+	\end{tikzpicture}
+ \end{minipage}
+	\caption{Improve from kind}\label{transf2}
+\end{figure}
+
+The third idea is to take an assigned fiber that is able to reach a SF (or SS), to assign it, and then we reassign a fiber assigned to a SF. As the number of SF per petal has to remain the same as previously (40) we search the second fiber amongst the same petal of the first fiber.
+
+
 \subsection{Some functions in structs.cpp}
 {\tt plate\_dist} turns radians into mm on the focal plane, i.e. it is the plate scale as a function of angle.
 
@@ -412,14 +525,7 @@ In algorithms, j stands for a plate, k for a fiber, p for a petal, g for a galax
 	\end{algorithmic}
 \end{algorithm}
 
-\begin{figure}[H]\begin{center}
-	\tikzsetnextfilename{idea}
-	\begin{tikzpicture}
-		\draw [->] (-2,0) -- (-1,3) (1,0) -- (2,3) (1,0) -- (4,3);
-		\draw (-3,0) -- (5,0);
-	\end{tikzpicture}
-	\caption{Ideas}\label{reachplate}
-\end{center}\end{figure}
+
 
 \subsection{Assigning making a plan}
 In the simulated catalog, we know all information on objects (if a QSO is a real one for example). During the real study, one won't have access to this information prior to the observation. Thus, in the code, we have to simulate that we have this infotmation only when we have at least once observed the object.
@@ -496,7 +602,7 @@ The argument "next" (integer) in following functions means that we treat all nex
 	\end{algorithmic}
 \end{algorithm}
 
-{\tt update\_plan\_from\_one\_obs} updates the plan formerly made so that if for example on the previous observation we've watched at a fake QSO, it won't be observed anymore in case it was planed to be observed once or several times again. Released tile-fibers will then be tryed to be reassigned with improve\_fiber
+{\tt update\_plan\_from\_one\_obs} updates the plan formerly made so that if for example on the current minus $Analysis$ we observed a QSO which the analysis reveals fake but is still planed to be observed again, we will unassign the corresponding fiber and try to reassign it with improve\_fiber and improve\_fiber\_from\_kind
 
 \begin{algorithm}[H]
 	\caption{Update\_plan\_from\_one\_observation(j0,end\_plan)}\label{euclid}
@@ -904,28 +1010,6 @@ The figure \ref{histastf} gives the histogram of proportion of assigned \lya and
 \subsection{Shifting parameters}
 In the following, we change a little bit parameters around the references values to observe their influences on results.
 
-\begin{figure}[H]\begin{center}\begin{minipage}{.5\textwidth}
-	\tikzsetnextfilename{colllya}
-	\begin{tikzpicture}[scale=1.1]
-		\begin{axis}[enlarge x limits=false,xlabel={Collide (mm)},ylabel={Weighted \% of \lya},cycle list name=mycolorlist]
-			\addplot [mark=x] coordinates {(0,68.572)(1,68.414)(1.8,67.963)(2.0,67.774)(2.1,67.670)(2.2,67.545)(2.4,67.278)(2.8,66.606)(3,66.187)(3.2,65.741)};
-			\draw [densely dashed] (axis cs:2.1,\pgfkeysvalueof{/pgfplots/ymin}) -- (axis cs:2.1,\pgfkeysvalueof{/pgfplots/ymax});
-		\end{axis}
-	\end{tikzpicture}
-\end{minipage}%
-\begin{minipage}{.5\textwidth}
-	\tikzsetnextfilename{collelg}
-	\begin{tikzpicture}[scale=1.1]
-		\begin{axis}[enlarge x limits=false,xlabel={Collide (mm)},ylabel={\% of ELG},cycle list name=mycolorlist]
-			\addplot [mark=x] coordinates {(0,78.301)(1,78.073)(1.8,77.999)(2.0,77.970)(2.1,77.955)(2.2,77.937)(2.4,77.894)(2.8,77.777)(3,77.703)(3.2,77.612)};
-			\draw [densely dashed] (axis cs:2.1,\pgfkeysvalueof{/pgfplots/ymin}) -- (axis cs:2.1,\pgfkeysvalueof{/pgfplots/ymax});
-		\end{axis}
-	\end{tikzpicture}
-\end{minipage}
-	\caption{Weighted \% of \lya and \% of ELG observed as a function of required stay-clear}
-\end{center}\end{figure}
-
-
 \begin{figure}[H]\begin{center}
 	\tikzsetnextfilename{intlya}
 	\begin{tikzpicture}[scale=1.1]
@@ -938,8 +1022,42 @@ In the following, we change a little bit parameters around the references values
 \end{center}\end{figure}
 
 
-\begin{comment}
-\end{comment}
+\section{Collision problem}
+There is an option in the features file that indicates whether we choose the exact geometry of the fiber positioners. If not, collisions are computed with only circles at the position of the fiber holder, of radius $AvCollide$, which we calibrate such that we get the same collision rate than with the exact geometry ($\sim$ 10.5\% when we take all plates). If the exact geometry is on, the modules collision.h and collision.cpp are used to check. They then build sets of circles or segments, and check collisions between those belonging to the first fiber positioner to the ones belonging to the second one.
+Computationnally cheap methods were used for segment-segment and circle-segment checking, because checking functions are called a lot of time, and optimization of those methods lead to considerably decrease total computation time. That is why we use circle and segments, not only segments : creating an arc with segments needs a lot of them, but only one circle.
+
+Figure \ref{coldist} is the histogram of distances between two galaxies, in a collision case, and its integral.
+\begin{figure}[H]\begin{center}\begin{minipage}{.5\textwidth}
+	\tikzsetnextfilename{coldist}
+\begin{tikzpicture}[scale=1.1]
+		\begin{axis}[const plot,enlarge x limits=false,enlarge y limits=false,xlabel={Distances between two colliding objects},ylabel={}]
+			\addplot [color=blue,mark=none] table[x=x,y=0] {figs/coldist.dat};
+		\end{axis}
+	\end{tikzpicture}
+\end{minipage}%
+\begin{minipage}{.5\textwidth}
+	\tikzsetnextfilename{coldistint}
+	\begin{tikzpicture}[scale=1.1]
+		\begin{axis}[const plot,enlarge x limits=false,enlarge y limits=false,xlabel={Distances between two colliding galaxies},ylabel={}]
+			\addplot [mark=none] table[x=x,y=1] {figs/coldist.dat};
+		\end{axis}
+	\end{tikzpicture}
+ \end{minipage}
+	\caption{Histogram of distances between galaxies in collision case}\label{coldist}
+\end{center}\end{figure}
+
+\section{Tile ploting}
+The function pyplotTile builds a tile.py file, which can be executed manually with python tile.py to create the pdf plot.
+Only objects that would need at least one further observation are projected on the plate and ploted. The function has to be called just before real observation time, otherwise, if it is called at the end for example, information on number of observations of an object would be the one that we have at the end, and not on the way.
+A black dot is ploted when there is an unassigned fiber at some place, not to mix up with fiducials (totally white), places where there is physically no fiber.
+Watching at a dozen of tile plots, one can convince hiself that the assignment is very close to the optimum.
+
+\begin{figure}[H]
+\hspace*{-1.5cm}
+    \includegraphics[scale=1.75]{python/tile.pdf}
+	\caption{Tile}
+\end{figure}
+
 
 
 \section{Possible improvements}
@@ -956,102 +1074,8 @@ The update function might still be improved to lead to more reassignments, and a
 
 We could make plans with only \lya assigned, launching improve function, and then adding separately LRG then improving, and adding again ELG and improving. It's likely that it won't increase results because as we saw before, doing assignments separately in new\_assign already didn't improved results. This kind of optimization must actually be already done by selecting with priorities and executing improvement functions.
 
-\section{Collision problem}
-\begin{figure}[H]\begin{center}
-	\tikzsetnextfilename{col}
-\begin{tikzpicture}[scale=1.1]
-	\begin{axis}[enlarge y limits=false,enlarge x limits=false,xlabel={Distance between fibers (mm)},ylabel={\# of collision cases}]
-		\addplot [mark=none] table[x=x,y=0] {figs/col.dat};
-	\end{axis}
-\end{tikzpicture}
-\caption{Histogram of cases of collision}
-\end{center}\end{figure}
-
-We will forbid distance between two galaxies to be less than 2 times the radius of what we will further call the first disk (FD), which is the disk of radius 0.990 mm that incorporates the hole for fiber ferrule. 
-It is sure that it is a necessary condition (simple to convince oneself) and will avoid a good proportion of collisions (40\% ?) using a very cheap computation.
-There is also 3-collisions problem possible, even with this constrain.
-4-collision problem is possible without this constrain, but maybe impossible with the constrain.
 
 
-At the moment of the study, we need to have a good precision of the final assignment efficacity. Joe Silber wrote a collision code with the exact geometry of positionners, and found out that the collision rate is 8\%. To take it into account, we calibrate the $collide$ parameter to get this same collision rate. Of course, this is not exact and eventually needs to be so, but by this way we get results very close to the final ones. We experimentally found out that we have to take $collide = 2.9 mm$.
-Notice that with collisions allowed, we get 94.4 \% of fibers assigned, instead of 93.9 \% when they are not. A further improvement can be to do the assignment with collisions allowed and at the very end try to change the colliding ones, but it's likely to lead to the same results than now.
-
-
-\begin{table}[H]\centering
-	\begin{tabular}{r|ccc}
-		Collide (mm) & 2.1 & 3.0 & 2.9\\ 
-		Collision rate at 2000 (\%) & 3.58&8.44 & 7.75\\
-		Collision rate (\%) & 3.93 & ~ & 8.27\\
-	\end{tabular}
-	\caption{Collision rate as a function of Collide}\label{colrate}
-\end{table}
-
-Note here that the collision rate is less when we only take the first 2000 plates, though on those plates more fibers are assigned, so one should get a greater percentage than when we take all the plates. Still to understand.
-
-\begin{table}[H]\begin{center}
-\begin{tabular}{rrrrrrrrrrcc}
-\hline
-\multicolumn{6}{r}{Times observed} \\
-	~ &           0 &     1 &  2 & 3 & 4 & 5 &  Total & Fiber used & Once observed & observed $\%$ & weighted $\%$ \\ \hline
-   QSO Ly-a   &     0 &     2 &   4 & 14 & 25 & 1 &    49 &   167 &    49 & 98.434 & 67.032\\ 
- QSO Tracer   &     1 &   118 &   0 &  0 &  0 & 0 &   119 &   118 &   118 & 98.454 & 98.454\\ 
-        LRG   &    16 &    37 & 244 &  0 &  0 & 0 &   298 &   526 &   281 & 94.376 & 88.069\\ 
-        ELG   &   537 & 1,874 &   0 &  0 &  0 & 0 & 2,411 & 1,874 & 1,874 & 77.721 & 77.721\\ 
-   Fake QSO   &     1 &    88 &   0 &  0 &  0 & 0 &    90 &    88 &    88 & 98.446 & 98.446\\ 
-   Fake LRG   &     2 &    47 &   0 &  0 &  0 & 0 &    50 &    47 &    47 & 95.063 & 95.063\\ 
-         SS   &    72 &    67 &   0 &  0 &  0 & 0 &   140 &    67 &    67 & 48.252 & 48.252\\ 
-         SF   & 1,129 &   270 &   0 &  0 &  0 & 0 & 1,400 &   270 &   270 & 19.300 & 19.300\\ 
-\hline
-\end{tabular}
-\caption{Results for collide = 2.9}\label{29}
-\end{center}\end{table}
-93.54 \% assigned of all fibers.
-
-\begin{table}[H]\begin{center}
-\begin{tabular}{rrrrrrrrrrcc}
-\hline
-\multicolumn{6}{r}{Times observed} \\
-	~ &           0 &     1 &  2 & 3 & 4 & 5 &  Total & Fiber used & Once observed & observed $\%$ & weighted $\%$ \\ \hline
-   QSO Ly-a   &     0 &     1 &   4 & 13 & 27 & 1 &    49 &   170 &    49 & 98.611 & 68.228\\ 
- QSO Tracer   &     1 &   118 &   0 &  0 &  0 & 0 &   119 &   118 &   118 & 98.626 & 98.626\\ 
-        LRG   &    15 &    35 & 247 &  0 &  0 & 0 &   298 &   530 &   283 & 94.794 & 88.823\\ 
-        ELG   &   532 & 1,879 &   0 &  0 &  0 & 0 & 2,411 & 1,879 & 1,879 & 77.935 & 77.935\\ 
-   Fake QSO   &     1 &    88 &   0 &  0 &  0 & 0 &    90 &    88 &    88 & 98.617 & 98.617\\ 
-   Fake LRG   &     2 &    47 &   0 &  0 &  0 & 0 &    50 &    47 &    47 & 95.443 & 95.443\\ 
-         SS   &    72 &    67 &   0 &  0 &  0 & 0 &   140 &    67 &    67 & 48.252 & 48.252\\ 
-         SF   & 1,129 &   270 &   0 &  0 &  0 & 0 & 1,400 &   270 &   270 & 19.300 & 19.300\\ 
-\hline
-\end{tabular}
-\caption{Results for collide = 2.1}\label{21}
-\end{center}\end{table}
-93.93 \% assigned of all fibers.
-
-\begin{figure}[H]\begin{center}\begin{minipage}{.5\textwidth}
-	\tikzsetnextfilename{coldist}
-\begin{tikzpicture}[scale=1.1]
-		\begin{axis}[const plot,enlarge x limits=false,enlarge y limits=false,xlabel={Distances between two colliding positioners},ylabel={}]
-			\addplot [color=blue,mark=none] table[x=x,y=0] {figs/coldist.dat};
-		\end{axis}
-	\end{tikzpicture}
-\end{minipage}%
-\begin{minipage}{.5\textwidth}
-	\tikzsetnextfilename{coldistint}
-	\begin{tikzpicture}[scale=1.1]
-		\begin{axis}[const plot,enlarge x limits=false,enlarge y limits=false,xlabel={Distances between two colliding positioners},ylabel={}]
-			\addplot [mark=none] table[x=x,y=1] {figs/coldist.dat};
-		\end{axis}
-	\end{tikzpicture}
- \end{minipage}
-	\caption{Histogram of distances between two colliding positioners}
-\end{center}\end{figure}
-
-\begin{figure}[H]
-\hspace*{-1.5cm}
-    \includegraphics[scale=1.75]{python/tile.pdf}
-	\caption{Tile}
-\end{figure}
-
-Polygons consist in segments and circles. Modelizing an arc by a circle is much better than by segments, because it needs only one circle, instead of several segments. Computationally cheap methods of collision checking between segments or circles can be read in collision.cpp.
 
 \bibliographystyle{plain}
 \bibliography{papers}{}

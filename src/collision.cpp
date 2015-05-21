@@ -199,8 +199,9 @@ Dlist polygon::limits() const {
 	return lims;
 }
 
-void polygon::pythonplot(str fname, int j) const {
+void polygon::pythonplot(str directory, int j) const {
 	FILE * file;
+	str fname = directory+"/tile"+i2s(j)+".py";
 	file = fopen(fname.c_str(),"w");
 	Dlist lims = limits();
 	fprintf(file,"from pylab import *\nimport pylab as pl\nimport matplotlib.pyplot as plt\nfrom matplotlib import collections as mc\nax=subplot(aspect='equal')\naxes = plt.gca()\naxes.set_xlim([%f,%f])\naxes.set_ylim([%f,%f])\nax.axis('off')\nax.get_xaxis().set_visible(False)\nax.get_yaxis().set_visible(False)\nset_cmap('hot')\nfig = plt.gcf()\n\n",lims[0],lims[1],lims[2],lims[3]);
@@ -224,7 +225,7 @@ void polygon::pythonplot(str fname, int j) const {
 			else fprintf(file,"circ=plt.Circle((%f,%f),%f,fill=False,linewidth=0.2,color='k',alpha=0.4)\nfig.gca().add_artist(circ)\n",e.O.f,e.O.s,e.rad);
 		}
 	}
-	fprintf(file,"\nfig.savefig('tile.pdf',bbox_inches='tight',pad_inches=0,dpi=(300))");
+	fprintf(file,"\nfig.savefig('tile%d.pdf',bbox_inches='tight',pad_inches=0,dpi=(300))",j);
 	fclose(file);
 }
 

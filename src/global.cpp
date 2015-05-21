@@ -751,7 +751,7 @@ void write_FAtile(int j, str outdir, const Gals& G, const Plates& P, const PP& p
 	fclose(FA);
 }
 
-void pyplotTile(int j, str fname, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
+void pyplotTile(int j, str directory, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
 	std::vector<char> colors;
 	colors.resize(F.Categories);
 	colors[0] = 'k'; colors[1] = 'g'; colors[2] = 'r'; colors[3] = 'b'; colors[4] = 'm'; colors[5] = 'y'; colors[6] = 'w'; colors[7] = 'c';
@@ -785,7 +785,7 @@ void pyplotTile(int j, str fname, const Gals& G, const Plates& P, const PP& pp, 
 			}
 		}
 	}
-	pol.pythonplot(fname,j);
+	pol.pythonplot(directory,j);
 }
 
 void overlappingTiles(str fname, const Feat& F, const Assignment& A) {
