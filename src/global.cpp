@@ -289,19 +289,21 @@ void improve_from_kind(const Gals& G, const Plates&P, const PP& pp, const Feat& 
 void update_plan_from_one_obs(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int end) {
 	int cnt(0);
 	int j0 = A.next_plate;
+	int jpast = j0-F.Analysis;
+	if (jpast<0) { printf("ERROR in update : jpast negative\n"); fl(); }
 	int n = end-j0+1;
 	int na_start(A.na(F,j0,n));
 	List to_update;
 	// Declare that we've seen those galaxies
-	A.update_once_obs(j0,F);
+	A.update_once_obs(jpast,F);
 	// Get the list of galaxies to update in the plan
 	for (int k=0; k<F.Nfiber; k++) {
-		int g = A.TF[j0][k];
+		int g = A.TF[jpast][k];
 		// Only if once_obs, we delete all further assignment. obs!=obs_tmp means that the galaxy is a fake one for example (same priority but different goal)
 		if (g!=-1 && A.nobsv_tmp[g]!=A.nobsv[g] && A.once_obs[g]) to_update.push_back(g);
 	}
 	// Update information on previously seen galaxies
-	A.update_nobsv_tmp_for_one(j0,F);
+	A.update_nobsv_tmp_for_one(jpast,F);
 	// Update further in the plan
 	for (int gg=0; gg<to_update.size(); gg++) {
 		int g = to_update[gg];
@@ -505,43 +507,7 @@ void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F
 
 void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, Feat& F, const Assignment& A, bool latex) {
 	printf("# Results :\n");
-	// Some petal
-	//for (int i=1; i<=10; i++) print_table("Petal of plate "+i2s(i),A.infos_petal(1000*i,5,G,P,pp,F));
-	
-	// Collision histogram of distances between galaxies
-	if (F.Collision) {
-	Dlist coldist;
-	for (int j=0; j<F.Nplate; j++) {
-		List done = initList(F.Nfiber);
-		for (int k=0; k<F.Nfiber; k++) {
-			if (done[k]==0) {
-				int c = A.is_collision(j,k,pp,G,P,F);
-				if (c!=-1) {
-					done[c] = 1;
-					dpair G1 = projection(A.TF[j][k],j,G,P);
-					dpair G2 = projection(A.TF[j][c],j,G,P);
-					double d = norm(G2-G1);
-					if (d==0) F.Count++;
-					coldist.push_back(d);
-				}
-			}
-		}
-	}
-	double intervaldist = 0.01;
-	
-	Dlist histcoldist = histogram(coldist,intervaldist);
-	Dlist redhistcol = percents(histcoldist,sumlist(histcoldist));
-	Dtable Dtd; Dtd.push_back(redhistcol); Dtd.push_back(cumulate(redhistcol));
-	print_mult_Dtable_latex("Collision histogram of distances between galaxies",outdir+"coldist.dat",Dtd,intervaldist);
-	}
 
-	// Count
-	printf("Count = %d \n",F.Count);
-
-	// 0 List of total number of galaxies
-	List tots = initList(F.Categories);
-	for (int g=0; g<F.Ngal; g++) tots[G[g].id]++;
-	
 	// 1 Raw numbers of galaxies by id and number of remaining observations
 	int MaxObs = max(F.goal);
 	Table hist2 = initTable(F.Categories,MaxObs+1);
@@ -551,7 +517,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 	for (int g=0; g<F.Ngal; g++) {
 		int id = G[g].id;
 		int m = A.nobs(g,G,F,false);
-		if (!(m>=0 && m<=MaxObs)) { printf("Error obs beyond limits \n"); fl(); }
+		if (!(m>=0 && m<=MaxObs)) { F.Count++;/*printf("Error obs beyond limits \n"); fl();*/ }
 		if (m>=0 && m<=MaxObs) hist2[id][m]++;
 		ob[id][m+MaxObs]++;
 	}
@@ -591,24 +557,9 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 	print_table("Obs per sqd and percentages",concatenate(obs_per_sqd,perc),latex,F.kind);
 
 	// 3 Observed galaxies in function of time
-	int interval = 10; // Interval of plates for graphic
-	Dtable Ttime_scaled = initDtable(F.Categories,0);
-	Table Ttime = initTable(F.Categories,0);
-	for (int id=0; id<F.Categories; id++) {
-		List l;
-		int n = 0;
-		for (int j=0; j<F.Nplate; j++) {
-			for (int p=0; p<F.Npetal; p++) n += A.nkind(j,p,id,G,P,pp,F,true);
-			if (j%interval==0) l.push_back(n);
-		}
-		Ttime[id] = l;
-		Ttime_scaled[id] = percents(l,l[l.size()-1]);
-	}
-	print_mult_Dtable_latex("Observed galaxies in function of time (scaled) (interval 10)",outdir+"time.dat",Ttime_scaled,interval);
-	//print_mult_table_latex("Observed galaxies in function of time",,F.kind,Ttime);
-	
-	/*
 	// Lya 1,2,3,4,5, LRG 1,2
+	if (F.PlotObsTime) {
+	int interval = 10;
 	int nk = 9;
 	Table Ttim = initTable(nk,0);
 	List galaxs = initList(F.Ngal);
@@ -632,9 +583,10 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 		}
 	}
 	print_mult_table_latex("Observed galaxies complete (interval 10)",outdir+"time2.dat",Ttim,interval);
-	*/
+	}
 
-	// 4 Histogramme of percentages of seen Ly-a
+	// 4 Histogram of percentages of seen Ly-a
+	if (F.PlotHistLya) {
 	int id = F.ids.at("QSOLy-a");
 	int goal = F.goal[id];
 	Table Percseen = initTable(goal+1,0);
@@ -654,8 +606,10 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 		}
 	}
 	print_mult_table_latex("Available tile-fibers for a galaxy (by kind)",outdir+"obsly.dat",Percseen,1);
+	}
 
 	// 5 Histogram of time between 2 obs of Ly a
+	if (F.PlotDistLya) {
 	Table deltas;
 	for (int g=0; g<F.Ngal; g++) {
 		if (G[g].id == F.ids.at("QSOLy-a")) {
@@ -680,20 +634,26 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 	//print_hist("Plate interval between 2 consecutive obs of Ly-a (interval 100)",100,histogram(deltas,100));
 	Table delts; delts.push_back(histo0); delts.push_back(cumulate(histo0));
 	print_mult_table_latex("Plate interval between 2 consecutive obs of Ly-a (interval 10)",outdir+"dist2ly.dat",delts,10);
+	}
 
 	// 6 Free fibers histogram
+	if (F.PlotFreeFibHist) {
 	Table unused_fbp = A.unused_fbp(pp,F);
 	make_square(unused_fbp);
 	Table hist0; hist0.push_back(histogram(unused_fbp,1));
 	print_mult_table_latex("Number of petals with this many free fiber (interval 1)",outdir+"freefib.dat",hist0,1);
+	}
 
 	// 7 Free fibers in function of time (plates)
+	if (F.PlotFreeFibTime) {
 	List freefibtime = initList(F.Nplate);
 	for (int j=0; j<F.Nplate; j++) freefibtime[j] = A.unused_f(j,F);
 	Table fft; fft.push_back(freefibtime);
 	print_mult_table_latex("Free fibers in function of time (plates)",outdir+"fft.dat",fft);
+	}
  
 	// 8 Percentage of seen objects as a function of density of objects
+	if (F.PlotSeenDens) {
 	Dcube densities = initDcube(F.Categories+1,0,0);
 	for (int j=0; j<F.Nplate; j++) {
 		for (int k=0; k<F.Nfiber; k++) {
@@ -730,24 +690,42 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 	Dtable densit = initDtable(F.Categories+1,max_row(densities));
 	for (int t=0; t<F.Categories+1; t++) for (int i=0; i<densities[t].size(); i++) densit[t][i] = sumlist(densities[t][i])/densities[t][i].size();
 	print_mult_Dtable_latex("Perc of seen obj as a fun of dens of objs",outdir+"seendens.dat",densit,1);
+	}
 	
-	// 9 Percentage of TF that have at least 1 QSO av and that are not assigned to a QSO
+	// 9 Collision histogram of distances between galaxies
+	if (F.Collision) {
+	Dlist coldist;
+	for (int j=0; j<F.Nplate; j++) {
+		List done = initList(F.Nfiber);
+		for (int k=0; k<F.Nfiber; k++) {
+			if (done[k]==0) {
+				int c = A.is_collision(j,k,pp,G,P,F);
+				if (c!=-1) {
+					done[c] = 1;
+					dpair G1 = projection(A.TF[j][k],j,G,P);
+					dpair G2 = projection(A.TF[j][c],j,G,P);
+					double d = norm(G2-G1);
+					coldist.push_back(d);
+				}
+			}
+		}
+	}
+	double intervaldist = 0.01;
+	
+	Dlist histcoldist = histogram(coldist,intervaldist);
+	Dlist redhistcol = percents(histcoldist,sumlist(histcoldist));
+	Dtable Dtd; Dtd.push_back(redhistcol); Dtd.push_back(cumulate(redhistcol));
+	print_mult_Dtable_latex("Collision histogram of distances between galaxies",outdir+"coldist.dat",Dtd,intervaldist);
+	}
 
-
-	// Misc
 	// Collision rate
-	/*if (Collision)*/ printf("Collision rate : %f \% \n",A.colrate(pp,G,P,F));
-	// Histogram of SS
-	Table usedSS = A.used_by_kind("SS",G,pp,F);
-	print_hist("UsedSS (number of petals)",1,histogram(usedSS,1));
-
-	// Histogram of SF
-	Table usedSF = A.used_by_kind("SF",G,pp,F);
-	print_hist("UsedSF (number of petals)",1,histogram(usedSF,1));
-
+	if (F.Collision) printf("Collision rate : %f \% \n",A.colrate(pp,G,P,F));
 
 	// Percentage of fibers assigned
 	printf("  %s assignments in total (%.4f %% of all fibers)\n",f(A.na(F)).c_str(),percent(A.na(F),F.Nplate*F.Nfiber));
+
+	// Count
+	if (F.Count!=0) printf("Count = %d \n",F.Count);
 }
 
 void write_FAtile(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
@@ -797,13 +775,15 @@ void pyplotTile(int j, str fname, const Gals& G, const Plates& P, const PP& pp, 
 			pol.add(fh);
 			pol.add(element(O,colors[G[g].id],true));
 		}
+		else pol.add(element(O,'k'));
 		List av_gals = P[j].av_gals[k];
 		for (int i=0; i<av_gals.size(); i++) {
 			int gg = av_gals[i];
+			if (1<=A.nobs(gg,G,F)) {
 			dpair Ga = projection(gg,j,G,P);
 			pol.add(element(Ga,colors[G[gg].id]));
+			}
 		}
-		pol.add(element(O,'k'));
 	}
 	pol.pythonplot(fname,j);
 }

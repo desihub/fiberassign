@@ -81,19 +81,16 @@ int main(int argc, char **argv) {
 	init_time_at(time,"# Begin real time assignment",t);
 	for (int jj=0; jj<limit; jj++) {
 		int j = A.next_plate;
-		printf(" - Plate %d : ",j); fl();
+		printf(" - Plate %d : ",j);
 		//improve_from_kind(G,P,pp,F,A,"SF",1);
 		//improve_from_kind(G,P,pp,F,A,"SS",1);
-		// here is observation time
+		// <-- here is the real observation time
 		printf(" %s not as - ",format(5,f(F.Nfiber-A.na(F,j,1))).c_str());
-		update_plan_from_one_obs(G,P,pp,F,A,limit-1);
+		if (0<=j-F.Analysis) update_plan_from_one_obs(G,P,pp,F,A,limit-1);
+		else printf("\n");
 		A.next_plate++;
 	}
 	print_time(time,"# ... took :");
-	//init_time_at(time,"# Compute collision rate",t);
-	//printf("Collision rate : %lf \% \n",A.colrate(pp,G,P,F,limit));
-	//print_time(time,"# ... took :");
-	pyplotTile(1500,"doc/figs/tile.py",G,P,pp,F,A); // Plot 1500th tile
 
 	// Make a plan ----------------------------------------------------
 	//new_assign_fibers(G,P,pp,F,A);
@@ -111,21 +108,24 @@ int main(int argc, char **argv) {
 	init_time_at(time,"# Begin real time assignment",t);
 	for (int jj=limit; jj<F.Nplate; jj++) {
 		int j = A.next_plate;
-		printf(" - Plate %d :",j); fl();
+		printf(" - Plate %d :",j);
 		improve_from_kind(G,P,pp,F,A,"SF",1);
 		improve_from_kind(G,P,pp,F,A,"SS",1);
-		// here is observation time
+		if (j==8000) pyplotTile(8000,"doc/figs/tile.py",G,P,pp,F,A); // Plot 1500th tile
+		// <-- here is the real observation time
 		printf(" %s not as - ",format(5,f(F.Nfiber-A.na(F,j,1))).c_str());
 		update_plan_from_one_obs(G,P,pp,F,A,F.Nplate-1);
 		A.next_plate++;
 	}
 	print_time(time,"# ... took :");
 
-	// Results --------------------------------------------------------
-	//for (int j=0; j<F.Nplate; j++) write_FAtile(j,F.outDir,G,P,pp,F,A);
-	//overlappingTiles("overlaps.txt",F,A);
+	// Results -------------------------------------------------------
+	//for (int j=0; j<F.Nplate; j++) write_FAtile(j,F.outDir,G,P,pp,F,A); // Write output
+	//overlappingTiles("overlaps.txt",F,A); // Write some overlapping tiles (for S.Bailey)
+	init_time_at(time,"# Display results",t);
 	display_results("doc/figs/",G,P,pp,F,A,true);
-	A.verif(P,G,pp,F); // Verification that the assignment is sane
+	print_time(time,"# ... took :");
+	//A.verif(P,G,pp,F); // Verification that the assignment is sane
 	print_time(t,"# Finished !... in");
 	return(0);
 }

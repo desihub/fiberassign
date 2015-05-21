@@ -15,6 +15,7 @@ Npass 5
 MaxSS 10
 MaxSF 40
 PlateRadius 1.65
+Analysis 200
 
 TotalArea 15789.0
 invFibArea 700
@@ -29,6 +30,12 @@ NoCollide 7.0
 PatrolRad 6.0
 NeighborRad 14.05
 
+PlotObsTime false
+PlotHistLya false
+PlotDistLya false
+PlotFreeFibHist false
+PlotFreeFibTime false
+PlotSeenDens false
 -------------------------------------------------
 
 -galFile : input file of objects
@@ -48,6 +55,7 @@ NeighborRad 14.05
 -MaxSS : number of standard stars in each petals
 -MaxSF : number of sky fibers in each petals
 -PlateRadius : radius of the plate
+-Analysis : number of tiles observed in a night (to update information, linked to the analysis that tell the exact kind of objects, on previously observed objects, by cluster of this number of tiles)
 
 -TotalArea : area of the sky observed
 -invFibArea : inverse of the reachable area (sqd) by a single fiber

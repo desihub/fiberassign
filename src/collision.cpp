@@ -88,10 +88,6 @@ element::element(const dpair& A, char c, bool big0) {
 	big = big0;
 }
 
-bool element::isseg() const {
-	return is_seg;
-}
-
 void element::add(const double& a, const double& b) {
 	segs.push_back(dpair(a,b));
 }

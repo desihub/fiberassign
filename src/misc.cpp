@@ -35,11 +35,38 @@ dpair operator-(dpair const& a, double b) {
     return dpair(a.f-b,a.s-b);
 }
 void dpair::print() const {printf("(%f,%f) ",f,s); fl();}
+
 bool dpair::isnull() const {
 	if (f==0 && s==0) return true;
 	return false;
 }
-//void dpair::pair_rand(double a, double b) { return dpair(1,2); }
+
+dpair cartesian(double r, double theta) {
+	return dpair(r*cos(theta),r*sin(theta));
+}
+
+dpair cartesian(dpair X) {
+	return dpair(X.f*cos(X.s),X.f*sin(X.s));
+}
+
+dpair sum_angles(dpair t, dpair a) {
+	return dpair(t.f*a.f-t.s*a.s,t.s*a.f+t.f*a.s);
+}
+
+dpair cos_sin_angle(dpair P) {
+	double r_inv = 1/norm(P);
+	return dpair(P.f*r_inv,P.s*r_inv);
+}
+
+double dist(dpair c1, dpair c2) {
+	return norm(c1.f-c2.f,c1.s-c2.s);
+}
+
+double sq(dpair p) { return p.f*p.f + p.s*p.s; }
+double sq(dpair p, dpair q) { return sq(p.f-q.f) + sq(p.s-q.s); }
+double scalar_prod(dpair p, dpair q, dpair d) {
+	return (q.f-p.f)*(d.f-p.f)+(q.s-p.s)*(d.s-p.s);
+}
 
 // List ------------------------------------------------------
 List Null() { List L; return L; }
@@ -210,18 +237,18 @@ List values(const List& L) {
 	return l;
 }
 
-void print_hist(str s, int i, List hist_petal, bool latex) {
+void print_hist(str s, int i0, List hist, bool latex) {
 	str et = latex ? " & " : " | ";
 	str slash = latex ? "\\\\ \n" : "\n";
 
 	str rrr(10,'r');
-	if (latex) printf("\\begin{table}[H]\\begin{center} \n \\caption{%s (interval %d)} \n \\begin{tabular}{%s}\n",s.c_str(),i,rrr.c_str());
-	else printf("%s (interval %d)\n",s.c_str(),i);
+	if (latex) printf("\\begin{table}[H]\\begin{center} \n \\caption{%s (interval %d)} \n \\begin{tabular}{%s}\n",s.c_str(),i0,rrr.c_str());
+	else printf("%s (interval %d)\n",s.c_str(),i0);
 
-	int size = hist_petal.size();
+	int size = hist.size();
 	for (int i=0; i<size; i++) {
 		str s = ((i+1)%10==0 || i==size-1) ? slash : et;
-		printf("%4s %s",f(hist_petal[i]).c_str(),s.c_str());
+		printf("%4s %s",f(hist[i]).c_str(),s.c_str());
 	}
 	if (latex) printf("\\end{tabular}\\end{center}\\end{table} \n");
 	fl();
@@ -391,7 +418,6 @@ int max_row(const Dtable& T) {
 	}
 	return max;
 }
-
 
 void print_table(str s, const Table& T, bool latex, Slist labels) {
 	int SIZE = 7;
@@ -763,39 +789,39 @@ void error(str s) {
 	exit(1);
 }
 
-void deb(int a) { // debug
+void deb(int a) {
 	std::cout << " " << a << std::endl;
 }
 
-void deb(str a) { // debug
+void deb(str a) {
 	std::cout << " " << a << std::endl;
 }
 
-void deb(int a, int b) { // debug
+void deb(int a, int b) {
 	std::cout << " " << a << "," << b << " " << std::endl;
 }
 
-void debl(int a) { // debug
+void debl(int a) {
 	std::cout << a << " " << std::flush;
 }
 
-void debl(str a) { // debug
+void debl(str a) {
 	std::cout << a << " " << std::flush;
 }
 
-void debl(double a) { // debug
+void debl(double a) {
 	std::cout << a << " " << std::flush;
 }
 
-void debl(bool a) { // debug
+void debl(bool a) {
 	std::cout << (a ? "true" : "false") << " " << std::flush;
 }
 
-void deb(double a) { // debug
+void deb(double a) {
 	std::cout << " " << a << std::endl;
 }
 // Conversions ------------------------------------------------
-str f(int i) { // int 1526879 -> const char* 1,526,879
+str f(int i) {
 	std::stringstream ss;
 	ss << i;
 	str s = ss.str();
@@ -808,7 +834,7 @@ str f(int i) { // int 1526879 -> const char* 1,526,879
 	return str.c_str();
 }
 
-str f(double i) { // Be careful : double 1523.5412 -> 1,523.54 (max 6 numbers)
+str f(double i) { 
 	std::stringstream ss;
 	ss << i;
 	str s = ss.str();
@@ -858,27 +884,13 @@ bool s2b(str s) {
 	printf("Error in s2b \n");
 }
 
-double s2d(str s) {
-	return atof(s.c_str());
-}
-
-str siz(const Table& T) {
-	std::stringstream ss;
-	ss << " size " << T.size() << "x" << T[0].size();
-	return ss.str();
-}
-
-str siz(const Ptable& T) {
-	std::stringstream ss;
-	ss << " size " << T.size() << "x" << T[0].size();
-	return ss.str();
-}
+double s2d(str s) { return atof(s.c_str()); }
 
 str format(int size, str s) {
 	str S = s; str sp = "";
 	int n = s.size();
 	if (size>n) for (int h=0; h<size-n; h++) sp.push_back(' ');
-	return (sp+s);
+	return sp+s;
 }
 
 str erase_spaces(str s) {
@@ -938,21 +950,9 @@ int min(int a, int b) {
 	return a;
 }
 
-void print_stats(str s, int cnt, int avg, int std, int min, int max) {
-	double avg1 = ((double) avg)/((double) cnt);
-	double std1 = sqrt(((double) std)/((double) cnt)-sq(avg1)); 
-	printf("%s %.1f +/- %.1f [%d,%d]",s.c_str(),avg1,std1,min,max);
-	std::cout << std::endl;
-}
-
 int sq(int n) { return(n*n); }
 double sq(double n) { return(n*n); }
 double sq(double a, double b) { return(a*a + b*b); }
-double sq(dpair p) { return p.f*p.f + p.s*p.s; }
-double sq(dpair p, dpair q) { return sq(p.f-q.f) + sq(p.s-q.s); }
-double scalar_prod(dpair p, dpair q, dpair d) {
-	return (q.f-p.f)*(d.f-p.f)+(q.s-p.s)*(d.s-p.s);
-}
 double norm(double a, double b) { return(sqrt(a*a + b*b)); }
 double norm(dpair p) { return(sqrt(p.f*p.f + p.s*p.s)); }
 double percent(int a, int b) { return(a*100./b); }
@@ -961,35 +961,4 @@ void fl() { std::cout.flush(); }
 double fRand(double fMin, double fMax) {
     double f = (double)rand() / RAND_MAX;
     return fMin + f * (fMax - fMin);
-}
-
-dpair cartesian(double r, double theta) {
-	return dpair(r*cos(theta),r*sin(theta));
-}
-
-dpair cartesian(dpair X) {
-	return dpair(X.f*cos(X.s),X.f*sin(X.s));
-}
-
-dpair polar(dpair X) {
-	return dpair(norm(X.f,X.s),atan(X.s/X.f));
-}
-
-dpair sum_angles(dpair t, dpair a) {
-	return dpair(t.f*a.f-t.s*a.s,t.s*a.f+t.f*a.s);
-}
-
-dpair cos_sin_angle(dpair P) {
-	double r_inv = 1/norm(P);
-	return dpair(P.f*r_inv,P.s*r_inv);
-}
-
-double dist(dpair c1, dpair c2) {
-	return norm(c1.f-c2.f,c1.s-c2.s);
-}
-
-int sign(double a) {
-	if (a<0) return -1;
-	else if (0<a) return 1;
-	else return 0;
 }

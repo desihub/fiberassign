@@ -349,6 +349,13 @@ void Assignment::verif(const Plates& P, const Gals& G, const PP& pp, const Feat&
 			}
 		}
 	}
+	Table usedSS = used_by_kind("SS",G,pp,F);
+	Table usedSF = used_by_kind("SF",G,pp,F);
+	for (int j=0; j<F.Nplate; j++) {
+		for (int n=0; n<F.Npetal; n++) {
+			if (usedSS[j][n]!=F.MaxSS || usedSF[j][n]!=F.MaxSF) printf("ERROR in verification : number of SF or SS\n");
+		}
+	}
 }
 
 int Assignment::is_assigned_jg(int j, int g) const {

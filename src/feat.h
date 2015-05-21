@@ -37,7 +37,7 @@ class Feat { // F for features
 	int MaxSS;
 	int MaxSF;
 	double PlateRadius;
-	double NeighborRad;
+	int Analysis;
 	double TotalArea;
 	double invFibArea;
 	int moduloGal;
@@ -49,6 +49,14 @@ class Feat { // F for features
 	double Collide;
 	double NoCollide;
 	double PatrolRad;
+	double NeighborRad;
+
+	bool PlotObsTime;
+	bool PlotHistLya;
+	bool PlotDistLya;
+	bool PlotFreeFibHist;
+	bool PlotFreeFibTime;
+	bool PlotSeenDens;
 	// Indirectly set by features file
 	int Categories;
 	Smap ids; // Redundtant but optimizes (inv of kind)
@@ -73,6 +81,6 @@ class Feat { // F for features
 	int id(str s) const;
 	int maxgoal(int kind) const; // Gives max goal for a galaxy of this kind (goal(Ly-a) for all QSO for example)
 	List maxgoal() const; // List (function of kind) of max goals according to the kind (defined by prio)
-	void init_ids();
+	void init_ids(); // Init ids member
 };
 #endif
