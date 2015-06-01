@@ -235,18 +235,6 @@ Plates read_plate_centers(const Feat& F) {
 	return(P);
 }
 
-List gals_range_fibers(const Plates& P, const Feat& F) {
-	List L;
-	for (int j=0; j<F.Nplate; j++) {
-		for (int k=0; k<F.Nfiber; k++) {
-			int s = P[j].av_gals[k].size();
-			if (s>=L.size()) {L.resize(s+1); L[s] = 0;}
-			L[s]++;
-		}
-	}
-	return L;
-}
-
 List av_gals_of_kind(int kind, int j, int k, const Gals& G, const Plates& P, const Feat& F) {
 	List L;
 	List av_gals = P[j].av_gals[k];
@@ -364,9 +352,7 @@ int Assignment::is_assigned_jg(int j, int g) const {
 }
 
 int Assignment::is_assigned_jg(int j, int g, const Feat& F) const {
-	for (int i=0; i<GL[g].size(); i++) {
-		if (max(j-F.InterPlate,0)<=GL[g][i].f && GL[g][i].f<=min(j+F.InterPlate,F.Nplate-1)) return i;
-	}
+	for (int i=0; i<GL[g].size(); i++) if (fabs(j-GL[g][i].f)<F.InterPlate || j==i) return i;
 	return -1;
 }
 
@@ -536,11 +522,18 @@ void Assignment::update_once_obs(int j, const Feat& F) {
 	}
 }
 
+int Assignment::nobs_time(int g, int j, const Gals& G, const Feat& F) const {
+	int kind = G[g].id;
+	int cnt = once_obs[g] ? F.goal[kind] : F.maxgoal(kind);
+	for (int i=0; i<GL[g].size(); i++) if (j<GL[g][i].f) cnt--;
+	return cnt;
+}
+
 // Useful sub-functions -------------------------------------------------------------------------------------------------
 
 int fprio(int g, const Gals& G, const Feat& F, const Assignment& A) {
-	if (A.once_obs[g]) return(F.priopost[G[g].id]);
-	else return(F.prio[G[g].id]);
+	if (A.once_obs[g]) return F.priopost[G[g].id];
+	else return F.prio[G[g].id];
 }
 
 // Returns the radial distance on the plate (mm) given the angle,

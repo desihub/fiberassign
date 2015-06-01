@@ -66,16 +66,15 @@ int main(int argc, char **argv) {
 	// For each galaxy, computes available tilefibers
 	collect_available_tilefibers(G,P,F);
 
-	//results_on_inputs("doc/figs/",G,P,F,true);
+	results_on_inputs("doc/figs/",G,P,F,true);
 
 	//// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
 	Assignment A(G,F);
 	print_time(t,"# Start assignment at : ");
 	int limit = 2000;
 	// Make a plan ----------------------------------------------------
-	//new_assign_fibers(G,P,pp,F,A,2000);
-	simple_assign(G,P,pp,F,A,limit);
-	improve_from_kind(G,P,pp,F,A,"SF",limit);
+	new_assign_fibers(G,P,pp,F,A,limit);
+	//simple_assign(G,P,pp,F,A,limit);
 
 	// Apply and update the plan --------------------------------------
 	init_time_at(time,"# Begin real time assignment",t);
@@ -94,24 +93,22 @@ int main(int argc, char **argv) {
 	print_time(time,"# ... took :");
 
 	// Make a plan ----------------------------------------------------
-	//new_assign_fibers(G,P,pp,F,A);
-	simple_assign(G,P,pp,F,A);
-	improve(G,P,pp,F,A);
-	improve_from_kind(G,P,pp,F,A,"SF");
-	improve_from_kind(G,P,pp,F,A,"SS");
+	new_assign_fibers(G,P,pp,F,A);
+	//simple_assign(G,P,pp,F,A);
+	//improve(G,P,pp,F,A);
 
-	redistribute_tf(G,P,pp,F,A);
-	improve(G,P,pp,F,A);
-	redistribute_tf(G,P,pp,F,A);
-	improve(G,P,pp,F,A);
+	//redistribute_tf(G,P,pp,F,A);
+	//improve(G,P,pp,F,A);
+	//redistribute_tf(G,P,pp,F,A);
+	//improve(G,P,pp,F,A);
 
 	// Apply and update the plan --------------------------------------
 	init_time_at(time,"# Begin real time assignment",t);
 	for (int jj=limit; jj<F.Nplate; jj++) {
 		int j = A.next_plate;
 		printf(" - Plate %d :",j);
-		improve_from_kind(G,P,pp,F,A,"SF",1);
-		improve_from_kind(G,P,pp,F,A,"SS",1);
+		//improve_from_kind(G,P,pp,F,A,"SF",1);
+		//improve_from_kind(G,P,pp,F,A,"SS",1);
 		if (j%500==0) pyplotTile(j,"doc/figs",G,P,pp,F,A);
 		// <-- here is the real observation time
 		printf(" %s not as - ",format(5,f(F.Nfiber-A.na(F,j,1))).c_str());

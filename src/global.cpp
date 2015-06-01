@@ -30,7 +30,7 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 	int jj;
 	//omp_set_num_threads(24);
 #pragma omp parallel
-	{ 	int id = omp_get_thread_num();
+	{ 	int id = omp_get_thread_num(); if (id==0) printf(" ");
 		// Collects for each plate ; shuffle order of plates (useless !?)
 		for (jj=id; jj<F.Nplate; jj++) { // <- begins at id, otherwise all begin at 0 -> conflict. Do all plates anyway
 			int j = permut[jj];
@@ -88,16 +88,16 @@ inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const Gals& 
 // Assignment sub-functions -------------------------------------------------------------------------------------
 // There is not problem with the fact that we only have knowledge on previous assignment, because when we call nobs (the only moment it can raise a problem) there can't be crossings with this plate, because g can only be assigned once
 // Be very careful of (j,k) calling this function in other ! (if improvement function doesn't work anymore it's likely that bad argu,ent where called
-inline int find_best(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, bool as_tf=false, int no_g=-1, List no_kind=Null()) {
+inline int find_best(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, bool has_tf=false, int no_g=-1, List kind=Null()) { // ! Null list mean everything
 	int best = -1; int mbest = -1; int pbest = 1e3;
 	List av_gals = P[j].av_gals[k];
 	for (int gg=0; gg<av_gals.size(); gg++) {
 		int g = av_gals[gg];
 		int prio = fprio(g,G,F,A);
 		int m = A.nobs(g,G,F);
-		bool tfb = as_tf ? !A.is_assigned_tf(j,k) : true;
-		if (m>=1 && tfb && A.is_assigned_jg(j,g,F)==-1 && ok_assign_g_to_jk(g,j,k,P,G,pp,F,A) && g!=no_g && !isfound(G[g].id,no_kind)) {
-			if (prio<pbest || A.once_obs[g] && m>mbest) { // Then g!=-1 because prio sup pbest
+		bool tfb = has_tf ? !A.is_assigned_tf(j,k) : true;
+		if (m>=1 && tfb && A.is_assigned_jg(j,g,F)==-1 && ok_assign_g_to_jk(g,j,k,P,G,pp,F,A) && g!=no_g && (kind.size()==0 || isfound(G[g].id,kind))) {
+			if (prio<pbest || (A.once_obs[g] && m>mbest)) { // Then g!=-1 because prio sup pbest
 				best = g;
 				pbest = prio;
 				mbest = m;
@@ -107,8 +107,16 @@ inline int find_best(int j, int k, const Gals& G, const Plates& P, const PP& pp,
 	return best;
 }
 
-inline int assign_fiber(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int no_g=-1, List no_kind=Null()) {
-	int best = find_best(j,k,G,P,pp,F,A,true);
+inline int assign_fiber(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int no_g=-1, List kind=Null()) {
+	int best = find_best(j,k,G,P,pp,F,A,true,no_g,kind);
+	//if (best!=-1 && G[best].id!=0 && G[best].id!=1 && G[best].id!=4) {
+		//List av_g = P[j].av_gals[k];
+		//for (int i=0; i<av_g.size(); i++) {
+			//int g = av_g[i];
+			//if (G[g].id==0 && A.is_assigned_jg(j,g)==-1 && P[j].ipass!=4 && 1<=A.nobs(g,G,F)) { printf("%d %d %d %d %d - ",A.is_assigned_jg(j,g,F)==-1,A.find_collision(j,k,g,pp,G,P,F)==-1,ok_assign_g_to_jk(g,j,k,P,G,pp,F,A),j,k);
+			//}
+		//}
+	//}
 	if (best!=-1) A.assign(j,k,best,G,P,pp);
 	return best;
 }
@@ -122,7 +130,7 @@ inline int improve_fiber(int begin, int next, int j, int k, const Gals& G, const
 		else { // Improve
 			int gb = -1; int bb = -1; int jpb = -1; int kpb = -1; int mb = -1; int pb = 1e3;
 			List av_g = P[j].av_gals[k];
-			for (int i=0; i<av_g.size(); i++) { // Not shuffled
+			for (int i=0; i<av_g.size(); i++) {
 				int g = av_g[i]; // g : possible galaxy for (j,k)
 				if (g!=-1 && g!=no_g) {
 					// Is it allowed for jk to take g ?
@@ -326,9 +334,10 @@ void update_plan_from_one_obs(const Gals& G, const Plates&P, const PP& pp, const
 }
 
 // If no enough SS and SF, remove old_kind an replace to SS-SF (new_kind) on petal (j,p)
-void replace(int old_kind, int new_kind, int j, int p, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
+void replace(List old_kind, int new_kind, int j, int p, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
 	int m = A.nkind(j,p,new_kind,G,P,pp,F,true);
-	List fibskindd = A.fibs_of_kind(old_kind,j,p,G,pp,F);
+	List fibskindd;
+	for (int i=0; i<old_kind.size(); i++) addlist(fibskindd,A.fibs_of_kind(old_kind[i],j,p,G,pp,F));
 	List fibskind = random_permut(fibskindd);
 	int Max = new_kind==F.ids.at("SS") ? F.MaxSS : F.MaxSF;
 	while (m<Max && fibskind.size()!=0) {
@@ -357,37 +366,44 @@ void new_assign_fibers(const Gals& G, const Plates& P, const PP& pp, const Feat&
 	int n = next==-1 ? F.Nplate-j0 : next; // Not F.Nplate-A.next_plate+1
 	List plates = sublist(j0,n,A.order);
 	List randPlates = F.Randomize ? random_permut(plates) : plates;
-	List no_kind; no_kind.push_back(F.ids.at("QSOLy-a")); no_kind.push_back(F.ids.at("QSOTracer")); no_kind.push_back(F.ids.at("FakeQSO")); no_kind.push_back(F.ids.at("SS")); no_kind.push_back(F.ids.at("SF")); 
-	List no_reg; no_reg.push_back(F.ids.at("QSOLy-a")); no_reg.push_back(F.ids.at("QSOTracer"));  no_reg.push_back(F.ids.at("LRG")); no_reg.push_back(F.ids.at("ELG")); no_reg.push_back(F.ids.at("FakeQSO")); no_reg.push_back(F.ids.at("Fake LRG"));
-	List only_qso; only_qso.push_back(F.ids.at("LRG")); only_qso.push_back(F.ids.at("ELG")); only_qso.push_back(F.ids.at("Fake LRG")); only_qso.push_back(F.ids.at("SS")); only_qso.push_back(F.ids.at("SF"));
+
+	str qsoA[] = {"QSOLy-a","QSOTracer","FakeQSO"}; List qso = F.init_ids_list(qsoA,3);
+	str lrgA[] = {"LRG","FakeLRG"}; List lrg = F.init_ids_list(lrgA,2);
+	str elgA[] = {"ELG"}; List elg = F.init_ids_list(elgA,1);
+	str ss_sfA[] = {"SS","SF"}; List ss_sf = F.init_ids_list(ss_sfA,2);
 	for (int jj=0; jj<n; jj++) {
 		int j = randPlates[jj];
 		List randPetals = random_permut(F.Npetal);
 		for (int ppet=0; ppet<F.Npetal; ppet++) {
-			// Assign only QSO
 			int p = randPetals[ppet];
-			List fibs = pp.fibers_of_sp[p];
-			List randFibers = random_permut(fibs);
-			for (int kk=0; kk<F.Nfbp; kk++) { // Fiber
+			List randFibers = random_permut(pp.fibers_of_sp[p]);
+			// Assign QSO
+			for (int kk=0; kk<F.Nfbp; kk++) {
 				int k = randFibers[kk];
-				assign_fiber(j,k,G,P,pp,F,A,-1,only_qso);
+				assign_fiber(j,k,G,P,pp,F,A,-1,qso);
 			}
-			// Assign without SS and SF
-			for (int kk=0; kk<F.Nfbp; kk++) { // Fiber
+			// Assign LRG
+			for (int kk=0; kk<F.Nfbp; kk++) {
 				int k = randFibers[kk];
-				if (!A.is_assigned_tf(j,k)) assign_fiber(j,k,G,P,pp,F,A,-1,no_kind);
+				if (!A.is_assigned_tf(j,k)) assign_fiber(j,k,G,P,pp,F,A,-1,lrg);
 			}
-			// Assign free fibers to SS-SF
-			List fibsunas = A.fibs_unassigned(j,p,G,pp,F);
-			for (int kk=0; kk<fibsunas.size(); kk++) { // Fiber
-				int k = fibsunas[kk];
-				assign_fiber(j,k,G,P,pp,F,A,-1,no_reg);
+			// Assign ELG
+			for (int kk=0; kk<F.Nfbp; kk++) {
+				int k = randFibers[kk];
+				if (!A.is_assigned_tf(j,k)) assign_fiber(j,k,G,P,pp,F,A,-1,elg);
 			}
-			// If no enough SS and SF, remove ELG an replace to SS-SF
-			replace(F.ids.at("ELG"),F.ids.at("SS"),j,p,G,P,pp,F,A);
-			replace(F.ids.at("ELG"),F.ids.at("SF"),j,p,G,P,pp,F,A);
-			replace(F.ids.at("LRG"),F.ids.at("SS"),j,p,G,P,pp,F,A);
-			replace(F.ids.at("LRG"),F.ids.at("SF"),j,p,G,P,pp,F,A);
+			// Assign SS-SF
+			for (int kk=0; kk<F.Nfbp; kk++) {
+				int k = randFibers[kk];
+				if (!A.is_assigned_tf(j,k)) assign_fiber(j,k,G,P,pp,F,A,-1,ss_sf);
+			}
+			// If not enough SS and SF, remove ELG an replace to SS-SF
+			replace(elg,F.ids.at("SS"),j,p,G,P,pp,F,A);
+			replace(elg,F.ids.at("SF"),j,p,G,P,pp,F,A);
+			replace(lrg,F.ids.at("SS"),j,p,G,P,pp,F,A);
+			replace(lrg,F.ids.at("SF"),j,p,G,P,pp,F,A);
+			if (A.kinds[j][p][F.ids.at("SS")]!=F.MaxSS) printf("! Not enough SS !\n");
+			if (A.kinds[j][p][F.ids.at("SF")]!=F.MaxSF) printf("! Not enough SF !\n");
 		}
 	}
 	str next_str = next==-1 ? "all left" : f(next);
@@ -432,13 +448,15 @@ void redistribute_tf(const Gals& G, const Plates&P, const PP& pp, const Feat& F,
 void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F, bool latex) {
 	printf("# Results on inputs :\n");
 	// Print features
-	print_list("  Kinds corresponding :",F.kind);
-	print_list("  Priorities :",F.prio);
-	print_list("  Goals of observations :",F.goal);
-	print_list("  Max goals of observations :",F.maxgoal());
+	//print_list("  Kinds corresponding :",F.kind);
+	//print_list("  Priorities :",F.prio);
+	//print_list("  Goals of observations :",F.goal);
+	//print_list("  Max goals of observations :",F.maxgoal());
 
 	// How many galaxies in range of a fiber ?
-	print_list("  How many galaxies in range of a fiber :",gals_range_fibers(P,F));
+	List data;
+	for (int j=0; j<F.Nplate; j++) for (int k=0; k<F.Nfiber; k++) data.push_back(P[j].av_gals[k].size());
+	print_list("  How many galaxies in range of a fiber :",histogram(data,1));
 
 	// 1 Histograms on number of av gals per plate and per fiber
 	Cube T = initCube(F.Categories,F.Nplate,F.Nfiber);
@@ -503,6 +521,21 @@ void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F
 	//}
 	//print_mult_table_latex("Histogram of number of times (by different plates) reachable galaxies",outdir+"reachplate.dat",countstot,1);
 	//print_mult_table_latex("Histogram of number of times (by different plates) reachable galaxies without last pass",outdir+"reachplateno.dat",countstot_nopass,1);
+	
+	// 4 Histogram of redshifts
+	Dtable countsz = initDtable(3,0);
+	double intervalz = 0.02;
+	for (int g=0; g<F.Ngal; g++) {
+		int kind = G[g].id;
+		int kind0 = -1;
+		if (kind==F.id("QSOLy-a") || kind==F.id("QSOTracer") || kind==F.id("FakeQSO")) kind0 = 0;
+		if (kind==F.id("LRG") || kind==F.id("FakeLRG")) kind0 = 1;
+		if (kind==F.id("ELG")) kind0 = 2;
+		if (kind0!=-1) countsz[kind0].push_back(G[g].z);
+	}
+	Dtable hist3;
+	for (int id=0; id<3; id++) hist3.push_back(histogram(countsz[id],intervalz));
+	print_mult_Dtable_latex("dn/dz",outdir+"redshifts.dat",hist3,intervalz);
 }
 
 void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, Feat& F, const Assignment& A, bool latex) {
@@ -660,7 +693,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 			// For all
 			int size = P[j].av_gals[k].size();
 			int oc = 0;
-			for (int i=0; i<size; i++) if (A.is_assigned_jg(j,P[j].av_gals[k][i])) oc++;
+			for (int i=0; i<size; i++) if (A.is_assigned_jg(j,P[j].av_gals[k][i])!=-1) oc++;
 			if (size!=0 && 1<=oc) { 
 				double d = percent(oc,size);
 				//printf("%f %f %f %d %d %d \n",d,x,invFibArea,size,oc,densities.size()); fl();
@@ -676,7 +709,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 					int g = P[j].av_gals[k][i];
 					if (G[g].id == t) {
 						nkind++;
-						if (A.is_assigned_jg(j,g)) ock++;
+						if (A.is_assigned_jg(j,g)!=-1) ock++;
 					}
 				}
 				if (nkind!=0 && 1<=ock) { 
@@ -773,15 +806,17 @@ void pyplotTile(int j, str directory, const Gals& G, const Plates& P, const PP& 
 			fh.set_color(colors[G[g].id]);
 			pol.add(cb);
 			pol.add(fh);
-			pol.add(element(O,colors[G[g].id],true));
+			pol.add(element(O,colors[G[g].id],0.3,5));
 		}
-		else pol.add(element(O,'k'));
+		else pol.add(element(O,'k',0.1,3));
 		List av_gals = P[j].av_gals[k];
 		for (int i=0; i<av_gals.size(); i++) {
 			int gg = av_gals[i];
-			if (1<=A.nobs(gg,G,F)) {
-			dpair Ga = projection(gg,j,G,P);
-			pol.add(element(Ga,colors[G[gg].id]));
+			if (1<=A.nobs_time(gg,j,G,F)) {
+				int kind = G[gg].id;
+				dpair Ga = projection(gg,j,G,P);
+				if (kind==F.ids.at("QSOLy-a")) pol.add(element(Ga,colors[kind],1,A.is_assigned_jg(j,gg)==-1?0.9:0.5));
+				else pol.add(element(Ga,colors[kind],1,0.5));
 			}
 		}
 	}
@@ -800,3 +835,50 @@ void overlappingTiles(str fname, const Feat& F, const Assignment& A) {
 	}
 	fclose(file);
 }
+
+    //QSOLy-a   &     0 &     2 &   4 & 11 & 20 & 10 &    49 &   179 &    49 & 98.364 & 72.015 \\ 
+  //QSOTracer   &     1 &   108 &   0 &  0 &  0 &  0 &   110 &   108 &   108 & 98.392 & 90.063 \\ 
+        //LRG   &    18 &    37 & 242 &  0 &  0 &  0 &   298 &   523 &   280 & 93.884 & 87.570 \\ 
+        //ELG   &   554 & 1,856 &   0 &  0 &  0 &  0 & 2,411 & 1,856 & 1,856 & 76.984 & 76.984 \\ 
+    //FakeQSO   &     1 &    81 &   0 &  0 &  0 &  0 &    82 &    81 &    81 & 98.370 & 90.027 \\ 
+    //FakeLRG   &     2 &    44 &   0 &  0 &  0 &  0 &    46 &    44 &    44 & 94.619 & 88.366 \\ 
+
+// Interplate = Analysis = 0
+    //QSOLy-a   &     0 &     2 &   4 & 11 & 20 & 10 &    49 &   180 &    49 & 98.333 & 72.259 \\ 
+  //QSOTracer   &     1 &   118 &   0 &  0 &  0 &  0 &   119 &   118 &   118 & 98.350 & 98.350 \\ 
+        //LRG   &    17 &    36 & 243 &  0 &  0 &  0 &   298 &   524 &   280 & 93.981 & 87.792 \\ 
+        //ELG   &   546 & 1,865 &   0 &  0 &  0 &  0 & 2,411 & 1,865 & 1,865 & 77.351 & 77.351 \\ 
+    //FakeQSO   &     1 &    88 &   0 &  0 &  0 &  0 &    90 &    88 &    88 & 98.344 & 98.344 \\ 
+    //FakeLRG   &     2 &    47 &   0 &  0 &  0 &  0 &    50 &    47 &    47 & 94.681 & 94.681 \\ 
+	 //
+// Interplate = Analysis = 0 + new_assign fixed
+    //QSOLy-a   &     0 &     1 &   3 & 10 & 21 & 11 &    49 &   185 &    49 & 98.398 & 74.097 \\ 
+  //QSOTracer   &     1 &   118 &   0 &  0 &  0 &  0 &   119 &   118 &   118 & 98.404 & 98.404 \\ 
+        //LRG   &    18 &    36 & 244 &  0 &  0 &  0 &   298 &   524 &   280 & 93.800 & 87.758 \\ 
+        //ELG   &   547 & 1,864 &   0 &  0 &  0 &  0 & 2,411 & 1,864 & 1,864 & 77.308 & 77.308 \\ 
+    //FakeQSO   &     1 &    88 &   0 &  0 &  0 &  0 &    90 &    88 &    88 & 98.412 & 98.412 \\ 
+    //FakeLRG   &     2 &    47 &   0 &  0 &  0 &  0 &    50 &    47 &    47 & 94.501 & 94.501 \\ 
+
+// Pareil avec truc des LRG fixed
+    //QSOLy-a   &     0 &     1 &   3 & 10 & 21 & 11 &    49 &   185 &    49 &   98.4 & 74.106 \\ 
+  //QSOTracer   &     1 &   118 &   0 &  0 &  0 &  0 &   119 &   118 &   118 & 98.407 & 98.407 \\ 
+        //LRG   &    18 &    36 & 244 &  0 &  0 &  0 &   298 &   524 &   280 & 93.787 & 87.749 \\ 
+        //ELG   &   547 & 1,864 &   0 &  0 &  0 &  0 & 2,411 & 1,864 & 1,864 & 77.310 & 77.310 \\ 
+    //FakeQSO   &     1 &    88 &   0 &  0 &  0 &  0 &    90 &    88 &    88 & 98.389 & 98.389 \\ 
+    //FakeLRG   &     2 &    47 &   0 &  0 &  0 &  0 &    50 &    47 &    47 & 94.493 & 94.493 \\ 
+// Same without impr
+    //QSOLy-a   &     0 &     1 &   3 & 10 & 21 & 11 &    49 &   185 &    49 & 98.396 & 74.100 \\ 
+  //QSOTracer   &     1 &   118 &   0 &  0 &  0 &  0 &   119 &   118 &   118 & 98.412 & 98.412 \\ 
+        //LRG   &    18 &    36 & 243 &  0 &  0 &  0 &   298 &   523 &   280 & 93.744 & 87.652 \\ 
+        //ELG   &   612 & 1,798 &   0 &  0 &  0 &  0 & 2,411 & 1,798 & 1,798 & 74.584 & 74.584 \\ 
+    //FakeQSO   &     1 &    88 &   0 &  0 &  0 &  0 &    90 &    88 &    88 & 98.397 & 98.397 \\ 
+    //FakeLRG   &     2 &    47 &   0 &  0 &  0 &  0 &    50 &    47 &    47 & 94.464 & 94.464 \\ 
+    //
+    //With QSO then LRG then ELG
+    //    QSOLy-a   &     0 &     1 &   3 & 10 & 21 & 11 &    49 &   185 &    49 & 98.380 & 74.092 ÖÖ 
+  //QSOTracer   &     1 &   118 &   0 &  0 &  0 &  0 &   119 &   118 &   118 & 98.401 & 98.401 ÖÖ 
+        //LRG   &    18 &    35 & 245 &  0 &  0 &  0 &   298 &   525 &   280 & 93.899 & 88.018 ÖÖ 
+        //ELG   &   622 & 1,788 &   0 &  0 &  0 &  0 & 2,411 & 1,788 & 1,788 & 74.184 & 74.184 ÖÖ 
+    //FakeQSO   &     1 &    88 &   0 &  0 &  0 &  0 &    90 &    88 &    88 & 98.394 & 98.394 ÖÖ 
+    //FakeLRG   &     2 &    47 &   0 &  0 &  0 &  0 &    50 &    47 &    47 & 94.590 & 94.590 ÖÖ 
+

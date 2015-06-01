@@ -8,14 +8,14 @@ prio 1 1 3 5 1 3 2 4
 priopost 0 1 3 5 1 3 2 4
 goal 5 1 2 1 1 1 1 1
 
-InterPlate 200
 Randomize false
 Pacman false
 Npass 5
 MaxSS 10
 MaxSF 40
 PlateRadius 1.65
-Analysis 200
+InterPlate 0
+Analysis 0
 
 TotalArea 15789.0
 invFibArea 700
@@ -35,7 +35,7 @@ PlotHistLya false
 PlotDistLya false
 PlotFreeFibHist false
 PlotFreeFibTime false
-PlotSeenDens false
+PlotSeenDens true
 Verif false
 -------------------------------------------------
 
@@ -49,13 +49,13 @@ Verif false
 -priopost : corresponding priorities when one knows the real kind
 -goal : number of times we want to observe them
 
--InterPlate : minimal distance (in number of tiles) between 2 observations of the same object
 -Randomize : whether the order of tiles is randomized in making plans
 -Pacman : pacman version with reduced number of petals
 -Npass : number of passes
 -MaxSS : number of standard stars in each petals
 -MaxSF : number of sky fibers in each petals
 -PlateRadius : radius of the plate
+-InterPlate : minimal distance (in number of tiles) between 2 observations of the same object
 -Analysis : number of tiles (time) between the observation of a tile and results on its analysis, which tells if for instance a QSO is a Ly-a or a fake, so that we can update the plan further such that we don't observe a fake again
 
 -TotalArea : area of the sky observed

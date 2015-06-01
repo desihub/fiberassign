@@ -81,11 +81,12 @@ element::element(const dpair& A, const dpair& B) {
 	color = 'k';
 }
 
-element::element(const dpair& A, char c, bool big0) {
+element::element(const dpair& A, char c, double transp, double rad0) {
 	is_seg = true;
 	add(A);
 	color = c;
-	big = big0;
+	transparency = transp;
+	radplot = rad0;
 }
 
 void element::add(const double& a, const double& b) {
@@ -215,10 +216,7 @@ void polygon::pythonplot(str directory, int j) const {
 			if (e.color!='w') fprintf(file,"]]\nlc = mc.LineCollection(lines,linewidths=0.2,color='%c')\nax.add_collection(lc)\n",e.color);
 			else fprintf(file,"]]\nlc = mc.LineCollection(lines,linewidths=0.2,color='k',alpha=0.4)\nax.add_collection(lc)\n");
 			}
-			if (e.segs.size()==1) {
-				if (e.big) fprintf(file,"circ=plt.Circle((%f,%f),5,fill=True,linewidth=0.1,alpha=0.3,edgecolor='none',fc='%c')\nfig.gca().add_artist(circ)\n",e.segs[0].f,e.segs[0].s,e.color);
-				else fprintf(file,"circ=plt.Circle((%f,%f),0.5,fill=True,linewidth=0.1,alpha=1,edgecolor='none',fc='%c')\nfig.gca().add_artist(circ)\n",e.segs[0].f,e.segs[0].s,e.color);
-			}
+			if (e.segs.size()==1) fprintf(file,"circ=plt.Circle((%f,%f),%f,fill=True,linewidth=0.1,alpha=%f,edgecolor='none',fc='%c')\nfig.gca().add_artist(circ)\n",e.segs[0].f,e.segs[0].s,e.radplot,e.transparency,e.color);
 		}
 		else {
 			if (e.color!='w') fprintf(file,"circ=plt.Circle((%f,%f),%f,fill=False,linewidth=0.2,color='%c')\nfig.gca().add_artist(circ)\n",e.O.f,e.O.s,e.rad,e.color);

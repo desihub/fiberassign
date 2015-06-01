@@ -364,6 +364,10 @@ Dlist division(const Dlist& L, double d) {
 	return Dl;
 }
 
+void addlist(List& L, const List& l) {
+	for (int i=0; i<l.size(); i++) L.push_back(l[i]);
+}
+
 // Table -----------------------------------------------------
 Table initTable(int l, int c, int val) {
 	Table T;
@@ -653,6 +657,30 @@ Dtable divide(const Table& T, double d) {
 	return t;
 }
 
+Dtable divide(const Dtable& T, double d) {
+	Dtable t;
+	for (int i=0; i<T.size(); i++) {
+		Dlist l;
+		for (int j=0; j<T[i].size(); j++) {
+			l.push_back(T[i][j]/d);
+		}
+		t.push_back(l);
+	}
+	return t;
+}
+
+Dtable mult(const Dtable& T, double d) {
+	Dtable t;
+	for (int i=0; i<T.size(); i++) {
+		Dlist l;
+		for (int j=0; j<T[i].size(); j++) {
+			l.push_back(T[i][j]*d);
+		}
+		t.push_back(l);
+	}
+	return t;
+}
+
 Table divide_floor(const Table& T, double d) {
 	Table t;
 	for (int i=0; i<T.size(); i++) {
@@ -690,6 +718,7 @@ Dtable concatenate(const Dtable& T1, const Dtable& T2) {
 	}
 	return T3;
 }
+
 
 // Cube ------------------------------------------------------
 Cube initCube(int l, int c, int d, int val) {
@@ -857,6 +886,13 @@ str f(double i) {
 }
 
 str i2s(int i) {
+	std::stringstream ss;
+	ss << i;
+	str s = ss.str();
+	return s;
+}
+
+str i2s(double i) {
 	std::stringstream ss;
 	ss << i;
 	str s = ss.str();

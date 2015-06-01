@@ -91,6 +91,7 @@ List inverse(const List& L); // Gives the inverse map defined by L
 List cumulate(const List& L); // Cumulated sum of L (integral)
 Dlist cumulate(const Dlist& L);
 Dlist division(const Dlist& L, double d); // L[i]/d
+void addlist(List& L, const List& l); // Add elements of l to L
 
 // Table -----------------------------------------------------
 class Table : public std::vector<List> {};
@@ -117,6 +118,8 @@ int max_row(const Dtable& T);
 List max_on_row(const Table& T); // List of max on each row
 void make_square(Table& T); // Make it square, filling with zeros
 Dtable divide(const Table& T, double d);
+Dtable divide(const Dtable& T, double d);
+Dtable mult(const Dtable& T, double d);
 Table divide_floor(const Table& T, double d); // floor(T[i][j]/d)
 Dtable ddivide_floor(const Table& T, double d); // floor(T[i][j]/d)
 Dtable concatenate(const Dtable& T1, const Dtable& T2); // Horizontal concatenation T1:T2
@@ -156,6 +159,7 @@ void debl(double a);
 str f(int i); // int 1526879 -> str 1,526,879
 str f(double i); // double 1523.5412 -> str 1,523.54
 str i2s(int i); // int to string
+str d2s(double i);
 str p2s(pair p);
 str p2s(int j, int k);
 int s2i(str s);

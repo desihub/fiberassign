@@ -40,6 +40,13 @@ void Feat::init_ids() {
 	for (int i=0; i<Categories; i++) ids[kind[i]] = i;
 }
 
+List Feat::init_ids_list(str l[], int size) const {
+	List L;
+	L.resize(size);
+	for (int i=0; i<size; i++) L[i] = ids.at(l[i]);
+	return L;
+}
+
 void Feat::readInputFile(const char file[]) {
 	const int Mc = 512; // Max chars per line
 	char delimiter = ' ';

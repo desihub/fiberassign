@@ -68,7 +68,6 @@ class plate {
 class Plates : public std::vector<struct plate> {};
 
 Plates read_plate_centers(const Feat& F);
-List gals_range_fibers(const Plates& P, const Feat& F);
 List av_gals_of_kind(int kind, int j, int k, const Gals& G, const Plates& P, const Feat& F);
 
 // Assignment ---------------------------------------------
@@ -116,6 +115,7 @@ class Assignment {
 	Table unused_fbp(const PP& pp, const Feat& F) const; // Unused fibers by petal
 	Table used_by_kind(str kind, const Gals& G, const PP& pp, const Feat& F) const; // Table (j X p) with numbers of assigned TF to a galaxy of kind
 	float colrate(const PP& pp, const Gals& G, const Plates& P, const Feat& F, int j=-1) const; // Get collision rate, j = plate number, doesn't take into account 3-collisions
+	int nobs_time(int g, int j, const Gals& G, const Feat& F) const; // Know the number of remaining observations of g when the program is at the tile j, for pyplotTile
 
 	// Not used (but could be useful)
 	int unused_f(int j, const Feat& F) const; // Number of unused fiber on the j'th plate

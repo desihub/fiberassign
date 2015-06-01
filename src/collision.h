@@ -32,13 +32,14 @@ class element { // List segments, or circles
 	dpair O; // Circle center
 	double rad; // Circle radius
 	char color; // For python plot
-	bool big; // For plotting big transparent points
+	double transparency; // For plotting
+	double radplot; // For plotting
 
 	element();
 	element(bool b); // b : is_seg
 	element(const dpair& O, const double& rad); // Creates circle
 	element(const dpair& A, const dpair& B); // Creates segment list with only the segment AB
-	element(const dpair& A, char c, bool big=0); // Point with color
+	element(const dpair& A, char c, double transp, double rad0); // Point with color
 	void add(const double& a, const double& b); // Add point to segments list
 	void add(const dpair& p); // Add point to segments list
 	void transl(const dpair& t); // Translation by t
