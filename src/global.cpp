@@ -97,7 +97,7 @@ inline int find_best(int j, int k, const Gals& G, const Plates& P, const PP& pp,
 		int m = A.nobs(g,G,F);
 		bool tfb = has_tf ? !A.is_assigned_tf(j,k) : true;
 		if (m>=1 && tfb && A.is_assigned_jg(j,g,F)==-1 && ok_assign_g_to_jk(g,j,k,P,G,pp,F,A) && g!=no_g && (kind.size()==0 || isfound(G[g].id,kind))) {
-			if (prio<pbest || (A.once_obs[g] && m>mbest)) { // Then g!=-1 because prio sup pbest
+			if (prio<pbest || (prio==pbest && m>mbest)) { // Then g!=-1 because prio sup pbest
 				best = g;
 				pbest = prio;
 				mbest = m;
@@ -109,14 +109,15 @@ inline int find_best(int j, int k, const Gals& G, const Plates& P, const PP& pp,
 
 inline int assign_fiber(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int no_g=-1, List kind=Null()) {
 	int best = find_best(j,k,G,P,pp,F,A,true,no_g,kind);
-	//if (best!=-1 && G[best].id!=0 && G[best].id!=1 && G[best].id!=4) {
-		//List av_g = P[j].av_gals[k];
-		//for (int i=0; i<av_g.size(); i++) {
-			//int g = av_g[i];
-			//if (G[g].id==0 && A.is_assigned_jg(j,g)==-1 && P[j].ipass!=4 && 1<=A.nobs(g,G,F)) { printf("%d %d %d %d %d - ",A.is_assigned_jg(j,g,F)==-1,A.find_collision(j,k,g,pp,G,P,F)==-1,ok_assign_g_to_jk(g,j,k,P,G,pp,F,A),j,k);
-			//}
-		//}
-	//}
+	if ((j==2500 || j==1500 || j==5500) && best==-1 && P[j].av_gals[k].size()!=0) {
+		List av_g = P[j].av_gals[k];
+		for (int i=0; i<av_g.size(); i++) {
+			int g = av_g[i];
+			int kind0 = G[g].id;
+			if (A.is_assigned_jg(j,g)==-1 && 1<=A.nobs(g,G,F) && kind0!=7 && kind0!=6 && (kind.size()==0 || isfound(kind0,kind))) { printf("%d %s %d %d %d %d - ",k,F.kind[kind0].c_str(),A.is_assigned_jg(j,g,F)==-1,A.find_collision(j,k,g,pp,G,P,F)==-1,ok_assign_g_to_jk(g,j,k,P,G,pp,F,A),j);
+			}
+		}
+	}
 	if (best!=-1) A.assign(j,k,best,G,P,pp);
 	return best;
 }
@@ -146,7 +147,7 @@ inline int improve_fiber(int begin, int next, int j, int k, const Gals& G, const
 							if (best!=-1 && (A.is_assigned_jg(j,g,F)==-1 || jp==j)) {
 								int prio = fprio(best,G,F,A);
 								int m = A.nobs(best,G,F);
-								if (prio<pb || A.once_obs[g] && m>mb) {
+								if (prio<pb || prio==pb && m>mb) {
 									gb = g; bb = best; jpb = jp; kpb = kp; mb = m; pb = prio;
 							}}}}}}
 			// Modify assignment
@@ -178,7 +179,7 @@ int improve_fiber_from_kind(int id, int j, int k, const Gals& G, const Plates&P,
 					if (best!=-1) {
 						int prio = fprio(best,G,F,A);
 						int m = A.nobs(best,G,F);
-						if (prio<pb || A.once_obs[g] && m>mb) {
+						if (prio<pb || prio==pb && m>mb) {
 							if (!A.find_collision(j,k,kp,g,best,pp,G,P,F)) { // Avoid that the choice of the 2 new objects collide
 							gb = g; gpb = gp; bb = best; kpb = kp; mb = m; pb = prio;
 		}}}}}}
@@ -266,7 +267,7 @@ void improve_from_kind(const Gals& G, const Plates&P, const PP& pp, const Feat& 
 							if (best!=-1) {
 								int prio = fprio(best,G,F,A);
 								int m = A.nobs(best,G,F);
-								if (prio<pb || A.once_obs[g] && m>mb) {
+								if (prio<pb || prio==pb && m>mb) {
 									if (!A.find_collision(j,k,kp,g,best,pp,G,P,F)) { // Avoid that the choice of the 2 new objects collide
 									gb = g; gpb = gp; bb = best; kpb = kp; kkpb = kkp; mb = m; pb = prio;
 							}}}
@@ -812,7 +813,8 @@ void pyplotTile(int j, str directory, const Gals& G, const Plates& P, const PP& 
 		List av_gals = P[j].av_gals[k];
 		for (int i=0; i<av_gals.size(); i++) {
 			int gg = av_gals[i];
-			if (1<=A.nobs_time(gg,j,G,F)) {
+			if (1<=A.nobs_time(gg,j,G,F)/*A.nobs(gg,G,F)*/) {
+				if (A.nobs_time(gg,j,G,F)!=A.nobs(gg,G,F)) printf("%d %d %s - ",A.nobs_time(gg,j,G,F),A.nobs(gg,G,F),F.kind[G[gg].id].c_str());
 				int kind = G[gg].id;
 				dpair Ga = projection(gg,j,G,P);
 				if (kind==F.ids.at("QSOLy-a")) pol.add(element(Ga,colors[kind],1,A.is_assigned_jg(j,gg)==-1?0.9:0.5));
@@ -820,7 +822,9 @@ void pyplotTile(int j, str directory, const Gals& G, const Plates& P, const PP& 
 			}
 		}
 	}
-	pol.pythonplot(directory,j);
+	pyplot pyp(pol);
+	for (int k=0; k<F.Nfiber; k++) pyp.addtext(pp.coords(k),i2s(k));
+	pyp.plot_tile(directory,j,F);
 }
 
 void overlappingTiles(str fname, const Feat& F, const Assignment& A) {
@@ -875,7 +879,7 @@ void overlappingTiles(str fname, const Feat& F, const Assignment& A) {
     //FakeLRG   &     2 &    47 &   0 &  0 &  0 &  0 &    50 &    47 &    47 & 94.464 & 94.464 \\ 
     //
     //With QSO then LRG then ELG
-    //    QSOLy-a   &     0 &     1 &   3 & 10 & 21 & 11 &    49 &   185 &    49 & 98.380 & 74.092 ÖÖ 
+    ////    QSOLy-a   &     0 &     1 &   3 & 10 & 21 & 11 &    49 &   185 &    49 & 98.380 & 74.092 ÖÖ 
   //QSOTracer   &     1 &   118 &   0 &  0 &  0 &  0 &   119 &   118 &   118 & 98.401 & 98.401 ÖÖ 
         //LRG   &    18 &    35 & 245 &  0 &  0 &  0 &   298 &   525 &   280 & 93.899 & 88.018 ÖÖ 
         //ELG   &   622 & 1,788 &   0 &  0 &  0 &  0 & 2,411 & 1,788 & 1,788 & 74.184 & 74.184 ÖÖ 

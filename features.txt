@@ -35,7 +35,7 @@ PlotHistLya false
 PlotDistLya false
 PlotFreeFibHist false
 PlotFreeFibTime false
-PlotSeenDens true
+PlotSeenDens false
 Verif false
 -------------------------------------------------
 

@@ -200,33 +200,6 @@ Dlist polygon::limits() const {
 	return lims;
 }
 
-void polygon::pythonplot(str directory, int j) const {
-	FILE * file;
-	str fname = directory+"/tile"+i2s(j)+".py";
-	file = fopen(fname.c_str(),"w");
-	Dlist lims = limits();
-	fprintf(file,"from pylab import *\nimport pylab as pl\nimport matplotlib.pyplot as plt\nfrom matplotlib import collections as mc\nax=subplot(aspect='equal')\naxes = plt.gca()\naxes.set_xlim([%f,%f])\naxes.set_ylim([%f,%f])\nax.axis('off')\nax.get_xaxis().set_visible(False)\nax.get_yaxis().set_visible(False)\nset_cmap('hot')\nfig = plt.gcf()\n\n",lims[0],lims[1],lims[2],lims[3]);
-	if (j!=-1) fprintf(file,"plt.text(350,-350,'Tile %d',horizontalalignment='center',verticalalignment='center',size=5)\n\n",j);
-	for (int i=0; i<elmts.size(); i++) {
-		element e = elmts[i];
-		if (e.is_seg) {
-			if (1<e.segs.size()) {
-			fprintf(file,"lines = [[");
-			for (int j=0; j<e.segs.size(); j++) fprintf(file,"(%f,%f),",e.segs[j].f,e.segs[j].s);
-			if (e.color!='w') fprintf(file,"]]\nlc = mc.LineCollection(lines,linewidths=0.2,color='%c')\nax.add_collection(lc)\n",e.color);
-			else fprintf(file,"]]\nlc = mc.LineCollection(lines,linewidths=0.2,color='k',alpha=0.4)\nax.add_collection(lc)\n");
-			}
-			if (e.segs.size()==1) fprintf(file,"circ=plt.Circle((%f,%f),%f,fill=True,linewidth=0.1,alpha=%f,edgecolor='none',fc='%c')\nfig.gca().add_artist(circ)\n",e.segs[0].f,e.segs[0].s,e.radplot,e.transparency,e.color);
-		}
-		else {
-			if (e.color!='w') fprintf(file,"circ=plt.Circle((%f,%f),%f,fill=False,linewidth=0.2,color='%c')\nfig.gca().add_artist(circ)\n",e.O.f,e.O.s,e.rad,e.color);
-			else fprintf(file,"circ=plt.Circle((%f,%f),%f,fill=False,linewidth=0.2,color='k',alpha=0.4)\nfig.gca().add_artist(circ)\n",e.O.f,e.O.s,e.rad);
-		}
-	}
-	fprintf(file,"\nfig.savefig('tile%d.pdf',bbox_inches='tight',pad_inches=0,dpi=(300))",j);
-	fclose(file);
-}
-
 polygon create_fh() {
 	polygon fh;
 	fh.axis = dpair(-3.0,0);

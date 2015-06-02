@@ -74,6 +74,7 @@ List av_gals_of_kind(int kind, int j, int k, const Gals& G, const Plates& P, con
 // 2 mappings of assignments : (j,k) -> id(gal) ; id(gal)[5] -> (j,k)
 class Assignment {
 	public:
+	//// ----- Members
 	Table TF; // TF for tile fiber, #tiles X #fibers
 	List order; // Order of tiles we want to assign, only 1-n in simple increasing order for the moment
 	int next_plate; // Next plate in the order
@@ -86,7 +87,7 @@ class Assignment {
 	List once_obs;
 	List probas; // Number of galaxies of this kind (not used but could be useful for some strategy)
 
-	//// Members
+	//// ----- Methods
 	Assignment(const Gals& G, const Feat& F);
 	~Assignment();
 	void assign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp);
@@ -131,5 +132,18 @@ int fprio(int g, const Gals& G, const Feat& F, const Assignment& A);
 double plate_dist(const double theta);
 struct onplate change_coords(const struct galaxy& O, const struct plate& P);
 dpair projection(int g, int j, const Gals& G, const Plates& P); // Projection of g on j
+
+// Pyplot -----------------------------------------------
+class pyplot {
+	public:
+	polygon pol;
+	Slist text;
+	Dplist textpos;
+
+	pyplot(polygon p);
+	void addtext(dpair p, str s);
+	void plot_tile(str directory, int j, const Feat& F) const;
+};
+
 
 #endif

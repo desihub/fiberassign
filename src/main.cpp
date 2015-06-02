@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
 	// For each galaxy, computes available tilefibers
 	collect_available_tilefibers(G,P,F);
 
-	results_on_inputs("doc/figs/",G,P,F,true);
+	//results_on_inputs("doc/figs/",G,P,F,true);
 
 	//// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
 	Assignment A(G,F);

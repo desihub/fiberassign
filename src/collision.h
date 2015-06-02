@@ -63,7 +63,6 @@ class polygon {
 	void print() const;
 	void set_color(char c); // Change color of the polygon
 	Dlist limits() const; // Xmin, Xmax, Ymin, Ymax of the polygon
-	void pythonplot(str fname, int j=-1) const; // Plot the polygon
 };
 polygon create_fh(); // fh = ferrule holder
 polygon create_cb(); // cb = central body

@@ -433,14 +433,6 @@ Table Assignment::used_by_kind(str kind, const Gals& G, const PP& pp, const Feat
 int Assignment::nkind(int j, int k, int kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F, bool pet) const {
 	if (!pet) return kinds[j][pp.spectrom[k]][kind];
 	else return kinds[j][k][kind];
-	//List fibers = pp.fibs_of_same_pet(k);
-	//int cnt(0);
-	//for (int i=0; i<fibers.size(); i++) {
-		//int kk = fibers[i];
-		//int g = TF[j][kk];
-		//if (g!=-1 && G[g].kind(F)==kind) cnt++;
-	//}
-	//return cnt;
 }
 
 double Assignment::get_proba(int i, const Gals& G, const Feat& F) {
@@ -497,9 +489,6 @@ List Assignment::fibs_unassigned(int j, int pet, const Gals& G, const PP& pp, co
 }
 
 int Assignment::nobs(int g, const Gals& G, const Feat& F, bool tmp) const {
-	//int cnt(F.goal[G[g].id]);
-	//for (int i=0; i<F.Npass; i++) if (is_assigned_pg(i,g)) cnt--;
-	//return cnt;
 	int obs = tmp ? nobsv_tmp[g] : nobsv[g]; // optimization
 	return obs;
 }
@@ -525,7 +514,7 @@ void Assignment::update_once_obs(int j, const Feat& F) {
 int Assignment::nobs_time(int g, int j, const Gals& G, const Feat& F) const {
 	int kind = G[g].id;
 	int cnt = once_obs[g] ? F.goal[kind] : F.maxgoal(kind);
-	for (int i=0; i<GL[g].size(); i++) if (j<GL[g][i].f) cnt--;
+	for (int i=0; i<GL[g].size(); i++) if (GL[g][i].f<j) cnt--;
 	return cnt;
 }
 
@@ -641,3 +630,50 @@ dpair projection(int g, int j, const Gals& G, const Plates& P) {
 	struct onplate op = change_coords(G[g],P[j]);
 	return dpair(op.pos[0],op.pos[1]);
 }
+
+pyplot::pyplot(polygon p) {
+	pol = p;
+}
+
+void pyplot::addtext(dpair p, str s) {
+	text.push_back(s);
+	textpos.push_back(p);
+}
+
+void pyplot::plot_tile(str directory, int j, const Feat& F) const {
+	FILE * file;
+	str fname = directory+"/tile"+i2s(j)+".py";
+	file = fopen(fname.c_str(),"w");
+
+	// Header
+	Dlist lims = pol.limits();
+	fprintf(file,"from pylab import *\nimport pylab as pl\nimport matplotlib.pyplot as plt\nfrom matplotlib import collections as mc\nax=subplot(aspect='equal')\naxes = plt.gca()\naxes.set_xlim([%f,%f])\naxes.set_ylim([%f,%f])\nax.axis('off')\nax.get_xaxis().set_visible(False)\nax.get_yaxis().set_visible(False)\nset_cmap('hot')\nfig = plt.gcf()\n\n",lims[0],lims[1],lims[2],lims[3]);
+	if (j!=-1) fprintf(file,"plt.text(350,-350,'Tile %d',horizontalalignment='center',verticalalignment='center',size=5)\n\n",j);
+
+	// Plot polygon
+	for (int i=0; i<pol.elmts.size(); i++) {
+		element e = pol.elmts[i];
+		if (e.is_seg) {
+			if (1<e.segs.size()) {
+				fprintf(file,"lines = [[");
+				for (int j=0; j<e.segs.size(); j++) fprintf(file,"(%f,%f),",e.segs[j].f,e.segs[j].s);
+				if (e.color!='w') fprintf(file,"]]\nlc = mc.LineCollection(lines,linewidths=0.2,color='%c')\nax.add_collection(lc)\n",e.color);
+				else fprintf(file,"]]\nlc = mc.LineCollection(lines,linewidths=0.2,color='k',alpha=0.4)\nax.add_collection(lc)\n");
+			}
+			if (e.segs.size()==1) fprintf(file,"circ=plt.Circle((%f,%f),%f,fill=True,linewidth=0.1,alpha=%f,edgecolor='none',fc='%c')\nfig.gca().add_artist(circ)\n",e.segs[0].f,e.segs[0].s,e.radplot,e.transparency,e.color);
+		}
+		else {
+			if (e.color!='w') fprintf(file,"circ=plt.Circle((%f,%f),%f,fill=False,linewidth=0.2,color='%c')\nfig.gca().add_artist(circ)\n",e.O.f,e.O.s,e.rad,e.color);
+			else fprintf(file,"circ=plt.Circle((%f,%f),%f,fill=False,linewidth=0.2,color='k',alpha=0.4)\nfig.gca().add_artist(circ)\n",e.O.f,e.O.s,e.rad);
+		}
+	}
+
+	// Plot text
+	if (text.size()!=textpos.size()) printf("Error sizes pyplot text\n");
+	else for (int i=0; i<text.size(); i++) fprintf(file,"plt.text(%f,%f,'%s',horizontalalignment='center',verticalalignment='center',size=1)\n\n",textpos[i].f,textpos[i].s,text[i].c_str());
+	
+	// Finally
+	fprintf(file,"\nfig.savefig('tile%d.pdf',bbox_inches='tight',pad_inches=0,dpi=(300))",j);
+	fclose(file);
+}
+
