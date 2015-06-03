@@ -1,4 +1,4 @@
-\documentclass{extarticle}
+\documentclass{article}
 \usepackage{etex}
 %\usepackage[7pt]{moresize}
 %\fontfamily{<familyname>}\selectfont
@@ -112,131 +112,13 @@
 \begin{titlepage}
 \maketitle
 \begin{center}
-  \includegraphics[scale=0.25]{python/tile.jpg}
+  \includegraphics[scale=0.2]{python/representant.jpg}
 
   \includegraphics[width = 20mm]{figs/logolbnl.png} \hfill
   \includegraphics[width = 20mm]{figs/logodesi.jpg} \hfill
   \includegraphics[width = 20mm]{figs/logoens.png} 
 \end{center}
 \end{titlepage}
-
-
-\begin{comment}
-
-Dark energy study began in 1998, when two independent teams, led by Adam Riess and Saul Perlmutter, found out, using quasars measurements, that the universe was still expanding. The then standard cosmological model, which components were baryonic and dark matter ruled by general relativity, had to be changed. The $\Lambda$-CDM model now include dark energy, a component explaining the fact that gravity is weaker than expected, and compatible with the exponentially accelerating rate of the universe. It is still today the standard model. One of the main goals of cosmology is then to understand how the universe has been evolving until today, from the oldest times we can reach thanks to the Planck satellite which scrutinizes the Cosmic Microwave Background, picture of the sky 378,000 after the big bang. This study needs to understand the nature of dark energy and has to get information on the distribution of matter over time. This thus involves to scrutinize millions of galaxies and quasars, their spectrum and redshift carrying a lot of data. Such a work needs huge surveys, like BOSS, BigBOSS, and now DESI, heir of the previous ones. DESI will then significantly improve the knowledge on caracteristic features, espacially the power spectrum (Fourier transform of the correlation function of the matter density) which permits to understand baryon acoustic oscillations (BAO) which went through the early universe and which signature has always been remaining. One of the pivotal points of the DESI experiment is the assignment of its 5000 fibers on 10666 different tiles, watching galaxies in a mock catalog of 70M ones. Indeed, the efficiency of DESI will directly depend on multiple features of this assignment algorithm : number of unassigned fibers, number of times a QSO \lya will be observed (5 times goal), etc. Here is a brief presentation of the standard cosmological model and the DESI experiment. We then describe the principles used, rules, C++ code organisation and results of the assignment we created, run on the Edison NERSC Supercomputer.
-
-
-\tableofcontents
-
-	\section{Cosmology today}
-\subsection{Recent breakthroughts}
-
-
-	\section{Cosmology today}
-
-	\subsection{Dark matter}
-	Dark matter is invisible (doesn't react with electromagnetic radiations), and has been discovered when physicists noticed that there must be additional matter in clusters of matter. It accounts for 27\% of the totality of matter and implies that the standard model of particle physics must be incomplete. Through gravitational interaction with baryonic matter, they influence the large scale structure formation, but also small-scale clustering of galaxies lying in host dark matter halos.
-
-
-	\subsection{\Lambda-CDM model}
-	This is the currently standard model. It assumes that the universe is ruled by regular general relativity, and that the existence of dark matter and of the Einsein's cosmological constant \Lambda.
-	It respects the cosmological principle : our observational location in the Universe is not unusual or special ; on a large-enough scale (much greater than the typical size of galactic clusters), the Universe looks the same in all directions (isotropy) and from every location (homogeneity). Then comes the well-known FLRW metric : 
-	
-\begin{equation}\label{metric}
-	g_{\mu\nu}dx^{\mu}dx^{\nu} = -c^{2}dt^{2}+a(t)^{2}(\frac{dr^{2}}{1-kr^{2}}+r^{2}d\Omega)
-\end{equation}
-
-
-
-There is a growing consensus among cosmologists that the total density of matter is equal to the critical density, so that the universe is spatially flat ($k = 0$). Approximately 24\% of this is in the form of a low pressure matter, most of which is thought to be “non-baryonic” dark matter, while the remaining 71\% is thought to be in the form of a negative pressure “dark energy”, like the cosmological constant. If this is true, then dark energy is the major driving force behind the fate of the universe and it will expand forever exponentially.
-Dynamical equation used is Einstein's field equation :
-\begin{equation}\label{eq1}
-R_{\mu \nu} - {1 \over 2}g_{\mu \nu}R + g_{\mu \nu} \Lambda = {8 \pi G \over c^4} T_{\mu \nu}
-\end{equation}
-
-
-We apply it to the FLRW metric, on a perfect fluid of energy density $\rho$ and pressure $p$ to get Friedmann equations :
-\begin{equation}\label{eq2}
-	\bigg(\frac{\dot{a(t)}}{a(t)}\bigg)^{2} + \frac{c^{2}k}{a^{2}} = \frac{8 \pi G}{3}\rho + \frac{c^{2}\Lambda}{3}
-\end{equation}
-
-\begin{equation}\label{eq3}
-\frac{\ddot{a(t)}}{a(t)} = - \frac{4\pi G}{3}(\rho + 3\frac{p}{c^{2}}) + \frac{c^{2}\Lambda}{3}
-\end{equation}
-
-
-Since it's a perfect fluid, we also use $p = w\rho c^{2}$. One of the most interesting thing to compute from them is the scale factor $a(t)$. Using those Friedmann equations, one easily gets :
-$\frac{\dot{\rho}}{\rho} = -3(1+w)\frac{\dot{a}}{a}$, and then, if $w$ is a constant : $\rho \propto a^{-3(1+w)}$.
-
-For baryonic/leptonic matter, $w = 0$. For radiation, $w = 1/3$. The cosmological redshift $z$ is defined by $1+z \equiv 1/a$, the Hubble parameter by $H(z) \equiv \frac{\dot{a}}{a}$ and $H_{0}$ is the Hubble parameter today. 
-
-We define the energy density parameter for matter and radiation $\Omega \equiv \rho_{i}/\rho_{critic}$, where $\rho_{critic} \equiv \frac{3H_{0}^{2}}{8\pi G}$is the critical density of the universe, beyond which it would recollapse due to gravitation. We also define $\Omega_{k} \equiv -c^{2}k/H_{0}^{2}$ and $\Omega_{\Lambda} \equiv c^{2}\Lambda/3H_{0}^{2}$, energy densities associated with curvature and cosmological constant \cite{2013PhR}.
-
-The first Friedmann equation \ref{eq2} can then be written :
-\begin{equation}\label{eq4}
-\frac{H(z)^{2}}{H_{0}^{2}} = \Omega_{m}(1+z)^{3} + \Omega_{r}(1+z)^{4} + \Omega_{k}^{3} + \Omega_{\Lambda}
-\end{equation}
-
-This is the relation between dark energy (through its equation of state $w(z)$) and the expansion (through $H(z)$).
-
-	\subsection{Dark energy}
-Saul Perlmutter's investigations showed that $\ddot{a(t)}$ is actually positive, which means that the expanding rate of the universe is still inscreasing and this was the beginning of dark energy hypothesis. That's why the cosmological constant was reintroduced. An other possibility is that the pressure of "dark energy" could be negative.
-
-	Several other theoretical solutions \cite{2013zfa} are possible. Dark energy is in fact a catch-all term for the origin of cosmic acceleration, and could be either a modification of general relativity, or a new kind of energy.
-
-In this equation, the cosmological constant is equivalent to a fluid with state parameter $w = −1$ and a repulsive gravitational effect, and we call it dark energy as we don’t know anything else about it. Now, let’s imagine that dark energy as a fluid that fills the whole Universe but with a parameter $w$ that can evolve in time, i.e. depending on the scale parameter $a$. We find then that equation is modified by $\Omega_{\Lambda} \leftarrow \Omega_{\Lambda}exp(3 \int_{0}^{z} \frac{1+w(z\textprime)}{1+z\textprime} dz\textprime)$
-
-Here are other several possibilities of modified gravity :
-\begin{itemize} 
-	\item replace the Ricci scalar $\mathcal{R}$ with a function $\mathcal{R} + f(\mathcal{R})$.
-\end{itemize} 
-	
-	Two possible new energies are the cosmological constant (a constant energy density filling space, and which can be formulated to be equivalent to vacuum energy, with repulsive gravitational effects) and scalar fields such as quintessence or moduli, dynamic quantities whose energy density can vary in time and space. Scalar fields that do change in space can be difficult to distinguish from a cosmological constant because the change may be extremely slow.
-	The density of dark energy, $7 \cdot 10^{−27} kg \cdot m^{-3}$ (with mass-energy equivalence), is much lower than the density of ordinary and matter within galaxies. It comes to dominate the mass–energy of the universe because it is uniform in space.
-
-One can consider that 
-
-	\section{DESI}
-	The Dark Energy Spectroscopic Instrument (DESI) is a Stage IV experiment that will make the next major advance in dark energy. \cite{2013gra}
-
-	\subsection{Material features}
-	The DESI instrument, that will be installed on the Mayall telescope in Arizona, consists of a new wide-field (3.2 deg. linear field of view) corrector plus a multi-object spectrometer with up to 5000 robotically positioned optical fibers, with a resolving power of R = 5000. The fibers feed 10 three-arm spectrographs (500 fibers for each spectrographs, also called petals) producing spectra that cover a wavelength range from 360-980 nm and have resolution of 2000-5500 depending on the wavelength. It will watch at 14,000 \sqd in 10666 tiles from 2018 to 2022, with roughly 7 different tiles each night. Fiber positioners will have a reach of $\sim$6 mm from their central position.
-
-	\subsection{General aspects}
-	It will study baryon acoustic oscillations (BAO) and the growth of structure through redshift-space distortions.
-	The goals are : i) probe the effects of dark energy on the expansion history using BAO, ii) measure the gravitational growth history through redshift-space distortions, iii) measure the sum of neutrino masses, and iv) study the signatures of primordial inflation. The resulting 3-D galaxy maps at z < 2 and Lyman-alpha forest at z > 2 will make 1\%-level measurements of the distance scale in 35 redshift bins. This will provide unprecedented constraints on cosmological models.
-
-	This survey is the successor of the Stage-III BigBOSS survey and complements imaging surveys such as the Stage-III Dark Energy Survey (DES, currently operating) and the Stage-IV Large Synoptic Survey Telescope (LSST, planned start in the next decade).
-
-	\subsection{Tiles}
-	In average, a galaxy is covered 5.24 times (by different fibers), with only 2.6\% of the footprint having a coverage of 3 or less. 
-	Figure du tiling. Figure des fibers.
-	There are different tiling strategies, depending on what 
-
-
-\subsection{Targets}
-It will seek for targets that trace the evolution of dark energy from redshift 0.2 out to 3.5 using 3 kinds of celestial objects : 4 million luminous red galaxies (LRG), 18 million emission line galaxies (ELG) and 3 million quasars. QSO \lya are the most important targets. Then comes LRG, then ELG. For each petal (of 500 fibers), 10 are dedicated to Standard Stars and 40 to Sky Fibers.
-\begin{itemize}
-	\item QSO (quasi stellar object) targets are divided into three categories. There are those at $z < 2.1$ (QSO-I), which are used as tracers only, and as those at $z > 2.1$ which are used for the \lya forest. Finally, there are false ones, objects that are a priori believed QSO but are actually not (known once observed). Quasars are extremely luminous, there spectra is very large and doesn't correspond to a star's one. They are likely central regions of massive galaxies surrounding a supermassive black hole, and their energy release must be caused by mass falling onto the accretion disc of the black hole. They are excellent tracer population at redshifts $1 < z < 2$. QSO \lya with $z > 2.1$ are espacially important because it is the only opportunity for DESI to get information on dark energy at so high redshifts, and get information on the matter distribution between us and the quasar. The Lyman-$\alpha$ forest represents the holes in the spectrum that correspond to an absorption ray of the hydrogen \cite{2003AIPC} (at different redshifts), and by this mean we can compute the matter distribution of hydrogen (consequently of all baryonic matter) along the line of sight.
-	\item LRG (luminous red galaxy) are the most luminous and red galaxies in the universe at $z < 1$ \cite{2001cq}.
-	\item ELG (emission line galaxy) are galaxies where stars are creating. They have strong emission lines and characteristic OII and OIII doublets at a rest frame 327 nm and 500nm, which enable to precisely get their redshift.
-	\item Sky Fibers and Standard Stars are calibration targets, necessary to have a reference during measurements. There have to be 10 Standard Stars and 40 Sky Fibers on each petal
-\end{itemize}
-
-\subsection{Fiber assignment}
-Fiber assignment is the correspondance between fibers of each tile to objects. It tells us which fiber is assigned to which galaxy, or unassigned (in regions where there are not enough galaxies). It depends upon fiber locations on the plate, and on the tilling pattern of the sky. One has to make prioritizations because there are several possibilities to target selection for each fiber. 
-
-
-\section{Rules for fiber assignment}
-We know the repartition of matter (by repartition of H matter) by pics.
-The original catalog of 50M galaxies has only information on the position and the type of the galaxy, which is LRG, ELG or QSO. Those information were given by a previous survey, only based on colors, the redshift wasn't then computed. But there are different types of each one. QSO can be \lya, target or fake (actually fake ones can be stars for example). A python code generates the file of galaxies, simulating with appropriate probabilities each type, taking into account the fact that there are correlations between positions of galaxies (accordingly with BAO and gravition). When we watch at a QSO and we see that it's a fake or a target, we don't watch at it anymore. But if it's a real one, we try to see it 5 times if it is possible.
-The absorption spectrum shows a pic at $\lambda = 1216$ \AA. We can deduced the redshift because we receive a wavelenght $\lambda(1+z)$. As spectrometers can only see wavelenghts in the range 380 nm (under, no enough energy is received) - 980 nm, the minimum redshift we can reach is 2.2.
-At first, there was as code written by Martin White then Bob Cahn that did an assignment of tilefibers - galaxies in a global way : naive assignment, improvement (try to reassign some fibers to other ones to assign free ones) and redistribution (do not assign more, but it's to have a better repartition of free fibers on each petal).
-We have to reserve 10 fibers by petal to Standard Stars and 40 to Sky Fibers.
-We have to avoid unmastered correlations. That's why we don't (at first sight), when we take a new tile, associate 50 free fibers to regions of low QSO density. We would rather assign until there are only 50 free fibers left.
-We do the compuation in real time. That means that we do it tile by tile. We can't access the information of all the galaxies because we only have past watched galaxies information. That adds a new constrain. So I rewrote algorithms so that they would compute an optimal assignment for one plate, knowing information on previous one assignments, and knowing information on previously watched galaxies.
-
-\end{comment}
 
 
 \section{Introduction}
@@ -306,16 +188,14 @@ Here are some features on input galaxies simulated catalog :
 	\caption{Characteristics of galaxy samples as set in make\_catalog\_rnc.py}\label{table:characteristics}
 \end{table}
 
-A number of parameters are defined at the begining of the file main.
+A number of parameters are defined in features.txt.
 \begin{itemize}
 	\item parameters summed-up in the Table \ref{table:characteristics}
 	\item Npass = 5 number of passes
-	\item MinUnused = 50 (not used anymore for the moment) minimum number of unused fibers on each petal
 	\item MaxSS = 10 ; MaxSF = 40 maximum number of fibers assigned to SS and SF on a petal
 	\item PlateRadius = $1.65^{\circ}$ radius of the plate
 	\item TotalArea = 15789.0 \sqd total area of the sky considered
 	\item invFibArea = 700 inverse of area in \sqd accessible to a fiber (fiber density for a \sqd)
-	\item NeighborRad = 14.0 mm maximum distance to consider that two fibers are neighbors
 	\item PatrolRad = 6.0 mm maximum distance, on plate coordinates, that allows a fiber to a galaxy
 	\item InterPlate = 200 minimal number of plates between two observations of the same galaxy
 	\item Randomize = false randomize order of plates in making plans
@@ -323,9 +203,13 @@ A number of parameters are defined at the begining of the file main.
 
 	\item Collision = true when we want to allow collisions, to compute the collision rate for instance
 	\item Exact = true whether we want exact collision checking (exact geometry of components) or just circles
-	\item AvCollide = 2.9 mm in case of no exact collision checking, limit distance between two galaxies for their positioners to collide
-	\item Collide = 2.1 mm minimum distance allowed on plate projection of two assigned galaxies on the same plate (optimizes collision checking)
+	\item AvCollide = 3.2 mm in case of no exact collision checking, limit distance between two galaxies for their positioners to collide (so that we have the same collision rate than with exact geometry)
+	\item Collide = 1.98 mm minimum distance allowed on plate projection of two assigned galaxies on the same plate (optimizes collision checking)
 	\item NoCollide = 7 mm maximum distance between two galaxies for the collision of their corresponding galaxies (optimizes collision checking)
+	\item NeighborRad = 14.0 mm maximum distance to consider that two fibers are neighbors
+
+	\item PlotObsTime, etc whether we want to plot some information into output files
+	\item Verif = false, whether we verificate that the assignment is sane (no collision, sane mapping, etc...)
 \end{itemize}
 
 
@@ -355,7 +239,7 @@ In algorithms, j stands for a plate, k for a fiber, p for a petal, g for a galax
 
 \subsection{Improvement functions ideas}
 A first assignment is done by the function simple\_assign, and is the same than in BOSS experiment.
-Here we present the three ideas of improvement of this first assignment, that increases the number of used fibers and the quality of the assignment. It represents the body, the main purpose of our work. They need to be somewhere "orthogonal", so that they don't loose efficiency when we call one of them after an other.
+Here we present the three ideas of improvement of this first assignment, which increase the number of used fibers and the quality of the assignment. It represents the body, the main purpose of our work. They need to be somewhere "orthogonal", so that they don't loose efficiency when we call one of them after an other.
 Those three ideas are coded into the three following functions :
 
 
@@ -426,7 +310,7 @@ The idea is to take an unassigned fiber and to look at the galaxies it can reach
 	\caption{Redistribute}\label{transf}
 \end{figure}
 
-In redistribute, we look at an assigned fiber, and try to make the observed object observed by and other fiber, which can come from a different plate. It "recooks" the assignment. In this way, it doesn't improves anything, but we then apply the improve function again, which is more efficient. The idea is the improve, then redistribute, then improve again, redistribute etc. If there is no redistribution between a new improve, the improve is almost useless.
+In redistribute, we look at an assigned fiber, and try to make the observed object observed by and other fiber, which can come from a different plate. It "anneals" the assignment. In this way, it doesn't improves anything, but we then apply the improve function again, which is more efficient. The idea is the improve, then redistribute, then improve again, redistribute etc. If there is no redistribution between a new improve, the improve is almost useless.
 
 \begin{figure}[H]
 	\hspace*{3cm}
@@ -471,7 +355,7 @@ The third idea is to take an assigned fiber that is able to reach a SF (or SS), 
 
 {\tt change\_coords} combines a galaxy and a particular plate to give the coordinates the galaxy will have in the focal plane when observed as with this tile. It's a rotation in angular coordinates. This ought to be rigorously checked.
 
-{\tt find\_collision} returns the fiber number of a fiber that conflicts with tiblefiber (j,k).  Conflict is defined by two observed galaxies being separated by less than {\tt Collide}, currently set to 2.9 mm.
+{\tt find\_collision} returns the fiber number of a fiber that conflicts with tiblefiber (j,k), collision checking can be with exact geometry (if Collision parameter is true) or reduced one
 
 \subsection{Collecting}
 {\tt collect\_galaxies\_for\_all} is multithreaded, and for each fiber of each tile, collects reachable galaxies. It uses kdTree and htmTree libraries written by Martin White, because it's absolutely necessary to do computations in a reasonable time with supercomputers.
@@ -547,7 +431,7 @@ The argument "next" (integer) in following functions means that we treat all nex
 	\end{algorithmic}
 \end{algorithm}
 
-{\tt new\_assign\_fibers} makes a first assignment plan trying to assign first QSO, then ELG and LRG, then trying to assign SF and SS replacing other kinds if there are not enough available fibers. This way, a QSO can't be lost because of a collision. With the current value of Collision, it's not very useful, but could be for bigger values.
+{\tt new\_assign\_fibers} makes a first assignment plan trying to assign first QSO, then LRG then ELG, then trying to assign SF and SS replacing other kinds if there are not enough available fibers. This way, a QSO can't be lost because of a collision. With the current value of Collision, it's not very useful, but could be for bigger values.
 
 \begin{algorithm}[H]
 	\caption{New\_assign\_fibers(j0,n)}\label{euclid}
@@ -558,7 +442,10 @@ The argument "next" (integer) in following functions means that we treat all nex
 		\State Try assign\_fiber(j,k) only allowing QSO
 		\EndFor
 		\For {each fiber k of this petal, in a random order}
-		\State Try assign\_fiber(j,k) only allowing ELG and LRG
+		\State Try assign\_fiber(j,k) only allowing LRG
+		\EndFor
+		\For {each fiber k of this petal, in a random order}
+		\State Try assign\_fiber(j,k) only allowing ELG
 		\EndFor
 		\For {each unassigned fiber k of this petal}
 		\State Try assign\_fiber(j,k) to only SS or SF
@@ -642,6 +529,7 @@ The argument "next" (integer) in following functions means that we treat all nex
 	\item there can't be more than 10 fibers assigned to SS on a petal
 	\item there can't be more than 40 fibers assigned to SF on a petal
 	\item basically, we choose best galaxy from at the same time available, observed less than maxgoal(kind) times and unassigned ones. Among them, we take those with highest priority, and then the one which has been seen the least number of times
+	\item between an already observed \lya and an unknown QSO, one chooses the already observed \lya
 \end{itemize}
 
 In nature we only know the basic type (QSO, LRG, ELG, SS, SF) of the galaxies of the catalog. The precise type is only infered by a simulation coded in python, but is generated with randomness. So in the algorithms, we can know the nature of the object only when it has been observed once at least.
@@ -652,121 +540,79 @@ The idea is to get most information possible in the first pass, assigning indepe
 
 \section{Algorithm}
 
-The calling sequence is {\tt assign galaxy plate\_centers fiberpos assignment 1 1}. The last of these is the file to which we would write all the final galaxy assignments, but this is generally suppressed since we aren't using it yet.
-
- {\tt main} proceeds by taking important parameters, features of galaxies, reading in the galaxies to make G, the positions of the fibers on the plate to make pp, the plate centers and positioner locations to make P. 
+ {\tt main} proceeds by loading input files : features of galaxies, reading in the galaxies catalog to make G, the positions of the fibers on the plate to make pp, the plate centers and positioner locations to make P. 
  
-We then collect available galaxies for each fiber for each plate, and compute the inverse map.
+ We then collect available galaxies for each fiber for each plate, and compute the inverse map (available fibers for each galaxies, useful for improvement functions).
  
-We next, tile after tile, do the assignment of galaxies. We have tried several strategies : making several plans, use simple assignment, use complexe one, improve several times, in several ways, etc... Here is the one which gives the best results.
-
-We present the strategy that produced the best results, which will be the strategy of reference,
-We tried a strategy where we make then apply a plan for the first 2000, then for the following 2000, then for the left, but it's not better.
-
-Simple assign fibers and new assign, even if there structure are quite different, give almost the same results. Simple assign is a little bit quicker so we will use this one.
+We next, tile after tile, do the assignment of galaxies. We have tried several strategies. The strategy that produced the best results, which will be the strategy of reference, consists of making only one plan, then applying it. We first run new\_assign, then 3 rounds of improvement : improve, redistribute, improve, redistribute, improve.
 
 \begin{algorithm}[H]
 	\caption{Assignment of reference in main program}\label{euclid}
 	\begin{algorithmic}[1]
-		\Algphasee{Phase I - Make a plan for the first 2000 plates}
-		\State Run, globally, on the list plates from 0 to 1999 :
-		\State Assign fibers
-		\State Improve SF
+		\Algphasee{Phase I - Make a plan for all plates}
+		\State Run, globally, on the list plates from 0 to last :
+		\State "New" assign fibers
+		\State Improve
+		\State Redistribute
+		\State Improve
+		\State Redistribute
+		\State Improve
 	\end{algorithmic}
 	\begin{algorithmic}[1]
-		\Algphase{Phase II - Applying the plan}
+		\Algphase{Phase II - Apply the plan}
 		\For {each plate j of the plan, in order}
+		\State Possibly "pyplot" the planned observed tile
 		\State Real observation is here
-		\State Update information collected on previous just watched tile
-		\State Update\_plan\_from\_one\_observation(j)
+		\State Update information collected on the previously observed Analysis'th past tile with update\_plan\_from\_one\_obs
 		\EndFor
-	\end{algorithmic}
-
-	\begin{algorithmic}[1]
-		\Algphase{Phase III - Make a plan for all left plates}
-		\State Run, globally, on the list plates from 2000 to the end :
-		\State Assign fibers
-		\State Improve
-		\State Improve SF
-		\State Improve SS
-		\State Redistribute
-		\State Improve
-		\State Redistribute
-		\State Improve
-	\end{algorithmic}
-
-	\begin{algorithmic}[1]
-		\Algphase{Phase IV - Applying the plan}
 	\end{algorithmic}
 \end{algorithm}
 
 
 A standard output display of an execution look like that (for assignment plan and applying):
+
 {\tt \small 
-
- - Plate 1998 :      9 not as -     0 unas \&    0 replaced
-
- - Plate 1999 :      8 not as -     0 unas \&    0 replaced
-
-\# ... took : 10.5 s
-
-\# Begin simple assignment :
-
-  37,635,165 assignments on all left next plates
-
-\# ... took : 2 mn 17.3 s
-
-\# Begin improve :
-
-  921,594 more assignments (2.449 \% improvement)
-
-\# ... took : 42.1 s
-
-\# Begin improve SF :
-
-  1,386,726 more assignments (3.597 \% improvement)
-
-\# ... took : 3 mn 13.8 s
-
-\# Begin improve SS :
-
-  194,603 more assignments (0.487 \% improvement)
-
-\# ... took : 6.99 s
-
-\# Begin redistribute TF :
-
-  2,202,483 redistributions of couples of TF
-
-\# ... took : 16.8 s
-
-\# Begin improve :
-
-  167,146 more assignments (0.416 \% improvement)
-
-\# ... took : 23.3 s
-
-\# Begin redistribute TF :
-
-  2,058,702 redistributions of couples of TF
-
-\# ... took : 16.8 s
-
-\# Begin improve :
-
-  76,484 more assignments (0.190 \% improvement)
-
-\# ... took : 22.1 s
-
-\# Begin real time assignment at 11 mn 34.7 s
-
- - Plate 2000 : SF-imp + 38 (+0.769 \%) SS-imp +  1 (+0.020 \%)    22 not as -  2630 unas \& 1985 replaced
-
- - Plate 2001 : SF-imp + 37 (+0.750 \%) SS-imp +  1 (+0.020 \%)    29 not as -  3227 unas \& 2619 replaced
-
- - Plate 2002 : SF-imp + 34 (+0.691 \%) SS-imp +  2 (+0.040 \%)    44 not as -  3296 unas \& 2632 replaced
-
- - Plate 2003 : SF-imp + 13 (+0.262 \%) SS-imp +  1 (+0.020 \%)    17 not as -  2797 unas \& 2526 replaced
+\# Read 71,998,144 galaxies from /project/projectdirs/desi/mocks/preliminary/objects\_ss\_sf0.rdzipn \\
+\# Read 10,666 plate centers from /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/footprint/desi-tiles.par and 
+5000 fibers from /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt \\
+\# Start building HTM tree at 13.8 s \\
+\# ... took : 25.5 s \\
+\# Begin collecting available galaxies \\
+ \# ... took : 31.6 s \\
+\# Begin computing available tilefibers \\
+\# ... took : 1 mn 12.5 s \\
+\# Start assignment at :  2 mn 27 s \\
+\# Begin new assignment : \\
+  50,518,743 assignments on all left next plates \\
+\# ... took : 18 mn 38.3 s \\
+\# Begin improve : \\
+  565,801 more assignments (1.120 \% improvement) \\
+\# ... took : 36.5 s \\
+\# Begin redistribute TF : \\
+  1,760,465 redistributions of couples of TF \\
+\# ... took : 23.3 s \\
+\# Begin improve : \\
+  206,948 more assignments (0.405 \% improvement) \\
+\# ... took : 30.2 s \\
+\# Begin redistribute TF : \\
+  1,575,337 redistributions of couples of TF \\
+\# ... took : 23.1 s \\
+\# Begin improve : \\
+  92,508 more assignments (0.180 \% improvement) \\
+\# ... took : 26 s \\
+\# Begin real time assignment at 23 mn 24.5 s \\
+ - Plate 0 :   550 not as -  3852 unas \& 2772 replaced \\
+ - Plate 1 :    98 not as -  3784 unas \& 2773 replaced \\
+ - Plate 2 :   104 not as -  3985 unas \& 2844 replaced \\
+ - Plate 3 :   121 not as -  3602 unas \& 2563 replaced \\
+ - Plate 4 :   105 not as -  3773 unas \& 2685 replaced \\
+ - Plate 5 :    85 not as -  3797 unas \& 2853 replaced \\
+ - Plate 6 :   145 not as -  3537 unas \& 2514 replaced \\
+ - Plate 7 :    92 not as -  3964 unas \& 2856 replaced \\
+ - Plate 8 :   123 not as -  3714 unas \& 2578 replaced \\
+ - Plate 9 :   143 not as -  3543 unas \& 2378 replaced \\
+ - Plate 10 :   148 not as -  3528 unas \& 2472 replaced \\
+ - Plate 11 :    86 not as -  3507 unas \& 2885 replaced \\
 }
 
 \section{Results}
@@ -807,6 +653,17 @@ Here are some statistics on the input galaxies catalog :
 		\addplot table[x=x,y=0] {figs/reachplate.dat};
 \end{axis}\end{tikzpicture}
 \caption{Available plates for a galaxy (without 5th pass)}\label{reachplate}
+\end{center}\end{figure}
+
+
+\begin{figure}[H]\begin{center}
+	\tikzsetnextfilename{redshifts}
+\begin{tikzpicture}[scale=1.1]\begin{semilogyaxis}[const plot,enlarge x limits=false,enlarge y limits=false,ymin=10,xlabel={z},ylabel={dn/dz},cycle list name=mycolorlist,legend entries={QSO,LRG,ELG},legend pos=north east,cycle list={{blue,fill=blue!90!black,fill opacity=0.2},{red,fill=red,fill opacity=0.2},{green,fill=green,fill opacity=0.2}}]
+		\addplot table[x=x,y=0] {figs/redshifts.dat}|- (axis cs:0,0) -- cycle;
+		\addplot table[x=x,y=1] {figs/redshifts.dat}|- (axis cs:0,0) -- cycle;
+		\addplot table[x=x,y=2] {figs/redshifts.dat}|- (axis cs:0,0) -- cycle;
+\end{semilogyaxis}\end{tikzpicture}
+\caption{Distribution of objects as a function of redshift}\label{redshifts}
 \end{center}\end{figure}
 
 
@@ -965,7 +822,6 @@ The figure \ref{histastf} gives the histogram of proportion of assigned \lya and
 \caption{\# of QSO \lya (with their number of observation) as a function of available tile-fibers}\label{histastf}
 \end{center}\end{figure}
 
-
 \begin{figure}[H]\begin{center}\begin{minipage}{.5\textwidth}
 	\tikzsetnextfilename{dist2ly}
 \begin{tikzpicture}[scale=1.1]
@@ -984,7 +840,6 @@ The figure \ref{histastf} gives the histogram of proportion of assigned \lya and
  \end{minipage}
 	\caption{Histogram of distances (in number of plates) between two consecutive observed QSO \lya and integral}
 \end{center}\end{figure}
-
 
 \subsection{Study on evolution over time}
 
@@ -1051,13 +906,13 @@ The function pyplotTile builds a tile.py file, which can be executed manually wi
 Only objects that would need at least one further observation are projected on the plate and ploted. The function has to be called just before real observation time, otherwise, if it is called at the end for example, information on number of observations of an object would be the one that we have at the end, and not on the way.
 A black dot is ploted when there is an unassigned fiber at some place, not to mix up with fiducials (totally white), places where there is physically no fiber.
 Watching at a dozen of tile plots, one can convince hiself that the assignment is very close to the optimum.
+Notice that on plot, one can for example see a fiber looking at an ELG though it could observe an LRG instead. It comes from the improvement functions, that "anneal" the assignment, and then the program plans anyway to look at the LRG but later, which leads to optimize the assignment.
 
 \begin{figure}[H]
 \hspace*{-1.5cm}
     \includegraphics[scale=1.75]{python/tile.pdf}
 	\caption{Tile}
 \end{figure}
-
 
 
 \section{Possible improvements}
@@ -1074,6 +929,13 @@ The update function might still be improved to lead to more reassignments, and a
 
 We could make plans with only \lya assigned, launching improve function, and then adding separately LRG then improving, and adding again ELG and improving. It's likely that it won't increase results because as we saw before, doing assignments separately in new\_assign already didn't improved results. This kind of optimization must actually be already done by selecting with priorities and executing improvement functions.
 
+
+Make a plan without SS and SF (to keep degrees of freedom for improvement functions) and then assign them only just before the observation.
+
+Do a function which puts all observations by the first tilefiber possible, after redistribution-improvement.
+
+\section{Effect on correlation function}
+One of the difficulties is that we have not to bring experimental bias the way we do the assignment. The fact that a lot of rules are used in the assignment make it more likely that a bias is created.
 
 
 
