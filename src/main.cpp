@@ -71,6 +71,8 @@ int main(int argc, char **argv) {
 	//// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
 	Assignment A(G,F);
 	print_time(t,"# Start assignment at : ");
+
+/*
 	int limit = 2000;
 	// Make a plan ----------------------------------------------------
 	new_assign_fibers(G,P,pp,F,A,limit);
@@ -91,20 +93,22 @@ int main(int argc, char **argv) {
 		A.next_plate++;
 	}
 	print_time(time,"# ... took :");
+*/
+
 
 	// Make a plan ----------------------------------------------------
 	new_assign_fibers(G,P,pp,F,A);
 	//simple_assign(G,P,pp,F,A);
-	//improve(G,P,pp,F,A);
+	improve(G,P,pp,F,A);
 
-	//redistribute_tf(G,P,pp,F,A);
-	//improve(G,P,pp,F,A);
-	//redistribute_tf(G,P,pp,F,A);
-	//improve(G,P,pp,F,A);
+	redistribute_tf(G,P,pp,F,A);
+	improve(G,P,pp,F,A);
+	redistribute_tf(G,P,pp,F,A);
+	improve(G,P,pp,F,A);
 
 	// Apply and update the plan --------------------------------------
 	init_time_at(time,"# Begin real time assignment",t);
-	for (int jj=limit; jj<F.Nplate; jj++) {
+	for (int jj=/*limit*/0; jj<F.Nplate; jj++) {
 		int j = A.next_plate;
 		printf(" - Plate %d :",j);
 		//improve_from_kind(G,P,pp,F,A,"SF",1);
@@ -123,7 +127,7 @@ int main(int argc, char **argv) {
 	init_time_at(time,"# Display results",t);
 	display_results("doc/figs/",G,P,pp,F,A,true);
 	print_time(time,"# ... took :");
-	if (F.Verif) A.verif(P,G,pp,F); // Verification that the assignment is sane
+	//if (F.Verif) A.verif(P,G,pp,F); // Verification that the assignment is sane
 	print_time(t,"# Finished !... in");
 	return(0);
 }

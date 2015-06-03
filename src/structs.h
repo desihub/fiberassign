@@ -97,7 +97,7 @@ class Assignment {
 	int is_collision(int j, int k, const PP& pp, const Gals& G, const Plates& P, const Feat& F) const;
 	void verif(const Plates& P, const Gals& G, const PP& pp, const Feat& F) const; // Verif mappings are right
 	int is_assigned_jg(int j, int g) const;
-	int is_assigned_jg(int j, int g, const Feat& F) const;
+	int is_assigned_jg(int j, int g, const Gals& G, const Feat& F) const;
 	bool is_assigned_tf(int j, int k) const; 
 	int na(const Feat& F, int begin=0, int size=-1) const; // Number of assignments within plates begin to begin+size
 	int nobs(int g, const Gals& G, const Feat& F, bool tmp=true) const; // Counts how many time ob should be observed else more. If tmp=true, return MaxObs for this kind (temporary information)

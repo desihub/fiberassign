@@ -309,6 +309,7 @@ void Assignment::unassign(int j, int k, int g, const Gals& G, const Plates& P, c
 }
 
 void Assignment::verif(const Plates& P, const Gals& G, const PP& pp, const Feat& F) const {
+	str qso_lrgA[] = {"QSOLy-a","QSOTracer","FakeQSO","LRG","FakeLRG"}; List qso_lrg = F.init_ids_list(qso_lrgA,5);
 	for (int g=0; g<F.Ngal; g++) {
 		Plist tfs = GL[g];
 		int j0(-1); int j1(-1);
@@ -319,7 +320,7 @@ void Assignment::verif(const Plates& P, const Gals& G, const PP& pp, const Feat&
 			// Verif on TF
 			if (TF[tf.f][tf.s]!=g) { printf("ERROR in verification of correspondance of galaxies !\n"); fl(); }
 			// No 2 assignments within an interval of F.InterPlate
-			if (j0!=-1 && fabs(j1-j0)<=F.InterPlate) { printf("ERROR in verification of F.InterPlate g=%d with j=%d and %d\n",g,j0,j1); fl(); }
+			if (j0!=-1 && isfound(G[g].id,qso_lrg) && fabs(j1-j0)<F.InterPlate) { printf("ERROR in verification of F.InterPlate g=%d with j=%d and %d\n",g,j0,j1); fl(); }
 		}
 	}
 	for (int j=0; j<F.Nplate; j++) {
@@ -351,8 +352,9 @@ int Assignment::is_assigned_jg(int j, int g) const {
 	return -1;
 }
 
-int Assignment::is_assigned_jg(int j, int g, const Feat& F) const {
-	for (int i=0; i<GL[g].size(); i++) if (fabs(j-GL[g][i].f)<F.InterPlate || j==i) return i;
+int Assignment::is_assigned_jg(int j, int g, const Gals& G, const Feat& F) const {
+	str qso_lrgA[] = {"QSOLy-a","QSOTracer","FakeQSO","LRG","FakeLRG"}; List qso_lrg = F.init_ids_list(qso_lrgA,5);
+	for (int i=0; i<GL[g].size(); i++) if ((isfound(G[g].id,qso_lrg) && fabs(j-GL[g][i].f)<F.InterPlate) || j==i) return i;
 	return -1;
 }
 
@@ -458,7 +460,7 @@ Table Assignment::infos_petal(int j, int pet, const Gals& G, const Plates& P, co
 			L.push_back(G[g].id);
 			L.push_back(nobs(g,G,F));
 			L.push_back(is_assigned_jg(j,g));
-			L.push_back(is_assigned_jg(j,g,F));
+			L.push_back(is_assigned_jg(j,g,G,F));
 			L.push_back(find_collision(j,k,g,pp,G,P,F));
 			if (G[g].id==0) lya = true;
 		}
@@ -676,4 +678,3 @@ void pyplot::plot_tile(str directory, int j, const Feat& F) const {
 	fprintf(file,"\nfig.savefig('tile%d.pdf',bbox_inches='tight',pad_inches=0,dpi=(300))",j);
 	fclose(file);
 }
-

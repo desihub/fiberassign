@@ -96,7 +96,7 @@ inline int find_best(int j, int k, const Gals& G, const Plates& P, const PP& pp,
 		int prio = fprio(g,G,F,A);
 		int m = A.nobs(g,G,F);
 		bool tfb = has_tf ? !A.is_assigned_tf(j,k) : true;
-		if (m>=1 && tfb && A.is_assigned_jg(j,g,F)==-1 && ok_assign_g_to_jk(g,j,k,P,G,pp,F,A) && g!=no_g && (kind.size()==0 || isfound(G[g].id,kind))) {
+		if (m>=1 && tfb && A.is_assigned_jg(j,g,G,F)==-1 && ok_assign_g_to_jk(g,j,k,P,G,pp,F,A) && g!=no_g && (kind.size()==0 || isfound(G[g].id,kind))) {
 			if (prio<pbest || (prio==pbest && m>mbest)) { // Then g!=-1 because prio sup pbest
 				best = g;
 				pbest = prio;
@@ -109,15 +109,15 @@ inline int find_best(int j, int k, const Gals& G, const Plates& P, const PP& pp,
 
 inline int assign_fiber(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int no_g=-1, List kind=Null()) {
 	int best = find_best(j,k,G,P,pp,F,A,true,no_g,kind);
-	if ((j==2500 || j==1500 || j==5500) && best==-1 && P[j].av_gals[k].size()!=0) {
-		List av_g = P[j].av_gals[k];
-		for (int i=0; i<av_g.size(); i++) {
-			int g = av_g[i];
-			int kind0 = G[g].id;
-			if (A.is_assigned_jg(j,g)==-1 && 1<=A.nobs(g,G,F) && kind0!=7 && kind0!=6 && (kind.size()==0 || isfound(kind0,kind))) { printf("%d %s %d %d %d %d - ",k,F.kind[kind0].c_str(),A.is_assigned_jg(j,g,F)==-1,A.find_collision(j,k,g,pp,G,P,F)==-1,ok_assign_g_to_jk(g,j,k,P,G,pp,F,A),j);
-			}
-		}
-	}
+	//if ((j==2500 || j==1500 || j==5500) && best==-1 && P[j].av_gals[k].size()!=0) {
+		//List av_g = P[j].av_gals[k];
+		//for (int i=0; i<av_g.size(); i++) {
+			//int g = av_g[i];
+			//int kind0 = G[g].id;
+			//if (A.is_assigned_jg(j,g)==-1 && 1<=A.nobs(g,G,F) && kind0!=7 && kind0!=6 && (kind.size()==0 || isfound(kind0,kind))) { printf("%d %s %d %d %d %d - ",k,F.kind[kind0].c_str(),A.is_assigned_jg(j,g,G,F)==-1,A.find_collision(j,k,g,pp,G,P,F)==-1,ok_assign_g_to_jk(g,j,k,P,G,pp,F,A),j);
+			//}
+		//}
+	//}
 	if (best!=-1) A.assign(j,k,best,G,P,pp);
 	return best;
 }
@@ -144,7 +144,7 @@ inline int improve_fiber(int begin, int next, int j, int k, const Gals& G, const
 							// FIND BEST JP KP !!!
 							int best = find_best(jp,kp,G,P,pp,F,A,false,-1,Null()); // best!=g because !A.assigned_pg(best)
 
-							if (best!=-1 && (A.is_assigned_jg(j,g,F)==-1 || jp==j)) {
+							if (best!=-1 && (A.is_assigned_jg(j,g,G,F)==-1 || jp==j)) {
 								int prio = fprio(best,G,F,A);
 								int m = A.nobs(best,G,F);
 								if (prio<pb || prio==pb && m>mb) {
@@ -171,7 +171,7 @@ int improve_fiber_from_kind(int id, int j, int k, const Gals& G, const Plates&P,
 		List av_gals = P[j].av_gals[k];
 		for (int i=0; i<av_gals.size(); i++) {
 			int g = av_gals[i];
-			if (G[g].id==id && A.find_collision(j,k,g,pp,G,P,F)==-1 && A.is_assigned_jg(j,g,F)==-1 && A.nobs(g,G,F)>=1) {
+			if (G[g].id==id && A.find_collision(j,k,g,pp,G,P,F)==-1 && A.is_assigned_jg(j,g,G,F)==-1 && A.nobs(g,G,F)>=1) {
 				for (int kkp=0; kkp<fibskind.size(); kkp++) {
 					int kp = fibskind[kkp];
 					int gp = A.TF[j][kp];
@@ -179,7 +179,7 @@ int improve_fiber_from_kind(int id, int j, int k, const Gals& G, const Plates&P,
 					if (best!=-1) {
 						int prio = fprio(best,G,F,A);
 						int m = A.nobs(best,G,F);
-						if (prio<pb || prio==pb && m>mb) {
+						if (prio<pb || (prio==pb && m>mb)) {
 							if (!A.find_collision(j,k,kp,g,best,pp,G,P,F)) { // Avoid that the choice of the 2 new objects collide
 							gb = g; gpb = gp; bb = best; kpb = kp; mb = m; pb = prio;
 		}}}}}}
@@ -258,7 +258,7 @@ void improve_from_kind(const Gals& G, const Plates&P, const PP& pp, const Feat& 
 				List av_gals = P[j].av_gals[k];
 				for (int i=0; i<av_gals.size(); i++) {
 					int g = av_gals[i];
-					if (G[g].id==id && A.nobs(g,G,F)>=1 && A.is_assigned_jg(j,g,F)==-1 && A.find_collision(j,k,g,pp,G,P,F)==-1) {
+					if (G[g].id==id && A.nobs(g,G,F)>=1 && A.is_assigned_jg(j,g,G,F)==-1 && A.find_collision(j,k,g,pp,G,P,F)==-1) {
 						// If the av gal is of the good kind, try to assign it, and improving an other one
 						for (int kkp=0; kkp<fibskind.size(); kkp++) {
 							int kp = fibskind[kkp];
@@ -319,14 +319,20 @@ void update_plan_from_one_obs(const Gals& G, const Plates&P, const PP& pp, const
 		Plist tfs = A.chosen_tfs(g,F,j0+1,n-1); // Begin at j0+1, because we can't change assignment at j0 (already watched)
 		while (tfs.size()!=0) {
 			int jp = tfs[0].f; int kp = tfs[0].s;
-			//print_Plist("Before",tfs); // Debug
+			//print_Plist(tfs,"Before"); // Debug
 			A.unassign(jp,kp,g,G,P,pp);
 			int gp = -1;
+			//debl(1);
 			gp = improve_fiber(j0+1,n-1,jp,kp,G,P,pp,F,A,g);
+			//debl(2);
 			if (gp==-1) gp = improve_fiber_from_kind(F.ids.at("SF"),jp,kp,G,P,pp,F,A);
+			//if (gp==-1) {debl(3); gp = improve_fiber_from_kind(F.ids.at("SF"),jp,kp,G,P,pp,F,A); debl(gp);}
 			if (gp==-1) gp = improve_fiber_from_kind(F.ids.at("SS"),jp,kp,G,P,pp,F,A);
+			//if (gp==-1) {debl(5); gp = improve_fiber_from_kind(F.ids.at("SS"),jp,kp,G,P,pp,F,A); debl(gp);}
+			//debl(7);
 			erase(0,tfs);
-			//print_Plist("After",tfs); // Debug
+			//debl(8);
+			//print_Plist(tfs,"After"); // Debug
 			cnt++;
 		}
 	}
@@ -434,7 +440,7 @@ void redistribute_tf(const Gals& G, const Plates&P, const PP& pp, const Feat& F,
 					for (int i=0; i<av_tfs.size() && !finished; i++) {
 						int jp = av_tfs[i].f;
 						int kp = av_tfs[i].s;
-						if (j0<=jp && jp<j0+n && !A.is_assigned_tf(jp,kp) && Done[jp][kp]==0 && ok_assign_g_to_jk(g,jp,kp,P,G,pp,F,A) && A.is_assigned_jg(jp,g,F)==-1) {
+						if (j0<=jp && jp<j0+n && !A.is_assigned_tf(jp,kp) && Done[jp][kp]==0 && ok_assign_g_to_jk(g,jp,kp,P,G,pp,F,A) && A.is_assigned_jg(jp,g,G,F)==-1) {
 							A.unassign(j,k,g,G,P,pp);
 							A.assign(jp,kp,g,G,P,pp);
 							finished = true;
@@ -813,8 +819,8 @@ void pyplotTile(int j, str directory, const Gals& G, const Plates& P, const PP& 
 		List av_gals = P[j].av_gals[k];
 		for (int i=0; i<av_gals.size(); i++) {
 			int gg = av_gals[i];
-			if (1<=A.nobs_time(gg,j,G,F)/*A.nobs(gg,G,F)*/) {
-				if (A.nobs_time(gg,j,G,F)!=A.nobs(gg,G,F)) printf("%d %d %s - ",A.nobs_time(gg,j,G,F),A.nobs(gg,G,F),F.kind[G[gg].id].c_str());
+			if (1<=A.nobs_time(gg,j,G,F)) {
+				//if (A.nobs_time(gg,j,G,F)!=A.nobs(gg,G,F)) printf("%d %d %s - ",A.nobs_time(gg,j,G,F),A.nobs(gg,G,F),F.kind[G[gg].id].c_str());
 				int kind = G[gg].id;
 				dpair Ga = projection(gg,j,G,P);
 				if (kind==F.ids.at("QSOLy-a")) pol.add(element(Ga,colors[kind],1,A.is_assigned_jg(j,gg)==-1?0.9:0.5));
@@ -823,8 +829,8 @@ void pyplotTile(int j, str directory, const Gals& G, const Plates& P, const PP& 
 		}
 	}
 	pyplot pyp(pol);
-	for (int k=0; k<F.Nfiber; k++) pyp.addtext(pp.coords(k),i2s(k));
-	pyp.plot_tile(directory,j,F);
+	//for (int k=0; k<F.Nfiber; k++) pyp.addtext(pp.coords(k),i2s(k)); // Plot fibers identifiers
+	pyp.plot_tile(directory,j,F); 
 }
 
 void overlappingTiles(str fname, const Feat& F, const Assignment& A) {
