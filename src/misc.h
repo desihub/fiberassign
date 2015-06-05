@@ -77,6 +77,7 @@ Dlist percents(const List& L, int n); // List of 100*L[i]/n
 Dlist percents(const Dlist& L, double n);
 bool isfound(int n, const List& L); // True iff n is found in L
 int isfound(pair p, const Plist& L); // Return the position of where p is found, -1 if not
+bool isfound(str n, const Slist& L);
 List values(const List& L); // List of different taken values (ex 1,1,5,2,5 gives 1,5,2)
 List random_permut(int n); // Return a random permutation of [0,n-1]
 List random_permut(const List& L); // Random permut of L

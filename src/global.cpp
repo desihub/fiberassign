@@ -80,7 +80,7 @@ inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const Gals& 
 	if (kind==F.ids.at("SF") && A.nkind(j,k,F.ids.at("SF"),G,P,pp,F)>=F.MaxSF) return false;
 	if (kind==F.ids.at("SS") && A.nkind(j,k,F.ids.at("SS"),G,P,pp,F)>=F.MaxSS) return false;
 	if (P[j].ipass==F.Npass-1 && !(kind==F.ids.at("ELG") || kind==F.ids.at("SS") || kind==F.ids.at("SF"))) return false; // Only ELG, SF, SS at the last pass
-	if (F.Collision) for (int i=0; i<pp.N[k].size(); i++) if (g==A.TF[j][pp.N[k][i]]) return false;
+	if (F.Collision) for (int i=0; i<pp.N[k].size(); i++) if (g==A.TF[j][pp.N[k][i]]) return false; // Avoid that 2 neighboring fibers observe the same galaxy
 	if (A.find_collision(j,k,g,pp,G,P,F)!=-1) return false;
 	return true;
 }
@@ -93,14 +93,16 @@ inline int find_best(int j, int k, const Gals& G, const Plates& P, const PP& pp,
 	List av_gals = P[j].av_gals[k];
 	for (int gg=0; gg<av_gals.size(); gg++) {
 		int g = av_gals[gg];
-		int prio = fprio(g,G,F,A);
 		int m = A.nobs(g,G,F);
-		bool tfb = has_tf ? !A.is_assigned_tf(j,k) : true;
-		if (m>=1 && tfb && A.is_assigned_jg(j,g,G,F)==-1 && ok_assign_g_to_jk(g,j,k,P,G,pp,F,A) && g!=no_g && (kind.size()==0 || isfound(G[g].id,kind))) {
-			if (prio<pbest || (prio==pbest && m>mbest)) { // Then g!=-1 because prio sup pbest
-				best = g;
-				pbest = prio;
-				mbest = m;
+		if (m>=1) { // Less neat to compute it here but optimizes. Since there are a lot of SS and SF, it's worth putting ok_assign_ss_sf here
+			int prio = fprio(g,G,F,A);
+			if (prio<pbest || (prio==pbest && m>mbest)) { // Less neat to compute it here but optimizes
+				bool tfb = has_tf ? !A.is_assigned_tf(j,k) : true;
+				if (tfb && A.is_assigned_jg(j,g,G,F)==-1 && ok_assign_g_to_jk(g,j,k,P,G,pp,F,A) && g!=no_g && (kind.size()==0 || isfound(G[g].id,kind))) {
+					best = g;
+					pbest = prio;
+					mbest = m;
+				}
 			}
 		}
 	}
@@ -368,7 +370,7 @@ void replace(List old_kind, int new_kind, int j, int p, const Gals& G, const Pla
 // For each petal, assign QSOs, LRGs, ELGs, ignoring SS and SF. Then if there are free fibers, try to assign them first to SS and then SF. Now if we don't have 10 SS and 40 SF in a petal, take SS and SF at random from those that are available to the petal and if their fiber is assigned to an ELG, remove that assignment and give it instead to the SS or SF.
 void new_assign_fibers(const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int next) {
 	Time t;
-	if (next!=1) init_time(t,"# Begin new assignment :");
+	if (next!=1) init_time(t,"# Begin new assignment :\n-------------------------------------------------------------");
 	int j0 = A.next_plate;
 	int n = next==-1 ? F.Nplate-j0 : next; // Not F.Nplate-A.next_plate+1
 	List plates = sublist(j0,n,A.order);
@@ -379,6 +381,8 @@ void new_assign_fibers(const Gals& G, const Plates& P, const PP& pp, const Feat&
 	str elgA[] = {"ELG"}; List elg = F.init_ids_list(elgA,1);
 	str ss_sfA[] = {"SS","SF"}; List ss_sf = F.init_ids_list(ss_sfA,2);
 	for (int jj=0; jj<n; jj++) {
+		//if (jj==floor(n/4)) print_time("1/4 of total tiles processed in \n");
+		if (jj%(int)floor(n/60)==0) { printf("-"); fl(); }
 		int j = randPlates[jj];
 		List randPetals = random_permut(F.Npetal);
 		for (int ppet=0; ppet<F.Npetal; ppet++) {

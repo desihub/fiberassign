@@ -228,6 +228,12 @@ int isfound(pair p, const Plist& L) {
 	return -1;
 }
 
+bool isfound(str n, const Slist& L) {
+	if (L.size()==0) return false;
+	for (int i=0; i<L.size(); i++) if (L[i]==n) return true;
+	return false;
+}
+
 List values(const List& L) {
 	List l;
 	for (int i=0; i<L.size(); i++) {

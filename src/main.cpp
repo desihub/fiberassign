@@ -88,8 +88,7 @@ int main(int argc, char **argv) {
 		if (j%500==0) pyplotTile(j,"doc/figs",G,P,pp,F,A);
 		// <-- here is the real observation time
 		printf(" %s not as - ",format(5,f(F.Nfiber-A.na(F,j,1))).c_str());
-		if (0<=j-F.Analysis) update_plan_from_one_obs(G,P,pp,F,A,limit-1);
-		else printf("\n");
+		if (0<=j-F.Analysis) update_plan_from_one_obs(G,P,pp,F,A,limit-1); else printf("\n");
 		A.next_plate++;
 	}
 	print_time(time,"# ... took :");
@@ -116,7 +115,7 @@ int main(int argc, char **argv) {
 		if (j%500==0) pyplotTile(j,"doc/figs",G,P,pp,F,A);
 		// <-- here is the real observation time
 		printf(" %s not as - ",format(5,f(F.Nfiber-A.na(F,j,1))).c_str());
-		update_plan_from_one_obs(G,P,pp,F,A,F.Nplate-1);
+		if (0<=j-F.Analysis) update_plan_from_one_obs(G,P,pp,F,A,F.Nplate-1); else printf("\n");
 		A.next_plate++;
 	}
 	print_time(time,"# ... took :");

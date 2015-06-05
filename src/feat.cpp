@@ -40,11 +40,23 @@ void Feat::init_ids() {
 	for (int i=0; i<Categories; i++) ids[kind[i]] = i;
 }
 
+void Feat::init_ids_types() {
+	for (int i=0; i<Categories; i++) ids_types[kind[i]] = i;
+}
+
 List Feat::init_ids_list(str l[], int size) const {
 	List L;
 	L.resize(size);
 	for (int i=0; i<size; i++) L[i] = ids.at(l[i]);
 	return L;
+}
+
+void Feat::init_types() {
+	for (int i=0; i<type.size(); i++) if (!isfound(type[i],types)) types.push_back(type[i]);
+}
+
+bool Feat::iftype(int kind, str type) const {
+	return ids_types.at(type)==type[kind];
 }
 
 void Feat::readInputFile(const char file[]) {
@@ -69,6 +81,12 @@ void Feat::readInputFile(const char file[]) {
 				Categories = tok.size()-1;
 				for (int i=0; i<Categories; i++) kind.push_back(tok[i+1]);
 				init_ids();
+			}
+			if (tok[0]=="type") {
+				Categories = tok.size()-1;
+				for (int i=0; i<Categories; i++) type.push_back(tok[i+1]);
+				init_types();
+				init_ids_types();
 			}
 			if (tok[0]=="prio") for (int i=0; i<Categories; i++) prio.push_back(s2i(tok[i+1]));
 			if (tok[0]=="priopost") for (int i=0; i<Categories; i++) priopost.push_back(s2i(tok[i+1]));

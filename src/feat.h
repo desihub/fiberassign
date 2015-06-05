@@ -29,6 +29,7 @@ class Feat { // F for features
 	List priopost; // Priorities when we know the kind
 	List goal;
 	Slist kind;
+	Slist type;
 
 	int InterPlate; 
 	bool Randomize; 
@@ -60,7 +61,9 @@ class Feat { // F for features
 	bool Verif;
 	// Indirectly set by features file
 	int Categories;
+	Slist types; // Same as type but with only QSO LRG ELG SS SF
 	Smap ids; // Redundtant but optimizes (inv of kind)
+	Smap ids_types; // Same but for types (inv of types) (1 to QSO, ...)
 
 	// Set after reading other input files
 	int Nplate;
@@ -83,6 +86,9 @@ class Feat { // F for features
 	int maxgoal(int kind) const; // Gives max goal for a galaxy of this kind (goal(Ly-a) for all QSO for example)
 	List maxgoal() const; // List (function of kind) of max goals according to the kind (defined by prio)
 	void init_ids(); // Init ids member
+	void init_ids_types(); // Same
 	List init_ids_list(str l[], int size) const;
+	void init_types();
+	bool iftype(int kind, str type) const; // Whether kind is of type "type"
 };
 #endif

@@ -353,8 +353,7 @@ int Assignment::is_assigned_jg(int j, int g) const {
 }
 
 int Assignment::is_assigned_jg(int j, int g, const Gals& G, const Feat& F) const {
-	str qso_lrgA[] = {"QSOLy-a","QSOTracer","FakeQSO","LRG","FakeLRG"}; List qso_lrg = F.init_ids_list(qso_lrgA,5);
-	for (int i=0; i<GL[g].size(); i++) if ((isfound(G[g].id,qso_lrg) && fabs(j-GL[g][i].f)<F.InterPlate) || j==i) return i;
+	for (int i=0; i<GL[g].size(); i++) if ((/*(F.iftype(G[g].id,"LRG") || F.iftype(G[g].id,"QSO")) &&*/ fabs(j-GL[g][i].f)<F.InterPlate) || j==i) return i; // Makes it crash
 	return -1;
 }
 
