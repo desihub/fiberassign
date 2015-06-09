@@ -134,7 +134,7 @@ int fprio(int g, const Gals& G, const Feat& F, const Assignment& A);
 double plate_dist(const double theta);
 struct onplate change_coords(const struct galaxy& O, const struct plate& P);
 dpair projection(int g, int j, const Gals& G, const Plates& P); // Projection of g on j
-int num_av_gals(int j, int k, const Gals& G, const Plates& P, const Feat& F, const Assignment& A); // Ponderated, and doesn't take into account other kinds than QSO LRG ELG
+int num_av_gals(int j, int k, const Gals& G, const Plates& P, const Feat& F, const Assignment& A); // Ponderated (and only with remaining observation according to the moment in the survey), and doesn't take into account other kinds than QSO LRG ELG
 
 // Pyplot -----------------------------------------------
 class pyplot {

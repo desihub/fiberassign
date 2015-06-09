@@ -489,7 +489,7 @@ int num_av_gals(int j, int k, const Gals& G, const Plates& P, const Feat& F, con
 	for (int i=0; i<P[j].av_gals[k].size(); i++) {
 		int g = P[j].av_gals[k][i];
 		int id = G[g].id;
-		if (isfound(id,F.no_ss_sf) && 1<=A.nobs_time(g,j,G,F)) cnt += A.once_obs[g] ? F.goal[id] : F.maxgoal(id);
+		if (isfound(id,F.no_ss_sf)) cnt += A.nobs_time(g,j,G,F);
 	}
 	return cnt;
 }

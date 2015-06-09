@@ -404,7 +404,27 @@ void replace(List old_kind, int new_kind, int j, int p, const Gals& G, const Pla
 		erase(0,fibskind);
 	}
 }
-
+/*
+void assign_left(int j, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A) { // Tries to assign left fibers, even taking objects further observed
+	List fibs = A.unused_f(j,F);
+	for (int k=0; k<fibs.size(); k++) {
+		int best = -1; int mbest = -1; int pbest = 1e3;
+		List av_gals = P[j].av_gals[k];
+		for (int gg=0; gg<av_gals.size(); gg++) {
+			int g = av_gals[gg];
+			int m = A.nobs(g,G,F);
+			int prio = fprio(g,G,F,A);
+			if (prio<pbest || (prio==pbest && m>mbest)) { // Less neat to compute it here but optimizes
+				if (A.is_assigned_jg(j,g,G,F)==-1 && ok_assign_g_to_jk(g,j,k,P,G,pp,F,A)) {
+					best = g;
+					pbest = prio;
+					mbest = m;
+				}
+			}
+		}
+	}
+}
+*/
 // If no enough SS and SF, remove old_kind an replace to SS-SF (new_kind) on petal (j,p)
 void assign_sf_ss(int j, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
 	str lrgA[] = {"LRG","FakeLRG"}; List lrg = F.init_ids_list(lrgA,2);
@@ -429,9 +449,6 @@ void assign_sf_ss(int j, const Gals& G, const Plates& P, const PP& pp, const Fea
 		}
 		else {
 			List elgs = A.fibs_of_kind(F.ids.at("ELG"),j,p,G,pp,F);
-			for (int i=0; i<elgs.size(); i++) {
-			}
-
 			int unused = A.unused[j][p];
 			for (int kk=0; kk<elgs.size() && unused<F.MaxSS+F.MaxSF; kk++) {
 				int k = elgs[kk];
