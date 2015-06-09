@@ -17,6 +17,7 @@ MaxSF 40
 PlateRadius 1.65
 InterPlate 1
 Analysis 1
+InfDens true
 
 TotalArea 15789.0
 invFibArea 700
@@ -24,7 +25,7 @@ moduloGal 1
 moduloFiber 1
 
 Collision false
-Exact true
+Exact false
 AvCollide 3.2
 Collide 1.98
 NoCollide 7.0
@@ -59,6 +60,7 @@ Verif false
 -PlateRadius : radius of the plate
 -InterPlate : minimal distance (in number of tiles) between 2 observations of the same object (if they are QSO or LRG)
 -Analysis : number of tiles (time) between the observation of a tile and results on its analysis, which tells if for instance a QSO is a Ly-a or a fake, so that we can update the plan further such that we don't observe a fake again
+-InfDens : instead of assigning SS and SF, just release MaxSS+MaxSF unused fibers per petal, to simulate an infinite density of SS and SF
 
 -TotalArea : area of the sky observed
 -invFibArea : inverse of the reachable area (sqd) by a single fiber

@@ -45,7 +45,7 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 				op.id = g;
 				O.push_back(op);
 			}
-			//debl(id);
+			printf(""); // Management of memory works better this way, and this function doesn't crash then
 			KDtree<struct onplate> kdT(O,2);
 			// For each fiber, finds all reachable galaxies
 			for (int k=0; k<F.Nfiber; k++) {
@@ -77,9 +77,9 @@ void collect_available_tilefibers(Gals& G, const Plates& P, const Feat& F) {
 
 inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const Gals& G, const PP& pp, const Feat& F, const Assignment& A) { // The order of tests matters for computation time
 	int kind = G[g].id;
-	if (kind==F.ids.at("SF") && A.nkind(j,k,F.ids.at("SF"),G,P,pp,F)>=F.MaxSF) return false;
-	if (kind==F.ids.at("SS") && A.nkind(j,k,F.ids.at("SS"),G,P,pp,F)>=F.MaxSS) return false;
-	if (P[j].ipass==F.Npass-1 && !(kind==F.ids.at("ELG") || kind==F.ids.at("SS") || kind==F.ids.at("SF"))) return false; // Only ELG, SF, SS at the last pass
+	if (kind==F.ids.at("SS") || kind==F.ids.at("SF")) return false;
+	if (P[j].ipass==F.Npass-1 && kind!=F.ids.at("ELG")) return false; // Only ELG, SF, SS at the last pass
+	if (A.unused[j][pp.spectrom[k]]<=0) return false;
 	if (F.Collision) for (int i=0; i<pp.N[k].size(); i++) if (g==A.TF[j][pp.N[k][i]]) return false; // Avoid that 2 neighboring fibers observe the same galaxy
 	if (A.find_collision(j,k,g,pp,G,P,F)!=-1) return false;
 	return true;
@@ -124,6 +124,42 @@ inline int assign_fiber(int j, int k, const Gals& G, const Plates& P, const PP& 
 	return best;
 }
 
+inline void assign_galaxy(int g, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int j00=-1, int size=-1) {
+	int j0 = (j00==-1) ? A.next_plate : j00;
+	int n = (size==-1) ? F.Nplate-j0 : size;
+	int jb = -1; int kb = -1; int unusedb = -1;
+	Plist av_tfs = G[g].av_tfs;
+	for (int tfs=0; tfs<av_tfs.size(); tfs++) {
+		int j = av_tfs[tfs].f;
+		int k = av_tfs[tfs].s;
+		if (j0<=j && j<j0+n && !A.is_assigned_tf(j,k) && ok_assign_g_to_jk(g,j,k,P,G,pp,F,A)) {
+			int unused = A.unused[j][pp.spectrom[k]];
+			if (unusedb<unused) {
+				jb = j; kb = k; unusedb = unused;
+			}
+		}
+	}
+	if (jb!=-1) A.assign(jb,kb,g,G,P,pp);
+}
+
+inline int assign_fiber_to_ss_sf(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
+	int best = -1; int pbest = 1e3;
+	List av_gals = P[j].av_gals[k];
+	for (int gg=0; gg<av_gals.size(); gg++) {
+		int g = av_gals[gg];
+		int kind = G[g].id;
+		int prio = fprio(g,G,F,A);
+		if (((kind==F.ids.at("SF") && A.nkind(j,k,F.ids.at("SF"),G,P,pp,F)<F.MaxSF) || (kind==F.ids.at("SS") && A.nkind(j,k,F.ids.at("SS"),G,P,pp,F)<F.MaxSS)) && prio<pbest) { // Less neat to compute it here but optimizes
+			if (A.is_assigned_jg(j,g,G,F)==-1 && A.find_collision(j,k,g,pp,G,P,F)==-1) {
+				best = g;
+				pbest = prio;
+			}
+		}
+	}
+	if (best!=-1) A.assign(j,k,best,G,P,pp);
+	return best;
+}
+
 // Try to use unused fibers by reassigning some used ones
 // We could improve this function by taking best amongst all possible improvements !
 inline int improve_fiber(int begin, int next, int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int no_g=-1) {
@@ -131,7 +167,7 @@ inline int improve_fiber(int begin, int next, int j, int k, const Gals& G, const
 		int g_try = assign_fiber(j,k,G,P,pp,F,A,no_g); // Doesn't add anything in practice, if there was an assignment first, though it can be useful in other cases
 		if (g_try!=-1) return g_try;
 		else { // Improve
-			int gb = -1; int bb = -1; int jpb = -1; int kpb = -1; int mb = -1; int pb = 1e3;
+			int gb = -1; int bb = -1; int jpb = -1; int kpb = -1; int mb = -1; int pb = 1e3; int unusedb = -1;
 			List av_g = P[j].av_gals[k];
 			for (int i=0; i<av_g.size(); i++) {
 				int g = av_g[i]; // g : possible galaxy for (j,k)
@@ -149,8 +185,9 @@ inline int improve_fiber(int begin, int next, int j, int k, const Gals& G, const
 							if (best!=-1 && (A.is_assigned_jg(j,g,G,F)==-1 || jp==j)) {
 								int prio = fprio(best,G,F,A);
 								int m = A.nobs(best,G,F);
-								if (prio<pb || prio==pb && m>mb) {
-									gb = g; bb = best; jpb = jp; kpb = kp; mb = m; pb = prio;
+								int unused = A.unused[jp][pp.spectrom[kp]]; // We take the most unused
+								if (prio<pb || (prio==pb && m>mb) || (prio==pb && m==mb && unused>unusedb)) {
+									gb = g; bb = best; jpb = jp; kpb = kp; mb = m; pb = prio; unusedb = unused;
 							}}}}}}
 			// Modify assignment
 			if (gb!=-1) {
@@ -173,7 +210,7 @@ int improve_fiber_from_kind(int id, int j, int k, const Gals& G, const Plates&P,
 		List av_gals = P[j].av_gals[k];
 		for (int i=0; i<av_gals.size(); i++) {
 			int g = av_gals[i];
-			if (G[g].id==id && A.find_collision(j,k,g,pp,G,P,F)==-1 && A.is_assigned_jg(j,g,G,F)==-1 && A.nobs(g,G,F)>=1) {
+			if (G[g].id==id && A.find_collision(j,k,g,pp,G,P,F)==-1 && A.is_assigned_jg(j,g,G,F)==-1 && A.nobs(g,G,F)>=1 && 0<A.unused[j][pp.spectrom[k]]) {
 				for (int kkp=0; kkp<fibskind.size(); kkp++) {
 					int kp = fibskind[kkp];
 					int gp = A.TF[j][kp];
@@ -260,7 +297,7 @@ void improve_from_kind(const Gals& G, const Plates&P, const PP& pp, const Feat& 
 				List av_gals = P[j].av_gals[k];
 				for (int i=0; i<av_gals.size(); i++) {
 					int g = av_gals[i];
-					if (G[g].id==id && A.nobs(g,G,F)>=1 && A.is_assigned_jg(j,g,G,F)==-1 && A.find_collision(j,k,g,pp,G,P,F)==-1) {
+					if (G[g].id==id && A.nobs(g,G,F)>=1 && A.is_assigned_jg(j,g,G,F)==-1 && A.find_collision(j,k,g,pp,G,P,F)==-1 && 0<A.unused[j][pp.spectrom[k]]) {
 						// If the av gal is of the good kind, try to assign it, and improving an other one
 						for (int kkp=0; kkp<fibskind.size(); kkp++) {
 							int kp = fibskind[kkp];
@@ -355,15 +392,54 @@ void replace(List old_kind, int new_kind, int j, int p, const Gals& G, const Pla
 		List av_g = P[j].av_gals[k];
 		for (int gg=0; gg<av_g.size() && !fin; gg++) {
 			int g = av_g[gg];
-			if (G[g].id==new_kind && A.find_collision(j,k,g,pp,G,P,F)==-1 && A.nobs(g,G,F)>=1 && pp.spectrom[k]==p) {
+			if (G[g].id==new_kind && A.find_collision(j,k,g,pp,G,P,F)==-1 /*A.nobs(g,G,F)>=1*/) {
 				int g0 = A.TF[j][k];
 				A.unassign(j,k,g0,G,P,pp);
+				assign_galaxy(g0,G,P,pp,F,A);
 				A.assign(j,k,g,G,P,pp);
 				fin = true;
 				m++;
 			}
 		}
 		erase(0,fibskind);
+	}
+}
+
+// If no enough SS and SF, remove old_kind an replace to SS-SF (new_kind) on petal (j,p)
+void assign_sf_ss(int j, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
+	str lrgA[] = {"LRG","FakeLRG"}; List lrg = F.init_ids_list(lrgA,2);
+	str elgA[] = {"ELG"}; List elg = F.init_ids_list(elgA,1);
+	List randPetals = random_permut(F.Npetal);
+	for (int ppet=0; ppet<F.Npetal; ppet++) {
+		int p = randPetals[ppet];
+		List randFibers = random_permut(pp.fibers_of_sp[p]);
+		if (!F.InfDens) {
+			// Assign SS-SF
+			for (int kk=0; kk<F.Nfbp; kk++) {
+				int k = randFibers[kk];
+				if (!A.is_assigned_tf(j,k)) assign_fiber_to_ss_sf(j,k,G,P,pp,F,A);
+			}
+			// If not enough SS and SF, remove ELG an replace to SS-SF
+			replace(elg,F.ids.at("SS"),j,p,G,P,pp,F,A);
+			replace(elg,F.ids.at("SF"),j,p,G,P,pp,F,A);
+			//replace(lrg,F.ids.at("SS"),j,p,G,P,pp,F,A);
+			//replace(lrg,F.ids.at("SF"),j,p,G,P,pp,F,A);
+			if (A.kinds[j][p][F.ids.at("SS")]!=F.MaxSS) printf("! Not enough SS !\n");
+			if (A.kinds[j][p][F.ids.at("SF")]!=F.MaxSF) printf("! Not enough SF !\n");
+		}
+		else {
+			List elgs = A.fibs_of_kind(F.ids.at("ELG"),j,p,G,pp,F);
+			for (int i=0; i<elgs.size(); i++) {
+			}
+
+			int unused = A.unused[j][p];
+			for (int kk=0; kk<elgs.size() && unused<F.MaxSS+F.MaxSF; kk++) {
+				int k = elgs[kk];
+				A.unassign(j,k,A.TF[j][k],G,P,pp);
+				unused++;
+			}
+			if (unused<F.MaxSS+F.MaxSF) printf("! Not enough !\n");
+		}
 	}
 }
 
@@ -403,22 +479,22 @@ void new_assign_fibers(const Gals& G, const Plates& P, const PP& pp, const Feat&
 				int k = randFibers[kk];
 				if (!A.is_assigned_tf(j,k)) assign_fiber(j,k,G,P,pp,F,A,-1,elg);
 			}
-			// Assign SS-SF
-			for (int kk=0; kk<F.Nfbp; kk++) {
-				int k = randFibers[kk];
-				if (!A.is_assigned_tf(j,k)) assign_fiber(j,k,G,P,pp,F,A,-1,ss_sf);
-			}
-			// If not enough SS and SF, remove ELG an replace to SS-SF
-			replace(elg,F.ids.at("SS"),j,p,G,P,pp,F,A);
-			replace(elg,F.ids.at("SF"),j,p,G,P,pp,F,A);
-			replace(lrg,F.ids.at("SS"),j,p,G,P,pp,F,A);
-			replace(lrg,F.ids.at("SF"),j,p,G,P,pp,F,A);
-			if (A.kinds[j][p][F.ids.at("SS")]!=F.MaxSS) printf("! Not enough SS !\n");
-			if (A.kinds[j][p][F.ids.at("SF")]!=F.MaxSF) printf("! Not enough SF !\n");
+			//// Assign SS-SF
+			//for (int kk=0; kk<F.Nfbp; kk++) {
+				//int k = randFibers[kk];
+				//if (!A.is_assigned_tf(j,k)) assign_fiber(j,k,G,P,pp,F,A,-1,ss_sf);
+			//}
+			//// If not enough SS and SF, remove ELG an replace to SS-SF
+			//replace(elg,F.ids.at("SS"),j,p,G,P,pp,F,A);
+			//replace(elg,F.ids.at("SF"),j,p,G,P,pp,F,A);
+			//replace(lrg,F.ids.at("SS"),j,p,G,P,pp,F,A);
+			//replace(lrg,F.ids.at("SF"),j,p,G,P,pp,F,A);
+			//if (A.kinds[j][p][F.ids.at("SS")]!=F.F.MaxSS) printf("! Not enough SS !\n");
+			//if (A.kinds[j][p][F.ids.at("SF")]!=F.F.MaxSF) printf("! Not enough SF !\n");
 		}
 	}
 	str next_str = next==-1 ? "all left" : f(next);
-	printf("  %s assignments on %s next plates\n",f(A.na(F,j0,n)).c_str(),next_str.c_str());
+	printf("\n  %s assignments on %s next plates\n",f(A.na(F,j0,n)).c_str(),next_str.c_str());
 	if (next!=1) print_time(t,"# ... took :");
 }
 
@@ -428,7 +504,8 @@ void redistribute_tf(const Gals& G, const Plates&P, const PP& pp, const Feat& F,
 	int j0 = A.next_plate;
 	int n = next==-1 ? F.Nplate-A.next_plate : next;
 	List plates = sublist(j0,n,A.order);
-	List randPlates = F.Randomize ? random_permut(plates) : plates;
+	//List randPlates = F.Randomize ? random_permut(plates) : plates;
+	List randPlates = random_permut(plates);
 	int red(0);
 	Table Done = initTable(F.Nplate,F.Nfiber);
 	for (int jj=0; jj<n; jj++) {
@@ -439,18 +516,31 @@ void redistribute_tf(const Gals& G, const Plates&P, const PP& pp, const Feat& F,
 			if (Done[j][k]==0) {
 				int g = A.TF[j][k];
 				if (g!=-1) {
-					bool finished = false;
+					int jpb = -1; int kpb = -1; int unusedb = A.unused[j][pp.spectrom[k]];
 					Plist av_tfs = G[g].av_tfs;
-					for (int i=0; i<av_tfs.size() && !finished; i++) {
+					for (int i=0; i<av_tfs.size(); i++) {
 						int jp = av_tfs[i].f;
 						int kp = av_tfs[i].s;
-						if (j0<=jp && jp<j0+n && !A.is_assigned_tf(jp,kp) && Done[jp][kp]==0 && ok_assign_g_to_jk(g,jp,kp,P,G,pp,F,A) && A.is_assigned_jg(jp,g,G,F)==-1) {
-							A.unassign(j,k,g,G,P,pp);
-							A.assign(jp,kp,g,G,P,pp);
-							finished = true;
-							Done[j][k] = 1;
-							Done[jp][kp] = 1;
-							red++; }}}}}}
+						int unused = A.unused[jp][pp.spectrom[kp]];
+						if (j0<=jp && jp<j0+n && !A.is_assigned_tf(jp,kp) && Done[jp][kp]==0 && ok_assign_g_to_jk(g,jp,kp,P,G,pp,F,A) && A.is_assigned_jg(jp,g,G,F)==-1 && 0<unused) {
+							if (unusedb<unused) { // Takes the most usused petal
+								jpb = jp;
+								kpb = kp;
+								unusedb = unused;
+							}
+						}
+					}
+					if (jpb!=-1) {
+						A.unassign(j,k,g,G,P,pp);
+						A.assign(jpb,kpb,g,G,P,pp);
+						Done[j][k] = 1;
+						Done[jpb][kpb] = 1;
+						red++; 
+					}
+				}
+			}
+		}
+	}
 	printf("  %s redistributions of couples of TF\n",f(red).c_str());
 	if (next!=1) print_time(t,"# ... took :");
 }
@@ -895,4 +985,21 @@ void overlappingTiles(str fname, const Feat& F, const Assignment& A) {
         //ELG   &   622 & 1,788 &   0 &  0 &  0 &  0 & 2,411 & 1,788 & 1,788 & 74.184 & 74.184 ÖÖ 
     //FakeQSO   &     1 &    88 &   0 &  0 &  0 &  0 &    90 &    88 &    88 & 98.394 & 98.394 ÖÖ 
     //FakeLRG   &     2 &    47 &   0 &  0 &  0 &  0 &    50 &    47 &    47 & 94.590 & 94.590 ÖÖ 
+
+
+
+// SS SF = 0, repartition
+//# Results :
+//Obs per sqd and percentages
+           //0 &     1 &   2 &  3 &  4 &  5 &     6 &     7 &     8 &      9 &     10 \\ 
+    //QSOLy-a   &     0 &     1 &   5 & 12 & 19 & 10 &    49 &   179 &    49 & 99.125 & 71.879 \\ 
+  //QSOTracer   &     1 &   113 &   0 &  0 &  0 &  0 &   114 &   113 &   113 & 99.123 & 94.538 \\ 
+        //LRG   &    15 &    42 & 241 &  0 &  0 &  0 &   298 &   524 &   283 & 94.934 & 87.842 \\ 
+        //ELG   &   479 & 1,931 &   0 &  0 &  0 &  0 & 2,411 & 1,931 & 1,931 & 80.109 & 80.109 \\ 
+    //FakeQSO   &     0 &    85 &   0 &  0 &  0 &  0 &    85 &    85 &    85 & 99.117 & 94.556 \\ 
+    //FakeLRG   &     2 &    46 &   0 &  0 &  0 &  0 &    48 &    46 &    46 & 95.212 & 92.536 \\ 
+         //SS   &   140 &     0 &   0 &  0 &  0 &  0 &   140 &     0 &     0 &      0 &      0 \\ 
+         //SF   & 1,400 &     0 &   0 &  0 &  0 &  0 & 1,400 &     0 &     0 &      0 &      0 \\ 
+
+  //45,831,177 assignments in total (85.9388 % of all fibers)
 

@@ -39,6 +39,7 @@ class Feat { // F for features
 	int MaxSF;
 	double PlateRadius;
 	int Analysis;
+	bool InfDens;
 	double TotalArea;
 	double invFibArea;
 	int moduloGal;
@@ -79,6 +80,10 @@ class Feat { // F for features
 	// Permit to count some things
 	int Count;
 
+	// Practical used lists
+	List no_ss_sf;
+	List ss_sf;
+
 	// Methods
 	Feat();
 	void readInputFile(const char fname[]);
@@ -89,6 +94,8 @@ class Feat { // F for features
 	void init_ids_types(); // Same
 	List init_ids_list(str l[], int size) const;
 	void init_types();
+	void init_no_ss_sf();
+	void init_ss_sf();
 	bool iftype(int kind, str type) const; // Whether kind is of type "type"
 };
 #endif

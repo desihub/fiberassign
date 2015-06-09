@@ -16,7 +16,11 @@
 #include        "collision.h"
 #include        "feat.h"
 // Features ------------------------------------------------------------------
-Feat::Feat() { Count = 0; }
+Feat::Feat() { 
+	Count = 0; 
+	init_no_ss_sf();
+	init_ss_sf();
+}
 
 int Feat::id(str s) const {
 	for (int i=0; i<Categories; i++) if (kind[i]==s) return i;
@@ -55,6 +59,16 @@ void Feat::init_types() {
 	for (int i=0; i<type.size(); i++) if (!isfound(type[i],types)) types.push_back(type[i]);
 }
 
+void Feat::init_no_ss_sf() {
+	str noA[] = {"LRG","FakeLRG","ELG","QSOLy-a","QSOTracer","FakeQSO"}; 
+	no_ss_sf = init_ids_list(noA,6);
+}
+
+void Feat::init_ss_sf() {
+	str A[] = {"SS","SF"}; 
+	ss_sf = init_ids_list(A,2);
+}
+		
 bool Feat::iftype(int kind, str type) const {
 	return ids_types.at(type)==type[kind];
 }
@@ -100,6 +114,7 @@ void Feat::readInputFile(const char file[]) {
 			if (tok[0]=="MaxSF") MaxSF = s2i(tok[1]);
 			if (tok[0]=="PlateRadius") PlateRadius = s2d(tok[1]);
 			if (tok[0]=="Analysis") Analysis = s2i(tok[1]);
+			if (tok[0]=="InfDens") InfDens = s2b(tok[1]);
 
 			if (tok[0]=="TotalArea") TotalArea = s2d(tok[1]);
 			if (tok[0]=="invFibArea") invFibArea = s2d(tok[1]);

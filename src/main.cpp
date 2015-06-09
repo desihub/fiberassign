@@ -96,14 +96,24 @@ int main(int argc, char **argv) {
 
 
 	// Make a plan ----------------------------------------------------
+	int interv = 5;
 	new_assign_fibers(G,P,pp,F,A);
 	//simple_assign(G,P,pp,F,A);
+	for (int i=0; i<3; i++) {
+	print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
+	redistribute_tf(G,P,pp,F,A);
+	}
+
+	for (int i=0; i<2; i++) {
 	improve(G,P,pp,F,A);
+	print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
+	redistribute_tf(G,P,pp,F,A);
+	print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
+	}
 
 	redistribute_tf(G,P,pp,F,A);
-	improve(G,P,pp,F,A);
-	redistribute_tf(G,P,pp,F,A);
-	improve(G,P,pp,F,A);
+	print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
+
 
 	// Apply and update the plan --------------------------------------
 	init_time_at(time,"# Begin real time assignment",t);
@@ -112,17 +122,24 @@ int main(int argc, char **argv) {
 		printf(" - Plate %d :",j);
 		//improve_from_kind(G,P,pp,F,A,"SF",1);
 		//improve_from_kind(G,P,pp,F,A,"SS",1);
+		assign_sf_ss(j,G,P,pp,F,A);
 		if (j%500==0) pyplotTile(j,"doc/figs",G,P,pp,F,A);
 		// <-- here is the real observation time
 		printf(" %s not as - ",format(5,f(F.Nfiber-A.na(F,j,1))).c_str());
 		if (0<=j-F.Analysis) update_plan_from_one_obs(G,P,pp,F,A,F.Nplate-1); else printf("\n");
 		A.next_plate++;
+
+		if (j==200 || j==700 || j==1500 || j==3000 || j==5000 || j==7000) {
+			redistribute_tf(G,P,pp,F,A);
+			improve(G,P,pp,F,A);
+		}
 	}
 	print_time(time,"# ... took :");
 
 	// Results -------------------------------------------------------
 	//for (int j=0; j<F.Nplate; j++) write_FAtile(j,F.outDir,G,P,pp,F,A); // Write output
 	//overlappingTiles("overlaps.txt",F,A); // Write some overlapping tiles (for S.Bailey)
+	print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
 	init_time_at(time,"# Display results",t);
 	display_results("doc/figs/",G,P,pp,F,A,true);
 	print_time(time,"# ... took :");

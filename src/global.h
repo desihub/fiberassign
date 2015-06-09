@@ -35,6 +35,8 @@ void update_plan_from_one_obs(const Gals& G, const Plates&P, const PP& pp, const
 
 void redistribute_tf(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int next=-1);
 
+void assign_sf_ss(int j, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A);
+
 // Results functions --------------------------------------------------
 void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F, bool latex=false);
 

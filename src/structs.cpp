@@ -180,6 +180,7 @@ List plate::av_gals_plate(const Feat& F) const {
 	return L;
 }
 
+
 // Plates ---------------------------------------------------------------------------
 // Read positions of the plate centers from an ascii file "center_name", and fill in a structure
 // There is a version of this function (to adapt) for non ASCII files, ask to Robert Cahn
@@ -245,7 +246,6 @@ List av_gals_of_kind(int kind, int j, int k, const Gals& G, const Plates& P, con
 	return L;
 }
 
-
 // Assignment -----------------------------------------------------------------------------
 Assignment::Assignment(const Gals& G, const Feat& F) {
 	TF = initTable(F.Nplate,F.Nfiber,-1);
@@ -263,6 +263,7 @@ Assignment::Assignment(const Gals& G, const Feat& F) {
 		nobsv[g] = F.goal[G[g].id];
 		nobsv_tmp[g] = l[G[g].id];
 	}
+	unused = initTable(F.Nplate,F.Npetal,F.Nfbp);
 }
 
 Assignment::~Assignment() {}
@@ -293,6 +294,8 @@ void Assignment::assign(int j, int k, int g, const Gals& G, const Plates& P, con
 	// Nobsv
 	nobsv[g]--;
 	nobsv_tmp[g]--;
+
+	unused[j][pp.spectrom[k]]--;
 }
 
 void Assignment::unassign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp) {
@@ -306,6 +309,8 @@ void Assignment::unassign(int j, int k, int g, const Gals& G, const Plates& P, c
 	probas[G[g].id]--;
 	nobsv[g]++;
 	nobsv_tmp[g]++;
+
+	unused[j][pp.spectrom[k]]++;
 }
 
 void Assignment::verif(const Plates& P, const Gals& G, const PP& pp, const Feat& F) const {
@@ -479,6 +484,34 @@ List Assignment::fibs_of_kind(int kind, int j, int pet, const Gals& G, const PP&
 	return L;
 }
 
+int num_av_gals(int j, int k, const Gals& G, const Plates& P, const Feat& F, const Assignment& A) {
+	int cnt = 0;
+	for (int i=0; i<P[j].av_gals[k].size(); i++) {
+		int g = P[j].av_gals[k][i];
+		int id = G[g].id;
+		if (isfound(id,F.no_ss_sf) && 1<=A.nobs_time(g,j,G,F)) cnt += A.once_obs[g] ? F.goal[id] : F.maxgoal(id);
+	}
+	return cnt;
+}
+
+/*
+List Assignment::fibs_of_kind_sorted(int kind, int j, int pet, const Gals& G, const PP& pp, const Feat& F) const {
+	List L;
+	List fibs = pp.fibers_of_sp[pet];
+	for (int kk=0; kk<F.Nfbp; kk++) {
+		int k = fibs[kk];
+		int g = TF[j][k];
+		if (g!=-1 && G[g].id==kind) L.push_back(k);
+	}
+	List num_av_gals;
+	for (int k=0; k<L.size(); k++) {
+num_av_gals.push_back(P[j].num_av_gals(k,);
+A.nobs_time(gg,j,G,F)
+	std::sort(L.begin(), L.end());  
+
+}
+*/
+
 List Assignment::fibs_unassigned(int j, int pet, const Gals& G, const PP& pp, const Feat& F) const {
 	List L;
 	List fibs = pp.fibers_of_sp[pet];
@@ -631,6 +664,7 @@ dpair projection(int g, int j, const Gals& G, const Plates& P) {
 	struct onplate op = change_coords(G[g],P[j]);
 	return dpair(op.pos[0],op.pos[1]);
 }
+
 
 pyplot::pyplot(polygon p) {
 	pol = p;
