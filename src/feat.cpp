@@ -18,8 +18,7 @@
 // Features ------------------------------------------------------------------
 Feat::Feat() { 
 	Count = 0; 
-	init_no_ss_sf();
-	init_ss_sf();
+
 }
 
 int Feat::id(str s) const {
@@ -95,6 +94,8 @@ void Feat::readInputFile(const char file[]) {
 				Categories = tok.size()-1;
 				for (int i=0; i<Categories; i++) kind.push_back(tok[i+1]);
 				init_ids();
+				init_no_ss_sf();
+				init_ss_sf();
 			}
 			if (tok[0]=="type") {
 				Categories = tok.size()-1;
