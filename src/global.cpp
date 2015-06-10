@@ -470,8 +470,8 @@ void assign_sf_ss(int j, const Gals& G, const Plates& P, const PP& pp, const Fea
 			// If not enough SS and SF, remove ELG an replace to SS-SF
 			replace(elg,F.ids.at("SS"),j,p,G,P,pp,F,A);
 			replace(elg,F.ids.at("SF"),j,p,G,P,pp,F,A);
-			//replace(lrg,F.ids.at("SS"),j,p,G,P,pp,F,A);
-			//replace(lrg,F.ids.at("SF"),j,p,G,P,pp,F,A);
+			replace(lrg,F.ids.at("SS"),j,p,G,P,pp,F,A);
+			replace(lrg,F.ids.at("SF"),j,p,G,P,pp,F,A);
 			if (A.kinds[j][p][F.ids.at("SS")]!=F.MaxSS) printf("! Not enough SS !\n");
 			if (A.kinds[j][p][F.ids.at("SF")]!=F.MaxSF) printf("! Not enough SF !\n");
 		}
