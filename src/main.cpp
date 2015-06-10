@@ -62,6 +62,7 @@ int main(int argc, char **argv) {
 	
 	// For plates/fibers, collect available galaxies
 	collect_galaxies_for_all(G,T,P,pp,F);
+	//init_densities(G,P,F);
 
 	// For each galaxy, computes available tilefibers
 	collect_available_tilefibers(G,P,F);
@@ -123,9 +124,10 @@ int main(int argc, char **argv) {
 		//improve_from_kind(G,P,pp,F,A,"SF",1);
 		//improve_from_kind(G,P,pp,F,A,"SS",1);
 		assign_sf_ss(j,G,P,pp,F,A);
+		assign_left(j,G,P,pp,F,A);
 		if (j%500==0) pyplotTile(j,"doc/figs",G,P,pp,F,A);
 		// <-- here is the real observation time
-		printf(" %s not as - ",format(5,f(F.Nfiber-A.na(F,j,1))).c_str());
+		printf(" %s not as - ",format(5,f(F.Nfiber-A.na(F,j,1))).c_str()); fl();
 		if (0<=j-F.Analysis) update_plan_from_one_obs(G,P,pp,F,A,F.Nplate-1); else printf("\n");
 		A.next_plate++;
 

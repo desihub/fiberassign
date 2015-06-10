@@ -75,6 +75,20 @@ void collect_available_tilefibers(Gals& G, const Plates& P, const Feat& F) {
 	print_time(t,"# ... took :");
 }
 
+void init_densities(const Gals& G, Plates& P, const Feat& F) {
+	for (int j=0; j<F.Nplate; j++) {
+		for (int k=0; k<F.Nfiber; k++) {
+			int cnt = 0;
+			for (int i=0; i<P[j].av_gals[k].size(); i++) {
+				int g = P[j].av_gals[k][i];
+				int id = G[g].id;
+				if (isfound(id,F.no_ss_sf)) cnt += /*A.nobs_time(g,j,G,F)*/ F.goal[id];
+			}
+			P[j].density[k] = cnt;
+		}
+	}
+}
+
 inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const Gals& G, const PP& pp, const Feat& F, const Assignment& A) { // The order of tests matters for computation time
 	int kind = G[g].id;
 	if (kind==F.ids.at("SS") || kind==F.ids.at("SF")) return false;
@@ -132,7 +146,7 @@ inline void assign_galaxy(int g, const Gals& G, const Plates& P, const PP& pp, c
 	for (int tfs=0; tfs<av_tfs.size(); tfs++) {
 		int j = av_tfs[tfs].f;
 		int k = av_tfs[tfs].s;
-		if (j0<=j && j<j0+n && !A.is_assigned_tf(j,k) && ok_assign_g_to_jk(g,j,k,P,G,pp,F,A)) {
+		if (j0<j && j<j0+n && !A.is_assigned_tf(j,k) && ok_assign_g_to_jk(g,j,k,P,G,pp,F,A)) {
 			int unused = A.unused[j][pp.spectrom[k]];
 			if (unusedb<unused) {
 				jb = j; kb = k; unusedb = unused;
@@ -364,9 +378,9 @@ void update_plan_from_one_obs(const Gals& G, const Plates&P, const PP& pp, const
 			//debl(1);
 			gp = improve_fiber(j0+1,n-1,jp,kp,G,P,pp,F,A,g);
 			//debl(2);
-			if (gp==-1) gp = improve_fiber_from_kind(F.ids.at("SF"),jp,kp,G,P,pp,F,A);
+			//if (gp==-1) gp = improve_fiber_from_kind(F.ids.at("SF"),jp,kp,G,P,pp,F,A);
 			//if (gp==-1) {debl(3); gp = improve_fiber_from_kind(F.ids.at("SF"),jp,kp,G,P,pp,F,A); debl(gp);}
-			if (gp==-1) gp = improve_fiber_from_kind(F.ids.at("SS"),jp,kp,G,P,pp,F,A);
+			//if (gp==-1) gp = improve_fiber_from_kind(F.ids.at("SS"),jp,kp,G,P,pp,F,A);
 			//if (gp==-1) {debl(5); gp = improve_fiber_from_kind(F.ids.at("SS"),jp,kp,G,P,pp,F,A); debl(gp);}
 			//debl(7);
 			erase(0,tfs);
@@ -384,7 +398,8 @@ void replace(List old_kind, int new_kind, int j, int p, const Gals& G, const Pla
 	int m = A.nkind(j,p,new_kind,G,P,pp,F,true);
 	List fibskindd;
 	for (int i=0; i<old_kind.size(); i++) addlist(fibskindd,A.fibs_of_kind(old_kind[i],j,p,G,pp,F));
-	List fibskind = random_permut(fibskindd);
+	//List fibskind = random_permut(fibskindd);
+	List fibskind = A.fibs_of_kind_sorted(old_kind[0],j,p,G,P,pp,F);
 	int Max = new_kind==F.ids.at("SS") ? F.MaxSS : F.MaxSF;
 	while (m<Max && fibskind.size()!=0) {
 		bool fin(false);
@@ -404,27 +419,40 @@ void replace(List old_kind, int new_kind, int j, int p, const Gals& G, const Pla
 		erase(0,fibskind);
 	}
 }
-/*
+
 void assign_left(int j, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A) { // Tries to assign left fibers, even taking objects further observed
-	List fibs = A.unused_f(j,F);
-	for (int k=0; k<fibs.size(); k++) {
-		int best = -1; int mbest = -1; int pbest = 1e3;
-		List av_gals = P[j].av_gals[k];
-		for (int gg=0; gg<av_gals.size(); gg++) {
-			int g = av_gals[gg];
-			int m = A.nobs(g,G,F);
-			int prio = fprio(g,G,F,A);
-			if (prio<pbest || (prio==pbest && m>mbest)) { // Less neat to compute it here but optimizes
-				if (A.is_assigned_jg(j,g,G,F)==-1 && ok_assign_g_to_jk(g,j,k,P,G,pp,F,A)) {
-					best = g;
-					pbest = prio;
-					mbest = m;
+	for (int k=0; k<F.Nfiber; k++) {
+		if (!A.is_assigned_tf(j,k)) {
+			int best = -1; int mbest = -1; int pbest = 1e3; int jpb = -1; int kpb = -1;
+			List av_gals = P[j].av_gals[k];
+			for (int gg=0; gg<av_gals.size(); gg++) {
+				int g = av_gals[gg];
+				int m = A.nobs(g,G,F);
+				int prio = fprio(g,G,F,A);
+				if (prio<pbest || (prio==pbest && m>mbest)) { // Less neat to compute it here but optimizes
+					if (A.is_assigned_jg(j,g,G,F)==-1 && ok_assign_g_to_jk(g,j,k,P,G,pp,F,A)) {
+						for (int i=0; i<A.GL[g].size(); i++) {
+							int jp = A.GL[g][i].f;
+							int kp = A.GL[g][i].s;
+							if (j<jp && jpb<jp) {
+								best = g;
+								pbest = prio;
+								mbest = m;
+								jpb = jp;
+								kpb = kp;
+							}
+						}
+					}
 				}
+			}
+			if (best!=-1) {
+				A.unassign(jpb,kpb,best,G,P,pp);
+				A.assign(j,k,best,G,P,pp);
 			}
 		}
 	}
 }
-*/
+
 // If no enough SS and SF, remove old_kind an replace to SS-SF (new_kind) on petal (j,p)
 void assign_sf_ss(int j, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
 	str lrgA[] = {"LRG","FakeLRG"}; List lrg = F.init_ids_list(lrgA,2);
