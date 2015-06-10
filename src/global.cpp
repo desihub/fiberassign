@@ -398,8 +398,8 @@ void replace(List old_kind, int new_kind, int j, int p, const Gals& G, const Pla
 	int m = A.nkind(j,p,new_kind,G,P,pp,F,true);
 	List fibskindd;
 	for (int i=0; i<old_kind.size(); i++) addlist(fibskindd,A.fibs_of_kind(old_kind[i],j,p,G,pp,F));
-	//List fibskind = random_permut(fibskindd);
-	List fibskind = A.fibs_of_kind_sorted(old_kind[0],j,p,G,P,pp,F);
+	List fibskind = random_permut(fibskindd);
+	//List fibskind = A.fibs_of_kind_sorted(old_kind[0],j,p,G,P,pp,F);
 	int Max = new_kind==F.ids.at("SS") ? F.MaxSS : F.MaxSF;
 	while (m<Max && fibskind.size()!=0) {
 		bool fin(false);
