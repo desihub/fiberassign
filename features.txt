@@ -5,8 +5,8 @@ outDir /project/projectdirs/desi/users/rncahn/fa_output/
 
 kind QSOLy-a QSOTracer LRG ELG FakeQSO FakeLRG SS SF
 type QSO QSO LRG ELG QSO LRG SS SF
-prio 1 1 2 3 1 2 0 0
-priopost 0 1 2 3 1 2 0 0
+prio 2 2 3 4 2 3 0 1
+priopost 0 2 3 4 2 3 0 1
 goal 5 1 2 1 1 1 5 5
 
 Randomize false

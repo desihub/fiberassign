@@ -518,7 +518,7 @@ List Assignment::sort_fibs_dens(int j, const List& fibs, const Gals& G, const Pl
 	for (int k=0; k<fibs.size(); k++) num.push_back(P[j].density[fibs[k]]);
 	List perm = get_permut_sort(num);
 	List fibs_sorted;
-	for (int k=0; k<num.size(); k++) fibs_sorted.push_back(fibs[perm[k]]);
+	for (int k=num.size()-1; k!=-1; k--) fibs_sorted.push_back(fibs[perm[k]]);
 	return fibs_sorted;
 }
 

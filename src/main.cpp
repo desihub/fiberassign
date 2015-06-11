@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
 		assign_left(j,G,P,pp,F,A); //if unused fibers, assign them
 		if (j%500==0) pyplotTile(j,"doc/figs",G,P,pp,F,A);//beautiful picture of positioners, galaxies
 		// <-- here is the real observation time
-		printf(" %s not as - ",format(5,f(F.Nfiber-A.na(F,j,1))).c_str()); fl();//na(F,j,1)=assigned fibers in j  so this is unassigned fibers
+		printf(" %s not as - ",format(5,f(A.unused_f(F,j))).c_str()); fl();
 		if (0<=j-F.Analysis) update_plan_from_one_obs(G,P,pp,F,A,F.Nplate-1); else printf("\n");//update once we are far enough along
 		//update corrects all future occurrences of wrong QSOs etc and tries to observe something else
 		A.next_plate++;
