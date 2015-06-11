@@ -102,11 +102,12 @@ class Assignment {
 	int is_assigned_jg(int j, int g, const Gals& G, const Feat& F) const;
 	bool is_assigned_tf(int j, int k) const; 
 	int na(const Feat& F, int begin=0, int size=-1) const; // Number of assignments within plates begin to begin+size
-	int nobs(int g, const Gals& G, const Feat& F, bool tmp=true) const; // Counts how many time ob should be observed else more. If tmp=true, return MaxObs for this kind (temporary information)
+	int nobs(int g, const Gals& G, const Feat& F, bool tmp=true) const; // Counts how many more times object should be observed. If tmp=true, return maximum for this kind (temporary information)
+	//if tmp=false we actually know the true type from the start
 	Plist chosen_tfs(int g, const Feat& F, int begin=0, int size=-1) const; // Pairs (j,k) chosen by g, amongst size plates from begin
-	int nkind(int j, int k, int kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F, bool pet=false) const; // Number of fibers assigned to the kind "kind" on the petal of (j,k). If pet=true, we don't take k but the petal directly instead
+	int nkind(int j, int k, int kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F, bool pet=false) const; // Number of fibers assigned to the kind "kind" on the petal of (j,k). If pet=true, we don't take k but the petal p directly instead
 	List fibs_of_kind(int kind, int j, int pet, const Gals& G, const PP& pp, const Feat& F) const; // Sublist of fibers assigned to a galaxy of type kind for (j,p)
-	List sort_fibs_dens(int j, const List& fibs, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const; // Sort this list of fibs by inscreasing density
+	List sort_fibs_dens(int j, const List& fibs, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const; // Sort this list of fibers by decreasing density
 	List fibs_unassigned(int j, int pet, const Gals& G, const PP& pp, const Feat& F) const; // Subist of unassigned fibers for (j,p)
 
 	// Update information
@@ -118,7 +119,7 @@ class Assignment {
 	List unused_f(const Feat& F) const;
 	Table unused_fbp(const PP& pp, const Feat& F) const; // Unused fibers by petal
 	Table used_by_kind(str kind, const Gals& G, const PP& pp, const Feat& F) const; // Table (j X p) with numbers of assigned TF to a galaxy of kind
-	float colrate(const PP& pp, const Gals& G, const Plates& P, const Feat& F, int j=-1) const; // Get collision rate, j = plate number, doesn't take into account 3-collisions
+	float colrate(const PP& pp, const Gals& G, const Plates& P, const Feat& F, int j=-1) const; // Get collision rate, j = plate number
 	int nobs_time(int g, int j, const Gals& G, const Feat& F) const; // Know the number of remaining observations of g when the program is at the tile j, for pyplotTile
 
 	// Not used (but could be useful)
@@ -128,14 +129,14 @@ class Assignment {
 	void update_nobsv_tmp(const Feat& F);
 };
 
-bool collision(dpair O1, dpair G1, dpair O2, dpair G2, const Feat& F); // Intersection of fh looking at galaxy G1 with fiber positionner centered in 01 and ...
+bool collision(dpair O1, dpair G1, dpair O2, dpair G2, const Feat& F); // collisions from  looking at galaxy G1 with fiber positionner centered at 01 and etc calculated in mm on plate
 
-int fprio(int g, const Gals& G, const Feat& F, const Assignment& A);
+int fprio(int g, const Gals& G, const Feat& F, const Assignment& A);//priority of galaxy g
 
-double plate_dist(const double theta);
+double plate_dist(const double theta);//plate scale conversion
 struct onplate change_coords(const struct galaxy& O, const struct plate& P);
 dpair projection(int g, int j, const Gals& G, const Plates& P); // Projection of g on j
-int num_av_gals(int j, int k, const Gals& G, const Plates& P, const Feat& F, const Assignment& A); // Ponderated (and only with remaining observation according to the moment in the survey), and doesn't take into account other kinds than QSO LRG ELG
+int num_av_gals(int j, int k, const Gals& G, const Plates& P, const Feat& F, const Assignment& A); // weighted (and only with remaining observation according to the moment in the survey), and doesn't take into account other kinds than QSO LRG ELG not used
 
 // Pyplot -----------------------------------------------
 class pyplot {
