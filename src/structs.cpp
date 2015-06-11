@@ -512,16 +512,10 @@ A.nobs_time(gg,j,G,F)
 }
 }
 */
-List Assignment::fibs_of_kind_sorted(int kind, int j, int pet, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const {
-	List L;
-	List fibs = pp.fibers_of_sp[pet];
-	for (int kk=0; kk<F.Nfbp; kk++) {
-		int k = fibs[kk];
-		int g = TF[j][k];
-		if (g!=-1 && G[g].id==kind) L.push_back(k);
-	}
+
+List Assignment::sort_fibs_dens(int j, const List& fibs, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const {
 	List num;
-	for (int k=0; k<L.size(); k++) num.push_back(P[j].density[L[k]]);
+	for (int k=0; k<fibs.size(); k++) num.push_back(P[j].density[fibs[k]]);
 	List perm = get_permut_sort(num);
 	List fibs_sorted;
 	for (int k=0; k<num.size(); k++) fibs_sorted.push_back(fibs[perm[k]]);

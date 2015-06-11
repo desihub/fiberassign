@@ -16,6 +16,7 @@
 #include        "misc.h"
 #include        "feat.h"
 #include        "structs.h"
+/*#include        "../../cfitsio_install/include/fitsio.h"*/
 
 // Collect -----------------------------------------------------------
 void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Plates& P, const PP& pp, const Feat& F);
@@ -44,7 +45,9 @@ void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F
 
 void display_results(str outdir, const Gals& G, const Plates &P, const PP& pp, Feat& F, const Assignment& A, bool latex=false);
 
-void write_FAtile(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A);
+void write_FAtile_ascii(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A);
+
+void fa_write(int j, const char *filename, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A);
 
 void pyplotTile(int j, str fname, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A);
 

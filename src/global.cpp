@@ -5,6 +5,7 @@
 #include	<iostream>
 #include	<iomanip>
 #include	<string>
+#include        <string.h>
 #include	<vector>
 #include	<algorithm>
 #include	<exception>
@@ -398,8 +399,8 @@ void replace(List old_kind, int new_kind, int j, int p, const Gals& G, const Pla
 	int m = A.nkind(j,p,new_kind,G,P,pp,F,true);
 	List fibskindd;
 	for (int i=0; i<old_kind.size(); i++) addlist(fibskindd,A.fibs_of_kind(old_kind[i],j,p,G,pp,F));
-	List fibskind = random_permut(fibskindd);
-	//List fibskind = A.fibs_of_kind_sorted(old_kind[0],j,p,G,P,pp,F);
+	List fibskind0 = random_permut(fibskindd);
+	List fibskind = A.sort_fibs_dens(j,fibskind0,G,P,pp,F);
 	int Max = new_kind==F.ids.at("SS") ? F.MaxSS : F.MaxSF;
 	while (m<Max && fibskind.size()!=0) {
 		bool fin(false);
@@ -524,18 +525,6 @@ void new_assign_fibers(const Gals& G, const Plates& P, const PP& pp, const Feat&
 				int k = randFibers[kk];
 				if (!A.is_assigned_tf(j,k)) assign_fiber(j,k,G,P,pp,F,A,-1,elg);
 			}
-			//// Assign SS-SF
-			//for (int kk=0; kk<F.Nfbp; kk++) {
-				//int k = randFibers[kk];
-				//if (!A.is_assigned_tf(j,k)) assign_fiber(j,k,G,P,pp,F,A,-1,ss_sf);
-			//}
-			//// If not enough SS and SF, remove ELG an replace to SS-SF
-			//replace(elg,F.ids.at("SS"),j,p,G,P,pp,F,A);
-			//replace(elg,F.ids.at("SF"),j,p,G,P,pp,F,A);
-			//replace(lrg,F.ids.at("SS"),j,p,G,P,pp,F,A);
-			//replace(lrg,F.ids.at("SF"),j,p,G,P,pp,F,A);
-			//if (A.kinds[j][p][F.ids.at("SS")]!=F.F.MaxSS) printf("! Not enough SS !\n");
-			//if (A.kinds[j][p][F.ids.at("SF")]!=F.F.MaxSF) printf("! Not enough SF !\n");
 		}
 	}
 	str next_str = next==-1 ? "all left" : f(next);
@@ -689,31 +678,23 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 
 	// 1 Raw numbers of galaxies by id and number of remaining observations
 	int MaxObs = max(F.goal);
-	Table hist2 = initTable(F.Categories,MaxObs+1);
-	Table ob = initTable(F.Categories+1,2*MaxObs+1);
+	Table obsrv = initTable(F.Categories,MaxObs+1);
 
-	List maxobs = F.maxgoal();
 	for (int g=0; g<F.Ngal; g++) {
 		int id = G[g].id;
 		int m = A.nobs(g,G,F,false);
-		if (!(m>=0 && m<=MaxObs)) { F.Count++;/*printf("Error obs beyond limits \n"); fl();*/ }
-		if (m>=0 && m<=MaxObs) hist2[id][m]++;
-		ob[id][m+MaxObs]++;
-	}
-	for (int m=0; m<2*MaxObs+1; m++) ob[F.Categories][m] = m-MaxObs;
-
-	Table obsvr = initTable(F.Categories,MaxObs+1);
-	for (int i=0; i<F.Categories; i++) {
-		int max = F.goal[i];
-		for (int j=0; j<=max; j++) obsvr[i][j] = hist2[i][max-j];
+		if (!(m>=0 && m<=MaxObs)) F.Count++;
+		int n = F.goal[id]-m;
+		if (n>=0 && n<=MaxObs) obsrv[id][n]++; // Some SS and SF are obs 6 or 7 times !
 	}
 
-	Table with_tots = obsvr;
+	// Add the 3 columns of tot, fibs, obs
+	Table with_tots = obsrv;
 	for (int i=0; i<F.Categories; i++) {
 		int fibs = 0; int obs = 0; int tot =0;
-		for (int j=0; j<=MaxObs; j++) tot += obsvr[i][j];
-		for (int j=0; j<=MaxObs; j++) fibs += obsvr[i][j]*j;
-		for (int j=1; j<=MaxObs; j++) obs += obsvr[i][j];
+		for (int j=0; j<=MaxObs; j++) tot += obsrv[i][j];
+		for (int j=0; j<=MaxObs; j++) fibs += obsrv[i][j]*j;
+		for (int j=1; j<=MaxObs; j++) obs += obsrv[i][j];
 		with_tots[i].push_back(tot);
 		with_tots[i].push_back(fibs);
 		with_tots[i].push_back(obs);
@@ -721,16 +702,17 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 	//print_table("  Remaining observations (without negative obs ones)",with_tots,latex,F.kind);
 	Dtable obs_per_sqd = ddivide_floor(with_tots,F.TotalArea);
 
-	// 2 Percentages of observation
+	// Add percentages of observation
 	Dtable perc = initDtable(F.Categories,2);
 	for (int id=0; id<F.Categories; id++) {
-		int tot = sumlist(ob[id]);
+		int tot = sumlist(obsrv[id]);
 		int goal = F.goal[id];
 
-		perc[id][0] = percent(tot-ob[id][MaxObs+goal],tot);
+		perc[id][0] = percent(tot-obsrv[id][0],tot);
 
-		double d(0.0);
-		for (int i=0; i<MaxObs; i++) d += ob[id][MaxObs+i]*(goal-i);
+		// Weighted percentage
+		int d = 0;
+		for (int i=0; i<=goal; i++) d += obsrv[id][i]*i;
 		perc[id][1] = percent(d,tot*goal);
 	}
 	print_table("Obs per sqd and percentages",concatenate(obs_per_sqd,perc),latex,F.kind);
@@ -907,7 +889,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 	if (F.Count!=0) printf("Count = %d \n",F.Count);
 }
 
-void write_FAtile(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
+void write_FAtile_ascii(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
 	FILE * FA;
 	str s = outdir+"tile"+i2s(j)+".txt";
 	FA = fopen(s.c_str(),"w");
@@ -929,7 +911,114 @@ void write_FAtile(int j, str outdir, const Gals& G, const Plates& P, const PP& p
 	}
 	fclose(FA);
 }
+/*
+void fa_write(int j, const char *filename, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) { // Lado Samushia
+	int MAXTGT = 13;
+	// initialize arrays
+	int fiber_id[F.Nfiber];
+	int positioner_id[F.Nfiber];
+	int num_target[F.Nfiber];
+	char objtype[F.Nfiber][8];
+	char *ot_tmp[F.Nfiber];
+	for (int i = 0; i < F.Nfiber; i++) ot_tmp[i] = objtype[i];
+	int target_id[F.Nfiber];
+	int desi_target[F.Nfiber];
+	float ra[F.Nfiber];
+	float dec[F.Nfiber];
+	float x_focal[F.Nfiber];
+	float y_focal[F.Nfiber];
+	int potential_target_id[F.Nfiber*MAXTGT];
+	int *ptid = potential_target_id;
+	int tot_targets = 0;
+	printf("start the loop\n");
+	for (int i = j*F.Nfiber; i < F.Nfiber; i++) {
+		int g = A.TF[j][i];
+		int id = G[g].id;
+		str type = F.type[id];
+		//char type0[] = "1111111";
 
+
+		fiber_id[i] = i;
+		positioner_id[i] = i;
+		num_target[i] = P[j].av_gals[i].size();
+		printf("%d ", g);
+		//objtype[i] = type0;
+		strcpy(objtype[i], type.c_str());
+		printf("%s ", objtype[i]);
+		target_id[i] = g;
+		desi_target[i] = 0;
+		ra[i] = g == -1 ? 370.0 : G[g].ra;
+		dec[i] = g == -1 ? 370.0 : G[g].dec;
+
+		dpair proj = projection(g,j,G,P);
+		x_focal[i] = proj.f;
+		y_focal[i] = proj.s;
+
+		for (int n = 0; n < P[j].av_gals[i].size(); n++) {
+			*ptid = P[j].av_gals[i][n];
+			ptid++;
+		}
+		tot_targets += P[j].av_gals[i].size();
+	}
+	// write to fits file
+	int status;
+	fitsfile *fptr;
+	fits_create_file(&fptr, filename, &status);
+	fits_report_error(stdout, status);
+	// FiberMap table
+	char *ttype[] = {"fiber", "positioner", "numtarget", "objtype", "targetid", "desi_target0", "ra", "dec", "xfocal_design", "yfocal_design"};
+	char *tform[10] = {"U", "U", "U", "8A", "J", "K", "E", "E", "E", "E"};
+	char *tunit[10] = { "", "", "", "", "", "", "deg", "deg", "mm", "mm"};
+	char extname[] = "FiberMap";
+	fits_create_tbl(fptr, BINARY_TBL, 0, 10, ttype, tform, tunit, extname, &status);
+	printf("#\n");
+	fits_report_error(stdout, status);
+	fits_write_col(fptr, TINT, 1, 1, 1, F.Nfiber, fiber_id, &status);
+	printf("#\n");
+	fits_report_error(stdout, status);
+	fits_write_col(fptr, TINT, 2, 1, 1, F.Nfiber, positioner_id, &status);
+	printf("#\n");
+	fits_report_error(stdout, status);
+	fits_write_col(fptr, TINT, 3, 1, 1, F.Nfiber, num_target, &status);
+	printf("#\n");
+	fits_report_error(stdout, status);
+	fits_write_col(fptr, TSTRING, 4, 1, 1, F.Nfiber, ot_tmp, &status);
+	fits_report_error(stdout, status);
+	fits_write_col(fptr, TINT, 5, 1, 1, F.Nfiber, target_id, &status);
+	printf("#\n");
+	fits_report_error(stdout, status);
+	fits_write_col(fptr, TINT, 6, 1, 1, F.Nfiber, desi_target, &status);
+	printf("#\n");
+	fits_report_error(stdout, status);
+	fits_write_col(fptr, TFLOAT, 7, 1, 1, F.Nfiber, ra, &status);
+	printf("#\n");
+	fits_report_error(stdout, status);
+	fits_write_col(fptr, TFLOAT, 8, 1, 1, F.Nfiber, dec, &status);
+	printf("#\n");
+	fits_report_error(stdout, status);
+	fits_write_col(fptr, TFLOAT, 9, 1, 1, F.Nfiber, x_focal, &status);
+	printf("#\n");
+	fits_report_error(stdout, status);
+	fits_write_col(fptr, TFLOAT, 10, 1, 1, F.Nfiber, y_focal, &status);
+	printf("#\n");
+	fits_report_error(stdout, status);
+	// PotentialFiberMap table
+	char *ttype2[] = {"potentialtargetid"};
+	char *tform2[1] = {"V"};
+	char *tunit2[10] = {""};
+	char extname2[] = "PotentialFiberMap";
+	fits_create_tbl(fptr, BINARY_TBL, 0, 1, ttype2, tform2, tunit2, extname2, &status);
+	printf("#\n");
+	fits_report_error(stdout, status);
+	fits_write_col(fptr, TINT, 1, 1, 1, tot_targets, potential_target_id, &status);
+	printf("#\n");
+	fits_report_error(stdout, status);
+	fits_close_file(fptr, &status);
+	printf("#\n");
+	fits_report_error(stdout, status);
+	return;
+}
+*/
 void pyplotTile(int j, str directory, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
 	std::vector<char> colors;
 	colors.resize(F.Categories);

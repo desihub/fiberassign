@@ -221,7 +221,7 @@ bool isfound(int n, const List& L) {
 	return false;
 }
 
-bool isfound_pos(int n, const Dlist& L) {
+int isfound_pos(double n, const Dlist& L) {
 	if (L.size()==0) return -1;
 	for (int i=0; i<L.size(); i++) if (L[i]==n) return i;
 	return -1;
@@ -392,7 +392,9 @@ List get_permut_sort(const List& l) {
 	Dlist L = lp;
 	std::sort(L.begin(), L.end());  
 	for (int i=0; i<L.size(); i++) {
-		perm[i] = isfound_pos(L[i],lp);
+		int pos = isfound_pos(L[i],lp);
+		if (pos==-1) printf("Error in get_permut_sort\n");
+		else perm[i] = pos;
 	}
 	return perm;
 }

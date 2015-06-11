@@ -101,15 +101,15 @@ int main(int argc, char **argv) {
 	new_assign_fibers(G,P,pp,F,A);
 	//simple_assign(G,P,pp,F,A);
 	for (int i=0; i<3; i++) {
-	print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
-	redistribute_tf(G,P,pp,F,A);
+		print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
+		redistribute_tf(G,P,pp,F,A);
 	}
 
 	for (int i=0; i<2; i++) {
-	improve(G,P,pp,F,A);
-	print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
-	redistribute_tf(G,P,pp,F,A);
-	print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
+		improve(G,P,pp,F,A);
+		print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
+		redistribute_tf(G,P,pp,F,A);
+		print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
 	}
 
 	redistribute_tf(G,P,pp,F,A);
