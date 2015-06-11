@@ -39,22 +39,22 @@ int main(int argc, char **argv) {
 	PP pp;
 	pp.read_fiber_positions(F); 
 	F.Nfiber = pp.fp.size()/2; 
-	F.Npetal = max(pp.spectrom)+1; // spectrom has to be identified from 0 to F.Npetal-1
+	F.Npetal = max(pp.spectrom)+1; // spectrometer has to be identified from 0 to F.Npetal-1
 	F.Nfbp = (int) (F.Nfiber/F.Npetal);
 	pp.get_neighbors(F); pp.compute_fibsofsp(F);
 
 	// Read plates
-	Plates P = read_plate_centers(F); // ! Reads all galaxies iff arg2=1
+	Plates P = read_plate_centers(F); 
 	F.Nplate = P.size();
 	printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
 
 	// Computes geometry of cb and fh
-	F.cb = create_cb();
-	F.fh = create_fh();
+	F.cb = create_cb();  // cb=central body
+	F.fh = create_fh();  // fh=fiber holder
 
 	//// Collect available galaxies <-> tilefibers --------------------
 	// HTM Tree of galaxies
-	const double MinTreeSize = 0.01; // <--- ?
+	const double MinTreeSize = 0.01; // 
 	init_time_at(time,"# Start building HTM tree",t);
 	htmTree<struct galaxy> T(G,MinTreeSize);
 	print_time(time,"# ... took :");
@@ -62,8 +62,7 @@ int main(int argc, char **argv) {
 	
 	// For plates/fibers, collect available galaxies
 	collect_galaxies_for_all(G,T,P,pp,F);
-	//init_densities(G,P,F);
-
+	
 	// For each galaxy, computes available tilefibers
 	collect_available_tilefibers(G,P,F);
 
@@ -73,38 +72,16 @@ int main(int argc, char **argv) {
 	Assignment A(G,F);
 	print_time(t,"# Start assignment at : ");
 
-/*
-	int limit = 2000;
-	// Make a plan ----------------------------------------------------
-	new_assign_fibers(G,P,pp,F,A,limit);
-	//simple_assign(G,P,pp,F,A,limit);
-
-	// Apply and update the plan --------------------------------------
-	init_time_at(time,"# Begin real time assignment",t);
-	for (int jj=0; jj<limit; jj++) {
-		int j = A.next_plate;
-		printf(" - Plate %d : ",j);
-		//improve_from_kind(G,P,pp,F,A,"SF",1);
-		//improve_from_kind(G,P,pp,F,A,"SS",1);
-		if (j%500==0) pyplotTile(j,"doc/figs",G,P,pp,F,A);
-		// <-- here is the real observation time
-		printf(" %s not as - ",format(5,f(F.Nfiber-A.na(F,j,1))).c_str());
-		if (0<=j-F.Analysis) update_plan_from_one_obs(G,P,pp,F,A,limit-1); else printf("\n");
-		A.next_plate++;
-	}
-	print_time(time,"# ... took :");
-*/
-
 
 	// Make a plan ----------------------------------------------------
-	int interv = 5;
-	new_assign_fibers(G,P,pp,F,A);
-	//simple_assign(G,P,pp,F,A);
+	int interv = 5; //for histograms
+	new_assign_fibers(G,P,pp,F,A);   //plans whole survey 
+	//smooth out distribution of free fibers
 	for (int i=0; i<3; i++) {
 		print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
 		redistribute_tf(G,P,pp,F,A);
 	}
-
+    //still not updated, so all QSO targets have multiple observations etc
 	for (int i=0; i<2; i++) {
 		improve(G,P,pp,F,A);
 		print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
@@ -118,20 +95,19 @@ int main(int argc, char **argv) {
 
 	// Apply and update the plan --------------------------------------
 	init_time_at(time,"# Begin real time assignment",t);
-	for (int jj=/*limit*/0; jj<F.Nplate; jj++) {
+	for (int jj=0; jj<F.Nplate; jj++) {
 		int j = A.next_plate;
 		printf(" - Plate %d :",j);
-		//improve_from_kind(G,P,pp,F,A,"SF",1);
-		//improve_from_kind(G,P,pp,F,A,"SS",1);
 		assign_sf_ss(j,G,P,pp,F,A);
-		assign_left(j,G,P,pp,F,A);
-		if (j%500==0) pyplotTile(j,"doc/figs",G,P,pp,F,A);
+		assign_left(j,G,P,pp,F,A); //if unused fibers, assign them
+		if (j%500==0) pyplotTile(j,"doc/figs",G,P,pp,F,A);//beautiful picture of positioners, galaxies
 		// <-- here is the real observation time
-		printf(" %s not as - ",format(5,f(F.Nfiber-A.na(F,j,1))).c_str()); fl();
-		if (0<=j-F.Analysis) update_plan_from_one_obs(G,P,pp,F,A,F.Nplate-1); else printf("\n");
+		printf(" %s not as - ",format(5,f(F.Nfiber-A.na(F,j,1))).c_str()); fl();//na(F,j,1)=assigned fibers in j  so this is unassigned fibers
+		if (0<=j-F.Analysis) update_plan_from_one_obs(G,P,pp,F,A,F.Nplate-1); else printf("\n");//update once we are far enough along
+		//update corrects all future occurrences of wrong QSOs etc and tries to observe something else
 		A.next_plate++;
 
-		if (j==200 || j==700 || j==1500 || j==3000 || j==5000 || j==7000) {
+		if (j==200 || j==700 || j==1500 || j==3000 || j==5000 || j==7000) {  //redistribute and improve on various occasions
 			redistribute_tf(G,P,pp,F,A);
 			improve(G,P,pp,F,A);
 		}
