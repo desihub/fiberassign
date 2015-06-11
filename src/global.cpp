@@ -395,7 +395,7 @@ void replace(List old_kind, int new_kind, int j, int p, const Gals& G, const Pla
 			if (G[g].id==new_kind && A.find_collision(j,k,g,pp,G,P,F)==-1 /*A.nobs(g,G,F)>=1*/) {
 				int g0 = A.TF[j][k];
 				A.unassign(j,k,g0,G,P,pp);
-				assign_galaxy(g0,G,P,pp,F,A);
+				//assign_galaxy(g0,G,P,pp,F,A);
 				A.assign(j,k,g,G,P,pp);
 				fin = true;
 				m++;
