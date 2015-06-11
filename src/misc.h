@@ -76,6 +76,7 @@ int max(const List& L); // Max of the list
 Dlist percents(const List& L, int n); // List of 100*L[i]/n
 Dlist percents(const Dlist& L, double n);
 bool isfound(int n, const List& L); // True iff n is found in L
+int isfound_pos(double n, const Dlist& L); // Return the position of where p is found, -1 if not
 int isfound(pair p, const Plist& L); // Return the position of where p is found, -1 if not
 bool isfound(str n, const Slist& L);
 List values(const List& L); // List of different taken values (ex 1,1,5,2,5 gives 1,5,2)
@@ -93,6 +94,8 @@ List cumulate(const List& L); // Cumulated sum of L (integral)
 Dlist cumulate(const Dlist& L);
 Dlist division(const Dlist& L, double d); // L[i]/d
 void addlist(List& L, const List& l); // Add elements of l to L
+Dlist var(const List& L); // L but with slight variations of elements
+List get_permut_sort(const List& l); // Get permutation that leads to sort this list
 
 // Table -----------------------------------------------------
 class Table : public std::vector<List> {};

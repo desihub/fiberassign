@@ -17,7 +17,7 @@ MaxSF 40
 PlateRadius 1.65
 InterPlate 1
 Analysis 1
-InfDens true
+InfDens false
 
 TotalArea 15789.0
 invFibArea 700

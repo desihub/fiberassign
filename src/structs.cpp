@@ -229,6 +229,7 @@ Plates read_plate_centers(const Feat& F) {
 			Q.nhat[2]    = cos(theta);
 			Q.ipass      = ipass-1; // <- be careful, format of input file
 			Q.av_gals.resize(F.Nfiber); // <- added
+			Q.density.resize(F.Nfiber); // <- added
 			try {P.push_back(Q);} catch(std::exception& e) {myexception(e);}
 		}
 	}
@@ -493,7 +494,6 @@ int num_av_gals(int j, int k, const Gals& G, const Plates& P, const Feat& F, con
 	}
 	return cnt;
 }
-
 /*
 List Assignment::fibs_of_kind_sorted(int kind, int j, int pet, const Gals& G, const PP& pp, const Feat& F) const {
 	List L;
@@ -510,7 +510,17 @@ A.nobs_time(gg,j,G,F)
 	std::sort(L.begin(), L.end());  
 
 }
+}
 */
+
+List Assignment::sort_fibs_dens(int j, const List& fibs, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const {
+	List num;
+	for (int k=0; k<fibs.size(); k++) num.push_back(P[j].density[fibs[k]]);
+	List perm = get_permut_sort(num);
+	List fibs_sorted;
+	for (int k=0; k<num.size(); k++) fibs_sorted.push_back(fibs[perm[k]]);
+	return fibs_sorted;
+}
 
 List Assignment::fibs_unassigned(int j, int pet, const Gals& G, const PP& pp, const Feat& F) const {
 	List L;

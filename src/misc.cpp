@@ -221,6 +221,12 @@ bool isfound(int n, const List& L) {
 	return false;
 }
 
+int isfound_pos(double n, const Dlist& L) {
+	if (L.size()==0) return -1;
+	for (int i=0; i<L.size(); i++) if (L[i]==n) return i;
+	return -1;
+}
+
 int isfound(pair p, const Plist& L) {
 	int j = p.f; int k = p.s;
 	if (L.size()==0) return -1;
@@ -372,6 +378,25 @@ Dlist division(const Dlist& L, double d) {
 
 void addlist(List& L, const List& l) {
 	for (int i=0; i<l.size(); i++) L.push_back(l[i]);
+}
+
+Dlist var(const List& L) {
+	Dlist v;
+	for (int i=0; i<L.size(); i++) v.push_back(L[i]+fRand(0,0.2));
+	return v;
+}
+
+List get_permut_sort(const List& l) {
+	List perm = initList(l.size());
+	Dlist lp = var(l);
+	Dlist L = lp;
+	std::sort(L.begin(), L.end());  
+	for (int i=0; i<L.size(); i++) {
+		int pos = isfound_pos(L[i],lp);
+		if (pos==-1) printf("Error in get_permut_sort\n");
+		else perm[i] = pos;
+	}
+	return perm;
 }
 
 // Table -----------------------------------------------------
