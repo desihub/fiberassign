@@ -72,26 +72,26 @@ int main(int argc, char **argv) {
 	Assignment A(G,F);
 	print_time(t,"# Start assignment at : ");
 
-
 	// Make a plan ----------------------------------------------------
 	int interv = 5; //for histograms
 	new_assign_fibers(G,P,pp,F,A);   //plans whole survey 
 	//smooth out distribution of free fibers
+	for (int i=0; i<7; i++) {
+		print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
+		redistribute_tf(G,P,pp,F,A);
+	}
+	// Still not updated, so all QSO targets have multiple observations etc
+	for (int i=0; i<7; i++) {
+		improve(G,P,pp,F,A);
+		print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
+		redistribute_tf(G,P,pp,F,A);
+		redistribute_tf(G,P,pp,F,A);
+		print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
+	}
 	for (int i=0; i<3; i++) {
 		print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
 		redistribute_tf(G,P,pp,F,A);
 	}
-    //still not updated, so all QSO targets have multiple observations etc
-	for (int i=0; i<2; i++) {
-		improve(G,P,pp,F,A);
-		print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
-		redistribute_tf(G,P,pp,F,A);
-		print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
-	}
-
-	redistribute_tf(G,P,pp,F,A);
-	print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
-
 
 	// Apply and update the plan --------------------------------------
 	init_time_at(time,"# Begin real time assignment",t);
@@ -107,9 +107,10 @@ int main(int argc, char **argv) {
 		//update corrects all future occurrences of wrong QSOs etc and tries to observe something else
 		A.next_plate++;
 
-		if (j==200 || j==700 || j==1500 || j==3000 || j==5000 || j==7000) {  //redistribute and improve on various occasions
+		if (j==100 || j==200 || j==700 || j==1500 || j==3000 || j==5000 || j==7000) {  //redistribute and improve on various occasions
 			redistribute_tf(G,P,pp,F,A);
 			improve(G,P,pp,F,A);
+			redistribute_tf(G,P,pp,F,A);
 		}
 	}
 	print_time(time,"# ... took :");

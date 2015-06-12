@@ -15,8 +15,8 @@ Npass 5
 MaxSS 10
 MaxSF 40
 PlateRadius 1.65
-InterPlate 1
-Analysis 1
+InterPlate 0
+Analysis 0
 InfDens false
 
 TotalArea 15789.0

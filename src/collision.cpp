@@ -37,7 +37,7 @@ int orientation(const dpair& p, const dpair& q, const dpair& r) {
 bool intersect(const dpair& p1, const dpair& q1, const dpair& p2, const dpair& q2) {
     int o1 = orientation(p1, q1, p2);
     int o2 = orientation(p1, q1, q2);
-    if (o1 == o2) return false; // terminate called after throwing an instance of 'std::bad_alloc'
+    if (o1 == o2) return false; // (when error) terminate called after throwing an instance of 'std::bad_alloc'
     int o3 = orientation(p2, q2, p1);
     int o4 = orientation(p2, q2, q1);
     if (o3 == o4) return false;
