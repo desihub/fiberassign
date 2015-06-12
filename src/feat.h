@@ -24,6 +24,7 @@ class Feat { // F for features
 	str tileFile;
 	str fibFile;
 	str outDir;
+	bool Output;
 
 	List prio; // Priorities 
 	List priopost; // Priorities when we know the kind

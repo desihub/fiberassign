@@ -1,8 +1,8 @@
 #PBS -S /bin/bash
 #PBS -N Assign
-#PBS -l mppwidth=24,walltime=0:29:30
+#PBS -l mppwidth=24,walltime=1:29:30
 
-#PBS -q debug
+#PBS -q premium
 cd $PBS_O_WORKDIR
 export OMP_NUM_THREADS=24
 echo "# Running assign"

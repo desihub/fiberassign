@@ -2,6 +2,7 @@ galFile /project/projectdirs/desi/mocks/preliminary/objects_ss_sf0.rdzipn
 tileFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/footprint/desi-tiles.par
 fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
 outDir /project/projectdirs/desi/users/rncahn/fa_output/
+Output false
 
 kind QSOLy-a QSOTracer LRG ELG FakeQSO FakeLRG SS SF
 type QSO QSO LRG ELG QSO LRG SS SF
@@ -45,6 +46,7 @@ Verif false
 -tileFile : input file of tiles
 -fibFile : input file of centers of locations of fiber positioners
 -outDir : output directory
+-Output : whether you want to output the assignment at the end
 
 -kind : kinds of objects
 -type : type of objects, in the same order
