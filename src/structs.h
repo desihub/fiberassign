@@ -63,7 +63,7 @@ class plate {
 	Table av_gals; // av_gals[k] : available galaxies of fiber k
 	List density; // density[k] is the ponderated number of objects available to (j,k)
 
-	void print_plate(const Feat& F) const;
+
 	List av_gals_plate(const Feat& F) const; // Av gals of the plate
 };
 class Plates : public std::vector<struct plate> {};
@@ -76,18 +76,18 @@ List av_gals_of_kind(int kind, int j, int k, const Gals& G, const Plates& P, con
 class Assignment {
 	public:
 	//// ----- Members
-	Table TF; // TF for tile fiber, #tiles X #fibers
+	Table TF; // TF for tile fiber, #tiles X #fibers TF[j][k] is the chosen galaxy, -1 if not yet chosen
 	List order; // Order of tiles we want to assign, only 1-n in simple increasing order for the moment
 	int next_plate; // Next plate in the order
 
 	// Redundant information (optimizes computation time)
-	Ptable GL; // GL for galaxy - list : #galaxies X (variable) #chosen TF
+	Ptable GL; // GL for galaxy - list : #galaxies X (variable) #chosen TF: gives chosen tf's for galaxy g
 	Cube kinds; // Cube[j][sp][id] : number of fibers of spectrometer sp and plate j that have the kind id
 	Table unused; // Table [j][p] giving number of unused fibers on this petal
-	List nobsv; // List of nobs, redundant but optimizes
-	List nobsv_tmp; // List of nobs, redundant but optimizes
-	List once_obs;
-	List probas; // Number of galaxies of this kind (not used but could be useful for some strategy)
+	List nobsv; // List of nobs, redundant but optimizes, originally true goal
+	List nobsv_tmp; // List of nobs, redundant but optimizes, apparent goal, i.e. goal of category of this type, gets updated
+	List once_obs; // 0 if not observed, 1 if observed  [list of all galaxies]
+
 
 	//// ----- Methods
 	Assignment(const Gals& G, const Feat& F);
@@ -101,7 +101,7 @@ class Assignment {
 	int is_assigned_jg(int j, int g) const;
 	int is_assigned_jg(int j, int g, const Gals& G, const Feat& F) const;
 	bool is_assigned_tf(int j, int k) const; 
-	int na(const Feat& F, int begin=0, int size=-1) const; // Number of assignments within plates begin to begin+size
+	int na(const Feat& F, int begin=0, int size=-1) const; // Number of assignments (changes) within plates begin to begin+size
 	int nobs(int g, const Gals& G, const Feat& F, bool tmp=true) const; // Counts how many more times object should be observed. If tmp=true, return maximum for this kind (temporary information)
 	//if tmp=false we actually know the true type from the start
 	Plist chosen_tfs(int g, const Feat& F, int begin=0, int size=-1) const; // Pairs (j,k) chosen by g, amongst size plates from begin
@@ -118,14 +118,13 @@ class Assignment {
 	Table infos_petal(int j, int pet, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const;
 	List unused_f(const Feat& F) const;
 	Table unused_fbp(const PP& pp, const Feat& F) const; // Unused fibers by petal
-	Table used_by_kind(str kind, const Gals& G, const PP& pp, const Feat& F) const; // Table (j X p) with numbers of assigned TF to a galaxy of kind
-	float colrate(const PP& pp, const Gals& G, const Plates& P, const Feat& F, int j=-1) const; // Get collision rate, j = plate number
+		float colrate(const PP& pp, const Gals& G, const Plates& P, const Feat& F, int j=-1) const; // Get collision rate, j = plate number
 	int nobs_time(int g, int j, const Gals& G, const Feat& F) const; // Know the number of remaining observations of g when the program is at the tile j, for pyplotTile
 
 	// Not used (but could be useful)
 	int unused_f(int j, const Feat& F) const; // Number of unused fiber on the j'th plate
 	int unused_fbp(int j, int k, const PP& pp, const Feat& F) const; // Number of unassigned fibers of the petal corresponding to (j,k)
-	double get_proba(int i, const Gals& G, const Feat& F); // p(fake QSO | QSO) for example
+
 	void update_nobsv_tmp(const Feat& F);
 };
 
