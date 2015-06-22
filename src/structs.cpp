@@ -350,8 +350,8 @@ int Assignment::is_assigned_jg(int j, int g) const {// is galaxy g assigned on t
 	return -1;
 }
 
-int Assignment::is_assigned_jg(int j, int g, const Gals& G, const Feat& F) const {//no occurrence too nearby in tiles
-	for (int i=0; i<GL[g].size(); i++) if ( fabs(j-GL[g][i].f)<F.InterPlate || j==i) return i; 
+int Assignment::is_assigned_jg(int j, int g, const Gals& G, const Feat& F) const { // No occurrence too nearby in tiles
+	for (int i=0; i<GL[g].size(); i++) if (fabs(j-GL[g][i].f)<F.InterPlate || j==GL[g][i].f) return i; 
 	return -1;
 }
 
@@ -417,13 +417,11 @@ int Assignment::unused_fbp(int j, int k, const PP& pp, const Feat& F) const {//u
 	return unused;
 }
 
-
 int Assignment::nkind(int j, int k, int kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F, bool pet) const {
 	//if pet is false, used petal of fiber k,, if pet is true use petal k        
 	if (!pet) return kinds[j][pp.spectrom[k]][kind];
 	else return kinds[j][k][kind];
 }
-
 	
 Table Assignment::infos_petal(int j, int pet, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const {
 	Table T;//for each fiber in a petal, record a lot of information

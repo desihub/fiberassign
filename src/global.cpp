@@ -273,7 +273,7 @@ void improve(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignm
 	printf("  %s more assignments (%.3f %% improvement)\n",f(na_end-na_start).c_str(),percent(na_end-na_start,na_start));//how many new assigned tf's
 	if (next!=1) print_time(t,"# ... took :");
 }
-//not used at present
+
 void improve_from_kind(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, str kind, int next) {
 	Time t;
 	if (next!=1) init_time(t,"# Begin improve "+kind+" :");
@@ -366,11 +366,8 @@ void update_plan_from_one_obs(const Gals& G, const Plates&P, const PP& pp, const
 			//print_Plist(tfs,"Before"); // Debug
 			A.unassign(jp,kp,g,G,P,pp);
 			int gp = -1;
-			
 			gp = improve_fiber(j0+1,n-1,jp,kp,G,P,pp,F,A,g);
-			
 			erase(0,tfs);
-			
 			//print_Plist(tfs,"After"); // Debug
 			cnt++;
 		}
@@ -393,7 +390,7 @@ void replace(List old_kind, int new_kind, int j, int p, const Gals& G, const Pla
 		List av_g = P[j].av_gals[k];
 		for (int gg=0; gg<av_g.size() && !fin; gg++) {
 			int g = av_g[gg];
-			if (G[g].id==new_kind && A.find_collision(j,k,g,pp,G,P,F)==-1 ) {//looking for fiber that took ELG but could take SS or SF
+			if (G[g].id==new_kind && A.find_collision(j,k,g,pp,G,P,F)==-1 && A.is_assigned_jg(j,g)==-1) { // Looking for fiber that took ELG but could take SS or SF
 				int g0 = A.TF[j][k];
 				A.unassign(j,k,g0,G,P,pp);
 				assign_galaxy(g0,G,P,pp,F,A);
@@ -449,7 +446,7 @@ void assign_sf_ss(int j, const Gals& G, const Plates& P, const PP& pp, const Fea
 		List randFibers = random_permut(pp.fibers_of_sp[p]);
 		if (!F.InfDens) {
 			// Assign SS-SF
-			for (int kk=0; kk<F.Nfbp; kk++) {//Nfbp number of fibers in petal
+			for (int kk=0; kk<F.Nfbp; kk++) {
 				int k = randFibers[kk];
 				if (!A.is_assigned_tf(j,k)) assign_fiber_to_ss_sf(j,k,G,P,pp,F,A);
 			}
@@ -897,7 +894,9 @@ void write_FAtile_ascii(int j, str outdir, const Gals& G, const Plates& P, const
 	}
 	fclose(FA);
 }
-/*  writes FITS file, but needs modification for C++
+
+/*
+//writes FITS file, but needs modification for C++
 void fa_write(int j, const char *filename, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) { // Lado Samushia
 	int MAXTGT = 13;
 	// initialize arrays

@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
 	//// Initializations ---------------------------------------------
 	srand48(1234); // Make sure we have reproducability
 	check_args(argc);
-	Time t,time; // t for global, time for local
+	Time t, time; // t for global, time for local
 	init_time(t);
 	Feat F;
 
@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
 
 	// Read galaxies
 	Gals G;
-	G = read_galaxies(F); // ! Reads all galaxies iff arg2=1
+	G = read_galaxies(F);
 	F.Ngal = G.size();
 	printf("# Read %s galaxies from %s \n",f(F.Ngal).c_str(),F.galFile.c_str());
 
@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
 	F.Nplate = P.size();
 	printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
 
-	// Computes geometry of cb and fh
+	// Computes geometries of cb and fh
 	F.cb = create_cb();  // cb=central body
 	F.fh = create_fh();  // fh=fiber holder
 
@@ -73,23 +73,31 @@ int main(int argc, char **argv) {
 	print_time(t,"# Start assignment at : ");
 
 	// Make a plan ----------------------------------------------------
-	int interv = 5; //for histograms
-	new_assign_fibers(G,P,pp,F,A);   //plans whole survey 
-	//smooth out distribution of free fibers
-	for (int i=0; i<7; i++) {
+	Table unused; Table unused_time; int interv = 5; // For ploting histograms
+
+	new_assign_fibers(G,P,pp,F,A); // Plans whole survey
+
+	// Smooth out distribution of free fibers
+	for (int i=0; i<9; i++) {
 		print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
+		unused.push_back(histogram(A.unused_fbp(pp,F),1));
 		redistribute_tf(G,P,pp,F,A);
 	}
 	// Still not updated, so all QSO targets have multiple observations etc
-	for (int i=0; i<7; i++) {
+	for (int i=0; i<5; i++) {
+		print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
+		unused.push_back(histogram(A.unused_fbp(pp,F),1));
 		improve(G,P,pp,F,A);
 		print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
-		redistribute_tf(G,P,pp,F,A);
+		unused.push_back(histogram(A.unused_fbp(pp,F),1));
 		redistribute_tf(G,P,pp,F,A);
 		print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
+		unused.push_back(histogram(A.unused_fbp(pp,F),1));
+		redistribute_tf(G,P,pp,F,A);
 	}
-	for (int i=0; i<3; i++) {
+	for (int i=0; i<4; i++) {
 		print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
+		unused.push_back(histogram(A.unused_fbp(pp,F),1));
 		redistribute_tf(G,P,pp,F,A);
 	}
 
@@ -103,11 +111,12 @@ int main(int argc, char **argv) {
 		if (j%500==0) pyplotTile(j,"doc/figs",G,P,pp,F,A);//beautiful picture of positioners, galaxies
 		// <-- here is the real observation time
 		printf(" %s not as - ",format(5,f(A.unused_f(j,F))).c_str()); fl();
-		if (0<=j-F.Analysis) update_plan_from_one_obs(G,P,pp,F,A,F.Nplate-1); else printf("\n");//update once we are far enough along
-		//update corrects all future occurrences of wrong QSOs etc and tries to observe something else
+		if (0<=j-F.Analysis) update_plan_from_one_obs(G,P,pp,F,A,F.Nplate-1); else printf("\n");
+		// Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
 		A.next_plate++;
 
 		if (j==100 || j==200 || j==700 || j==1500 || j==3000 || j==5000 || j==7000) {  //redistribute and improve on various occasions
+			redistribute_tf(G,P,pp,F,A);
 			redistribute_tf(G,P,pp,F,A);
 			improve(G,P,pp,F,A);
 			redistribute_tf(G,P,pp,F,A);
@@ -116,9 +125,12 @@ int main(int argc, char **argv) {
 	print_time(time,"# ... took :");
 
 	// Results -------------------------------------------------------
-	if (F.Output) for (int j=0; j<F.Nplate; j++) write_FAtile_ascii(j,F.outDir,G,P,pp,F,A); // Write output
+	//if (F.Output) for (int j=0; j<F.Nplate; j++) write_FAtile_ascii(j,F.outDir,G,P,pp,F,A); // Write output
 	//overlappingTiles("overlaps.txt",F,A); // Write some overlapping tiles (for S.Bailey)
 	print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
+	unused.push_back(histogram(A.unused_fbp(pp,F),1));
+	print_mult_table_latex("Histograms of unused fibers","doc/figs/unusedfibs.dat",unused,1);
+
 	init_time_at(time,"# Display results",t);
 	display_results("doc/figs/",G,P,pp,F,A,true);
 	print_time(time,"# ... took :");
