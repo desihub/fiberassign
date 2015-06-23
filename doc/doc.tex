@@ -122,19 +122,18 @@
 
 
 \section{Introduction}
-Martin White developed C++ code for fiber assignment over the full 14k \sqd footprint.  We first modified Martin's code to incorporate features from Bob Cahn's python code, which ran on a restricted 480 \sqd... We included the improvement and redistribution steps, which switch fiber assignments to increase the number of galaxies observed. We then adapted the code to compute assignments not globally "knowing all information on galaxies yet to be observed" but plate after plate, as in the real experiment.
-The samples are taken from Martin's mocks in stored on NERSC at /project/projectdirs/desi/mocks/preliminary/. From these files we create a single file containing the appropriate mix of ELG, LRG, QSO, SS (Standard Stars) and SF (Sky Fibers) using the python script in git fiberassign/bin/make\_catalog\_starsandsky.py. In the same place there is python code to produce a mixture of galaxies without any correlations, but with the correct $\frac{dn}{dz}$  
+Martin White started to develop a C++ code for fiber assignment, modified by Lado Samushia, then by Bob Cahn and finally by Bob and Louis Garrigue, intern for 5 months. We included the improvement, redistribution and update steps, to increase the number and the quality of the assignment, and at the same time to have a realistic process, in a way the code can be used. It provides a library of functions which can be easily adapted, with a main producing the assignment. It is well "pipelined" and someone can use it easily. The code can be found on \href{https://github.com/desihub/fiberassign}{DESI git repository} with a short description of how to run it.
   
 \section{In a nutshell}
 \subsection{Input files}
-Found in the NERSC repository (except for Parameters file features.txt).
-The produced executable is {\tt assign}. The calling sequence will look like :
-{\tt./assign features.txt}. An example of how runing it on NERSC is provided in the {\tt run} script, then call it with qsub run.
-
+They are found in the NERSC repository (see features.txt for addresses).
+The produced executable (to compile with {\tt make all in src repository)} is {\tt assign}. The calling sequence will look like :
+{\tt./assign features.txt}. An example of how runing it on NERSC is provided in the {\tt run} script, then call it with {\tt qsub run}.
+ 
 \begin{itemize} 
-	\item Parameters : all parameters used in the fiber assignment are written in this file. It contains the adress of other input files
-	\item Target DB : information, before the study, on all possible targets : (NERSC rep) /projects/projectdirs/desi/mocks/preliminary/objects\_ss\_sf0.rdzipn, created by {\tt make\_catalog}
-	\item Obs DB : batabase constructed from the ongoing DESI observations after the data has been processed by the Spectroscopic pipeline. This DB has not been designed yet
+	\item Parameters : all parameters used in the fiber assignment are written in this file, including addresses of other input files
+	\item Target DB : information, before the study, on all possible targets : (NERSC rep) /projects/projectdirs/desi/mocks/preliminary/objects\_ss\_sf0.rdzipn, created by {\tt make\_catalog}. The samples are taken from Martin's mocks and stored on NERSC at /project/projectdirs/desi/mocks/preliminary/. From these files we create a single file containing the appropriate mix of ELG, LRG, QSO, SS (Standard Stars) and SF (Sky Fibers) using the python script in git fiberassign/bin/make\_catalog\_starsandsky.py. In the same place there is python code to produce a mixture of galaxies without any correlations, but with the correct dn/dz
+	\item Obs DB : database constructed from the ongoing DESI observations after the data has been processed by the Spectroscopic pipeline. This DB has not been designed yet
 	\item Survey tiles : file containing the positions of all the tiles to be observed in /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/footprint/desi-tiles.par
 	\item Fiber positions : locations of the positioners in the focal plane in /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
 \end{itemize} 
@@ -142,7 +141,7 @@ The produced executable is {\tt assign}. The calling sequence will look like :
 To change the location of other input files, one can simply change it in the features file.
 
 \subsection{Output files}
-They are produced in a directory defined in features.txt (/project/projectdirs/desi/users/rncahn/fa\_output/ for now), in the format {\tt tile54.fits} for example for the 54th tile. There are therefore 10666 such binary files. They consist in 5000 lines (fibers) with the following columns :
+They are produced in a directory defined in features.txt, in the format {\tt tile54.fits} for example for the 54th tile. There are therefore 10666 such binary files. They consist in 5000 lines (fibers) with the following columns :
 
 \begin{itemize}
     \item fiber: [0-4999]
@@ -161,17 +160,16 @@ They are produced in a directory defined in features.txt (/project/projectdirs/d
 \section{Source files}
 Source files are file.h and file.cpp and are in this increasing dependency order :
 \begin{itemize}
-	\item misc : a home-made library of structures (and functions on them) needed to manipulate concerning datas, but independent of them. There are pair (of int), List (of int), Table, Cube, and timing, printing, string conversion, error report items.
-	\item collision : used to compute collision checkings and build polygons
-	\item features : stocks all useful parameters
-	\item structs : structures of the manipulated datas and their members
-	\item global : main high-level functions and algorithms used in the program to collect information, assign fibers and print statistics. Important ones are described further
-	\item main : neat and quickly understandable code that sums up all steps
+	\item misc : a home-made library of structures (and functions on them) needed to manipulate concerned data, but independent of them. There are pair (of int), List (of int), Table, Cube, and timing, printing, string conversion, error report items.
+	\item collision : used to compute collision checking and build polygons representing positioners
+	\item features : carries all useful parameters
+	\item structs : structures of the manipulated data and their members
+	\item global : main high-level functions and algorithms used in the program to collect information, assign fibers, print statistics and output. Important ones are described further
+	\item main : neat and quickly understandable code that sums up all the steps of the assignment
 \end{itemize}
 
 \section{Parameters}
 Here are some features on input galaxies simulated catalog :
-
 
 \begin{table}[H]\centering
 	\begin{tabular}{rcccl} \hline
@@ -179,36 +177,44 @@ Here are some features on input galaxies simulated catalog :
 		QSO Ly-$\alpha$ & 0 & 1 & 5 & 50\\
 		QSO Tracer & 1 & 1 & 1 & 120\\
 		LRG & 2 & 3 & 2 & 300\\
-		ELG & 3 & 5 & 1 & 2400\\
+		ELG & 3 & 4 & 1 & 2400\\
 		Fake QSO & 4 & 1 & 1 & 90\\
 		Fake LRG & 5 & 3 & 1 & 50\\
-		Standard Star & 6 & 2 & 1 & 140\\
-		Sky Fiber & 7 & 4 & 1 & 1400\\ \hline
+		Standard Star & 6 & 5 & 1 & 140\\
+		Sky Fiber & 7 & 6 & 1 & 1400\\ \hline
 	\end{tabular}
 	\caption{Characteristics of galaxy samples as set in make\_catalog\_rnc.py}\label{table:characteristics}
 \end{table}
-
 A number of parameters are defined in features.txt.
 \begin{itemize}
-	\item parameters summed-up in the Table \ref{table:characteristics}
-	\item Npass = 5 number of passes
-	\item MaxSS = 10 ; MaxSF = 40 maximum number of fibers assigned to SS and SF on a petal
-	\item PlateRadius = $1.65^{\circ}$ radius of the plate
-	\item TotalArea = 15789.0 \sqd total area of the sky considered
-	\item invFibArea = 700 inverse of area in \sqd accessible to a fiber (fiber density for a \sqd)
-	\item PatrolRad = 6.0 mm maximum distance, on plate coordinates, that allows a fiber to a galaxy
-	\item InterPlate = 200 minimal number of plates between two observations of the same galaxy
+	\item input and output directories
+	\item Output = true, whether you want to release the output
+
 	\item Randomize = false randomize order of plates in making plans
 	\item Pacman = false selects only spectrometers 0, 1, 2, 7, 8, 9 of the pacman
+	\item Npass = 5 number of passes
+	\item MaxSS = 10 ; MaxSF = 40 number of fibers assigned to SS and SF on a petal
+	\item PlateRadius = $1.65^{\circ}$ radius of the plate
+	\item InterPlate = 0 minimal number of plates between two observations of the same galaxy
+	\item Analysis = 0, tile distance for getting the information from previously observed tiles
+	\item InfDens = false, simulate infinite density of SS and SF
 
-	\item Collision = true when we want to allow collisions, to compute the collision rate for instance
+	\item TotalArea = 15789.0 \sqd total area of the sky considered
+	\item invFibArea = 700 inverse of area in \sqd accessible to a fiber (fiber density for a \sqd)
+	\item moduloGal = 1, if 2 for instance, reads only one object over two in galFile
+	\item moduloFiber = 1, same for fiber
+
+	\item PatrolRad = 6.0 mm maximum distance, on plate coordinates, that allows a fiber to a galaxy
+
+
+	\item Collision = true when we want to allow collisions, to compute the collision rate for instance, and very practical when one wants to make quick tests, to run the fiber assignment faster
 	\item Exact = true whether we want exact collision checking (exact geometry of components) or just circles
 	\item AvCollide = 3.2 mm in case of no exact collision checking, limit distance between two galaxies for their positioners to collide (so that we have the same collision rate than with exact geometry)
-	\item Collide = 1.98 mm minimum distance allowed on plate projection of two assigned galaxies on the same plate (optimizes collision checking)
+	\item Collide = 1.98 mm minimum distance allowed on plate projection of two assigned galaxies on the same fiber (optimizes collision checking)
 	\item NoCollide = 7 mm maximum distance between two galaxies for the collision of their corresponding galaxies (optimizes collision checking)
 	\item NeighborRad = 14.0 mm maximum distance to consider that two fibers are neighbors
 
-	\item PlotObsTime, etc whether we want to plot some information into output files
+	\item PlotObsTime, etc, whether we want to plot some information into output files
 	\item Verif = false, whether we verificate that the assignment is sane (no collision, sane mapping, etc...)
 \end{itemize}
 
@@ -217,172 +223,94 @@ A number of parameters are defined in features.txt.
 Classes and structures are built to be independent of each other, flexible, quickly understandable, logical, and with no redundant information as much as possible.
 
 \begin{table}[H]\begin{center}
-	\begin{tabular}{|l|l|p{12cm}|} \hline
+	\begin{tabular}{|l|l|p{11cm}|} \hline
 		Structure name & Meaning & Description \\ \hline \hline
 
-		PP & Plate Parameters & Carries locations of fiber positions on the plate, spectrometer correspondence, and neighboring fibers information.\\ 
+		element & Element of a geometric figure & Either a set of juxtaposed segments, either a circle\\ 
 
-		onplate & Plate coordinates & Used for coordinates in the focal plane in mm. The member {\tt id} is used to give the identity of a galaxy. Onplates is vector of onplate.\\ 
+		polygon & Polygon of segments + circles & Set of elements\\ \hline
 
-		plate & A plate & Locations in the sky of the tile in terms of a unit vector derived from RA and DEC. Carries also the Id of the tile, its pass, and the available galaxies it is able to reach. Plates is vector of plate, and has all information on tiles.\\ \hline
+		Feat & Features/Parameters & Carries all needed parameters defined in features.txt and some other computed in the input reading process\\ \hline
 
-		galaxy & A galaxy & Information on a galaxy : an {\tt id} that corresponds to Table \ref{table:characteristics}, a position in the sky (in two differents ways), and the available tile-fibers that can observe it. Gals is vector of galaxy and carries all information on galaxies.\\ \hline
+		PP & Plate Parameters & Carries locations of positioners on the plate, spectrometer correspondence, and neighboring fibers information\\ 
 
-		Assignment & An entire assignment & Carries mapping of tile-fibers to galaxies, its inverse, galaxies to tile-fibers, and the cube (3d-matrix) of assigned fibers for a kind, a petal and a plate (useful for fast computations).\\ \hline
+		onplate & Plate coordinates & Used for coordinates in the focal plane in mm\\ 
+
+		plate & A plate & Locations in the sky of the tile in terms of a unitary vector derived from RA and DEC. Carries also the Id of the tile, its pass, and the available galaxies it is able to reach. Plates is vector of plate, and carries all information on tiles\\ \hline
+
+		galaxy & A galaxy & Information on a galaxy : kind which corresponds to Table \ref{table:characteristics}, a position in the sky (in two differents ways), and the available tile-fibers that can observe it. Gals is vector of galaxy and carries all information on galaxies\\ \hline
+
+		Assignment & An entire assignment & Carries mapping of tile-fibers to galaxies on a table, and other redundant information for optimization\\ \hline
 	\end{tabular}\end{center}
 	\caption{Classes and structures}\label{tab:structures}
 \end{table}
 
 
 \section{Functions}
-In algorithms, j stands for a plate, k for a fiber, p for a petal, g for a galaxy.
+In algorithms, j stands for a plate, k for a fiber, p for a petal, g for a galaxy. They are integers in the code.
 
 \subsection{Improvement functions ideas}
-A first assignment is done by the function simple\_assign, and is the same than in BOSS experiment.
 Here we present the three ideas of improvement of this first assignment, which increase the number of used fibers and the quality of the assignment. It represents the body, the main purpose of our work. They need to be somewhere "orthogonal", so that they don't loose efficiency when we call one of them after an other.
 Those three ideas are coded into the three following functions :
 
+\begin{center}\rule{8cm}{0.4pt}\end{center}
 
 \begin{figure}[H]
-	\hspace*{3cm}
-	\begin{minipage}{.5\textwidth}
-	\tikzsetnextfilename{idea}
-	\begin{tikzpicture}
-		\begin{axis}[width=50mm,height=30mm,axis lines=none,line width=1pt]
-			\addplot [only marks,mark=x] coordinates { (10,20) (40,20)};
-			\addplot [->,loosely dashed] coordinates {(-10,0) (10,20)};
-			\addplot [->] coordinates {(30,0) (10,20)};
-			\addplot [->,loosely dashed] coordinates {(30,0) (40,20)};
-			\addplot [] coordinates {(-20,0) (-5,0)};
-			\addplot [] coordinates {(20,0) (35,0)};
-			\node [left] at (axis cs:10,20){\small{ELG}};
-			\node [left] at (axis cs:40,20){\small{LRG}};
-		\end{axis}
-	\end{tikzpicture}
- \end{minipage}%
-\begin{minipage}{.5\textwidth}
-	\tikzsetnextfilename{transf}
-	\begin{tikzpicture}
-		\begin{axis}[width=50mm,height=30mm,axis lines=none,line width=1pt]
-			\addplot [only marks,mark=x] coordinates { (10,20) (40,20)};
-			\addplot [->] coordinates {(-10,0) (10,20)};
-			\addplot [->,loosely dashed] coordinates {(30,0) (10,20)};
-			\addplot [->] coordinates {(30,0) (40,20)};
-			\addplot [] coordinates {(-20,0) (-5,0)};
-			\addplot [] coordinates {(20,0) (35,0)};
-			\node [left] at (axis cs:10,20){\small{ELG}};
-			\node [left] at (axis cs:40,20){\small{LRG}};
-		\end{axis}
-	\end{tikzpicture}
- \end{minipage}
+	\hspace*{5cm}
+	\includegraphics[scale=1]{figs/graph/idea.pdf}
+	\hspace*{1cm}
+	\includegraphics[scale=1]{figs/graph/transf.pdf}\hfill
 	\caption{Improve}\label{transf}
 \end{figure}
 
-The idea is to take an unassigned fiber and to look at the galaxies it can reach and that are already assigned. We then look at the second fiber, which is observing this galaxy and try to reassign it to an other galaxy, and assign the first fiber to the first object. It is powerful because we use it when making a plan, and so the two fibers can (and are almost always) from different plates, that can be arbitrarily separated.
+The idea is to take an unassigned fiber and to look at the galaxies it can reach and that are already assigned. We then look at the second fiber, which is observing this galaxy and try to reassign it to an other galaxy, and assign the first fiber to the first object. It is powerful because we use it when making a plan, and so the two fibers can (and are almost always) from different plates, which can be arbitrarily separated.
 
-
-\begin{figure}[H] 
-	\hspace*{3cm}
-	\begin{minipage}{.5\textwidth}
-	\tikzsetnextfilename{idea}
-	\begin{tikzpicture}
-		\begin{axis}[width=50mm,height=30mm,axis lines=none,line width=1pt]
-			\addplot [only marks,mark=x] coordinates { (10,20)};
-			\addplot [->,loosely dashed] coordinates {(-10,0) (10,20)};
-			\addplot [->] coordinates {(30,0) (10,20)};
-			\addplot [] coordinates {(-20,0) (-5,0)};
-			\addplot [] coordinates {(20,0) (35,0)};
-		\end{axis}
-	\end{tikzpicture}
- \end{minipage}%
-\begin{minipage}{.5\textwidth}
-	\tikzsetnextfilename{transf}
-	\begin{tikzpicture}
-		\begin{axis}[width=50mm,height=30mm,axis lines=none,line width=1pt]
-			\addplot [only marks,mark=x] coordinates { (10,20)};
-			\addplot [->] coordinates {(-10,0) (10,20)};
-			\addplot [->,loosely dashed] coordinates {(30,0) (10,20)};
-			\addplot [] coordinates {(-20,0) (-5,0)};
-			\addplot [] coordinates {(20,0) (35,0)};
-		\end{axis}
-	\end{tikzpicture}
- \end{minipage}
-	\caption{Redistribute}\label{transf}
-\end{figure}
-
-In redistribute, we look at an assigned fiber, and try to make the observed object observed by and other fiber, which can come from a different plate. It "anneals" the assignment. In this way, it doesn't improves anything, but we then apply the improve function again, which is more efficient. The idea is the improve, then redistribute, then improve again, redistribute etc. If there is no redistribution between a new improve, the improve is almost useless.
+\begin{center}\rule{8cm}{0.4pt}\end{center}
 
 \begin{figure}[H]
-	\hspace*{3cm}
-	\begin{minipage}{.5\textwidth}
-	\tikzsetnextfilename{idea2}
-	\begin{tikzpicture}
-		\begin{axis}[width=50mm,height=30mm,axis lines=none,line width=1pt]
-			\addplot [only marks,mark=x] coordinates { (-15,20) (15,20) (20,20) };
-			\addplot [->,loosely dashed] coordinates {(-10,0) (-15,20)};
-			\addplot [->] coordinates {(10,0) (15,20)};
-			\addplot [->,loosely dashed] coordinates {(10,0) (20,20)};
-			\addplot [] coordinates {(-20,0) (35,0)};
-			\node [left] at (axis cs:-15,20){\small{SF}};
-			\node [left] at (axis cs:15,20){\small{SF}};
-			\node [right] at (axis cs:20,20){\small{\lya}};
-		\end{axis}
-	\end{tikzpicture}
- \end{minipage}%
-\begin{minipage}{.5\textwidth}
-	\tikzsetnextfilename{transf2}
-	\begin{tikzpicture}
-		\begin{axis}[width=50mm,height=30mm,axis lines=none,line width=1pt]
-			\addplot [only marks,mark=x] coordinates { (-15,20) (15,20) (20,20) };
-			\addplot [->] coordinates {(-10,0) (-15,20)};
-			\addplot [->,loosely dashed] coordinates {(10,0) (15,20)};
-			\addplot [->] coordinates {(10,0) (20,20)};
-			\addplot [] coordinates {(-20,0) (35,0)};
-			\node [left] at (axis cs:-15,20){\small{SF}};
-			\node [left] at (axis cs:15,20){\small{SF}};
-			\node [right] at (axis cs:20,20){\small{\lya}};
-		\end{axis}
-	\end{tikzpicture}
- \end{minipage}
+	\hspace*{5cm}
+	\includegraphics[scale=1]{figs/graph/idea1.pdf}
+	\hspace*{1cm}
+	\includegraphics[scale=1]{figs/graph/transf1.pdf}\hfill
+	\caption{Redistribute}\label{transf1}
+\end{figure}
+
+In redistribute, we look at an assigned fiber, and try to make the observed object observed by and other fiber, which can come from a different plate. It "anneals" the assignment. In this way, it doesn't improves anything, but we then apply the improve function again, which is more efficient. The idea is the improve, then redistribute, then improve again, redistribute etc. If there is no redistribution between a new improve, the improve is almost useless. Furthermore, among possible fibers, we assign it to the least used petal.
+
+\begin{center}\rule{8cm}{0.4pt}\end{center}
+
+\begin{figure}[H]
+	\hspace*{5cm}
+	\includegraphics[scale=1]{figs/graph/idea2.pdf}
+	\hspace*{1cm}
+	\includegraphics[scale=1]{figs/graph/transf2.pdf}\hfill
 	\caption{Improve from kind}\label{transf2}
 \end{figure}
 
-The third idea is to take an assigned fiber that is able to reach a SF (or SS), to assign it, and then we reassign a fiber assigned to a SF. As the number of SF per petal has to remain the same as previously (40) we search the second fiber amongst the same petal of the first fiber.
+The third idea is to take an assigned fiber that is able to reach a SF (or SS), to assign it, and then we reassign a fiber assigned to a SF. As the number of SF per petal has to remain the same as previously (40) we search the second fiber among the same petal of the first fiber. It's not used anymore since it becomes useless when we first use new\_assign.
 
 
-\subsection{Some functions in structs.cpp}
+\subsection{Some inportant functions in structs.cpp}
 {\tt plate\_dist} turns radians into mm on the focal plane, i.e. it is the plate scale as a function of angle.
 
-{\tt change\_coords} combines a galaxy and a particular plate to give the coordinates the galaxy will have in the focal plane when observed as with this tile. It's a rotation in angular coordinates. This ought to be rigorously checked.
+{\tt projection} combines a galaxy and a particular plate to give the coordinates the galaxy will have in the focal plane when observed as with this tile. It's a rotation in angular coordinates
 
-{\tt find\_collision} returns the fiber number of a fiber that conflicts with tiblefiber (j,k), collision checking can be with exact geometry (if Collision parameter is true) or reduced one
+{\tt find\_collision} returns the fiber number of a fiber that conflicts with tiblefiber (j,k), or -1 if there is no collision 
 
 \subsection{Collecting}
-{\tt collect\_galaxies\_for\_all} is multithreaded, and for each fiber of each tile, collects reachable galaxies. It uses kdTree and htmTree libraries written by Martin White, because it's absolutely necessary to do computations in a reasonable time with supercomputers.
+{\tt collect\_galaxies\_for\_all} is multithreaded, and for each fiber of each tile, collects reachable galaxies. It uses kdTree and htmTree libraries written by Martin White. It's absolutely necessary in order to do computations in a reasonable time with supercomputers
 
 {\tt collect\_available\_tilefibers} computes, using the previous work, available tile-fibers for each galaxy (inverse map)
 
 \subsection{Useful sub-functions for global functions}
 
-{\tt ok\_assign\_g\_to\_jk\_nobs and ok\_assign\_tot} checks to see if we can assign g to the tile-fiber (j,k), according to assigning rules described further
+{\tt ok\_assign\_g\_to\_jk(g,j,k)} checks to see if we can assign g to the tile-fiber (j,k), according to some assigning rules described further (g has to be a QSO, LRG or ELG, only ELG in last pass, and no collision with neighbors)
 
-{\tt find\_best (j,k)} finds the best reachable galaxy for this fiber, according to assignment rules
-
-\begin{algorithm}[H]
-	\caption{Find best(j,k)}\label{euclid}
-	\begin{algorithmic}[1]
-		\State Initialize a fictional galaxy with $ID=-1$, called best
-		\For {each galaxy available galaxy (for this fiber) g}
-		\If {g is better (according to priority and number of observations)}
-		\State $best \gets g$
-		\EndIf
-		\EndFor
-	\end{algorithmic}
-\end{algorithm}
+{\tt find\_best(j,k)} finds the best reachable galaxy for this fiber, according to assignment rules (not observed in two tiles separated by less than Interplate, choose the one with the higher priority, then if several ones compete, the least observed)
 
 {\tt assign\_fiber(j,k)} tries to assign this fiber using find\_best
 
-{\tt improve\_fiber (j0,n,j,k)} if this fiber is unused, tries first to simply assign it, and if it doesn't work, tries to reassigning some used one (jp,kp) where $j0\le jp \le j0+n$. Before : (jp,kp) - g ; (j,k) \& gp free. After : (j,k) - g \& (jp,kp) - gp. The power of this function lies in the fact that j and jp can correspond to different passes.
+{\tt improve\_fiber(j0,n,j,k)} if this fiber is unused, tries first to simply assign it, and if it doesn't work, tries to reassign some used one (jp,kp) where $j0\le jp \le j0+n$. Before : (jp,kp) - g ; (j,k) \& gp free. After : (j,k) - g \& (jp,kp) - gp. The power of this function lies in the fact that j and jp can correspond to different passes. Among all galaxies of same priority and same number of observation, it takes the one belonging to the most unused petal, to distribute ELGs
 
 \begin{algorithm}[H]
 	\caption{Improve\_fiber(j0,n,j,k)}\label{euclid}
@@ -394,7 +322,7 @@ The third idea is to take an assigned fiber that is able to reach a SF (or SS), 
 		\For {each galaxy g available to (j,k)}
 		\If {it's possible to assign g with k}
 		\For {each chosen tile-fibers (jp,kp) which chose g (where $j0\le jp \le j0+n$)}
-		\State $gp\leftarrow find\_best(jp,kp)$
+		\State $gp \leftarrow find\_best(jp,kp)$
 		\State memorize jp, kp, g, gp if it's a better set (gp is more worthy) than previous one
 		\EndFor
 		\EndIf
@@ -410,13 +338,10 @@ The third idea is to take an assigned fiber that is able to reach a SF (or SS), 
 \end{algorithm}
 
 
-
 \subsection{Assigning making a plan}
-In the simulated catalog, we know all information on objects (if a QSO is a real one for example). During the real study, one won't have access to this information prior to the observation. Thus, in the code, we have to simulate that we have this infotmation only when we have at least once observed the object.
+In the simulated catalog, we know all information on objects (if a QSO is a real one for example). During the real study, one won't have access to this information prior to the observation plus analysis time. Thus, in the code, we have to simulate that we have this information only when we have at least once observed the object, and when the analysis of received data tells which exact type it is (fake or not for ELG for example). Algorithms do a plan with only types of objects (QSO, LRG, ELG) available in the catalog. A plan consists of an assignment on a set of consecutive tiles (from 0 to 2000 for instance). The assignment works better when we do only one plan.
 
-Thus, algorithms do a plan with only information available by the catalog and by previously seen galaxies. A plan consists of an assignment on a set of consecutive tiles (from 0 to 2000 for instance). One can use algorithms on size-one plans if one wants to do an assignment plate after plate for example (which shouldn't be called a plan anymore).
-
-The argument "next" (integer) in following functions means that we treat all next "next" plates (in the right order of tiles) in the plan we make. If it is $-1$, it will deal with all left plates. For example, if next plate in the program is 10 and one launch a function with $next = 100$, this function is going to do his job on plates from 10 to 110.
+The argument "next" (integer) in following functions means that we treat all next "next" plates in the plan we make. If it is $-1$, it will deal with all left plates. For example, if $next_plate = 10$ and one launch a function with $next = 100$, this function is going to do his job on plates from 10 to 110.
 
 {\tt simple\_assign} makes a first simple assignment plan : for each fiber assign to the best available galaxy
 
@@ -431,7 +356,7 @@ The argument "next" (integer) in following functions means that we treat all nex
 	\end{algorithmic}
 \end{algorithm}
 
-{\tt new\_assign\_fibers} makes a first assignment plan trying to assign first QSO, then LRG then ELG, then trying to assign SF and SS replacing other kinds if there are not enough available fibers. This way, a QSO can't be lost because of a collision. With the current value of Collision, it's not very useful, but could be for bigger values.
+{\tt new\_assign} makes a first assignment plan trying to assign first QSO, then LRG then ELG (neither SS nor SF). This way, a QSO can't be lost because of a collision, among other things.
 
 \begin{algorithm}[H]
 	\caption{New\_assign\_fibers(j0,n)}\label{euclid}
@@ -447,23 +372,14 @@ The argument "next" (integer) in following functions means that we treat all nex
 		\For {each fiber k of this petal, in a random order}
 		\State Try assign\_fiber(j,k) only allowing ELG
 		\EndFor
-		\For {each unassigned fiber k of this petal}
-		\State Try assign\_fiber(j,k) to only SS or SF
-		\EndFor
-		\If {Number of SS $\le$ 10}
-		\State Replace ELG (then LRG) to an SS until there are 10 SS
-		\EndIf
-		\If {Number of SF $\le$ 40}
-		\State Replace ELG (then LRG) to an SF until there are 40 SF
-		\EndIf
 		\EndFor
 		\EndFor
 	\end{algorithmic}
 \end{algorithm}
 
-{\tt improve} improves the plan applying improve\_fiber to all of the fibers that concern it
+{\tt improve} improves the plan applying improve\_fiber to all of the fibers involved in the plan
 
-{\tt improve\_from\_kind (kind)} for every concerned petal, tries to assign unassigned fibers to SS or SF, to release an other fiber (formerly assigned to a SS or SF) that would be reassigned to a regular galaxy (kind is SS or SF when we call it). There is also the function {\tt improve\_fiber\_from\_kind} that does the same but on only a fiber.
+{\tt improve\_from\_kind (kind)} for every concerned petal, tries to assign unassigned fibers to objects of kind "kind" (useful when it's SS or SF), to release an other fiber (formerly assigned to a SS or SF) that would be reassigned to a regular galaxy (kind is SS or SF when we call it). There is also the function {\tt improve\_fiber\_from\_kind} that does the same but on only a fiber. We don't use it anymore, since we use new\_assign, which already includes potential improvement brought by this function.
 
 \begin{algorithm}[H]
 	\caption{Improve\_from\_kind (kind,j0,n)}\label{euclid}
@@ -489,22 +405,22 @@ The argument "next" (integer) in following functions means that we treat all nex
 	\end{algorithmic}
 \end{algorithm}
 
-{\tt update\_plan\_from\_one\_obs} updates the plan formerly made so that if for example on the current minus $Analysis$ we observed a QSO which the analysis reveals fake but is still planed to be observed again, we will unassign the corresponding fiber and try to reassign it with improve\_fiber and improve\_fiber\_from\_kind
+{\tt redistribute\_tf} "anneals" the distribution (so that improve is more efficient after) and in the same time redistribute in a way that the number of unused fibers per petal tends to be the same for every petal. It is very important to prepare the step of assigning SS and SF, in order to replace the least number of ELG and LRG for having the needed number of SS/SF
 
 \begin{algorithm}[H]
-	\caption{Update\_plan\_from\_one\_observation(j0,end\_plan)}\label{euclid}
+	\caption{redistribute\_tf(j0,n)}\label{redis}
 	\begin{algorithmic}[1]
-		\State get the list of galaxies observed by this plate that are discovered fake or target
-		\For {each of those galaxies g}
-		\State get the list of tile-fibers that are supposed to observed this galaxy further in the plan $j0\le jp \le end$
-		\For {each of those tile-fibers (jp,kp)}
-		\State Unassign $(jp,kp) \longleftrightarrow g$
-		\State run improve\_fiber(j0+1,end-j0,jp,kp)
-		\If {jp, kp hasn't been assigned}
-		\State run improve\_fiber\_from\_kind(SF,j0+1,end-j0,jp,kp)
+		\For {each plate j from j0 to j0+n}
+		\For {each assigned fiber k}
+		\State get g, the galaxy to which (j,k) is assigned
+		\State initialize a set of variables (jpb,kpb) to memorize values of (jp,kp)
+		\For {each available tile-fibers of g}
+		\If {(jp,kp) is better ($j0\le jp \l j0+n$, unassigned, it's ok to assign, and the petal of (jp,kp) is more unused than the one of (jpb,kpb)) }
+		\State memorize (jp,kp) in (jpb,kpb)
 		\EndIf
-		\If {jp, kp hasn't been assigned}
-		\State run improve\_fiber\_from\_kind(SS,j0+1,end-j0,jp,kp)
+		\EndFor
+		\If {$jpb \ne -1$}
+		\State Reassign g to (jpb,kpb)
 		\EndIf
 		\EndFor
 		\EndFor
@@ -512,39 +428,108 @@ The argument "next" (integer) in following functions means that we treat all nex
 \end{algorithm}
 
 
+{\tt update\_plan\_from\_one\_obs(j)} updates the plan formerly made so that if for example on the plate $j-Analysis$ plates (to simulate there is a delay between observation and result on analysis) we observed a QSO which the analysis reveals fake but is still planed to be observed again further in the plan, we will unassign the corresponding fiber and try to reassign it with improve\_fiber.
+In the input catalog we only know the basic type (QSO, LRG, ELG, SS, SF) of the galaxies. The precise type is only infered by a simulation coded in python, but is generated with randomness. So in the algorithms, we can know the nature of the object only when it has been observed once at least and analysed (this delay of "Analysis" number of plates is inserted between those two events). In a plan, we try to optimize assignment, but of course, we can't know the precise type (fake, ...) so it is possible to foresee observing for example 4 times a fake QSO. We won't do it, so after having planned, when we begin to apply it and do the real observation, if we have just previously observed a fake QSO, we will remove further observations in this plan. We then try to assign the released tile-fibers.
+
+\begin{algorithm}[H]
+	\caption{Update\_plan\_from\_one\_observation(j0,end\_plan)}\label{euclid}
+	\begin{algorithmic}[1]
+		\State get the list of galaxies observed by this plate that are discovered fake or target
+		\For {each of those galaxies g}
+		\State get the list of tile-fibers that are supposed to observed this galaxy further in the plan $j0\le jp \le end_plan$
+		\For {each of those tile-fibers (jp,kp)}
+		\State Unassign $(jp,kp) \longleftrightarrow g$
+		\State run improve\_fiber(j0+1,end-j0,jp,kp) (tries to reassign (jp,kp)
+		\EndFor
+		\EndFor
+	\end{algorithmic}
+\end{algorithm}
+
+{\tt assign\_sf\_ss(j)} just before the observation of a tile, we assign SF and SS, replacing ELG then LRG if necessary
+
+\begin{algorithm}[H]
+	\caption{assign\_sf\_ss}\label{assignsfss}
+	\begin{algorithmic}[1]
+		\For {each petal p of this plate, in a random order}
+		\State try to assign unused fibers to 40 SF and 10 SS
+		\If {not enough SS and/or SF}
+		\State try to replace some ELG for SS
+		\State try to replace some ELG for SF
+		\EndIf
+		\If {not enough SS and SF}
+		\State try to replace some LRG for SS
+		\State try to replace some LRG for SF
+		\EndIf
+		\EndFor
+	\end{algorithmic}
+\end{algorithm}
+
+{\tt assign\_left(j)} just before the observation of a tile, for all unassigned fibers, tries to assign them to a galaxy in reach that is supposed to be observed later, and remove the later observation. The goal is to observe and thus analyse objects as soon as possible, not waiting further in the plan.
+
+
 \subsection{Displaying results}
-{\tt results\_on\_inputs} displays some statistics on input files (recall input features, print statistics on the number of fibers with 0 galaxies within reach, 1 galaxy within reach etc. out to 19 galaxies within reach ; number of available tile-fibers for a galaxy, ...)
+Histograms are written in Tikz format.
 
-{\tt display\_results} writes some statistics and provides the tex-formatted results to make Table \ref{tab:full14k}
+{\tt results\_on\_inputs} displays some statistics on input files (histogram of number of objects in range of a fiber, histogram of number of tile-fibers which can observe a given object, histogram of redshifts by type)
 
-{\tt print\_free\_fibers} print histograms on free fibers towards/regarding petals, for everything, for only SS and for only SF
+{\tt display\_results} provides the tex-formated results to make Table \ref{tab:full14k} and writes histograms one can see further in this document
 
+{\tt write\_FAtile\_ascii(j)} writes output of the assignment in ASCII format
+
+{\tt fa\_write(j)} writes output of the assignment in FITS format
+
+{\tt pyplotTile(j)} writes a file tileX.py from which (executing {\tt python tileX.py} one can produce the pdf graphic colored plot of the tile. In it, are also ploted objects requiring more observations. A LRG already observed twice won't appear for example
 
 \section{Rules of assignment}
 \begin{itemize}
-	\item Of course, a tile-fiber is only assigned once
-	\item two observations of a galaxy can't be separated by less than {\tt InterPlate} (200) plates
-	\item two observed galaxies can't be separated by less than {\tt Collide} (set by find\_collision)
+	\item a tile-fiber is only assigned once
+	\item no collision between fiber positioners
+	\item two observations of a QSO or an LRG can't be separated by less than {\tt InterPlate} plates
 	\item in last pass, only ELG, SS and SF are considered
-	\item there can't be more than 10 fibers assigned to SS on a petal
-	\item there can't be more than 40 fibers assigned to SF on a petal
+	\item there are 10 and 40 fibers assigned to SS and SF per petal
 	\item basically, we choose best galaxy from at the same time available, observed less than maxgoal(kind) times and unassigned ones. Among them, we take those with highest priority, and then the one which has been seen the least number of times
 	\item between an already observed \lya and an unknown QSO, one chooses the already observed \lya
+	\item the same SS or SF can be observed several times
+	\item SS has priority over SF
+	\item our policy is : while improving the assignment, never unassign an object without reassigning it right then
 \end{itemize}
 
-In nature we only know the basic type (QSO, LRG, ELG, SS, SF) of the galaxies of the catalog. The precise type is only infered by a simulation coded in python, but is generated with randomness. So in the algorithms, we can know the nature of the object only when it has been observed once at least.
-There are two way of assignment : either observe tile after tile and foresee the assignment of the tile just before observing it ; otherwise, we can make a plan for a definite number of succeeding tiles. In such a plan, we try to optimize assignment, but of course, we can't know the precise type (fake, ...) so it is possible to foresee observing for example 4 times a fake QSO. We won't do it, so after having planned, when we begin to apply it and do the real observation, if we have just previously observed a fake QSO, we will remove further observations in this plan. We then try to assign the released tile-fibers. In the code, a difficulty was optimization at this point : we could have replanned everything in the plan after an update of information, but we can't because that would take too much time. So we only try to reassign released tile-fibers.
-
-The idea is to get most information possible in the first pass, assigning independently tile after tile, and then, after this first pass, make a plan for everything else, when we have information on most of the QSO and LRG (the only kinds we want to observe several times). The plan will be better that way, because we do less mistakes than if we would do it from the begining.
-
-
 \section{Algorithm}
+ {\tt main} proceeds by : 
+ 
+ \begin{itemize}
+	 \item loading input files : features of galaxies to make F, reading in the galaxies catalog to make G, the positions of the fibers on the plate to make pp, the plate centers and positioner locations to make P
+	 \item collect available galaxies for each fiber for each plate, and compute the inverse map (available fibers for each galaxies, useful for improvement functions)
+	 \item before begining the study, make a plan of assignment
+	 \item begin the study, and update the plan as we get information from objects, ongoing
+ \end{itemize}
 
- {\tt main} proceeds by loading input files : features of galaxies, reading in the galaxies catalog to make G, the positions of the fibers on the plate to make pp, the plate centers and positioner locations to make P. 
- 
- We then collect available galaxies for each fiber for each plate, and compute the inverse map (available fibers for each galaxies, useful for improvement functions).
- 
-We next, tile after tile, do the assignment of galaxies. We have tried several strategies. The strategy that produced the best results, which will be the strategy of reference, consists of making only one plan, then applying it. We first run new\_assign, then 3 rounds of improvement : improve, redistribute, improve, redistribute, improve.
+\subsection{Redistribution-Improvement step}
+Assigning only QSO, LRG and ELG, not SS and SF when making the plan leads to have a lot more degrees of freedom for the improvement function, which is then much more efficient. Redistributing unused fibers by petal permits to replace the least ELG possible when assigning SS and SF just before an observation.
+
+When applying the plan, sometimes redistributing-improving the plan is very efficient, it updates the further plan (compared to the initial maked plan, just before begining the study), taking into account that some new fibers have been released and that we have new information on precise kind of objects.
+
+Here is presented, in the Figure \ref{unusedfibs0}, histograms of unused fibers per petal, during redistribution/improvement process. The goal is to have 50 unused fibers per petal before begining observations.
+
+\begin{figure}[H]\begin{center}
+	\includegraphics[scale=1]{figs/graph/unusedfibs0.pdf}
+	\caption{Unused fibers, at different steps}\label{unusedfibs0}
+\end{center}\end{figure}
+
+\begin{figure}[H]\begin{center}
+	\includegraphics[scale=1]{figs/graph/unusedfibs.pdf}
+	\caption{Unused fibers, at different steps, with more improvements}\label{unusedfibs}
+\end{center}\end{figure}
+
+\begin{figure}[H]\begin{center}
+	\includegraphics[scale=1]{figs/graph/unusedfibsnolog.pdf}
+	\caption{Same, no in log scale}\label{unusedfibsnolog}
+\end{center}\end{figure}
+
+
+We also do improvement/redistribution process during the observation 5-years time.
+
+\subsection{Algorithm, more precisely}
 
 \begin{algorithm}[H]
 	\caption{Assignment of reference in main program}\label{euclid}
@@ -552,26 +537,28 @@ We next, tile after tile, do the assignment of galaxies. We have tried several s
 		\Algphasee{Phase I - Make a plan for all plates}
 		\State Run, globally, on the list plates from 0 to last :
 		\State "New" assign fibers
-		\State Improve
-		\State Redistribute
-		\State Improve
-		\State Redistribute
-		\State Improve
+		\State Redistribute (several times)
+		\State Improve + 2x Redistribute (several times)
+		\State Redistribute (several times)
 	\end{algorithmic}
 	\begin{algorithmic}[1]
-		\Algphase{Phase II - Apply the plan}
+		\Algphase{Phase II - Observation time}
+		\State Begining of the study
 		\For {each plate j of the plan, in order}
+		\State Assign\_sf\_ss
+		\State Assign\_left
 		\State Possibly "pyplot" the planned observed tile
 		\State Real observation is here
 		\State Update information collected on the previously observed Analysis'th past tile with update\_plan\_from\_one\_obs
+		\State If we are in the plate 100, or 300, or 800, or... Redistribute + Improve + Redistribute (on all the plan of remaining tiles)
 		\EndFor
 	\end{algorithmic}
 \end{algorithm}
 
-
-A standard output display of an execution look like that (for assignment plan and applying):
+A standard output display of an execution looks like that (for assignment plan and applying):
 
 {\tt \small 
+
 \# Read 71,998,144 galaxies from /project/projectdirs/desi/mocks/preliminary/objects\_ss\_sf0.rdzipn \\
 \# Read 10,666 plate centers from /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/footprint/desi-tiles.par and 
 5000 fibers from /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt \\
@@ -610,103 +597,73 @@ A standard output display of an execution look like that (for assignment plan an
  - Plate 6 :   145 not as -  3537 unas \& 2514 replaced \\
  - Plate 7 :    92 not as -  3964 unas \& 2856 replaced \\
  - Plate 8 :   123 not as -  3714 unas \& 2578 replaced \\
- - Plate 9 :   143 not as -  3543 unas \& 2378 replaced \\
- - Plate 10 :   148 not as -  3528 unas \& 2472 replaced \\
- - Plate 11 :    86 not as -  3507 unas \& 2885 replaced \\
+- Plate 9 :   143 not as -  3543 unas \& 2378 replaced \\
+- Plate 10 :   148 not as -  3528 unas \& 2472 replaced \\
+- Plate 11 :    86 not as -  3507 unas \& 2885 replaced \\
+\# Begin redistribute TF : \\
+  1,160,465 redistributions of couples of TF \\
+\# ... took : 23.3 s \\
+\# Begin improve : \\
+  106,948 more assignments (0.205 \% improvement) \\
+\# ... took : 30.2 s \\
+- Plate 12 :   48 not as -  3128 unas \& 2475 replaced \\
+- Plate 13 :    96 not as -  3407 unas \& 2485 replaced \\
+...\\
 }
+
+After an observed tile, we print the number of unassigned fibers on it, the number of further objects unassigned because they were analysed as fake, and the number of those tile-fibers that have been successfully reassigned
 
 \section{Results}
 \subsection{Results on the input catalog}
 Here are some statistics on the input galaxies catalog :
 
-\begin{figure}[H]\begin{center}\begin{minipage}{.5\textwidth}
-	\tikzsetnextfilename{avgalhist}
-	\begin{tikzpicture}[scale=1.1]\begin{semilogyaxis}[const plot,enlarge x limits=false,xmax=10,xlabel={\# of accessible galaxies},ylabel={},cycle list name=mycolorlist,legend entries={QSO \lya,QSO Tracer,LRG,ELG,Fake QSO,Fake LRG}] 
-		\addplot table[x=x,y=0] {figs/avgalhist.dat};
-		\addplot table[x=x,y=1] {figs/avgalhist.dat};
-		\addplot table[x=x,y=2] {figs/avgalhist.dat};
-		\addplot table[x=x,y=3] {figs/avgalhist.dat};
-		\addplot table[x=x,y=4] {figs/avgalhist.dat};
-		\addplot table[x=x,y=5] {figs/avgalhist.dat};
-\end{semilogyaxis}\end{tikzpicture}
-\caption{Available galaxies (by kind) for a single fiber on a single tile}\label{avgalhist}
-\end{minipage}%
-\begin{minipage}{.5\textwidth}
-	\tikzsetnextfilename{avtfhist}
-\begin{tikzpicture}[scale=1.1]\begin{semilogyaxis}[const plot,enlarge x limits=false,xlabel={\# of TF that can access a given galaxy},xmax=13,ylabel={},cycle list name=mycolorlist,legend pos=south west]
-		\addplot table[x=x,y=0] {figs/avtfhist.dat};
-		\addplot table[x=x,y=1] {figs/avtfhist.dat};
-		\addplot table[x=x,y=2] {figs/avtfhist.dat};
-		\addplot table[x=x,y=3] {figs/avtfhist.dat};
-		\addplot table[x=x,y=4] {figs/avtfhist.dat};
-		\addplot table[x=x,y=5] {figs/avtfhist.dat};
-\end{semilogyaxis}\end{tikzpicture}
-\caption{Available tile-fibers for a galaxy (by kind)}\label{avtfhist}
-\end{minipage}
+\begin{figure}[H]\begin{center}
+	\includegraphics[scale=1]{figs/graph/avgalhist.pdf}
+	\includegraphics[scale=1]{figs/graph/avtfhist.pdf}\hfill
+	\caption{Available galaxies for a fiber on a tile and available tile-fibers for a galaxy (by kind)}\label{avtfhist}
 \end{center}\end{figure}
-
 
 \begin{figure}[H]\begin{center}
-	\tikzsetnextfilename{reachplate}
-\begin{tikzpicture}[scale=1.1]\begin{axis}[const plot,enlarge x limits=false,enlarge y limits=false,xlabel={\# of plates that can access a given galaxy},ylabel={\%},cycle list name=mycolorlist,legend entries={Pacman,Normal},legend pos=north east]
-		\addplot table[x=x,y=0] {figs/reachplatepac.dat};
-		\addplot table[x=x,y=0] {figs/reachplate.dat};
-\end{axis}\end{tikzpicture}
-\caption{Available plates for a galaxy (without 5th pass)}\label{reachplate}
+	\includegraphics[scale=1]{figs/graph/reachplate.pdf}
+	\caption{Available plates for a galaxy (without 5th pass)}\label{reachplate}
 \end{center}\end{figure}
-
 
 \begin{figure}[H]\begin{center}
-	\tikzsetnextfilename{redshifts}
-\begin{tikzpicture}[scale=1.1]\begin{semilogyaxis}[const plot,enlarge x limits=false,enlarge y limits=false,ymin=10,xlabel={z},ylabel={dn/dz},cycle list name=mycolorlist,legend entries={QSO,LRG,ELG},legend pos=north east,cycle list={{blue,fill=blue!90!black,fill opacity=0.2},{red,fill=red,fill opacity=0.2},{green,fill=green,fill opacity=0.2}}]
-		\addplot table[x=x,y=0] {figs/redshifts.dat}|- (axis cs:0,0) -- cycle;
-		\addplot table[x=x,y=1] {figs/redshifts.dat}|- (axis cs:0,0) -- cycle;
-		\addplot table[x=x,y=2] {figs/redshifts.dat}|- (axis cs:0,0) -- cycle;
-\end{semilogyaxis}\end{tikzpicture}
-\caption{Distribution of objects as a function of redshift}\label{redshifts}
+	\includegraphics[scale=1]{figs/graph/redshifts.pdf}
+	\caption{Distribution of objects as a function of redshift}\label{redshifts}
 \end{center}\end{figure}
-
 
 \subsection{Results of the assignment}
-We run the program with all information (prior knowledge of information on fake, target, etc) to compare with realistic simulation, this result is interesting.
+We run the program with all information (prior knowledge of information on fake, target, etc) to compare with realistic simulation, this result is interesting to see the effect of this prior unrealistic knowledge.
 
-The results are then written using {\tt display\_results}, and each assignment/improvement function display its own statistics.
+We have taken a reference strategy, which was a trade-off between computation time and quality of results. We use improvement functions in a way such that they are still efficient given the time they take (because the more improvement execution we launch, the less they are efficient). And from this reference strategy, we change parameters to see the effects of them on the program.
 
-We precise that we have indeed exactly 10 SS and 40 SF per petal. We have taken a reference strategy, which was a trade-off between computation time and quality of results. We use improvement functions in a way such that they are still efficient given the time they take (because the more improvement execution we launch, the less they are efficent). And from this reference strategy, we change parameters to see the effects of them on the program. We also compare to other strategies. 
-
-The best strategy (discovered until now) is the one where we first look at 2000 tiles, tile after tile runing simple\_assign on each tile without plan, and we then do a plan for all left tiles, before improving it only with an SF-improve.
-
-In the second plan, we can experimentally see that after a first SF-improvement ($+\sim 3.6\%$), even if we redistribute, a second one is almost useless ($+\sim 0.1\%$), whereas a second simple-improve is still efficient after a redistribution ($+\sim 0.4\%$), but useless without a redistribution step ($+\sim 0.01\%$). An other kind of kind-improvement (instead of SF and SS ($+\sim 0.5\%$)) is also almost useless. Furthermore, the computation time is far bigger for SF-improvement (5 mn) than for other.
-
-The most results-sensible feature in it is the number of plan/applying and their plates sets. One could try to find a better one.
-
+We tried to run it with an "ideal" infinite density of SS and SF, which only led to an 0.5\% inscreasing of the number of observed ELG.
 
 \subsection{Sum-up of assigned galaxies}
-In the reference strategy, we have 50,095,513 assignments in total (93.54\% of all fibers). The weighted score of a certain kind is defined as : 
+The weighted score of a certain kind is defined as : 
 \vspace{1\baselineskip}
 $Score(kind) = 100\cdot \frac{\sum\nolimits_{g \in kind} obs(g)}{\sum\nolimits_{g \in kind} goal}$ where $obs(g)$ is the number of times g is observed.
 
 A sum-up table of general results on assignment is provided on Table \ref{res}.
-
 
 \begin{table}[H]\begin{center}
 \begin{tabular}{rrrrrrrrrrcc}
 \hline
 \multicolumn{6}{r}{Times observed} \\
 	~ &           0 &     1 &  2 & 3 & 4 & 5 &  Total & Fiber used & Once observed & observed $\%$ & weighted $\%$ \\ \hline
-    QSO \lya  &     0 &     2 &   5 & 15 & 25 & 1 &    49 &   166 &    49 & 98.468 & 66.747 \\ 
-  QSO Tracer   &     1 &   118 &   0 &  0 &  0 & 0 &   119 &   118 &   118 & 98.487 & 98.487 \\ 
-        LRG   &    16 &    38 & 243 &  0 &  0 & 0 &   298 &   524 &   281 & 94.352 & 87.854 \\ 
-        ELG   &   540 & 1,870 &   0 &  0 &  0 & 0 & 2,411 & 1,870 & 1,870 & 77.572 & 77.572 \\ 
-    Fake QSO   &     1 &    88 &   0 &  0 &  0 & 0 &    90 &    88 &    88 & 98.472 & 98.472 \\ 
-    Fake LRG   &     2 &    47 &   0 &  0 &  0 & 0 &    50 &    47 &    47 & 95.061 & 95.061 \\ 
-         SS   &    72 &    67 &   0 &  0 &  0 & 0 &   140 &    67 &    67 & 48.252 & 48.252 \\ 
-         SF   & 1,129 &   270 &   0 &  0 &  0 & 0 & 1,400 &   270 &   270 & 19.300 & 19.300 \\ 
+    QSOLy-a   &     0 &     1 &   5 & 12 & 19 & 10 &    49 &   180 &    49 & 99.151 & 72.206 \\ 
+  QSOTracer   &     1 &   118 &   0 &  0 &  0 &  0 &   119 &   118 &   118 & 99.141 & 99.141 \\ 
+        LRG   &    13 &    42 & 243 &  0 &  0 &  0 &   298 &   528 &   285 & 95.505 & 88.434 \\ 
+        ELG   &   480 & 1,930 &   0 &  0 &  0 &  0 & 2,411 & 1,930 & 1,930 & 80.054 & 80.054 \\ 
+    FakeQSO   &     0 &    89 &   0 &  0 &  0 &  0 &    90 &    89 &    89 & 99.139 & 99.139 \\ 
+    FakeLRG   &     2 &    47 &   0 &  0 &  0 &  0 &    50 &    47 &    47 & 95.792 & 95.792 \\ 
 \hline
 \end{tabular}
 \caption{Densities (objects/\sqd) as as a function of \# of observations (with total), and \% observed, once and weighted}\label{res}
 \end{center}\end{table}
 
+Furthermore, there are 51,044,452 assignments in total (95.7143 \% of all fibers).
 
 \subsection{Pacman plate}
 On the Table \ref{pac}, we present results of the assignment taking for input the fiber locations files of the pacman (plate deprived of 4 petals) used in case of run out of money. Every parameter is the same. As one can notice, they are quite similar to regular ones.
@@ -722,222 +679,111 @@ On the Table \ref{pac}, we present results of the assignment taking for input th
         ELG   &   493 & 1,918 &   0 &  0 &  0 & 0 & 2,411 & 1,918 & 1,918 & 79.540 & 79.540 \\ 
    Fake QSO   &     2 &    87 &   0 &  0 &  0 & 0 &    90 &    87 &    87 & 97.579 & 97.579 \\ 
    Fake LRG   &     2 &    47 &   0 &  0 &  0 & 0 &    50 &    47 &    47 & 94.608 & 94.608 \\ 
-         SS   &    70 &    69 &   0 &  0 &  0 & 0 &   140 &    69 &    69 & 49.576 & 49.576 \\ 
-         SF   & 1,122 &   277 &   0 &  0 &  0 & 0 & 1,400 &   277 &   277 & 19.830 & 19.830 \\ 
+
 \hline
 \end{tabular}
 \caption{Same than Table \ref{res} but with the pacman}\label{pac}
 \end{center}\end{table}
 
-Furthermore, there are 50,938,132 assignments in total (92.9358 \% of all fibers).
 
 \subsection{Free fibers}
 Here are the histogram of petals as a function of free fibers on Figure \ref{freefib} and the number of free fibers for each plate, in inscreasing order on Figure \ref{fft}.
 
-
-\begin{figure}[H]\begin{center}\begin{minipage}{.5\textwidth}
-	\tikzsetnextfilename{freefib}
-	\begin{tikzpicture}[scale=1.1]\begin{semilogyaxis}[const plot,enlarge x limits=false,xlabel={\# of free fibers},ylabel={\# of petals},xmax=160] 
-	\addplot [mark=none] table [x=x,y=0] {figs/freefib.dat};
-\end{semilogyaxis}\end{tikzpicture}
-\caption{\# of petals with that many free fibers}\label{freefib}
- \end{minipage}%
-\begin{minipage}{.5\textwidth}
-	\tikzsetnextfilename{fft}
-	\begin{tikzpicture}[scale=1.1]
-		\begin{axis}[const plot,enlarge x limits=false,enlarge y limits=false,xlabel={Tiles observed},ylabel={\# of free fibers},cycle list name=mycolorlist]
-			\addplot table[x=x,y=0] {figs/fft.dat};
-		\end{axis}
-	\end{tikzpicture}
-	\caption{Free fibers as a function of time (plates)}\label{fft}
- \end{minipage}
+\begin{figure}[H]\begin{center}
+	\includegraphics[scale=1]{figs/graph/freefib.pdf}
+	\includegraphics[scale=1]{figs/graph/fft.pdf}\hfill
+	\caption{\# of petals with that many free fibers and free fibers as a function of time (plates)}\label{fft}
 \end{center}\end{figure}
-
 
 On the Figure \ref{seendens}, one can seen the proportion of observed objects as a function of their density. "usq" stands for unity of square degrees, its the area of the sky reachable by a single fiber. Keep Figure \ref{avgalhist} in mind while reading this one.
-\begin{figure}[H]\begin{center}\begin{minipage}{.5\textwidth}
-	\tikzsetnextfilename{seendens}
-\begin{tikzpicture}[scale=1.1]
-	\begin{axis}[enlarge y limits=false,enlarge x limits=false,xlabel={Objects/usq},ylabel={},cycle list name=mycolorlist,legend entries={QSO \lya,QSO Tracer,LRG,ELG,Fake QSO,Fake LRG,All},legend pos=south east]
-		\addplot table[x=x,y=0] {figs/seendens.dat};
-		\addplot table[x=x,y=1] {figs/seendens.dat};
-		\addplot table[x=x,y=2] {figs/seendens.dat};
-		\addplot table[x=x,y=3] {figs/seendens.dat};
-		\addplot table[x=x,y=4] {figs/seendens.dat};
-		\addplot table[x=x,y=5] {figs/seendens.dat};
-		\addplot table[x=x,y=8] {figs/seendens.dat};
-	\end{axis}
-\end{tikzpicture}
-\end{minipage}%
-\begin{minipage}{.5\textwidth}
-	\tikzsetnextfilename{seendenszoom}
-\begin{tikzpicture}[scale=1.1]
-	\begin{axis}[xmax=7,ymin=65,enlarge y limits=false,enlarge x limits=false,xlabel={Objects/usq},ylabel={},cycle list name=mycolorlist]
-		\addplot table[x=x,y=0] {figs/seendens.dat};
-		\addplot table[x=x,y=1] {figs/seendens.dat};
-		\addplot table[x=x,y=2] {figs/seendens.dat};
-		\addplot table[x=x,y=3] {figs/seendens.dat};
-		\addplot table[x=x,y=4] {figs/seendens.dat};
-		\addplot table[x=x,y=5] {figs/seendens.dat};
-		\addplot table[x=x,y=8] {figs/seendens.dat};
-	\end{axis}
-\end{tikzpicture}
- \end{minipage}
-\caption{\% of observed galaxies as a function of objects density, wide and zoom}\label{seendens}
+
+\begin{figure}[H]\begin{center}
+	\includegraphics[scale=1]{figs/graph/seendens.pdf}
+	\caption{\% of observed galaxies as a function of objects density}\label{seendens}
 \end{center}\end{figure}
-
-
-\subsection{Redistribution-Improvement step}
-We see, in the second plan, what is the effect of several redistribution-improvement executions. Here is presented, in the Table \ref{ris}, the number of redistributions, number of additionnal assignments, with the improvement in \% and the total time taken for until this step.
-
-\begin{table}[H]\centering
-	\begin{tabular}{c|cccl}
-		Step & \# red & \# +as & + \% & Time \\ \hline
-		1 & 2,204,977 & 167,741 & .418 & 40s\\
-		2 & 2,060,851 & 76,509 & .190 & 1mn 20s\\
-		3 & 1,965,994 & 19,273 & 0.048 & 2mn\\
-		4 & 1,945,418 & 10,738 & 0.027 & 2mn 40s\\
-		5 & 1,929,917 & 7,999 & 0.020 & 3mn 20s\\
-		6 & 1,921,331 & 5,745 & 0.014 & 4mn\\
-	\end{tabular}
-	\caption{Results of several redistribution-improvement steps}\label{ris}
-\end{table}
 
 
 \subsection{Results on \lya particularly}
 The figure \ref{histastf} gives the histogram of proportion of assigned \lya and the number of observations as a function of available TF.
 
 \begin{figure}[H]\begin{center}
-	\tikzsetnextfilename{obsly}
-\begin{tikzpicture}[scale=1.1]
-	\begin{axis}[const plot,stack plots=y,enlarge x limits=false,enlarge y limits=false,xlabel={Number of available TF},ylabel={},cycle list name=mycolorlist,legend entries={0,1,2,3,4,5}]
-		\addplot [fill,fill opacity=0.5,color=blue] table[x=x,y=0] {figs/obsly.dat};
-		\addplot [fill,fill opacity=0.5,color=red] table[x=x,y=1] {figs/obsly.dat};
-		\addplot [fill,fill opacity=0.5,color=brown] table[x=x,y=2] {figs/obsly.dat};
-		\addplot [fill,fill opacity=0.5,color=teal] table[x=x,y=3] {figs/obsly.dat};
-		\addplot [fill,fill opacity=0.5,color=violet] table[x=x,y=4] {figs/obsly.dat};
-		\addplot [fill,fill opacity=0.5,color=black] table[x=x,y=5] {figs/obsly.dat};
-	\end{axis}
-\end{tikzpicture}
-\caption{\# of QSO \lya (with their number of observation) as a function of available tile-fibers}\label{histastf}
+	\includegraphics[scale=1]{figs/graph/obsly.pdf}
+	\caption{\# of QSO \lya (with their number of observation) as a function of available tile-fibers}\label{histastf}
 \end{center}\end{figure}
 
-\begin{figure}[H]\begin{center}\begin{minipage}{.5\textwidth}
-	\tikzsetnextfilename{dist2ly}
-\begin{tikzpicture}[scale=1.1]
-		\begin{semilogyaxis}[const plot,enlarge x limits=false,xlabel={Distance between plates},ylabel={}]
-			\addplot [color=blue,mark=none] table[x=x,y=0] {figs/dist2ly.dat};
-		\end{semilogyaxis}
-	\end{tikzpicture}
-\end{minipage}%
-\begin{minipage}{.5\textwidth}
-	\tikzsetnextfilename{dist2lyint}
-	\begin{tikzpicture}[scale=1.1]
-		\begin{axis}[const plot,enlarge x limits=false,enlarge y limits=false,xlabel={Distance between plates},ylabel={}]
-			\addplot [mark=none] table[x=x,y=1] {figs/dist2ly.dat};
-		\end{axis}
-	\end{tikzpicture}
- \end{minipage}
+\begin{figure}[H]\begin{center}
+	\includegraphics[scale=1]{figs/graph/dist2ly.pdf}
+	\includegraphics[scale=1]{figs/graph/dist2lyint.pdf}\hfill
 	\caption{Histogram of distances (in number of plates) between two consecutive observed QSO \lya and integral}
 \end{center}\end{figure}
 
 \subsection{Study on evolution over time}
 
 \begin{figure}[H]\begin{center}
-	\tikzsetnextfilename{time2}
-\begin{tikzpicture}[scale=1.5]
-	\begin{semilogyaxis}[enlarge y limits=false,enlarge x limits=false,xlabel={Tiles observed},ylabel={\# of objects},legend entries={QSO \lya 1 obs,QSO \lya 2 obs,QSO \lya 3 obs,QSO \lya 4 obs,QSO \lya 5 obs,LRG 1 obs,LRG 2 obs,QSO Tracer,ELG},legend style={at={(1.3,0.9)}, anchor=north}]
-		\addplot [color=red,loosely dashed] table[x=x,y=0] {figs/time2.dat};
-		\addplot [color=red,dashed] table[x=x,y=1] {figs/time2.dat};
-		\addplot [color=red,dashdotted] table[x=x,y=2] {figs/time2.dat};
-		\addplot [color=red,densely dashdotted] table[x=x,y=3] {figs/time2.dat};
-		\addplot [color=red] table[x=x,y=4] {figs/time2.dat};
-		\addplot [color=blue,densely dashed] table[x=x,y=5] {figs/time2.dat};
-		\addplot [color=blue] table[x=x,y=6] {figs/time2.dat};
-		\addplot [color=green] table[x=x,y=7] {figs/time2.dat};
-		\addplot [color=cyan] table[x=x,y=8] {figs/time2.dat};
-	\end{semilogyaxis}
-\end{tikzpicture}
-\caption{Observed galaxy kind as a function of time (plates seen)}
+	\includegraphics[scale=1]{figs/graph/time2.pdf}
+	\caption{Observed galaxy kind as a function of time (plates seen)}
 \end{center}\end{figure}
 
-
-\subsection{Shifting parameters}
-In the following, we change a little bit parameters around the references values to observe their influences on results.
+\subsection{Choice by density}
+The assignment could include the idea well described in \cite{fa} which consists in, when you have the choice of several fibers to observe an object, you choose the one which has the least density of (weighted) remaining available objects in reach. This way, "busy" fibers are more available. Of course, it will introduce a bias in the survey, and since it doesn't improve results (it's likely because redistribution/improvement functions already make this optimization) we can avoid it. An illustration taken from \cite{fa} is in Figure \ref{act}.
 
 \begin{figure}[H]\begin{center}
-	\tikzsetnextfilename{intlya}
-	\begin{tikzpicture}[scale=1.1]
-		\begin{axis}[enlarge x limits=false,xlabel={InterPlate},ylabel={Weighted \% of \lya},cycle list name=mycolorlist]
-			\addplot [mark=x] coordinates {(0,73.317)(1,70.172)(20,68.022)(50,67.961)(100,67.905)(200,67.670)(400,67.461)(1000,66.888)(2000,65.660)};
-			\draw [densely dashed] (axis cs:200,\pgfkeysvalueof{/pgfplots/ymin}) -- (axis cs:200,\pgfkeysvalueof{/pgfplots/ymax});
-		\end{axis}
-	\end{tikzpicture}
-	\caption{\% of \lya observed as a function of required minimum interval between plates observing the \lya}
+	\includegraphics[scale=0.2]{figs/act.eps}
+	\caption{Choice by density : A is chosen to observe 1}\label{act}
 \end{center}\end{figure}
+
+\subsection{Tiling strategy}
+The tiling strategy is important and should separate overlapping tiles for more than "Analysis". This way, the assignment can be updated in order to avoid observing twice the same object. The results are then improved in a non negligible rate.
 
 
 \section{Collision problem}
-There is an option in the features file that indicates whether we choose the exact geometry of the fiber positioners. If not, collisions are computed with only circles at the position of the fiber holder, of radius $AvCollide$, which we calibrate such that we get the same collision rate than with the exact geometry ($\sim$ 10.5\% when we take all plates). If the exact geometry is on, the modules collision.h and collision.cpp are used to check. They then build sets of circles or segments, and check collisions between those belonging to the first fiber positioner to the ones belonging to the second one.
+Fiber geometry can be found at \href{https://desi.lbl.gov/DocDB/cgi-bin/private/ShowDocument?docid=899}{this address}, which is a work of Joe Silber. The exact geometry as built in our program can be seen on Figure \ref{onefib}, which consists in two circles and several segments. The black dot point is the center of the positioner, and other ones are objects in reach.
+
+\begin{figure}[H]\begin{center}
+	\includegraphics[scale=0.8]{figs/one_fib.pdf}
+	\caption{Geometry of a fiber positioner, with fiber holder and central body oriented}\label{onefib}
+\end{center}\end{figure}
+
+In the features file the "Exact" boolean indicates whether we choose the exact geometry of the fiber positioners. If not, collisions are computed with only circles at the position of the fiber holder, of radius $AvCollide$, which we calibrate such that we get the same collision rate than with the exact geometry ($\sim$ 10.8\% of fibers collide). If the exact geometry is on, the modules collision.h and collision.cpp are used to check. They then build sets of circles or segments, and check collisions between those belonging to the first fiber positioner to the ones belonging to the second one.
 Computationnally cheap methods were used for segment-segment and circle-segment checking, because checking functions are called a lot of time, and optimization of those methods lead to considerably decrease total computation time. That is why we use circle and segments, not only segments : creating an arc with segments needs a lot of them, but only one circle.
 
 Figure \ref{coldist} is the histogram of distances between two galaxies, in a collision case, and its integral.
-\begin{figure}[H]\begin{center}\begin{minipage}{.5\textwidth}
-	\tikzsetnextfilename{coldist}
-\begin{tikzpicture}[scale=1.1]
-		\begin{axis}[const plot,enlarge x limits=false,enlarge y limits=false,xlabel={Distances between two colliding objects},ylabel={}]
-			\addplot [color=blue,mark=none] table[x=x,y=0] {figs/coldist.dat};
-		\end{axis}
-	\end{tikzpicture}
-\end{minipage}%
-\begin{minipage}{.5\textwidth}
-	\tikzsetnextfilename{coldistint}
-	\begin{tikzpicture}[scale=1.1]
-		\begin{axis}[const plot,enlarge x limits=false,enlarge y limits=false,xlabel={Distances between two colliding galaxies},ylabel={}]
-			\addplot [mark=none] table[x=x,y=1] {figs/coldist.dat};
-		\end{axis}
-	\end{tikzpicture}
- \end{minipage}
-	\caption{Histogram of distances between galaxies in collision case}\label{coldist}
+
+\begin{figure}[H]\begin{center}
+	\includegraphics[scale=1]{figs/graph/coldist.pdf}
+	\includegraphics[scale=1]{figs/graph/coldistint.pdf}
+	\caption{Histogram of distances between galaxies in collision case, and integral}\label{coldist}
 \end{center}\end{figure}
+
+Here is an article on the problem to reach the final position for the positioner without colliding a neighboring one : \cite{collision}
 
 \section{Tile ploting}
 The function pyplotTile builds a tile.py file, which can be executed manually with python tile.py to create the pdf plot.
 Only objects that would need at least one further observation are projected on the plate and ploted. The function has to be called just before real observation time, otherwise, if it is called at the end for example, information on number of observations of an object would be the one that we have at the end, and not on the way.
 A black dot is ploted when there is an unassigned fiber at some place, not to mix up with fiducials (totally white), places where there is physically no fiber.
 Watching at a dozen of tile plots, one can convince hiself that the assignment is very close to the optimum.
-Notice that on plot, one can for example see a fiber looking at an ELG though it could observe an LRG instead. It comes from the improvement functions, that "anneal" the assignment, and then the program plans anyway to look at the LRG but later, which leads to optimize the assignment.
 
 \begin{figure}[H]
 \hspace*{-1.5cm}
-    \includegraphics[scale=1.75]{python/tile.pdf}
-	\caption{Tile}
+    \includegraphics[scale=1.75]{python/rep-1000.pdf}
+	\caption{Tile 1000}
 \end{figure}
 
+\section{Other functions}
+In the library, functions are written to put data into .dat files, which can be compiled by the Latex module Tikz to create figures like histograms present here.
+
+There is a function of verification which check several features of the assignment to know if it is sane (no collision, regular mapping, etc...).
 
 \section{Possible improvements}
-We havn't tried all possible strategies, so it is possible that an other combination of runing of the functions could lead to better results.
-One could also try to search for an "orthogonal" (of the 3 other ones) improvement function.
-To make plans, we could use an automaton, which would be automatically able to use all kinds of assigment/improvement functions, and would go through all fibers at random to assign/improve randomly, and the controlable parameter would only be the time we want it to work.
-Nevertheless, a lot of efforts now lead to little improvements of the results. It is likely that we are almost at the global optimum. We only have a doubt on the number of plans/applying and their sets of plates that could improve significantly.
+One could try to search for an "orthogonal" (of the 3 other ones) improvement function.
 
-The problem of colliding fiber positioners is addressed in a simplified way (circles around a fiber) which can be precised.
+Nevertheless, it is likely that we are almost at the global optimum.
 
-We can adapt a little bit the code in order to do assignment and improvements without SS and SF, and only add SS and SF just before launching the observation, using the "replace" function in global.cpp. It's not likely to improve a lot because improve-SS and SF must already improve this way.
-
-The update function might still be improved to lead to more reassignments, and an improvement execution on the current plan could be efficient after several hundred updatings, since some "redistribution" happened with updatings.
-
-We could make plans with only \lya assigned, launching improve function, and then adding separately LRG then improving, and adding again ELG and improving. It's likely that it won't increase results because as we saw before, doing assignments separately in new\_assign already didn't improved results. This kind of optimization must actually be already done by selecting with priorities and executing improvement functions.
-
-
-Make a plan without SS and SF (to keep degrees of freedom for improvement functions) and then assign them only just before the observation.
-
-Do a function which puts all observations by the first tilefiber possible, after redistribution-improvement.
+Other ideas from \cite{fa}
 
 \section{Effect on correlation function}
 One of the difficulties is that we have not to bring experimental bias the way we do the assignment. The fact that a lot of rules are used in the assignment make it more likely that a bias is created.
-
-
+We can do a study, comparing correlation functions given with this fiber assignment and ones with all galaxies.
 
 \bibliographystyle{plain}
 \bibliography{papers}{}

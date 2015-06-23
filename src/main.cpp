@@ -125,7 +125,7 @@ int main(int argc, char **argv) {
 	print_time(time,"# ... took :");
 
 	// Results -------------------------------------------------------
-	//if (F.Output) for (int j=0; j<F.Nplate; j++) write_FAtile_ascii(j,F.outDir,G,P,pp,F,A); // Write output
+	if (F.Output) for (int j=0; j<F.Nplate; j++) write_FAtile_ascii(j,F.outDir,G,P,pp,F,A); // Write output
 	//overlappingTiles("overlaps.txt",F,A); // Write some overlapping tiles (for S.Bailey)
 	print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
 	unused.push_back(histogram(A.unused_fbp(pp,F),1));

@@ -11,7 +11,7 @@ priopost 0 2 3 4 2 3 0 1
 goal 5 1 2 1 1 1 5 5
 
 Randomize false
-Pacman false
+Pacman true
 Npass 5
 MaxSS 10
 MaxSF 40
@@ -39,6 +39,7 @@ PlotDistLya false
 PlotFreeFibHist false
 PlotFreeFibTime false
 PlotSeenDens false
+
 Verif false
 -------------------------------------------------
 
@@ -78,4 +79,5 @@ Verif false
 -NeighborRad : max distance between 2 positioner locations for possible collision
 
 -PlotObsTime PlotHistLya PlotDistLya PlotFreeFibHist PlotFreeFibTime PlotSeenDens : whether we compute and stock those information (takes around 5mn altogether)
+
 -Verif : whether we verificate that the assignment is sane (no collision, sane mapping, etc...)
