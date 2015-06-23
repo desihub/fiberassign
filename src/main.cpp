@@ -49,8 +49,8 @@ int main(int argc, char **argv) {
 	printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
 
 	// Computes geometries of cb and fh
-	F.cb = create_cb();  // cb=central body
-	F.fh = create_fh();  // fh=fiber holder
+	F.cb = create_cb(); // cb=central body
+	F.fh = create_fh(); // fh=fiber holder
 
 	//// Collect available galaxies <-> tilefibers --------------------
 	// HTM Tree of galaxies
@@ -73,42 +73,30 @@ int main(int argc, char **argv) {
 	print_time(t,"# Start assignment at : ");
 
 	// Make a plan ----------------------------------------------------
-	Table unused; Table unused_time; int interv = 5; // For ploting histograms
-
 	new_assign_fibers(G,P,pp,F,A); // Plans whole survey
 
-	// Smooth out distribution of free fibers
-	for (int i=0; i<9; i++) {
-		print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
-		unused.push_back(histogram(A.unused_fbp(pp,F),1));
-		redistribute_tf(G,P,pp,F,A);
-	}
-	// Still not updated, so all QSO targets have multiple observations etc
-	for (int i=0; i<5; i++) {
-		print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
-		unused.push_back(histogram(A.unused_fbp(pp,F),1));
-		improve(G,P,pp,F,A);
-		print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
-		unused.push_back(histogram(A.unused_fbp(pp,F),1));
-		redistribute_tf(G,P,pp,F,A);
-		print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
-		unused.push_back(histogram(A.unused_fbp(pp,F),1));
-		redistribute_tf(G,P,pp,F,A);
-	}
-	for (int i=0; i<4; i++) {
-		print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
-		unused.push_back(histogram(A.unused_fbp(pp,F),1));
-		redistribute_tf(G,P,pp,F,A);
-	}
+	print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
 
+	// Smooth out distribution of free fibers
+	for (int i=0; i<9; i++) redistribute_tf(G,P,pp,F,A);
+	for (int i=0; i<5; i++) {
+		improve(G,P,pp,F,A);
+		redistribute_tf(G,P,pp,F,A);
+		redistribute_tf(G,P,pp,F,A);
+	}
+	for (int i=0; i<4; i++) redistribute_tf(G,P,pp,F,A);
+
+	print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false);
+
+	// Still not updated, so all QSO targets have multiple observations etc
 	// Apply and update the plan --------------------------------------
 	init_time_at(time,"# Begin real time assignment",t);
 	for (int jj=0; jj<F.Nplate; jj++) {
 		int j = A.next_plate;
 		printf(" - Plate %d :",j);
 		assign_sf_ss(j,G,P,pp,F,A);
-		assign_left(j,G,P,pp,F,A); //if unused fibers, assign them
-		if (j%500==0) pyplotTile(j,"doc/figs",G,P,pp,F,A);//beautiful picture of positioners, galaxies
+		assign_left(j,G,P,pp,F,A);
+		if (j%500==0) pyplotTile(j,"doc/figs",G,P,pp,F,A); // Beautiful picture of positioners, galaxies
 		// <-- here is the real observation time
 		printf(" %s not as - ",format(5,f(A.unused_f(j,F))).c_str()); fl();
 		if (0<=j-F.Analysis) update_plan_from_one_obs(G,P,pp,F,A,F.Nplate-1); else printf("\n");
@@ -126,15 +114,8 @@ int main(int argc, char **argv) {
 
 	// Results -------------------------------------------------------
 	if (F.Output) for (int j=0; j<F.Nplate; j++) write_FAtile_ascii(j,F.outDir,G,P,pp,F,A); // Write output
-	//overlappingTiles("overlaps.txt",F,A); // Write some overlapping tiles (for S.Bailey)
-	print_hist("Unused fibers",interv,histogram(A.unused_fbp(pp,F),interv),false);
-	unused.push_back(histogram(A.unused_fbp(pp,F),1));
-	print_mult_table_latex("Histograms of unused fibers","doc/figs/unusedfibs.dat",unused,1);
-
-	init_time_at(time,"# Display results",t);
 	display_results("doc/figs/",G,P,pp,F,A,true);
-	print_time(time,"# ... took :");
-	//if (F.Verif) A.verif(P,G,pp,F); // Verification that the assignment is sane
+	if (F.Verif) A.verif(P,G,pp,F); // Verification that the assignment is sane
 	print_time(t,"# Finished !... in");
 	return(0);
 }
