@@ -21,5 +21,5 @@ Modify parameters in features.txt (input files, etc...)
 
 Compile doc.tex with luatex
 
-To create Tikz graphs, process .dat files as in makepdf.tex
+To create Tikz graphs, process .dat files like in makepdf.tex
 
