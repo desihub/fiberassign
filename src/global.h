@@ -16,7 +16,7 @@
 #include        "misc.h"
 #include        "feat.h"
 #include        "structs.h"
-#include        "../../cfitsio_install/include/fitsio.h"
+/*#include        "../../cfitsio_install/include/fitsio.h"*/
 
 // Collect -----------------------------------------------------------
 // From the HTM tree, collects for each fiber and for each plate, the available galaxies

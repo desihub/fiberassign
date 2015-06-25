@@ -2,13 +2,12 @@ CC=CC
 CURDIR = $(shell pwd)
 CFLAGS= -fopenmp -funroll-loops -O2 -lm -lpthread -dynamic
 FITS= -lcfitsio
-#SFITS= -I/../../cfitsio_install/include/ -L/../../cfitsio_install/lib/
 SFITS= -I/../../cfitsio_install/include/ -L/../../cfitsio_install/lib/
 DEPS = structs.h feat.h misc.h collision.h collision.cpp structs.cpp main.cpp feat.cpp misc.cpp global.cpp global.h
 OBJ = misc.o collision.o feat.o structs.o global.o main.o
 
 all: $(OBJ)
-	$(CC) -o $(SFITS) $(FITS) $(CURDIR)/../assign $(OBJ) $(CFLAGS)  
+	$(CC) -o ../assign $(OBJ) $(CFLAGS)  
 
 misc.o: misc.h misc.cpp
 	$(CC) -c misc.cpp $(CFLAGS)
@@ -23,10 +22,10 @@ structs.o: misc.h feat.h collision.h structs.h structs.cpp
 	$(CC) -c structs.cpp $(CFLAGS)
 
 global.o: misc.h feat.h collision.h structs.h global.h global.cpp
-	$(CC) -c $(SFITS) global.cpp $(CFLAGS) $(FITS)
+	$(CC) -c global.cpp $(CFLAGS)
 
 main.o: misc.h collision.h feat.h structs.h global.h main.cpp 
-	$(CC) -c main.cpp $(CFLAGS) $(FITS)
+	$(CC) -c main.cpp $(CFLAGS)
 
 clean:
 	rm $(OBJ)

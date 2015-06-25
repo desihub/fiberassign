@@ -896,7 +896,7 @@ void write_FAtile_ascii(int j, str outdir, const Gals& G, const Plates& P, const
 }
 
 //writes FITS file, but needs modification for C++
-void fa_write(int j, const char *filename, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) { // Lado Samushia
+/*void fa_write(int j, const char *filename, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) { // Lado Samushia
 	int MAXTGT = 13;
 	// initialize arrays
 	int fiber_id[F.Nfiber];
@@ -1001,7 +1001,7 @@ void fa_write(int j, const char *filename, const Gals& G, const Plates& P, const
 	printf("#\n");
 	fits_report_error(stdout, status);
 	return;
-}
+}*/
 
 void pyplotTile(int j, str directory, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
 	std::vector<char> colors;
