@@ -13,3 +13,13 @@ cd ..
 ------------------------------------------------------
 
 Modify parameters in features.txt (input files, etc...)
+
+
+------------------------------------------------------
+
+"talk0" corresponds to version Vtalk0 (branched on github) which works
+
+Compile doc.tex with luatex
+
+To create Tikz graphs, process .dat files as in makepdf.tex
+

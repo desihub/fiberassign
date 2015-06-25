@@ -54,7 +54,7 @@ int main(int argc, char **argv) {
 
 	//// Collect available galaxies <-> tilefibers --------------------
 	// HTM Tree of galaxies
-	const double MinTreeSize = 0.01; // 
+	const double MinTreeSize = 0.01;
 	init_time_at(time,"# Start building HTM tree",t);
 	htmTree<struct galaxy> T(G,MinTreeSize);
 	print_time(time,"# ... took :");
@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
 
 	print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
 
-	// Smooth out distribution of free fibers
+	// Smooth out distribution of free fibers, and increase the number of assignments
 	for (int i=0; i<9; i++) redistribute_tf(G,P,pp,F,A);
 	for (int i=0; i<5; i++) {
 		improve(G,P,pp,F,A);
@@ -94,16 +94,16 @@ int main(int argc, char **argv) {
 	for (int jj=0; jj<F.Nplate; jj++) {
 		int j = A.next_plate;
 		printf(" - Plate %d :",j);
-		assign_sf_ss(j,G,P,pp,F,A);
+		assign_sf_ss(j,G,P,pp,F,A); // Assign SS and SF just before an observation
 		assign_left(j,G,P,pp,F,A);
-		if (j%500==0) pyplotTile(j,"doc/figs",G,P,pp,F,A); // Beautiful picture of positioners, galaxies
+		if (j%500==0) pyplotTile(j,"doc/figs",G,P,pp,F,A); // Picture of positioners, galaxies
 		// <-- here is the real observation time
 		printf(" %s not as - ",format(5,f(A.unused_f(j,F))).c_str()); fl();
-		if (0<=j-F.Analysis) update_plan_from_one_obs(G,P,pp,F,A,F.Nplate-1); else printf("\n");
 		// Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
+		if (0<=j-F.Analysis) update_plan_from_one_obs(G,P,pp,F,A,F.Nplate-1); else printf("\n");
 		A.next_plate++;
-
-		if (j==100 || j==200 || j==700 || j==1500 || j==3000 || j==5000 || j==7000) {  //redistribute and improve on various occasions
+		// Redistribute and improve on various occasions
+		if (j==100 || j==200 || j==700 || j==1500 || j==3000 || j==5000 || j==7000) {
 			redistribute_tf(G,P,pp,F,A);
 			redistribute_tf(G,P,pp,F,A);
 			improve(G,P,pp,F,A);
