@@ -2,7 +2,7 @@ galFile /project/projectdirs/desi/mocks/preliminary/objects_ss_sf0.rdzipn
 tileFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/footprint/desi-tiles.par
 fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
 outDir /project/projectdirs/desi/users/rncahn/fa_output/
-Output false
+Output true
 
 kind QSOLy-a QSOTracer LRG ELG FakeQSO FakeLRG SS SF
 type QSO QSO LRG ELG QSO LRG SS SF
@@ -22,8 +22,8 @@ InfDens false
 
 TotalArea 15789.0
 invFibArea 700
-moduloGal 1
-moduloFiber 1
+moduloGal 1000
+moduloFiber 100
 
 Collision false
 Exact true

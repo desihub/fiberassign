@@ -16,7 +16,7 @@
 #include        "misc.h"
 #include        "feat.h"
 #include        "structs.h"
-/*#include        "../../cfitsio_install/include/fitsio.h"*/
+#include        "fitsio.h"
 
 // Collect -----------------------------------------------------------
 // From the HTM tree, collects for each fiber and for each plate, the available galaxies
@@ -29,7 +29,7 @@ void collect_available_tilefibers(Gals& G, const Plates& P, const Feat& F);
 // First simple assignment plan, executing find_best on every plate on every fiber
 void simple_assign(const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int next=-1);
 
-// More fine first assignment plan, 
+// Better first assignment plan
 void new_assign_fibers(const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int next=-1);
 
 void improve(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int next=-1);
@@ -51,7 +51,7 @@ void display_results(str outdir, const Gals& G, const Plates &P, const PP& pp, F
 
 void write_FAtile_ascii(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A);
 
-void fa_write(int j, const char *filename, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A);
+void fa_write(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A);
 
 void pyplotTile(int j, str fname, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A);
 

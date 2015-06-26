@@ -1,8 +1,5 @@
 CC=CC
-CURDIR = $(shell pwd)
-CFLAGS= -fopenmp -funroll-loops -O2 -lm -lpthread -dynamic
-FITS= -lcfitsio
-SFITS= -I/../../cfitsio_install/include/ -L/../../cfitsio_install/lib/
+CFLAGS= -fopenmp -g -funroll-loops -O2 -lm -lpthread -dynamic $(CFITSIO)
 DEPS = structs.h feat.h misc.h collision.h collision.cpp structs.cpp main.cpp feat.cpp misc.cpp global.cpp global.h
 OBJ = misc.o collision.o feat.o structs.o global.o main.o
 
