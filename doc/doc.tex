@@ -14,7 +14,7 @@
 \usepackage{multicol}
 \usepackage{indentfirst}
 \usepackage{pstricks,pstricks-add,pst-math,pst-xkey}
-\usepackage{amsmath}
+\usepackage{amssymb,amsmath}
 \usepackage{algorithm}
 \usepackage[noend]{algpseudocode}
 \usepackage{float}
@@ -28,9 +28,6 @@
 \usepackage{gensymb}
 %Needed for problems with bibtex
 \usepackage{hyperref}
-\usepackage{harvard}
-\usepackage{url}
-
 %PGF plot
 \usepackage{pgfplots,pgfplotstable}
 \usepgfplotslibrary{statistics}
@@ -63,6 +60,8 @@
 \addtolength{\leftmargin}{#1}%
 \addtolength{\rightmargin}{#2}%
 }\item }{\end{list}}
+
+\newcommand{\fact}[1]{#1\mathpunct{}!}
 
 %\begin{changemargin}{0cm}{0cm}
 %\end{changemargin}
@@ -341,7 +340,7 @@ The third idea is to take an assigned fiber that is able to reach a SF (or SS), 
 \subsection{Assigning making a plan}
 In the simulated catalog, we know all information on objects (if a QSO is a real one for example). During the real study, one won't have access to this information prior to the observation plus analysis time. Thus, in the code, we have to simulate that we have this information only when we have at least once observed the object, and when the analysis of received data tells which exact type it is (fake or not for ELG for example). Algorithms do a plan with only types of objects (QSO, LRG, ELG) available in the catalog. A plan consists of an assignment on a set of consecutive tiles (from 0 to 2000 for instance). The assignment works better when we do only one plan.
 
-The argument "next" (integer) in following functions means that we treat all next "next" plates in the plan we make. If it is $-1$, it will deal with all left plates. For example, if $next_plate = 10$ and one launch a function with $next = 100$, this function is going to do his job on plates from 10 to 110.
+The argument "next" (integer) in following functions means that we treat all next "next" plates in the plan we make. If it is $-1$, it will deal with all left plates. For example, if $next\_plate = 10$ and one launch a function with $next = 100$, this function is going to do his job on plates from 10 to 110.
 
 {\tt simple\_assign} makes a first simple assignment plan : for each fiber assign to the best available galaxy
 
@@ -472,7 +471,7 @@ Histograms are written in Tikz format.
 
 {\tt results\_on\_inputs} displays some statistics on input files (histogram of number of objects in range of a fiber, histogram of number of tile-fibers which can observe a given object, histogram of redshifts by type)
 
-{\tt display\_results} provides the tex-formated results to make Table \ref{tab:full14k} and writes histograms one can see further in this document
+{\tt display\_results} provides the tex-formated results to make Table \ref{res} and writes histograms one can see further in this document
 
 {\tt write\_FAtile\_ascii(j)} writes output of the assignment in ASCII format
 
@@ -508,26 +507,27 @@ Histograms are written in Tikz format.
 Assigning only QSO, LRG and ELG, not SS and SF when making the plan leads to have a lot more degrees of freedom for the improvement function, which is then much more efficient. Redistributing unused fibers by petal permits to replace the least ELG possible when assigning SS and SF just before an observation.
 
 When applying the plan, sometimes redistributing-improving the plan is very efficient, it updates the further plan (compared to the initial maked plan, just before begining the study), taking into account that some new fibers have been released and that we have new information on precise kind of objects.
+We also do improvement/redistribution process during the observation 5-years time.
 
-Here is presented, in the Figure \ref{unusedfibs0}, histograms of unused fibers per petal, during redistribution/improvement process. The goal is to have 50 unused fibers per petal before begining observations.
+Here is presented, in the Figure \ref{unusedfibs0}, histograms of unused fibers per petal, during redistribution/improvement process when making the first plan. The goal is to have 50 unused fibers per petal before begining observations.
 
 \begin{figure}[H]\begin{center}
 	\includegraphics[scale=1]{figs/graph/unusedfibs0.pdf}
 	\caption{Unused fibers, at different steps}\label{unusedfibs0}
 \end{center}\end{figure}
 
+Here is the the same type of graphic but with more redistributions-improvements, and the same with a linear y axis.
+
 \begin{figure}[H]\begin{center}
-	\includegraphics[scale=1]{figs/graph/unusedfibs.pdf}
+	\includegraphics[scale=0.6]{figs/graph/unusedfibs.pdf}
 	\caption{Unused fibers, at different steps, with more improvements}\label{unusedfibs}
 \end{center}\end{figure}
 
 \begin{figure}[H]\begin{center}
-	\includegraphics[scale=1]{figs/graph/unusedfibsnolog.pdf}
+	\includegraphics[scale=0.6]{figs/graph/unusedfibsnolog.pdf}
 	\caption{Same, no in log scale}\label{unusedfibsnolog}
 \end{center}\end{figure}
 
-
-We also do improvement/redistribution process during the observation 5-years time.
 
 \subsection{Algorithm, more precisely}
 
@@ -550,7 +550,7 @@ We also do improvement/redistribution process during the observation 5-years tim
 		\State Possibly "pyplot" the planned observed tile
 		\State Real observation is here
 		\State Update information collected on the previously observed Analysis'th past tile with update\_plan\_from\_one\_obs
-		\State If we are in the plate 100, or 300, or 800, or... Redistribute + Improve + Redistribute (on all the plan of remaining tiles)
+		\State If we are in the plate 100, or 300, or 800, or... 2xRedistribute + Improve + Redistribute (on all the plan of remaining tiles)
 		\EndFor
 	\end{algorithmic}
 \end{algorithm}
@@ -559,7 +559,7 @@ A standard output display of an execution looks like that (for assignment plan a
 
 {\tt \small 
 
-\# Read 71,998,144 galaxies from /project/projectdirs/desi/mocks/preliminary/objects\_ss\_sf0.rdzipn \\
+\noindent\# Read 71,998,144 galaxies from /project/projectdirs/desi/mocks/preliminary/objects\_ss\_sf0.rdzipn \\
 \# Read 10,666 plate centers from /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/footprint/desi-tiles.par and 
 5000 fibers from /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt \\
 \# Start building HTM tree at 13.8 s \\
@@ -611,7 +611,7 @@ A standard output display of an execution looks like that (for assignment plan a
 ...\\
 }
 
-After an observed tile, we print the number of unassigned fibers on it, the number of further objects unassigned because they were analysed as fake, and the number of those tile-fibers that have been successfully reassigned
+After an observed tile, we print the number of unassigned fibers on it, the number of further objects unassigned because they were analysed as fake, and the number of the corresponding tile-fibers that have been successfully reassigned.
 
 \section{Results}
 \subsection{Results on the input catalog}
@@ -643,7 +643,7 @@ We tried to run it with an "ideal" infinite density of SS and SF, which only led
 \subsection{Sum-up of assigned galaxies}
 The weighted score of a certain kind is defined as : 
 \vspace{1\baselineskip}
-$Score(kind) = 100\cdot \frac{\sum\nolimits_{g \in kind} obs(g)}{\sum\nolimits_{g \in kind} goal}$ where $obs(g)$ is the number of times g is observed.
+$Score(kind) = 100\cdot \frac{\sum\limits_{g \in kind} obs(g)}{\sum\limits_{g \in kind} goal}$ where $obs(g)$ is the number of times g is observed.
 
 A sum-up table of general results on assignment is provided on Table \ref{res}.
 
@@ -665,37 +665,33 @@ A sum-up table of general results on assignment is provided on Table \ref{res}.
 
 Furthermore, there are 51,044,452 assignments in total (95.7143 \% of all fibers).
 
-\subsection{Pacman plate}
-On the Table \ref{pac}, we present results of the assignment taking for input the fiber locations files of the pacman (plate deprived of 4 petals) used in case of run out of money. Every parameter is the same. As one can notice, they are quite similar to regular ones.
+%To be computed !
+%\subsection{Pacman plate}
+%On the Table \ref{pac}, we present results of the assignment taking for input the fiber locations files of the pacman (plate deprived of 4 petals) used in case of run out of money. Every parameter is the same.
 
-\begin{table}[H]\begin{center}
-\begin{tabular}{rrrrrrrrrrcc}
-\hline
-\multicolumn{6}{r}{Times observed} \\
-	~ &           0 &     1 &  2 & 3 & 4 & 5 &  Total & Fiber used & Once observed & observed $\%$ & weighted $\%$ \\ \hline
-   QSO Ly-a   &     1 &     1 &   4 & 14 & 27 & 0 &    49 &   166 &    48 & 97.593 & 66.818 \\ 
- QSO Tracer   &     2 &   117 &   0 &  0 &  0 & 0 &   119 &   117 &   117 & 97.575 & 97.575 \\ 
-        LRG   &    17 &    33 & 247 &  0 &  0 & 0 &   298 &   528 &   280 & 93.987 & 88.411 \\ 
-        ELG   &   493 & 1,918 &   0 &  0 &  0 & 0 & 2,411 & 1,918 & 1,918 & 79.540 & 79.540 \\ 
-   Fake QSO   &     2 &    87 &   0 &  0 &  0 & 0 &    90 &    87 &    87 & 97.579 & 97.579 \\ 
-   Fake LRG   &     2 &    47 &   0 &  0 &  0 & 0 &    50 &    47 &    47 & 94.608 & 94.608 \\ 
+%\begin{table}[H]\begin{center}
+%\begin{tabular}{rrrrrrrrrrcc}
+%\hline
+%\multicolumn{6}{r}{Times observed} \\
+	%~ &           0 &     1 &  2 & 3 & 4 & 5 &  Total & Fiber used & Once observed & observed $\%$ & weighted $\%$ \\ \hline
 
-\hline
-\end{tabular}
-\caption{Same than Table \ref{res} but with the pacman}\label{pac}
-\end{center}\end{table}
+
+%\hline
+%\end{tabular}
+%\caption{Same than Table \ref{res} but with the pacman}\label{pac}
+%\end{center}\end{table}
 
 
 \subsection{Free fibers}
-Here are the histogram of petals as a function of free fibers on Figure \ref{freefib} and the number of free fibers for each plate, in inscreasing order on Figure \ref{fft}.
+Here are the histogram of petals as a function of free fibers and the number of free fibers for each plate, in inscreasing order on Figure \ref{fft}. One can see on the second one the 5 different passes.
 
 \begin{figure}[H]\begin{center}
-	\includegraphics[scale=1]{figs/graph/freefib.pdf}
-	\includegraphics[scale=1]{figs/graph/fft.pdf}\hfill
+	\includegraphics[scale=0.9]{figs/graph/freefib.pdf}
+	\includegraphics[scale=0.9]{figs/graph/fft.pdf}\hfill
 	\caption{\# of petals with that many free fibers and free fibers as a function of time (plates)}\label{fft}
 \end{center}\end{figure}
 
-On the Figure \ref{seendens}, one can seen the proportion of observed objects as a function of their density. "usq" stands for unity of square degrees, its the area of the sky reachable by a single fiber. Keep Figure \ref{avgalhist} in mind while reading this one.
+On Figure \ref{seendens}, one can see the proportion of observed objects as a function of their density. "usq" stands for unity of square degrees, it's the area of the sky reachable by a single fiber. As expected, when density inscreases, proportion of observed objects decreases.
 
 \begin{figure}[H]\begin{center}
 	\includegraphics[scale=1]{figs/graph/seendens.pdf}
@@ -704,7 +700,7 @@ On the Figure \ref{seendens}, one can seen the proportion of observed objects as
 
 
 \subsection{Results on \lya particularly}
-The figure \ref{histastf} gives the histogram of proportion of assigned \lya and the number of observations as a function of available TF.
+Figure \ref{histastf} gives the histogram of proportion of assigned \lya and the number of observations as a function of available tile-fibers.
 
 \begin{figure}[H]\begin{center}
 	\includegraphics[scale=1]{figs/graph/obsly.pdf}
@@ -725,27 +721,27 @@ The figure \ref{histastf} gives the histogram of proportion of assigned \lya and
 \end{center}\end{figure}
 
 \subsection{Choice by density}
-The assignment could include the idea well described in \cite{fa} which consists in, when you have the choice of several fibers to observe an object, you choose the one which has the least density of (weighted) remaining available objects in reach. This way, "busy" fibers are more available. Of course, it will introduce a bias in the survey, and since it doesn't improve results (it's likely because redistribution/improvement functions already make this optimization) we can avoid it. An illustration taken from \cite{fa} is in Figure \ref{act}.
+The assignment could include the idea well described in $[1]$ which consists in, when you have the choice of several fibers to observe an object, you choose the one which has the least density of (weighted) remaining available objects in reach. This way, "busy" fibers are more available. Of course, it will introduce a bias in the survey, and since it doesn't improve results (it's likely because redistribution/improvement functions already make this optimization) we can avoid it. An illustration taken from $[1]$ is in Figure \ref{act}.
 
 \begin{figure}[H]\begin{center}
-	\includegraphics[scale=0.2]{figs/act.eps}
+	\includegraphics[scale=0.15]{figs/act.eps}
 	\caption{Choice by density : A is chosen to observe 1}\label{act}
 \end{center}\end{figure}
 
 \subsection{Tiling strategy}
-The tiling strategy is important and should separate overlapping tiles for more than "Analysis". This way, the assignment can be updated in order to avoid observing twice the same object. The results are then improved in a non negligible rate.
+The tiling strategy is important and should separate overlapping tiles for more than "Analysis". This way, the assignment can be updated in order to avoid observing twice the same object. The results are then improved in a non negligible rate. Fiber assignment results may help to choose the best strategy.
 
 
 \section{Collision problem}
 Fiber geometry can be found at \href{https://desi.lbl.gov/DocDB/cgi-bin/private/ShowDocument?docid=899}{this address}, which is a work of Joe Silber. The exact geometry as built in our program can be seen on Figure \ref{onefib}, which consists in two circles and several segments. The black dot point is the center of the positioner, and other ones are objects in reach.
 
 \begin{figure}[H]\begin{center}
-	\includegraphics[scale=0.8]{figs/one_fib.pdf}
+	\includegraphics[scale=0.7]{figs/one_fib.pdf}
 	\caption{Geometry of a fiber positioner, with fiber holder and central body oriented}\label{onefib}
 \end{center}\end{figure}
 
 In the features file the "Exact" boolean indicates whether we choose the exact geometry of the fiber positioners. If not, collisions are computed with only circles at the position of the fiber holder, of radius $AvCollide$, which we calibrate such that we get the same collision rate than with the exact geometry ($\sim$ 10.8\% of fibers collide). If the exact geometry is on, the modules collision.h and collision.cpp are used to check. They then build sets of circles or segments, and check collisions between those belonging to the first fiber positioner to the ones belonging to the second one.
-Computationnally cheap methods were used for segment-segment and circle-segment checking, because checking functions are called a lot of time, and optimization of those methods lead to considerably decrease total computation time. That is why we use circle and segments, not only segments : creating an arc with segments needs a lot of them, but only one circle.
+Computationnally cheap methods were absolutely necessary and used for segment-segment and circle-segment checking, because checking functions are called a lot of time, and optimization of those methods lead to considerably decrease total computation time. That is why we use circle and segments, not only segments : creating an arc with segments needs a lot of them, but only one circle.
 
 Figure \ref{coldist} is the histogram of distances between two galaxies, in a collision case, and its integral.
 
@@ -755,13 +751,14 @@ Figure \ref{coldist} is the histogram of distances between two galaxies, in a co
 	\caption{Histogram of distances between galaxies in collision case, and integral}\label{coldist}
 \end{center}\end{figure}
 
-Here is an article on the problem to reach the final position for the positioner without colliding a neighboring one : \cite{collision}
+$[2]$ is an article about the problem of reaching final position for the positioner without colliding a neighboring one.
 
 \section{Tile ploting}
-The function pyplotTile builds a tile.py file, which can be executed manually with python tile.py to create the pdf plot.
-Only objects that would need at least one further observation are projected on the plate and ploted. The function has to be called just before real observation time, otherwise, if it is called at the end for example, information on number of observations of an object would be the one that we have at the end, and not on the way.
-A black dot is ploted when there is an unassigned fiber at some place, not to mix up with fiducials (totally white), places where there is physically no fiber.
-Watching at a dozen of tile plots, one can convince hiself that the assignment is very close to the optimum.
+The function pyplotTile builds a tile.py file, which can be executed manually with {\tt python tile.py} to create the pdf plot.
+Only objects that would need at least one remaining observation are projected on the plate and ploted. The function has to be called just before real observation time, otherwise, if it is called at the end for example, information on number of observations of an object would be the one that we have at the end, and not on the way.
+
+A grey circle is ploted when there is an unassigned fiber at some place, not to mix up with fiducials (totally white), places where there is physically no fiber.
+Watching at a dozen of tile plots, one can convince oneself that the assignment is very close to the optimum.
 
 \begin{figure}[H]
 \hspace*{-1.5cm}
@@ -774,18 +771,50 @@ In the library, functions are written to put data into .dat files, which can be 
 
 There is a function of verification which check several features of the assignment to know if it is sane (no collision, regular mapping, etc...).
 
+\section{Effect on correlation function}
+One of the difficulties is that we have not to bring experimental bias the way we do the assignment. The fact that a lot of rules are used in the assignment makes it more likely that a bias is created.
+We can do a study, comparing correlation functions given with this fiber assignment and ones with all galaxies.
+
+
+\section{Mathematical optimum}
+Have we reached the optimum ? We have to master, understand, results we get from mathematical computations.
+
+Imagine a portion S of the sky of the size the reacheable area by a single fiber. Let i be the indice for different kinds (\lya, fake QSO, ... except SS or SF). Let $\lambda_{i}$ be the densities of the kinds of objects in S. Let N be the indice for the portions of sky with exactly N objects (when we take an area of size S). Let $f_{N}$ be the fraction of the sky which density corresponds to N. Let $poisson(x,n) = \frac{x^{n}e^{-x}}{n\text{!}}$ be the Poisson distribution. Then, for a given ELG in S, named e, the probability to be observed is :
+
+	\begin{equation}
+\begin{split} 
+	p(\text{observe e}) =& \sum\limits_{1 \le N \le 10} f_{N} \sum\limits_{0 \le A \le N-1\text{ and }1 \le B \le \infty} p(\text{\tiny A objects having priority over an ELG}) \cdot p(\text{\tiny B ELG and e is chosen among the N-A firsts})\\
+	=& \sum\limits_{1 \le N \le 10} f_{N} \sum\limits_{0 \le A \le N-1\text{ and }1 \le B \le \infty} p(A) \cdot p(\text{\tiny B ELG}) \cdot p(\text{\tiny e is chosen among the N-A firsts})\\
+	=& \sum\limits_{1 \le N \le 10} f_{N} \sum\limits_{0 \le A \le N-1} \sum\limits_{1 \le B \le \infty} p(A) \cdot \frac{\lambda_{ELG}^{B}e^{-\lambda_{ELG}}}{B\text{!}} \cdot \frac{N-A}{B}\\
+	=& I\cdot\sum\limits_{1 \le N \le 10} f_{N} \sum\limits_{0 \le A \le N-1} p(A) (N-A)
+\end{split} 
+	\end{equation}
+
+	where $I = e^{-\lambda_{ELG}} \int\limits_{0}^{\lambda_{ELG}} \frac{e^{\lambda}-1}{\lambda} d\lambda$ 
+	
+	Also we define the set L of objects with priority against ELG, which are \lya, fake QSO, QSO target, LRG and fake LRG. Then, for $i \in L$ :
+	
+	$p(A) = \sum\limits_{n_{i} st \sum\limits_{i} goal(i)n_{i} = A} \prod\limits_{i} poisson(\lambda_{i},n_{i})$
+
+	One use the same method to compute theoretical percentage of observed QSO and LRG.
+
 \section{Possible improvements}
 One could try to search for an "orthogonal" (of the 3 other ones) improvement function.
 
 Nevertheless, it is likely that we are almost at the global optimum.
 
-Other ideas from \cite{fa}
+Other ideas from $[1]$.
 
-\section{Effect on correlation function}
-One of the difficulties is that we have not to bring experimental bias the way we do the assignment. The fact that a lot of rules are used in the assignment make it more likely that a bias is created.
-We can do a study, comparing correlation functions given with this fiber assignment and ones with all galaxies.
 
 \bibliographystyle{plain}
-\bibliography{papers}{}
+%\bibliography{papers}{}
+
+  \begin{thebibliography}{1}
+
+  \bibitem{fa} Morales {\em Fiber assignment in next-generation wide-field spectrographs}  2012.
+
+  \bibitem{collision} Makarem {\em Collision avoidance in next-generation fiber positioner robotic systems for large survey spectrographs}  2014.
+
+  \end{thebibliography}
 
 \end{document}

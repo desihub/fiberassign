@@ -376,7 +376,7 @@ Then, for a given ELG in S, named e, the probability to be observed is :
 		\begin{tiny}
 	\begin{equation}\label{}
 
-	$p(\text{\observe e})=\sum\limits_{1 \le N \le 10} f_{k} \sum\limits_{0 \le A \le N-1 and 1 \le B \le \infty} p(\text{\tiny A objects having priority over an ELG}) \cdot p(\text{\tiny B ELG and e is chosen among the N-A firsts})\\
+	p(\text{observe e})=\sum\limits_{1 \le N \le 10} f_{k} \sum\limits_{0 \le A \le N-1 and 1 \le B \le \infty} p(\text{\tiny A objects having priority over an ELG}) \cdot p(\text{\tiny B ELG and e is chosen among the N-A firsts})\\
 	= \sum\limits_{1 \le N \le 10} f_{k} \sum\limits_{0 \le A \le N-1 and 1 \le B \le \infty} p(A) \cdot p(\text{\tiny B ELG}) \cdot p(\text{\tiny e is chosen among the N-A firsts})\\
 	= \sum\limits_{1 \le N \le 10} f_{k} \sum\limits_{0 \le A \le N-1} \sum\limits_{1 \le B \le \infty} p(A) \cdot \frac{\lambda_{ELG}^{B}e^{-\lambda_{ELG}}}{B!} \cdot \frac{N-A}{B}\\
 = I\cdot\sum\limits_{1 \le N \le 10} f_{k} \sum\limits_{0 \le A \le N-1} p(A) (N-A)
