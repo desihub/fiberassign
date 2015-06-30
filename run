@@ -1,7 +1,7 @@
 #PBS -S /bin/bash
 #PBS -N Assign
-#PBS -l mppwidth=24,walltime=0:29:30
-#PBS -q debug
+#PBS -l mppwidth=24,walltime=1:29:30
+#PBS -q premium
 #PBS -V
 
 cd $PBS_O_WORKDIR
