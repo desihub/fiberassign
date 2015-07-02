@@ -1,7 +1,10 @@
 Fiber assignment code for DESI
 ------------------------------------------------------
+
 If the master version does not work, you may want to use the Vtalk0 branch version, which works
+
 ------------------------------------------------------
+
  On Nersc, load modules PrgEnv-gnu and cfitsio like that :
 
 load module PrgEnv-gnu
