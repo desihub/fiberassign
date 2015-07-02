@@ -55,7 +55,7 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 				dpair X = pp.coords(k);
 				std::vector<int> gals = kdT.near(&(pp.fp[2*k]),0.0,F.PatrolRad);
 				if (MAXAVGAL<=gals.size()) {
-					printf("In collect galaxies : exceeds size, increase MAXAVGAL\n");
+					printf("In collect galaxies : exceeds size, increase MAXAVGAL\n"); fl();
 					exit(1);
 				}
 				for (int g=0; g<gals.size(); g++) {
