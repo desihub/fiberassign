@@ -11,7 +11,7 @@ priopost 0 2 3 4 2 3 0 1
 goal 5 1 2 1 1 1 5 5
 
 Randomize false
-Pacman true
+Pacman false
 Npass 5
 MaxSS 10
 MaxSF 40

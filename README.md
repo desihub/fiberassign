@@ -1,5 +1,15 @@
 Fiber assignment code for DESI
 ------------------------------------------------------
+If the master version does not work, you may want to use the Vtalk0 branch version, which works
+------------------------------------------------------
+ On Nersc, load modules PrgEnv-gnu and cfitsio like that :
+
+load module PrgEnv-gnu
+
+load module cfitsio
+
+------------------------------------------------------
+
 In a nutshell (to run it) :
 
 cd src
@@ -9,9 +19,6 @@ make all
 cd ..
 
 ./assign features.txt (or on NERSC : "qsub run", script that does it on your NERSC account)
-
-------------------------------------------------------
- On Nersc, load modules PrgEnv-gnu and cfitsio
 
 ------------------------------------------------------
 
