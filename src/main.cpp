@@ -16,7 +16,7 @@
 #include        "structs.h"
 #include        "collision.h"
 #include        "global.h"
-
+//reduce redistributes, updates  07/02/15 rnc
 int main(int argc, char **argv) {
 	//// Initializations ---------------------------------------------
 	srand48(1234); // Make sure we have reproducability
@@ -78,13 +78,13 @@ int main(int argc, char **argv) {
 	print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
 
 	// Smooth out distribution of free fibers, and increase the number of assignments
-	for (int i=0; i<9; i++) redistribute_tf(G,P,pp,F,A);
-	for (int i=0; i<5; i++) {
+	for (int i=0; i<1; i++) redistribute_tf(G,P,pp,F,A);
+	for (int i=0; i<1; i++) {
 		improve(G,P,pp,F,A);
 		redistribute_tf(G,P,pp,F,A);
 		redistribute_tf(G,P,pp,F,A);
 	}
-	for (int i=0; i<4; i++) redistribute_tf(G,P,pp,F,A);
+	for (int i=0; i<1; i++) redistribute_tf(G,P,pp,F,A);
 
 	print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false);
 
@@ -103,7 +103,7 @@ int main(int argc, char **argv) {
 		if (0<=j-F.Analysis) update_plan_from_one_obs(G,P,pp,F,A,F.Nplate-1); else printf("\n");
 		A.next_plate++;
 		// Redistribute and improve on various occasions
-		if (j==100 || j==200 || j==700 || j==1500 || j==3000 || j==5000 || j==7000) {
+		if (j==200 ||  j==3000 ) {
 			redistribute_tf(G,P,pp,F,A);
 			redistribute_tf(G,P,pp,F,A);
 			improve(G,P,pp,F,A);
