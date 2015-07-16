@@ -915,6 +915,7 @@ void write_FAtile_ascii(int j, str outdir, const Gals& G, const Plates& P, const
 }
 
 //writes FITS file, but needs modification for C++
+
 void fa_write(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) { // Lado Samushia
 
 	str s = outdir+"tile"+i2s(j)+".fits";
@@ -971,6 +972,7 @@ void fa_write(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, c
 		tot_targets += P[j].av_gals[i].size();
 	}
 	// write to fits file
+#ifdef FITS
 	int status;
 	fitsfile *fptr;
 	fits_create_file(&fptr, filename, &status);
@@ -1028,8 +1030,10 @@ void fa_write(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	fits_close_file(fptr, &status);
 	printf("#\n");
 	fits_report_error(stdout, status);
+#endif
 	return;
 }
+
 
 void pyplotTile(int j, str directory, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
 	std::vector<char> colors;

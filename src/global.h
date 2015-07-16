@@ -16,7 +16,9 @@
 #include        "misc.h"
 #include        "feat.h"
 #include        "structs.h"
+#ifdef FITS
 #include        "fitsio.h"
+#endif
 
 // Collect -----------------------------------------------------------
 // From the HTM tree, collects for each fiber and for each plate, the available galaxies
