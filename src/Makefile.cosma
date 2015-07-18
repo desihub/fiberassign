@@ -4,7 +4,7 @@ DEPS = structs.h feat.h misc.h collision.h collision.cpp structs.cpp main.cpp fe
 OBJ = misc.o collision.o feat.o structs.o global.o main.o
 
 all: $(OBJ)
-	$(CC) -o ../assign $(OBJ) $(CFLAGS)  
+	$(CC) -o ../script/assign $(OBJ) $(CFLAGS)  
 
 misc.o: misc.h misc.cpp
 	$(CC) -c misc.cpp $(CFLAGS)
