@@ -28,7 +28,7 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 	List permut = random_permut(F.Nplate);
 	double rad = F.PlateRadius*M_PI/180.;
 	int jj;
-	int MAXAVGAL = 50; // Upper limit of max number of available galaxies. This way, avoids using mutex
+	int MAXAVGAL = 5000; // Upper limit of max number of available galaxies. This way, avoids using mutex
 	//omp_set_num_threads(24);
 	for (int j=0; j<F.Nplate; j++) P[j].av_gals = initTable(F.Nfiber,MAXAVGAL,-1);
 #pragma omp parallel
