@@ -32,7 +32,7 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 #pragma omp parallel
 	{ 	int id = omp_get_thread_num(); if (id==0) printf(" ");
 		// Collects for each plate
-		for (jj=id; jj<F.Nplate; jj++) { // <- begins at id, otherwise all begin at 0 -> conflict. Do all plates anyway
+		for (jj=id; jj<F.Nplate; jj++) { // <- begins at id, otherwise all begin at 0 -> conflict. Does all plates anyway
 			int j = permut[jj];
 			plate p = P[j];
 			// Takes neighboring galaxies that can be reached by this plate

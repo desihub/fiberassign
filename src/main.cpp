@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
 	F.Nfiber = pp.fp.size()/2; 
 	F.Npetal = max(pp.spectrom)+1; // spectrometer has to be identified from 0 to F.Npetal-1
 	F.Nfbp = (int) (F.Nfiber/F.Npetal);
-	pp.get_neighbors(F); pp.compute_fibsofsp(F);
+	pp.get_neighbors(F); pp.compute_fibsofsp(F);//get neighbors of each fiber;for each spectrometer,get list of fibers
 
 	// Read plates
 	Plates P = read_plate_centers(F); 
@@ -60,10 +60,10 @@ int main(int argc, char **argv) {
 	print_time(time,"# ... took :");
 	//T.stats();
 	
-	// For plates/fibers, collect available galaxies
+	// For plates/fibers, collect available galaxies; done in parallel  P[plate j].av_gal[k]=[g1,g2,..]
 	collect_galaxies_for_all(G,T,P,pp,F);
 	
-	// For each galaxy, computes available tilefibers
+	// For each galaxy, computes available tilefibers  G[i].av_tfs = [(j1,k1),(j2,k2),..]
 	collect_available_tilefibers(G,P,F);
 
 	//results_on_inputs("doc/figs/",G,P,F,true);
@@ -102,8 +102,8 @@ int main(int argc, char **argv) {
 		// Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
 		if (0<=j-F.Analysis) update_plan_from_one_obs(G,P,pp,F,A,F.Nplate-1); else printf("\n");
 		A.next_plate++;
-		// Redistribute and improve on various occasions
-		if (j==200 ||  j==3000 ) {
+		// Redistribute and improve on various occasions  add more times if desired
+		if ( j==3000 ) {
 			redistribute_tf(G,P,pp,F,A);
 			redistribute_tf(G,P,pp,F,A);
 			improve(G,P,pp,F,A);
