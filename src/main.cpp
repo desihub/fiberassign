@@ -93,12 +93,12 @@ int main(int argc, char **argv) {
 	init_time_at(time,"# Begin real time assignment",t);
 	for (int jj=0; jj<F.Nplate; jj++) {
 		int j = A.next_plate;
-		printf(" - Plate %d :",j);
+		//printf(" - Plate %d :",j);
 		assign_sf_ss(j,G,P,pp,F,A); // Assign SS and SF just before an observation
 		assign_left(j,G,P,pp,F,A);
-		if (j%500==0) pyplotTile(j,"doc/figs",G,P,pp,F,A); // Picture of positioners, galaxies
+		//if (j%500==0) pyplotTile(j,"doc/figs",G,P,pp,F,A); // Picture of positioners, galaxies
 		// <-- here is the real observation time
-		printf(" %s not as - ",format(5,f(A.unused_f(j,F))).c_str()); fl();
+		//printf(" %s not as - ",format(5,f(A.unused_f(j,F))).c_str()); fl();
 		// Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
 		if (0<=j-F.Analysis) update_plan_from_one_obs(G,P,pp,F,A,F.Nplate-1); else printf("\n");
 		A.next_plate++;
