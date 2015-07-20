@@ -2,7 +2,7 @@ galFile /gpfs/data/jeforero/desidata/inputfiber/Targets_Tile_00000.rdzipn
 tileFile /gpfs/data/jeforero/desimodel/data/footprint/desi-tiles.par
 fibFile /gpfs/data/jeforero/desimodel/data/focalplane/fiberpos.txt
 outDir /gpfs/data/jeforero/desidata/outputfiber/
-Output False
+Output true
 
 kind QSOLy-a QSOTracer LRG ELG FakeQSO FakeLRG SS SF
 type QSO QSO LRG ELG QSO LRG SS SF
@@ -10,7 +10,7 @@ prio 2 2 3 4 2 3 0 1
 priopost 0 2 3 4 2 3 0 1
 goal 5 1 2 1 1 1 5 5
 
-Randomize false
+Randomize true
 Pacman false
 Npass 5
 MaxSS 10
