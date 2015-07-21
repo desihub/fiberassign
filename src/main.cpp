@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
 	init_time(t);
 	Feat F;
 
-	// Read parameters file
+	// Read parameters file //
 	F.readInputFile(argv[1]);
 	printFile(argv[1]);
 
