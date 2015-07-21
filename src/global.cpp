@@ -870,7 +870,9 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 
 	// Count
 	if (F.Count!=0) printf("Count = %d \n",F.Count);
+    // print no. of times each galaxy is observed up to max of F.PrintGalObs
     if (F.PrintGalObs>0){
+        printf(" F.PrintGalObs  %d \n",F.PrintGalObs);
         for(int g=0;g<F.PrintGalObs;++g){
                 int id = G[g].id;
                 int m = A.nobs(g,G,F,false);

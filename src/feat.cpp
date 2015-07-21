@@ -138,7 +138,7 @@ void Feat::readInputFile(const char file[]) {
 			if (tok[0]=="PlotFreeFibTime") PlotFreeFibTime = s2b(tok[1]);
 			if (tok[0]=="PlotSeenDens") PlotSeenDens = s2b(tok[1]);
 			if (tok[0]=="Verif") Verif = s2b(tok[1]);
-            if (tok[0]=="PrintGalObs") PrintGalObs = s2b(tok[1]);
+            if (tok[0]=="PrintGalObs") PrintGalObs = s2i(tok[1]);
 		}
 	}
 	fIn.close();

@@ -39,7 +39,7 @@ PlotDistLya false
 PlotFreeFibHist false
 PlotFreeFibTime false
 PlotSeenDens false
-PrintGalObs 100
+PrintGalObs 1000
 
 Verif false
 -------------------------------------------------
