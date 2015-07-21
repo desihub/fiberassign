@@ -870,6 +870,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 
 	// Count
 	if (F.Count!=0) printf("Count = %d \n",F.Count);
+    // if PrintGalObs
 }
 
 void write_FAtile_ascii(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
