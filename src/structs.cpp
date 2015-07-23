@@ -80,6 +80,7 @@ Gals read_galaxies(const Feat& F) {
 		Q.dec = dc[i];
 		Q.z = zz[i];
 		try{P.push_back(Q);}catch(std::exception& e) {myexception(e);}
+ 
 		}
 	}
 	return P;

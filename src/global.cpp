@@ -29,10 +29,10 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 	double rad = F.PlateRadius*M_PI/180.;
 	int jj;
 	//omp_set_num_threads(24);
-#pragma omp parallel
+    #pragma omp parallel
 	{ 	int id = omp_get_thread_num(); if (id==0) printf(" ");
 		// Collects for each plate
-		for (jj=id; jj<F.Nplate; jj++) { // <- begins at id, otherwise all begin at 0 -> conflict. Do all plates anyway
+		for (jj=id; jj<F.Nplate; jj++) { // <- begins at id, otherwise all begin at 0 -> conflict. Does all plates anyway
 			int j = permut[jj];
 			plate p = P[j];
 			// Takes neighboring galaxies that can be reached by this plate
@@ -373,7 +373,7 @@ void update_plan_from_one_obs(const Gals& G, const Plates&P, const PP& pp, const
 		}
 	}
 	int na_end(A.na(F,j0,n));
-	printf(" %4d unas & %4d replaced\n",cnt,na_end-na_start+cnt); fl();
+	//printf(" %4d unas & %4d replaced\n",cnt,na_end-na_start+cnt); fl();
 }
 
 // If not enough SS and SF, remove old_kind an replace to SS-SF (new_kind) on petal (j,p)
@@ -524,24 +524,24 @@ void redistribute_tf(const Gals& G, const Plates&P, const PP& pp, const Feat& F,
 	//List randPlates = F.Randomize ? random_permut(plates) : plates;
 	List randPlates = random_permut(plates);
 	int red(0);
-	Table Done = initTable(F.Nplate,F.Nfiber);
+	Table Done = initTable(F.Nplate,F.Nfiber);//consider every plate and every fiber
 	for (int jj=0; jj<n; jj++) {
 		int j = randPlates[jj];
 		List randFiber = random_permut(F.Nfiber);
 		for (int kk=0; kk<F.Nfiber; kk++) {
 			int k = randFiber[kk];
 			if (Done[j][k]==0) {
-				int g = A.TF[j][k];
+				int g = A.TF[j][k];//current assignment of (j,k)  only look if assigned
 				if (g!=-1) {
-					int jpb = -1; int kpb = -1; int unusedb = A.unused[j][pp.spectrom[k]];
-					Plist av_tfs = G[g].av_tfs;
+					int jpb = -1; int kpb = -1; int unusedb = A.unused[j][pp.spectrom[k]];//unused for j, spectrom[k]
+					Plist av_tfs = G[g].av_tfs;  //all possible tile fibers for this galaxy
 					for (int i=0; i<av_tfs.size(); i++) {
 						int jp = av_tfs[i].f;
 						int kp = av_tfs[i].s;
-						int unused = A.unused[jp][pp.spectrom[kp]];
+						int unused = A.unused[jp][pp.spectrom[kp]];//unused for jp, spectrom[kp]
 						if (j0<=jp && jp<j0+n && !A.is_assigned_tf(jp,kp) && Done[jp][kp]==0 && ok_assign_g_to_jk(g,jp,kp,P,G,pp,F,A) && A.is_assigned_jg(jp,g,G,F)==-1 && 0<unused) {
-							if (unusedb<unused) { // Takes the most usused petal  might have focused instead on petals with too few free fibers
-								jpb = jp;
+							if (unusedb<unused) { // Takes the most usused petal
+                                jpb = jp;
 								kpb = kp;
 								unusedb = unused;
 							}
@@ -870,6 +870,16 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 
 	// Count
 	if (F.Count!=0) printf("Count = %d \n",F.Count);
+    // print no. of times each galaxy is observed up to max of F.PrintGalObs
+    if (F.PrintGalObs>0){
+        printf(" F.PrintGalObs  %d \n",F.PrintGalObs);
+        for(int g=0;g<F.PrintGalObs;++g){
+                int id = G[g].id;
+                int m = A.nobs(g,G,F,false);
+                int n = F.goal[id]-m;
+            printf(" galaxy number %d  times observed %d\n",g,n);
+        }
+    }
 }
 
 void write_FAtile_ascii(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
