@@ -345,7 +345,7 @@ List sort(const List& L) {
 }
 
 List inverse(const List& L) {
-	List l = initList(max(L));
+	List l = initList(max(L)+1);
 	for (int i=0; i<L.size(); i++) l[L[i]] = i;
 	return l;
 }
