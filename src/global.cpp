@@ -54,10 +54,7 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 			for (int k=0; k<F.Nfiber; k++) {
 				dpair X = pp.coords(k);
 				std::vector<int> gals = kdT.near(&(pp.fp[2*k]),0.0,F.PatrolRad);
-				if (MAXAVGAL<=gals.size()) {
-					printf("In collect galaxies : exceeds size, increase MAXAVGAL\n");
-					exit(1);
-				}
+				List gals2;
 				for (int g=0; g<gals.size(); g++) {
 					dpair Xg = projection(gals[g],j,G,P);
 					if (sq(Xg,X)<sq(F.PatrolRad)/*Needed*/) P[j].av_gals[k][g] = gals[g];
@@ -66,17 +63,17 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 		}
 	}
 	for (int j=0; j<F.Nplate; j++) {
-		for (int k=0; k<F.Nfiber; k++) {
-			int lim = 0;
-			bool finished = false;
-			for (int g=0; g<MAXAVGAL && !finished; g++) {
-				if (P[j].av_gals[k][g]==-1) {
-					lim = g;
-					finished = true;
+			for (int k=0; k<F.Nfiber; k++) {
+				int lim = 0;
+				bool finished = false;
+				for (int g=0; g<MAXAVGAL && !finished; g++) {
+					if (P[j].av_gals[k][g]==-1) {
+						lim = g;
+						finished = true;
+					}
 				}
+				P[j].av_gals[k].resize(lim);
 			}
-			P[j].av_gals[k].resize(lim);
-		}
 	}
 	print_time(t,"# ... took :");
 }
