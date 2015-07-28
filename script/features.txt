@@ -11,7 +11,7 @@ priopost 0 2 3 4 2 3 0 1
 goal 5 1 2 1 1 1 5 5
 
 Randomize false
-Pacman false
+Pacman true
 Npass 5
 MaxSS 10
 MaxSF 40
@@ -30,7 +30,7 @@ Exact true
 AvCollide 3.2
 Collide 1.98
 NoCollide 7.0
-PatrolRad 5.8
+PatrolRad 6.0
 NeighborRad 14.05
 
 PlotObsTime false
@@ -39,7 +39,6 @@ PlotDistLya false
 PlotFreeFibHist false
 PlotFreeFibTime false
 PlotSeenDens false
-PrintGalObs 0
 
 Verif false
 -------------------------------------------------

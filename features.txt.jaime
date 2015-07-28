@@ -1,4 +1,4 @@
-galFile /project/projectdirs/desi/mocks/preliminary/objects_ss_sf0.rdzipn
+galFile /global/u2/f/forero/fibertest/Targets_Tile_00000.rdzipn
 tileFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/footprint/desi-tiles.par
 fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
 outDir /project/projectdirs/desi/users/rncahn/fa_output/
@@ -13,8 +13,8 @@ goal 5 1 2 1 1 1 5 5
 Randomize false
 Pacman false
 Npass 5
-MaxSS 10
-MaxSF 40
+MaxSS 0
+MaxSF 0
 PlateRadius 1.65
 InterPlate 0
 Analysis 0
@@ -39,7 +39,7 @@ PlotDistLya false
 PlotFreeFibHist false
 PlotFreeFibTime false
 PlotSeenDens false
-PrintGalObs 0
+PrintGalObs 1000
 
 Verif false
 -------------------------------------------------

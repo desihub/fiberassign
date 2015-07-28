@@ -15,10 +15,9 @@
 
 # Need to ensure the right MPI module is loaded -
 # i.e. the same module which the program was compiled with.
-module purge
+#module purge
 module load intel_comp/c4/2015
-#module load intel_comp/c5/2015 platform_mpi/9.1.2
-
+module load intel_comp/c5/2015 platform_mpi/9.1.2
 
 # Run the program
 mpirun -np $LSB_DJOB_NUMPROC ./assign ./features_cosma.txt
