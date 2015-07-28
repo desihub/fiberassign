@@ -52,13 +52,11 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 			for (int k=0; k<F.Nfiber; k++) {
 				dpair X = pp.coords(k);
 				std::vector<int> gals = kdT.near(&(pp.fp[2*k]),0.0,F.PatrolRad);
-				List gals2;
 				for (int g=0; g<gals.size(); g++) {
 					dpair Xg = projection(gals[g],j,G,P);
-					if (sq(Xg,X)<sq(F.PatrolRad)/*Needed*/) p.av_gals[k].push_back(gals[g]);
+					if (sq(Xg,X)<sq(F.PatrolRad)/*Needed*/) P[j].av_gals[k].push_back(gals[g]);
 				}
 			}
-			P[j] = p;
 		}
 	}
 	print_time(t,"# ... took :");
@@ -910,7 +908,7 @@ void fa_write(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	int num_target[F.Nfiber];
 	char objtype[F.Nfiber][8];
 	char *ot_tmp[F.Nfiber];
-	for (int i = 0; i<F.Nfiber; i++) ot_tmp[i] = objtype[i];
+	for (int i = 0; i < F.Nfiber; i++) ot_tmp[i] = objtype[i];
 	int target_id[F.Nfiber];
 	int desi_target[F.Nfiber];
 	float ra[F.Nfiber];
@@ -921,16 +919,18 @@ void fa_write(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	int *ptid = potential_target_id;
 	int tot_targets = 0;
 	printf("start the loop\n");
-	for (int i = 0; i < F.Nfiber; i++) {
+	for (int i = j*F.Nfiber; i < F.Nfiber; i++) {
 		int g = A.TF[j][i];
 		int id = G[g].id;
-		str type = g==-1 ? "NO" : F.type[id];
+		str type = F.type[id];
 		//char type0[] = "1111111";
+
 
 		fiber_id[i] = i;
 		positioner_id[i] = i;
 		num_target[i] = P[j].av_gals[i].size();
 		printf("%d ", g);
+		//objtype[i] = type0;
 		strcpy(objtype[i], type.c_str());
 		printf("%s ", objtype[i]);
 		target_id[i] = g;
@@ -938,15 +938,9 @@ void fa_write(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, c
 		ra[i] = g == -1 ? 370.0 : G[g].ra;
 		dec[i] = g == -1 ? 370.0 : G[g].dec;
 
-		if (g!=-1) { 
-			dpair proj = projection(g,j,G,P);
-			x_focal[i] = proj.f;
-			y_focal[i] = proj.s;
-		}
-		else {
-			x_focal[i] = 0;
-			y_focal[i] = 0;
-		}
+		dpair proj = projection(g,j,G,P);
+		x_focal[i] = proj.f;
+		y_focal[i] = proj.s;
 
 		for (int n = 0; n < P[j].av_gals[i].size(); n++) {
 			*ptid = P[j].av_gals[i][n];
@@ -960,16 +954,14 @@ void fa_write(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	fitsfile *fptr;
 	fits_create_file(&fptr, filename, &status);
 	fits_report_error(stdout, status);
-	printf("# status after opening file %s = %d\n",filename,status);
-
 	// FiberMap table
 	char *ttype[] = {"fiber", "positioner", "numtarget", "objtype", "targetid", "desi_target0", "ra", "dec", "xfocal_design", "yfocal_design"};
 	char *tform[10] = {"U", "U", "U", "8A", "J", "K", "E", "E", "E", "E"};
 	char *tunit[10] = { "", "", "", "", "", "", "deg", "deg", "mm", "mm"};
 	char extname[] = "FiberMap";
 	fits_create_tbl(fptr, BINARY_TBL, 0, 10, ttype, tform, tunit, extname, &status);
+	printf("#\n");
 	fits_report_error(stdout, status);
-	printf("# fits_create_tbl status %d\n",status);
 	fits_write_col(fptr, TINT, 1, 1, 1, F.Nfiber, fiber_id, &status);
 	printf("#\n");
 	fits_report_error(stdout, status);
@@ -1015,7 +1007,7 @@ void fa_write(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	fits_report_error(stdout, status);
 #endif
 	return;
-}
+}*/
 
 
 void pyplotTile(int j, str directory, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {

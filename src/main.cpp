@@ -113,10 +113,9 @@ int main(int argc, char **argv) {
 	print_time(time,"# ... took :");
 
 	// Results -------------------------------------------------------
+	if (F.Output) for (int j=0; j<F.Nplate; j++) write_FAtile_ascii(j,F.outDir,G,P,pp,F,A); // Write output
 	display_results("doc/figs/",G,P,pp,F,A,true);
 	if (F.Verif) A.verif(P,G,pp,F); // Verification that the assignment is sane
-	if (F.Output) for (int j=0; j<F.Nplate; j++) fa_write(j,F.outDir,G,P,pp,F,A);
-	//if (F.Output) for (int j=0; j<F.Nplate; j++) write_FAtile_ascii(j,F.outDir,G,P,pp,F,A); // Write output
 	print_time(t,"# Finished !... in");
 	return(0);
 }
