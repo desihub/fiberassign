@@ -45,6 +45,7 @@ class Feat { // F for features
 	double invFibArea;
 	int moduloGal;
 	int moduloFiber;
+    int PrintGalObs;
 	
 	bool Collision; // True when we take collisions into account
 	bool Exact;

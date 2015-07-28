@@ -881,6 +881,16 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 
 	// Count
 	if (F.Count!=0) printf("Count = %d \n",F.Count);
+    // print no. of times each galaxy is observed up to max of F.PrintGalObs
+    if (F.PrintGalObs>0){
+        printf(" F.PrintGalObs  %d \n",F.PrintGalObs);
+        for(int g=0;g<F.PrintGalObs;++g){
+                int id = G[g].id;
+                int m = A.nobs(g,G,F,false);
+                int n = F.goal[id]-m;
+            printf(" galaxy number %d  times observed %d\n",g,n);
+        }
+    }
 }
 
 void write_FAtile_ascii(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
