@@ -28,9 +28,7 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 	List permut = random_permut(F.Nplate);
 	double rad = F.PlateRadius*M_PI/180.;
 	int jj;
-	int MAXAVGAL = 50; // Upper limit of max number of available galaxies. This way, avoids using mutex
 	//omp_set_num_threads(24);
-	for (int j=0; j<F.Nplate; j++) P[j].av_gals = initTable(F.Nfiber,MAXAVGAL,-1);
 #pragma omp parallel
 	{ 	int id = omp_get_thread_num(); if (id==0) printf(" ");
 		// Collects for each plate
@@ -57,23 +55,11 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 				List gals2;
 				for (int g=0; g<gals.size(); g++) {
 					dpair Xg = projection(gals[g],j,G,P);
-					if (sq(Xg,X)<sq(F.PatrolRad)/*Needed*/) P[j].av_gals[k][g] = gals[g];
+					if (sq(Xg,X)<sq(F.PatrolRad)/*Needed*/) p.av_gals[k].push_back(gals[g]);
 				}
 			}
+			P[j] = p;
 		}
-	}
-	for (int j=0; j<F.Nplate; j++) {
-			for (int k=0; k<F.Nfiber; k++) {
-				int lim = 0;
-				bool finished = false;
-				for (int g=0; g<MAXAVGAL && !finished; g++) {
-					if (P[j].av_gals[k][g]==-1) {
-						lim = g;
-						finished = true;
-					}
-				}
-				P[j].av_gals[k].resize(lim);
-			}
 	}
 	print_time(t,"# ... took :");
 }
