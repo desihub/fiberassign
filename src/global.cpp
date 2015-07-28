@@ -27,14 +27,23 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 	init_time(t,"# Begin collecting available galaxies");
 	List permut = random_permut(F.Nplate);
 	double rad = F.PlateRadius*M_PI/180.;
-	int jj;
+	//int jj;
 	//omp_set_num_threads(24);
     #pragma omp parallel
 	{ 	int id = omp_get_thread_num(); if (id==0) printf(" ");
+        // debug 7/27/15
+        FILE * FA;
+        str s = "debug_"+i2s(id)+".txt";
+        FA=fopen(s.c_str(),"w");
+        //debug
 		// Collects for each plate
-		for (jj=id; jj<F.Nplate; jj++) { // <- begins at id, otherwise all begin at 0 -> conflict. Does all plates anyway
+        // start at jj=0 not id
+        #pragma omp for
+        for (int jj=0; jj<F.Nplate; jj++){ // <- begins at id, otherwise all begin at 0 -> conflict. Does all plates anyway
 			int j = permut[jj];
 			plate p = P[j];
+            //more debug
+            fprintf(FA," j = %d   jj = %d  \n",j,jj);
 			// Takes neighboring galaxies that can be reached by this plate
 			std::vector<int> nbr = T.near(G,p.nhat,rad);
 			// Projects thoses galaxies on the focal plane
@@ -58,6 +67,8 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 				}
 			}
 		}
+        fclose(FA);
+
 	}
 	print_time(t,"# ... took :");
 }
