@@ -20,8 +20,10 @@ You can customize the build options by using one of the
 configurations in the platforms directory.  This is done by 
 exporting an environment variable and setting it to the name of 
 the file in the platforms directory you want to use.  For example, 
-when building at NERSC with HPCPorts, you would do:
+when building at NERSC with HPCPorts on the Cray systems, you would do:
 
+    $> hpcports shared_gnu
+    $> module load cfitsio-hpcp
     $> export PLATFORM=hpcports
     $> make install
 
@@ -44,7 +46,5 @@ On edison.nersc.gov, you can use the PBS script in the "scripts"
 directory:
 
     $> qsub scripts/run_nersc.job
-
-./assign features.txt (or on NERSC : "qsub run", script that does it on your NERSC account)
 
 
