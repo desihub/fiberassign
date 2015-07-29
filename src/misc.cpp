@@ -345,7 +345,7 @@ List sort(const List& L) {
 }
 
 List inverse(const List& L) {
-	List l = initList(max(L));
+	List l = initList(max(L)+1);
 	for (int i=0; i<L.size(); i++) l[L[i]] = i;
 	return l;
 }
@@ -484,12 +484,12 @@ void print_table(str s, const Table& T, bool latex, Slist labels) {
 	str slash = latex ? " \\\\ \n" : "\n";
 
 	str rrr(T[0].size(),'r');
-	printf(s.c_str());
+	printf("%s", s.c_str());
 	printf("\n");
 
 	bool labelsB = isnull(labels);
 	str space(6,' ');
-	printf(space.c_str());
+	printf("%s", space.c_str());
 	for (int j=0; j<max; j++) {
 		str s = (j==max-1) ? slash : et;
 		printf("%s%s",format(maxRow[j],f(j)).c_str(),s.c_str());
@@ -538,12 +538,12 @@ void print_table(str s, const Dtable& T, bool latex, Slist labels) {
 	str slash = latex ? " \\\\ \n" : "\n";
 
 	str rrr(T[0].size(),'r');
-	printf(s.c_str());
+	printf("%s", s.c_str());
 	printf("\n");
 
 	bool labelsB = isnull(labels);
 	str space(6,' ');
-	printf(space.c_str());
+	printf("%s", space.c_str());
 	for (int j=0; j<max; j++) {
 		str s = (j==max-1) ? slash : et;
 		printf("%s%s",format(maxRow[j],f(j)).c_str(),s.c_str());
@@ -563,7 +563,7 @@ void print_table(str s, const Dtable& T, bool latex, Slist labels) {
 }
 
 void print_table(str s, const Ptable& T) {
-	printf(s.c_str()); printf("\n");
+	printf("%s", s.c_str()); printf("\n");
 	int l = T.size();
 	if (l==0) {
 		printf("   ! Empty table\n");
@@ -578,7 +578,7 @@ void print_table(str s, const Ptable& T) {
 	}
 	str s0(" ",10);
 	const char* space = s0.c_str();
-	printf(space);
+	printf("%s", space);
 	for (int j=0; j<c; j++) printf("%11d",j);
 	printf("\n");
 	for (int i=0; i<l; i++) {
@@ -993,7 +993,7 @@ void printFile(const char file[]) {
 	char buf[Mc];
 	while (!fIn.eof() && buf[0]!='-') {
 		fIn.getline(buf,Mc);
-		printf(buf);
+		printf("%s", buf);
 		printf(" - ");
 	}
 	fIn.close();

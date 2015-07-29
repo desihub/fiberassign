@@ -917,6 +917,7 @@ void write_FAtile_ascii(int j, str outdir, const Gals& G, const Plates& P, const
 }
 
 //writes FITS file, but needs modification for C++
+
 void fa_write(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) { // Lado Samushia
 
 	str s = outdir+"tile"+i2s(j)+".fits";

@@ -97,14 +97,14 @@ int main(int argc, char **argv) {
 		assign_sf_ss(j,G,P,pp,F,A); // Assign SS and SF just before an observation
 		assign_left(j,G,P,pp,F,A);
 		if (j%2000==0) pyplotTile(j,"doc/figs",G,P,pp,F,A); // Picture of positioners, galaxies
-
 		// <-- here is the real observation time
 		//printf(" %s not as - ",format(5,f(A.unused_f(j,F))).c_str()); fl();
 		// Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
 		if (0<=j-F.Analysis) update_plan_from_one_obs(G,P,pp,F,A,F.Nplate-1); else printf("\n");
 		A.next_plate++;
 		// Redistribute and improve on various occasions  add more times if desired
-        if ( j==3000 ) {
+
+		if ( j==3000 ) {
 			redistribute_tf(G,P,pp,F,A);
 			redistribute_tf(G,P,pp,F,A);
 			improve(G,P,pp,F,A);
@@ -117,8 +117,10 @@ int main(int argc, char **argv) {
 	if (F.Output) for (int j=0; j<F.Nplate; j++) write_FAtile_ascii(j,F.outDir,G,P,pp,F,A); // Write output
 	display_results("doc/figs/",G,P,pp,F,A,true);
 	if (F.Verif) A.verif(P,G,pp,F); // Verification that the assignment is sane
+
 	if (F.Output) for (int j=0; j<F.Nplate; j++) fa_write(j,F.outDir,G,P,pp,F,A);
 	if (F.Output) for (int j=0; j<F.Nplate; j++) write_FAtile_ascii(j,F.outDir,G,P,pp,F,A); // Write output
+
 	print_time(t,"# Finished !... in");
 	return(0);
 }
