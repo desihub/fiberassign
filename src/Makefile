@@ -18,8 +18,8 @@ main.o \
 misc.o \
 structs.o
 
-COMPILE = $(CXXFLAGS) -I. $(CFITSIO_CPPFLAGS)
-LINK = $(CFITSIO)
+COMPILE = $(CXXFLAGS) $(OMPFLAGS) -I. $(CFITSIO_CPPFLAGS)
+LINK = $(OMPFLAGS) $(CFITSIO)
 
 
 all : assign
@@ -28,7 +28,7 @@ install : all
 	cp assign $(INSTALL)
 
 assign : $(OBJS)
-	$(CXX) -o $@ $< $(LINK)
+	$(CXX) -o $@ $^ $(LINK)
 
 %.o : %.cpp $(HEADERS)
 	$(CXX) $(COMPILE) -o $@ -c $<
