@@ -110,7 +110,7 @@ void element::rotation(const dpair& t, const dpair& axis) {
 void element::print() const {
 	printf("seg ? %d",is_seg); fl();
 	if (!O.isnull() || rad!=0) { printf(" - center (%f,%f) rad %f",O.f,O.s,rad); fl(); }
-	printf(" sizesegs= %d ",segs.size()); fl();
+	printf(" sizesegs= %lu ",segs.size()); fl();
 	if (0<segs.size()) {
 		debl(" - segs : ");
 		for (int i=0; i<segs.size(); i++) segs[i].print();

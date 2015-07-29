@@ -54,7 +54,7 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 				op.id = g;
 				O.push_back(op);
 			}
-			printf(""); // Management of memory mysteriously works better this way
+			//printf(""); // Management of memory mysteriously works better this way
 			// Build 2D KD tree of those galaxies
 			KDtree<struct onplate> kdT(O,2);
 			// For each fiber, finds all reachable galaxies thanks to the tree
@@ -874,7 +874,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 	}
 
 	// Collision rate
-	if (F.Collision) printf("Collision rate : %f \% \n",A.colrate(pp,G,P,F));
+	if (F.Collision) printf("Collision rate : %f %% \n",A.colrate(pp,G,P,F));
 
 	// Percentage of fibers assigned
 	printf("  %s assignments in total (%.4f %% of all fibers)\n",f(A.na(F)).c_str(),percent(A.na(F),F.Nplate*F.Nfiber));
@@ -903,7 +903,7 @@ void write_FAtile_ascii(int j, str outdir, const Gals& G, const Plates& P, const
 		fprintf(FA,"%d ",k);
 		List av_gals = P[j].av_gals[k];
 		// Number of potential galaxies
-		fprintf(FA,"%d ",av_gals.size());
+		fprintf(FA,"%lu ",av_gals.size());
 		// IDs of potential galaxies
 		for (int i=0; i<av_gals.size(); i++) fprintf(FA,"%d ",av_gals[i]);
 		// Object type, Target ID, ra, dec, x, y
@@ -1028,7 +1028,7 @@ void fa_write(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	fits_report_error(stdout, status);
 #endif
 	return;
-}*/
+}
 
 
 void pyplotTile(int j, str directory, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
