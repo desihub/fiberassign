@@ -1,0 +1,13 @@
+
+# The serial C++ compiler
+CXX := g++
+
+# Normal compile flags
+CXXFLAGS := -O3
+
+# OpenMP flags (used for both compiling and linking)
+OMPFLAGS := -fopenmp
+
+# CFITSIO include and linking commands
+CFITSIO_CPPFLAGS :=
+CFITSIO := -lcfitsio -lm
