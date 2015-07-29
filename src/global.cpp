@@ -27,14 +27,23 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 	init_time(t,"# Begin collecting available galaxies");
 	List permut = random_permut(F.Nplate);
 	double rad = F.PlateRadius*M_PI/180.;
-	int jj;
+	//int jj;
 	//omp_set_num_threads(24);
-#pragma omp parallel
+    #pragma omp parallel
 	{ 	int id = omp_get_thread_num(); if (id==0) printf(" ");
+        // debug 7/27/15
+        FILE * FA;
+        str s = "debug_"+i2s(id)+".txt";
+        FA=fopen(s.c_str(),"w");
+        //debug
 		// Collects for each plate
-		for (jj=id; jj<F.Nplate; jj++) { // <- begins at id, otherwise all begin at 0 -> conflict. Do all plates anyway
+        // start at jj=0 not id
+        #pragma omp for
+        for (int jj=0; jj<F.Nplate; jj++){ // <- begins at id, otherwise all begin at 0 -> conflict. Does all plates anyway
 			int j = permut[jj];
 			plate p = P[j];
+            //more debug
+            fprintf(FA," j = %d   jj = %d  \n",j,jj);
 			// Takes neighboring galaxies that can be reached by this plate
 			std::vector<int> nbr = T.near(G,p.nhat,rad);
 			// Projects thoses galaxies on the focal plane
@@ -45,21 +54,21 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 				op.id = g;
 				O.push_back(op);
 			}
-			printf(""); // Management of memory mysteriously works better this way
+			//printf(""); // Management of memory mysteriously works better this way
 			// Build 2D KD tree of those galaxies
 			KDtree<struct onplate> kdT(O,2);
 			// For each fiber, finds all reachable galaxies thanks to the tree
 			for (int k=0; k<F.Nfiber; k++) {
 				dpair X = pp.coords(k);
 				std::vector<int> gals = kdT.near(&(pp.fp[2*k]),0.0,F.PatrolRad);
-				List gals2;
 				for (int g=0; g<gals.size(); g++) {
 					dpair Xg = projection(gals[g],j,G,P);
-					if (sq(Xg,X)<sq(F.PatrolRad)/*Needed*/) p.av_gals[k].push_back(gals[g]);
+					if (sq(Xg,X)<sq(F.PatrolRad)/*Needed*/) P[j].av_gals[k].push_back(gals[g]);
 				}
 			}
-			P[j] = p;
 		}
+        fclose(FA);
+
 	}
 	print_time(t,"# ... took :");
 }
@@ -375,7 +384,7 @@ void update_plan_from_one_obs(const Gals& G, const Plates&P, const PP& pp, const
 		}
 	}
 	int na_end(A.na(F,j0,n));
-	printf(" %4d unas & %4d replaced\n",cnt,na_end-na_start+cnt); fl();
+	//printf(" %4d unas & %4d replaced\n",cnt,na_end-na_start+cnt); fl();
 }
 
 // If not enough SS and SF, remove old_kind an replace to SS-SF (new_kind) on petal (j,p)
@@ -526,24 +535,24 @@ void redistribute_tf(const Gals& G, const Plates&P, const PP& pp, const Feat& F,
 	//List randPlates = F.Randomize ? random_permut(plates) : plates;
 	List randPlates = random_permut(plates);
 	int red(0);
-	Table Done = initTable(F.Nplate,F.Nfiber);
+	Table Done = initTable(F.Nplate,F.Nfiber);//consider every plate and every fiber
 	for (int jj=0; jj<n; jj++) {
 		int j = randPlates[jj];
 		List randFiber = random_permut(F.Nfiber);
 		for (int kk=0; kk<F.Nfiber; kk++) {
 			int k = randFiber[kk];
 			if (Done[j][k]==0) {
-				int g = A.TF[j][k];
+				int g = A.TF[j][k];//current assignment of (j,k)  only look if assigned
 				if (g!=-1) {
-					int jpb = -1; int kpb = -1; int unusedb = A.unused[j][pp.spectrom[k]];
-					Plist av_tfs = G[g].av_tfs;
+					int jpb = -1; int kpb = -1; int unusedb = A.unused[j][pp.spectrom[k]];//unused for j, spectrom[k]
+					Plist av_tfs = G[g].av_tfs;  //all possible tile fibers for this galaxy
 					for (int i=0; i<av_tfs.size(); i++) {
 						int jp = av_tfs[i].f;
 						int kp = av_tfs[i].s;
-						int unused = A.unused[jp][pp.spectrom[kp]];
+						int unused = A.unused[jp][pp.spectrom[kp]];//unused for jp, spectrom[kp]
 						if (j0<=jp && jp<j0+n && !A.is_assigned_tf(jp,kp) && Done[jp][kp]==0 && ok_assign_g_to_jk(g,jp,kp,P,G,pp,F,A) && A.is_assigned_jg(jp,g,G,F)==-1 && 0<unused) {
-							if (unusedb<unused) { // Takes the most usused petal  might have focused instead on petals with too few free fibers
-								jpb = jp;
+							if (unusedb<unused) { // Takes the most usused petal
+                                jpb = jp;
 								kpb = kp;
 								unusedb = unused;
 							}
@@ -865,13 +874,23 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 	}
 
 	// Collision rate
-	if (F.Collision) printf("Collision rate : %f \% \n",A.colrate(pp,G,P,F));
+	if (F.Collision) printf("Collision rate : %f %% \n",A.colrate(pp,G,P,F));
 
 	// Percentage of fibers assigned
 	printf("  %s assignments in total (%.4f %% of all fibers)\n",f(A.na(F)).c_str(),percent(A.na(F),F.Nplate*F.Nfiber));
 
 	// Count
 	if (F.Count!=0) printf("Count = %d \n",F.Count);
+    // print no. of times each galaxy is observed up to max of F.PrintGalObs
+    if (F.PrintGalObs>0){
+        printf(" F.PrintGalObs  %d \n",F.PrintGalObs);
+        for(int g=0;g<F.PrintGalObs;++g){
+                int id = G[g].id;
+                int m = A.nobs(g,G,F,false);
+                int n = F.goal[id]-m;
+            printf(" galaxy number %d  times observed %d\n",g,n);
+        }
+    }
 }
 
 void write_FAtile_ascii(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
@@ -884,7 +903,7 @@ void write_FAtile_ascii(int j, str outdir, const Gals& G, const Plates& P, const
 		fprintf(FA,"%d ",k);
 		List av_gals = P[j].av_gals[k];
 		// Number of potential galaxies
-		fprintf(FA,"%d ",av_gals.size());
+		fprintf(FA,"%lu ",av_gals.size());
 		// IDs of potential galaxies
 		for (int i=0; i<av_gals.size(); i++) fprintf(FA,"%d ",av_gals[i]);
 		// Object type, Target ID, ra, dec, x, y
@@ -909,7 +928,7 @@ void fa_write(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	int num_target[F.Nfiber];
 	char objtype[F.Nfiber][8];
 	char *ot_tmp[F.Nfiber];
-	for (int i = 0; i<F.Nfiber; i++) ot_tmp[i] = objtype[i];
+	for (int i = 0; i < F.Nfiber; i++) ot_tmp[i] = objtype[i];
 	int target_id[F.Nfiber];
 	int desi_target[F.Nfiber];
 	float ra[F.Nfiber];
@@ -920,16 +939,18 @@ void fa_write(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	int *ptid = potential_target_id;
 	int tot_targets = 0;
 	printf("start the loop\n");
-	for (int i = 0; i < F.Nfiber; i++) {
+	for (int i = j*F.Nfiber; i < F.Nfiber; i++) {
 		int g = A.TF[j][i];
 		int id = G[g].id;
-		str type = g==-1 ? "NO" : F.type[id];
+		str type = F.type[id];
 		//char type0[] = "1111111";
+
 
 		fiber_id[i] = i;
 		positioner_id[i] = i;
 		num_target[i] = P[j].av_gals[i].size();
 		printf("%d ", g);
+		//objtype[i] = type0;
 		strcpy(objtype[i], type.c_str());
 		printf("%s ", objtype[i]);
 		target_id[i] = g;
@@ -937,15 +958,9 @@ void fa_write(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, c
 		ra[i] = g == -1 ? 370.0 : G[g].ra;
 		dec[i] = g == -1 ? 370.0 : G[g].dec;
 
-		if (g!=-1) { 
-			dpair proj = projection(g,j,G,P);
-			x_focal[i] = proj.f;
-			y_focal[i] = proj.s;
-		}
-		else {
-			x_focal[i] = 0;
-			y_focal[i] = 0;
-		}
+		dpair proj = projection(g,j,G,P);
+		x_focal[i] = proj.f;
+		y_focal[i] = proj.s;
 
 		for (int n = 0; n < P[j].av_gals[i].size(); n++) {
 			*ptid = P[j].av_gals[i][n];
@@ -954,20 +969,19 @@ void fa_write(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, c
 		tot_targets += P[j].av_gals[i].size();
 	}
 	// write to fits file
+#ifdef FITS
 	int status;
 	fitsfile *fptr;
 	fits_create_file(&fptr, filename, &status);
 	fits_report_error(stdout, status);
-	printf("# status after opening file %s = %d\n",filename,status);
-
 	// FiberMap table
 	char *ttype[] = {"fiber", "positioner", "numtarget", "objtype", "targetid", "desi_target0", "ra", "dec", "xfocal_design", "yfocal_design"};
 	char *tform[10] = {"U", "U", "U", "8A", "J", "K", "E", "E", "E", "E"};
 	char *tunit[10] = { "", "", "", "", "", "", "deg", "deg", "mm", "mm"};
 	char extname[] = "FiberMap";
 	fits_create_tbl(fptr, BINARY_TBL, 0, 10, ttype, tform, tunit, extname, &status);
+	printf("#\n");
 	fits_report_error(stdout, status);
-	printf("# fits_create_tbl status %d\n",status);
 	fits_write_col(fptr, TINT, 1, 1, 1, F.Nfiber, fiber_id, &status);
 	printf("#\n");
 	fits_report_error(stdout, status);
@@ -1011,8 +1025,10 @@ void fa_write(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	fits_close_file(fptr, &status);
 	printf("#\n");
 	fits_report_error(stdout, status);
+#endif
 	return;
 }
+
 
 void pyplotTile(int j, str directory, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
 	std::vector<char> colors;

@@ -16,7 +16,7 @@
 #include        "structs.h"
 #include        "collision.h"
 #include        "global.h"
-
+//reduce redistributes, updates  07/02/15 rnc
 int main(int argc, char **argv) {
 	//// Initializations ---------------------------------------------
 	srand48(1234); // Make sure we have reproducability
@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
 	F.Nfiber = pp.fp.size()/2; 
 	F.Npetal = max(pp.spectrom)+1; // spectrometer has to be identified from 0 to F.Npetal-1
 	F.Nfbp = (int) (F.Nfiber/F.Npetal);
-	pp.get_neighbors(F); pp.compute_fibsofsp(F);
+	pp.get_neighbors(F); pp.compute_fibsofsp(F);//get neighbors of each fiber;for each spectrometer,get list of fibers
 
 	// Read plates
 	Plates P = read_plate_centers(F); 
@@ -60,10 +60,10 @@ int main(int argc, char **argv) {
 	print_time(time,"# ... took :");
 	//T.stats();
 	
-	// For plates/fibers, collect available galaxies
+	// For plates/fibers, collect available galaxies; done in parallel  P[plate j].av_gal[k]=[g1,g2,..]
 	collect_galaxies_for_all(G,T,P,pp,F);
 	
-	// For each galaxy, computes available tilefibers
+	// For each galaxy, computes available tilefibers  G[i].av_tfs = [(j1,k1),(j2,k2),..]
 	collect_available_tilefibers(G,P,F);
 
 	//results_on_inputs("doc/figs/",G,P,F,true);
@@ -78,13 +78,13 @@ int main(int argc, char **argv) {
 	print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
 
 	// Smooth out distribution of free fibers, and increase the number of assignments
-	for (int i=0; i<9; i++) redistribute_tf(G,P,pp,F,A);
-	for (int i=0; i<5; i++) {
+	for (int i=0; i<1; i++) redistribute_tf(G,P,pp,F,A);
+	for (int i=0; i<1; i++) {
 		improve(G,P,pp,F,A);
 		redistribute_tf(G,P,pp,F,A);
 		redistribute_tf(G,P,pp,F,A);
 	}
-	for (int i=0; i<4; i++) redistribute_tf(G,P,pp,F,A);
+	for (int i=0; i<1; i++) redistribute_tf(G,P,pp,F,A);
 
 	print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false);
 
@@ -93,17 +93,18 @@ int main(int argc, char **argv) {
 	init_time_at(time,"# Begin real time assignment",t);
 	for (int jj=0; jj<F.Nplate; jj++) {
 		int j = A.next_plate;
-		printf(" - Plate %d :",j);
+		//printf(" - Plate %d :",j);
 		assign_sf_ss(j,G,P,pp,F,A); // Assign SS and SF just before an observation
 		assign_left(j,G,P,pp,F,A);
-		if (j%500==0) pyplotTile(j,"doc/figs",G,P,pp,F,A); // Picture of positioners, galaxies
+		if (j%2000==0) pyplotTile(j,"doc/figs",G,P,pp,F,A); // Picture of positioners, galaxies
+
 		// <-- here is the real observation time
-		printf(" %s not as - ",format(5,f(A.unused_f(j,F))).c_str()); fl();
+		//printf(" %s not as - ",format(5,f(A.unused_f(j,F))).c_str()); fl();
 		// Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
 		if (0<=j-F.Analysis) update_plan_from_one_obs(G,P,pp,F,A,F.Nplate-1); else printf("\n");
 		A.next_plate++;
-		// Redistribute and improve on various occasions
-		if (j==100 || j==200 || j==700 || j==1500 || j==3000 || j==5000 || j==7000) {
+		// Redistribute and improve on various occasions  add more times if desired
+        if ( j==3000 ) {
 			redistribute_tf(G,P,pp,F,A);
 			redistribute_tf(G,P,pp,F,A);
 			improve(G,P,pp,F,A);
@@ -113,10 +114,11 @@ int main(int argc, char **argv) {
 	print_time(time,"# ... took :");
 
 	// Results -------------------------------------------------------
+	if (F.Output) for (int j=0; j<F.Nplate; j++) write_FAtile_ascii(j,F.outDir,G,P,pp,F,A); // Write output
 	display_results("doc/figs/",G,P,pp,F,A,true);
 	if (F.Verif) A.verif(P,G,pp,F); // Verification that the assignment is sane
 	if (F.Output) for (int j=0; j<F.Nplate; j++) fa_write(j,F.outDir,G,P,pp,F,A);
-	//if (F.Output) for (int j=0; j<F.Nplate; j++) write_FAtile_ascii(j,F.outDir,G,P,pp,F,A); // Write output
+	if (F.Output) for (int j=0; j<F.Nplate; j++) write_FAtile_ascii(j,F.outDir,G,P,pp,F,A); // Write output
 	print_time(t,"# Finished !... in");
 	return(0);
 }
