@@ -28,7 +28,7 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 	List permut = random_permut(F.Nplate);
 	double rad = F.PlateRadius*M_PI/180.;
 	//int jj;
-	//omp_set_num_threads(24);
+	omp_set_num_threads(24);
     #pragma omp parallel
 	{ 	int id = omp_get_thread_num(); if (id==0) printf(" ");
         // debug 7/27/15
@@ -917,7 +917,6 @@ void write_FAtile_ascii(int j, str outdir, const Gals& G, const Plates& P, const
 }
 
 //writes FITS file, but needs modification for C++
-
 void fa_write(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) { // Lado Samushia
 
 	str s = outdir+"tile"+i2s(j)+".fits";
