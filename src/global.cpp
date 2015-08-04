@@ -28,7 +28,7 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 	List permut = random_permut(F.Nplate);
 	double rad = F.PlateRadius*M_PI/180.;
 	//int jj;
-	omp_set_num_threads(24);
+	//omp_set_num_threads(24);
     #pragma omp parallel
 	{ 	int id = omp_get_thread_num(); if (id==0) printf(" ");
         // debug 7/27/15
@@ -497,8 +497,7 @@ void new_assign_fibers(const Gals& G, const Plates& P, const PP& pp, const Feat&
 	str elgA[] = {"ELG"}; List elg = F.init_ids_list(elgA,1);
 	str ss_sfA[] = {"SS","SF"}; List ss_sf = F.init_ids_list(ss_sfA,2);
 	for (int jj=0; jj<n; jj++) {
-		//if (jj==floor(n/4)) print_time("1/4 of total tiles processed in \n");
-		if (jj%(int)floor(n/60)==0) { printf("-"); fl(); }
+		//if (jj%(int)floor(n/60)==0) { printf("-"); fl(); }
 		int j = randPlates[jj];
 		List randPetals = random_permut(F.Npetal);
 		for (int ppet=0; ppet<F.Npetal; ppet++) {
