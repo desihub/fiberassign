@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
 		//printf(" - Plate %d :",j);
 		assign_sf_ss(j,G,P,pp,F,A); // Assign SS and SF just before an observation
 		assign_left(j,G,P,pp,F,A);
-		if (j%2000==0) pyplotTile(j,"doc/figs",G,P,pp,F,A); // Picture of positioners, galaxies
+		//if (j%2000==0) pyplotTile(j,"doc/figs",G,P,pp,F,A); // Picture of positioners, galaxies
 		// <-- here is the real observation time
 		//printf(" %s not as - ",format(5,f(A.unused_f(j,F))).c_str()); fl();
 		// Update corrects all future occurrences of wrong QSOs etc and tries to observe something else

@@ -599,6 +599,7 @@ List histogram(const Table& T, int interval) {
 				if (a<0) { printf("Error in print_hist, neg\n"); fl(); }
 				int n = floor(a/interval);
 				//printf("%d %d %d %d-",n,a,i,j);
+                //makes histogram size expand to include last element
 				if (n>=hist.size()) { hist.resize(n+1); hist[n] = 0;}
 				hist[n]++;
 			}
