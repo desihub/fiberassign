@@ -392,9 +392,9 @@ void replace(List old_kind, int new_kind, int j, int p, const Gals& G, const Pla
 	int m = A.nkind(j,p,new_kind,G,P,pp,F,true);//number of new_kind already on this petal
 	List fibskindd;
 	for (int i=0; i<old_kind.size(); i++) addlist(fibskindd,A.fibs_of_kind(old_kind[i],j,p,G,pp,F));//list of fibers on tile j assigned to galaxies of types old_kind
-	//List fibskind0 = random_permut(fibskindd);
-	List fibskind = A.sort_fibs_dens(j,fibskindd,G,P,pp,F);
-    //List fibskind=fibskind0;
+	List fibskind0 = random_permut(fibskindd);
+
+    List fibskind=fibskind0;
 	int Max = new_kind==F.ids.at("SS") ? F.MaxSS : F.MaxSF;
 	while (m<Max && fibskind.size()!=0) {
 		bool fin(false);
@@ -503,8 +503,8 @@ void new_assign_fibers(const Gals& G, const Plates& P, const PP& pp, const Feat&
 		for (int ppet=0; ppet<F.Npetal; ppet++) {
 			int p = randPetals[ppet];
 			List randFibers = random_permut(pp.fibers_of_sp[p]);
-            //List fibers =randFibers;
-            List fibers = A.sort_fibs_dens(j,pp.fibers_of_sp[p],G,P,pp,F);
+            List fibers =randFibers;
+ 
 			// Assign QSO
 			for (int kk=0; kk<F.Nfbp; kk++) {
 				int k = fibers[kk];
