@@ -40,15 +40,16 @@ int main(int argc, char **argv) {
 	pp.read_fiber_positions(F); 
 	F.Nfiber = pp.fp.size()/2; 
 	F.Npetal = max(pp.spectrom)+1; // spectrometer has to be identified from 0 to F.Npetal-1
-	F.Nfbp = (int) (F.Nfiber/F.Npetal);
-	pp.get_neighbors(F); pp.compute_fibsofsp(F);//get neighbors of each fiber;for each spectrometer,get list of fibers
+	F.Nfbp = (int) (F.Nfiber/F.Npetal);// fibers per petal = 500
+	pp.get_neighbors(F); pp.compute_fibsofsp(F);//get neighbors of each fiber;
+                                                //for each spectrometer, get list of fibers
 
-	// Read plates
+	// Read plates in order they are to be observed
 	Plates P = read_plate_centers(F); 
 	F.Nplate = P.size();
 	printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
 
-	// Computes geometries of cb and fh
+	// Computes geometries of cb and fh: pieces of positioner - used to determine possible collisions
 	F.cb = create_cb(); // cb=central body
 	F.fh = create_fh(); // fh=fiber holder
 
@@ -73,13 +74,16 @@ int main(int argc, char **argv) {
 	print_time(t,"# Start assignment at : ");
 
 	// Make a plan ----------------------------------------------------
-	new_assign_fibers(G,P,pp,F,A); // Plans whole survey
+	new_assign_fibers(G,P,pp,F,A); // Plans whole survey without sky fibers, standard stars
+                                   // assumes maximum number of observations needed for QSOs, LRGs
 
 	print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
+                                    // Want to have even distribution of unused fibers
+                                    // so we can put in sky fibers and standard stars
 
 	// Smooth out distribution of free fibers, and increase the number of assignments
-	for (int i=0; i<1; i++) redistribute_tf(G,P,pp,F,A);
-	for (int i=0; i<1; i++) {
+	for (int i=0; i<1; i++) redistribute_tf(G,P,pp,F,A);// more iterations will improve performance slightly
+	for (int i=0; i<1; i++) {                           // more iterations will improve performance slightly
 		improve(G,P,pp,F,A);
 		redistribute_tf(G,P,pp,F,A);
 		redistribute_tf(G,P,pp,F,A);
@@ -97,14 +101,14 @@ int main(int argc, char **argv) {
 		assign_sf_ss(j,G,P,pp,F,A); // Assign SS and SF just before an observation
 		assign_left(j,G,P,pp,F,A);
 		//if (j%2000==0) pyplotTile(j,"doc/figs",G,P,pp,F,A); // Picture of positioners, galaxies
-		// <-- here is the real observation time
+		
 		//printf(" %s not as - ",format(5,f(A.unused_f(j,F))).c_str()); fl();
 		// Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
 		if (0<=j-F.Analysis) update_plan_from_one_obs(G,P,pp,F,A,F.Nplate-1); else printf("\n");
 		A.next_plate++;
 		// Redistribute and improve on various occasions  add more times if desired
 
-		if ( j==3000 ) {
+		if ( j==2000 || j==4000) {
 			redistribute_tf(G,P,pp,F,A);
 			redistribute_tf(G,P,pp,F,A);
 			improve(G,P,pp,F,A);
