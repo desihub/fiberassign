@@ -20,9 +20,8 @@
 #include        "global.h"
 
 // Collecting information from input -------------------------------------------------------------------------------------
-// Keep it in only 1 function
-// Sometimes crashes (bad management of the memory by the compiler)
 void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Plates& P, const PP& pp, const Feat& F) {
+    //provides list of galaxies available to fiber k on tile j: p[j].av_gals[k]
 	Time t;
 	init_time(t,"# Begin collecting available galaxies");
 	List permut = random_permut(F.Nplate);
@@ -31,20 +30,15 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 	//omp_set_num_threads(24);
     #pragma omp parallel
 	{ 	int id = omp_get_thread_num(); if (id==0) printf(" ");
-        // debug 7/27/15
-        FILE * FA;
-        str s = "debug_"+i2s(id)+".txt";
-        FA=fopen(s.c_str(),"w");
-        //debug
 		// Collects for each plate
         // start at jj=0 not id
         #pragma omp for
-        for (int jj=0; jj<F.Nplate; jj++){ // <- begins at id, otherwise all begin at 0 -> conflict. Does all plates anyway
+        for (int jj=0; jj<F.Nplate; jj++){
 			int j = permut[jj];
 			plate p = P[j];
             //more debug
-            fprintf(FA," j = %d   jj = %d  \n",j,jj);
-			// Takes neighboring galaxies that can be reached by this plate
+            //fprintf(FA," j = %d   jj = %d  \n",j,jj);
+			// Takes neighboring galaxies that fall on this plate
 			std::vector<int> nbr = T.near(G,p.nhat,rad);
 			// Projects thoses galaxies on the focal plane
 			Onplates O;
@@ -54,26 +48,25 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 				op.id = g;
 				O.push_back(op);
 			}
-			//printf(""); // Management of memory mysteriously works better this way
 			// Build 2D KD tree of those galaxies
 			KDtree<struct onplate> kdT(O,2);
-			// For each fiber, finds all reachable galaxies thanks to the tree
+			// For each fiber, finds all reachable galaxies within patrol radius, thanks to the tree
 			for (int k=0; k<F.Nfiber; k++) {
 				dpair X = pp.coords(k);
 				std::vector<int> gals = kdT.near(&(pp.fp[2*k]),0.0,F.PatrolRad);
 				for (int g=0; g<gals.size(); g++) {
 					dpair Xg = projection(gals[g],j,G,P);
-					if (sq(Xg,X)<sq(F.PatrolRad)/*Needed*/) P[j].av_gals[k].push_back(gals[g]);
+					if (sq(Xg,X)<sq(F.PatrolRad)) P[j].av_gals[k].push_back(gals[g]);
 				}
 			}
 		}
-        fclose(FA);
 
 	}
 	print_time(t,"# ... took :");
 }
 
 void collect_available_tilefibers(Gals& G, const Plates& P, const Feat& F) {
+    //G[i].av_tfs is list of tile-fiber pairs available to galaxy i
 	Time t;
 	init_time(t,"# Begin computing available tilefibers");
 	for(int j=0; j<F.Nplate; j++) {
@@ -93,12 +86,13 @@ inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const Gals& 
 	int kind = G[g].id;
 	if (isfound(kind,F.ss_sf)) return false; // Don't assign to SS or SF
 	if (P[j].ipass==F.Npass-1 && kind!=F.ids.at("ELG")) return false; // Only ELG at the last pass
-	if (F.Collision) for (int i=0; i<pp.N[k].size(); i++) if (g==A.TF[j][pp.N[k][i]]) return false; // Avoid that 2 neighboring fibers observe the same galaxy (can happen only when Collision=true)
+	if (F.Collision) for (int i=0; i<pp.N[k].size(); i++) if (g==A.TF[j][pp.N[k][i]]) return false; // Avoid 2 neighboring fibers observe the same galaxy (can happen only when Collision=true)
 	if (A.find_collision(j,k,g,pp,G,P,F)!=-1) return false; // No collision
 	return true;
+    //doesn't require that jk is unassigned//doesn't require that g isn't assigned already on this plate
 }
 
-// Find, for (j,k), the best galaxy to reach among the possible ones
+// Find, for (j,k), find the best galaxy it can reach among the possible ones
 // Null list means you can take all possible kinds, otherwise you can only take, for the galaxy, a kind among this list
 // Not allowed to take the galaxy of id no_g
 inline int find_best(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, int no_g=-1, List kind=Null()) {
@@ -107,12 +101,11 @@ inline int find_best(int j, int k, const Gals& G, const Plates& P, const PP& pp,
 	// For all available galaxies
 	for (int gg=0; gg<av_gals.size(); gg++) {
 		int g = av_gals[gg];
-		int m = A.nobs(g,G,F); 
-		// Check whether it needs further observation
-		if (m>=1) { // Less neat to compute it here but optimizes. Since there are a lot of SS and SF, it's worth putting ok_assign_ss_sf here
-			int prio = fprio(g,G,F,A);
-			// Takes it if better priority, or if same, if observed less
-			if (prio<pbest || (prio==pbest && m>mbest)) { // Less neat to compute it here but optimizes
+		int m = A.nobs(g,G,F); //defaults to nobsv_tmp		// Check whether it needs further observation
+		if (m>=1) {
+            int prio = fprio(g,G,F,A);
+			// Takes it if better priority, or if same, if it needs more observations, so shares observations if two QSOs are close
+			if (prio<pbest || (prio==pbest && m>mbest)) { 
 				// Check that g is not assigned yet on this plate, or on the InterPlate around, check with ok_to_assign
 				if (A.is_assigned_jg(j,g,G,F)==-1 && ok_assign_g_to_jk(g,j,k,P,G,pp,F,A) && g!=no_g && (kind.size()==0 || isfound(G[g].id,kind))) {
 					best = g;
