@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
 		int j = A.next_plate;
 		//printf(" - Plate %d :",j);
 		assign_sf_ss(j,G,P,pp,F,A); // Assign SS and SF just before an observation
-		assign_usused(j,G,P,pp,F,A);
+		assign_unused(j,G,P,pp,F,A);
 		//if (j%2000==0) pyplotTile(j,"doc/figs",G,P,pp,F,A); // Picture of positioners, galaxies
 		
 		//printf(" %s not as - ",format(5,f(A.unused_f(j,F))).c_str()); fl();
