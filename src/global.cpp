@@ -282,7 +282,8 @@ void improve(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignm
 	printf("  %s more assignments (%.3f %% improvement)\n",f(na_end-na_start).c_str(),percent(na_end-na_start,na_start));//how many new assigned tf's
 	if (next!=1) print_time(t,"# ... took :");
 }
-
+//not used
+/*
 void improve_from_kind(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, str kind, int next) {
 	Time t;
 	if (next!=1) init_time(t,"# Begin improve "+kind+" :");
@@ -346,7 +347,7 @@ void improve_from_kind(const Gals& G, const Plates&P, const PP& pp, const Feat& 
 		print_time(t,"# ... took :");
 	}
 }
-
+*/
 // If there are galaxies discovered as fake for example, they won't be observed several times in the plan
 void update_plan_from_one_obs(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int end) {
 	int cnt(0);
