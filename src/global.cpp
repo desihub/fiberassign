@@ -105,7 +105,7 @@ inline int find_best(int j, int k, const Gals& G, const Plates& P, const PP& pp,
 		if (m>=1) {
             int prio = fprio(g,G,F,A);
 			// Takes it if better priority, or if same, if it needs more observations, so shares observations if two QSOs are close
-			if (prio<pbest || (prio==pbest && m>mbest)) { 
+			if (prio<pbest || (prio==pbest && m>mbest)) {
 				// Check that g is not assigned yet on this plate, or on the InterPlate around, check with ok_to_assign
 				if (A.is_assigned_jg(j,g,G,F)==-1 && ok_assign_g_to_jk(g,j,k,P,G,pp,F,A) && g!=no_g && (kind.size()==0 || isfound(G[g].id,kind))) {
 					best = g;
@@ -126,13 +126,16 @@ inline int assign_fiber(int j, int k, const Gals& G, const Plates& P, const PP& 
 	return best;
 }
 
-// Tries to assign the galaxy g, on one of the plates list starting with the jstart one, and of size size
+// Tries to assign the galaxy g to one of the plates list starting with the jstart one, and of size size
+//default jstart is as A.next_plate
+//default size is number of plates to go
+//used only in replace
 inline void assign_galaxy(int g, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int jstart=-1, int size=-1) {
 	int j0 = (jstart==-1) ? A.next_plate : jstart;
 	int n = (size==-1) ? F.Nplate-j0 : size;// number of plates to do
 	int jb = -1; int kb = -1; int unusedb = -1;
 	Plist av_tfs = G[g].av_tfs;
-	// Among all the tile-fibers than can observe it
+	// All the tile-fibers that can observe galaxy g
 	for (int tfs=0; tfs<av_tfs.size(); tfs++) {
 		int j = av_tfs[tfs].f;
 		int k = av_tfs[tfs].s;
@@ -157,7 +160,7 @@ inline int assign_fiber_to_ss_sf(int j, int k, const Gals& G, const Plates& P, c
 		int kind = G[g].id;
 		int prio = fprio(g,G,F,A);
 		if (((kind==F.ids.at("SF") && A.nkind(j,k,F.ids.at("SF"),G,P,pp,F)<F.MaxSF) || (kind==F.ids.at("SS") && A.nkind(j,k,F.ids.at("SS"),G,P,pp,F)<F.MaxSS)) && prio<pbest) { // Optimizes this way
-			if (A.is_assigned_jg(j,g,G,F)==-1 && A.find_collision(j,k,g,pp,G,P,F)==-1) {
+			if (A.is_assigned_jg(j,g,G,F)==-1 && A.find_collision(j,k,g,pp,G,P,F)==-1) {//nmo collision, not assigned to this plate
 				best = g;
 				pbest = prio;
 			}
@@ -168,22 +171,22 @@ inline int assign_fiber_to_ss_sf(int j, int k, const Gals& G, const Plates& P, c
 }
 
 // Takes an unassigned fiber and tries to assign it with the "improve" technique described in the doc
-//not used for SS or SF   because used before we add SS and SF
+// not used for SS or SF   because it is used before we add SS and SF
 inline int improve_fiber(int begin, int next, int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int no_g=-1) {
 	if (!A.is_assigned_tf(j,k)) { // Unused tilefiber (j,k)
-		// Desperately tries to assign it in the conventional way
+		// tries to assign it in the conventional way to galaxy available to it
 		int g_try = assign_fiber(j,k,G,P,pp,F,A,no_g);
 		if (g_try!=-1) return g_try;
 		else { // Improve
 			int gb = -1; int bb = -1; int jpb = -1; int kpb = -1; int mb = -1; int pb = 1e3; int unusedb = -1;
 			List av_g = P[j].av_gals[k];
-			// For all available galaxies which are already observed
+			// For all available galaxies within reach that are already observed
 			for (int i=0; i<av_g.size(); i++) {
 				int g = av_g[i];
 				if (g!=-1 && g!=no_g) {
-					if (ok_assign_g_to_jk(g,j,k,P,G,pp,F,A)) {
+					if (ok_assign_g_to_jk(g,j,k,P,G,pp,F,A)) {//this doesn't check to see that jk isnt assigned: it is
 						// Which tile-fibers have taken g ?
-						Plist tfs = A.chosen_tfs(g,F,begin,next);
+						Plist tfs = A.chosen_tfs(g,F,begin,next);//all tile-fibers that observe g in tiles from begin to next
 						for (int p=0; p<tfs.size(); p++) {
 							int jp = tfs[p].f;
 							int kp = tfs[p].s; // (jp,kp) currently assigned to galaxy g
@@ -208,7 +211,8 @@ inline int improve_fiber(int begin, int next, int j, int k, const Gals& G, const
 	}
 	return -1;
 }
-
+//not used !
+/*
 int improve_fiber_from_kind(int id, int j, int k, const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A) {//only for kind=SS or SF
 	if (!A.is_assigned_tf(j,k)) { // Unused tilefiber (j,k)
 		int p = pp.spectrom[k];
@@ -240,7 +244,7 @@ int improve_fiber_from_kind(int id, int j, int k, const Gals& G, const Plates&P,
 	}
 	return -1;
 }
-
+*/
 // Assignment functions ------------------------------------------------------------------------------------------
 // Assign fibers naively
 // Not used at present
@@ -391,14 +395,14 @@ void replace(List old_kind, int new_kind, int j, int p, const Gals& G, const Pla
 	int Max = new_kind==F.ids.at("SS") ? F.MaxSS : F.MaxSF;
 	while (m<Max && fibskind.size()!=0) {
 		bool fin(false);
-		int k = fibskind[0];
-		List av_g = P[j].av_gals[k];
+		int k = fibskind[0];//list of fibers assigned to galaxies of old type
+        List av_g = P[j].av_gals[k];//all galaxies available to (j,k)
 		for (int gg=0; gg<av_g.size() && !fin; gg++) {
-			int g = av_g[gg];
+			int g = av_g[gg];//is this one the right kind (newkind)?
 			if (G[g].id==new_kind && A.find_collision(j,k,g,pp,G,P,F)==-1 && A.is_assigned_jg(j,g)==-1) { // Looking for fiber that took ELG but could take SS or SF
 				int g0 = A.TF[j][k];
 				A.unassign(j,k,g0,G,P,pp);
-				assign_galaxy(g0,G,P,pp,F,A);
+				assign_galaxy(g0,G,P,pp,F,A);//having released g0, look for new place for it
 				A.assign(j,k,g,G,P,pp);
 				fin = true;
 				m++;
