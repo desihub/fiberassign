@@ -414,11 +414,12 @@ void replace(List old_kind, int new_kind, int j, int p, const Gals& G, const Pla
 	}
 }
 
-void assign_unused(int j, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A) { // Tries to assign remaining fibers, even taking objects observed later
+void assign_unused(int j, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A) { // Tries to assign remaining fibers in tile j
+                                                                                                        //even taking objects observed later
 	for (int k=0; k<F.Nfiber; k++) {
 		if (!A.is_assigned_tf(j,k)) {
 			int best = -1; int mbest = -1; int pbest = 1e3; int jpb = -1; int kpb = -1;
-			List av_gals = P[j].av_gals[k];
+			List av_gals = P[j].av_gals[k];//all available galaxies for this fiber k
 			for (int gg=0; gg<av_gals.size(); gg++) {
 				int g = av_gals[gg];
 				int m = A.nobs(g,G,F);

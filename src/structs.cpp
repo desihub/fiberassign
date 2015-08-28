@@ -28,7 +28,7 @@ void galaxy::print_av_tfs() { // Used to debug
 // There is a version of this function (to adapt) for ASCII files, ask to Robert Cahn
 // Read galaxies from binary file--format is ra, dec, z, priority and nobs
 // with ra/dec in degrees. Priority and nobs information are treated diffenrently now, by Feat, and should be removed here.
-//  Reads every n galaxies (to test quicker)
+//  Reads every n galaxies (to test more quickly)
 Gals read_galaxies(const Feat& F) {
 	Gals P;
 	const char* fname;
@@ -178,7 +178,6 @@ List plate::av_gals_plate(const Feat& F) const {//list of galaxies available to 
 
 // Plates ---------------------------------------------------------------------------
 // Read positions of the plate centers from an ascii file "center_name", and fill in a structure
-// There is a version of this function (to adapt) for non ASCII files, ask to Robert Cahn
 Plates read_plate_centers(const Feat& F) {
 	Plates P;
 	str buf;
@@ -231,7 +230,7 @@ Plates read_plate_centers(const Feat& F) {
 	fs.close();
 	return(P);
 }
-
+//not used
 List av_gals_of_kind(int kind, int j, int k, const Gals& G, const Plates& P, const Feat& F) {
 	List L;  //list of galaxies available to (j,k) of kind 'kind'
 	List av_gals = P[j].av_gals[k];
@@ -244,16 +243,16 @@ List av_gals_of_kind(int kind, int j, int k, const Gals& G, const Plates& P, con
 
 // Assignment -----------------------------------------------------------------------------
 Assignment::Assignment(const Gals& G, const Feat& F) {
-	TF = initTable(F.Nplate,F.Nfiber,-1);
-	GL = initPtable(F.Ngal,0); 
+	TF = initTable(F.Nplate,F.Nfiber,-1);//galaxy assigned to tile-fiber TF[j][k]
+	GL = initPtable(F.Ngal,0); //tile-fiber pair for galaxy  GL[g]
 	order.resize(F.Nplate);
 	for (int i=0; i<F.Nplate; i++) order[i] = i;
 	next_plate = 0;
 	kinds = initCube(F.Nplate,F.Npetal,F.Categories);
-	once_obs = initList(F.Ngal);
-	nobsv = initList(F.Ngal);
-	nobsv_tmp = initList(F.Ngal);
-	List l = F.maxgoal();//max for a category
+	once_obs = initList(F.Ngal);//is galaxy observed?
+	nobsv = initList(F.Ngal);//remaining observations
+	nobsv_tmp = initList(F.Ngal);//remaining observations before we know truth
+	List l = F.maxgoal();//max observations for a category
 	for (int g=0; g<F.Ngal; g++) {
 		nobsv[g] = F.goal[G[g].id];//true goal
 		nobsv_tmp[g] = l[G[g].id];//max goal for category
