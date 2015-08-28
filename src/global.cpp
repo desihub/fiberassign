@@ -248,6 +248,7 @@ int improve_fiber_from_kind(int id, int j, int k, const Gals& G, const Plates&P,
 // Assignment functions ------------------------------------------------------------------------------------------
 // Assign fibers naively
 // Not used at present
+/*
 void simple_assign(const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int next) {
 	Time t;
 	if (next!=1) init_time(t,"# Begin simple assignment :");
@@ -267,7 +268,7 @@ void simple_assign(const Gals& G, const Plates& P, const PP& pp, const Feat& F, 
 	printf("  %s assignments on %s next plates\n",f(A.na(F,j0,n)).c_str(),next_str.c_str());
 	if (next!=1) print_time(t,"# ... took :");
 }
-
+*/
 void improve(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int next) {
 	Time t;
 	if (next!=1) init_time(t,"# Begin improve :");
