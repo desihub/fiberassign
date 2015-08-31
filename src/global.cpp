@@ -21,7 +21,7 @@
 
 // Collecting information from input -------------------------------------------------------------------------------------
 void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Plates& P, const PP& pp, const Feat& F) {
-    //provides list of galaxies available to fiber k on tile j: p[j].av_gals[k]
+    //provides list of galaxies available to fiber k on tile j: P[j].av_gals[k]
 	Time t;
 	init_time(t,"# Begin collecting available galaxies");
 	List permut = random_permut(F.Nplate);

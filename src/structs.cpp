@@ -568,7 +568,7 @@ bool collision(dpair O1, dpair G1, dpair O2, dpair G2, const Feat& F) {
 	return false;
 }
 
-// (On plate p) finds if there is a collision if fiber k would watch at galaxy g (collision with neighb)
+// (On plate p) finds if there is a collision if fiber k would observe galaxy g (collision with neighbor)
 int Assignment::find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plates& P, const Feat& F, int col) const {//check all neighboring fibers
 	bool bol = (col==-1) ? F.Collision : false;
 	if (bol) return -1;

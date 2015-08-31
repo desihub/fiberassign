@@ -23,12 +23,13 @@ class PP { // PP for plate parameters
 	Dlist fp; // All fiber positions (x,y) in mm
 	List spectrom; // All spectrometer assignments of fibers
 	Table fibers_of_sp; // Inv map of spectrom, fibers_of_sp[sp] are fibers of spectrom sp, redundant but optimizes
-	Table N; // Identify neighboring positionners : neighb of fiber k are N[k]
+	Table N; // Identify neighboring positioners : neighbors of fiber k are N[k]
 	
 	PP();
 	void read_fiber_positions(const Feat& F);
 	void get_neighbors(const Feat& F);
 	void compute_fibsofsp(const Feat& F); // Computes fibers_of_sp
+    \\not used
 	List fibs_of_same_pet(int k) const;
 	dpair coords(int k) const; // Coords of fiber k
 };
@@ -53,6 +54,7 @@ struct onplate { // The position of a galaxy in plate coordinates
 	int id;
 	double pos[2];
 };
+//not used
 class Onplates : public std::vector<struct onplate> {};
 
 class plate {
@@ -61,7 +63,7 @@ class plate {
 	double nhat[3]; // Unit vector pointing to plate
 	int ipass; // Pass
 	Table av_gals; // av_gals[k] : available galaxies of fiber k
-	List density; // density[k] is the ponderated number of objects available to (j,k)
+	List density; // density[k] is the weighted number of objects available to (j,k)
 
 
 	List av_gals_plate(const Feat& F) const; // Av gals of the plate
@@ -69,6 +71,7 @@ class plate {
 class Plates : public std::vector<struct plate> {};
 
 Plates read_plate_centers(const Feat& F);
+//not used
 List av_gals_of_kind(int kind, int j, int k, const Gals& G, const Plates& P, const Feat& F);
 
 // Assignment ---------------------------------------------
@@ -108,7 +111,7 @@ class Assignment {
 	int nkind(int j, int k, int kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F, bool pet=false) const; // Number of fibers assigned to the kind "kind" on the petal of (j,k). If pet=true, we don't take k but the petal p directly instead
 	List fibs_of_kind(int kind, int j, int pet, const Gals& G, const PP& pp, const Feat& F) const; // Sublist of fibers assigned to a galaxy of type kind for (j,p)
 	List sort_fibs_dens(int j, const List& fibs, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const; // Sort this list of fibers by decreasing density
-	List fibs_unassigned(int j, int pet, const Gals& G, const PP& pp, const Feat& F) const; // Subist of unassigned fibers for (j,p)
+	List fibs_unassigned(int j, int pet, const Gals& G, const PP& pp, const Feat& F) const; // Sublist of unassigned fibers for (j,p)
 
 	// Update information
 	void update_nobsv_tmp_for_one(int j, const Feat& F);
