@@ -1,4 +1,4 @@
-#include	<cstdlib>
+op#include	<cstdlib>
 #include	<cmath>
 #include	<fstream>
 #include	<sstream>
@@ -392,7 +392,7 @@ Table Assignment::unused_fbp(const PP& pp, const Feat& F) const {//table unused 
 	}
 	return unused;
 }
-
+//not used
 List Assignment::unused_f(const Feat& F) const {//total unused fibers
 	List unused = initList(F.Nplate);
 	for(int j=0; j<F.Nplate; j++) {
@@ -483,7 +483,7 @@ int Assignment::nobs(int g, const Gals& G, const Feat& F, bool tmp) const {//giv
 	int obs = tmp ? nobsv_tmp[g] : nobsv[g]; // optimization
 	return obs;
 }
-
+\not used
 void Assignment::update_nobsv_tmp(const Feat& F) {//if galaxy is observed we know the truth
 	for (int g=0; g<F.Ngal; g++) if (once_obs[g]) nobsv_tmp[g] = nobsv[g];
 }

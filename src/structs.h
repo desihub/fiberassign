@@ -110,28 +110,31 @@ class Assignment {
 	Plist chosen_tfs(int g, const Feat& F, int begin=0, int size=-1) const; // Pairs (j,k) chosen by g, amongst size plates from begin
 	int nkind(int j, int k, int kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F, bool pet=false) const; // Number of fibers assigned to the kind "kind" on the petal of (j,k). If pet=true, we don't take k but the petal p directly instead
 	List fibs_of_kind(int kind, int j, int pet, const Gals& G, const PP& pp, const Feat& F) const; // Sublist of fibers assigned to a galaxy of type kind for (j,p)
-	List sort_fibs_dens(int j, const List& fibs, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const; // Sort this list of fibers by decreasing density
+	//not used
+    List sort_fibs_dens(int j, const List& fibs, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const; // Sort this list of fibers by decreasing density
 	List fibs_unassigned(int j, int pet, const Gals& G, const PP& pp, const Feat& F) const; // Sublist of unassigned fibers for (j,p)
 
 	// Update information
-	void update_nobsv_tmp_for_one(int j, const Feat& F);
+	void update_nobsv_tmp_for_one(int j, const Feat& F);//update for plate j
 	void update_once_obs(int j, const Feat& F);
 
 	// Used to compute results at the end
+    //not used
 	Table infos_petal(int j, int pet, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const;
-	List unused_f(const Feat& F) const;
+    //not used
+	List unused_f(const Feat& F) const; //gives total number of unused fibers
 	Table unused_fbp(const PP& pp, const Feat& F) const; // Unused fibers by petal
-		float colrate(const PP& pp, const Gals& G, const Plates& P, const Feat& F, int j=-1) const; // Get collision rate, j = plate number
+    float colrate(const PP& pp, const Gals& G, const Plates& P, const Feat& F, int j=-1) const; // Get collision rate, j = plate number
 	int nobs_time(int g, int j, const Gals& G, const Feat& F) const; // Know the number of remaining observations of g when the program is at the tile j, for pyplotTile
 
-	// Not used (but could be useful)
-	int unused_f(int j, const Feat& F) const; // Number of unused fiber on the j'th plate
+    int unused_f(int j, const Feat& F) const; // Number of unused fiber on the j'th plate
+    //not used
 	int unused_fbp(int j, int k, const PP& pp, const Feat& F) const; // Number of unassigned fibers of the petal corresponding to (j,k)
-
+    //not used
 	void update_nobsv_tmp(const Feat& F);
 };
 
-bool collision(dpair O1, dpair G1, dpair O2, dpair G2, const Feat& F); // collisions from  looking at galaxy G1 with fiber positionner centered at 01 and etc calculated in mm on plate
+bool collision(dpair O1, dpair G1, dpair O2, dpair G2, const Feat& F); // collisions from  looking at galaxy G1 with fiber positioner centered at 01 and etc calculated in mm on plate
 
 int fprio(int g, const Gals& G, const Feat& F, const Assignment& A);//priority of galaxy g
 
