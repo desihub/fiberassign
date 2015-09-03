@@ -59,8 +59,9 @@ void Feat::init_types() {
 }
 
 void Feat::init_no_ss_sf() {
-	str noA[] = {"LRG","FakeLRG","ELG","QSOLy-a","QSOTracer","FakeQSO"}; 
-	no_ss_sf = init_ids_list(noA,6);
+	//str noA[] = {"LRG","FakeLRG","ELG","QSOLy-a","QSOTracer","FakeQSO"};
+    for(int i=0;i<kind.size()-2;++i)no_ss_sf.push_back(i);
+	//no_ss_sf = init_ids_list(noA,6);
 }
 
 void Feat::init_ss_sf() {
@@ -93,10 +94,14 @@ void Feat::readInputFile(const char file[]) {
 
 			if (tok[0]=="kind") {
 				Categories = tok.size()-1;
-				for (int i=0; i<Categories; i++) kind.push_back(tok[i+1]);
+                for (int i=0; i<Categories; i++) kind.push_back(tok[i+1]);
+                printf("  1 \n ");
 				init_ids();
-				init_no_ss_sf();
+                printf("  2  \n ");
 				init_ss_sf();
+                printf("  3 \n ");
+				init_no_ss_sf();
+                printf("  4 \n ");
 			}
 			if (tok[0]=="type") {
 				Categories = tok.size()-1;
@@ -138,6 +143,7 @@ void Feat::readInputFile(const char file[]) {
 			if (tok[0]=="PlotFreeFibTime") PlotFreeFibTime = s2b(tok[1]);
 			if (tok[0]=="PlotSeenDens") PlotSeenDens = s2b(tok[1]);
 			if (tok[0]=="Verif") Verif = s2b(tok[1]);
+            if (tok[0]=="Ascii") Ascii = s2b(tok[1]);
             if (tok[0]=="PrintGalObs") PrintGalObs = s2i(tok[1]);
 		}
 	}

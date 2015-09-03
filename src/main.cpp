@@ -31,7 +31,11 @@ int main(int argc, char **argv) {
 
 	// Read galaxies
 	Gals G;
-	G = read_galaxies(F);
+    if(F.Ascii){
+        G=read_galaxies_ascii(F);}
+    else{
+        G = read_galaxies(F);
+    }
 	F.Ngal = G.size();
 	printf("# Read %s galaxies from %s \n",f(F.Ngal).c_str(),F.galFile.c_str());
 
@@ -45,7 +49,8 @@ int main(int argc, char **argv) {
                                                 //for each spectrometer, get list of fibers
 
 	// Read plates in order they are to be observed
-	Plates P = read_plate_centers(F); 
+    
+	Plates P = read_plate_centers(F);
 	F.Nplate = P.size();
 	printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
 

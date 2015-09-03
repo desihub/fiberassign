@@ -1,4 +1,4 @@
-op#include	<cstdlib>
+#include	<cstdlib>
 #include	<cmath>
 #include	<fstream>
 #include	<sstream>
@@ -84,6 +84,56 @@ Gals read_galaxies(const Feat& F) {
 		}
 	}
 	return P;
+}
+Gals read_galaxies_ascii(const Feat& F)
+// Read objects from ascii file--format is ra, dec, priority and nobs
+// with ra/dec in degrees.
+{
+    Gals P;
+    std::string buf;
+    const char* fname;
+    fname= F.galFile.c_str();
+    std::ifstream fs(fname);
+    if (!fs) {  // An error occurred opening the file.
+        std::cerr << "Unable to open file " << fname << std::endl;
+        myexit(1);
+    }
+    // Reserve some storage, since we expect we'll be reading quite a few
+    // lines from this file.
+    try {P.reserve(4000000);} catch (std::exception& e) {myexception(e);}
+    // Skip any leading lines beginning with #
+    getline(fs,buf);
+    while (fs.eof()==0 && buf[0]=='#') {
+        getline(fs,buf);
+    }
+    int oid=0;
+    while (fs.eof()==0) {
+        double ra,dec,priority,redshift;  int nobs;
+        std::istringstream(buf) >> ra >> dec >> redshift >> priority >> nobs ;
+        if (ra<   0.) {ra += 360.;}
+        if (ra>=360.) {ra -= 360.;}
+        if (dec<=-90. || dec>=90.) {
+            std::cout << "DEC="<<dec<<" out of range reading "<<fname<<std::endl;
+            myexit(1);
+        }
+        double theta = (90.0 - dec)*M_PI/180.;
+        double phi   = (ra        )*M_PI/180.;
+        struct galaxy Q;
+        Q.nhat[0]    = cos(phi)*sin(theta);
+        Q.nhat[1]    = sin(phi)*sin(theta);
+        Q.nhat[2]    = cos(theta);
+        Q.id         = oid;
+        //Q.priority   = priority;
+        //Q.nobs       = nobs;
+        Q.z = redshift;
+        Q.ra = ra;
+        Q.dec = dec;
+        try{P.push_back(Q);}catch(std::exception& e) {myexception(e);}
+        oid++;
+        getline(fs,buf);
+    }
+    fs.close();
+    return(P);
 }
 
 
@@ -483,7 +533,7 @@ int Assignment::nobs(int g, const Gals& G, const Feat& F, bool tmp) const {//giv
 	int obs = tmp ? nobsv_tmp[g] : nobsv[g]; // optimization
 	return obs;
 }
-\not used
+//not used
 void Assignment::update_nobsv_tmp(const Feat& F) {//if galaxy is observed we know the truth
 	for (int g=0; g<F.Ngal; g++) if (once_obs[g]) nobsv_tmp[g] = nobsv[g];
 }

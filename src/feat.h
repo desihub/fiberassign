@@ -62,6 +62,7 @@ class Feat { // F for features
 	bool PlotFreeFibTime;
 	bool PlotSeenDens;
 	bool Verif;
+    bool Ascii;
 	// Indirectly set by features file
 	int Categories;
 	Slist types; // Same as type but with only QSO LRG ELG SS SF

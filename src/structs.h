@@ -29,7 +29,7 @@ class PP { // PP for plate parameters
 	void read_fiber_positions(const Feat& F);
 	void get_neighbors(const Feat& F);
 	void compute_fibsofsp(const Feat& F); // Computes fibers_of_sp
-    \\not used
+    //not used
 	List fibs_of_same_pet(int k) const;
 	dpair coords(int k) const; // Coords of fiber k
 };
@@ -48,6 +48,7 @@ class galaxy {
 class Gals : public std::vector<struct galaxy> {};
 
 Gals read_galaxies(const Feat& F);
+Gals read_galaxies_ascii(const Feat& F);
 
 // Plate -------------------------------------------------
 struct onplate { // The position of a galaxy in plate coordinates
