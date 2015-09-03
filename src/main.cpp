@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
 	// Make a plan ----------------------------------------------------
 	//new_assign_fibers(G,P,pp,F,A); // Plans whole survey without sky fibers, standard stars
                                    // assumes maximum number of observations needed for QSOs, LRGs
-    simple_assign(G,P,pp,F,A)
+    simple_assign(G,P,pp,F,A);
 	print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
                                     // Want to have even distribution of unused fibers
                                     // so we can put in sky fibers and standard stars

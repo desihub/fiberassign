@@ -256,11 +256,14 @@ void simple_assign(const Gals& G, const Plates& P, const PP& pp, const Feat& F, 
 	int n = next==-1 ? F.Nplate-j0 : next; // Not F.Nplate-A.next_plate+1
 	List plates = sublist(j0,n,A.order);
 	List randPlates = F.Randomize ? random_permut(plates) : plates;
+    printf(" j0  %d  n  %d \n",j0,n);
 	for (int jj=0; jj<n; jj++) {
 		int j = randPlates[jj];
+        printf(" plate  %d \n", j);
 		List randFibers = random_permut(F.Nfiber);
 		for (int kk=0; kk<F.Nfiber; kk++) { // Fiber
 			int k = randFibers[kk];
+            if(kk%200==0)printf(" k %d   kk  %d \n", k, kk);
 			assign_fiber(j,k,G,P,pp,F,A);
 		}
 	}
