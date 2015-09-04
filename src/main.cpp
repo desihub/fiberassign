@@ -63,8 +63,7 @@ int main(int argc, char **argv) {
 	const double MinTreeSize = 0.01;
 	init_time_at(time,"# Start building HTM tree",t);
 	htmTree<struct galaxy> T(G,MinTreeSize);
-	print_time(time,"# ... took :");
-	//T.stats();
+	print_time(time,"# ... took :");//T.stats();
 	
 	// For plates/fibers, collect available galaxies; done in parallel  P[plate j].av_gal[k]=[g1,g2,..]
 	collect_galaxies_for_all(G,T,P,pp,F);
@@ -81,6 +80,7 @@ int main(int argc, char **argv) {
 	// Make a plan ----------------------------------------------------
 	//new_assign_fibers(G,P,pp,F,A); // Plans whole survey without sky fibers, standard stars
                                    // assumes maximum number of observations needed for QSOs, LRGs
+    printf(" Nplate %d  Ngal %d   Nfiber \n", F.Nplate, F.Ngal, F.Nfiber);
     simple_assign(G,P,pp,F,A);
     
     /*
