@@ -487,7 +487,9 @@ void assign_sf_ss(int j, const Gals& G, const Plates& P, const PP& pp, const Fea
 	}
 }
 
-// For each petal, assign QSOs, LRGs, ELGs, ignoring SS and SF. 
+// For each petal, assign QSOs, LRGs, ELGs, ignoring SS and SF.
+
+/*
 void new_assign_fibers(const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int next) {
 	Time t;
 	if (next!=1) init_time(t,"# Begin new assignment :\n-------------------------------------------------------------");
@@ -530,6 +532,7 @@ void new_assign_fibers(const Gals& G, const Plates& P, const PP& pp, const Feat&
 	printf("\n  %s assignments on %s next plates\n",f(A.na(F,j0,n)).c_str(),next_str.c_str());
 	if (next!=1) print_time(t,"# ... took :");
 }
+ */
 
 void redistribute_tf(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int next) {
 	Time t;
