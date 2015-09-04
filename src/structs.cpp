@@ -122,7 +122,7 @@ Gals read_galaxies_ascii(const Feat& F)
         Q.nhat[0]    = cos(phi)*sin(theta);
         Q.nhat[1]    = sin(phi)*sin(theta);
         Q.nhat[2]    = cos(theta);
-        Q.id         = oid;//just consecutive starting at 0
+        Q.id         = oid/F.moduloGal;//just consecutive starting at 0
         //Q.priority   = priority;
         //Q.nobs       = nobs;
         Q.z = redshift;
