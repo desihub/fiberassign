@@ -80,7 +80,7 @@ int main(int argc, char **argv) {
 	// Make a plan ----------------------------------------------------
 	//new_assign_fibers(G,P,pp,F,A); // Plans whole survey without sky fibers, standard stars
                                    // assumes maximum number of observations needed for QSOs, LRGs
-    printf(" Nplate %d  Ngal %d   Nfiber \n", F.Nplate, F.Ngal, F.Nfiber);
+    printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.Nplate, F.Ngal, F.Nfiber);
     simple_assign(G,P,pp,F,A);
     
     /*
