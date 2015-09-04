@@ -110,6 +110,7 @@ Gals read_galaxies_ascii(const Feat& F)
     while (fs.eof()==0) {
         double ra,dec,priority,redshift;  int nobs;
         std::istringstream(buf) >> ra >> dec >> redshift >> priority >> nobs ;
+        // use priority as proxy for id
         if (ra<   0.) {ra += 360.;}
         if (ra>=360.) {ra -= 360.;}
         if (dec<=-90. || dec>=90.) {
@@ -122,7 +123,7 @@ Gals read_galaxies_ascii(const Feat& F)
         Q.nhat[0]    = cos(phi)*sin(theta);
         Q.nhat[1]    = sin(phi)*sin(theta);
         Q.nhat[2]    = cos(theta);
-        Q.id         = oid/F.moduloGal;//just consecutive starting at 0
+        Q.id         = priority
         //Q.priority   = priority;
         //Q.nobs       = nobs;
         Q.z = redshift;
@@ -131,7 +132,7 @@ Gals read_galaxies_ascii(const Feat& F)
 
         if (oid%F.moduloGal == 0) {
         try{P.push_back(Q);}catch(std::exception& e) {myexception(e);}
-        if(oid%500000==0)printf( "%d  %8.4f   %8.4f   %8.4f %8.4f   %8.4f   %8.4f \n",Q.id, Q.z, Q.ra, Q.dec, Q.nhat[0],Q.nhat[1],Q.nhat[2]);
+        if(oid%500000==0)printf( "%d  %d  %8.4f   %8.4f   %8.4f %8.4f   %8.4f   %8.4f \n",oid,Q.id, Q.z, Q.ra, Q.dec, Q.nhat[0],Q.nhat[1],Q.nhat[2]);
         }
         oid++;
         getline(fs,buf);
