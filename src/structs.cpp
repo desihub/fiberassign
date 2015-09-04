@@ -296,6 +296,7 @@ List av_gals_of_kind(int kind, int j, int k, const Gals& G, const Plates& P, con
 
 // Assignment -----------------------------------------------------------------------------
 Assignment::Assignment(const Gals& G, const Feat& F) {
+    printf("start Assignment");
 	TF = initTable(F.Nplate,F.Nfiber,-1);//galaxy assigned to tile-fiber TF[j][k]
 	GL = initPtable(F.Ngal,0); //tile-fiber pair for galaxy  GL[g]
 	order.resize(F.Nplate);
@@ -306,11 +307,14 @@ Assignment::Assignment(const Gals& G, const Feat& F) {
 	nobsv = initList(F.Ngal);//remaining observations
 	nobsv_tmp = initList(F.Ngal);//remaining observations before we know truth
 	List l = F.maxgoal();//max observations for a category
+    printf("set up plates");
 	for (int g=0; g<F.Ngal; g++) {
 		nobsv[g] = F.goal[G[g].id];//true goal
 		nobsv_tmp[g] = l[G[g].id];//max goal for category
 	}
+    printf("set up galaxies");
 	unused = initTable(F.Nplate,F.Npetal,F.Nfbp);//initialized to number of fibers on a petal
+    printf("set up unused");
 }
 
 Assignment::~Assignment() {}

@@ -264,8 +264,7 @@ void simple_assign(const Gals& G, const Plates& P, const PP& pp, const Feat& F, 
 		List randFibers = random_permut(F.Nfiber);
 		for (int kk=0; kk<F.Nfiber; kk++) { // Fiber
 			int k = randFibers[kk];
-            //if(kk%200==0)printf(" k %d   kk  %d \n", k, kk);
-			assign_fiber(j,k,G,P,pp,F,A);
+            assign_fiber(j,k,G,P,pp,F,A);
 		}
 	}
 	str next_str = next==-1 ? "all left" : f(n);
