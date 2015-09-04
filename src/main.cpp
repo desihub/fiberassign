@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
 	//results_on_inputs("doc/figs/",G,P,F,true);
 
 	//// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
-    printf("before assignment");
+    printf("before assignment\n");
 	Assignment A(G,F);
 	print_time(t,"# Start assignment at : ");
 
