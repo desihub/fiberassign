@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
 	}
 	for (int i=0; i<1; i++) redistribute_tf(G,P,pp,F,A);
 
-	print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false);
+	qprint_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false);
 
 	// Still not updated, so all QSO targets have multiple observations etc
 	// Apply and update the plan --------------------------------------
