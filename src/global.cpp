@@ -85,7 +85,7 @@ void collect_available_tilefibers(Gals& G, const Plates& P, const Feat& F) {
 inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const Gals& G, const PP& pp, const Feat& F, const Assignment& A) {
 	int kind = G[g].id;
 	if (isfound(kind,F.ss_sf)) return false; // Don't assign to SS or SF
-	if (P[j].ipass==F.Npass-1 && kind!=F.ids.at("ELG")) return false; // Only ELG at the last pass
+	//if (P[j].ipass==F.Npass-1 && kind!=F.ids.at("ELG")) return false; // Only ELG at the last pass
 	if (F.Collision) for (int i=0; i<pp.N[k].size(); i++) if (g==A.TF[j][pp.N[k][i]]) return false; // Avoid 2 neighboring fibers observe the same galaxy (can happen only when Collision=true)
 	if (A.find_collision(j,k,g,pp,G,P,F)!=-1) return false; // No collision
 	return true;
