@@ -145,6 +145,7 @@ void Feat::readInputFile(const char file[]) {
 			if (tok[0]=="Verif") Verif = s2b(tok[1]);
             if (tok[0]=="Ascii") Ascii = s2b(tok[1]);
             if (tok[0]=="PrintGalObs") PrintGalObs = s2i(tok[1]);
+            if (tok[0]=="BrightTime") BrightTime = s2b(tok[1]);
 		}
 	}
 	fIn.close();
