@@ -453,7 +453,7 @@ void assign_unused(int j, const Gals& G, const Plates& P, const PP& pp, const Fe
 
 // If not enough SS and SF, remove old_kind and replace with SS-SF (new_kind) on petal (j,p)
 void assign_sf_ss(int j, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
-    if(!BrightTime){
+    if(!F.BrightTime){
 	str lrgA[] = {"LRG","FakeLRG"}; List lrg = F.init_ids_list(lrgA,2);
 	str elgA[] = {"ELG"}; List elg = F.init_ids_list(elgA,1);
 	List randPetals = random_permut(F.Npetal);
@@ -689,7 +689,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 
 	for (int g=0; g<F.Ngal; g++) {
 		int id = G[g].id;
-		int m = A.nobs(g,G,F,false);
+		int m = A.nobs(g,G,F,false);//remaining observations needed
 		if (!(m>=0 && m<=MaxObs)) F.Count++;
 		int n = F.goal[id]-m;
 		if (n>=0 && n<=MaxObs) obsrv[id][n]++; // Some SS and SF are obs 6 or 7 times !
