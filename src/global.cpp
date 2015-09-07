@@ -453,6 +453,7 @@ void assign_unused(int j, const Gals& G, const Plates& P, const PP& pp, const Fe
 
 // If not enough SS and SF, remove old_kind and replace with SS-SF (new_kind) on petal (j,p)
 void assign_sf_ss(int j, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
+    if(!BrightTime){
 	str lrgA[] = {"LRG","FakeLRG"}; List lrg = F.init_ids_list(lrgA,2);
 	str elgA[] = {"ELG"}; List elg = F.init_ids_list(elgA,1);
 	List randPetals = random_permut(F.Npetal);
@@ -484,6 +485,10 @@ void assign_sf_ss(int j, const Gals& G, const Plates& P, const PP& pp, const Fea
 			if (unused<F.MaxSS+F.MaxSF) printf("! Not enough !\n");
 		}
 	}
+}
+    else{//make list of fibers assigned to priority 2, then priority 1
+        
+    }
 }
 
 // For each petal, assign QSOs, LRGs, ELGs, ignoring SS and SF.
