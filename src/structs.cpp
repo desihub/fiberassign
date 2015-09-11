@@ -161,6 +161,9 @@ MTL make_MTL(const Gals& G, const Feat& F){
         targ.dec=G[i].dec;
         targ.t_priority=F.prio[G[i].id];
         targ.nobs_remain=F.goal[G[i].id];//needs to be goal prior to knowledge!!
+        targ.SS=SS[G[i].id];
+        targ.SF=SF[G[i].id];
+        targ.lastpass=Pass5[G[i].id];
         M.push_back(targ);
         
     }

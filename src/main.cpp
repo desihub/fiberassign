@@ -38,7 +38,8 @@ int main(int argc, char **argv) {
     }
 	F.Ngal = G.size();
 	printf("# Read %s galaxies from %s \n",f(F.Ngal).c_str(),F.galFile.c_str());
-
+    // make MTL
+    MTL M=make_MTL(G,F);
 	// Read fiber center positions and compute related things
 	PP pp;
 	pp.read_fiber_positions(F); 
@@ -56,7 +57,7 @@ int main(int argc, char **argv) {
     Plates P;
     List permut = random_permut(F.Nplate);
     for (int jj=0; jj<F.Nplate; jj++){
-        P[jj]=P_original[permute[jj]];
+        P[jj]=P_original[permut[jj]];
     }
 
 	printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
@@ -73,10 +74,10 @@ int main(int argc, char **argv) {
 	print_time(time,"# ... took :");//T.stats();
 	
 	// For plates/fibers, collect available galaxies; done in parallel  P[plate j].av_gal[k]=[g1,g2,..]
-	collect_galaxies_for_all(G,T,P,pp,F);
+	collect_galaxies_for_all(M,T,P,pp,F);
 	
 	// For each galaxy, computes available tilefibers  G[i].av_tfs = [(j1,k1),(j2,k2),..]
-	collect_available_tilefibers(G,P,F);
+	collect_available_tilefibers(M,P,F);
 
 	//results_on_inputs("doc/figs/",G,P,F,true);
 

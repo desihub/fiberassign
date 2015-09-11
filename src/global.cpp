@@ -20,7 +20,7 @@
 #include        "global.h"
 
 // Collecting information from input -------------------------------------------------------------------------------------
-void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Plates& P, const PP& pp, const Feat& F) {
+void collect_galaxies_for_all(const MTL& M, const htmTree<struct MTL>& T, Plates& P, const PP& pp, const Feat& F) {
     //provides list of galaxies available to fiber k on tile j: P[j].av_gals[k]
 	Time t;
 	init_time(t,"# Begin collecting available galaxies");
@@ -36,15 +36,13 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
         for (int jj=0; jj<F.Nplate; jj++){
 			int j = permut[jj];
 			plate p = P[j];
-            //more debug
-            //fprintf(FA," j = %d   jj = %d  \n",j,jj);
 			// Takes neighboring galaxies that fall on this plate
-			std::vector<int> nbr = T.near(G,p.nhat,rad);
+			std::vector<int> nbr = T.near(M,p.nhat,rad);
 			// Projects thoses galaxies on the focal plane
 			Onplates O;
 			for (int gg=0; gg<nbr.size(); gg++) {
 				int g = nbr[gg];
-				struct onplate op = change_coords(G[g],p); 
+				struct onplate op = change_coords(M[g],p);
 				op.id = g;
 				O.push_back(op);
 			}
@@ -55,7 +53,7 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 				dpair X = pp.coords(k);
 				std::vector<int> gals = kdT.near(&(pp.fp[2*k]),0.0,F.PatrolRad);
 				for (int g=0; g<gals.size(); g++) {
-					dpair Xg = projection(gals[g],j,G,P);
+					dpair Xg = projection(gals[g],j,M,P);
 					if (sq(Xg,X)<sq(F.PatrolRad)) P[j].av_gals[k].push_back(gals[g]);
 				}
 			}
@@ -65,7 +63,7 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 	print_time(t,"# ... took :");
 }
 
-void collect_available_tilefibers(Gals& G, const Plates& P, const Feat& F) {
+void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) {
     //G[i].av_tfs is list of tile-fiber pairs available to galaxy i
 	Time t;
 	init_time(t,"# Begin computing available tilefibers");
@@ -73,7 +71,7 @@ void collect_available_tilefibers(Gals& G, const Plates& P, const Feat& F) {
 		for(int k=0; k<F.Nfiber; k++) {
 			for(int m=0; m<P[j].av_gals[k].size(); m++) {
 				int i = P[j].av_gals[k][m];  //i is the id of the mth galaxy available to tile j and fiber k
-				G[i].av_tfs.push_back(pair(j,k));  //list of tile-fibers available to galaxy i
+				M[i].av_tfs.push_back(pair(j,k));  //list of tile-fibers available to galaxy i
 			}
 		}
 	}
@@ -82,13 +80,12 @@ void collect_available_tilefibers(Gals& G, const Plates& P, const Feat& F) {
 
 // Assignment sub-functions -------------------------------------------------------------------------------------
 // Allow (j,k) to observe g ?
-inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const Gals& G, const PP& pp, const Feat& F, const Assignment& A) {
-	int kind = G[g].id;
-	if (isfound(kind,F.ss_sf)) return false; // Don't assign to SS or SF
-    if (P[j].ipass==4 && kind!=3) return false; // Only ELG at the last pass
-	//if (P[j].ipass==F.Npass-1 && kind!=F.ids.at("ELG")) return false; // Only ELG at the last pass
+inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const MTL& M, const PP& pp, const Feat& F, const Assignment& A) {
+	
+	if (SS[g]||SF[g]) return false; // Don't assign to SS or SF
+    if (P[j].ipass==4 && Pass5[g]!=3) return false; // Only ELG at the last pass
 	if (F.Collision) for (int i=0; i<pp.N[k].size(); i++) if (g==A.TF[j][pp.N[k][i]]) return false; // Avoid 2 neighboring fibers observe the same galaxy (can happen only when Collision=true)
-	if (A.find_collision(j,k,g,pp,G,P,F)!=-1) return false; // No collision
+	if (A.find_collision(j,k,g,pp,M,P,F)!=-1) return false; // No collision
 	return true;
     //doesn't require that jk is unassigned//doesn't require that g isn't assigned already on this plate
 }
@@ -153,14 +150,14 @@ inline void assign_galaxy(int g, const Gals& G, const Plates& P, const PP& pp, c
 
 // Tries to assign (j,k) to a SS (preferentially because they have priority) or a SF
 // no limit on the number of times a SS or SF can be observed
-inline int assign_fiber_to_ss_sf(int j, int k, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
+inline int assign_fiber_to_ss_sf(int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
 	int best = -1; int pbest = 1e3;
 	List av_gals = P[j].av_gals[k];
 	for (int gg=0; gg<av_gals.size(); gg++) {
 		int g = av_gals[gg];
-		int kind = G[g].id;
-		int prio = fprio(g,G,F,A);
-		if (((kind==F.ids.at("SF") && A.nkind(j,k,F.ids.at("SF"),G,P,pp,F)<F.MaxSF) || (kind==F.ids.at("SS") && A.nkind(j,k,F.ids.at("SS"),G,P,pp,F)<F.MaxSS)) && prio<pbest) { // Optimizes this way
+		
+		int prio = t_priority[g];
+		if ((SF[g] && A.nkind(j,k,F.ids.at("SF"),M,P,pp,F)<F.MaxSF) || SS[g] && A.nkind(j,k,F.ids.at("SS"),G,P,pp,F)<F.MaxSS)) && prio<pbest) { // Optimizes this way
 			if (A.is_assigned_jg(j,g,G,F)==-1 && A.find_collision(j,k,g,pp,G,P,F)==-1) {//nmo collision, not assigned to this plate
 				best = g;
 				pbest = prio;
