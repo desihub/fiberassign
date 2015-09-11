@@ -29,6 +29,7 @@ class Feat { // F for features
 	List prio; // Priorities 
 	List priopost; // Priorities when we know the kind
 	List goal;
+    List goalpost;
 	Slist kind;
 	Slist type;
 

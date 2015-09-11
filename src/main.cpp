@@ -50,8 +50,15 @@ int main(int argc, char **argv) {
 
 	// Read plates in order they are to be observed
     
-	Plates P = read_plate_centers(F);
-	F.Nplate = P.size();
+	Plates P_original = read_plate_centers(F);
+    F.Nplate=P_original.size();
+    //This takes the place of Opsim or NextFieldSelector; will be replaced by appropriate code
+    Plates P;
+    List permut = random_permut(F.Nplate);
+    for (int jj=0; jj<F.Nplate; jj++){
+        P[jj]=P_original[permute[jj]];
+    }
+
 	printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
 
 	// Computes geometries of cb and fh: pieces of positioner - used to determine possible collisions
@@ -62,7 +69,7 @@ int main(int argc, char **argv) {
 	// HTM Tree of galaxies
 	const double MinTreeSize = 0.01;
 	init_time_at(time,"# Start building HTM tree",t);
-	htmTree<struct galaxy> T(G,MinTreeSize);
+	htmTree<struct MTL> T(M,MinTreeSize);
 	print_time(time,"# ... took :");//T.stats();
 	
 	// For plates/fibers, collect available galaxies; done in parallel  P[plate j].av_gal[k]=[g1,g2,..]

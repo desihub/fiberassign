@@ -146,6 +146,26 @@ str galaxy::kind(const Feat& F) const {
 	return(F.kind[id]);
 }
 
+// targets -----------------------------------------------------------------------
+// derived from G, but includes priority and nobs_remain
+
+MTL make_MTL(const Gals& G, const Feat& F){
+    MTL M;
+    int Nobj=G.size();
+    struct target targ;
+    for(int i=0;i<Nobj;++i){
+        targ.nhat[0]=G[i].nhat[0];
+        targ.nhat[1]=G[i].nhat[1];
+        targ.nhat[2]=G[i].nhat[2];
+        targ.ra=G[i].ra;
+        targ.dec=G[i].dec;
+        targ.t_priority=F.prio[G[i].id];
+        targ.nobs_remain=F.goal[G[i].id];//needs to be goal prior to knowledge!!
+        M.push_back(targ);
+        
+    }
+}
+
 // PP ----------------------------------------------------------------------------
 // Read the positions of the fibers on each plate.  Assumes the format
 // of fiberpos.txt produced by "F.Randomize_fibers".

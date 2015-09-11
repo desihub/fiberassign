@@ -13,9 +13,7 @@
 #include	<exception>
 #include	<sys/time.h>
 #include        <map>
-#include        "misc.h"
 #include        "feat.h"
-#include        "collision.h"
 
 // PP ---------------------------------------------------
 class PP { // PP for plate parameters
@@ -49,6 +47,21 @@ class Gals : public std::vector<struct galaxy> {};
 
 Gals read_galaxies(const Feat& F);
 Gals read_galaxies_ascii(const Feat& F);
+
+
+
+//target -----------------------------------------------------
+class target {
+    public:
+    int id, nobs_remain;
+    double nhat[3];
+    double ra, dec, t_priority;
+    Plist av_tfs;
+};
+class MTL : public std::vector<struct target> {};
+
+MTL make_MTL(const Gals& G, const Feat& F);
+
 
 // Plate -------------------------------------------------
 struct onplate { // The position of a galaxy in plate coordinates

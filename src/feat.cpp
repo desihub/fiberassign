@@ -112,7 +112,7 @@ void Feat::readInputFile(const char file[]) {
 			if (tok[0]=="prio") for (int i=0; i<Categories; i++) prio.push_back(s2i(tok[i+1]));
 			if (tok[0]=="priopost") for (int i=0; i<Categories; i++) priopost.push_back(s2i(tok[i+1]));
 			if (tok[0]=="goal") for (int i=0; i<Categories; i++) goal.push_back(s2i(tok[i+1]));
-
+            if (tok[0]=="goalpost") for (int i=0; i<Categories; i++) goalpost.push_back(s2i(tok[i+1]));
 			if (tok[0]=="InterPlate") InterPlate = s2i(tok[1]);
 			if (tok[0]=="Randomize") Randomize = s2b(tok[1]);
 			if (tok[0]=="Pacman") Pacman = s2b(tok[1]);
