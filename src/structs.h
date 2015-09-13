@@ -86,8 +86,6 @@ class plate {
 class Plates : public std::vector<struct plate> {};
 
 Plates read_plate_centers(const Feat& F);
-//not used
-List av_gals_of_kind(int kind, int j, int k, const Gals& G, const Plates& P, const Feat& F);
 
 // Assignment ---------------------------------------------
 // 2 mappings of assignments : (j,k) -> id(gal) ; id(gal)[5] -> (j,k)
@@ -108,26 +106,26 @@ class Assignment {
 
 
 	//// ----- Methods
-	Assignment(const Gals& G, const Feat& F);
+	Assignment(const MTL& M, const Feat& F);
 	~Assignment();
-	void assign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp);
-	void unassign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp);
-	int find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plates& P, const Feat& F, int col=-1) const;
-	bool find_collision(int j, int k, int kn, int g, int gn, const PP& pp, const Gals& G, const Plates& P, const Feat& F, int col=-1) const;
-	int is_collision(int j, int k, const PP& pp, const Gals& G, const Plates& P, const Feat& F) const;
-	void verif(const Plates& P, const Gals& G, const PP& pp, const Feat& F) const; // Verif mappings are right
+	void assign(int j, int k, int g, const MTL& M, const Plates& P, const PP& pp);
+	void unassign(int j, int k, int g, const MTL& M, const Plates& P, const PP& pp);
+	int find_collision(int j, int k, int g, const PP& pp, const MTL& M, const Plates& P, const Feat& F, int col=-1) const;
+	bool find_collision(int j, int k, int kn, int g, int gn, const PP& pp, const MTL& M, const Plates& P, const Feat& F, int col=-1) const;
+	int is_collision(int j, int k, const PP& pp, const MTL& M, const Plates& P, const Feat& F) const;
+	void verif(const Plates& P, const MTL& M, const PP& pp, const Feat& F) const; // Verif mappings are right
 	int is_assigned_jg(int j, int g) const;
-	int is_assigned_jg(int j, int g, const Gals& G, const Feat& F) const;
+	int is_assigned_jg(int j, int g, const MTL& M, const Feat& F) const;
 	bool is_assigned_tf(int j, int k) const; 
 	int na(const Feat& F, int begin=0, int size=-1) const; // Number of assignments (changes) within plates begin to begin+size
-	int nobs(int g, const Gals& G, const Feat& F, bool tmp=true) const; // Counts how many more times object should be observed. If tmp=true, return maximum for this kind (temporary information)
+	int nobs(int g, const MTL& M, const Feat& F, bool tmp=true) const; // Counts how many more times object should be observed. If tmp=true, return maximum for this kind (temporary information)
 	//if tmp=false we actually know the true type from the start
 	Plist chosen_tfs(int g, const Feat& F, int begin=0, int size=-1) const; // Pairs (j,k) chosen by g, amongst size plates from begin
-	int nkind(int j, int k, int kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F, bool pet=false) const; // Number of fibers assigned to the kind "kind" on the petal of (j,k). If pet=true, we don't take k but the petal p directly instead
-	List fibs_of_kind(int kind, int j, int pet, const Gals& G, const PP& pp, const Feat& F) const; // Sublist of fibers assigned to a galaxy of type kind for (j,p)
+	int nkind(int j, int k, int kind, const MTL& M, const Plates& P, const PP& pp, const Feat& F, bool pet=false) const; // Number of fibers assigned to the kind "kind" on the petal of (j,k). If pet=true, we don't take k but the petal p directly instead
+	List fibs_of_kind(int kind, int j, int pet, const MTL& M, const PP& pp, const Feat& F) const; // Sublist of fibers assigned to a galaxy of type kind for (j,p)
 	//not used
-    List sort_fibs_dens(int j, const List& fibs, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const; // Sort this list of fibers by decreasing density
-	List fibs_unassigned(int j, int pet, const Gals& G, const PP& pp, const Feat& F) const; // Sublist of unassigned fibers for (j,p)
+    List sort_fibs_dens(int j, const List& fibs, const MTL& M, const Plates& P, const PP& pp, const Feat& F) const; // Sort this list of fibers by decreasing density
+	List fibs_unassigned(int j, int pet, const MTL& M, const PP& pp, const Feat& F) const; // Sublist of unassigned fibers for (j,p)
 
 	// Update information
 	void update_nobsv_tmp_for_one(int j, const Feat& F);//update for plate j
@@ -135,12 +133,12 @@ class Assignment {
 
 	// Used to compute results at the end
     //not used
-	Table infos_petal(int j, int pet, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const;
+	Table infos_petal(int j, int pet, const MTL& M, const Plates& P, const PP& pp, const Feat& F) const;
     //not used
 	List unused_f(const Feat& F) const; //gives total number of unused fibers
 	Table unused_fbp(const PP& pp, const Feat& F) const; // Unused fibers by petal
-    float colrate(const PP& pp, const Gals& G, const Plates& P, const Feat& F, int j=-1) const; // Get collision rate, j = plate number
-	int nobs_time(int g, int j, const Gals& G, const Feat& F) const; // Know the number of remaining observations of g when the program is at the tile j, for pyplotTile
+    float colrate(const PP& pp, const MTL& M, const Plates& P, const Feat& F, int j=-1) const; // Get collision rate, j = plate number
+	int nobs_time(int g, int j, const MTL& M, const Feat& F) const; // Know the number of remaining observations of g when the program is at the tile j, for pyplotTile
 
     int unused_f(int j, const Feat& F) const; // Number of unused fiber on the j'th plate
     //not used
@@ -151,7 +149,7 @@ class Assignment {
 
 bool collision(dpair O1, dpair G1, dpair O2, dpair G2, const Feat& F); // collisions from  looking at galaxy G1 with fiber positioner centered at 01 and etc calculated in mm on plate
 
-int fprio(int g, const Gals& G, const Feat& F, const Assignment& A);//priority of galaxy g
+//int fprio(int g, const Gals& G, const Feat& F, const Assignment& A);//priority of galaxy g
 
 double plate_dist(const double theta);//plate scale conversion
 struct onplate change_coords(const struct target& O, const struct plate& P);
