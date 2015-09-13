@@ -105,7 +105,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
 			// Takes it if better priority, or if same, if it needs more observations, so shares observations if two QSOs are close
 			if (prio<pbest || (prio==pbest && m>mbest)) {
 				// Check that g is not assigned yet on this plate, or on the InterPlate around, check with ok_to_assign
-				if (A.is_assigned_jg(j,g,M,F)==-1 && ok_assign_g_to_jk(g,j,k,P,M,pp,F,A) && g!=no_g && (kind.size()==0 || isfound(G[g].id,kind))) {
+				if (A.is_assigned_jg(j,g,M,F)==-1 && ok_assign_g_to_jk(g,j,k,P,M,pp,F,A) && g!=no_g && (kind.size()==0 || isfound(M[g].id,kind))) {
 					best = g;
 					pbest = prio;
 					mbest = m;
@@ -132,7 +132,7 @@ inline void assign_galaxy(int g, const MTL& M, const Plates& P, const PP& pp, co
 	int j0 = (jstart==-1) ? A.next_plate : jstart;
 	int n = (size==-1) ? F.Nplate-j0 : size;// number of plates to do
 	int jb = -1; int kb = -1; int unusedb = -1;
-	Plist av_tfs = G[g].av_tfs;
+	Plist av_tfs = M[g].av_tfs;
 	// All the tile-fibers that can observe galaxy g
 	for (int tfs=0; tfs<av_tfs.size(); tfs++) {
 		int j = av_tfs[tfs].f;
@@ -156,8 +156,8 @@ inline int assign_fiber_to_ss_sf(int j, int k, const MTL& M, const Plates& P, co
 	for (int gg=0; gg<av_gals.size(); gg++) {
 		int g = av_gals[gg];
 		
-		int prio = t_priority[g];
-		if ((SF[g] && A.nkind(j,k,F.ids.at("SF"),M,P,pp,F)<F.MaxSF) || SS[g] && A.nkind(j,k,F.ids.at("SS"),M,P,pp,F)<F.MaxSS)) && prio<pbest) { // Optimizes this way
+		int prio = M[g].t_priority;
+        if ((M[g].SF && A.nkind(j,k,F.ids.at("SF"),M,P,pp,F)<F.MaxSF) || M[g].SS && A.nkind(j,k,F.ids.at("SS"),M,P,pp,F)<F.MaxSS)) && prio<pbest) { // Optimizes this way
 			if (A.is_assigned_jg(j,g,M,F)==-1 && A.find_collision(j,k,g,pp,M,P,F)==-1) {//nmo collision, not assigned to this plate
 				best = g;
 				pbest = prio;
@@ -200,7 +200,7 @@ inline int improve_fiber(int begin, int next, int j, int k, const MTL& M, const 
 							}}}}}}
 			// Modify assignment
 			if (gb!=-1) {
-				A.unassign(jpb,kpb,gb,GM,P,pp);
+				A.unassign(jpb,kpb,gb,M,P,pp);
 				A.assign(j,k,gb,M,P,pp);
 				A.assign(jpb,kpb,bb,M,P,pp);
 				return gb;
@@ -303,7 +303,7 @@ void replace(List old_kind, int new_kind, int j, int p, const MTL& M, const Plat
         List av_g = P[j].av_gals[k];//all galaxies available to (j,k)
 		for (int gg=0; gg<av_g.size() && !fin; gg++) {
 			int g = av_g[gg];//is this one the right kind (newkind)?
-			if (G[g].id==new_kind && A.find_collision(j,k,g,pp,M,P,F)==-1 && A.is_assigned_jg(j,g)==-1) { // Looking for fiber that took ELG but could take SS or SF
+			if (M[g].id==new_kind && A.find_collision(j,k,g,pp,M,P,F)==-1 && A.is_assigned_jg(j,g)==-1) { // Looking for fiber that took ELG but could take SS or SF
 				int g0 = A.TF[j][k];
 				A.unassign(j,k,g0,M,P,pp);
 				assign_galaxy(g0,M,P,pp,F,A);//having released g0, look for new place for it
@@ -351,7 +351,7 @@ void assign_unused(int j, const MTL& M, const Plates& P, const PP& pp, const Fea
 }
 
 // If not enough SS and SF, remove old_kind and replace with SS-SF (new_kind) on petal (j,p)
-void assign_sf_ss(int j, const MTL& M const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
+void assign_sf_ss(int j, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
     if(!F.BrightTime){
 	str lrgA[] = {"LRG","FakeLRG"}; List lrg = F.init_ids_list(lrgA,2);
 	str elgA[] = {"ELG"}; List elg = F.init_ids_list(elgA,1);
@@ -470,7 +470,7 @@ void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F
 	Table Tg = initTable(F.Categories,0);
 	for (int g=0; g<F.Ngal; g++) {
 		int n = M[g].av_tfs.size();
-		Tg[G[g].id].push_back(n);
+		Tg[M[g].id].push_back(n);
 	}
 	Table hist2;
 	for (int id=0; id<F.Categories; id++) hist2.push_back(histogram(Tg[id],1));
@@ -480,10 +480,10 @@ void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F
 	List countgals;
 	List countgals_nopass;
 	for (int g=0; g<F.Ngal; g++) {
-		int id = G[g].id;
+		int id = M[g].id;
 		List plates;
-		for (int i=0; i<G[g].av_tfs.size(); i++) {
-			int j = G[g].av_tfs[i].f;
+		for (int i=0; i<M[g].av_tfs.size(); i++) {
+			int j = M[g].av_tfs[i].f;
             //if (!isfound(j,plates) && P[j].ipass!=F.Npass-1) plates.push_back(j);
 			if (!isfound(j,plates) && P[j].ipass!=4) plates.push_back(j);
 		}
@@ -523,12 +523,12 @@ void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F
 	Dtable countsz = initDtable(3,0);
 	double intervalz = 0.02;
 	for (int g=0; g<F.Ngal; g++) {
-		int kind = G[g].id;
+		int kind = M[g].id;
 		int kind0 = -1;
 		if (kind==F.id("QSOLy-a") || kind==F.id("QSOTracer") || kind==F.id("FakeQSO")) kind0 = 0;
 		if (kind==F.id("LRG") || kind==F.id("FakeLRG")) kind0 = 1;
 		if (kind==F.id("ELG")) kind0 = 2;
-		if (kind0!=-1) countsz[kind0].push_back(G[g].z);
+		if (kind0!=-1) countsz[kind0].push_back(M[g].z);
 	}
 	Dtable hist3;
 	for (int id=0; id<3; id++) hist3.push_back(histogram(countsz[id],intervalz));
@@ -543,7 +543,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 	Table obsrv = initTable(F.Categories,MaxObs+1);
 
 	for (int g=0; g<F.Ngal; g++) {
-		int id = G[g].id;
+		int id = M[g].id;
 		int m = A.nobs(g,G,F,false);//remaining observations needed
 		if (!(m>=0 && m<=MaxObs)) F.Count++;
 		int n = F.goal[id]-m;
@@ -596,10 +596,10 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 			for (int g=0; g<F.Ngal; g++) {
 				int n = galaxs[g];
 				if (1<=n) {
-					if (G[g].id == 0) l[n-1]++;
-					if (G[g].id == 2) l[n-1+5]++;
-					if (G[g].id == 1) l[n+6]++;
-					if (G[g].id == 3) l[n+7]++;
+					if (M[g].id == 0) l[n-1]++;
+					if (M[g].id == 2) l[n-1+5]++;
+					if (M[g].id == 1) l[n+6]++;
+					if (M[g].id == 3) l[n+7]++;
 				}
 			}
 			for (int id=0; id<nk; id++) Ttim[id].push_back(l[id]);
@@ -614,8 +614,8 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 	int goal = F.goal[id];
 	Table Percseen = initTable(goal+1,0);
 	for (int g=0; g<F.Ngal; g++) {
-		if (G[g].id==id) {
-			int n = G[g].av_tfs.size();
+		if (M[g].id==id) {
+			int n = M[g].av_tfs.size();
 			int p = A.chosen_tfs(g,F).size();
 			if (n>=Percseen[p].size()) Percseen[p].resize(n+1);
 			Percseen[p][n]++;
@@ -635,7 +635,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 	if (F.PlotDistLya) {
 	Table deltas;
 	for (int g=0; g<F.Ngal; g++) {
-		if (G[g].id == F.ids.at("QSOLy-a")) {
+		if (M[g].id == F.ids.at("QSOLy-a")) {
 			Plist tfs = A.chosen_tfs(g,F);
 			if (tfs.size()>=2) {
 				List unsorted;
@@ -697,7 +697,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
 				int ock = 0;
 				for (int i=0; i<size; i++) {
 					int g = P[j].av_gals[k][i];
-					if (G[g].id == t) {
+					if (M[g].id == t) {
 						nkind++;
 						if (A.is_assigned_jg(j,g)!=-1) ock++;
 					}
@@ -753,7 +753,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
     if (F.PrintGalObs>0){
         printf(" F.PrintGalObs  %d \n",F.PrintGalObs);
         for(int g=0;g<F.PrintGalObs;++g){
-                int id = G[g].id;
+                int id = M[g].id;
                 int m = A.nobs(g,G,F,false);
                 int n = F.goal[id]-m;
             printf(" galaxy number %d  times observed %d\n",g,n);
@@ -777,7 +777,7 @@ void write_FAtile_ascii(int j, str outdir, const Gals& G, const Plates& P, const
 		// Object type, Target ID, ra, dec, x, y
 		if (g!=-1) {
 			dpair Gal = projection(g,j,M,P);
-			fprintf(FA,"%s %d %f %f %f %f\n",F.kind[G[g].id].c_str(),g,G[g].ra,G[g].dec,Gal.f,Gal.s);
+			fprintf(FA,"%s %d %f %f %f %f\n",F.kind[M[g].id].c_str(),g,M[g].ra,M[g].dec,Gal.f,Gal.s);
 		}
 		else fprintf(FA,"-1\n");
 	}
@@ -809,7 +809,7 @@ void fa_write(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, c
 	printf("start the loop\n");
 	for (int i = j*F.Nfiber; i < F.Nfiber; i++) {
 		int g = A.TF[j][i];
-		int id = G[g].id;
+		int id = M[g].id;
 		str type = F.type[id];
 		//char type0[] = "1111111";
 
@@ -823,8 +823,8 @@ void fa_write(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, c
 		printf("%s ", objtype[i]);
 		target_id[i] = g;
 		desi_target[i] = 0;
-		ra[i] = g == -1 ? 370.0 : G[g].ra;
-		dec[i] = g == -1 ? 370.0 : G[g].dec;
+		ra[i] = g == -1 ? 370.0 : M[g].ra;
+		dec[i] = g == -1 ? 370.0 : M[g].dec;
 
 		dpair proj = projection(g,j,M,P);
 		x_focal[i] = proj.f;
@@ -916,11 +916,11 @@ void pyplotTile(int j, str directory, const Gals& G, const Plates& P, const PP& 
 				//cb.set_color('r');
 				//fh.set_color('r');
 			//}
-			cb.set_color(colors[G[g].id]);
-			fh.set_color(colors[G[g].id]);
+			cb.set_color(colors[M[g].id]);
+			fh.set_color(colors[M[g].id]);
 			pol.add(cb);
 			pol.add(fh);
-			pol.add(element(O,colors[G[g].id],0.3,5));
+			pol.add(element(O,colors[M[g].id],0.3,5));
 		}
 		else pol.add(element(O,'k',0.1,3));
 		List av_gals = P[j].av_gals[k];
