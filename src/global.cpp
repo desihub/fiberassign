@@ -157,7 +157,7 @@ inline int assign_fiber_to_ss_sf(int j, int k, const MTL& M, const Plates& P, co
 		int g = av_gals[gg];
 		
 		int prio = M[g].t_priority;
-        if ((M[g].SF && A.nkind(j,k,F.ids.at("SF"),M,P,pp,F)<F.MaxSF) || M[g].SS && A.nkind(j,k,F.ids.at("SS"),M,P,pp,F)<F.MaxSS)) && prio<pbest) { // Optimizes this way
+        if (((M[g].SF && A.nkind(j,k,F.ids.at("SF"),M,P,pp,F)<F.MaxSF) || M[g].SS && A.nkind(j,k,F.ids.at("SS"),M,P,pp,F)<F.MaxSS) && prio<pbest) { // Optimizes this way
 			if (A.is_assigned_jg(j,g,M,F)==-1 && A.find_collision(j,k,g,pp,M,P,F)==-1) {//nmo collision, not assigned to this plate
 				best = g;
 				pbest = prio;
@@ -544,7 +544,7 @@ void display_results(str outdir, const MTL& M, const Plates& P, const PP& pp, Fe
 
 	for (int g=0; g<F.Ngal; g++) {
 		int id = M[g].id;
-		int m = A.nobs(g,G,F,false);//remaining observations needed
+		int m = M[g].nobs_remain;//remaining observations needed
 		if (!(m>=0 && m<=MaxObs)) F.Count++;
 		int n = F.goal[id]-m;
 		if (n>=0 && n<=MaxObs) obsrv[id][n]++; // Some SS and SF are obs 6 or 7 times !
@@ -754,7 +754,7 @@ void display_results(str outdir, const MTL& M, const Plates& P, const PP& pp, Fe
         printf(" F.PrintGalObs  %d \n",F.PrintGalObs);
         for(int g=0;g<F.PrintGalObs;++g){
                 int id = M[g].id;
-                int m = A.nobs(g,G,F,false);
+                int m = M[g].nobs_remain;
                 int n = F.goal[id]-m;
             printf(" galaxy number %d  times observed %d\n",g,n);
         }
@@ -926,7 +926,7 @@ void pyplotTile(int j, str directory, const MTL& M, const Plates& P, const PP& p
 		List av_gals = P[j].av_gals[k];
 		for (int i=0; i<av_gals.size(); i++) {
 			int gg = av_gals[i];
-			if (1<=A.nobs_time(gg,j,G,F)) {
+			if (1<=A.nobs_time(gg,j,M,F)) {
 				//if (A.nobs_time(gg,j,G,F)!=A.nobs(gg,G,F)) printf("%d %d %s - ",A.nobs_time(gg,j,G,F),A.nobs(gg,G,F),F.kind[G[gg].id].c_str());
 				int kind = G[gg].id;
 				dpair Ga = projection(gg,j,M,P);
