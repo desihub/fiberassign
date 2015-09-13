@@ -154,9 +154,9 @@ bool collision(dpair O1, dpair G1, dpair O2, dpair G2, const Feat& F); // collis
 int fprio(int g, const Gals& G, const Feat& F, const Assignment& A);//priority of galaxy g
 
 double plate_dist(const double theta);//plate scale conversion
-struct onplate change_coords(const struct galaxy& O, const struct plate& P);
-dpair projection(int g, int j, const Gals& G, const Plates& P); // Projection of g on j
-int num_av_gals(int j, int k, const Gals& G, const Plates& P, const Feat& F, const Assignment& A); // weighted (and only with remaining observation according to the moment in the survey), and doesn't take into account other kinds than QSO LRG ELG not used
+struct onplate change_coords(const struct target& O, const struct plate& P);
+dpair projection(int g, int j, const MTL& M , const Plates& P); // Projection of g on j
+int num_av_gals(int j, int k, const MTL& M, const Plates& P, const Feat& F, const Assignment& A); // weighted (and only with remaining observation according to the moment in the survey), and doesn't take into account other kinds than QSO LRG ELG not used
 
 // Pyplot -----------------------------------------------
 class pyplot {

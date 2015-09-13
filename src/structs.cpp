@@ -608,7 +608,7 @@ double plate_dist(const double theta) {
 }
 
 // Returns the x-y position on the plate centered at P for galaxy O.
-struct onplate change_coords(const struct galaxy& O, const struct plate& P) {
+struct onplate change_coords(const struct target& O, const struct plate& P) {
 	struct onplate obj;
 	// Rotate the "galaxy" vector so that the plate center is at z-hat.
 	double nhat1[3],nhat2[3];
