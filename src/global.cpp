@@ -393,7 +393,7 @@ void assign_sf_ss(int j, const MTL& M, const Plates& P, const PP& pp, const Feat
 // For each petal, assign QSOs, LRGs, ELGs, ignoring SS and SF.
 
 
-void redistribute_tf(const Gals& G, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int next) {
+void redistribute_tf(const MTL& M, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int next) {
 	Time t;
 	if (next!=1) init_time(t,"# Begin redistribute TF :");
 	int j0 = A.next_plate;
@@ -441,7 +441,7 @@ void redistribute_tf(const Gals& G, const Plates&P, const PP& pp, const Feat& F,
 }
 
 // Other useful functions --------------------------------------------------------------------------------------------
-void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F, bool latex) {
+void results_on_inputs(str outdir, const MTL& M, const Plates& P, const Feat& F, bool latex) {
 	printf("# Results on inputs :\n");
 	// Print features
 	//print_list("  Kinds corresponding :",F.kind);
@@ -535,7 +535,7 @@ void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F
 	print_mult_Dtable_latex("dn/dz",outdir+"redshifts.dat",hist3,intervalz);
 }
 
-void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, Feat& F, const Assignment& A, bool latex) {
+void display_results(str outdir, const MTL& M, const Plates& P, const PP& pp, Feat& F, const Assignment& A, bool latex) {
 	printf("# Results :\n");
 
 	// 1 Raw numbers of galaxies by id and number of remaining observations
@@ -761,7 +761,7 @@ void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, F
     }
 }
 
-void write_FAtile_ascii(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
+void write_FAtile_ascii(int j, str outdir, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
 	FILE * FA;
 	str s = outdir+"tile"+i2s(j)+".txt";
 	FA = fopen(s.c_str(),"w");
@@ -785,7 +785,7 @@ void write_FAtile_ascii(int j, str outdir, const Gals& G, const Plates& P, const
 }
 
 //writes FITS file, but needs modification for C++
-void fa_write(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) { // Lado Samushia
+void fa_write(int j, str outdir, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) { // Lado Samushia
 
 	str s = outdir+"tile"+i2s(j)+".fits";
 	const char * filename = s.c_str();
@@ -898,7 +898,7 @@ void fa_write(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, c
 }
 
 
-void pyplotTile(int j, str directory, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
+void pyplotTile(int j, str directory, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
 	std::vector<char> colors;
 	colors.resize(F.Categories);
 	colors[0] = 'k'; colors[1] = 'g'; colors[2] = 'r'; colors[3] = 'b'; colors[4] = 'm'; colors[5] = 'y'; colors[6] = 'w'; colors[7] = 'c';
