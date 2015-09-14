@@ -528,7 +528,7 @@ void results_on_inputs(str outdir, const MTL& M, const Plates& P, const Feat& F,
 		if (kind==F.id("QSOLy-a") || kind==F.id("QSOTracer") || kind==F.id("FakeQSO")) kind0 = 0;
 		if (kind==F.id("LRG") || kind==F.id("FakeLRG")) kind0 = 1;
 		if (kind==F.id("ELG")) kind0 = 2;
-		if (kind0!=-1) countsz[kind0].push_back(M[g].z);
+		//if (kind0!=-1) countsz[kind0].push_back(M[g].z);  n
 	}
 	Dtable hist3;
 	for (int id=0; id<3; id++) hist3.push_back(histogram(countsz[id],intervalz));
@@ -897,8 +897,8 @@ void fa_write(int j, str outdir, const MTL& M, const Plates& P, const PP& pp, co
 	return;
 }
 
-
-void pyplotTile(int j, str directory, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
+/*
+void pyplotTile(int j, str directory, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
 	std::vector<char> colors;
 	colors.resize(F.Categories);
 	colors[0] = 'k'; colors[1] = 'g'; colors[2] = 'r'; colors[3] = 'b'; colors[4] = 'm'; colors[5] = 'y'; colors[6] = 'w'; colors[7] = 'c';
@@ -908,7 +908,7 @@ void pyplotTile(int j, str directory, const MTL& M, const Plates& P, const PP& p
 		dpair O = pp.coords(k);
 		int g = A.TF[j][k];
 		if (g!=-1) {
-			dpair Ga = projection(g,j,M,P);
+			dpair Ga = projection(g,j,G,P);
 			polygon fh = F.fh;
 			polygon cb = F.cb;
 			repos_cb_fh(cb,fh,O,Ga,posp);
@@ -920,7 +920,7 @@ void pyplotTile(int j, str directory, const MTL& M, const Plates& P, const PP& p
 			fh.set_color(colors[M[g].id]);
 			pol.add(cb);
 			pol.add(fh);
-			pol.add(element(O,colors[M[g].id],0.3,5));
+			pol.add(element(O,colors[G[g].id],0.3,5));
 		}
 		else pol.add(element(O,'k',0.1,3));
 		List av_gals = P[j].av_gals[k];
@@ -939,7 +939,7 @@ void pyplotTile(int j, str directory, const MTL& M, const Plates& P, const PP& p
 	//for (int k=0; k<F.Nfiber; k++) pyp.addtext(pp.coords(k),i2s(k)); // Plot fibers identifiers
 	pyp.plot_tile(directory,j,F); 
 }
-
+*/
 void overlappingTiles(str fname, const Feat& F, const Assignment& A) {
 	FILE * file;
 	file = fopen(fname.c_str(),"w");
