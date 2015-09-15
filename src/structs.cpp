@@ -309,7 +309,7 @@ Plates read_plate_centers(const Feat& F) {
 	return(P);
 }
 //not used
-List av_gals_of_kind(int kind, int j, int k, const Gals& G, const Plates& P, const Feat& F) {
+List av_gals_of_kind(int kind, int j, int k, const MTL& M, const Plates& P, const Feat& F) {
 	List L;  //list of galaxies available to (j,k) of kind 'kind'
 	List av_gals = P[j].av_gals[k];
 	for (int gg=0; gg<av_gals.size(); gg++) {
@@ -412,7 +412,7 @@ void Assignment::verif(const Plates& P, const MTL& M, const PP& pp, const Feat& 
 				if (gals[g]==1) printf("ERROR in verification, twice the same galaxy by (%d,%d)\n",j,k);
 				else gals[g] = 1;
 				// Collision checking
-				if (!F.Collision && is_collision(j,k,pp,G,P,F)!=-1) printf("ERROR in verification : collisions\n");
+				if (!F.Collision && is_collision(j,k,pp,M,P,F)!=-1) printf("ERROR in verification : collisions\n");
 			}
 		}
 	}
@@ -517,8 +517,8 @@ Table Assignment::infos_petal(int j, int pet, const MTL& M, const Plates& P, con
 			L.push_back(g].id);
 			L.push_back(nobs(g,G,F));
 			L.push_back(is_assigned_jg(j,g));
-			L.push_back(is_assigned_jg(j,g,G,F));
-			L.push_back(find_collision(j,k,g,pp,G,P,F));
+			L.push_back(is_assigned_jg(j,g,M,F));
+			L.push_back(find_collision(j,k,g,pp,M,P,F));
 			if (M[g].id==0) lya = true;
 		}
 		if (lya) T.push_back(L);
@@ -650,12 +650,12 @@ bool collision(dpair O1, dpair G1, dpair O2, dpair G2, const Feat& F) {
 int Assignment::find_collision(int j, int k, int g, const PP& pp, const MTL& M, const Plates& P, const Feat& F, int col) const {//check all neighboring fibers
 	bool bol = (col==-1) ? F.Collision : false;
 	if (bol) return -1;
-	dpair G1 = projection(g,j,G,P);
+	dpair G1 = projection(g,j,M,P);
 	for (int i=0; i<pp.N[k].size(); i++) {
 		int kn = pp.N[k][i];
 		int gn = TF[j][kn];
 		if (gn!=-1) {
-			dpair G2 = projection(gn,j,G,P);
+			dpair G2 = projection(gn,j,M,P);
 			bool b = F.Exact ? collision(pp.coords(k),G1,pp.coords(kn),G2,F) : (sq(G1,G2) < sq(F.AvCollide));
 			if (b) return kn;
 		}
@@ -666,14 +666,14 @@ int Assignment::find_collision(int j, int k, int g, const PP& pp, const MTL& M, 
 bool Assignment::find_collision(int j, int k, int kn, int g, int gn, const PP& pp, const MTL& M, const Plates& P, const Feat& F, int col) const {//check two fibers
 	bool bol = (col==-1) ? F.Collision : false;
 	if (bol) return false;
-	dpair G1 = projection(g,j,G,P);
-	dpair G2 = projection(gn,j,G,P);
+	dpair G1 = projection(g,j,M,P);
+	dpair G2 = projection(gn,j,M,P);
 	return F.Exact ? collision(pp.coords(k),G1,pp.coords(kn),G2,F) : (sq(G1,G2) < sq(F.AvCollide));
 }
 
 int Assignment::is_collision(int j, int k, const PP& pp, const MTL& M, const Plates& P, const Feat& F) const {//find collision for galaxy g
 	int g = TF[j][k];
-	if (g!=-1) return find_collision(j,k,g,pp,G,P,F,0);
+	if (g!=-1) return find_collision(j,k,g,pp,M,P,F,0);
 	else return -1;
 }
 
