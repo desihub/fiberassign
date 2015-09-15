@@ -320,7 +320,7 @@ List av_gals_of_kind(int kind, int j, int k, const Gals& G, const Plates& P, con
 }
 
 // Assignment -----------------------------------------------------------------------------
-Assignment::Assignment(const Gals& G, const Feat& F) {
+Assignment::Assignment(const MTL& M, const Feat& F) {
     printf("start Assignment\n");
 	TF = initTable(F.Nplate,F.Nfiber,-1);//galaxy assigned to tile-fiber TF[j][k]
 	GL = initPtable(F.Ngal,0); //tile-fiber pair for galaxy  GL[g]
@@ -328,15 +328,15 @@ Assignment::Assignment(const Gals& G, const Feat& F) {
 	for (int i=0; i<F.Nplate; i++) order[i] = i;
 	next_plate = 0;
 	kinds = initCube(F.Nplate,F.Npetal,F.Categories);
-	once_obs = initList(F.Ngal);//is galaxy observed?
-	nobsv = initList(F.Ngal);//remaining observations
-	nobsv_tmp = initList(F.Ngal);//remaining observations before we know truth
-	List l = F.maxgoal();//max observations for a category
-    printf("set up plates\n");
-	for (int g=0; g<F.Ngal; g++) {
-		nobsv[g] = F.goal[G[g].id];//true goal
-		nobsv_tmp[g] = l[G[g].id];//max goal for category
-	}
+	//once_obs = initList(F.Ngal);//is galaxy observed?
+	//nobsv = initList(F.Ngal);//remaining observations
+	//nobsv_tmp = initList(F.Ngal);//remaining observations before we know truth
+	//List l = F.maxgoal();//max observations for a category
+    //printf("set up plates\n");
+	//for (int g=0; g<F.Ngal; g++) {
+	//	nobsv[g] = F.goal[G[g].id];//true goal
+	//	nobsv_tmp[g] = l[G[g].id];//max goal for category
+	//}
     printf("set up galaxies\n");
 	unused = initTable(F.Nplate,F.Npetal,F.Nfbp);//initialized to number of fibers on a petal
     printf("set up unused\n");
@@ -345,7 +345,7 @@ Assignment::Assignment(const Gals& G, const Feat& F) {
 Assignment::~Assignment() {}
 
 // Assign g with tile/fiber (j,k), and check for duplicates
-void Assignment::assign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp) {
+void Assignment::assign(int j, int k, int g, const MTL& M, const Plates& P, const PP& pp) {
 	// Assign (j,k)
 	int q = TF[j][k];
 	if (q != -1) {
@@ -375,7 +375,7 @@ void Assignment::assign(int j, int k, int g, const Gals& G, const Plates& P, con
 	unused[j][pp.spectrom[k]]--;
 }
 
-void Assignment::unassign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp) {
+void Assignment::unassign(int j, int k, int g, const MTL& M, const Plates& P, const PP& pp) {
 	if (TF[j][k]==-1) printf("### !!! ### TF (j,k) = (%d,%d) gets unassigned but was already not assigned\n",j,k);
 	int a = isfound(pair(j,k),GL[g]);
 	if (a==-1) printf("### !!! ### Galaxy g = %d gets unassigned but was already not assigned\n",g);
@@ -390,7 +390,7 @@ void Assignment::unassign(int j, int k, int g, const Gals& G, const Plates& P, c
 	unused[j][pp.spectrom[k]]++;
 }
 
-void Assignment::verif(const Plates& P, const Gals& G, const PP& pp, const Feat& F) const {
+void Assignment::verif(const Plates& P, const MTL& M, const PP& pp, const Feat& F) const {
 	str qso_lrgA[] = {"QSOLy-a","QSOTracer","FakeQSO","LRG","FakeLRG"}; List qso_lrg = F.init_ids_list(qso_lrgA,5);
 	for (int g=0; g<F.Ngal; g++) {// make sure observations are separated by at least InterPlate
 		Plist tfs = GL[g];
@@ -432,7 +432,7 @@ int Assignment::is_assigned_jg(int j, int g) const {// is galaxy g assigned on t
 	return -1;
 }
 
-int Assignment::is_assigned_jg(int j, int g, const Gals& G, const Feat& F) const { // No occurrence too nearby in tiles
+int Assignment::is_assigned_jg(int j, int g, const MTL& M, const Feat& F) const { // No occurrence too nearby in tiles
 	for (int i=0; i<GL[g].size(); i++) if (fabs(j-GL[g][i].f)<F.InterPlate || j==GL[g][i].f) return i; 
 	return -1;
 }
@@ -499,13 +499,13 @@ int Assignment::unused_fbp(int j, int k, const PP& pp, const Feat& F) const {//u
 	return unused;
 }
 
-int Assignment::nkind(int j, int k, int kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F, bool pet) const {
+int Assignment::nkind(int j, int k, int kind, const MTL& M, const Plates& P, const PP& pp, const Feat& F, bool pet) const {
 	//if pet is false, used petal of fiber k,, if pet is true use petal k        
 	if (!pet) return kinds[j][pp.spectrom[k]][kind];
 	else return kinds[j][k][kind];
 }
 	
-Table Assignment::infos_petal(int j, int pet, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const {
+Table Assignment::infos_petal(int j, int pet, const MTL& M, const Plates& P, const PP& pp, const Feat& F) const {
 	Table T;//for each fiber in a petal, record a lot of information
 	List fibs = pp.fibers_of_sp[pet];
 	for (int kk=0; kk<fibs.size(); kk++) {
@@ -530,7 +530,7 @@ Table Assignment::infos_petal(int j, int pet, const Gals& G, const Plates& P, co
 	return T;
 }
 
-List Assignment::fibs_of_kind(int kind, int j, int pet, const Gals& G, const PP& pp, const Feat& F) const {//all fibers on some petal assigned to some kind
+List Assignment::fibs_of_kind(int kind, int j, int pet, const MTL& M, const PP& pp, const Feat& F) const {//all fibers on some petal assigned to some kind
 	List L;
 	List fibs = pp.fibers_of_sp[pet];
 	for (int kk=0; kk<F.Nfbp; kk++) {
@@ -542,7 +542,7 @@ List Assignment::fibs_of_kind(int kind, int j, int pet, const Gals& G, const PP&
 }
 
 
-List Assignment::sort_fibs_dens(int j, const List& fibs, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const {
+List Assignment::sort_fibs_dens(int j, const List& fibs, const MTL& M, const Plates& P, const PP& pp, const Feat& F) const {
 	List num;
 	for (int k=0; k<fibs.size(); k++) num.push_back(P[j].density[fibs[k]]);//how many observations demanded by galaxies in reach of (j,k)
 	List perm = get_permut_sort(num);//increasing order
@@ -551,7 +551,7 @@ List Assignment::sort_fibs_dens(int j, const List& fibs, const Gals& G, const Pl
 	return fibs_sorted;
 }
 
-List Assignment::fibs_unassigned(int j, int pet, const Gals& G, const PP& pp, const Feat& F) const {//list of unassigned fibers on petal pet
+List Assignment::fibs_unassigned(int j, int pet, const MTL& M, const PP& pp, const Feat& F) const {//list of unassigned fibers on petal pet
 	List L;
 	List fibs = pp.fibers_of_sp[pet];
 	for (int kk=0; kk<F.Nfbp; kk++) {
@@ -561,7 +561,7 @@ List Assignment::fibs_unassigned(int j, int pet, const Gals& G, const PP& pp, co
 	return L;
 }
 
-int Assignment::nobs(int g, const Gals& G, const Feat& F, bool tmp) const {//gives nobsv_tmp or nobsv depending on tmp and tmp is true by default
+int Assignment::nobs(int g, const MTL& M, const Feat& F, bool tmp) const {//gives nobsv_tmp or nobsv depending on tmp and tmp is true by default
 	int obs = tmp ? nobsv_tmp[g] : nobsv[g]; // optimization
 	return obs;
 }
@@ -584,7 +584,7 @@ void Assignment::update_once_obs(int j, const Feat& F) {//updates once_obs
 	}
 }
 
-int Assignment::nobs_time(int g, int j, const Gals& G, const Feat& F) const {//counts observations up to some tile j
+int Assignment::nobs_time(int g, int j, const MTL& M, const Feat& F) const {//counts observations up to some tile j
 	int kind = G[g].id;
 	int cnt = once_obs[g] ? F.goal[kind] : F.maxgoal(kind);
 	for (int i=0; i<GL[g].size(); i++) if (GL[g][i].f<j) cnt--;
@@ -593,7 +593,7 @@ int Assignment::nobs_time(int g, int j, const Gals& G, const Feat& F) const {//c
 
 // Useful sub-functions -------------------------------------------------------------------------------------------------
 
-int fprio(int g, const Gals& G, const Feat& F, const Assignment& A) {
+int fprio(int g, const MTL& M, const Feat& F, const Assignment& A) {
 	if (A.once_obs[g]) return F.priopost[G[g].id];
 	else return F.prio[G[g].id];
 }
@@ -651,7 +651,7 @@ bool collision(dpair O1, dpair G1, dpair O2, dpair G2, const Feat& F) {
 }
 
 // (On plate p) finds if there is a collision if fiber k would observe galaxy g (collision with neighbor)
-int Assignment::find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plates& P, const Feat& F, int col) const {//check all neighboring fibers
+int Assignment::find_collision(int j, int k, int g, const PP& pp, const MTL& M, const Plates& P, const Feat& F, int col) const {//check all neighboring fibers
 	bool bol = (col==-1) ? F.Collision : false;
 	if (bol) return -1;
 	dpair G1 = projection(g,j,G,P);
@@ -667,7 +667,7 @@ int Assignment::find_collision(int j, int k, int g, const PP& pp, const Gals& G,
 	return -1;
 }
 
-bool Assignment::find_collision(int j, int k, int kn, int g, int gn, const PP& pp, const Gals& G, const Plates& P, const Feat& F, int col) const {//check two fibers
+bool Assignment::find_collision(int j, int k, int kn, int g, int gn, const PP& pp, const MTL& M, const Plates& P, const Feat& F, int col) const {//check two fibers
 	bool bol = (col==-1) ? F.Collision : false;
 	if (bol) return false;
 	dpair G1 = projection(g,j,G,P);
@@ -675,13 +675,13 @@ bool Assignment::find_collision(int j, int k, int kn, int g, int gn, const PP& p
 	return F.Exact ? collision(pp.coords(k),G1,pp.coords(kn),G2,F) : (sq(G1,G2) < sq(F.AvCollide));
 }
 
-int Assignment::is_collision(int j, int k, const PP& pp, const Gals& G, const Plates& P, const Feat& F) const {//find collision for galaxy g
+int Assignment::is_collision(int j, int k, const PP& pp, const MTL& M, const Plates& P, const Feat& F) const {//find collision for galaxy g
 	int g = TF[j][k];
 	if (g!=-1) return find_collision(j,k,g,pp,G,P,F,0);
 	else return -1;
 }
 
-float Assignment::colrate(const PP& pp, const Gals& G, const Plates& P, const Feat& F, int jend0) const {//rate of collisions
+float Assignment::colrate(const PP& pp, const MTL& M, const Plates& P, const Feat& F, int jend0) const {//rate of collisions
 	int jend = (jend0==-1) ? F.Nplate : jend0;
 	int col = 0;
 	for (int j=0; j<jend; j++) {
@@ -699,7 +699,7 @@ float Assignment::colrate(const PP& pp, const Gals& G, const Plates& P, const Fe
 	return percent(col,jend*F.Nfiber);
 }
 
-dpair projection(int g, int j, const Gals& G, const Plates& P) {//x and y coordinates for galaxy observed on plate j
+dpair projection(int g, int j, const MTL& M, const Plates& P) {//x and y coordinates for galaxy observed on plate j
 	struct onplate op = change_coords(G[g],P[j]);
 	return dpair(op.pos[0],op.pos[1]);
 }

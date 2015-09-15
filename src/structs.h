@@ -56,7 +56,7 @@ class target {
     int id, nobs_remain;
     double nhat[3];
     double ra, dec, t_priority;
-    bool SS,SF,Pass5;
+    bool SS,SF,lastpass;
     Plist av_tfs;
 };
 class MTL : public std::vector<struct target> {};
@@ -100,9 +100,9 @@ class Assignment {
 	Ptable GL; // GL for galaxy - list : #galaxies X (variable) #chosen TF: gives chosen tf's for galaxy g
 	Cube kinds; // Cube[j][sp][id] : number of fibers of spectrometer sp and plate j that have the kind id
 	Table unused; // Table [j][p] giving number of unused fibers on this petal
-	List nobsv; // List of nobs, redundant but optimizes, originally true goal
-	List nobsv_tmp; // List of nobs, redundant but optimizes, apparent goal, i.e. goal of category of this type, gets updated
-	List once_obs; // 0 if not observed, 1 if observed  [list of all galaxies]
+	//List nobsv; // List of nobs, redundant but optimizes, originally true goal
+	//List nobsv_tmp; // List of nobs, redundant but optimizes, apparent goal, i.e. goal of category of this type, gets updated
+	//List once_obs; // 0 if not observed, 1 if observed  [list of all galaxies]
 
 
 	//// ----- Methods
