@@ -23,9 +23,9 @@
 
 // Collect -----------------------------------------------------------
 // From the HTM tree, collects for each fiber and for each plate, the available galaxies
-void collect_galaxies_for_all(const MTL& M, const htmTree<struct galaxy>& T, Plates& P, const PP& pp, const Feat& F);
+void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Plates& P, const PP& pp, const Feat& F);
 
-// From the previous computations, computes the inverse map, that is to say, for each galaxy, computes the tile-fibers which can reach it
+// From the previous computations, computes the inverse map, that is to say, for each target, computes the tile-fibers which can reach it
 void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F);
 
 // Assignment functions ----------------------------------------------
