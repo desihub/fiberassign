@@ -39,7 +39,7 @@ void improve(const MTL& M, const Plates&P, const PP& pp, const Feat& F, Assignme
 
 void improve_from_kind(const MTL& M, const Plates&P, const PP& pp, const Feat& F, Assignment& A, str kind, int next=-1);
 
-void update_plan_from_one_obs(const MTL& M, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int end);
+void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int end);
 
 void redistribute_tf(const MTL& M, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int next=-1);
 

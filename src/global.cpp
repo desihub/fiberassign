@@ -251,7 +251,7 @@ void improve(const MTL& M, const Plates&P, const PP& pp, const Feat& F, Assignme
 }
 //not used
 // If there are galaxies discovered as fake for example, they won't be observed several times in the plan
-void update_plan_from_one_obs(const Gals& G,const MTL& M, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int end) {
+void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int end) {
 	int cnt(0);
 	int j0 = A.next_plate;
 	int jpast = j0-F.Analysis;//tile whose information we just learned
@@ -260,15 +260,22 @@ void update_plan_from_one_obs(const Gals& G,const MTL& M, const Plates&P, const 
 	int na_start(A.na(F,j0,n));
 	List to_update;
 	// Declare that we've seen those galaxies
-	A.update_once_obs(jpast,F);//updates once_obs, which tells whether object has been observed at least once
+	//A.update_once_obs(jpast,F);//updates once_obs, which tells whether object has been observed at least once
 	// Get the list of galaxies to update in the plan
 	for (int k=0; k<F.Nfiber; k++) {
 		int g = A.TF[jpast][k];
 		// Only if once_obs, we delete all further assignment. obs!=obs_tmp means that the galaxy is a fake one for example (same priority but different goal)
-		if (g!=-1 && A.nobsv_tmp[g]!=A.nobsv[g] && A.once_obs[g]) to_update.push_back(g); //this galaxy g is a fake
-	}
-	// Update information on previously seen galaxies
-	A.update_nobsv_tmp_for_one(jpast,F);
+        if (g!=-1){
+            if(M[g].t_priority!=F.goalpost[G[g].id]){
+                //first obs of QSO-tracer, QSO-fake, LRG-fake
+                M[g].nobs_remain=0;
+                to_update.push_back(g);
+                else{
+                    if(!M[g].SS]&&!M[g].SF){//not SS or SF
+                        M[g].nobs_remain-=1;
+                    }
+                }
+        }
 	// Update further in the plan
 	for (int gg=0; gg<to_update.size(); gg++) {
 		int g = to_update[gg];
