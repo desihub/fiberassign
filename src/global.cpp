@@ -20,7 +20,7 @@
 #include        "global.h"
 
 // Collecting information from input -------------------------------------------------------------------------------------
-void collect_galaxies_for_all(const MTL& M, const htmTree<struct MTL>& T, Plates& P, const PP& pp, const Feat& F) {
+void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Plates& P, const PP& pp, const Feat& F) {
     //provides list of galaxies available to fiber k on tile j: P[j].av_gals[k]
 	Time t;
 	init_time(t,"# Begin collecting available galaxies");
