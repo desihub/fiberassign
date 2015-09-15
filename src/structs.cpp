@@ -514,8 +514,8 @@ Table Assignment::infos_petal(int j, int pet, const MTL& M, const Plates& P, con
 		for (int gg=0; gg<av_gals.size(); gg++) {
 			int g = av_gals[gg];
 			L.push_back(g==g0 ? -3 : -2);
-			L.push_back(g].id);
-			L.push_back(nobs(g,G,F));
+			L.push_back(M[g].id);
+			L.push_back(nobs(g,M,F));
 			L.push_back(is_assigned_jg(j,g));
 			L.push_back(is_assigned_jg(j,g,M,F));
 			L.push_back(find_collision(j,k,g,pp,M,P,F));
