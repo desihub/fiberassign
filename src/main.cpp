@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
 	// HTM Tree of galaxies
 	const double MinTreeSize = 0.01;
 	init_time_at(time,"# Start building HTM tree",t);
-	htmTree<struct MTL> T(M,MinTreeSize);
+	htmTree<struct target> T(M,MinTreeSize);
 	print_time(time,"# ... took :");//T.stats();
 	
 	// For plates/fibers, collect available galaxies; done in parallel  P[plate j].av_gal[k]=[g1,g2,..]
