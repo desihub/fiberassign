@@ -314,7 +314,7 @@ List av_gals_of_kind(int kind, int j, int k, const Gals& G, const Plates& P, con
 	List av_gals = P[j].av_gals[k];
 	for (int gg=0; gg<av_gals.size(); gg++) {
 		int g = av_gals[gg];
-		if (G[g].id==kind) L.push_back(g);
+		if (M[g].id==kind) L.push_back(g);
 	}
 	return L;
 }
@@ -366,11 +366,9 @@ void Assignment::assign(int j, int k, int g, const MTL& M, const Plates& P, cons
 	}
 	GL[g].push_back(p);
 	// Kinds
-	kinds[j][pp.spectrom[k]][G[g].id]++;
+	kinds[j][pp.spectrom[k]][M[g].id]++;
 
 	// Nobsv
-	nobsv[g]--;
-	nobsv_tmp[g]--;
 
 	unused[j][pp.spectrom[k]]--;
 }
@@ -382,10 +380,8 @@ void Assignment::unassign(int j, int k, int g, const MTL& M, const Plates& P, co
 
 	TF[j][k] = -1;
 	if (a!=-1) erase(a,GL[g]);
-	kinds[j][pp.spectrom[k]][G[g].id]--;
+	kinds[j][pp.spectrom[k]][M[g].id]--;
 
-	nobsv[g]++;
-	nobsv_tmp[g]++;
 
 	unused[j][pp.spectrom[k]]++;
 }
@@ -402,7 +398,7 @@ void Assignment::verif(const Plates& P, const MTL& M, const PP& pp, const Feat& 
 			// Verif on TF
 			if (TF[tf.f][tf.s]!=g) { printf("ERROR in verification of correspondance of galaxies !\n"); fl(); }
 			// No 2 assignments within an interval of F.InterPlate
-			if (j0!=-1 && isfound(G[g].id,qso_lrg) && fabs(j1-j0)<F.InterPlate) { printf("ERROR in verification of F.InterPlate g=%d with j=%d and %d\n",g,j0,j1); fl(); }
+			if (j0!=-1 && isfound(M[g].id,qso_lrg) && fabs(j1-j0)<F.InterPlate) { printf("ERROR in verification of F.InterPlate g=%d with j=%d and %d\n",g,j0,j1); fl(); }
 		}
 	}
 	for (int j=0; j<F.Nplate; j++) {
@@ -512,18 +508,18 @@ Table Assignment::infos_petal(int j, int pet, const MTL& M, const Plates& P, con
 		List L;
 		int k = fibs[kk];
 		int g0 = TF[j][k];
-		L.push_back(g0==-1 ? -1 : G[g0].id);
+		L.push_back(g0==-1 ? -1 : M[g0].id);
 		List av_gals = P[j].av_gals[k];
 		bool lya(false);
 		for (int gg=0; gg<av_gals.size(); gg++) {
 			int g = av_gals[gg];
 			L.push_back(g==g0 ? -3 : -2);
-			L.push_back(G[g].id);
+			L.push_back(g].id);
 			L.push_back(nobs(g,G,F));
 			L.push_back(is_assigned_jg(j,g));
 			L.push_back(is_assigned_jg(j,g,G,F));
 			L.push_back(find_collision(j,k,g,pp,G,P,F));
-			if (G[g].id==0) lya = true;
+			if (M[g].id==0) lya = true;
 		}
 		if (lya) T.push_back(L);
 	}
@@ -536,7 +532,7 @@ List Assignment::fibs_of_kind(int kind, int j, int pet, const MTL& M, const PP& 
 	for (int kk=0; kk<F.Nfbp; kk++) {
 		int k = fibs[kk];
 		int g = TF[j][k];
-		if (g!=-1 && G[g].id==kind) L.push_back(k);
+		if (g!=-1 && M[g].id==kind) L.push_back(k);
 	}
 	return L;
 }
@@ -585,7 +581,7 @@ void Assignment::update_once_obs(int j, const Feat& F) {//updates once_obs
 }
 
 int Assignment::nobs_time(int g, int j, const MTL& M, const Feat& F) const {//counts observations up to some tile j
-	int kind = G[g].id;
+	int kind = M[g].id;
 	int cnt = once_obs[g] ? F.goal[kind] : F.maxgoal(kind);
 	for (int i=0; i<GL[g].size(); i++) if (GL[g][i].f<j) cnt--;
 	return cnt;
@@ -594,8 +590,8 @@ int Assignment::nobs_time(int g, int j, const MTL& M, const Feat& F) const {//co
 // Useful sub-functions -------------------------------------------------------------------------------------------------
 
 int fprio(int g, const MTL& M, const Feat& F, const Assignment& A) {
-	if (A.once_obs[g]) return F.priopost[G[g].id];
-	else return F.prio[G[g].id];
+	if (A.once_obs[g]) return F.priopost[M[g].id];
+	else return F.prio[M[g].id];
 }
 
 // Returns the radial distance on the plate (mm) given the angle,
@@ -700,7 +696,7 @@ float Assignment::colrate(const PP& pp, const MTL& M, const Plates& P, const Fea
 }
 
 dpair projection(int g, int j, const MTL& M, const Plates& P) {//x and y coordinates for galaxy observed on plate j
-	struct onplate op = change_coords(G[g],P[j]);
+	struct onplate op = change_coords(M[g],P[j]);
 	return dpair(op.pos[0],op.pos[1]);
 }
 
