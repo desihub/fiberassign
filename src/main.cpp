@@ -100,11 +100,11 @@ int main(int argc, char **argv) {
 	// Smooth out distribution of free fibers, and increase the number of assignments
 	for (int i=0; i<1; i++) redistribute_tf(M,P,pp,F,A);// more iterations will improve performance slightly
 	for (int i=0; i<1; i++) {                           // more iterations will improve performance slightly
-		improve(G,M,pp,F,A);
-		redistribute_tf(G,M,pp,F,A);
-		redistribute_tf(G,P,pp,F,A);
+		improve(M.P,pp,F,A);
+		redistribute_tf(M,P,pp,F,A);
+		redistribute_tf(M,P,pp,F,A);
 	}
-	for (int i=0; i<1; i++) redistribute_tf(G,P,pp,F,A);
+	for (int i=0; i<1; i++) redistribute_tf(M,P,pp,F,A);
 
 	print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false);
 
@@ -114,8 +114,8 @@ int main(int argc, char **argv) {
 	for (int jj=0; jj<F.Nplate; jj++) {
 		int j = A.next_plate;
 		//printf(" - Plate %d :",j);
-		assign_sf_ss(j,G,P,pp,F,A); // Assign SS and SF just before an observation
-		assign_unused(j,G,P,pp,F,A);
+		assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF just before an observation
+		assign_unused(j,M,P,pp,F,A);
 		//if (j%2000==0) pyplotTile(j,"doc/figs",G,P,pp,F,A); // Picture of positioners, galaxies
 		
 		//printf(" %s not as - ",format(5,f(A.unused_f(j,F))).c_str()); fl();
@@ -125,17 +125,17 @@ int main(int argc, char **argv) {
 		// Redistribute and improve on various occasions  add more times if desired
 
 		if ( j==2000 || j==4000) {
-			redistribute_tf(G,P,pp,F,A);
-			redistribute_tf(G,P,pp,F,A);
-			improve(G,P,pp,F,A);
-			redistribute_tf(G,P,pp,F,A);
+			redistribute_tf(M,P,pp,F,A);
+			redistribute_tf(M,P,pp,F,A);
+			improve(M,P,pp,F,A);
+			redistribute_tf(M,P,pp,F,A);
 		}
 	}
 	print_time(time,"# ... took :");
 
 	// Results -------------------------------------------------------
-	if (F.Output) for (int j=0; j<F.Nplate; j++) write_FAtile_ascii(j,F.outDir,G,P,pp,F,A); // Write output
-	display_results("doc/figs/",G,P,pp,F,A,true);
+	if (F.Output) for (int j=0; j<F.Nplate; j++) write_FAtile_ascii(j,F.outDir,M,P,pp,F,A); // Write output
+	display_results("doc/figs/",M,P,pp,F,A,true);
 	if (F.Verif) A.verif(P,G,pp,F); // Verification that the assignment is sane
 
 
