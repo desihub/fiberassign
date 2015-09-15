@@ -271,7 +271,7 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
                 M[g].nobs_remain=0;
                 to_update.push_back(g);}
                 else{
-                    if(!M[g].SS]&&!M[g].SF){//not SS or SF
+                    if(!M[g].SS && !M[g].SF){//not SS or SF
                         M[g].nobs_remain-=1;
                     }
                 }
