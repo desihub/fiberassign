@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
 
 	//// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
     printf("before assignment\n");
-	Assignment A(G,F);
+	Assignment A(M,F);
 	print_time(t,"# Start assignment at : ");
 
 	// Make a plan ----------------------------------------------------
