@@ -98,10 +98,10 @@ int main(int argc, char **argv) {
                                     // so we can put in sky fibers and standard stars
 
 	// Smooth out distribution of free fibers, and increase the number of assignments
-	for (int i=0; i<1; i++) redistribute_tf(G,P,pp,F,A);// more iterations will improve performance slightly
+	for (int i=0; i<1; i++) redistribute_tf(M,P,pp,F,A);// more iterations will improve performance slightly
 	for (int i=0; i<1; i++) {                           // more iterations will improve performance slightly
-		improve(G,P,pp,F,A);
-		redistribute_tf(G,P,pp,F,A);
+		improve(G,M,pp,F,A);
+		redistribute_tf(G,M,pp,F,A);
 		redistribute_tf(G,P,pp,F,A);
 	}
 	for (int i=0; i<1; i++) redistribute_tf(G,P,pp,F,A);
