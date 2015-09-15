@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
 		
 		//printf(" %s not as - ",format(5,f(A.unused_f(j,F))).c_str()); fl();
 		// Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
-		if (0<=j-F.Analysis) update_plan_from_one_obs(G,P,pp,F,A,F.Nplate-1); else printf("\n");
+		if (0<=j-F.Analysis) update_plan_from_one_obs(G,M,P,pp,F,A,F.Nplate-1); else printf("\n");
 		A.next_plate++;
 		// Redistribute and improve on various occasions  add more times if desired
 
@@ -136,7 +136,7 @@ int main(int argc, char **argv) {
 	// Results -------------------------------------------------------
 	if (F.Output) for (int j=0; j<F.Nplate; j++) write_FAtile_ascii(j,F.outDir,M,P,pp,F,A); // Write output
 	display_results("doc/figs/",M,P,pp,F,A,true);
-	if (F.Verif) A.verif(P,G,pp,F); // Verification that the assignment is sane
+	if (F.Verif) A.verif(P,M,pp,F); // Verification that the assignment is sane
 
 
 	print_time(t,"# Finished !... in");
