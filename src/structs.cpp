@@ -500,7 +500,7 @@ int Assignment::nkind(int j, int k, int kind, const MTL& M, const Plates& P, con
 	if (!pet) return kinds[j][pp.spectrom[k]][kind];
 	else return kinds[j][k][kind];
 }
-	
+/* not used
 Table Assignment::infos_petal(int j, int pet, const MTL& M, const Plates& P, const PP& pp, const Feat& F) const {
 	Table T;//for each fiber in a petal, record a lot of information
 	List fibs = pp.fibers_of_sp[pet];
@@ -525,7 +525,7 @@ Table Assignment::infos_petal(int j, int pet, const MTL& M, const Plates& P, con
 	}
 	return T;
 }
-
+*/
 List Assignment::fibs_of_kind(int kind, int j, int pet, const MTL& M, const PP& pp, const Feat& F) const {//all fibers on some petal assigned to some kind
 	List L;
 	List fibs = pp.fibers_of_sp[pet];
@@ -562,6 +562,7 @@ int Assignment::nobs(int g, const MTL& M, const Feat& F, bool tmp) const {//give
 	return obs;
 }
 //not used
+/*
 void Assignment::update_nobsv_tmp(const Feat& F) {//if galaxy is observed we know the truth
 	for (int g=0; g<F.Ngal; g++) if (once_obs[g]) nobsv_tmp[g] = nobsv[g];
 }
@@ -579,7 +580,7 @@ void Assignment::update_once_obs(int j, const Feat& F) {//updates once_obs
 		if (g!=-1) once_obs[g] = 1;
 	}
 }
-
+*/
 int Assignment::nobs_time(int g, int j, const MTL& M, const Feat& F) const {//counts observations up to some tile j
 	int kind = M[g].id;
 	int cnt = once_obs[g] ? F.goal[kind] : F.maxgoal(kind);
