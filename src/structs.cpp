@@ -556,11 +556,12 @@ List Assignment::fibs_unassigned(int j, int pet, const MTL& M, const PP& pp, con
 	}
 	return L;
 }
-
+/*
 int Assignment::nobs(int g, const MTL& M, const Feat& F, bool tmp) const {//gives nobsv_tmp or nobsv depending on tmp and tmp is true by default
 	int obs = tmp ? nobsv_tmp[g] : nobsv[g]; // optimization
 	return obs;
 }
+ */
 //not used
 /*
 void Assignment::update_nobsv_tmp(const Feat& F) {//if galaxy is observed we know the truth
@@ -581,20 +582,21 @@ void Assignment::update_once_obs(int j, const Feat& F) {//updates once_obs
 	}
 }
 */
+/*
 int Assignment::nobs_time(int g, int j, const MTL& M, const Feat& F) const {//counts observations up to some tile j
 	int kind = M[g].id;
 	int cnt = once_obs[g] ? F.goal[kind] : F.maxgoal(kind);
 	for (int i=0; i<GL[g].size(); i++) if (GL[g][i].f<j) cnt--;
 	return cnt;
 }
-
+*/
 // Useful sub-functions -------------------------------------------------------------------------------------------------
-
+/*
 int fprio(int g, const MTL& M, const Feat& F, const Assignment& A) {
 	if (A.once_obs[g]) return F.priopost[M[g].id];
 	else return F.prio[M[g].id];
 }
-
+*/
 // Returns the radial distance on the plate (mm) given the angle,
 // theta (radians).  This is simply a fit to the data provided.
 double plate_dist(const double theta) {
@@ -685,7 +687,7 @@ float Assignment::colrate(const PP& pp, const MTL& M, const Plates& P, const Fea
 		List done = initList(F.Nfiber);
 		for (int k=0; k<F.Nfiber; k++) {
 			if (done[k] == 0) {
-				int c = is_collision(j,k,pp,G,P,F);
+				int c = is_collision(j,k,pp,M,P,F);
 				if (c!=-1) {
 					done[c] = 1;
 					col += 2;
