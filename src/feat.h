@@ -32,7 +32,7 @@ class Feat { // F for features
     List goalpost;
     List SS;
     List SF;
-    List Pass5;
+    List lastpass;
 	Slist kind;
 	Slist type;
 
