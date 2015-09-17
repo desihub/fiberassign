@@ -40,13 +40,15 @@ int main(int argc, char **argv) {
 	printf("# Read %s galaxies from %s \n",f(F.Ngal).c_str(),F.galFile.c_str());
     // make MTL
     MTL M=make_MTL(G,F);
-	// Read fiber center positions and compute related things
+    printf("Read fiber center positions and compute related things\n");
 	PP pp;
 	pp.read_fiber_positions(F); 
 	F.Nfiber = pp.fp.size()/2; 
-	F.Npetal = max(pp.spectrom)+1; // spectrometer has to be identified from 0 to F.Npetal-1
+	F.Npetal = max(pp.spectrom)+1;
+    printf("spectrometer has to be identified from 0 to F.Npetal-1\n");
 	F.Nfbp = (int) (F.Nfiber/F.Npetal);// fibers per petal = 500
-	pp.get_neighbors(F); pp.compute_fibsofsp(F);//get neighbors of each fiber;
+	pp.get_neighbors(F); pp.compute_fibsofsp(F);
+    printf("get neighbors of each fiber;\n");
                                                 //for each spectrometer, get list of fibers
 
 	// Read plates in order they are to be observed

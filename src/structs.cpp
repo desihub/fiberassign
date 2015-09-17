@@ -171,7 +171,7 @@ MTL make_MTL(const Gals& G, const Feat& F){
         targ.lastpass=F.lastpass[G[i].id];
         targ.id=i;//makes list in M correspond to list in G
         M.push_back(targ);
-        if(i<10){
+        if(i%100000==0){
             printf("i %d ra  %f  dec  %f  SS %d  SF  %d\n",i, targ.ra,targ.dec, targ.SS, targ.SF);
         }
     }
