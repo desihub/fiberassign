@@ -154,15 +154,22 @@ MTL make_MTL(const Gals& G, const Feat& F){
     int Nobj=G.size();
     struct target targ;
     for(int i=0;i<Nobj;++i){
+        if(i<10){
+            printf("i %d \n",i);
+        }
+
         targ.nhat[0]=G[i].nhat[0];
         targ.nhat[1]=G[i].nhat[1];
         targ.nhat[2]=G[i].nhat[2];
         targ.ra=G[i].ra;
         targ.dec=G[i].dec;
+        printf(" ra %d dec  %d\n",targ.ra,targ.dec);
         targ.t_priority=F.prio[G[i].id];
+        printf("priority %d\n",targ.t_priority);
         targ.nobs_remain=F.goal[G[i].id];//needs to be goal prior to knowledge!!
         targ.SS=F.SS[G[i].id];
         targ.SF=F.SF[G[i].id];
+        printf(" SS %d  SF %d\n",targ.SS,targ.SF);
         targ.lastpass=F.lastpass[G[i].id];
         targ.id=i;//makes list in M correspond to list in G
         M.push_back(targ);
