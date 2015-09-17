@@ -164,11 +164,14 @@ MTL make_MTL(const Gals& G, const Feat& F){
         targ.ra=G[i].ra;
         targ.dec=G[i].dec;
         printf(" ra %d dec  %d\n",targ.ra,targ.dec);
+        printf("G[i].id \n",G[i].id);
         targ.t_priority=F.prio[G[i].id];
         printf("priority %d\n",targ.t_priority);
         targ.nobs_remain=F.goal[G[i].id];//needs to be goal prior to knowledge!!
+        printf("targ.nobs_remain  %d,\n",targ.nobs_remain);
         targ.SS=F.SS[G[i].id];
         targ.SF=F.SF[G[i].id];
+        printf("targ.SS %d  targ.SF  %d,  \n",targ.SS,targ.SF);
         printf(" SS %d  SF %d\n",targ.SS,targ.SF);
         targ.lastpass=F.lastpass[G[i].id];
         targ.id=i;//makes list in M correspond to list in G
