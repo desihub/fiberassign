@@ -51,11 +51,11 @@ int main(int argc, char **argv) {
     printf("get neighbors of each fiber;\n");
                                                 //for each spectrometer, get list of fibers
 
-	// Read plates in order they are to be observed
+    printf("Read plates in order they are to be observed\n ");
     
 	Plates P_original = read_plate_centers(F);
     F.Nplate=P_original.size();
-    //This takes the place of Opsim or NextFieldSelector; will be replaced by appropriate code
+    peintf("This takes the place of Opsim or NextFieldSelector; will be replaced by appropriate code\n");
     Plates P;
     List permut = random_permut(F.Nplate);
     for (int jj=0; jj<F.Nplate; jj++){
