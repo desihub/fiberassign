@@ -55,8 +55,9 @@ int main(int argc, char **argv) {
     
 	Plates P_original = read_plate_centers(F);
     F.Nplate=P_original.size();
-    peintf("This takes the place of Opsim or NextFieldSelector; will be replaced by appropriate code\n");
+    printf("This takes the place of Opsim or NextFieldSelector; will be replaced by appropriate code\n");
     Plates P;
+    P.resize(F.Nplate);
     List permut = random_permut(F.Nplate);
     for (int jj=0; jj<F.Nplate; jj++){
         P[jj]=P_original[permut[jj]];
