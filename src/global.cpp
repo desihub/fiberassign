@@ -290,12 +290,13 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
                     M[g].nobs_remain=F.goalpost[G[g].id]-1;
                     to_update.push_back(g);
                 }
+            }
             else{//this isn't the first observation
                 M[g].nobs_remain-=1;
-                }
             }
         }
     }
+    
 	// Update further in the plan
 	for (int gg=0; gg<to_update.size(); gg++) {
 		int g = to_update[gg];
