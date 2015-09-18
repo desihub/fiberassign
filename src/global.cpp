@@ -102,7 +102,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
 		int m = M[g].nobs_remain; //defaults to nobsv_tmp		// Check whether it needs further observation
 		if (m>=1) {
             int prio = M[g].t_priority;
-            printf("g %d gg %d  m  %d  j  %d  k  %d \n", g,gg,m,j,k );
+            //printf("g %d gg %d  m  %d  j  %d  k  %d \n", g,gg,m,j,k );
 			// Takes it if better priority, or if same, if it needs more observations, so shares observations if two QSOs are close
 			if (prio<pbest || (prio==pbest && m>mbest)) {
                 printf(" prio %d  priobest  %d\n",prio,pbest);
@@ -110,7 +110,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
                 int isa=A.is_assigned_jg(j,g,M,F);
                 int ok=ok_assign_g_to_jk(g,j,k,P,M,pp,F,A);
                 printf(" isa   %d   ok   %d",isa,ok);
-                if (!isa && ok && g!=no_g ) {
+                if (isa==-1 && ok && g!=no_g ) {
 					best = g;
 					pbest = prio;
 					mbest = m;
