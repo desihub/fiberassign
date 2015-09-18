@@ -102,7 +102,7 @@ inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const MTL& M
 // Null list means you can take all possible kinds, otherwise you can only take, for the galaxy, a kind among this list
 // Not allowed to take the galaxy of id no_g
 inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, int no_g=-1, List kind=Null()) {
-	int best = -1; int mbest = -1; int pbest = 1e3;
+	int best = -1; int mbest = -1; double pbest = 1e3;
 	List av_gals = P[j].av_gals[k];
 	// For all available galaxies
 	for (int gg=0; gg<av_gals.size(); gg++) {
@@ -113,7 +113,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
             //printf("g %d gg %d  m  %d  j  %d  k  %d \n", g,gg,m,j,k );
 			// Takes it if better priority, or if same, if it needs more observations, so shares observations if two QSOs are close
 			if (prio<pbest || (prio==pbest && m>mbest)) {
-                printf(" prio %d  pbest  %d m %d j  %d   k  %d\n",prio,pbest,m,j,k);
+                printf(" prio %f  pbest  %f m %d j  %d   k  %d\n",prio,pbest,m,j,k);
 				// Check that g is not assigned yet on this plate, or on the InterPlate around, check with ok_to_assign
                 int isa=A.is_assigned_jg(j,g,M,F);
                 int ok=ok_assign_g_to_jk(g,j,k,P,M,pp,F,A);
@@ -167,7 +167,7 @@ inline void assign_galaxy(int g, const MTL& M, const Plates& P, const PP& pp, co
 // Tries to assign (j,k) to a SS (preferentially because they have priority) or a SF
 // no limit on the number of times a SS or SF can be observed
 inline int assign_fiber_to_ss_sf(int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
-	int best = -1; int pbest = 1e3;
+	int best = -1; double pbest = 1e3;
 	List av_gals = P[j].av_gals[k];
 	for (int gg=0; gg<av_gals.size(); gg++) {
 		int g = av_gals[gg];
@@ -348,12 +348,12 @@ void assign_unused(int j, const MTL& M, const Plates& P, const PP& pp, const Fea
                                                                                                         //even taking objects observed later
 	for (int k=0; k<F.Nfiber; k++) {
 		if (!A.is_assigned_tf(j,k)) {
-			int best = -1; int mbest = -1; int pbest = 1e3; int jpb = -1; int kpb = -1;
+			int best = -1; int mbest = -1; double pbest = 1e3; int jpb = -1; int kpb = -1;
 			List av_gals = P[j].av_gals[k];//all available galaxies for this fiber k
 			for (int gg=0; gg<av_gals.size(); gg++) {
 				int g = av_gals[gg];
 				int m = M[g].nobs_remain;
-				int prio = M[g].t_priority;
+				double prio = M[g].t_priority;
 				if (prio<pbest || (prio==pbest && m>mbest)) { // Less elegant to compute it here but optimizes
 					if (A.is_assigned_jg(j,g,M,F)==-1 && ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)) {//not assigned this plate or within excluded interval
 						for (int i=0; i<A.GL[g].size(); i++) { //GL[g].size() is number of tf that could look a g
