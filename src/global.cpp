@@ -84,7 +84,7 @@ inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const MTL& M
 	
     if (M[g].SS||M[g].SF) {
         printf(" SS or SF so not ok\n");
-        return false}; // Don't assign to SS or SF
+        return false;} // Don't assign to SS or SF
     if (P[j].ipass==4 && M[g].lastpass==0){
         
         printf("last pass, not ELG so not ok\n");
@@ -92,7 +92,7 @@ inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const MTL& M
 	if (F.Collision) for (int i=0; i<pp.N[k].size(); i++) if (g==A.TF[j][pp.N[k][i]]) return false; // Avoid 2 neighboring fibers observe the same galaxy (can happen only when Collision=true)
     if (A.find_collision(j,k,g,pp,M,P,F)!=-1){
         printf"Collsion so not ok \n");
-        return false; // No collision
+        return false;} // No collision
         printf(" no problem\n");
 	return true;
     //doesn't require that jk is unassigned//doesn't require that g isn't assigned already on this plate
