@@ -109,7 +109,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
 		int g = av_gals[gg];
 		int m = M[g].nobs_remain; //defaults to nobsv_tmp		// Check whether it needs further observation
 		if (m>=1) {
-            int prio = M[g].t_priority;
+            double prio = M[g].t_priority;
             //printf("g %d gg %d  m  %d  j  %d  k  %d \n", g,gg,m,j,k );
 			// Takes it if better priority, or if same, if it needs more observations, so shares observations if two QSOs are close
 			if (prio<pbest || (prio==pbest && m>mbest)) {
@@ -128,7 +128,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
 			}
 		}
 	}
-    printf("******* best %d \n",best);
+    printf("******* best %d \n\n",best);
 	return best;
 }
 
@@ -172,7 +172,7 @@ inline int assign_fiber_to_ss_sf(int j, int k, const MTL& M, const Plates& P, co
 	for (int gg=0; gg<av_gals.size(); gg++) {
 		int g = av_gals[gg];
 		
-		int prio = M[g].t_priority;
+		double prio = M[g].t_priority;
         if (((M[g].SF && A.nkind(j,k,F.ids.at("SF"),M,P,pp,F)<F.MaxSF) || M[g].SS && A.nkind(j,k,F.ids.at("SS"),M,P,pp,F)<F.MaxSS) && prio<pbest) { // Optimizes this way
 			if (A.is_assigned_jg(j,g,M,F)==-1 && A.find_collision(j,k,g,pp,M,P,F)==-1) {//nmo collision, not assigned to this plate
 				best = g;
@@ -208,7 +208,7 @@ inline int improve_fiber(int begin, int next, int j, int k, const MTL& M, const 
 							int best = find_best(jp,kp,M,P,pp,F,A); // best!=g because !A.assigned_pg(best)
 
 							if (best!=-1 && (A.is_assigned_jg(j,g,M,F)==-1 || jp==j)) {
-								int prio = M[g].t_priority;
+								double prio = M[g].t_priority;
 								int m = M[g].nobs_remain;
 								int unused = A.unused[jp][pp.spectrom[kp]]; // We take the most unused
 								if (prio<pb || (prio==pb && m>mb) || (prio==pb && m==mb && unused>unusedb)) {
@@ -275,8 +275,6 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
 	int n = end-j0+1;
 	int na_start(A.na(F,j0,n));
 	List to_update;
-	// Declare that we've seen those galaxies
-	//A.update_once_obs(jpast,F);//updates once_obs, which tells whether object has been observed at least once
 	// Get the list of galaxies to update in the plan
 	for (int k=0; k<F.Nfiber; k++) {
 		int g = A.TF[jpast][k];
