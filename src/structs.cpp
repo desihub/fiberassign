@@ -154,9 +154,6 @@ MTL make_MTL(const Gals& G, const Feat& F){
     int Nobj=G.size();
     struct target targ;
     for(int i=0;i<Nobj;++i){
-        if(i<10){
-            printf("i %d galaxy %d\n",i,G[i].id);
-        }
 
         targ.nhat[0]=G[i].nhat[0];
         targ.nhat[1]=G[i].nhat[1];
@@ -171,9 +168,6 @@ MTL make_MTL(const Gals& G, const Feat& F){
         targ.lastpass=F.lastpass[G[i].id];
         targ.id=i;//makes list in M correspond to list in G
         M.push_back(targ);
-        if(i%100000==0){
-            printf("i %d ra  %f  dec  %f  SS %d  SF  %d\n",i, targ.ra,targ.dec, targ.SS, targ.SF);
-        }
     }
     return M;
 }
