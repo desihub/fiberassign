@@ -96,8 +96,7 @@ class Feat { // F for features
 	Feat();
 	void readInputFile(const char fname[]);
 	int id(str s) const;
-	int maxgoal(int kind) const; // Gives max goal for a galaxy of this kind (goal(Ly-a) for all QSO for example)
-	List maxgoal() const; // List (function of kind) of max goals according to the kind (defined by prio)
+
 	void init_ids(); // Init ids member
 	void init_ids_types(); // Same
 	List init_ids_list(str l[], int size) const;

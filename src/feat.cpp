@@ -27,18 +27,6 @@ int Feat::id(str s) const {
 	return -1;
 }
 
-int Feat::maxgoal(int kind) const {
-	int max(goal[kind]); int prio0= prio[kind];
-	for (int i=0; i<Categories; i++) if (prio[i]==prio0 && goal[i]>max) max = goal[i];
-	return max;
-}
-
-List Feat::maxgoal() const {
-	List max = initList(Categories,-1);
-	for (int i=0; i<Categories; i++) max[i] = maxgoal(i);
-	return max;
-}
-
 void Feat::init_ids() {
 	for (int i=0; i<Categories; i++) ids[kind[i]] = i;
 }
