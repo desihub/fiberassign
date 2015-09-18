@@ -82,8 +82,12 @@ void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) {
 // Allow (j,k) to observe g ?
 inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const MTL& M, const PP& pp, const Feat& F, const Assignment& A) {
 	
-    if (M[g].SS||M[g].SF) {
-        printf(" SS or SF so not ok\n");
+    if (M[g].SF) {
+        printf(" SF so not ok\n");
+        return false;} // Don't assign to SS or SF
+    
+    if (M[g].SS){
+        printf(" SS so not ok\n");
         return false;} // Don't assign to SS or SF
     if (P[j].ipass==4 && M[g].lastpass==0){
         
