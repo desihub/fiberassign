@@ -224,7 +224,7 @@ void simple_assign(const MTL &M, const Plates& P, const PP& pp, const Feat& F, A
     
 	for (int jj=0; jj<n; jj++) {
 		int j = randPlates[jj];
-        printf(" doing the &d  plate\n",jj);
+        printf(" doing the %d  plate   original number %d\n",jj,j);
 		List randFibers = random_permut(F.Nfiber);
 		for (int kk=0; kk<F.Nfiber; kk++) { // Fiber
 			int k = randFibers[kk];
