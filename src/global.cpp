@@ -109,11 +109,12 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
 				// Check that g is not assigned yet on this plate, or on the InterPlate around, check with ok_to_assign
                 int isa=A.is_assigned_jg(j,g,M,F);
                 int ok=ok_assign_g_to_jk(g,j,k,P,M,pp,F,A);
-                printf(" isa   %d   ok   %d\n",isa,ok);
+                printf("g %d isa   %d   ok   %d\n",g,isa,ok);
                 if (isa==-1 && ok && g!=no_g ) {
 					best = g;
 					pbest = prio;
 					mbest = m;
+                    printf("best %d \n",best);
 				}
 			}
 		}
