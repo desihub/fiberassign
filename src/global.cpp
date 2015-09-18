@@ -278,15 +278,20 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
 	// Get the list of galaxies to update in the plan
 	for (int k=0; k<F.Nfiber; k++) {
 		int g = A.TF[jpast][k];
-		// Only if once_obs, we delete all further assignment. obs!=obs_tmp means that the galaxy is a fake one for example (same priority but different goal)
-        if (g!=-1){
-            if(M[g].t_priority!=F.goalpost[G[g].id]){
-                //first obs of QSO-tracer, QSO-fake, LRG-fake
-                M[g].nobs_remain=0;
-                to_update.push_back(g);}
-            else{
-                if(!M[g].SS && !M[g].SF){//not SS or SF
-                        M[g].nobs_remain-=1;
+        // Don't update SS or SF
+        if (g!=-1&&!M[g].SS && !M[g].SF){
+            //initially nobs_remain==goal
+            if(M[g].nobs_remain=F.goal[G[g].id]){//first obs
+                if(F.goalpost[G[g].id]==1){//if only one obs needed
+                    M[g].nobs_remain =0;
+                    if(F.goal[G[g].id]!=1) to_update.push_back(g);
+                }// remove later observations
+                else{//more obs needed
+                    M[g].nobs_remain=F.goalpost[G[g].id]-1;
+                    to_update.push_back(g);
+                }
+            else{//this isn't the first observation
+                M[g].nobs_remain-=1;
                 }
             }
         }
@@ -294,7 +299,7 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
 	// Update further in the plan
 	for (int gg=0; gg<to_update.size(); gg++) {
 		int g = to_update[gg];
-		Plist tfs = A.chosen_tfs(g,F,j0+1,n-1); // Begin at j0+1, because we can't change assignment at j0 (already watched)
+		Plist tfs = A.chosen_tfs(g,F,j0+1,n-1); // Begin at j0+1, can't change assignment at j0 (already observed)
 		while (tfs.size()!=0) {
 			int jp = tfs[0].f; int kp = tfs[0].s;
 			//print_Plist(tfs,"Before"); // Debug
