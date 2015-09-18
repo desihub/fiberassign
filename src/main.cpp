@@ -93,6 +93,7 @@ int main(int argc, char **argv) {
 	//new_assign_fibers(G,P,pp,F,A); // Plans whole survey without sky fibers, standard stars
                                    // assumes maximum number of observations needed for QSOs, LRGs
     printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.Nplate, F.Ngal, F.Nfiber);
+ 
     simple_assign(M,P,pp,F,A);
     
     
@@ -145,4 +146,5 @@ int main(int argc, char **argv) {
 	print_time(t,"# Finished !... in");
  
 	return(0);
+  
 }
