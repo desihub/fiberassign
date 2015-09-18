@@ -102,6 +102,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
 		int m = M[g].nobs_remain; //defaults to nobsv_tmp		// Check whether it needs further observation
 		if (m>=1) {
             int prio = M[g].t_priority;
+            printf("g %d gg %d  m  %d  j  %d  k  %d \n", g,gg,m,j,k );
 			// Takes it if better priority, or if same, if it needs more observations, so shares observations if two QSOs are close
 			if (prio<pbest || (prio==pbest && m>mbest)) {
 				// Check that g is not assigned yet on this plate, or on the InterPlate around, check with ok_to_assign
