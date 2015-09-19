@@ -161,7 +161,7 @@ MTL make_MTL(const Gals& G, const Feat& F){
         targ.ra=G[i].ra;
         targ.dec=G[i].dec;
         targ.t_priority=F.prio[G[i].id];
-        if(targ.t_priority>2.1 and targ.t_priority<4.0)printf("     targ.t_priority  %f \n",targ.t_priority);
+        if(targ.t_priority>3.4 and targ.t_priority<4.0)printf("     targ.t_priority  %f \n",targ.t_priority);
         targ.nobs_remain=F.goal[G[i].id];//needs to be goal prior to knowledge!!
         targ.SS=F.SS[G[i].id];
         targ.SF=F.SF[G[i].id];
