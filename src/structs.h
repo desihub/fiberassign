@@ -61,12 +61,12 @@ class target {
 };
 class MTL : public std::vector<struct target> {
     public:
-    Dlist priority_list;
+    std::vector<double> priority_list;
 };
 
 MTL make_MTL(const Gals& G, const Feat& F);
 
-List priorities_list(MTL& M);//list of all priorities
+
 
 
 // Plate -------------------------------------------------
