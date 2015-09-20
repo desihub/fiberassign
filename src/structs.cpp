@@ -140,7 +140,8 @@ Gals read_galaxies_ascii(const Feat& F)
     fs.close();
     return(P);
 }
-
+//to order galaxies by their priority
+bool galaxy_priority(target t1,target t2){return (t1.t_priority<t2.t_priority);}
 
 str galaxy::kind(const Feat& F) const {
 	return(F.kind[id]);
