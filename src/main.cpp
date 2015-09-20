@@ -28,7 +28,8 @@ int main(int argc, char **argv) {
 	// Read parameters file //
 	F.readInputFile(argv[1]);
 	printFile(argv[1]);
-
+    for (int i=0; i<F.prio.size(); i++) printf("  %8.4f ",F.prio[i]);
+    for (int i=0; i<F.priopost.size(); i++) printf("  %8.4f ",F.priopost[i]);
 	// Read galaxies
 	Gals G;
     if(F.Ascii){
