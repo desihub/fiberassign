@@ -99,7 +99,7 @@ void Feat::readInputFile(const char file[]) {
 			}
             if (tok[0]=="prio") {
                 for (int i=0; i<Categories; i++) prio.push_back(s2d(tok[i+1]));
-                for (int i=0; i<Categories; i++) printf("  %f ",prio[i]);
+               
                 printf(" \n");
             }
 			if (tok[0]=="priopost") for (int i=0; i<Categories; i++) priopost.push_back(s2d(tok[i+1]));
@@ -144,5 +144,6 @@ void Feat::readInputFile(const char file[]) {
             if (tok[0]=="BrightTime") BrightTime = s2b(tok[1]);
 		}
 	}
+     for (int i=0; i<Categories; i++) printf("  %8.4f ",prio[i]);
 	fIn.close();
 }
