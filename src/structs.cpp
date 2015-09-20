@@ -166,7 +166,7 @@ MTL make_MTL(const Gals& G, const Feat& F){
         targ.SF=F.SF[G[i].id];
 
         targ.lastpass=F.lastpass[G[i].id];
-        targ.identity=i;//makes list in M correspond to list in G
+        //targ.identity=i;//makes list in M correspond to list in G
         M.push_back(targ);
     }
     return M;
