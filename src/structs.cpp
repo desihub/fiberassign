@@ -170,8 +170,8 @@ MTL make_MTL(const Gals& G, const Feat& F){
         //make list of priorities
         int *p;
         
-        p = std::find(M.priority_list,M.priority_list+M.priority_list.size(),t_priority);
-        if (p==M.priority_list+M.priority_list.size()){
+        p = std::find(M.priority_list.begin(),M.priority_list.end(),t_priority);
+        if (p==M.priority_list.end()){
             M.priority_list.push_back(t_priority);
         
         //targ.identity=i;//makes list in M correspond to list in G
