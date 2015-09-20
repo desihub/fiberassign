@@ -166,7 +166,7 @@ MTL make_MTL(const Gals& G, const Feat& F){
         targ.SF=F.SF[G[i].id];
 
         targ.lastpass=F.lastpass[G[i].id];
-        targ.id=i;//makes list in M correspond to list in G
+        targ.identity=i;//makes list in M correspond to list in G
         M.push_back(targ);
     }
     return M;
@@ -312,6 +312,7 @@ Plates read_plate_centers(const Feat& F) {
 	return(P);
 }
 //not used
+/*
 List av_gals_of_kind(int kind, int j, int k, const MTL& M, const Plates& P, const Feat& F) {
 	List L;  //list of galaxies available to (j,k) of kind 'kind'
 	List av_gals = P[j].av_gals[k];
@@ -321,7 +322,7 @@ List av_gals_of_kind(int kind, int j, int k, const MTL& M, const Plates& P, cons
 	}
 	return L;
 }
-
+*/
 // Assignment -----------------------------------------------------------------------------
 Assignment::Assignment(const MTL& M, const Feat& F) {
     printf("start Assignment\n");
@@ -369,7 +370,7 @@ void Assignment::assign(int j, int k, int g, const MTL& M, const Plates& P, cons
 	}
 	GL[g].push_back(p);
 	// Kinds
-	kinds[j][pp.spectrom[k]][M[g].id]++;
+	//kinds[j][pp.spectrom[k]][M[g].id]++;
 
 	// Nobsv
 
@@ -383,7 +384,7 @@ void Assignment::unassign(int j, int k, int g, const MTL& M, const Plates& P, co
 
 	TF[j][k] = -1;
 	if (a!=-1) erase(a,GL[g]);
-	kinds[j][pp.spectrom[k]][M[g].id]--;
+	//kinds[j][pp.spectrom[k]][M[g].id]--;
 
 
 	unused[j][pp.spectrom[k]]++;
@@ -401,7 +402,7 @@ void Assignment::verif(const Plates& P, const MTL& M, const PP& pp, const Feat& 
 			// Verif on TF
 			if (TF[tf.f][tf.s]!=g) { printf("ERROR in verification of correspondance of galaxies !\n"); fl(); }
 			// No 2 assignments within an interval of F.InterPlate
-			if (j0!=-1 && isfound(M[g].id,qso_lrg) && fabs(j1-j0)<F.InterPlate) { printf("ERROR in verification of F.InterPlate g=%d with j=%d and %d\n",g,j0,j1); fl(); }
+			//if (j0!=-1 && isfound(M[g].id,qso_lrg) && fabs(j1-j0)<F.InterPlate) { printf("ERROR in verification of F.InterPlate g=%d with j=%d and %d\n",g,j0,j1); fl(); }
 		}
 	}
 	for (int j=0; j<F.Nplate; j++) {
@@ -529,6 +530,7 @@ Table Assignment::infos_petal(int j, int pet, const MTL& M, const Plates& P, con
 	return T;
 }
 */
+/*
 List Assignment::fibs_of_kind(int kind, int j, int pet, const MTL& M, const PP& pp, const Feat& F) const {//all fibers on some petal assigned to some kind
 	List L;
 	List fibs = pp.fibers_of_sp[pet];
@@ -539,8 +541,8 @@ List Assignment::fibs_of_kind(int kind, int j, int pet, const MTL& M, const PP& 
 	}
 	return L;
 }
-
-
+*/
+/*
 List Assignment::sort_fibs_dens(int j, const List& fibs, const MTL& M, const Plates& P, const PP& pp, const Feat& F) const {
 	List num;
 	for (int k=0; k<fibs.size(); k++) num.push_back(P[j].density[fibs[k]]);//how many observations demanded by galaxies in reach of (j,k)
@@ -549,7 +551,7 @@ List Assignment::sort_fibs_dens(int j, const List& fibs, const MTL& M, const Pla
 	for (int k=num.size()-1; k!=-1; k--) fibs_sorted.push_back(fibs[perm[k]]);//reverse the order so most demanded fibers are first
 	return fibs_sorted;
 }
-
+*/
 List Assignment::fibs_unassigned(int j, int pet, const MTL& M, const PP& pp, const Feat& F) const {//list of unassigned fibers on petal pet
 	List L;
 	List fibs = pp.fibers_of_sp[pet];
