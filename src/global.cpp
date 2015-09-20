@@ -83,15 +83,14 @@ void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) {
 inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const MTL& M, const PP& pp, const Feat& F, const Assignment& A) {
 	
     if (M[g].SF) {
-        printf(" SF so not ok\n");
+
         return false;} // Don't assign to SS or SF
     
     if (M[g].SS){
-        printf(" SS so not ok\n");
         return false;} // Don't assign to SS or SF
     if (P[j].ipass==4 && M[g].lastpass==0){
         
-        printf("last pass, not ELG so not ok\n");
+
         return false;} // Only ELG at the last pass
 	if (F.Collision) for (int i=0; i<pp.N[k].size(); i++) if (g==A.TF[j][pp.N[k][i]]) return false; // Avoid 2 neighboring fibers observe the same galaxy (can happen only when Collision=true)
     if (A.find_collision(j,k,g,pp,M,P,F)!=-1){
@@ -117,11 +116,10 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
             //printf("g %d gg %d  m  %d  j  %d  k  %d \n", g,gg,m,j,k );
 			// Takes it if better priority, or if same, if it needs more observations, so shares observations if two QSOs are close
 			if (prio<pbest || (prio==pbest && m>mbest)) {
-                printf(" prio %8.4f  pbest  %8.4f m %d j  %d   k  %d\n",prio,pbest,m,j,k);
+
 				// Check that g is not assigned yet on this plate, or on the InterPlate around, check with ok_to_assign
                 int isa=A.is_assigned_jg(j,g,M,F);
                 int ok=ok_assign_g_to_jk(g,j,k,P,M,pp,F,A);
-                printf("g %d isa   %d   ok   %d\n",g,isa,ok);
                 if (isa==-1 && ok && g!=no_g ) {
 					best = g;
 					pbest = prio;
@@ -132,7 +130,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
 			}
 		}
 	}
-    printf("******* best %d \n\n",best);
+
 	return best;
 }
 
