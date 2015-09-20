@@ -168,10 +168,12 @@ MTL make_MTL(const Gals& G, const Feat& F){
 
         targ.lastpass=F.lastpass[G[i].id];
         //make list of priorities
-        int *p;
+        std::vector<int>::iterator it;
         
-        p = std::find(M.priority_list.begin(),M.priority_list.end(),targ.t_priority);
-        if (p==M.priority_list.end()){
+        
+        
+        it = find(M.priority_list.begin(),M.priority_list.end(),targ.t_priority);
+        if (it==M.priority_list.end()){
             M.priority_list.push_back(t_priority);
         
         //targ.identity=i;//makes list in M correspond to list in G
