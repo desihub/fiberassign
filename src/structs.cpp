@@ -167,11 +167,20 @@ MTL make_MTL(const Gals& G, const Feat& F){
         targ.SF=F.SF[G[i].id];
 
         targ.lastpass=F.lastpass[G[i].id];
+        //make list of priorities
+        int *p;
+        
+        p = std::find(M.priority_list,priority_list+priority_list.size(),t_priority);
+        if (p==priority_list+priority_list.size()){
+            priority_list.push_back(t_priority);
+        }
         //targ.identity=i;//makes list in M correspond to list in G
         M.push_back(targ);
     }
     return M;
 }
+
+List priorities_list
 
 // PP ----------------------------------------------------------------------------
 // Read the positions of the fibers on each plate.  Assumes the format
