@@ -321,6 +321,7 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
 }
 
 // If not enough SS and SF, remove old_kind an replace to SS-SF (new_kind) on petal (j,p)
+/*
 void replace(List old_kind, int new_kind, int j, int p, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
 	int m = A.nkind(j,p,new_kind,M,P,pp,F,true);//number of new_kind already on this petal
 	List fibskindd;
@@ -347,7 +348,7 @@ void replace(List old_kind, int new_kind, int j, int p, const MTL& M, const Plat
 		erase(0,fibskind);
 	}
 }
-
+*/
 void assign_unused(int j, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) { // Tries to assign remaining fibers in tile j
                                                                                                         //even taking objects observed later
 	for (int k=0; k<F.Nfiber; k++) {
@@ -383,6 +384,7 @@ void assign_unused(int j, const MTL& M, const Plates& P, const PP& pp, const Fea
 }
 
 // If not enough SS and SF, remove old_kind and replace with SS-SF (new_kind) on petal (j,p)
+/*
 void assign_sf_ss(int j, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
     if(!F.BrightTime){
 	str lrgA[] = {"LRG","FakeLRG"}; List lrg = F.init_ids_list(lrgA,2);
@@ -398,6 +400,7 @@ void assign_sf_ss(int j, const MTL& M, const Plates& P, const PP& pp, const Feat
 				if (!A.is_assigned_tf(j,k)) assign_fiber_to_ss_sf(j,k,M,P,pp,F,A);
 			}
 			// If not enough SS and SF, remove ELG an replace to SS-SF
+            
 			replace(elg,F.ids.at("SS"),j,p,M,P,pp,F,A);
 			replace(elg,F.ids.at("SF"),j,p,M,P,pp,F,A);
 			replace(lrg,F.ids.at("SS"),j,p,M,P,pp,F,A);
@@ -421,7 +424,7 @@ void assign_sf_ss(int j, const MTL& M, const Plates& P, const PP& pp, const Feat
         
     }
 }
-
+*/
 // For each petal, assign QSOs, LRGs, ELGs, ignoring SS and SF.
 
 

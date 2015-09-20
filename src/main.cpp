@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
 	for (int jj=0; jj<F.Nplate; jj++) {
 		int j = A.next_plate;
 		//printf(" - Plate %d :",j);
-		assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF just before an observation
+		//assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF just before an observation
 		assign_unused(j,M,P,pp,F,A);
 		//if (j%2000==0) pyplotTile(j,"doc/figs",G,P,pp,F,A); // Picture of positioners, galaxies
 		
