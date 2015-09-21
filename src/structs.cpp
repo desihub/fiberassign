@@ -187,17 +187,8 @@ MTL make_MTL(const Gals& G, const Feat& F){
             M.priority_list.push_back(targ.t_priority);
             printf(" priority %f i  %d  id %d\n",targ.t_priority,i,G[i].id);
         }
-        if(G[i].id==6){
-            special_count+=1;
-            if(stop_count<10){
-                printf("targ.t_priority %f   F.prio[G[i].id]  %f \n",targ.t_priority, F.prio[G[i].id]);
-                stop_count+=1;
-            }
-        }
         M.push_back(targ);
     }
-    for(int k=0;k<8;++k){printf("  i %d   F.prio[G[i].id] %f \n", k, F.prio[k]);}
-    printf("  id=4  %d\n",special_count);
     return M;
 }
 
