@@ -169,7 +169,7 @@ MTL make_MTL(const Gals& G, const Feat& F){
         //make list of priorities
         bool in=false;
         for (int j=0;j<M.priority_list.size();++j){
-            if(abs(targ.t_priority-M.priority_list[j])<1.e05){
+            if(abs(targ.t_priority-M.priority_list[j])<1.e-5){
                 in=true;
             }
         }
