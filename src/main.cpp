@@ -37,7 +37,8 @@ int main(int argc, char **argv) {
     }
 	F.Ngal = G.size();
 	printf("# Read %s galaxies from %s \n",f(F.Ngal).c_str(),F.galFile.c_str());
-    std::vector<int> count=count_galaxies(G);
+    std::vector<int> count;
+    count=count_galaxies(G);
     for(int i=0;i<8;i++){printf ("   %d  \n",count[i]);}
     // make MTL
     MTL M=make_MTL(G,F);
