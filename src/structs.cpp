@@ -167,11 +167,14 @@ MTL make_MTL(const Gals& G, const Feat& F){
 
         targ.lastpass=F.lastpass[G[i].id];
         //make list of priorities
+        bool in=false;
         for (i=0;i<M.priority_list.size();++i){
             if(abs(targ.t_priority-M.priority_list[i])<1.e05){
-                break;
+                in=true;
             }
-            M.priority_list.push_back(targ.t_priority);
+            if(!not){
+                M.priority_list.push_back(targ.t_priority);
+                printf(" priority %f \n",targ.t_priority);
         }
         
         //targ.identity=i;//makes list in M correspond to list in G
