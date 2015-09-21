@@ -198,7 +198,7 @@ MTL assign_priority_class(MTL& M){
     // assign each target to a priority class
     //this needs to be updated
     for(int i=0;i<M.size();++i){
-        for(j=0;j<M.priority_list.size();++j){
+        for(int j=0;j<M.priority_list.size();++j){
             if(std::abs(M[i].t_priority-M.priority_list[j])<0.001){
                 M[i].priority_class=j;}
         }
