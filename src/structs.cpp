@@ -149,14 +149,6 @@ str galaxy::kind(const Feat& F) const {
 
 // targets -----------------------------------------------------------------------
 // derived from G, but includes priority and nobs_remain
-s/*truct dbl_cmp {
-    dbl_cmp(double v, double d) val(v), delta(d) { }
-    inline bool operator()(const double &x) const {
-        return abs(x-val) < delta;
-    }
-private:
-    double val, delta;
-};*/
 MTL make_MTL(const Gals& G, const Feat& F){
     MTL M;
     int Nobj=G.size();
