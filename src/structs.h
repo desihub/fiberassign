@@ -56,7 +56,7 @@ class target {
     int id, nobs_remain;
     double nhat[3];
     double ra, dec, t_priority;
-    int SS,SF,lastpass;
+    int SS,SF,lastpass, priority_class;
     Plist av_tfs;
 };
 class MTL : public std::vector<struct target> {
