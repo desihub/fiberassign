@@ -317,7 +317,7 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
 }
 
 // If not enough SS and SF, remove old_kind an replace to SS-SF (new_kind) on petal (j,p)
-
+/*
 void replace(List old_kind, int new_kind, int j, int p, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
 	int m = A.nkind(j,p,new_kind,M,P,pp,F,true);//number of new_kind already on this petal
 	List fibskindd;
@@ -372,7 +372,7 @@ void new_replace( int j, int p, const MTL& M, const Plates& P, const PP& pp, con
         erase(0,fibskind);
     }
 }
-
+*/
 
 
 
