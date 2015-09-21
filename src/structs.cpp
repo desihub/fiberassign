@@ -183,7 +183,7 @@ MTL make_MTL(const Gals& G, const Feat& F){
         }
         if(!in){
             M.priority_list.push_back(targ.t_priority);
-            printf(" priority %f \n",targ.t_priority);
+            printf(" priority %f i  %d\n",targ.t_priority,i);
         }
         M.push_back(targ);
     }
