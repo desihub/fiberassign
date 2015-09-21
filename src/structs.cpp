@@ -178,10 +178,10 @@ MTL make_MTL(const Gals& G, const Feat& F){
             printf(" priority %f \n",targ.t_priority);
         }
         M.push_back(targ);
-        }
-    return M;
     }
+    return M;
 }
+
 
 
 // PP ----------------------------------------------------------------------------
