@@ -85,6 +85,16 @@ Gals read_galaxies(const Feat& F) {
 	}
 	return P;
 }
+
+std::vector<int> count_galaxies(Gals& G){
+    std::vector <int> counter(10);
+    for (int i=0;i<G.size();i++){
+        count[G[i].id]+=1;
+                  }
+    return counter;
+}
+
+
 Gals read_galaxies_ascii(const Feat& F)
 // Read objects from ascii file--format is ra, dec, priority and nobs
 // with ra/dec in degrees.
