@@ -39,6 +39,10 @@ int main(int argc, char **argv) {
 	printf("# Read %s galaxies from %s \n",f(F.Ngal).c_str(),F.galFile.c_str());
     // make MTL
     MTL M=make_MTL(G,F);
+    for(i=0,i<M.priority_list.size();++i){
+        printf(" priority   %f",M.priority_list[i]);
+    }
+    printf(" \n");
     printf("Read fiber center positions and compute related things\n");
 	PP pp;
 	pp.read_fiber_positions(F); 
