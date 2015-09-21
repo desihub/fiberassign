@@ -196,7 +196,7 @@ MTL make_MTL(const Gals& G, const Feat& F){
         }
         M.push_back(targ);
     }
-    for(int k=0;k<8;++k){printf("  i %d   F.prio[G[i].id] %f \n", k, F.prio[G[k].id]);}
+    for(int k=0;k<8;++k){printf("  i %d   F.prio[G[i].id] %f \n", k, F.prio[k]);}
     printf("  id=4  %d\n",special_count);
     return M;
 }
