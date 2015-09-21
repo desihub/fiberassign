@@ -175,7 +175,7 @@ MTL make_MTL(const Gals& G, const Feat& F){
 
         targ.lastpass=F.lastpass[G[i].id];
         //make list of priorities
-        if(!find_if(M.priority_list.begin(), M.Priority._list.end(), dbl_cmp(t_priority,1E-5)){
+        if(!find_if(M.priority_list.begin(), M.Priority._list.end(), dbl_cmp(targ.t_priority,1E-5)){
 
             M.priority_list.push_back(t_priority);
         }
