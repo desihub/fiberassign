@@ -317,7 +317,7 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
 }
 
 // If not enough SS and SF, remove old_kind an replace to SS-SF (new_kind) on petal (j,p)
-/*
+
 void replace(List old_kind, int new_kind, int j, int p, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
 	int m = A.nkind(j,p,new_kind,M,P,pp,F,true);//number of new_kind already on this petal
 	List fibskindd;
@@ -344,7 +344,39 @@ void replace(List old_kind, int new_kind, int j, int p, const MTL& M, const Plat
 		erase(0,fibskind);
 	}
 }
-*/
+
+void new_replace( int j, int p, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
+    //make sure there are enough standard stars and sky fibers on each petal p in plate j
+    int m = A.nkind(j,p,new_kind,M,P,pp,F,true);//number of new_kind already on this petal
+    List fibskindd;
+    for (int i=0; i<old_kind.size(); i++) addlist(fibskindd,A.fibs_of_kind(old_kind[i],j,p,M,pp,F));//list of fibers on tile j assigned to galaxies of types old_kind
+    List fibskind0 = random_permut(fibskindd);
+    
+    List fibskind=fibskind0;
+    int Max = new_kind==F.ids.at("SS") ? F.MaxSS : F.MaxSF;
+    while (m<Max && fibskind.size()!=0) {
+        bool fin(false);
+        int k = fibskind[0];//list of fibers assigned to galaxies of old type
+        List av_g = P[j].av_gals[k];//all galaxies available to (j,k)
+        for (int gg=0; gg<av_g.size() && !fin; gg++) {
+            int g = av_g[gg];//is this one the right kind (newkind)?
+            if (M[g].id==new_kind && A.find_collision(j,k,g,pp,M,P,F)==-1 && A.is_assigned_jg(j,g)==-1) { // Looking for fiber that took ELG but could take SS or SF
+                int g0 = A.TF[j][k];
+                A.unassign(j,k,g0,M,P,pp);
+                assign_galaxy(g0,M,P,pp,F,A);//having released g0, look for new place for it
+                A.assign(j,k,g,M,P,pp);
+                fin = true;
+                m++;
+            }
+        }
+        erase(0,fibskind);
+    }
+}
+
+
+
+
+
 void assign_unused(int j, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) { // Tries to assign remaining fibers in tile j
                                                                                                         //even taking objects observed later
 	for (int k=0; k<F.Nfiber; k++) {
