@@ -172,15 +172,15 @@ MTL make_MTL(const Gals& G, const Feat& F){
             if(abs(targ.t_priority-M.priority_list[i])<1.e05){
                 in=true;
             }
-            if(!in){
-                M.priority_list.push_back(targ.t_priority);
-                printf(" priority %f \n",targ.t_priority);
         }
-        
-        //targ.identity=i;//makes list in M correspond to list in G
+        if(!in){
+            M.priority_list.push_back(targ.t_priority);
+            printf(" priority %f \n",targ.t_priority);
+        }
         M.push_back(targ);
         }
     return M;
+    }
 }
 
 
