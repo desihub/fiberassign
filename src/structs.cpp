@@ -164,6 +164,7 @@ MTL make_MTL(const Gals& G, const Feat& F){
     int Nobj=G.size();
     struct target targ;
     int special_count(0);
+    int stop_count(0);
     for(int i=0;i<Nobj;++i){
 
         targ.nhat[0]=G[i].nhat[0];
@@ -186,10 +187,16 @@ MTL make_MTL(const Gals& G, const Feat& F){
             M.priority_list.push_back(targ.t_priority);
             printf(" priority %f i  %d  id %d\n",targ.t_priority,i,G[i].id);
         }
-        if(G[i].id==4)special_count+=1;
+        if(G[i].id==4){
+            special_count+=1;
+            if(stop_count<10){
+                printf("targ.t_priority %f   F.prio[G[i].id]  %f \n",targ.t_priority, F.prio[G[i].id]);
+                stop_count+=1;
+            }
+        }
         M.push_back(targ);
     }
-    printf("  id=6  %d\n",special_count);
+    printf("  id=4  %d\n",special_count);
     return M;
 }
 
