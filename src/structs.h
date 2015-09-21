@@ -48,7 +48,7 @@ class Gals : public std::vector<struct galaxy> {};
 Gals read_galaxies(const Feat& F);
 Gals read_galaxies_ascii(const Feat& F);
 
-
+std::vector<int>count_galaxies(const Gals& G);
 
 //target -----------------------------------------------------
 class target {
