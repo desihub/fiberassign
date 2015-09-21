@@ -149,14 +149,14 @@ str galaxy::kind(const Feat& F) const {
 
 // targets -----------------------------------------------------------------------
 // derived from G, but includes priority and nobs_remain
-struct dbl_cmp {
+s/*truct dbl_cmp {
     dbl_cmp(double v, double d) val(v), delta(d) { }
     inline bool operator()(const double &x) const {
         return abs(x-val) < delta;
     }
 private:
     double val, delta;
-};
+};*/
 MTL make_MTL(const Gals& G, const Feat& F){
     MTL M;
     int Nobj=G.size();
@@ -175,8 +175,10 @@ MTL make_MTL(const Gals& G, const Feat& F){
 
         targ.lastpass=F.lastpass[G[i].id];
         //make list of priorities
-        if(!find_if(M.priority_list.begin(), M.Priority._list.end(), dbl_cmp(targ.t_priority,1E-5)){
-
+        for (i=0;i<M.priority_list.size(),++i){
+            if(abs(targ.t_priority-M.priority_list[i])<1.e05){
+                break;
+            }
             M.priority_list.push_back(t_priority);
         }
         
