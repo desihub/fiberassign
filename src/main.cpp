@@ -46,6 +46,8 @@ int main(int argc, char **argv) {
         printf(" priority   %f",M.priority_list[i]);
     }
     printf(" \n");
+    
+    printf(" number of MTL galaxies  %d\n",MN.size();
     printf("Read fiber center positions and compute related things\n");
 	PP pp;
 	pp.read_fiber_positions(F); 
