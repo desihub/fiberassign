@@ -196,15 +196,15 @@ MTL make_MTL(const Gals& G, const Feat& F){
 
 MTL assign_priority_class(MTL& M){
     // assign each target to a priority class
-    //this needs to be updated 
+    //this needs to be updated
     for(int i=0;i<M.size();++i){
         for(j=0;j<M.priority_list.size();++j){
             if(std::abs(M[i].t_priority-M.priority_list[j])<0.001){
                 M[i].priority_class=j;}
-            }
         }
     }
 }
+
 
 
 // PP ----------------------------------------------------------------------------
