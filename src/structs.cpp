@@ -188,7 +188,6 @@ MTL make_MTL(const Gals& G, const Feat& F){
     return M;
 }
 
-List priorities_list
 
 // PP ----------------------------------------------------------------------------
 // Read the positions of the fibers on each plate.  Assumes the format
