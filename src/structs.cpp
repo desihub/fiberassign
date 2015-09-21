@@ -89,7 +89,7 @@ Gals read_galaxies(const Feat& F) {
 std::vector<int> count_galaxies(Gals& G){
     std::vector <int> counter(10,0);
     for (int i=0;i<G.size();i++){
-        count[G[i].id]+=1;
+        counter[G[i].id]+=1;
                   }
     return counter;
 }
