@@ -194,7 +194,7 @@ MTL make_MTL(const Gals& G, const Feat& F){
     return M;
 }
 
-MTL assign_priority_class(MTL& M){
+void assign_priority_class(MTL& M){
     // assign each target to a priority class
     //this needs to be updated
     for(int i=0;i<M.size();++i){

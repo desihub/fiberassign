@@ -46,6 +46,7 @@ int main(int argc, char **argv) {
         printf(" priority   %f",M.priority_list[i]);
     }
     printf(" \n");
+    assign_priority_class(M);
     
     std::vector <int> count_class(M.priority_list.size(),0);
     for(int i;i<M.size();++i){
