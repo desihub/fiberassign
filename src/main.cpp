@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
     }
     printf(" \n");
     
-    std::vector <int> count_class(M.priority_list,0);
+    std::vector <int> count_class(M.priority_list.size(),0);
     for(int i;i<M.size();++i){
         count_class[M[i].priority_class]+=1;
     }
