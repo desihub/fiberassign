@@ -47,6 +47,14 @@ int main(int argc, char **argv) {
     }
     printf(" \n");
     
+    std::vector <int> count_class(M.priority_list,0);
+    for(int i;i<M.size();++i){
+        count_class[M[i].priority_class]+=1;
+    }
+    for(int i;i<M.priority_list.size();++i){
+        printf("  class  %d  number  %d\n",i,count_class[i]);
+    }
+    
     printf(" number of MTL galaxies  %d\n",M.size());
     printf("Read fiber center positions and compute related things\n");
 	PP pp;
