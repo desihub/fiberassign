@@ -56,13 +56,11 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
 					dpair Xg = projection(gals[g],j,M,P);
                     if (sq(Xg,X)<sq(F.PatrolRad)){
                         P[j].av_gals[k].push_back(gals[g]);
-                        }
                     }
                 }
-			}
-		}
-
-	}
+            }
+        }
+    }
 	print_time(t,"# ... took :");
 }
 
