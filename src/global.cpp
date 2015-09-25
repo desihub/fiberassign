@@ -374,14 +374,14 @@ void new_replace( int j, int p, const MTL& M, const Plates& P, const PP& pp, con
         std::vector <int> gals=P[j].SS_av_gal[p]; //standard stars on this plate
         for(int gg=0;gg<gals.size();++gg){//what tfs for this SS?  M[g].av_tfs
             target g=M[gg];
-            Plist tfs=M[gals[g]].av_tfs;
+            Plist tfs=M[g].av_tfs;
             for(int i;i<tfs.size();++i){
                 int k=tfs.s;
                 galaxy g_old=A.TF[j][k];
                 if (pp.spectrom[k]==p && g.priority_class==c){//right petal, right priority
                     A.unassign(j,k,g_old,M,P,pp);
                     assign_galaxy(g_old,M,P,pp,F,A);//try to assign
-                    A.assign(j,k,gals[g],M,P,pp);
+                    A.assign(j,k,g,M,P,pp);
                 }
             }
          }
