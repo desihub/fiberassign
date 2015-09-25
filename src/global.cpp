@@ -56,11 +56,6 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
 					dpair Xg = projection(gals[g],j,M,P);
                     if (sq(Xg,X)<sq(F.PatrolRad)){
                         P[j].av_gals[k].push_back(gals[g]);
-                        int av[]=P[j].av_gals_plate;
-                        int *p;
-                        p =std::find(av.begin(),av.last(),gals[g]);
-                        if (p==av.last()){
-                            P[j].av_gals_plate.push_back(gals[g]);
                         }
                     }
                 }
@@ -359,17 +354,17 @@ void new_replace( int j, int p, const MTL& M, const Plates& P, const PP& pp, con
     //first do SS count SS in each petal
     std::vector<int> SS_in_petal(10,0), SF_in_petal(10,0);
     
-    for(int k;k<N.fibers;++k){
+    for(int k;k<F.Nfibers;++k){
         int g=TF[j][k];
         if(M[g].t_priority==99){SS_in_petal[pp.spectrom[k]]+=1;}
         if(M[g].t_priority==98){SF_in_petal[pp.spectrom[k]]+=1;}
     }
     // do standard stars,going through priority classes from least to most
     // skip SS and SF, so start at size -3
-    for(int c=M.priority_list.size()-3;c>-1;--i){
-        for(k=0;k<F.Nfiber;++k){
+    for(int c=M.priority_list.size()-3;c>-1;--c ){
+        for(int k=0;k<F.Nfiber;++k){
             int petal=pp.spectrom[k];
-            if(MaxSF-SF_in_petal[petal]>0){//need more SF in this petal
+            if(F.MaxSF-SF_in_petal[petal]>0){//need more SF in this petal
                 //find all SF, SS on this petal
                 
         }
