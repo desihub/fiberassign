@@ -359,6 +359,7 @@ void new_replace( int j, int p, const MTL& M, const Plates& P, const PP& pp, con
     }
     // do standard stars,going through priority classes from least to most
     // skip SS and SF, so start at size -3
+    //can get all available SS,SF on plate from P[j].av_gals_plate restricting to plate p
     for(int c=M.priority_list.size()-3;c>-1;--c ){
         for(int k=0;k<F.Nfiber;++k){
             int petal=pp.spectrom[k];
@@ -395,9 +396,6 @@ void new_replace( int j, int p, const MTL& M, const Plates& P, const PP& pp, con
         erase(0,fibskind);
     }
 }
-
-
-
 
 
 void assign_unused(int j, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) { // Tries to assign remaining fibers in tile j

@@ -47,6 +47,7 @@ int main(int argc, char **argv) {
     }
     printf(" \n");
     assign_priority_class(M);
+    //find available SS and SF galaxies on each petal
     
     std::vector <int> count_class(M.priority_list.size(),0);
     for(int i;i<M.size();++i){

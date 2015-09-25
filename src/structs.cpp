@@ -276,14 +276,24 @@ dpair PP::coords(int k) const {// x and y in mm
 
 // plate ---------------------------------------------------------------------------
 
-List plate::av_gals_plate(const Feat& F) const {//list of galaxies available to plate no repetitions
+List plate::av_gals_plate(const Feat& F,const MTL& M, const PP& pp) const {//list of galaxies available to plate no repetitions
 	List gals = initList(F.Ngal);
 	List L = initList(0);
+    Table SS_av_gal;
+    Table SF_av_gal;
 	for (int k=0; k<F.Nfiber; k++) {
 		for (int i=0; i<av_gals[k].size(); i++) {
 			if (gals[av_gals[k][i]] == 0) {
 				gals[av_gals[k][i]] = 1;
 				L.push_back(i);
+                if(M[i].priority_class==99){
+                    int p=pp.spectrom[k];
+                    SS_av_gal[p].push.back(i);
+                }
+                if(M[i].priority_class==98){
+                    int p=pp.spectrom[k];
+                    SF_av_gal[p].push.back(i);
+                }
 			}
 		}
 	}

@@ -84,7 +84,8 @@ class plate {
 	int ipass; // Pass
 	Table av_gals; // av_gals[k] : available galaxies of fiber k
 	List density; // density[k] is the weighted number of objects available to (j,k)
-
+    Table SS_av_gal;//SS_av_gals[p] are available standard stars on petal p of this plate
+    Table SF_av_gal;
 
 	List av_gals_plate(const Feat& F) const; // Av gals of the plate
 };
