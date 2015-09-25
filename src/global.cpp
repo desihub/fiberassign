@@ -369,8 +369,8 @@ void new_replace( int j, int p, const MTL& M, const Plates& P, const PP& pp, con
     // do standard stars,going through priority classes from least to most
     // skip SS and SF, so start at size -3
     //can get all available SS,SF on plate from P[j].av_gals_plate restricting to plate p
-
-    for(int c=M.priority_list.size()-3;c>-1;--c ){//try to do this for lowest priority
+    
+    for(int c=M.priority_list.size()-3&&SS_in_petal[p]<F.MaxSS;c>-1;--c ){//try to do this for lowest priority
         std::vector <int> gals=P[j].SS_av_gal[p]; //standard stars on this plate
         for(int gg=0;gg<gals.size();++gg){//what tfs for this SS?  M[g].av_tfs
             int g=gals[gg];
@@ -382,11 +382,13 @@ void new_replace( int j, int p, const MTL& M, const Plates& P, const PP& pp, con
                     A.unassign(j,k,g_old,M,P,pp);
                     assign_galaxy(g_old,M,P,pp,F,A);//try to assign
                     A.assign(j,k,g,M,P,pp);
+                    SS_in_petal[p]+=1;
                 }
             }
          }
     }
-            
+    
+    
 /*
     int m = A.nkind(j,p,new_kind,M,P,pp,F,true);//number of new_kind already on this petal
     List fibskindd;
