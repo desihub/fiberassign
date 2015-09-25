@@ -345,7 +345,7 @@ void replace(List old_kind, int new_kind, int j, int p, const MTL& M, const Plat
 		erase(0,fibskind);
 	}
 }
-*/
+*//*
 void new_replace( int j, int p, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
     //make sure there are enough standard stars and sky fibers on each petal p in plate j
     //special priorities for SS 99  and SF  98
@@ -397,7 +397,7 @@ void new_replace( int j, int p, const MTL& M, const Plates& P, const PP& pp, con
     }
 }
 
-
+*/
 void assign_unused(int j, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) { // Tries to assign remaining fibers in tile j
                                                                                                         //even taking objects observed later
 	for (int k=0; k<F.Nfiber; k++) {
