@@ -67,7 +67,7 @@ class MTL : public std::vector<struct target> {
 MTL make_MTL(const Gals& G, const Feat& F);
 
 void assign_priority_class(MTL & M);
-
+// petal--------------------------------------------------
 
 // Plate -------------------------------------------------
 struct onplate { // The position of a galaxy in plate coordinates

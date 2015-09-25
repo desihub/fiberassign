@@ -206,7 +206,6 @@ void assign_priority_class(MTL& M){
 }
 
 
-
 // PP ----------------------------------------------------------------------------
 // Read the positions of the fibers on each plate.  Assumes the format
 // of fiberpos.txt produced by "F.Randomize_fibers".
@@ -276,7 +275,7 @@ dpair PP::coords(int k) const {// x and y in mm
 }
 
 // plate ---------------------------------------------------------------------------
-
+/*
 List plate::av_gals_plate(const Feat& F) const {//list of galaxies available to plate no repetitions
 	List gals = initList(F.Ngal);
 	List L = initList(0);
@@ -290,6 +289,7 @@ List plate::av_gals_plate(const Feat& F) const {//list of galaxies available to 
 	}
 	return L;
 }
+*/
 
 
 // Plates ---------------------------------------------------------------------------
