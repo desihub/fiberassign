@@ -373,10 +373,10 @@ void new_replace( int j, int p, const MTL& M, const Plates& P, const PP& pp, con
     for(int c=M.priority_list.size()-3;c>-1;--c ){//try to do this for lowest priority
         std::vector <int> gals=P[j].SS_av_gal[p]; //standard stars on this plate
         for(int gg=0;gg<gals.size();++gg){//what tfs for this SS?  M[g].av_tfs
-            target g=M[gg]
+            target g=M[gg];
             Plist tfs=M[gals[g]].av_tfs;
             for(int i;i<tfs.size();++i){
-                int k=tfs.s
+                int k=tfs.s;
                 galaxy g_old=A.TF[j][k];
                 if (pp.spectrom[k]==p && g.priority_class==c){//right petal, right priority
                     A.unassign(j,k,g_old,M,P,pp);
