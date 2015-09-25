@@ -376,7 +376,7 @@ void new_replace( int j, int p, const MTL& M, const Plates& P, const PP& pp, con
             target g=M[gg];
             Plist tfs=g.av_tfs;
             for(int i;i<tfs.size();++i){
-                int k=tfs.s;
+                int k=tfs[i].s;
                 galaxy g_old=A.TF[j][k];
                 if (pp.spectrom[k]==p && g.priority_class==c){//right petal, right priority
                     A.unassign(j,k,g_old,M,P,pp);
