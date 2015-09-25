@@ -393,7 +393,7 @@ void new_replace( int j, int p, const MTL& M, const Plates& P, const PP& pp, con
             }
         }
         erase(0,fibskind);
-    }}
+    }
 }
 
 
