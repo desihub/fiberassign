@@ -354,7 +354,7 @@ void replace(List old_kind, int new_kind, int j, int p, const MTL& M, const Plat
 		erase(0,fibskind);
 	}
 }
-*//*
+*/
 void new_replace( int j, int p, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
     //make sure there are enough standard stars and sky fibers on each petal p in plate j
     //special priorities for SS 99  and SF  98
@@ -369,17 +369,25 @@ void new_replace( int j, int p, const MTL& M, const Plates& P, const PP& pp, con
     // do standard stars,going through priority classes from least to most
     // skip SS and SF, so start at size -3
     //can get all available SS,SF on plate from P[j].av_gals_plate restricting to plate p
-    for(int c=M.priority_list.size()-3;c>-1;--c ){
-        for(int k=0;k<F.Nfiber;++k){
-            int petal=pp.spectrom[k];
-            if(F.MaxSF-SF_in_petal[petal]>0){//need more SF in this petal
-                //find all SF, SS on this petal
+
+    for(int c=M.priority_list.size()-3;c>-1;--c ){//try to do this for lowest priority
+        std::vector <int> gals=P[j].SS_av_gal[p]; //standard stars on this plate
+        for(int gg=0;gg<gals.size();++gg){//what tfs for this SS?  M[g].av_tfs
+            target g=M[gg]
+            Plist tfs=M[gals[g]].av_tfs;
+            for(int i;i<tfs.size();++i){
+                int k=tfs.s
+                galaxy g_old=A.TF[j][k];
+                if (pp.spectrom[k]==p && g.priority_class==c){//right petal, right priority
+                    A.unassign(j,k,g_old,M,P,pp);
+                    assign_galaxy(g_old,M,P,pp,F,A);//try to assign
+                    A.assign(j,k,gals[g],M,P,pp);
+                }
             }
-            
-        }
+         }
     }
             
-            
+/*
     int m = A.nkind(j,p,new_kind,M,P,pp,F,true);//number of new_kind already on this petal
     List fibskindd;
     for (int i=0; i<old_kind.size(); i++) addlist(fibskindd,A.fibs_of_kind(old_kind[i],j,p,M,pp,F));//list of fibers on tile j assigned to galaxies of types old_kind
@@ -404,9 +412,10 @@ void new_replace( int j, int p, const MTL& M, const Plates& P, const PP& pp, con
         }
         erase(0,fibskind);
     }
+ */
 }
 
-*/
+
 void assign_unused(int j, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) { // Tries to assign remaining fibers in tile j
                                                                                                         //even taking objects observed later
 	for (int k=0; k<F.Nfiber; k++) {
