@@ -87,7 +87,7 @@ class plate {
     Table SS_av_gal;//SS_av_gals[p] are available standard stars on petal p of this plate
     Table SF_av_gal;
 
-	List av_gals_plate(const Feat& F) const; // Av gals of the plate
+	List av_gals_plate(const Feat& F, const MTL& M,const PP& pp) const; // Av gals of the plate
 };
 class Plates : public std::vector<struct plate> {};
 
