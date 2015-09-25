@@ -378,7 +378,7 @@ void new_replace( int j, int p, const MTL& M, const Plates& P, const PP& pp, con
             for(int i;i<tfs.size();++i){
                 int k=tfs[i].s;
                 int g_old=A.TF[j][k];
-                if (pp.spectrom[k]==p && g.priority_class==c){//right petal, right priority
+                if (pp.spectrom[k]==p && M[g].priority_class==c){//right petal, right priority
                     A.unassign(j,k,g_old,M,P,pp);
                     assign_galaxy(g_old,M,P,pp,F,A);//try to assign
                     A.assign(j,k,g,M,P,pp);
