@@ -60,7 +60,7 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
                             int p=pp.spectrom[k];
                             SS_av_gal[p].push.back(gals[g]);
                         }
-                        if(M[gals]g]].priority_class==98){
+                        if(M[gals[g]].priority_class==98){
                             int p=pp.spectrom[k];
                             SF_av_gal[p].push.back(gals[g]);
                         }
