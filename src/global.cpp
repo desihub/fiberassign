@@ -352,8 +352,8 @@ void new_replace( int j, int p, const MTL& M, const Plates& P, const PP& pp, con
     //first do SS count SS in each petal
     std::vector<int> SS_in_petal(10,0), SF_in_petal(10,0);
     
-    for(int k;k<F.Nfibers;++k){
-        int g=TF[j][k];
+    for(int k;k<F.Nfiber;++k){
+        int g=A.TF[j][k];
         if(M[g].t_priority==99){SS_in_petal[pp.spectrom[k]]+=1;}
         if(M[g].t_priority==98){SF_in_petal[pp.spectrom[k]]+=1;}
     }
@@ -364,7 +364,8 @@ void new_replace( int j, int p, const MTL& M, const Plates& P, const PP& pp, con
             int petal=pp.spectrom[k];
             if(F.MaxSF-SF_in_petal[petal]>0){//need more SF in this petal
                 //find all SF, SS on this petal
-                
+            }
+            
         }
     }
             
@@ -392,7 +393,7 @@ void new_replace( int j, int p, const MTL& M, const Plates& P, const PP& pp, con
             }
         }
         erase(0,fibskind);
-    }
+    }}
 }
 
 
