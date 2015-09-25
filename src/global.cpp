@@ -374,7 +374,7 @@ void new_replace( int j, int p, const MTL& M, const Plates& P, const PP& pp, con
         std::vector <int> gals=P[j].SS_av_gal[p]; //standard stars on this plate
         for(int gg=0;gg<gals.size();++gg){//what tfs for this SS?  M[g].av_tfs
             int g=gals[gg];
-            Plist tfs=g.av_tfs;
+            Plist tfs=M[g].av_tfs;
             for(int i;i<tfs.size();++i){
                 int k=tfs[i].s;
                 int g_old=A.TF[j][k];
