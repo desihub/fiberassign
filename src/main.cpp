@@ -114,7 +114,7 @@ int main(int argc, char **argv) {
 
     simple_assign(M,P,pp,F,A);
     // diagnostic
-    int count_by_class(M.priority_list.size(),0);
+    std::vector<int> count_by_class(M.priority_list.size(),0);
     for (int j=0;j<F.Nplate;++j){
         for(int k=0;k<F.Nfiber;++k){
             int g=A.TF[j][k];
