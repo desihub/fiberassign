@@ -118,11 +118,11 @@ int main(int argc, char **argv) {
     for (int j=0;j<F.Nplate;++j){
         for(int k=0;k<F.Nfiber;++k){
             int g=A.TF[j][k];
-            if(g!=-1){count_by_class[M[g].Priority_class]+=1;
+            if(g!=-1){count_by_class[M[g].priority_class]+=1;
             }
         }
     }
-    for(int i=0,i<M.priority_list.size();++i){
+    for(int i=0;i<M.priority_list.size();++i){
         printf(" i  %d    number  %d \n",count_by_class[i]):;
     }
     
