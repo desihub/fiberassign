@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
         }
     }
     for(int i=0;i<M.priority_list.size();++i){
-        printf(" i  %d    number  %d \n",count_by_class[i]):;
+        printf(" i  %d    number  %d \n",count_by_class[i]);
     }
     
     //end diagnostic
