@@ -45,6 +45,6 @@ From the top directory (for example), you can run with:
 On edison.nersc.gov, you can use the PBS script in the "scripts"
 directory:
 
-    $> qsub scripts/run_nersc.job
+    $> qsub script/run
 
 
