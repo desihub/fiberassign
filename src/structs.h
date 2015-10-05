@@ -55,13 +55,13 @@ class target {
     public:
     int id, nobs_remain;
     double nhat[3];
-    double ra, dec, t_priority;
-    int SS,SF,lastpass, priority_class;
+    double ra, dec;
+    int SS,SF,lastpass, priority_class, t_priority;
     Plist av_tfs;
 };
 class MTL : public std::vector<struct target> {
     public:
-    std::vector<double> priority_list;
+    std::vector<int> priority_list;
 };
 
 MTL make_MTL(const Gals& G, const Feat& F);
