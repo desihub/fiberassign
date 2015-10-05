@@ -174,8 +174,8 @@ MTL make_MTL(const Gals& G, const Feat& F){
         targ.dec=G[i].dec;
         targ.t_priority=F.prio[G[i].id];
         targ.nobs_remain=F.goal[G[i].id];//needs to be goal prior to knowledge!!
-        targ.SS=F.SS[G[i].id];
-        targ.SF=F.SF[G[i].id];
+        //targ.SS=F.SS[G[i].id];
+        //targ.SF=F.SF[G[i].id];
 
         targ.lastpass=F.lastpass[G[i].id];
         //make list of priorities
