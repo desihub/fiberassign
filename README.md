@@ -47,4 +47,14 @@ directory:
 
     $> qsub script/run
 
+This uses the file features.txt to define the input files, the priorities of the various galaxy types, etc.
+
+An analogous system is in place for a prototype bright time survey:
+
+   $> qsub script/run_bright_time
+
+which uses bright_time_features.txt.  This uses as one of the input
+files, mocks provided by Jeremy Tinker.  At present, there is no
+provision here for standard stars or sky fibers.
+
 
