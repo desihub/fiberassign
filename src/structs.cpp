@@ -118,7 +118,7 @@ Gals read_galaxies_ascii(const Feat& F)
     }
     int oid=0;
     while (fs.eof()==0) {
-        double ra,dec,priority,redshift;  int nobs;
+        double ra,dec,redshift;  int nobs,priority;
         std::istringstream(buf) >> ra >> dec >> redshift >> priority >> nobs ;
         // use priority as proxy for id
         if (ra<   0.) {ra += 360.;}
@@ -181,7 +181,7 @@ MTL make_MTL(const Gals& G, const Feat& F){
         //make list of priorities
         bool in=false;
         for (int j=0;j<M.priority_list.size();++j){
-            if(std::abs(targ.t_priority-M.priority_list[j])<0.001){in=true;
+            if(targ.t_priority==M.priority_list[j]){in=true;
             }
         }
         if(!in){
@@ -199,7 +199,7 @@ void assign_priority_class(MTL& M){
     //this needs to be updated
     for(int i=0;i<M.size();++i){
         for(int j=0;j<M.priority_list.size();++j){
-            if(std::abs(M[i].t_priority-M.priority_list[j])<0.001){
+            if(M[i].t_priority==M.priority_list[j]){
                 M[i].priority_class=j;}
         }
     }
