@@ -99,8 +99,8 @@ void Feat::readInputFile(const char file[]) {
 			}
             if (tok[0]=="prio")  for (int i=0; i<Categories; i++){
                 prio.push_back(s2i(tok[i+1]));
-                printf(" %8.4f ", s2i(tok[i+1]   ));
-                printf(" %8.4f \n",prio[i]);
+                printf(" %8.4d ", s2i(tok[i+1]   ));
+                printf(" %8.4d \n",prio[i]);
                     }
 			if (tok[0]=="priopost") for (int i=0; i<Categories; i++) priopost.push_back(s2i(tok[i+1]));
 			if (tok[0]=="goal") for (int i=0; i<Categories; i++) goal.push_back(s2i(tok[i+1]));

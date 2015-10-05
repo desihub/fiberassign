@@ -43,7 +43,7 @@ int main(int argc, char **argv) {
     // make MTL
     MTL M=make_MTL(G,F);
     for(int i=0;i<M.priority_list.size();++i){
-        printf(" priority   %f",M.priority_list[i]);
+        printf(" priority   %d",M.priority_list[i]);
     }
     printf(" \n");
     assign_priority_class(M);
