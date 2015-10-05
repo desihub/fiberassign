@@ -26,8 +26,8 @@ class Feat { // F for features
 	str outDir;
 	bool Output;
 
-	Dlist prio; // Priorities
-	Dlist priopost; // Priorities when we know the kind
+	List prio; // Priorities  int
+	List priopost; // Priorities when we know the kind int
 	List goal;
     List goalpost;
     List SS;
