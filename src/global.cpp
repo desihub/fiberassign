@@ -120,7 +120,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
 		int g = av_gals[gg];
 		int m = M[g].nobs_remain; //defaults to nobsv_tmp		// Check whether it needs further observation
 		if (m>=1) {
-            double prio = M[g].t_priority;
+            int prio = M[g].t_priority;
             //printf("g %d gg %d  m  %d  j  %d  k  %d \n", g,gg,m,j,k );
 			// Takes it if better priority, or if same, if it needs more observations, so shares observations if two QSOs are close
 			if (prio<pbest || (prio==pbest && m>mbest)) {
@@ -182,7 +182,7 @@ inline int assign_fiber_to_ss_sf(int j, int k, const MTL& M, const Plates& P, co
 	for (int gg=0; gg<av_gals.size(); gg++) {
 		int g = av_gals[gg];
 		
-		double prio = M[g].t_priority;
+		int prio = M[g].t_priority;
         if (((M[g].SF && A.nkind(j,k,F.ids.at("SF"),M,P,pp,F)<F.MaxSF) || M[g].SS && A.nkind(j,k,F.ids.at("SS"),M,P,pp,F)<F.MaxSS) && prio<pbest) { // Optimizes this way
 			if (A.is_assigned_jg(j,g,M,F)==-1 && A.find_collision(j,k,g,pp,M,P,F)==-1) {//nmo collision, not assigned to this plate
 				best = g;
@@ -218,7 +218,7 @@ inline int improve_fiber(int begin, int next, int j, int k, const MTL& M, const 
 							int best = find_best(jp,kp,M,P,pp,F,A); // best!=g because !A.assigned_pg(best)
 
 							if (best!=-1 && (A.is_assigned_jg(j,g,M,F)==-1 || jp==j)) {
-								double prio = M[g].t_priority;
+								int prio = M[g].t_priority;
 								int m = M[g].nobs_remain;
 								int unused = A.unused[jp][pp.spectrom[kp]]; // We take the most unused
 								if (prio<pb || (prio==pb && m>mb) || (prio==pb && m==mb && unused>unusedb)) {
@@ -427,7 +427,7 @@ void assign_unused(int j, const MTL& M, const Plates& P, const PP& pp, const Fea
 			for (int gg=0; gg<av_gals.size(); gg++) {
 				int g = av_gals[gg];
 				int m = M[g].nobs_remain;
-				double prio = M[g].t_priority;
+				int prio = M[g].t_priority;
 				if (prio<pbest || (prio==pbest && m>mbest)) { // Less elegant to compute it here but optimizes
 					if (A.is_assigned_jg(j,g,M,F)==-1 && ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)) {//not assigned this plate or within excluded interval
 						for (int i=0; i<A.GL[g].size(); i++) { //GL[g].size() is number of tf that could look a g
