@@ -56,11 +56,11 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
 					dpair Xg = projection(gals[g],j,M,P);
                     if (sq(Xg,X)<sq(F.PatrolRad)){
                         P[j].av_gals[k].push_back(gals[g]);
-                        if(M[gals[g]].priority_class==99){
+                        if(M[gals[g]].priority_class==9900){
                             int p=pp.spectrom[k];
                             P[j].SS_av_gal[p].push_back(gals[g]);
                         }
-                        if(M[gals[g]].priority_class==98){
+                        if(M[gals[g]].priority_class==9800){
                             int p=pp.spectrom[k];
                             P[j].SF_av_gal[p].push_back(gals[g]);
                         }
@@ -113,7 +113,7 @@ inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const MTL& M
 // Null list means you can take all possible kinds, otherwise you can only take, for the galaxy, a kind among this list
 // Not allowed to take the galaxy of id no_g
 inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, int no_g=-1, List kind=Null()) {
-	int best = -1; int mbest = -1; double pbest = 1e3;
+	int best = -1; int mbest = -1; int pbest = 10000;
 	List av_gals = P[j].av_gals[k];
 	// For all available galaxies
 	for (int gg=0; gg<av_gals.size(); gg++) {
@@ -177,7 +177,7 @@ inline void assign_galaxy(int g, const MTL& M, const Plates& P, const PP& pp, co
 // Tries to assign (j,k) to a SS (preferentially because they have priority) or a SF
 // no limit on the number of times a SS or SF can be observed
 inline int assign_fiber_to_ss_sf(int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
-	int best = -1; double pbest = 1e3;
+	int best = -1; int pbest = 10000;
 	List av_gals = P[j].av_gals[k];
 	for (int gg=0; gg<av_gals.size(); gg++) {
 		int g = av_gals[gg];
@@ -422,7 +422,7 @@ void assign_unused(int j, const MTL& M, const Plates& P, const PP& pp, const Fea
                                                                                                         //even taking objects observed later
 	for (int k=0; k<F.Nfiber; k++) {
 		if (!A.is_assigned_tf(j,k)) {
-			int best = -1; int mbest = -1; double pbest = 1e3; int jpb = -1; int kpb = -1;
+			int best = -1; int mbest = -1; int pbest = 10000; int jpb = -1; int kpb = -1;
 			List av_gals = P[j].av_gals[k];//all available galaxies for this fiber k
 			for (int gg=0; gg<av_gals.size(); gg++) {
 				int g = av_gals[gg];
