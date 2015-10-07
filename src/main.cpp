@@ -134,11 +134,18 @@ int main(int argc, char **argv) {
         obsrv[c][m]++; //
     }
     for (int c=0;c<F.Categories;++c){
+        int tot=0;
         for (int m=0;m<MaxObs+1;++m){
-            printf( " %d  ",obsrv[c][m]);
+            tot+=obsrv[c][m];
+        }
+        for (int m=0;m<MaxObs+1;++m){
+            double ratio=float(obsrv[c][m])/float(tot);
+            printf("   %f  ",ratio);
         }
         printf("\n");
     }
+    
+    
     //end diagnostic
 	print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
                                     // Want to have even distribution of unused fibers
