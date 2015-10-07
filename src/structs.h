@@ -114,8 +114,8 @@ class Assignment {
 	//// ----- Methods
 	Assignment(const MTL& M, const Feat& F);
 	~Assignment();
-	void assign(int j, int k, int g, const MTL& M, const Plates& P, const PP& pp);
-	void unassign(int j, int k, int g, const MTL& M, const Plates& P, const PP& pp);
+	void assign(int j, int k, int g,  MTL& M, const Plates& P, const PP& pp);
+	void unassign(int j, int k, int g, MTL& M, const Plates& P, const PP& pp);
 	int find_collision(int j, int k, int g, const PP& pp, const MTL& M, const Plates& P, const Feat& F, int col=-1) const;
 	bool find_collision(int j, int k, int kn, int g, int gn, const PP& pp, const MTL& M, const Plates& P, const Feat& F, int col=-1) const;
 	int is_collision(int j, int k, const PP& pp, const MTL& M, const Plates& P, const Feat& F) const;

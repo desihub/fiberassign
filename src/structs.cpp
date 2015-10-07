@@ -386,7 +386,7 @@ Assignment::Assignment(const MTL& M, const Feat& F) {
 Assignment::~Assignment() {}
 
 // Assign g with tile/fiber (j,k), and check for duplicates
-void Assignment::assign(int j, int k, int g, const MTL& M, const Plates& P, const PP& pp) {
+void Assignment::assign(int j, int k, int g, MTL& M, const Plates& P, const PP& pp) {
 	// Assign (j,k)
 	int q = TF[j][k];
 	if (q != -1) {
