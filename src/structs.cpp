@@ -412,7 +412,7 @@ void Assignment::assign(int j, int k, int g, const MTL& M, const Plates& P, cons
 	unused[j][pp.spectrom[k]]--;
 }
 
-void Assignment::unassign(int j, int k, int g, const MTL& M, const Plates& P, const PP& pp) {
+void Assignment::unassign(int j, int k, int g, MTL& M, const Plates& P, const PP& pp) {
 	if (TF[j][k]==-1) printf("### !!! ### TF (j,k) = (%d,%d) gets unassigned but was already not assigned\n",j,k);
 	int a = isfound(pair(j,k),GL[g]);
 	if (a==-1) printf("### !!! ### Galaxy g = %d gets unassigned but was already not assigned\n",g);
