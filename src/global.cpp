@@ -359,7 +359,7 @@ void replace(List old_kind, int new_kind, int j, int p, const MTL& M, const Plat
 	}
 }
 */
-void new_replace( int j, int p, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
+void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
     //make sure there are enough standard stars and sky fibers on each petal p in plate j
     //special priorities for SS 99  and SF  98
     //first do SS count SS in each petal
