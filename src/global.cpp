@@ -650,12 +650,10 @@ void display_results(str outdir, const MTL& M, const Plates& P, const PP& pp, Fe
 	int MaxObs = max(F.goal);
 	Table obsrv = initTable(F.Categories,MaxObs+1);
 
-	for (int g=0; g<F.Ngal; g++) {
-		int id = M[g].id;
-		int m = M[g].nobs_remain;//remaining observations needed
-		if (!(m>=0 && m<=MaxObs)) F.Count++;
-		int n = F.goal[id]-m;
-		if (n>=0 && n<=MaxObs) obsrv[id][n]++; // Some SS and SF are obs 6 or 7 times !
+	for (int g=0; g<M.size(); g++) {
+		int c= M[g].priority_class;
+		int m = M[g].nobs_done;
+        obsrv[c][m]++; //
 	}
 
 	// Add the 3 columns of tot, fibs, obs
