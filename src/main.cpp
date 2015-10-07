@@ -128,12 +128,12 @@ int main(int argc, char **argv) {
     int MaxObs = max(F.goal);
     Table obsrv = initTable(F.Categories,MaxObs+1);
     
-    for (int g=0; g<M.size(); g++) {
-        int c= M[g].priority_class;
+    for (int g=0; g<G.size(); g++) {
+        int c= G[g].id;
         int m = M[g].nobs_done;
         obsrv[c][m]++; //
     }
-    for (int c=0;c<M.priority_list.size();++c){
+    for (int c=0;c<F.Categories;++c){
         for (int m=0;m<MaxObs+1;++m){
             printf( " %d  ",obsrv[c][m]);
         }
