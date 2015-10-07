@@ -501,7 +501,7 @@ void assign_sf_ss(int j, const MTL& M, const Plates& P, const PP& pp, const Feat
 // For each petal, assign QSOs, LRGs, ELGs, ignoring SS and SF.
 
 
-void redistribute_tf(const MTL& M, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int next) {
+void redistribute_tf(MTL& M, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int next) {
 	Time t;
 	if (next!=1) init_time(t,"# Begin redistribute TF :");
 	int j0 = A.next_plate;
