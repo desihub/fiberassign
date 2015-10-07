@@ -145,7 +145,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
 }
 
 // Tries to assign the fiber (j,k)
-inline int assign_fiber(int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int no_g=-1, List kind=Null()) {
+inline int assign_fiber(int j, int k, MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int no_g=-1, List kind=Null()) {
 	if (A.is_assigned_tf(j,k)) return -1;
 	int best = find_best(j,k,M,P,pp,F,A,no_g,kind);
 	if (best!=-1) A.assign(j,k,best,M,P,pp);
@@ -156,7 +156,7 @@ inline int assign_fiber(int j, int k, const MTL& M, const Plates& P, const PP& p
 //default jstart is as A.next_plate
 //default size is number of plates to go
 //used only in replace
-inline void assign_galaxy(int g, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int jstart=-1, int size=-1) {
+inline void assign_galaxy(int g,  MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int jstart=-1, int size=-1) {
 	int j0 = (jstart==-1) ? A.next_plate : jstart;
 	int n = (size==-1) ? F.Nplate-j0 : size;// number of plates to do
 	int jb = -1; int kb = -1; int unusedb = -1;
@@ -178,7 +178,7 @@ inline void assign_galaxy(int g, const MTL& M, const Plates& P, const PP& pp, co
 
 // Tries to assign (j,k) to a SS (preferentially because they have priority) or a SF
 // no limit on the number of times a SS or SF can be observed
-inline int assign_fiber_to_ss_sf(int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
+inline int assign_fiber_to_ss_sf(int j, int k, MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
 	int best = -1; int pbest = 10000;
 	List av_gals = P[j].av_gals[k];
 	for (int gg=0; gg<av_gals.size(); gg++) {
@@ -198,7 +198,7 @@ inline int assign_fiber_to_ss_sf(int j, int k, const MTL& M, const Plates& P, co
 
 // Takes an unassigned fiber and tries to assign it with the "improve" technique described in the doc
 // not used for SS or SF   because it is used before we add SS and SF
-inline int improve_fiber(int begin, int next, int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int no_g=-1) {
+inline int improve_fiber(int begin, int next, int j, int k, MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int no_g=-1) {
 	if (!A.is_assigned_tf(j,k)) { // Unused tilefiber (j,k)
 		// tries to assign it in the conventional way to galaxy available to it
 		int g_try = assign_fiber(j,k,M,P,pp,F,A,no_g);
@@ -242,7 +242,7 @@ inline int improve_fiber(int begin, int next, int j, int k, const MTL& M, const 
 // Assign fibers naively
 // Not used at present
 
-void simple_assign(const MTL &M, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int next) {
+void simple_assign(MTL &M, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int next) {
 	Time t;
 	if (next!=1) init_time(t,"# Begin simple assignment :");
 	int j0 = A.next_plate;
@@ -264,7 +264,7 @@ void simple_assign(const MTL &M, const Plates& P, const PP& pp, const Feat& F, A
 	if (next!=1) print_time(t,"# ... took :");
 }
 
-void improve(const MTL& M, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int next) {
+void improve( MTL& M, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int next) {
 	Time t;
 	if (next!=1) init_time(t,"# Begin improve :");
 	int j0 = A.next_plate;

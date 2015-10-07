@@ -33,19 +33,19 @@ void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F);
 void simple_assign(const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int next=-1);
 
 // More fine first assignment plan, 
-void new_assign_fibers(const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int next=-1);
+void new_assign_fibers(MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int next=-1);
 
-void improve(const MTL& M, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int next=-1);
+void improve(MTL& M, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int next=-1);
 
-void improve_from_kind(const MTL& M, const Plates&P, const PP& pp, const Feat& F, Assignment& A, str kind, int next=-1);
+void improve_from_kind(MTL& M, const Plates&P, const PP& pp, const Feat& F, Assignment& A, str kind, int next=-1);
 
 void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int end);
 
-void redistribute_tf(const MTL& M, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int next=-1);
+void redistribute_tf(MTL& M, const Plates&P, const PP& pp, const Feat& F, Assignment& A, int next=-1);
 
-void assign_sf_ss(int j, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A);
+void assign_sf_ss(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A);
 
-void assign_unused(int j, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A);
+void assign_unused(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A);
 
 // Results functions --------------------------------------------------
 void results_on_inputs(str outdir, const MTL& M, const Plates& P, const Feat& F, bool latex=false);
