@@ -113,17 +113,17 @@ int main(int argc, char **argv) {
     printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.Nplate, F.Ngal, F.Nfiber);
 
     simple_assign(M,P,pp,F,A);
-    // diagnostic
-    std::vector<int> count_by_class(M.priority_list.size(),0);
+    // diagnostic  allow us to peek at the actual id of each galaxy
+    std::vector<int> count_by_kind(F.Categories,0);
     for (int j=0;j<F.Nplate;++j){
         for(int k=0;k<F.Nfiber;++k){
             int g=A.TF[j][k];
-            if(g!=-1){count_by_class[M[g].priority_class]+=1;
+            if(g!=-1){count_by_kind[G[g].id]+=1;
             }
         }
     }
-    for(int i=0;i<M.priority_list.size();++i){
-        printf(" i  %d    number  %d \n",i,count_by_class[i]);
+    for(int i=0;i<F.Categories;++i){
+        printf(" i  %d    number  %d \n",i,count_by_kind[i]);
     }
     int MaxObs = max(F.goal);
     Table obsrv = initTable(F.Categories,MaxObs+1);
