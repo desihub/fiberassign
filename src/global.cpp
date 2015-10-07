@@ -422,7 +422,7 @@ void new_replace( int j, int p, const MTL& M, const Plates& P, const PP& pp, con
 }
 
 
-void assign_unused(int j, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) { // Tries to assign remaining fibers in tile j
+void assign_unused(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) { // Tries to assign remaining fibers in tile j
                                                                                                         //even taking objects observed later
 	for (int k=0; k<F.Nfiber; k++) {
 		if (!A.is_assigned_tf(j,k)) {
