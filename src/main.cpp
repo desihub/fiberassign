@@ -133,7 +133,7 @@ int main(int argc, char **argv) {
         int m = M[g].nobs_done;
         obsrv[c][m]++; //
     }
-    for (int c=0;c<M.priority_list.size(),++c){
+    for (int c=0;c<M.priority_list.size();++c){
         for (int m=0;m<MaxObs+1;++m){
             printf( " %d  ",obsrv[c][m]);
         }
