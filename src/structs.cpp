@@ -406,10 +406,8 @@ void Assignment::assign(int j, int k, int g, const MTL& M, const Plates& P, cons
 		}
 	}
 	GL[g].push_back(p);
-	// Kinds
-	//kinds[j][pp.spectrom[k]][M[g].id]++;
-
-	// Nobsv
+    M[g].nobs_done++;
+    M[g].nobs_remain--;
 
 	unused[j][pp.spectrom[k]]--;
 }
@@ -421,7 +419,8 @@ void Assignment::unassign(int j, int k, int g, const MTL& M, const Plates& P, co
 
 	TF[j][k] = -1;
 	if (a!=-1) erase(a,GL[g]);
-	//kinds[j][pp.spectrom[k]][M[g].id]--;
+    M[g].nobs_done--;
+    M[g].nobs_remain++;
 
 
 	unused[j][pp.spectrom[k]]++;
