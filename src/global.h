@@ -30,7 +30,7 @@ void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F);
 
 // Assignment functions ----------------------------------------------
 // First simple assignment plan, executing find_best on every plate on every fiber
-void simple_assign(const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int next=-1);
+void simple_assign(MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int next=-1);
 
 // More fine first assignment plan, 
 void new_assign_fibers(MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int next=-1);
