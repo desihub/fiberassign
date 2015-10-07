@@ -125,7 +125,20 @@ int main(int argc, char **argv) {
     for(int i=0;i<M.priority_list.size();++i){
         printf(" i  %d    number  %d \n",i,count_by_class[i]);
     }
+    int MaxObs = max(F.goal);
+    Table obsrv = initTable(F.Categories,MaxObs+1);
     
+    for (int g=0; g<M.size(); g++) {
+        int c= M[g].priority_class;
+        int m = M[g].nobs_done;
+        obsrv[c][m]++; //
+    }
+    for (int c=0;c<M.priority_list.size(),++c){
+        for (int m=0;m<MaxObs+1;++m){
+            printf( " %d  ",obsrv[c][m]);
+        }
+        printf("\n");
+    }
     //end diagnostic
 	print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
                                     // Want to have even distribution of unused fibers
