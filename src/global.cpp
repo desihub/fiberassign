@@ -294,6 +294,7 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
 		int g = A.TF[jpast][k];
         // Don't update SS or SF
         if (g!=-1&&M[g].t_priority!=9800 && M[g].t_priority!=9900){
+            printf("passes first cut\n");
             //initially nobs_remain==goal
             if(M[g].nobs_remain=F.goal[G[g].id]){//first obs
                 printf("first observation\n");
