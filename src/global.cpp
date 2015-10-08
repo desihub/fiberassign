@@ -453,6 +453,7 @@ void assign_unused(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, 
 			if (best!=-1) {
 				A.unassign(jpb,kpb,best,M,P,pp);
 				A.assign(j,k,best,M,P,pp);
+                printf("reassigned old jk %d %d new jk %d %d galaxy %d \n",jpb,kpb,j,k,best);
 			}
 		}
 	}
