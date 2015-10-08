@@ -174,7 +174,9 @@ int main(int argc, char **argv) {
 		
 		//printf(" %s not as - ",format(5,f(A.unused_f(j,F))).c_str()); fl();
 		// Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
+        printf("before update\n");
 		if (0<=j-F.Analysis) update_plan_from_one_obs(G,M,P,pp,F,A,F.Nplate-1); else printf("\n");
+        printf("after update \n");
 		A.next_plate++;
 		// Redistribute and improve on various occasions  add more times if desired
 
