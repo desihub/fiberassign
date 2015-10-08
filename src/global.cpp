@@ -290,29 +290,25 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
 	List to_update;
 	// Get the list of galaxies to update in the plan
 	for (int k=0; k<F.Nfiber; k++) {
-        printf(" updating j %d  k %d \n",jpast,k);
-		int g = A.TF[jpast][k];
+        		int g = A.TF[jpast][k];
         // Don't update SS or SF
         if (g!=-1&&M[g].t_priority!=9800 && M[g].t_priority!=9900){
-            printf("passes first cut\n");
+            
             //initially nobs_remain==goal
             if(M[g].nobs_remain=F.goal[G[g].id]){//first obs
-                printf("first observation\n");
-                if(F.goalpost[G[g].id]==1){//if only one obs needed
+                                if(F.goalpost[G[g].id]==1){//if only one obs needed
                     M[g].nobs_remain =0;
                     M[g].nobs_done=1;
-                    printf(" only one obs needed\n");
-                }
+                                    }
                 else{//more obs needed
                     M[g].nobs_remain-=1;
                     M[g].nobs_done+=1;
                     to_update.push_back(g);
-                    printf(" more obs needed\n");
+                    
                 }
             }
             else{//this isn't the first observation
-                printf("not first observation \n");
-                M[g].nobs_remain-=1;
+                                M[g].nobs_remain-=1;
                 M[g].nobs_done+=1;
             }
         }
