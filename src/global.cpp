@@ -429,11 +429,13 @@ void assign_unused(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, 
 			int best = -1; int mbest = -1; int pbest = 10000; int jpb = -1; int kpb = -1;
 			List av_gals = P[j].av_gals[k];//all available galaxies for this fiber k
 			for (int gg=0; gg<av_gals.size(); gg++) {
-				int g = av_gals[gg];
+				int g = av_gals[gg];//available galaxies
 				int m = M[g].nobs_remain;
 				int prio = M[g].t_priority;
-				if (prio<pbest || (prio==pbest && m>mbest)) { // Less elegant to compute it here but optimizes
+				if (prio<pbest || (prio==pbest && m>mbest)) {
+                    printf(" before A.is_assigned");
 					if (A.is_assigned_jg(j,g,M,F)==-1 && ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)) {//not assigned this plate or within excluded interval
+                        printf("after A.is_asssigned");
 						for (int i=0; i<A.GL[g].size(); i++) { //GL[g].size() is number of tf that could look a g
 							int jp = A.GL[g][i].f;
 							int kp = A.GL[g][i].s;
