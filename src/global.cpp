@@ -433,9 +433,9 @@ void assign_unused(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, 
 				int m = M[g].nobs_remain;
 				int prio = M[g].t_priority;
 				if (prio<pbest || (prio==pbest && m>mbest)) {
-                    printf(" before A.is_assigned");
+                    printf(" before A.is_assigned \n");
 					if (A.is_assigned_jg(j,g,M,F)==-1 && ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)) {//not assigned this plate or within excluded interval
-                        printf("after A.is_asssigned");
+                        printf("after A.is_asssigned  j %d  k %d  g %d\n",j,k,g);
 						for (int i=0; i<A.GL[g].size(); i++) { //GL[g].size() is number of tf that could look a g
 							int jp = A.GL[g][i].f;
 							int kp = A.GL[g][i].s;
