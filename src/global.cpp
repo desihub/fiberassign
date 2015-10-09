@@ -296,19 +296,19 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
             
             //initially nobs_remain==goal
             if(M[g].nobs_remain=F.goal[G[g].id]){//first obs
-                                if(F.goalpost[G[g].id]==1){//if only one obs needed
+                if(F.goalpost[G[g].id]==1){//if only one obs needed
                     M[g].nobs_remain =0;
                     M[g].nobs_done=1;
                                     }
                 else{//more obs needed
-                    M[g].nobs_remain-=1;
+                    M[g].nobs_remain1=F.goalpost[G[g].id]-1;
                     M[g].nobs_done+=1;
                     to_update.push_back(g);
                     
                 }
             }
             else{//this isn't the first observation
-                                M[g].nobs_remain-=1;
+                M[g].nobs_remain-=1;
                 M[g].nobs_done+=1;
             }
         }
