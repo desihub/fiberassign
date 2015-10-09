@@ -692,7 +692,7 @@ void display_results(str outdir, const MTL& M, const Plates& P, const PP& pp, Fe
 
 	// 1 Raw numbers of galaxies by id and number of remaining observations
 	int MaxObs = max(F.goal);
-	Table obsrv = initTable(F.Categories,MaxObs+1);
+	Table obsrv = initTable(F.Categories,100);
 
 	for (int g=0; g<M.size(); g++) {
 		int c= M[g].priority_class;
