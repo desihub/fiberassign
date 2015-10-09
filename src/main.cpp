@@ -167,16 +167,16 @@ int main(int argc, char **argv) {
 	init_time_at(time,"# Begin real time assignment",t);
 	for (int jj=0; jj<F.Nplate; jj++) {
 		int j = A.next_plate;
-		printf(" - Plate %d :\n",j);
+		
 		//assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF just before an observation
 		assign_unused(j,M,P,pp,F,A);
 		//if (j%2000==0) pyplotTile(j,"doc/figs",G,P,pp,F,A); // Picture of positioners, galaxies
 		
 		//printf(" %s not as - ",format(5,f(A.unused_f(j,F))).c_str()); fl();
 		// Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
-        printf("before update\n");
+        
 		if (0<=j-F.Analysis) update_plan_from_one_obs(G,M,P,pp,F,A,F.Nplate-1); else printf("\n");
-        printf("after update \n");
+     
 		A.next_plate++;
 		// Redistribute and improve on various occasions  add more times if desired
 
