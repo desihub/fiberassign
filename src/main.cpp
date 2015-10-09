@@ -113,7 +113,7 @@ int main(int argc, char **argv) {
     printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.Nplate, F.Ngal, F.Nfiber);
 
     simple_assign(M,P,pp,F,A);
-    diagnostic(M,G,F);
+    diagnostic(M,G,F,A);
     print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
                                     // Want to have even distribution of unused fibers
                                     // so we can put in sky fibers and standard stars
@@ -152,7 +152,7 @@ int main(int argc, char **argv) {
 			redistribute_tf(M,P,pp,F,A);
 			improve(M,P,pp,F,A);
 			redistribute_tf(M,P,pp,F,A);
-            diagnostic(M,G,F);
+            diagnostic(M,G,F,A);
 		}
 	}
 	print_time(time,"# ... took :");

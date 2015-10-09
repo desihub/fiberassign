@@ -655,7 +655,7 @@ void results_on_inputs(str outdir, const MTL& M, const Plates& P, const Feat& F,
 	print_mult_Dtable_latex("dn/dz",outdir+"redshifts.dat",hist3,intervalz);
 }
 
-void diagnostic(const MTL& M, const Gals& G, Feat& F){
+void diagnostic(const MTL& M, const Gals& G, Feat& F, const Assignment& A){
     // diagnostic  allow us to peek at the actual id of each galaxy
     std::vector<int> count_by_kind(F.Categories,0);
     for (int j=0;j<F.Nplate;++j){
