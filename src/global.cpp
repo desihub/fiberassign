@@ -655,6 +655,44 @@ void results_on_inputs(str outdir, const MTL& M, const Plates& P, const Feat& F,
 	print_mult_Dtable_latex("dn/dz",outdir+"redshifts.dat",hist3,intervalz);
 }
 
+void diagnostic(const MTL& M, const Gals& G, Feat& F){
+    // diagnostic  allow us to peek at the actual id of each galaxy
+    std::vector<int> count_by_kind(F.Categories,0);
+    for (int j=0;j<F.Nplate;++j){
+        for(int k=0;k<F.Nfiber;++k){
+            int g=A.TF[j][k];
+            if(g!=-1){count_by_kind[G[g].id]+=1;
+            }
+        }
+    }
+    for(int i=0;i<F.Categories;++i){
+        printf(" i  %d    number  %d \n",i,count_by_kind[i]);
+    }
+    int MaxObs = max(F.goal);
+    Table obsrv = initTable(F.Categories,MaxObs+1);
+    
+    for (int g=0; g<G.size(); g++) {
+        int c= G[g].id;
+        int m = M[g].nobs_done;
+        obsrv[c][m]++; //
+    }
+    for (int c=0;c<F.Categories;++c){
+        int tot=0;
+        for (int m=0;m<MaxObs+1;++m){
+            tot+=obsrv[c][m];
+        }
+        for (int m=0;m<MaxObs+1;++m){
+            double ratio=float(obsrv[c][m])/float(tot);
+            printf("   %f  ",ratio);
+        }
+        printf("\n");
+    }
+    
+    
+    //end diagnostic
+
+}
+
 void display_results(str outdir, const MTL& M, const Plates& P, const PP& pp, Feat& F, const Assignment& A, bool latex) {
 	printf("# Results :\n");
 

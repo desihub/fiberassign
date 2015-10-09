@@ -52,6 +52,8 @@ void results_on_inputs(str outdir, const MTL& M, const Plates& P, const Feat& F,
 
 void display_results(str outdir, const MTL& M, const Plates &P, const PP& pp, Feat& F, const Assignment& A, bool latex=false);
 
+void diagnostic(const MTL& M, const Gals& G, Feat& F);
+
 void write_FAtile_ascii(int j, str outdir, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A);
 
 void fa_write(int j, const char *filename, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A);
