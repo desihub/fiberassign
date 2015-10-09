@@ -148,7 +148,7 @@ int main(int argc, char **argv) {
 		A.next_plate++;
 		// Redistribute and improve on various occasions  add more times if desired
 
-		if ( j==2000 || j==4000) {
+		if ( j==1000 || j==4000) {
 			redistribute_tf(M,P,pp,F,A);
 			redistribute_tf(M,P,pp,F,A);
 			improve(M,P,pp,F,A);
