@@ -136,7 +136,7 @@ int main(int argc, char **argv) {
 		int j = A.next_plate;
 		
 		//assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF just before an observation
-		assign_unused(j,M,P,pp,F,A);
+		//assign_unused(j,M,P,pp,F,A);
 		//if (j%2000==0) pyplotTile(j,"doc/figs",G,P,pp,F,A); // Picture of positioners, galaxies
 		
 		//printf(" %s not as - ",format(5,f(A.unused_f(j,F))).c_str()); fl();
@@ -148,6 +148,7 @@ int main(int argc, char **argv) {
 		// Redistribute and improve on various occasions  add more times if desired
 
 		if ( j==2000 || j==4000) {
+            printf("  j == %d \n",j);
 			redistribute_tf(M,P,pp,F,A);
 			redistribute_tf(M,P,pp,F,A);
 			improve(M,P,pp,F,A);
