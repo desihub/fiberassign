@@ -293,13 +293,13 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
         		int g = A.TF[jpast][k];
         // Don't update SS or SF
         if (g!=-1&&M[g].t_priority!=9800 && M[g].t_priority!=9900){
-            if(j0%500==0){printf("updating j0 %d \n",j0);}
+            if(j0%500==0&&g%100==0){printf("updating j0 %d \n",j0);}
             //initially nobs_remain==goal
             if(M[g].nobs_remain=F.goal[G[g].id]){//first obs
                 if(F.goalpost[G[g].id]==1){//if only one obs needed
                     M[g].nobs_remain =0;
                     M[g].nobs_done=1;
-                        if(j0%500==0){printf("updating first obs only one needed \n");
+                        if(j0%500==0g%100==0)){printf("updating first obs only one needed \n");
                         }
                 }
             
@@ -307,14 +307,14 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
                     M[g].nobs_remain=F.goalpost[G[g].id]-1;
                     M[g].nobs_done+=1;
                     to_update.push_back(g);
-                    if(j0%500==0){printf("updating first obs more needed needed \n");
+                    if(j0%500==0g%100==0)){printf("updating first obs more needed needed \n");
                         }
                 }
             }
             else{//this isn't the first observation
                 M[g].nobs_remain-=1;
                 M[g].nobs_done+=1;
-                if(j0%500==0){printf("updating not first obs\n");
+                if(j0%500==0g%100==0)){printf("updating not first obs\n");
                 }
             }
         }
