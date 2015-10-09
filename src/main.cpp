@@ -134,6 +134,7 @@ int main(int argc, char **argv) {
 	init_time_at(time,"# Begin real time assignment",t);
 	for (int jj=0; jj<F.Nplate; jj++) {
 		int j = A.next_plate;
+        printf("  j == %d \n",j);
 		
 		//assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF just before an observation
 		//assign_unused(j,M,P,pp,F,A);
@@ -148,7 +149,6 @@ int main(int argc, char **argv) {
 		// Redistribute and improve on various occasions  add more times if desired
 
 		if ( j==2000 || j==4000) {
-            printf("  j == %d \n",j);
 			redistribute_tf(M,P,pp,F,A);
 			redistribute_tf(M,P,pp,F,A);
 			improve(M,P,pp,F,A);
