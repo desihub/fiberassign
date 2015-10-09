@@ -367,7 +367,7 @@ void update_plan_from_one_obs(const Gals& G, const Plates&P, const PP& pp, const
 		int g = A.TF[jpast][k];
 		// Only if once_obs, we delete all further assignment. obs!=obs_tmp means that the galaxy is a fake one for example (same priority but different goal)
 		if (g!=-1 && A.nobsv_tmp[g]!=A.nobsv[g] && A.once_obs[g]) to_update.push_back(g); //this galaxy g is a fake
-	}
+    }
 	// Update information on previously seen galaxies
 	A.update_nobsv_tmp_for_one(jpast,F);
 	// Update further in the plan
