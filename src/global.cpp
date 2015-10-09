@@ -663,7 +663,7 @@ void diagnostic(const MTL& M, const Gals& G, Feat& F, const Assignment& A){
         printf(" i  %d    number  %d \n",i,count_by_kind[i]);
     }
     int MaxObs = max(F.goal);
-    Table obsrv = initTable(F.Categories,MaxObs+1);
+    Table obsrv = initTable(F.Categories,100);
     
     for (int g=0; g<G.size(); g++) {
         int c= G[g].id;
