@@ -681,7 +681,7 @@ void diagnostic(const MTL& M, const Gals& G, Feat& F, const Assignment& A){
         }
         printf("\n");
     }
-    
+    printf("done with diagnostic\n");
     
     //end diagnostic
 
