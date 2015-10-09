@@ -287,7 +287,6 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
 	if (jpast<0) { printf("ERROR in update : jpast negative\n"); fl(); }
 	int n = end-j0+1;
 	int na_start(A.na(F,j0,n));
-    printf(" plate number %d \n",j0);
 	List to_update;
 	// Get the list of galaxies to update in the plan
 	for (int k=0; k<F.Nfiber; k++) {
