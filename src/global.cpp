@@ -319,7 +319,7 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
                 //}
             }
         }
-    
+    }
 	// Update further in the plan
 	for (int gg=0; gg<to_update.size(); gg++) {
 		int g = to_update[gg];
@@ -337,7 +337,7 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
     }
 	int na_end(A.na(F,j0,n));
 	//printf(" %4d unas & %4d replaced\n",cnt,na_end-na_start+cnt); fl();
-    }
+    
 }
 
 // If not enough SS and SF, remove old_kind an replace to SS-SF (new_kind) on petal (j,p)
