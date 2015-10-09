@@ -302,16 +302,15 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
                         if(j0%500==0){printf("updating first obs only one needed \n");
                         }
                 }
+            
+                else{//more obs needed
+                    M[g].nobs_remain=F.goalpost[G[g].id]-1;
+                    M[g].nobs_done+=1;
+                    to_update.push_back(g);
+                    if(j0%500==0){printf("updating first obs more needed needed \n");
+                        }
+                }
             }
-            else{//more obs needed
-                M[g].nobs_remain=F.goalpost[G[g].id]-1;
-                M[g].nobs_done+=1;
-                to_update.push_back(g);
-                if(j0%500==0){printf("updating first obs more needed needed \n");
-                    }
-                   
-            }
-        
             else{//this isn't the first observation
                 M[g].nobs_remain-=1;
                 M[g].nobs_done+=1;
