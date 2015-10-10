@@ -687,7 +687,7 @@ void diagnostic(const MTL& M, const Gals& G, Feat& F, const Assignment& A){
 
 }
 
-void display_results(str outdir, const MTL& M, const Plates& P, const PP& pp, Feat& F, const Assignment& A, bool latex) {
+void display_results(str outdir, const Gals& G,const MTL& M, const Plates& P, const PP& pp, Feat& F, const Assignment& A, bool latex) {
 	printf("# Results :\n");
 
 	// 1 Raw numbers of galaxies by id and number of remaining observations
