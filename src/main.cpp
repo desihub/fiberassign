@@ -153,7 +153,7 @@ int main(int argc, char **argv) {
 			redistribute_tf(M,P,pp,F,A);
 			improve(M,P,pp,F,A);
 			redistribute_tf(M,P,pp,F,A);
-            diagnostic(M,G,F,A);
+            //diagnostic(M,G,F,A);
 		}
 	}
 	print_time(time,"# ... took :");
