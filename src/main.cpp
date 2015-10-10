@@ -160,7 +160,7 @@ int main(int argc, char **argv) {
 
 	// Results -------------------------------------------------------
 	if (F.Output) for (int j=0; j<F.Nplate; j++) write_FAtile_ascii(j,F.outDir,M,P,pp,F,A); // Write output
-	display_results("doc/figs/",M,P,pp,F,A,true);
+	display_results("doc/figs/",G,M,P,pp,F,A,true);
 	if (F.Verif) A.verif(P,M,pp,F); // Verification that the assignment is sane
 
 
