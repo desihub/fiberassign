@@ -695,7 +695,7 @@ void display_results(str outdir, const Gals& G,const MTL& M, const Plates& P, co
 	Table obsrv = initTable(F.Categories,MaxObs+1);
 
 	for (int g=0; g<M.size(); g++) {
-		int c= M[g].priority_class;
+		int c= G[g].id;
 		int m = min(M[g].nobs_done,MaxObs);
         obsrv[c][m]++; //
 	}
