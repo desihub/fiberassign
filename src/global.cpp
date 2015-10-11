@@ -145,7 +145,10 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
 inline int assign_fiber(int j, int k, MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int no_g=-1, List kind=Null()) {
 	if (A.is_assigned_tf(j,k)) return -1;
 	int best = find_best(j,k,M,P,pp,F,A,no_g,kind);
-	if (best!=-1) A.assign(j,k,best,M,P,pp);
+    int g=best;
+    if (g==5600000){printf ("** before assign g=%d remain %d  done %d  once_obs %d \n",g,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
+    if (best!=-1) A.assign(j,k,best,M,P,pp);
+    if (g==5600000){printf ("** after assign g=%d remain %d  done %d  once_obs %d \n",g,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
 	return best;
 }
 
