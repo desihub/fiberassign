@@ -192,7 +192,7 @@ MTL make_MTL(const Gals& G, const Feat& F){
         }
         std::sort(M.priority_list.begin(),M.priority_list.end());
         M.push_back(targ);
-        (if g==5600000){printf ("5600000  remain %d  done %d  once_obs %d \n",M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
+        if (g==5600000){printf ("5600000  remain %d  done %d  once_obs %d \n",M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
     }
     return M;
 }
