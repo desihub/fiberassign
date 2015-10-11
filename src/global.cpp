@@ -294,7 +294,8 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
         // Don't update SS or SF
         if (g!=-1&&M[g].t_priority!=9800 && M[g].t_priority!=9900){
             //initially nobs_remain==goal
-            if(M[g].nobs_remain=F.goal[G[g].id]){//first obs
+            if(M[g].once_obs==0){//first obs
+                M[g].once_obs=1;
                 if(F.goalpost[G[g].id]==1){//if only one obs needed
                     M[g].nobs_remain =0;
                     M[g].nobs_done=1;

@@ -56,7 +56,7 @@ class target {
     int id, nobs_remain, nobs_done;
     double nhat[3];
     double ra, dec;
-    int SS,SF,lastpass, priority_class, t_priority;
+    int SS,SF,lastpass, priority_class, t_priority, once_obs;
     Plist av_tfs;
 };
 class MTL : public std::vector<struct target> {
@@ -108,7 +108,7 @@ class Assignment {
 	Table unused; // Table [j][p] giving number of unused fibers on this petal
 	//List nobsv; // List of nobs, redundant but optimizes, originally true goal
 	//List nobsv_tmp; // List of nobs, redundant but optimizes, apparent goal, i.e. goal of category of this type, gets updated
-	//List once_obs; // 0 if not observed, 1 if observed  [list of all galaxies]
+
 
 
 	//// ----- Methods
@@ -134,8 +134,8 @@ class Assignment {
 	List fibs_unassigned(int j, int pet, const MTL& M, const PP& pp, const Feat& F) const; // Sublist of unassigned fibers for (j,p)
 
 	// Update information
-	void update_nobsv_tmp_for_one(int j, const Feat& F);//update for plate j
-	void update_once_obs(int j, const Feat& F);
+	//void update_nobsv_tmp_for_one(int j, const Feat& F);//update for plate j
+	//void update_once_obs(int j, const Feat& F);
 
 	// Used to compute results at the end
     //not used

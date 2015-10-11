@@ -175,6 +175,7 @@ MTL make_MTL(const Gals& G, const Feat& F){
         targ.t_priority=F.prio[G[i].id];
         targ.nobs_remain=F.goal[G[i].id];//needs to be goal prior to knowledge!!
         targ.nobs_done=0;//need to keep track of this, too
+        targ.once_obs=0;//changed only in update_plan
         //targ.SS=F.SS[G[i].id];
         //targ.SF=F.SF[G[i].id];
 
