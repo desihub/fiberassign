@@ -300,17 +300,24 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
                     M[g].nobs_done=1;
                     M[g].t_priority=F.priopost[G[g].id];
                     to_update.push_back(g);
+                    if(G[g].id==3&&g%100000==0){
+                        printf("first time LRG only one needed g = %d  nobs_remain %d nobs_done %d\n",g,M[g].nobs_remain,M[g].nobs_done);
+                    }
                  }
             
                 else{//more obs needed
                     M[g].nobs_remain=F.goalpost[G[g].id]-1;
                     M[g].nobs_done+=1;
                     M[g].t_priority=F.priopost[G[g].id];
+                    if(G[g].id==3&&g%100000==0){
+                        printf("first time LRG more obs needed g = %d  nobs_remain %d nobs_done %d\n",g,M[g].nobs_remain,M[g].nobs_done);
                 }
             }
             else{//this isn't the first observation
                 M[g].nobs_remain-=1;
                 M[g].nobs_done+=1;
+                if(G[g].id==3&&g%100000==0){
+                    printf("not first time LRG g = %d  nobs_remain %d nobs_done %d\n",g,M[g].nobs_remain,M[g].nobs_done);
             }
         }
     }
