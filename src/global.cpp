@@ -120,10 +120,10 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
 	// For all available galaxies
 	for (int gg=0; gg<av_gals.size(); gg++) {
 		int g = av_gals[gg];
-		int m = M[g].nobs_remain; //defaults to nobsv_tmp		// Check whether it needs further observation
-		if (m>=1) {
+		int m = M[g].nobs_remain; // Check whether it needs further observation
+        if (m>=1) {
             int prio = M[g].t_priority;
-            //printf("g %d gg %d  m  %d  j  %d  k  %d \n", g,gg,m,j,k );
+            
 			// Takes it if better priority, or if same, if it needs more observations, so shares observations if two QSOs are close
 			if (prio<pbest || (prio==pbest && m>mbest)) {
 
@@ -134,13 +134,10 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
 					best = g;
 					pbest = prio;
 					mbest = m;
-                    
 				}
-
 			}
-		}
+        }
 	}
-
 	return best;
 }
 
@@ -316,8 +313,8 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
                 }
             }
             else{//this isn't the first observation
-                M[g].nobs_remain-=1;
-                M[g].nobs_done+=1;
+                //M[g].nobs_remain-=1;
+                //M[g].nobs_done+=1;
                 if(G[g].id==2&&g%100000==0){
                     printf("not first time LRG g = %d  nobs_remain %d nobs_done %d\n",g,M[g].nobs_remain,M[g].nobs_done);
                 }
@@ -330,12 +327,10 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
 		Plist tfs = A.chosen_tfs(g,F,j0+1,n-1); // Begin at j0+1, can't change assignment at j0 (already observed)
 		while (tfs.size()!=0) {
 			int jp = tfs[0].f; int kp = tfs[0].s;
-			//print_Plist(tfs,"Before"); // Debug
 			A.unassign(jp,kp,g,M,P,pp);
 			int gp = -1;
 			gp = improve_fiber(j0+1,n-1,jp,kp,M,P,pp,F,A,g);
 			erase(0,tfs);
-			//print_Plist(tfs,"After"); // Debug
 			cnt++;
         }
     }
