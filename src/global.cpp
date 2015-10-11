@@ -180,8 +180,8 @@ inline int assign_fiber_to_ss_sf(int j, int k, MTL& M, const Plates& P, const PP
 	List av_gals = P[j].av_gals[k];
 	for (int gg=0; gg<av_gals.size(); gg++) {
 		int g = av_gals[gg];
-		
-		int prio = M[g].t_priority;
+		if (g==5600000){printf ("g=%d remain %d  done %d  once_obs %d \n",g,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
+        int prio = M[g].t_priority;
         if (((M[g].SF && A.nkind(j,k,F.ids.at("SF"),M,P,pp,F)<F.MaxSF) || M[g].SS && A.nkind(j,k,F.ids.at("SS"),M,P,pp,F)<F.MaxSS) && prio<pbest) { // Optimizes this way
 			if (A.is_assigned_jg(j,g,M,F)==-1 && A.find_collision(j,k,g,pp,M,P,F)==-1) {//nmo collision, not assigned to this plate
 				best = g;
