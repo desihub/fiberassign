@@ -305,22 +305,18 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
                     M[g].t_priority=F.priopost[G[g].id];
                     to_update.push_back(g);
                     if (g==5600000){printf ("** only one obs needed in update g=%d remain %d  done %d  once_obs %d \n",g,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
-                 }
+                }
             
                 else{//more obs needed
                     if (g==5600000){printf ("** more obs needed in update g=%d remain %d  done %d  once_obs %d \n",g,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
                     M[g].nobs_remain=F.goalpost[G[g].id]-1;
-                    M[g].nobs_done+=1;
+                    //M[g].nobs_done+=1; already incremented
                     M[g].t_priority=F.priopost[G[g].id];
                     if (g==5600000){printf ("** after more obs in upgrade g=%d remain %d  done %d  once_obs %d \n",g,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
                 }
             }
-            else{//this isn't the first observation
-                //M[g].nobs_remain-=1;
-                //M[g].nobs_done+=1;
-                if(G[g].id==2&&g%100000==0){
-                    printf("not first time LRG g = %d  nobs_remain %d nobs_done %d\n",g,M[g].nobs_remain,M[g].nobs_done);
-                }
+            else{
+                    if (g==5600000){printf ("** not first obs, in upgrade g=%d remain %d  done %d  once_obs %d \n",g,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
             }
         }
     }
