@@ -310,7 +310,7 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
                     M[g].nobs_done+=1;
                     M[g].t_priority=F.priopost[G[g].id];
                     if(G[g].id==2&&g%100000==0){
-                        printf("first time LRG more obs needed  nobs_remain %d nobs_done %d id %d goal %d goalpost   %dn",M[g].nobs_remain,M[g].nobs_done,G[g].id,F.goal[G[g].id],F.goalpost[G[g].id]);
+                        printf("first time LRG more obs needed  nobs_remain %d nobs_done %d id %d goal %d goalpost   %d\n",M[g].nobs_remain,M[g].nobs_done,G[g].id,F.goal[G[g].id],F.goalpost[G[g].id]);
                     }
                 }
             }
