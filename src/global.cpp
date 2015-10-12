@@ -296,27 +296,13 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
         if (g!=-1&&M[g].t_priority!=9800 && M[g].t_priority!=9900){
             //initially nobs_remain==goal
             
-            if(M[g].once_obs==0){//first obs
-                if (g%500000==0){printf ("** first obs in update g=%d id= %d remain %d  done %d  once_obs %d \n",g,G[g].id,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
-                M[g].once_obs=1;
-                if(F.goalpost[G[g].id]==1){//if only one obs needed
-                    M[g].nobs_remain =0;
-                    M[g].nobs_done=1;
-                    M[g].t_priority=F.priopost[G[g].id];
-                    to_update.push_back(g);
-                    if (g%500000==0){printf ("** only one obs needed in update g=%d id= %d remain %d  done %d  once_obs %d \n",g,G[g].id,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
+            if(M[g].once_obs==0){//first obs  otherwise should be ok
+                
+                if(M[g].nobs_done>F.goalpost[G[g].id]){//need to fix this
+                    to_update.push_back(g);}
+                else{
+                    M[g].nobs_remain=F.goalpost[G[g].id]-M[g].nobs_done;
                 }
-            
-                else{//more obs needed
-                    if (g%500000==0){printf ("** more obs needed in update g=%d id= %d remain %d  done %d  once_obs %d \n",g,G[g].id,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
-                    M[g].nobs_remain=F.goalpost[G[g].id]-1;
-                    //M[g].nobs_done+=1; already incremented
-                    M[g].t_priority=F.priopost[G[g].id];
-                    if (g%500000==0){printf ("** after more obs in upgrade g=%d id= %d remain %d  done %d  once_obs %d \n",g,G[g].id,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
-                }
-            }
-            else{
-                    if (g%500000==0){printf ("** not first obs, in upgrade g=%d id= %d  %d  done %d  once_obs %d \n",g,G[g].id,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
             }
         }
     }
@@ -324,7 +310,7 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
 	for (int gg=0; gg<to_update.size(); gg++) {
 		int g = to_update[gg];
 		Plist tfs = A.chosen_tfs(g,F,j0+1,n-1); // Begin at j0+1, can't change assignment at j0 (already observed)
-		while (tfs.size()!=0) {
+		while (tfs.size()!=0&&M[g].nobs_done>F.goalpost[G[g].id]) {
 			int jp = tfs[0].f; int kp = tfs[0].s;
 			A.unassign(jp,kp,g,M,P,pp);
 			int gp = -1;
