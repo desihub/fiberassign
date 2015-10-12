@@ -291,32 +291,32 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
 	// Get the list of galaxies to update in the plan
 	for (int k=0; k<F.Nfiber; k++) {
         int g = A.TF[jpast][k];
-        if (g==5600000){printf ("** first in update g=%d remain %d  done %d  once_obs %d \n",g,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
+        if (g%500000==0){printf ("** first in update g=%d id= %d remain %d  done %d  once_obs %d \n",g,G[g].id,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
         // Don't update SS or SF
         if (g!=-1&&M[g].t_priority!=9800 && M[g].t_priority!=9900){
             //initially nobs_remain==goal
             
             if(M[g].once_obs==0){//first obs
-                if (g==5600000){printf ("** first obs in update g=%d remain %d  done %d  once_obs %d \n",g,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
+                if (g==5600000){printf ("** first obs in update g=%d id= %d remain %d  done %d  once_obs %d \n",g,G[g].id,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
                 M[g].once_obs=1;
                 if(F.goalpost[G[g].id]==1){//if only one obs needed
                     M[g].nobs_remain =0;
                     M[g].nobs_done=1;
                     M[g].t_priority=F.priopost[G[g].id];
                     to_update.push_back(g);
-                    if (g==5600000){printf ("** only one obs needed in update g=%d remain %d  done %d  once_obs %d \n",g,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
+                    if (g==5600000){printf ("** only one obs needed in update g=%d id= %d remain %d  done %d  once_obs %d \n",g,G[g].id,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
                 }
             
                 else{//more obs needed
-                    if (g==5600000){printf ("** more obs needed in update g=%d remain %d  done %d  once_obs %d \n",g,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
+                    if (g==5600000){printf ("** more obs needed in update g=%d id= %d remain %d  done %d  once_obs %d \n",g,G[g].id,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
                     M[g].nobs_remain=F.goalpost[G[g].id]-1;
                     //M[g].nobs_done+=1; already incremented
                     M[g].t_priority=F.priopost[G[g].id];
-                    if (g==5600000){printf ("** after more obs in upgrade g=%d remain %d  done %d  once_obs %d \n",g,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
+                    if (g==5600000){printf ("** after more obs in upgrade g=%d id= %d remain %d  done %d  once_obs %d \n",g,G[g].id,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
                 }
             }
             else{
-                    if (g==5600000){printf ("** not first obs, in upgrade g=%d remain %d  done %d  once_obs %d \n",g,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
+                    if (g==5600000){printf ("** not first obs, in upgrade g=%d id= %d  %d  done %d  once_obs %d \n",g,G[g].id,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
             }
         }
     }
