@@ -313,6 +313,7 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
 		while (tfs.size()!=0&&M[g].nobs_done>F.goalpost[G[g].id]) {
 			int jp = tfs[0].f; int kp = tfs[0].s;
 			A.unassign(jp,kp,g,M,P,pp);
+            M[g].nobs_remain=0;
             if (g%10000==0&&G[g].id==1){printf ("** after unassign g=%d id= %d remain %d  done %d  once_obs %d \n",g,G[g].id,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
 
 			int gp = -1;
