@@ -44,7 +44,7 @@ void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Pl
 			Onplates O;
 			for (int gg=0; gg<nbr.size(); gg++) {
 				int g = nbr[gg];
-				struct onplate op = change_coords(G[g],p); 
+				struct onplate op = change_coords(G[g],p);
 				op.id = g;
 				O.push_back(op);
 			}
