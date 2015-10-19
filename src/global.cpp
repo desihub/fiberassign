@@ -356,6 +356,7 @@ void replace(List old_kind, int new_kind, int j, int p, const MTL& M, const Plat
 	}
 }
 */
+
 void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
     //make sure there are enough standard stars and sky fibers on each petal p in plate j
     //special priorities for SS 99  and SF  98
@@ -364,22 +365,23 @@ void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Fea
     
     for(int k;k<F.Nfiber;++k){
         int g=A.TF[j][k];
-        if(M[g].t_priority==99){SS_in_petal[pp.spectrom[k]]+=1;}
-        if(M[g].t_priority==98){SF_in_petal[pp.spectrom[k]]+=1;}
+        if(M[g].t_priority==9900){SS_in_petal[pp.spectrom[k]]+=1;}
+        if(M[g].t_priority==9800){SF_in_petal[pp.spectrom[k]]+=1;}
     }
     // do standard stars,going through priority classes from least to most
     // skip SS and SF, so start at size -3
     //can get all available SS,SF on plate from P[j].av_gals_plate restricting to plate p
     
-    for(int c=M.priority_list.size()-3&&SS_in_petal[p]<F.MaxSS;c>-1;--c ){//try to do this for lowest priority
+    for(int c=M.priority_list.size()-3;SS_in_petal[p]<F.MaxSS&&c>-1;--c ){//try to do this for lowest priority
+        // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SS_av_gal[p]; //standard stars on this plate
         for(int gg=0;gg<gals.size();++gg){//what tfs for this SS?  M[g].av_tfs
-            int g=gals[gg];
+            int g=gals[gg];//a standard star
             Plist tfs=M[g].av_tfs;
             for(int i;i<tfs.size();++i){
-                int k=tfs[i].s;
-                int g_old=A.TF[j][k];
-                if (pp.spectrom[k]==p && M[g].priority_class==c){//right petal, right priority
+                int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
+                int g_old=A.TF[j][k];//what is now at (j,k)
+                if (M[g].priority_class==c){//right priority
                     A.unassign(j,k,g_old,M,P,pp);
                     assign_galaxy(g_old,M,P,pp,F,A);//try to assign
                     A.assign(j,k,g,M,P,pp);
@@ -390,32 +392,6 @@ void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Fea
     }
     
     
-/*
-    int m = A.nkind(j,p,new_kind,M,P,pp,F,true);//number of new_kind already on this petal
-    List fibskindd;
-    for (int i=0; i<old_kind.size(); i++) addlist(fibskindd,A.fibs_of_kind(old_kind[i],j,p,M,pp,F));//list of fibers on tile j assigned to galaxies of types old_kind
-    List fibskind0 = random_permut(fibskindd);
-    
-    List fibskind=fibskind0;
-    int Max = new_kind==F.ids.at("SS") ? F.MaxSS : F.MaxSF;
-    while (m<Max && fibskind.size()!=0) {
-        bool fin(false);
-        int k = fibskind[0];//list of fibers assigned to galaxies of old type
-        List av_g = P[j].av_gals[k];//all galaxies available to (j,k)
-        for (int gg=0; gg<av_g.size() && !fin; gg++) {
-            int g = av_g[gg];//is this one the right kind (newkind)?
-            if (M[g].id==new_kind && A.find_collision(j,k,g,pp,M,P,F)==-1 && A.is_assigned_jg(j,g)==-1) { // Looking for fiber that took ELG but could take SS or SF
-                int g0 = A.TF[j][k];
-                A.unassign(j,k,g0,M,P,pp);
-                assign_galaxy(g0,M,P,pp,F,A);//having released g0, look for new place for it
-                A.assign(j,k,g,M,P,pp);
-                fin = true;
-                m++;
-            }
-        }
-        erase(0,fibskind);
-    }
- */
 }
 
 
