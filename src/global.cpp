@@ -455,10 +455,12 @@ void assign_unused(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, 
 void assign_sf_ss(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
 	List randPetals = random_permut(F.Npetal);
 	for (int ppet=0; ppet<F.Npetal; ppet++) {
+        printf(" ppet = %d \n",ppet);
 		int p = randPetals[ppet];
 		List randFibers = random_permut(pp.fibers_of_sp[p]);
         //first use any free fibers
 			for (int kk=0; kk<F.Nfbp; kk++) {
+                printf(" kk = %d \n", kk)
 				int k = randFibers[kk];
                 if (!A.is_assigned_tf(j,k)){
                     //assign_fiber_to_ss_sf(j,k,M,P,pp,F,A);
@@ -466,7 +468,9 @@ void assign_sf_ss(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, A
                     List av_gals = P[j].av_gals[k];
                     for (int gg=0; gg<av_gals.size(); gg++) {
                         int g = av_gals[gg];//galaxy at (j,k)
+                        printf("galaxy  %d \n",g);
                         if(M[g].t_priority==9900){
+                            printf(" priority  %d \n",M[g].t_priority);
                             A.assign(j,k,g,M,P,pp);}
                         else{
                             if(M[g].t_priority==9800){
