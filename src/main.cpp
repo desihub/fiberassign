@@ -96,7 +96,10 @@ int main(int argc, char **argv) {
 	
 	// For plates/fibers, collect available galaxies; done in parallel  P[plate j].av_gal[k]=[g1,g2,..]
 	collect_galaxies_for_all(M,T,P,pp,F);
-	
+/*
+    
+    
+    
 	// For each galaxy, computes available tilefibers  G[i].av_tfs = [(j1,k1),(j2,k2),..]
 	collect_available_tilefibers(M,P,F);
 
@@ -156,8 +159,8 @@ int main(int argc, char **argv) {
 			redistribute_tf(M,P,pp,F,A);
             //diagnostic(M,G,F,A);
 		}
- */
-	}
+ 
+    }
 	print_time(time,"# ... took :");
 
 	// Results -------------------------------------------------------
@@ -167,7 +170,7 @@ int main(int argc, char **argv) {
 
 
 	print_time(t,"# Finished !... in");
- 
+*/
 	return(0);
   
 }
