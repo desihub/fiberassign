@@ -365,10 +365,11 @@ void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Fea
     
     for(int k;k<F.Nfiber;++k){
         int g=A.TF[j][k];
+        printf("k= %d petal %d  SS at g= %d \n",k,pp.spectrom[k],g);
         if(M[g].t_priority==9900){SS_in_petal[pp.spectrom[k]]+=1;
-            printf("k= %d petal %d  SS at g= %d \n",k,pp.spectrom[k],g);}
+        }
         if(M[g].t_priority==9800){SF_in_petal[pp.spectrom[k]]+=1;
-            printf("k= %d petal %d  SF at g= %d \n",k,pp.spectrom[k],g);}
+        }
         
     }
     for (int i=0;i<10;++i){printf(" plate %d petal %d  SS %d  SF %d \n",j,i,SS_in_petal[i],SF_in_petal[i]);}
