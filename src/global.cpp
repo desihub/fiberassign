@@ -451,7 +451,7 @@ void assign_unused(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, 
 }
 
 // If not enough SS and SF, remove old_kind and replace with SS-SF (new_kind) on petal (j,p)
-/*
+
 void assign_sf_ss(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
 	List randPetals = random_permut(F.Npetal);
 	for (int ppet=0; ppet<F.Npetal; ppet++) {
@@ -480,7 +480,7 @@ void assign_sf_ss(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, A
 			new_replace(j,p,M,P,pp,F,A);
     }
 }
-*/
+
 // For each petal, assign QSOs, LRGs, ELGs, ignoring SS and SF.
 
 
