@@ -346,7 +346,7 @@ void replace(List old_kind, int new_kind, int j, int p, const MTL& M, const Plat
 			if (M[g].id==new_kind && A.find_collision(j,k,g,pp,M,P,F)==-1 && A.is_assigned_jg(j,g)==-1) { // Looking for fiber that took ELG but could take SS or SF
 				int g0 = A.TF[j][k];
 				A.unassign(j,k,g0,M,P,pp);
-				assign_galaxy(g0,M,P,pp,F,A);//having released g0, look for new place for it
+                galaxy(g0,M,P,pp,F,A);//having released g0, look for new place for it
 				A.assign(j,k,g,M,P,pp);
 				fin = true;
 				m++;
@@ -365,8 +365,11 @@ void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Fea
     
     for(int k;k<F.Nfiber;++k){
         int g=A.TF[j][k];
-        if(M[g].t_priority==9900){SS_in_petal[pp.spectrom[k]]+=1;}
-        if(M[g].t_priority==9800){SF_in_petal[pp.spectrom[k]]+=1;}
+        if(M[g].t_priority==9900){SS_in_petal[pp.spectrom[k]]+=1;
+            printf(" SS at g= %d \n",g);}
+        if(M[g].t_priority==9800){SF_in_petal[pp.spectrom[k]]+=1;
+            printf(" SF at g= %d \n",g);}
+        
     }
     // do standard stars,going through priority classes from least to most
     // skip SS and SF, so start at size -3
@@ -481,6 +484,7 @@ void assign_sf_ss(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, A
                 }
             }
 			// If not enough SS and SF, replace galaxies with lowest priority
+        printf("begin new replace\n");
 			new_replace(j,p,M,P,pp,F,A);
     }
 }
