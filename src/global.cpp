@@ -371,6 +371,7 @@ void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Fea
             printf(" SF at g= %d \n",g);}
         
     }
+    for (int i=0;i<10;++i){printf(" plate %d petal %d  SS %d  SF %d \n",j,i,SS_in_petal[i],SF_in_petal[i]);}
     // do standard stars,going through priority classes from least to most
     // skip SS and SF, so start at size -3
     //can get all available SS,SF on plate from P[j].av_gals_plate restricting to plate p
