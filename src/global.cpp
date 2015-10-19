@@ -390,7 +390,25 @@ void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Fea
             }
          }
     }
-    
+    for(int c=M.priority_list.size()-3;SF_in_petal[p]<F.MaxSS&&c>-1;--c ){//try to do this for lowest priority
+        // aside from SS and SF, so size()-3
+        std::vector <int> gals=P[j].SF_av_gal[p]; //standard stars on this plate
+        for(int gg=0;gg<gals.size();++gg){//what tfs for this SS?  M[g].av_tfs
+            int g=gals[gg];//a standard star
+            Plist tfs=M[g].av_tfs;
+            for(int i;i<tfs.size();++i){
+                int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
+                int g_old=A.TF[j][k];//what is now at (j,k)
+                if (M[g].priority_class==c){//right priority
+                    A.unassign(j,k,g_old,M,P,pp);
+                    assign_galaxy(g_old,M,P,pp,F,A);//try to assign
+                    A.assign(j,k,g,M,P,pp);
+                    SF_in_petal[p]+=1;
+                }
+            }
+        }
+    }
+   
     
 }
 
@@ -433,7 +451,7 @@ void assign_unused(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, 
 }
 
 // If not enough SS and SF, remove old_kind and replace with SS-SF (new_kind) on petal (j,p)
-/*
+
 void assign_sf_ss(int j, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
     if(!F.BrightTime){
 	str lrgA[] = {"LRG","FakeLRG"}; List lrg = F.init_ids_list(lrgA,2);
@@ -450,12 +468,9 @@ void assign_sf_ss(int j, const MTL& M, const Plates& P, const PP& pp, const Feat
 			}
 			// If not enough SS and SF, remove ELG an replace to SS-SF
             
-			replace(elg,F.ids.at("SS"),j,p,M,P,pp,F,A);
-			replace(elg,F.ids.at("SF"),j,p,M,P,pp,F,A);
-			replace(lrg,F.ids.at("SS"),j,p,M,P,pp,F,A);
-			replace(lrg,F.ids.at("SF"),j,p,M,P,pp,F,A);
-			if (A.kinds[j][p][F.ids.at("SS")]!=F.MaxSS) printf("! Not enough SS !\n");
-			if (A.kinds[j][p][F.ids.at("SF")]!=F.MaxSF) printf("! Not enough SF !\n");
+			new_replace(j,p,M,P,pp,F,A);
+//			if (A.kinds[j][p][F.ids.at("SS")]!=F.MaxSS) printf("! Not enough SS !\n");
+//			if (A.kinds[j][p][F.ids.at("SF")]!=F.MaxSF) printf("! Not enough SF !\n");
 		}
 		else {
 			List elgs = A.fibs_of_kind(F.ids.at("ELG"),j,p,M,pp,F);
