@@ -137,7 +137,7 @@ int main(int argc, char **argv) {
 		int j = A.next_plate;
         
 		
-		//assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF just before an observation
+		assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF just before an observation
 		//assign_unused(j,M,P,pp,F,A);
 		//if (j%2000==0) pyplotTile(j,"doc/figs",G,P,pp,F,A); // Picture of positioners, galaxies
 		
