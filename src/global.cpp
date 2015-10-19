@@ -374,7 +374,7 @@ void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Fea
     // do standard stars,going through priority classes from least to most
     // skip SS and SF, so start at size -3
     //can get all available SS,SF on plate from P[j].av_gals_plate restricting to plate p
-    
+    printf(" c = %d  SS_in_petal[p] = %d  F.MaxSS %d \n",M.priority_list.size()-3,SS_in_petal[p],F.MaxSS);
     for(int c=M.priority_list.size()-3;SS_in_petal[p]<F.MaxSS&&c>-1;--c ){//try to do this for lowest priority
         // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SS_av_gal[p]; //standard stars on this plate
