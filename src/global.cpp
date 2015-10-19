@@ -291,7 +291,7 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
 	// Get the list of galaxies to update in the plan
 	for (int k=0; k<F.Nfiber; k++) {
         int g = A.TF[jpast][k];
-        //if (g%500000==0){printf ("** first in update g=%d id= %d remain %d  done %d  once_obs %d \n",g,G[g].id,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
+        {printf ("** first in update g=%d id= %d remain %d  done %d  once_obs %d \n",g,G[g].id,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
         // Don't update SS or SF
         if (g!=-1&&M[g].t_priority!=9800 && M[g].t_priority!=9900){
             //initially nobs_remain==goal
