@@ -454,41 +454,36 @@ void assign_unused(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, 
 
 void assign_sf_ss(int j, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
     if(!F.BrightTime){
-	str lrgA[] = {"LRG","FakeLRG"}; List lrg = F.init_ids_list(lrgA,2);
-	str elgA[] = {"ELG"}; List elg = F.init_ids_list(elgA,1);
+	//str lrgA[] = {"LRG","FakeLRG"}; List lrg = F.init_ids_list(lrgA,2);
+	//str elgA[] = {"ELG"}; List elg = F.init_ids_list(elgA,1);
 	List randPetals = random_permut(F.Npetal);
 	for (int ppet=0; ppet<F.Npetal; ppet++) {
 		int p = randPetals[ppet];
 		List randFibers = random_permut(pp.fibers_of_sp[p]);
-		if (!F.InfDens) {
-			// Assign SS-SF
+        //first use any free fibers
 			for (int kk=0; kk<F.Nfbp; kk++) {
 				int k = randFibers[kk];
-				if (!A.is_assigned_tf(j,k)) assign_fiber_to_ss_sf(j,k,M,P,pp,F,A);
-			}
-			// If not enough SS and SF, remove ELG an replace to SS-SF
-            
+                if (!A.is_assigned_tf(j,k)){
+                    //assign_fiber_to_ss_sf(j,k,M,P,pp,F,A);
+                    //look at available galaxies for (j.k)
+                    List av_gals = P[j].av_gals[k];
+                    for (int gg=0; gg<av_gals.size(); gg++) {
+                        int g = av_gals[gg];//galaxy at (j,k)
+                        if(M[g].t_priority==9900){
+                            A.assign(j,k,g,M,P,pp);}
+                        else{
+                            if(M[g].t_priority==9800){
+                                A.assign(j,k,g,M,pp);
+                            }
+                        }
+                    }
+                }
+            }
+			// If not enough SS and SF, replace galaxies with lowest priority            
 			new_replace(j,p,M,P,pp,F,A);
-//			if (A.kinds[j][p][F.ids.at("SS")]!=F.MaxSS) printf("! Not enough SS !\n");
-//			if (A.kinds[j][p][F.ids.at("SF")]!=F.MaxSF) printf("! Not enough SF !\n");
-		}
-		else {
-			List elgs = A.fibs_of_kind(F.ids.at("ELG"),j,p,M,pp,F);
-			int unused = A.unused[j][p];
-			for (int kk=0; kk<elgs.size() && unused<F.MaxSS+F.MaxSF; kk++) {
-				int k = elgs[kk];
-				A.unassign(j,k,A.TF[j][k],M,P,pp);
-				unused++;
-			}
-			if (unused<F.MaxSS+F.MaxSF) printf("! Not enough !\n");
-		}
-	}
-}
-    else{//make list of fibers assigned to priority 2, then priority 1
-        
     }
 }
-*/
+
 // For each petal, assign QSOs, LRGs, ELGs, ignoring SS and SF.
 
 
