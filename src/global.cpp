@@ -452,7 +452,7 @@ void assign_unused(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, 
 
 // If not enough SS and SF, remove old_kind and replace with SS-SF (new_kind) on petal (j,p)
 
-void assign_sf_ss(int j, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
+void assign_sf_ss(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
     if(!F.BrightTime){
 	//str lrgA[] = {"LRG","FakeLRG"}; List lrg = F.init_ids_list(lrgA,2);
 	//str elgA[] = {"ELG"}; List elg = F.init_ids_list(elgA,1);
@@ -479,7 +479,7 @@ void assign_sf_ss(int j, const MTL& M, const Plates& P, const PP& pp, const Feat
                     }
                 }
             }
-			// If not enough SS and SF, replace galaxies with lowest priority            
+			// If not enough SS and SF, replace galaxies with lowest priority
 			new_replace(j,p,M,P,pp,F,A);
     }
 }
