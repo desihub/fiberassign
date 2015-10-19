@@ -119,7 +119,7 @@ int main(int argc, char **argv) {
                                     // so we can put in sky fibers and standard stars
 
 	// Smooth out distribution of free fibers, and increase the number of assignments
-    /*
+    
 	for (int i=0; i<1; i++) redistribute_tf(M,P,pp,F,A);// more iterations will improve performance slightly
 	for (int i=0; i<1; i++) {                           // more iterations will improve performance slightly
 		improve(M,P,pp,F,A);
@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
 		redistribute_tf(M,P,pp,F,A);
 	}
 	for (int i=0; i<1; i++) redistribute_tf(M,P,pp,F,A);
-    */
+    
 	print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false);
 
 	// Still not updated, so all QSO targets have multiple observations etc
