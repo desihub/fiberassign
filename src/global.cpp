@@ -56,16 +56,16 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
 					dpair Xg = projection(gals[g],j,M,P);
                     if (sq(Xg,X)<sq(F.PatrolRad)){
                         P[j].av_gals[k].push_back(gals[g]);
-                        /*
+                        
                         if(M[gals[g]].t_priority==9900){
-                            int p=pp.spectrom[k];
-                            P[j].SS_av_gal[p].push_back(gals[g]);
+                            int q=pp.spectrom[k];
+                            P[j].SS_av_gal[q].push_back(gals[g]);
                         }
                         if(M[gals[g]].t_priority==9800){
-                            int p=pp.spectrom[k];
-                            P[j].SF_av_gal[p].push_back(gals[g]);
+                            int q=pp.spectrom[k];
+                            P[j].SF_av_gal[q].push_back(gals[g]);
                         }
-*/
+
                     }
                 }
             }
@@ -380,7 +380,7 @@ void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Fea
     printf(" c = %d  SS_in_petal[p] = %d  F.MaxSS %d \n",M.priority_list.size()-3,SS_in_petal[p],F.MaxSS);
     for(int c=M.priority_list.size()-3;SS_in_petal[p]<F.MaxSS&&c>-1;--c ){//try to do this for lowest priority
         // aside from SS and SF, so size()-3
-        std::vector <int> gals=P[j].SS_av_gal[p]; //standard stars on this plate
+        std::vector <int> gals=P[j].SS_av_gal[p]; //standard stars on this petal
         for(int gg=0;gg<gals.size();++gg){//what tfs for this SS?  M[g].av_tfs
             int g=gals[gg];//a standard star
             Plist tfs=M[g].av_tfs;
