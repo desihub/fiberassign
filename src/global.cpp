@@ -57,11 +57,11 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
                     if (sq(Xg,X)<sq(F.PatrolRad)){
                         P[j].av_gals[k].push_back(gals[g]);
                         
-                        if(M[gals[g]].t_priority==9900){
+                        if(M[gals[g]].priority_class==5){
                             int q=pp.spectrom[k];
                             P[j].SS_av_gal[q].push_back(gals[g]);
                         }
-                        if(M[gals[g]].t_priority==9800){
+                        if(M[gals[g]].priority_class==4){
                             int q=pp.spectrom[k];
                             P[j].SF_av_gal[q].push_back(gals[g]);
                         }
