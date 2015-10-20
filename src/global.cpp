@@ -56,6 +56,10 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
 					dpair Xg = projection(gals[g],j,M,P);
                     if (sq(Xg,X)<sq(F.PatrolRad)){
                         P[j].av_gals[k].push_back(gals[g]);
+                        P[j].SS_av_gal[q].push_back(99);
+                        printf("pushed back to SS");
+                        P[j].SF_av_gal[q].push_back(99);
+                        printf("pushed back to SF");
                         int q=pp.spectrom[k];
                         printf(" q=spectrometer %d  t_priority %d \n",q,M[gals[g]].t_priority);
                         if(M[gals[g]].t_priority==9900){
