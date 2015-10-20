@@ -81,13 +81,13 @@ int main(int argc, char **argv) {
         P[jj]=P_original[permut[jj]];
     }
  */
-    P=P_original
+    P=P_original;
 	printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
     //diagnostic
     for (int j=0;j<F.Nplate;++j){
         printf("\n j= %d ",j);
         for (int p=0;p<10;++p){
-            printf(" %d ",P[j].SS_as_gal[p].size());
+            printf(" %d ",P[j].SS_av_gal[p].size());
         }
 
     }
