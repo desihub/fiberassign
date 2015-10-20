@@ -75,14 +75,22 @@ int main(int argc, char **argv) {
     F.Nplate=P_original.size();
     printf("This takes the place of Opsim or NextFieldSelector; will be replaced by appropriate code\n");
     Plates P;
-    P.resize(F.Nplate);
-    List permut = random_permut(F.Nplate);
+    P.resize(F.Nplate);//don't permute plates
+/*    List permut = random_permut(F.Nplate);
     for (int jj=0; jj<F.Nplate; jj++){
         P[jj]=P_original[permut[jj]];
     }
-
+ */
+    P=P_original
 	printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
+    //diagnostic
+    for (int j=0;j<F.Nplate;++j){
+        printf("\n j= %d ",j);
+        for (int p=0;p<10;++p){
+            printf(" %d ",P[j].SS_as_gal[p].size());
+        }
 
+    }
 	// Computes geometries of cb and fh: pieces of positioner - used to determine possible collisions
 	F.cb = create_cb(); // cb=central body
 	F.fh = create_fh(); // fh=fiber holder
