@@ -366,9 +366,9 @@ void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Fea
     for(int k;k<F.Nfiber;++k){
         int g=A.TF[j][k];
         printf("k= %d petal %d  SS at g= %d \n",k,pp.spectrom[k],g);
-        if(M[g].t_priority==9900){SS_in_petal[pp.spectrom[k]]+=1;
+        if(g!=-1&&M[g].t_priority==9900){SS_in_petal[pp.spectrom[k]]+=1;
         }
-        if(M[g].t_priority==9800){SF_in_petal[pp.spectrom[k]]+=1;
+        if(g!=-1&&M[g].t_priority==9800){SF_in_petal[pp.spectrom[k]]+=1;
         }
         
     }
@@ -473,7 +473,7 @@ void assign_sf_ss(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, A
                     List av_gals = P[j].av_gals[k];
                     for (int gg=0; gg<av_gals.size(); gg++) {
                         int g = av_gals[gg];//galaxy at (j,k)
-                        printf("galaxy  %d \n",g);
+                        printf("galaxy  %d plate %d fiber  %d\n",g);
                         if(M[g].t_priority==9900){
                             printf(" priority  %d \n",M[g].t_priority);
                             A.assign(j,k,g,M,P,pp);}
@@ -487,7 +487,7 @@ void assign_sf_ss(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, A
             }
 			// If not enough SS and SF, replace galaxies with lowest priority
         printf("begin new replace\n");
-			new_replace(j,p,M,P,pp,F,A);
+        new_replace(j,p,M,P,pp,F,A);
     }
 }
 
