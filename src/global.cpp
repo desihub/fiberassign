@@ -379,7 +379,7 @@ void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Fea
             for(int i;i<tfs.size();++i){
                 int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                 int g_old=A.TF[j][k];//what is now at (j,k)
-                if (M[g].priority_class==c&&A.is_assigned_jg==-1){//right priority
+                if (M[g].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1){//right priority
                     A.unassign(j,k,g_old,M,P,pp);
                     assign_galaxy(g_old,M,P,pp,F,A);//try to assign
                     A.assign(j,k,g,M,P,pp);
