@@ -59,11 +59,11 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
                         int q=pp.spectrom[k];
                         printf(" q=spectrometer %d  priority_class %d \n",q,M[gals[g]].priority_class);
                         if(M[gals[g]].priority_class==5){
-                            P[j].SS_av_gal[q].push_back(gals[g]);
+                            P[j].SS_av_gal[k].push_back(gals[g]);
                         }
                         if(M[gals[g]].priority_class==4){
                             printf(" size %d\n",P[j].SF_av_gal[q].size());
-                            P[j].SF_av_gal[q].push_back(gals[g]);
+                            P[j].SF_av_gal[k].push_back(gals[g]);
                         }
 
                     }
