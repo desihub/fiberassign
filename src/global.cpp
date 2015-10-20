@@ -458,10 +458,10 @@ void assign_sf_ss(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, A
 		List randFibers = random_permut(pp.fibers_of_sp[p]);
         //first use any free fibers
 			for (int kk=0; kk<F.Nfbp; kk++) {
-                printf(" kk = %d \n", kk);
+                //printf(" kk = %d \n", kk);
 				int k = randFibers[kk];
-                if (!A.is_assigned_tf(j,k)){
-                    //assign_fiber_to_ss_sf(j,k,M,P,pp,F,A);
+                //if (!A.is_assigned_tf(j,k)){
+                if (A.TF[j][k]==-1){
                     //look at available galaxies for (j.k)
                     List av_gals = P[j].av_gals[k];
                     for (int gg=0; gg<av_gals.size(); gg++) {
