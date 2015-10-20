@@ -379,7 +379,7 @@ void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Fea
             for(int i;i<tfs.size();++i){
                 int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                 int g_old=A.TF[j][k];//what is now at (j,k)
-                if (M[g].priority_class==c){//right priority
+                if (M[g].priority_class==c&&A.is_assigned_jg==-1){//right priority
                     A.unassign(j,k,g_old,M,P,pp);
                     assign_galaxy(g_old,M,P,pp,F,A);//try to assign
                     A.assign(j,k,g,M,P,pp);
@@ -453,7 +453,7 @@ void assign_unused(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, 
 void assign_sf_ss(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
 	List randPetals = random_permut(F.Npetal);
 	for (int ppet=0; ppet<F.Npetal; ppet++) {
-        printf(" ppet = %d \n",ppet);
+        //printf(" ppet = %d \n",ppet);
 		int p = randPetals[ppet];
 		List randFibers = random_permut(pp.fibers_of_sp[p]);
         //first use any free fibers
@@ -466,7 +466,7 @@ void assign_sf_ss(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, A
                     List av_gals = P[j].av_gals[k];
                     for (int gg=0; gg<av_gals.size(); gg++) {
                         int g = av_gals[gg];//galaxy at (j,k)
-                        printf("galaxy  %d plate %d fiber  %d\n",g,j,k);
+                        //printf("galaxy  %d plate %d fiber  %d\n",g,j,k);
                         if(M[g].t_priority==9900){
                             printf(" priority  %d \n",M[g].t_priority);
                             A.assign(j,k,g,M,P,pp);}
