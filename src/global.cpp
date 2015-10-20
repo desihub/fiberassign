@@ -468,11 +468,11 @@ void assign_sf_ss(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, A
                         int g = av_gals[gg];//galaxy at (j,k)
                         //printf("galaxy  %d plate %d fiber  %d\n",g,j,k);
                         if(M[g].t_priority==9900){
-                            printf(" priority  %d \n",M[g].t_priority);
+                            printf(" priority  %d j %d k %d  occupied %d\n",M[g].t_priority,j,k,A.TF[j][k]);
                             A.assign(j,k,g,M,P,pp);}
                         else{
                             if(M[g].t_priority==9800){
-                                printf(" priority  %d \n",M[g].t_priority);
+                                printf(" priority  %d j %d k %d  occupied %d\n",M[g].t_priority,j,k,A.TF[j][k]);
                                 A.assign(j,k,g,M,P,pp);
                             }
                         }
