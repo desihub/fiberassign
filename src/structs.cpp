@@ -345,6 +345,8 @@ Plates read_plate_centers(const Feat& F) {
 			Q.ipass      = ipass-1; // <- be careful, format of input file
 			Q.av_gals.resize(F.Nfiber); // <- added
 			Q.density.resize(F.Nfiber); // <- added
+            Q.SS_av_gal.resize(F.Nfbp);
+            Q.SF_av_gal.resize(F.Nfbp);
 			try {P.push_back(Q);} catch(std::exception& e) {myexception(e);}
 		}
 	}
