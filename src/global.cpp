@@ -284,7 +284,7 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
 	// Get the list of galaxies to update in the plan
 	for (int k=0; k<F.Nfiber; k++) {
         int g = A.TF[jpast][k];
-        {printf ("** first in update g=%d id= %d remain %d  done %d  once_obs %d \n",g,G[g].id,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
+       // {printf ("** first in update g=%d id= %d remain %d  done %d  once_obs %d \n",g,G[g].id,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
         // Don't update SS or SF
         if (g!=-1&&M[g].t_priority!=9800 && M[g].t_priority!=9900){
             //initially nobs_remain==goal
@@ -358,7 +358,7 @@ void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Fea
     
     for(int k;k<F.Nfiber;++k){
         int g=A.TF[j][k];
-        printf("k= %d petal %d  SS at g= %d \n",k,pp.spectrom[k],g);
+        //printf("k= %d petal %d  SS at g= %d \n",k,pp.spectrom[k],g);
         if(g!=-1&&M[g].t_priority==9900){SS_in_petal[pp.spectrom[k]]+=1;
         }
         if(g!=-1&&M[g].t_priority==9800){SF_in_petal[pp.spectrom[k]]+=1;
@@ -411,24 +411,24 @@ void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Fea
 }
 
 
-void assign_unused(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) { // Tries to assign remaining fibers in tile j
-                                                                                                        //even taking objects observed later
+void assign_unused(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
+    // Tries to assign remaining fibers in tile j
+    //even taking objects observed later
 	for (int k=0; k<F.Nfiber; k++) {
 		if (!A.is_assigned_tf(j,k)) {
-			int best = -1; int mbest = -1; int pbest = 10000; int jpb = -1; int kpb = -1;
+			int best = -1; int mbest = -1; int pbest = 100000; int jpb = -1; int kpb = -1;
 			List av_gals = P[j].av_gals[k];//all available galaxies for this fiber k
 			for (int gg=0; gg<av_gals.size(); gg++) {
 				int g = av_gals[gg];//available galaxies
 				int m = M[g].nobs_remain;
 				int prio = M[g].t_priority;
 				if (prio<pbest || (prio==pbest && m>mbest)) {
-                   
-					if (A.is_assigned_jg(j,g,M,F)==-1 && ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)) {//not assigned this plate or within excluded interval
-                        
-						for (int i=0; i<A.GL[g].size(); i++) { //GL[g].size() is number of tf that could look a g
+					if (A.is_assigned_jg(j,g,M,F)==-1 && ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)) {
+                        //not assigned this plate or within excluded interval
+						for (int i=0; i<A.GL[g].size(); i++) { //GL[g].size() is number of tf that could observe g
 							int jp = A.GL[g][i].f;
 							int kp = A.GL[g][i].s;
-							if (j<jp && jpb<jp) {//take latest opportunity
+							if (j<jp && jpb<jp) {//take best opportunity
 								best = g;
 								pbest = prio;
 								mbest = m;
@@ -440,7 +440,7 @@ void assign_unused(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, 
 				}
 			}
 			if (best!=-1) {
-                				A.unassign(jpb,kpb,best,M,P,pp);
+                A.unassign(jpb,kpb,best,M,P,pp);
 				A.assign(j,k,best,M,P,pp);
                 
 			}
