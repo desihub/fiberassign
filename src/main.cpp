@@ -87,7 +87,7 @@ int main(int argc, char **argv) {
     for (int j=0;j<F.Nplate;++j){
         printf("\n j= %d ",j);
         for (int p=0;p<10;++p){
-            printf(" %d ",P[j].SS_av_gal[p].size());
+            printf(" %d ",P[j].av_gals[p].size());
         }
 
     }
