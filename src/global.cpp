@@ -472,6 +472,7 @@ void assign_sf_ss(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, A
                             A.assign(j,k,g,M,P,pp);}
                         else{
                             if(M[g].t_priority==9800){
+                                printf(" priority  %d \n",M[g].t_priority);
                                 A.assign(j,k,g,M,P,pp);
                             }
                         }
