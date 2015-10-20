@@ -473,7 +473,7 @@ void assign_sf_ss(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, A
                     List av_gals = P[j].av_gals[k];
                     for (int gg=0; gg<av_gals.size(); gg++) {
                         int g = av_gals[gg];//galaxy at (j,k)
-                        printf("galaxy  %d plate %d fiber  %d\n",g);
+                        printf("galaxy  %d plate %d fiber  %d\n",g,j,k);
                         if(M[g].t_priority==9900){
                             printf(" priority  %d \n",M[g].t_priority);
                             A.assign(j,k,g,M,P,pp);}
