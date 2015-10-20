@@ -91,14 +91,7 @@ void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) {
 // Assignment sub-functions -------------------------------------------------------------------------------------
 // Allow (j,k) to observe g ?
 inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const MTL& M, const PP& pp, const Feat& F, const Assignment& A) {
-/*
-    if (M[g].SF) {
 
-        return false;} // Don't assign to SS or SF
-    
-    if (M[g].SS){
-        return false;} // Don't assign to SS or SF
- */
     if(M[g].t_priority==9900 || M[g].t_priority==9900) return false;
     if (P[j].ipass==4 && M[g].lastpass==0){
         
