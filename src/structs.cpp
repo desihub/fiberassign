@@ -416,7 +416,7 @@ void Assignment::assign(int j, int k, int g, MTL& M, const Plates& P, const PP& 
     M[g].nobs_done++;
     M[g].nobs_remain--;
     if(M[g].t_priority==9800){
-        p=pp.spectrom[k];
+        int p=pp.spectrom[k];
         P[j].SF_in_petal[p]+=1;}
     if(M[g].t_priority==9900){
         p=pp.spectrom[k];
