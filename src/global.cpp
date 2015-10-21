@@ -350,13 +350,14 @@ void replace(List old_kind, int new_kind, int j, int p, const MTL& M, const Plat
 
 void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
     //make sure there are enough standard stars and sky fibers on each petal p in plate j
-    //special priorities for SS 99  and SF  98
+    //special priorities for SS 9900  and SF  9800
     //first do SS count SS in each petal
     std::vector<int> SS_in_petal(10,0), SF_in_petal(10,0);
     
     for(int k;k<F.Nfiber;++k){
         int g=A.TF[j][k];
         //printf("k= %d petal %d  SS at g= %d \n",k,pp.spectrom[k],g);
+        //count number of SS and SF already on this petal (j,p)
         if(g!=-1&&M[g].t_priority==9900){SS_in_petal[pp.spectrom[k]]+=1;
         }
         if(g!=-1&&M[g].t_priority==9800){SF_in_petal[pp.spectrom[k]]+=1;
@@ -371,30 +372,34 @@ void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Fea
     for(int c=M.priority_list.size()-3;SS_in_petal[p]<F.MaxSS&&c>-1;--c ){//try to do this for lowest priority
         // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SS_av_gal[p]; //standard stars on this petal
-        for(int gg=0;gg<gals.size();++gg){//what tfs for this SS?  M[g].av_tfs
+        for(int gg=0;gg<gals.size() && SS_in_petal[p]<F.MaxSS;++gg){
             int g=gals[gg];//a standard star
-            Plist tfs=M[g].av_tfs;
-            for(int i;i<tfs.size();++i){
-                if(tfs[i].f==j){
+            Plist tfs=M[g].av_tfs;//all tiles and fibers that reach g
+            int done=0;//quit after we've used this SS
+            for(int i;i<tfs.size()&&ddone==0;++i){
+                if(tfs[i].f==j){//a combination on this plate
                     int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                     int g_old=A.TF[j][k];//what is now at (j,k)
-                    if (M[g].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1){//right priority
+                    if (M[g].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1){
+                        //right priority; this SS not already assigned on this plate
                         A.unassign(j,k,g_old,M,P,pp);
                         assign_galaxy(g_old,M,P,pp,F,A);//try to assign
                         A.assign(j,k,g,M,P,pp);
                         SS_in_petal[p]+=1;
+                        done=1;
                     }
                 }
             }
          }
     }
-    for(int c=M.priority_list.size()-3;SF_in_petal[p]<F.MaxSS&&c>-1;--c ){//try to do this for lowest priority
+    for(int c=M.priority_list.size()-3;SF_in_petal[p]<F.MaxSF&&c>-1;--c ){//try to do this for lowest priority
         // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SF_av_gal[p]; //standard stars on this plate
-        for(int gg=0;gg<gals.size();++gg){//what tfs for this SS?  M[g].av_tfs
+        for(int gg=0;gg<gals.size() && SF_in_petal[p]<F.MaxSF;++gg){//what tfs for this SS?  M[g].av_tfs
             int g=gals[gg];//a standard star
             Plist tfs=M[g].av_tfs;
-            for(int i;i<tfs.size();++i){
+            int done=0;
+            for(int i;i<tfs.size() && done==0;++i){
                 if(tfs[i].f==j){
                     int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                     int g_old=A.TF[j][k];//what is now at (j,k)
@@ -403,6 +408,7 @@ void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Fea
                         assign_galaxy(g_old,M,P,pp,F,A);//try to assign
                         A.assign(j,k,g,M,P,pp);
                         SF_in_petal[p]+=1;
+                        done=1;
                     }
                 }
             }
