@@ -385,7 +385,6 @@ void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Fea
                         A.unassign(j,k,g_old,M,P,pp);
                         assign_galaxy(g_old,M,P,pp,F,A);//try to assign
                         A.assign(j,k,g,M,P,pp);
-                        SS_in_petal[p]+=1;
                         done=1;
                     }
                 }
@@ -407,7 +406,6 @@ void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Fea
                         A.unassign(j,k,g_old,M,P,pp);
                         assign_galaxy(g_old,M,P,pp,F,A);//try to assign
                         A.assign(j,k,g,M,P,pp);
-                        SF_in_petal[p]+=1;
                         done=1;
                     }
                 }
