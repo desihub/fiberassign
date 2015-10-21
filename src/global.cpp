@@ -97,6 +97,7 @@ inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const MTL& M
 	if (F.Collision) for (int i=0; i<pp.N[k].size(); i++) if (g==A.TF[j][pp.N[k][i]]) return false; // Avoid 2 neighboring fibers observe the same galaxy (can happen only when Collision=true)
     if (A.find_collision(j,k,g,pp,M,P,F)!=-1){
         return false;} // No collision
+    //if (M[g].t_priority==9800 && )
 	return true;
     //doesn't require that jk is unassigned//doesn't require that g isn't assigned already on this plate
 }
@@ -136,9 +137,8 @@ inline int assign_fiber(int j, int k, MTL& M, const Plates& P, const PP& pp, con
 	if (A.is_assigned_tf(j,k)) return -1;
 	int best = find_best(j,k,M,P,pp,F,A,no_g,kind);
     int g=best;
-    //if (g==5600000){printf ("** before assign g=%d remain %d  done %d  once_obs %d \n",g,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
+
     if (best!=-1) A.assign(j,k,best,M,P,pp);
-    //if (g==5600000){printf ("** after assign g=%d remain %d  done %d  once_obs %d \n",g,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
 	return best;
 }
 
@@ -174,7 +174,7 @@ inline int assign_fiber_to_ss_sf(int j, int k, MTL& M, const Plates& P, const PP
 	List av_gals = P[j].av_gals[k];
 	for (int gg=0; gg<av_gals.size(); gg++) {
 		int g = av_gals[gg];
-		//if (g==5600000){printf ("g=%d remain %d  done %d  once_obs %d \n",g,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
+
         int prio = M[g].t_priority;
         if (((M[g].SF && A.nkind(j,k,F.ids.at("SF"),M,P,pp,F)<F.MaxSF) || M[g].SS && A.nkind(j,k,F.ids.at("SS"),M,P,pp,F)<F.MaxSS) && prio<pbest) { // Optimizes this way
 			if (A.is_assigned_jg(j,g,M,F)==-1 && A.find_collision(j,k,g,pp,M,P,F)==-1) {//nmo collision, not assigned to this plate
@@ -282,7 +282,7 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
 	// Get the list of galaxies to update in the plan
 	for (int k=0; k<F.Nfiber; k++) {
         int g = A.TF[jpast][k];
-       // {printf ("** first in update g=%d id= %d remain %d  done %d  once_obs %d \n",g,G[g].id,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
+
         // Don't update SS or SF
         if (g!=-1&&M[g].t_priority!=9800 && M[g].t_priority!=9900){
             //initially nobs_remain==goal
@@ -305,7 +305,6 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, const Plates&P, const PP& p
 			int jp = tfs[0].f; int kp = tfs[0].s;
 			A.unassign(jp,kp,g,M,P,pp);
             M[g].nobs_remain=0;
-            //if (g%10000==0&&G[g].id==1){printf ("** after unassign g=%d id= %d remain %d  done %d  once_obs %d \n",g,G[g].id,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
 
 			int gp = -1;
 			gp = improve_fiber(j0+1,n-1,jp,kp,M,P,pp,F,A,g);
@@ -352,7 +351,7 @@ void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Fea
     //make sure there are enough standard stars and sky fibers on each petal p in plate j
     //special priorities for SS 9900  and SF  9800
     //first do SS count SS in each petal
-    std::vector<int> SS_in_petal(10,0), SF_in_petal(10,0);
+   /* std::vector<int> SS_in_petal(10,0), SF_in_petal(10,0);
     
     for(int k;k<F.Nfiber;++k){
         int g=A.TF[j][k];
@@ -364,12 +363,13 @@ void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Fea
         }
         
     }
+    */
     //for (int i=0;i<10;++i){printf(" plate %d petal %d  SS %d  SF %d \n",j,i,SS_in_petal[i],SF_in_petal[i]);}
     // do standard stars,going through priority classes from least to most
     // skip SS and SF, so start at size -3
     //can get all available SS,SF on plate from P[j].av_gals_plate restricting to plate p
     //printf(" c = %d  SS_in_petal[p] = %d  F.MaxSS %d \n",M.priority_list.size()-3,SS_in_petal[p],F.MaxSS);
-    for(int c=M.priority_list.size()-3;SS_in_petal[p]<F.MaxSS&&c>-1;--c ){//try to do this for lowest priority
+    for(int c=M.priority_list.size()-3;P[j].SS_in_petal[p]<F.MaxSS&&c>-1;--c ){//try to do this for lowest priority
         // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SS_av_gal[p]; //standard stars on this petal
         for(int gg=0;gg<gals.size() && SS_in_petal[p]<F.MaxSS;++gg){
@@ -392,7 +392,7 @@ void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Fea
             }
          }
     }
-    for(int c=M.priority_list.size()-3;SF_in_petal[p]<F.MaxSF&&c>-1;--c ){//try to do this for lowest priority
+    for(int c=M.priority_list.size()-3;P[j].SF_in_petal[p]<F.MaxSF&&c>-1;--c ){//try to do this for lowest priority
         // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SF_av_gal[p]; //standard stars on this plate
         for(int gg=0;gg<gals.size() && SF_in_petal[p]<F.MaxSF;++gg){//what tfs for this SS?  M[g].av_tfs

@@ -86,6 +86,8 @@ class plate {
 	List density; // density[k] is the weighted number of objects available to (j,k)
     Table SS_av_gal;//SS_av_gal[p] are available standard stars on petal p of this plate
     Table SF_av_gal;
+    List SS_in_petal;//number of SS assigned to a petal in this plate
+    List SF_in_petal;
 
 	List av_gals_plate(const Feat& F, const MTL& M,const PP& pp) const; // Av gals of the plate
 };

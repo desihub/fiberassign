@@ -193,7 +193,7 @@ MTL make_MTL(const Gals& G, const Feat& F){
         std::sort(M.priority_list.begin(),M.priority_list.end());
         M.push_back(targ);
         int g=M.size()-1;
-        //if (g%500000==0){printf ("g=%d id= %d remain %d  done %d  once_obs %d \n",g,G[g].id,M[g].nobs_remain,M[g].nobs_done, M[g].once_obs);}
+
     }
     return M;
 }
@@ -347,6 +347,8 @@ Plates read_plate_centers(const Feat& F) {
 			Q.density.resize(F.Nfiber); // <- added
             Q.SS_av_gal.resize(F.Nfbp);
             Q.SF_av_gal.resize(F.Nfbp);
+            Q.SS_in_petal.resize(F.Npetal);
+            Q.SF_in_petal.resize(F.Npetal);
 			try {P.push_back(Q);} catch(std::exception& e) {myexception(e);}
 		}
 	}
@@ -413,7 +415,12 @@ void Assignment::assign(int j, int k, int g, MTL& M, const Plates& P, const PP& 
 	GL[g].push_back(p);
     M[g].nobs_done++;
     M[g].nobs_remain--;
-
+    if(M[g].t_priority==9800){
+        p=pp.spectrom[k];
+        P[j].SF_in_petal[p]+=1;}
+    if(M[g].t_priority==9900){
+        p=pp.spectrom[k];
+        P[j].SS_in_petal[p]+=1;}
 	unused[j][pp.spectrom[k]]--;
 }
 
@@ -426,7 +433,12 @@ void Assignment::unassign(int j, int k, int g, MTL& M, const Plates& P, const PP
 	if (a!=-1) erase(a,GL[g]);
     M[g].nobs_done--;
     M[g].nobs_remain++;
-
+    if(M[g].t_priority==9800){
+        p=pp.spectrom[k];
+        P[j].SF_in_petal[p]-=1;}
+    if(M[g].t_priority==9900){
+        p=pp.spectrom[k];
+        P[j].SS_in_petal[p]-=1;}
 
 	unused[j][pp.spectrom[k]]++;
 }
