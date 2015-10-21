@@ -419,7 +419,7 @@ void Assignment::assign(int j, int k, int g, MTL& M, const Plates& P, const PP& 
         int p=pp.spectrom[k];
         P[j].SF_in_petal[p]+=1;}
     if(M[g].t_priority==9900){
-        p=pp.spectrom[k];
+        int p=pp.spectrom[k];
         P[j].SS_in_petal[p]+=1;}
 	unused[j][pp.spectrom[k]]--;
 }
