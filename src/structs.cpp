@@ -435,10 +435,10 @@ void Assignment::unassign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) 
     M[g].nobs_done--;
     M[g].nobs_remain++;
     if(M[g].t_priority==9800){
-        p=pp.spectrom[k];
+        int p=pp.spectrom[k];
         P[j].SF_in_petal[p]-=1;}
     if(M[g].t_priority==9900){
-        p=pp.spectrom[k];
+        int p=pp.spectrom[k];
         P[j].SS_in_petal[p]-=1;}
 
 	unused[j][pp.spectrom[k]]++;
