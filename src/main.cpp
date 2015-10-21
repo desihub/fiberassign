@@ -140,7 +140,7 @@ int main(int argc, char **argv) {
 	init_time_at(time,"# Begin real time assignment",t);
 	for (int jj=0; jj<F.Nplate; jj++) {
 		int j = A.next_plate;
-        printf(" j = %d is next plate\n",j);
+        //printf(" j = %d is next plate\n",j);
 		
 		assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF just before an observation
 		assign_unused(j,M,P,pp,F,A);
@@ -148,7 +148,7 @@ int main(int argc, char **argv) {
 		
 		//printf(" %s not as - ",format(5,f(A.unused_f(j,F))).c_str()); fl();
 		// Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
-        printf("done with assign_sf_ss for plate %d\n", j);
+        //printf("done with assign_sf_ss for plate %d\n", j);
 		if (0<=j-F.Analysis) update_plan_from_one_obs(G,M,P,pp,F,A,F.Nplate-1); else printf("\n");
      
 		A.next_plate++;
