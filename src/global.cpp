@@ -168,6 +168,7 @@ inline void assign_galaxy(int g,  MTL& M, const Plates& P, const PP& pp, const F
 
 // Tries to assign (j,k) to a SS (preferentially because they have priority) or a SF
 // no limit on the number of times a SS or SF can be observed
+// not used 10/20/15
 inline int assign_fiber_to_ss_sf(int j, int k, MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
 	int best = -1; int pbest = 10000;
 	List av_gals = P[j].av_gals[k];
@@ -362,11 +363,11 @@ void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Fea
         }
         
     }
-    for (int i=0;i<10;++i){printf(" plate %d petal %d  SS %d  SF %d \n",j,i,SS_in_petal[i],SF_in_petal[i]);}
+    //for (int i=0;i<10;++i){printf(" plate %d petal %d  SS %d  SF %d \n",j,i,SS_in_petal[i],SF_in_petal[i]);}
     // do standard stars,going through priority classes from least to most
     // skip SS and SF, so start at size -3
     //can get all available SS,SF on plate from P[j].av_gals_plate restricting to plate p
-    printf(" c = %d  SS_in_petal[p] = %d  F.MaxSS %d \n",M.priority_list.size()-3,SS_in_petal[p],F.MaxSS);
+    //printf(" c = %d  SS_in_petal[p] = %d  F.MaxSS %d \n",M.priority_list.size()-3,SS_in_petal[p],F.MaxSS);
     for(int c=M.priority_list.size()-3;SS_in_petal[p]<F.MaxSS&&c>-1;--c ){//try to do this for lowest priority
         // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SS_av_gal[p]; //standard stars on this petal
@@ -374,13 +375,15 @@ void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Fea
             int g=gals[gg];//a standard star
             Plist tfs=M[g].av_tfs;
             for(int i;i<tfs.size();++i){
-                int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
-                int g_old=A.TF[j][k];//what is now at (j,k)
-                if (M[g].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1){//right priority
-                    A.unassign(j,k,g_old,M,P,pp);
-                    assign_galaxy(g_old,M,P,pp,F,A);//try to assign
-                    A.assign(j,k,g,M,P,pp);
-                    SS_in_petal[p]+=1;
+                if(tfs[i].f==j){
+                    int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
+                    int g_old=A.TF[j][k];//what is now at (j,k)
+                    if (M[g].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1){//right priority
+                        A.unassign(j,k,g_old,M,P,pp);
+                        assign_galaxy(g_old,M,P,pp,F,A);//try to assign
+                        A.assign(j,k,g,M,P,pp);
+                        SS_in_petal[p]+=1;
+                    }
                 }
             }
          }
@@ -392,13 +395,15 @@ void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Fea
             int g=gals[gg];//a standard star
             Plist tfs=M[g].av_tfs;
             for(int i;i<tfs.size();++i){
-                int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
-                int g_old=A.TF[j][k];//what is now at (j,k)
-                if (M[g].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1){//right priority
-                    A.unassign(j,k,g_old,M,P,pp);
-                    assign_galaxy(g_old,M,P,pp,F,A);//try to assign
-                    A.assign(j,k,g,M,P,pp);
-                    SF_in_petal[p]+=1;
+                if(tfs[i]==j){
+                    int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
+                    int g_old=A.TF[j][k];//what is now at (j,k)
+                    if (M[g].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1){//right priority
+                        A.unassign(j,k,g_old,M,P,pp);
+                        assign_galaxy(g_old,M,P,pp,F,A);//try to assign
+                        A.assign(j,k,g,M,P,pp);
+                        SF_in_petal[p]+=1;
+                    }
                 }
             }
         }
