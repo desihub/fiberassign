@@ -395,7 +395,7 @@ void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Fea
             int g=gals[gg];//a standard star
             Plist tfs=M[g].av_tfs;
             for(int i;i<tfs.size();++i){
-                if(tfs[i]==j){
+                if(tfs[i].f==j){
                     int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                     int g_old=A.TF[j][k];//what is now at (j,k)
                     if (M[g].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1){//right priority
