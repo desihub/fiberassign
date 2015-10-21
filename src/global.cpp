@@ -376,7 +376,7 @@ void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Fea
             int g=gals[gg];//a standard star
             Plist tfs=M[g].av_tfs;//all tiles and fibers that reach g
             int done=0;//quit after we've used this SS
-            for(int i;i<tfs.size()&&ddone==0;++i){
+            for(int i;i<tfs.size() && done==0;++i){
                 if(tfs[i].f==j){//a combination on this plate
                     int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                     int g_old=A.TF[j][k];//what is now at (j,k)
