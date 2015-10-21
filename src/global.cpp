@@ -372,7 +372,7 @@ void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Fea
     for(int c=M.priority_list.size()-3;P[j].SS_in_petal[p]<F.MaxSS&&c>-1;--c ){//try to do this for lowest priority
         // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SS_av_gal[p]; //standard stars on this petal
-        for(int gg=0;gg<gals.size() && SS_in_petal[p]<F.MaxSS;++gg){
+        for(int gg=0;gg<gals.size() && P[j].SS_in_petal[p]<F.MaxSS;++gg){
             int g=gals[gg];//a standard star
             Plist tfs=M[g].av_tfs;//all tiles and fibers that reach g
             int done=0;//quit after we've used this SS
@@ -395,7 +395,7 @@ void new_replace( int j, int p, MTL& M, const Plates& P, const PP& pp, const Fea
     for(int c=M.priority_list.size()-3;P[j].SF_in_petal[p]<F.MaxSF&&c>-1;--c ){//try to do this for lowest priority
         // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SF_av_gal[p]; //standard stars on this plate
-        for(int gg=0;gg<gals.size() && SF_in_petal[p]<F.MaxSF;++gg){//what tfs for this SS?  M[g].av_tfs
+        for(int gg=0;gg<gals.size() && P[j].SF_in_petal[p]<F.MaxSF;++gg){//what tfs for this SS?  M[g].av_tfs
             int g=gals[gg];//a standard star
             Plist tfs=M[g].av_tfs;
             int done=0;
