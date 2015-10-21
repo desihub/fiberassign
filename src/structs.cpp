@@ -347,8 +347,9 @@ Plates read_plate_centers(const Feat& F) {
 			Q.density.resize(F.Nfiber); // <- added
             Q.SS_av_gal.resize(F.Nfbp);
             Q.SF_av_gal.resize(F.Nfbp);
-            Q.SS_in_petal(F.Npetal,0);
-            Q.SF_in_petal(F.Npetal,0);
+            for (int i=0);i<F.Npetal;++i){Q.SS_in_petal[i]=0;}
+            for (int i=0);i<F.Npetal;++i){Q.SF_in_petal[i]=0;}
+
 			try {P.push_back(Q);} catch(std::exception& e) {myexception(e);}
 		}
 	}
