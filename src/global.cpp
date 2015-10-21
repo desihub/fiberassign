@@ -471,13 +471,13 @@ void assign_sf_ss(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, A
                         int g = av_gals[gg];//galaxy at (j,k)
                         //printf("galaxy  %d plate %d fiber  %d\n",g,j,k);
                         if(M[g].t_priority==9900&&A.is_assigned_jg(j,g,M,F)==-1){
-                            printf(" priority  %d j %d k %d  occupied %d\n",M[g].t_priority,j,k,A.TF[j][k]);
+                            //printf(" priority  %d j %d k %d  occupied %d\n",M[g].t_priority,j,k,A.TF[j][k]);
                             A.assign(j,k,g,M,P,pp);
                             done=1;
                         }
                         else{
                             if(M[g].t_priority==9800&&A.is_assigned_jg(j,g,M,F)==-1){
-                                printf(" priority  %d j %d k %d  occupied %d\n",M[g].t_priority,j,k,A.TF[j][k]);
+                                //printf(" priority  %d j %d k %d  occupied %d\n",M[g].t_priority,j,k,A.TF[j][k]);
                                 A.assign(j,k,g,M,P,pp);
                                 done=1;
                             }
@@ -486,7 +486,7 @@ void assign_sf_ss(int j, MTL& M, const Plates& P, const PP& pp, const Feat& F, A
                 }
             }
 			// If not enough SS and SF, replace galaxies with lowest priority
-        printf("begin new replace\n");
+        //printf("begin new replace\n");
         new_replace(j,p,M,P,pp,F,A);
     }
 }
