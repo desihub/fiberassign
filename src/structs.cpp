@@ -394,7 +394,7 @@ Assignment::Assignment(const MTL& M, const Feat& F) {
 Assignment::~Assignment() {}
 
 // Assign g with tile/fiber (j,k), and check for duplicates
-void Assignment::assign(int j, int k, int g, MTL& M, const Plates& P, const PP& pp) {
+void Assignment::assign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
 	// Assign (j,k)
 	int q = TF[j][k];
 	if (q != -1) {
@@ -425,7 +425,7 @@ void Assignment::assign(int j, int k, int g, MTL& M, const Plates& P, const PP& 
 	unused[j][pp.spectrom[k]]--;
 }
 
-void Assignment::unassign(int j, int k, int g, MTL& M, const Plates& P, const PP& pp) {
+void Assignment::unassign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
 	if (TF[j][k]==-1) printf("### !!! ### TF (j,k) = (%d,%d) gets unassigned but was already not assigned\n",j,k);
 	int a = isfound(pair(j,k),GL[g]);
 	if (a==-1) printf("### !!! ### Galaxy g = %d gets unassigned but was already not assigned\n",g);
