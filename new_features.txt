@@ -43,10 +43,10 @@ PlotFreeFibTime false
 PlotSeenDens false
 PrintGalObs false
 
-MaxDec 90.
-MinDec -90.
+MaxDec 10.
+MinDec -10.
 MinRa 0.
-MaxRa 360.
+MaxRa 10.
 
 Verif false
 -------------------------------------------------
