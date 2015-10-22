@@ -86,7 +86,7 @@ int main(int argc, char **argv) {
     P=P_original;
 	printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
     //diagnostic
-    for (int j=0;j<F.Nplates;++j){
+    for (int j=0;j<F.Nplate;++j){
         for(int p=0;p<F.Npetal;++p){
             printf(" i %d  SS_in_petal  %d  SF_in_petal %d\n ", P[j].SS_in_petal[p], P[j].SF_in_petal[p]  );
         }
