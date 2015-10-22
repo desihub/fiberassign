@@ -421,11 +421,11 @@ void Assignment::assign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
     M[g].nobs_done++;
     M[g].nobs_remain--;
     if(M[g].t_priority==9800){
-        int p=pp.spectrom[k];
-        P[j].SF_in_petal[p]+=1;}
+        int q=pp.spectrom[k];
+        P[j].SF_in_petal[q]+=1;}
     if(M[g].t_priority==9900){
-        int p=pp.spectrom[k];
-        P[j].SS_in_petal[p]+=1;}
+        int q=pp.spectrom[k];
+        P[j].SS_in_petal[q]+=1;}
 	unused[j][pp.spectrom[k]]--;
 }
 
