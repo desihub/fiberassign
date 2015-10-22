@@ -1095,21 +1095,23 @@ void fa_write (int j, str outdir, const Gals & G, const Plates & P, const PP & p
 
 			for (int i = 0; i < n; ++i) {
 				int fib = offset + i;
-
 				int g = A.TF[j][fib];
-				str type = F.type[fib];
+
 				fiber_id[i] = fib;
 				positioner_id[i] = fib;
 				num_target[i] = P[j].av_gals[fib].size();
 				strncpy(objtype[i], type.c_str(), objtypelen);
 				target_id[i] = g;
 				desi_target[i] = 0;
+
 				if (g < 0) {
+					strcpy(objtype[i], "NA");
 					ra[i] = qNan;
 					dec[i] = qNan;
 					x_focal[i] = qNan;
 					y_focal[i] = qNan;
 				} else {
+					strncpy(objtype[i], F.kind[G[g].id].c_str(), objtypelen);
 					ra[i] = G[g].ra;
 					dec[i] = G[g].dec;
 					dpair proj = projection(g,j,G,P);
