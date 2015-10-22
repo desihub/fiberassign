@@ -338,6 +338,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
             //if(j==0)printf(" tfs size %d \n",tfs.size());
             int done=0;//quit after we've used this SS
             for(int i;i<tfs.size() && done==0;++i){
+                if(j==0)printf("i %d tfs[i].f  %d  tfs[i].s %d \n",i,tfs[i].f, tfs[i].s);
                 if(tfs[i].f==j){//a combination on this plate
                     int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                     int g_old=A.TF[j][k];//what is now at (j,k)
