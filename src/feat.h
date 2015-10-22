@@ -71,8 +71,8 @@ class Feat { // F for features
     
     double MaxDec;
     double MinDec;
-    double MaxRa'
-    double MinRa
+    double MaxRa;'
+    double MinRa;
 	// Indirectly set by features file
 	int Categories;
 	Slist types; // Same as type but with only QSO LRG ELG SS SF
