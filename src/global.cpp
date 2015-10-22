@@ -101,6 +101,15 @@ inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const MTL& M
 	return true;
     //doesn't require that jk is unassigned//doesn't require that g isn't assigned already on this plate
 }
+// makes sure we don't exceed limit on SS and SF
+inline bool ok_for_limit_SS_SF(int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F){
+    bool is_SF=M[g].t_priority==9800;
+    bool too_many_SF=P[j].SF_in_petal[pp.spectrom[k]]>F.MaxSF-1;
+    bool is_SS=M[g].t_priority==9900;
+    bool too_many_SS=P[j].SF_in_petal[pp.spectrom[k]]>F.MaxSS-1;
+    return !(is_SF&&too_many_SF)&&!(is_SF&&too_many_SF)
+    
+    
 
 // Find, for (j,k), find the best galaxy it can reach among the possible ones
 // Null list means you can take all possible kinds, otherwise you can only take, for the galaxy, a kind among this list
@@ -144,16 +153,7 @@ inline int assign_fiber(int j, int k, MTL& M, Plates& P, const PP& pp, const Fea
 	return best;
 }
 
-// makes sure we don't exceed limit on SS and SF
-inline bool ok_for_limit_SS_SF(int j, int k, const MTL& M, const Platex& P, const PP& pp, const Feat& F){
-    bool is_SF=M[g].t_priority==9800;
-    bool too_many_SF=P[j].SF_in_petal[pp.spectrom[k]]>F.MaxSF-1;
-    bool is_SS=M[g].t_priority==9900;
-    bool too_many_SS=P[j].SF_in_petal[pp.spectrom[k]]>F.MaxSS-1;
-    return !(is_SF&&too_many_SF)&&!(is_SF&&too_many_SF)
-                 
-                 
-                 
+
 // Tries to assign the galaxy g to one of the plates list starting with the jstart one, and of size size
 //default jstart is as A.next_plate
 //default size is number of plates to go
