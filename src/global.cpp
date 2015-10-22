@@ -351,24 +351,12 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
     //make sure there are enough standard stars and sky fibers on each petal p in plate j
     //special priorities for SS 9900  and SF  9800
     //first do SS count SS in each petal
-   /* std::vector<int> SS_in_petal(10,0), SF_in_petal(10,0);
-    
-    for(int k;k<F.Nfiber;++k){
-        int g=A.TF[j][k];
-        //printf("k= %d petal %d  SS at g= %d \n",k,pp.spectrom[k],g);
-        //count number of SS and SF already on this petal (j,p)
-        if(g!=-1&&M[g].t_priority==9900){SS_in_petal[pp.spectrom[k]]+=1;
-        }
-        if(g!=-1&&M[g].t_priority==9800){SF_in_petal[pp.spectrom[k]]+=1;
-        }
-        
-    }
-    */
     //for (int i=0;i<10;++i){printf(" plate %d petal %d  SS %d  SF %d \n",j,i,SS_in_petal[i],SF_in_petal[i]);}
     // do standard stars,going through priority classes from least to most
     // skip SS and SF, so start at size -3
     //can get all available SS,SF on plate from P[j].av_gals_plate restricting to plate p
     //printf(" c = %d  SS_in_petal[p] = %d  F.MaxSS %d \n",M.priority_list.size()-3,SS_in_petal[p],F.MaxSS);
+    if(j%1000==0){printf(" j= %d before free SS_in_petal 0 %   SF_in_petal 0 \n ", j, P[j].SS_in_petal[0],SF_in_petal[0]);
     for(int c=M.priority_list.size()-3;P[j].SS_in_petal[p]<F.MaxSS&&c>-1;--c ){//try to do this for lowest priority
         // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SS_av_gal[p]; //standard stars on this petal
@@ -391,6 +379,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
             }
          }
     }
+    if(j%1000==0){printf(" j= %d after free SS_in_petal 0 %   SF_in_petal 0 \n ", j, P[j].SS_in_petal[0],SF_in_petal[0]);
     for(int c=M.priority_list.size()-3;P[j].SF_in_petal[p]<F.MaxSF&&c>-1;--c ){//try to do this for lowest priority
         // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SF_av_gal[p]; //standard stars on this plate
@@ -413,7 +402,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
         }
     }
    
-    
+    if(j%1000==0){printf(" j= %d after not free SS_in_petal 0 %   SF_in_petal 0 \n ", j, P[j].SS_in_petal[0],SF_in_petal[0]);
 }
 
 
