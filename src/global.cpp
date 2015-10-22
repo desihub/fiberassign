@@ -111,7 +111,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
 	// For all available galaxies
 	for (int gg=0; gg<av_gals.size(); gg++) {
 		int g = av_gals[gg];
-        if(!(M[g].t_priority==9800&&P[j].SF_in_petal[pp.spectrom[k]]>F.MaxSF-1)&&!(M[g].t_priority==9900&&P[j].SF_in_petal[pp.spectrom[k]]>F.MaxSS-1)){
+        if(ok_for_limit_SS_SF){
             int m = M[g].nobs_remain; // Check whether it needs further observation
             if (m>=1) {
                 int prio = M[g].t_priority;
@@ -144,6 +144,16 @@ inline int assign_fiber(int j, int k, MTL& M, Plates& P, const PP& pp, const Fea
 	return best;
 }
 
+// makes sure we don't exceed limit on SS and SF
+inline bool ok_for_limit_SS_SF(int j, int k, const MTL& M, const Platex& P, const PP& pp, const Feat& F){
+    bool is_SF=M[g].t_priority==9800;
+    bool too_many_SF=P[j].SF_in_petal[pp.spectrom[k]]>F.MaxSF-1;
+    bool is_SS=M[g].t_priority==9900;
+    bool too_many_SS=P[j].SF_in_petal[pp.spectrom[k]]>F.MaxSS-1;
+    return !(is_SF&&too_many_SF)&&!(is_SF&&too_many_SF)
+                 
+                 
+                 
 // Tries to assign the galaxy g to one of the plates list starting with the jstart one, and of size size
 //default jstart is as A.next_plate
 //default size is number of plates to go
@@ -158,7 +168,7 @@ inline void assign_galaxy(int g,  MTL& M, Plates& P, const PP& pp, const Feat& F
 		int j = av_tfs[tfs].f;
 		int k = av_tfs[tfs].s;
 		// Check if the assignment is possible, if ok, if the tf is not used yet, and if the plate is in the list
-		if (j0<j && j<j0+n && !A.is_assigned_tf(j,k) && ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)) {
+		if (j0<j && j<j0+n && !A.is_assigned_tf(j,k) && ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)&&ok_for_limit_SS_SF) {
 			int unused = A.unused[j][pp.spectrom[k]];//unused fibers on this petal
 			if (unusedb<unused) {
 				jb = j; kb = k; unusedb = unused;//observe this galaxy by fiber on petal with most free fibefs
@@ -320,35 +330,6 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, Plates&P, const PP& pp, con
     
 }
 
-// If not enough SS and SF, remove old_kind an replace to SS-SF (new_kind) on petal (j,p)
-/*
-void replace(List old_kind, int new_kind, int j, int p, const MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A) {
-	int m = A.nkind(j,p,new_kind,M,P,pp,F,true);//number of new_kind already on this petal
-	List fibskindd;
-	for (int i=0; i<old_kind.size(); i++) addlist(fibskindd,A.fibs_of_kind(old_kind[i],j,p,M,pp,F));//list of fibers on tile j assigned to galaxies of types old_kind
-	List fibskind0 = random_permut(fibskindd);
-
-    List fibskind=fibskind0;
-	int Max = new_kind==F.ids.at("SS") ? F.MaxSS : F.MaxSF;
-	while (m<Max && fibskind.size()!=0) {
-		bool fin(false);
-		int k = fibskind[0];//list of fibers assigned to galaxies of old type
-        List av_g = P[j].av_gals[k];//all galaxies available to (j,k)
-		for (int gg=0; gg<av_g.size() && !fin; gg++) {
-			int g = av_g[gg];//is this one the right kind (newkind)?
-			if (M[g].id==new_kind && A.find_collision(j,k,g,pp,M,P,F)==-1 && A.is_assigned_jg(j,g)==-1) { // Looking for fiber that took ELG but could take SS or SF
-				int g0 = A.TF[j][k];
-				A.unassign(j,k,g0,M,P,pp);
-                galaxy(g0,M,P,pp,F,A);//having released g0, look for new place for it
-				A.assign(j,k,g,M,P,pp);
-				fin = true;
-				m++;
-			}
-		}
-		erase(0,fibskind);
-	}
-}
-*/
 
 void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
     //make sure there are enough standard stars and sky fibers on each petal p in plate j
