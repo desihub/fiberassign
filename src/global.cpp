@@ -101,6 +101,7 @@ inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const MTL& M
 	return true;
     //doesn't require that jk is unassigned//doesn't require that g isn't assigned already on this plate
 }
+
 // makes sure we don't exceed limit on SS and SF
 inline bool ok_for_limit_SS_SF(int g, int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F){
     bool is_SF=M[g].t_priority==9800;
@@ -179,28 +180,6 @@ inline void assign_galaxy(int g,  MTL& M, Plates& P, const PP& pp, const Feat& F
 	if (jb!=-1) A.assign(jb,kb,g,M,P,pp);
 }
 
-// Tries to assign (j,k) to a SS (preferentially because they have priority) or a SF
-// no limit on the number of times a SS or SF can be observed
-// not used 10/20/15
-/*
-inline int assign_fiber_to_ss_sf(int j, int k, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
-	int best = -1; int pbest = 10000;
-	List av_gals = P[j].av_gals[k];
-	for (int gg=0; gg<av_gals.size(); gg++) {
-		int g = av_gals[gg];
-
-        int prio = M[g].t_priority;
-        if (((M[g].SF && A.nkind(j,k,F.ids.at("SF"),M,P,pp,F)<F.MaxSF) || M[g].SS && A.nkind(j,k,F.ids.at("SS"),M,P,pp,F)<F.MaxSS) && prio<pbest) { // Optimizes this way
-			if (A.is_assigned_jg(j,g,M,F)==-1 && A.find_collision(j,k,g,pp,M,P,F)==-1) {//nmo collision, not assigned to this plate
-				best = g;
-				pbest = prio;
-			}
-		}
-	}
-	if (best!=-1) A.assign(j,k,best,M,P,pp);
-	return best;
-}
-*/
 // Takes an unassigned fiber and tries to assign it with the "improve" technique described in the doc
 // not used for SS or SF   because it is used before we add SS and SF
 inline int improve_fiber(int begin, int next, int j, int k, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A, int no_g=-1) {
@@ -341,7 +320,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
     // skip SS and SF, so start at size -3
     //can get all available SS,SF on plate from P[j].av_gals_plate restricting to plate p
     //printf(" c = %d  SS_in_petal[p] = %d  F.MaxSS %d \n",M.priority_list.size()-3,SS_in_petal[p],F.MaxSS);
-    if(j%1000==0){printf(" j= %d p= %d before free SS_in_petal 0 %d   SF_in_petal 0 %d\n ", j,p, P[j].SS_in_petal[0],P[j].SF_in_petal[0]);}
+    if(j%1000==0){printf(" j= %d p= %d before free SS_in_petal  %d   SF_in_petal  %d  avail SS %d  avail SF %d\n ", j,p, P[j].SS_in_petal[0],P[j].SF_in_petal[0]),P[j].SS_av_gal[p],P[j].SF_av_gal[p];}
     for(int c=M.priority_list.size()-3;P[j].SS_in_petal[p]<F.MaxSS&&c>-1;--c ){//try to do this for lowest priority
         // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SS_av_gal[p]; //standard stars on this petal
@@ -364,7 +343,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
             }
          }
     }
-        if(j%1000==0){printf(" j= %d p=%d after free SS_in_petal 0 %d   SF_in_petal 0  %d\n ", j,p, P[j].SS_in_petal[0],P[j].SF_in_petal[0]);}
+        if(j%1000==0){printf(" j= %d p=%d after free SS_in_petal  %d   SF_in_petal   %d\n ", j,p, P[j].SS_in_petal[0],P[j].SF_in_petal[0]);}
     for(int c=M.priority_list.size()-3;P[j].SF_in_petal[p]<F.MaxSF&&c>-1;--c ){//try to do this for lowest priority
         // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SF_av_gal[p]; //standard stars on this plate
@@ -387,7 +366,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
         }
     }
    
-        if(j%1000==0){printf(" j= %d p= %d after not free SS_in_petal 0 %d   SF_in_petal 0  %d\n ", j,p, P[j].SS_in_petal[0],P[j].SF_in_petal[0]);}
+        if(j%1000==0){printf(" j= %d p= %d after not free SS_in_petal  %d   SF_in_petal   %d\n ", j,p, P[j].SS_in_petal[0],P[j].SF_in_petal[0]);}
 }
 
 
