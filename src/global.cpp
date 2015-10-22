@@ -327,11 +327,11 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
     // skip SS and SF, so start at size -3
     //can get all available SS,SF on plate from P[j].av_gals_plate restricting to plate p
     //printf(" c = %d  SS_in_petal[p] = %d  F.MaxSS %d \n",M.priority_list.size()-3,SS_in_petal[p],F.MaxSS);
-    if(j%1000==0){printf(" j= %d p= %d before free SS_in_petal  %d   SF_in_petal  %d  avail SS %d  avail SF %d\n ", j,p, P[j].SS_in_petal[p],P[j].SF_in_petal[p]),P[j].SS_av_gal[p].size(),P[j].SF_av_gal[p].size();}
+    if(j%1000==0){printf(" j= %d p= %d before free SS_in_petal  %d   SF_in_petal  %d  avail SS %d  avail SF %d\n ", j,p, P[j].SS_in_petal[p],P[j].SF_in_petal[p],P[j].SS_av_gal[p].size(),P[j].SF_av_gal[p].size());}
     for(int c=M.priority_list.size()-3;P[j].SS_in_petal[p]<F.MaxSS&&c>-1;--c ){//try to do this for lowest priority
         // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SS_av_gal[p]; //standard stars on this petal
-        printf("j %d p %d gals.size() %d\n",j,p,gals.size());
+        printf("j %d p %d gals.size() %d\n",j,p,);
         for(int gg=0;gg<gals.size() ;++gg){
             int g=gals[gg];//a standard star
             Plist tfs=M[g].av_tfs;//all tiles and fibers that reach g
