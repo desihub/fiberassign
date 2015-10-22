@@ -69,18 +69,19 @@ Gals read_galaxies(const Feat& F) {
 	// reduce time
 	for (int i=0; i<Nobj; i++) {
 		if (i%F.moduloGal == 0) {
-		double theta = (90 - (double)dc[i])*M_PI/180;
-		double phi   = ((double)ra[i]     )*M_PI/180;
-		struct galaxy Q;
-		Q.id         = id[i]-1; // -1 added
-		Q.nhat[0]    = sin(theta)*cos(phi);
-		Q.nhat[1]    = sin(theta)*sin(phi);
-		Q.nhat[2]    = cos(theta);
-		Q.ra = ra[i];
-		Q.dec = dc[i];
-		Q.z = zz[i];
-		try{P.push_back(Q);}catch(std::exception& e) {myexception(e);}
- 
+            double theta = (90 - (double)dc[i])*M_PI/180;
+            double phi   = ((double)ra[i]     )*M_PI/180;
+            struct galaxy Q;
+            Q.id         = id[i]-1; // -1 added
+            Q.nhat[0]    = sin(theta)*cos(phi);
+            Q.nhat[1]    = sin(theta)*sin(phi);
+            Q.nhat[2]    = cos(theta);
+            Q.ra = ra[i];
+            Q.dec = dc[i];
+            Q.z = zz[i];
+            if(Q.dec<F.MaxDec && Q.dec>F.MinDec &&Q.ra<F.MaxRa && Q.ra>F.MinRa){
+                try{P.push_back(Q);}catch(std::exception& e) {myexception(e);}
+            }
 		}
 	}
 	return P;
@@ -142,7 +143,7 @@ Gals read_galaxies_ascii(const Feat& F)
 
         if (oid%F.moduloGal == 0) {
         try{P.push_back(Q);}catch(std::exception& e) {myexception(e);}
-        //if(oid%500000==0)printf( "%d  %d  %8.4f   %8.4f   %8.4f %8.4f   %8.4f   %8.4f \n",oid,Q.id, Q.z, Q.ra, Q.dec, Q.nhat[0],Q.nhat[1],Q.nhat[2]);
+
         }
         oid++;
         getline(fs,buf);
@@ -351,8 +352,9 @@ Plates read_plate_centers(const Feat& F) {
             Q.SF_in_petal.resize(F.Npetal);
             for (int i=0;i<F.Npetal;++i){Q.SS_in_petal[i]=0;}
             for (int i=0;i<F.Npetal;++i){Q.SF_in_petal[i]=0;}
-
-			try {P.push_back(Q);} catch(std::exception& e) {myexception(e);}
+            if(dec<F.MaxDec && dec>F.MinDec &&ra<F.MaxRa && ra>F.MinRa){
+                try {P.push_back(Q);} catch(std::exception& e) {myexception(e);}
+            }
 		}
 	}
 	fs.close();

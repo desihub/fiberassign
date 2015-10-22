@@ -142,9 +142,15 @@ void Feat::readInputFile(const char file[]) {
             if (tok[0]=="Ascii") Ascii = s2b(tok[1]);
             if (tok[0]=="PrintGalObs") PrintGalObs = s2i(tok[1]);
             if (tok[0]=="BrightTime") BrightTime = s2b(tok[1]);
+            
+            if (tok[0]=="MaxDec") MaxDec = s2d(tok[1]);
+            if (tok[0]=="MinDec") MinDec = s2d(tok[1]);
+            if (tok[0]=="MaxRa") MaxRa = s2d(tok[1]);
+            if (tok[0]=="MinRa") MinRa = s2d(tok[1]);
+
 		}
 	}
-     
+    
     
 	fIn.close();
 }
