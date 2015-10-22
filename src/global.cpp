@@ -70,6 +70,13 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
             }
         }
     }
+    //diagnostic
+    
+    for(int j=0;j<F.Nplate;++j){
+        for(int p=0;p<F.Npetal;++p){
+            printf(" j %d p %d SS_av %d  SF_av  %d \n"j,p,P[j].SS_av_gal[p], P[j].SF_av_gal[p]);
+        }
+    }
 	print_time(t,"# ... took :");
 }
 
