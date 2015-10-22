@@ -111,7 +111,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
 	// For all available galaxies
 	for (int gg=0; gg<av_gals.size(); gg++) {
 		int g = av_gals[gg];
-        if(!(M[g].t_priority==9800&&P[j].SF_in_petal[pp.spectrom[k]]>MaxSF-1)&&!(M[g].t_priority==9900&&P[j].SF_in_petal[pp.spectrom[k]]>MaxSS-1)){
+        if(!(M[g].t_priority==9800&&P[j].SF_in_petal[pp.spectrom[k]]>F.MaxSF-1)&&!(M[g].t_priority==9900&&P[j].SF_in_petal[pp.spectrom[k]]>F.MaxSS-1)){
             int m = M[g].nobs_remain; // Check whether it needs further observation
             if (m>=1) {
                 int prio = M[g].t_priority;
