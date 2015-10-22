@@ -345,7 +345,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
     for(int c=M.priority_list.size()-3;P[j].SS_in_petal[p]<F.MaxSS&&c>-1;--c ){//try to do this for lowest priority
         // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SS_av_gal[p]; //standard stars on this petal
-        for(int gg=0;gg<gals.size() && ok_for_limit_SS_SF(g,j,k,M,P,pp,F);++gg){
+        for(int gg=0;gg<gals.size() ;++gg){
             int g=gals[gg];//a standard star
             Plist tfs=M[g].av_tfs;//all tiles and fibers that reach g
             int done=0;//quit after we've used this SS
@@ -353,7 +353,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                 if(tfs[i].f==j){//a combination on this plate
                     int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                     int g_old=A.TF[j][k];//what is now at (j,k)
-                    if (M[g].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1){
+                    if (M[g].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1&& ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                         //right priority; this SS not already assigned on this plate
                         A.unassign(j,k,g_old,M,P,pp);
                         assign_galaxy(g_old,M,P,pp,F,A);//try to assign
@@ -368,7 +368,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
     for(int c=M.priority_list.size()-3;P[j].SF_in_petal[p]<F.MaxSF&&c>-1;--c ){//try to do this for lowest priority
         // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SF_av_gal[p]; //standard stars on this plate
-        for(int gg=0;gg<gals.size() && ok_for_limit_SS_SF(g,j,k,M,P,pp,F);++gg){//what tfs for this SS?  M[g].av_tfs
+        for(int gg=0;gg<gals.size();++gg){//what tfs for this SS?  M[g].av_tfs
             int g=gals[gg];//a standard star
             Plist tfs=M[g].av_tfs;
             int done=0;
@@ -376,7 +376,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                 if(tfs[i].f==j){
                     int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                     int g_old=A.TF[j][k];//what is now at (j,k)
-                    if (M[g].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1){//right priority
+                    if (M[g].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){//right priority
                         A.unassign(j,k,g_old,M,P,pp);
                         assign_galaxy(g_old,M,P,pp,F,A);//try to assign
                         A.assign(j,k,g,M,P,pp);
