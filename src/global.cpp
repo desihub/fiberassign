@@ -335,6 +335,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
         for(int gg=0;gg<gals.size() ;++gg){
             int g=gals[gg];//a standard star
             Plist tfs=M[g].av_tfs;//all tiles and fibers that reach g
+            if(j==0)printf(" tfs size %d \n",tfs.size());
             int done=0;//quit after we've used this SS
             for(int i;i<tfs.size() && done==0;++i){
                 if(tfs[i].f==j){//a combination on this plate
