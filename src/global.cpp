@@ -107,8 +107,9 @@ inline bool ok_for_limit_SS_SF(int g, int j, int k, const MTL& M, const Plates& 
     bool too_many_SF=P[j].SF_in_petal[pp.spectrom[k]]>F.MaxSF-1;
     bool is_SS=M[g].t_priority==9900;
     bool too_many_SS=P[j].SF_in_petal[pp.spectrom[k]]>F.MaxSS-1;
-    return !(is_SF&&too_many_SF)&&!(is_SF&&too_many_SF)
-    
+    return !(is_SF&&too_many_SF)&&!(is_SF&&too_many_SF);
+}
+
     
 
 // Find, for (j,k), find the best galaxy it can reach among the possible ones
