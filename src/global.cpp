@@ -1100,7 +1100,6 @@ void fa_write (int j, str outdir, const Gals & G, const Plates & P, const PP & p
 				fiber_id[i] = fib;
 				positioner_id[i] = fib;
 				num_target[i] = P[j].av_gals[fib].size();
-				strncpy(objtype[i], type.c_str(), objtypelen);
 				target_id[i] = g;
 				desi_target[i] = 0;
 
