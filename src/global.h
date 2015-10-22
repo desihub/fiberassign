@@ -53,7 +53,7 @@ void display_results(str outdir, const Gals& G, const Plates &P, const PP& pp, F
 
 void write_FAtile_ascii(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A);
 
-void fa_write(int j, const char *filename, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A);
+void fa_write(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A);
 
 void pyplotTile(int j, str fname, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A);
 
