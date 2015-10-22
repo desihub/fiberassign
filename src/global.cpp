@@ -102,7 +102,7 @@ inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const MTL& M
     //doesn't require that jk is unassigned//doesn't require that g isn't assigned already on this plate
 }
 // makes sure we don't exceed limit on SS and SF
-inline bool ok_for_limit_SS_SF(int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F){
+inline bool ok_for_limit_SS_SF(int g, int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F){
     bool is_SF=M[g].t_priority==9800;
     bool too_many_SF=P[j].SF_in_petal[pp.spectrom[k]]>F.MaxSF-1;
     bool is_SS=M[g].t_priority==9900;
@@ -120,7 +120,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
 	// For all available galaxies
 	for (int gg=0; gg<av_gals.size(); gg++) {
 		int g = av_gals[gg];
-        if(ok_for_limit_SS_SF){
+        if(ok_for_limit_SS_SF(g,j,k,M,P,PP,F)){
             int m = M[g].nobs_remain; // Check whether it needs further observation
             if (m>=1) {
                 int prio = M[g].t_priority;
@@ -168,7 +168,7 @@ inline void assign_galaxy(int g,  MTL& M, Plates& P, const PP& pp, const Feat& F
 		int j = av_tfs[tfs].f;
 		int k = av_tfs[tfs].s;
 		// Check if the assignment is possible, if ok, if the tf is not used yet, and if the plate is in the list
-		if (j0<j && j<j0+n && !A.is_assigned_tf(j,k) && ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)&&ok_for_limit_SS_SF) {
+		if (j0<j && j<j0+n && !A.is_assigned_tf(j,k) && ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)&&ok_for_limit_SS_SF(g,j,k,M,P,PP,F)) {
 			int unused = A.unused[j][pp.spectrom[k]];//unused fibers on this petal
 			if (unusedb<unused) {
 				jb = j; kb = k; unusedb = unused;//observe this galaxy by fiber on petal with most free fibefs
