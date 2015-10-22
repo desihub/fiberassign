@@ -71,7 +71,7 @@ class Feat { // F for features
     
     double MaxDec;
     double MinDec;
-    double MaxRa;'
+    double MaxRa;
     double MinRa;
 	// Indirectly set by features file
 	int Categories;
