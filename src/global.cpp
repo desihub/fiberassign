@@ -215,7 +215,7 @@ inline int improve_fiber(int begin, int next, int j, int k, MTL& M, Plates& P, c
 			for (int i=0; i<av_g.size(); i++) {
 				int g = av_g[i];
 				if (g!=-1 && g!=no_g) {
-					if (ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)) {//this doesn't check to see that jk isnt assigned: it is
+					if (ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)) {//this doesn't check to see that jk isnt assigned: it is
 						// Which tile-fibers have taken g ?
 						Plist tfs = A.chosen_tfs(g,F,begin,next);//all tile-fibers that observe g in tiles from begin to next
 						for (int p=0; p<tfs.size(); p++) {
@@ -345,7 +345,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
     for(int c=M.priority_list.size()-3;P[j].SS_in_petal[p]<F.MaxSS&&c>-1;--c ){//try to do this for lowest priority
         // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SS_av_gal[p]; //standard stars on this petal
-        for(int gg=0;gg<gals.size() && P[j].SS_in_petal[p]<F.MaxSS;++gg){
+        for(int gg=0;gg<gals.size() && ok_for_limit_SS_SF(g,j,k,M,P,pp,F);++gg){
             int g=gals[gg];//a standard star
             Plist tfs=M[g].av_tfs;//all tiles and fibers that reach g
             int done=0;//quit after we've used this SS
@@ -368,7 +368,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
     for(int c=M.priority_list.size()-3;P[j].SF_in_petal[p]<F.MaxSF&&c>-1;--c ){//try to do this for lowest priority
         // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SF_av_gal[p]; //standard stars on this plate
-        for(int gg=0;gg<gals.size() && P[j].SF_in_petal[p]<F.MaxSF;++gg){//what tfs for this SS?  M[g].av_tfs
+        for(int gg=0;gg<gals.size() && ok_for_limit_SS_SF(g,j,k,M,P,pp,F);++gg){//what tfs for this SS?  M[g].av_tfs
             int g=gals[gg];//a standard star
             Plist tfs=M[g].av_tfs;
             int done=0;
@@ -428,7 +428,7 @@ void assign_unused(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assign
 	}
 }
 
-// If not enough SS and SF, remove old_kind and replace with SS-SF (new_kind) on petal (j,p)
+// If not enough SS and SF,
 
 void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
 	List randPetals = random_permut(F.Npetal);
@@ -448,13 +448,13 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
                     for (int gg=0; gg<av_gals.size()&&done==0; gg++) {
                         int g = av_gals[gg];//galaxy at (j,k)
                         //printf("galaxy  %d plate %d fiber  %d\n",g,j,k);
-                        if(M[g].t_priority==9900&&A.is_assigned_jg(j,g,M,F)==-1){
+                        if(M[g].t_priority==9900&&A.is_assigned_jg(j,g,M,F)==-1&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                             //printf(" priority  %d j %d k %d  occupied %d\n",M[g].t_priority,j,k,A.TF[j][k]);
                             A.assign(j,k,g,M,P,pp);
                             done=1;
                         }
                         else{
-                            if(M[g].t_priority==9800&&A.is_assigned_jg(j,g,M,F)==-1){
+                            if(M[g].t_priority==9800&&A.is_assigned_jg(j,g,M,F)==-1&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                                 //printf(" priority  %d j %d k %d  occupied %d\n",M[g].t_priority,j,k,A.TF[j][k]);
                                 A.assign(j,k,g,M,P,pp);
                                 done=1;
@@ -504,7 +504,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 							}
 						}
 					}
-					if (jpb!=-1) {
+					if (jpb!=-1&&ok_for_limit_SS_SF(g,jpb,kpb,M,P,pp,F)) {
 						A.unassign(j,k,g,M,P,pp);
 						A.assign(jpb,kpb,g,M,P,pp);
 						Done[j][k] = 1;
