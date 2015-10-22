@@ -356,7 +356,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
     // skip SS and SF, so start at size -3
     //can get all available SS,SF on plate from P[j].av_gals_plate restricting to plate p
     //printf(" c = %d  SS_in_petal[p] = %d  F.MaxSS %d \n",M.priority_list.size()-3,SS_in_petal[p],F.MaxSS);
-    if(j%1000==0){printf(" j= %d before free SS_in_petal 0 %   SF_in_petal 0 \n ", j, P[j].SS_in_petal[0],P[j].SF_in_petal[0]);}
+    if(j%1000==0){printf(" j= %d p= %d before free SS_in_petal 0 %d   SF_in_petal 0 %d\n ", j,p, P[j].SS_in_petal[0],P[j].SF_in_petal[0]);}
     for(int c=M.priority_list.size()-3;P[j].SS_in_petal[p]<F.MaxSS&&c>-1;--c ){//try to do this for lowest priority
         // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SS_av_gal[p]; //standard stars on this petal
@@ -379,7 +379,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
             }
          }
     }
-        if(j%1000==0){printf(" j= %d after free SS_in_petal 0 %   SF_in_petal 0 \n ", j, P[j].SS_in_petal[0],P[j].SF_in_petal[0]);}
+        if(j%1000==0){printf(" j= %d p=%d after free SS_in_petal 0 %d   SF_in_petal 0  %d\n ", j,p, P[j].SS_in_petal[0],P[j].SF_in_petal[0]);}
     for(int c=M.priority_list.size()-3;P[j].SF_in_petal[p]<F.MaxSF&&c>-1;--c ){//try to do this for lowest priority
         // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SF_av_gal[p]; //standard stars on this plate
@@ -402,7 +402,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
         }
     }
    
-        if(j%1000==0){printf(" j= %d after not free SS_in_petal 0 %   SF_in_petal 0 \n ", j, P[j].SS_in_petal[0],P[j].SF_in_petal[0]);}
+        if(j%1000==0){printf(" j= %d p= %d after not free SS_in_petal 0 %d   SF_in_petal 0  %d\n ", j,p, P[j].SS_in_petal[0],P[j].SF_in_petal[0]);}
 }
 
 
