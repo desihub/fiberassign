@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
     //diagnostic
     for (int j=0;j<F.Nplate;++j){
         for(int p=0;p<F.Npetal;++p){
-            printf(" i %d  SS_in_petal  %d  SF_in_petal %d\n ", i,P[j].SS_in_petal[p], P[j].SF_in_petal[p]  );
+            printf(" j %d p %d  SS_in_petal  %d  SF_in_petal %d\n ",j, p ,P[j].SS_in_petal[p], P[j].SF_in_petal[p]  );
         }
     }
 
