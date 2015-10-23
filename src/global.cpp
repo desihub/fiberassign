@@ -337,7 +337,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                 if(tfs[i].f==j){//a combination on this plate
                     int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                     int g_old=A.TF[j][k];//what is now at (j,k)
-                    //if (j==0)printf(" j  %d  k %d  g %d  g_old %d  M[g_old].priority_class  %d A.is_assigned_jg(j,g,M,F) %d ok_for_limit_SS_SF(g,j,k,M,P,pp,F) %d \n ", j, k,  g , g_old , M[g_old].priority_class  ,A.is_assigned_jg(j,g,M,F) , ok_for_limit_SS_SF(g,j,k,M,P,pp,F));
+                    if (j==0)printf(" SS j  %d  k %d  g %d  g_old %d  M[g_old].priority_class  %d A.is_assigned_jg(j,g,M,F) %d ok_for_limit_SS_SF(g,j,k,M,P,pp,F) %d \n ", j, k,  g , g_old , M[g_old].priority_class  ,A.is_assigned_jg(j,g,M,F) , ok_for_limit_SS_SF(g,j,k,M,P,pp,F));
                     if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1&& ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                         //right priority; this SS not already assigned on this plate
                         A.unassign(j,k,g_old,M,P,pp);
@@ -364,7 +364,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                 if(tfs[i].f==j){
                     int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                     int g_old=A.TF[j][k];//what is now at (j,k)
-                    if (j==0)printf(" j  %d  k %d  g %d  g_old %d  M[g_old].priority_class  %d A.is_assigned_jg(j,g,M,F) %d ok_for_limit_SS_SF(g,j,k,M,P,pp,F) %d \n ", j, k,  g , g_old , M[g_old].priority_class  ,A.is_assigned_jg(j,g,M,F) , ok_for_limit_SS_SF(g,j,k,M,P,pp,F));
+                    if (j==0)printf(" SF j  %d  k %d  g %d  g_old %d  M[g_old].priority_class  %d A.is_assigned_jg(j,g,M,F) %d ok_for_limit_SS_SF(g,j,k,M,P,pp,F) %d \n ", j, k,  g , g_old , M[g_old].priority_class  ,A.is_assigned_jg(j,g,M,F) , ok_for_limit_SS_SF(g,j,k,M,P,pp,F));
                     if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                         A.unassign(j,k,g_old,M,P,pp);
                         assign_galaxy(g_old,M,P,pp,F,A);//try to assign
