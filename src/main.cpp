@@ -150,7 +150,7 @@ int main(int argc, char **argv) {
 		// Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
         //printf("done with assign_sf_ss for plate %d\n", j);
 		if (0<=j-F.Analysis) update_plan_from_one_obs(G,M,P,pp,F,A,F.Nplate-1); else printf("\n");
-        printf("done with update\n");
+        printf("jj= %d done with update\n",jj);
 		A.next_plate++;
 		// Redistribute and improve on various occasions  add more times if desired
 /*
