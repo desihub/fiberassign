@@ -334,7 +334,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
         //printf("j %d p %d gals.size() %d\n",j,p,gals.size());
         for(int gg=0;gg<gals.size() ;++gg){
             int g=gals[gg];//a standard star
-            if(is_assigned_jg(j,g)==0){
+            if(A.is_assigned_jg(j,g)==-1){
             Plist tfs=M[g].av_tfs;//all tiles and fibers that reach g
             //if(j==0)printf(" tfs size %d \n",tfs.size());
             int done=0;//quit after we've used this SS
@@ -362,7 +362,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
         std::vector <int> gals=P[j].SF_av_gal[p]; //standard stars on this plate
         for(int gg=0;gg<gals.size();++gg){//what tfs for this SS?  M[g].av_tfs
             int g=gals[gg];//a standard star
-            if(is_assigned_jg(j,g)==0){
+            if(A.is_assigned_jg(j,g)==-1){
             Plist tfs=M[g].av_tfs;
             int done=0;
             for(int i;i<tfs.size() && done==0;++i){
