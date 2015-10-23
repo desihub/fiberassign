@@ -76,10 +76,10 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
         for(int p=0;p<F.Npetal;++p){
             printf(" j %d p %d SS_av %d  SF_av  %d \n",j,p,P[j].SS_av_gal[p].size(), P[j].SF_av_gal[p].size());
         }
-    }
+    }*/
 	print_time(t,"# ... took :");
 }
-*/
+
 void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) {
     //G[i].av_tfs is list of tile-fiber pairs available to galaxy i
 	Time t;
