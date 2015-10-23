@@ -142,7 +142,7 @@ int main(int argc, char **argv) {
 		if(j%1000==0)diagnostic(M,G,F,A);
         assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF just before an observation
         printf(" done with assign_sf_ss\n");
-		assign_unused(j,M,P,pp,F,A);
+		//assign_unused(j,M,P,pp,F,A);
         printf("done with assign_unused\n");
 		//if (j%2000==0) pyplotTile(j,"doc/figs",G,P,pp,F,A); // Picture of positioners, galaxies
 		
