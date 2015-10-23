@@ -327,9 +327,9 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
             Plist tfs=M[g].av_tfs;//all tiles and fibers that reach g
             int done=0;//quit after we've used this SS
             for(int i=0;i<tfs.size() && done==0;++i){
-                if(tfs[i].f==j){//a combination on this plate
+                if(tfs[i].f==j&&pp.spectrom[tfs[i].s]==p){//a combination on this plate
                     int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
-                    int g_old=A.TF[j][k];//what is now at (j,k)
+                    int g_old=A.TF[j][k];//what is now at (j,k)  g_old can't be -1 or we would have used it already in assign_sf
                     if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1&& ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                         //right priority; this SS not already assigned on this plate
                         A.unassign(j,k,g_old,M,P,pp);
@@ -351,7 +351,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
             Plist tfs=M[g].av_tfs;
             int done=0;
             for(int i=0;i<tfs.size() && done==0;++i){
-                if(tfs[i].f==j){
+                if(tfs[i].f==j&&pp.spectrom[tfs[i].s]==p){
                     int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                     int g_old=A.TF[j][k];//what is now at (j,k)
                    if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
@@ -443,7 +443,7 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
             }
 			// If not enough SS and SF, replace galaxies with lowest priority
         //printf("begin new replace\n");
-        //new_replace(j,p,M,P,pp,F,A);
+        new_replace(j,p,M,P,pp,F,A);
     }
 }
 
