@@ -70,18 +70,12 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
             }
         }
     }
-    //diagnostic
-    /*
-    for(int j=0;j<F.Nplate;++j){
-        for(int p=0;p<F.Npetal;++p){
-            printf(" j %d p %d SS_av %d  SF_av  %d \n",j,p,P[j].SS_av_gal[p].size(), P[j].SF_av_gal[p].size());
-        }
-    }*/
+
 	print_time(t,"# ... took :");
 }
 
 void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) {
-    //G[i].av_tfs is list of tile-fiber pairs available to galaxy i
+    //M[i].av_tfs is list of tile-fiber pairs available to galaxy i
 	Time t;
 	init_time(t,"# Begin computing available tilefibers");
 	for(int j=0; j<F.Nplate; j++) {
@@ -107,6 +101,7 @@ inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const MTL& M
     //if (M[g].t_priority==9800 && )
 	return true;
     //doesn't require that jk is unassigned//doesn't require that g isn't assigned already on this plate
+    //use is_assigned_jg for this
 }
 
 // makes sure we don't exceed limit on SS and SF
