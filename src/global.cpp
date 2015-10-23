@@ -266,7 +266,7 @@ void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int 
 //not used
 // If there are galaxies discovered as fake for example, they won't be observed several times in the plan
 // haas access to G,not just M, because it needs to know the truth
-/*
+
 void update_plan_from_one_obs(const Gals& G, MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int end) {
 	int cnt(0);
 	int j0 = A.next_plate;
@@ -312,7 +312,7 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, Plates&P, const PP& pp, con
 	//printf(" %4d unas & %4d replaced\n",cnt,na_end-na_start+cnt); fl();
     
 }
-*/
+
 
 void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
     // do standard stars,going through priority classes from least to most
