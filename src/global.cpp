@@ -334,6 +334,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
         //printf("j %d p %d gals.size() %d\n",j,p,gals.size());
         for(int gg=0;gg<gals.size() ;++gg){
             int g=gals[gg];//a standard star
+            if(!is_assigned_jg(j,g)){
             Plist tfs=M[g].av_tfs;//all tiles and fibers that reach g
             //if(j==0)printf(" tfs size %d \n",tfs.size());
             int done=0;//quit after we've used this SS
@@ -342,7 +343,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                 if(tfs[i].f==j){//a combination on this plate
                     int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                     int g_old=A.TF[j][k];//what is now at (j,k)
-                    if (j==0)printf(" j  %d  k%d  g %d  g_old %d  M[g].priority_class  %d A.is_assigned_jg(j,g,M,F) %d ok_for_limit_SS_SF(g,j,k,M,P,pp,F) %d \n ", j, k,  g , g_old , M[g].priority_class  ,A.is_assigned_jg(j,g,M,F) , ok_for_limit_SS_SF(g,j,k,M,P,pp,F));
+                    if (j==0)printf(" j  %d  k %d  g %d  g_old %d  M[g_old].priority_class  %d A.is_assigned_jg(j,g,M,F) %d ok_for_limit_SS_SF(g,j,k,M,P,pp,F) %d \n ", j, k,  g , g_old , M[g_old].priority_class  ,A.is_assigned_jg(j,g,M,F) , ok_for_limit_SS_SF(g,j,k,M,P,pp,F));
                     if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1&& ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                         //right priority; this SS not already assigned on this plate
                         A.unassign(j,k,g_old,M,P,pp);
@@ -352,6 +353,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                     }
                 }
             }
+            }
          }
     }
         if(j%1000==0){printf(" j= %d p=%d after  SS_in_petal  %d   SF_in_petal   %d\n ", j,p, P[j].SS_in_petal[p],P[j].SF_in_petal[p]);}
@@ -360,6 +362,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
         std::vector <int> gals=P[j].SF_av_gal[p]; //standard stars on this plate
         for(int gg=0;gg<gals.size();++gg){//what tfs for this SS?  M[g].av_tfs
             int g=gals[gg];//a standard star
+            if(!is_assigned_jg(j,g)){
             Plist tfs=M[g].av_tfs;
             int done=0;
             for(int i;i<tfs.size() && done==0;++i){
@@ -373,6 +376,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                         done=1;
                     }
                 }
+            }
             }
         }
     }
