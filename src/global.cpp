@@ -350,7 +350,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
             }
         }
     }
-    if(j%1000==0){printf(" j= %d p=%d after  SS_in_petal  %d   SF_in_petal   %d\n ", j,p, P[j].SS_in_petal[p],P[j].SF_in_petal[p]);}
+    //if(j%1000==0){printf(" j= %d p=%d after  SS_in_petal  %d   SF_in_petal   %d\n ", j,p, P[j].SS_in_petal[p],P[j].SF_in_petal[p]);}
     for(int c=M.priority_list.size()-3;P[j].SF_in_petal[p]<F.MaxSF && c>-1;--c ){//try to do this for lowest priority
         // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SF_av_gal[p]; //standard stars on this plate
@@ -377,7 +377,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
         }
     }
    
-        if(j%1000==0){printf(" j= %d p= %d after SS_in_petal  %d   SF_in_petal   %d\n ", j,p, P[j].SS_in_petal[p],P[j].SF_in_petal[p]);}
+        //if(j%1000==0){printf(" j= %d p= %d after SS_in_petal  %d   SF_in_petal   %d\n ", j,p, P[j].SS_in_petal[p],P[j].SF_in_petal[p]);}
 }
 
 
