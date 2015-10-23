@@ -71,7 +71,7 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
         }
     }
     //diagnostic
-    
+    /*
     for(int j=0;j<F.Nplate;++j){
         for(int p=0;p<F.Npetal;++p){
             printf(" j %d p %d SS_av %d  SF_av  %d \n",j,p,P[j].SS_av_gal[p].size(), P[j].SF_av_gal[p].size());
@@ -79,7 +79,7 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
     }
 	print_time(t,"# ... took :");
 }
-
+*/
 void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) {
     //G[i].av_tfs is list of tile-fiber pairs available to galaxy i
 	Time t;
@@ -319,19 +319,14 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, Plates&P, const PP& pp, con
 
 
 void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
-    //make sure there are enough standard stars and sky fibers on each petal p in plate j
-    //special priorities for SS 9900  and SF  9800
-    //first do SS count SS in each petal
-    //for (int i=0;i<10;++i){printf(" plate %d petal %d  SS %d  SF %d \n",j,i,SS_in_petal[i],SF_in_petal[i]);}
     // do standard stars,going through priority classes from least to most
     // skip SS and SF, so start at size -3
     //can get all available SS,SF on plate from P[j].av_gals_plate restricting to plate p
     //printf(" c = %d  SS_in_petal[p] = %d  F.MaxSS %d \n",M.priority_list.size()-3,SS_in_petal[p],F.MaxSS);
     if(j%1000==0){printf(" j= %d p= %d before  SS_in_petal  %d   SF_in_petal  %d  avail SS %d  avail SF %d\n ", j,p, P[j].SS_in_petal[p],P[j].SF_in_petal[p],P[j].SS_av_gal[p].size(),P[j].SF_av_gal[p].size());}
-    for(int c=M.priority_list.size()-3;P[j].SS_in_petal[p]<F.MaxSS&&c>-1;--c ){//try to do this for lowest priority
+    for(int c=M.priority_list.size()-3;P[j].SS_in_petal[p]<F.MaxSS && c>-1;--c ){//try to do this for lowest priority
         // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SS_av_gal[p]; //standard stars on this petal
-        //printf("j %d p %d gals.size() %d\n",j,p,gals.size());
         for(int gg=0;gg<gals.size() ;++gg){
             int g=gals[gg];//a standard star
             if(A.is_assigned_jg(j,g)==-1){
@@ -339,7 +334,6 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
             //if(j==0)printf(" tfs size %d \n",tfs.size());
             int done=0;//quit after we've used this SS
             for(int i=0;i<tfs.size() && done==0;++i){
-                
                 if(tfs[i].f==j){//a combination on this plate
                     int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                     int g_old=A.TF[j][k];//what is now at (j,k)
@@ -354,14 +348,14 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                 }
             }
             }
-         }
+        }
     }
         if(j%1000==0){printf(" j= %d p=%d after  SS_in_petal  %d   SF_in_petal   %d\n ", j,p, P[j].SS_in_petal[p],P[j].SF_in_petal[p]);}
-    for(int c=M.priority_list.size()-3;P[j].SF_in_petal[p]<F.MaxSF&&c>-1;--c ){//try to do this for lowest priority
+    for(int c=M.priority_list.size()-3;P[j].SF_in_petal[p]<F.MaxSF && c>-1;--c ){//try to do this for lowest priority
         // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SF_av_gal[p]; //standard stars on this plate
         for(int gg=0;gg<gals.size();++gg){//what tfs for this SS?  M[g].av_tfs
-            int g=gals[gg];//a standard star
+            int g=gals[gg];//a sky fiber
             if(A.is_assigned_jg(j,g)==-1){
             Plist tfs=M[g].av_tfs;
             int done=0;
@@ -369,7 +363,8 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                 if(tfs[i].f==j){
                     int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                     int g_old=A.TF[j][k];//what is now at (j,k)
-                    if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){//right priority
+                    if (j==0)printf(" j  %d  k %d  g %d  g_old %d  M[g_old].priority_class  %d A.is_assigned_jg(j,g,M,F) %d ok_for_limit_SS_SF(g,j,k,M,P,pp,F) %d \n ", j, k,  g , g_old , M[g_old].priority_class  ,A.is_assigned_jg(j,g,M,F) , ok_for_limit_SS_SF(g,j,k,M,P,pp,F));
+                    if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                         A.unassign(j,k,g_old,M,P,pp);
                         assign_galaxy(g_old,M,P,pp,F,A);//try to assign
                         A.assign(j,k,g,M,P,pp);
