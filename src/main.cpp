@@ -140,7 +140,7 @@ int main(int argc, char **argv) {
 		int j = A.next_plate;
         //printf(" j = %d is next plate\n",j);
 		if(j%1000==0)diagnostic(M,G,F,A);
-        //assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF just before an observation
+        assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF just before an observation
         printf(" done with assign_sf_ss\n");
 		//assign_unused(j,M,P,pp,F,A);
         printf("done with assign_unused\n");

@@ -412,9 +412,8 @@ void assign_unused(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assign
 void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
 	List randPetals = random_permut(F.Npetal);
 	for (int ppet=0; ppet<F.Npetal; ppet++) {
-        //printf(" ppet = %d \n",ppet);
 		int p = randPetals[ppet];
-		List randFibers = random_permut(pp.fibers_of_sp[p]);
+		List randFibers = random_permut(pp.fibers_of_sp[p]);//fibers for this petal
         //first use any free fibers
 			for (int kk=0; kk<F.Nfbp; kk++) {
                 //printf(" kk = %d \n", kk);
@@ -444,7 +443,7 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
             }
 			// If not enough SS and SF, replace galaxies with lowest priority
         //printf("begin new replace\n");
-        new_replace(j,p,M,P,pp,F,A);
+        //new_replace(j,p,M,P,pp,F,A);
     }
 }
 
