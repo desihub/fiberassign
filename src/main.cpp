@@ -141,14 +141,16 @@ int main(int argc, char **argv) {
         //printf(" j = %d is next plate\n",j);
 		if(j%1000==0)diagnostic(M,G,F,A);
         assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF just before an observation
+        printf(" done with assign_sf_ss\n");
 		assign_unused(j,M,P,pp,F,A);
+        printf("done with assign_unused\n");
 		//if (j%2000==0) pyplotTile(j,"doc/figs",G,P,pp,F,A); // Picture of positioners, galaxies
 		
 		//printf(" %s not as - ",format(5,f(A.unused_f(j,F))).c_str()); fl();
 		// Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
         //printf("done with assign_sf_ss for plate %d\n", j);
 		if (0<=j-F.Analysis) update_plan_from_one_obs(G,M,P,pp,F,A,F.Nplate-1); else printf("\n");
-     
+        printf("done with update\n")
 		A.next_plate++;
 		// Redistribute and improve on various occasions  add more times if desired
 /*
