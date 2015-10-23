@@ -334,11 +334,11 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
             //if(j==0)printf(" tfs size %d \n",tfs.size());
             int done=0;//quit after we've used this SS
             for(int i=0;i<tfs.size() && done==0;++i){
-                if(j==0)printf(" SS p %d i %d  tfs.f %d  tfb.s %d\n",p,i,tfs[i].f,tfs[i].s);
+                //if(j==0)printf(" SS p %d i %d  tfs.f %d  tfb.s %d\n",p,i,tfs[i].f,tfs[i].s);
                 if(tfs[i].f==j){//a combination on this plate
                     int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                     int g_old=A.TF[j][k];//what is now at (j,k)
-                    //if (j==0)printf(" SS j  %d  k %d  g %d  g_old %d  M[g_old].priority_class  %d A.is_assigned_jg(j,g,M,F) %d ok_for_limit_SS_SF(g,j,k,M,P,pp,F) %d \n ", j, k,  g , g_old , M[g_old].priority_class  ,A.is_assigned_jg(j,g,M,F) , ok_for_limit_SS_SF(g,j,k,M,P,pp,F));
+                    if (j==0)printf(" SS gg %d j  %d  k %d  g %d  g_old %d  M[g_old].priority_class  %d A.is_assigned_jg(j,g,M,F) %d ok_for_limit_SS_SF(g,j,k,M,P,pp,F) %d \n ", gg,j, k,  g , g_old , M[g_old].priority_class  ,A.is_assigned_jg(j,g,M,F) , ok_for_limit_SS_SF(g,j,k,M,P,pp,F));
                     if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1&& ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                         //right priority; this SS not already assigned on this plate
                         A.unassign(j,k,g_old,M,P,pp);
@@ -355,15 +355,15 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
     for(int c=M.priority_list.size()-3;P[j].SF_in_petal[p]<F.MaxSF && c>-1;--c ){//try to do this for lowest priority
         // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SF_av_gal[p]; //standard stars on this plate
-        printf(" SF c %d j %d p %d gals-size %d\n",c,j,p,gals.size());
+        //printf(" SF c %d j %d p %d gals-size %d\n",c,j,p,gals.size());
         for(int gg=0;gg<gals.size();++gg){//what tfs for this SS?  M[g].av_tfs
             if(gg%100==0)printf(" gg %d\n",gg);
-            int g=gals[gg];//a sky fiber
+            //int g=gals[gg];//a sky fiber
             if(A.is_assigned_jg(j,g)==-1){
             Plist tfs=M[g].av_tfs;
             int done=0;
             for(int i;i<tfs.size() && done==0;++i){
-                if(j==0)printf("  SF p %d i %d  tfs.f %d  tfb.s %d\n",p,i,tfs[i].f,tfs[i].s);
+                //if(j==0)printf("  SF p %d i %d  tfs.f %d  tfb.s %d\n",p,i,tfs[i].f,tfs[i].s);
                 if(tfs[i].f==j){
                     int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                     int g_old=A.TF[j][k];//what is now at (j,k)
