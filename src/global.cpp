@@ -114,7 +114,7 @@ inline bool ok_for_limit_SS_SF(int g, int j, int k, const MTL& M, const Plates& 
     bool is_SF=M[g].t_priority==9800;
     bool too_many_SF=P[j].SF_in_petal[pp.spectrom[k]]>F.MaxSF-1;
     bool is_SS=M[g].t_priority==9900;
-    bool too_many_SS=P[j].SF_in_petal[pp.spectrom[k]]>F.MaxSS-1;
+    bool too_many_SS=P[j].SS_in_petal[pp.spectrom[k]]>F.MaxSS-1;
     return !(is_SF&&too_many_SF)&&!(is_SF&&too_many_SF);
 }
 
@@ -381,7 +381,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
         }
     }
    
-        if(j%1000==0){printf(" j= %d p= %d after SF_in_petal  %d   SF_in_petal   %d\n ", j,p, P[j].SS_in_petal[p],P[j].SF_in_petal[p]);}
+        if(j%1000==0){printf(" j= %d p= %d after SS_in_petal  %d   SF_in_petal   %d\n ", j,p, P[j].SS_in_petal[p],P[j].SF_in_petal[p]);}
 }
 
 
