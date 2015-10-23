@@ -266,6 +266,7 @@ void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int 
 //not used
 // If there are galaxies discovered as fake for example, they won't be observed several times in the plan
 // haas access to G,not just M, because it needs to know the truth
+/*
 void update_plan_from_one_obs(const Gals& G, MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int end) {
 	int cnt(0);
 	int j0 = A.next_plate;
@@ -311,14 +312,12 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, Plates&P, const PP& pp, con
 	//printf(" %4d unas & %4d replaced\n",cnt,na_end-na_start+cnt); fl();
     
 }
-
+*/
 
 void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
     // do standard stars,going through priority classes from least to most
     // skip SS and SF, so start at size -3
     //can get all available SS,SF on plate from P[j].av_gals_plate restricting to plate p
-    //printf(" c = %d  SS_in_petal[p] = %d  F.MaxSS %d \n",M.priority_list.size()-3,SS_in_petal[p],F.MaxSS);
-    //if(j%1000==0){printf(" j= %d p= %d before  SS_in_petal  %d   SF_in_petal  %d  avail SS %d  avail SF %d\n ", j,p, P[j].SS_in_petal[p],P[j].SF_in_petal[p],P[j].SS_av_gal[p].size(),P[j].SF_av_gal[p].size());}
     for(int c=M.priority_list.size()-3;P[j].SS_in_petal[p]<F.MaxSS && c>-1;--c ){//try to do this for lowest priority
         // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SS_av_gal[p]; //standard stars on this petal
@@ -328,11 +327,9 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
             Plist tfs=M[g].av_tfs;//all tiles and fibers that reach g
             int done=0;//quit after we've used this SS
             for(int i=0;i<tfs.size() && done==0;++i){
-                //if(j==0)printf(" SS p %d i %d  tfs.f %d  tfb.s %d\n",p,i,tfs[i].f,tfs[i].s);
                 if(tfs[i].f==j){//a combination on this plate
                     int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                     int g_old=A.TF[j][k];//what is now at (j,k)
-                    //if (j==0)printf(" SS gg %d j  %d  k %d  g %d  g_old %d  M[g_old].priority_class  %d A.is_assigned_jg(j,g,M,F) %d ok_for_limit_SS_SF(g,j,k,M,P,pp,F) %d \n ", gg,j, k,  g , g_old , M[g_old].priority_class  ,A.is_assigned_jg(j,g,M,F) , ok_for_limit_SS_SF(g,j,k,M,P,pp,F));
                     if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1&& ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                         //right priority; this SS not already assigned on this plate
                         A.unassign(j,k,g_old,M,P,pp);
@@ -345,7 +342,6 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
             }
         }
     }
-    //if(j%1000==0){printf(" j= %d p=%d after  SS_in_petal  %d   SF_in_petal   %d\n ", j,p, P[j].SS_in_petal[p],P[j].SF_in_petal[p]);}
     for(int c=M.priority_list.size()-3;P[j].SF_in_petal[p]<F.MaxSF && c>-1;--c ){//try to do this for lowest priority
         // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SF_av_gal[p]; //standard stars on this plate
@@ -355,12 +351,10 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
             Plist tfs=M[g].av_tfs;
             int done=0;
             for(int i=0;i<tfs.size() && done==0;++i){
-                //if(j==0)printf("  SF p %d i %d  tfs.f %d  tfb.s %d\n",p,i,tfs[i].f,tfs[i].s);
                 if(tfs[i].f==j){
                     int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                     int g_old=A.TF[j][k];//what is now at (j,k)
-                    //if (j==0)printf(" SF gg %d j  %d  k %d  g %d  g_old %d  M[g_old].priority_class  %d A.is_assigned_jg(j,g,M,F) %d ok_for_limit_SS_SF(g,j,k,M,P,pp,F) %d \n ",gg, j, k,  g , g_old , M[g_old].priority_class  ,A.is_assigned_jg(j,g,M,F) , ok_for_limit_SS_SF(g,j,k,M,P,pp,F));
-                    if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
+                   if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                         A.unassign(j,k,g_old,M,P,pp);
                         assign_galaxy(g_old,M,P,pp,F,A);//try to assign
                         A.assign(j,k,g,M,P,pp);
@@ -372,7 +366,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
         }
     }
    
-        //if(j%1000==0){printf(" j= %d p= %d after SS_in_petal  %d   SF_in_petal   %d\n ", j,p, P[j].SS_in_petal[p],P[j].SF_in_petal[p]);}
+
 }
 
 
@@ -453,8 +447,6 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
         new_replace(j,p,M,P,pp,F,A);
     }
 }
-
-// For each petal, assign QSOs, LRGs, ELGs, ignoring SS and SF.
 
 
 void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int next) {
@@ -557,35 +549,10 @@ void results_on_inputs(str outdir, const MTL& M, const Plates& P, const Feat& F,
 	List h00 = histogram(countgals,1);
 	countstot.push_back(percents(h00,sumlist(h00))); 
 	print_mult_Dtable_latex("Histogram of percents (by different plates) reachable galaxies (not 5th pass)",outdir+"reachplate.dat",countstot,1);
+
+    Dtable countsz = initDtable(3,0);
 	
-	// By kind
-	//Table countgals = initTable(F.Categories,0);
-	//Table countgals_nopass = initTable(F.Categories,0);
-	//for (int g=0; g<F.Ngal; g++) {
-		//int id = G[g].id;
-		//List plates; List plates_no;
-		//for (int i=0; i<G[g].av_tfs.size(); i++) {
-			//int j = G[g].av_tfs[i].f;
-			//if (!isfound(j,plates)) {
-				//plates.push_back(j);
-				//if (P[j].ipass!=F.Npass-1 || F.id("ELG")==id) plates_no.push_back(j);
-			//}
-		//}
-		//countgals[id].push_back(plates.size());
-		//countgals_nopass[id].push_back(plates_no.size());
-	//}
-	//Table countstot; 
-	//Table countstot_nopass; 
-	//for (int i=0; i<F.Categories; i++) {
-		//countstot.push_back(histogram(countgals[i],1)); 
-		//countstot_nopass.push_back(histogram(countgals_nopass[i],1));
-	//}
-	//print_mult_table_latex("Histogram of number of times (by different plates) reachable galaxies",outdir+"reachplate.dat",countstot,1);
-	//print_mult_table_latex("Histogram of number of times (by different plates) reachable galaxies without last pass",outdir+"reachplateno.dat",countstot_nopass,1);
-	
-	// 4 Histogram of redshifts
-	Dtable countsz = initDtable(3,0);
-	double intervalz = 0.02;
+    double intervalz = 0.02;
 	for (int g=0; g<F.Ngal; g++) {
 		int kind = M[g].id;
 		int kind0 = -1;

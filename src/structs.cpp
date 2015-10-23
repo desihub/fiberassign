@@ -25,9 +25,9 @@ void galaxy::print_av_tfs() { // Used to debug
 		printf("\n");
 	}
 }
-// There is a version of this function (to adapt) for ASCII files, ask to Robert Cahn
+
 // Read galaxies from binary file--format is ra, dec, z, priority and nobs
-// with ra/dec in degrees. Priority and nobs information are treated diffenrently now, by Feat, and should be removed here.
+// with ra/dec in degrees.
 //  Reads every n galaxies (to test more quickly)
 Gals read_galaxies(const Feat& F) {
 	Gals P;
@@ -360,18 +360,6 @@ Plates read_plate_centers(const Feat& F) {
 	fs.close();
 	return(P);
 }
-//not used
-/*
-List av_gals_of_kind(int kind, int j, int k, const MTL& M, const Plates& P, const Feat& F) {
-	List L;  //list of galaxies available to (j,k) of kind 'kind'
-	List av_gals = P[j].av_gals[k];
-	for (int gg=0; gg<av_gals.size(); gg++) {
-		int g = av_gals[gg];
-		if (M[g].id==kind) L.push_back(g);
-	}
-	return L;
-}
-*/
 // Assignment -----------------------------------------------------------------------------
 Assignment::Assignment(const MTL& M, const Feat& F) {
     printf("start Assignment\n");
@@ -381,15 +369,6 @@ Assignment::Assignment(const MTL& M, const Feat& F) {
 	for (int i=0; i<F.Nplate; i++) order[i] = i;
 	next_plate = 0;
 	kinds = initCube(F.Nplate,F.Npetal,F.Categories);
-	//once_obs = initList(F.Ngal);//is galaxy observed?
-	//nobsv = initList(F.Ngal);//remaining observations
-	//nobsv_tmp = initList(F.Ngal);//remaining observations before we know truth
-	//List l = F.maxgoal();//max observations for a category
-    //printf("set up plates\n");
-	//for (int g=0; g<F.Ngal; g++) {
-	//	nobsv[g] = F.goal[G[g].id];//true goal
-	//	nobsv_tmp[g] = l[G[g].id];//max goal for category
-	//}
     printf("set up galaxies\n");
 	unused = initTable(F.Nplate,F.Npetal,F.Nfbp);//initialized to number of fibers on a petal
     printf("set up unused\n");
@@ -562,54 +541,6 @@ int Assignment::nkind(int j, int k, int kind, const MTL& M, const Plates& P, con
 	if (!pet) return kinds[j][pp.spectrom[k]][kind];
 	else return kinds[j][k][kind];
 }
-/* not used
-Table Assignment::infos_petal(int j, int pet, const MTL& M, const Plates& P, const PP& pp, const Feat& F) const {
-	Table T;//for each fiber in a petal, record a lot of information
-	List fibs = pp.fibers_of_sp[pet];
-	for (int kk=0; kk<fibs.size(); kk++) {
-		List L;
-		int k = fibs[kk];
-		int g0 = TF[j][k];
-		L.push_back(g0==-1 ? -1 : M[g0].id);
-		List av_gals = P[j].av_gals[k];
-		bool lya(false);
-		for (int gg=0; gg<av_gals.size(); gg++) {
-			int g = av_gals[gg];
-			L.push_back(g==g0 ? -3 : -2);
-			L.push_back(M[g].id);
-			L.push_back(nobs(g,M,F));
-			L.push_back(is_assigned_jg(j,g));
-			L.push_back(is_assigned_jg(j,g,M,F));
-			L.push_back(find_collision(j,k,g,pp,M,P,F));
-			if (M[g].id==0) lya = true;
-		}
-		if (lya) T.push_back(L);
-	}
-	return T;
-}
-*/
-/*
-List Assignment::fibs_of_kind(int kind, int j, int pet, const MTL& M, const PP& pp, const Feat& F) const {//all fibers on some petal assigned to some kind
-	List L;
-	List fibs = pp.fibers_of_sp[pet];
-	for (int kk=0; kk<F.Nfbp; kk++) {
-		int k = fibs[kk];
-		int g = TF[j][k];
-		if (g!=-1 && M[g].id==kind) L.push_back(k);
-	}
-	return L;
-}
-*/
-/*
-List Assignment::sort_fibs_dens(int j, const List& fibs, const MTL& M, const Plates& P, const PP& pp, const Feat& F) const {
-	List num;
-	for (int k=0; k<fibs.size(); k++) num.push_back(P[j].density[fibs[k]]);//how many observations demanded by galaxies in reach of (j,k)
-	List perm = get_permut_sort(num);//increasing order
-	List fibs_sorted;
-	for (int k=num.size()-1; k!=-1; k--) fibs_sorted.push_back(fibs[perm[k]]);//reverse the order so most demanded fibers are first
-	return fibs_sorted;
-}
-*/
 List Assignment::fibs_unassigned(int j, int pet, const MTL& M, const PP& pp, const Feat& F) const {//list of unassigned fibers on petal pet
 	List L;
 	List fibs = pp.fibers_of_sp[pet];
@@ -619,47 +550,6 @@ List Assignment::fibs_unassigned(int j, int pet, const MTL& M, const PP& pp, con
 	}
 	return L;
 }
-/*
-int Assignment::nobs(int g, const MTL& M, const Feat& F, bool tmp) const {//gives nobsv_tmp or nobsv depending on tmp and tmp is true by default
-	int obs = tmp ? nobsv_tmp[g] : nobsv[g]; // optimization
-	return obs;
-}
- */
-//not used
-/*
-void Assignment::update_nobsv_tmp(const Feat& F) {//if galaxy is observed we know the truth
-	for (int g=0; g<F.Ngal; g++) if (once_obs[g]) nobsv_tmp[g] = nobsv[g];
-}
-
-void Assignment::update_nobsv_tmp_for_one(int j, const Feat& F) {//updates one plate only
-	for (int k=0; k<F.Nfiber; k++) {
-		int g = TF[j][k];
-		if (g!=-1) nobsv_tmp[g] = nobsv[g];
-	}
-}
-
-void Assignment::update_once_obs(int j, const Feat& F) {//updates once_obs
-	for (int k=0; k<F.Nfiber; k++) {
-		int g = TF[j][k];
-		if (g!=-1) once_obs[g] = 1;
-	}
-}
-*/
-/*
-int Assignment::nobs_time(int g, int j, const MTL& M, const Feat& F) const {//counts observations up to some tile j
-	int kind = M[g].id;
-	int cnt = once_obs[g] ? F.goal[kind] : F.maxgoal(kind);
-	for (int i=0; i<GL[g].size(); i++) if (GL[g][i].f<j) cnt--;
-	return cnt;
-}
-*/
-// Useful sub-functions -------------------------------------------------------------------------------------------------
-/*
-int fprio(int g, const MTL& M, const Feat& F, const Assignment& A) {
-	if (A.once_obs[g]) return F.priopost[M[g].id];
-	else return F.prio[M[g].id];
-}
-*/
 // Returns the radial distance on the plate (mm) given the angle,
 // theta (radians).  This is simply a fit to the data provided.
 double plate_dist(const double theta) {
