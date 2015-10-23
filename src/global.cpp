@@ -357,6 +357,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
         std::vector <int> gals=P[j].SF_av_gal[p]; //standard stars on this plate
         printf(" SF c %d j %d p %d gals-size %d\n",c,j,p,gals.size());
         for(int gg=0;gg<gals.size();++gg){//what tfs for this SS?  M[g].av_tfs
+            if(gg%100==0)printf(" gg %d\n",gg);
             int g=gals[gg];//a sky fiber
             if(A.is_assigned_jg(j,g)==-1){
             Plist tfs=M[g].av_tfs;
