@@ -39,17 +39,17 @@ int main(int argc, char **argv) {
 	printf("# Read %s galaxies from %s \n",f(F.Ngal).c_str(),F.galFile.c_str());
     std::vector<int> count;
     count=count_galaxies(G);
-    for(int i=0;i<8;i++){printf ("   %d  \n",count[i]);}
+    printf(" Number of galaxies by type, QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF\n")
+    for(int i=0;i<8;i++){printf (" type %d number  %d  \n",i, count[i]);}
     // make MTL
     MTL M=make_MTL(G,F);
-    for(int i=0;i<M.priority_list.size();++i){
-        printf(" priority   %d",M.priority_list[i]);
-    }
-    printf(" \n");
+    
     assign_priority_class(M);
     //find available SS and SF galaxies on each petal
     
     std::vector <int> count_class(M.priority_list.size(),0);
+    
+    printf("Number in each priority class.  The last two are SF and SS.")
     for(int i;i<M.size();++i){
         count_class[M[i].priority_class]+=1;
     }
@@ -58,32 +58,15 @@ int main(int argc, char **argv) {
     }
     
     printf(" number of MTL galaxies  %d\n",M.size());
-    printf("Read fiber center positions and compute related things\n");
+    
 	PP pp;
 	pp.read_fiber_positions(F); 
 	F.Nfiber = pp.fp.size()/2; 
 	F.Npetal = max(pp.spectrom)+1;
-    printf("spectrometer has to be identified from 0 to F.Npetal-1\n");
-	F.Nfbp = (int) (F.Nfiber/F.Npetal);// fibers per petal = 500
+    F.Nfbp = (int) (F.Nfiber/F.Npetal);// fibers per petal = 500
 	pp.get_neighbors(F); pp.compute_fibsofsp(F);
-    printf("get neighbors of each fiber;\n");
-                                                //for each spectrometer, get list of fibers
-
-    printf("Read plates in order they are to be observed\n ");
-    
-	Plates P_original = read_plate_centers(F);
-    F.Nplate=P_original.size();
-    printf("This takes the place of Opsim or NextFieldSelector; will be replaced by appropriate code\n");
-    Plates P;
-    P.resize(F.Nplate);//don't permute plates
-    
-    
-/*    List permut = random_permut(F.Nplate);
-    for (int jj=0; jj<F.Nplate; jj++){
-        P[jj]=P_original[permut[jj]];
-    }
- */
-    P=P_original;
+	Plates P = read_plate_centers(F);
+    F.Nplate=P.size();
 	printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
    
 	// Computes geometries of cb and fh: pieces of positioner - used to determine possible collisions
@@ -106,7 +89,6 @@ int main(int argc, char **argv) {
 	//results_on_inputs("doc/figs/",G,P,F,true);
 
 	//// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
-    printf("before assignment\n");
 	Assignment A(M,F);
 	print_time(t,"# Start assignment at : ");
 
@@ -150,6 +132,7 @@ int main(int argc, char **argv) {
 		// Redistribute and improve on various occasions  add more times if desired
 
 		if ( j==1000 || j==3000) {
+            printf ( "Redistribute and improve at j = %d\n",j);
 			redistribute_tf(M,P,pp,F,A);
 			redistribute_tf(M,P,pp,F,A);
 			improve(M,P,pp,F,A);

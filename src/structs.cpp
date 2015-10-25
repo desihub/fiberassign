@@ -189,7 +189,6 @@ MTL make_MTL(const Gals& G, const Feat& F){
         }
         if(!in){
             M.priority_list.push_back(targ.t_priority);
-            printf(" priority %d i  %d  id %d\n",targ.t_priority,i,G[i].id);
         }
         std::sort(M.priority_list.begin(),M.priority_list.end());
         M.push_back(targ);

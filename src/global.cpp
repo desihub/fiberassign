@@ -57,7 +57,6 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
                     if (sq(Xg,X)<sq(F.PatrolRad)){
                         P[j].av_gals[k].push_back(gals[g]);
                         int q=pp.spectrom[k];
-                        //printf(" q=spectrometer %d  t_priority %d \n",q,M[gals[g]].t_priority);
                         if(M[gals[g]].t_priority==9900){
                             P[j].SS_av_gal[q].push_back(gals[g]);
                         }
@@ -238,7 +237,6 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
     
 	for (int jj=0; jj<n; jj++) {
 		int j = randPlates[jj];
-        //printf(" doing the %d  plate   original number %d\n",jj,j);
 		List randFibers = random_permut(F.Nfiber);
 		for (int kk=0; kk<F.Nfiber; kk++) { // Fiber
 			int k = randFibers[kk];
@@ -246,7 +244,6 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
 		}
 	}
 	str next_str = next==-1 ? "all left" : f(n);
-	//printf("  %s assignments on %s next plates\n",f(A.na(F,j0,n)).c_str(),next_str.c_str());
 	if (next!=1) print_time(t,"# ... took :");
 }
 
@@ -416,24 +413,19 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
 		List randFibers = random_permut(pp.fibers_of_sp[p]);//fibers for this petal
         //first use any free fibers
 			for (int kk=0; kk<F.Nfbp; kk++) {
-                //printf(" kk = %d \n", kk);
 				int k = randFibers[kk];
-                //if (!A.is_assigned_tf(j,k)){
                 if (A.TF[j][k]==-1){
                     //look at available galaxies for (j.k)
                     int done=0;
                     List av_gals = P[j].av_gals[k];
                     for (int gg=0; gg<av_gals.size()&&done==0; gg++) {
                         int g = av_gals[gg];//galaxy at (j,k)
-                        //printf("galaxy  %d plate %d fiber  %d\n",g,j,k);
                         if(M[g].t_priority==9900&&A.is_assigned_jg(j,g,M,F)==-1&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
-                            //printf(" priority  %d j %d k %d  occupied %d\n",M[g].t_priority,j,k,A.TF[j][k]);
                             A.assign(j,k,g,M,P,pp);
                             done=1;
                         }
                         else{
                             if(M[g].t_priority==9800&&A.is_assigned_jg(j,g,M,F)==-1&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
-                                //printf(" priority  %d j %d k %d  occupied %d\n",M[g].t_priority,j,k,A.TF[j][k]);
                                 A.assign(j,k,g,M,P,pp);
                                 done=1;
                             }
@@ -442,7 +434,6 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
                 }
             }
 			// If not enough SS and SF, replace galaxies with lowest priority
-        //printf("begin new replace\n");
         new_replace(j,p,M,P,pp,F,A);
     }
 }
@@ -491,7 +482,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 			}
 		}
 	}
-	printf("  %s redistributions of couples of TF\n",f(red).c_str());
+	printf("  %s redistributions of tile-fibers \n",f(red).c_str());
 	if (next!=1) print_time(t,"# ... took :");
 }
 
@@ -597,7 +588,6 @@ void diagnostic(const MTL& M, const Gals& G, Feat& F, const Assignment& A){
         }
         printf("\n");
     }
-    //printf("done with diagnostic\n");
     
     //end diagnostic
 
