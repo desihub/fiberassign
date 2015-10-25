@@ -17,14 +17,6 @@
 #include        "collision.h"
 
 // Galaxies ------------------------------------------------------------------
-void galaxy::print_av_tfs() { // Used to debug
-	if (av_tfs.size() == 0) printf("Print av tfs : no av tf \n");
-	else {
-		printf("Available tfs : ");
-		for (int g=0; g<av_tfs.size(); g++) av_tfs[g].print_pair();
-		printf("\n");
-	}
-}
 
 // Read galaxies from binary file--format is ra, dec, z, priority and nobs
 // with ra/dec in degrees.
@@ -361,17 +353,15 @@ Plates read_plate_centers(const Feat& F) {
 }
 // Assignment -----------------------------------------------------------------------------
 Assignment::Assignment(const MTL& M, const Feat& F) {
-    printf("start Assignment\n");
+
 	TF = initTable(F.Nplate,F.Nfiber,-1);//galaxy assigned to tile-fiber TF[j][k]
 	GL = initPtable(F.Ngal,0); //tile-fiber pair for galaxy  GL[g]
 	order.resize(F.Nplate);
 	for (int i=0; i<F.Nplate; i++) order[i] = i;
 	next_plate = 0;
 	kinds = initCube(F.Nplate,F.Npetal,F.Categories);
-    printf("set up galaxies\n");
 	unused = initTable(F.Nplate,F.Npetal,F.Nfbp);//initialized to number of fibers on a petal
-    printf("set up unused\n");
-}
+    }
 
 Assignment::~Assignment() {}
 

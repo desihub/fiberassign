@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
     
     std::vector <int> count_class(M.priority_list.size(),0);
     
-    printf("Number in each priority class.  The last two are SF and SS.");
+    printf("Number in each priority class.  The last two are SF and SS.\n");
     for(int i;i<M.size();++i){
         count_class[M[i].priority_class]+=1;
     }

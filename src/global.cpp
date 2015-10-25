@@ -558,6 +558,7 @@ void results_on_inputs(str outdir, const MTL& M, const Plates& P, const Feat& F,
 
 void diagnostic(const MTL& M, const Gals& G, Feat& F, const Assignment& A){
     // diagnostic  allow us to peek at the actual id of each galaxy
+    printf("Diagnostics using types:QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF\n");
     std::vector<int> count_by_kind(F.Categories,0);
     for (int j=0;j<F.Nplate;++j){
         for(int k=0;k<F.Nfiber;++k){
