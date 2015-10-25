@@ -142,6 +142,15 @@ int main(int argc, char **argv) {
 
     }
 	print_time(time,"# ... took :");
+    
+    
+    //diagnostic check on SS and SF
+    for (int j=0,j<F.Nplate;++j){
+        for (int p=0, p<F.Npetal; ++p){
+            if(P[j].SS_in_petal[p]!=MaxSS){printf("SS j= %d p= %d number = P[j].SS_in_petal[p]\n");
+            if(P[j].SF_in_petal[p]!=MaxSF){printf("SF j= %d p= %d number = P[j].SS_in_petal[p]\n");
+        }
+    }
 
 	// Results -------------------------------------------------------
 	if (F.Output) for (int j=0; j<F.Nplate; j++) write_FAtile_ascii(j,F.outDir,M,P,pp,F,A); // Write output
