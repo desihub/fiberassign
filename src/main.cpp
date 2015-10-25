@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
 	printf("# Read %s galaxies from %s \n",f(F.Ngal).c_str(),F.galFile.c_str());
     std::vector<int> count;
     count=count_galaxies(G);
-    printf(" Number of galaxies by type, QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF\n")
+    printf(" Number of galaxies by type, QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF\n");
     for(int i=0;i<8;i++){printf (" type %d number  %d  \n",i, count[i]);}
     // make MTL
     MTL M=make_MTL(G,F);
@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
     
     std::vector <int> count_class(M.priority_list.size(),0);
     
-    printf("Number in each priority class.  The last two are SF and SS.")
+    printf("Number in each priority class.  The last two are SF and SS.");
     for(int i;i<M.size();++i){
         count_class[M[i].priority_class]+=1;
     }
