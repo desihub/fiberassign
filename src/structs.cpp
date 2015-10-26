@@ -192,7 +192,8 @@ MTL make_MTL(const Gals& G, const Feat& F){
 
 void write_MTLfile(const MTL& M){
     FILE * FA;
-    FA = fopen("MTLfile.txt");
+    str s="MTLfile.txt";
+    FA = fopen(s.c_str(),"w");
     for (int i=0;i<M.size();++i){
         fprintf(FA," %d  %f  %f  %d  %d\n",i,M[i].ra,M[i].dec,M[i].t_priority,M[i].nobs_remain);
     }
