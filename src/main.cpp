@@ -42,8 +42,9 @@ int main(int argc, char **argv) {
     printf(" Number of galaxies by type, QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF\n");
     for(int i=0;i<8;i++){printf (" type %d number  %d  \n",i, count[i]);}
     // make MTL
-    MTL M=make_MTL(G,F);
-    write_MTLfile(M);
+    MTL Min=make_MTL(G,F);
+    write_MTLfile(Min);
+    read_MTLfile;
     
     assign_priority_class(M);
     //find available SS and SF galaxies on each petal

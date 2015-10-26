@@ -200,6 +200,51 @@ void write_MTLfile(const MTL& M){
     fclose(FA);
 }
 
+
+MTL read_MTLfile{
+    str s="MTLfile.txt";
+    MTL M;
+    std::string buf;
+    const char* fname;
+    fname= s.c_str();
+    std::ifstream fs(fname);
+    if (!fs) {  // An error occurred opening the file.
+        std::cerr << "Unable to open MTLfile " << fname << std::endl;
+        myexit(1);
+        }
+        // Reserve some storage, since we expect we'll be reading quite a few
+        // lines from this file.
+        try {P.reserve(4000000);} catch (std::exception& e) {myexception(e);}
+        // Skip any leading lines beginning with #
+        getline(fs,buf);
+        while (fs.eof()==0 && buf[0]=='#') {
+            getline(fs,buf);
+        }
+        while (fs.eof()==0) {
+            double ra,dec,redshift;  int id, nobs_remain,priority;
+            std::istringstream(buf) id>> ra >> dec >>  priority >> nobs_remain ;
+            if (ra<   0.) {ra += 360.;}
+            if (ra>=360.) {ra -= 360.;}
+            if (dec<=-90. || dec>=90.) {
+                std::cout << "DEC="<<dec<<" out of range reading "<<fname<<std::endl;
+                myexit(1);
+            }
+            double theta = (90.0 - dec)*M_PI/180.;
+            double phi   = (ra        )*M_PI/180.;
+            struct galaxy Q;
+            Q.nhat[0]    = cos(phi)*sin(theta);
+            Q.nhat[1]    = sin(phi)*sin(theta);
+            Q.nhat[2]    = cos(theta);
+            Q.t_priority = priority;//priority is proxy for id, starts at zero
+            Q.nobs_remian= nobs_remain;
+            Q.ra = ra;
+            Q.dec = dec;
+            Q.id = id;
+            
+            if (oid%F.moduloGal == 0) {
+                try{P.push_back(Q);}catch(std::exception& e) {myexception(e);}
+            
+}
 void assign_priority_class(MTL& M){
     // assign each target to a priority class
     //this needs to be updated
@@ -354,12 +399,12 @@ Plates read_plate_centers(const Feat& F) {
             for (int i=0;i<F.Npetal;++i){Q.SS_in_petal[i]=0;}
             for (int i=0;i<F.Npetal;++i){Q.SF_in_petal[i]=0;}
             if(dec<F.MaxDec && dec>F.MinDec &&ra<F.MaxRa && ra>F.MinRa){
-                try {P.push_back(Q);} catch(std::exception& e) {myexception(e);}
+                try {M.push_back(Q);} catch(std::exception& e) {myexception(e);}
             }
 		}
 	}
 	fs.close();
-	return(P);
+	return(M);
 }
 // Assignment -----------------------------------------------------------------------------
 Assignment::Assignment(const MTL& M, const Feat& F) {
