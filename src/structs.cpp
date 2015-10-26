@@ -201,7 +201,7 @@ void write_MTLfile(const MTL& M){
 }
 
 
-MTL read_MTLfile(){
+MTL read_MTLfile(F){
     str s="MTLfile.txt";
     MTL M;
     std::string buf;
@@ -243,7 +243,7 @@ MTL read_MTLfile(){
             Q.id = id;
             
             if (id%F.moduloGal == 0) {
-                try{P.push_back(Q);}catch(std::exception& e) {myexception(e);}
+                try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
             
             }
         }
@@ -402,7 +402,7 @@ Plates read_plate_centers(const Feat& F) {
             for (int i=0;i<F.Npetal;++i){Q.SS_in_petal[i]=0;}
             for (int i=0;i<F.Npetal;++i){Q.SF_in_petal[i]=0;}
             if(dec<F.MaxDec && dec>F.MinDec &&ra<F.MaxRa && ra>F.MinRa){
-                try {M.push_back(Q);} catch(std::exception& e) {myexception(e);}
+                try {P.push_back(Q);} catch(std::exception& e) {myexception(e);}
             }
 		}
 	}
