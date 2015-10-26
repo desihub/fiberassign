@@ -44,8 +44,7 @@ int main(int argc, char **argv) {
     // make MTL
     MTL Min=make_MTL(G,F);
     write_MTLfile(Min);
-    read_MTLfile;
-    
+    MTL M=read_MTLfile;
     assign_priority_class(M);
     //find available SS and SF galaxies on each petal
     
