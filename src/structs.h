@@ -65,6 +65,7 @@ class MTL : public std::vector<struct target> {
 };
 
 MTL make_MTL(const Gals& G, const Feat& F);
+MTL read_MTLfile();
 void write_MTLfile(const MTL& M);
 void assign_priority_class(MTL & M);
 // petal--------------------------------------------------
