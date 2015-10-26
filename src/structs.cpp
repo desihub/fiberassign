@@ -223,7 +223,7 @@ MTL read_MTLfile(){
         while (fs.eof()==0) {
             double ra,dec,redshift;
             int id, nobs_remain,priority;
-            std::istringstream(buf) id>> ra >> dec >>  priority >> nobs_remain ;
+            std::istringstream(buf)>> id>> ra >> dec >>  priority >> nobs_remain ;
             if (ra<   0.) {ra += 360.;}
             if (ra>=360.) {ra -= 360.;}
             if (dec<=-90. || dec>=90.) {
@@ -232,12 +232,12 @@ MTL read_MTLfile(){
             }
             double theta = (90.0 - dec)*M_PI/180.;
             double phi   = (ra        )*M_PI/180.;
-            struct galaxy Q;
+            struct target Q;
             Q.nhat[0]    = cos(phi)*sin(theta);
             Q.nhat[1]    = sin(phi)*sin(theta);
             Q.nhat[2]    = cos(theta);
             Q.t_priority = priority;//priority is proxy for id, starts at zero
-            Q.nobs_remian= nobs_remain;
+            Q.nobs_remain= nobs_remain;
             Q.ra = ra;
             Q.dec = dec;
             Q.id = id;
