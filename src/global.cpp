@@ -379,7 +379,7 @@ void assign_unused(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assign
 				int m = M[g].nobs_remain;
 				int prio = M[g].t_priority;
 				if (prio<pbest || (prio==pbest && m>mbest)) {
-					if (A.is_assigned_jg(j,g,M,F)==-1 && ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)) {
+					if (A.is_assigned_jg(j,g,M,F)==-1 && ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)) {
                         //not assigned this plate or within excluded interval
 						for (int i=0; i<A.GL[g].size(); i++) { //GL[g].size() is number of tf that could observe g
 							int jp = A.GL[g][i].f;
@@ -463,7 +463,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 						int jp = av_tfs[i].f;
 						int kp = av_tfs[i].s;
 						int unused = A.unused[jp][pp.spectrom[kp]];//unused for jp, spectrom[kp]
-						if (j0<=jp && jp<j0+n && !A.is_assigned_tf(jp,kp) && Done[jp][kp]==0 && ok_assign_g_to_jk(g,jp,kp,P,M,pp,F,A) && A.is_assigned_jg(jp,g,M,F)==-1 && 0<unused) {
+						if (j0<=jp && jp<j0+n && !A.is_assigned_tf(jp,kp) && Done[jp][kp]==0 && ok_assign_g_to_jk(g,jp,kp,P,M,pp,F,A) && A.is_assigned_jg(jp,g,M,F)==-1 && 0<unused)) {
 							if (unusedb<unused) { // Takes the most usused petal
                                 jpb = jp;
 								kpb = kp;
