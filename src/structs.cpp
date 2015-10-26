@@ -201,7 +201,7 @@ void write_MTLfile(const MTL& M){
 }
 
 
-MTL read_MTLfile(F){
+MTL read_MTLfile(Feat& F){
     str s="MTLfile.txt";
     MTL M;
     std::string buf;
