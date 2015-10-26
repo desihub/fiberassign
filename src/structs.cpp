@@ -214,14 +214,15 @@ MTL read_MTLfile(){
         }
         // Reserve some storage, since we expect we'll be reading quite a few
         // lines from this file.
-        try {P.reserve(4000000);} catch (std::exception& e) {myexception(e);}
+        try {M.reserve(4000000);} catch (std::exception& e) {myexception(e);}
         // Skip any leading lines beginning with #
         getline(fs,buf);
         while (fs.eof()==0 && buf[0]=='#') {
             getline(fs,buf);
         }
         while (fs.eof()==0) {
-            double ra,dec,redshift;  int id, nobs_remain,priority;
+            double ra,dec,redshift;
+            int id, nobs_remain,priority;
             std::istringstream(buf) id>> ra >> dec >>  priority >> nobs_remain ;
             if (ra<   0.) {ra += 360.;}
             if (ra>=360.) {ra -= 360.;}
@@ -241,9 +242,11 @@ MTL read_MTLfile(){
             Q.dec = dec;
             Q.id = id;
             
-            if (oid%F.moduloGal == 0) {
+            if (id%F.moduloGal == 0) {
                 try{P.push_back(Q);}catch(std::exception& e) {myexception(e);}
             
+            }
+        }
 }
 void assign_priority_class(MTL& M){
     // assign each target to a priority class
