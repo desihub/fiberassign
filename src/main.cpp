@@ -43,7 +43,7 @@ int main(int argc, char **argv) {
     for(int i=0;i<8;i++){printf (" type %d number  %d  \n",i, count[i]);}
     // make MTL
     MTL M=make_MTL(G,F);
-    write_MTLfile;
+    write_MTLfile(M);
     
     assign_priority_class(M);
     //find available SS and SF galaxies on each petal
