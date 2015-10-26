@@ -221,7 +221,7 @@ MTL read_MTLfile(const Feat& F){
             getline(fs,buf);
         }
         while (fs.eof()==0) {
-            double ra,dec,redshift;
+            double ra,dec;
             int id, nobs_remain,priority;
             std::istringstream(buf)>> id>> ra >> dec >>  priority >> nobs_remain ;
             if (ra<   0.) {ra += 360.;}
@@ -244,8 +244,8 @@ MTL read_MTLfile(const Feat& F){
             
             if (id%F.moduloGal == 0) {
                 try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
-            
             }
+            if(id%100000==0)printf("id %d \n",id);
         }
     return(M);
 }
