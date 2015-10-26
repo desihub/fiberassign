@@ -247,6 +247,7 @@ MTL read_MTLfile(Feat& F){
             
             }
         }
+    return(M);
 }
 void assign_priority_class(MTL& M){
     // assign each target to a priority class
@@ -407,7 +408,7 @@ Plates read_plate_centers(const Feat& F) {
 		}
 	}
 	fs.close();
-	return(M);
+	return(P);
 }
 // Assignment -----------------------------------------------------------------------------
 Assignment::Assignment(const MTL& M, const Feat& F) {
