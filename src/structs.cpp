@@ -196,6 +196,7 @@ void write_MTLfile(const MTL& M){
     for (int i=0;i<M.size();++i){
         fprintf(FA," %d  %f  %f  %d  %d\n",i,M[i].ra,M[i].dec,M[i].t_priority,M[i].nobs_remain);
     }
+    fclose(FA);
 }
 
 void assign_priority_class(MTL& M){
