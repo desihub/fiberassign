@@ -31,5 +31,5 @@ install :
 clean :
 	@cd src; $(MAKE) clean
 
-install_writeMTL:
+install_writeMTL :
 	@cd src_writeMTL; $(MAKE) install
