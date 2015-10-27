@@ -252,6 +252,16 @@ MTL read_MTLfile(const Feat& F){
             getline(fs,buf);
         }
     fs.close();
+    bool in=false;
+    for (int j=0;j<M.priority_list.size();++j){
+        if(targ.t_priority==M.priority_list[j]){in=true;
+        }
+    }
+    if(!in){
+        M.priority_list.push_back(targ.t_priority);
+    }
+    std::sort(M.priority_list.begin(),M.priority_list.end());
+
     return(M);
 }
 void assign_priority_class(MTL& M){
