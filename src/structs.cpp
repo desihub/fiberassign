@@ -246,7 +246,9 @@ MTL read_MTLfile(const Feat& F){
                 try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
             }
             if(id%100000==0)printf("id %d ra %f \n",id,ra);
+            getline(fs,buf);
         }
+    fs(close);
     return(M);
 }
 void assign_priority_class(MTL& M){
