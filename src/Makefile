@@ -10,11 +10,19 @@ global.h \
 misc.h \
 structs.h
 
-OBJS = \
+OBJS_FA = \
 collision.o \
 feat.o \
 global.o \
-main.o \
+fa.o \
+misc.o \
+structs.o
+
+OBJS_MTL = \
+collision.o \
+feat.o \
+global.o \
+mtl.o \
 misc.o \
 structs.o
 
@@ -22,17 +30,27 @@ COMPILE = $(CXXFLAGS) $(OMPFLAGS) -I. $(CFITSIO_CPPFLAGS)
 LINK = $(OMPFLAGS) $(CFITSIO)
 
 
-all : assign
+all_mtl : assign_mtl
 
-install : all
-	cp assign $(INSTALL)
+install_mtl : all
+	cp assign_mtl $(INSTALL)
 
-assign : $(OBJS)
+all_fa : assign_fa
+
+install_fa : all
+	cp assign_fa $(INSTALL)
+
+assign_mtl : $(OBJS_MTL)
+	$(CXX) -o $@ $^ $(LINK)
+
+assign_fa : $(OBJS_FA)
 	$(CXX) -o $@ $^ $(LINK)
 
 %.o : %.cpp $(HEADERS)
 	$(CXX) $(COMPILE) -o $@ -c $<
 
-clean :
-	rm -f assign *.o *~
+clean_mtl :
+	rm -f assign_mtl  *.o *~
 
+clean_fa :
+	rm -f assign_fa  *.o *~
