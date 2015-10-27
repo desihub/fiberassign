@@ -32,12 +32,12 @@ LINK = $(OMPFLAGS) $(CFITSIO)
 
 all_mtl : assign_mtl
 
-install_mtl : all
+install_mtl : all_mtl
 	cp assign_mtl $(INSTALL)
 
 all_fa : assign_fa
 
-install_fa : all
+install_fa : all_fa
 	cp assign_fa $(INSTALL)
 
 assign_mtl : $(OBJS_MTL)
