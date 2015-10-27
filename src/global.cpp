@@ -1024,6 +1024,8 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     float dec[optimal];
     float x_focal[optimal];
     float y_focal[optimal];
+    //new
+    float t_priority[optimal];
     
     std::vector <long long> potentialtargetid;
     
@@ -1057,12 +1059,14 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
                     x_focal[i] = qNan;
                     y_focal[i] = qNan;
                 } else {
-                    strncpy(objtype[i], F.kind[G[g].id].c_str(), objtypelen);
-                    ra[i] = G[g].ra;
-                    dec[i] = G[g].dec;
-                    dpair proj = projection(g,j,G,P);
+                    //we aren't supposed to know the kind  use priority instead
+                    //strncpy(objtype[i], F.kind[G[g].id].c_str(), objtypelen);
+                    ra[i] = M[g].ra;
+                    dec[i] = M[g].dec;
+                    dpair proj = projection(g,j,M,P);
                     x_focal[i] = proj.f;
                     y_focal[i] = proj.s;
+                    t_priority[i]=M[g].t_priority;//new
                 }
                 
                 for (int k = 0; k < P[j].av_gals[fib].size(); ++k) {
@@ -1079,7 +1083,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
             fits_write_col(fptr, TINT, 3, offset+1, 1, n, num_target, &status);
             fits_report_error(stderr, status);
             
-            fits_write_col(fptr, TSTRING, 4, offset+1, 1, n, ot_tmp, &status);
+            fits_write_col(fptr, TINT, 4, offset+1, 1, n, t_priority, &status);
             fits_report_error(stderr, status);
             
             fits_write_col(fptr, TLONGLONG, 5, offset+1, 1, n, target_id, &status);
