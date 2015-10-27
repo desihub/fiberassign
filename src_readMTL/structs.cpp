@@ -187,6 +187,7 @@ void write_MTLfile(const MTL& M){
     str s="MTLfile.txt";
     FA = fopen(s.c_str(),"w");
     for (int i=0;i<M.size();++i){
+        //note artificial 'id' generated simply by using i
         fprintf(FA," %d  %f  %f  %d  %d\n",i,M[i].ra,M[i].dec,M[i].t_priority,M[i].nobs_remain);
     }
     fclose(FA);

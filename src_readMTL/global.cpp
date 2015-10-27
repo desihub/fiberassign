@@ -834,7 +834,7 @@ void write_FAtile_ascii(int j, str outdir, const MTL& M, const Plates& P, const 
 		// Object type, Target ID, ra, dec, x, y
 		if (g!=-1) {
 			dpair Gal = projection(g,j,M,P);
-			fprintf(FA,"%s %d %f %f %f %f\n",F.kind[M[g].id].c_str(),g,M[g].ra,M[g].dec,Gal.f,Gal.s);
+			fprintf(FA,"%d %f %f %f %f\n",g,M[g].ra,M[g].dec,Gal.f,Gal.s);
 		}
 		else fprintf(FA,"-1\n");
 	}
