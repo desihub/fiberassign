@@ -230,6 +230,8 @@ MTL read_MTLfile(const Feat& F){
             Q.nhat[2]    = cos(theta);
             Q.t_priority = priority;//priority is proxy for id, starts at zero
             Q.nobs_remain= nobs_remain;
+            Q.nobs_done=0;//need to keep track of this, too
+            Q.once_obs=0;//changed only in update_plan
             Q.ra = ra;
             Q.dec = dec;
             Q.id = id;
