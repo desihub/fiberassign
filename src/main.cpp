@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
     MTL M=read_MTLfile(F);
     assign_priority_class(M);
     //find available SS and SF galaxies on each petal
-    make priority_list(M)_
+    make_priority_list(M)_
     std::vector <int> count_class(M.priority_list.size(),0);
     
     printf("Number in each priority class.  The last two are SF and SS.\n");
