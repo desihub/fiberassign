@@ -174,20 +174,23 @@ MTL make_MTL(const Gals& G, const Feat& F){
 
         targ.lastpass=F.lastpass[G[i].id];
         //make list of priorities
-        bool in=false;
-        for (int j=0;j<M.priority_list.size();++j){
-            if(targ.t_priority==M.priority_list[j]){in=true;
-            }
-        }
-        if(!in){
-            M.priority_list.push_back(targ.t_priority);
-        }
-        std::sort(M.priority_list.begin(),M.priority_list.end());
         M.push_back(targ);
         int g=M.size()-1;
 
     }
     return M;
+}
+
+void make_priority_list(MTL& M){
+    bool in=false;
+    for (int j=0;j<M.priority_list.size();++j){
+        if(targ.t_priority==M.priority_list[j]){in=true;
+        }
+    }
+    if(!in){
+        M.priority_list.push_back(targ.t_priority);
+    }
+    std::sort(M.priority_list.begin(),M.priority_list.end());
 }
 
 void write_MTLfile(const MTL& M){
