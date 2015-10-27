@@ -181,17 +181,6 @@ MTL make_MTL(const Gals& G, const Feat& F){
     return M;
 }
 
-void make_priority_list(MTL& M){
-    bool in=false;
-    for (int j=0;j<M.priority_list.size();++j){
-        if(targ.t_priority==M.priority_list[j]){in=true;
-        }
-    }
-    if(!in){
-        M.priority_list.push_back(targ.t_priority);
-    }
-    std::sort(M.priority_list.begin(),M.priority_list.end());
-}
 
 void write_MTLfile(const MTL& M){
     FILE * FA;
@@ -249,21 +238,21 @@ MTL read_MTLfile(const Feat& F){
                 try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
             }
             if(id%100000==0)printf("id %d ra %f \n",id,ra);
+            bool in=false;
+            for (int j=0;j<M.priority_list.size();++j){
+                if(Q.t_priority==M.priority_list[j]){in=true;
+                }
+            }
+            if(!in){
+                M.priority_list.push_back(Q.t_priority);
+            }
+
             getline(fs,buf);
         }
-    fs.close();
-    bool in=false;
-    for (int j=0;j<M.priority_list.size();++j){
-        if(targ.t_priority==M.priority_list[j]){in=true;
-        }
-    }
-    if(!in){
-        M.priority_list.push_back(targ.t_priority);
-    }
     std::sort(M.priority_list.begin(),M.priority_list.end());
-
+    fs.close();
     return(M);
-}
+    }
 void assign_priority_class(MTL& M){
     // assign each target to a priority class
     //this needs to be updated

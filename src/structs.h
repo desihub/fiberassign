@@ -68,7 +68,6 @@ MTL make_MTL(const Gals& G, const Feat& F);
 MTL read_MTLfile(const Feat& F);
 void write_MTLfile(const MTL& M);
 void assign_priority_class(MTL & M);
-void make_priority_list(MTL& M);
 // petal--------------------------------------------------
 
 // Plate -------------------------------------------------
