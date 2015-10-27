@@ -27,7 +27,7 @@ all : assign_readMTL
 install : all
 	cp assign_readMTL $(INSTALL)
 
-assign_writeMTL : $(OBJS)
+assign_readMTL : $(OBJS)
 	$(CXX) -o $@ $^ $(LINK)
 
 %.o : %.cpp $(HEADERS)
