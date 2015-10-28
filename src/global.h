@@ -56,7 +56,7 @@ void diagnostic(const MTL& M, const Gals& G, Feat& F, const Assignment& A);
 
 void write_FAtile_ascii(int j, str outdir, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A);
 
-void fa_write(int j, const char *filename, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A);
+void fa_write(int j, str outdir, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A);
 
 void pyplotTile(int j, str fname, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A);
 
