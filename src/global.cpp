@@ -18,6 +18,7 @@
 #include        "feat.h"
 #include        "structs.h"
 #include        "global.h"
+#include    <sys/stat.h>
 
 // Collecting information from input -------------------------------------------------------------------------------------
 void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Plates& P, const PP& pp, const Feat& F) {
