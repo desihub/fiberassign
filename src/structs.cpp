@@ -194,7 +194,7 @@ void write_MTLfile(const MTL& M,const Feat& F){
 
 
 MTL read_MTLfile(const Feat& F){
-    str s="MTLfile.txt";
+    str s=F.MTLfile;
     MTL M;
     std::string buf;
     const char* fname;
