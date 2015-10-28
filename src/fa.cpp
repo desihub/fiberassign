@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
     printf(" pass_intervals  %d %d %d %d %d\n",F.pass_intervals[0],F.pass_intervals[1],F.pass_intervals[2],F.pass_intervals[3],F.pass_intervals[4]);
     
     for(int i=0;i<F.pass_intervals.size();++i){
-        //printf(" before pass = %d  at %d  tiles\n",i,F.pass_intervals[i]);
+        printf(" before pass = %d  at %d  tiles\n",i,F.pass_intervals[i]);
         //display_results("doc/figs/",G,P,pp,F,A,true);
         A.next_plate=F.pass_intervals[i];
         for (int jj=F.pass_intervals[i]; jj<F.Nplate; jj++) {
