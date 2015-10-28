@@ -134,12 +134,12 @@ int main(int argc, char **argv) {
         A.next_plate=F.pass_intervals[i];
         for (int jj=F.pass_intervals[i]; jj<F.Nplate; jj++) {
             int j = A.next_plate;
-            //printf(" - Plate %d :",j);
+            printf(" - Plate %d :",j);
             assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF just before an observation
             assign_unused(j,M,P,pp,F,A);
             A.next_plate++;
         }
-        //if (j%2000==0) pyplotTile(j,"doc/figs",G,P,pp,F,A); // Picture of positioners, galaxies
+
         A.next_plate=F.pass_intervals[i];
         for (int jj=F.pass_intervals[i]; jj<F.pass_intervals[i+1]; jj++) {
             int j = A.next_plate;
