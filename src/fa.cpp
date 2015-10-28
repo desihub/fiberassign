@@ -118,6 +118,36 @@ int main(int argc, char **argv) {
 
 	// Still not updated, so all QSO targets have multiple observations etc
 	// Apply and update the plan --------------------------------------
+    //int pass_intervals[6] {0,500,1000,2000,4000,F.Nplate};
+    printf(" pass_intervals  %d %d %d %d %d\n",F.pass_intervals[0],F.pass_intervals[1],F.pass_intervals[2],F.pass_intervals[3],F.pass_intervals[4]);
+    
+    for(int i=0;i<F.pass_intervals.size();++i){
+        printf(" before pass = %d  at %d  tiles\n",i,F.pass_intervals[i]);
+        display_results("doc/figs/",G,P,pp,F,A,true);
+        A.next_plate=F.pass_intervals[i];
+        for (int jj=F.pass_intervals[i]; jj<F.Nplate; jj++) {
+            int j = A.next_plate;
+            //printf(" - Plate %d :",j);
+            assign_sf_ss(j,G,P,pp,F,A); // Assign SS and SF just before an observation
+            assign_unused(j,G,P,pp,F,A);
+            A.next_plate++;
+        }
+        //if (j%2000==0) pyplotTile(j,"doc/figs",G,P,pp,F,A); // Picture of positioners, galaxies
+        A.next_plate=F.pass_intervals[i];
+        for (int jj=F.pass_intervals[i]; jj<F.pass_intervals[i+1]; jj++) {
+            int j = A.next_plate;
+            //printf(" %s not as - ",format(5,f(A.unused_f(j,F))).c_str()); fl();
+            // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
+            if (0<=j-F.Analysis) update_plan_from_one_obs(G,P,pp,F,A,F.Nplate-1); else printf("\n");
+            A.next_plate++;
+        }
+        redistribute_tf(G,P,pp,F,A);
+        redistribute_tf(G,P,pp,F,A);
+        improve(G,P,pp,F,A);
+        redistribute_tf(G,P,pp,F,A);
+        
+    }
+/*
 	init_time_at(time,"# Begin real time assignment",t);
 	for (int jj=0; jj<F.Nplate; jj++) {
 		int j = A.next_plate;
@@ -142,7 +172,7 @@ int main(int argc, char **argv) {
 		}
 
     }
-	print_time(time,"# ... took :");
+	print_time(time,"# ... took :");*/
     
     
     //diagnostic check on SS and SF
