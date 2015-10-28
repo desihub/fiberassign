@@ -11,6 +11,8 @@ priopost 0 2000 3000 4000 2000 3000 9900 9800
 goal 5 5 2 1 5 2 5 5
 goalpost 5 1 2 1 1 1 5 5
 lastpass 0 0 0 1 0 0 1 1 
+pass_intervals 0 500 1000 2000 4000 8000
+
 
 Randomize false
 Pacman false
