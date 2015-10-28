@@ -100,6 +100,10 @@ void Feat::readInputFile(const char file[]) {
             if (tok[0]=="lastpass") for(int i=0; i<Categories;i++)lastpass.push_back(s2i(tok[i+1]));
             if (tok[0]=="SS") for(int i=0; i<Categories;i++)SS.push_back(s2i(tok[i+1]));
             if (tok[0]=="SF") for(int i=0; i<Categories;i++)SF.push_back(s2i(tok[i+1]));
+            if (tok[0]=="pass_intervals"){
+                int n_intervals=tok.size()-1;
+                for (int i=0;i<n_intervals;++i) pass_intervals.push_back(s2i(tok[i+1]));
+            }
             
 			if (tok[0]=="InterPlate") InterPlate = s2i(tok[1]);
 			if (tok[0]=="Randomize") Randomize = s2b(tok[1]);
