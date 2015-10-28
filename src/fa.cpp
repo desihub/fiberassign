@@ -144,7 +144,7 @@ int main(int argc, char **argv) {
         }
 
         A.next_plate=F.pass_intervals[i];
-        for (int jj=F.pass_intervals[i]; jj<F.pass_intervals[i+1]; jj++) {
+        for (int jj=F.pass_intervals[i]; jj<F.pass_intervals[i+1]&&jj<F.Nplate; jj++) {
             int j = A.next_plate;
             printf(" j = %d\n", j);
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
