@@ -151,11 +151,12 @@ int main(int argc, char **argv) {
             if (0<=j-F.Analysis) update_plan_from_one_obs(G,M,P,pp,F,A,F.Nplate-1); else printf("\n");
             A.next_plate++;
         }
+        if(A.next_plate<F.Nplate){
         redistribute_tf(M,P,pp,F,A);
         redistribute_tf(M,P,pp,F,A);
         improve(M,P,pp,F,A);
         redistribute_tf(M,P,pp,F,A);
-        
+        }
     }
 /*
 	init_time_at(time,"# Begin real time assignment",t);
