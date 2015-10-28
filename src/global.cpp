@@ -965,10 +965,14 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     strcpy(ttype[2], "numtarget");
     strcpy(tform[2], "J");
     strcpy(tunit[2], "");
-    
-    strcpy(ttype[3], "objtype");
-    snprintf(tform[3], FLEN_VALUE, "%dA", (int)objtypelen);
+ 
+    strcpy(ttype[3], "t_priority");
+    strcpy(tform[3], "J");
     strcpy(tunit[3], "");
+
+    //strcpy(ttype[3], "objtype");
+    //snprintf(tform[3], FLEN_VALUE, "%dA", (int)objtypelen);
+    //strcpy(tunit[3], "");
     
     strcpy(ttype[4], "targetid");
     strcpy(tform[4], "K");
@@ -1054,7 +1058,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
                 desi_target[i] = 0;
                 
                 if (g < 0) {
-                    strcpy(objtype[i], "NA");
+                    //strcpy(objtype[i], "NA");
                     ra[i] = qNan;
                     dec[i] = qNan;
                     x_focal[i] = qNan;
