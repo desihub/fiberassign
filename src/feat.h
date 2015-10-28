@@ -24,6 +24,7 @@ class Feat { // F for features
 	str tileFile;
 	str fibFile;
 	str outDir;
+    str MTLfile;
 	bool Output;
 
 	List prio; // Priorities  int

@@ -43,7 +43,7 @@ int main(int argc, char **argv) {
     for(int i=0;i<8;i++){printf (" type %d number  %d  \n",i, count[i]);}
     // make MTL
     MTL Min=make_MTL(G,F);
-    write_MTLfile(Min);
+    write_MTLfile(Min,F);
 
 	return(0);
   
