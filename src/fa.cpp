@@ -146,7 +146,7 @@ int main(int argc, char **argv) {
         A.next_plate=F.pass_intervals[i];
         for (int jj=F.pass_intervals[i]; jj<F.pass_intervals[i+1]; jj++) {
             int j = A.next_plate;
-
+            printf(" j = %d\n");
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
             if (0<=j-F.Analysis) update_plan_from_one_obs(G,M,P,pp,F,A,F.Nplate-1); else printf("\n");
             A.next_plate++;
