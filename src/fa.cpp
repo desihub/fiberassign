@@ -139,7 +139,7 @@ int main(int argc, char **argv) {
             assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF just before an observation
             printf(" did sf_ss\n");
             assign_unused(j,M,P,pp,F,A);
-            printf(" did unused\n");
+            printf(" did unused\nq");
             A.next_plate++;
         }
 
