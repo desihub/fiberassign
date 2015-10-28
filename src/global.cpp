@@ -1,11 +1,12 @@
 #include	<cstdlib>
 #include	<cmath>
+#include    <cstdio>
 #include	<fstream>
 #include	<sstream>
 #include	<iostream>
 #include	<iomanip>
 #include	<string>
-#include        <string.h>
+#include    <cstring>
 #include	<vector>
 #include	<algorithm>
 #include	<exception>
@@ -18,6 +19,13 @@
 #include        "feat.h"
 #include        "structs.h"
 #include        "global.h"
+
+extern "C" {
+	#include <sys/stat.h>
+}
+
+#include <stdexcept>
+
 
 // Collecting information from input -------------------------------------------------------------------------------------
 void collect_galaxies_for_all(const Gals& G, const htmTree<struct galaxy>& T, Plates& P, const PP& pp, const Feat& F) {
@@ -929,116 +937,253 @@ void write_FAtile_ascii(int j, str outdir, const Gals& G, const Plates& P, const
 	fclose(FA);
 }
 
-//writes FITS file, but needs modification for C++
-void fa_write(int j, str outdir, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) { // Lado Samushia
+// writes to FITS format specified in DocDB 1049
 
-	str s = outdir+"tile"+i2s(j)+".fits";
-	const char * filename = s.c_str();
-	int MAXTGT = 13;
-	// initialize arrays
-	int fiber_id[F.Nfiber];
-	int positioner_id[F.Nfiber];
-	int num_target[F.Nfiber];
-	char objtype[F.Nfiber][8];
-	char *ot_tmp[F.Nfiber];
-	for (int i = 0; i < F.Nfiber; i++) ot_tmp[i] = objtype[i];
-	int target_id[F.Nfiber];
-	int desi_target[F.Nfiber];
-	float ra[F.Nfiber];
-	float dec[F.Nfiber];
-	float x_focal[F.Nfiber];
-	float y_focal[F.Nfiber];
-	int potential_target_id[F.Nfiber*MAXTGT];
-	int *ptid = potential_target_id;
-	int tot_targets = 0;
-	printf("start the loop\n");
-	for (int i = j*F.Nfiber; i < F.Nfiber; i++) {
-		int g = A.TF[j][i];
-		int id = G[g].id;
-		str type = F.type[id];
-		//char type0[] = "1111111";
+void fa_write (int j, str outdir, const Gals & G, const Plates & P, const PP & pp, const Feat & F, const Assignment & A) {
 
+	// generate a quiet NaN to use for invalid entries.  We cannot
+	// guarantee that we have C++11, so we can't use the nice functions
+	// included in that standard...
 
-		fiber_id[i] = i;
-		positioner_id[i] = i;
-		num_target[i] = P[j].av_gals[i].size();
-		printf("%d ", g);
-		//objtype[i] = type0;
-		strcpy(objtype[i], type.c_str());
-		printf("%s ", objtype[i]);
-		target_id[i] = g;
-		desi_target[i] = 0;
-		ra[i] = g == -1 ? 370.0 : G[g].ra;
-		dec[i] = g == -1 ? 370.0 : G[g].dec;
+	const unsigned maxU = ~0;
+	const float qNan = *((float*)&maxU);
 
-		dpair proj = projection(g,j,G,P);
-		x_focal[i] = proj.f;
-		y_focal[i] = proj.s;
+	// constants for the filename length and fixed object
+	// type length
 
-		for (int n = 0; n < P[j].av_gals[i].size(); n++) {
-			*ptid = P[j].av_gals[i][n];
-			ptid++;
-		}
-		tot_targets += P[j].av_gals[i].size();
+	size_t cfilesize = 512;
+	size_t objtypelen = 8;
+
+	// check if the file exists, and if so, throw an exception
+
+	char filename[cfilesize];
+	int ret = snprintf(filename, cfilesize, "%s/tile_%05d.fits", outdir.c_str(), j);
+
+	struct stat filestat;
+	ret = ::stat(filename, &filestat );
+
+	if (ret == 0) {
+		std::ostringstream o;
+		o << "output file " << filename << " already exists";
+		throw std::runtime_error(o.str().c_str());
 	}
-	// write to fits file
-#ifdef FITS
-	int status;
-	fitsfile *fptr;
-	fits_create_file(&fptr, filename, &status);
-	fits_report_error(stdout, status);
-	// FiberMap table
-	char *ttype[] = {"fiber", "positioner", "numtarget", "objtype", "targetid", "desi_target0", "ra", "dec", "xfocal_design", "yfocal_design"};
-	char *tform[10] = {"U", "U", "U", "8A", "J", "K", "E", "E", "E", "E"};
-	char *tunit[10] = { "", "", "", "", "", "", "deg", "deg", "mm", "mm"};
-	char extname[] = "FiberMap";
-	fits_create_tbl(fptr, BINARY_TBL, 0, 10, ttype, tform, tunit, extname, &status);
-	printf("#\n");
-	fits_report_error(stdout, status);
-	fits_write_col(fptr, TINT, 1, 1, 1, F.Nfiber, fiber_id, &status);
-	printf("#\n");
-	fits_report_error(stdout, status);
-	fits_write_col(fptr, TINT, 2, 1, 1, F.Nfiber, positioner_id, &status);
-	printf("#\n");
-	fits_report_error(stdout, status);
-	fits_write_col(fptr, TINT, 3, 1, 1, F.Nfiber, num_target, &status);
-	printf("#\n");
-	fits_report_error(stdout, status);
-	fits_write_col(fptr, TSTRING, 4, 1, 1, F.Nfiber, ot_tmp, &status);
-	fits_report_error(stdout, status);
-	fits_write_col(fptr, TINT, 5, 1, 1, F.Nfiber, target_id, &status);
-	printf("#\n");
-	fits_report_error(stdout, status);
-	fits_write_col(fptr, TINT, 6, 1, 1, F.Nfiber, desi_target, &status);
-	printf("#\n");
-	fits_report_error(stdout, status);
-	fits_write_col(fptr, TFLOAT, 7, 1, 1, F.Nfiber, ra, &status);
-	printf("#\n");
-	fits_report_error(stdout, status);
-	fits_write_col(fptr, TFLOAT, 8, 1, 1, F.Nfiber, dec, &status);
-	printf("#\n");
-	fits_report_error(stdout, status);
-	fits_write_col(fptr, TFLOAT, 9, 1, 1, F.Nfiber, x_focal, &status);
-	printf("#\n");
-	fits_report_error(stdout, status);
-	fits_write_col(fptr, TFLOAT, 10, 1, 1, F.Nfiber, y_focal, &status);
-	printf("#\n");
-	fits_report_error(stdout, status);
-	// PotentialFiberMap table
-	char *ttype2[] = {"potentialtargetid"};
-	char *tform2[1] = {"V"};
-	char *tunit2[10] = {""};
-	char extname2[] = "PotentialFiberMap";
-	fits_create_tbl(fptr, BINARY_TBL, 0, 1, ttype2, tform2, tunit2, extname2, &status);
-	printf("#\n");
-	fits_report_error(stdout, status);
-	fits_write_col(fptr, TINT, 1, 1, 1, tot_targets, potential_target_id, &status);
-	printf("#\n");
-	fits_report_error(stdout, status);
+
+	// create the file
+
+	int status = 0;
+	fitsfile * fptr;
+	fits_create_file (&fptr, filename, &status);
+	fits_report_error (stderr, status);
+
+	// Set up the schema for the table.  We explicitly malloc these
+	// string arrays, since the CFITSIO API requires non-const pointers
+	// to them (i.e. arrays of literals won't work).
+
+	size_t ncols = 10;
+
+	char ** ttype;
+	char ** tform;
+	char ** tunit;
+
+	ttype = (char**) malloc ( ncols * sizeof(char*) );
+	tform = (char**) malloc ( ncols * sizeof(char*) );
+	tunit = (char**) malloc ( ncols * sizeof(char*) );
+
+	if ( ! ( ttype && tform && tunit ) ) {
+		std::ostringstream o;
+		o << "cannot allocate column info for binary table";
+		throw std::runtime_error(o.str().c_str());
+	}
+
+	for ( size_t c = 0; c < ncols; ++c ) {
+		ttype[c] = (char*) malloc ( FLEN_VALUE * sizeof(char) );
+		tform[c] = (char*) malloc ( FLEN_VALUE * sizeof(char) );
+		tunit[c] = (char*) malloc ( FLEN_VALUE * sizeof(char) );
+		if ( ! ( ttype[c] && tform[c] && tunit[c] ) ) {
+			std::ostringstream o;
+			o << "cannot allocate column info for binary table";
+			throw std::runtime_error(o.str().c_str());
+		}
+	}
+
+	strcpy(ttype[0], "fiber");
+	strcpy(tform[0], "J");
+	strcpy(tunit[0], "");
+
+	strcpy(ttype[1], "positioner");
+	strcpy(tform[1], "J");
+	strcpy(tunit[1], "");
+
+	strcpy(ttype[2], "numtarget");
+	strcpy(tform[2], "J");
+	strcpy(tunit[2], "");
+
+	strcpy(ttype[3], "objtype");
+	snprintf(tform[3], FLEN_VALUE, "%dA", (int)objtypelen);
+	strcpy(tunit[3], "");
+
+	strcpy(ttype[4], "targetid");
+	strcpy(tform[4], "K");
+	strcpy(tunit[4], "");
+
+	strcpy(ttype[5], "desi_target0");
+	strcpy(tform[5], "K");
+	strcpy(tunit[5], "");
+
+	strcpy(ttype[6], "ra");
+	strcpy(tform[6], "E");
+	strcpy(tunit[6], "deg");
+
+	strcpy(ttype[7], "dec");
+	strcpy(tform[7], "E");
+	strcpy(tunit[7], "deg");
+
+	strcpy(ttype[8], "xfocal_design");
+	strcpy(tform[8], "E");
+	strcpy(tunit[8], "mm");
+
+	strcpy(ttype[9], "yfocal_design");
+	strcpy(tform[9], "E");
+	strcpy(tunit[9], "mm");
+	
+	char extname[FLEN_VALUE];
+
+	strcpy(extname, "FiberMap");
+
+	// create the table with the full size on disk.
+	
+	ret = fits_create_tbl(fptr, BINARY_TBL, F.Nfiber, ncols, ttype, tform, tunit, extname, &status);
+	fits_report_error(stderr, status);
+
+	// get the number of rows to write for each internal FITS buffer.
+
+	long optimal;
+	ret = fits_get_rowsize(fptr, &optimal, &status);
+	fits_report_error(stderr, status);
+
+	// initialize arrays to the optimal number of rows for writing.
+	
+	int fiber_id[optimal];
+	int positioner_id[optimal];
+	int num_target[optimal];
+	char objtype[optimal][objtypelen];
+	char * ot_tmp[optimal];
+	for (int i = 0; i < optimal; i++) {
+		ot_tmp[i] = objtype[i];
+	}
+	long long target_id[optimal];
+	long long desi_target[optimal];
+	float ra[optimal];
+	float dec[optimal];
+	float x_focal[optimal];
+	float y_focal[optimal];
+
+	std::vector <long long> potentialtargetid;
+
+	// write data in buffered way
+
+	long long offset = 0;
+	long long n = optimal;
+
+	while ( n == optimal ) {
+
+		if ( offset + optimal > F.Nfiber ) {
+			n = F.Nfiber - offset;
+		}
+
+		if ( n > 0 ) {
+
+			for (int i = 0; i < n; ++i) {
+				int fib = offset + i;
+				int g = A.TF[j][fib];
+
+				fiber_id[i] = fib;
+				positioner_id[i] = fib;
+				num_target[i] = P[j].av_gals[fib].size();
+				target_id[i] = g;
+				desi_target[i] = 0;
+
+				if (g < 0) {
+					strcpy(objtype[i], "NA");
+					ra[i] = qNan;
+					dec[i] = qNan;
+					x_focal[i] = qNan;
+					y_focal[i] = qNan;
+				} else {
+					strncpy(objtype[i], F.kind[G[g].id].c_str(), objtypelen);
+					ra[i] = G[g].ra;
+					dec[i] = G[g].dec;
+					dpair proj = projection(g,j,G,P);
+					x_focal[i] = proj.f;
+					y_focal[i] = proj.s;
+				}
+
+				for (int k = 0; k < P[j].av_gals[fib].size(); ++k) {
+					potentialtargetid.push_back(P[j].av_gals[fib][k]);
+				}
+			}
+
+			fits_write_col(fptr, TINT, 1, offset+1, 1, n, fiber_id, &status);
+			fits_report_error(stderr, status);
+			
+			fits_write_col(fptr, TINT, 2, offset+1, 1, n, positioner_id, &status);
+			fits_report_error(stderr, status);
+			
+			fits_write_col(fptr, TINT, 3, offset+1, 1, n, num_target, &status);
+			fits_report_error(stderr, status);
+			
+			fits_write_col(fptr, TSTRING, 4, offset+1, 1, n, ot_tmp, &status);
+			fits_report_error(stderr, status);
+			
+			fits_write_col(fptr, TLONGLONG, 5, offset+1, 1, n, target_id, &status);
+			fits_report_error(stderr, status);
+			
+			fits_write_col(fptr, TLONGLONG, 6, offset+1, 1, n, desi_target, &status);
+			fits_report_error(stderr, status);
+			
+			fits_write_col(fptr, TFLOAT, 7, offset+1, 1, n, ra, &status);
+			fits_report_error(stderr, status);
+			
+			fits_write_col(fptr, TFLOAT, 8, offset+1, 1, n, dec, &status);
+			fits_report_error(stderr, status);
+			
+			fits_write_col(fptr, TFLOAT, 9, offset+1, 1, n, x_focal, &status);
+			fits_report_error(stderr, status);
+			
+			fits_write_col(fptr, TFLOAT, 10, offset+1, 1, n, y_focal, &status);
+			fits_report_error(stderr, status);
+		}
+
+		offset += n;
+	}
+
+	// PotentialFiberMap table.  We have only one column, so it is safe
+	// from a performance perspective to write the whole thing.
+
+	strcpy(ttype[0], "potentialtargetid");
+	strcpy(tform[0], "K");
+	strcpy(tunit[0], "");
+
+	strcpy(extname, "PotentialFiberMap");
+
+	ret = fits_create_tbl(fptr, BINARY_TBL, potentialtargetid.size(), 1, ttype, tform, tunit, extname, &status);
+	fits_report_error(stderr, status);
+
+	fits_write_col(fptr, TLONGLONG, 1, 1, 1, potentialtargetid.size(), &(potentialtargetid[0]), &status);
+	fits_report_error(stderr, status);
+
 	fits_close_file(fptr, &status);
-	printf("#\n");
-	fits_report_error(stdout, status);
-#endif
+	fits_report_error(stderr, status);
+
+	for ( size_t c = 0; c < ncols; ++c ) {
+		free ( ttype[c] );
+		free ( tform[c] );
+		free ( tunit[c] );
+	}
+	free ( ttype );
+	free ( tform );
+	free ( tunit );
+
 	return;
 }
 
