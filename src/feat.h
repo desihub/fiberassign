@@ -33,6 +33,7 @@ class Feat { // F for features
     List SS;
     List SF;
     List lastpass;
+    List pass_intervals;
 	Slist kind;
 	Slist type;
 
