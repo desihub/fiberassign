@@ -146,17 +146,22 @@ int main(int argc, char **argv) {
     
     
     //diagnostic check on SS and SF
+    /*
     for (int j=0;j<F.Nplate;++j){
         for (int p=0; p<F.Npetal; ++p){
             if(P[j].SS_in_petal[p]!=F.MaxSS){printf("SS j= %d p= %d number = %d\n",j,p,P[j].SS_in_petal[p]);}
             if(P[j].SF_in_petal[p]!=F.MaxSF){printf("SF j= %d p= %d number = %d\n",j,p,P[j].SF_in_petal[p]);}
         }
     }
-
+*/
 	// Results -------------------------------------------------------
-    if (F.Output) for (int j=0; j<F.Nplate; j++){ write_FAtile_ascii(j,F.outDir,M,P,pp,F,A);
-        for (int j=0; j<F.Nplate; j++) fa_write(j,F.outDir,M,P,pp,F,A); // Write output
+    if (F.Output) for (int j=0; j<F.Nplate; j++){
+        write_FAtile_ascii(j,F.outDir,M,P,pp,F,A);
     }
+    if (F.Output) for (int j=0; j<F.Nplate; j++){
+        fa_write(j,F.outDir,M,P,pp,F,A); // Write output
+    }
+
 	display_results("doc/figs/",G,M,P,pp,F,A,true);
 	if (F.Verif) A.verif(P,M,pp,F); // Verification that the assignment is sane
 
