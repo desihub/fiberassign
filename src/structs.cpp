@@ -182,7 +182,7 @@ MTL make_MTL(const Gals& G, const Feat& F){
 }
 
 
-void write_MTLfile(const MTL& M,F){
+void write_MTLfile(const MTL& M,const Feat& F){
     FILE * FA;
     str s=F.MTLfile;
     FA = fopen(s.c_str(),"w");
