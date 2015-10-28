@@ -115,6 +115,13 @@ int main(int argc, char **argv) {
 	for (int i=0; i<1; i++) redistribute_tf(M,P,pp,F,A);
     
 	print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false);
+    //try assigning SF and SS before real time assignment
+    for (int j=0;j<F.Nplate;++j){
+        A.next_plate=j;
+        assign_sf_ss(j,G,P,pp,F,A); // Assign SS and SF just before an observation
+        assign_unused(j,G,P,pp,F,A);
+    }
+    init_time_at(time,"# Begin real time assignment",t);
 
 	// Still not updated, so all QSO targets have multiple observations etc
 	// Apply and update the plan --------------------------------------
@@ -128,8 +135,8 @@ int main(int argc, char **argv) {
         for (int jj=F.pass_intervals[i]; jj<F.Nplate; jj++) {
             int j = A.next_plate;
             //printf(" - Plate %d :",j);
-            assign_sf_ss(j,G,P,pp,F,A); // Assign SS and SF just before an observation
-            assign_unused(j,G,P,pp,F,A);
+            assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF just before an observation
+            assign_unused(j,M,P,pp,F,A);
             A.next_plate++;
         }
         //if (j%2000==0) pyplotTile(j,"doc/figs",G,P,pp,F,A); // Picture of positioners, galaxies
@@ -138,13 +145,13 @@ int main(int argc, char **argv) {
             int j = A.next_plate;
             //printf(" %s not as - ",format(5,f(A.unused_f(j,F))).c_str()); fl();
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
-            if (0<=j-F.Analysis) update_plan_from_one_obs(G,P,pp,F,A,F.Nplate-1); else printf("\n");
+            if (0<=j-F.Analysis) update_plan_from_one_obs(G,M,P,pp,F,A,F.Nplate-1); else printf("\n");
             A.next_plate++;
         }
-        redistribute_tf(G,P,pp,F,A);
-        redistribute_tf(G,P,pp,F,A);
-        improve(G,P,pp,F,A);
-        redistribute_tf(G,P,pp,F,A);
+        redistribute_tf(M,P,pp,F,A);
+        redistribute_tf(M,P,pp,F,A);
+        improve(M,P,pp,F,A);
+        redistribute_tf(M,P,pp,F,A);
         
     }
 /*
