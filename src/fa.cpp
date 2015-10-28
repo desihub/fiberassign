@@ -134,7 +134,7 @@ int main(int argc, char **argv) {
         A.next_plate=F.pass_intervals[i];
         for (int jj=F.pass_intervals[i]; jj<F.Nplate; jj++) {
             int j = A.next_plate;
-            printf(" - Plate %d :\n",j);
+            //printf(" - Plate %d :\n",j);
             //printf(" %s not as - ",format(5,f(A.unused_f(j,F))).c_str()); fl();
             assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF just before an observation
 
