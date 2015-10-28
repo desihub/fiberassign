@@ -1,7 +1,7 @@
 galFile /project/projectdirs/desi/mocks/preliminary/objects_ss_sf0.rdzipn
 tileFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/footprint/desi-tiles.par
 fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
-outDir /project/projectdirs/desi/users/rncahn/fa_output/
+outDir /project/projectdirs/desi/users/rncahn/fa_output/big/
 Output false
 MTLfile bigMTLfile.txt
 

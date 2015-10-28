@@ -137,16 +137,16 @@ int main(int argc, char **argv) {
             printf(" - Plate %d :\n",j);
             //printf(" %s not as - ",format(5,f(A.unused_f(j,F))).c_str()); fl();
             assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF just before an observation
-            printf(" did sf_ss\n");
+
             assign_unused(j,M,P,pp,F,A);
-            printf(" did unused\n");
+
             A.next_plate++;
         }
 
         A.next_plate=F.pass_intervals[i];
         for (int jj=F.pass_intervals[i]; jj<F.pass_intervals[i+1]&&jj<F.Nplate; jj++) {
             int j = A.next_plate;
-            printf(" j = %d\n", j);
+
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
             if (0<=j-F.Analysis) update_plan_from_one_obs(G,M,P,pp,F,A,F.Nplate-1); else printf("\n");
             A.next_plate++;
