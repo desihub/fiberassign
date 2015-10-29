@@ -71,9 +71,9 @@ Gals read_galaxies(const Feat& F) {
             Q.ra = ra[i];
             Q.dec = dc[i];
             Q.z = zz[i];
-            if(Q.dec<F.MaxDec && Q.dec>F.MinDec &&Q.ra<F.MaxRa && Q.ra>F.MinRa){
+            //if(Q.dec<F.MaxDec && Q.dec>F.MinDec &&Q.ra<F.MaxRa && Q.ra>F.MinRa){
                 try{P.push_back(Q);}catch(std::exception& e) {myexception(e);}
-            }
+            //}
 		}
 	}
 	return P;
@@ -174,7 +174,9 @@ MTL make_MTL(const Gals& G, const Feat& F){
 
         targ.lastpass=F.lastpass[G[i].id];
         //make list of priorities
+        if(targ.dec<F.MaxDec && tag.dec>F.MinDec &&tag.ra<F.MaxRa && targ.ra>F.MinRa){
         M.push_back(targ);
+        }
         int g=M.size()-1;
 
     }
