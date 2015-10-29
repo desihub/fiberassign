@@ -158,45 +158,9 @@ int main(int argc, char **argv) {
         improve(M,P,pp,F,A);
         redistribute_tf(M,P,pp,F,A);
         }
+        diagnostic(M,G,F,A);
     }
     }
-/*
-	init_time_at(time,"# Begin real time assignment",t);
-	for (int jj=0; jj<F.Nplate; jj++) {
-		int j = A.next_plate;
-
-		if(j%1000==0)diagnostic(M,G,F,A);
-        assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF just before an observation
-		assign_unused(j,M,P,pp,F,A);
-		//if (j%2000==0) pyplotTile(j,"doc/figs",G,P,pp,F,A); // Picture of positioners, galaxies
-		
-
-		if (0<=j-F.Analysis) update_plan_from_one_obs(G,M,P,pp,F,A,F.Nplate-1); else printf("\n");
-		A.next_plate++;
-		// Redistribute and improve on various occasions  add more times if desired
-
-		if ( j==1000 || j==3000) {
-            printf ( "Redistribute and improve at j = %d\n",j);
-			redistribute_tf(M,P,pp,F,A);
-			redistribute_tf(M,P,pp,F,A);
-			improve(M,P,pp,F,A);
-			redistribute_tf(M,P,pp,F,A);
-            //diagnostic(M,G,F,A);
-		}
-
-    }
-	print_time(time,"# ... took :");*/
-    
-    
-    //diagnostic check on SS and SF
-    /*
-    for (int j=0;j<F.Nplate;++j){
-        for (int p=0; p<F.Npetal; ++p){
-            if(P[j].SS_in_petal[p]!=F.MaxSS){printf("SS j= %d p= %d number = %d\n",j,p,P[j].SS_in_petal[p]);}
-            if(P[j].SF_in_petal[p]!=F.MaxSF){printf("SF j= %d p= %d number = %d\n",j,p,P[j].SF_in_petal[p]);}
-        }
-    }
-*/
 	// Results -------------------------------------------------------
     if (F.Output) for (int j=0; j<F.Nplate; j++){
         write_FAtile_ascii(j,F.outDir,M,P,pp,F,A);
