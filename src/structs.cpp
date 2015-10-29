@@ -190,7 +190,7 @@ void write_MTLfile(const MTL& M,const Feat& F){
     FA = fopen(s.c_str(),"w");
     str source="MartinsMocks";
     for (int i=0;i<M.size();++i){
-        fprintf(FA," %d %s %f  %f  %d  %d\n",M[i].id,source,M[i].ra,M[i].dec,M[i].nobs_remain,M[i].t_priority);
+        fprintf(FA," %d %s %f  %f  %d  %d\n",M[i].id,source.c_str,M[i].ra,M[i].dec,M[i].nobs_remain,M[i].t_priority);
     }
     fclose(FA);
 }
