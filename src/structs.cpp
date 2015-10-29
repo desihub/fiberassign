@@ -440,7 +440,7 @@ void Assignment::assign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
 		myexit(1);
 	}
 	TF[j][k] = g;
-    if(g%1000==0)printf(" assign  g %d to j %d k%d\n", g,j,k);
+    //if(g%1000==0)printf(" assign  g %d to j %d k%d\n", g,j,k);
 	// Assign g
 	Plist pl = GL[g];//pair list, tf's for this g
 	pair p = pair(j,k);
