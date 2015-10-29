@@ -26,9 +26,21 @@ mtl.o \
 misc.o \
 structs.o
 
+OBJS_MINI = \
+collision.o \
+feat.o \
+global.o \
+mini.o \
+misc.o \
+structs.o
+
 COMPILE = $(CXXFLAGS) $(OMPFLAGS) -I. $(CFITSIO_CPPFLAGS)
 LINK = $(OMPFLAGS) $(CFITSIO)
 
+all_mini : assign_mini
+
+install_mini : all_mini
+	cp assign_mini $(INSTALL)
 
 all_mtl : assign_mtl
 
@@ -43,6 +55,9 @@ install_fa : all_fa
 assign_mtl : $(OBJS_MTL)
 	$(CXX) -o $@ $^ $(LINK)
 
+assign_mini : $(OBJS_MINI)
+	$(CXX) -o $@ $^ $(LINK)
+
 assign_fa : $(OBJS_FA)
 	$(CXX) -o $@ $^ $(LINK)
 
@@ -54,3 +69,6 @@ clean_mtl :
 
 clean_fa :
 	rm -f assign_fa  *.o *~
+
+clean_min :
+	rm -f assign_mini  *.o *~
