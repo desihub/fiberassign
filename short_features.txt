@@ -47,18 +47,17 @@ PlotFreeFibTime false
 PlotSeenDens false
 PrintGalObs false
 
-MaxDec 10.
-MinDec -10.
+
+MaxDec 90.
+MinDec -90.
 MinRa 0.
-MaxRa 10.
--MaxDec 90.
--MinDec -90.
--MinRa 0.
--MaxRa 360.
+MaxRa 360.
 Verif false
 -------------------------------------------------
-
--galFile : input file of objects
+-axDec 10.
+-inDec -10.
+-inRa 0.
+-axRa 10.-galFile : input file of objects
 -tileFile : input file of tiles
 -fibFile : input file of centers of locations of fiber positioners
 -outDir : output directory
