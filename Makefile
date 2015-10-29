@@ -39,3 +39,12 @@ install_fa :
 
 clean_fa :
 	@cd src; $(MAKE) clean_fa
+
+all_mini : 
+	@cd src; $(MAKE) all_mini
+
+install_mini :
+	@cd src; $(MAKE) install_mini
+
+clean_mini :
+	@cd src; $(MAKE) clean_mini
