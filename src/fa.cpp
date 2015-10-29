@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
     printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.Nplate, F.Ngal, F.Nfiber);
 
     simple_assign(M,P,pp,F,A);
-    diagnostic(M,G,F,A);
+    if(F.diagnose)diagnostic(M,G,F,A);
     print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
                                     // Want to have even distribution of unused fibers
                                     // so we can put in sky fibers and standard stars
@@ -121,6 +121,7 @@ int main(int argc, char **argv) {
         assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF just before an observation
         assign_unused(j,M,P,pp,F,A);
     }
+    if(F.diagnose){
     init_time_at(time,"# Begin real time assignment",t);
 
 	// Still not updated, so all QSO targets have multiple observations etc
@@ -157,6 +158,7 @@ int main(int argc, char **argv) {
         improve(M,P,pp,F,A);
         redistribute_tf(M,P,pp,F,A);
         }
+    }
     }
 /*
 	init_time_at(time,"# Begin real time assignment",t);

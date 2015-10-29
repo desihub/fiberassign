@@ -26,6 +26,7 @@ class Feat { // F for features
 	str outDir;
     str MTLfile;
 	bool Output;
+    bool diagnose;
 
 	List prio; // Priorities  int
 	List priopost; // Priorities when we know the kind int

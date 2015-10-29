@@ -4,6 +4,7 @@ fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplan
 outDir /project/projectdirs/desi/users/rncahn/fa_output/big/
 Output false
 MTLfile bigMTLfile.txt
+diagnose false
 
 kind QSOLy-a QSOTracer LRG ELG FakeQSO FakeLRG SS SF
 type QSO QSO LRG ELG QSO LRG SS SF
