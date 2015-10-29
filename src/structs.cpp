@@ -159,7 +159,7 @@ MTL make_MTL(const Gals& G, const Feat& F){
     int special_count(0);
     int stop_count(0);
     for(int i=0;i<Nobj;++i){
-
+        targ.id=i;
         targ.nhat[0]=G[i].nhat[0];
         targ.nhat[1]=G[i].nhat[1];
         targ.nhat[2]=G[i].nhat[2];
@@ -187,7 +187,7 @@ void write_MTLfile(const MTL& M,const Feat& F){
     str s=F.MTLfile;
     FA = fopen(s.c_str(),"w");
     for (int i=0;i<M.size();++i){
-        fprintf(FA," %d  %f  %f  %d  %d\n",i,M[i].ra,M[i].dec,M[i].t_priority,M[i].nobs_remain);
+        fprintf(FA," %d  %f  %f  %d  %d\n",M[i].id,M[i].ra,M[i].dec,M[i].t_priority,M[i].nobs_remain);
     }
     fclose(FA);
 }
