@@ -216,8 +216,8 @@ MTL read_MTLfile(const Feat& F){
             double ra,dec;
             int id, nobs_remain,priority;
             str xname;
-            //std::istringstream(buf)>> id>> ra >> dec >>  priority >> nobs_remain ;
-            std::istringstream(buf)>> id>> xname>>ra >> dec >>  nobs_remain>> priority;
+            std::istringstream(buf)>> id>> ra >> dec >>  priority >> nobs_remain ;
+            //std::istringstream(buf)>> id>> xname>>ra >> dec >>  nobs_remain>> priority;
             if (ra<   0.) {ra += 360.;}
             if (ra>=360.) {ra -= 360.;}
             if (dec<=-90. || dec>=90.) {
