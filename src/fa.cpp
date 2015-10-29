@@ -99,14 +99,7 @@ int main(int argc, char **argv) {
     printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.Nplate, F.Ngal, F.Nfiber);
 
     simple_assign(M,P,pp,F,A);
-    if (F.Output) for (int j=0; j<F.Nplate; j++){
-        write_FAtile_ascii(j,F.outDir,M,P,pp,F,A);
-    }
-    if (F.Output) for (int j=0; j<F.Nplate; j++){
-        fa_write(j,F.outDir,M,P,pp,F,A); // Write output
-    }
-
-    if(F.diagnose)diagnostic(M,G,F,A);
+     if(F.diagnose)diagnostic(M,G,F,A);
     print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
                                     // Want to have even distribution of unused fibers
                                     // so we can put in sky fibers and standard stars
@@ -205,6 +198,14 @@ int main(int argc, char **argv) {
     }
 */
 	// Results -------------------------------------------------------
+    if (F.Output) for (int j=0; j<F.Nplate; j++){
+        write_FAtile_ascii(j,F.outDir,M,P,pp,F,A);
+    }
+    /*
+    if (F.Output) for (int j=0; j<F.Nplate; j++){
+        fa_write(j,F.outDir,M,P,pp,F,A); // Write output
+    }
+    */
 
 	display_results("doc/figs/",G,M,P,pp,F,A,true);
 	if (F.Verif) A.verif(P,M,pp,F); // Verification that the assignment is sane
