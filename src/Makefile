@@ -70,5 +70,5 @@ clean_mtl :
 clean_fa :
 	rm -f assign_fa  *.o *~
 
-clean_min :
+clean_mini :
 	rm -f assign_mini  *.o *~
