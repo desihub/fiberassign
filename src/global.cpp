@@ -283,7 +283,7 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, Plates&P, const PP& pp, con
             
             if(M[g].once_obs==0){//first obs  otherwise should be ok
                 M[g].once_obs=1;
-                int original_g=G[M[g].id]];
+                int original_g=M[g].id;
                 if(M[g].nobs_done>F.goalpost[G[original_g].id]){//need to fix this
                     to_update.push_back(g);}
                 else{
@@ -296,7 +296,7 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, Plates&P, const PP& pp, con
 	for (int gg=0; gg<to_update.size(); gg++) {
 		int g = to_update[gg];
 		Plist tfs = A.chosen_tfs(g,F,j0+1,n-1); // Begin at j0+1, can't change assignment at j0 (already observed)
-        int original_g=G[M[g].id]];
+        int original_g=M[g].id;
 		while (tfs.size()!=0&&M[g].nobs_done>F.goalpost[G[original_g].id]) {
 			int jp = tfs[0].f; int kp = tfs[0].s;
 			A.unassign(jp,kp,g,M,P,pp);
@@ -566,7 +566,7 @@ void diagnostic(const MTL& M, const Gals& G, Feat& F, const Assignment& A){
     for (int j=0;j<F.Nplate;++j){
         for(int k=0;k<F.Nfiber;++k){
             int g=A.TF[j][k];
-            int original_g=G[M[g].id]];
+            int original_g=M[g].id;
             if(g!=-1){count_by_kind[G[original_g].id]+=1;
             }
         }
@@ -578,7 +578,7 @@ void diagnostic(const MTL& M, const Gals& G, Feat& F, const Assignment& A){
     Table obsrv = initTable(F.Categories,MaxObs+1);
     
     for (int g=0; g<G.size(); g++) {
-        int original_g=G[M[g].id]];
+        int original_g=M[g].id;
         int c= G[original_g].id;
         int m = min(M[g].nobs_done,MaxObs);
         obsrv[c][m]++; //
@@ -607,7 +607,7 @@ void display_results(str outdir, const Gals& G,const MTL& M, const Plates& P, co
 	Table obsrv = initTable(F.Categories,MaxObs+1);
 
 	for (int g=0; g<M.size(); g++) {
-        int original_g=G[M[g].id]];
+        int original_g=M[g].id;
 		int c= G[original_g].id;
 		int m = min(M[g].nobs_done,MaxObs);
         obsrv[c][m]++; //
