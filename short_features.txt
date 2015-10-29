@@ -48,16 +48,13 @@ PlotSeenDens false
 PrintGalObs false
 
 
-MaxDec 90.
-MinDec -90.
+MaxDec 10.
+MinDec -10.
 MinRa 0.
-MaxRa 360.
+MaxRa 10.
 Verif false
 -------------------------------------------------
--axDec 10.
--inDec -10.
--inRa 0.
--axRa 10.-galFile : input file of objects
+-galFile : input file of objects
 -tileFile : input file of tiles
 -fibFile : input file of centers of locations of fiber positioners
 -outDir : output directory
