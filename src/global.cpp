@@ -577,7 +577,7 @@ void diagnostic(const MTL& M, const Gals& G, Feat& F, const Assignment& A){
     int MaxObs = max(F.goal);
     Table obsrv = initTable(F.Categories,MaxObs+1);
     
-    for (int g=0; g<G.size(); g++) {
+    for (int g=0; g<M.size(); g++) {
         int original_g=M[g].id;
         int c= G[original_g].id;
         int m = min(M[g].nobs_done,MaxObs);
