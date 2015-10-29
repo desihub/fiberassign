@@ -174,7 +174,7 @@ MTL make_MTL(const Gals& G, const Feat& F){
 
         targ.lastpass=F.lastpass[G[i].id];
         //make list of priorities
-        if(targ.dec<F.MaxDec && tag.dec>F.MinDec &&tag.ra<F.MaxRa && targ.ra>F.MinRa){
+        if(targ.dec<F.MaxDec && targ.dec>F.MinDec &&targ.ra<F.MaxRa && targ.ra>F.MinRa){
         M.push_back(targ);
         }
         int g=M.size()-1;
