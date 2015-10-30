@@ -9,6 +9,7 @@
 #include	<vector>
 #include	<algorithm>
 #include	<exception>
+#include        <stdexcept>
 #include	<sys/time.h>
 #include        <stdlib.h>     /* srand, rand */
 #include	"modules/htmTree.h"
