@@ -378,7 +378,7 @@ def write_catalog(icat=0, fitsoutput=False):
             ('PRIORITY', '>i4')
         ]
 
-        data = N.ndarray(shape=(len(Nt)), dtype=type_table) 
+        data = N.ndarray(shape=ra.size, dtype=type_table) 
         data['TARGETID'] = id
         data['RA'] = ra
         data['DEC'] = dc
@@ -387,9 +387,9 @@ def write_catalog(icat=0, fitsoutput=False):
         data['PRIORITY'] = pp
 
         #- Create header to include versions, etc.
-        hdr = fitsio.FITSHDR()
+        hdr = F.FITSHDR()
         hdr['DEPNAM00'] = 'makecatalog'
-        fitsio.write(fitsname, data, extname='MTL', header=hdr, clobber=True)
+        F.write(fitsname, data, extname='MTL', header=hdr, clobber=True)
         print('wrote {} items to target file'.format(len(ra)))
         
 if __name__=="__main__":
