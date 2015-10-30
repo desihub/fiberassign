@@ -368,28 +368,30 @@ def write_catalog(icat=0, fitsoutput=False):
             os.remove(fitsname)
     
 
+        # structure for output data
+        type_table = [
+            ('TARGETID', '>i4'), 
+            ('BRICKNAME', '|S8'),
+            ('RA', '>f4'), 
+            ('DEC', '>f4'),
+            ('NUMOBS', '>i4'), 
+            ('PRIORITY', '>i4')
+        ]
 
-        c0=fits.Column(name='ID', format='I', array=Nt)
-        c1=fits.Column(name='TARGETID', format='I', array=id)
-        c2=fits.Column(name='RA', format='D', array=ra)
-        c3=fits.Column(name='DEC', format='D', array=dc)
-        c4=fits.Column(name='PRIORITY', format='D', array=pp)
-        c5=fits.Column(name='NOBS', format='D', array=no)
-        c6=fits.Column(name='OBJTYPE', format='8A', array=types)
+        data = np.ndarray(shape=(len(Nt)), dtype=type_table) 
+        data['TARGETID'] = id
+        data['RA'] = ra
+        data['DEC'] = dc
+        data['BRICKNAME'][:] = "0simple0"
+        data['NUMOBS'] = no
+        data['PRIORITY'] = pp
 
-        print("PACK")
-        targetcat=fits.ColDefs([c0,c1,c2,c3,c4,c5,c6])
-        table_targetcat_hdu=fits.TableHDU.from_columns(targetcat)
-    
-        hdu=fits.PrimaryHDU()
-        hdulist=fits.HDUList([hdu])
-        hdulist.append(table_targetcat_hdu)
-        print("VERIFY")
-        hdulist.verify()
-        print("WRITING")
-        hdulist.writeto(fitsname)
-        print("DONE!")
-
+        #- Create header to include versions, etc.
+        hdr = fitsio.FITSHDR()
+        hdr['DEPNAM00'] = 'makecatalog'
+        fitsio.write(fitsname, data, extname='MTL', header=hdr, clobber=True)
+        print('wrote {} items to target file'.format(len(ra)))
+        
 if __name__=="__main__":
     args = sys.argv
 
