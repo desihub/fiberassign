@@ -160,10 +160,10 @@ def write_catalog(icat=0, fitsoutput=False):
     no       = N.append(no,nno)
     print 'qsoIIs',len(nra)
 
-    tmp_type = N.chararray(nra.size, itemsize=8)
+    tmp_type = N.chararray(ra.size, itemsize=8)
     tmp_type[:] = 'QSO'
     types = N.append(types, tmp_type)
-
+    print  'total ra, types', N.size(ra), N.size(types) 
     
     # get extra qsos for qsoI
     icatp=icat+1
@@ -187,7 +187,7 @@ def write_catalog(icat=0, fitsoutput=False):
     tmp_type = N.chararray(nra.size, itemsize=8)
     tmp_type[:] = 'QSO'
     types = N.append(types, tmp_type)
-
+    print  'total ra, types', len(ra), N.size(types) 
     print' added qsoIs', len(nra)
 
     # LRGs are priority 3.
@@ -211,8 +211,7 @@ def write_catalog(icat=0, fitsoutput=False):
 
     print 'lrgs added',len(nra)
     print 'lrg density',len(nra)/total_area
-
-
+    print  'total ra, types', len(ra), N.size(types) 
 
     # ELGs are priority 4.
     
@@ -237,8 +236,9 @@ def write_catalog(icat=0, fitsoutput=False):
     types = N.append(types, tmp_type)
     
     print 'elgs added',len(nra)
+    print 'new total nid'
     print 'elg density',len(nra)/total_area
-    
+    print  'total ra, types', len(ra), len(types)     
 
     
     # and now we have "fake" qsos, placed randomly.
@@ -273,8 +273,9 @@ def write_catalog(icat=0, fitsoutput=False):
 
     print 'fake qso density',density
 
-    print 'fake qsos',len(nra)
-  
+    print 'fake qsos',len(nra), len(types)
+    print  'total ra, types', len(ra), len(types) 
+
     #now need bad lrgs at 50/sq deg
     nra      = data[ 'RA'][end_badqso+1:end_badlrg].astype('f4')
     ndc      = data['DEC'][end_badqso+1:end_badlrg].astype('f4')
@@ -296,7 +297,7 @@ def write_catalog(icat=0, fitsoutput=False):
 
     print 'fake lrg density',density
     
-    print 'fake lrgs added', len(nra)
+    print 'fake lrgs added', len(nra), len(types)
     
     #now need standard stars at 140/sq deg
     nra      = data[ 'RA'][end_badlrg+1:end_standardstar].astype('f4')
@@ -321,7 +322,7 @@ def write_catalog(icat=0, fitsoutput=False):
     print 'standardstar density',density
     
     print 'standardstar added', len(nra)
-    
+    print  'total ra, types', len(ra), len(types) 
     
     #now need sky fibers at 1400/sq deg
     nra      = data[ 'RA'][end_standardstar+1:end_skyfiber].astype('f4')
@@ -345,7 +346,7 @@ def write_catalog(icat=0, fitsoutput=False):
     print 'sky fiber density',density
     
     print 'sky fiber density added', len(nra)
-   
+    print  'total ra, types', len(ra), len(types) 
    
     #
     print "Writing information for ",ra.size," objects."
@@ -360,14 +361,14 @@ def write_catalog(icat=0, fitsoutput=False):
     no.tofile(fout)
     fout.close()
     #
+    print  'total ra, types', len(ra), len(types) 
+
 
 
     if(fitsoutput):
         fitsname="objects_ss_sf%d.fits"%icat
         if(os.path.exists(fitsname)):
             os.remove(fitsname)
-    
-
         # structure for output data
         type_table = [
             ('TARGETID', '>i4'), 
@@ -379,7 +380,7 @@ def write_catalog(icat=0, fitsoutput=False):
         ]
 
         data = N.ndarray(shape=ra.size, dtype=type_table) 
-        data['TARGETID'] = id
+        data['TARGETID'] = N.arange(ra.size)
         data['RA'] = ra
         data['DEC'] = dc
         data['BRICKNAME'][:] = "0simple0"
@@ -392,6 +393,27 @@ def write_catalog(icat=0, fitsoutput=False):
         F.write(fitsname, data, extname='MTL', header=hdr, clobber=True)
         print('wrote {} items to target file'.format(len(ra)))
         
+        #structure for truth file
+        type_table = [
+            ('TARGETID', '>i8'),
+            ('BRICKNAME', '|S20'),
+            ('Z', '>f8'),
+            ('TYPE', '|S20'),
+            ('SUBTYPE', '|S20')
+        ]
+        data = N.ndarray(shape=ra.size, dtype=type_table) 
+        data['TARGETID'] = N.arange(ra.size)
+        data['BRICKNAME'][:] = "0simple0"
+        data['Z'] = zz
+        data['TYPE'] = types
+        data['SUBTYPE'] = types
+
+        hdr = F.FITSHDR()
+        hdr['DEPNAM00'] = 'makecatalog-truth'
+        F.write('truth_'+fitsname, data, extname='MTL', header=hdr, clobber=True)
+        print('wrote {} items to truth target file'.format(len(ra)))
+
+
 if __name__=="__main__":
     args = sys.argv
 
