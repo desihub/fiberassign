@@ -378,7 +378,7 @@ def write_catalog(icat=0, fitsoutput=False):
             ('PRIORITY', '>i4')
         ]
 
-        data = np.ndarray(shape=(len(Nt)), dtype=type_table) 
+        data = N.ndarray(shape=(len(Nt)), dtype=type_table) 
         data['TARGETID'] = id
         data['RA'] = ra
         data['DEC'] = dc
