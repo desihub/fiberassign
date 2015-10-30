@@ -836,7 +836,7 @@ void write_FAtile_ascii(int j, str outdir, const MTL& M, const Plates& P, const 
 		// Number of potential galaxies
 		fprintf(FA,"%lu ",av_gals.size());
 		// IDs of potential galaxies
-		for (int i=0; i<av_gals.size(); i++) fprintf(FA,"%d ",av_gals[i]);
+		for (int i=0; i<av_gals.size(); i++) fprintf(FA,"%d ",M[av_gals[i]].id);
 		// galaxy number, ra, dec, x, y
 		if (g!=-1) {
 			dpair Gal = projection(g,j,M,P);
