@@ -840,7 +840,7 @@ void write_FAtile_ascii(int j, str outdir, const MTL& M, const Plates& P, const 
 		// galaxy number, ra, dec, x, y
 		if (g!=-1) {
 			dpair Gal = projection(g,j,M,P);
-			fprintf(FA,"%d %f %f %f %f\n",g,M[g].ra,M[g].dec,Gal.f,Gal.s);
+            fprintf(FA,"%d %f %f %f %f\n",M[g].id,M[g].ra,M[g].dec,Gal.f,Gal.s);
 		}
 		else fprintf(FA,"-1\n");
 	}
