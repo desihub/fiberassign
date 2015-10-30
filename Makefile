@@ -40,11 +40,11 @@ install_fa :
 clean_fa :
 	@cd src; $(MAKE) clean_fa
 
-all_mini : 
-	@cd src; $(MAKE) all_mini
+all_pipeline : 
+	@cd src; $(MAKE) all_pipeline
 
-install_mini :
-	@cd src; $(MAKE) install_mini
+install_pipeline :
+	@cd src; $(MAKE) install_pipeline
 
-clean_mini :
-	@cd src; $(MAKE) clean_mini
+clean_pipeline :
+	@cd src; $(MAKE) clean_pipeline
