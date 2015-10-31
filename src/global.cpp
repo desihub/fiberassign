@@ -1060,9 +1060,12 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
                 fiber_id[i] = fib;
                 positioner_id[i] = fib;
                 num_target[i] = P[j].av_gals[fib].size();
-                target_id[i] = g;
+
                 desi_target[i] = 0;
-                
+		//PRUEBA
+                //target_id[i] = g;
+		target_id[i] = M[g].id;
+
                 if (g < 0) {
                     //strcpy(objtype[i], "NA");
                     ra[i] = qNan;
