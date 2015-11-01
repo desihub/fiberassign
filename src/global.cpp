@@ -238,7 +238,8 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
 	List randPlates = F.Randomize ? random_permut(plates) : plates;
     
 	for (int jj=0; jj<n; jj++) {
-		int j = randPlates[jj];
+		//int j = randPlates[jj];
+        j=jj;
 		List randFibers = random_permut(F.Nfiber);
 		for (int kk=0; kk<F.Nfiber; kk++) { // Fiber
 			int k = randFibers[kk];
