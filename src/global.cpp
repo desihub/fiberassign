@@ -284,9 +284,9 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, Plates&P, const PP& pp, con
             //initially nobs_remain==goal
             
             if(M[g].once_obs==0){//first obs  otherwise should be ok
-                M[g].once_obs=1;
+                M[g].once_obs=1;//now observed
                 int original_g=M[g].id;
-                if(M[g].nobs_done>F.goalpost[G[original_g].id]){//need to fix this
+                if(M[g].nobs_done>F.goalpost[G[original_g].id]){
                     to_update.push_back(g);}
                 else{
                     M[g].nobs_remain=F.goalpost[G[original_g].id]-M[g].nobs_done;
