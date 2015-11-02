@@ -235,11 +235,11 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
 	int j0 = A.next_plate;
 	int n = next==-1 ? F.Nplate-j0 : next; // Not F.Nplate-A.next_plate+1
 	List plates = sublist(j0,n,A.order);
-	List randPlates = F.Randomize ? random_permut(plates) : plates;
+	//List randPlates = F.Randomize ? random_permut(plates) : plates;
     
 	for (int jj=0; jj<n; jj++) {
 		//int j = randPlates[jj];
-        j=jj;
+        int j=jj;
 		List randFibers = random_permut(F.Nfiber);
 		for (int kk=0; kk<F.Nfiber; kk++) { // Fiber
 			int k = randFibers[kk];
@@ -568,8 +568,9 @@ void diagnostic(const MTL& M, const Gals& G, Feat& F, const Assignment& A){
     for (int j=0;j<F.Nplate;++j){
         for(int k=0;k<F.Nfiber;++k){
             int g=A.TF[j][k];
+            if(g!=-1){
             int original_g=M[g].id;
-            if(g!=-1){count_by_kind[G[original_g].id]+=1;
+            count_by_kind[G[original_g].id]+=1;
             }
         }
     }
