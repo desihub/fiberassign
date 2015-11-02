@@ -263,7 +263,7 @@ void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int 
 	printf("  %s more assignments (%.3f %% improvement)\n",f(na_end-na_start).c_str(),percent(na_end-na_start,na_start));//how many new assigned tf's
 	if (next!=1) print_time(t,"# ... took :");
 }
-//not used
+
 // If there are galaxies discovered as fake for example, they won't be observed several times in the plan
 // haas access to G,not just M, because it needs to know the truth
 
