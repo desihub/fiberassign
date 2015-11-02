@@ -121,29 +121,28 @@ int main(int argc, char **argv) {
         assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF just before an observation
         assign_unused(j,M,P,pp,F,A);
     }
-    if(F.diagnose){
+    
     init_time_at(time,"# Begin real time assignment",t);
 
 	// Still not updated, so all QSO targets have multiple observations etc
 	// Apply and update the plan --------------------------------------
-    //int pass_intervals[6] {0,500,1000,2000,4000,F.Nplate};
-    printf(" pass_intervals  %d %d %d %d %d\n",F.pass_intervals[0],F.pass_intervals[1],F.pass_intervals[2],F.pass_intervals[3],F.pass_intervals[4]);
-    
+   
     for(int i=0;i<F.pass_intervals.size();++i){
         printf(" before pass = %d  at %d  tiles\n",i,F.pass_intervals[i]);
         //display_results("doc/figs/",G,P,pp,F,A,true);
+        //execute this phase (i) of survey
         A.next_plate=F.pass_intervals[i];
-        for (int jj=F.pass_intervals[i]; jj<F.Nplate; jj++) {
+        for (int jj=F.pass_intervals[i]; jj<F.Nplate&&jj<F.Nplate; jj++) {
             int j = A.next_plate;
-            //printf(" - Plate %d :\n",j);
-            //printf(" %s not as - ",format(5,f(A.unused_f(j,F))).c_str()); fl();
+            ///printf(" - Plate %d :\n",j);
+            //printf(" %s not assigned - ",format(5,f(A.unused_f(j,F))).c_str()); fl();
             assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF just before an observation
 
             assign_unused(j,M,P,pp,F,A);
 
             A.next_plate++;
         }
-
+        //update target information for this interval
         A.next_plate=F.pass_intervals[i];
         for (int jj=F.pass_intervals[i]; jj<F.pass_intervals[i+1]&&jj<F.Nplate; jj++) {
             int j = A.next_plate;
@@ -160,7 +159,7 @@ int main(int argc, char **argv) {
         }
         diagnostic(M,G,F,A);
     }
-    }
+    
 	// Results -------------------------------------------------------
     if (F.Output) for (int j=0; j<F.Nplate; j++){
         write_FAtile_ascii(j,F.outDir,M,P,pp,F,A);
