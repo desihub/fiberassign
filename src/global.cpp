@@ -311,7 +311,7 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, Plates&P, const PP& pp, con
 			gp = improve_fiber(j0+1,n-1,jp,kp,M,P,pp,F,A,g);
 			erase(0,tfs);
 			if(gp!=-1)cnt_replace++;//number of replacements
-            if(jp%100==0 && kp%100==0){
+            if(jp%100==0 && kp%100==0&&gp!=-1){
                 printf(" jp  %d  kp  %d  gp %d  t_priority %d \n",jp,kp,gp,M[gp].t_priority);
             }
         }
