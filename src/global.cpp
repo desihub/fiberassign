@@ -304,7 +304,7 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, Plates&P, const PP& pp, con
 		while (tfs.size()!=0&&M[g].nobs_done>F.goalpost[G[original_g].id]) {
 			int jp = tfs[0].f; int kp = tfs[0].s;
 			A.unassign(jp,kp,g,M,P,pp);
-            cnt_deassign++'
+            cnt_deassign++;
             M[g].nobs_remain=0;
 
 			int gp = -1;
