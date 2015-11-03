@@ -184,7 +184,7 @@ inline void assign_galaxy(int g,  MTL& M, Plates& P, const PP& pp, const Feat& F
 }
 
 // Takes an unassigned fiber and tries to assign it with the "improve" technique described in the doc
-// not used for SS or SF   because it is used before we add SS and SF
+// not used for SS or SF   
 inline int improve_fiber(int begin, int next, int j, int k, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A, int no_g=-1) {
 	if (!A.is_assigned_tf(j,k)) { // Unused tilefiber (j,k)
 		// tries to assign it in the conventional way to galaxy available to it
@@ -257,8 +257,9 @@ void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int 
 	int n = next==-1 ? F.Nplate-j0 : next;
 	int na_start = A.na(F,j0,n);//number of assigned tile-fibers from j0 to jo+n-1
 	List plates = sublist(j0,n,A.order);
-	List randPlates = F.Randomize ? random_permut(plates) : plates;
-	for (int jj=0; jj<n; jj++) for (int k=0; k<F.Nfiber; k++) improve_fiber(j0,n,randPlates[jj],k,M,P,pp,F,A);
+	//List randPlates = F.Randomize ? random_permut(plates) : plates;
+	//for (int jj=0; jj<n; jj++) for (int k=0; k<F.Nfiber; k++) improve_fiber(j0,n,randPlates[jj],k,M,P,pp,F,A);
+    for (int jj=0; jj<n; jj++) for (int k=0; k<F.Nfiber; k++) improve_fiber(j0,n,plates[jj],k,M,P,pp,F,A);
 	int na_end = A.na(F,j0,n);
 	printf("  %s more assignments (%.3f %% improvement)\n",f(na_end-na_start).c_str(),percent(na_end-na_start,na_start));//how many new assigned tf's
 	if (next!=1) print_time(t,"# ... took :");
