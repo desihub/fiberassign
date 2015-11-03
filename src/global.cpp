@@ -314,7 +314,7 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, Plates&P, const PP& pp, con
         }
     }
 	//int na_end(A.na(F,j0,n));
-	printf(" %4d de-assigned & %4d replaced\n",cnt_deassign,cnt_replace); fl();
+	(if j0%100==0)printf(" j0  %d  %4d de-assigned & %4d replaced\n",j0,cnt_deassign,cnt_replace); fl();
     
 }
 
