@@ -919,7 +919,8 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     // check if the file exists, and if so, throw an exception
     
     char filename[cfilesize];
-    int ret = snprintf(filename, cfilesize, "%s/tile_%05d.fits", outdir.c_str(), j);
+    // int ret = snprintf(filename, cfilesize, "%s/tile_%05d.fits", outdir.c_str(), j);
+    int ret = snprintf(filename, cfilesize, "%s/tile_%05d.fits", outdir.c_str(), P[j].tileid);
     
     struct stat filestat;
     ret = ::stat(filename, &filestat );

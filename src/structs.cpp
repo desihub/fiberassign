@@ -398,7 +398,7 @@ Plates read_plate_centers(const Feat& F) {
 			double theta = (90.0 - dec)*M_PI/180.;
 			double phi   = (ra        )*M_PI/180.;
 			struct plate Q;
-			Q.idp = l;
+			Q.tileid = tileid;
 			l++;
 			Q.nhat[0]    = sin(theta)*cos(phi);
 			Q.nhat[1]    = sin(theta)*sin(phi);
