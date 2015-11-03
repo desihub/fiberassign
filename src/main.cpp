@@ -120,14 +120,17 @@ int main(int argc, char **argv) {
 			redistribute_tf(G,P,pp,F,A);
 			redistribute_tf(G,P,pp,F,A);
 			improve(G,P,pp,F,A);
-			redistribute_tf(G,P,pp,F,A);
+            redistribute_tf(G,P,pp,F,A);
 		}
 	}
 	print_time(time,"# ... took :");
 
 	init_time_at(time,"# Begin FITS writing",t);
 	// Results -------------------------------------------------------
-	if (F.Output) for (int j=0; j<F.Nplate; j++) fa_write(j,F.outDir,G,P,pp,F,A); // Write output
+    if (F.Output) for (int j=0; j<F.Nplate; j++){
+        printf(" printing output for j= %d\n", j);
+        fa_write(j,F.outDir,G,P,pp,F,A); // Write output
+    }
 	display_results("doc/figs/",G,P,pp,F,A,true);
 	if (F.Verif) A.verif(P,G,pp,F); // Verification that the assignment is sane
 	print_time(time,"# ... took :");
