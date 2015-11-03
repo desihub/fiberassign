@@ -2,7 +2,7 @@ galFile gal_20_fain.dat
 tileFile desi-tiles-intrim-3pass.par
 fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
 outDir /project/projectdirs/desi/users/rncahn/fa_output/
-Output false
+Output true
 kind kinda kindb SS SF
 type typea typeb SS SF
 prio 1 2 0 1
