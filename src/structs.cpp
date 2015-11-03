@@ -537,7 +537,7 @@ int Assignment::is_assigned_jg(int j, int g, const MTL& M, const Feat& F) const 
 
 bool Assignment::is_assigned_tf(int j, int k) const { return (TF[j][k] != -1); }
 
-int Assignment::na(const Feat& F, int begin, int size) const {
+int Assignment::na(const Feat& F, int begin, int size) const {//unassigned fibers in tiles begin to begin+size
 	int size1 = (size==-1) ? F.Nplate : size;
 	int cnt(0);
 	for (int j=begin; j<begin+size1; j++) {

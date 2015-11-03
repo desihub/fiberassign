@@ -274,7 +274,7 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, Plates&P, const PP& pp, con
 	int jpast = j0-F.Analysis;//tile whose information we just learned
 	if (jpast<0) { printf("ERROR in update : jpast negative\n"); fl(); }
 	int n = end-j0+1;
-	int na_start(A.na(F,j0,n));
+	int na_start(A.na(F,j0,n));//unassigned fibers in tiles from j0 to j0+n
 	List to_update;
 	// Get the list of galaxies to update in the plan
 	for (int k=0; k<F.Nfiber; k++) {
@@ -308,11 +308,11 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, Plates&P, const PP& pp, con
 			int gp = -1;
 			gp = improve_fiber(j0+1,n-1,jp,kp,M,P,pp,F,A,g);
 			erase(0,tfs);
-			cnt++;
+			if(gp!=-1)cnt++;
         }
     }
 	int na_end(A.na(F,j0,n));
-	printf(" %4d unassigned & %4d replaced\n",cnt,na_end-na_start+cnt); fl();
+	printf(" %4d unassigned & %4d replaced\n",na_end-na_start+cnt,cnt); fl();
     
 }
 
