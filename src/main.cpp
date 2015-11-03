@@ -128,7 +128,6 @@ int main(int argc, char **argv) {
 	init_time_at(time,"# Begin FITS writing",t);
 	// Results -------------------------------------------------------
     if (F.Output) for (int j=0; j<F.Nplate; j++){
-        printf(" printing output for j= %d\n", j);
         fa_write(j,F.outDir,G,P,pp,F,A); // Write output
     }
 	display_results("doc/figs/",G,P,pp,F,A,true);
