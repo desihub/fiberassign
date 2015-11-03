@@ -276,7 +276,7 @@ void assign_priority_class(MTL& M){
 // of fiberpos.txt produced by "F.Randomize_fibers".
 // need also to get the petal, i.e. spectrometer  rnc 1/16/15  added S
 void PP::read_fiber_positions(const Feat& F) {
-	str buf;
+    std::string buf;
 	std::ifstream fs(F.fibFile.c_str());
 
 	if (!fs) { // An error occurred opening the file.
@@ -362,7 +362,7 @@ List plate::av_gals_plate(const Feat& F,const MTL& M, const PP& pp) const {//lis
 // Read positions of the plate centers from an ascii file "center_name", and fill in a structure
 Plates read_plate_centers(const Feat& F) {
 	Plates P;
-	str buf;
+        std::string buf;
 	std::ifstream fs(F.tileFile.c_str());
 	if (!fs) {  // An error occurred opening the file.
 		std::cerr << "Unable to open file " << F.tileFile << std::endl;
@@ -371,17 +371,16 @@ Plates read_plate_centers(const Feat& F) {
 	// Reserve some storage, since we expect we'll be reading quite a few
 	// lines from this file.
 	try {P.reserve(4000000);} catch (std::exception& e) {myexception(e);}
-	// Skip any leading lines beginning with #
-	getline(fs,buf);
-	while (fs.eof()==0 && buf[0]=='#') { getline(fs,buf); }
-	//read lines until we get some blank lines, then skip blank lines, then get real data
-	//this conforms to the format of desi-tiles.par
-	while(buf.size()!=0){getline(fs,buf);}
-	while(buf.size()==0){getline(fs,buf);}				 
-	double ra,dec,ebv,airmass,exposefac; int ipass,in_desi,tileid;
+
+	double ra,dec,ebv,airmass,exposefac;
+        int ipass,in_desi,tileid;
 	int l = 0;
 	while (fs.eof()==0) {
 		getline(fs,buf);
+                if(buf.compare(0, 7, "STRUCT1") != 0) {
+                    // std::cout << "Skipping " << buf << std::endl;
+                    continue;
+                }
 		//gymnastics to read line with string in first column
 		std::istringstream ss(buf);
 		str start;
@@ -398,8 +397,11 @@ Plates read_plate_centers(const Feat& F) {
 			double theta = (90.0 - dec)*M_PI/180.;
 			double phi   = (ra        )*M_PI/180.;
 			struct plate Q;
-			Q.idp = l;
+			Q.tileid = tileid;
+                        std::cout << "TILEID " << tileid << std::endl;
 			l++;
+			Q.tilera        = ra;
+			Q.tiledec       = dec;
 			Q.nhat[0]    = sin(theta)*cos(phi);
 			Q.nhat[1]    = sin(theta)*sin(phi);
 			Q.nhat[2]    = cos(theta);

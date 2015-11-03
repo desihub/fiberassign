@@ -603,9 +603,19 @@ void diagnostic(const MTL& M, const Gals& G, Feat& F, const Assignment& A){
         }
         printf("\n");
     }
-    
+    for (int c=0;c<F.Categories;++c){
+        int tot=0;
+        for (int m=0;m<MaxObs+1;++m){
+            tot+=obsrv[c][m];
+        }
+        //totals, not percentages
+        for (int m=0;m<MaxObs+1;++m){
+            double ratio=float(obsrv[c][m]);
+            printf("     %f    ",ratio);
+        }
+        printf("\n");
+    }
     //end diagnostic
-
 }
 
 void display_results(str outdir, const Gals& G,const MTL& M, const Plates& P, const PP& pp, Feat& F, const Assignment& A, bool latex) {
@@ -919,7 +929,8 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     // check if the file exists, and if so, throw an exception
     
     char filename[cfilesize];
-    int ret = snprintf(filename, cfilesize, "%s/tile_%05d.fits", outdir.c_str(), j);
+    // int ret = snprintf(filename, cfilesize, "%s/tile_%05d.fits", outdir.c_str(), j);
+    int ret = snprintf(filename, cfilesize, "%s/tile_%05d.fits", outdir.c_str(), P[j].tileid);
     
     struct stat filestat;
     ret = ::stat(filename, &filestat );
@@ -1096,6 +1107,17 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
                 }
             }
             
+	    int tileid = P[j].tileid;
+	    float tilera = P[j].tilera;
+	    float tiledec = P[j].tiledec;
+
+	    fits_write_key(fptr, TINT, "TILEID", &(tileid), "Tile ID number", &status);
+            fits_report_error(stderr, status);
+	    fits_write_key(fptr, TFLOAT, "TILERA", &(tilera), "Tile RA", &status);
+	    fits_report_error(stderr, status);
+	    fits_write_key(fptr, TFLOAT, "TILEDEC", &(tiledec), "Tile DEC", &status);
+            fits_report_error(stderr, status);
+
             fits_write_col(fptr, TINT, 1, offset+1, 1, n, fiber_id, &status);
             fits_report_error(stderr, status);
             
