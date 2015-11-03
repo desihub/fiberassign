@@ -614,11 +614,8 @@ void diagnostic(const MTL& M, const Gals& G, Feat& F, const Assignment& A){
             printf("     %f    ",ratio);
         }
         printf("\n");
-        
-
-    
+    }
     //end diagnostic
-
 }
 
 void display_results(str outdir, const Gals& G,const MTL& M, const Plates& P, const PP& pp, Feat& F, const Assignment& A, bool latex) {
