@@ -25,7 +25,8 @@ class Feat { // F for features
 	str fibFile;
 	str outDir;
     str MTLfile;
-	bool Output;
+	bool PrintFits;
+    boll PrintAscii;
     bool diagnose;
 
 	List prio; // Priorities  int

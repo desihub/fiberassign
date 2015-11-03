@@ -999,7 +999,7 @@ void printFile(const char file[]) {
 	while (!fIn.eof() && buf[0]!='-') {
 		fIn.getline(buf,Mc);
 		printf("%s", buf);
-		printf(" - ");
+		printf(" \n");
 	}
 	fIn.close();
 }
