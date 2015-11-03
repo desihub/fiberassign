@@ -3,7 +3,8 @@ tileFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/footprin
 fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
 outDir /project/projectdirs/desi/users/rncahn/fa_output/mini/
 /
-Output true
+PrintAscii true
+PrintFits true
 MTLfile mtl_jaime.txt
 diagnose false
 
