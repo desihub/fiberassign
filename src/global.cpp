@@ -1107,6 +1107,17 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
                 }
             }
             
+	    int tileid = P[j].tileid;
+	    float tilera = P[j].tilera;
+	    float tiledec = P[j].tiledec;
+
+	    fits_write_key(fptr, TINT, "TILEID", &(tileid), "Tile ID number", &status);
+            fits_report_error(stderr, status);
+	    fits_write_key(fptr, TFLOAT, "TILERA", &(tilera), "Tile RA", &status);
+	    fits_report_error(stderr, status);
+	    fits_write_key(fptr, TFLOAT, "TILEDEC", &(tiledec), "Tile DEC", &status);
+            fits_report_error(stderr, status);
+
             fits_write_col(fptr, TINT, 1, offset+1, 1, n, fiber_id, &status);
             fits_report_error(stderr, status);
             
