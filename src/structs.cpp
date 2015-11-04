@@ -373,7 +373,7 @@ Plates read_plate_centers(const Feat& F) {
 	try {P.reserve(4000000);} catch (std::exception& e) {myexception(e);}
 
 	double ra,dec,ebv,airmass,exposefac;
-        int ipass,in_desi,tileid;
+    int ipass,in_desi,tileid;
 	int l = 0;
 	while (fs.eof()==0) {
 		getline(fs,buf);
@@ -398,7 +398,7 @@ Plates read_plate_centers(const Feat& F) {
 			double phi   = (ra        )*M_PI/180.;
 			struct plate Q;
 			Q.tileid = tileid;
-                        std::cout << "TILEID " << tileid << std::endl;
+                        //std::cout << "TILEID " << tileid << std::endl;
 			l++;
 			Q.tilera        = ra;
 			Q.tiledec       = dec;
