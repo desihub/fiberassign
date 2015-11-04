@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
         printf("  class  %d  number  %d\n",i,count_class[i]);
     }
     
-    printf(" number of MTL galaxies  %d\n",M.size());
+    printf(" number of MTL galaxies  %d\n",(int)(M.size()));
     
 	PP pp;
 	pp.read_fiber_positions(F); 
