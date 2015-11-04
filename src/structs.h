@@ -80,7 +80,9 @@ class Onplates : public std::vector<struct onplate> {};
 
 class plate {
 	public:
-	int idp;
+	int tileid;
+	float tilera;
+	float tiledec;
 	double nhat[3]; // Unit vector pointing to plate
 	int ipass; // Pass
 	Table av_gals; // av_gals[k] : available galaxies of fiber k

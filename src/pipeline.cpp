@@ -114,7 +114,7 @@ int main(int argc, char **argv) {
             count_total++;
             }
         }
-        if(nj>0) printf(" j = %d  number assigned= %d\n",j,nj);
+        if(nj>0) printf(" j = %d tileid %d number assigned= %d\n",j, P[j].tileid, nj);
     }
     printf(" total assigned = %d\n",count_total);
         
