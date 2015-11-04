@@ -127,6 +127,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
 		int g = av_gals[gg];
         if(ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
             int m = M[g].nobs_remain; // Check whether it needs further observation
+            if(g%10000==0)printf("j %d  k %d  g  %d  m  %d  prio  %d \n",j,k,g,m,M[g]-t_priority);
             if (m>=1) {
                 int prio = M[g].t_priority;
             
@@ -140,11 +141,12 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
                         best = g;
                         pbest = prio;
                         mbest = m;
-                    }
+                                            }
                 }
             }
         }
     }
+    if(g%10000==0)printf("best  %d  pbest  %d  mbest %d\n",best,pbest,mbest);
 	return best;
 }
 
