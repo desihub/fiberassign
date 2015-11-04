@@ -240,9 +240,9 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
 	for (int jj=0; jj<n; jj++) {
 		//int j = randPlates[jj];
         int j=jj;
-		List randFibers = random_permut(F.Nfiber);
-		for (int kk=0; kk<F.Nfiber; kk++) { // Fiber
-			int k = randFibers[kk];
+		//List randFibers = random_permut(F.Nfiber);
+		for (int k=0; k<F.Nfiber; k++) { // Fiber
+			//int k = randFibers[kk];
             assign_fiber(j,k,M,P,pp,F,A);
 		}
 	}
