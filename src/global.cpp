@@ -147,7 +147,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
         }
         if(g%10000==0)printf("best  %d  pbest  %d  mbest %d\n",best,pbest,mbest);	return best;
     }
-
+return best
 }
 
 // Tries to assign the fiber (j,k)
