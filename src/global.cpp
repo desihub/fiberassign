@@ -1,11 +1,12 @@
 #include	<cstdlib>
 #include	<cmath>
+#include    <cstdio>
 #include	<fstream>
 #include	<sstream>
 #include	<iostream>
 #include	<iomanip>
 #include	<string>
-#include        <string.h>
+#include    <cstring>
 #include	<vector>
 #include	<algorithm>
 #include	<exception>
@@ -20,6 +21,13 @@
 #include        "structs.h"
 #include        "global.h"
 #include    <sys/stat.h>
+
+extern "C" {
+	#include <sys/stat.h>
+}
+
+#include <stdexcept>
+
 
 // Collecting information from input -------------------------------------------------------------------------------------
 void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Plates& P, const PP& pp, const Feat& F) {
@@ -44,7 +52,9 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
 			Onplates O;
 			for (int gg=0; gg<nbr.size(); gg++) {
 				int g = nbr[gg];
+
 				struct onplate op = change_coords(M[g],p);
+
 				op.id = g;
 				O.push_back(op);
 			}
@@ -279,6 +289,7 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, Plates&P, const PP& pp, con
 	List to_update;
 	// Get the list of galaxies to update in the plan
 	for (int k=0; k<F.Nfiber; k++) {
+
         int g = A.TF[jpast][k];
 
         // Don't update SS or SF
@@ -296,6 +307,8 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, Plates&P, const PP& pp, con
             }
         }
     }
+
+
 	// Update further in the plan
 	for (int gg=0; gg<to_update.size(); gg++) {
 		int g = to_update[gg];
@@ -865,6 +878,7 @@ void write_FAtile_ascii(int j, str outdir, const MTL& M, const Plates& P, const 
 	}
 	fclose(FA);
 }
+
 
 
 /*

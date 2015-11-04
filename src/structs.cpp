@@ -133,10 +133,11 @@ Gals read_galaxies_ascii(const Feat& F)
         Q.ra = ra;
         Q.dec = dec;
 
+
         if (oid%F.moduloGal == 0) {
         try{P.push_back(Q);}catch(std::exception& e) {myexception(e);}
-
         }
+
         oid++;
         getline(fs,buf);
     }
