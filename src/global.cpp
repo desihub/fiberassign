@@ -127,6 +127,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
 		int g = av_gals[gg];
         if(ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
             int m = M[g].nobs_remain; // Check whether it needs further observation
+            if(g%1000==0)printf("j %d  k %d  g  %d  m  %d  prio  %d \n",j,k,g,m,M[g].t_priority);
             if (m>=1) {
                 int prio = M[g].t_priority;
             
@@ -140,12 +141,13 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
                         best = g;
                         pbest = prio;
                         mbest = m;
-                    }
+                                            }
                 }
             }
         }
+        if(g%1000==0)printf("best  %d  pbest  %d  mbest %d\n",best,pbest,mbest);	return best;
     }
-	return best;
+
 }
 
 // Tries to assign the fiber (j,k)
@@ -240,13 +242,13 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
 	for (int jj=0; jj<n; jj++) {
 		//int j = randPlates[jj];
         int j=jj;
-		List randFibers = random_permut(F.Nfiber);
-		for (int kk=0; kk<F.Nfiber; kk++) { // Fiber
-			int k = randFibers[kk];
+		//List randFibers = random_permut(F.Nfiber);
+		for (int k=0; k<F.Nfiber; k++) { // Fiber
+			//int k = randFibers[kk];
             assign_fiber(j,k,M,P,pp,F,A);
 		}
 	}
-	str next_str = next==-1 ? "all left" : f(n);
+	//str next_str = next==-1 ? "all left" : f(n);
 	if (next!=1) print_time(t,"# ... took :");
 }
 
