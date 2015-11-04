@@ -603,15 +603,7 @@ void diagnostic(const MTL& M, const Gals& G, Feat& F, const Assignment& A){
         }
         printf("\n");
     }
-    for (int c=0;c<F.Categories;++c){
-        //totals, not percentages
-        for (int m=0;m<MaxObs+1;++m){
-            int total=obsrv[c][m];
-            printf("   %d  ",total);
-        }
-        printf("\n");
-    }
-    //end diagnostic
+       //end diagnostic
 }
 
 void display_results(str outdir, const Gals& G,const MTL& M, const Plates& P, const PP& pp, Feat& F, const Assignment& A, bool latex) {
