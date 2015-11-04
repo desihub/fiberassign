@@ -16,7 +16,7 @@
 #include        "structs.h"
 #include        "collision.h"
 #include        "global.h"
-//reduce redistributes, updates  07/02/15 rnc
+
 int main(int argc, char **argv) {
   //// Initializations ---------------------------------------------
   srand48(1234); // Make sure we have reproducibility
@@ -102,9 +102,11 @@ int main(int argc, char **argv) {
   
   // Results -------------------------------------------------------*/
   
-  if (F.PrintFits) for (int j=0; j<F.Nplate; j++){
+  if (F.PrintFits){
+    for (int j=0; j<F.Nplate; j++){
       fa_write(j,F.outDir,M,P,pp,F,A); // Write output
     }
+  }
   
   print_time(t,"# Finished !... in");
   

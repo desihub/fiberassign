@@ -151,40 +151,6 @@ str galaxy::kind(const Feat& F) const {
 	return(F.kind[id]);
 }
 
-// targets -----------------------------------------------------------------------
-// derived from G, but includes priority and nobs_remain
-MTL make_MTL(const Gals& G, const Feat& F){
-    MTL M;
-    int Nobj=G.size();
-    struct target targ;
-    int special_count(0);
-    int stop_count(0);
-    for(int i=0;i<Nobj;++i){
-        targ.id=i;
-        targ.nhat[0]=G[i].nhat[0];
-        targ.nhat[1]=G[i].nhat[1];
-        targ.nhat[2]=G[i].nhat[2];
-        targ.ra=G[i].ra;
-        targ.dec=G[i].dec;
-        targ.t_priority=F.prio[G[i].id];
-        targ.nobs_remain=F.goal[G[i].id];//needs to be goal prior to knowledge!!
-        targ.nobs_done=0;//need to keep track of this, too
-        targ.once_obs=0;//changed only in update_plan
-        //targ.SS=F.SS[G[i].id];
-        //targ.SF=F.SF[G[i].id];
-
-        targ.lastpass=F.lastpass[G[i].id];
-        //make list of priorities
-        if(targ.dec<F.MaxDec && targ.dec>F.MinDec &&targ.ra<F.MaxRa && targ.ra>F.MinRa){
-        M.push_back(targ);
-        }
-        int g=M.size()-1;
-
-    }
-    return M;
-}
-
-
 void write_MTLfile(const MTL& M,const Feat& F){
     FILE * FA;
     str s=F.MTLfile;

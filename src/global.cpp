@@ -278,61 +278,6 @@ void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int 
 // If there are galaxies discovered as fake for example, they won't be observed several times in the plan
 // haas access to G,not just M, because it needs to know the truth
 
-void update_plan_from_one_obs(const Gals& G, MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int end) {
-	int cnt_deassign(0);
-    int cnt_replace(0);
-	int j0 = A.next_plate;
-	int jpast = j0-F.Analysis;//tile whose information we just learned
-	if (jpast<0) { printf("ERROR in update : jpast negative\n"); fl(); }
-	int n = end-j0+1;
-	//int na_start(A.na(F,j0,n));//unassigned fibers in tiles from j0 to j0+n
-	List to_update;
-	// Get the list of galaxies to update in the plan
-	for (int k=0; k<F.Nfiber; k++) {
-
-        int g = A.TF[jpast][k];
-
-        // Don't update SS or SF
-        if (g!=-1&&M[g].t_priority!=9800 && M[g].t_priority!=9900){
-            //initially nobs_remain==goal
-            
-            if(M[g].once_obs==0){//first obs  otherwise should be ok
-                M[g].once_obs=1;//now observed
-                int original_g=M[g].id;
-                if(M[g].nobs_done>F.goalpost[G[original_g].id]){
-                    to_update.push_back(g);}
-                else{
-                    M[g].nobs_remain=F.goalpost[G[original_g].id]-M[g].nobs_done;
-                }
-            }
-        }
-    }
-
-
-	// Update further in the plan
-	for (int gg=0; gg<to_update.size(); gg++) {
-		int g = to_update[gg];
-		Plist tfs = A.chosen_tfs(g,F,j0+1,n-1); // Begin at j0+1, can't change assignment at j0 (already observed)
-        int original_g=M[g].id;
-		while (tfs.size()!=0&&M[g].nobs_done>F.goalpost[G[original_g].id]) {
-			int jp = tfs[0].f; int kp = tfs[0].s;
-			A.unassign(jp,kp,g,M,P,pp);
-            cnt_deassign++;
-            M[g].nobs_remain=0;
-
-			int gp = -1;
-			gp = improve_fiber(j0+1,n-1,jp,kp,M,P,pp,F,A,g);
-			erase(0,tfs);
-			if(gp!=-1)cnt_replace++;//number of replacements
-            if(jp%100==0 && kp%100==0&&gp!=-1){
-                printf(" jp  %d  kp  %d  gp %d  t_priority %d \n",jp,kp,gp,M[gp].t_priority);
-            }
-        }
-    }
-	//int na_end(A.na(F,j0,n));
-	if (j0%100==0)printf(" j0  %d  %4d de-assigned & %4d replaced\n",j0,cnt_deassign,cnt_replace); fl();
-    
-}
 
 
 void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
@@ -508,59 +453,6 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 	}
 	printf("  %s redistributions of tile-fibers \n",f(red).c_str());
 	if (next!=1) print_time(t,"# ... took :");
-}
-
-
-
-void diagnostic(const MTL& M, const Gals& G, Feat& F, const Assignment& A){
-    // diagnostic  allow us to peek at the actual id of each galaxy
-    printf("Diagnostics using types:QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF\n");
-    std::vector<int> count_by_kind(F.Categories,0);
-    for (int j=0;j<F.Nplate;++j){
-        for(int k=0;k<F.Nfiber;++k){
-            int g=A.TF[j][k];
-            if(g!=-1){
-            int original_g=M[g].id;
-            count_by_kind[G[original_g].id]+=1;
-            }
-        }
-    }
-    for(int i=0;i<F.Categories;++i){
-        printf(" i  %d    number  %d \n",i,count_by_kind[i]);
-    }
-    int MaxObs = max(F.goal);
-    Table obsrv = initTable(F.Categories,MaxObs+1);
-    
-    for (int g=0; g<M.size(); g++) {
-        int original_g=M[g].id;
-        int c= G[original_g].id;
-        int m = min(M[g].nobs_done,MaxObs);
-        obsrv[c][m]++; //
-    }
-    for (int c=0;c<F.Categories;++c){
-        int tot=0;
-        for (int m=0;m<MaxObs+1;++m){
-            tot+=obsrv[c][m];
-        }
-        for (int m=0;m<MaxObs+1;++m){
-            double ratio=float(obsrv[c][m])/float(tot);
-            printf("   %g  ",ratio);
-        }
-        printf("\n");
-    }
-    for (int c=0;c<F.Categories;++c){
-        int tot=0;
-        for (int m=0;m<MaxObs+1;++m){
-            tot+=obsrv[c][m];
-        }
-        //totals, not percentages
-        for (int m=0;m<MaxObs+1;++m){
-            double ratio=float(obsrv[c][m]);
-            printf("   %g  ",ratio);
-        }
-        printf("\n");
-    }
-    //end diagnostic
 }
 
 
