@@ -607,7 +607,7 @@ void diagnostic(const MTL& M, const Gals& G, Feat& F, const Assignment& A){
         //totals, not percentages
         for (int m=0;m<MaxObs+1;++m){
             int total=obsrv[c][m]);
-            printf("   %d  ",ratio);
+            printf("   %d  ",total);
         }
         printf("\n");
     }
