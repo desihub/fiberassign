@@ -145,7 +145,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
                 }
             }
         }
-        if(g%10000==0)printf("best  %d  pbest  %d  mbest %d\  isa  %d   ok  %dn",best,pbest,mbest,isa,ok);	return best;
+        if(g%10000==0)printf("best  %d  pbest  %d  mbest %d  isa  %d   ok  %d \n",best,pbest,mbest,isa,ok);	return best;
     }
     return best;
 }
