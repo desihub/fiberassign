@@ -606,7 +606,7 @@ void diagnostic(const MTL& M, const Gals& G, Feat& F, const Assignment& A){
     for (int c=0;c<F.Categories;++c){
         //totals, not percentages
         for (int m=0;m<MaxObs+1;++m){
-            int total=obsrv[c][m]);
+            int total=obsrv[c][m];
             printf("   %d  ",total);
         }
         printf("\n");
