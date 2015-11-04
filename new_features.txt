@@ -1,14 +1,20 @@
 galFile /project/projectdirs/desi/mocks/preliminary/objects_ss_sf0.rdzipn
 tileFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/footprint/desi-tiles.par
 fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
-outDir /project/projectdirs/desi/users/rncahn/fa_output/
-Output false
+outDir /project/projectdirs/desi/users/rncahn/fa_output/big/
+PrintAscii false
+PrintFits false
+MTLfile bigMTLfile.txt
+diagnose true
 
 kind QSOLy-a QSOTracer LRG ELG FakeQSO FakeLRG SS SF
 type QSO QSO LRG ELG QSO LRG SS SF
-prio 2 2 3 4 2 3 0 1
-priopost 0 2 3 4 2 3 0 1
-goal 5 1 2 1 1 1 5 5
+prio 2000 2000 3000 4000 2000 3000 9900 9800
+priopost 0 2000 3000 4000 2000 3000 9900 9800
+goal 5 5 2 1 5 2 5 5
+goalpost 5 1 2 1 1 1 5 5
+lastpass 0 0 0 1 0 0 1 1 
+pass_intervals 0 500 1000 2000 4000 8000
 
 Randomize false
 Pacman false
@@ -40,7 +46,10 @@ PlotFreeFibHist false
 PlotFreeFibTime false
 PlotSeenDens false
 PrintGalObs false
-
+MaxDec 90.
+MinDec -90.
+MinRa 0.
+MaxRa 360.
 Verif false
 -------------------------------------------------
 

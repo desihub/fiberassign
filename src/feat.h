@@ -24,11 +24,19 @@ class Feat { // F for features
 	str tileFile;
 	str fibFile;
 	str outDir;
-	bool Output;
+    str MTLfile;
+	bool PrintFits;
+    bool PrintAscii;
+    bool diagnose;
 
-	List prio; // Priorities 
-	List priopost; // Priorities when we know the kind
+	List prio; // Priorities  int
+	List priopost; // Priorities when we know the kind int
 	List goal;
+    List goalpost;
+    List SS;
+    List SF;
+    List lastpass;
+    List pass_intervals;
 	Slist kind;
 	Slist type;
 
@@ -64,6 +72,11 @@ class Feat { // F for features
 	bool Verif;
     bool Ascii;
     bool BrightTime;
+    
+    double MaxDec;
+    double MinDec;
+    double MaxRa;
+    double MinRa;
 	// Indirectly set by features file
 	int Categories;
 	Slist types; // Same as type but with only QSO LRG ELG SS SF
@@ -92,8 +105,7 @@ class Feat { // F for features
 	Feat();
 	void readInputFile(const char fname[]);
 	int id(str s) const;
-	int maxgoal(int kind) const; // Gives max goal for a galaxy of this kind (goal(Ly-a) for all QSO for example)
-	List maxgoal() const; // List (function of kind) of max goals according to the kind (defined by prio)
+
 	void init_ids(); // Init ids member
 	void init_ids_types(); // Same
 	List init_ids_list(str l[], int size) const;
