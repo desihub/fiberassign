@@ -246,7 +246,7 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
             assign_fiber(j,k,M,P,pp,F,A);
 		}
 	}
-	str next_str = next==-1 ? "all left" : f(n);
+	//str next_str = next==-1 ? "all left" : f(n);
 	if (next!=1) print_time(t,"# ... took :");
 }
 
