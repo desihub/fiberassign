@@ -127,10 +127,10 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
 	for (int gg=0; gg<av_gals.size(); gg++) {
         printthis=false;
 		int g = av_gals[gg];
-        if(g%10000==0)printthis=true;
+        //if(j<50&&k%100==0)printthis=true;
         if(ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
             int m = M[g].nobs_remain; // Check whether it needs further observation
-            if(printthis)printf("j %d  k %d  g  %d  m  %d  prio  %d \n",j,k,g,m,M[g].t_priority);
+            //if(printthis)printf("j %d  k %d  g  %d  m  %d  prio  %d \n",j,k,g,m,M[g].t_priority);
             if (m>=1) {
                 int prio = M[g].t_priority;
             
@@ -140,7 +140,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
                     // Check that g is not assigned yet on this plate, or on the InterPlate around, check with ok_to_assign
                     int isa=A.is_assigned_jg(j,g,M,F);
                     int ok=ok_assign_g_to_jk(g,j,k,P,M,pp,F,A);
-                    if(printthis)printf("best  %d  pbest  %d  mbest %d  isa  %d   ok  %d \n",best,pbest,mbest,isa,ok);
+                    //if(printthis)printf("best  %d  pbest  %d  mbest %d  isa  %d   ok  %d \n",best,pbest,mbest,isa,ok);
                     if (isa==-1 && ok && g!=no_g ) {
                         best = g;
                         pbest = prio;
@@ -151,8 +151,8 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
         }
        
     }
-    if(printthis)printf("best  %d  pbest  %d  mbest %d   \n",best,pbest,mbest);
-
+    //if(printthis)printf("best  %d  pbest  %d  mbest %d   \n",best,pbest,mbest);
+    
     return best;
 }
 
@@ -320,7 +320,7 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, Plates&P, const PP& pp, con
 			erase(0,tfs);
 			if(gp!=-1)cnt_replace++;//number of replacements
             if(jp%100==0 && kp%100==0&&gp!=-1){
-                printf(" jp  %d  kp  %d  gp %d  t_priority %d \n",jp,kp,gp,M[gp].t_priority);
+                //printf(" jp  %d  kp  %d  gp %d  t_priority %d \n",jp,kp,gp,M[gp].t_priority);
             }
         }
     }

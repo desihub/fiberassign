@@ -1,4 +1,8 @@
-
+doc/*
 *.jaime~
-
+Assign.*
 *.txt~
+*/*.o
+patrol*
+10m*
+simple*

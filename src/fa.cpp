@@ -107,7 +107,7 @@ int main(int argc, char **argv) {
 	// Smooth out distribution of free fibers, and increase the number of assignments
     
 	for (int i=0; i<1; i++) redistribute_tf(M,P,pp,F,A);// more iterations will improve performance slightly
-	for (int i=0; i<1; i++) {                           // more iterations will improve performance slightly
+	for (int i=0; i<3; i++) {                           // more iterations will improve performance slightly
 		improve(M,P,pp,F,A);
 		redistribute_tf(M,P,pp,F,A);
 		redistribute_tf(M,P,pp,F,A);
