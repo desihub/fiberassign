@@ -1,4 +1,4 @@
-
+Assign.*
 assign
 *~
 *.o
@@ -6,3 +6,4 @@ assign
 *.jaime~
 
 *.txt~
+doc/*
