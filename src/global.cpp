@@ -687,6 +687,45 @@ void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F
 	for (int id=0; id<3; id++) hist3.push_back(histogram(countsz[id],intervalz));
 	print_mult_Dtable_latex("dn/dz",outdir+"redshifts.dat",hist3,intervalz);
 }
+void diagnostic( const Gals& G, Feat& F, const Assignment& A){
+    // diagnostic  allow us to peek at the actual id of each galaxy
+    printf("Diagnostics using types:QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF\n");
+    std::vector<int> count_by_kind(F.Categories,0);
+    for (int j=0;j<F.Nplate;++j){
+        for(int k=0;k<F.Nfiber;++k){
+            int g=A.TF[j][k];
+            if(g!=-1){
+            
+            count_by_kind[G[g].id]+=1;
+            }
+        }
+    }
+    for(int i=0;i<F.Categories;++i){
+        printf(" i  %d    number  %d \n",i,count_by_kind[i]);
+    }
+    int MaxObs = max(F.goal);
+    Table obsrv = initTable(F.Categories,MaxObs+1);
+    
+    for (int g=0; g<G.size(); g++) {
+        
+        int c= G[g].id;
+        int m = min(F.goal[c]-A.nobs(g,G,F),MaxObs);
+        obsrv[c][m]++; //
+    }
+    for (int c=0;c<F.Categories;++c){
+        int tot=0;
+        for (int m=0;m<MaxObs+1;++m){
+            tot+=obsrv[c][m];
+        }
+        for (int m=0;m<MaxObs+1;++m){
+            double ratio=float(obsrv[c][m])/float(tot);
+            printf("   %f  ",ratio);
+        }
+        printf("\n");
+    }
+       //end diagnostic
+}
+
 
 void display_results(str outdir, const Gals& G, const Plates& P, const PP& pp, Feat& F, const Assignment& A, bool latex) {
 	printf("# Results :\n");

@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
                                    // assumes maximum number of observations needed for QSOs, LRGs
     printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.Nplate, F.Ngal, F.Nfiber);
     simple_assign(G,P,pp,F,A);
-    
+    diagnostic(G,F,A);
     
 	print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
                                     // Want to have even distribution of unused fibers

@@ -46,6 +46,7 @@ void assign_sf_ss(int j, const Gals& G, const Plates& P, const PP& pp, const Fea
 
 void assign_unused(int j, const Gals& G, const Plates& P, const PP& pp, const Feat& F, Assignment& A);
 
+void diagnostic(const Gals& G, Feat& F, const Assignment& A);
 // Results functions --------------------------------------------------
 void results_on_inputs(str outdir, const Gals& G, const Plates& P, const Feat& F, bool latex=false);
 
