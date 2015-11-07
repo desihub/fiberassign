@@ -104,9 +104,9 @@ int main(int argc, char **argv) {
     for(int j=0;j<F.Nplate;++j{
         int count_assiged=0;
         for (int k=0;k<F.Nfiber;++k){
-            if(TF[j][k]!=-1)count_assiged++;
+            if(A.TF[j][k]!=-1)count_assiged++;
         }
-        printf(" j = %d  number assigned = %d \n",j count_assiged);
+        printf(" j = %d  number assigned = %d \n",j, count_assiged);
     }
     
     print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
