@@ -244,7 +244,8 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
 	int n = next==-1 ? F.Nplate-j0 : next; // Not F.Nplate-A.next_plate+1
 	List plates = sublist(j0,n,A.order);
 	//List randPlates = F.Randomize ? random_permut(plates) : plates;
-    
+        //simplify  11/7/15
+    n=F.Nplate;
 	for (int jj=0; jj<n; jj++) {
 		//int j = randPlates[jj];
         int j=jj;
