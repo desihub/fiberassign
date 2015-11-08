@@ -249,7 +249,7 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
 	printf( " n = %d \n",n);
 	for (int jj=0; jj<n; jj++) {
         int countme=0;
-        best=-1;
+        int best=-1;
 		//int j = randPlates[jj];
         int j=jj;
 		//List randFibers = random_permut(F.Nfiber);
