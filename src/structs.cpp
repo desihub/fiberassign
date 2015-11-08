@@ -219,7 +219,7 @@ MTL read_MTLfile(const Feat& F){
             double ra,dec;
             int id, nobs_remain,priority;
             str xname;
-            std::istringstream(buf)>> id>>xname>> ra >> dec>> nobs_remain >>  priority  ;
+            std::istringstream(buf)>> id>>xname>> ra >> dec>> nobs_remain >>  priority >>lastpass ;
             //std::istringstream(buf)>> id>> xname>>ra >> dec >>  nobs_remain>> priority;
             if (ra<   0.) {ra += 360.;}
             if (ra>=360.) {ra -= 360.;}
@@ -240,6 +240,7 @@ MTL read_MTLfile(const Feat& F){
             Q.ra = ra;
             Q.dec = dec;
             Q.id = id;
+            Q.lastpass = lastpass;
             
             if (id%F.moduloGal == 0) {
                 try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
