@@ -217,7 +217,7 @@ MTL read_MTLfile(const Feat& F){
         }
         while (fs.eof()==0) {
             double ra,dec;
-            int id, nobs_remain,priority;
+            int id, nobs_remain, priority, lastpass;
             str xname;
             std::istringstream(buf)>> id>>xname>> ra >> dec>> nobs_remain >>  priority >>lastpass ;
             //std::istringstream(buf)>> id>> xname>>ra >> dec >>  nobs_remain>> priority;
