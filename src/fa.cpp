@@ -94,8 +94,10 @@ int main(int argc, char **argv) {
     // assumes maximum number of observations needed for QSOs, LRGs
 
     simple_assign(M,P,pp,F,A);
+
     if(F.diagnose)diagnostic(M,G,F,A);
     
+
     print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
     
 	// Smooth out distribution of free fibers, and increase the number of assignments

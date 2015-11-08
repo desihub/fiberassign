@@ -245,7 +245,8 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
 	List plates = sublist(j0,n,A.order);
 	//List randPlates = F.Randomize ? random_permut(plates) : plates;
         //simplify  11/7/15
-    n=F.Nplate;
+	n=F.Nplate;
+	printf( " n = %d \n",n);
 	for (int jj=0; jj<n; jj++) {
         int countme=0;
         int best=-1;
