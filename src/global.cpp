@@ -514,12 +514,6 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 // Other useful functions --------------------------------------------------------------------------------------------
 void results_on_inputs(str outdir, const MTL& M, const Plates& P, const Feat& F, bool latex) {
 	printf("# Results on inputs :\n");
-	// Print features
-	//print_list("  Kinds corresponding :",F.kind);
-	//print_list("  Priorities :",F.prio);
-	//print_list("  Goals of observations :",F.goal);
-	//print_list("  Max goals of observations :",F.maxgoal());
-
 	// How many galaxies in range of a fiber ?
 	List data;
 	for (int j=0; j<F.Nplate; j++) for (int k=0; k<F.Nfiber; k++) data.push_back(P[j].av_gals[k].size());
