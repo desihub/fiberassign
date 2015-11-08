@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
      if(F.diagnose)diagnostic(M,G,F,A);
     //diagnostic 11/7/15
 
-    printf(" count total %d \n",count_total);
+   
     print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
                                     // Want to have even distribution of unused fibers
                                     // so we can put in sky fibers and standard stars
