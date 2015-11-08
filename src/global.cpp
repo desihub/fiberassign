@@ -258,7 +258,7 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
             if (best!=-1)countme++;
             
 		}
-        printf("j = %d  count = %d \n",j,countme);
+        //printf("j = %d  count = %d \n",j,countme);
 	}
 	//str next_str = next==-1 ? "all left" : f(n);
 	if (next!=1) print_time(t,"# ... took :");
@@ -331,7 +331,7 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, Plates&P, const PP& pp, con
         }
     }
 	//int na_end(A.na(F,j0,n));
-	if (j0%100==0)printf(" j0  %d  %4d de-assigned & %4d replaced\n",j0,cnt_deassign,cnt_replace); fl();
+	//if (j0%100==0)printf(" j0  %d  %4d de-assigned & %4d replaced\n",j0,cnt_deassign,cnt_replace); fl();
     
 }
 
