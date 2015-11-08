@@ -247,13 +247,18 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
         //simplify  11/7/15
     n=F.Nplate;
 	for (int jj=0; jj<n; jj++) {
+        int countme=0;
+        best=-1;
 		//int j = randPlates[jj];
         int j=jj;
 		//List randFibers = random_permut(F.Nfiber);
 		for (int k=0; k<F.Nfiber; k++) { // Fiber
 			//int k = randFibers[kk];
-            assign_fiber(j,k,M,P,pp,F,A);
+            best=assign_fiber(j,k,M,P,pp,F,A);
+            if (best!=-1)countme++;
+            
 		}
+        printf("j = %d  count = %d \n",j,countme);
 	}
 	//str next_str = next==-1 ? "all left" : f(n);
 	if (next!=1) print_time(t,"# ... took :");
