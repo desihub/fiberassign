@@ -119,8 +119,7 @@ inline bool ok_for_limit_SS_SF(int g, int j, int k, const MTL& M, const Plates& 
 // Find, for (j,k), find the best galaxy it can reach among the possible ones
 // Null list means you can take all possible kinds, otherwise you can only take, for the galaxy, a kind among this list
 // Not allowed to take the galaxy of id no_g
-inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, //int no_g=-1, List kind=Null()
-                     ) {
+inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, int no_g=-1, List kind=Null()) {
 	int best = -1; int mbest = -1; int pbest = 10000;
 	List av_gals = P[j].av_gals[k];
 	// For all available galaxies
@@ -131,7 +130,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
             if (m>=1) {
                 int prio = M[g].t_priority;
                 // Takes it if better priority, or if same, if it needs more observations, so shares observations if two QSOs are close
-                if (prio<pbest || (prio==pbest && m>mbest)) {
+                if (prio<pbest || (prio==pbest && m>mbest))
                     // Check that g is not assigned yet on this plate, or on the InterPlate around, check with ok_to_assign
                     int isa=A.is_assigned_jg(j,g,M,F);
                     int ok=ok_assign_g_to_jk(g,j,k,P,M,pp,F,A);
@@ -145,15 +144,15 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
         }
        
     }
+    //if(printthis)printf("best  %d  pbest  %d  mbest %d   \n",best,pbest,mbest);
+    
     return best;
 }
 
 // Tries to assign the fiber (j,k)
 inline int assign_fiber(int j, int k, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A, int no_g=-1, List kind=Null()) {
 	if (A.is_assigned_tf(j,k)) return -1;
-	int best = find_best(j,k,M,P,pp,F,A
-                         //,no_g,kind
-                         );
+	int best = find_best(j,k,M,P,pp,F,A,no_g,kind);
     int g=best;
 
     if (best!=-1) A.assign(j,k,best,M,P,pp);
