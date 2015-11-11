@@ -15,6 +15,8 @@
 #include        "feat.h"
 #include        "structs.h"
 #include        "collision.h"
+#include        "fitsio.h"
+
 
 // Galaxies ------------------------------------------------------------------
 
@@ -163,6 +165,7 @@ void write_MTLfile(const MTL& M,const Feat& F){
 }
 
 
+
 MTL read_MTLfile(const Feat& F){
     str s=F.MTLfile;
     MTL M;
@@ -170,62 +173,160 @@ MTL read_MTLfile(const Feat& F){
     const char* fname;
     fname= s.c_str();
     std::ifstream fs(fname);
-    if (!fs) {  // An error occurred opening the file.
-        std::cerr << "Unable to open MTLfile " << fname << std::endl;
-        myexit(1);
-        }
-        // Reserve some storage, since we expect we'll be reading quite a few
-        // lines from this file.
-        try {M.reserve(4000000);} catch (std::exception& e) {myexception(e);}
-        // Skip any leading lines beginning with #
-        getline(fs,buf);
-        while (fs.eof()==0 && buf[0]=='#') {
-            getline(fs,buf);
-        }
-        while (fs.eof()==0) {
-            double ra,dec;
-            int id, nobs_remain,priority;
-            str xname;
-            std::istringstream(buf)>> id>>xname>> ra >> dec>> nobs_remain >>  priority  ;
-            //std::istringstream(buf)>> id>> xname>>ra >> dec >>  nobs_remain>> priority;
-            if (ra<   0.) {ra += 360.;}
-            if (ra>=360.) {ra -= 360.;}
-            if (dec<=-90. || dec>=90.) {
-                std::cout << "DEC="<<dec<<" out of range reading "<<fname<<std::endl;
-                myexit(1);
-            }
-            double theta = (90.0 - dec)*M_PI/180.;
-            double phi   = (ra        )*M_PI/180.;
-            struct target Q;
-            Q.nhat[0]    = cos(phi)*sin(theta);
-            Q.nhat[1]    = sin(phi)*sin(theta);
-            Q.nhat[2]    = cos(theta);
-            Q.t_priority = priority;//priority is proxy for id, starts at zero
-            Q.nobs_remain= nobs_remain;
-            Q.nobs_done=0;//need to keep track of this, too
-            Q.once_obs=0;//changed only in update_plan
-            Q.ra = ra;
-            Q.dec = dec;
-            Q.id = id;
-            
-            if (id%F.moduloGal == 0) {
-                try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
-            }
-            bool in=false;
-            for (int j=0;j<M.priority_list.size();++j){
-                if(Q.t_priority==M.priority_list[j]){in=true;
-                }
-            }
-            if(!in){
-                M.priority_list.push_back(Q.t_priority);
-            }
+    int ii;
+    fitsfile *fptr;        
+    int status = 0, anynulls;
+    int hdutype;
+    int nkeys;
+    int hdupos;
+    long nrows;
+    int ncols;
+    long *targetid;
+    int *numobs;
+    int *priority;
+    float *ra;
+    float *dec;    
+    int colnum;
+    
 
-            getline(fs,buf);
-        }
-    std::sort(M.priority_list.begin(),M.priority_list.end());
-    fs.close();
-    return(M);
+    if (! fits_open_file(&fptr, fname, READONLY, &status)){
+      std::cout << "opened MTL file " << fname << std::endl;
+
+      if ( fits_movabs_hdu(fptr, 2, &hdutype, &status) )
+	exit(status);
+      
+      
+      fits_get_hdrspace(fptr, &nkeys, NULL, &status);            
+      fits_get_hdu_num(fptr, &hdupos);
+      fits_get_hdu_type(fptr, &hdutype, &status);  /* Get the HDU type */            
+      fits_get_num_rows(fptr, &nrows, &status);
+      fits_get_num_cols(fptr, &ncols, &status);
+      
+      printf("%d columns x %ld rows\n", ncols, nrows);
+      printf("\nHDU #%d  ", hdupos);
+      if (hdutype == ASCII_TBL)
+	printf("ASCII Table:  ");
+      else
+	printf("Binary Table:  ");      
+
+      if(!(targetid= (long *)malloc(nrows * sizeof(long)))){
+	fprintf(stderr, "problem with targetid allocation\n");
+	exit(1);
+      }
+      if(!(numobs= (int *)malloc(nrows * sizeof(int)))){
+	fprintf(stderr, "problem with numobs allocation\n");
+	exit(1);
+      }
+      if(!(priority= (int *)malloc(nrows * sizeof(int)))){
+	fprintf(stderr, "problem with priority allocation\n");
+	exit(1);
+      }
+      if(!(ra= (float *)malloc(nrows * sizeof(float)))){
+	fprintf(stderr, "problem with ra allocation\n");
+	exit(1);
+      }      
+      if(!(dec= (float *)malloc(nrows * sizeof(float)))){
+	fprintf(stderr, "problem with dec allocation\n");
+	exit(1);
+      }
+     
+/* find which column contains the TARGETID values */
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"TARGETID", &colnum, &status) ){
+	fprintf(stderr, "error\n");
+	exit(status);
+      }
+      
+      long frow, felem, nullval;
+      frow = 1;
+      felem = 1;
+      nullval = -99.;
+      if (fits_read_col(fptr, TLONG, colnum, frow, felem, nrows, 
+			&nullval, targetid, &anynulls, &status) ){
+	fprintf(stderr, "error\n");
+	exit(status);
+      }
+      
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"RA", &colnum, &status) ){
+	fprintf(stderr, "error\n");
+	exit(status);
+      }
+      if (fits_read_col(fptr, TFLOAT, colnum, frow, felem, nrows, 
+			&nullval, ra, &anynulls, &status) ){
+	fprintf(stderr, "error\n");
+	exit(status);
+      }
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"DEC", &colnum, &status) ){
+	fprintf(stderr, "error\n");
+	exit(status);
+      }
+      if (fits_read_col(fptr, TFLOAT, colnum, frow, felem, nrows, 
+			&nullval, dec, &anynulls, &status) ){
+	fprintf(stderr, "error\n");
+	exit(status);
+      }
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"NUMOBS", &colnum, &status) ){
+	fprintf(stderr, "error\n");
+	exit(status);
+      }
+      if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
+			&nullval, numobs, &anynulls, &status) ){
+	fprintf(stderr, "error\n");
+	exit(status);
+      }
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"PRIORITY", &colnum, &status) ){
+	fprintf(stderr, "error\n");
+	exit(status);
+      }
+      if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
+			&nullval, priority, &anynulls, &status) ){
+	fprintf(stderr, "error\n");
+	exit(status);
+      }
+      
+      try {M.reserve(nrows);} catch (std::exception& e) {myexception(e);}
+      
+      for(ii=0;ii<nrows;ii++){
+	str xname;
+	
+	//std::istringstream(buf)>> id>> xname>>ra >> dec >>  nobs_remain>> priority;
+	if (ra[ii]<   0.) {ra[ii] += 360.;}
+	if (ra[ii]>=360.) {ra[ii] -= 360.;}
+	if (dec[ii]<=-90. || dec[ii]>=90.) {
+	  std::cout << "DEC="<<dec<<" out of range reading "<<fname<<std::endl;
+	  myexit(1);
+	}
+	double theta = (90.0 - dec[ii])*M_PI/180.;
+	double phi   = (ra[ii]        )*M_PI/180.;
+	struct target Q;
+	Q.nhat[0]    = cos(phi)*sin(theta);
+	Q.nhat[1]    = sin(phi)*sin(theta);
+	Q.nhat[2]    = cos(theta);
+	Q.t_priority = priority[ii];//priority is proxy for id, starts at zero
+	Q.nobs_remain= numobs[ii];
+	Q.nobs_done=0;//need to keep track of this, too
+	Q.once_obs=0;//changed only in update_plan
+	Q.ra = ra[ii];
+	Q.dec = dec[ii];
+	Q.id = targetid[ii];
+        
+	if (targetid[ii]%F.moduloGal == 0) {
+	  try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
+	}
+	bool in=false;
+	for (int j=0;j<M.priority_list.size();++j){
+	  if(Q.t_priority==M.priority_list[j]){in=true;
+	  }
+	}
+	if(!in){
+	  M.priority_list.push_back(Q.t_priority);
+	}
+	       	
+      }
+      std::sort(M.priority_list.begin(),M.priority_list.end());
+      return(M);  
     }
+}
+
 void assign_priority_class(MTL& M){
     // assign each target to a priority class
     //this needs to be updated
@@ -365,7 +466,7 @@ Plates read_plate_centers(const Feat& F) {
 			double phi   = (ra        )*M_PI/180.;
 			struct plate Q;
 			Q.tileid = tileid;
-                        std::cout << "TILEID " << tileid << std::endl;
+			//                        std::cout << "TILEID " << tileid << std::endl;
 			l++;
 			Q.tilera        = ra;
 			Q.tiledec       = dec;

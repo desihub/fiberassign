@@ -1,12 +1,12 @@
 #include	<cstdlib>
 #include	<cmath>
-#include    <cstdio>
+#include        <cstdio>
 #include	<fstream>
 #include	<sstream>
 #include	<iostream>
 #include	<iomanip>
 #include	<string>
-#include    <cstring>
+#include        <cstring>
 #include	<vector>
 #include	<algorithm>
 #include	<exception>
