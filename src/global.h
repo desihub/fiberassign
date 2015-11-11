@@ -17,7 +17,6 @@
 #include        "feat.h"
 #include        "structs.h"
 
-
 #include        "fitsio.h"
 
 
@@ -47,6 +46,7 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
 
 void assign_unused(int j, MTL& M,  Plates& P, const PP& pp, const Feat& F, Assignment& A);
 
+void diagnostic(const Gals& G, Feat& F, const Assignment& A);
 // Results functions --------------------------------------------------
 void results_on_inputs(str outdir, const MTL& M, const Plates& P, const Feat& F, bool latex=false);
 

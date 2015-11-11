@@ -80,4 +80,3 @@ echo "# Running assign"
 aprun -n 1 -N 1 -d 24 ./assign_fa fa_features.txt
 
 
-

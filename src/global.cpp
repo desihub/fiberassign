@@ -493,11 +493,9 @@ void assign_sf_ss(int j, const Gals& G, const Plates& P, const PP& pp, const Fea
 			}
 			if (unused<F.MaxSS+F.MaxSF) printf("! Not enough !\n");
 		}
-
     }
     }
     else{//make list of fibers assigned to priority 2, then priority 1
-        
     }
 }
 
