@@ -4,14 +4,14 @@ fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplan
 outDir /project/projectdirs/desi/users/rncahn/fa_output/big/
 PrintAscii false
 PrintFits false
-MTLfile big_MTLfile.txt
+MTLfile /project/projectdirs/desi/mocks/preliminary/big_MTLfile.txt
 diagnose true
 
 kind QSOLy-a QSOTracer LRG ELG FakeQSO FakeLRG SS SF
 type QSO QSO LRG ELG QSO LRG SS SF
 prio 2000 2000 3000 4000 2000 3000 9900 9800
 priopost 0 2000 3000 4000 2000 3000 9900 9800
-goal 5 5 2 1 2 5 5 5
+goal 5 5 2 1 5 2 5 5
 goalpost 5 1 2 1 1 1 5 5
 lastpass 0 0 0 1 0 0 1 1 
 SS       0 0 0 0 0 0 1 0

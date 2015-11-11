@@ -4,7 +4,7 @@ fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplan
 outDir /project/projectdirs/desi/users/rncahn/fa_output/short/
 PrintAscii false
 PrintFits false
-MTLfile small_MTLfile.txt
+MTLfile /project/projectdirs/desi/mocks/preliminary/small_MTLfile.txt
 diagnose true
 
 kind QSOLy-a QSOTracer LRG ELG FakeQSO FakeLRG SS SF
