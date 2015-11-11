@@ -40,6 +40,7 @@ PlotFreeFibHist false
 PlotFreeFibTime false
 PlotSeenDens false
 PrintGalObs false
+BrightTime false
 
 Verif false
 -------------------------------------------------

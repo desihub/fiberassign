@@ -84,6 +84,7 @@ int main(int argc, char **argv) {
     printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.Nplate, F.Ngal, F.Nfiber);
     simple_assign(G,P,pp,F,A);
     //diagnostic 11/7/15
+    /*
     int count_total=0;
     for(int j=0;j<F.Nplate;++j){
       
@@ -91,13 +92,13 @@ int main(int argc, char **argv) {
         for (int k=0;k<F.Nfiber;++k){
             if(A.TF[j][k]!=-1)count_assigned++;
         }
-        printf("  %d  %d \n",j, count_assigned);
+        
 	count_total+=count_assigned;
     }
     printf(" total = %d \n",count_total);
 
     diagnostic(G,F,A);
-    
+    */
 	print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
                                     // Want to have even distribution of unused fibers
                                     // so we can put in sky fibers and standard stars
