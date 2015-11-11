@@ -1,4 +1,8 @@
 doc/*
+Assign.*
+assign
+*~
+*.o
 *.jaime~
 Assign.*
 *.txt~
