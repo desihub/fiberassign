@@ -5,7 +5,7 @@ outDir /project/projectdirs/desi/users/rncahn/fa_output/mini/
 /
 PrintAscii true
 PrintFits true
-MTLfile mtl_jaime.txt
+MTLfile gray_mtl.txt
 diagnose false
 
 kind QSOLy-a QSOTracer LRG ELG FakeQSO FakeLRG SS SF
