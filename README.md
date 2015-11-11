@@ -79,5 +79,11 @@ echo "# Running assign"
 
 aprun -n 1 -N 1 -d 24 ./assign_fa fa_features.txt
 
+Thus on edison, for example, from the fiberassign directory, you can submit a job as
+
+qsub ./script/run_fa
+
+
+
 
 
