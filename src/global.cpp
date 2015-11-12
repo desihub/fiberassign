@@ -129,10 +129,8 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
             int m = M[g].nobs_remain; // Check whether it needs further observation
             if (m>=1) {
                 int prio = M[g].t_priority;
-            
                 // Takes it if better priority, or if same, if it needs more observations, so shares observations if two QSOs are close
-                if (prio<pbest || (prio==pbest && m>mbest)) {
-
+                if (prio<pbest || (prio==pbest && m>mbest)){
                     // Check that g is not assigned yet on this plate, or on the InterPlate around, check with ok_to_assign
                     int isa=A.is_assigned_jg(j,g,M,F);
                     int ok=ok_assign_g_to_jk(g,j,k,P,M,pp,F,A);
@@ -140,12 +138,15 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
                         best = g;
                         pbest = prio;
                         mbest = m;
-                    }
+                                            }
                 }
             }
         }
+       
     }
-	return best;
+    //if(printthis)printf("best  %d  pbest  %d  mbest %d   \n",best,pbest,mbest);
+    
+    return best;
 }
 
 // Tries to assign the fiber (j,k)
@@ -236,17 +237,24 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
 	int n = next==-1 ? F.Nplate-j0 : next; // Not F.Nplate-A.next_plate+1
 	List plates = sublist(j0,n,A.order);
 	//List randPlates = F.Randomize ? random_permut(plates) : plates;
-    
+        //simplify  11/7/15
+	n=F.Nplate;
+	printf( " n = %d \n",n);
 	for (int jj=0; jj<n; jj++) {
+        int countme=0;
+        int best=-1;
 		//int j = randPlates[jj];
         int j=jj;
-		List randFibers = random_permut(F.Nfiber);
-		for (int kk=0; kk<F.Nfiber; kk++) { // Fiber
-			int k = randFibers[kk];
-            assign_fiber(j,k,M,P,pp,F,A);
+		//List randFibers = random_permut(F.Nfiber);
+		for (int k=0; k<F.Nfiber; k++) { // Fiber
+			//int k = randFibers[kk];
+            best=assign_fiber(j,k,M,P,pp,F,A);
+            if (best!=-1)countme++;
+            
 		}
+        //printf("j = %d  count = %d \n",j,countme);
 	}
-	str next_str = next==-1 ? "all left" : f(n);
+	//str next_str = next==-1 ? "all left" : f(n);
 	if (next!=1) print_time(t,"# ... took :");
 }
 
@@ -312,12 +320,12 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, Plates&P, const PP& pp, con
 			erase(0,tfs);
 			if(gp!=-1)cnt_replace++;//number of replacements
             if(jp%100==0 && kp%100==0&&gp!=-1){
-                printf(" jp  %d  kp  %d  gp %d  t_priority %d \n",jp,kp,gp,M[gp].t_priority);
+                //printf(" jp  %d  kp  %d  gp %d  t_priority %d \n",jp,kp,gp,M[gp].t_priority);
             }
         }
     }
 	//int na_end(A.na(F,j0,n));
-	if (j0%100==0)printf(" j0  %d  %4d de-assigned & %4d replaced\n",j0,cnt_deassign,cnt_replace); fl();
+	//if (j0%100==0)printf(" j0  %d  %4d de-assigned & %4d replaced\n",j0,cnt_deassign,cnt_replace); fl();
     
 }
 
@@ -500,12 +508,6 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 // Other useful functions --------------------------------------------------------------------------------------------
 void results_on_inputs(str outdir, const MTL& M, const Plates& P, const Feat& F, bool latex) {
 	printf("# Results on inputs :\n");
-	// Print features
-	//print_list("  Kinds corresponding :",F.kind);
-	//print_list("  Priorities :",F.prio);
-	//print_list("  Goals of observations :",F.goal);
-	//print_list("  Max goals of observations :",F.maxgoal());
-
 	// How many galaxies in range of a fiber ?
 	List data;
 	for (int j=0; j<F.Nplate; j++) for (int k=0; k<F.Nfiber; k++) data.push_back(P[j].av_gals[k].size());

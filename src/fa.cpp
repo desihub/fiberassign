@@ -41,15 +41,11 @@ int main(int argc, char **argv) {
     count=count_galaxies(G);
     printf(" Number of galaxies by type, QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF\n");
     for(int i=0;i<8;i++){printf (" type %d number  %d  \n",i, count[i]);}
-    // make MTL
-    //MTL Min=make_MTL(G,F);
-    //write_MTLfile(Min);
     MTL M=read_MTLfile(F);
     assign_priority_class(M);
-    //find available SS and SF galaxies on each petal
-
-    std::vector <int> count_class(M.priority_list.size(),0);
     
+    //establish priority classes
+    std::vector <int> count_class(M.priority_list.size(),0);
     printf("Number in each priority class.  The last two are SF and SS.\n");
     for(int i;i<M.size();++i){
         count_class[M[i].priority_class]+=1;
@@ -58,7 +54,6 @@ int main(int argc, char **argv) {
         printf("  class  %d  number  %d\n",i,count_class[i]);
     }
     
-    printf(" number of MTL galaxies  %d\n",M.size());
     
 	PP pp;
 	pp.read_fiber_positions(F); 
@@ -91,42 +86,42 @@ int main(int argc, char **argv) {
 
 	//// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
 	Assignment A(M,F);
+    printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.Nplate, F.Ngal, F.Nfiber);
 	print_time(t,"# Start assignment at : ");
 
 	// Make a plan ----------------------------------------------------
-	//new_assign_fibers(G,P,pp,F,A); // Plans whole survey without sky fibers, standard stars
-                                   // assumes maximum number of observations needed for QSOs, LRGs
-    printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.Nplate, F.Ngal, F.Nfiber);
+    // Plans whole survey without sky fibers, standard stars
+    // assumes maximum number of observations needed for QSOs, LRGs
 
     simple_assign(M,P,pp,F,A);
-     if(F.diagnose)diagnostic(M,G,F,A);
-    print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
-                                    // Want to have even distribution of unused fibers
-                                    // so we can put in sky fibers and standard stars
 
+    if(F.diagnose)diagnostic(M,G,F,A);
+    
+
+    print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
+    
 	// Smooth out distribution of free fibers, and increase the number of assignments
     
 	for (int i=0; i<1; i++) redistribute_tf(M,P,pp,F,A);// more iterations will improve performance slightly
-	for (int i=0; i<1; i++) {                           // more iterations will improve performance slightly
-		improve(M,P,pp,F,A);
-		redistribute_tf(M,P,pp,F,A);
+	for (int i=0; i<2; i++) {
+        improve(M,P,pp,F,A);
+		//redistribute_tf(M,P,pp,F,A);
 		redistribute_tf(M,P,pp,F,A);
 	}
-	for (int i=0; i<1; i++) redistribute_tf(M,P,pp,F,A);
+	
     
 	print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false);
     //try assigning SF and SS before real time assignment
     for (int j=0;j<F.Nplate;++j){
         A.next_plate=j;
-        assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF just before an observation
+        assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF for each tile
         assign_unused(j,M,P,pp,F,A);
     }
     
     init_time_at(time,"# Begin real time assignment",t);
 
-	// Still not updated, so all QSO targets have multiple observations etc
-	// Apply and update the plan --------------------------------------
-   
+	//Execute plan, updating targets at intervals
+    
     for(int i=0;i<F.pass_intervals.size();++i){
         printf(" before pass = %d  at %d  tiles\n",i,F.pass_intervals[i]);
         //display_results("doc/figs/",G,P,pp,F,A,true);
@@ -134,12 +129,8 @@ int main(int argc, char **argv) {
         A.next_plate=F.pass_intervals[i];
         for (int jj=F.pass_intervals[i]; jj<F.Nplate&&jj<F.Nplate; jj++) {
             int j = A.next_plate;
-            ///printf(" - Plate %d :\n",j);
-            //printf(" %s not assigned - ",format(5,f(A.unused_f(j,F))).c_str()); fl();
-            assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF just before an observation
-
+            assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF
             assign_unused(j,M,P,pp,F,A);
-
             A.next_plate++;
         }
         //update target information for this interval
@@ -151,13 +142,15 @@ int main(int argc, char **argv) {
             if (0<=j-F.Analysis) update_plan_from_one_obs(G,M,P,pp,F,A,F.Nplate-1); else printf("\n");
             A.next_plate++;
         }
+        /*
         if(A.next_plate<F.Nplate){
         redistribute_tf(M,P,pp,F,A);
         redistribute_tf(M,P,pp,F,A);
         improve(M,P,pp,F,A);
         redistribute_tf(M,P,pp,F,A);
         }
-        diagnostic(M,G,F,A);
+         */
+        if(F.diagnose)diagnostic(M,G,F,A);
     }
     
 	// Results -------------------------------------------------------

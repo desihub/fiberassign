@@ -133,10 +133,12 @@ Gals read_galaxies_ascii(const Feat& F)
         Q.ra = ra;
         Q.dec = dec;
 
+
         if (oid%F.moduloGal == 0) {
         try{P.push_back(Q);}catch(std::exception& e) {myexception(e);}
 
         }
+
         oid++;
         getline(fs,buf);
     }
@@ -169,8 +171,8 @@ MTL make_MTL(const Gals& G, const Feat& F){
         targ.nobs_remain=F.goal[G[i].id];//needs to be goal prior to knowledge!!
         targ.nobs_done=0;//need to keep track of this, too
         targ.once_obs=0;//changed only in update_plan
-        //targ.SS=F.SS[G[i].id];
-        //targ.SF=F.SF[G[i].id];
+        targ.SS=F.SS[G[i].id];
+        targ.SF=F.SF[G[i].id];
 
         targ.lastpass=F.lastpass[G[i].id];
         //make list of priorities
@@ -190,7 +192,7 @@ void write_MTLfile(const MTL& M,const Feat& F){
     FA = fopen(s.c_str(),"w");
     str source="MartinsMocks";
     for (int i=0;i<M.size();++i){
-        fprintf(FA," %d MartinsMocks %f  %f  %d  %d\n",M[i].id,M[i].ra,M[i].dec,M[i].nobs_remain,M[i].t_priority);
+        fprintf(FA," %d MartinsMocks %f  %f  %d  %d %d \n",M[i].id,M[i].ra,M[i].dec,M[i].nobs_remain,M[i].t_priority,M[i].lastpass);
     }
     fclose(FA);
 }
@@ -217,9 +219,9 @@ MTL read_MTLfile(const Feat& F){
         }
         while (fs.eof()==0) {
             double ra,dec;
-            int id, nobs_remain,priority;
+            int id, nobs_remain, priority, lastpass;
             str xname;
-            std::istringstream(buf)>> id>>xname>> ra >> dec>> nobs_remain >>  priority  ;
+            std::istringstream(buf)>> id>>xname>> ra >> dec>> nobs_remain >>  priority >>lastpass ;
             //std::istringstream(buf)>> id>> xname>>ra >> dec >>  nobs_remain>> priority;
             if (ra<   0.) {ra += 360.;}
             if (ra>=360.) {ra -= 360.;}
@@ -240,6 +242,7 @@ MTL read_MTLfile(const Feat& F){
             Q.ra = ra;
             Q.dec = dec;
             Q.id = id;
+            Q.lastpass = lastpass;
             
             if (id%F.moduloGal == 0) {
                 try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
