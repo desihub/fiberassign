@@ -39,7 +39,7 @@ __email__  = "mjwhite@lbl.gov/rncahn@lbl.gov"
 dbase = "/project/projectdirs/desi/mocks/preliminary/"
 
 footprint_area=20.*45.*N.sin(45.*N.pi/180.)/(45.*N.pi/180.)
-print("fotprint area %f"%(footprint_area))
+print("footprint area %f"%(footprint_area))
 
 total_area=0.
 def read_objects(fn):
@@ -418,7 +418,7 @@ if __name__=="__main__":
     args = sys.argv
 
     fitsoutput = False
-    if ('-fits' in args):
+    if ('--fits' in args):
         fitsoutput = True
 
     write_catalog(fitsoutput=fitsoutput)

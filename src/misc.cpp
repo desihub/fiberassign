@@ -544,10 +544,14 @@ void print_table(str s, const Dtable& T, bool latex, Slist labels) {
 	bool labelsB = isnull(labels);
 	str space(6,' ');
 	printf("%s", space.c_str());
-	for (int j=0; j<max; j++) {
+    //rnc 10/25/15
+    printf("Obs. made ");
+    for (int j=0; j<6;j++){
+    //for (int j=0; j<max; j++) {
 		str s = (j==max-1) ? slash : et;
 		printf("%s%s",format(maxRow[j],f(j)).c_str(),s.c_str());
 	}
+    printf("initial&  fibers&obs'rvd&percent& wght'd\\\\ \n");
 	for (int i=0; i<l && i<MAXLINE; i++) {
 		str pre = labelsB ? f(i) : format(11,labels[i]);
 		printf("%3s  %s",pre.c_str(),et.c_str());
@@ -995,7 +999,7 @@ void printFile(const char file[]) {
 	while (!fIn.eof() && buf[0]!='-') {
 		fIn.getline(buf,Mc);
 		printf("%s", buf);
-		printf(" - ");
+		printf(" \n");
 	}
 	fIn.close();
 }

@@ -27,18 +27,6 @@ int Feat::id(str s) const {
 	return -1;
 }
 
-int Feat::maxgoal(int kind) const {
-	int max(goal[kind]); int prio0= prio[kind];
-	for (int i=0; i<Categories; i++) if (prio[i]==prio0 && goal[i]>max) max = goal[i];
-	return max;
-}
-
-List Feat::maxgoal() const {
-	List max = initList(Categories,-1);
-	for (int i=0; i<Categories; i++) max[i] = maxgoal(i);
-	return max;
-}
-
 void Feat::init_ids() {
 	for (int i=0; i<Categories; i++) ids[kind[i]] = i;
 }
@@ -90,18 +78,18 @@ void Feat::readInputFile(const char file[]) {
 			if (tok[0]=="tileFile") tileFile= tok[1];
 			if (tok[0]=="fibFile") fibFile= tok[1];
 			if (tok[0]=="outDir") outDir= tok[1];
-			if (tok[0]=="Output") Output= s2b(tok[1]);
+			if (tok[0]=="PrintAscii") PrintAscii= s2b(tok[1]);
+            if (tok[0]=="PrintFits") PrintFits= s2b(tok[1]);
+            
+            if (tok[0]=="MTLfile") MTLfile=tok[1];
+            if (tok[0]=="diagnose") diagnose=s2b(tok[1]);
 
 			if (tok[0]=="kind") {
 				Categories = tok.size()-1;
                 for (int i=0; i<Categories; i++) kind.push_back(tok[i+1]);
-                printf("  1 \n ");
 				init_ids();
-                printf("  2  \n ");
 				init_ss_sf();
-                printf("  3 \n ");
 				init_no_ss_sf();
-                printf("  4 \n ");
 			}
 			if (tok[0]=="type") {
 				Categories = tok.size()-1;
@@ -109,10 +97,18 @@ void Feat::readInputFile(const char file[]) {
 				init_types();
 				init_ids_types();
 			}
-			if (tok[0]=="prio") for (int i=0; i<Categories; i++) prio.push_back(s2i(tok[i+1]));
+            if (tok[0]=="prio")  for (int i=0; i<Categories; i++){prio.push_back(s2i(tok[i+1]));}
 			if (tok[0]=="priopost") for (int i=0; i<Categories; i++) priopost.push_back(s2i(tok[i+1]));
 			if (tok[0]=="goal") for (int i=0; i<Categories; i++) goal.push_back(s2i(tok[i+1]));
-
+            if (tok[0]=="goalpost") for (int i=0; i<Categories; i++) goalpost.push_back(s2i(tok[i+1]));
+            if (tok[0]=="lastpass") for(int i=0; i<Categories;i++)lastpass.push_back(s2i(tok[i+1]));
+            if (tok[0]=="SS") for(int i=0; i<Categories;i++)SS.push_back(s2i(tok[i+1]));
+            if (tok[0]=="SF") for(int i=0; i<Categories;i++)SF.push_back(s2i(tok[i+1]));
+            if (tok[0]=="pass_intervals"){
+                int n_intervals=tok.size()-1;
+                for (int i=0;i<n_intervals;++i) pass_intervals.push_back(s2i(tok[i+1]));
+            }
+            
 			if (tok[0]=="InterPlate") InterPlate = s2i(tok[1]);
 			if (tok[0]=="Randomize") Randomize = s2b(tok[1]);
 			if (tok[0]=="Pacman") Pacman = s2b(tok[1]);
@@ -146,7 +142,15 @@ void Feat::readInputFile(const char file[]) {
             if (tok[0]=="Ascii") Ascii = s2b(tok[1]);
             if (tok[0]=="PrintGalObs") PrintGalObs = s2i(tok[1]);
             if (tok[0]=="BrightTime") BrightTime = s2b(tok[1]);
+            
+            if (tok[0]=="MaxDec") MaxDec = s2d(tok[1]);
+            if (tok[0]=="MinDec") MinDec = s2d(tok[1]);
+            if (tok[0]=="MaxRa") MaxRa = s2d(tok[1]);
+            if (tok[0]=="MinRa") MinRa = s2d(tok[1]);
+
 		}
 	}
+    
+    
 	fIn.close();
 }

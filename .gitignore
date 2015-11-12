@@ -1,9 +1,14 @@
+doc/*
 Assign.*
 assign
 *~
 *.o
-
 *.jaime~
-
+Assign.*
 *.txt~
-doc/*
+*/*.o
+patrol*
+10m*
+simple*
+assign*
+src/assign*

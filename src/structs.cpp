@@ -17,17 +17,9 @@
 #include        "collision.h"
 
 // Galaxies ------------------------------------------------------------------
-void galaxy::print_av_tfs() { // Used to debug
-	if (av_tfs.size() == 0) printf("Print av tfs : no av tf \n");
-	else {
-		printf("Available tfs : ");
-		for (int g=0; g<av_tfs.size(); g++) av_tfs[g].print_pair();
-		printf("\n");
-	}
-}
-// There is a version of this function (to adapt) for ASCII files, ask to Robert Cahn
+
 // Read galaxies from binary file--format is ra, dec, z, priority and nobs
-// with ra/dec in degrees. Priority and nobs information are treated diffenrently now, by Feat, and should be removed here.
+// with ra/dec in degrees.
 //  Reads every n galaxies (to test more quickly)
 Gals read_galaxies(const Feat& F) {
 	Gals P;
@@ -69,22 +61,33 @@ Gals read_galaxies(const Feat& F) {
 	// reduce time
 	for (int i=0; i<Nobj; i++) {
 		if (i%F.moduloGal == 0) {
-		double theta = (90 - (double)dc[i])*M_PI/180;
-		double phi   = ((double)ra[i]     )*M_PI/180;
-		struct galaxy Q;
-		Q.id         = id[i]-1; // -1 added
-		Q.nhat[0]    = sin(theta)*cos(phi);
-		Q.nhat[1]    = sin(theta)*sin(phi);
-		Q.nhat[2]    = cos(theta);
-		Q.ra = ra[i];
-		Q.dec = dc[i];
-		Q.z = zz[i];
-		try{P.push_back(Q);}catch(std::exception& e) {myexception(e);}
- 
+            double theta = (90 - (double)dc[i])*M_PI/180;
+            double phi   = ((double)ra[i]     )*M_PI/180;
+            struct galaxy Q;
+            Q.id         = id[i]-1; // -1 added
+            Q.nhat[0]    = sin(theta)*cos(phi);
+            Q.nhat[1]    = sin(theta)*sin(phi);
+            Q.nhat[2]    = cos(theta);
+            Q.ra = ra[i];
+            Q.dec = dc[i];
+            Q.z = zz[i];
+            //if(Q.dec<F.MaxDec && Q.dec>F.MinDec &&Q.ra<F.MaxRa && Q.ra>F.MinRa){
+                try{P.push_back(Q);}catch(std::exception& e) {myexception(e);}
+            //}
 		}
 	}
 	return P;
 }
+
+std::vector<int> count_galaxies(const Gals& G){
+    std::vector <int> counter(10,0);
+    for (int i=0;i<G.size();i++){
+        counter[G[i].id]+=1;
+                  }
+    return counter;
+}
+
+
 Gals read_galaxies_ascii(const Feat& F)
 // Read objects from ascii file--format is ra, dec, priority and nobs
 // with ra/dec in degrees.
@@ -108,7 +111,7 @@ Gals read_galaxies_ascii(const Feat& F)
     }
     int oid=0;
     while (fs.eof()==0) {
-        double ra,dec,priority,redshift;  int nobs;
+        double ra,dec,redshift;  int nobs,priority;
         std::istringstream(buf) >> ra >> dec >> redshift >> priority >> nobs ;
         // use priority as proxy for id
         if (ra<   0.) {ra += 360.;}
@@ -130,25 +133,153 @@ Gals read_galaxies_ascii(const Feat& F)
         Q.ra = ra;
         Q.dec = dec;
 
-        if (oid%F.moduloGal == 0) try{P.push_back(Q);}catch(std::exception& e) {myexception(e);}
+
+        if (oid%F.moduloGal == 0) {
+        try{P.push_back(Q);}catch(std::exception& e) {myexception(e);}
+
+        }
+
         oid++;
         getline(fs,buf);
     }
     fs.close();
     return(P);
 }
-
+//to order galaxies by their priority
+bool galaxy_priority(target t1,target t2){return (t1.t_priority<t2.t_priority);}
 
 str galaxy::kind(const Feat& F) const {
 	return(F.kind[id]);
 }
+
+// targets -----------------------------------------------------------------------
+// derived from G, but includes priority and nobs_remain
+MTL make_MTL(const Gals& G, const Feat& F){
+    MTL M;
+    int Nobj=G.size();
+    struct target targ;
+    int special_count(0);
+    int stop_count(0);
+    for(int i=0;i<Nobj;++i){
+        targ.id=i;
+        targ.nhat[0]=G[i].nhat[0];
+        targ.nhat[1]=G[i].nhat[1];
+        targ.nhat[2]=G[i].nhat[2];
+        targ.ra=G[i].ra;
+        targ.dec=G[i].dec;
+        targ.t_priority=F.prio[G[i].id];
+        targ.nobs_remain=F.goal[G[i].id];//needs to be goal prior to knowledge!!
+        targ.nobs_done=0;//need to keep track of this, too
+        targ.once_obs=0;//changed only in update_plan
+        targ.SS=F.SS[G[i].id];
+        targ.SF=F.SF[G[i].id];
+
+        targ.lastpass=F.lastpass[G[i].id];
+        //make list of priorities
+        if(targ.dec<F.MaxDec && targ.dec>F.MinDec &&targ.ra<F.MaxRa && targ.ra>F.MinRa){
+        M.push_back(targ);
+        }
+        int g=M.size()-1;
+
+    }
+    return M;
+}
+
+
+void write_MTLfile(const MTL& M,const Feat& F){
+    FILE * FA;
+    str s=F.MTLfile;
+    FA = fopen(s.c_str(),"w");
+    str source="MartinsMocks";
+    for (int i=0;i<M.size();++i){
+        fprintf(FA," %d MartinsMocks %f  %f  %d  %d %d \n",M[i].id,M[i].ra,M[i].dec,M[i].nobs_remain,M[i].t_priority,M[i].lastpass);
+    }
+    fclose(FA);
+}
+
+
+MTL read_MTLfile(const Feat& F){
+    str s=F.MTLfile;
+    MTL M;
+    std::string buf;
+    const char* fname;
+    fname= s.c_str();
+    std::ifstream fs(fname);
+    if (!fs) {  // An error occurred opening the file.
+        std::cerr << "Unable to open MTLfile " << fname << std::endl;
+        myexit(1);
+        }
+        // Reserve some storage, since we expect we'll be reading quite a few
+        // lines from this file.
+        try {M.reserve(4000000);} catch (std::exception& e) {myexception(e);}
+        // Skip any leading lines beginning with #
+        getline(fs,buf);
+        while (fs.eof()==0 && buf[0]=='#') {
+            getline(fs,buf);
+        }
+        while (fs.eof()==0) {
+            double ra,dec;
+            int id, nobs_remain, priority, lastpass;
+            str xname;
+            std::istringstream(buf)>> id>>xname>> ra >> dec>> nobs_remain >>  priority >>lastpass ;
+            //std::istringstream(buf)>> id>> xname>>ra >> dec >>  nobs_remain>> priority;
+            if (ra<   0.) {ra += 360.;}
+            if (ra>=360.) {ra -= 360.;}
+            if (dec<=-90. || dec>=90.) {
+                std::cout << "DEC="<<dec<<" out of range reading "<<fname<<std::endl;
+                myexit(1);
+            }
+            double theta = (90.0 - dec)*M_PI/180.;
+            double phi   = (ra        )*M_PI/180.;
+            struct target Q;
+            Q.nhat[0]    = cos(phi)*sin(theta);
+            Q.nhat[1]    = sin(phi)*sin(theta);
+            Q.nhat[2]    = cos(theta);
+            Q.t_priority = priority;//priority is proxy for id, starts at zero
+            Q.nobs_remain= nobs_remain;
+            Q.nobs_done=0;//need to keep track of this, too
+            Q.once_obs=0;//changed only in update_plan
+            Q.ra = ra;
+            Q.dec = dec;
+            Q.id = id;
+            Q.lastpass = lastpass;
+            
+            if (id%F.moduloGal == 0) {
+                try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
+            }
+            bool in=false;
+            for (int j=0;j<M.priority_list.size();++j){
+                if(Q.t_priority==M.priority_list[j]){in=true;
+                }
+            }
+            if(!in){
+                M.priority_list.push_back(Q.t_priority);
+            }
+
+            getline(fs,buf);
+        }
+    std::sort(M.priority_list.begin(),M.priority_list.end());
+    fs.close();
+    return(M);
+    }
+void assign_priority_class(MTL& M){
+    // assign each target to a priority class
+    //this needs to be updated
+    for(int i=0;i<M.size();++i){
+        for(int j=0;j<M.priority_list.size();++j){
+            if(M[i].t_priority==M.priority_list[j]){
+                M[i].priority_class=j;}
+        }
+    }
+}
+
 
 // PP ----------------------------------------------------------------------------
 // Read the positions of the fibers on each plate.  Assumes the format
 // of fiberpos.txt produced by "F.Randomize_fibers".
 // need also to get the petal, i.e. spectrometer  rnc 1/16/15  added S
 void PP::read_fiber_positions(const Feat& F) {
-	str buf;
+    std::string buf;
 	std::ifstream fs(F.fibFile.c_str());
 
 	if (!fs) { // An error occurred opening the file.
@@ -213,9 +344,10 @@ dpair PP::coords(int k) const {// x and y in mm
 
 // plate ---------------------------------------------------------------------------
 
-List plate::av_gals_plate(const Feat& F) const {//list of galaxies available to plate no repetitions
+List plate::av_gals_plate(const Feat& F,const MTL& M, const PP& pp) const {//list of galaxies available to plate no repetitions
 	List gals = initList(F.Ngal);
 	List L = initList(0);
+
 	for (int k=0; k<F.Nfiber; k++) {
 		for (int i=0; i<av_gals[k].size(); i++) {
 			if (gals[av_gals[k][i]] == 0) {
@@ -228,11 +360,12 @@ List plate::av_gals_plate(const Feat& F) const {//list of galaxies available to 
 }
 
 
+
 // Plates ---------------------------------------------------------------------------
 // Read positions of the plate centers from an ascii file "center_name", and fill in a structure
 Plates read_plate_centers(const Feat& F) {
 	Plates P;
-	str buf;
+        std::string buf;
 	std::ifstream fs(F.tileFile.c_str());
 	if (!fs) {  // An error occurred opening the file.
 		std::cerr << "Unable to open file " << F.tileFile << std::endl;
@@ -241,17 +374,16 @@ Plates read_plate_centers(const Feat& F) {
 	// Reserve some storage, since we expect we'll be reading quite a few
 	// lines from this file.
 	try {P.reserve(4000000);} catch (std::exception& e) {myexception(e);}
-	// Skip any leading lines beginning with #
-	getline(fs,buf);
-	while (fs.eof()==0 && buf[0]=='#') { getline(fs,buf); }
-	//read lines until we get some blank lines, then skip blank lines, then get real data
-	//this conforms to the format of desi-tiles.par
-	while(buf.size()!=0){getline(fs,buf);}
-	while(buf.size()==0){getline(fs,buf);}				 
-	double ra,dec,ebv,airmass,exposefac; int ipass,in_desi,tileid;
+
+	double ra,dec,ebv,airmass,exposefac;
+    int ipass,in_desi,tileid;
 	int l = 0;
 	while (fs.eof()==0) {
 		getline(fs,buf);
+                if(buf.compare(0, 7, "STRUCT1") != 0) {
+                    // std::cout << "Skipping " << buf << std::endl;
+                    continue;
+                }
 		//gymnastics to read line with string in first column
 		std::istringstream ss(buf);
 		str start;
@@ -268,58 +400,47 @@ Plates read_plate_centers(const Feat& F) {
 			double theta = (90.0 - dec)*M_PI/180.;
 			double phi   = (ra        )*M_PI/180.;
 			struct plate Q;
-			Q.idp = l;
+			Q.tileid = tileid;
+                        //std::cout << "TILEID " << tileid << std::endl;
 			l++;
+			Q.tilera        = ra;
+			Q.tiledec       = dec;
 			Q.nhat[0]    = sin(theta)*cos(phi);
 			Q.nhat[1]    = sin(theta)*sin(phi);
 			Q.nhat[2]    = cos(theta);
 			Q.ipass      = ipass-1; // <- be careful, format of input file
 			Q.av_gals.resize(F.Nfiber); // <- added
 			Q.density.resize(F.Nfiber); // <- added
-			try {P.push_back(Q);} catch(std::exception& e) {myexception(e);}
+            Q.SS_av_gal.resize(F.Nfbp);
+            Q.SF_av_gal.resize(F.Nfbp);
+            Q.SS_in_petal.resize(F.Npetal);
+            Q.SF_in_petal.resize(F.Npetal);
+            for (int i=0;i<F.Npetal;++i){Q.SS_in_petal[i]=0;}
+            for (int i=0;i<F.Npetal;++i){Q.SF_in_petal[i]=0;}
+            if(dec<F.MaxDec && dec>F.MinDec &&ra<F.MaxRa && ra>F.MinRa){
+                try {P.push_back(Q);} catch(std::exception& e) {myexception(e);}
+            }
 		}
 	}
 	fs.close();
 	return(P);
 }
-//not used
-List av_gals_of_kind(int kind, int j, int k, const Gals& G, const Plates& P, const Feat& F) {
-	List L;  //list of galaxies available to (j,k) of kind 'kind'
-	List av_gals = P[j].av_gals[k];
-	for (int gg=0; gg<av_gals.size(); gg++) {
-		int g = av_gals[gg];
-		if (G[g].id==kind) L.push_back(g);
-	}
-	return L;
-}
-
 // Assignment -----------------------------------------------------------------------------
-Assignment::Assignment(const Gals& G, const Feat& F) {
-    printf("start Assignment\n");
+Assignment::Assignment(const MTL& M, const Feat& F) {
+
 	TF = initTable(F.Nplate,F.Nfiber,-1);//galaxy assigned to tile-fiber TF[j][k]
 	GL = initPtable(F.Ngal,0); //tile-fiber pair for galaxy  GL[g]
 	order.resize(F.Nplate);
 	for (int i=0; i<F.Nplate; i++) order[i] = i;
 	next_plate = 0;
 	kinds = initCube(F.Nplate,F.Npetal,F.Categories);
-	once_obs = initList(F.Ngal);//is galaxy observed?
-	nobsv = initList(F.Ngal);//remaining observations
-	nobsv_tmp = initList(F.Ngal);//remaining observations before we know truth
-	List l = F.maxgoal();//max observations for a category
-    printf("set up plates\n");
-	for (int g=0; g<F.Ngal; g++) {
-		nobsv[g] = F.goal[G[g].id];//true goal
-		nobsv_tmp[g] = l[G[g].id];//max goal for category
-	}
-    printf("set up galaxies\n");
 	unused = initTable(F.Nplate,F.Npetal,F.Nfbp);//initialized to number of fibers on a petal
-    printf("set up unused\n");
-}
+    }
 
 Assignment::~Assignment() {}
 
 // Assign g with tile/fiber (j,k), and check for duplicates
-void Assignment::assign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp) {
+void Assignment::assign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
 	// Assign (j,k)
 	int q = TF[j][k];
 	if (q != -1) {
@@ -327,6 +448,9 @@ void Assignment::assign(int j, int k, int g, const Gals& G, const Plates& P, con
 		myexit(1);
 	}
 	TF[j][k] = g;
+    //DIAGNOSTIC
+    //if(k==0)printf(" j  %d   k  %d   g  %d\n",j,k,g);
+    //if(g%1000==0)printf(" assign  g %d to j %d k%d\n", g,j,k);
 	// Assign g
 	Plist pl = GL[g];//pair list, tf's for this g
 	pair p = pair(j,k);
@@ -339,32 +463,37 @@ void Assignment::assign(int j, int k, int g, const Gals& G, const Plates& P, con
 		}
 	}
 	GL[g].push_back(p);
-	// Kinds
-	kinds[j][pp.spectrom[k]][G[g].id]++;
-
-	// Nobsv
-	nobsv[g]--;
-	nobsv_tmp[g]--;
-
+    M[g].nobs_done++;
+    M[g].nobs_remain--;
+    if(M[g].t_priority==9800){
+        int q=pp.spectrom[k];
+        P[j].SF_in_petal[q]+=1;}
+    if(M[g].t_priority==9900){
+        int q=pp.spectrom[k];
+        P[j].SS_in_petal[q]+=1;}
 	unused[j][pp.spectrom[k]]--;
 }
 
-void Assignment::unassign(int j, int k, int g, const Gals& G, const Plates& P, const PP& pp) {
+void Assignment::unassign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
 	if (TF[j][k]==-1) printf("### !!! ### TF (j,k) = (%d,%d) gets unassigned but was already not assigned\n",j,k);
 	int a = isfound(pair(j,k),GL[g]);
 	if (a==-1) printf("### !!! ### Galaxy g = %d gets unassigned but was already not assigned\n",g);
 
 	TF[j][k] = -1;
 	if (a!=-1) erase(a,GL[g]);
-	kinds[j][pp.spectrom[k]][G[g].id]--;
-
-	nobsv[g]++;
-	nobsv_tmp[g]++;
+    M[g].nobs_done--;
+    M[g].nobs_remain++;
+    if(M[g].t_priority==9800){
+        int p=pp.spectrom[k];
+        P[j].SF_in_petal[p]-=1;}
+    if(M[g].t_priority==9900){
+        int p=pp.spectrom[k];
+        P[j].SS_in_petal[p]-=1;}
 
 	unused[j][pp.spectrom[k]]++;
 }
 
-void Assignment::verif(const Plates& P, const Gals& G, const PP& pp, const Feat& F) const {
+void Assignment::verif(const Plates& P, const MTL& M, const PP& pp, const Feat& F) const {
 	str qso_lrgA[] = {"QSOLy-a","QSOTracer","FakeQSO","LRG","FakeLRG"}; List qso_lrg = F.init_ids_list(qso_lrgA,5);
 	for (int g=0; g<F.Ngal; g++) {// make sure observations are separated by at least InterPlate
 		Plist tfs = GL[g];
@@ -376,7 +505,7 @@ void Assignment::verif(const Plates& P, const Gals& G, const PP& pp, const Feat&
 			// Verif on TF
 			if (TF[tf.f][tf.s]!=g) { printf("ERROR in verification of correspondance of galaxies !\n"); fl(); }
 			// No 2 assignments within an interval of F.InterPlate
-			if (j0!=-1 && isfound(G[g].id,qso_lrg) && fabs(j1-j0)<F.InterPlate) { printf("ERROR in verification of F.InterPlate g=%d with j=%d and %d\n",g,j0,j1); fl(); }
+			//if (j0!=-1 && isfound(M[g].id,qso_lrg) && fabs(j1-j0)<F.InterPlate) { printf("ERROR in verification of F.InterPlate g=%d with j=%d and %d\n",g,j0,j1); fl(); }
 		}
 	}
 	for (int j=0; j<F.Nplate; j++) {
@@ -390,7 +519,7 @@ void Assignment::verif(const Plates& P, const Gals& G, const PP& pp, const Feat&
 				if (gals[g]==1) printf("ERROR in verification, twice the same galaxy by (%d,%d)\n",j,k);
 				else gals[g] = 1;
 				// Collision checking
-				if (!F.Collision && is_collision(j,k,pp,G,P,F)!=-1) printf("ERROR in verification : collisions\n");
+				if (!F.Collision && is_collision(j,k,pp,M,P,F)!=-1) printf("ERROR in verification : collisions\n");
 			}
 		}
 	}
@@ -406,14 +535,14 @@ int Assignment::is_assigned_jg(int j, int g) const {// is galaxy g assigned on t
 	return -1;
 }
 
-int Assignment::is_assigned_jg(int j, int g, const Gals& G, const Feat& F) const { // No occurrence too nearby in tiles
+int Assignment::is_assigned_jg(int j, int g, const MTL& M, const Feat& F) const { // No occurrence too nearby in tiles
 	for (int i=0; i<GL[g].size(); i++) if (fabs(j-GL[g][i].f)<F.InterPlate || j==GL[g][i].f) return i; 
 	return -1;
 }
 
 bool Assignment::is_assigned_tf(int j, int k) const { return (TF[j][k] != -1); }
 
-int Assignment::na(const Feat& F, int begin, int size) const {
+int Assignment::na(const Feat& F, int begin, int size) const {//unassigned fibers in tiles begin to begin+size
 	int size1 = (size==-1) ? F.Nplate : size;
 	int cnt(0);
 	for (int j=begin; j<begin+size1; j++) {
@@ -473,59 +602,12 @@ int Assignment::unused_fbp(int j, int k, const PP& pp, const Feat& F) const {//u
 	return unused;
 }
 
-int Assignment::nkind(int j, int k, int kind, const Gals& G, const Plates& P, const PP& pp, const Feat& F, bool pet) const {
+int Assignment::nkind(int j, int k, int kind, const MTL& M, const Plates& P, const PP& pp, const Feat& F, bool pet) const {
 	//if pet is false, used petal of fiber k,, if pet is true use petal k        
 	if (!pet) return kinds[j][pp.spectrom[k]][kind];
 	else return kinds[j][k][kind];
 }
-	
-Table Assignment::infos_petal(int j, int pet, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const {
-	Table T;//for each fiber in a petal, record a lot of information
-	List fibs = pp.fibers_of_sp[pet];
-	for (int kk=0; kk<fibs.size(); kk++) {
-		List L;
-		int k = fibs[kk];
-		int g0 = TF[j][k];
-		L.push_back(g0==-1 ? -1 : G[g0].id);
-		List av_gals = P[j].av_gals[k];
-		bool lya(false);
-		for (int gg=0; gg<av_gals.size(); gg++) {
-			int g = av_gals[gg];
-			L.push_back(g==g0 ? -3 : -2);
-			L.push_back(G[g].id);
-			L.push_back(nobs(g,G,F));
-			L.push_back(is_assigned_jg(j,g));
-			L.push_back(is_assigned_jg(j,g,G,F));
-			L.push_back(find_collision(j,k,g,pp,G,P,F));
-			if (G[g].id==0) lya = true;
-		}
-		if (lya) T.push_back(L);
-	}
-	return T;
-}
-
-List Assignment::fibs_of_kind(int kind, int j, int pet, const Gals& G, const PP& pp, const Feat& F) const {//all fibers on some petal assigned to some kind
-	List L;
-	List fibs = pp.fibers_of_sp[pet];
-	for (int kk=0; kk<F.Nfbp; kk++) {
-		int k = fibs[kk];
-		int g = TF[j][k];
-		if (g!=-1 && G[g].id==kind) L.push_back(k);
-	}
-	return L;
-}
-
-
-List Assignment::sort_fibs_dens(int j, const List& fibs, const Gals& G, const Plates& P, const PP& pp, const Feat& F) const {
-	List num;
-	for (int k=0; k<fibs.size(); k++) num.push_back(P[j].density[fibs[k]]);//how many observations demanded by galaxies in reach of (j,k)
-	List perm = get_permut_sort(num);//increasing order
-	List fibs_sorted;
-	for (int k=num.size()-1; k!=-1; k--) fibs_sorted.push_back(fibs[perm[k]]);//reverse the order so most demanded fibers are first
-	return fibs_sorted;
-}
-
-List Assignment::fibs_unassigned(int j, int pet, const Gals& G, const PP& pp, const Feat& F) const {//list of unassigned fibers on petal pet
+List Assignment::fibs_unassigned(int j, int pet, const MTL& M, const PP& pp, const Feat& F) const {//list of unassigned fibers on petal pet
 	List L;
 	List fibs = pp.fibers_of_sp[pet];
 	for (int kk=0; kk<F.Nfbp; kk++) {
@@ -534,44 +616,6 @@ List Assignment::fibs_unassigned(int j, int pet, const Gals& G, const PP& pp, co
 	}
 	return L;
 }
-
-int Assignment::nobs(int g, const Gals& G, const Feat& F, bool tmp) const {//gives nobsv_tmp or nobsv depending on tmp and tmp is true by default
-	int obs = tmp ? nobsv_tmp[g] : nobsv[g]; // optimization
-	return obs;
-}
-//not used
-void Assignment::update_nobsv_tmp(const Feat& F) {//if galaxy is observed we know the truth
-	for (int g=0; g<F.Ngal; g++) if (once_obs[g]) nobsv_tmp[g] = nobsv[g];
-}
-
-void Assignment::update_nobsv_tmp_for_one(int j, const Feat& F) {//updates one plate only
-	for (int k=0; k<F.Nfiber; k++) {
-		int g = TF[j][k];
-		if (g!=-1) nobsv_tmp[g] = nobsv[g];
-	}
-}
-
-void Assignment::update_once_obs(int j, const Feat& F) {//updates once_obs
-	for (int k=0; k<F.Nfiber; k++) {
-		int g = TF[j][k];
-		if (g!=-1) once_obs[g] = 1;
-	}
-}
-
-int Assignment::nobs_time(int g, int j, const Gals& G, const Feat& F) const {//counts observations up to some tile j
-	int kind = G[g].id;
-	int cnt = once_obs[g] ? F.goal[kind] : F.maxgoal(kind);
-	for (int i=0; i<GL[g].size(); i++) if (GL[g][i].f<j) cnt--;
-	return cnt;
-}
-
-// Useful sub-functions -------------------------------------------------------------------------------------------------
-
-int fprio(int g, const Gals& G, const Feat& F, const Assignment& A) {
-	if (A.once_obs[g]) return F.priopost[G[g].id];
-	else return F.prio[G[g].id];
-}
-
 // Returns the radial distance on the plate (mm) given the angle,
 // theta (radians).  This is simply a fit to the data provided.
 double plate_dist(const double theta) {
@@ -582,7 +626,7 @@ double plate_dist(const double theta) {
 }
 
 // Returns the x-y position on the plate centered at P for galaxy O.
-struct onplate change_coords(const struct galaxy& O, const struct plate& P) {
+struct onplate change_coords(const struct target& O, const struct plate& P) {
 	struct onplate obj;
 	// Rotate the "galaxy" vector so that the plate center is at z-hat.
 	double nhat1[3],nhat2[3];
@@ -625,15 +669,15 @@ bool collision(dpair O1, dpair G1, dpair O2, dpair G2, const Feat& F) {
 }
 
 // (On plate p) finds if there is a collision if fiber k would observe galaxy g (collision with neighbor)
-int Assignment::find_collision(int j, int k, int g, const PP& pp, const Gals& G, const Plates& P, const Feat& F, int col) const {//check all neighboring fibers
+int Assignment::find_collision(int j, int k, int g, const PP& pp, const MTL& M, const Plates& P, const Feat& F, int col) const {//check all neighboring fibers
 	bool bol = (col==-1) ? F.Collision : false;
 	if (bol) return -1;
-	dpair G1 = projection(g,j,G,P);
+	dpair G1 = projection(g,j,M,P);
 	for (int i=0; i<pp.N[k].size(); i++) {
 		int kn = pp.N[k][i];
 		int gn = TF[j][kn];
 		if (gn!=-1) {
-			dpair G2 = projection(gn,j,G,P);
+			dpair G2 = projection(gn,j,M,P);
 			bool b = F.Exact ? collision(pp.coords(k),G1,pp.coords(kn),G2,F) : (sq(G1,G2) < sq(F.AvCollide));
 			if (b) return kn;
 		}
@@ -641,28 +685,28 @@ int Assignment::find_collision(int j, int k, int g, const PP& pp, const Gals& G,
 	return -1;
 }
 
-bool Assignment::find_collision(int j, int k, int kn, int g, int gn, const PP& pp, const Gals& G, const Plates& P, const Feat& F, int col) const {//check two fibers
+bool Assignment::find_collision(int j, int k, int kn, int g, int gn, const PP& pp, const MTL& M, const Plates& P, const Feat& F, int col) const {//check two fibers
 	bool bol = (col==-1) ? F.Collision : false;
 	if (bol) return false;
-	dpair G1 = projection(g,j,G,P);
-	dpair G2 = projection(gn,j,G,P);
+	dpair G1 = projection(g,j,M,P);
+	dpair G2 = projection(gn,j,M,P);
 	return F.Exact ? collision(pp.coords(k),G1,pp.coords(kn),G2,F) : (sq(G1,G2) < sq(F.AvCollide));
 }
 
-int Assignment::is_collision(int j, int k, const PP& pp, const Gals& G, const Plates& P, const Feat& F) const {//find collision for galaxy g
+int Assignment::is_collision(int j, int k, const PP& pp, const MTL& M, const Plates& P, const Feat& F) const {//find collision for galaxy g
 	int g = TF[j][k];
-	if (g!=-1) return find_collision(j,k,g,pp,G,P,F,0);
+	if (g!=-1) return find_collision(j,k,g,pp,M,P,F,0);
 	else return -1;
 }
 
-float Assignment::colrate(const PP& pp, const Gals& G, const Plates& P, const Feat& F, int jend0) const {//rate of collisions
+float Assignment::colrate(const PP& pp, const MTL& M, const Plates& P, const Feat& F, int jend0) const {//rate of collisions
 	int jend = (jend0==-1) ? F.Nplate : jend0;
 	int col = 0;
 	for (int j=0; j<jend; j++) {
 		List done = initList(F.Nfiber);
 		for (int k=0; k<F.Nfiber; k++) {
 			if (done[k] == 0) {
-				int c = is_collision(j,k,pp,G,P,F);
+				int c = is_collision(j,k,pp,M,P,F);
 				if (c!=-1) {
 					done[c] = 1;
 					col += 2;
@@ -673,8 +717,8 @@ float Assignment::colrate(const PP& pp, const Gals& G, const Plates& P, const Fe
 	return percent(col,jend*F.Nfiber);
 }
 
-dpair projection(int g, int j, const Gals& G, const Plates& P) {//x and y coordinates for galaxy observed on plate j
-	struct onplate op = change_coords(G[g],P[j]);
+dpair projection(int g, int j, const MTL& M, const Plates& P) {//x and y coordinates for galaxy observed on plate j
+	struct onplate op = change_coords(M[g],P[j]);
 	return dpair(op.pos[0],op.pos[1]);
 }
 
