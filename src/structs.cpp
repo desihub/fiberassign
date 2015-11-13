@@ -159,7 +159,7 @@ void write_MTLfile(const MTL& M,const Feat& F){
     FA = fopen(s.c_str(),"w");
     str source="MartinsMocks";
     for (int i=0;i<M.size();++i){
-        fprintf(FA," %d MartinsMocks %f  %f  %d  %d\n",M[i].id,M[i].ra,M[i].dec,M[i].nobs_remain,M[i].t_priority);
+        fprintf(FA," %ld MartinsMocks %f  %f  %d  %d\n",M[i].id,M[i].ra,M[i].dec,M[i].nobs_remain,M[i].t_priority);
     }
     fclose(FA);
 }
@@ -193,7 +193,7 @@ MTL read_MTLfile(const Feat& F){
       std::cout << "opened MTL file " << fname << std::endl;
 
       if ( fits_movabs_hdu(fptr, 2, &hdutype, &status) )
-	exit(status);
+	myexit(status);
       
       
       fits_get_hdrspace(fptr, &nkeys, NULL, &status);            
@@ -204,36 +204,38 @@ MTL read_MTLfile(const Feat& F){
       
       printf("%d columns x %ld rows\n", ncols, nrows);
       printf("\nHDU #%d  ", hdupos);
-      if (hdutype == ASCII_TBL)
+      if (hdutype == ASCII_TBL){
 	printf("ASCII Table:  ");
-      else
-	printf("Binary Table:  ");      
+      }else{
+	printf("Binary Table: \n ");      
+      }
 
+      fflush(stdout);
       if(!(targetid= (long *)malloc(nrows * sizeof(long)))){
 	fprintf(stderr, "problem with targetid allocation\n");
-	exit(1);
+	myexit(1);
       }
       if(!(numobs= (int *)malloc(nrows * sizeof(int)))){
 	fprintf(stderr, "problem with numobs allocation\n");
-	exit(1);
+	myexit(1);
       }
       if(!(priority= (int *)malloc(nrows * sizeof(int)))){
 	fprintf(stderr, "problem with priority allocation\n");
-	exit(1);
+	myexit(1);
       }
       if(!(ra= (float *)malloc(nrows * sizeof(float)))){
 	fprintf(stderr, "problem with ra allocation\n");
-	exit(1);
+	myexit(1);
       }      
       if(!(dec= (float *)malloc(nrows * sizeof(float)))){
 	fprintf(stderr, "problem with dec allocation\n");
-	exit(1);
+	myexit(1);
       }
      
 /* find which column contains the TARGETID values */
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"TARGETID", &colnum, &status) ){
 	fprintf(stderr, "error\n");
-	exit(status);
+	myexit(status);
       }
       
       long frow, felem, nullval;
@@ -243,48 +245,49 @@ MTL read_MTLfile(const Feat& F){
       if (fits_read_col(fptr, TLONG, colnum, frow, felem, nrows, 
 			&nullval, targetid, &anynulls, &status) ){
 	fprintf(stderr, "error\n");
-	exit(status);
+	myexit(status);
       }
       
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"RA", &colnum, &status) ){
 	fprintf(stderr, "error\n");
-	exit(status);
+	myexit(status);
       }
       if (fits_read_col(fptr, TFLOAT, colnum, frow, felem, nrows, 
 			&nullval, ra, &anynulls, &status) ){
 	fprintf(stderr, "error\n");
-	exit(status);
+	myexit(status);
       }
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"DEC", &colnum, &status) ){
 	fprintf(stderr, "error\n");
-	exit(status);
+	myexit(status);
       }
       if (fits_read_col(fptr, TFLOAT, colnum, frow, felem, nrows, 
 			&nullval, dec, &anynulls, &status) ){
 	fprintf(stderr, "error\n");
-	exit(status);
+	myexit(status);
       }
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"NUMOBS", &colnum, &status) ){
 	fprintf(stderr, "error\n");
-	exit(status);
+	myexit(status);
       }
       if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
 			&nullval, numobs, &anynulls, &status) ){
 	fprintf(stderr, "error\n");
-	exit(status);
+	myexit(status);
       }
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"PRIORITY", &colnum, &status) ){
 	fprintf(stderr, "error\n");
-	exit(status);
+	myexit(status);
       }
       if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
 			&nullval, priority, &anynulls, &status) ){
 	fprintf(stderr, "error\n");
-	exit(status);
+	myexit(status);
       }
       
       try {M.reserve(nrows);} catch (std::exception& e) {myexception(e);}
-      
+
+
       for(ii=0;ii<nrows;ii++){
 	str xname;
 	
@@ -308,10 +311,13 @@ MTL read_MTLfile(const Feat& F){
 	Q.ra = ra[ii];
 	Q.dec = dec[ii];
 	Q.id = targetid[ii];
-        
-	if (targetid[ii]%F.moduloGal == 0) {
-	  try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
-	}
+	try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
+
+	//	
+	//	fprintf(stdout, "%ld %ld %f %f\n", Q.id, targetid[ii], Q.ra, Q.dec);
+	//if (targetid[ii]%F.moduloGal == 0) {
+	//	  try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
+	//	}
 	bool in=false;
 	for (int j=0;j<M.priority_list.size();++j){
 	  if(Q.t_priority==M.priority_list[j]){in=true;

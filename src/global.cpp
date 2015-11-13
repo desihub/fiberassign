@@ -253,7 +253,7 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
 		List randFibers = random_permut(F.Nfiber);
 		for (int kk=0; kk<F.Nfiber; kk++) { // Fiber
 			int k = randFibers[kk];
-            assign_fiber(j,k,M,P,pp,F,A);
+			assign_fiber(j,k,M,P,pp,F,A);
 		}
 	}
 	str next_str = next==-1 ? "all left" : f(n);
@@ -468,11 +468,11 @@ void write_FAtile_ascii(int j, str outdir, const MTL& M, const Plates& P, const 
 		// Number of potential galaxies
 		fprintf(FA,"%lu ",av_gals.size());
 		// IDs of potential galaxies
-		for (int i=0; i<av_gals.size(); i++) fprintf(FA,"%d ",M[av_gals[i]].id);
+		for (int i=0; i<av_gals.size(); i++) fprintf(FA,"%ld ",M[av_gals[i]].id);
 		// galaxy number, ra, dec, x, y
 		if (g!=-1) {
 			dpair Gal = projection(g,j,M,P);
-            fprintf(FA,"%d %f %f %f %f\n",M[g].id,M[g].ra,M[g].dec,Gal.f,Gal.s);
+            fprintf(FA,"%ld %f %f %f %f\n",M[g].id,M[g].ra,M[g].dec,Gal.f,Gal.s);
 		}
 		else fprintf(FA,"-1\n");
 	}
