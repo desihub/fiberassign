@@ -512,8 +512,7 @@ void Assignment::assign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
 	}
 	TF[j][k] = g;
     //DIAGNOSTIC
-    //if(k==0)printf(" j  %d   k  %d   g  %d\n",j,k,g);
-    //if(g%1000==0)printf(" assign  g %d to j %d k%d\n", g,j,k);
+
 	// Assign g
 	Plist pl = GL[g];//pair list, tf's for this g
 	pair p = pair(j,k);
@@ -528,10 +527,10 @@ void Assignment::assign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
 	GL[g].push_back(p);
     M[g].nobs_done++;
     M[g].nobs_remain--;
-    if(M[g].t_priority==9800){
+    if(M[g].SF){
         int q=pp.spectrom[k];
         P[j].SF_in_petal[q]+=1;}
-    if(M[g].t_priority==9900){
+    if(M[g].SS){
         int q=pp.spectrom[k];
         P[j].SS_in_petal[q]+=1;}
 	unused[j][pp.spectrom[k]]--;
@@ -546,10 +545,10 @@ void Assignment::unassign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) 
 	if (a!=-1) erase(a,GL[g]);
     M[g].nobs_done--;
     M[g].nobs_remain++;
-    if(M[g].t_priority==9800){
+    if(M[g].SF){
         int p=pp.spectrom[k];
         P[j].SF_in_petal[p]-=1;}
-    if(M[g].t_priority==9900){
+    if(M[g].SS){
         int p=pp.spectrom[k];
         P[j].SS_in_petal[p]-=1;}
 

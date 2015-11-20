@@ -59,10 +59,10 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
                     if (sq(Xg,X)<sq(F.PatrolRad)){
                         P[j].av_gals[k].push_back(gals[g]);
                         int q=pp.spectrom[k];
-                        if(M[gals[g]].t_priority==9900){
+                        if(M[gals[g]].SS){
                             P[j].SS_av_gal[q].push_back(gals[g]);
                         }
-                        if(M[gals[g]].t_priority==9800){
+                        if(M[gals[g]].SF){
                             P[j].SF_av_gal[q].push_back(gals[g]);
                         }
 
@@ -93,13 +93,12 @@ void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) {
 // Assignment sub-functions -------------------------------------------------------------------------------------
 // Allow (j,k) to observe g ?
 inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const MTL& M, const PP& pp, const Feat& F, const Assignment& A) {
-    if(M[g].t_priority==9900 || M[g].t_priority==9800) return false;
+    if(M[g].SS || M[g].SF) return false;
     if (P[j].ipass==4 && M[g].lastpass==0){
         return false;} // Only ELG at the last pass
 	if (F.Collision) for (int i=0; i<pp.N[k].size(); i++) if (g==A.TF[j][pp.N[k][i]]) return false; // Avoid 2 neighboring fibers observe the same galaxy (can happen only when Collision=true)
     if (A.find_collision(j,k,g,pp,M,P,F)!=-1){
         return false;} // No collision
-    //if (M[g].t_priority==9800 && )
 	return true;
     //doesn't require that jk is unassigned//doesn't require that g isn't assigned already on this plate
     //use is_assigned_jg for this
@@ -279,7 +278,7 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, Plates&P, const PP& pp, con
         int g = A.TF[jpast][k];
 
         // Don't update SS or SF
-        if (g!=-1&&M[g].t_priority!=9800 && M[g].t_priority!=9900){
+        if (g!=-1&&!M[g].SS && !M[g].SF){
             //initially nobs_remain==goal
             
             if(M[g].once_obs==0){//first obs  otherwise should be ok
@@ -428,12 +427,12 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
                     List av_gals = P[j].av_gals[k];
                     for (int gg=0; gg<av_gals.size()&&done==0; gg++) {
                         int g = av_gals[gg];//galaxy at (j,k)
-                        if(M[g].t_priority==9900&&A.is_assigned_jg(j,g,M,F)==-1&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
+                        if(M[g].SS&&A.is_assigned_jg(j,g,M,F)==-1&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                             A.assign(j,k,g,M,P,pp);
                             done=1;
                         }
                         else{
-                            if(M[g].t_priority==9800&&A.is_assigned_jg(j,g,M,F)==-1&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
+                            if(M[g].SF&&A.is_assigned_jg(j,g,M,F)==-1&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                                 A.assign(j,k,g,M,P,pp);
                                 done=1;
                             }
