@@ -2,9 +2,13 @@ galFile /project/projectdirs/desi/mocks/preliminary/objects_ss_sf0.rdzipn
 tileFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/footprint/desi-tiles.par
 fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
 outDir /project/projectdirs/desi/users/rncahn/fa_output/short/
-PrintAscii true
-PrintFits true
+PrintAscii false
+PrintFits false
 MTLfile /project/projectdirs/desi/mocks/preliminary/small_MTLfile.txt
+Targfile /project/projectdirs/desi/mocks/preliminary/Targfile.txt
+SStarsfile /project/projectdirs/desi/mocks/preliminary/SStarsfile.txt
+SkyFfile /project/projectdirs/desi/mocks/preliminary/SkyFfile.txt
+
 diagnose true
 
 kind QSOLy-a QSOTracer LRG ELG FakeQSO FakeLRG SS SF

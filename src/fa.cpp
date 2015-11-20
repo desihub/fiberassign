@@ -24,6 +24,8 @@ int main(int argc, char **argv) {
 	Time t, time; // t for global, time for local
 	init_time(t);
 	Feat F;
+    MTL M;
+   
 
 	// Read parameters file //
 	F.readInputFile(argv[1]);
@@ -41,7 +43,33 @@ int main(int argc, char **argv) {
     count=count_galaxies(G);
     printf(" Number of galaxies by type, QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF\n");
     for(int i=0;i<8;i++){printf (" type %d number  %d  \n",i, count[i]);}
-    MTL M=read_MTLfile(F);
+    //read the three input files
+    MTL Targ=read_MTLfile(F.Targfile,F);
+    MTL SStars=read_MTLfile(F.SStarsfile,F);
+    MTL SkyF=read_MTLfile(F.SkyFfile,F);
+    //combine the three input files
+
+    M=Targ;
+    M.reserve(Targ.size()+SStars.size()+SkyF.size());
+    printf(" M size %d \n",M.size());
+    M.insert(M.end(),SStars.begin(),SStars.end());
+    printf(" M size %d \n",M.size());
+    M.insert(M.end(),SkyF.begin(),SkyF.end());
+    printf(" M size %d \n",M.size());
+    //need to fix priority list, combining those from targets, standard stars, skyfibers
+    std::vector<int> p_list=Targ.priority_list;
+    p_list.insert(p_list.end(),SStars.priority_list.begin(),SStars.priority_list.end());
+    p_list.insert(p_list.end(),SkyF.priority_list.begin(),SkyF.priority_list.end());
+    std::sort(p_list.begin(),p_list.end());
+
+    M.priority_list.clear();
+    M.priority_list.push_back(p_list[0]);
+    for(int i=1;i<p_list.size();++i){
+        if(p_list[i]!=p_list[i-1]){
+            M.priority_list.push_back(p_list[i]);
+            }
+    }
+
     assign_priority_class(M);
     
     //establish priority classes

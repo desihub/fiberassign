@@ -107,9 +107,9 @@ inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const MTL& M
 
 // makes sure we don't exceed limit on SS and SF
 inline bool ok_for_limit_SS_SF(int g, int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F){
-    bool is_SF=M[g].t_priority==9800;
+    bool is_SF=M[g].SF;
     bool too_many_SF=P[j].SF_in_petal[pp.spectrom[k]]>F.MaxSF-1;
-    bool is_SS=M[g].t_priority==9900;
+    bool is_SS=M[g].SS;
     bool too_many_SS=P[j].SS_in_petal[pp.spectrom[k]]>F.MaxSS-1;
     return !(is_SF&&too_many_SF)&&!(is_SS&&too_many_SS);
 }
@@ -236,25 +236,16 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
 	int j0 = A.next_plate;
 	int n = next==-1 ? F.Nplate-j0 : next; // Not F.Nplate-A.next_plate+1
 	List plates = sublist(j0,n,A.order);
-	//List randPlates = F.Randomize ? random_permut(plates) : plates;
-        //simplify  11/7/15
 	n=F.Nplate;
 	printf( " n = %d \n",n);
-	for (int jj=0; jj<n; jj++) {
+	for (int j=0; j<n; j++) {
         int countme=0;
         int best=-1;
-		//int j = randPlates[jj];
-        int j=jj;
-		//List randFibers = random_permut(F.Nfiber);
 		for (int k=0; k<F.Nfiber; k++) { // Fiber
-			//int k = randFibers[kk];
             best=assign_fiber(j,k,M,P,pp,F,A);
             if (best!=-1)countme++;
-            
 		}
-        //printf("j = %d  count = %d \n",j,countme);
 	}
-	//str next_str = next==-1 ? "all left" : f(n);
 	if (next!=1) print_time(t,"# ... took :");
 }
 
@@ -265,8 +256,6 @@ void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int 
 	int n = next==-1 ? F.Nplate-j0 : next;
 	int na_start = A.na(F,j0,n);//number of assigned tile-fibers from j0 to jo+n-1
 	List plates = sublist(j0,n,A.order);
-	//List randPlates = F.Randomize ? random_permut(plates) : plates;
-	//for (int jj=0; jj<n; jj++) for (int k=0; k<F.Nfiber; k++) improve_fiber(j0,n,randPlates[jj],k,M,P,pp,F,A);
     for (int jj=0; jj<n; jj++) for (int k=0; k<F.Nfiber; k++) improve_fiber(j0,n,plates[jj],k,M,P,pp,F,A);
 	int na_end = A.na(F,j0,n);
 	printf("  %s more assignments (%.3f %% improvement)\n",f(na_end-na_start).c_str(),percent(na_end-na_start,na_start));//how many new assigned tf's

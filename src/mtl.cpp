@@ -30,6 +30,7 @@ int main(int argc, char **argv) {
 	printFile(argv[1]);
 	// Read galaxies
 	Gals G;
+    MTL Targ, SStars, SkyF;
     if(F.Ascii){
         G=read_galaxies_ascii(F);}
     else{
@@ -45,7 +46,8 @@ int main(int argc, char **argv) {
     // make MTL
     MTL Min=make_MTL(G,F);
     write_MTLfile(Min,F);
-
+    make_MTL_SS_SF(G,Targ,SStars,SkyF,F);
+    write_MTL_SS_SFfile(Targ,SStars,SkyF,F);
 	return(0);
   
 }

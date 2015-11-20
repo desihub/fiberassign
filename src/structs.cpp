@@ -184,6 +184,40 @@ MTL make_MTL(const Gals& G, const Feat& F){
     }
     return M;
 }
+void make_MTL_SS_SF(const Gals& G, MTL& Targ, MTL& SStars, MTL& SkyF, const Feat& F){
+    // Targ contains only galaxy targets
+    // SStars contains only standard stars
+    // SkyF contains only sky fibers
+    int Nobj=G.size();
+    struct target targ;
+    int special_count(0);
+    int stop_count(0);
+    for(int i=0;i<Nobj;++i){
+        targ.id=i;
+        targ.nhat[0]=G[i].nhat[0];
+        targ.nhat[1]=G[i].nhat[1];
+        targ.nhat[2]=G[i].nhat[2];
+        targ.ra=G[i].ra;
+        targ.dec=G[i].dec;
+        targ.t_priority=F.prio[G[i].id];
+        targ.nobs_remain=F.goal[G[i].id];//needs to be goal prior to knowledge!!
+        targ.nobs_done=0;//need to keep track of this, too
+        targ.once_obs=0;//changed only in update_plan
+        targ.SS=F.SS[G[i].id];
+        targ.SF=F.SF[G[i].id];
+        
+        targ.lastpass=F.lastpass[G[i].id];
+        //make list of priorities
+        if(targ.dec<F.MaxDec && targ.dec>F.MinDec &&targ.ra<F.MaxRa && targ.ra>F.MinRa){
+        
+            if(targ.SS)SStars.push_back(targ);
+            else if(targ.SF)SkyF.push_back(targ);
+            else Targ.push_back(targ);
+        }
+    }
+    
+}
+
 
 
 void write_MTLfile(const MTL& M,const Feat& F){
@@ -197,9 +231,38 @@ void write_MTLfile(const MTL& M,const Feat& F){
     fclose(FA);
 }
 
+void write_MTL_SS_SFfile(const MTL& Targ, const MTL& SStars,const MTL& SkyF,const Feat& F){
+    FILE * FA;
+    str sa=F.Targfile;
+    FA = fopen(sa.c_str(),"w");
+    //str source="MartinsMocks";
+    for (int i=0;i<Targ.size();++i){
+        fprintf(FA," %d Target %f  %f  %d  %d %d \n",Targ[i].id,Targ[i].ra,Targ[i].dec,Targ[i].nobs_remain,Targ[i].t_priority,Targ[i].lastpass);
+    }
+    fclose(FA);
+    FILE * FB;
+    str sb=F.SStarsfile;
+    FB = fopen(sb.c_str(),"w");
+    //str source="MartinsMocks";
+    for (int i=0;i<SStars.size();++i){
+        fprintf(FB," %d SStars %f  %f  %d  %d %d \n",SStars[i].id,SStars[i].ra,SStars[i].dec,SStars[i].nobs_remain,SStars[i].t_priority,SStars[i].lastpass);
+    }
+    fclose(FB);
+    FILE * FC;
+    str sc=F.SkyFfile;
+    FC = fopen(sc.c_str(),"w");
+    //str source="MartinsMocks";
+    for (int i=0;i<SkyF.size();++i){
+        fprintf(FC," %d SkyF %f  %f  %d  %d %d \n",SkyF[i].id,SkyF[i].ra,SkyF[i].dec,SkyF[i].nobs_remain,SkyF[i].t_priority,SkyF[i].lastpass);
+    }
+    fclose(FB);
+}
 
-MTL read_MTLfile(const Feat& F){
-    str s=F.MTLfile;
+
+
+MTL read_MTLfile(str readfile, const Feat& F){
+    //str s=F.MTLfile;
+    str s=readfile;
     MTL M;
     std::string buf;
     const char* fname;

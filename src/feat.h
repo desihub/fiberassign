@@ -25,6 +25,9 @@ class Feat { // F for features
 	str fibFile;
 	str outDir;
     str MTLfile;
+    str Targfile;
+    str SStarsfile;
+    str SkyFfile;
 	bool PrintFits;
     bool PrintAscii;
     bool diagnose;

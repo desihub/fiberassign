@@ -32,7 +32,6 @@ void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F);
 void simple_assign(MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A, int next=-1);
 
 // More fine first assignment plan, 
-void new_assign_fibers(MTL& M, const Plates& P, const PP& pp, const Feat& F, Assignment& A, int next=-1);
 
 void improve(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int next=-1);
 
