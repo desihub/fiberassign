@@ -234,9 +234,9 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
 	Time t;
 	if (next!=1) init_time(t,"# Begin simple assignment :");
 	int j0 = A.next_plate;
-	int n = next==-1 ? F.Nplate-j0 : next; // Not F.Nplate-A.next_plate+1
+	int n = next==-1 ? F.ONplate-j0 : next; // Not F.Nplate-A.next_plate+1
 	List plates = sublist(j0,n,A.order);
-	n=F.Nplate;
+	n=F.ONplate;
 	printf( " n = %d \n",n);
 	for (int j=0; j<n; j++) {
         int countme=0;
