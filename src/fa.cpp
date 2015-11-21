@@ -122,6 +122,18 @@ int main(int argc, char **argv) {
     // assumes maximum number of observations needed for QSOs, LRGs
 
     simple_assign(M,P,pp,F,A);
+    
+    //check to see if there are tiles with no galaxies
+    for (int j=0;j<F.Nplate ;++j){
+        P[j].is_used=false;
+        bool not_done=true;
+        for(int k=0;k<F.Nfiber && not_done;++k){
+            if(A.TF[j][k]!=-1){
+                P[j].is_used=true;
+                not_done=false;
+            }
+        }
+    }
 
     if(F.diagnose)diagnostic(M,G,F,A);
     
