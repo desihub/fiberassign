@@ -127,14 +127,14 @@ int main(int argc, char **argv) {
     
     //check to see if there are tiles with no galaxies
     for (int j=0;j<F.ONplate ;++j){
-        int newj=0;
+       
         OP[j].is_used=false;
         bool not_done=true;
-        for(int k=0;k<F.Nfiber && not_done;++k){
+        for(int k=0;k<F.qNfiber && not_done;++k){
             if(A.TF[j][k]!=-1){
                 OP[j].is_used=true;
-                P[newj]=OP[j];
-                newj++;
+                P.push_back(OP[j]);
+                
                 not_done=false;
             }
         }
