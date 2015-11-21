@@ -140,6 +140,7 @@ int main(int argc, char **argv) {
         }
     }
     F.Nplate=P.size();
+    printf(" Plates after screening %d \",F.Nplate);
     if(F.diagnose)diagnostic(M,G,F,A);
     
 
