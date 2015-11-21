@@ -89,9 +89,10 @@ int main(int argc, char **argv) {
 	F.Npetal = max(pp.spectrom)+1;
     F.Nfbp = (int) (F.Nfiber/F.Npetal);// fibers per petal = 500
 	pp.get_neighbors(F); pp.compute_fibsofsp(F);
-	Plates P = read_plate_centers(F);
-    F.Nplate=P.size();
-	printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
+	Plates OP = read_plate_centers(F);
+    Plates P;
+    F.ONplate=OP.size();
+	printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.ONplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
    
 	// Computes geometries of cb and fh: pieces of positioner - used to determine possible collisions
 	F.cb = create_cb(); // cb=central body
@@ -105,36 +106,39 @@ int main(int argc, char **argv) {
 	print_time(time,"# ... took :");//T.stats();
 	
 	// For plates/fibers, collect available galaxies; done in parallel  P[plate j].av_gal[k]=[g1,g2,..]
-	collect_galaxies_for_all(M,T,P,pp,F);
+	collect_galaxies_for_all(M,T,OP,pp,F);
     
 	// For each galaxy, computes available tilefibers  G[i].av_tfs = [(j1,k1),(j2,k2),..]
-	collect_available_tilefibers(M,P,F);
+	collect_available_tilefibers(M,OP,F);
 
 	//results_on_inputs("doc/figs/",G,P,F,true);
 
 	//// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
 	Assignment A(M,F);
-    printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.Nplate, F.Ngal, F.Nfiber);
+    printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.ONplate, F.Ngal, F.Nfiber);
 	print_time(t,"# Start assignment at : ");
 
 	// Make a plan ----------------------------------------------------
     // Plans whole survey without sky fibers, standard stars
     // assumes maximum number of observations needed for QSOs, LRGs
 
-    simple_assign(M,P,pp,F,A);
+    simple_assign(M,OP,pp,F,A);
     
     //check to see if there are tiles with no galaxies
     for (int j=0;j<F.Nplate ;++j){
-        P[j].is_used=false;
+        int newj=0;
+        OP[j].is_used=false;
         bool not_done=true;
         for(int k=0;k<F.Nfiber && not_done;++k){
             if(A.TF[j][k]!=-1){
-                P[j].is_used=true;
+                OP[j].is_used=true;
+                P[newj]=OP[j];
+                newj++;
                 not_done=false;
             }
         }
     }
-
+    F.Nplate=P.size();
     if(F.diagnose)diagnostic(M,G,F,A);
     
 

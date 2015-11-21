@@ -88,6 +88,7 @@ class Feat { // F for features
 
 	// Set after reading other input files
 	int Nplate;
+    int ONplate;
 	int Ngal;
 	int Nfiber;
 	int Npetal;
