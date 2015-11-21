@@ -130,7 +130,7 @@ int main(int argc, char **argv) {
        
         OP[j].is_used=false;
         bool not_done=true;
-        for(int k=0;k<F.qNfiber && not_done;++k){
+        for(int k=0;k<F.Nfiber && not_done;++k){
             if(A.TF[j][k]!=-1){
                 OP[j].is_used=true;
                 P.push_back(OP[j]);
