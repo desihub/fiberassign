@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
     simple_assign(M,OP,pp,F,A);
     
     //check to see if there are tiles with no galaxies
-    for (int j=0;j<F.Nplate ;++j){
+    for (int j=0;j<F.ONplate ;++j){
         int newj=0;
         OP[j].is_used=false;
         bool not_done=true;
