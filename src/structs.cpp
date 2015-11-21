@@ -480,8 +480,9 @@ Plates read_plate_centers(const Feat& F) {
             Q.SF_in_petal.resize(F.Npetal);
             for (int i=0;i<F.Npetal;++i){Q.SS_in_petal[i]=0;}
             for (int i=0;i<F.Npetal;++i){Q.SF_in_petal[i]=0;}
-            if(dec<F.MaxDec && dec>F.MinDec &&ra<F.MaxRa && ra>F.MinRa){
-                try {P.push_back(Q);} catch(std::exception& e) {myexception(e);}
+            //if(dec<F.MaxDec && dec>F.MinDec &&ra<F.MaxRa && ra>F.MinRa){
+                try {P.push_back(Q);} catch(std::exception& e) {myexception(e);
+                //}
             }
 		}
 	}
