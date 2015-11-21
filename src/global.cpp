@@ -26,7 +26,7 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
     //provides list of galaxies available to fiber k on tile j: P[j].av_gals[k]
 	Time t;
 	init_time(t,"# Begin collecting available galaxies");
-	List permut = random_permut(F.Nplate);
+	List permut = random_permut(F.ONplate);
 	double rad = F.PlateRadius*M_PI/180.;
 	//int jj;
 	//omp_set_num_threads(24);
@@ -35,7 +35,7 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
 		// Collects for each plate
         // start at jj=0 not id
         #pragma omp for
-        for (int jj=0; jj<F.Nplate; jj++){
+        for (int jj=0; jj<F.ONplate; jj++){
 			int j = permut[jj];
 			plate p = P[j];
 			// Takes neighboring galaxies that fall on this plate
@@ -79,7 +79,7 @@ void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) {
     //M[i].av_tfs is list of tile-fiber pairs available to galaxy i
 	Time t;
 	init_time(t,"# Begin computing available tilefibers");
-	for(int j=0; j<F.Nplate; j++) {
+	for(int j=0; j<F.ONplate; j++) {
 		for(int k=0; k<F.Nfiber; k++) {
 			for(int m=0; m<P[j].av_gals[k].size(); m++) {
 				int i = P[j].av_gals[k][m];  //i is the id of the mth galaxy available to tile j and fiber k

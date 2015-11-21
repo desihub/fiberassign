@@ -105,8 +105,8 @@ int main(int argc, char **argv) {
 	htmTree<struct target> T(M,MinTreeSize);
 	print_time(time,"# ... took :");//T.stats();
 	
-	// For plates/fibers, collect available galaxies; done in parallel  P[plate j].av_gal[k]=[g1,g2,..]
-	collect_galaxies_for_all(M,T,OP,pp,F);
+	// For plates/fibers, collect available galaxies; done in parallel
+    collect_galaxies_for_all(M,T,OP,pp,F);
     
 	// For each galaxy, computes available tilefibers  G[i].av_tfs = [(j1,k1),(j2,k2),..]
 	collect_available_tilefibers(M,OP,F);
