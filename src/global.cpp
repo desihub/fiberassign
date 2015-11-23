@@ -93,7 +93,7 @@ void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) {
 // Assignment sub-functions -------------------------------------------------------------------------------------
 // Allow (j,k) to observe g ?
 inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const MTL& M, const PP& pp, const Feat& F, const Assignment& A) {
-    //if(M[g].SS || M[g].SF) return false;
+    
     if (P[j].ipass==4 && M[g].lastpass==0){
         return false;} // Only ELG at the last pass
 	if (F.Collision) for (int i=0; i<pp.N[k].size(); i++) if (g==A.TF[j][pp.N[k][i]]) return false; // Avoid 2 neighboring fibers observe the same galaxy (can happen only when Collision=true)
@@ -253,10 +253,10 @@ void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int 
 	Time t;
 	if (next!=1) init_time(t,"# Begin improve :");
 	int j0 = A.next_plate;
-	int n = next==-1 ? F.Nplate-j0 : next;
+	int n = next==-1 ? F.Nplate-j0 : next;//used plates only
 	int na_start = A.na(F,j0,n);//number of assigned tile-fibers from j0 to jo+n-1
-	List plates = sublist(j0,n,A.order);
-    for (int jj=0; jj<n; jj++) for (int k=0; k<F.Nfiber; k++) improve_fiber(j0,n,plates[jj],k,M,P,pp,F,A);
+	List plates = sublist(j0,n,A.order);//not needed?
+    for (int jj=0; jj<n; jj++) for (int k=0; k<F.Nfiber; k++) improve_fiber(j0,n,A.order[jj],k,M,P,pp,F,A);
 	int na_end = A.na(F,j0,n);
 	printf("  %s more assignments (%.3f %% improvement)\n",f(na_end-na_start).c_str(),percent(na_end-na_start,na_start));//how many new assigned tf's
 	if (next!=1) print_time(t,"# ... took :");
@@ -374,24 +374,26 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 }
 
 
-void assign_unused(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
-    // Tries to assign remaining fibers in tile j
+void assign_unused(int js, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
+    // Tries to assign remaining fibers in tile jth tile with galaxies on it
     //even taking objects observed later
+    //js is a tile with galaxies on it
 	for (int k=0; k<F.Nfiber; k++) {
-		if (!A.is_assigned_tf(j,k)) {
+        
+		if (!A.is_assigned_tf(js,k)) {
 			int best = -1; int mbest = -1; int pbest = 100000; int jpb = -1; int kpb = -1;
-			List av_gals = P[j].av_gals[k];//all available galaxies for this fiber k
+			List av_gals = P[js].av_gals[k];//all available galaxies for this fiber k
 			for (int gg=0; gg<av_gals.size(); gg++) {
 				int g = av_gals[gg];//available galaxies
 				int m = M[g].nobs_remain;
 				int prio = M[g].t_priority;
 				if (prio<pbest || (prio==pbest && m>mbest)) {
-                    if (A.is_assigned_jg(j,g,M,F)==-1 && ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
+                    if (A.is_assigned_jg(js,g,M,F)==-1 && ok_assign_g_to_jk(g,js,k,P,M,pp,F,A)&&ok_for_limit_SS_SF(g,js,k,M,P,pp,F)){
                         //not assigned this plate or within excluded interval
 						for (int i=0; i<A.GL[g].size(); i++) { //GL[g].size() is number of tf that could observe g
 							int jp = A.GL[g][i].f;
 							int kp = A.GL[g][i].s;
-							if (j<jp && jpb<jp) {//take best opportunity
+							if (js<jp && jpb<jp) {//take best opportunity
 								best = g;
 								pbest = prio;
 								mbest = m;
@@ -404,7 +406,7 @@ void assign_unused(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assign
 			}
 			if (best!=-1) {
                 A.unassign(jpb,kpb,best,M,P,pp);
-				A.assign(j,k,best,M,P,pp);
+				A.assign(js,k,best,M,P,pp);
                 
 			}
 		}
@@ -453,17 +455,19 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 	int n = next==-1 ? F.Nplate-A.next_plate : next; //from next_plate on
 	List plates = sublist(j0,n,A.order);
 	//List randPlates = F.Randomize ? random_permut(plates) : plates;
-	List randPlates = random_permut(plates);
+	//List randPlates = random_permut(plates);
 	int red(0);
-	Table Done = initTable(F.Nplate,F.Nfiber);//consider every plate and every fiber
+	Table Done = initTable(F.Nplate,F.Nfiber);//consider every used plate and every fiber
 	for (int jj=0; jj<n; jj++) {
-		int j = randPlates[jj];
+		//int j = randPlates[jj];
+        int j=jj;
 		List randFiber = random_permut(F.Nfiber);
 		for (int kk=0; kk<F.Nfiber; kk++) {
 			int k = randFiber[kk];
 			if (Done[j][k]==0) {
-				int g = A.TF[j][k];//current assignment of (j,k)  only look if assigned
-				if (g!=-1) {
+                int js=A.suborder[j];
+				int g = A.TF[js][k];//current assignment of (js,k)  only look if assigned
+                if (g!=-1&&!M[g].SS&&!M[g].SF) {
 					int jpb = -1; int kpb = -1; int unusedb = A.unused[j][pp.spectrom[k]];//unused for j, spectrom[k]
 					Plist av_tfs = M[g].av_tfs;  //all possible tile fibers for this galaxy
 					for (int i=0; i<av_tfs.size(); i++) {
@@ -471,15 +475,15 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 						int kp = av_tfs[i].s;
 						int unused = A.unused[jp][pp.spectrom[kp]];//unused for jp, spectrom[kp]
 						if (j0<=jp && jp<j0+n && !A.is_assigned_tf(jp,kp) && Done[jp][kp]==0 && ok_assign_g_to_jk(g,jp,kp,P,M,pp,F,A) && A.is_assigned_jg(jp,g,M,F)==-1 && 0<unused) {
-							if (unusedb<unused) { // Takes the most usused petal
+							if (unusedb<unused) { // Takes the most unused petal
                                 jpb = jp;
 								kpb = kp;
 								unusedb = unused;
 							}
 						}
 					}
-					if (jpb!=-1&&ok_for_limit_SS_SF(g,jpb,kpb,M,P,pp,F)) {
-						A.unassign(j,k,g,M,P,pp);
+					if (jpb!=-1) {
+						A.unassign(js,k,g,M,P,pp);
 						A.assign(jpb,kpb,g,M,P,pp);
 						Done[j][k] = 1;
 						Done[jpb][kpb] = 1;

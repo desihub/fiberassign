@@ -129,16 +129,18 @@ int main(int argc, char **argv) {
     //need to keep mapping of old tile list to new tile list
     for (int j=0;j<F.ONplate ;++j){
        
-        OP[j].is_used=false;
+        //OP[j].is_used=false;
         bool not_done=true;
         for(int k=0;k<F.Nfiber && not_done;++k){
             if(A.TF[j][k]!=-1){
-                OP[j].is_used=true;
+                //OP[j].is_used=true;
                 P.push_back(OP[j]);
                 A.suborder.push_back(j);
+                //A.inverse_order.push_back(j);
                 printf("j  %d   k  %d  value %d\n",j,k,A.TF[j][k]);
                 not_done=false;
             }
+            //else A.inverse_order.push_back(-1);
         }
     }
     F.Nplate=P.size();
@@ -161,9 +163,10 @@ int main(int argc, char **argv) {
 	print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false);
     //try assigning SF and SS before real time assignment
     for (int j=0;j<F.Nplate;++j){
-        A.next_plate=j;
-        assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF for each tile
-        assign_unused(j,M,P,pp,F,A);
+        int js=A.suborder[j];
+        A.next_plate=js;
+        assign_sf_ss(js,M,P,pp,F,A); // Assign SS and SF for each tile
+        assign_unused(js,M,P,pp,F,A);
     }
     
     init_time_at(time,"# Begin real time assignment",t);
@@ -174,9 +177,9 @@ int main(int argc, char **argv) {
         printf(" before pass = %d  at %d  tiles\n",i,F.pass_intervals[i]);
         //display_results("doc/figs/",G,P,pp,F,A,true);
         //execute this phase (i) of survey
-        A.next_plate=F.pass_intervals[i];
-        for (int jj=F.pass_intervals[i]; jj<F.Nplate&&jj<F.Nplate; jj++) {
-            int j = A.next_plate;
+        A.next_plate=A.suborder[F.pass_intervals[i]];
+        for (int jj=F.pass_intervals[i]; jj<F.ONplate; jj++) {
+            int j = A.suborder[A.next_plate];
             printf("  next plate is %d \n",j);
             assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF
             assign_unused(j,M,P,pp,F,A);
@@ -184,11 +187,11 @@ int main(int argc, char **argv) {
         }
         //update target information for this interval
         A.next_plate=F.pass_intervals[i];
-        for (int jj=F.pass_intervals[i]; jj<F.pass_intervals[i+1]&&jj<F.Nplate; jj++) {
-            int j = A.next_plate;
+        for (int jj=F.pass_intervals[i]; jj<F.pass_intervals[i+1]&&jj<F.ONplate; jj++) {
+            int j = A.suborder[A.next_plate];
 
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
-            if (0<=j-F.Analysis) update_plan_from_one_obs(G,M,P,pp,F,A,F.Nplate-1); else printf("\n");
+            if (0<=A.next_plate-F.Analysis) update_plan_from_one_obs(G,M,P,pp,F,A,F.Nplate-1); else printf("\n");
             A.next_plate++;
         }
         /*
