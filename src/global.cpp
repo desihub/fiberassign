@@ -93,7 +93,7 @@ void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) {
 // Assignment sub-functions -------------------------------------------------------------------------------------
 // Allow (j,k) to observe g ?
 inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const MTL& M, const PP& pp, const Feat& F, const Assignment& A) {
-    if(M[g].SS || M[g].SF) return false;
+    //if(M[g].SS || M[g].SF) return false;
     if (P[j].ipass==4 && M[g].lastpass==0){
         return false;} // Only ELG at the last pass
 	if (F.Collision) for (int i=0; i<pp.N[k].size(); i++) if (g==A.TF[j][pp.N[k][i]]) return false; // Avoid 2 neighboring fibers observe the same galaxy (can happen only when Collision=true)
@@ -321,10 +321,9 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, Plates&P, const PP& pp, con
 
 void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
     // do standard stars,going through priority classes from least to most
-    // skip SS and SF, so start at size -3
+    // SS and SF not in priority list so start at size -1
     //can get all available SS,SF on plate from P[j].av_gals_plate restricting to plate p
-    for(int c=M.priority_list.size()-3;P[j].SS_in_petal[p]<F.MaxSS && c>-1;--c ){//try to do this for lowest priority
-        // aside from SS and SF, so size()-3
+    for(int c=M.priority_list.size()-1;P[j].SS_in_petal[p]<F.MaxSS && c>-1;--c ){//try to do this for lowest priority
         std::vector <int> gals=P[j].SS_av_gal[p]; //standard stars on this petal
         for(int gg=0;gg<gals.size() ;++gg){
             int g=gals[gg];//a standard star
@@ -428,12 +427,12 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
                     List av_gals = P[j].av_gals[k];
                     for (int gg=0; gg<av_gals.size()&&done==0; gg++) {
                         int g = av_gals[gg];//galaxy at (j,k)
-                        if(M[g].SS&&A.is_assigned_jg(j,g,M,F)==-1&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
+                        if(M[g].SS&&A.is_assigned_jg(j,g,M,F)==-1&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)&&ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)){
                             A.assign(j,k,g,M,P,pp);
                             done=1;
                         }
                         else{
-                            if(M[g].SF&&A.is_assigned_jg(j,g,M,F)==-1&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
+                            if(M[g].SF&&A.is_assigned_jg(j,g,M,F)==-1&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)&&ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)){
                                 A.assign(j,k,g,M,P,pp);
                                 done=1;
                             }

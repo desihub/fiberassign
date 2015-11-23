@@ -738,7 +738,7 @@ int Assignment::find_collision(int j, int k, int g, const PP& pp, const MTL& M, 
 	bool bol = (col==-1) ? F.Collision : false;
 	if (bol) return -1;
 	dpair G1 = projection(g,j,M,P);
-	for (int i=0; i<pp.N[k].size(); i++) {
+	for (int i=0; i<pp.N[k].size(); i++) {// i numbers the fibers neighboring fiber k
 		int kn = pp.N[k][i];
 		int gn = TF[j][kn];
 		if (gn!=-1) {
@@ -749,7 +749,7 @@ int Assignment::find_collision(int j, int k, int g, const PP& pp, const MTL& M, 
 	}
 	return -1;
 }
-
+//probably not used
 bool Assignment::find_collision(int j, int k, int kn, int g, int gn, const PP& pp, const MTL& M, const Plates& P, const Feat& F, int col) const {//check two fibers
 	bool bol = (col==-1) ? F.Collision : false;
 	if (bol) return false;

@@ -109,6 +109,7 @@ class Assignment {
 	//// ----- Members
 	Table TF; // TF for tile fiber, #tiles X #fibers TF[j][k] is the chosen galaxy, -1 if not yet chosen
 	List order; // Order of tiles we want to assign, only 1-n in simple increasing order for the moment
+    List suborder; // Order of tiles actually containing targets
 	int next_plate; // Next plate in the order
 
 	// Redundant information (optimizes computation time)

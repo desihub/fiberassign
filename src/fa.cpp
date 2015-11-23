@@ -126,6 +126,7 @@ int main(int argc, char **argv) {
     simple_assign(M,OP,pp,F,A);
     
     //check to see if there are tiles with no galaxies
+    //need to keep mapping of old tile list to new tile list
     for (int j=0;j<F.ONplate ;++j){
        
         OP[j].is_used=false;
@@ -134,6 +135,7 @@ int main(int argc, char **argv) {
             if(A.TF[j][k]!=-1){
                 OP[j].is_used=true;
                 P.push_back(OP[j]);
+                A.suborder.push_back(j);
                 printf("j  %d   k  %d  value %d\n",j,k,A.TF[j][k]);
                 not_done=false;
             }
