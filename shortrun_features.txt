@@ -5,9 +5,9 @@ outDir /project/projectdirs/desi/users/rncahn/fa_output/short/
 PrintAscii false
 PrintFits false
 MTLfile /project/projectdirs/desi/mocks/preliminary/small_MTLfile.txt
-Targfile /project/projectdirs/desi/mocks/preliminary/Targfile.txt
-SStarsfile /project/projectdirs/desi/mocks/preliminary/SStarsfile.txt
-SkyFfile /project/projectdirs/desi/mocks/preliminary/SkyFfile.txt
+Targfile /project/projectdirs/desi/mocks/preliminary/smallTargfile.txt
+SStarsfile /project/projectdirs/desi/mocks/preliminary/smallSStarsfile.txt
+SkyFfile /project/projectdirs/desi/mocks/preliminary/smallSkyFfile.txt
 
 diagnose true
 
