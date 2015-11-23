@@ -176,6 +176,7 @@ int main(int argc, char **argv) {
         A.next_plate=F.pass_intervals[i];
         for (int jj=F.pass_intervals[i]; jj<F.Nplate&&jj<F.Nplate; jj++) {
             int j = A.next_plate;
+            printf("  next plate is %d \n",j);
             assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF
             assign_unused(j,M,P,pp,F,A);
             A.next_plate++;
