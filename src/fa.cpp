@@ -115,8 +115,7 @@ int main(int argc, char **argv) {
 	//results_on_inputs("doc/figs/",G,P,F,true);
 
 	//// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
-    printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.ONplate, F.Ngal, F.Nfiber);
-	Assignment A(M,F);
+    Assignment A(M,F);
     printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.ONplate, F.Ngal, F.Nfiber);
 	print_time(t,"# Start assignment at : ");
 
@@ -135,7 +134,7 @@ int main(int argc, char **argv) {
             if(A.TF[j][k]!=-1){
                 OP[j].is_used=true;
                 P.push_back(OP[j]);
-                
+                printf("j  %d   k  %d \n",j,k);
                 not_done=false;
             }
         }
