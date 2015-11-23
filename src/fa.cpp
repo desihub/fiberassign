@@ -134,7 +134,7 @@ int main(int argc, char **argv) {
             if(A.TF[j][k]!=-1){
                 OP[j].is_used=true;
                 P.push_back(OP[j]);
-                printf("j  %d   k  %d \n",j,k);
+                printf("j  %d   k  %d  value %d\n",j,k,A.TF[j][k]);
                 not_done=false;
             }
         }
