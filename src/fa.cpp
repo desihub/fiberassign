@@ -44,9 +44,9 @@ int main(int argc, char **argv) {
     printf(" Number of galaxies by type, QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF\n");
     for(int i=0;i<8;i++){printf (" type %d number  %d  \n",i, count[i]);}
     //read the three input files
-    MTL Targ=read_MTLfile(F.Targfile,F);
-    MTL SStars=read_MTLfile(F.SStarsfile,F);
-    MTL SkyF=read_MTLfile(F.SkyFfile,F);
+    MTL Targ=read_MTLfile(F.Targfile,F,0,0);
+    MTL SStars=read_MTLfile(F.SStarsfile,F,1,0);
+    MTL SkyF=read_MTLfile(F.SkyFfile,F,0,1);
     //combine the three input files
 
     M=Targ;
@@ -58,27 +58,27 @@ int main(int argc, char **argv) {
     printf(" M size %d \n",M.size());
     //need to fix priority list, combining those from targets, standard stars, skyfibers
     std::vector<int> p_list=Targ.priority_list;
-    p_list.insert(p_list.end(),SStars.priority_list.begin(),SStars.priority_list.end());
-    p_list.insert(p_list.end(),SkyF.priority_list.begin(),SkyF.priority_list.end());
-    std::sort(p_list.begin(),p_list.end());
+    //p_list.insert(p_list.end(),SStars.priority_list.begin(),SStars.priority_list.end());
+    //p_list.insert(p_list.end(),SkyF.priority_list.begin(),SkyF.priority_list.end());
+    //std::sort(p_list.begin(),p_list.end());
 
-    M.priority_list.clear();
-    M.priority_list.push_back(p_list[0]);
-    for(int i=1;i<p_list.size();++i){
-        if(p_list[i]!=p_list[i-1]){
-            M.priority_list.push_back(p_list[i]);
-            }
-    }
+    //M.priority_list.clear();
+    //M.priority_list.push_back(p_list[0]);
+    //for(int i=1;i<p_list.size();++i){
+       // if(p_list[i]!=p_list[i-1]){
+         //   M.priority_list.push_back(p_list[i]);
+           // }
+    //}
 
     assign_priority_class(M);
     
     //establish priority classes
-    std::vector <int> count_class(M.priority_list.size(),0);
+    std::vector <int> count_class(Targ.priority_list.size(),0);
     printf("Number in each priority class.  The last two are SF and SS.\n");
-    for(int i;i<M.size();++i){
-        count_class[M[i].priority_class]+=1;
+    for(int i;i<Targ.size();++i){
+        count_class[Targ[i].priority_class]+=1;
     }
-    for(int i;i<M.priority_list.size();++i){
+    for(int i;i<Targ.priority_list.size();++i){
         printf("  class  %d  number  %d\n",i,count_class[i]);
     }
     
@@ -91,6 +91,7 @@ int main(int argc, char **argv) {
 	pp.get_neighbors(F); pp.compute_fibsofsp(F);
 	Plates OP = read_plate_centers(F);
     Plates P;
+    printf(" future plates %d\n",P.size());
     F.ONplate=OP.size();
 	printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.ONplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
    

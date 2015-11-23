@@ -260,7 +260,7 @@ void write_MTL_SS_SFfile(const MTL& Targ, const MTL& SStars,const MTL& SkyF,cons
 
 
 
-MTL read_MTLfile(str readfile, const Feat& F){
+MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
     //str s=F.MTLfile;
     str s=readfile;
     MTL M;
@@ -306,6 +306,8 @@ MTL read_MTLfile(str readfile, const Feat& F){
             Q.dec = dec;
             Q.id = id;
             Q.lastpass = lastpass;
+            Q.SS=SS;
+            Q.SF=SF;
             
             if (id%F.moduloGal == 0) {
                 try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
