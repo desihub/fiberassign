@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
     M.insert(M.end(),SkyF.begin(),SkyF.end());
     printf(" M size %d \n",M.size());
     //need to fix priority list, combining those from targets, standard stars, skyfibers
-    std::vector<int> p_list=Targ.priority_list;
+    //std::vector<int> p_list=Targ.priority_list;
     //p_list.insert(p_list.end(),SStars.priority_list.begin(),SStars.priority_list.end());
     //p_list.insert(p_list.end(),SkyF.priority_list.begin(),SkyF.priority_list.end());
     //std::sort(p_list.begin(),p_list.end());
@@ -115,8 +115,9 @@ int main(int argc, char **argv) {
 	//results_on_inputs("doc/figs/",G,P,F,true);
 
 	//// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
-    Assignment A(M,F);
     printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.ONplate, F.Ngal, F.Nfiber);
+    Assignment A(M,F);
+    
 	print_time(t,"# Start assignment at : ");
 
 	// Make a plan ----------------------------------------------------
