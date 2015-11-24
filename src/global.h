@@ -39,8 +39,8 @@ void improve_from_kind(MTL& M, const Plates&P, const PP& pp, const Feat& F, Assi
 
 void update_plan_from_one_obs(const Gals& G, MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int end);
 
-void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int next=-1);
-
+//void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int next=-1);
+void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A);
 void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A);
 
 void assign_unused(int j, MTL& M,  Plates& P, const PP& pp, const Feat& F, Assignment& A);
