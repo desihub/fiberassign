@@ -457,15 +457,16 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 	//List randPlates = F.Randomize ? random_permut(plates) : plates;
 	//List randPlates = random_permut(plates);
 	int red(0);
-	Table Done = initTable(F.Nplate,F.Nfiber);//consider every used plate and every fiber
-	for (int j=j0; j<n; j++) {
+	Table Done = initTable(F.Nplate,F.Nfiber);//consider every occupied plate and every fiber
+	for (int j=j0; j<F.Nplate; j++) {
 		//int j = randPlates[jj];
-        
+        int js=A.suborder[j];
+        printf(" j = %d  js = %d \n",j,js);
 		List randFiber = random_permut(F.Nfiber);
 		for (int kk=0; kk<F.Nfiber; kk++) {
 			int k = randFiber[kk];
 			if (Done[j][k]==0) {
-                int js=A.suborder[j];
+
 				int g = A.TF[js][k];//current assignment of (js,k)  only look if assigned
                 if (g!=-1&&!M[g].SS&&!M[g].SF) {
 					int jpb = -1; int kpb = -1; int unusedb = A.unused[j][pp.spectrom[k]];//unused for j, spectrom[k]
