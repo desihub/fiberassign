@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
            // }
     //}
 
-    assign_priority_class(M);
+    assign_priority_class(Targ);
     
     //establish priority classes
     std::vector <int> count_class(Targ.priority_list.size(),0);
