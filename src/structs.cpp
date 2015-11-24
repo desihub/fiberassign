@@ -497,11 +497,14 @@ Assignment::Assignment(const MTL& M, const Feat& F) {
     
 	TF = initTable(F.ONplate,F.Nfiber,-1);//galaxy assigned to tile-fiber TF[j][k]
 	GL = initPtable(F.Ngal,0); //tile-fiber pair for galaxy  GL[g]
-	
+    printf("test 1\n");
 	for (int i=0; i<F.ONplate; i++) order[i] = i;
+    printf("test 2\n");
 	next_plate = 0;
 	kinds = initCube(F.ONplate,F.Npetal,F.Categories);
+    printf("test 3\n");
 	unused = initTable(F.ONplate,F.Npetal,F.Nfbp);//initialized to number of fibers on a petal
+    printf("test 4\n");
     }
 
 Assignment::~Assignment() {}
