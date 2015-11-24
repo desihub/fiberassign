@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
 	F.readInputFile(argv[1]);
 	printFile(argv[1]);
 	// Read galaxies
-	Gals G;
+	Gals G, Secret;
     MTL Targ, SStars, SkyF;
     if(F.Ascii){
         G=read_galaxies_ascii(F);}
@@ -44,8 +44,8 @@ int main(int argc, char **argv) {
     printf(" Number of galaxies by type, QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF\n");
     for(int i=0;i<8;i++){printf (" type %d number  %d  \n",i, count[i]);}
     // make MTL
-    MTL Min=make_MTL(G,F);
-    write_MTLfile(Min,F);
+    make_MTL(G,F,Secret,Targ);
+    write_MTLfile(Secret,Targ,F);
     make_MTL_SS_SF(G,Targ,SStars,SkyF,F);
     write_MTL_SS_SFfile(Targ,SStars,SkyF,F);
 	return(0);

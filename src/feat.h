@@ -28,6 +28,7 @@ class Feat { // F for features
     str Targfile;
     str SStarsfile;
     str SkyFfile;
+    str Secretfile;
 	bool PrintFits;
     bool PrintAscii;
     bool diagnose;

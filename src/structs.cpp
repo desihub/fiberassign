@@ -154,8 +154,8 @@ str galaxy::kind(const Feat& F) const {
 
 // targets -----------------------------------------------------------------------
 // derived from G, but includes priority and nobs_remain
-MTL make_MTL(const Gals& G, const Feat& F){
-    MTL M;
+void make_MTL(const Gals& G, const Feat& F, Gals& Secret, MTL& M){
+    
     int Nobj=G.size();
     struct target targ;
     int special_count(0);
@@ -177,12 +177,13 @@ MTL make_MTL(const Gals& G, const Feat& F){
         targ.lastpass=F.lastpass[G[i].id];
         //make list of priorities
         if(targ.dec<F.MaxDec && targ.dec>F.MinDec &&targ.ra<F.MaxRa && targ.ra>F.MinRa){
-        M.push_back(targ);
+            M.push_back(targ);
+            Secret.push_back(G[i]);
         }
         int g=M.size()-1;
 
     }
-    return M;
+    
 }
 void make_MTL_SS_SF(const Gals& G, MTL& Targ, MTL& SStars, MTL& SkyF, const Feat& F){
     // Targ contains only galaxy targets
@@ -220,15 +221,21 @@ void make_MTL_SS_SF(const Gals& G, MTL& Targ, MTL& SStars, MTL& SkyF, const Feat
 
 
 
-void write_MTLfile(const MTL& M,const Feat& F){
+void write_MTLfile(const Gals& Secret, const MTL& M,const Feat& F){
     FILE * FA;
-    str s=F.MTLfile;
-    FA = fopen(s.c_str(),"w");
-    str source="MartinsMocks";
+    str sa=F.MTLfile;
+    FA = fopen(sa.c_str(),"w");
+
     for (int i=0;i<M.size();++i){
-        fprintf(FA," %d MartinsMocks %f  %f  %d  %d %d \n",M[i].id,M[i].ra,M[i].dec,M[i].nobs_remain,M[i].t_priority,M[i].lastpass);
+        fprintf(FA," %d MartinsMocks %f  %f  %d  %d %d \n",i,M[i].ra,M[i].dec,M[i].nobs_remain,M[i].t_priority,M[i].lastpass);
     }
     fclose(FA);
+    FILE * FB;
+    str sb=F.Secretfile;
+    FB = fopen(sb.c_str(),"w");
+    for (int i=0;i<M.size();++i){
+        fprintf(FA," %d Secret %f  %f  %d  %d %d \n",      i,M[i].ra,M[i].dec,M[i].nobs_remain,M[i].t_priority,M[i].lastpass,Secret[i].id);
+    }
 }
 
 void write_MTL_SS_SFfile(const MTL& Targ, const MTL& SStars,const MTL& SkyF,const Feat& F){
@@ -739,6 +746,7 @@ bool collision(dpair O1, dpair G1, dpair O2, dpair G2, const Feat& F) {
 }
 
 // (On plate p) finds if there is a collision if fiber k would observe galaxy g (collision with neighbor)
+//  j is in list that runs to F.ONplate since it is used in TF[j][k]
 int Assignment::find_collision(int j, int k, int g, const PP& pp, const MTL& M, const Plates& P, const Feat& F, int col) const {//check all neighboring fibers
 	bool bol = (col==-1) ? F.Collision : false;
 	if (bol) return -1;
