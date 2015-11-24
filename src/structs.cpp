@@ -262,7 +262,7 @@ void write_MTL_SS_SFfile(const MTL& Targ, const MTL& SStars,const MTL& SkyF,cons
     fclose(FC);
     FILE * FD;
     str sd=F.Secretfile;
-    FB = fopen(sd.c_str(),"w");
+    FD = fopen(sd.d_str(),"w");
     for (int i=0;i<Secret.size();++i){
         fprintf(FD," %d Secret %f  %f  %d  %d %d \n",      i,Secret[i].ra,Secret[i].dec,Secret[i].id);
     }
