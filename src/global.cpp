@@ -450,10 +450,10 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
 //void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int next) {
 void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A) {
 	Time t;
-	if (next!=1) init_time(t,"# Begin redistribute TF :");
+	init_time(t,"# Begin redistribute TF :");
 	int j0 = A.next_plate;//among only plates with galaxies
 	//int n = next==-1 ? F.Nplate-A.next_plate : next; //from next_plate on
-    int n = F.Nplate-A.next_plate 
+    int n = F.Nplate-A.next_plate;
 	//List randPlates = F.Randomize ? random_permut(plates) : plates;
 	//List randPlates = random_permut(plates);
 	int red(0);
@@ -494,7 +494,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 		}
 	}
 	printf("  %s redistributions of tile-fibers \n",f(red).c_str());
-	if (next!=1) print_time(t,"# ... took :");
+	print_time(t,"# ... took :");
 }
 
 // Other useful functions --------------------------------------------------------------------------------------------
