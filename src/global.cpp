@@ -475,7 +475,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 						int jp = av_tfs[i].f;
 						int kp = av_tfs[i].s;
 						int unused = A.unused[jp][pp.spectrom[kp]];//unused for jp, spectrom[kp]
-						if (j0<=jp && jp<j0+n && !A.is_assigned_tf(jp,kp) && Done[jp][kp]==0 && ok_assign_g_to_jk(g,jp,kp,P,M,pp,F,A) && A.is_assigned_jg(jp,g,M,F)==-1 && 0<unused) {
+						if (A.suborder(j0)<=jp && jp<F.Nplate && !A.is_assigned_tf(jp,kp) && Done[jp][kp]==0 && ok_assign_g_to_jk(g,jp,kp,P,M,pp,F,A) && A.is_assigned_jg(jp,g,M,F)==-1 && 0<unused) {
 							if (unusedb<unused) { // Takes the most unused petal
                                 jpb = jp;
 								kpb = kp;
