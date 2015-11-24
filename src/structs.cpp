@@ -234,8 +234,9 @@ void write_MTLfile(const Gals& Secret, const MTL& M,const Feat& F){
     str sb=F.Secretfile;
     FB = fopen(sb.c_str(),"w");
     for (int i=0;i<M.size();++i){
-        fprintf(FA," %d Secret %f  %f  %d  %d %d \n",      i,M[i].ra,M[i].dec,M[i].nobs_remain,M[i].t_priority,M[i].lastpass,Secret[i].id);
+        fprintf(FB," %d Secret %f  %f  %d  %d %d \n",      i,M[i].ra,M[i].dec,M[i].nobs_remain,M[i].t_priority,M[i].lastpass,Secret[i].id);
     }
+    fclose(FB);
 }
 
 void write_MTL_SS_SFfile(const MTL& Targ, const MTL& SStars,const MTL& SkyF,const Feat& F){
