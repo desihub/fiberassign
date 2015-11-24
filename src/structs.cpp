@@ -154,7 +154,7 @@ str galaxy::kind(const Feat& F) const {
 
 // targets -----------------------------------------------------------------------
 // derived from G, but includes priority and nobs_remain
-void make_MTL(const Gals& G, const Feat& F, Gals& Secret, MTL& M){
+void make_MTL(const Gals& G, const Feat& F,  MTL& M){
     
     int Nobj=G.size();
     struct target targ;
@@ -178,14 +178,14 @@ void make_MTL(const Gals& G, const Feat& F, Gals& Secret, MTL& M){
         //make list of priorities
         if(targ.dec<F.MaxDec && targ.dec>F.MinDec &&targ.ra<F.MaxRa && targ.ra>F.MinRa){
             M.push_back(targ);
-            Secret.push_back(G[i]);
+
         }
         int g=M.size()-1;
 
     }
     
 }
-void make_MTL_SS_SF(const Gals& G, MTL& Targ, MTL& SStars, MTL& SkyF, const Feat& F){
+void make_MTL_SS_SF(const Gals& G, MTL& Targ, MTL& SStars, MTL& SkyF, Gals& Secret, const Feat& F){
     // Targ contains only galaxy targets
     // SStars contains only standard stars
     // SkyF contains only sky fibers
@@ -213,7 +213,10 @@ void make_MTL_SS_SF(const Gals& G, MTL& Targ, MTL& SStars, MTL& SkyF, const Feat
         
             if(targ.SS)SStars.push_back(targ);
             else if(targ.SF)SkyF.push_back(targ);
-            else Targ.push_back(targ);
+            else {
+                Targ.push_back(targ);
+                Secret.push_back(G[i]);
+            }
         }
     }
     
@@ -230,16 +233,9 @@ void write_MTLfile(const Gals& Secret, const MTL& M,const Feat& F){
         fprintf(FA," %d MartinsMocks %f  %f  %d  %d %d \n",i,M[i].ra,M[i].dec,M[i].nobs_remain,M[i].t_priority,M[i].lastpass);
     }
     fclose(FA);
-    FILE * FB;
-    str sb=F.Secretfile;
-    FB = fopen(sb.c_str(),"w");
-    for (int i=0;i<M.size();++i){
-        fprintf(FB," %d Secret %f  %f  %d  %d %d \n",      i,M[i].ra,M[i].dec,M[i].nobs_remain,M[i].t_priority,M[i].lastpass,Secret[i].id);
-    }
-    fclose(FB);
 }
 
-void write_MTL_SS_SFfile(const MTL& Targ, const MTL& SStars,const MTL& SkyF,const Feat& F){
+void write_MTL_SS_SFfile(const MTL& Targ, const MTL& SStars,const MTL& SkyF,const Gals& Secret, const Feat& F){
     FILE * FA;
     str sa=F.Targfile;
     FA = fopen(sa.c_str(),"w");
@@ -263,7 +259,15 @@ void write_MTL_SS_SFfile(const MTL& Targ, const MTL& SStars,const MTL& SkyF,cons
     for (int i=0;i<SkyF.size();++i){
         fprintf(FC," %d SkyF %f  %f  %d  %d %d \n",SkyF[i].id,SkyF[i].ra,SkyF[i].dec,SkyF[i].nobs_remain,SkyF[i].t_priority,SkyF[i].lastpass);
     }
-    fclose(FB);
+    fclose(FC);
+    FILE * FD;
+    str sd=F.Secretfile;
+    FB = fopen(sd.c_str(),"w");
+    for (int i=0;i<Secret.size();++i){
+        fprintf(FD," %d Secret %f  %f  %d  %d %d \n",      i,Secret[i].ra,Secret[i].dec,Secret[i].id);
+    }
+    fclose(FD);
+
 }
 
 

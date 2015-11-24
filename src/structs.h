@@ -65,11 +65,11 @@ class MTL : public std::vector<struct target> {
 };
 
 void make_MTL(const Gals& G, const Feat& F, Gals& Secret, MTL& M);
-void make_MTL_SS_SF(const Gals& G, MTL& Targ, MTL& SStars, MTL& SkyF, const Feat& F);
+void make_MTL_SS_SF(const Gals& G, MTL& Targ, MTL& SStars, MTL& SkyF,Gals& Secret, const Feat& F);
 MTL read_MTLfile(str filename, const Feat& F, int SS, int SF);
 
 void write_MTLfile(const Gals& Secret, const MTL& M, const Feat& F);
-void write_MTL_SS_SFfile(const MTL& Targ, const MTL& SStarts, const MTL& SkyF, const Feat& F);
+void write_MTL_SS_SFfile(const MTL& Targ, const MTL& SStarts, const MTL& SkyF, const Gals& Secret, const Feat& F);
 void assign_priority_class(MTL & M);
 // petal--------------------------------------------------
 
