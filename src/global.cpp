@@ -265,7 +265,7 @@ void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int 
 // If there are galaxies discovered as fake for example, they won't be observed several times in the plan
 // haas access to G,not just M, because it needs to know the truth
 
-void update_plan_from_one_obs(const Gals& G, MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int end) {
+void update_plan_from_one_obs(const Gals& Secret, MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int end) {
 	int cnt_deassign(0);
     int cnt_replace(0);
 	int j0 = A.next_plate;
@@ -284,11 +284,11 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, Plates&P, const PP& pp, con
             
             if(M[g].once_obs==0){//first obs  otherwise should be ok
                 M[g].once_obs=1;//now observed
-                int original_g=M[g].id;
-                if(M[g].nobs_done>F.goalpost[G[original_g].id]){
+                //int original_g=M[g].id;
+                if(M[g].nobs_done>F.goalpost[Secret[g].id]){
                     to_update.push_back(g);}
                 else{
-                    M[g].nobs_remain=F.goalpost[G[original_g].id]-M[g].nobs_done;
+                    M[g].nobs_remain=F.goalpost[Secret[g].id]-M[g].nobs_done;
                 }
             }
         }
@@ -298,7 +298,7 @@ void update_plan_from_one_obs(const Gals& G, MTL& M, Plates&P, const PP& pp, con
 		int g = to_update[gg];
 		Plist tfs = A.chosen_tfs(g,F,j0+1,n-1); // Begin at j0+1, can't change assignment at j0 (already observed)
         int original_g=M[g].id;
-		while (tfs.size()!=0&&M[g].nobs_done>F.goalpost[G[original_g].id]) {
+		while (tfs.size()!=0&&M[g].nobs_done>F.goalpost[Secret[g].id]) {
 			int jp = tfs[0].f; int kp = tfs[0].s;
 			A.unassign(jp,kp,g,M,P,pp);
             cnt_deassign++;
@@ -562,7 +562,7 @@ void results_on_inputs(str outdir, const MTL& M, const Plates& P, const Feat& F,
 	print_mult_Dtable_latex("dn/dz",outdir+"redshifts.dat",hist3,intervalz);
 }
 
-void diagnostic(const MTL& M, const Gals& G, Feat& F, const Assignment& A){
+void diagnostic(const MTL& M, const Gals& Secret, Feat& F, const Assignment& A){
     // diagnostic  allow us to peek at the actual id of each galaxy
     printf("Diagnostics using types:QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF\n");
     std::vector<int> count_by_kind(F.Categories,0);
@@ -571,7 +571,7 @@ void diagnostic(const MTL& M, const Gals& G, Feat& F, const Assignment& A){
             int g=A.TF[j][k];
             if(g!=-1){
             int original_g=M[g].id;
-            count_by_kind[G[original_g].id]+=1;
+            count_by_kind[Secret[g].id]+=1;
             }
         }
     }
@@ -582,8 +582,8 @@ void diagnostic(const MTL& M, const Gals& G, Feat& F, const Assignment& A){
     Table obsrv = initTable(F.Categories,MaxObs+1);
     
     for (int g=0; g<M.size(); g++) {
-        int original_g=M[g].id;
-        int c= G[original_g].id;
+        
+        int c= Secret[g].id;
         int m = min(M[g].nobs_done,MaxObs);
         obsrv[c][m]++; //
     }
@@ -601,7 +601,7 @@ void diagnostic(const MTL& M, const Gals& G, Feat& F, const Assignment& A){
        //end diagnostic
 }
 
-void display_results(str outdir, const Gals& G,const MTL& M, const Plates& P, const PP& pp, Feat& F, const Assignment& A, bool latex) {
+void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& P, const PP& pp, Feat& F, const Assignment& A, bool latex) {
 	printf("# Results :\n");
 
 	// 1 Raw numbers of galaxies by id and number of remaining observations
@@ -609,8 +609,8 @@ void display_results(str outdir, const Gals& G,const MTL& M, const Plates& P, co
 	Table obsrv = initTable(F.Categories,MaxObs+1);
 
 	for (int g=0; g<M.size(); g++) {
-        int original_g=M[g].id;
-		int c= G[original_g].id;
+        
+		int c= Secret[g].id;
 		int m = min(M[g].nobs_done,MaxObs);
         obsrv[c][m]++; //
 	}

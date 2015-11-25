@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
     Secret=read_Secretfile(F);
     F.Ngal= Secret.size();
     
-	printf("# Read %s galaxies from %s \n",f(F.Ngal).c_str(),F.Secretfileile.c_str());
+	printf("# Read %s galaxies from %s \n",f(F.Ngal).c_str(),F.Secretfile.c_str());
     std::vector<int> count;
     count=count_galaxies(Secret);
     printf(" Number of galaxies by type, QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF\n");
@@ -152,7 +152,7 @@ int main(int argc, char **argv) {
     }
     F.Nplate=P.size();
     printf(" Plates after screening %d \n",F.Nplate);
-    if(F.diagnose)diagnostic(M,G,F,A);
+    //if(F.diagnose)diagnostic(M,G,F,A);
     
 
     print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
@@ -197,7 +197,7 @@ int main(int argc, char **argv) {
             //int j = A.suborder[A.next_plate];
             int js=A.suborder[jj];
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
-            if (0<=js-F.Analysis) update_plan_from_one_obs(G,M,P,pp,F,A,F.Nplate-1); else printf("\n");
+            if (0<=js-F.Analysis) update_plan_from_one_obs(Secret,M,P,pp,F,A,F.Nplate-1); else printf("\n");
             //A.next_plate++;
         }
         /*
@@ -208,7 +208,7 @@ int main(int argc, char **argv) {
         redistribute_tf(M,P,pp,F,A);
         }
          */
-        if(F.diagnose)diagnostic(M,G,F,A);
+        if(F.diagnose)diagnostic(M,Secret,F,A);
     }
     
 	// Results -------------------------------------------------------
@@ -221,7 +221,7 @@ int main(int argc, char **argv) {
     }
     
 
-	display_results("doc/figs/",G,M,P,pp,F,A,true);
+	display_results("doc/figs/",Secret,M,P,pp,F,A,true);
 	if (F.Verif) A.verif(P,M,pp,F); // Verification that the assignment is sane
 
 
