@@ -31,6 +31,7 @@ int main(int argc, char **argv) {
 	F.readInputFile(argv[1]);
 	printFile(argv[1]);
 	// Read galaxies
+    /*
 	Gals G;
     if(F.Ascii){
         G=read_galaxies_ascii(F);}
@@ -38,9 +39,14 @@ int main(int argc, char **argv) {
         G = read_galaxies(F);
     }
 	F.Ngal = G.size();
-	printf("# Read %s galaxies from %s \n",f(F.Ngal).c_str(),F.galFile.c_str());
+     */
+    Gals Secret;
+    Secret=read_Secretfile(F);
+    F.Ngal= Secret.size();
+    
+	printf("# Read %s galaxies from %s \n",f(F.Ngal).c_str(),F.Secretfileile.c_str());
     std::vector<int> count;
-    count=count_galaxies(G);
+    count=count_galaxies(Secret);
     printf(" Number of galaxies by type, QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF\n");
     for(int i=0;i<8;i++){printf (" type %d number  %d  \n",i, count[i]);}
     //read the three input files

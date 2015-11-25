@@ -223,7 +223,7 @@ void make_MTL_SS_SF(const Gals& G, MTL& Targ, MTL& SStars, MTL& SkyF, Gals& Secr
 }
 
 
-
+/*
 void write_MTLfile(const Gals& Secret, const MTL& M,const Feat& F){
     FILE * FA;
     str sa=F.MTLfile;
@@ -234,7 +234,7 @@ void write_MTLfile(const Gals& Secret, const MTL& M,const Feat& F){
     }
     fclose(FA);
 }
-
+*/
 void write_MTL_SS_SFfile(const MTL& Targ, const MTL& SStars,const MTL& SkyF,const Gals& Secret, const Feat& F){
     FILE * FA;
     str sa=F.Targfile;
@@ -270,6 +270,46 @@ void write_MTL_SS_SFfile(const MTL& Targ, const MTL& SStars,const MTL& SkyF,cons
 
 }
 
+Gals read_Secretfile(str readfile, const Feat&F){
+    str s=readfile;
+    Gals Secret;
+    std::string buf;
+    const char* fname;
+    fname= s.c_str();
+    std::ifstream fs(fname);
+    if (!fs) {  // An error occurred opening the file.
+        std::cerr << "Unable to open MTLfile " << fname << std::endl;
+        myexit(1);
+    }
+    // Reserve some storage, since we expect we'll be reading quite a few
+    // lines from this file.
+    try {Secret.reserve(4000000);} catch (std::exception& e) {myexception(e);}
+    // Skip any leading lines beginning with #
+    getline(fs,buf);
+    while (fs.eof()==0 && buf[0]=='#') {
+        getline(fs,buf);
+    }
+    while (fs.eof()==0) {
+        double ra,dec;
+        int id, i;
+        str xname;
+        std::istringstream(buf)>> i>>xname>> ra >> dec>> id ;
+
+        if (ra<   0.) {ra += 360.;}
+        if (ra>=360.) {ra -= 360.;}
+        if (dec<=-90. || dec>=90.) {
+            std::cout << "DEC="<<dec<<" out of range reading "<<fname<<std::endl;
+            myexit(1);
+        }
+        struct galaxy Q;
+        Q.ra = ra;
+        Q.dec = dec;
+        Q.id = id;
+        Secret.push_back(Q);
+        getline(fs,buf);
+    }
+    return Secret;
+}
 
 
 MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
