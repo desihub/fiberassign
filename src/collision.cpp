@@ -252,7 +252,7 @@ Dlist angles(const dpair& A, const PosP& posp) {
 void repos_cb_fh(polygon& cb, polygon& fh, const dpair& O, const dpair& G, const PosP& posp) {
     //repositions positioner (central body, ferule holder)
 	dpair Gp = G-O;
-	if (sq(posp.r1+posp.r2)<sq(Gp)) printf("Error galaxy out of range of fiber in repos_fiber r1 %f r2 %f Gp.f %f  Gp.s %f\n",posp.r1,posp.r2,Gp.f,Gp.s );
+	if (sq(posp.r1+posp.r2)<sq(Gp)) printf("Error galaxy out of range of fiber in repos_fiber O.f %f O.s %f G.f %f  G.s %f\n",O.f,O.s,G.f,G.s );
 	Dlist anglesT = angles(Gp,posp);
 	dpair theta_ = dpair(anglesT[0],anglesT[1]);
 	dpair phi_ = dpair(anglesT[2],anglesT[3]);
