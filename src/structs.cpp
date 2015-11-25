@@ -842,6 +842,9 @@ float Assignment::colrate(const PP& pp, const MTL& M, const Plates& P, const Fea
 
 dpair projection(int g, int j, const MTL& M, const Plates& P) {//x and y coordinates for galaxy observed on plate j
 	struct onplate op = change_coords(M[g],P[j]);
+    if (op.pos[0]*op.pos[0]+op.pos[1]*op.pos[1]>500.*500.){
+        printf("outside positioner range  g  %d  j  %d  x %f  y %f\n",g,j,op.pos[0],op.pos[1]);
+    }
 	return dpair(op.pos[0],op.pos[1]);
 }
 
