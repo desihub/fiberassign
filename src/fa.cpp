@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
 	F.Ngal = G.size();
      */
     Gals Secret;
-    Secret=read_Secretfile(F);
+    Secret=read_Secretfile(F.Secretfile,F);
     F.Ngal= Secret.size();
     
 	printf("# Read %s galaxies from %s \n",f(F.Ngal).c_str(),F.Secretfile.c_str());
