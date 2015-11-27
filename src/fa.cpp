@@ -139,7 +139,7 @@ int main(int argc, char **argv) {
     //diagnostic
     for (int j=0;j<F.Nplate;++j){
         js=A.suborder[j];
-        printf(" j %d  js  %d\ ",j,js);
+        printf(" j %d  js  %d\n ",j,js);
         for (int k=0;k<F.Nfiber;++k){
             if(k%1==0){
                 int g=A.TF[js][k];
