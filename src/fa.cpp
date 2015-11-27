@@ -139,7 +139,7 @@ int main(int argc, char **argv) {
     //diagnostic
     for (int j=0;j<F.Nplate;++j){
         for (int k=0;k<F.Nfiber;++k){
-            if(k%500==0){
+            if(k%50==0){
                 int g=A.TF[A.suborder[j]][k];
                 if(g!=-1){
                     dpair test_projection=projection(g,j,M,P);
