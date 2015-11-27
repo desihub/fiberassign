@@ -136,23 +136,6 @@ int main(int argc, char **argv) {
     F.Nplate=P.size();
     printf(" Plates after screening %d \n",F.Nplate);
     //if(F.diagnose)diagnostic(M,G,F,A);
-    //diagnostic
-    for (int j=0;j<F.Nplate;++j){
-        int js=A.suborder[j];
-        printf(" j %d  js  %d\n ",j,js);
-        for (int k=0;k<F.Nfiber;++k){
-            if(k%500==0){
-                int g=A.TF[js][k];
-                if(g!=-1){
-                    dpair test_projection=projection(g,j,M,P);
-                    if (test_projection.f>1. || test_projection.s>1.){
-                        printf(" g %d  j %d test_projection.f  %f test_projection.s  %f\n",g,j,test_projection.f,test_projection.s);
-                    }
-                }
-            }
-        }
-    }
-    
 
     print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
     
