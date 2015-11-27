@@ -40,11 +40,14 @@ int main(int argc, char **argv) {
     }
 	F.Ngal = G.size();
      */
+    
+    // Secret contains the identity of each target: QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF
     Gals Secret;
+    printf("# Read %s galaxies from %s \n",f(F.Ngal).c_str(),F.Secretfile.c_str());
     Secret=read_Secretfile(F.Secretfile,F);
     F.Ngal= Secret.size();
     
-	printf("# Read %s galaxies from %s \n",f(F.Ngal).c_str(),F.Secretfile.c_str());
+	
     std::vector<int> count;
     count=count_galaxies(Secret);
     printf(" Number of galaxies by type, QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF\n");
@@ -56,25 +59,12 @@ int main(int argc, char **argv) {
     //combine the three input files
 
     M=Targ;
-    M.reserve(Targ.size()+SStars.size()+SkyF.size());
+   
     printf(" M size %d \n",M.size());
     M.insert(M.end(),SStars.begin(),SStars.end());
     printf(" M size %d \n",M.size());
     M.insert(M.end(),SkyF.begin(),SkyF.end());
     printf(" M size %d \n",M.size());
-    //need to fix priority list, combining those from targets, standard stars, skyfibers
-    //std::vector<int> p_list=Targ.priority_list;
-    //p_list.insert(p_list.end(),SStars.priority_list.begin(),SStars.priority_list.end());
-    //p_list.insert(p_list.end(),SkyF.priority_list.begin(),SkyF.priority_list.end());
-    //std::sort(p_list.begin(),p_list.end());
-
-    //M.priority_list.clear();
-    //M.priority_list.push_back(p_list[0]);
-    //for(int i=1;i<p_list.size();++i){
-       // if(p_list[i]!=p_list[i-1]){
-         //   M.priority_list.push_back(p_list[i]);
-           // }
-    //}
 
     assign_priority_class(Targ);
     
@@ -88,8 +78,7 @@ int main(int argc, char **argv) {
         printf("  class  %d  number  %d\n",i,count_class[i]);
     }
     
-    
-	PP pp;
+    PP pp;
 	pp.read_fiber_positions(F); 
 	F.Nfiber = pp.fp.size()/2; 
 	F.Npetal = max(pp.spectrom)+1;
@@ -135,19 +124,13 @@ int main(int argc, char **argv) {
     //check to see if there are tiles with no galaxies
     //need to keep mapping of old tile list to new tile list
     for (int j=0;j<F.ONplate ;++j){
-       
-        //OP[j].is_used=false;
         bool not_done=true;
         for(int k=0;k<F.Nfiber && not_done;++k){
             if(A.TF[j][k]!=-1){
-                //OP[j].is_used=true;
-                P.push_back(OP[j]);
+                 P.push_back(OP[j]);
                 A.suborder.push_back(j);
-                //A.inverse_order.push_back(j);
-                printf("j  %d   k  %d  value %d\n",j,k,A.TF[j][k]);
                 not_done=false;
             }
-            //else A.inverse_order.push_back(-1);
         }
     }
     F.Nplate=P.size();
@@ -160,7 +143,7 @@ int main(int argc, char **argv) {
 	// Smooth out distribution of free fibers, and increase the number of assignments
     
 	for (int i=0; i<1; i++) redistribute_tf(M,P,pp,F,A);// more iterations will improve performance slightly
-	for (int i=0; i<2; i++) {
+	for (int i=0; i<1; i++) {
         improve(M,P,pp,F,A);
 		redistribute_tf(M,P,pp,F,A);
 	}
