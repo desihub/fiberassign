@@ -138,9 +138,11 @@ int main(int argc, char **argv) {
     //if(F.diagnose)diagnostic(M,G,F,A);
     //diagnostic
     for (int j=0;j<F.Nplate;++j){
+        js=A.suborder[j];
+        printf(" j %d  js  %d\ ",j,js);
         for (int k=0;k<F.Nfiber;++k){
-            if(k%50==0){
-                int g=A.TF[A.suborder[j]][k];
+            if(k%1==0){
+                int g=A.TF[js][k];
                 if(g!=-1){
                     dpair test_projection=projection(g,j,M,P);
                     if (test_projection.f>500. || test_projection.s>500.){
