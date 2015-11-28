@@ -30,17 +30,7 @@ int main(int argc, char **argv) {
 	// Read parameters file //
 	F.readInputFile(argv[1]);
 	printFile(argv[1]);
-	// Read galaxies
-    /*
-	Gals G;
-    if(F.Ascii){
-        G=read_galaxies_ascii(F);}
-    else{
-        G = read_galaxies(F);
-    }
-	F.Ngal = G.size();
-     */
-    
+	// Read Secretfile
     // Secret contains the identity of each target: QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF
     Gals Secret;
     printf("# Read %s galaxies from %s \n",f(F.Ngal).c_str(),F.Secretfile.c_str());
@@ -84,11 +74,13 @@ int main(int argc, char **argv) {
 	F.Npetal = max(pp.spectrom)+1;
     F.Nfbp = (int) (F.Nfiber/F.Npetal);// fibers per petal = 500
 	pp.get_neighbors(F); pp.compute_fibsofsp(F);
-	Plates OP = read_plate_centers(F);
-    Plates P;
+    
+    //P is original list of plates
+	Plates P = read_plate_centers(F);
+
     printf(" future plates %d\n",P.size());
-    F.ONplate=OP.size();
-	printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.ONplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
+    F.Nplate=P.size();
+	printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
    
 	// Computes geometries of cb and fh: pieces of positioner - used to determine possible collisions
 	F.cb = create_cb(); // cb=central body
@@ -102,15 +94,15 @@ int main(int argc, char **argv) {
 	print_time(time,"# ... took :");//T.stats();
 	
 	// For plates/fibers, collect available galaxies; done in parallel
-    collect_galaxies_for_all(M,T,OP,pp,F);
+    collect_galaxies_for_all(M,T,P,pp,F);
     
 	// For each galaxy, computes available tilefibers  G[i].av_tfs = [(j1,k1),(j2,k2),..]
-	collect_available_tilefibers(M,OP,F);
+	collect_available_tilefibers(M,P,F);
 
 	//results_on_inputs("doc/figs/",G,P,F,true);
 
 	//// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
-    printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.ONplate, F.Ngal, F.Nfiber);
+    printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.Nplate, F.Ngal, F.Nfiber);
     Assignment A(M,F);
     
     
@@ -120,30 +112,23 @@ int main(int argc, char **argv) {
     // Plans whole survey without sky fibers, standard stars
     // assumes maximum number of observations needed for QSOs, LRGs
 
-    simple_assign(M,OP,pp,F,A);
+    simple_assign(M,P,pp,F,A);
     
     //check to see if there are tiles with no galaxies
     //need to keep mapping of old tile list to new tile list
-    for (int j=0;j<F.ONplate ;++j){
+    for (int j=0;j<F.Nplate ;++j){
         bool not_done=true;
         for(int k=0;k<F.Nfiber && not_done;++k){
             if(A.TF[j][k]!=-1){
-                 P.push_back(OP[j]);
+                
                 A.suborder.push_back(j);
                 not_done=false;
             }
         }
     }
-    F.Nplate=P.size();
+    F.NUsedplate=A.suborder.size();
     printf(" Plates after screening %d \n",F.Nplate);
-    printf(")make TF from OTF\n");
-    for (int j=0;j<F.Nplate;++oj){
-        oj=A.suborder[j];
-        for (int k=0; k<kF.Nplate;++k){
-            TF[j][k]=OTF[oj][k]
-        }
-    }
-
+ 
     //if(F.diagnose)diagnostic(M,G,F,A);
 
     print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
@@ -203,12 +188,12 @@ int main(int argc, char **argv) {
     }
     
 	// Results -------------------------------------------------------
-    if (F.PrintAscii) for (int j=0; j<F.Nplate; j++){
-        write_FAtile_ascii(j,F.outDir,M,P,pp,F,A);
+    if (F.PrintAscii) for (int j=0; j<F.NUsedplate; j++){
+        write_FAtile_ascii(A.suborder[j],F.outDir,M,P,pp,F,A);
     }
     
-    if (F.PrintFits) for (int j=0; j<F.Nplate; j++){
-        fa_write(j,F.outDir,M,P,pp,F,A); // Write output
+    if (F.PrintFits) for (int j=0; j<F.NUsedplate; j++){
+        fa_write(A.suborder[j],F.outDir,M,P,pp,F,A); // Write output
     }
     
 

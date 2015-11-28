@@ -547,38 +547,36 @@ Plates read_plate_centers(const Feat& F) {
 Assignment::Assignment(const MTL& M, const Feat& F) {
 
     
-	OTF = initTable(F.ONplate,F.Nfiber,-1);//galaxy assigned to tile-fiber OTF[oj][k]
     TF=initTable(F.Nplate,F.Nfiber,-1);//galaxy assigned to tile-fiber TF[j][k]
 	GL = initPtable(F.Ngal,0); //tile-fiber pair for galaxy  GL[g]
     printf("test 1\n");
-    order.resize(F.ONplate);
-    for (int i=0; i<F.ONplate; i++) order[i] = i;
+    order.resize(F.Nplate);
+    for (int i=0; i<F.Nplate; i++) order[i] = i;
     printf("test 2\n");
 	next_plate = 0;
-	kinds = initCube(F.ONplate,F.Npetal,F.Categories);
+	kinds = initCube(F.Nplate,F.Npetal,F.Categories);
     printf("test 3\n");
-	unused = initTable(F.ONplate,F.Npetal,F.Nfbp);//initialized to number of fibers on a petal
+	unused = initTable(F.Nplate,F.Npetal,F.Nfbp);//initialized to number of fibers on a petal
     printf("test 4\n");
     }
 
 Assignment::~Assignment() {}
 
-// Assign g with tile/fiber (oj,k), and check for duplicates
-void Assignment::assign(int oj, int k, int g, MTL& M, Plates& P, const PP& pp) {
-	// Assign (oj,k)
-	int q = TF[oj][k];
+// Assign g with tile/fiber (j,k), and check for duplicates
+void Assignment::assign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
+	// Assign (j,k)
+	int q = TF[j][k];
 	if (q != -1) {
 		printf("### !!! ### DUPLICATE (j,k) = (%d,%d) assigned with g = %d and %d ---> information on first g lost \n",j,k,q,g);
 		myexit(1);
 	}
-	OTF[oj][k] = g;
     //DIAGNOSTIC
 
 	// Assign g
 	Plist pl = GL[g];//pair list, tf's for this g
-	pair p = pair(oj,k);
+	pair p = pair(j,k);
 	for(int i=0;i<pl.size();i++){
-		if(pl[i].f==oj){
+		if(pl[i].f==j){
 
 		printf("### !!! ### DUPLICATE g = %d assigned with (j,k) = (%d,%d) and (%d,%d) ---> information on first (j,k) lost \n",g,pl[i].f,pl[i].s,j,k);
 		

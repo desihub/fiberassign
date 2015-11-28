@@ -26,7 +26,7 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
     //provides list of galaxies available to fiber k on tile j: P[j].av_gals[k]
 	Time t;
 	init_time(t,"# Begin collecting available galaxies");
-	List permut = random_permut(F.ONplate);
+	//List permut = random_permut(F.Nplate);
 	double rad = F.PlateRadius*M_PI/180.;
 	//int jj;
 	//omp_set_num_threads(24);
@@ -35,7 +35,7 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
 		// Collects for each plate
         // start at jj=0 not id
         #pragma omp for
-        for (int j=0; j<F.ONplate; j++){
+        for (int j=0; j<F.Nplate; j++){
 			plate p = P[j];
 			// Takes neighboring galaxies that fall on this plate
 			std::vector<int> nbr = T.near(M,p.nhat,rad);
@@ -78,7 +78,7 @@ void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) {
     //M[i].av_tfs is list of tile-fiber pairs available to galaxy i
 	Time t;
 	init_time(t,"# Begin computing available tilefibers");
-	for(int j=0; j<F.ONplate; j++) {
+	for(int j=0; j<F.Nplate; j++) {
 		for(int k=0; k<F.Nfiber; k++) {
 			for(int m=0; m<P[j].av_gals[k].size(); m++) {
 				int i = P[j].av_gals[k][m];  //i is the id of the mth galaxy available to tile j and fiber k
@@ -233,9 +233,9 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
 	Time t;
 	if (next!=1) init_time(t,"# Begin simple assignment :");
 	int j0 = A.next_plate;
-	int n = next==-1 ? F.ONplate-j0 : next; // Not F.Nplate-A.next_plate+1
+	int n = next==-1 ? F.Nplate-j0 : next; // Not F.Nplate-A.next_plate+1
 	List plates = sublist(j0,n,A.order);
-	n=F.ONplate;
+	n=F.Nplate;
 	printf( " n = %d \n",n);
 	for (int j=0; j<n; j++) {
         int countme=0;
@@ -469,15 +469,15 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 	init_time(t,"# Begin redistribute TF :");
 	int j0 = A.next_plate;//among only plates with galaxies
 	//int n = next==-1 ? F.Nplate-A.next_plate : next; //from next_plate on
-    int n = F.Nplate-A.next_plate;
+    int n = F.NUsedplate-A.next_plate;
 	int red(0);
-	Table Done = initTable(F.Nplate,F.Nfiber);//consider every occupied plate and every fiber
+	Table Done = initTable(F.NUsedplate,F.Nfiber);//consider every occupied plate and every fiber
 	for (int j=j0; j<F.Nplate; j++) {
         int js=A.suborder[j];
 		List randFiber = random_permut(F.Nfiber);
 		for (int kk=0; kk<F.Nfiber; kk++) {
 			int k = randFiber[kk];
-			if (Done[j][k]==0) {
+			if (Done[js][k]==0) {
 
 				int g = A.TF[js][k];//current assignment of (js,k)  only look if assigned
                 if (g!=-1&&!M[g].SS&&!M[g].SF) {
@@ -499,7 +499,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 						A.unassign(js,k,g,M,P,pp);
 						A.assign(jpb,kpb,g,M,P,pp);
 						Done[j][k] = 1;
-						//Done[jpb][kpb] = 1;  wrong index: jpb  runs to F.ONplate
+						Done[jpb][kpb] = 1;
 						red++; 
 					}
 				}
