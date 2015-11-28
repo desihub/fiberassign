@@ -475,7 +475,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
     int n = F.NUsedplate-A.next_plate;
 	int red(0);
 	Table Done = initTable(F.NUsedplate,F.Nfiber);//consider every occupied plate and every fiber
-	for (int j=j0; j<F.Nplate; j++) {
+	for (int j=j0; j<F.NUsedplate; j++) {
         int js=A.suborder[j];
 		List randFiber = random_permut(F.Nfiber);
 		for (int kk=0; kk<F.Nfiber; kk++) {
