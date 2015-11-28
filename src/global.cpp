@@ -453,7 +453,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
     printf("start redistribute n");
     for (int j=0;j<F.NUsedplate;++j){
         int js=A.suborder[j];
-        printf(" j %d  js  %d\n ",j,js);
+        //printf(" j %d  js  %d\n ",j,js);
         for (int k=0;k<F.Nfiber;++k){
             if(k%1==0){
                 int g=A.TF[js][k];
