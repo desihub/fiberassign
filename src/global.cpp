@@ -450,7 +450,7 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
 
 void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A) {
     //diagnostic
-    printf("start redistribute n");
+    printf("start redistribute \n");
     for (int j=0;j<F.NUsedplate;++j){
         int js=A.suborder[j];
         //printf(" j %d  js  %d\n ",j,js);
@@ -480,7 +480,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 		List randFiber = random_permut(F.Nfiber);
 		for (int kk=0; kk<F.Nfiber; kk++) {
 			int k = randFiber[kk];
-			if (Done[js][k]==0) {
+			if (Done[j][k]==0) {
 
 				int g = A.TF[js][k];//current assignment of (js,k)  only look if assigned
                 if (g!=-1&&!M[g].SS&&!M[g].SF) {
