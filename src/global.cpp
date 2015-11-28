@@ -246,6 +246,7 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
 		}
 	}
 	if (next!=1) print_time(t,"# ... took :");
+    printf(" countme %d \n",countme);
 }
 
 void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int next) {
