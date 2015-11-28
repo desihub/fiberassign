@@ -675,13 +675,11 @@ int Assignment::na(const Feat& F, int begin, int size) const {//unassigned fiber
 	return cnt;
 }
 
-Plist Assignment::chosen_tfs(int g, const Feat& F, int begin, int size0) const {//creates list of tile-fibers observing g
-	int size = (size0==-1) ? F.Nplate : size0;
+Plist Assignment::chosen_tfs(int g, const Feat& F, int begin) const {//creates list of tile-fibers observing g starting from plate begin
 	Plist chosen;
-	if (F.Nplate<begin+size) { printf("ERROR in chosen_tfs - size\n"); fl(); }
 	for (int i=0; i<GL[g].size(); i++) {
 		pair tf = GL[g][i];
-		if (begin<=tf.f && tf.f<begin+size) {
+		if (begin<=tf.f ) {
 			if (TF[tf.f][tf.s]!=g) { printf("ERROR in chosen_tfs\n"); fl(); }
 			chosen.push_back(tf);
 		}

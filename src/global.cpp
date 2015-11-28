@@ -185,7 +185,7 @@ inline void assign_galaxy(int g,  MTL& M, Plates& P, const PP& pp, const Feat& F
 
 // Takes an unassigned fiber and tries to assign it with the "improve" technique described in the doc
 // not used for SS or SF   
-inline int improve_fiber(int begin, int next, int j, int k, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A, int no_g=-1) {
+inline int improve_fiber(int begin, int j, int k, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A, int no_g=-1) {
 	if (!A.is_assigned_tf(j,k)) { // Unused tilefiber (j,k)
 		// tries to assign it in the conventional way to galaxy available to it
 		int g_try = assign_fiber(j,k,M,P,pp,F,A,no_g);
@@ -199,7 +199,7 @@ inline int improve_fiber(int begin, int next, int j, int k, MTL& M, Plates& P, c
 				if (g!=-1 && g!=no_g) {
 					if (ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)) {//this doesn't check to see that jk isnt assigned: it is
 						// Which tile-fibers have taken g ?
-						Plist tfs = A.chosen_tfs(g,F,begin,next);//all tile-fibers that observe g in tiles from begin to next
+						Plist tfs = A.chosen_tfs(g,F,begin);//all tile-fibers that observe g in tiles from begin to next
 						for (int p=0; p<tfs.size(); p++) {
 							int jp = tfs[p].f;
 							int kp = tfs[p].s; // (jp,kp) currently assigned to galaxy g
@@ -253,14 +253,18 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
 void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int next) {
 	Time t;
 	if (next!=1) init_time(t,"# Begin improve :");
-	int j0 = A.next_plate;
+	int j0 = A.next_plate;//among only those used
     printf("j0 %d\n",j0);
-	int n = next==-1 ? F.NUsedplate-j0 : next;//used plates only
     int j0s=A.suborder[j0];
     printf("j0s %d\n",j0s);
 	//int na_start = A.na(F,j0,n);//number of assigned tile-fibers from j0 to j0+n-1
 	//List plates = sublist(j0,n,A.order);//not needed?
-    for (int jj=0; jj<n; jj++) for (int k=0; k<F.Nfiber; k++) improve_fiber(j0s,n,A.suborder[jj],k,M,P,pp,F,A);
+    for (int jj=j0; jj<F.NUsedplate; jj++){
+        for (int k=0; k<F.Nfiber; k++){
+            int js=A.suborder[jj];
+            improve_fiber(j0s,js,k,M,P,pp,F,A);
+        }
+    }
 	//int na_end = A.na(F,j0s,n);
 	//printf("  %s more assignments (%.3f %% improvement)\n",f(na_end-na_start).c_str(),percent(na_end-na_start,na_start));//how many new assigned tf's
 	if (next!=1) print_time(t,"# ... took :");
@@ -300,7 +304,7 @@ void update_plan_from_one_obs(const Gals& Secret, MTL& M, Plates&P, const PP& pp
 	// Update further in the plan
 	for (int gg=0; gg<to_update.size(); gg++) {
 		int g = to_update[gg];
-		Plist tfs = A.chosen_tfs(g,F,j0+1,n-1); // Begin at j0+1, can't change assignment at j0 (already observed)
+		Plist tfs = A.chosen_tfs(g,F,j0+1); // Begin at j0+1, can't change assignment at j0 (already observed)
         int original_g=M[g].id;
 		while (tfs.size()!=0&&M[g].nobs_done>F.goalpost[Secret[g].id]) {
 			int jp = tfs[0].f; int kp = tfs[0].s;
@@ -309,7 +313,7 @@ void update_plan_from_one_obs(const Gals& Secret, MTL& M, Plates&P, const PP& pp
             M[g].nobs_remain=0;
 
 			int gp = -1;
-			gp = improve_fiber(j0+1,n-1,jp,kp,M,P,pp,F,A,g);
+			gp = improve_fiber(j0+1,jp,kp,M,P,pp,F,A,g);
 			erase(0,tfs);
 			if(gp!=-1)cnt_replace++;//number of replacements
             if(jp%100==0 && kp%100==0&&gp!=-1){

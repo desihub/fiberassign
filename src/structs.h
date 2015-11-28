@@ -138,7 +138,7 @@ class Assignment {
 	int na(const Feat& F, int begin=0, int size=-1) const; // Number of assignments (changes) within plates begin to begin+size
 	int nobs(int g, const MTL& M, const Feat& F, bool tmp=true) const; // Counts how many more times object should be observed. If tmp=true, return maximum for this kind (temporary information)
 	//if tmp=false we actually know the true type from the start
-	Plist chosen_tfs(int g, const Feat& F, int begin=0, int size=-1) const; // Pairs (j,k) chosen by g, amongst size plates from begin
+	Plist chosen_tfs(int g, const Feat& F, int begin=0) const; // Pairs (j,k) chosen by g, amongst size plates from begin
 	int nkind(int j, int k, int kind, const MTL& M, const Plates& P, const PP& pp, const Feat& F, bool pet=false) const; // Number of fibers assigned to the kind "kind" on the petal of (j,k). If pet=true, we don't take k but the petal p directly instead
 	List fibs_of_kind(int kind, int j, int pet, const MTL& M, const PP& pp, const Feat& F) const; // Sublist of fibers assigned to a galaxy of type kind for (j,p)
 	//not used
