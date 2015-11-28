@@ -122,6 +122,7 @@ int main(int argc, char **argv) {
             if(A.TF[j][k]!=-1){
                 A.suborder.push_back(j);
                 not_done=false;
+                printf(" j %d  js %d \n",j,A.suborder.size());
             }
         }
     }
