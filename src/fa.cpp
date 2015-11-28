@@ -120,14 +120,13 @@ int main(int argc, char **argv) {
         bool not_done=true;
         for(int k=0;k<F.Nfiber && not_done;++k){
             if(A.TF[j][k]!=-1){
-                
                 A.suborder.push_back(j);
                 not_done=false;
             }
         }
     }
     F.NUsedplate=A.suborder.size();
-    printf(" Plates after screening %d \n",F.Nplate);
+    printf(" Plates after screening %d \n",F.NUsedplate);
  
     //if(F.diagnose)diagnostic(M,G,F,A);
 

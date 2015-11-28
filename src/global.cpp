@@ -448,6 +448,7 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
 
 void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A) {
     //diagnostic
+    printf("start redistribute n");
     for (int j=0;j<F.Nplate;++j){
         int js=A.suborder[j];
         printf(" j %d  js  %d\n ",j,js);
