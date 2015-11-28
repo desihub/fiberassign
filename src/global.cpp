@@ -254,10 +254,10 @@ void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int 
 	Time t;
 	if (next!=1) init_time(t,"# Begin improve :");
 	int j0 = A.next_plate;
-	int n = next==-1 ? F.Nplate-j0 : next;//used plates only
+	int n = next==-1 ? F.Nusedplate-j0 : next;//used plates only
 	int na_start = A.na(F,j0,n);//number of assigned tile-fibers from j0 to jo+n-1
-	List plates = sublist(j0,n,A.order);//not needed?
-    for (int jj=0; jj<n; jj++) for (int k=0; k<F.Nfiber; k++) improve_fiber(j0,n,A.order[jj],k,M,P,pp,F,A);
+	//List plates = sublist(j0,n,A.order);//not needed?
+    for (int jj=0; jj<n; jj++) for (int k=0; k<F.Nfiber; k++) improve_fiber(j0,n,jj,k,M,P,pp,F,A);
 	int na_end = A.na(F,j0,n);
 	printf("  %s more assignments (%.3f %% improvement)\n",f(na_end-na_start).c_str(),percent(na_end-na_start,na_start));//how many new assigned tf's
 	if (next!=1) print_time(t,"# ... took :");
