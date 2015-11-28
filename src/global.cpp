@@ -237,8 +237,9 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
 	List plates = sublist(j0,n,A.order);
 	n=F.Nplate;
 	printf( " n = %d \n",n);
+    int countme=0;
 	for (int j=0; j<n; j++) {
-        int countme=0;
+
         int best=-1;
 		for (int k=0; k<F.Nfiber; k++) { // Fiber
             best=assign_fiber(j,k,M,P,pp,F,A);
