@@ -547,7 +547,8 @@ Plates read_plate_centers(const Feat& F) {
 Assignment::Assignment(const MTL& M, const Feat& F) {
 
     
-	TF = initTable(F.ONplate,F.Nfiber,-1);//galaxy assigned to tile-fiber TF[j][k]
+	OTF = initTable(F.ONplate,F.Nfiber,-1);//galaxy assigned to tile-fiber OTF[oj][k]
+    TF=initTable(F.Nplate,F.Nfiber,-1);//galaxy assigned to tile-fiber TF[j][k]
 	GL = initPtable(F.Ngal,0); //tile-fiber pair for galaxy  GL[g]
     printf("test 1\n");
     order.resize(F.ONplate);
@@ -562,22 +563,22 @@ Assignment::Assignment(const MTL& M, const Feat& F) {
 
 Assignment::~Assignment() {}
 
-// Assign g with tile/fiber (j,k), and check for duplicates
-void Assignment::assign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
-	// Assign (j,k)
-	int q = TF[j][k];
+// Assign g with tile/fiber (oj,k), and check for duplicates
+void Assignment::assign(int oj, int k, int g, MTL& M, Plates& P, const PP& pp) {
+	// Assign (oj,k)
+	int q = TF[oj][k];
 	if (q != -1) {
 		printf("### !!! ### DUPLICATE (j,k) = (%d,%d) assigned with g = %d and %d ---> information on first g lost \n",j,k,q,g);
 		myexit(1);
 	}
-	TF[j][k] = g;
+	OTF[oj][k] = g;
     //DIAGNOSTIC
 
 	// Assign g
 	Plist pl = GL[g];//pair list, tf's for this g
-	pair p = pair(j,k);
+	pair p = pair(oj,k);
 	for(int i=0;i<pl.size();i++){
-		if(pl[i].f==j){
+		if(pl[i].f==oj){
 
 		printf("### !!! ### DUPLICATE g = %d assigned with (j,k) = (%d,%d) and (%d,%d) ---> information on first (j,k) lost \n",g,pl[i].f,pl[i].s,j,k);
 		
@@ -840,8 +841,9 @@ float Assignment::colrate(const PP& pp, const MTL& M, const Plates& P, const Fea
 	return percent(col,jend*F.Nfiber);
 }
 
-dpair projection(int g, int j, const MTL& M, const Plates& P) {//x and y coordinates for galaxy observed on plate j
-	struct onplate op = change_coords(M[g],P[j]);
+dpair projection(int g, int j, const MTL& M, const Plates& OP) {//x and y coordinates for galaxy observed on plate j
+    // USE OLD LIST OF PLATES HERE
+	struct onplate op = change_coords(M[g],OP[j]);
     if (op.pos[0]*op.pos[0]+op.pos[1]*op.pos[1]>500.*500.){
         printf("outside positioner range  g  %d  j  %d  x %f  y %f\n",g,j,op.pos[0],op.pos[1]);
     }

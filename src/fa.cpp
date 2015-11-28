@@ -113,6 +113,7 @@ int main(int argc, char **argv) {
     printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.ONplate, F.Ngal, F.Nfiber);
     Assignment A(M,F);
     
+    
 	print_time(t,"# Start assignment at : ");
 
 	// Make a plan ----------------------------------------------------
@@ -135,6 +136,14 @@ int main(int argc, char **argv) {
     }
     F.Nplate=P.size();
     printf(" Plates after screening %d \n",F.Nplate);
+    printf(")make TF from OTF\n");
+    for (int j=0;j<F.Nplate;++oj){
+        oj=A.suborder[j];
+        for (int k=0; k<kF.Nplate;++k){
+            TF[j][k]=OTF[oj][k]
+        }
+    }
+
     //if(F.diagnose)diagnostic(M,G,F,A);
 
     print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs

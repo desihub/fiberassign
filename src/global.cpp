@@ -35,8 +35,7 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
 		// Collects for each plate
         // start at jj=0 not id
         #pragma omp for
-        for (int jj=0; jj<F.ONplate; jj++){
-			int j = permut[jj];
+        for (int j=0; j<F.ONplate; j++){
 			plate p = P[j];
 			// Takes neighboring galaxies that fall on this plate
 			std::vector<int> nbr = T.near(M,p.nhat,rad);
@@ -500,7 +499,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 						A.unassign(js,k,g,M,P,pp);
 						A.assign(jpb,kpb,g,M,P,pp);
 						Done[j][k] = 1;
-						Done[jpb][kpb] = 1;
+						//Done[jpb][kpb] = 1;  wrong index: jpb  runs to F.ONplate
 						red++; 
 					}
 				}
