@@ -573,6 +573,7 @@ void Assignment::assign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
     //DIAGNOSTIC
 
 	// Assign g
+    TF[j][k]=g;
 	Plist pl = GL[g];//pair list, tf's for this g
 	pair p = pair(j,k);
 	for(int i=0;i<pl.size();i++){
