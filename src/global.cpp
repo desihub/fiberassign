@@ -255,7 +255,7 @@ void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int 
 	if (next!=1) init_time(t,"# Begin improve :");
 	int j0 = A.next_plate;
 	int n = next==-1 ? F.NUsedplate-j0 : next;//used plates only
-    int j0s=A.suborder[j0]
+    int j0s=A.suborder[j0];
 	int na_start = A.na(F,j0,n);//number of assigned tile-fibers from j0 to j0+n-1
 	//List plates = sublist(j0,n,A.order);//not needed?
     for (int jj=0; jj<n; jj++) for (int k=0; k<F.Nfiber; k++) improve_fiber(j0s,n,A.suborder[jj],k,M,P,pp,F,A);
