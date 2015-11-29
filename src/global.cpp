@@ -198,7 +198,7 @@ inline int improve_fiber(int begin, int j, int k, MTL& M, Plates& P, const PP& p
 			for (int i=0; i<av_g.size(); i++) {
                 printf("Test B\n");
 				int g = av_g[i];
-				if (g!=-1 && g!=no_g) {
+                if (g!=-1 && g!=no_g&&!M[g].SS&!M[g].SF) {
 					if (ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)) {//this doesn't check to see that jk isnt assigned: it is
 						// Which tile-fibers have taken g ?
                         printf("Test C  begin %d  j %d  k %d  g  %d\n", begin,j,k,g);
