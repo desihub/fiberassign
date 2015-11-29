@@ -1,4 +1,4 @@
-#!/bin/batch -1
+#!/bin/batch -l
 #SBATCH -S /bin/bash
 #SBATCH -N Assign
 #SBATCH -l mppwidth=24,walltime=0:29:59
