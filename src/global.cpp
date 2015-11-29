@@ -189,7 +189,7 @@ inline int improve_fiber(int begin, int j, int k, MTL& M, Plates& P, const PP& p
 	if (!A.is_assigned_tf(j,k)) { // Unused tilefiber (j,k)
 		// tries to assign it in the conventional way to galaxy available to it
         
-		int g_try = assign_fiber(j,k,M,P,pp,F,A,no_g);
+		int g_try = assign_fiber(j,k,M,P,pp,F,A,no_g);//maybe doesn't allow SS or SF
 		if (g_try!=-1) return g_try;
 		else { // Improve
 			int gb = -1; int bb = -1; int jpb = -1; int kpb = -1; int mb = -1; int pb = 1e3; int unusedb = -1;
