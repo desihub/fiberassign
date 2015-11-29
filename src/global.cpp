@@ -450,7 +450,7 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
                     int done=0;
                     std::vector <int> SS_av_k=P[j].SS_av_gal_fiber[k];
                     std::vector <int> SF_av_k=P[j].SF_av_gal_fiber[k];
-                    printf(" ss available for fiber k %d is %d \n ",k,SS_av_k.size());
+                    if(SS_av_k.size()>0)printf(" ss available for fiber k %d is %d \n ",k,SS_av_k.size());
 
                     for (int gg=0; gg<SS_av_k.size()&&done==0; gg++) {
                         int g = SS_av_k[gg];//SS on this petal
