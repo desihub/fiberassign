@@ -109,9 +109,13 @@ int main(int argc, char **argv) {
     
     //diagnostic
     for (int j=0;j<F.Nplate;++j){
-        printf("  j = %d  available SS for fiebers\n",j);
+        printf("  j = %d  available SS for fibers\n",j);
         for (int k=0;k<10;++k){
             printf(" %d ",P[j].SS_av_gal_fiber[k*500].size());
+        }
+        printf("\n  petals");
+        for (int q=0;q<F.Nfbp;++q){
+            printf(" %d",P[j].SS_av_gal[q].size());
         }
         printf("\n");
     }

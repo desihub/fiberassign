@@ -63,7 +63,7 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
                             P[j].SS_av_gal[q].push_back(gals[g]);
                             P[j].SS_av_gal_fiber[k].push_back(gals[g]);
                         }
-                        if(M[gals[g]].SF){
+                        if(M[gals[g]].SF){  
                             P[j].SF_av_gal[q].push_back(gals[g]);
                             P[j].SF_av_gal_fiber[k].push_back(gals[g]);
                         }
