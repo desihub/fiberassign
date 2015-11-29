@@ -437,7 +437,7 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
 				//int k = randFibers[kk];
                 int k= kk;
                 if (A.TF[j][k]==-1){
-                    printf("//look at available galaxies for (j.k) j=%d k= %d p= %d\n",j,k,p;
+                    printf("//look at available galaxies for (j.k) j=%d k= %d p= %d\n",j,k,p);
                     int done=0;
                     List av_gals = P[j].av_gals[k];
                     for (int gg=0; gg<av_gals.size()&&done==0; gg++) {
