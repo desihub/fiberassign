@@ -114,7 +114,7 @@ int main(int argc, char **argv) {
             printf(" %d ",P[j].SS_av_gal_fiber[k*500].size());
         }
         printf("\n  petals");
-        for (int q=0;q<F.Nfbp;++q){
+        for (int q=0;q<F.Npetal;++q){
             printf(" %d",P[j].SS_av_gal[q].size());
         }
         printf("\n");
