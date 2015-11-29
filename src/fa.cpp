@@ -149,7 +149,7 @@ int main(int argc, char **argv) {
         int js=A.suborder[j];
         A.next_plate=js;
         assign_sf_ss(js,M,P,pp,F,A); // Assign SS and SF for each tile
-        printf("before assign_unused ]n");
+        printf("before assign_unused \n");
         assign_unused(js,M,P,pp,F,A);
     }
     
