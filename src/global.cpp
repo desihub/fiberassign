@@ -201,7 +201,7 @@ inline int improve_fiber(int begin, int j, int k, MTL& M, Plates& P, const PP& p
 				if (g!=-1 && g!=no_g) {
 					if (ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)) {//this doesn't check to see that jk isnt assigned: it is
 						// Which tile-fibers have taken g ?
-                        printf("Test C\n");
+                        printf("Test C  begin %d  j %d  k %d\n", begin,j,k);
 						Plist tfs = A.chosen_tfs(g,F,begin);//all tile-fibers that observe g in tiles from begin to next
 						for (int p=0; p<tfs.size(); p++) {
 							int jp = tfs[p].f;
