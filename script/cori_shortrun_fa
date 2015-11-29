@@ -5,7 +5,7 @@
 #SBATCH -t 0:29:59
 
 
-#SBATCH -q debug
+
 cd $SLURM_SUBMIT_DIR
 export OMP_NUM_THREADS=24
 echo "# Running assign"
