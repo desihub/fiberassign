@@ -1,11 +1,13 @@
 #!/bin/batch -l
-#SBATCH -S /bin/bash
-#SBATCH -N Assign
-#SBATCH -l mppwidth=24,walltime=0:29:59
 
-#SBTACH -q debug
-cd $SBATCH_O_WORKDIR
+#SBATCH -p debug
+#SBATCH -N 1
+#SBATCH -t 0:29:59
+
+
+#SBATCH -q debug
+cd $SLURM_SUBMIT_DIR
 export OMP_NUM_THREADS=24
 echo "# Running assign"
 
-srun -n 1 -N 1 -d 24 ./assign_fa shortrun_features.txt
+srun  -N 1  ./assign_fa shortrun_features.txt
