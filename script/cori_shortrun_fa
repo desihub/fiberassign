@@ -1,0 +1,10 @@
+#SBATCH -S /bin/bash
+#SBATCH -N Assign
+#SBATCH -l mppwidth=24,walltime=0:29:59
+
+#SBTACH -q debug
+cd $SBATCH_O_WORKDIR
+export OMP_NUM_THREADS=24
+echo "# Running assign"
+
+srun -n 1 -N 1 -d 24 ./assign_fa shortrun_features.txt
