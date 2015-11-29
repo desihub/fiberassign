@@ -429,13 +429,14 @@ void assign_unused(int js, MTL& M, Plates& P, const PP& pp, const Feat& F, Assig
 void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
 	List randPetals = random_permut(F.Npetal);
 	for (int ppet=0; ppet<F.Npetal; ppet++) {
-		int p = randPetals[ppet];
+		//int p = randPetals[ppet];
+        int p = ppet;
 		List randFibers = random_permut(pp.fibers_of_sp[p]);//fibers for this petal
         printf("//first use any free fibers j= %d\n",j);
 			for (int kk=0; kk<F.Nfbp; kk++) {
 				int k = randFibers[kk];
                 if (A.TF[j][k]==-1){
-                    printf("//look at available galaxies for (j.k) j=%d k= %d \n",j,k);
+                    printf("//look at available galaxies for (j.k) j=%d k= %d p= %d\n",j,k,p;
                     int done=0;
                     List av_gals = P[j].av_gals[k];
                     for (int gg=0; gg<av_gals.size()&&done==0; gg++) {
