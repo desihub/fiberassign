@@ -431,11 +431,11 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
 	for (int ppet=0; ppet<F.Npetal; ppet++) {
 		int p = randPetals[ppet];
 		List randFibers = random_permut(pp.fibers_of_sp[p]);//fibers for this petal
-        //first use any free fibers
+        printf("//first use any free fibers \n");
 			for (int kk=0; kk<F.Nfbp; kk++) {
 				int k = randFibers[kk];
                 if (A.TF[j][k]==-1){
-                    //look at available galaxies for (j.k)
+                    printf("//look at available galaxies for (j.k) \n");
                     int done=0;
                     List av_gals = P[j].av_gals[k];
                     for (int gg=0; gg<av_gals.size()&&done==0; gg++) {
@@ -453,7 +453,7 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
                     }
                 }
             }
-			// If not enough SS and SF, replace galaxies with lowest priority
+        printf(")// If not enough SS and SF, replace galaxies with lowest priority \n");
         new_replace(j,p,M,P,pp,F,A);
     }
 }
