@@ -343,21 +343,22 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
         for(int gg=0;gg<gals.size() ;++gg){
             int g=gals[gg];//a standard star
             if(A.is_assigned_jg(j,g)==-1){
-            Plist tfs=M[g].av_tfs;//all tiles and fibers that reach g
-            int done=0;//quit after we've used this SS
-            for(int i=0;i<tfs.size() && done==0;++i){
-                if(tfs[i].f==j&&pp.spectrom[tfs[i].s]==p){//a combination on this plate
-                    int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
-                    int g_old=A.TF[j][k];//what is now at (j,k)  g_old can't be -1 or we would have used it already in assign_sf
-                    if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1&& ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
-                        //right priority; this SS not already assigned on this plate
-                        A.unassign(j,k,g_old,M,P,pp);
-                        assign_galaxy(g_old,M,P,pp,F,A);//try to assign
-                        A.assign(j,k,g,M,P,pp);
-                        done=1;
+                Plist tfs=M[g].av_tfs;//all tiles and fibers that reach g
+                int done=0;//quit after we've used this SS
+                for(int i=0;i<tfs.size() && done==0;++i){
+                    if(tfs[i].f==j&&pp.spectrom[tfs[i].s]==p){//a tile fiber from this petal
+                        int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
+                        int g_old=A.TF[j][k];//what is now at (j,k)  g_old can't be -1 or we would have used it already in assign_sf
+                        if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1&& ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
+                            //right priority; this SS not already assigned on this plate
+                            A.unassign(j,k,g_old,M,P,pp);
+                            assign_galaxy(g_old,M,P,pp,F,A);//try to assign
+                            A.assign(j,k,g,M,P,pp);
+                            done=1;
+                            printf(" assign g= %d to j= %d  k=%d \n");
+                        }
                     }
                 }
-            }
             }
         }
     }
