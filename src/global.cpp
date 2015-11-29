@@ -438,7 +438,7 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
         std::vector <int> SS_av=P[j].SS_av_gal[p];
         std::vector <int> SF_av=P[j].SF_av_gal[p];
 		//List randFibers = random_permut(pp.fibers_of_sp[p]);//fibers for this petal
-        printf("//first use any free fibers j= %d\n",j);
+        printf("//first use any free fibers j= %d  available SS %d  available SF %d\n",j,SS_av.size(),SF_av.size());
 
 			for (int kk=0; kk<F.Nfbp; kk++) {
 				//int k = randFibers[kk];
