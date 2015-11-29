@@ -58,11 +58,14 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
                     if (sq(Xg,X)<sq(F.PatrolRad)){
                         P[j].av_gals[k].push_back(gals[g]);
                         int q=pp.spectrom[k];
+                        //better to make SS & SF assigned to fibers
                         if(M[gals[g]].SS){
                             P[j].SS_av_gal[q].push_back(gals[g]);
+                            P[j].SS_av_gal_fiber[k].push_back(gals[g]);
                         }
                         if(M[gals[g]].SF){
                             P[j].SF_av_gal[q].push_back(gals[g]);
+                            P[j].SF_av_gal_fiber[k].push_back(gals[g]);
                         }
 
                     }
@@ -427,34 +430,42 @@ void assign_unused(int js, MTL& M, Plates& P, const PP& pp, const Feat& F, Assig
 // If not enough SS and SF,
 
 void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
-	List randPetals = random_permut(F.Npetal);
+    //List randPetals = random_permut(F.Npetal);
 	for (int ppet=0; ppet<F.Npetal; ppet++) {
 		//int p = randPetals[ppet];
         int p = ppet;
-		List randFibers = random_permut(pp.fibers_of_sp[p]);//fibers for this petal
+        std::vector <int> SS_av=P[j].SS_av_gal[p];
+        std::vector <int> SF_av=P[j].SF_av_gal[p];
+		//List randFibers = random_permut(pp.fibers_of_sp[p]);//fibers for this petal
         printf("//first use any free fibers j= %d\n",j);
+
 			for (int kk=0; kk<F.Nfbp; kk++) {
 				//int k = randFibers[kk];
                 int k= kk;
                 if (A.TF[j][k]==-1){
-                    printf("//look at available galaxies for (j.k) j=%d k= %d p= %d\n",j,k,p);
+                    int p=pp.spectrom[k];
                     int done=0;
-                    List av_gals = P[j].av_gals[k];
-                    for (int gg=0; gg<av_gals.size()&&done==0; gg++) {
-                        int g = av_gals[gg];//galaxy at (j,k)
-                        if(M[g].SS&&A.is_assigned_jg(j,g,M,F)==-1&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)&&ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)){
+                    std::vector <int> SS_av_k=P[j].SS_av_gal_fiber[k];
+                    std::vector <int> SF_av_k=P[j].SF_av_gal_fiber[k];
+
+                    for (int gg=0; gg<SS_av_k.size()&&done==0; gg++) {
+                        int g = SS_av_k[gg];//SS on this petal
+                        if(A.is_assigned_jg(j,g,M,F)==-1&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)&&ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)){
                             A.assign(j,k,g,M,P,pp);
                             done=1;
                         }
-                        else{
-                            if(M[g].SF&&A.is_assigned_jg(j,g,M,F)==-1&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)&&ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)){
-                                A.assign(j,k,g,M,P,pp);
-                                done=1;
+                        else
+                            for (int gg=0; gg<SF_av_k.size()&&done==0; gg++) {
+                                int g = SF_av_k[gg];//SF on this petal
+                                if(A.is_assigned_jg(j,g,M,F)==-1&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)&&ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)){
+                                        A.assign(j,k,g,M,P,pp);
+                                    done=1;
+                                }
                             }
                         }
                     }
                 }
-            }
+
         printf("// If not enough SS and SF, replace galaxies with lowest priority j= %d  p= %d\n",j,p);
         new_replace(j,p,M,P,pp,F,A);
     }
