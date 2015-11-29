@@ -67,6 +67,14 @@ int main(int argc, char **argv) {
     for(int i;i<Targ.priority_list.size();++i){
         printf("  class  %d  number  %d\n",i,count_class[i]);
     }
+    //diagnostic
+    int count_ss=0;
+    int count_sf=0;
+    for(int g=0;g<M.size();++g){
+        if(M[g].SS) count_ss++;
+        if(M[g].SF) count_sf++;
+    }
+    printf("  number SS = %d  number SF = %d\n",count_ss,count_sf);
     
     PP pp;
 	pp.read_fiber_positions(F); 
