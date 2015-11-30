@@ -35,7 +35,6 @@ int main(int argc, char **argv) {
     Gals Secret;
     printf("# Read %s galaxies from %s \n",f(F.Ngal).c_str(),F.Secretfile.c_str());
     Secret=read_Secretfile(F.Secretfile,F);
-    F.Ngal= Secret.size();
     
 	
     std::vector<int> count;
@@ -55,7 +54,7 @@ int main(int argc, char **argv) {
     printf(" M size %d \n",M.size());
     M.insert(M.end(),SkyF.begin(),SkyF.end());
     printf(" M size %d \n",M.size());
-
+    F.Ngal=M.size();
     assign_priority_class(Targ);
     
     //establish priority classes
