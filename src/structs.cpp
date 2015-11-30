@@ -383,9 +383,11 @@ void assign_priority_class(MTL& M){
     // assign each target to a priority class
     //this needs to be updated
     for(int i=0;i<M.size();++i){
-        for(int j=0;j<M.priority_list.size();++j){
-            if(M[i].t_priority==M.priority_list[j]){
-                M[i].priority_class=j;}
+        if(!M[i].SS&&!M[i].SF){
+            for(int j=0;j<M.priority_list.size();++j){
+                if(M[i].t_priority==M.priority_list[j]){
+                    M[i].priority_class=j;}
+            }
         }
     }
 }

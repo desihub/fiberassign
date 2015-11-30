@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
     M.insert(M.end(),SkyF.begin(),SkyF.end());
     printf(" M size %d \n",M.size());
     F.Ngal=M.size();
-    assign_priority_class(Targ);
+    assign_priority_class(M);
     
     //establish priority classes
     std::vector <int> count_class(Targ.priority_list.size(),0);
