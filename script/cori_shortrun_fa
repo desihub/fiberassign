@@ -1,4 +1,4 @@
-#!/bin/batch -1
+#!/bin/bash -l
 
 #SBATCH -p debug
 #SBATCH -N 1
