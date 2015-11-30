@@ -449,6 +449,7 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
 			for (int kk=0; kk<F.Nfbp; kk++) {
 				//int k = randFibers[kk];
                 int k= pp.fibers_of_sp[p][kk];
+                printf(" k %d  g  %d  \n  ", k ,A.TF[j][k] );
                 if (A.TF[j][k]==-1){
                     
                     int done=0;
