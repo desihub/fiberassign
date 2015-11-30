@@ -122,6 +122,19 @@ int main(int argc, char **argv) {
 
     simple_assign(M,P,pp,F,A);
     
+    //check to see if any SS or SF are assigned
+    int SS_count=0;
+    int SF_count=0;
+    for( int j=0;j<F.Nplate;++j){
+        for (int k=0;k<F.Nfiber;++k){
+            if(A.TF[j][k]!=-1){
+                if(M[A.TF[j][k]].SS)SS_count++;
+                if(M[A.TF[j][k]].SF)SF_count++;
+            }
+        }
+    }
+    printf("after simple assign,  SS assigned %d  SF assigned %d\n",SS_count,SF_count);
+    
     //check to see if there are tiles with no galaxies
     //need to keep mapping of old tile list to new tile list
     for (int j=0;j<F.Nplate ;++j){
