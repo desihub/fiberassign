@@ -149,6 +149,21 @@ int main(int argc, char **argv) {
     }
     F.NUsedplate=A.suborder.size();
     printf(" Plates after screening %d \n",F.NUsedplate);
+    
+    //diagnostic
+    for (int j=0;j<F.NUsedplate;++j){
+        int js=A.suborder[j];
+        printf("  js = %d  available SS for fibers\n",js);
+        for (int k=0;k<10;++k){
+            printf(" %d ",P[js].SS_av_gal_fiber[k*500].size());
+        }
+        printf("\n  petals");
+        for (int q=0;q<F.Npetal;++q){
+            printf(" %d",P[js].SS_av_gal[q].size());
+        }
+        printf("\n");
+    }
+    
  
     //if(F.diagnose)diagnostic(M,G,F,A);
 
