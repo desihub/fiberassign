@@ -107,19 +107,7 @@ int main(int argc, char **argv) {
 	// For each galaxy, computes available tilefibers  G[i].av_tfs = [(j1,k1),(j2,k2),..]
 	collect_available_tilefibers(M,P,F);
     
-    //diagnostic
-    for (int j=0;j<F.Nplate;++j){
-        printf("  j = %d  available SS for fibers\n",j);
-        for (int k=0;k<10;++k){
-            printf(" %d ",P[j].SS_av_gal_fiber[k*500].size());
-        }
-        printf("\n  petals");
-        for (int q=0;q<F.Npetal;++q){
-            printf(" %d",P[j].SS_av_gal[q].size());
-        }
-        printf("\n");
-    }
-
+   
 	//results_on_inputs("doc/figs/",G,P,F,true);
 
 	//// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
