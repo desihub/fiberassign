@@ -58,17 +58,16 @@ int main(int argc, char **argv) {
     assign_priority_class(M);
     
     //establish priority classes
-        std::vector <int> count_class2(M.priority_list.size(),0);
+    std::vector <int> count_class(M.priority_list.size(),0);
     for(int i;i<M.size();++i){
         if(!M[i].SS&&!M[i].SF){
-        count_class2[M[i].priority_class]+=1;
+        count_class[M[i].priority_class]+=1;
         }
     }
-    for(int i;i<Targ.priority_list.size();++i){
+
+   
+    for(int i;i<M.priority_list.size();++i){
         printf("  class  %d  number  %d\n",i,count_class[i]);
-    }
-    for(int i;i<Targ.priority_list.size();++i){
-        printf("  class2  %d  number  %d\n",i,count_class2[i]);
     }
 
     //diagnostic
