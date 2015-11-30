@@ -125,15 +125,18 @@ int main(int argc, char **argv) {
     //check to see if any SS or SF are assigned
     int SS_count=0;
     int SF_count=0;
+    std::vector <int> class_count(3,0);
     for( int j=0;j<F.Nplate;++j){
         for (int k=0;k<F.Nfiber;++k){
             if(A.TF[j][k]!=-1){
                 if(M[A.TF[j][k]].SS)SS_count++;
                 if(M[A.TF[j][k]].SF)SF_count++;
+                class_count[M[A.TF[j][k]].priority_class]++;
             }
         }
     }
     printf("after simple assign,  SS assigned %d  SF assigned %d\n",SS_count,SF_count);
+    printf(" class 0 %d  class 1 %d  class 2 %d\n", class_count[0],class_count[1],class_count[2]);
     
     //check to see if there are tiles with no galaxies
     //need to keep mapping of old tile list to new tile list
