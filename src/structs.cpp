@@ -528,8 +528,8 @@ Plates read_plate_centers(const Feat& F) {
 			Q.ipass      = ipass-1; // <- be careful, format of input file
 			Q.av_gals.resize(F.Nfiber); // <- added
 			Q.density.resize(F.Nfiber); // <- added
-            Q.SS_av_gal.resize(F.Nfbp);
-            Q.SF_av_gal.resize(F.Nfbp);
+            Q.SS_av_gal.resize(F.Npetal);//was Nfbp
+            Q.SF_av_gal.resize(F.Npetal);//was Nfbp
             Q.SS_in_petal.resize(F.Npetal);
             Q.SF_in_petal.resize(F.Npetal);
             Q.SS_av_gal_fiber.resize(F.Nfiber);
