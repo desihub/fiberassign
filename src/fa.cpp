@@ -138,6 +138,7 @@ int main(int argc, char **argv) {
     printf(" Plates after screening %d \n",F.NUsedplate);
     
     //diagnostic
+    /*
     for (int j=0;j<F.NUsedplate;++j){
         int js=A.suborder[j];
         printf("  js = %d  available SS for fibers\n",js);
@@ -150,7 +151,7 @@ int main(int argc, char **argv) {
         }
         printf("\n");
     }
-    
+    */
  
     //if(F.diagnose)diagnostic(M,G,F,A);
 
