@@ -449,12 +449,13 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
 			for (int kk=0; kk<F.Nfbp; kk++) {
 				//int k = randFibers[kk];
                 int k= pp.fibers_of_sp[p][kk];
-                printf(" k %d  g  %d  \n  ", k ,A.TF[j][k] );
+                printf(" j %d k %d  g  %d  \n  ",j, k ,A.TF[j][k] );
                 if (A.TF[j][k]==-1){
                     
                     int done=0;
                     std::vector <int> SS_av_k=P[j].SS_av_gal_fiber[k];
                     std::vector <int> SF_av_k=P[j].SF_av_gal_fiber[k];
+                    printf( "SS av  %d  SF av  %d \n",SS_av_k.size(), SF_av_k.size());
                     if(SS_av_k.size()>0)printf(" ss available for fiber k %d is %d \n ",k,SS_av_k.size());
 
                     for (int gg=0; gg<SS_av_k.size()&&done==0; gg++) {
