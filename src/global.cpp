@@ -343,6 +343,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
         for(int gg=0;gg<gals.size() ;++gg){
             int g=gals[gg];//a standard star
             printf(" g %d \n",g);
+            printf(" is assigned %d\n",A.is_assigned_jg(j,g) );
             if(A.is_assigned_jg(j,g)==-1){
                 Plist tfs=M[g].av_tfs;//all tiles and fibers that reach g
                 printf(" no of tfs that reach f = %d",tfs.size());
