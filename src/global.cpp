@@ -428,6 +428,7 @@ void assign_unused(int js, MTL& M, Plates& P, const PP& pp, const Feat& F, Assig
 			if (best!=-1) {
                 A.unassign(jpb,kpb,best,M,P,pp);
 				A.assign(js,k,best,M,P,pp);
+                printf("assigned  ( %d , %d ) to g= %d unassigned it from ( %d , %d) \n",js,k,best,jpb,kpb);
                 
 			}
 		}
