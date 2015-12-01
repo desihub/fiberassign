@@ -202,7 +202,7 @@ int main(int argc, char **argv) {
 
 	//Execute plan, updating targets at intervals
     
-    for(int i=0;i<F.pass_intervals.size()&&F.pass_intervals[i]<F.Nplate;++i){
+    for(int i=0;i<F.pass_intervals.size()&&F.pass_intervals[i]<F.NUsedplate;++i){
         printf(" before pass = %d  at %d  tiles\n",i,F.pass_intervals[i]);
         //display_results("doc/figs/",G,P,pp,F,A,true);
         //execute this phase (i) of survey
