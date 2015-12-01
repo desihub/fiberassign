@@ -211,7 +211,7 @@ int main(int argc, char **argv) {
             printf("  next plate is %d \n",j);
             assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF
             assign_unused(j,M,P,pp,F,A);
-            //A.next_plate++;
+            A.next_plate++;
         }
         //update target information for this interval
         //A.next_plate=F.pass_intervals[i];
