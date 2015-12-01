@@ -207,7 +207,7 @@ int main(int argc, char **argv) {
         //display_results("doc/figs/",G,P,pp,F,A,true);
         //execute this phase (i) of survey
         A.next_plate=F.pass_intervals[i];
-        for (int jj=F.pass_intervals[i]; jj<F.Nplate; jj++) {
+        for (int jj=F.pass_intervals[i]; jj<F.NUsedplate; jj++) {
             int j = A.suborder[A.next_plate];
             printf("  next plate is %d \n",j);
             assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF
