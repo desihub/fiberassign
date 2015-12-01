@@ -242,7 +242,7 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
 	int n = next==-1 ? F.Nplate-j0 : next; // Not F.Nplate-A.next_plate+1
 	List plates = sublist(j0,n,A.order);
 	n=F.Nplate;
-	printf( " n = %d \n",n);
+	//printf( " n = %d \n",n);
     int countme=0;
 	for (int j=0; j<n; j++) {
 
@@ -260,9 +260,9 @@ void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int 
 	Time t;
 	if (next!=1) init_time(t,"# Begin improve :");
 	int j0 = A.next_plate;//among only those used
-    printf("j0 %d\n",j0);
+    //printf("j0 %d\n",j0);
     int j0s=A.suborder[j0];
-    printf("j0s %d\n",j0s);
+    //printf("j0s %d\n",j0s);
 	//int na_start = A.na(F,j0,n);//number of assigned tile-fibers from j0 to j0+n-1
 	//List plates = sublist(j0,n,A.order);//not needed?
     for (int jj=j0; jj<F.NUsedplate; jj++){
@@ -338,7 +338,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
     // SS and SF not in priority list so start at size -1
     //can get all available SS,SF on plate from P[j].av_gals_plate restricting to plate p
     for(int c=M.priority_list.size()-1;P[j].SS_in_petal[p]<F.MaxSS && c>-1;--c ){//try to do this for lowest priority
-        printf(" c %d  j= %d p= %d SS in petal assigned %d available %d\n",c,j,p,P[j].SS_in_petal[p],P[j].SS_av_gal[p].size());
+       //printf(" c %d  j= %d p= %d SS in petal assigned %d available %d\n",c,j,p,P[j].SS_in_petal[p],P[j].SS_av_gal[p].size());
         std::vector <int> gals=P[j].SS_av_gal[p]; //standard stars on this petal
         for(int gg=0;gg<gals.size() ;++gg){
             int g=gals[gg];//a standard star
@@ -357,7 +357,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                                 assign_galaxy(g_old,M,P,pp,F,A);//try to assign
                                 A.assign(j,k,g,M,P,pp);
                                 done=1;
-                                printf(" **assign SS g= %d to j= %d  k=%d \n",g,j,k);
+                                //printf(" **assign SS g= %d to j= %d  k=%d \n",g,j,k);
                             }
                         }
                     }
@@ -483,7 +483,7 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
                     }
                 }
 
-        printf("// If not enough SS and SF, replace galaxies with lowest priority j= %d  p= %d\n",j,p);
+        //printf("// If not enough SS and SF, replace galaxies with lowest priority j= %d  p= %d\n",j,p);
         new_replace(j,p,M,P,pp,F,A);
         }
     }
