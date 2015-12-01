@@ -191,10 +191,10 @@ int main(int argc, char **argv) {
     for (int j=0;j<F.NUsedplate;++j){
 
         int js=A.suborder[j];
-        printf(" before assign_sf_ss js= %d\n",js);
+        //printf(" before assign_sf_ss js= %d\n",js);
         A.next_plate=js;
         assign_sf_ss(js,M,P,pp,F,A); // Assign SS and SF for each tile
-        printf("before assign_unused js= %d \n",js);
+        //printf("before assign_unused js= %d \n",js);
         assign_unused(js,M,P,pp,F,A);
     }
     
@@ -209,7 +209,7 @@ int main(int argc, char **argv) {
         A.next_plate=F.pass_intervals[i];
         for (int jj=F.pass_intervals[i]; jj<F.NUsedplate; jj++) {
             int j = A.suborder[A.next_plate];
-            printf("  next plate is %d \n",j);
+            //printf("  next plate is %d \n",j);
             assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF
             assign_unused(j,M,P,pp,F,A);
             A.next_plate++;
