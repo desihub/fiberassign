@@ -348,17 +348,18 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                 int done=0;//quit after we've used this SS
                 for(int i=0;i<tfs.size() && done==0;++i){
                     if(tfs[i].f==j&&pp.spectrom[tfs[i].s]==p){//a tile fiber from this petal
-                        
-                        int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
-                        int g_old=A.TF[j][k];//what is now at (j,k)  g_old can't be -1 or we would have used it already in assign_sf
-                        //printf("g_old %d c %d  isa  %d,  ok  %d\n",g_old,M[g_old].priority_class,A.is_assigned_jg(j,g,M,F),ok_for_limit_SS_SF(g,j,k,M,P,pp,F));
-                        if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1&& ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
-                            //right priority; this SS not already assigned on this plate
-                            A.unassign(j,k,g_old,M,P,pp);
-                            assign_galaxy(g_old,M,P,pp,F,A);//try to assign
-                            A.assign(j,k,g,M,P,pp);
-                            done=1;
-                            printf(" **assign SS g= %d to j= %d  k=%d \n",g,j,k);
+                        if(g_old!=-1 && !M[g].SS && !M[g].SF){
+                            int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
+                            int g_old=A.TF[j][k];//what is now at (j,k)  g_old can't be -1 or we would have used it already in assign_sf
+                            if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
+
+                                //right priority; this SS not already assigned on this plate
+                                A.unassign(j,k,g_old,M,P,pp);
+                                assign_galaxy(g_old,M,P,pp,F,A);//try to assign
+                                A.assign(j,k,g,M,P,pp);
+                                done=1;
+                                printf(" **assign SS g= %d to j= %d  k=%d \n",g,j,k);
+                            }
                         }
                     }
                 }
@@ -368,22 +369,24 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
     for(int c=M.priority_list.size()-1;P[j].SF_in_petal[p]<F.MaxSF && c>-1;--c ){//try to do this for lowest priority
                 printf(" c %d  j= %d p= %d SF in petal %d\n",c,j,p,P[j].SS_in_petal[p]);
         // aside from SS and SF, so size()-3
-        std::vector <int> gals=P[j].SF_av_gal[p]; //standard stars on this plate
-        for(int gg=0;gg<gals.size();++gg){//what tfs for this SS?  M[g].av_tfs
+        std::vector <int> gals=P[j].SF_av_gal[p]; //sky fibers on this petak
+        for(int gg=0;gg<gals.size();++gg){
             int g=gals[gg];//a sky fiber
             if(A.is_assigned_jg(j,g)==-1){
                 Plist tfs=M[g].av_tfs;
                 int done=0;
                 for(int i=0;i<tfs.size() && done==0;++i){
-                    if(tfs[i].f==j&&pp.spectrom[tfs[i].s]==p){
+                    if(tfs[i].f==j&&pp.spectrom[tfs[i].s]==p){//g is accesible to j,k
                         int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                         int g_old=A.TF[j][k];//what is now at (j,k)
-                        if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
-                            A.unassign(j,k,g_old,M,P,pp);
-                            assign_galaxy(g_old,M,P,pp,F,A);//try to assign
-                            A.assign(j,k,g,M,P,pp);
-                            done=1;
+                        if(g_old!=-1 && !M[g].SS && !M[g].SF){
+                            if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
+                                A.unassign(j,k,g_old,M,P,pp);
+                                assign_galaxy(g_old,M,P,pp,F,A);//try to assign
+                                A.assign(j,k,g,M,P,pp);
+                                done=1;
                             printf(" assign SF g= %d to j= %d  k=%d \n",g,j,k);
+                            }
                         }
                     }
                 }
@@ -456,7 +459,7 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
                 //printf( " fibers on j=%d  SS   av  %d  SF av  %d \n",j,SS_av_k.size(), SF_av_k.size());
                 //printf( " fibers on petal p=%d  SS   av  %d  SF av  %d \n",p,SS_av.size(), SF_av.size());
                 if (A.TF[j][k]==-1){
-                    printf("galaxy at j = %d k= %d is g= %d\n",j,k,A.TF[j][k]);
+                    //printf("galaxy at j = %d k= %d is g= %d\n",j,k,A.TF[j][k]);
                     int done=0;
                     
                     
