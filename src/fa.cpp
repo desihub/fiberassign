@@ -189,11 +189,12 @@ int main(int argc, char **argv) {
 	print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false);
     //try assigning SF and SS before real time assignment
     for (int j=0;j<F.NUsedplate;++j){
-        printf(" before assign_sf_ss j= %d\n",j);
+
         int js=A.suborder[j];
+        printf(" before assign_sf_ss js= %d\n",js);
         A.next_plate=js;
         assign_sf_ss(js,M,P,pp,F,A); // Assign SS and SF for each tile
-        printf("before assign_unused \n");
+        printf("before assign_unused js= %d \n",js);
         assign_unused(js,M,P,pp,F,A);
     }
     
