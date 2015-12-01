@@ -236,7 +236,8 @@ int main(int argc, char **argv) {
     }
     // check on SS and SF
     
-    for(int js=0;js<F.NUsedplate;++js){
+    for(int j=0;j<F.NUsedplate;++j){
+        int js=A.suborder[j];
         printf("\n js = %d\n",js);
         for (int p=0;p<F.Npetal;++p){
             int count_SS=0;
