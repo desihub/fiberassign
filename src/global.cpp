@@ -625,6 +625,7 @@ void diagnostic(const MTL& M, const Gals& Secret, Feat& F, const Assignment& A){
     for (int j=0;j<F.NUsedplate;++j){
         int js=A.suborder[j];
         printf(" js = %d\n",js);
+        printf(" Secret size %d\n",Secret.size());
         for(int k=0;k<F.Nfiber;++k){
             int g=A.TF[js][k];
             if(g!=-1){
