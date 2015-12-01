@@ -442,25 +442,25 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
         std::vector <int> SS_av=P[j].SS_av_gal[p];
         std::vector <int> SF_av=P[j].SF_av_gal[p];
 		//List randFibers = random_permut(pp.fibers_of_sp[p]);//fibers for this petal
-        printf("//first use any free fibers j= %d p= %d available SS %d  available SF %d\n",j,p,SS_av.size(),SF_av.size());
+        //printf("//first use any free fibers j= %d p= %d available SS %d  available SF %d\n",j,p,SS_av.size(),SF_av.size());
         if(SS_av.size()>0 ||SF_av.size()>0){
             //look at fibers on this petal
 			for (int kk=0; kk<F.Nfbp; kk++) {
 				//int k = randFibers[kk];
                 int k= pp.fibers_of_sp[p][kk];
-                printf(" j %d k %d  g  %d  \n  ",j, k ,A.TF[j][k] );
+                //printf(" j %d k %d  g  %d  \n  ",j, k ,A.TF[j][k] );
                 
                 
                 std::vector <int> SS_av_k=P[j].SS_av_gal_fiber[k];
                 std::vector <int> SF_av_k=P[j].SF_av_gal_fiber[k];
-                printf( " fibers on j=%d  SS   av  %d  SF av  %d \n",j,SS_av_k.size(), SF_av_k.size());
-                printf( " fibers on petal p=%d  SS   av  %d  SF av  %d \n",p,SS_av.size(), SF_av.size());
+                //printf( " fibers on j=%d  SS   av  %d  SF av  %d \n",j,SS_av_k.size(), SF_av_k.size());
+                //printf( " fibers on petal p=%d  SS   av  %d  SF av  %d \n",p,SS_av.size(), SF_av.size());
                 if (A.TF[j][k]==-1){
                     printf("galaxy at j = %d k= %d is g= %d\n",j,k,A.TF[j][k]);
                     int done=0;
                     
                     
-                    if(SS_av_k.size()>0)printf(" ss available for fiber k %d is %d \n ",k,SS_av_k.size());
+                    //if(SS_av_k.size()>0)printf(" ss available for fiber k %d is %d \n ",k,SS_av_k.size());
 
                     for (int gg=0; gg<SS_av_k.size()&&done==0; gg++) {
                         int g = SS_av_k[gg];//SS on this petal
