@@ -624,8 +624,8 @@ void diagnostic(const MTL& M, const Gals& Secret, Feat& F, const Assignment& A){
     std::vector<int> count_by_kind(F.Categories,0);
     for (int j=0;j<F.NUsedplate;++j){
         int js=A.suborder[j];
-        printf(" js = %d\n",js);
-        printf(" Secret size %d\n",Secret.size());
+        //printf(" js = %d\n",js);
+        //printf(" Secret size %d\n",Secret.size());
         for(int k=0;k<F.Nfiber;++k){
             int g=A.TF[js][k];
             if(g!=-1&&!M[g].SS&&!M[g].SF){
@@ -641,10 +641,11 @@ void diagnostic(const MTL& M, const Gals& Secret, Feat& F, const Assignment& A){
     Table obsrv = initTable(F.Categories,MaxObs+1);
     
     for (int g=0; g<M.size(); g++) {
-        
+        if(!M[g].SS && !M[g].SF){
         int c= Secret[g].id;
         int m = min(M[g].nobs_done,MaxObs);
         obsrv[c][m]++; //
+        }
     }
     for (int c=0;c<F.Categories;++c){
         int tot=0;
