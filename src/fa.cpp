@@ -197,7 +197,7 @@ int main(int argc, char **argv) {
         //printf("before assign_unused js= %d \n",js);
         assign_unused(js,M,P,pp,F,A);
     }
-    
+    if(F.diagnose)diagnostic(M,Secret,F,A);    
     init_time_at(time,"# Begin real time assignment",t);
 
 	//Execute plan, updating targets at intervals
