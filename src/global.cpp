@@ -624,6 +624,7 @@ void diagnostic(const MTL& M, const Gals& Secret, Feat& F, const Assignment& A){
     std::vector<int> count_by_kind(F.Categories,0);
     for (int j=0;j<F.NUsedplate;++j){
         int js=A.suborder[j];
+        printf(" js = %d\n",js);
         for(int k=0;k<F.Nfiber;++k){
             int g=A.TF[js][k];
             if(g!=-1){
