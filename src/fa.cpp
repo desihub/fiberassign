@@ -197,7 +197,7 @@ int main(int argc, char **argv) {
         //printf("before assign_unused js= %d \n",js);
         assign_unused(js,M,P,pp,F,A);
     }
-    if(F.diagnose)diagnostic(M,Secret,F,A);    
+    if(F.diagnose)diagnostic(M,Secret,F,A);
     init_time_at(time,"# Begin real time assignment",t);
 
 	//Execute plan, updating targets at intervals
@@ -233,6 +233,24 @@ int main(int argc, char **argv) {
         //}
         
         if(F.diagnose)diagnostic(M,Secret,F,A);
+    }
+    // check on SS and SF
+    
+    for(int js=0;js<F.NUsedplate;++js){
+        printf("\n js = %d\n",js);
+        for (int p=0;p<F.Npetal;++p){
+            int count_SS=0;
+            int count_SF=0;
+            for (int k=0;k<F.Nfbp;++k){
+                int kk=pp.fibers_of_sp[p][k];
+                int g=A.TF[js][kk];
+                if(g!=-1 && M[g].SS)count_SS++;
+                if(g!=-1 && M[g].SF)count_SF++;
+                
+            }
+            printf("  %d  %d   ",count_SS,count_SF);
+        }
+        printf("\n");
     }
     
 	// Results -------------------------------------------------------
