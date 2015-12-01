@@ -629,7 +629,7 @@ void diagnostic(const MTL& M, const Gals& Secret, Feat& F, const Assignment& A){
         for(int k=0;k<F.Nfiber;++k){
             int g=A.TF[js][k];
             if(g!=-1){
-                printf("g = &d  k = %d  id = %d \n",g,k,Secret[g].id);
+                printf("g = %d  k = %d  id = %d \n",g,k,Secret[g].id);
             count_by_kind[Secret[g].id]+=1;
             }
         }
