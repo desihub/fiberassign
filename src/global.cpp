@@ -342,8 +342,6 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
         std::vector <int> gals=P[j].SS_av_gal[p]; //standard stars on this petal
         for(int gg=0;gg<gals.size() ;++gg){
             int g=gals[gg];//a standard star
-            printf(" g %d \n",g);
-            printf(" is assigned %d\n",A.is_assigned_jg(j,g) );
             if(A.is_assigned_jg(j,g)==-1){
                 Plist tfs=M[g].av_tfs;//all tiles and fibers that reach g
                 
@@ -353,14 +351,14 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                         
                         int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                         int g_old=A.TF[j][k];//what is now at (j,k)  g_old can't be -1 or we would have used it already in assign_sf
-                        printf("g_old %d c %d  isa  %d,  ok  %d\n",g_old,M[g_old].priority_class,A.is_assigned_jg(j,g,M,F),ok_for_limit_SS_SF(g,j,k,M,P,pp,F));
+                        //printf("g_old %d c %d  isa  %d,  ok  %d\n",g_old,M[g_old].priority_class,A.is_assigned_jg(j,g,M,F),ok_for_limit_SS_SF(g,j,k,M,P,pp,F));
                         if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1&& ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                             //right priority; this SS not already assigned on this plate
                             A.unassign(j,k,g_old,M,P,pp);
                             assign_galaxy(g_old,M,P,pp,F,A);//try to assign
                             A.assign(j,k,g,M,P,pp);
                             done=1;
-                            printf(" **assign g= %d to j= %d  k=%d \n",g,j,k);
+                            printf(" **assign SS g= %d to j= %d  k=%d \n",g,j,k);
                         }
                     }
                 }
@@ -385,7 +383,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                             assign_galaxy(g_old,M,P,pp,F,A);//try to assign
                             A.assign(j,k,g,M,P,pp);
                             done=1;
-                            printf(" assign g= %d to j= %d  k=%d \n",g,j,k);
+                            printf(" assign SF g= %d to j= %d  k=%d \n",g,j,k);
                         }
                     }
                 }
