@@ -206,7 +206,7 @@ int main(int argc, char **argv) {
         printf(" before pass = %d  at %d  tiles\n",i,F.pass_intervals[i]);
         //display_results("doc/figs/",G,P,pp,F,A,true);
         //execute this phase (i) of survey
-        //A.next_plate=F.pass_intervals[i];
+        A.next_plate=F.pass_intervals[i];
         for (int jj=F.pass_intervals[i]; jj<F.Nplate; jj++) {
             int j = A.suborder[A.next_plate];
             printf("  next plate is %d \n",j);
