@@ -202,8 +202,8 @@ int main(int argc, char **argv) {
 
 	//Execute plan, updating targets at intervals
     std::vector <int> update_intervals=F.pass_intervals;
-    update_intervals.push_back(F.Usedplate);
-    for(int i=0;i<update_intervals-1;++i){//go plate by used plate
+    update_intervals.push_back(F.NUsedplate);
+    for(int i=0;i<update_intervals.size()-1;++i){//go plate by used plate
         printf(" before pass = %d  at %d  tiles\n",i,update_intervals[i]);
         //display_results("doc/figs/",G,P,pp,F,A,true);
         //execute this phase (i) of survey
