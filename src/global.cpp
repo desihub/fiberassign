@@ -623,7 +623,7 @@ void diagnostic(const MTL& M, const Gals& Secret, Feat& F, const Assignment& A){
     printf("Diagnostics using types:QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF\n");
     std::vector<int> count_by_kind(F.Categories,0);
     for (int j=0;j<F.NUsedplate;++j){
-        js=A.suborder[j];
+        int js=A.suborder[j];
         for(int k=0;k<F.Nfiber;++k){
             int g=A.TF[js][k];
             if(g!=-1){
