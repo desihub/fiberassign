@@ -206,7 +206,7 @@ int main(int argc, char **argv) {
     for(int i=0;i<update_intervals.size()-1;++i){//go plate by used plate
         printf(" before pass = %d  at %d  tiles\n",i,update_intervals[i]);
         //display_results("doc/figs/",G,P,pp,F,A,true);
-        //execute this phase (i) of survey
+        //plan whole survey from this point out
         A.next_plate=F.pass_intervals[i];
         for (int jj=F.pass_intervals[i]; jj<F.NUsedplate; jj++) {
             int j = A.suborder[jj];
@@ -215,13 +215,13 @@ int main(int argc, char **argv) {
             assign_unused(j,M,P,pp,F,A);
             //A.next_plate++;
         }
-        //update target information for this interval
+        //update target information for interval i
         //A.next_plate=F.pass_intervals[i];
         for (int jj=update_intervals[i]; jj<update_intervals[i+1]; jj++) {
             //int j = A.suborder[A.next_plate];
-            int js=A.suborder[jj];
+            //int js=A.suborder[jj];
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
-            if (0<=js-F.Analysis) update_plan_from_one_obs(Secret,M,P,pp,F,A,F.Nplate-1); else printf("\n");
+            if (0<=jj-F.Analysis) update_plan_from_one_obs(jj,Secret,M,P,pp,F,A,F.Nplate-1); else printf("\n");
             //A.next_plate++;
         }
         

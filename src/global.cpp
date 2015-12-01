@@ -277,20 +277,23 @@ void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int 
 }
 
 // If there are galaxies discovered as fake for example, they won't be observed several times in the plan
-// haas access to G,not just M, because it needs to know the truth
+// has access to G,not just M, because it needs to know the truth
 
-void update_plan_from_one_obs(const Gals& Secret, MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int end) {
+void update_plan_from_one_obs(int j0,const Gals& Secret, MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int end) {
 	int cnt_deassign(0);
     int cnt_replace(0);
-	int j0 = A.next_plate;
+	//int j0 = A.next_plate;
+    //j is counted among used plates only
+    
 	int jpast = j0-F.Analysis;//tile whose information we just learned
 	if (jpast<0) { printf("ERROR in update : jpast negative\n"); fl(); }
 	int n = end-j0+1;
+    int js=A.suborder[jpast];
 	//int na_start(A.na(F,j0,n));//unassigned fibers in tiles from j0 to j0+n
 	List to_update;
 	// Get the list of galaxies to update in the plan
 	for (int k=0; k<F.Nfiber; k++) {
-        int g = A.TF[jpast][k];
+        int g = A.TF[js][k];
 
         // Don't update SS or SF
         if (g!=-1&&!M[g].SS && !M[g].SF){
