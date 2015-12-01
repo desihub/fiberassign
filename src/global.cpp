@@ -366,7 +366,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
         }
     }
     for(int c=M.priority_list.size()-1;P[j].SF_in_petal[p]<F.MaxSF && c>-1;--c ){//try to do this for lowest priority
-                printf(" c %d  j= %d p= %d SF in petal %d\n",c,j,p,P[j].SS_in_petal[p]);
+                //printf(" c %d  j= %d p= %d SF in petal %d\n",c,j,p,P[j].SS_in_petal[p]);
         // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SF_av_gal[p]; //sky fibers on this petak
         for(int gg=0;gg<gals.size();++gg){
