@@ -360,7 +360,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                                 assign_galaxy(g_old,M,P,pp,F,A);//try to assign
                                 A.assign(j,k,g,M,P,pp);
                                 done=1;
-                                //printf(" **assign SS g= %d to j= %d  k=%d \n",g,j,k);
+                                if(j<1000)printf(" **assign SS g= %d to j= %d  k=%d \n",g,j,k);
                             }
                         }
                     }
@@ -387,7 +387,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                                 assign_galaxy(g_old,M,P,pp,F,A);//try to assign
                                 A.assign(j,k,g,M,P,pp);
                                 done=1;
-                            printf(" assign SF g= %d to j= %d  k=%d \n",g,j,k);
+                                if(j<1000)printf(" assign SF g= %d to j= %d  k=%d \n",g,j,k);
                             }
                         }
                     }

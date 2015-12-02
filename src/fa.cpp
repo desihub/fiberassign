@@ -125,22 +125,7 @@ int main(int argc, char **argv) {
     // assumes maximum number of observations needed for QSOs, LRGs
 
     simple_assign(M,P,pp,F,A);
-    
-    //check to see if any SS or SF are assigned
-    int SS_count=0;
-    int SF_count=0;
-    std::vector <int> class_count(3,0);
-    for( int j=0;j<F.Nplate;++j){
-        for (int k=0;k<F.Nfiber;++k){
-            if(A.TF[j][k]!=-1){
-                if(M[A.TF[j][k]].SS)SS_count++;
-                if(M[A.TF[j][k]].SF)SF_count++;
-                class_count[M[A.TF[j][k]].priority_class]++;
-            }
-        }
-    }
-    printf("after simple assign,  SS assigned %d  SF assigned %d\n",SS_count,SF_count);
-    printf(" class 0 %d  class 1 %d  class 2 %d\n", class_count[0],class_count[1],class_count[2]);
+
     
     //check to see if there are tiles with no galaxies
     //need to keep mapping of old tile list to new tile list
@@ -156,22 +141,6 @@ int main(int argc, char **argv) {
     }
     F.NUsedplate=A.suborder.size();
     printf(" Plates after screening %d \n",F.NUsedplate);
-    
-    //diagnostic
-    /*
-    for (int j=0;j<F.NUsedplate;++j){
-        int js=A.suborder[j];
-        printf("  js = %d  available SF for fibers\n",js);
-        for (int k=0;k<10;++k){
-            printf(" %d ",P[js].SF_av_gal_fiber[k*500].size());
-        }
-        printf("\n  petals");
-        for (int q=0;q<F.Npetal;++q){
-            printf(" %d",P[js].SF_av_gal[q].size());
-        }
-        printf("\n");
-    }
-    */
  
     //if(F.diagnose)diagnostic(M,G,F,A);
 
@@ -197,26 +166,7 @@ int main(int argc, char **argv) {
         //printf("before assign_unused js= %d \n",js);
         assign_unused(js,M,P,pp,F,A);
     }
-    
-    for(int j=0;j<F.NUsedplate;++j){
-        int js=A.suborder[j];
-        printf("\n js = %d\n",js);
-        for (int p=0;p<F.Npetal;++p){
-            int count_SS=0;
-            int count_SF=0;
-            for (int k=0;k<F.Nfbp;++k){
-                int kk=pp.fibers_of_sp[p][k];
-                int g=A.TF[js][kk];
-                if(g!=-1 && M[g].SS)count_SS++;
-                if(g!=-1 && M[g].SF)count_SF++;
-                
-            }
-            printf("  %d  %d   ",count_SS,count_SF);
-        }
-        printf("\n");
-    }
-    
-
+ 
     if(F.diagnose)diagnostic(M,Secret,F,A);
     init_time_at(time,"# Begin real time assignment",t);
 
