@@ -353,9 +353,9 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                     if(tfs[i].f==j&&pp.spectrom[tfs[i].s]==p){//a tile fiber from this petal
                         int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                         int g_old=A.TF[j][k];//what is now at (j,k)  g_old can't be -1 or we would have used it already in assign_sf
-                        if(j<1000)printf("c %d  g %d g_old  %d i %d  j %d  k%d  piroity_class %d \n",c,g,g_old,i,tfs[i].f,tfs[i].s,M[g_old].priority_class);
+                        //if(j<1000)printf("c %d  g %d g_old  %d i %d  j %d  k%d  piroity_class %d \n",c,g,g_old,i,tfs[i].f,tfs[i].s,M[g_old].priority_class);
 
-                        if(g_old!=-1 && !M[g].SS && !M[g].SF){
+                        if(g_old!=-1 && !M[g_old].SS && !M[g_old].SF){
                             if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                                 //right priority; this SS not already assigned on this plate
                                 A.unassign(j,k,g_old,M,P,pp);
@@ -383,7 +383,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                     if(tfs[i].f==j&&pp.spectrom[tfs[i].s]==p){//g is accesible to j,k
                         int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                         int g_old=A.TF[j][k];//what is now at (j,k)
-                        if(g_old!=-1 && !M[g].SS && !M[g].SF){
+                        if(g_old!=-1 && !M[g_old].SS && !M[g_old].SF){
                             if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                                 A.unassign(j,k,g_old,M,P,pp);
                                 assign_galaxy(g_old,M,P,pp,F,A);//try to assign
