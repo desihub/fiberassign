@@ -358,7 +358,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                         if(g_old!=-1 && !M[g_old].SS && !M[g_old].SF){
                             if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                                 //right priority; this SS not already assigned on this plate
-                                printf("SS j %d k %d   g %d  g_old  %d \n "j,k,g,g_old);
+                                printf("SS j %d k %d   g %d  g_old  %d \n ",j,k,g,g_old);
                                 A.unassign(j,k,g_old,M,P,pp);
                                 assign_galaxy(g_old,M,P,pp,F,A);//try to assign
                                 A.assign(j,k,g,M,P,pp);
