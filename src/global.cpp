@@ -351,9 +351,10 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                 int done=0;//quit after we've used this SS
                 for(int i=0;i<tfs.size() && done==0;++i){
                     if(tfs[i].f==j&&pp.spectrom[tfs[i].s]==p){//a tile fiber from this petal
-                        if(j<1000)printf(" g %d i %d  j %d  k%d\n",g,i,tfs[i].f,tfs[i].s);
                         int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                         int g_old=A.TF[j][k];//what is now at (j,k)  g_old can't be -1 or we would have used it already in assign_sf
+                        if(j<1000)printf("c %d  g %d g_old  %d i %d  j %d  k%d  piroity_class %d \n",c,g,g_old,i,tfs[i].f,tfs[i].s,M[g_old].priority_class);
+
                         if(g_old!=-1 && !M[g].SS && !M[g].SF){
                             if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                                 //right priority; this SS not already assigned on this plate
