@@ -167,6 +167,7 @@ int main(int argc, char **argv) {
         //printf("before assign_unused js= %d \n",js);
         assign_unused(js,M,P,pp,F,A);
     }
+    /*
     for(int j=0;j<F.NUsedplate;++j){
         int js=A.suborder[j];
         printf("\n js = %d\n",js);
@@ -184,7 +185,7 @@ int main(int argc, char **argv) {
         }
         printf("\n");
     }
-
+     */
     if(F.diagnose)diagnostic(M,Secret,F,A);
     init_time_at(time,"# Begin real time assignment",t);
 
@@ -196,11 +197,11 @@ int main(int argc, char **argv) {
         //display_results("doc/figs/",G,P,pp,F,A,true);
         //plan whole survey from this point out
         A.next_plate=F.pass_intervals[i];
-        for (int jj=F.pass_intervals[i]; jj<F.NUsedplate; jj++) {
-            int j = A.suborder[jj];
+        for (int jj=update_intervals[i]; jj<F.NUsedplate; jj++) {
+            int js = A.suborder[jj];
             //printf("  next plate is %d \n",j);
-            assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF
-            assign_unused(j,M,P,pp,F,A);
+            assign_sf_ss(js,M,P,pp,F,A); // Assign SS and SF
+            assign_unused(js,M,P,pp,F,A);
             //A.next_plate++;
         }
         //update target information for interval i

@@ -338,7 +338,7 @@ void update_plan_from_one_obs(int j0,const Gals& Secret, MTL& M, Plates&P, const
 
 void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
     // do standard stars,going through priority classes from least to most
-    // SS and SF not in priority list so start at size -1
+    
     //can get all available SS,SF on plate from P[j].av_gals_plate restricting to plate p
     for(int c=M.priority_list.size()-1;P[j].SS_in_petal[p]<F.MaxSS && c>-1;--c ){//try to do this for lowest priority
        //printf(" c %d  j= %d p= %d SS in petal assigned %d available %d\n",c,j,p,P[j].SS_in_petal[p],P[j].SS_av_gal[p].size());
@@ -358,6 +358,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                         if(g_old!=-1 && !M[g_old].SS && !M[g_old].SF){
                             if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                                 //right priority; this SS not already assigned on this plate
+                                printf(" j %d k %d   g %d  g_old  %d \n ");
                                 A.unassign(j,k,g_old,M,P,pp);
                                 assign_galaxy(g_old,M,P,pp,F,A);//try to assign
                                 A.assign(j,k,g,M,P,pp);
