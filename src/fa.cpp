@@ -141,7 +141,25 @@ int main(int argc, char **argv) {
     }
     F.NUsedplate=A.suborder.size();
     printf(" Plates after screening %d \n",F.NUsedplate);
- 
+    
+    for(int j=0;j<F.NUsedplate;++j){
+        int js=A.suborder[j];
+        printf("\n js = %d\n",js);
+        for (int p=0;p<F.Npetal;++p){
+            int count_SS=0;
+            int count_SF=0;
+            for (int k=0;k<F.Nfbp;++k){
+                int kk=pp.fibers_of_sp[p][k];
+                int g=A.TF[js][kk];
+                if(g!=-1 && M[g].SS)count_SS++;
+                if(g!=-1 && M[g].SF)count_SF++;
+                
+            }
+            printf("  %d  %d   ",count_SS,count_SF);
+        }
+        printf("\n");
+    }
+
     //if(F.diagnose)diagnostic(M,G,F,A);
 
     print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
