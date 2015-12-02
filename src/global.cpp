@@ -351,6 +351,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                 int done=0;//quit after we've used this SS
                 for(int i=0;i<tfs.size() && done==0;++i){
                     if(tfs[i].f==j&&pp.spectrom[tfs[i].s]==p){//a tile fiber from this petal
+                        if(j<1000)printf(" g %d i %d  j %d  k%d\n",g,i,tfs[i].f,tfs[i].s);
                         int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                         int g_old=A.TF[j][k];//what is now at (j,k)  g_old can't be -1 or we would have used it already in assign_sf
                         if(g_old!=-1 && !M[g].SS && !M[g].SF){
