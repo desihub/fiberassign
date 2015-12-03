@@ -6,7 +6,7 @@ PrintAscii false
 PrintFits false
 MTLfile /project/projectdirs/desi/mocks/preliminary/big_MTLfile.txt
 diagnose true
-Targfile /project/projectdirs/desi/mocks/preliminary/Tragfile.txt
+Targfile /project/projectdirs/desi/mocks/preliminary/Targfile.txt
 SStarsfile /project/projectdirs/desi/mocks/preliminary/SStarsfile.txt
 SkyFfile /project/projectdirs/desi/mocks/preliminary/SkyFfile.txt
 Secretfile /project/projectdirs/desi/mocks/preliminary/Secretfile.txt
