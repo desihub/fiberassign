@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
     Gals Secret;
     printf("before read secretfile \n");
     Secret=read_Secretfile(F.Secretfile,F);
-    //printf("# Read %s galaxies from %s \n",Secret.size(),F.Secretfile.c_str());
+    printf("# Read %d galaxies from %s \n",Secret.size(),F.Secretfile.c_str());
 	
     std::vector<int> count;
     count=count_galaxies(Secret);
