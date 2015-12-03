@@ -680,7 +680,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 		int m = min(M[g].nobs_done,MaxObs);
         obsrv[c][m]++; //
 	}
-
+    printf(" collected obsrv \n");
 	// Add the 3 columns of tot, fibs, obs
 	Table with_tots = obsrv;
 	for (int i=0; i<F.Categories; i++) {
@@ -692,6 +692,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 		with_tots[i].push_back(fibs);
 		with_tots[i].push_back(obs);
 	}
+    printf(" did with_tots \n");
 	//print_table("  Remaining observations (without negative obs ones)",with_tots,latex,F.kind);
 	Dtable obs_per_sqd = ddivide_floor(with_tots,F.TotalArea);
 

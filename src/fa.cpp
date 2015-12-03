@@ -224,7 +224,7 @@ int main(int argc, char **argv) {
         if(F.diagnose)diagnostic(M,Secret,F,A);
     }
     // check on SS and SF
-    
+    /*
     for(int j=0;j<F.NUsedplate;++j){
         int js=A.suborder[j];
         printf("\n js = %d\n",js);
@@ -242,7 +242,7 @@ int main(int argc, char **argv) {
         }
         printf("\n");
     }
-    
+    */
 	// Results -------------------------------------------------------
     if (F.PrintAscii) for (int j=0; j<F.NUsedplate; j++){
         write_FAtile_ascii(A.suborder[j],F.outDir,M,P,pp,F,A);
