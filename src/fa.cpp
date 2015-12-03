@@ -33,9 +33,9 @@ int main(int argc, char **argv) {
 	// Read Secretfile
     // Secret contains the identity of each target: QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF
     Gals Secret;
-    printf("# Read %s galaxies from %s \n",f(F.Ngal).c_str(),F.Secretfile.c_str());
-    Secret=read_Secretfile(F.Secretfile,F);
     
+    Secret=read_Secretfile(F.Secretfile,F);
+    printf("# Read %s galaxies from %s \n",Secret.size().c_str(),F.Secretfile.c_str());
 	
     std::vector<int> count;
     count=count_galaxies(Secret);
