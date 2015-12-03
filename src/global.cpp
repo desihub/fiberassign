@@ -569,7 +569,7 @@ void results_on_inputs(str outdir, const MTL& M, const Plates& P, const Feat& F,
 	print_list("  How many galaxies in range of a fiber :",histogram(data,1));
 
 	// 1 Histograms on number of av gals per plate and per fiber
-	Cube T = initCube(F.Categories,F.Nplate,F.Nfiber);
+	Cube T = initCube(F.Categories-2,F.Nplate,F.Nfiber);
 	for (int j=0; j<F.Nplate; j++) {
 		for (int k=0; k<F.Nfiber; k++) {
 			List gals = P[j].av_gals[k];
@@ -577,7 +577,7 @@ void results_on_inputs(str outdir, const MTL& M, const Plates& P, const Feat& F,
 		}
 	}
 	Table hist1;
-	for (int id=0; id<F.Categories; id++) hist1.push_back(histogram(T[id],1));
+	for (int id=0; id<F.Categories-2; id++) hist1.push_back(histogram(T[id],1));
 	print_mult_table_latex("Available galaxies (by kind) for a TF",outdir+"avgalhist.dat",hist1,1);
 
 	// 2 Histograms on number of av tfs per galaxy
@@ -587,7 +587,7 @@ void results_on_inputs(str outdir, const MTL& M, const Plates& P, const Feat& F,
 		Tg[M[g].id].push_back(n);
 	}
 	Table hist2;
-	for (int id=0; id<F.Categories; id++) hist2.push_back(histogram(Tg[id],1));
+	for (int id=0; id<F.Categories-2; id++) hist2.push_back(histogram(Tg[id],1));
 	print_mult_table_latex("Available tile-fibers for a galaxy (by kind)",outdir+"avtfhist.dat",hist2,1);
 
 	// 3 Histogram of number of times (by different plates) reachable galaxies
@@ -627,7 +627,7 @@ void results_on_inputs(str outdir, const MTL& M, const Plates& P, const Feat& F,
 void diagnostic(const MTL& M, const Gals& Secret, Feat& F, const Assignment& A){
     // diagnostic  allows us to peek at the actual id of each galaxy
     printf("Diagnostics using types:QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF\n");
-    std::vector<int> count_by_kind(F.Categories,0);
+    std::vector<int> count_by_kind(F.Categories-2,0);
     for (int j=0;j<F.NUsedplate;++j){
         int js=A.suborder[j];
         //printf(" js = %d\n",js);
@@ -640,7 +640,7 @@ void diagnostic(const MTL& M, const Gals& Secret, Feat& F, const Assignment& A){
             }
         }
     }
-    for(int i=0;i<F.Categories;++i){
+    for(int i=0;i<F.Categories-2;++i){
         printf(" i  %d    number  %d \n",i,count_by_kind[i]);
     }
     int MaxObs = max(F.goal);
@@ -653,7 +653,7 @@ void diagnostic(const MTL& M, const Gals& Secret, Feat& F, const Assignment& A){
         obsrv[c][m]++; //
         }
     }
-    for (int c=0;c<F.Categories;++c){
+    for (int c=0;c<F.Categories-2;++c){
         int tot=0;
         for (int m=0;m<MaxObs+1;++m){
             tot+=obsrv[c][m];
@@ -672,7 +672,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 
 	// 1 Raw numbers of galaxies by id and number of remaining observations
 	int MaxObs = max(F.goal);
-	Table obsrv = initTable(F.Categories,MaxObs+1);
+	Table obsrv = initTable(F.Categories-2,MaxObs+1);
 
 	for (int g=0; g<M.size(); g++) {
         if(!M[g].SS && !M[g].SF){
@@ -684,7 +684,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
     printf(" collected obsrv \n");
 	// Add the 3 columns of tot, fibs, obs
 	Table with_tots = obsrv;
-	for (int i=0; i<F.Categories; i++) {
+	for (int i=0; i<F.Categories-2; i++) {
 		int fibs = 0; int obs = 0; int tot =0;
 		for (int j=0; j<=MaxObs; j++) tot += obsrv[i][j];
 		for (int j=0; j<=MaxObs; j++) fibs += obsrv[i][j]*j;
@@ -698,8 +698,8 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 	Dtable obs_per_sqd = ddivide_floor(with_tots,F.TotalArea);
 
 	// Add percentages of observation
-	Dtable perc = initDtable(F.Categories,2);
-	for (int id=0; id<F.Categories; id++) {
+	Dtable perc = initDtable(F.Categories-2,2);
+	for (int id=0; id<F.Categories-2; id++) {
 		int tot = sumlist(obsrv[id]);
 		int goal = F.goal[id];
 
@@ -810,7 +810,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
  
 	// 8 Percentage of seen objects as a function of density of objects
 	if (F.PlotSeenDens) {
-	Dcube densities = initDcube(F.Categories+1,0,0);
+	Dcube densities = initDcube(F.Categories+-21,0,0);
 	for (int j=0; j<F.Nplate; j++) {
 		for (int k=0; k<F.Nfiber; k++) {
 			// For all
@@ -825,7 +825,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 			}
 
 			// For kind
-			for (int t=0; t<F.Categories; t++) {
+			for (int t=0; t<F.Categories-2; t++) {
 				int nkind = 0;
 				int ock = 0;
 				for (int i=0; i<size; i++) {
@@ -843,8 +843,8 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 			}
 		}
 	}
-	Dtable densit = initDtable(F.Categories+1,max_row(densities));
-	for (int t=0; t<F.Categories+1; t++) for (int i=0; i<densities[t].size(); i++) densit[t][i] = sumlist(densities[t][i])/densities[t][i].size();
+	Dtable densit = initDtable(F.Categories-2+1,max_row(densities));
+	for (int t=0; t<F.Categories-2+1; t++) for (int i=0; i<densities[t].size(); i++) densit[t][i] = sumlist(densities[t][i])/densities[t][i].size();
 	print_mult_Dtable_latex("Perc of seen obj as a fun of dens of objs",outdir+"seendens.dat",densit,1);
 	}
 	
