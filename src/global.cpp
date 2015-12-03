@@ -354,7 +354,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                         if(g_old!=-1 && !M[g_old].SS && !M[g_old].SF){
                             if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                                 //right priority; this SS not already assigned on this plate
-                                printf("SS j %d k %d   g %d  g_old  %d \n ",j,k,g,g_old);
+                                //printf("SS j %d k %d   g %d  g_old  %d \n ",j,k,g,g_old);
                                 A.unassign(j,k,g_old,M,P,pp);
                                 assign_galaxy(g_old,M,P,pp,F,A,j);//try to assign
                                 A.assign(j,k,g,M,P,pp);
@@ -382,12 +382,12 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                         int g_old=A.TF[j][k];//what is now at (j,k)
                         if(g_old!=-1 && !M[g_old].SS && !M[g_old].SF){
                             if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
-                                printf("SF j %d k %d   g %d  g_old  %d \n ",j,k,g,g_old);
-                                printf(" before unassign occupant of (j,k)  %d\n",A.TF[j][k]);
+                                //printf("SF j %d k %d   g %d  g_old  %d \n ",j,k,g,g_old);
+                                //printf(" before unassign occupant of (j,k)  %d\n",A.TF[j][k]);
                                 A.unassign(j,k,g_old,M,P,pp);
 
                                 assign_galaxy(g_old,M,P,pp,F,A,j);//try to assign
-                                printf(" after unassign occupant of (j,k)  %d\n",A.TF[j][k]);
+                                //printf(" after unassign occupant of (j,k)  %d\n",A.TF[j][k]);
                                 A.assign(j,k,g,M,P,pp);
                                 done=1;
                                 //if(j<1000)printf(" assign SF g= %d to j= %d  k=%d \n",g,j,k);
@@ -506,9 +506,9 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
                 int g=A.TF[js][k];
                 if(g!=-1){
                     dpair test_projection=projection(g,js,M,P);
-                    if (test_projection.f>500. || test_projection.s>500.){
-                        printf(" g %d  j %d test_projection.f  %f test_projection.s  %f\n",g,js,test_projection.f,test_projection.s);
-                    }
+                    //if (test_projection.f>500. || test_projection.s>500.){
+                        //printf(" g %d  j %d test_projection.f  %f test_projection.s  %f\n",g,js,test_projection.f,test_projection.s);
+                    //}
                 }
             }
         }
