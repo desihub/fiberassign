@@ -389,8 +389,9 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                                 printf("SF j %d k %d   g %d  g_old  %d \n ",j,k,g,g_old);
                                 printf(" before unassign occupant of (j,k)  %d\n",A.TF[j][k]);
                                 A.unassign(j,k,g_old,M,P,pp);
-                                printf(" after unassign occupant of (j,k)  %d\n",A.TF[j][k]);
+
                                 assign_galaxy(g_old,M,P,pp,F,A);//try to assign
+                                printf(" after unassign occupant of (j,k)  %d\n",A.TF[j][k]);
                                 A.assign(j,k,g,M,P,pp);
                                 done=1;
                                 //if(j<1000)printf(" assign SF g= %d to j= %d  k=%d \n",g,j,k);
