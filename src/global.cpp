@@ -356,7 +356,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                                 //right priority; this SS not already assigned on this plate
                                 printf("SS j %d k %d   g %d  g_old  %d \n ",j,k,g,g_old);
                                 A.unassign(j,k,g_old,M,P,pp);
-                                assign_galaxy(g_old,M,P,pp,F,A);//try to assign
+                                assign_galaxy(g_old,M,P,pp,F,A,j);//try to assign
                                 A.assign(j,k,g,M,P,pp);
                                 done=1;
                                 //if(j<1000)printf(" **assign SS g= %d to j= %d  k=%d \n",g,j,k);
@@ -386,7 +386,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                                 printf(" before unassign occupant of (j,k)  %d\n",A.TF[j][k]);
                                 A.unassign(j,k,g_old,M,P,pp);
 
-                                assign_galaxy(g_old,M,P,pp,F,A);//try to assign
+                                assign_galaxy(g_old,M,P,pp,F,A,j);//try to assign
                                 printf(" after unassign occupant of (j,k)  %d\n",A.TF[j][k]);
                                 A.assign(j,k,g,M,P,pp);
                                 done=1;
