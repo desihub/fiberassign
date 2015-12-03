@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
 	// Read Secretfile
     // Secret contains the identity of each target: QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF
     Gals Secret;
-    
+    printf("before read secretfile \n");
     Secret=read_Secretfile(F.Secretfile,F);
     printf("# Read %s galaxies from %s \n",Secret.size(),F.Secretfile.c_str());
 	
