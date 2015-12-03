@@ -675,10 +675,11 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 	Table obsrv = initTable(F.Categories,MaxObs+1);
 
 	for (int g=0; g<M.size(); g++) {
-        
+        if(!M[g].SS && !M[g].SF){
 		int c= Secret[g].id;
 		int m = min(M[g].nobs_done,MaxObs);
         obsrv[c][m]++; //
+        }
 	}
     printf(" collected obsrv \n");
 	// Add the 3 columns of tot, fibs, obs
