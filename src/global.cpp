@@ -162,21 +162,17 @@ inline int assign_fiber(int j, int k, MTL& M, Plates& P, const PP& pp, const Fea
 }
 
 
-// Tries to assign the galaxy g to one of the plates list starting with the jstart one, and of size size
-//default jstart is as A.next_plate
-//default size is number of plates to go
-//used only in replace
-inline void assign_galaxy(int g,  MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A, int jstart=-1, int size=-1) {
-	int j0 = (jstart==-1) ? A.next_plate : jstart;
-	int n = (size==-1) ? F.Nplate-j0 : size;// number of plates to do
-	int jb = -1; int kb = -1; int unusedb = -1;
+// Tries to assign the galaxy g to one of the used plates after jstart
+inline void assign_galaxy(int g,  MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A, int jstart) {
+    
+    int jb = -1; int kb = -1; int unusedb = -1;
 	Plist av_tfs = M[g].av_tfs;
 	// All the tile-fibers that can observe galaxy g
 	for (int tfs=0; tfs<av_tfs.size(); tfs++) {
 		int j = av_tfs[tfs].f;
 		int k = av_tfs[tfs].s;
 		// Check if the assignment is possible, if ok, if the tf is not used yet, and if the plate is in the list
-		if (j0<j && j<j0+n && !A.is_assigned_tf(j,k) && ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)) {
+		if (jstart<j && !A.is_assigned_tf(j,k) && ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)) {
 			int unused = A.unused[j][pp.spectrom[k]];//unused fibers on this petal
 			if (unusedb<unused) {
 				jb = j; kb = k; unusedb = unused;//observe this galaxy by fiber on petal with most free fibefs
