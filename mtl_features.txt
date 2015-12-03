@@ -9,6 +9,7 @@ diagnose true
 Targfile /project/projectdirs/desi/mocks/preliminary/Tragfile.txt
 SStarsfile /project/projectdirs/desi/mocks/preliminary/SStarsfile.txt
 SkyFfile /project/projectdirs/desi/mocks/preliminary/SkyFfile.txt
+Secretfile /project/projectdirs/desi/mocks/preliminary/Secretfile.txt
 kind QSOLy-a QSOTracer LRG ELG FakeQSO FakeLRG SS SF
 type QSO QSO LRG ELG QSO LRG SS SF
 prio 2000 2000 3000 4000 2000 3000 9900 9800
