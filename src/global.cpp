@@ -486,40 +486,18 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
     }
 }
 
-void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A) {
+void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int jstart) {
     //diagnostic
     printf("start redistribute \n");
-    for (int j=0;j<F.NUsedplate;++j){
-        int js=A.suborder[j];
-        //printf(" j %d  js  %d\n ",j,js);
-        for (int k=0;k<F.Nfiber;++k){
-            if(k%1==0){
-                int g=A.TF[js][k];
-                if(g!=-1){
-                    dpair test_projection=projection(g,js,M,P);
-                    //if (test_projection.f>500. || test_projection.s>500.){
-                        //printf(" g %d  j %d test_projection.f  %f test_projection.s  %f\n",g,js,test_projection.f,test_projection.s);
-                    //}
-                }
-            }
-        }
-    }
-    
-
 	Time t;
 	init_time(t,"# Begin redistribute TF :");
-	int j0 = A.next_plate;//among only plates with galaxies
-	//int n = next==-1 ? F.Nplate-A.next_plate : next; //from next_plate on
     int n = F.NUsedplate-A.next_plate;
 	int red(0);
 	Table Done = initTable(F.Nplate,F.Nfiber);//consider every occupied plate and every fiber
-	for (int j=j0; j<F.NUsedplate; j++) {
-        int js=A.suborder[j];
-		List randFiber = random_permut(F.Nfiber);
-		for (int kk=0; kk<F.Nfiber; kk++) {
-			int k = randFiber[kk];
-			if (Done[js][k]==0) {
-
+	for (int j=jstart; j<F.NUsedplate; j++) {
+        int js=A.suborder[jstart];
+		for (int k=0; k<F.Nfiber; k++) {
+			if (Done[j][k]==0) {
 				int g = A.TF[js][k];//current assignment of (js,k)  only look if assigned
                 if (g!=-1&&!M[g].SS&&!M[g].SF) {
 					int jpb = -1; int kpb = -1; int unusedb = A.unused[j][pp.spectrom[k]];//unused for j, spectrom[k]
@@ -528,7 +506,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 						int jp = av_tfs[i].f;
 						int kp = av_tfs[i].s;
 						int unused = A.unused[jp][pp.spectrom[kp]];//unused for jp, spectrom[kp]
-						if (A.suborder[j0]<=jp && jp<F.Nplate && !A.is_assigned_tf(jp,kp) && Done[jp][kp]==0 && ok_assign_g_to_jk(g,jp,kp,P,M,pp,F,A) && A.is_assigned_jg(jp,g,M,F)==-1 && 0<unused) {
+						if (A.suborder[j]<=jp && jp<F.Nplate && !A.is_assigned_tf(jp,kp) && Done[A.inv_order[jp]][kp]==0 && ok_assign_g_to_jk(g,jp,kp,P,M,pp,F,A) && A.is_assigned_jg(jp,g,M,F)==-1 && 0<unused) {
 							if (unusedb<unused) { // Takes the most unused petal
                                 jpb = jp;
 								kpb = kp;

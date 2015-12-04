@@ -33,14 +33,14 @@ void simple_assign(MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A
 
 // More fine first assignment plan, 
 
-void improve(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int next=-1);
+void improve(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int jstart);
 
 void improve_from_kind(MTL& M, const Plates&P, const PP& pp, const Feat& F, Assignment& A, str kind, int next=-1);
 
 void update_plan_from_one_obs(int j, const Gals& G, MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int end);
 
 //void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int next=-1);
-void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A);
+void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int jstart);
 void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A);
 
 void assign_unused(int j, MTL& M,  Plates& P, const PP& pp, const Feat& F, Assignment& A);

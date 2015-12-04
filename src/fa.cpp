@@ -126,6 +126,8 @@ int main(int argc, char **argv) {
     
     //check to see if there are tiles with no galaxies
     //need to keep mapping of old tile list to new tile list
+    //and inverse map
+    A.inv_order=initList(F.Nplate,0);
     for (int j=0;j<F.Nplate ;++j){
         bool not_done=true;
         for(int k=0;k<F.Nfiber && not_done;++k){
@@ -146,10 +148,10 @@ int main(int argc, char **argv) {
     
 	// Smooth out distribution of free fibers, and increase the number of assignments
     
-	for (int i=0; i<1; i++) redistribute_tf(M,P,pp,F,A);// more iterations will improve performance slightly
+	for (int i=0; i<1; i++) redistribute_tf(M,P,pp,F,A,0);// more iterations will improve performance slightly
 	for (int i=0; i<1; i++) {
-        improve(M,P,pp,F,A);
-		redistribute_tf(M,P,pp,F,A);
+        improve(M,P,pp,F,A,0);
+		redistribute_tf(M,P,pp,F,A,0);
 	}
 	
     
@@ -171,11 +173,11 @@ int main(int argc, char **argv) {
     std::vector <int> update_intervals=F.pass_intervals;
     update_intervals.push_back(F.NUsedplate);//to end intervals at last plate
     for(int i=0;i<update_intervals.size()-1;++i){//go plate by used plate
-        printf(" before pass = %d  at %d  tiles\n",i,update_intervals[i]);
+        int starter=update_intervals[i];
+        printf(" before pass = %d  at %d  tiles\n",i,starter);
         //display_results("doc/figs/",G,P,pp,F,A,true);
         //plan whole survey from this point out
-        A.next_plate=F.pass_intervals[i];
-        for (int jj=update_intervals[i]; jj<F.NUsedplate; jj++) {
+        for (int jj=starter; jj<F.NUsedplate; jj++) {
             int js = A.suborder[jj];
             //printf("  next plate is %d \n",j);
             assign_sf_ss(js,M,P,pp,F,A); // Assign SS and SF
@@ -184,7 +186,7 @@ int main(int argc, char **argv) {
         }
         //update target information for interval i
         //A.next_plate=F.pass_intervals[i];
-        for (int jj=update_intervals[i]; jj<update_intervals[i+1]; jj++) {
+        for (int jj=starter; jj<update_intervals[i+1]; jj++) {
             //int j = A.suborder[A.next_plate];
             //int js=A.suborder[jj];
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
@@ -193,10 +195,10 @@ int main(int argc, char **argv) {
         }
         
         //if(A.next_plate<F.Nplate){
-        redistribute_tf(M,P,pp,F,A);
-        redistribute_tf(M,P,pp,F,A);
-        improve(M,P,pp,F,A);
-        redistribute_tf(M,P,pp,F,A);
+        redistribute_tf(M,P,pp,F,A,starter);
+        redistribute_tf(M,P,pp,F,A,starter);
+        improve(M,P,pp,F,A,starter);
+        redistribute_tf(M,P,pp,F,A,starter);
         //}
         
         if(F.diagnose)diagnostic(M,Secret,F,A);
