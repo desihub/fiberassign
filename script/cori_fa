@@ -2,7 +2,7 @@
 
 #SBATCH -p debug
 #SBATCH -N 1
-#SBATCH -t 0:29:59
+#SBATCH -t 1:00:00
 
 
 
