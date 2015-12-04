@@ -185,30 +185,28 @@ inline void assign_galaxy(int g,  MTL& M, Plates& P, const PP& pp, const Feat& F
 // Takes an unassigned fiber and tries to assign it with the "improve" technique described in the doc
 // not used for SS or SF   
 inline int improve_fiber(int begin, int j, int k, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A, int no_g=-1) {
-	if (!A.is_assigned_tf(j,k)) { // Unused tilefiber (j,k)
-		// tries to assign it in the conventional way to galaxy available to it
-        
-		int g_try = assign_fiber(j,k,M,P,pp,F,A,no_g);//maybe doesn't allow SS or SF
+    // begin and j are in interval from 0 to F.NUsedplate
+    int js=A.suborder[j];
+	if (!A.is_assigned_tf(js,k)) { // Unused tilefiber (js,k)
+		int g_try = assign_fiber(js,k,M,P,pp,F,A,no_g);//maybe doesn't allow SS or SF
 		if (g_try!=-1) return g_try;
 		else { // Improve
 			int gb = -1; int bb = -1; int jpb = -1; int kpb = -1; int mb = -1; int pb = 1e3; int unusedb = -1;
-			List av_g = P[j].av_gals[k];
+			List av_g = P[js].av_gals[k];
 			// For all available galaxies within reach that are already observed
 			for (int i=0; i<av_g.size(); i++) {
-                //printf("Test B\n");
-				int g = av_g[i];
-                if (g!=-1 && g!=no_g&&!M[g].SS&!M[g].SF) {
-					if (ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)) {//this doesn't check to see that jk isnt assigned: it is
-						// Which tile-fibers have taken g ?
-                        //printf("Test C  begin %d  j %d  k %d  g  %d\n", begin,j,k,g);
-						Plist tfs = A.chosen_tfs(g,F,begin);//all tile-fibers that observe g in tiles from begin to next
-						for (int p=0; p<tfs.size(); p++) {
+				int g = av_g[i];//a galaxy accessible to js,k
+                if (g!=-1 && g!=no_g&&!M[g].SS&!M[g].SF) {//not SS or SF
+					if (ok_assign_g_to_jk(g,js,k,P,M,pp,F,A)&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)) {
+                        // Which tile-fibers have taken g ?
+						Plist tfs = A.chosen_tfs(g,F,begin);//all tile-fibers that observe g in tiles from begin to end
+                        for (int p=0; p<tfs.size(); p++) {
 							int jp = tfs[p].f;
 							int kp = tfs[p].s; // (jp,kp) currently assigned to galaxy g
 							// FIND BEST JP KP !!!
 							int best = find_best(jp,kp,M,P,pp,F,A); // best!=g because !A.assigned_pg(best)
 
-							if (best!=-1 && (A.is_assigned_jg(j,g,M,F)==-1 || jp==j)) {
+							if (best!=-1 && (A.is_assigned_jg(js,g,M,F)==-1 || jp==js)) {
 								int prio = M[g].t_priority;
 								int m = M[g].nobs_remain;
 								int unused = A.unused[jp][pp.spectrom[kp]]; // We take the most unused
@@ -218,12 +216,12 @@ inline int improve_fiber(int begin, int j, int k, MTL& M, Plates& P, const PP& p
 			// Modify assignment
 			if (gb!=-1) {
 				A.unassign(jpb,kpb,gb,M,P,pp);
-				A.assign(j,k,gb,M,P,pp);
+				A.assign(js,k,gb,M,P,pp);
 				A.assign(jpb,kpb,bb,M,P,pp);
 				return gb;
 			}
 		}
-	}
+    }
 	return -1;
 }
 //not used !
@@ -252,24 +250,17 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
     printf(" countme %d \n",countme);
 }
 
-void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int next) {
+void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int jstart) {
+    //jstart is in list from 0 to F.NUsedplate
 	Time t;
-	if (next!=1) init_time(t,"# Begin improve :");
-	int j0 = A.next_plate;//among only those used
-    //printf("j0 %d\n",j0);
-    int j0s=A.suborder[j0];
-    //printf("j0s %d\n",j0s);
-	//int na_start = A.na(F,j0,n);//number of assigned tile-fibers from j0 to j0+n-1
-	//List plates = sublist(j0,n,A.order);//not needed?
-    for (int jj=j0; jj<F.NUsedplate; jj++){
+	init_time(t,"# Begin improve :");
+    for (int jj=jstart; jj<F.NUsedplate; jj++){
         for (int k=0; k<F.Nfiber; k++){
-            int js=A.suborder[jj];
-            improve_fiber(j0s,js,k,M,P,pp,F,A);
+            improve_fiber(jstart,jj,k,M,P,pp,F,A);
         }
     }
-	//int na_end = A.na(F,j0s,n);
-	//printf("  %s more assignments (%.3f %% improvement)\n",f(na_end-na_start).c_str(),percent(na_end-na_start,na_start));//how many new assigned tf's
-	if (next!=1) print_time(t,"# ... took :");
+
+	print_time(t,"# ... took :");
 }
 
 // If there are galaxies discovered as fake for example, they won't be observed several times in the plan

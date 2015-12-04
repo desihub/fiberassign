@@ -34,8 +34,9 @@ int main(int argc, char **argv) {
     // Secret contains the identity of each target: QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF
     Gals Secret;
     printf("before read secretfile \n");
-    Secret=read_Secretfile(F.Secretfile,F);
     init_time_at(time,"# read Secret file",t);
+
+    Secret=read_Secretfile(F.Secretfile,F);
     printf("# Read %d galaxies from %s \n",Secret.size(),F.Secretfile.c_str());
 	print_time(time,"# ... took :");
     std::vector<int> count;
@@ -106,7 +107,7 @@ int main(int argc, char **argv) {
     init_time_at(time,"# collect available tile-fibers at",t);
 	// For each galaxy, computes available tilefibers  G[i].av_tfs = [(j1,k1),(j2,k2),..]
 	collect_available_tilefibers(M,P,F);
-	print_time(time,"# ... took :");//T.stats();
+	
 	//results_on_inputs("doc/figs/",G,P,F,true);
 
 	//// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
