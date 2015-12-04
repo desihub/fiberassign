@@ -175,6 +175,7 @@ int main(int argc, char **argv) {
     printf("before push back\n");
     cout<<std::endl;
     update_intervals.push_back(F.NUsedplate);//to end intervals at last plate
+    /*
     printf("made update_intervals\n");
     for(int i=0;i<update_intervals.size()-1;++i){//go plate by used plate
         int starter=update_intervals[i];
