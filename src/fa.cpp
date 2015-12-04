@@ -35,16 +35,19 @@ int main(int argc, char **argv) {
     Gals Secret;
     printf("before read secretfile \n");
     Secret=read_Secretfile(F.Secretfile,F);
+    init_time_at(time,"# read Secret file",t);
     printf("# Read %d galaxies from %s \n",Secret.size(),F.Secretfile.c_str());
-	
+	print_time(time,"# ... took :");
     std::vector<int> count;
     count=count_galaxies(Secret);
     printf(" Number of galaxies by type, QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF\n");
     for(int i=0;i<8;i++){printf (" type %d number  %d  \n",i, count[i]);}
     //read the three input files
+    init_time_at(time,"# read target, SS, SF files",t);
     MTL Targ=read_MTLfile(F.Targfile,F,0,0);
     MTL SStars=read_MTLfile(F.SStarsfile,F,1,0);
     MTL SkyF=read_MTLfile(F.SkyFfile,F,0,1);
+    print_time(time,"# ... took :");
     //combine the three input files
 
     M=Targ;
@@ -58,26 +61,18 @@ int main(int argc, char **argv) {
     assign_priority_class(M);
     
     //establish priority classes
+    init_time_at(time,"# establish priority clasess",t);
     std::vector <int> count_class(M.priority_list.size(),0);
     for(int i;i<M.size();++i){
         if(!M[i].SS&&!M[i].SF){
         count_class[M[i].priority_class]+=1;
         }
     }
-
+	print_time(time,"# ... took :");
    
     for(int i;i<M.priority_list.size();++i){
         printf("  class  %d  number  %d\n",i,count_class[i]);
     }
-
-    //diagnostic
-    int count_ss=0;
-    int count_sf=0;
-    for(int g=0;g<M.size();++g){
-        if(M[g].SS) count_ss++;
-        if(M[g].SF) count_sf++;
-    }
-    printf("  number SS = %d  number SF = %d\n",count_ss,count_sf);
     
     PP pp;
 	pp.read_fiber_positions(F); 
@@ -103,14 +98,15 @@ int main(int argc, char **argv) {
 	init_time_at(time,"# Start building HTM tree",t);
 	htmTree<struct target> T(M,MinTreeSize);
 	print_time(time,"# ... took :");//T.stats();
+    init_time_at(time,"# collect galaxies at ",t);
 	
 	// For plates/fibers, collect available galaxies; done in parallel
     collect_galaxies_for_all(M,T,P,pp,F);
-    
+    print_time(time,"# ... took :");//T.stats();
+    init_time_at(time,"# collect available tile-fibers at",t);
 	// For each galaxy, computes available tilefibers  G[i].av_tfs = [(j1,k1),(j2,k2),..]
 	collect_available_tilefibers(M,P,F);
-    
-   
+	print_time(time,"# ... took :");//T.stats();
 	//results_on_inputs("doc/figs/",G,P,F,true);
 
 	//// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -167,31 +163,12 @@ int main(int argc, char **argv) {
         //printf("before assign_unused js= %d \n",js);
         assign_unused(js,M,P,pp,F,A);
     }
-    /*
-    for(int j=0;j<F.NUsedplate;++j){
-        int js=A.suborder[j];
-        printf("\n js = %d\n",js);
-        for (int p=0;p<F.Npetal;++p){
-            int count_SS=0;
-            int count_SF=0;
-            for (int k=0;k<F.Nfbp;++k){
-                int kk=pp.fibers_of_sp[p][k];
-                int g=A.TF[js][kk];
-                if(g!=-1 && M[g].SS)count_SS++;
-                if(g!=-1 && M[g].SF)count_SF++;
-                
-            }
-            printf("  %d  %d   ",count_SS,count_SF);
-        }
-        printf("\n");
-    }
-     */
     if(F.diagnose)diagnostic(M,Secret,F,A);
     init_time_at(time,"# Begin real time assignment",t);
 
 	//Execute plan, updating targets at intervals
     std::vector <int> update_intervals=F.pass_intervals;
-    update_intervals.push_back(F.NUsedplate);
+    update_intervals.push_back(F.NUsedplate);//to end intervals at last plate
     for(int i=0;i<update_intervals.size()-1;++i){//go plate by used plate
         printf(" before pass = %d  at %d  tiles\n",i,update_intervals[i]);
         //display_results("doc/figs/",G,P,pp,F,A,true);
