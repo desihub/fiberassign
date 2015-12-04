@@ -161,7 +161,7 @@ int main(int argc, char **argv) {
 
         int js=A.suborder[j];
         //printf(" before assign_sf_ss js= %d\n",js);
-        A.next_plate=js;
+        //A.next_plate=js;
         assign_sf_ss(js,M,P,pp,F,A); // Assign SS and SF for each tile
         //printf("before assign_unused js= %d \n",js);
         assign_unused(js,M,P,pp,F,A);
@@ -172,6 +172,7 @@ int main(int argc, char **argv) {
 	//Execute plan, updating targets at intervals
     std::vector <int> update_intervals=F.pass_intervals;
     update_intervals.push_back(F.NUsedplate);//to end intervals at last plate
+    printf("made update_intervals\n");
     for(int i=0;i<update_intervals.size()-1;++i){//go plate by used plate
         int starter=update_intervals[i];
         printf(" before pass = %d  at %d  tiles\n",i,starter);
