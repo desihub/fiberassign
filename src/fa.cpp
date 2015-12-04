@@ -170,6 +170,7 @@ int main(int argc, char **argv) {
     init_time_at(time,"# Begin real time assignment",t);
 
 	//Execute plan, updating targets at intervals
+    for(int i=0;i<F.pass_intervals.size();i++)printf(" i=%d interval %d \n",i,F.pass_intervals[i]);
     std::vector <int> update_intervals=F.pass_intervals;
     printf("before push back\n");
     update_intervals.push_back(F.NUsedplate);//to end intervals at last plate
