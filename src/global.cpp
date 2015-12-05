@@ -254,12 +254,14 @@ void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int 
     //jstart is in list from 0 to F.NUsedplate
 	Time t;
 	init_time(t,"# Begin improve :");
+    int improvements=0;
     for (int jj=jstart; jj<F.NUsedplate; jj++){
         for (int k=0; k<F.Nfiber; k++){
-            improve_fiber(jstart,jj,k,M,P,pp,F,A);
+            int worked=improve_fiber(jstart,jj,k,M,P,pp,F,A);
+            if (worked!=-1)improvements++;
         }
     }
-
+    printf(" improvements  %d\n",improvements);
 	print_time(t,"# ... took :");
 }
 
