@@ -180,12 +180,14 @@ int main(int argc, char **argv) {
         //update target information for interval i
 
         for (int jj=starter; jj<update_intervals[i+1]; jj++) {
-            
-            // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
-            if (0<=jj-F.Analysis) update_plan_from_one_obs(jj,Secret,M,P,pp,F,A); else printf("\n no update\n");
+            printf(" jj  %d \n",jj);
         }
     }
+    
     /*
+            // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
+            if (0<=jj-F.Analysis) update_plan_from_one_obs(jj,Secret,M,P,pp,F,A); else printf("\n no update\n");
+
         redistribute_tf(M,P,pp,F,A,starter);
         improve(M,P,pp,F,A,starter);
         redistribute_tf(M,P,pp,F,A,starter);
