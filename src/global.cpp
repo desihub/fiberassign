@@ -185,26 +185,19 @@ inline void assign_galaxy(int g,  MTL& M, Plates& P, const PP& pp, const Feat& F
 // Takes an unassigned fiber and tries to assign it with the "improve" technique described in the doc
 // not used for SS or SF   
 inline int improve_fiber(int begin, int j, int k, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A, int no_g=-1) {
-    if(begin!=0)printf(" begin %d j %d k %d \n",begin,j,k);
-    std::cout.flush();
+
     // begin and j are in interval from 0 to F.NUsedplate
     int js=j;
-    if(begin!=0)printf(" ** js %d \n",js);
-    std::cout.flush();
-    
 	if (!A.is_assigned_tf(js,k)) { // Unused tilefiber (js,k)
 		int g_try = assign_fiber(js,k,M,P,pp,F,A,no_g);//maybe doesn't allow SS or SF
 		if (g_try!=-1) return g_try;
 		else { // Improve
 			int gb = -1; int bb = -1; int jpb = -1; int kpb = -1; int mb = -1; int pb = 1e3; int unusedb = -1;
 			List av_g = P[js].av_gals[k];
-            if(begin!=0)printf(" list size %d \n",av_g.size());
-            std::cout.flush();
-			// For all available galaxies within reach that are already observed
+ 			// For all available galaxies within reach that are already observed
 			for (int i=0; i<av_g.size(); i++) {
 				int g = av_g[i];//a galaxy accessible to js,k
-                if(begin!=0)printf("i %d  g %d \n",i,g);
-                std::cout.flush();
+
                 if (g!=-1 && g!=no_g && !M[g].SS && !M[g].SF) {//not SS or SF
 					if (ok_assign_g_to_jk(g,js,k,P,M,pp,F,A) && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)) {
                         // Which tile-fibers have taken g ?
@@ -300,8 +293,6 @@ void update_plan_from_one_obs(int j0,const Gals& Secret, MTL& M, Plates&P, const
 	// Update further in the plan
 	for (int gg=0; gg<to_update.size(); gg++) {
 		int g = to_update[gg];
-        printf("  gg %d g %d j0 %d to_update %d\n",gg,g,j0,to_update.size());
-        std::cout.flush();
 		Plist tfs = A.chosen_tfs(g,F,A.suborder[j0+1]); // Begin at j0+1, can't change assignment at j0 (already observed)
         
 		while (tfs.size()!=0 && M[g].nobs_done>F.goalpost[Secret[g].id]) {
@@ -311,21 +302,14 @@ void update_plan_from_one_obs(int j0,const Gals& Secret, MTL& M, Plates&P, const
 			A.unassign(jp,kp,g,M,P,pp);
             cnt_deassign++;
             M[g].nobs_remain=0;
-            printf("  jp %d kp %d tile order %d\n",jp,kp,A.inv_order[jp]);
-            std::cout.flush();
-            
-			int gp = -1;
+  			int gp = -1;
             //j0 runs to F.NUsedplate, jp runs to F.Nplate
 			gp = improve_fiber(j0+1,jp,kp,M,P,pp,F,A,g);//****************
-            
-            printf("  gp %d \n",gp);
-            std::cout.flush();
 			erase(0,tfs);
 			if(gp!=-1)cnt_replace++;//number of replacements
         }
     }
 	//int na_end(A.na(F,j0,n));
-    printf(" deassigned %d\n",cnt_deassign);
 }
 
 
