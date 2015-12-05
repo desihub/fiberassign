@@ -197,6 +197,7 @@ inline int improve_fiber(int begin, int j, int k, MTL& M, Plates& P, const PP& p
 			// For all available galaxies within reach that are already observed
 			for (int i=0; i<av_g.size(); i++) {
 				int g = av_g[i];//a galaxy accessible to js,k
+                if(begin!=0)printf("i %d  g %d \n",i,g);
                 if (g!=-1 && g!=no_g && !M[g].SS && !M[g].SF) {//not SS or SF
 					if (ok_assign_g_to_jk(g,js,k,P,M,pp,F,A) && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)) {
                         // Which tile-fibers have taken g ?
