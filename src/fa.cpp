@@ -127,11 +127,14 @@ int main(int argc, char **argv) {
     //and inverse map
     A.inv_order=initList(F.Nplate,0);
     for (int j=0;j<F.Nplate ;++j){
+        int inv_count=0;
         bool not_done=true;
         for(int k=0;k<F.Nfiber && not_done;++k){
             if(A.TF[j][k]!=-1){
                 A.suborder.push_back(j);
                 not_done=false;
+                inv_count++;
+                A.inv_order[j]=inv_count;
                 
             }
         }
