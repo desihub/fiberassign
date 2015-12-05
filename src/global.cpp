@@ -224,21 +224,14 @@ inline int improve_fiber(int begin, int j, int k, MTL& M, Plates& P, const PP& p
     }
 	return -1;
 }
-//not used !
 // Assignment functions ------------------------------------------------------------------------------------------
 // Assign fibers naively
-// Not used at present
 
-void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A, int next) {
+void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
 	Time t;
-	if (next!=1) init_time(t,"# Begin simple assignment :");
-	int j0 = A.next_plate;
-	int n = next==-1 ? F.Nplate-j0 : next; // Not F.Nplate-A.next_plate+1
-	List plates = sublist(j0,n,A.order);
-	n=F.Nplate;
-	//printf( " n = %d \n",n);
+	init_time(t,"# Begin simple assignment :");
     int countme=0;
-	for (int j=0; j<n; j++) {
+	for (int j=0; j<F.Nplate; j++) {
 
         int best=-1;
 		for (int k=0; k<F.Nfiber; k++) { // Fiber
@@ -246,7 +239,7 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
             if (best!=-1)countme++;
 		}
 	}
-	if (next!=1) print_time(t,"# ... took :");
+	print_time(t,"# ... took :");
     printf(" countme %d \n",countme);
 }
 
@@ -271,26 +264,22 @@ void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int 
 void update_plan_from_one_obs(int j0,const Gals& Secret, MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int end) {
 	int cnt_deassign(0);
     int cnt_replace(0);
-	//int j0 = A.next_plate;
+
     //j is counted among used plates only
     
 	int jpast = j0-F.Analysis;//tile whose information we just learned
 	if (jpast<0) { printf("ERROR in update : jpast negative\n"); fl(); }
-	int n = end-j0+1;
     int js=A.suborder[jpast];
 	//int na_start(A.na(F,j0,n));//unassigned fibers in tiles from j0 to j0+n
 	List to_update;
 	// Get the list of galaxies to update in the plan
 	for (int k=0; k<F.Nfiber; k++) {
         int g = A.TF[js][k];
-
         // Don't update SS or SF
         if (g!=-1&&!M[g].SS && !M[g].SF){
             //initially nobs_remain==goal
-            
             if(M[g].once_obs==0){//first obs  otherwise should be ok
                 M[g].once_obs=1;//now observed
-                //int original_g=M[g].id;
                 if(M[g].nobs_done>F.goalpost[Secret[g].id]){
                     to_update.push_back(g);}
                 else{
@@ -303,25 +292,22 @@ void update_plan_from_one_obs(int j0,const Gals& Secret, MTL& M, Plates&P, const
 	for (int gg=0; gg<to_update.size(); gg++) {
 		int g = to_update[gg];
 		Plist tfs = A.chosen_tfs(g,F,j0+1); // Begin at j0+1, can't change assignment at j0 (already observed)
-        int original_g=M[g].id;
-		while (tfs.size()!=0&&M[g].nobs_done>F.goalpost[Secret[g].id]) {
+        
+		while (tfs.size()!=0 && M[g].nobs_done>F.goalpost[Secret[g].id]) {
 			int jp = tfs[0].f; int kp = tfs[0].s;
 			A.unassign(jp,kp,g,M,P,pp);
             cnt_deassign++;
             M[g].nobs_remain=0;
 
 			int gp = -1;
+            //j0 runs to F.NUsedplate, jp runs to F.Nplate
 			gp = improve_fiber(j0+1,jp,kp,M,P,pp,F,A,g);
 			erase(0,tfs);
 			if(gp!=-1)cnt_replace++;//number of replacements
-            if(jp%100==0 && kp%100==0&&gp!=-1){
-                //printf(" jp  %d  kp  %d  gp %d  t_priority %d \n",jp,kp,gp,M[gp].t_priority);
-            }
         }
     }
 	//int na_end(A.na(F,j0,n));
-	//if (j0%100==0)printf(" j0  %d  %4d de-assigned & %4d replaced\n",j0,cnt_deassign,cnt_replace); fl();
-    
+    printf(" deassigned %d\n",cnt_deassign);
 }
 
 
