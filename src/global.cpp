@@ -261,24 +261,22 @@ void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int 
 // If there are galaxies discovered as fake for example, they won't be observed several times in the plan
 // has access to G,not just M, because it needs to know the truth
 
-void update_plan_from_one_obs(int j0,const Gals& Secret, MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int end) {
+void update_plan_from_one_obs(int j0,const Gals& Secret, MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A) {
 	int cnt_deassign(0);
     int cnt_replace(0);
 
-    //j is counted among used plates only
+    //j0 is counted among used plates only
     
 	int jpast = j0-F.Analysis;//tile whose information we just learned
 	if (jpast<0) { printf("ERROR in update : jpast negative\n"); fl(); }
     int js=A.suborder[jpast];
 	//int na_start(A.na(F,j0,n));//unassigned fibers in tiles from j0 to j0+n
-	List to_update;
-	// Get the list of galaxies to update in the plan
+	List to_update;	// Get the list of galaxies to update in the plan
 	for (int k=0; k<F.Nfiber; k++) {
         int g = A.TF[js][k];
-        // Don't update SS or SF
-        if (g!=-1&&!M[g].SS && !M[g].SF){
+        if (g!=-1&&!M[g].SS && !M[g].SF){        // Don't update SS or SF
             //initially nobs_remain==goal
-            if(M[g].once_obs==0){//first obs  otherwise should be ok
+            if(M[g].once_obs==0){//first observation  otherwise should be ok
                 M[g].once_obs=1;//now observed
                 if(M[g].nobs_done>F.goalpost[Secret[g].id]){
                     to_update.push_back(g);}
@@ -429,26 +427,16 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
         int p = ppet;
         std::vector <int> SS_av=P[j].SS_av_gal[p];
         std::vector <int> SF_av=P[j].SF_av_gal[p];
-		//List randFibers = random_permut(pp.fibers_of_sp[p]);//fibers for this petal
-        //printf("//first use any free fibers j= %d p= %d available SS %d  available SF %d\n",j,p,SS_av.size(),SF_av.size());
+
         if(SS_av.size()>0 ||SF_av.size()>0){
             //look at fibers on this petal
 			for (int kk=0; kk<F.Nfbp; kk++) {
 				//int k = randFibers[kk];
                 int k= pp.fibers_of_sp[p][kk];
-                //printf(" j %d k %d  g  %d  \n  ",j, k ,A.TF[j][k] );
-                
-                
                 std::vector <int> SS_av_k=P[j].SS_av_gal_fiber[k];
                 std::vector <int> SF_av_k=P[j].SF_av_gal_fiber[k];
-                //printf( " fibers on j=%d  SS   av  %d  SF av  %d \n",j,SS_av_k.size(), SF_av_k.size());
-                //printf( " fibers on petal p=%d  SS   av  %d  SF av  %d \n",p,SS_av.size(), SF_av.size());
                 if (A.TF[j][k]==-1){
-                    //printf("galaxy at j = %d k= %d is g= %d\n",j,k,A.TF[j][k]);
                     int done=0;
-                    
-                    
-                    //if(SS_av_k.size()>0)printf(" ss available for fiber k %d is %d \n ",k,SS_av_k.size());
 
                     for (int gg=0; gg<SS_av_k.size()&&done==0; gg++) {
                         int g = SS_av_k[gg];//SS on this petal
@@ -468,7 +456,6 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
                     }
                 }
 
-        //printf("// If not enough SS and SF, replace galaxies with lowest priority j= %d  p= %d\n",j,p);
         new_replace(j,p,M,P,pp,F,A);
         }
     }
