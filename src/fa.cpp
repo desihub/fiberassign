@@ -193,15 +193,15 @@ int main(int argc, char **argv) {
     
         //update target information for interval i
         //A.next_plate=F.pass_intervals[i];
-        for (int jj=starter; jj<update_intervals[i+1]; jj++) {
+        for (int jj=starter; jj<update_intervals[i]; jj++) {
             //int j = A.suborder[A.next_plate];
             //int js=A.suborder[jj];
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
             if (0<=jj-F.Analysis) update_plan_from_one_obs(jj,Secret,M,P,pp,F,A,F.Nplate-1); else printf("\n");
             //A.next_plate++;
         }
-    }
-        /*
+    
+   
         //if(A.next_plate<F.Nplate){
         redistribute_tf(M,P,pp,F,A,starter);
         redistribute_tf(M,P,pp,F,A,starter);
@@ -210,9 +210,9 @@ int main(int argc, char **argv) {
         //}
         
         if(F.diagnose)diagnostic(M,Secret,F,A);
-    }
+    
     // check on SS and SF
-    /*
+
     for(int j=0;j<F.NUsedplate;++j){
         int js=A.suborder[j];
         printf("\n js = %d\n",js);
@@ -230,7 +230,7 @@ int main(int argc, char **argv) {
         }
         printf("\n");
     }
-    */
+    }
 	// Results -------------------------------------------------------
     if (F.PrintAscii) for (int j=0; j<F.NUsedplate; j++){
         write_FAtile_ascii(A.suborder[j],F.outDir,M,P,pp,F,A);
