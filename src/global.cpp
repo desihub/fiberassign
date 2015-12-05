@@ -275,8 +275,7 @@ void update_plan_from_one_obs(int j0,const Gals& Secret, MTL& M, Plates&P, const
 	List to_update;	// Get the list of galaxies to update in the plan
 	for (int k=0; k<F.Nfiber; k++) {
         int g = A.TF[js][k];
-        printf("  js  %d k %d  g %d\n",js,k,g);
-        std::cout.flush();
+
         if (g!=-1&&!M[g].SS && !M[g].SF){        // Don't update SS or SF
             //initially nobs_remain==goal
             if(M[g].once_obs==0){//first observation  otherwise should be ok
@@ -292,10 +291,14 @@ void update_plan_from_one_obs(int j0,const Gals& Secret, MTL& M, Plates&P, const
 	// Update further in the plan
 	for (int gg=0; gg<to_update.size(); gg++) {
 		int g = to_update[gg];
+        printf("  gg %d g %d j0 %d\n",gg,g,j0);
+        std::cout.flush();
 		Plist tfs = A.chosen_tfs(g,F,A.suborder[j0+1]); // Begin at j0+1, can't change assignment at j0 (already observed)
         
 		while (tfs.size()!=0 && M[g].nobs_done>F.goalpost[Secret[g].id]) {
 			int jp = tfs[0].f; int kp = tfs[0].s;
+            printf("  jp %d kp[ %d \n",jp,kp);
+            std::cout.flush();
 			A.unassign(jp,kp,g,M,P,pp);
             cnt_deassign++;
             M[g].nobs_remain=0;
