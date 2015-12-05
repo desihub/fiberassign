@@ -270,8 +270,6 @@ void update_plan_from_one_obs(int j0,const Gals& Secret, MTL& M, Plates&P, const
 	int jpast = j0-F.Analysis;//tile whose information we just learned
 	if (jpast<0) { printf("ERROR in update : jpast negative\n"); fl(); }
     int js=A.suborder[jpast];
-    printf(" j0  %d  jpast  %d  js  %d\n",j0,jpast,js);
-    std::cout.flush();
     
 	//int na_start(A.na(F,j0,n));//unassigned fibers in tiles from j0 to j0+n
 	List to_update;	// Get the list of galaxies to update in the plan
@@ -294,7 +292,7 @@ void update_plan_from_one_obs(int j0,const Gals& Secret, MTL& M, Plates&P, const
 	// Update further in the plan
 	for (int gg=0; gg<to_update.size(); gg++) {
 		int g = to_update[gg];
-		Plist tfs = A.chosen_tfs(g,F,j0+1); // Begin at j0+1, can't change assignment at j0 (already observed)
+		Plist tfs = A.chosen_tfs(g,F,A.suborder[j0+1]); // Begin at j0+1, can't change assignment at j0 (already observed)
         
 		while (tfs.size()!=0 && M[g].nobs_done>F.goalpost[Secret[g].id]) {
 			int jp = tfs[0].f; int kp = tfs[0].s;
