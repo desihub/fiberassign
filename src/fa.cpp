@@ -178,7 +178,7 @@ int main(int argc, char **argv) {
         }
          */
         //update target information for interval i
-
+        printf(" starter  %d   ender   %d\n",starter, update_intervals[i+1]);
         for (int jj=starter; jj<update_intervals[i]; jj++) {
             printf(" updating tile jj %d\n",jj);
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
