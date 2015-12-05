@@ -175,7 +175,7 @@ int main(int argc, char **argv) {
     printf("before push back\n");
     
     update_intervals.push_back(F.NUsedplate);//to end intervals at last plate
-    /*
+    
     printf("made update_intervals\n");
     for(int i=0;i<update_intervals.size()-1;++i){//go plate by used plate
         int starter=update_intervals[i];
@@ -189,6 +189,8 @@ int main(int argc, char **argv) {
             assign_unused(js,M,P,pp,F,A);
             //A.next_plate++;
         }
+    }
+        /*
         //update target information for interval i
         //A.next_plate=F.pass_intervals[i];
         for (int jj=starter; jj<update_intervals[i+1]; jj++) {
