@@ -307,7 +307,7 @@ void update_plan_from_one_obs(int j0,const Gals& Secret, MTL& M, Plates&P, const
             
 			int gp = -1;
             //j0 runs to F.NUsedplate, jp runs to F.Nplate
-			gp = improve_fiber(j0+1,jp,kp,M,P,pp,F,A,g);
+			//gp = improve_fiber(j0+1,jp,kp,M,P,pp,F,A,g);
             
             printf("  gp %d \n",gp);
             std::cout.flush();
