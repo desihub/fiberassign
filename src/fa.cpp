@@ -180,7 +180,7 @@ int main(int argc, char **argv) {
             assign_sf_ss(js,M,P,pp,F,A); // Assign SS and SF
             assign_unused(js,M,P,pp,F,A);
         }
-         */
+        */
         //update target information for interval i
 
         for (int jj=starter; jj<update_intervals[i+1]; jj++) {
@@ -188,9 +188,9 @@ int main(int argc, char **argv) {
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
            
         }
-    }
     
-    /*
+    
+ 
 
         redistribute_tf(M,P,pp,F,A,starter);
         improve(M,P,pp,F,A,starter);
@@ -198,7 +198,7 @@ int main(int argc, char **argv) {
         //}
 
         if(F.diagnose)diagnostic(M,Secret,F,A);
-    
+    }
     // check on SS and SF
 /*
     for(int j=0;j<F.NUsedplate;++j){
@@ -218,9 +218,9 @@ int main(int argc, char **argv) {
         }
         printf("\n");
     }
-     
-    }
      */
+    
+
  
 	// Results -------------------------------------------------------
     if (F.PrintAscii) for (int j=0; j<F.NUsedplate; j++){
