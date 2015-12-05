@@ -291,7 +291,7 @@ void update_plan_from_one_obs(int j0,const Gals& Secret, MTL& M, Plates&P, const
 	// Update further in the plan
 	for (int gg=0; gg<to_update.size(); gg++) {
 		int g = to_update[gg];
-        printf("  gg %d g %d j0 %d to_update %d\n",gg,g,j0),to_update.size();
+        printf("  gg %d g %d j0 %d to_update %d\n",gg,g,j0,to_update.size());
         std::cout.flush();
 		Plist tfs = A.chosen_tfs(g,F,A.suborder[j0+1]); // Begin at j0+1, can't change assignment at j0 (already observed)
         
