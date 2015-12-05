@@ -165,7 +165,7 @@ int main(int argc, char **argv) {
     for(int i=0;i<F.pass_intervals.size();i++)printf(" i=%d interval %d \n",i,F.pass_intervals[i]);
     std::vector <int> update_intervals=F.pass_intervals;
     update_intervals.push_back(F.NUsedplate);//to end intervals at last plate
-    for(int i=0;i<update_intervals.size()-1;++i){//go plate by used plate
+    for(int i=0;i<update_intervals.size()-2;++i){//go plate by used plate
         int starter=update_intervals[i];
         printf(" before pass = %d  at %d  tiles  \n",i,starter);
         //display_results("doc/figs/",G,P,pp,F,A,true);
