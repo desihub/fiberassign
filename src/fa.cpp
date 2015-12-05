@@ -158,7 +158,7 @@ int main(int argc, char **argv) {
         assign_sf_ss(js,M,P,pp,F,A); // Assign SS and SF for each tile
         assign_unused(js,M,P,pp,F,A);
     }
-    //if(F.diagnose)diagnostic(M,Secret,F,A);
+    if(F.diagnose)diagnostic(M,Secret,F,A);
     init_time_at(time,"# Begin real time assignment",t);
 
 	//Execute plan, updating targets at intervals
@@ -187,13 +187,13 @@ int main(int argc, char **argv) {
             if (0<=jj-F.Analysis) update_plan_from_one_obs(jj,Secret,M,P,pp,F,A,F.Nplate-1); else printf("\n");
             //A.next_plate++;
         }
-        redistribute_tf(M,P,pp,F,A,starter);
+        //redistribute_tf(M,P,pp,F,A,starter);
         redistribute_tf(M,P,pp,F,A,starter);
         improve(M,P,pp,F,A,starter);
         redistribute_tf(M,P,pp,F,A,starter);
         //}
         
-        //if(F.diagnose)diagnostic(M,Secret,F,A);
+        if(F.diagnose)diagnostic(M,Secret,F,A);
     
     // check on SS and SF
 /*
