@@ -189,6 +189,9 @@ inline int improve_fiber(int begin, int j, int k, MTL& M, Plates& P, const PP& p
     std::cout.flush();
     // begin and j are in interval from 0 to F.NUsedplate
     int js=A.suborder[j];
+    if(begin!=0)printf(" ** js %d \n",js);
+    std::cout.flush();
+    
 	if (!A.is_assigned_tf(js,k)) { // Unused tilefiber (js,k)
 		int g_try = assign_fiber(js,k,M,P,pp,F,A,no_g);//maybe doesn't allow SS or SF
 		if (g_try!=-1) return g_try;
