@@ -270,6 +270,9 @@ void update_plan_from_one_obs(int j0,const Gals& Secret, MTL& M, Plates&P, const
 	int jpast = j0-F.Analysis;//tile whose information we just learned
 	if (jpast<0) { printf("ERROR in update : jpast negative\n"); fl(); }
     int js=A.suborder[jpast];
+    printf(" j0  %d  jpast  %d  js  %d\n",j0,jpast,js);
+    std::cout.flush();
+    
 	//int na_start(A.na(F,j0,n));//unassigned fibers in tiles from j0 to j0+n
 	List to_update;	// Get the list of galaxies to update in the plan
 	for (int k=0; k<F.Nfiber; k++) {
