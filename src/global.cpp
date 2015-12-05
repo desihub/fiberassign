@@ -474,7 +474,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 	int red(0);
 	Table Done = initTable(F.NUsedplate,F.Nfiber);//consider every occupied plate and every fiber
 	for (int j=jstart; j<F.NUsedplate; j++) {
-        int js=A.suborder[jstart];
+        int js=A.suborder[j];
 		for (int k=0; k<F.Nfiber; k++) {
 			if (Done[j][k]==0) {
 				int g = A.TF[js][k];//current assignment of (js,k)  only look if assigned
