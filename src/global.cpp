@@ -297,7 +297,7 @@ void update_plan_from_one_obs(int j0,const Gals& Secret, MTL& M, Plates&P, const
         
 		while (tfs.size()!=0 && M[g].nobs_done>F.goalpost[Secret[g].id]) {
 			int jp = tfs[0].f; int kp = tfs[0].s;
-            printf("  jp %d kp %d \n",jp,kp);
+            
             std::cout.flush();
 			A.unassign(jp,kp,g,M,P,pp);
             cnt_deassign++;
@@ -307,7 +307,7 @@ void update_plan_from_one_obs(int j0,const Gals& Secret, MTL& M, Plates&P, const
             
 			int gp = -1;
             //j0 runs to F.NUsedplate, jp runs to F.Nplate
-			//gp = improve_fiber(j0+1,jp,kp,M,P,pp,F,A,g);
+			gp = improve_fiber(j0+1,jp,kp,M,P,pp,F,A,g);//****************
             
             printf("  gp %d \n",gp);
             std::cout.flush();
