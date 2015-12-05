@@ -188,7 +188,7 @@ inline int improve_fiber(int begin, int j, int k, MTL& M, Plates& P, const PP& p
     if(begin!=0)printf(" begin %d j %d k %d \n",begin,j,k);
     std::cout.flush();
     // begin and j are in interval from 0 to F.NUsedplate
-    int js=A.suborder[j];
+    int js=j;
     if(begin!=0)printf(" ** js %d \n",js);
     std::cout.flush();
     
