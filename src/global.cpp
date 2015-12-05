@@ -186,6 +186,7 @@ inline void assign_galaxy(int g,  MTL& M, Plates& P, const PP& pp, const Feat& F
 // not used for SS or SF   
 inline int improve_fiber(int begin, int j, int k, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A, int no_g=-1) {
     if(begin!=0)printf(" begin %d j %d k %d \n",begin,j,k);
+    std::cout.flush();
     // begin and j are in interval from 0 to F.NUsedplate
     int js=A.suborder[j];
 	if (!A.is_assigned_tf(js,k)) { // Unused tilefiber (js,k)
@@ -195,10 +196,12 @@ inline int improve_fiber(int begin, int j, int k, MTL& M, Plates& P, const PP& p
 			int gb = -1; int bb = -1; int jpb = -1; int kpb = -1; int mb = -1; int pb = 1e3; int unusedb = -1;
 			List av_g = P[js].av_gals[k];
             if(begin!=0)printf(" list size %d \n",av_g.size());
+            std::cout.flush();
 			// For all available galaxies within reach that are already observed
 			for (int i=0; i<av_g.size(); i++) {
 				int g = av_g[i];//a galaxy accessible to js,k
                 if(begin!=0)printf("i %d  g %d \n",i,g);
+                std::cout.flush();
                 if (g!=-1 && g!=no_g && !M[g].SS && !M[g].SF) {//not SS or SF
 					if (ok_assign_g_to_jk(g,js,k,P,M,pp,F,A) && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)) {
                         // Which tile-fibers have taken g ?
