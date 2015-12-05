@@ -125,7 +125,7 @@ int main(int argc, char **argv) {
     //check to see if there are tiles with no galaxies
     //need to keep mapping of old tile list to new tile list
     //and inverse map
-    A.inv_order=initList(F.Nplate,0);
+    A.inv_order=initList(F.Nplate,-1);
     int inv_count=0;
     for (int j=0;j<F.Nplate ;++j){
 
