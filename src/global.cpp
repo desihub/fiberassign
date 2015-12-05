@@ -194,6 +194,7 @@ inline int improve_fiber(int begin, int j, int k, MTL& M, Plates& P, const PP& p
 		else { // Improve
 			int gb = -1; int bb = -1; int jpb = -1; int kpb = -1; int mb = -1; int pb = 1e3; int unusedb = -1;
 			List av_g = P[js].av_gals[k];
+            if(begin!=0)printf(" list size %d \n",av_g.size());
 			// For all available galaxies within reach that are already observed
 			for (int i=0; i<av_g.size(); i++) {
 				int g = av_g[i];//a galaxy accessible to js,k
