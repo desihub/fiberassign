@@ -185,7 +185,7 @@ inline void assign_galaxy(int g,  MTL& M, Plates& P, const PP& pp, const Feat& F
 // Takes an unassigned fiber and tries to assign it with the "improve" technique described in the doc
 // not used for SS or SF   
 inline int improve_fiber(int begin, int j, int k, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A, int no_g=-1) {
-    printf(" begin %d j %d k %d \n",begin,j,k);
+    if(begin!=0)printf(" begin %d j %d k %d \n",begin,j,k);
     // begin and j are in interval from 0 to F.NUsedplate
     int js=A.suborder[j];
 	if (!A.is_assigned_tf(js,k)) { // Unused tilefiber (js,k)
