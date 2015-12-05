@@ -164,21 +164,19 @@ int main(int argc, char **argv) {
 	//Execute plan, updating targets at intervals
     for(int i=0;i<F.pass_intervals.size();i++)printf(" i=%d interval %d \n",i,F.pass_intervals[i]);
     std::vector <int> update_intervals=F.pass_intervals;
-    printf("before push back\n");
-    
     update_intervals.push_back(F.NUsedplate);//to end intervals at last plate
-    
-    printf("made update_intervals\n");
     for(int i=0;i<update_intervals.size()-1;++i){//go plate by used plate
         int starter=update_intervals[i];
         printf(" before pass = %d  at %d  tiles\n",i,starter);
         //display_results("doc/figs/",G,P,pp,F,A,true);
         //plan whole survey from this point out
+        /*
         for (int jj=starter; jj<F.NUsedplate; jj++) {
             int js = A.suborder[jj];
             assign_sf_ss(js,M,P,pp,F,A); // Assign SS and SF
             assign_unused(js,M,P,pp,F,A);
         }
+         */
         //update target information for interval i
 
         for (int jj=starter; jj<update_intervals[i]; jj++) {
