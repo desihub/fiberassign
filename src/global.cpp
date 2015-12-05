@@ -274,6 +274,7 @@ void update_plan_from_one_obs(int j0,const Gals& Secret, MTL& M, Plates&P, const
 	List to_update;	// Get the list of galaxies to update in the plan
 	for (int k=0; k<F.Nfiber; k++) {
         int g = A.TF[js][k];
+        if (js<500)printf("js   %d   k  %d   g  %d\n",js,k,g);
         if (g!=-1&&!M[g].SS && !M[g].SF){        // Don't update SS or SF
             //initially nobs_remain==goal
             if(M[g].once_obs==0){//first observation  otherwise should be ok
