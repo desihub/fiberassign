@@ -480,7 +480,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
     //int n = F.NUsedplate-A.next_plate;
 	int red(0);
 	Table Done = initTable(F.NUsedplate,F.Nfiber);//consider every occupied plate and every fiber
-	for (int jused=jused_start; j<F.NUsedplate; j++) {
+	for (int jused=jused_start; jused<F.NUsedplate; jused++) {
         int j=A.suborder[jused];
 		for (int k=0; k<F.Nfiber; k++) {
 			if (Done[jused][k]==0) {
@@ -493,7 +493,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 						int kp = av_tfs[i].s;
 						int unused = A.unused[jp][pp.spectrom[kp]];//unused for jp, spectrom[kp]
                         if(A.inv_order[jp]>F.NUsedplate || A.inv_order[jp]<0)printf("**out range  %d\n",A.inv_order[jp]);
-						if (A.suborder[jstart]<=jp && !A.is_assigned_tf(jp,kp) && Done[A.inv_order[jp]][kp]==0 && ok_assign_g_to_jk(g,jp,kp,P,M,pp,F,A) && A.is_assigned_jg(jp,g,M,F)==-1 && 0<unused) {
+						if (A.suborder[jused_start]<=jp && !A.is_assigned_tf(jp,kp) && Done[A.inv_order[jp]][kp]==0 && ok_assign_g_to_jk(g,jp,kp,P,M,pp,F,A) && A.is_assigned_jg(jp,g,M,F)==-1 && 0<unused) {
 							if (unusedb<unused) { // Takes the most unused petal
                                 jpb = jp;
 								kpb = kp;
@@ -502,7 +502,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 						}
 					}
 					if (jpb!=-1) {
-						A.unassign(js,k,g,M,P,pp);
+						A.unassign(j,k,g,M,P,pp);
 						A.assign(jpb,kpb,g,M,P,pp);
 						Done[j][k] = 1;
 						Done[A.inv_order[jpb]][kpb] = 1;
