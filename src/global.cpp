@@ -310,9 +310,10 @@ void update_plan_from_one_obs(int jused,const Gals& Secret, MTL& M, Plates&P, co
             M[g].nobs_remain=0;
   			int gp = -1;
             //j0 runs to F.NUsedplate, jp runs to F.Nplate
-			gp = improve_fiber(jused+1,A.inv_order[jp],kp,M,P,pp,F,A,g);//****************
+            //*****
+			//gp = improve_fiber(jused+1,A.inv_order[jp],kp,M,P,pp,F,A,g);//****************
 			erase(0,tfs);
-			if(gp!=-1)cnt_replace++;//number of replacements
+			//if(gp!=-1)cnt_replace++;//number of replacements
         }
     }
 	//int na_end(A.na(F,j0,n));
@@ -471,7 +472,7 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
     }
 }
 
-void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int jstart) {
+void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int jused_start) {
     //diagnostic
     printf("start redistribute \n");
 	Time t;
@@ -479,13 +480,13 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
     //int n = F.NUsedplate-A.next_plate;
 	int red(0);
 	Table Done = initTable(F.NUsedplate,F.Nfiber);//consider every occupied plate and every fiber
-	for (int j=jstart; j<F.NUsedplate; j++) {
-        int js=A.suborder[j];
+	for (int jused=jused_start; j<F.NUsedplate; j++) {
+        int j=A.suborder[jused];
 		for (int k=0; k<F.Nfiber; k++) {
-			if (Done[j][k]==0) {
-				int g = A.TF[js][k];//current assignment of (js,k)  only look if assigned
+			if (Done[jused][k]==0) {
+				int g = A.TF[j][k];//current assignment of (js,k)  only look if assigned
                 if (g!=-1 && !M[g].SS && !M[g].SF) {
-					int jpb = -1; int kpb = -1; int unusedb = A.unused[js][pp.spectrom[k]];
+					int jpb = -1; int kpb = -1; int unusedb = A.unused[j][pp.spectrom[k]];
                     Plist av_tfs = M[g].av_tfs;  //all possible tile fibers for this galaxy
 					for (int i=0; i<av_tfs.size(); i++) {
 						int jp = av_tfs[i].f;

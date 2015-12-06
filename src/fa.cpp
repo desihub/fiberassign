@@ -149,7 +149,7 @@ int main(int argc, char **argv) {
     
 	for (int i=0; i<1; i++) redistribute_tf(M,P,pp,F,A,0);// more iterations will improve performance slightly
 	for (int i=0; i<1; i++) {
-        improve(M,P,pp,F,A,0);
+        //improve(M,P,pp,F,A,0);
 		redistribute_tf(M,P,pp,F,A,0);
 	}
 	print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false);
@@ -174,7 +174,7 @@ int main(int argc, char **argv) {
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
         }
         redistribute_tf(M,P,pp,F,A,starter);
-        improve(M,P,pp,F,A,starter);
+        //improve(M,P,pp,F,A,starter);
         redistribute_tf(M,P,pp,F,A,starter);
         if(F.diagnose)diagnostic(M,Secret,F,A);
     }
