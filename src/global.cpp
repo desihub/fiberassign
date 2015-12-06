@@ -479,13 +479,13 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 			if (Done[j][k]==0) {
 				int g = A.TF[js][k];//current assignment of (js,k)  only look if assigned
                 if (g!=-1 && !M[g].SS && !M[g].SF) {
-					int jpb = -1; int kpb = -1; int unusedb = A.unused[j][pp.spectrom[k]];//unused for j, spectrom[k]
-					Plist av_tfs = M[g].av_tfs;  //all possible tile fibers for this galaxy
+					int jpb = -1; int kpb = -1; int unusedb = A.unused[js][pp.spectrom[k]];
+                    Plist av_tfs = M[g].av_tfs;  //all possible tile fibers for this galaxy
 					for (int i=0; i<av_tfs.size(); i++) {
 						int jp = av_tfs[i].f;
 						int kp = av_tfs[i].s;
 						int unused = A.unused[jp][pp.spectrom[kp]];//unused for jp, spectrom[kp]
-						if (A.suborder[j]<=jp && jp<F.Nplate && !A.is_assigned_tf(jp,kp) && Done[A.inv_order[jp]][kp]==0 && ok_assign_g_to_jk(g,jp,kp,P,M,pp,F,A) && A.is_assigned_jg(jp,g,M,F)==-1 && 0<unused) {
+						if (A.suborder[jstart]<=jp && !A.is_assigned_tf(jp,kp) && Done[A.inv_order[jp]][kp]==0 && ok_assign_g_to_jk(g,jp,kp,P,M,pp,F,A) && A.is_assigned_jg(jp,g,M,F)==-1 && 0<unused) {
 							if (unusedb<unused) { // Takes the most unused petal
                                 jpb = jp;
 								kpb = kp;

@@ -558,6 +558,7 @@ Assignment::Assignment(const MTL& M, const Feat& F) {
 	next_plate = 0;
 	kinds = initCube(F.Nplate,F.Npetal,F.Categories);
 	unused = initTable(F.Nplate,F.Npetal,F.Nfbp);//initialized to number of fibers on a petal
+    //j runs to F.Nplate
     }
 
 Assignment::~Assignment() {}
