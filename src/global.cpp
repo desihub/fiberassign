@@ -95,7 +95,10 @@ void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) {
 // Assignment sub-functions -------------------------------------------------------------------------------------
 // Allow (j,k) to observe g ?
 inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const MTL& M, const PP& pp, const Feat& F, const Assignment& A) {
-    
+    if(g==-1){
+        printf(" *******ERROR  TRIED TO ASSIGN NON-EXISTENT GALAXY IN ok_assign...\n");
+        std::cout.flush();
+    }
     if (P[j].ipass==4 && M[g].lastpass==0){
         return false;} // Only ELG at the last pass
 	if (F.Collision) for (int i=0; i<pp.N[k].size(); i++) if (g==A.TF[j][pp.N[k][i]]) return false; // Avoid 2 neighboring fibers observe the same galaxy (can happen only when Collision=true)
@@ -108,6 +111,10 @@ inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const MTL& M
 
 // makes sure we don't exceed limit on SS and SF
 inline bool ok_for_limit_SS_SF(int g, int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F){
+    if(g==-1){
+        printf(" *******ERROR  TRIED TO ASSIGN NON-EXISTENT GALAXY IN ok_for_limit...\n");
+        std::cout.flush();
+    }
     bool is_SF=M[g].SF;
     bool too_many_SF=P[j].SF_in_petal[pp.spectrom[k]]>F.MaxSF-1;
     bool is_SS=M[g].SS;

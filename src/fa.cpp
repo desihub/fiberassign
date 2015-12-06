@@ -182,15 +182,14 @@ int main(int argc, char **argv) {
 
     List SS_hist=initList(10,0);
     List SF_hist=initList(40,0);
-    for(int j=0;j<F.NUsedplate;++j){
-        int js=A.suborder[j];
-        printf("\n js = %d\n",js);
+    for(int jused=0;jused<F.NUsedplate;++jused){
+        int j=A.suborder[jused];
         for (int p=0;p<F.Npetal;++p){
             int count_SS=0;
             int count_SF=0;
             for (int k=0;k<F.Nfbp;++k){
                 int kk=pp.fibers_of_sp[p][k];
-                int g=A.TF[js][kk];
+                int g=A.TF[j][kk];
                 if(g!=-1 && M[g].SS)count_SS++;
                 if(g!=-1 && M[g].SF)count_SF++;
                 
