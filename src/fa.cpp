@@ -50,44 +50,42 @@ int main(int argc, char **argv) {
     MTL SkyF=read_MTLfile(F.SkyFfile,F,0,1);
     print_time(time,"# ... took :");
     //combine the three input files
-
     M=Targ;
-   
     printf(" M size %d \n",M.size());
     M.insert(M.end(),SStars.begin(),SStars.end());
     printf(" M size %d \n",M.size());
     M.insert(M.end(),SkyF.begin(),SkyF.end());
     printf(" M size %d \n",M.size());
     F.Ngal=M.size();
-    assign_priority_class(M);
     
     //establish priority classes
     init_time_at(time,"# establish priority clasess",t);
-    std::vector <int> count_class(M.priority_list.size(),0);
+    assign_priority_class(M);
+        std::vector <int> count_class(M.priority_list.size(),0);
     for(int i;i<M.size();++i){
         if(!M[i].SS&&!M[i].SF){
         count_class[M[i].priority_class]+=1;
         }
     }
-	print_time(time,"# ... took :");
-   
     for(int i;i<M.priority_list.size();++i){
         printf("  class  %d  number  %d\n",i,count_class[i]);
     }
+	print_time(time,"# ... took :");
     
+    // fiber positioners
     PP pp;
 	pp.read_fiber_positions(F); 
 	F.Nfiber = pp.fp.size()/2; 
 	F.Npetal = max(pp.spectrom)+1;
     F.Nfbp = (int) (F.Nfiber/F.Npetal);// fibers per petal = 500
-	pp.get_neighbors(F); pp.compute_fibsofsp(F);
+	pp.get_neighbors(F);
+    pp.compute_fibsofsp(F);
     
     //P is original list of plates
 	Plates P = read_plate_centers(F);
-
-    printf(" future plates %d\n",P.size());
     F.Nplate=P.size();
-	printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
+    printf(" full number of plates %d\n",F.Nplate);
+    printf("# Read %d plates from %s and %d fibers from %s\n",F.Nplate,F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
    
 	// Computes geometries of cb and fh: pieces of positioner - used to determine possible collisions
 	F.cb = create_cb(); // cb=central body
@@ -132,18 +130,18 @@ int main(int argc, char **argv) {
         bool not_done=true;
         for(int k=0;k<F.Nfiber && not_done;++k){
             if(A.TF[j][k]!=-1){
-                A.suborder.push_back(j);
+                A.suborder.push_back(j);//suborder[jused] is jused-th used plate
                 not_done=false;
                 inv_count++;
-                A.inv_order[j]=inv_count;
-                
+                A.inv_order[j]=inv_count;//inv_order[j] is -1 unless used
+                //and otherwise the position of plate j in list of used plates
             }
         }
     }
     F.NUsedplate=A.suborder.size();
-    printf(" Plates after screening %d \n",F.NUsedplate);
+    printf(" Plates actually used %d \n",F.NUsedplate);
     
-    //if(F.diagnose)diagnostic(M,G,F,A);
+    if(F.diagnose)diagnostic(M,Secret,F,A);
 
     print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
     
@@ -156,11 +154,11 @@ int main(int argc, char **argv) {
 	}
 	print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false);
     //try assigning SF and SS before real time assignment
-    for (int j=0;j<F.NUsedplate;++j){
+    for (int jused=0;jused<F.NUsedplate;++jused){
 
-        int js=A.suborder[j];
-        assign_sf_ss(js,M,P,pp,F,A); // Assign SS and SF for each tile
-        assign_unused(js,M,P,pp,F,A);
+        int j=A.suborder[jused];
+        assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF for each tile
+        assign_unused(j,M,P,pp,F,A);
     }
     if(F.diagnose)diagnostic(M,Secret,F,A);
     init_time_at(time,"# Begin real time assignment",t);
@@ -171,36 +169,19 @@ int main(int argc, char **argv) {
     update_intervals.push_back(F.NUsedplate);//to end intervals at last plate
     for(int i=0;i<update_intervals.size()-1;++i){//go plate by used plate
         int starter=update_intervals[i];
-
-        //display_results("doc/figs/",G,P,pp,F,A,true);
-        //plan whole survey from this point out
-        /*
-        for (int jj=starter; jj<F.NUsedplate; jj++) {
-            int js = A.suborder[jj];
-            assign_sf_ss(js,M,P,pp,F,A); // Assign SS and SF
-            assign_unused(js,M,P,pp,F,A);
-        }
-        */
-        //update target information for interval i
-
         for (int jj=starter; jj<update_intervals[i+1]; jj++) {
             if (0<=jj-F.Analysis) update_plan_from_one_obs(jj,Secret,M,P,pp,F,A); else printf("\n no update\n");
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
-           
         }
-    
-    
- 
-
         redistribute_tf(M,P,pp,F,A,starter);
         improve(M,P,pp,F,A,starter);
         redistribute_tf(M,P,pp,F,A,starter);
-        //}
-
         if(F.diagnose)diagnostic(M,Secret,F,A);
     }
     // check on SS and SF
-/*
+
+    List SS_hist=initList(10,0);
+    List SF_hist=initList(40,0);
     for(int j=0;j<F.NUsedplate;++j){
         int js=A.suborder[j];
         printf("\n js = %d\n",js);
@@ -214,21 +195,25 @@ int main(int argc, char **argv) {
                 if(g!=-1 && M[g].SF)count_SF++;
                 
             }
-            printf("  %d  %d   ",count_SS,count_SF);
+            SS_hist[count_SS]++;
+            SF_hist[count_SF]++;
         }
-        printf("\n");
     }
-     */
+    printf(" SS distribution \n");
+    for(int i=0;i<10;i++)printf("%8d",SS_hist[i]);
+    printf("\n %8d \n",SS_hist[10]);
+ 
+
     
 
  
 	// Results -------------------------------------------------------
-    if (F.PrintAscii) for (int j=0; j<F.NUsedplate; j++){
-        write_FAtile_ascii(A.suborder[j],F.outDir,M,P,pp,F,A);
+    if (F.PrintAscii) for (int jused=0; jused<F.NUsedplate; jused++){
+        write_FAtile_ascii(A.suborder[jused],F.outDir,M,P,pp,F,A);
     }
     
-    if (F.PrintFits) for (int j=0; j<F.NUsedplate; j++){
-        fa_write(A.suborder[j],F.outDir,M,P,pp,F,A); // Write output
+    if (F.PrintFits) for (int jused=0; jused<F.NUsedplate; jused++){
+        fa_write(A.suborder[jused],F.outDir,M,P,pp,F,A); // Write output
     }
     
 

@@ -112,7 +112,7 @@ inline bool ok_for_limit_SS_SF(int g, int j, int k, const MTL& M, const Plates& 
     bool too_many_SF=P[j].SF_in_petal[pp.spectrom[k]]>F.MaxSF-1;
     bool is_SS=M[g].SS;
     bool too_many_SS=P[j].SS_in_petal[pp.spectrom[k]]>F.MaxSS-1;
-    return !(is_SF&&too_many_SF)&&!(is_SS&&too_many_SS);
+    return !(is_SF && too_many_SF)&&!(is_SS && too_many_SS);
 }
 
     
@@ -120,7 +120,7 @@ inline bool ok_for_limit_SS_SF(int g, int j, int k, const MTL& M, const Plates& 
 // Find, for (j,k), find the best galaxy it can reach among the possible ones
 // Null list means you can take all possible kinds, otherwise you can only take, for the galaxy, a kind among this list
 // Not allowed to take the galaxy of id no_g
-inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A, int no_g=-1, List kind=Null()) {
+inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
 	int best = -1; int mbest = -1; int pbest = 10000;
 	List av_gals = P[j].av_gals[k];
 	// For all available galaxies
@@ -136,7 +136,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
                     // Check that g is not assigned yet on this plate, or on the InterPlate around, check with ok_to_assign
                     int isa=A.is_assigned_jg(j,g,M,F);
                     int ok=ok_assign_g_to_jk(g,j,k,P,M,pp,F,A);
-                    if (isa==-1 && ok && g!=no_g ) {
+                    if (isa==-1 ) {
                         best = g;
                         pbest = prio;
                         mbest = m;
@@ -152,9 +152,9 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
 }
 
 // Tries to assign the fiber (j,k)
-inline int assign_fiber(int j, int k, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A, int no_g=-1, List kind=Null()) {
+inline int assign_fiber(int j, int k, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
 	if (A.is_assigned_tf(j,k)) return -1;
-	int best = find_best(j,k,M,P,pp,F,A,no_g,kind);
+	int best = find_best(j,k,M,P,pp,F,A);
     int g=best;
 
     if (best!=-1) A.assign(j,k,best,M,P,pp);
@@ -189,7 +189,7 @@ inline int improve_fiber(int begin, int j, int k, MTL& M, Plates& P, const PP& p
     // begin and j are in interval from 0 to F.NUsedplate
     int js=j;
 	if (!A.is_assigned_tf(js,k)) { // Unused tilefiber (js,k)
-		int g_try = assign_fiber(js,k,M,P,pp,F,A,no_g);//maybe doesn't allow SS or SF
+		int g_try = assign_fiber(js,k,M,P,pp,F,A);//maybe doesn't allow SS or SF
 		if (g_try!=-1) return g_try;
 		else { // Improve
 			int gb = -1; int bb = -1; int jpb = -1; int kpb = -1; int mb = -1; int pb = 1e3; int unusedb = -1;
@@ -382,26 +382,26 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 }
 
 
-void assign_unused(int js, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
+void assign_unused(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
     // Tries to assign remaining fibers in tile jth tile with galaxies on it
     //even taking objects observed later
     //js is a tile with galaxies on it
 	for (int k=0; k<F.Nfiber; k++) {
         
-		if (!A.is_assigned_tf(js,k)) {
+		if (!A.is_assigned_tf(j,k)) {
 			int best = -1; int mbest = -1; int pbest = 100000; int jpb = -1; int kpb = -1;
-			List av_gals = P[js].av_gals[k];//all available galaxies for this fiber k
+			List av_gals = P[j].av_gals[k];//all available galaxies for this fiber k
 			for (int gg=0; gg<av_gals.size(); gg++) {
 				int g = av_gals[gg];//available galaxies
 				int m = M[g].nobs_remain;
 				int prio = M[g].t_priority;
 				if (prio<pbest || (prio==pbest && m>mbest)) {
-                    if (A.is_assigned_jg(js,g,M,F)==-1 && ok_assign_g_to_jk(g,js,k,P,M,pp,F,A)&&ok_for_limit_SS_SF(g,js,k,M,P,pp,F)){
+                    if (A.is_assigned_jg(j,g,M,F)==-1 && ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                         //not assigned this plate or within excluded interval
 						for (int i=0; i<A.GL[g].size(); i++) { //GL[g].size() is number of tf that could observe g
 							int jp = A.GL[g][i].f;
 							int kp = A.GL[g][i].s;
-							if (js<jp && jpb<jp) {//take best opportunity
+							if (j<jp && jpb<jp) {//take best opportunity
 								best = g;
 								pbest = prio;
 								mbest = m;
@@ -414,7 +414,7 @@ void assign_unused(int js, MTL& M, Plates& P, const PP& pp, const Feat& F, Assig
 			}
 			if (best!=-1) {
                 A.unassign(jpb,kpb,best,M,P,pp);
-				A.assign(js,k,best,M,P,pp);
+				A.assign(j,k,best,M,P,pp);
                 //printf("assigned  ( %d , %d ) to g= %d unassigned it from ( %d , %d) \n",js,k,best,jpb,kpb);
                 
 			}
