@@ -477,14 +477,16 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
     printf("start redistribute \n");
 	Time t;
 	init_time(t,"# Begin redistribute TF :");
-    //int n = F.NUsedplate-A.next_plate;
+
 	int red(0);
 	Table Done = initTable(F.NUsedplate,F.Nfiber);//consider every occupied plate and every fiber
 	for (int jused=jused_start; jused<F.NUsedplate; jused++) {
         int j=A.suborder[jused];
+        printf(" jused = %d  j = %d\n",jused,j());
+        std::cout.flush();
 		for (int k=0; k<F.Nfiber; k++) {
 			if (Done[jused][k]==0) {
-				int g = A.TF[j][k];//current assignment of (js,k)  only look if assigned
+				int g = A.TF[j][k];//current assignment of (j,k)  only look if assigned
                 if (g!=-1 && !M[g].SS && !M[g].SF) {
 					int jpb = -1; int kpb = -1; int unusedb = A.unused[j][pp.spectrom[k]];
                     Plist av_tfs = M[g].av_tfs;  //all possible tile fibers for this galaxy
@@ -500,7 +502,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 								unusedb = unused;
 							}
 						}
-					}
+                    }
 					if (jpb!=-1) {
 						A.unassign(j,k,g,M,P,pp);
 						A.assign(jpb,kpb,g,M,P,pp);
