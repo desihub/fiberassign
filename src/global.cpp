@@ -505,6 +505,8 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 		}
 	}
 	printf("  %s redistributions of tile-fibers \n",f(red).c_str());
+    std::cout.flush();
+    
 	print_time(t,"# ... took :");
 }
 
