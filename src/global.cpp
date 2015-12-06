@@ -269,20 +269,20 @@ void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int 
 // If there are galaxies discovered as fake for example, they won't be observed several times in the plan
 // has access to G,not just M, because it needs to know the truth
 
-void update_plan_from_one_obs(int j0,const Gals& Secret, MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A) {
+void update_plan_from_one_obs(int jused,const Gals& Secret, MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A) {
 	int cnt_deassign(0);
     int cnt_replace(0);
 
     //j0 is counted among used plates only
     
-	int jpast = j0-F.Analysis;//tile whose information we just learned
+	int jpast = jused-F.Analysis;//tile whose information we just learned
 	if (jpast<0) { printf("ERROR in update : jpast negative\n"); fl(); }
-    int js=A.suborder[jpast];
+    int j=A.suborder[jpast];
     
 	//int na_start(A.na(F,j0,n));//unassigned fibers in tiles from j0 to j0+n
 	List to_update;	// Get the list of galaxies to update in the plan
 	for (int k=0; k<F.Nfiber; k++) {
-        int g = A.TF[js][k];
+        int g = A.TF[j][k];
 
         if (g!=-1&&!M[g].SS && !M[g].SF){        // Don't update SS or SF
             //initially nobs_remain==goal
@@ -299,7 +299,7 @@ void update_plan_from_one_obs(int j0,const Gals& Secret, MTL& M, Plates&P, const
 	// Update further in the plan
 	for (int gg=0; gg<to_update.size(); gg++) {
 		int g = to_update[gg];
-		Plist tfs = A.chosen_tfs(g,F,A.suborder[j0+1]); // Begin at j0+1, can't change assignment at j0 (already observed)
+		Plist tfs = A.chosen_tfs(g,F,A.suborder[jused+1]); // Begin at j0+1, can't change assignment at j0 (already observed)
         
 		while (tfs.size()!=0 && M[g].nobs_done>F.goalpost[Secret[g].id]) {
 			int jp = tfs[0].f; int kp = tfs[0].s;
@@ -310,7 +310,7 @@ void update_plan_from_one_obs(int j0,const Gals& Secret, MTL& M, Plates&P, const
             M[g].nobs_remain=0;
   			int gp = -1;
             //j0 runs to F.NUsedplate, jp runs to F.Nplate
-			gp = improve_fiber(j0+1,jp,kp,M,P,pp,F,A,g);//****************
+			gp = improve_fiber(jused+1,A.inv_order[jp],kp,M,P,pp,F,A,g);//****************
 			erase(0,tfs);
 			if(gp!=-1)cnt_replace++;//number of replacements
         }
