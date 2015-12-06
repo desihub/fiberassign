@@ -153,8 +153,6 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
         }
        
     }
-    //if(printthis)printf("best  %d  pbest  %d  mbest %d   \n",best,pbest,mbest);
-    
     return best;
 }
 
@@ -162,8 +160,6 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
 inline int assign_fiber(int j, int k, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
 	if (A.is_assigned_tf(j,k)) return -1;
 	int best = find_best(j,k,M,P,pp,F,A);
-    int g=best;
-
     if (best!=-1) A.assign(j,k,best,M,P,pp);
 	return best;
 }
@@ -171,7 +167,11 @@ inline int assign_fiber(int j, int k, MTL& M, Plates& P, const PP& pp, const Fea
 
 // Tries to assign the galaxy g to one of the used plates after jstart
 inline void assign_galaxy(int g,  MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A, int jstart) {
-    
+    //jstart runs possibly to F.Nplate
+    if(g==-1){
+        printf(" *******ERROR  TRIED TO ASSIGN NON-EXISTENT GALAXY IN assign_galaxy\n");
+        std::cout.flush();
+    }
     int jb = -1; int kb = -1; int unusedb = -1;
 	Plist av_tfs = M[g].av_tfs;
 	// All the tile-fibers that can observe galaxy g
@@ -191,31 +191,30 @@ inline void assign_galaxy(int g,  MTL& M, Plates& P, const PP& pp, const Feat& F
 
 // Takes an unassigned fiber and tries to assign it with the "improve" technique described in the doc
 // not used for SS or SF   
-inline int improve_fiber(int begin, int j, int k, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A, int no_g=-1) {
+inline int improve_fiber(int jused_begin, int jused, int k, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A, int no_g=-1) {
 
-    // begin and j are in interval from 0 to F.NUsedplate
-    int js=j;
-	if (!A.is_assigned_tf(js,k)) { // Unused tilefiber (js,k)
-		int g_try = assign_fiber(js,k,M,P,pp,F,A);//maybe doesn't allow SS or SF
+    int j=A.suborder[jused];
+	if (!A.is_assigned_tf(j,k)) { // Unused tilefiber (j,k)
+		int g_try = assign_fiber(j,k,M,P,pp,F,A);//maybe doesn't allow SS or SF
 		if (g_try!=-1) return g_try;
 		else { // Improve
 			int gb = -1; int bb = -1; int jpb = -1; int kpb = -1; int mb = -1; int pb = 1e3; int unusedb = -1;
-			List av_g = P[js].av_gals[k];
+			List av_g = P[j].av_gals[k];
  			// For all available galaxies within reach that are already observed
 			for (int i=0; i<av_g.size(); i++) {
-				int g = av_g[i];//a galaxy accessible to js,k
+				int g = av_g[i];//a galaxy accessible to j,k
 
                 if (g!=-1 && g!=no_g && !M[g].SS && !M[g].SF) {//not SS or SF
-					if (ok_assign_g_to_jk(g,js,k,P,M,pp,F,A) && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)) {
+					if (ok_assign_g_to_jk(g,j,k,P,M,pp,F,A) ) {
                         // Which tile-fibers have taken g ?
-						Plist tfs = A.chosen_tfs(g,F,A.suborder[begin]);//all tile-fibers that observe g in tiles from begin to end
+						Plist tfs = A.chosen_tfs(g,F,A.suborder[jused_begin]);//all tile-fibers that observe g in tiles from begin to end
                         for (int p=0; p<tfs.size(); p++) {
 							int jp = tfs[p].f;
 							int kp = tfs[p].s; // (jp,kp) currently assigned to galaxy g
 							// FIND BEST JP KP !!!
 							int best = find_best(jp,kp,M,P,pp,F,A); // best!=g because !A.assigned_pg(best)
 
-							if (best!=-1 && (A.is_assigned_jg(js,g,M,F)==-1 || jp==js)) {
+							if (best!=-1 && (A.is_assigned_jg(j,g,M,F)==-1 || jp==j)) {
 								int prio = M[g].t_priority;
 								int m = M[g].nobs_remain;
 								int unused = A.unused[jp][pp.spectrom[kp]]; // We take the most unused
@@ -225,7 +224,7 @@ inline int improve_fiber(int begin, int j, int k, MTL& M, Plates& P, const PP& p
 			// Modify assignment
 			if (gb!=-1) {
 				A.unassign(jpb,kpb,gb,M,P,pp);
-				A.assign(js,k,gb,M,P,pp);
+				A.assign(j,k,gb,M,P,pp);
 				A.assign(jpb,kpb,bb,M,P,pp);
 				return gb;
 			}
@@ -252,14 +251,14 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
     printf(" countme %d \n",countme);
 }
 
-void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int jstart) {
+void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int jused_start) {
     //jstart is in list from 0 to F.NUsedplate
 	Time t;
 	init_time(t,"# Begin improve :");
     int improvements=0;
-    for (int jj=jstart; jj<F.NUsedplate; jj++){
+    for (int jused=jused_start; jused<F.NUsedplate; jused++){
         for (int k=0; k<F.Nfiber; k++){
-            int worked=improve_fiber(jstart,jj,k,M,P,pp,F,A);
+            int worked=improve_fiber(jused_start,jused,k,M,P,pp,F,A);
             if (worked!=-1)improvements++;
         }
     }
