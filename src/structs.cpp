@@ -555,7 +555,7 @@ Assignment::Assignment(const MTL& M, const Feat& F) {
 	GL = initPtable(F.Ngal,0); //tile-fiber pair for galaxy  GL[g]
     inv_order=initList(F.Nplate,-1);
     
-    for (int i=0; i<F.Nplate; i++) order[i] = i;
+    //for (int i=0; i<F.Nplate; i++) order[i] = i;
 	next_plate = 0;
 	kinds = initCube(F.Nplate,F.Npetal,F.Categories);
 	unused = initTable(F.Nplate,F.Npetal,F.Nfbp);//initialized to number of fibers on a petal
