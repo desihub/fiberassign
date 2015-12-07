@@ -790,7 +790,7 @@ bool collision(dpair O1, dpair G1, dpair O2, dpair G2, const Feat& F) {
 }
 
 // (On plate p) finds if there is a collision if fiber k would observe galaxy g (collision with neighbor)
-//  j is in list that runs to F.ONplate since it is used in TF[j][k]
+//  j is in list that runs to F.Nplate since it is used in TF[j][k]
 int Assignment::find_collision(int j, int k, int g, const PP& pp, const MTL& M, const Plates& P, const Feat& F, int col) const {//check all neighboring fibers
 	bool bol = (col==-1) ? F.Collision : false;
 	if (bol) return -1;

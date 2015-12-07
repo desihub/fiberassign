@@ -506,7 +506,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 					if (jpb!=-1) {
 						A.unassign(j,k,g,M,P,pp);
 						A.assign(jpb,kpb,g,M,P,pp);
-						Done[j][k] = 1;
+						Done[A.inv_order[j]][k] = 1;
 						Done[A.inv_order[jpb]][kpb] = 1;
 						red++; 
 					}
