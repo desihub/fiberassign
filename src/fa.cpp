@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
     Secret=read_Secretfile(F.Secretfile,F);
     printf("# Read %d galaxies from %s \n",Secret.size(),F.Secretfile.c_str());
 	print_time(time,"# ... took :");
-    std::vector<int> count;
+    std::vector<int> count(10);
     count=count_galaxies(Secret);
     printf(" Number of galaxies by type, QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF\n");
     for(int i=0;i<8;i++){printf (" type %d number  %d  \n",i, count[i]);}

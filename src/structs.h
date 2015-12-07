@@ -113,8 +113,7 @@ class Assignment {
 	Table TF; // TF for tile fiber, #tiles X #fibers TF[j][k] is the chosen galaxy, -1 if not yet chosen
 	List order; // Order of tiles we want to assign, only 1-n in simple increasing order for the moment
     List suborder; // Order of tiles actually containing targets. size is F.Nplate
-    List inv_order; // inverse of suborder unused tiles map to 0
-    List inverse_order; // -1 if tile not used, = where in suborder if used  size is F.ONplate 
+    List inv_order; // inverse of suborder unused tiles map to -1
 	int next_plate; // Next plate in the order, i.e suborder(next_plate) is actually next plate
 
 	// Redundant information (optimizes computation time)
