@@ -482,7 +482,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 	Table Done = initTable(F.NUsedplate,F.Nfiber);//consider every occupied plate and every fiber
 	for (int jused=jused_start; jused<F.NUsedplate; jused++) {
         int j=A.suborder[jused];
-        printf(" jused = %d  j = %d\n",jused,j);
+        //printf(" jused = %d  j = %d\n",jused,j);
         std::cout.flush();
 		for (int k=0; k<F.Nfiber; k++) {
 			if (Done[jused][k]==0) {
