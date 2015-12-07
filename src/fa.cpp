@@ -174,7 +174,7 @@ int main(int argc, char **argv) {
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
         }
         redistribute_tf(M,P,pp,F,A,starter);
-        //improve(M,P,pp,F,A,starter);
+        improve(M,P,pp,F,A,starter);
         redistribute_tf(M,P,pp,F,A,starter);
         if(F.diagnose)diagnostic(M,Secret,F,A);
     }
