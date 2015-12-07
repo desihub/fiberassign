@@ -553,8 +553,8 @@ Assignment::Assignment(const MTL& M, const Feat& F) {
     
     TF=initTable(F.Nplate,F.Nfiber,-1);//galaxy assigned to tile-fiber TF[j][k]
 	GL = initPtable(F.Ngal,0); //tile-fiber pair for galaxy  GL[g]
-    inv_order.resize(F.Nplate);
-    suborder.resize(F.NUsedplate);
+    inv_order=initList(F.Nplate,-1);
+    suborder=initList(F.NUsedplate);
     for (int i=0; i<F.Nplate; i++) order[i] = i;
 	next_plate = 0;
 	kinds = initCube(F.Nplate,F.Npetal,F.Categories);

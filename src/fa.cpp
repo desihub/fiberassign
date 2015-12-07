@@ -126,11 +126,11 @@ int main(int argc, char **argv) {
     A.inv_order=initList(F.Nplate,-1);
     int inv_count=0;
     for (int j=0;j<F.Nplate ;++j){
-
+        
         bool not_done=true;
         for(int k=0;k<F.Nfiber && not_done;++k){
             if(A.TF[j][k]!=-1){
-                A.suborder.push_back(j);//suborder[jused] is jused-th used plate
+                A.suborder[inv_count]=j;//suborder[jused] is jused-th used plate
                 not_done=false;
                 inv_count++;
                 A.inv_order[j]=inv_count;//inv_order[j] is -1 unless used
@@ -140,6 +140,12 @@ int main(int argc, char **argv) {
     }
     F.NUsedplate=A.suborder.size();
     printf(" Plates actually used %d \n",F.NUsedplate);
+    for (int j=0;j<F.Nplate;++j){
+        printf(" j %d A.inv_order[j]  %d\n",j,A.inv_order[j]);
+    }
+    for (int jused=0;jused<F.NUsedplate;++jused){
+        printf("jused %d  A.suborder[jused]\n",jused,A.suborder[jused]);
+    }
     
     if(F.diagnose)diagnostic(M,Secret,F,A);
 
