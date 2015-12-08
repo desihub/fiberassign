@@ -130,7 +130,7 @@ int main(int argc, char **argv) {
         bool not_done=true;
         for(int k=0;k<F.Nfiber && not_done;++k){
             if(A.TF[j][k]!=-1){
-                A.suborder[inv_count]=j;//suborder[jused] is jused-th used plate
+                A.suborder.push_back(j);//suborder[jused] is jused-th used plate
                 not_done=false;
                 inv_count++;
                 A.inv_order[j]=inv_count;//inv_order[j] is -1 unless used
