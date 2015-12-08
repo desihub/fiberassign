@@ -211,8 +211,11 @@ int main(int argc, char **argv) {
  
     printf(" SF distribution \n");
     for(int i=0;i<10;i++)printf("%8d",SF_hist[i]);
+    printf("\n");
     for(int i=10;i<20;i++)printf("%8d",SF_hist[i]);
+    printf("\n");
     for(int i=20;i<30;i++)printf("%8d",SF_hist[i]);
+    printf("\n");
     for(int i=30;i<40;i++)printf("%8d",SF_hist[i]);
     printf("\n %8d \n",SS_hist[40]);
 
