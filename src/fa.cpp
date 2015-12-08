@@ -139,14 +139,14 @@ int main(int argc, char **argv) {
         }
     }
     F.NUsedplate=A.suborder.size();
-    printf(" Plates actually used %d \n",F.NUsedplate);
+    printf(" Plates actually used %d \n",F.NUsedplate);/*
     for (int j=0;j<F.Nplate;++j){
         printf(" j %d A.inv_order[j]  %d\n",j,A.inv_order[j]);
     }
     for (int jused=0;jused<F.NUsedplate;++jused){
-        printf("jused %d  A.suborder[jused]\n",jused,A.suborder[jused]);
+        printf("jused %d  A.suborder[jused] %d\n",jused,A.suborder[jused]);
     }
-    
+    */
     if(F.diagnose)diagnostic(M,Secret,F,A);
 
     print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
