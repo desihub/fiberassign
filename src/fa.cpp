@@ -132,8 +132,9 @@ int main(int argc, char **argv) {
             if(A.TF[j][k]!=-1){
                 A.suborder.push_back(j);//suborder[jused] is jused-th used plate
                 not_done=false;
-                inv_count++;
                 A.inv_order[j]=inv_count;//inv_order[j] is -1 unless used
+                inv_count++;
+
                 //and otherwise the position of plate j in list of used plates
             }
         }
