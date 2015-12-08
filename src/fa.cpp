@@ -187,8 +187,8 @@ int main(int argc, char **argv) {
     }
     // check on SS and SF
 
-    List SS_hist=initList(10,0);
-    List SF_hist=initList(40,0);
+    List SS_hist=initList(11,0);
+    List SF_hist=initList(41,0);
     for(int jused=0;jused<F.NUsedplate;++jused){
         int j=A.suborder[jused];
         for (int p=0;p<F.Npetal;++p){
@@ -209,6 +209,12 @@ int main(int argc, char **argv) {
     for(int i=0;i<10;i++)printf("%8d",SS_hist[i]);
     printf("\n %8d \n",SS_hist[10]);
  
+    printf(" SF distribution \n");
+    for(int i=0;i<10;i++)printf("%8d",SF_hist[i]);
+    for(int i=10;i<20;i++)printf("%8d",SF_hist[i]);
+    for(int i=20;i<30;i++)printf("%8d",SF_hist[i]);
+    for(int i=30;i<40;i++)printf("%8d",SF_hist[i]);
+    printf("\n %8d \n",SS_hist[40]);
 
     
 
