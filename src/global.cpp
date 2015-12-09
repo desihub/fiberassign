@@ -101,7 +101,8 @@ inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const MTL& M
 	if (F.Collision) for (int i=0; i<pp.N[k].size(); i++) if (g==A.TF[j][pp.N[k][i]]) return false; // Avoid 2 neighboring fibers observe the same galaxy (can happen only when Collision=true)
     if (A.find_collision(j,k,g,pp,M,P,F)!=-1){
         return false;} // No collision
-    if(g%2000==0)printf( "ipass %d   lastpass %d   g  %d   j  %d \n",P[j].ipass,M[g].lastpass,g,j);
+    //if(g%2000==0)printf( "ipass %d   lastpass %d   g  %d   j  %d \n",P[j].ipass,M[g].lastpass,g,j);
+    if(g%500==0 && M[g].t_priority==2000)printf( "plate %d  ipass %d  M[g].nobs_remain \n",j,P[j].ipass,M[g].nobs_remain);
 	return true;
     //doesn't require that jk is unassigned//doesn't require that g isn't assigned already on this plate
     //use is_assigned_jg for this
