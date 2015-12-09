@@ -273,7 +273,7 @@ void update_plan_from_one_obs(int jused,const Gals& Secret, MTL& M, Plates&P, co
 	int cnt_deassign(0);
     int cnt_replace(0);
 
-    //j0 is counted among used plates only
+    //jused is counted among used plates only
     
 	int jpast = jused-F.Analysis;//tile whose information we just learned
 	if (jpast<0) { printf("ERROR in update : jpast negative\n"); fl(); }
