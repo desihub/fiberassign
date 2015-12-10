@@ -468,7 +468,9 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
     printf("start redistribute \n");
 	Time t;
 	init_time(t,"# Begin redistribute TF :");
-
+    int count1=0;
+    int count2=0;
+    int count3=0;
 	int red(0);
 	Table Done = initTable(F.NUsedplate,F.Nfiber);//consider every occupied plate and every fiber
 	for (int jused=jused_start; jused<F.NUsedplate; jused++) {
@@ -476,11 +478,13 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
         //printf(" jused = %d  j = %d\n",jused,j);
         //std::cout.flush();
 		for (int k=0; k<F.Nfiber; k++) {
+            count1++;
 			if (Done[jused][k]==0) {
 				int g = A.TF[j][k];//current assignment of (j,k)  only look if assigned
                 if (g!=-1 && !M[g].SS && !M[g].SF) {
 					int jpb = -1; int kpb = -1; int unusedb = A.unused[j][pp.spectrom[k]];
                     Plist av_tfs = M[g].av_tfs;  //all possible tile fibers for this galaxy
+                    count2++
 					for (int i=0; i<av_tfs.size(); i++) {
 						int jp = av_tfs[i].f;
 						int kp = av_tfs[i].s;
@@ -496,6 +500,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
                                                     jpb = jp;
                                                     kpb = kp;
                                                     unusedb = unused;
+                                                    count3++
                                                 }
                                             }
                                         }
@@ -517,7 +522,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
     }
 	printf("  %s redistributions of tile-fibers \n",f(red).c_str());
     std::cout.flush();
-    
+    printf("count1 %d  count2  %d  count3  %d\n",count1,count2,count3);
 	print_time(t,"# ... took :");
 }
 
