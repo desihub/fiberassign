@@ -585,6 +585,8 @@ void diagnostic(const MTL& M, const Gals& G, Feat& F, const Assignment& A){
             if(g!=-1){
             int original_g=M[g].id;
             count_by_kind[G[original_g].id]+=1;
+                //
+                if(g<1000)printf("g % original_g %d kind  %d \n",g,original_g,G[original_g].id);
             }
         }
     }
