@@ -79,4 +79,22 @@ echo "# Running assign"
 
 aprun -n 1 -N 1 -d 24 ./assign_fa fa_features.txt
 
+Thus on edison, for example, from the fiberassign directory, you can submit a job as
+
+qsub ./script/run_fa
+
+
+# Features files
+Fiber assignment is governed by features files.  For run_fa, the features file is fa_features. 
+For the 200 sq deg version, shortrun_fa, there is shortrun_features.txt
+For pipeline there is pipeline_features.
+
+The intent is for the executables in master to work with their associated features files EXCEPT
+that you should, if you want to write the fiber assignments, you must define an appropriate
+outDir to which you can write.  Whether you do write is governed by the booleans PrintAscii and 
+PrintFits in the features file.  If you are using your own input as MTLfile, you should set 
+MaxSS and MaxSF to zero unless you have actually included appropriate numbers of standard stars and 
+sky fibers.  Eventually, we will make regular collections of these available to augment any
+target collections you develop.  
+
 

@@ -1,0 +1,13 @@
+#!/bin/bash -l
+
+#SBATCH -p regular
+#SBATCH -N 1
+#SBATCH -t 1:00:00
+
+
+
+cd $SLURM_SUBMIT_DIR
+export OMP_NUM_THREADS=32
+echo "# Running assign"
+
+srun  -N 1  ./assign_fa fa_features.txt
