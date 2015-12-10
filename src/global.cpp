@@ -460,6 +460,9 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
 
 void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int next) {
 	Time t;
+    int count1=0;
+    int count2=0;
+    int count3=0;
 	if (next!=1) init_time(t,"# Begin redistribute TF :");
 	int j0 = A.next_plate;
 	int n = next==-1 ? F.Nplate-A.next_plate : next; //from next_plate on
@@ -472,12 +475,14 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 		int j = randPlates[jj];
 		List randFiber = random_permut(F.Nfiber);
 		for (int kk=0; kk<F.Nfiber; kk++) {
+            count1++;
 			int k = randFiber[kk];
 			if (Done[j][k]==0) {
 				int g = A.TF[j][k];//current assignment of (j,k)  only look if assigned
 				if (g!=-1) {
 					int jpb = -1; int kpb = -1; int unusedb = A.unused[j][pp.spectrom[k]];//unused for j, spectrom[k]
 					Plist av_tfs = M[g].av_tfs;  //all possible tile fibers for this galaxy
+                    count2++;
 					for (int i=0; i<av_tfs.size(); i++) {
 						int jp = av_tfs[i].f;
 						int kp = av_tfs[i].s;
@@ -487,6 +492,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
                                 jpb = jp;
 								kpb = kp;
 								unusedb = unused;
+                                count3++;
 							}
 						}
 					}
