@@ -590,7 +590,7 @@ void Assignment::assign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
     M[g].nobs_done++;
     M[g].nobs_remain--;
     //
-    if(M[g].t_priority==2000 && g%500==0)printf( "ipass %d   lastpass %d   g  %d   j  %d   remain %d\n",P[j].ipass,M[g].lastpass,g,j,M[g].nobs_remain);
+    if(P[j].ipass==4 && g%1000==0  && !M[g].SS && !M[g].SF)printf( "ipass %d   lastpass %d   g  %d type %   j  %d   remain %d\n",P[j].ipass,M[g].lastpass,g,M[g].t_priority,j,M[g].nobs_remain);
     if(M[g].SF){
         int q=pp.spectrom[k];
         P[j].SF_in_petal[q]+=1;}
