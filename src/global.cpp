@@ -484,7 +484,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
                 if (g!=-1 && !M[g].SS && !M[g].SF) {
 					int jpb = -1; int kpb = -1; int unusedb = A.unused[j][pp.spectrom[k]];
                     Plist av_tfs = M[g].av_tfs;  //all possible tile fibers for this galaxy
-                    count2++
+                    count2++;
 					for (int i=0; i<av_tfs.size(); i++) {
 						int jp = av_tfs[i].f;
 						int kp = av_tfs[i].s;
@@ -500,7 +500,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
                                                     jpb = jp;
                                                     kpb = kp;
                                                     unusedb = unused;
-                                                    count3++
+                                                    count3++;
                                                 }
                                             }
                                         }
