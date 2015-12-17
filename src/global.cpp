@@ -548,19 +548,19 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
         }
     }
     
-    strcpy(ttype[0], "fiber");
+    strcpy(ttype[0], "FIBER");
     strcpy(tform[0], "J");
     strcpy(tunit[0], "");
     
-    strcpy(ttype[1], "positioner");
+    strcpy(ttype[1], "POSITIONER");
     strcpy(tform[1], "J");
     strcpy(tunit[1], "");
     
-    strcpy(ttype[2], "numtarget");
+    strcpy(ttype[2], "NUMTARGET");
     strcpy(tform[2], "J");
     strcpy(tunit[2], "");
  
-    strcpy(ttype[3], "t_priority");
+    strcpy(ttype[3], "PRIORITY");
     strcpy(tform[3], "J");
     strcpy(tunit[3], "");
 
@@ -568,33 +568,33 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     //snprintf(tform[3], FLEN_VALUE, "%dA", (int)objtypelen);
     //strcpy(tunit[3], "");
     
-    strcpy(ttype[4], "targetid");
+    strcpy(ttype[4], "TARGETID");
     strcpy(tform[4], "K");
     strcpy(tunit[4], "");
     
-    strcpy(ttype[5], "desi_target0");
+    strcpy(ttype[5], "TARGETFLAG");
     strcpy(tform[5], "K");
     strcpy(tunit[5], "");
     
-    strcpy(ttype[6], "ra");
+    strcpy(ttype[6], "RA");
     strcpy(tform[6], "E");
     strcpy(tunit[6], "deg");
     
-    strcpy(ttype[7], "dec");
+    strcpy(ttype[7], "DEC");
     strcpy(tform[7], "E");
     strcpy(tunit[7], "deg");
     
-    strcpy(ttype[8], "xfocal_design");
+    strcpy(ttype[8], "XFOCAL_DESIGN");
     strcpy(tform[8], "E");
     strcpy(tunit[8], "mm");
     
-    strcpy(ttype[9], "yfocal_design");
+    strcpy(ttype[9], "YFOCAL_DESIGN");
     strcpy(tform[9], "E");
     strcpy(tunit[9], "mm");
     
     char extname[FLEN_VALUE];
     
-    strcpy(extname, "FiberMap");
+    strcpy(extname, "FIBER_ASSIGNMENTS");
     
     // create the table with the full size on disk.
     
@@ -682,9 +682,9 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
 
 	    fits_write_key(fptr, TINT, "TILEID", &(tileid), "Tile ID number", &status);
             fits_report_error(stderr, status);
-	    fits_write_key(fptr, TFLOAT, "TILERA", &(tilera), "Tile RA", &status);
+	    fits_write_key(fptr, TFLOAT, "TILERA", &(tilera), "Tile RA [deg]", &status);
 	    fits_report_error(stderr, status);
-	    fits_write_key(fptr, TFLOAT, "TILEDEC", &(tiledec), "Tile DEC", &status);
+	    fits_write_key(fptr, TFLOAT, "TILEDEC", &(tiledec), "Tile DEC [deg]", &status);
             fits_report_error(stderr, status);
 
             fits_write_col(fptr, TINT, 1, offset+1, 1, n, fiber_id, &status);
@@ -724,11 +724,11 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     // PotentialFiberMap table.  We have only one column, so it is safe
     // from a performance perspective to write the whole thing.
     
-    strcpy(ttype[0], "potentialtargetid");
+    strcpy(ttype[0], "POTENTIALTARGETID");
     strcpy(tform[0], "K");
     strcpy(tunit[0], "");
     
-    strcpy(extname, "PotentialFiberMap");
+    strcpy(extname, "POTENTIAL_ASSIGNMENTS");
     
     ret = fits_create_tbl(fptr, BINARY_TBL, potentialtargetid.size(), 1, ttype, tform, tunit, extname, &status);
     fits_report_error(stderr, status);
