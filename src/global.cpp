@@ -456,18 +456,16 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
                             A.assign(j,k,g,M,P,pp);
                             done=1;
                         }
-                        else
-                            for (int gg=0; gg<SF_av_k.size()&&done==0; gg++) {
-                                int g = SF_av_k[gg];//SF on this petal
-                                if(A.is_assigned_jg(j,g,M,F)==-1&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)&&ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)){
-                                        A.assign(j,k,g,M,P,pp);
-                                    done=1;
-                                }
-                            }
+                    }
+                    for (int gg=0; gg<SF_av_k.size()&&done==0; gg++) {
+                        int g = SF_av_k[gg];//SF on this petal
+                        if(A.is_assigned_jg(j,g,M,F)==-1&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)&&ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)){
+                            A.assign(j,k,g,M,P,pp);
+                            done=1;
+                        }
                     }
                 }
-            }
-
+            }//fiber loop
         new_replace(j,p,M,P,pp,F,A);
         }// if any SS or SF on petal
     }//petal loop
