@@ -386,7 +386,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
             }
         }
     }
-    printf(" j= %d   p= %d  added SS %d reassigned SS %d added SF %d reassigned SF %d\n",j,p,add_SS,reassign_SS,add_SF,reassign_SF);
+   // printf(" j= %d   p= %d  added SS %d reassigned SS %d added SF %d reassigned SF %d\n",j,p,add_SS,reassign_SS,add_SF,reassign_SF);
 }
 
 
