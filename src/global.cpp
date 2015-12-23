@@ -319,6 +319,8 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
     //keep track of reassignments
     int reassign_SS=0;
     int reassign_SF=0;
+    int add_SS=0;
+    int add_SF=0;
     //can get all available SS,SF on plate from P[j].av_gals_plate restricting to plate p
     for(int c=M.priority_list.size()-1;P[j].SS_in_petal[p]<F.MaxSS && c>-1;--c ){//try to do this for lowest priority
        //printf(" c %d  j= %d p= %d SS in petal assigned %d available %d\n",c,j,p,P[j].SS_in_petal[p],P[j].SS_av_gal[p].size());
@@ -342,6 +344,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                                 A.unassign(j,k,g_old,M,P,pp);
                                 reassign_SS+=assign_galaxy(g_old,M,P,pp,F,A,j);//try to assign
                                 A.assign(j,k,g,M,P,pp);
+                                add_SS++;
                                 done=1;
                                 //if(j<1000)printf(" **assign SS g= %d to j= %d  k=%d \n",g,j,k);
                             }
@@ -373,6 +376,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                                 reassign_SF+=assign_galaxy(g_old,M,P,pp,F,A,j);//try to assign
                                 //printf(" after unassign occupant of (j,k)  %d\n",A.TF[j][k]);
                                 A.assign(j,k,g,M,P,pp);
+                                add_SF++;
                                 done=1;
                                 //if(j<1000)printf(" assign SF g= %d to j= %d  k=%d \n",g,j,k);
                             }
@@ -382,7 +386,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
             }
         }
     }
-    printf(" j= %d   p= %d   reassigned SS %d  reassigned SF %d\n",j,p,reassign_SS,reassign_SF);
+    printf(" j= %d   p= %d  added SS %d reassigned SS %d added SF %d reassigned SF %d\n",j,p,add_SS,reassign_SS,add_SF,reassign_SF);
 }
 
 
