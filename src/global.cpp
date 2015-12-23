@@ -161,7 +161,7 @@ inline int assign_fiber(int j, int k, MTL& M, Plates& P, const PP& pp, const Fea
 
 
 // Tries to assign the galaxy g to one of the used plates after jstart
-inline void assign_galaxy(int g,  MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A, int jstart) {
+inline int assign_galaxy(int g,  MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A, int jstart) {
     //jstart runs possibly to F.Nplate
     int jb = -1; int kb = -1; int unusedb = -1;
 	Plist av_tfs = M[g].av_tfs;
@@ -177,7 +177,10 @@ inline void assign_galaxy(int g,  MTL& M, Plates& P, const PP& pp, const Feat& F
 			}
 		}
 	}
-	if (jb!=-1) A.assign(jb,kb,g,M,P,pp);
+    if (jb!=-1){
+        A.assign(jb,kb,g,M,P,pp);
+        return 1;}
+    else return 0;
 }
 
 // Takes an unassigned fiber and tries to assign it with the "improve" technique described in the doc
@@ -313,7 +316,9 @@ void update_plan_from_one_obs(int jused,const Gals& Secret, MTL& M, Plates&P, co
 
 void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
     // do standard stars,going through priority classes from least to most
-    
+    //keep track of reassignments
+    int reassign_SS=0;
+    int reassign_SF=0;
     //can get all available SS,SF on plate from P[j].av_gals_plate restricting to plate p
     for(int c=M.priority_list.size()-1;P[j].SS_in_petal[p]<F.MaxSS && c>-1;--c ){//try to do this for lowest priority
        //printf(" c %d  j= %d p= %d SS in petal assigned %d available %d\n",c,j,p,P[j].SS_in_petal[p],P[j].SS_av_gal[p].size());
@@ -335,7 +340,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                                 //right priority; this SS not already assigned on this plate
                                 //printf("SS j %d k %d   g %d  g_old  %d \n ",j,k,g,g_old);
                                 A.unassign(j,k,g_old,M,P,pp);
-                                assign_galaxy(g_old,M,P,pp,F,A,j);//try to assign
+                                reassign_SS+=assign_galaxy(g_old,M,P,pp,F,A,j);//try to assign
                                 A.assign(j,k,g,M,P,pp);
                                 done=1;
                                 //if(j<1000)printf(" **assign SS g= %d to j= %d  k=%d \n",g,j,k);
@@ -365,7 +370,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                                 //printf(" before unassign occupant of (j,k)  %d\n",A.TF[j][k]);
                                 A.unassign(j,k,g_old,M,P,pp);
 
-                                assign_galaxy(g_old,M,P,pp,F,A,j);//try to assign
+                                reassign_SF+=assign_galaxy(g_old,M,P,pp,F,A,j);//try to assign
                                 //printf(" after unassign occupant of (j,k)  %d\n",A.TF[j][k]);
                                 A.assign(j,k,g,M,P,pp);
                                 done=1;
@@ -377,6 +382,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
             }
         }
     }
+    printf(" j= %d   p= %d   reassigned SS %d  reassigned SF %d\n",j,p,reassign_SS,reassign_SF);
 }
 
 
