@@ -454,13 +454,13 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
                                     done=1;
                                 }
                             }
-                        }
                     }
                 }
+            }
 
         new_replace(j,p,M,P,pp,F,A);
-        }
-    }
+        }// if any SS or SF on petal
+    }//petal loop
 }
 
 void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int jused_start) {
