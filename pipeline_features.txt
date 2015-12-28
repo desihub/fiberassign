@@ -3,10 +3,10 @@ tileFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/footprin
 fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
 outDir /project/projectdirs/desi/users/rncahn/fa_output/mini/
 /
-PrintAscii true
-PrintFits true
+PrintAscii false
+PrintFits false
 MTLfile /project/projectdirs/desi/mocks/preliminary/gray_mtl.txt
-diagnose false
+diagnose true
 
 kind QSOLy-a QSOTracer LRG ELG FakeQSO FakeLRG SS SF
 type QSO QSO LRG ELG QSO LRG SS SF
