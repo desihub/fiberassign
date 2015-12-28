@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
     F.NUsedplate=A.suborder.size();
     printf(" Plates actually used %d \n",F.NUsedplate);
     
-    if(F.diagnose)diagnostic(M,Secret,F,A);
+
     
     print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
     
@@ -142,7 +142,7 @@ int main(int argc, char **argv) {
         assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF for each tile
         assign_unused(j,M,P,pp,F,A);
     }
-    if(F.diagnose)diagnostic(M,Secret,F,A);
+
     init_time_at(time,"# Begin real time assignment",t);
     
 
