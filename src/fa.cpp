@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
     //establish priority classes
     init_time_at(time,"# establish priority clasess",t);
     assign_priority_class(M);
-        std::vector <int> count_class(M.priority_list.size(),0);
+    std::vector <int> count_class(M.priority_list.size(),0);
     for(int i;i<M.size();++i){
         if(!M[i].SS&&!M[i].SF){
         count_class[M[i].priority_class]+=1;
