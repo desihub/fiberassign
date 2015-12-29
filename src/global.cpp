@@ -498,7 +498,11 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
                     Plist av_tfs = M[g].av_tfs;  //all possible tile fibers for this galaxy
                     count2++;
 					for (int i=0; i<av_tfs.size(); i++) {
+                        printf(" ** i %d \n",i);
+                        std::cout.flush();
 						int jp = av_tfs[i].f;
+                        printf("jp  %d \n", jp);
+                        std::cout.lfush();
 						int kp = av_tfs[i].s;
                         printf("j %d  jused %d  g  %d  i  %d   jp  %d  kp %d\n",j,jused,g,i,jp,kp);
                         std::cout.flush();
