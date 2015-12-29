@@ -489,7 +489,8 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
             count1++;
 			if (Done[jused][k]==0) {
 				int g = A.TF[j][k];//current assignment of (j,k)  only look if assigned
-                printf("j %d k %d  g %d\n",j,k,g); 
+                printf("j %d k %d  g %d\n",j,k,g);
+                std::cout.flush();
                 if (g!=-1 && !M[g].SS && !M[g].SF) {
 					int jpb = -1; int kpb = -1; int unusedb = A.unused[j][pp.spectrom[k]];
                     Plist av_tfs = M[g].av_tfs;  //all possible tile fibers for this galaxy
