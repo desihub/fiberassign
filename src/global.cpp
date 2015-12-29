@@ -483,8 +483,8 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 	Table Done = initTable(F.NUsedplate,F.Nfiber);//consider every occupied plate and every fiber
 	for (int jused=jused_start; jused<F.NUsedplate; jused++) {
         int j=A.suborder[jused];
-        printf(" jused = %d  j = %d\n",jused,j);
-        std::cout.flush();
+        //printf(" jused = %d  j = %d\n",jused,j);
+        //std::cout.flush();
 		for (int k=0; k<F.Nfiber; k++) {
             count1++;
 			if (Done[jused][k]==0) {
@@ -496,8 +496,8 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 					for (int i=0; i<av_tfs.size(); i++) {
 						int jp = av_tfs[i].f;
 						int kp = av_tfs[i].s;
-                        printf("j %d  jused %d  g  %d  i  %d   jp  %d  kp %d\n",j,jused,g,i,jp,kp);
-                        std::cout.flush();
+                        //printf("j %d  jused %d  g  %d  i  %d   jp  %d  kp %d\n",j,jused,g,i,jp,kp);
+                        //std::cout.flush();
                         
 						int unused = A.unused[jp][pp.spectrom[kp]];//unused for jp, spectrom[kp]
                         if(A.inv_order[jp]>F.NUsedplate || A.inv_order[jp]<0)printf("**out range  %d\n",A.inv_order[jp]);
