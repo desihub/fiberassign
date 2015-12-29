@@ -524,6 +524,8 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
                     }
 					if (jpb!=-1) {
                         printf("reassign \n");
+                        std::cout.flush();
+                        
 						A.unassign(j,k,g,M,P,pp);
 						A.assign(jpb,kpb,g,M,P,pp);
 						Done[A.inv_order[j]][k] = 1;
