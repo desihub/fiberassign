@@ -120,6 +120,7 @@ int main(int argc, char **argv) {
     }
     F.NUsedplate=A.suborder.size();
     printf(" Plates actually used %d \n",F.NUsedplate);
+    for(int i=0;i<F.NUsedplate;i++)printf(" jused  %d  j  %d\n",i,A.suborder[i]);
     
 
     
