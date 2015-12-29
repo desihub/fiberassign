@@ -509,6 +509,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
                         
 						int unused = A.unused[jp][pp.spectrom[kp]];//unused for jp, spectrom[kp]
                         printf("unused %d\n",unused);
+                        std::cout.flush();
                         if(A.inv_order[jp]>F.NUsedplate || A.inv_order[jp]<0)printf("**out range  %d\n",A.inv_order[jp]);
                         if (A.suborder[jused_start]<=jp){
                             if(!A.is_assigned_tf(jp,kp)){
