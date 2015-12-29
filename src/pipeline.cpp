@@ -97,8 +97,6 @@ int main(int argc, char **argv) {
 	Assignment A(M,F);
     // Make a plan ----------------------------------------------------
 	print_time(t,"# Start assignment at : ");
-    printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.Nplate, F.Ngal, F.Nfiber);
-
     simple_assign(M,P,pp,F,A);
     
     //check to see if there are tiles with no galaxies
