@@ -513,6 +513,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
                                                     unusedb = unused;
                                                     count3++;
                                                     printf(" jpb %d  kpb %d \n",jpb,kpb);
+                                                    std::cout.flush();
                                                 }
                                             }
                                         }
