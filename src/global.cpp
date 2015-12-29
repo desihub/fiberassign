@@ -487,7 +487,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
         std::cout.flush();
 		for (int k=0; k<F.Nfiber; k++) {
             count1++;
-            printf("j %d k %d  g %d\n",j,k,g);
+            printf("j %d k %d  \n",j,k);
             std::cout.flush();
 			if (Done[jused][k]==0) {
 				int g = A.TF[j][k];//current assignment of (j,k)  only look if assigned
