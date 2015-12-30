@@ -173,23 +173,12 @@ int main(int argc, char **argv) {
             printf(" class %2d   %5d",pr,used_by_class[pr]);
         }
         printf("\n");
+    }
     printf(" plate jused %5d j %5d  SS   %4d    SF   %4d",jused,j,total_used_SS,total_used_SF);
     for (int pr=0;pr<M.priority_list.size();++pr){
         printf(" class %2d   %5d",pr,total_used_by_class[pr]);
     }
     printf("\n");
-        
-        
-        
-
-    
-                        
-                                        
-                             
-                
-                                            
-                                    
-    
     
     if (F.PrintAscii) for (int j=0; j<F.Nplate; j++){
             write_FAtile_ascii(j,F.outDir,M,P,pp,F,A);
