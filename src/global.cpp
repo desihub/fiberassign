@@ -483,41 +483,43 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 	Table Done = initTable(F.NUsedplate,F.Nfiber);//consider every occupied plate and every fiber
 	for (int jused=jused_start; jused<F.NUsedplate; jused++) {
         int j=A.suborder[jused];
-        printf(" jused = %d  j = %d\n",jused,j);
-        std::cout.flush();
+        //printf(" jused = %d  j = %d\n",jused,j);
+        //std::cout.flush();
 		for (int k=0; k<F.Nfiber; k++) {
             count1++;
-            printf("j %d k %d  \n",j,k);
-            std::cout.flush();
+            //printf("j %d k %d  \n",j,k);
+            //std::cout.flush();
 			if (Done[jused][k]==0) {
 				int g = A.TF[j][k];//current assignment of (j,k)  only look if assigned
-                printf("j %d k %d  g %d\n",j,k,g);
+                //printf("j %d k %d  g %d\n",j,k,g);
                 std::cout.flush();
                 if (g!=-1 && !M[g].SS && !M[g].SF) {
 					int jpb = -1; int kpb = -1; int unusedb = A.unused[j][pp.spectrom[k]];
                     Plist av_tfs = M[g].av_tfs;  //all possible tile fibers for this galaxy
                     count2++;
 					for (int i=0; i<av_tfs.size(); i++) {
-                        printf(" ** i %d \n",i);
-                        std::cout.flush();
+                        //printf(" ** i %d \n",i);
+                        //std::cout.flush();
 						int jp = av_tfs[i].f;
-                        printf("jp  %d \n", jp);
-                        std::cout.flush();
+                        //printf("jp  %d \n", jp);
+                        //std::cout.flush();
 						int kp = av_tfs[i].s;
-                        printf("j %d  jused %d  g  %d  i  %d   jp  %d  kp %d\n",j,jused,g,i,jp,kp);
-                        std::cout.flush();
+                        //printf("j %d  jused %d  g  %d  i  %d   jp  %d  kp %d\n",j,jused,g,i,jp,kp);
+                        //std::cout.flush();
                         
 						int unused = A.unused[jp][pp.spectrom[kp]];//unused for jp, spectrom[kp]
-                        printf("unused %d\n",unused);
-                        std::cout.flush();
-                        printf("A.inv_order[jp] %d\n",A.inv_order[jp]);
-                        std::cout.flush();
+                        //printf("unused %d\n",unused);
+                        //std::cout.flush();
+                        //printf("A.inv_order[jp] %d\n",A.inv_order[jp]);
+                        //std::cout.flush();
+                        if(A.inv_order[jp]=-1)printf("inv_order = -1  jp= %d\n",jp);
+                        else{
                         if(A.inv_order[jp]>F.NUsedplate || A.inv_order[jp]<0)printf("**out range  %d\n",A.inv_order[jp]);
                         if (A.suborder[jused_start]<=jp){
                             if(!A.is_assigned_tf(jp,kp)){
                                 if(Done[A.inv_order[jp]][kp]==0){
-                                    printf("before ok_assign \n");
-                                    std::cout.flush();
+                                    //printf("before ok_assign \n");
+                                    //std::cout.flush();
                                     if( ok_assign_g_to_jk(g,jp,kp,P,M,pp,F,A)){
                                         if(A.is_assigned_jg(jp,g,M,F)==-1){
                                             if( 0<unused) {
@@ -526,8 +528,8 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
                                                     kpb = kp;
                                                     unusedb = unused;
                                                     count3++;
-                                                    printf(" jpb %d  kpb %d \n",jpb,kpb);
-                                                    std::cout.flush();
+                                                    //printf(" jpb %d  kpb %d \n",jpb,kpb);
+                                                    //std::cout.flush();
                                                 }
                                             }
                                         }
@@ -535,10 +537,11 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
                                 }
                             }
                         }
+                        }
                     }
 					if (jpb!=-1) {
-                        printf("reassign \n");
-                        std::cout.flush();
+                        //printf("reassign \n");
+                        //std::cout.flush();
                         
 						A.unassign(j,k,g,M,P,pp);
 						A.assign(jpb,kpb,g,M,P,pp);
