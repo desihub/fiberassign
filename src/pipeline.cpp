@@ -150,9 +150,9 @@ int main(int argc, char **argv) {
         std::vector <int> used_by_class(M.priority_list.size(),0);
         int used_SS=0;
         int used_SF=0;
-        j=A.suborder[jused];
+        int j=A.suborder[jused];
         for(int k=0;k<F.Nfiber;++k){
-            g=A.TF[j][k];
+            int g=A.TF[j][k];
             if(g!=-1){
                 if(M[g].SS){
                     total_used_SS++;
