@@ -512,7 +512,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
                         //std::cout.flush();
                         //printf("A.inv_order[jp] %d\n",A.inv_order[jp]);
                         //std::cout.flush();
-                        if(A.inv_order[jp]=-1)printf("inv_order = -1  jp= %d\n",jp);
+                        if(A.inv_order[jp]=-1)//printf("inv_order = -1  jp= %d\n",jp);
                         else{
                         if(A.inv_order[jp]>F.NUsedplate || A.inv_order[jp]<0)printf("**out range  %d\n",A.inv_order[jp]);
                         if (A.suborder[jused_start]<=jp){
