@@ -37,11 +37,11 @@ int main(int argc, char **argv) {
     print_time(time,"# ... took :");
     //combine the three input files
     M=Targ;
-    printf(" M size %d \n",M.size());
+    printf(" Target size %d \n",M.size());
     M.insert(M.end(),SStars.begin(),SStars.end());
-    printf(" M size %d \n",M.size());
+    printf(" Standard Star size %d \n",M.size());
     M.insert(M.end(),SkyF.begin(),SkyF.end());
-    printf(" M size %d \n",M.size());
+    printf(" Sky Fiber size %d \n",M.size());
     
     F.Ngal = M.size();
     assign_priority_class(M);
@@ -113,8 +113,6 @@ int main(int argc, char **argv) {
                 not_done=false;
                 A.inv_order[j]=inv_count;//inv_order[j] is -1 unless used
                 inv_count++;
-                
-                //and otherwise the position of plate j in list of used plates
             }
         }
     }
@@ -142,10 +140,49 @@ int main(int argc, char **argv) {
         assign_unused(j,M,P,pp,F,A);
     }
 
-    init_time_at(time,"# Begin real time assignment",t);
     
 
 	// Results -------------------------------------------------------*/
+    std::vector <int> total_used_by_class(M.priority_list.size(),0);
+    int total_used_SS=0;
+    int total_used_SF=0;
+    for (int jused=0;jused<F.NUsedplate;++jused){
+        std::vector <int> used_by_class(M.priority_list.size(),0);
+        int used_SS=0;
+        int used_SF=0;
+        j=A.suborder[jused];
+        for(int k=0;k<F.Nfiber;++k){
+            g=A.TF[j][k];
+            if(g!=-1){
+                if(M[g].SS){
+                    total_used_SS++;
+                    used_SS++;
+                    }
+                    else if(M[g].SF){
+                        used_SF++;
+                        total_used_SF++;
+                    }
+                    else{
+                        used_by_class[M[g].priority_class]++;
+                        total_used_by_class[M[g].priority_class]++;
+                    }
+            }
+        }
+        printf(" plate jused %5d j %5d  SS   %4d    SF   %4",jused,j,used_SS,used_SF);
+        for (int pr=0;pr<M.priority_list.size();++pr){
+            printf(" class %d   %d",pr,used_by_class[pr]);
+        }
+        printf("\n");
+    }
+    
+                        
+                                        
+                             
+                
+                                            
+                                    
+    
+    
     if (F.PrintAscii) for (int j=0; j<F.Nplate; j++){
             write_FAtile_ascii(j,F.outDir,M,P,pp,F,A);
         }

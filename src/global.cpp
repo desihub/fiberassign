@@ -101,8 +101,6 @@ inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const MTL& M
 	if (F.Collision) for (int i=0; i<pp.N[k].size(); i++) if (g==A.TF[j][pp.N[k][i]]) return false; // Avoid 2 neighboring fibers observe the same galaxy (can happen only when Collision=true)
     if (A.find_collision(j,k,g,pp,M,P,F)!=-1){
         return false;} // No collision
-    //if(g%2000==0)printf( "ipass %d   lastpass %d   g  %d   j  %d \n",P[j].ipass,M[g].lastpass,g,j);
-    //if(g%500==0 && M[g].t_priority==2000)printf( "galaxy g  %d  plate %d  ipass %d  M[g].nobs_remain %d\n",g,j,P[j].ipass,M[g].nobs_remain);
 	return true;
     //doesn't require that jk is unassigned//doesn't require that g isn't assigned already on this plate
     //use is_assigned_jg for this
@@ -323,7 +321,6 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
     int add_SF=0;
     //can get all available SS,SF on plate from P[j].av_gals_plate restricting to plate p
     for(int c=M.priority_list.size()-1;P[j].SS_in_petal[p]<F.MaxSS && c>-1;--c ){//try to do this for lowest priority
-       //printf(" c %d  j= %d p= %d SS in petal assigned %d available %d\n",c,j,p,P[j].SS_in_petal[p],P[j].SS_av_gal[p].size());
         std::vector <int> gals=P[j].SS_av_gal[p]; //standard stars on this petal
         for(int gg=0;gg<gals.size() ;++gg){
             int g=gals[gg];//a standard star
@@ -335,18 +332,14 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                     if(tfs[i].f==j&&pp.spectrom[tfs[i].s]==p){//a tile fiber from this petal
                         int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                         int g_old=A.TF[j][k];//what is now at (j,k)  g_old can't be -1 or we would have used it already in assign_sf
-                        //if(j<1000)printf("c %d  g %d g_old  %d i %d  j %d  k%d  piroity_class %d \n",c,g,g_old,i,tfs[i].f,tfs[i].s,M[g_old].priority_class);
-
                         if(g_old!=-1 && !M[g_old].SS && !M[g_old].SF){
                             if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                                 //right priority; this SS not already assigned on this plate
-                                //printf("SS j %d k %d   g %d  g_old  %d \n ",j,k,g,g_old);
                                 A.unassign(j,k,g_old,M,P,pp);
                                 reassign_SS+=assign_galaxy(g_old,M,P,pp,F,A,j);//try to assign
                                 A.assign(j,k,g,M,P,pp);
                                 add_SS++;
                                 done=1;
-                                //if(j<1000)printf(" **assign SS g= %d to j= %d  k=%d \n",g,j,k);
                             }
                         }
                     }
@@ -355,8 +348,6 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
         }
     }
     for(int c=M.priority_list.size()-1;P[j].SF_in_petal[p]<F.MaxSF && c>-1;--c ){//try to do this for lowest priority
-                //printf(" c %d  j= %d p= %d SF in petal %d\n",c,j,p,P[j].SS_in_petal[p]);
-        // aside from SS and SF, so size()-3
         std::vector <int> gals=P[j].SF_av_gal[p]; //sky fibers on this petak
         for(int gg=0;gg<gals.size();++gg){
             int g=gals[gg];//a sky fiber
@@ -369,16 +360,12 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                         int g_old=A.TF[j][k];//what is now at (j,k)
                         if(g_old!=-1 && !M[g_old].SS && !M[g_old].SF){
                             if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
-                                //printf("SF j %d k %d   g %d  g_old  %d \n ",j,k,g,g_old);
-                                //printf(" before unassign occupant of (j,k)  %d\n",A.TF[j][k]);
                                 A.unassign(j,k,g_old,M,P,pp);
 
                                 reassign_SF+=assign_galaxy(g_old,M,P,pp,F,A,j);//try to assign
-                                //printf(" after unassign occupant of (j,k)  %d\n",A.TF[j][k]);
                                 A.assign(j,k,g,M,P,pp);
                                 add_SF++;
                                 done=1;
-                                //if(j<1000)printf(" assign SF g= %d to j= %d  k=%d \n",g,j,k);
                             }
                         }
                     }
@@ -423,7 +410,6 @@ void assign_unused(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assign
 			if (best!=-1) {
                 A.unassign(jpb,kpb,best,M,P,pp);
 				A.assign(j,k,best,M,P,pp);
-                //printf("assigned  ( %d , %d ) to g= %d unassigned it from ( %d , %d) \n",js,k,best,jpb,kpb);
                 
 			}
 		}
@@ -483,43 +469,25 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 	Table Done = initTable(F.NUsedplate,F.Nfiber);//consider every occupied plate and every fiber
 	for (int jused=jused_start; jused<F.NUsedplate; jused++) {
         int j=A.suborder[jused];
-        //printf(" jused = %d  j = %d\n",jused,j);
-        //std::cout.flush();
 		for (int k=0; k<F.Nfiber; k++) {
             count1++;
-            //printf("j %d k %d  \n",j,k);
-            //std::cout.flush();
 			if (Done[jused][k]==0) {
 				int g = A.TF[j][k];//current assignment of (j,k)  only look if assigned
-                //printf("j %d k %d  g %d\n",j,k,g);
                 std::cout.flush();
                 if (g!=-1 && !M[g].SS && !M[g].SF) {
 					int jpb = -1; int kpb = -1; int unusedb = A.unused[j][pp.spectrom[k]];
                     Plist av_tfs = M[g].av_tfs;  //all possible tile fibers for this galaxy
                     count2++;
 					for (int i=0; i<av_tfs.size(); i++) {
-                        //printf(" ** i %d \n",i);
-                        //std::cout.flush();
 						int jp = av_tfs[i].f;
-                        //printf("jp  %d \n", jp);
-                        //std::cout.flush();
 						int kp = av_tfs[i].s;
-                        //printf("j %d  jused %d  g  %d  i  %d   jp  %d  kp %d\n",j,jused,g,i,jp,kp);
-                        //std::cout.flush();
-                        
 						int unused = A.unused[jp][pp.spectrom[kp]];//unused for jp, spectrom[kp]
-                        //printf("unused %d\n",unused);
-                        //std::cout.flush();
-                        //printf("A.inv_order[jp] %d\n",A.inv_order[jp]);
-                        //std::cout.flush();
-                        if(A.inv_order[jp]!=-1)//printf("inv_order = -1  jp= %d\n",jp);
+                        if(A.inv_order[jp]!=-1)//necessary because underdense targets may leave some plates unused
                         {
                         if(A.inv_order[jp]>F.NUsedplate || A.inv_order[jp]<0)printf("**out range  %d\n",A.inv_order[jp]);
                         if (A.suborder[jused_start]<=jp){
                             if(!A.is_assigned_tf(jp,kp)){
                                 if(Done[A.inv_order[jp]][kp]==0){
-                                    //printf("before ok_assign \n");
-                                    //std::cout.flush();
                                     if( ok_assign_g_to_jk(g,jp,kp,P,M,pp,F,A)){
                                         if(A.is_assigned_jg(jp,g,M,F)==-1){
                                             if( 0<unused) {
@@ -528,8 +496,6 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
                                                     kpb = kp;
                                                     unusedb = unused;
                                                     count3++;
-                                                    //printf(" jpb %d  kpb %d \n",jpb,kpb);
-                                                    //std::cout.flush();
                                                 }
                                             }
                                         }
@@ -540,9 +506,6 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
                         }
                     }
 					if (jpb!=-1) {
-                        //printf("reassign \n");
-                        //std::cout.flush();
-                        
 						A.unassign(j,k,g,M,P,pp);
 						A.assign(jpb,kpb,g,M,P,pp);
 						Done[A.inv_order[j]][k] = 1;
@@ -555,7 +518,6 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
     }
 	printf("  %s redistributions of tile-fibers \n",f(red).c_str());
     std::cout.flush();
-    printf("count1 %d  count2  %d  count3  %d\n",count1,count2,count3);
 	print_time(t,"# ... took :");
 }
 
