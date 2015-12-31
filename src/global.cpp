@@ -1094,8 +1094,9 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
 
                 desi_target[i] = 0;
 		//PRUEBA
-                //target_id[i] = g;
-		target_id[i] = M[g].id;
+                //target_id[i] = g; ********
+                if(g>0) target_id[i] = M[g].id;
+                else target_id[i]=-1;
 
                 if (g < 0) {
                     //strcpy(objtype[i], "NA");
