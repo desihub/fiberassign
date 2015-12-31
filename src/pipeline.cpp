@@ -180,12 +180,13 @@ int main(int argc, char **argv) {
     }
     printf("\n");
     
-    if (F.PrintAscii) for (int jused=0; jused<F.NUsedplate; j++){
+    if (F.PrintAscii) for (int jused=0; jused<F.NUsedplate; jused++){
         int j=A.suborder[jused];
-            write_FAtile_ascii(j,F.outDir,M,P,pp,F,A);
+        write_FAtile_ascii(j,F.outDir,M,P,pp,F,A);
         }
 
-    if (F.PrintFits) for (int j=0; j<F.Nplate; jused++){
+    if (F.PrintFits) for (int jused=0; jused<F.Nusedplate; jused++){
+        int j=A.suborder[jused];
         fa_write(j,F.outDir,M,P,pp,F,A); // Write output
     }
     /*
