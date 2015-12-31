@@ -185,7 +185,7 @@ int main(int argc, char **argv) {
         write_FAtile_ascii(j,F.outDir,M,P,pp,F,A);
         }
 
-    if (F.PrintFits) for (int jused=0; jused<F.Nusedplate; jused++){
+    if (F.PrintFits) for (int jused=0; jused<F.NUsedplate; jused++){
         int j=A.suborder[jused];
         fa_write(j,F.outDir,M,P,pp,F,A); // Write output
     }
