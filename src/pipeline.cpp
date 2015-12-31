@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
     }
     F.NUsedplate=A.suborder.size();
     printf(" Plates actually used %d \n",F.NUsedplate);
-    for(int i=0;i<F.NUsedplate;i++)printf(" jused  %d  j  %d\n",i,A.suborder[i]);
+    //for(int i=0;i<F.NUsedplate;i++)printf(" jused  %d  j  %d\n",i,A.suborder[i]);
     
 
     
@@ -168,11 +168,12 @@ int main(int argc, char **argv) {
                     }
             }
         }
-        printf(" plate jused %5d j %5d  SS   %4d    SF   %4d",jused,j,used_SS,used_SF);
+       /* printf(" plate jused %5d j %5d  SS   %4d    SF   %4d",jused,j,used_SS,used_SF);
         for (int pr=0;pr<M.priority_list.size();++pr){
             printf(" class %2d   %5d",pr,used_by_class[pr]);
         }
         printf("\n");
+        */
     }
     printf(" Totals SS   %4d    SF   %4d",total_used_SS,total_used_SF);
     for (int pr=0;pr<M.priority_list.size();++pr){
