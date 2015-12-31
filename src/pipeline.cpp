@@ -180,7 +180,8 @@ int main(int argc, char **argv) {
     }
     printf("\n");
     
-    if (F.PrintAscii) for (int j=0; j<F.Nplate; j++){
+    if (F.PrintAscii) for (int jused=0; j<F.NUsedplate; j++){
+        int j=A.suborder[jused];
             write_FAtile_ascii(j,F.outDir,M,P,pp,F,A);
         }
 
