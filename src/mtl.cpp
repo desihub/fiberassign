@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
 	// Read parameters file //
 	F.readInputFile(argv[1]);
 	printFile(argv[1]);
-    std::cout/flush();
+    std::cout.flush();
 	// Read galaxies
 	Gals G, Secret;
     MTL Targ, SStars, SkyF;
