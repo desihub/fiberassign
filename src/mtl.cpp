@@ -33,6 +33,8 @@ int main(int argc, char **argv) {
 	Gals G, Secret;
     MTL Targ, SStars, SkyF;
     if(F.Ascii){
+        printf("to read galaxies\n");
+        std::cout.flush();
         G=read_galaxies_ascii(F);}
     else{
         G = read_galaxies(F);
