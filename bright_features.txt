@@ -1,15 +1,14 @@
-galFile /project/projectdirs/desi/mocks/preliminary/objects_ss_sf0.rdzipn
+galFile /project/projectdirs/desi/mocks/preliminary/gal_20.fain.dat
 tileFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/footprint/desi-tiles.par
 fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
 outDir /project/projectdirs/desi/users/rncahn/fa_output/big/
-PrintAscii false
+PrintAscii true
 PrintFits false
-MTLfile /project/projectdirs/desi/mocks/preliminary/bright_time_sample.dat
 diagnose true
-Targfile /project/projectdirs/desi/mocks/preliminary/Targfile.txt
-SStarsfile /project/projectdirs/desi/mocks/preliminary/SStarsfile.txt
-SkyFfile /project/projectdirs/desi/mocks/preliminary/SkyFfile.txt
-Secretfile /project/projectdirs/desi/mocks/preliminary/Secretfile.txt
+Targfile /project/projectdirs/desi/mocks/preliminary/bright_Targfile.txt
+SStarsfile /project/projectdirs/desi/mocks/preliminary/bright_SStarsfile.txt
+SkyFfile /project/projectdirs/desi/mocks/preliminary/bright-SkyFfile.txt
+Secretfile /project/projectdirs/desi/mocks/preliminary/bright_Secretfile.txt
 kind QSOLy-a QSOTracer LRG ELG FakeQSO FakeLRG SS SF
 type QSO QSO LRG ELG QSO LRG SS SF
 prio 2000 2000 3000 4000 2000 3000 9900 9800
