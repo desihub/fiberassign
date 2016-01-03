@@ -46,7 +46,7 @@ PlotSeenDens false
 PrintGalObs false
 
 
-Verif false
+qVerif false
 -------------------------------------------------
 -galFile : input file of objects
 -tileFile : input file of tiles

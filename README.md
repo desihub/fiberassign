@@ -57,6 +57,10 @@ fa_features: used by cori_fa, assign_fa
     specifies all the input files for the targets, positioners, tiles, etc.
     specifies output files, which need to be modified to the user's area
 
+shortrun_features: used by cori_shortrun_fa, shortrun_fa
+    specifies all the input files for the targets, positioners, tiles, etc.
+    specifies output files, which need to be modified to the user's area
+
 
 
 
