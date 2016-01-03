@@ -61,12 +61,11 @@ shortrun_features: used by cori_shortrun_fa, shortrun_fa
     specifies all the input files for the targets, positioners, tiles, etc.
     specifies output files, which need to be modified to the user's area
 
+mtl_features: used to make target, standard star, skyfiber, secret files
 
 
-
-    pipeline_features
-    mtl_features
-
+pipeline_features: used by cori_pipeline
+   
 
     
 are intended as templates.  You can make your own variations.
