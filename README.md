@@ -4,14 +4,31 @@
 
 Several executables are available for fiber assignment.  The scripts for running the code are in the directory "scripts"
 
-assign_fa:  This uses mocks for ELGs, LRGs, and QSOs, together with random mocks for standard stars and sky fibers, with densities chosen to be appropriate to the DESI experiment.  At the end, the yield of the various types is displayed.  The performance is controlled by an ascii file "fa_features."  In particular, you can choose have output giving the fiber assignments, and whether to have it as ascii or FITS."
+At present - January 2, 2016 - only the cori machine is available at NERSC.  The scripts for running the code on cori are as follows:
 
+cori_fa:   This uses mocks for ELGs, LRGs, and QSOs, together with random mocks for standard stars and sky fibers, with densities chosen to be appropriate to the DESI experiment.  At the end, the yield of the various types is displayed.  The performance is controlled by an ascii file "fa_features."  In particular, you can choose have output giving the fiber assignments, and whether to have it as ascii or FITS. Unfortunately, this now takes a bit over 30 minutes. 
+
+cori_shortrun_fa:  Same as cori_fa, except that there are only about one million targets (0<RA<10, -10<DEC<10).
+
+cori_pipeline: This is a stripped down version of the full code.  It doesn't read a full galaxy collections but a reduced one, which doesn't reveal the details, e.g. whether a QSO target is a  Lyman-alpha forest or not.  The input is called the MTLfile and is specified in mtl_features.
+
+cori_run_mtl:  This generates a complete set of input files - Targ, SStars, SkyF, and Secret.  All these are derived from Martin White's mocks.  Targ = target files, SStars = standard stars, SkyF = skyfibers, Secret = information not available in pipeline, revealing true nature of each target
+
+When edison is operative, the following scripts are appropriate.
+
+run_fa:  This uses mocks for ELGs, LRGs, and QSOs, together with random mocks for standard stars and sky fibers, with densities chosen to be appropriate to the DESI experiment.  At the end, the yield of the various types is displayed.  The performance is controlled by an ascii file "fa_features."  In particular, you can choose have output giving the fiber assignments, and whether to have it as ascii or FITS.
+
+shortrun_fa: Same as assign_fa, except that there are only about one million targets (0<RA<10, -10<DEC<10).
 
 assign_pipeline This is a stripped down version of the full code.  It doesn't read a full galaxy collections but a reduced one, which doesn't reveal the details, e.g. whether a QSO target is a  Lyman-alpha forest or not.  The input is called the MTLfile and is specified in mtl_features.
 
+cori_run_mtl:  This generates a complete set of input files - Targ, SStars, SkyF, and Secret.  All these are derived from Martin White's mocks.  Targ = target files, SStars = standard stars, SkyF = skyfibers, Secret = information not available in pipeline, revealing true nature of each target
+
+run_mtl:  This generates a complete set of input files - Targ, SStars, SkyF, and Secret.  All these are derived from Martin White's mocks.  Targ = target files, SStars = standard stars, SkyF = skyfibers, Secret = information not available in pipeline, revealing true nature of each target
+
 assign_mtl: This creates an MTLfile suitable for pipeline_fa
 
-## Building
+##Building
 
 By default, options for a generic Linux machine are used.  All 
 dependencies (e.g. libcfitsio) are assumed to be installed in
@@ -35,10 +52,18 @@ To create the executable for run_mtl
     $> make clean_mtl
     $> make install_mtl
 
-The features files
-    fa_features
+##The features files
+fa_features: used by cori_fa, assign_fa
+    specifies all the input files for the targets, positioners, tiles, etc.
+    specifies output files, which need to be modified to the user's area
+
+
+
+
     pipeline_features
     mtl_features
+
+
     
 are intended as templates.  You can make your own variations.
 

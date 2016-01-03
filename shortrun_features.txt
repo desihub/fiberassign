@@ -11,15 +11,6 @@ SkyFfile /project/projectdirs/desi/mocks/preliminary/smallSkyFfile.txt
 
 diagnose true
 
-kind QSOLy-a QSOTracer LRG ELG FakeQSO FakeLRG SS SF
-type QSO QSO LRG ELG QSO LRG SS SF
-prio 2000 2000 3000 4000 2000 3000 9900 9800
-priopost 0 2000 3000 4000 2000 3000 9900 9800
-goal 5 5 2 1 5 2 5 5
-goalpost 5 1 2 1 1 1 5 5
-lastpass 0 0 0 1 0 0 1 1 
-SS       0 0 0 0 0 0 1 0
-SF       0 0 0 0 0 0 0 1
 pass_intervals 0 50 100 150 200
 
 
@@ -55,10 +46,6 @@ PlotSeenDens false
 PrintGalObs false
 
 
-MaxDec 10.
-MinDec -10.
-MinRa 0.
-MaxRa 10.
 Verif false
 -------------------------------------------------
 -galFile : input file of objects
