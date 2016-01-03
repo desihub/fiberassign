@@ -2,8 +2,9 @@ galFile /project/projectdirs/desi/mocks/preliminary/gal_20.fain.dat
 tileFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/footprint/desi-tiles.par
 fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
 outDir /project/projectdirs/desi/users/rncahn/fa_output/big/
-PrintAscii true
+PrintAscii false
 PrintFits false
+Ascii true
 diagnose true
 Targfile /project/projectdirs/desi/mocks/preliminary/bright_Targfile.txt
 SStarsfile /project/projectdirs/desi/mocks/preliminary/bright_SStarsfile.txt
