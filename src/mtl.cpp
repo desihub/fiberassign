@@ -42,6 +42,7 @@ int main(int argc, char **argv) {
 	F.Ngal = G.size();
     
 	printf("# Read %s galaxies from %s \n",f(F.Ngal).c_str(),F.galFile.c_str());
+        std::cout.flush();
     std::vector<int> count;
     count=count_galaxies(G);
     printf(" Number of galaxies by type, QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF\n");
