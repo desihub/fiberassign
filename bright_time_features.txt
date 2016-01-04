@@ -4,7 +4,6 @@ fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplan
 outDir /project/projectdirs/desi/users/rncahn/fa_output/
 PrintAscii false
 PrintFits false
-Ascii true
 diagnose true
 Targfile /project/projectdirs/desi/mocks/preliminary/bright_Targfile.txt
 SStarsfile /project/projectdirs/desi/mocks/preliminary/bright_SStarsfile.txt
@@ -17,6 +16,7 @@ prio 1 2 0 1
 priopost 1 2 0 1
 goal 1 2 5 5
 lastpass 1 1 1 1
+pass_intervals 0 500 1000 2000 
 Randomize false
 Pacman false
 Npass 5
