@@ -298,6 +298,25 @@ void write_MTL_SS_SFfile(const MTL& Targ, const MTL& SStars,const MTL& SkyF,cons
     fclose(FD);
 
 }
+void write_Targ_Secret(const MTL& Targ, const Gals& Secret, const Feat& F){
+    FILE * FA;
+    str sa=F.Targfile;
+    FA = fopen(sa.c_str(),"w");
+    //str source="MartinsMocks";
+    for (int i=0;i<Targ.size();++i){
+        fprintf(FA," %d Target %f  %f  %d  %d %d \n",Targ[i].id,Targ[i].ra,Targ[i].dec,Targ[i].nobs_remain,Targ[i].t_priority,Targ[i].lastpass);
+    }
+    fclose(FA);
+    
+    FILE * FD;
+    str sd=F.Secretfile;
+    FD = fopen(sd.c_str(),"w");
+    for (int i=0;i<Secret.size();++i){
+        fprintf(FD," %d Secret %f  %f  %d   \n",      i,Secret[i].ra,Secret[i].dec,Secret[i].id);
+    }
+    fclose(FD);
+    
+}
 
 Gals read_Secretfile(str readfile, const Feat&F){
     str s=readfile;
