@@ -6,8 +6,8 @@ PrintAscii false
 PrintFits false
 diagnose true
 Targfile /project/projectdirs/desi/mocks/preliminary/bright_Targfile.txt
-SStarsfile /project/projectdirs/desi/mocks/preliminary/bright_SStarsfile.txt
-SkyFfile /project/projectdirs/desi/mocks/preliminary/bright_SkyFfile.txt
+SStarsfile /project/projectdirs/desi/mocks/preliminary/SStarsfile.txt
+SkyFfile /project/projectdirs/desi/mocks/preliminary/SkyFfile.txt
 Secretfile /project/projectdirs/desi/mocks/preliminary/bright_Secretfile.txt
 Output true
 kind kinda kindb SS SF
