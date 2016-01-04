@@ -173,6 +173,8 @@ int main(int argc, char **argv) {
     update_intervals.push_back(F.NUsedplate);//to end intervals at last plate
     for(int i=0;i<update_intervals.size()-1;++i){//go plate by used plate
         int starter=update_intervals[i];
+        printf(" beginning at %d\n",starter);
+        std::cout.flush();
         for (int jused=starter; jused<update_intervals[i+1]; jused++) {
             if (0<=jused-F.Analysis) update_plan_from_one_obs(jused,Secret,M,P,pp,F,A); else printf("\n no update\n");
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
