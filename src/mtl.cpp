@@ -47,7 +47,10 @@ int main(int argc, char **argv) {
     count=count_galaxies(G);
     printf(" Number of galaxies by type, QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF\n");
     std::cout.flush();
-    for(int i=0;i<2;i++){printf (" type %d number  %d  \n",i, count[i]);}
+    for(int i=0;i<2;i++){
+        printf (" type %d number  %d  \n",i, count[i]);
+        std::cout.flush();
+    }
     // make MTL
     //read_MTL(G,F,Secret,Targ);
     //write_MTLfile(Secret,Targ,F);
