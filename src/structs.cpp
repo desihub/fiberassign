@@ -222,6 +222,35 @@ void make_MTL_SS_SF(const Gals& G, MTL& Targ, MTL& SStars, MTL& SkyF, Gals& Secr
     
 }
 
+void make_Targ_Secret(const Gals& G, MTL& Targ, Gals& Secret, const Feat& F){
+    // Targ contains only galaxy targets
+    // SStars contains only standard stars
+    // SkyF contains only sky fibers
+    int Nobj=G.size();
+    struct target targ;
+    int special_count(0);
+    int stop_count(0);
+    for(int i=0;i<Nobj;++i){
+        targ.id=i;
+        targ.nhat[0]=G[i].nhat[0];
+        targ.nhat[1]=G[i].nhat[1];
+        targ.nhat[2]=G[i].nhat[2];
+        targ.ra=G[i].ra;
+        targ.dec=G[i].dec;
+        targ.t_priority=F.prio[G[i].id];
+        targ.nobs_remain=F.goal[G[i].id];//needs to be goal prior to knowledge!!
+        targ.nobs_done=0;//need to keep track of this, too
+        targ.once_obs=0;//changed only in update_plan
+        targ.SS=0;
+        targ.SF=0;
+        
+        targ.lastpass=F.lastpass[G[i].id];
+        //make list of priorities
+                        Targ.push_back(targ);
+                Secret.push_back(G[i]);
+    }
+    
+}
 
 /*
 void write_MTLfile(const Gals& Secret, const MTL& M,const Feat& F){
