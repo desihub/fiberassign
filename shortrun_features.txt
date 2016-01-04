@@ -10,7 +10,7 @@ SStarsfile /project/projectdirs/desi/mocks/preliminary/smallSStarsfile.txt
 SkyFfile /project/projectdirs/desi/mocks/preliminary/smallSkyFfile.txt
 
 diagnose true
-
+lastpass 0 0 0 1 0 0 1 1
 pass_intervals 0 50 100 150 200
 
 

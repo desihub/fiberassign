@@ -10,7 +10,7 @@ SkyFfile /project/projectdirs/desi/mocks/preliminary/SkyFfile.txt
 Secretfile /project/projectdirs/desi/mocks/preliminary/Secretfile.txt
 diagnose true
 
-
+lastpass 0 0 0 1 0 0 1 1
 pass_intervals 0 500 1000 2000 4000 8000
 
 Randomize false
