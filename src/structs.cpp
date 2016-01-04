@@ -86,7 +86,7 @@ std::vector<int> count_galaxies(const Gals& G){
             printf("id less than zero= %d\n",G[i].id);
             std::cout.flush();}
         else counter[G[i].id]+=1;
-                  
+    }
     return counter;
 }
 
