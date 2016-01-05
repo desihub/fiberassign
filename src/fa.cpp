@@ -113,6 +113,7 @@ int main(int argc, char **argv) {
     Assignment A(M,F);
     
 	print_time(t,"# Start assignment at : ");
+    sstd::cout.flush();
 
 	// Make a plan ----------------------------------------------------
     // Plans whole survey without sky fibers, standard stars
