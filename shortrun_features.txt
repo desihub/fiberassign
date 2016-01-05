@@ -12,7 +12,8 @@ SkyFfile /project/projectdirs/desi/mocks/preliminary/smallSkyFfile.txt
 diagnose true
 lastpass 0 0 0 1 0 0 1 1
 pass_intervals 0 50 100 150 200
-
+kind QSOLy-a QSOTracer LRG ELG FakeQSO FakeLRG SS SF
+type QSO QSO LRG ELG QSO LRG SS SF
 
 Randomize false
 Pacman false
