@@ -13,7 +13,7 @@ Output true
 kind kinda kindb SS SF
 type typea typeb SS SF
 prio 1 2 0 1
-priopost 1 2 0 1
+goalpost 1 2 0 1
 goal 1 2 5 5
 lastpass 1 1 1 1
 pass_intervals 0 500 1000 2000 
