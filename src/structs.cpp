@@ -615,6 +615,8 @@ Assignment::Assignment(const MTL& M, const Feat& F) {
     
     //for (int i=0; i<F.Nplate; i++) order[i] = i;
 	next_plate = 0;
+    printf(" plate %d petal %d categories %d \n",F.Nplate,F.Npetal,F.Categories);
+    std::cout.flush();
 	kinds = initCube(F.Nplate,F.Npetal,F.Categories);
     printf("assignment constructor5\n");
     std::cout.flush();
