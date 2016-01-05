@@ -272,6 +272,7 @@ void update_plan_from_one_obs(int jused,const Gals& Secret, MTL& M, Plates&P, co
     int j=A.suborder[jpast];
     //diagnostic
     printf("j %d  jused %d \n",j,jused);
+    std::cout.flush();
 	//int na_start(A.na(F,j0,n));//unassigned fibers in tiles from j0 to j0+n
 	List to_update;	// Get the list of galaxies to update in the plan
 	for (int k=0; k<F.Nfiber; k++) {
