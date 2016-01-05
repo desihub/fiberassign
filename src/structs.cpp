@@ -616,7 +616,15 @@ Assignment::Assignment(const MTL& M, const Feat& F) {
     //for (int i=0; i<F.Nplate; i++) order[i] = i;
 	next_plate = 0;
 	kinds = initCube(F.Nplate,F.Npetal,F.Categories);
+    printf("assignment constructor5\n");
+    std::cout.flush();
+    
+    
 	unused = initTable(F.Nplate,F.Npetal,F.Nfbp);//initialized to number of fibers on a petal
+    printf("assignment constructor6\n");
+    std::cout.flush();
+    
+    
     //j runs to F.Nplate
     }
 
