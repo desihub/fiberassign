@@ -277,6 +277,8 @@ void update_plan_from_one_obs(int jused,const Gals& Secret, MTL& M, Plates&P, co
 	List to_update;	// Get the list of galaxies to update in the plan
 	for (int k=0; k<F.Nfiber; k++) {
         int g = A.TF[j][k];
+        printf("g = %d\n",g);
+        std::count.flush();
         if(g!=-1){
             printf(" g %d  M[g].SS  %d  M[g].SF  %d  Secret[g].id %d\n", g, M[g].SS, M[g].SF ,Secret[g].id );
             std::cout.flush();}
