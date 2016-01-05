@@ -598,7 +598,7 @@ Plates read_plate_centers(const Feat& F) {
 // Assignment -----------------------------------------------------------------------------
 Assignment::Assignment(const MTL& M, const Feat& F) {
 
-    
+    printf("assingment constructor\n");
     TF=initTable(F.Nplate,F.Nfiber,-1);//galaxy assigned to tile-fiber TF[j][k]
 	GL = initPtable(F.Ngal,0); //tile-fiber pair for galaxy  GL[g]
     inv_order=initList(F.Nplate,-1);
