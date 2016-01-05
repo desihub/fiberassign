@@ -171,6 +171,9 @@ int main(int argc, char **argv) {
     }
     std::vector <int> update_intervals=F.pass_intervals;
     update_intervals.push_back(F.NUsedplate);//to end intervals at last plate
+    for(int i=0;i<update_intervals.size();++i){
+        printf("i %d  update_interval %d\n",i, update_interval[i]);
+    }
     for(int i=0;i<update_intervals.size()-1;++i){//go plate by used plate
         int starter=update_intervals[i];
         printf(" beginning at %d\n",starter);
