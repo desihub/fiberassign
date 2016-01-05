@@ -598,10 +598,20 @@ Plates read_plate_centers(const Feat& F) {
 // Assignment -----------------------------------------------------------------------------
 Assignment::Assignment(const MTL& M, const Feat& F) {
 
-    printf("assingment constructor\n");
+    printf("assignment constructor1\n");
+    std::cout.flush();
     TF=initTable(F.Nplate,F.Nfiber,-1);//galaxy assigned to tile-fiber TF[j][k]
+    printf("assignment constructor2\n");
+    std::cout.flush();
+    
 	GL = initPtable(F.Ngal,0); //tile-fiber pair for galaxy  GL[g]
+    printf("assignment constructor3\n");
+    std::cout.flush();
+
     inv_order=initList(F.Nplate,-1);
+    printf("assignment constructor4\n");
+    std::cout.flush();
+
     
     //for (int i=0; i<F.Nplate; i++) order[i] = i;
 	next_plate = 0;
