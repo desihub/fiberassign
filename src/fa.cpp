@@ -179,8 +179,10 @@ int main(int argc, char **argv) {
         printf(" beginning at %d\n",starter);
         std::cout.flush();
         for (int jused=starter; jused<update_intervals[i+1]; jused++) {
-            if (0<=jused-F.Analysis) update_plan_from_one_obs(jused,Secret,M,P,pp,F,A); else printf("\n no update\n");
+            if (0<=jused-F.Analysis) {
+                update_plan_from_one_obs(jused,Secret,M,P,pp,F,A); else printf("\n no update\n");
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
+                printf(" jused %d\n",jused);
         }
         redistribute_tf(M,P,pp,F,A,starter);
         improve(M,P,pp,F,A,starter);
