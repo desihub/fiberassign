@@ -32,6 +32,7 @@ import sys
 from astropy.io import fits
 import os.path
 from desitarget import desi_mask, bgs_mask, mws_mask
+import numpy.lib.recfunctions as rfn
 
 __author__ = "Martin White modified by Robert Cahn  6/30/14"
 __version__ = "1.0"
@@ -384,6 +385,16 @@ def write_catalog(icat=0, fitsoutput=False):
         data['BRICKNAME'][:] = "00000000"
         data['NUMOBS'] = no
         data['PRIORITY'] = pp
+
+
+        desi_target = N.zeros(ra.size, dtype=N.int64)
+        bgs_target = N.zeros(desi_target.size, dtype=N.int64)
+        mws_target = N.zeros(desi_target.size, dtype=N.int64)
+
+        desi_target = N.int_(types)
+        data = rfn.append_fields(data,
+        ['DESI_TARGET', 'BGS_TARGET', 'MWS_TARGET'],
+        [desi_target, bgs_target, mws_target], usemask=False)
 
         #- Create header to include versions, etc.
         hdr = F.FITSHDR()
