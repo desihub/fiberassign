@@ -26,6 +26,14 @@ mtl.o \
 misc.o \
 structs.o
 
+OBJS_TARG = \
+collision.o \
+feat.o \
+global.o \
+targ.o \
+misc.o \
+structs.o
+
 OBJS_PIPE = \
 collision.o \
 feat.o \
@@ -33,6 +41,8 @@ global.o \
 pipeline.o \
 misc.o \
 structs.o
+
+
 
 COMPILE = $(CXXFLAGS) $(OMPFLAGS) -I. $(CFITSIO_CPPFLAGS)
 LINK = $(OMPFLAGS) $(CFITSIO)
@@ -47,12 +57,20 @@ all_mtl : assign_mtl
 install_mtl : all_mtl
 	cp assign_mtl $(INSTALL)
 
+all_targ : assign_targ
+
+install_targ : all_targ
+	cp assign_targ $(INSTALL)
+
 all_fa : assign_fa
 
 install_fa : all_fa
 	cp assign_fa $(INSTALL)
 
 assign_mtl : $(OBJS_MTL)
+	$(CXX) -o $@ $^ $(LINK)
+
+assign_targ : $(OBJS_TARG)
 	$(CXX) -o $@ $^ $(LINK)
 
 assign_pipeline : $(OBJS_PIPE)
@@ -66,6 +84,9 @@ assign_fa : $(OBJS_FA)
 
 clean_mtl :
 	rm -f assign_mtl  *.o *~
+
+clean_targ :
+	rm -f assign_targ  *.o *~
 
 clean_fa :
 	rm -f assign_fa  *.o *~

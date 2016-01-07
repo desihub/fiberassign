@@ -54,8 +54,8 @@ int main(int argc, char **argv) {
     // make MTL
     //read_MTL(G,F,Secret,Targ);
     //write_MTLfile(Secret,Targ,F);
-    make_MTL_SS_SF(G,Targ,SStars,SkyF,Secret,F);
-    write_MTL_SS_SFfile(Targ,SStars,SkyF,Secret,F);
+    make_Targ_Secret(G,Targ,Secret,F);
+    write_Targ_Secret(Targ,Secret,F);
 	return(0);
   
 }

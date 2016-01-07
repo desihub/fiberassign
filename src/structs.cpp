@@ -82,8 +82,8 @@ Gals read_galaxies(const Feat& F) {
 std::vector<int> count_galaxies(const Gals& G){
     std::vector <int> counter(10,0);
     for (int i=0;i<G.size();i++){
-        counter[G[i].id]+=1;
-                  }
+    counter[G[i].id]+=1;
+    }
     return counter;
 }
 
@@ -154,8 +154,8 @@ str galaxy::kind(const Feat& F) const {
 
 // targets -----------------------------------------------------------------------
 // derived from G, but includes priority and nobs_remain
-MTL make_MTL(const Gals& G, const Feat& F){
-    MTL M;
+void make_MTL(const Gals& G, const Feat& F,  MTL& M){
+    
     int Nobj=G.size();
     struct target targ;
     int special_count(0);
@@ -177,29 +177,192 @@ MTL make_MTL(const Gals& G, const Feat& F){
         targ.lastpass=F.lastpass[G[i].id];
         //make list of priorities
         if(targ.dec<F.MaxDec && targ.dec>F.MinDec &&targ.ra<F.MaxRa && targ.ra>F.MinRa){
-        M.push_back(targ);
+            M.push_back(targ);
+
         }
         int g=M.size()-1;
 
     }
-    return M;
+    
+}
+void make_MTL_SS_SF(const Gals& G, MTL& Targ, MTL& SStars, MTL& SkyF, Gals& Secret, const Feat& F){
+    // Targ contains only galaxy targets
+    // SStars contains only standard stars
+    // SkyF contains only sky fibers
+    int Nobj=G.size();
+    struct target targ;
+    int special_count(0);
+    int stop_count(0);
+    for(int i=0;i<Nobj;++i){
+        targ.id=i;
+        targ.nhat[0]=G[i].nhat[0];
+        targ.nhat[1]=G[i].nhat[1];
+        targ.nhat[2]=G[i].nhat[2];
+        targ.ra=G[i].ra;
+        targ.dec=G[i].dec;
+        targ.t_priority=F.prio[G[i].id];
+        targ.nobs_remain=F.goal[G[i].id];//needs to be goal prior to knowledge!!
+        targ.nobs_done=0;//need to keep track of this, too
+        targ.once_obs=0;//changed only in update_plan
+        targ.SS=F.SS[G[i].id];
+        targ.SF=F.SF[G[i].id];
+        
+        targ.lastpass=F.lastpass[G[i].id];
+        //make list of priorities
+        if(targ.dec<F.MaxDec && targ.dec>F.MinDec &&targ.ra<F.MaxRa && targ.ra>F.MinRa){
+        
+            if(targ.SS)SStars.push_back(targ);
+            else if(targ.SF)SkyF.push_back(targ);
+            else {
+                Targ.push_back(targ);
+                Secret.push_back(G[i]);
+            }
+        }
+    }
+    
 }
 
+void make_Targ_Secret(const Gals& G, MTL& Targ, Gals& Secret, const Feat& F){
+    // Targ contains only galaxy targets
+    // SStars contains only standard stars
+    // SkyF contains only sky fibers
+    int Nobj=G.size();
+    struct target targ;
+    int special_count(0);
+    int stop_count(0);
+    for(int i=0;i<Nobj;++i){
+        targ.id=i;
+        targ.nhat[0]=G[i].nhat[0];
+        targ.nhat[1]=G[i].nhat[1];
+        targ.nhat[2]=G[i].nhat[2];
+        targ.ra=G[i].ra;
+        targ.dec=G[i].dec;
+        targ.t_priority=F.prio[G[i].id];
+        targ.nobs_remain=F.goal[G[i].id];//needs to be goal prior to knowledge!!
+        targ.nobs_done=0;//need to keep track of this, too
+        targ.once_obs=0;//changed only in update_plan
+        targ.SS=0;
+        targ.SF=0;
+        
+        targ.lastpass=F.lastpass[G[i].id];
+        //make list of priorities
+                        Targ.push_back(targ);
+                Secret.push_back(G[i]);
+    }
+    
+}
 
-void write_MTLfile(const MTL& M,const Feat& F){
+/*
+void write_MTLfile(const Gals& Secret, const MTL& M,const Feat& F){
     FILE * FA;
-    str s=F.MTLfile;
-    FA = fopen(s.c_str(),"w");
-    str source="MartinsMocks";
+    str sa=F.MTLfile;
+    FA = fopen(sa.c_str(),"w");
+
     for (int i=0;i<M.size();++i){
-        fprintf(FA," %d MartinsMocks %f  %f  %d  %d %d \n",M[i].id,M[i].ra,M[i].dec,M[i].nobs_remain,M[i].t_priority,M[i].lastpass);
+        fprintf(FA," %d MartinsMocks %f  %f  %d  %d %d \n",i,M[i].ra,M[i].dec,M[i].nobs_remain,M[i].t_priority,M[i].lastpass);
     }
     fclose(FA);
 }
+*/
+void write_MTL_SS_SFfile(const MTL& Targ, const MTL& SStars,const MTL& SkyF,const Gals& Secret, const Feat& F){
+    FILE * FA;
+    str sa=F.Targfile;
+    FA = fopen(sa.c_str(),"w");
+    //str source="MartinsMocks";
+    for (int i=0;i<Targ.size();++i){
+        fprintf(FA," %d Target %f  %f  %d  %d %d \n",Targ[i].id,Targ[i].ra,Targ[i].dec,Targ[i].nobs_remain,Targ[i].t_priority,Targ[i].lastpass);
+    }
+    fclose(FA);
+    FILE * FB;
+    str sb=F.SStarsfile;
+    FB = fopen(sb.c_str(),"w");
+    //str source="MartinsMocks";
+    for (int i=0;i<SStars.size();++i){
+        fprintf(FB," %d SStars %f  %f  %d  %d %d \n",SStars[i].id,SStars[i].ra,SStars[i].dec,SStars[i].nobs_remain,SStars[i].t_priority,SStars[i].lastpass);
+    }
+    fclose(FB);
+    FILE * FC;
+    str sc=F.SkyFfile;
+    FC = fopen(sc.c_str(),"w");
+    //str source="MartinsMocks";
+    for (int i=0;i<SkyF.size();++i){
+        fprintf(FC," %d SkyF %f  %f  %d  %d %d \n",SkyF[i].id,SkyF[i].ra,SkyF[i].dec,SkyF[i].nobs_remain,SkyF[i].t_priority,SkyF[i].lastpass);
+    }
+    fclose(FC);
+    FILE * FD;
+    str sd=F.Secretfile;
+    FD = fopen(sd.c_str(),"w");
+    for (int i=0;i<Secret.size();++i){
+        fprintf(FD," %d Secret %f  %f  %d   \n",      i,Secret[i].ra,Secret[i].dec,Secret[i].id);
+    }
+    fclose(FD);
+
+}
+void write_Targ_Secret(const MTL& Targ, const Gals& Secret, const Feat& F){
+    FILE * FA;
+    str sa=F.Targfile;
+    FA = fopen(sa.c_str(),"w");
+    //str source="MartinsMocks";
+    for (int i=0;i<Targ.size();++i){
+        fprintf(FA," %d Target %f  %f  %d  %d %d \n",Targ[i].id,Targ[i].ra,Targ[i].dec,Targ[i].nobs_remain,Targ[i].t_priority,Targ[i].lastpass);
+    }
+    fclose(FA);
+    
+    FILE * FD;
+    str sd=F.Secretfile;
+    FD = fopen(sd.c_str(),"w");
+    for (int i=0;i<Secret.size();++i){
+        fprintf(FD," %d Secret %f  %f  %d   \n",      i,Secret[i].ra,Secret[i].dec,Secret[i].id);
+    }
+    fclose(FD);
+    
+}
+
+Gals read_Secretfile(str readfile, const Feat&F){
+    str s=readfile;
+    Gals Secret;
+    std::string buf;
+    const char* fname;
+    fname= s.c_str();
+    std::ifstream fs(fname);
+    if (!fs) {  // An error occurred opening the file.
+        std::cerr << "Unable to open MTLfile " << fname << std::endl;
+        myexit(1);
+    }
+    // Reserve some storage, since we expect we'll be reading quite a few
+    // lines from this file.
+    try {Secret.reserve(4000000);} catch (std::exception& e) {myexception(e);}
+    // Skip any leading lines beginning with #
+    getline(fs,buf);
+    while (fs.eof()==0 && buf[0]=='#') {
+        getline(fs,buf);
+    }
+    while (fs.eof()==0) {
+        double ra,dec;
+        int id, i;
+        str xname;
+        std::istringstream(buf)>> i>>xname>> ra >> dec>> id ;
+
+        if (ra<   0.) {ra += 360.;}
+        if (ra>=360.) {ra -= 360.;}
+        if (dec<=-90. || dec>=90.) {
+            std::cout << "DEC="<<dec<<" out of range reading "<<fname<<std::endl;
+            myexit(1);
+        }
+        struct galaxy Q;
+        Q.ra = ra;
+        Q.dec = dec;
+        Q.id = id;
+        Secret.push_back(Q);
+        getline(fs,buf);
+    }
+    return Secret;
+}
 
 
-MTL read_MTLfile(const Feat& F){
-    str s=F.MTLfile;
+MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
+    //str s=F.MTLfile;
+    str s=readfile;
     MTL M;
     std::string buf;
     const char* fname;
@@ -243,6 +406,8 @@ MTL read_MTLfile(const Feat& F){
             Q.dec = dec;
             Q.id = id;
             Q.lastpass = lastpass;
+            Q.SS=SS;
+            Q.SF=SF;
             
             if (id%F.moduloGal == 0) {
                 try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
@@ -266,9 +431,11 @@ void assign_priority_class(MTL& M){
     // assign each target to a priority class
     //this needs to be updated
     for(int i=0;i<M.size();++i){
-        for(int j=0;j<M.priority_list.size();++j){
-            if(M[i].t_priority==M.priority_list[j]){
-                M[i].priority_class=j;}
+        if(!M[i].SS&&!M[i].SF){
+            for(int j=0;j<M.priority_list.size();++j){
+                if(M[i].t_priority==M.priority_list[j]){
+                    M[i].priority_class=j;}
+            }
         }
     }
 }
@@ -411,14 +578,17 @@ Plates read_plate_centers(const Feat& F) {
 			Q.ipass      = ipass-1; // <- be careful, format of input file
 			Q.av_gals.resize(F.Nfiber); // <- added
 			Q.density.resize(F.Nfiber); // <- added
-            Q.SS_av_gal.resize(F.Nfbp);
-            Q.SF_av_gal.resize(F.Nfbp);
+            Q.SS_av_gal.resize(F.Npetal);//was Nfbp
+            Q.SF_av_gal.resize(F.Npetal);//was Nfbp
             Q.SS_in_petal.resize(F.Npetal);
             Q.SF_in_petal.resize(F.Npetal);
+            Q.SS_av_gal_fiber.resize(F.Nfiber);
+            Q.SF_av_gal_fiber.resize(F.Nfiber);
             for (int i=0;i<F.Npetal;++i){Q.SS_in_petal[i]=0;}
             for (int i=0;i<F.Npetal;++i){Q.SF_in_petal[i]=0;}
-            if(dec<F.MaxDec && dec>F.MinDec &&ra<F.MaxRa && ra>F.MinRa){
-                try {P.push_back(Q);} catch(std::exception& e) {myexception(e);}
+            //if(dec<F.MaxDec && dec>F.MinDec &&ra<F.MaxRa && ra>F.MinRa){
+                try {P.push_back(Q);} catch(std::exception& e) {myexception(e);
+                //}
             }
 		}
 	}
@@ -428,13 +598,36 @@ Plates read_plate_centers(const Feat& F) {
 // Assignment -----------------------------------------------------------------------------
 Assignment::Assignment(const MTL& M, const Feat& F) {
 
-	TF = initTable(F.Nplate,F.Nfiber,-1);//galaxy assigned to tile-fiber TF[j][k]
+    printf("assignment constructor1\n");
+    std::cout.flush();
+    TF=initTable(F.Nplate,F.Nfiber,-1);//galaxy assigned to tile-fiber TF[j][k]
+    printf("assignment constructor2\n");
+    std::cout.flush();
+    
 	GL = initPtable(F.Ngal,0); //tile-fiber pair for galaxy  GL[g]
-	order.resize(F.Nplate);
-	for (int i=0; i<F.Nplate; i++) order[i] = i;
+    printf("assignment constructor3\n");
+    std::cout.flush();
+
+    inv_order=initList(F.Nplate,-1);
+    printf("assignment constructor4\n");
+    std::cout.flush();
+
+    
+    //for (int i=0; i<F.Nplate; i++) order[i] = i;
 	next_plate = 0;
+    printf(" plate %d petal %d categories %d \n",F.Nplate,F.Npetal,F.Categories);
+    std::cout.flush();
 	kinds = initCube(F.Nplate,F.Npetal,F.Categories);
+    printf("assignment constructor5\n");
+    std::cout.flush();
+    
+    
 	unused = initTable(F.Nplate,F.Npetal,F.Nfbp);//initialized to number of fibers on a petal
+    printf("assignment constructor6\n");
+    std::cout.flush();
+    
+    
+    //j runs to F.Nplate
     }
 
 Assignment::~Assignment() {}
@@ -447,11 +640,10 @@ void Assignment::assign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
 		printf("### !!! ### DUPLICATE (j,k) = (%d,%d) assigned with g = %d and %d ---> information on first g lost \n",j,k,q,g);
 		myexit(1);
 	}
-	TF[j][k] = g;
     //DIAGNOSTIC
-    //if(k==0)printf(" j  %d   k  %d   g  %d\n",j,k,g);
-    //if(g%1000==0)printf(" assign  g %d to j %d k%d\n", g,j,k);
+
 	// Assign g
+    TF[j][k]=g;
 	Plist pl = GL[g];//pair list, tf's for this g
 	pair p = pair(j,k);
 	for(int i=0;i<pl.size();i++){
@@ -465,10 +657,12 @@ void Assignment::assign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
 	GL[g].push_back(p);
     M[g].nobs_done++;
     M[g].nobs_remain--;
-    if(M[g].t_priority==9800){
+    //
+    //if(P[j].ipass==4 && g%1000==0  && !M[g].SS && !M[g].SF)printf( "ipass %d   lastpass %d   g  %d type %d   j  %d   remain %d\n",P[j].ipass,M[g].lastpass,g,M[g].t_priority,j,M[g].nobs_remain);
+    if(M[g].SF){
         int q=pp.spectrom[k];
         P[j].SF_in_petal[q]+=1;}
-    if(M[g].t_priority==9900){
+    if(M[g].SS){
         int q=pp.spectrom[k];
         P[j].SS_in_petal[q]+=1;}
 	unused[j][pp.spectrom[k]]--;
@@ -483,10 +677,10 @@ void Assignment::unassign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) 
 	if (a!=-1) erase(a,GL[g]);
     M[g].nobs_done--;
     M[g].nobs_remain++;
-    if(M[g].t_priority==9800){
+    if(M[g].SF){
         int p=pp.spectrom[k];
         P[j].SF_in_petal[p]-=1;}
-    if(M[g].t_priority==9900){
+    if(M[g].SS){
         int p=pp.spectrom[k];
         P[j].SS_in_petal[p]-=1;}
 
@@ -553,13 +747,11 @@ int Assignment::na(const Feat& F, int begin, int size) const {//unassigned fiber
 	return cnt;
 }
 
-Plist Assignment::chosen_tfs(int g, const Feat& F, int begin, int size0) const {//creates list of tile-fibers observing g
-	int size = (size0==-1) ? F.Nplate : size0;
+Plist Assignment::chosen_tfs(int g, const Feat& F, int begin) const {//creates list of tile-fibers observing g starting from plate begin
 	Plist chosen;
-	if (F.Nplate<begin+size) { printf("ERROR in chosen_tfs - size\n"); fl(); }
 	for (int i=0; i<GL[g].size(); i++) {
 		pair tf = GL[g][i];
-		if (begin<=tf.f && tf.f<begin+size) {
+		if (begin<=tf.f ) {
 			if (TF[tf.f][tf.s]!=g) { printf("ERROR in chosen_tfs\n"); fl(); }
 			chosen.push_back(tf);
 		}
@@ -669,11 +861,12 @@ bool collision(dpair O1, dpair G1, dpair O2, dpair G2, const Feat& F) {
 }
 
 // (On plate p) finds if there is a collision if fiber k would observe galaxy g (collision with neighbor)
+//  j is in list that runs to F.Nplate since it is used in TF[j][k]
 int Assignment::find_collision(int j, int k, int g, const PP& pp, const MTL& M, const Plates& P, const Feat& F, int col) const {//check all neighboring fibers
 	bool bol = (col==-1) ? F.Collision : false;
 	if (bol) return -1;
 	dpair G1 = projection(g,j,M,P);
-	for (int i=0; i<pp.N[k].size(); i++) {
+	for (int i=0; i<pp.N[k].size(); i++) {// i numbers the fibers neighboring fiber k
 		int kn = pp.N[k][i];
 		int gn = TF[j][kn];
 		if (gn!=-1) {
@@ -684,7 +877,7 @@ int Assignment::find_collision(int j, int k, int g, const PP& pp, const MTL& M, 
 	}
 	return -1;
 }
-
+//probably not used
 bool Assignment::find_collision(int j, int k, int kn, int g, int gn, const PP& pp, const MTL& M, const Plates& P, const Feat& F, int col) const {//check two fibers
 	bool bol = (col==-1) ? F.Collision : false;
 	if (bol) return false;
@@ -717,8 +910,12 @@ float Assignment::colrate(const PP& pp, const MTL& M, const Plates& P, const Fea
 	return percent(col,jend*F.Nfiber);
 }
 
-dpair projection(int g, int j, const MTL& M, const Plates& P) {//x and y coordinates for galaxy observed on plate j
-	struct onplate op = change_coords(M[g],P[j]);
+dpair projection(int g, int j, const MTL& M, const Plates& OP) {//x and y coordinates for galaxy observed on plate j
+    // USE OLD LIST OF PLATES HERE
+	struct onplate op = change_coords(M[g],OP[j]);
+    if (op.pos[0]*op.pos[0]+op.pos[1]*op.pos[1]>500.*500.){
+        printf("outside positioner range  g  %d  j  %d  x %f  y %f\n",g,j,op.pos[0],op.pos[1]);
+    }
 	return dpair(op.pos[0],op.pos[1]);
 }
 

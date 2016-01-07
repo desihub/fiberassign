@@ -4,7 +4,11 @@ fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplan
 outDir /project/projectdirs/desi/users/rncahn/fa_output/short/
 PrintAscii false
 PrintFits false
-MTLfile /project/projectdirs/desi/mocks/preliminary/small_MTLfile.txt
+Secretfile /project/projectdirs/desi/mocks/preliminary/smallSecretfile.txt
+Targfile /project/projectdirs/desi/mocks/preliminary/smallTargfile.txt
+SStarsfile /project/projectdirs/desi/mocks/preliminary/smallSStarsfile.txt
+SkyFfile /project/projectdirs/desi/mocks/preliminary/smallSkyFfile.txt
+
 diagnose true
 
 kind QSOLy-a QSOTracer LRG ELG FakeQSO FakeLRG SS SF
@@ -16,7 +20,7 @@ goalpost 5 1 2 1 1 1 5 5
 lastpass 0 0 0 1 0 0 1 1 
 SS       0 0 0 0 0 0 1 0
 SF       0 0 0 0 0 0 0 1
-pass_intervals 0 500 1000 2000 4000 8000
+pass_intervals 0 50 100 150 200
 
 
 Randomize false

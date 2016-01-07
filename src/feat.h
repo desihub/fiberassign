@@ -25,6 +25,10 @@ class Feat { // F for features
 	str fibFile;
 	str outDir;
     str MTLfile;
+    str Targfile;
+    str SStarsfile;
+    str SkyFfile;
+    str Secretfile;
 	bool PrintFits;
     bool PrintAscii;
     bool diagnose;
@@ -85,6 +89,7 @@ class Feat { // F for features
 
 	// Set after reading other input files
 	int Nplate;
+    int NUsedplate;
 	int Ngal;
 	int Nfiber;
 	int Npetal;
