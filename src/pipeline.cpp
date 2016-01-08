@@ -181,7 +181,7 @@ int main(int argc, char **argv) {
     std::cout.flush();
     for (int pr=0;pr<M.priority_list.size();++pr){
         printf(" class %2d   %5d",pr,total_used_by_class[pr]);
-        std::cout>flush();
+        std::cout.flush();
     }
     printf("\n");
     init_time_at(time,"# print txt files ",t);
@@ -189,7 +189,7 @@ int main(int argc, char **argv) {
         int j=A.suborder[jused];
         write_FAtile_ascii(j,F.outDir,M,P,pp,F,A);
         }
-    init_time_at(time,"# print fits files ",t);    
+    init_time_at(time,"# print fits files ",t);
     if (F.PrintFits) for (int jused=0; jused<F.NUsedplate; jused++){
         int j=A.suborder[jused];
         fa_write(j,F.outDir,M,P,pp,F,A); // Write output
