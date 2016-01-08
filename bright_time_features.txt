@@ -1,18 +1,27 @@
-galFile gal_20_fain.dat
-tileFile desi-tiles-intrim-3pass.par
+galFile /project/projectdirs/desi/mocks/preliminary/gal_20_fain.dat
+tileFile /project/projectdirs/desi/mocks/preliminary/desi-tiles-intrim-3pass.par
 fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
 outDir /project/projectdirs/desi/users/rncahn/fa_output/
+PrintAscii false
+PrintFits false
+diagnose true
+Targfile /project/projectdirs/desi/mocks/preliminary/bright_Targfile.txt
+SStarsfile /project/projectdirs/desi/mocks/preliminary/SStarsfile.txt
+SkyFfile /project/projectdirs/desi/mocks/preliminary/SkyFfile.txt
+Secretfile /project/projectdirs/desi/mocks/preliminary/bright_Secretfile.txt
 Output true
 kind kinda kindb SS SF
 type typea typeb SS SF
 prio 1 2 0 1
-priopost 1 2 0 1
+goalpost 1 2 0 1
 goal 1 2 5 5
+lastpass 1 1 1 1
+pass_intervals 0 500 1000 2000 
 Randomize false
 Pacman false
 Npass 5
-MaxSS 0
-MaxSF 0
+MaxSS 10
+MaxSF 40
 PlateRadius 1.65
 InterPlate 0
 Analysis 0

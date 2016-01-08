@@ -47,6 +47,7 @@ class Gals : public std::vector<struct galaxy> {};
 
 Gals read_galaxies(const Feat& F);
 Gals read_galaxies_ascii(const Feat& F);
+Gals read_Secretfile(str filename,const Feat& F);
 
 std::vector<int>count_galaxies(const Gals& G);
 
@@ -64,9 +65,13 @@ class MTL : public std::vector<struct target> {
     std::vector<int> priority_list;
 };
 
-MTL make_MTL(const Gals& G, const Feat& F);
-MTL read_MTLfile(const Feat& F);
-void write_MTLfile(const MTL& M, const Feat& F);
+void make_MTL(const Gals& G, const Feat& F, Gals& Secret, MTL& M);
+void make_MTL_SS_SF(const Gals& G, MTL& Targ, MTL& SStars, MTL& SkyF,Gals& Secret, const Feat& F);
+MTL read_MTLfile(str filename, const Feat& F, int SS, int SF);
+void make_Targ_Secret(const Gals& G, MTL& Targ, Gals& Secret, const Feat& F);
+void write_MTLfile(const Gals& Secret, const MTL& M, const Feat& F);
+void write_MTL_SS_SFfile(const MTL& Targ, const MTL& SStars, const MTL& SkyF, const Gals& Secret, const Feat& F);
+void write_Targ_Secret(const MTL& Targ,  const Gals& Secret, const Feat& F);
 void assign_priority_class(MTL & M);
 // petal--------------------------------------------------
 
@@ -89,8 +94,11 @@ class plate {
 	List density; // density[k] is the weighted number of objects available to (j,k)
     Table SS_av_gal;//SS_av_gal[p] are available standard stars on petal p of this plate
     Table SF_av_gal;
+    Table SS_av_gal_fiber;
+    Table SF_av_gal_fiber;
     std::vector<int> SS_in_petal;//number of SS assigned to a petal in this plate
     std::vector<int> SF_in_petal;
+    bool is_used;  //true if tile has some galaxies within reach
 
 	List av_gals_plate(const Feat& F, const MTL& M,const PP& pp) const; // Av gals of the plate
 };
@@ -105,7 +113,9 @@ class Assignment {
 	//// ----- Members
 	Table TF; // TF for tile fiber, #tiles X #fibers TF[j][k] is the chosen galaxy, -1 if not yet chosen
 	List order; // Order of tiles we want to assign, only 1-n in simple increasing order for the moment
-	int next_plate; // Next plate in the order
+    List suborder; // Order of tiles actually containing targets. size is F.Nplate
+    List inv_order; // inverse of suborder unused tiles map to -1
+	int next_plate; // Next plate in the order, i.e suborder(next_plate) is actually next plate
 
 	// Redundant information (optimizes computation time)
 	Ptable GL; // GL for galaxy - list : #galaxies X (variable) #chosen TF: gives chosen tf's for galaxy g
@@ -131,7 +141,7 @@ class Assignment {
 	int na(const Feat& F, int begin=0, int size=-1) const; // Number of assignments (changes) within plates begin to begin+size
 	int nobs(int g, const MTL& M, const Feat& F, bool tmp=true) const; // Counts how many more times object should be observed. If tmp=true, return maximum for this kind (temporary information)
 	//if tmp=false we actually know the true type from the start
-	Plist chosen_tfs(int g, const Feat& F, int begin=0, int size=-1) const; // Pairs (j,k) chosen by g, amongst size plates from begin
+	Plist chosen_tfs(int g, const Feat& F, int begin=0) const; // Pairs (j,k) chosen by g, amongst size plates from begin
 	int nkind(int j, int k, int kind, const MTL& M, const Plates& P, const PP& pp, const Feat& F, bool pet=false) const; // Number of fibers assigned to the kind "kind" on the petal of (j,k). If pet=true, we don't take k but the petal p directly instead
 	List fibs_of_kind(int kind, int j, int pet, const MTL& M, const PP& pp, const Feat& F) const; // Sublist of fibers assigned to a galaxy of type kind for (j,p)
 	//not used

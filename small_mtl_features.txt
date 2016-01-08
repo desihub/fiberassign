@@ -6,10 +6,10 @@ PrintAscii false
 PrintFits false
 MTLfile /project/projectdirs/desi/mocks/preliminary/big_MTLfile.txt
 diagnose true
-Targfile /project/projectdirs/desi/mocks/preliminary/Targfile.txt
-SStarsfile /project/projectdirs/desi/mocks/preliminary/SStarsfile.txt
-SkyFfile /project/projectdirs/desi/mocks/preliminary/SkyFfile.txt
-Secretfile /project/projectdirs/desi/mocks/preliminary/Secretfile.txt
+Targfile /project/projectdirs/desi/mocks/preliminary/smallTargfile.txt
+SStarsfile /project/projectdirs/desi/mocks/preliminary/smallSStarsfile.txt
+SkyFfile /project/projectdirs/desi/mocks/preliminary/smallSkyFfile.txt
+Secretfile /project/projectdirs/desi/mocks/preliminary/smallSecretfile.txt
 kind QSOLy-a QSOTracer LRG ELG FakeQSO FakeLRG SS SF
 type QSO QSO LRG ELG QSO LRG SS SF
 prio 2000 2000 3000 4000 2000 3000 9900 9800
@@ -51,10 +51,10 @@ PlotFreeFibHist false
 PlotFreeFibTime false
 PlotSeenDens false
 PrintGalObs false
-MaxDec 90.
-MinDec -90.
+MaxDec 10.
+MinDec -10.
 MinRa 0.
-MaxRa 360.
+MaxRa 10.
 Verif false
 -------------------------------------------------
 

@@ -48,3 +48,12 @@ install_pipeline :
 
 clean_pipeline :
 	@cd src; $(MAKE) clean_pipeline
+all_targ : 
+	@cd src; $(MAKE) all_targ
+
+install_targ :
+	@cd src; $(MAKE) install_targ
+
+clean_targ :
+	@cd src; $(MAKE) clean_targ
+
