@@ -82,7 +82,7 @@ bool isfound(str n, const Slist& L);
 List values(const List& L); // List of different taken values (ex 1,1,5,2,5 gives 1,5,2)
 List random_permut(int n); // Return a random permutation of [0,n-1]
 List random_permut(const List& L); // Random permut of L
-void print_hist(str s, int i, List hist, bool latex=false); // Print histogram hist with interval i, printing s before, in latex format if wished
+
 void erase(int i, List& L); // Erase i th element
 void erase(int i, Plist& L); // Erase i th element
 List complementary(int size, const List& L); // Complementary list (provided L is a subset of [0,size-1])
@@ -114,8 +114,6 @@ List histogram(const Table& T, int interval); // Build histogram of interval int
 List histogram(const List& L, int interval); // Build histogram of interval interval from values in L
 Dlist histogram(const Dlist& L, double interval);
 Dlist histogram(const Dplist& L, double interval);
-void print_mult_table_latex(str s, str ss, Table T, int multX=1); // Print, in latex format, data from table T in file ss, writing s on cout
-void print_mult_Dtable_latex(str s, str ss, Dtable T, double multX=1);
 Table with_tot(const Table& T); // Add a row with sum of lines
 int max_row(const Table& T); // Max number of rows
 int max_row(const Dtable& T);

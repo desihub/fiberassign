@@ -29,4 +29,3 @@ install :
 
 clean :
 	@cd src; $(MAKE) clean
-

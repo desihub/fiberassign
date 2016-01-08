@@ -249,70 +249,7 @@ List values(const List& L) {
 	return l;
 }
 
-void print_hist(str s, int i0, List hist, bool latex) {
-	str et = latex ? " & " : " | ";
-	str slash = latex ? "\\\\ \n" : "\n";
 
-	str rrr(10,'r');
-	if (latex) printf("\\begin{table}[H]\\begin{center} \n \\caption{%s (interval %d)} \n \\begin{tabular}{%s}\n",s.c_str(),i0,rrr.c_str());
-	else printf("%s (interval %d)\n",s.c_str(),i0);
-
-	int size = hist.size();
-	for (int i=0; i<size; i++) {
-		str s = ((i+1)%10==0 || i==size-1) ? slash : et;
-		printf("%4s %s",f(hist[i]).c_str(),s.c_str());
-	}
-	if (latex) printf("\\end{tabular}\\end{center}\\end{table} \n");
-	fl();
-}
-
-void print_mult_table_latex(str s, str ss, Table T, int multX) {
-	printf("# %s \n  Output data in %s \n\n",s.c_str(),ss.c_str());
-	FILE* pFile;
-	pFile = fopen(ss.c_str(),"w");
-	if (!pFile) {
-		printf("File opening failed \n"); fl();
-		myexit(1);
-	}
-
-	fprintf(pFile,"x ");
-	for (int i=0; i<T.size(); i++) fprintf(pFile,"%d ",i);
-	fprintf(pFile,"\n");
-	int maxrow = max_row(T);
-	for (int j=0; j<maxrow; j++) {
-		fprintf(pFile,"%d ",j*multX);
-		for (int i=0; i<T.size(); i++) {
-			if (j<T[i].size()) fprintf(pFile,"%d ",T[i][j]);
-			else fprintf(pFile,"0 ");
-		}
-		fprintf(pFile,"\n");
-	}
-	fclose(pFile);
-}
-
-void print_mult_Dtable_latex(str s, str ss, Dtable T, double multX) {
-	printf("# %s \n  Output data in %s \n\n",s.c_str(),ss.c_str());
-	FILE* pFile;
-	pFile = fopen(ss.c_str(),"w");
-	if (!pFile) {
-		printf("File opening failed \n"); fl();
-		myexit(1);
-	}
-
-	fprintf(pFile,"x ");
-	for (int i=0; i<T.size(); i++) fprintf(pFile,"%d ",i);
-	fprintf(pFile,"\n");
-	int maxrow = max_row(T);
-	for (int j=0; j<maxrow; j++) {
-		fprintf(pFile,"%f ",j*multX);
-		for (int i=0; i<T.size(); i++) {
-			if (j<T[i].size()) fprintf(pFile,"%f ",T[i][j]);
-			else fprintf(pFile,"0 ");
-		}
-		fprintf(pFile,"\n");
-	}
-	fclose(pFile);
-}
 
 void erase(int i, List& L) { L.erase (L.begin()+i); }
 

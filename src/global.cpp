@@ -1,11 +1,13 @@
 #include	<cstdlib>
 #include	<cmath>
+#include        <cstdio>
 #include	<fstream>
 #include	<sstream>
 #include	<iostream>
 #include	<iomanip>
 #include	<string>
 #include        <string.h>
+#include        <cstring>
 #include	<vector>
 #include	<algorithm>
 #include	<exception>
@@ -230,14 +232,14 @@ inline int improve_fiber(int jused_begin, int jused, int k, MTL& M, Plates& P, c
 void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
 	Time t;
 	init_time(t,"# Begin simple assignment :");
-    int countme=0;
+	int countme=0;
 	for (int j=0; j<F.Nplate; j++) {
 
         int best=-1;
-		for (int k=0; k<F.Nfiber; k++) { // Fiber
-            best=assign_fiber(j,k,M,P,pp,F,A);
-            if (best!=-1)countme++;
-		}
+	for (int k=0; k<F.Nfiber; k++) { // Fiber
+	  best=assign_fiber(j,k,M,P,pp,F,A);
+	  if (best!=-1)countme++;
+	}
 	}
 	print_time(t,"# ... took :");
     printf(" countme %d \n",countme);
@@ -260,6 +262,7 @@ void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int 
 
 // If there are galaxies discovered as fake for example, they won't be observed several times in the plan
 // has access to G,not just M, because it needs to know the truth
+
 
 void update_plan_from_one_obs(int jused,const Gals& Secret, MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A) {
 	int cnt_deassign(0);
@@ -314,6 +317,7 @@ void update_plan_from_one_obs(int jused,const Gals& Secret, MTL& M, Plates&P, co
     }
 	//int na_end(A.na(F,j0,n));
 }
+
 
 
 void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
@@ -525,6 +529,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 	print_time(t,"# ... took :");
 }
 
+<<<<<<< HEAD
 // Other useful functions --------------------------------------------------------------------------------------------
 void results_on_inputs(str outdir, const MTL& M, const Plates& P, const Feat& F, bool latex) {
 	printf("# Results on inputs :\n");
@@ -871,11 +876,11 @@ void write_FAtile_ascii(int j, str outdir, const MTL& M, const Plates& P, const 
 		// Number of potential galaxies
 		fprintf(FA,"%lu ",av_gals.size());
 		// IDs of potential galaxies
-		for (int i=0; i<av_gals.size(); i++) fprintf(FA,"%d ",M[av_gals[i]].id);
+		for (int i=0; i<av_gals.size(); i++) fprintf(FA,"%ld ",M[av_gals[i]].id);
 		// galaxy number, ra, dec, x, y
 		if (g!=-1) {
 			dpair Gal = projection(g,j,M,P);
-            fprintf(FA,"%d %f %f %f %f\n",M[g].id,M[g].ra,M[g].dec,Gal.f,Gal.s);
+            fprintf(FA,"%ld %f %f %f %f\n",M[g].id,M[g].ra,M[g].dec,Gal.f,Gal.s);
 		}
 		else fprintf(FA,"-1\n");
 	}
@@ -883,49 +888,6 @@ void write_FAtile_ascii(int j, str outdir, const MTL& M, const Plates& P, const 
 }
 
 
-/*
-void pyplotTile(int j, str directory, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
-	std::vector<char> colors;
-	colors.resize(F.Categories);
-	colors[0] = 'k'; colors[1] = 'g'; colors[2] = 'r'; colors[3] = 'b'; colors[4] = 'm'; colors[5] = 'y'; colors[6] = 'w'; colors[7] = 'c';
-	polygon pol;
-	PosP posp(3,3);
-	for (int k=0; k<F.Nfiber; k++) {
-		dpair O = pp.coords(k);
-		int g = A.TF[j][k];
-		if (g!=-1) {
-			dpair Ga = projection(g,j,G,P);
-			polygon fh = F.fh;
-			polygon cb = F.cb;
-			repos_cb_fh(cb,fh,O,Ga,posp);
-			//if (A.is_collision(j,k,pp,G,P,F)!=-1) {
-				//cb.set_color('r');
-				//fh.set_color('r');
-			//}
-			cb.set_color(colors[M[g].id]);
-			fh.set_color(colors[M[g].id]);
-			pol.add(cb);
-			pol.add(fh);
-			pol.add(element(O,colors[G[g].id],0.3,5));
-		}
-		else pol.add(element(O,'k',0.1,3));
-		List av_gals = P[j].av_gals[k];
-		for (int i=0; i<av_gals.size(); i++) {
-			int gg = av_gals[i];
-			if (1<=A.nobs_time(gg,j,M,F)) {
-				//if (A.nobs_time(gg,j,G,F)!=A.nobs(gg,G,F)) printf("%d %d %s - ",A.nobs_time(gg,j,G,F),A.nobs(gg,G,F),F.kind[G[gg].id].c_str());
-				int kind = G[gg].id;
-				dpair Ga = projection(gg,j,M,P);
-				if (kind==F.ids.at("QSOLy-a")) pol.add(element(Ga,colors[kind],1,A.is_assigned_jg(j,gg)==-1?0.9:0.5));
-				else pol.add(element(Ga,colors[kind],1,0.5));
-			}
-		}
-	}
-	pyplot pyp(pol);
-	//for (int k=0; k<F.Nfiber; k++) pyp.addtext(pp.coords(k),i2s(k)); // Plot fibers identifiers
-	pyp.plot_tile(directory,j,F); 
-}
-*/
 
 void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp, const Feat & F, const Assignment & A) {
     
@@ -1201,14 +1163,14 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
 
 
 void overlappingTiles(str fname, const Feat& F, const Assignment& A) {
-	FILE * file;
-	file = fopen(fname.c_str(),"w");
-	for (int g=0; g<F.Ngal; g++) {
-		if (A.GL[g].size()==5) {
-			fprintf(file,"%d ",g);
-			for (int i=0; i<A.GL[g].size(); i++) fprintf(file,"(%d,%d) ",A.GL[g][i].f,A.GL[g][i].s);
-			fprintf(file,"\n");
-		}
-	}
-	fclose(file);
+  FILE * file;
+  file = fopen(fname.c_str(),"w");
+  for (int g=0; g<F.Ngal; g++) {
+    if (A.GL[g].size()==5) {
+      fprintf(file,"%d ",g);
+      for (int i=0; i<A.GL[g].size(); i++) fprintf(file,"(%d,%d) ",A.GL[g][i].f,A.GL[g][i].s);
+      fprintf(file,"\n");
+    }
+  }
+  fclose(file);
 }
