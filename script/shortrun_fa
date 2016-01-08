@@ -7,4 +7,4 @@ cd $PBS_O_WORKDIR
 export OMP_NUM_THREADS=24
 echo "# Running assign"
 
-aprun -n 1 -N 1 -d 24 ./assign_fa shortrun_features.txt
+aprun -n 1 -N 1 -d 24 bin/fiberassign_surveysim shortrun_features.txt
