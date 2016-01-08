@@ -10,7 +10,7 @@ global.h \
 misc.h \
 structs.h
 
-OBJS_FA = \
+OBJS_SURVEYSIM = \
 collision.o \
 feat.o \
 global.o \
@@ -18,7 +18,7 @@ fa.o \
 misc.o \
 structs.o
 
-OBJS_MTL = \
+OBJS_SKYSTD = \
 collision.o \
 feat.o \
 global.o \
@@ -26,7 +26,7 @@ mtl.o \
 misc.o \
 structs.o
 
-OBJS_TARG = \
+OBJS_TARG_SECRET = \
 collision.o \
 feat.o \
 global.o \
@@ -34,7 +34,7 @@ targ.o \
 misc.o \
 structs.o
 
-OBJS_PIPE = \
+OBJS_FIBERASSIGN = \
 collision.o \
 feat.o \
 global.o \
@@ -42,54 +42,31 @@ pipeline.o \
 misc.o \
 structs.o
 
-
-
+EXECUTABLES = fiberassign fiberassign_surveysim split_targ_secret_sky_std split_targ_secret
 COMPILE = $(CXXFLAGS) $(OMPFLAGS) -I. $(CFITSIO_CPPFLAGS)
 LINK = $(OMPFLAGS) $(CFITSIO)
 
-all_pipeline : assign_pipeline
+all : $(EXECUTABLES)
 
-install_pipeline : all_pipeline
-	cp assign_pipeline $(INSTALL)
+install : all
+	cp $(EXECUTABLES) $(INSTALL)
 
-all_mtl : assign_mtl
-
-install_mtl : all_mtl
-	cp assign_mtl $(INSTALL)
-
-all_targ : assign_targ
-
-install_targ : all_targ
-	cp assign_targ $(INSTALL)
-
-all_fa : assign_fa
-
-install_fa : all_fa
-	cp assign_fa $(INSTALL)
-
-assign_mtl : $(OBJS_MTL)
+split_targ_secret_sky_std : $(OBJS_SKYSTD)
 	$(CXX) -o $@ $^ $(LINK)
 
-assign_targ : $(OBJS_TARG)
+split_targ_secret : $(OBJS_TARG_SECRET)
 	$(CXX) -o $@ $^ $(LINK)
 
-assign_pipeline : $(OBJS_PIPE)
+fiberassign : $(OBJS_FIBERASSIGN)
 	$(CXX) -o $@ $^ $(LINK)
 
-assign_fa : $(OBJS_FA)
+fiberassign_surveysim : $(OBJS_SURVEYSIM)
 	$(CXX) -o $@ $^ $(LINK)
 
 %.o : %.cpp $(HEADERS)
 	$(CXX) $(COMPILE) -o $@ -c $<
 
-clean_mtl :
-	rm -f assign_mtl  *.o *~
-
-clean_targ :
-	rm -f assign_targ  *.o *~
-
-clean_fa :
-	rm -f assign_fa  *.o *~
-
-clean_pipeline :
-	rm -f assign_pipeline  *.o *~
+clean :
+	rm -f $(EXECUTABLES)
+	rm -f *.o *~
+	@cd $(INSTALL); rm -f $(EXECUTABLES)

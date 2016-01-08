@@ -8,4 +8,4 @@ cd $SLURM_SUBMIT_DIR
 export OMP_NUM_THREADS=24
 echo "# Running assign"
 
-srun -N 1 ./assign_targ bright_time_features.txt
+srun -N 1 bin/split_targ_secret bright_time_features.txt
