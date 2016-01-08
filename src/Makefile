@@ -10,6 +10,7 @@ global.h \
 misc.h \
 structs.h
 
+
 OBJS_SURVEYSIM = \
 collision.o \
 feat.o \
@@ -46,6 +47,7 @@ EXECUTABLES = fiberassign fiberassign_surveysim split_targ_secret_sky_std split_
 COMPILE = $(CXXFLAGS) $(OMPFLAGS) -I. $(CFITSIO_CPPFLAGS)
 LINK = $(OMPFLAGS) $(CFITSIO)
 
+
 all : $(EXECUTABLES)
 
 install : all
@@ -63,8 +65,10 @@ fiberassign : $(OBJS_FIBERASSIGN)
 fiberassign_surveysim : $(OBJS_SURVEYSIM)
 	$(CXX) -o $@ $^ $(LINK)
 
+
 %.o : %.cpp $(HEADERS)
 	$(CXX) $(COMPILE) -o $@ -c $<
+
 
 clean :
 	rm -f $(EXECUTABLES)

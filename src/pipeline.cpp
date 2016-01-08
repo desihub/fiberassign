@@ -16,6 +16,7 @@
 #include        "structs.h"
 #include        "collision.h"
 #include        "global.h"
+
 //reduce redistributes, updates  07/02/15 rnc
 int main(int argc, char **argv) {
 	//// Initializations ---------------------------------------------
@@ -194,12 +195,9 @@ int main(int argc, char **argv) {
         int j=A.suborder[jused];
         fa_write(j,F.outDir,M,P,pp,F,A); // Write output
     }
-    /*
-	display_results("doc/figs/",G,M,P,pp,F,A,true);
-	if (F.Verif) A.verif(P,M,pp,F); // Verification that the assignment is sane
-     */
-
-    print_time(t,"# Finished !... in");
-    
-    return(0);    
+  }
+  
+  print_time(t,"# Finished !... in");
+  
+  return(0);    
 }

@@ -31,6 +31,8 @@ import fitsio as F
 import sys
 from astropy.io import fits
 import os.path
+from desitarget import desi_mask, bgs_mask, mws_mask
+import numpy.lib.recfunctions as rfn
 
 __author__ = "Martin White modified by Robert Cahn  6/30/14"
 __version__ = "1.0"
@@ -141,17 +143,17 @@ def write_catalog(icat=0, fitsoutput=False):
     print 'need %8.3f more qsoI \n' %qsoI_needed
     print 'first qsoIs',len(ra_low)
     
-    id       = N.zeros(ra_low.size,dtype='i4')+2
-    pp       = N.zeros(ra_low.size,dtype='f4')+2
-    no       = N.zeros(ra_low.size,dtype='i4')+1
+    id       = N.zeros(ra_low.size,dtype='i4') + 2
+    pp       = N.zeros(ra_low.size,dtype='f4') + desi_mask['QSO'].priorities['UNOBS'] 
+    no       = N.zeros(ra_low.size,dtype='i4') + 1
 
     frac_qsoII=goal_qsoII/mockdensity_qsoII
     print ('goals  qsoI   %8.1f   qsoII  %8.1f\n'%(goal_qsoI,goal_qsoII))
     nra,ndc,nzz = reduce(ra_high,dc_high,zz_high,frac_qsoII)
     #combine all qsoIs with qsoIIs
-    nid       = N.zeros(nra.size,dtype='i4')+1
-    npp       = N.zeros(nra.size,dtype='f4')+2
-    nno       = N.zeros(nra.size,dtype='i4')+5
+    nid       = N.zeros(nra.size,dtype='i4') + 1
+    npp       = N.zeros(nra.size,dtype='f4') + desi_mask['QSO'].priorities['UNOBS'] 
+    nno       = N.zeros(nra.size,dtype='i4') + 5
     ra       = N.append(ra_low,nra)
     dc       = N.append(dc_low,ndc)
     zz       = N.append(zz_low,nzz)
@@ -160,8 +162,7 @@ def write_catalog(icat=0, fitsoutput=False):
     no       = N.append(no,nno)
     print 'qsoIIs',len(nra)
 
-    tmp_type = N.chararray(ra.size, itemsize=8)
-    tmp_type[:] = 'QSO'
+    tmp_type = N.ones(ra.size, dtype='i8') * desi_mask.QSO
     types = N.append(types, tmp_type)
     print  'total ra, types', N.size(ra), N.size(types) 
     
@@ -175,7 +176,7 @@ def write_catalog(icat=0, fitsoutput=False):
     nzz_low=xzz[low]
     nra,ndc,nzz=reduce(nra_low,ndc_low,nzz_low,qsoI_needed)
     nid       = N.zeros(nra.size,dtype='i4')+2
-    npp       = N.zeros(nra.size,dtype='f4')+2
+    npp       = N.zeros(nra.size,dtype='f4') + desi_mask['QSO'].priorities['UNOBS'] 
     nno       = N.zeros(nra.size,dtype='i4')+1
     ra       = N.append(ra,nra)
     dc       = N.append(dc,ndc)
@@ -184,9 +185,10 @@ def write_catalog(icat=0, fitsoutput=False):
     pp       = N.append(pp,npp)
     no       = N.append(no,nno)
     
-    tmp_type = N.chararray(nra.size, itemsize=8)
-    tmp_type[:] = 'QSO'
+
+    tmp_type = N.ones(nra.size, dtype='i8') * desi_mask.QSO
     types = N.append(types, tmp_type)
+    print  'total ra, types', N.size(ra), N.size(types) 
     print  'total ra, types', len(ra), N.size(types) 
     print' added qsoIs', len(nra)
 
@@ -195,9 +197,9 @@ def write_catalog(icat=0, fitsoutput=False):
     nra,ndc,nzz,density=read_objects(dbase+"v2_lrg_%d.fits"%icat)
     print 'lrg mock density', density
 
-    nid      = N.zeros(nra.size,dtype='i4')+3
-    npp      = N.zeros(nra.size,dtype='f4')+3
-    nno      = N.zeros(nra.size,dtype='i4')+2   #only use 2 exposures for LRG
+    nid      = N.zeros(nra.size,dtype='i4') + 3
+    npp      = N.zeros(nra.size,dtype='f4') + desi_mask['LRG'].priorities['UNOBS'] 
+    nno      = N.zeros(nra.size,dtype='i4') + 2   #only use 2 exposures for LRG
     ra       = N.append(ra,nra)
     dc       = N.append(dc,ndc)
     zz       = N.append(zz,nzz)
@@ -205,8 +207,8 @@ def write_catalog(icat=0, fitsoutput=False):
     pp       = N.append(pp,npp)
     no       = N.append(no,nno)
 
-    tmp_type = N.chararray(nra.size, itemsize=8)
-    tmp_type[:] = 'LRG'
+
+    tmp_type = N.ones(nra.size, dtype='i8') * desi_mask.LRG
     types = N.append(types, tmp_type)
 
     print 'lrgs added',len(nra)
@@ -221,9 +223,9 @@ def write_catalog(icat=0, fitsoutput=False):
     nra,ndc,nzz=reduce(mra,mdc,mzz,(goal_elg/density))
     
     
-    nid      = N.zeros(nra.size,dtype='i4')+4
-    npp      = N.zeros(nra.size,dtype='f4')+4
-    nno      = N.zeros(nra.size,dtype='i4')+1
+    nid      = N.zeros(nra.size,dtype='i4') + 4
+    npp      = N.zeros(nra.size,dtype='f4') + desi_mask['ELG'].priorities['UNOBS'] 
+    nno      = N.zeros(nra.size,dtype='i4') + 1
     ra       = N.append(ra,nra)
     dc       = N.append(dc,ndc)
     zz       = N.append(zz,nzz)
@@ -231,10 +233,9 @@ def write_catalog(icat=0, fitsoutput=False):
     pp       = N.append(pp,npp)
     no       = N.append(no,nno)
 
-    tmp_type = N.chararray(nra.size, itemsize=8)
-    tmp_type[:] = 'ELG'
-    types = N.append(types, tmp_type)
-    
+    tmp_type = N.ones(nra.size, dtype='i8') * desi_mask.ELG
+    types = N.append(types, tmp_type)    
+
     print 'elgs added',len(nra)
     print 'new total nid'
     print 'elg density',len(nra)/total_area
@@ -257,7 +258,7 @@ def write_catalog(icat=0, fitsoutput=False):
     ndc      = data['DEC'][:end_badqso].astype('f4')
     nzz      = N.zeros(nra.size,dtype='f4')
     nid      = N.zeros(nra.size,dtype='i4')+5
-    npp      = N.zeros(nra.size,dtype='f4')+2
+    npp      = N.zeros(nra.size,dtype='f4') + desi_mask['QSO'].priorities['UNOBS'] 
     nno      = N.zeros(nra.size,dtype='i4')+1
     ra       = N.append(ra,nra)
     dc       = N.append(dc,ndc)
@@ -267,10 +268,8 @@ def write_catalog(icat=0, fitsoutput=False):
     no       = N.append(no,nno)
     density=len(nra)/total_area
 
-    tmp_type = N.chararray(nra.size, itemsize=8)
-    tmp_type[:] = 'QSO'
-    types = N.append(types, tmp_type)
-
+    tmp_type = N.ones(nra.size, dtype='i8') * desi_mask.QSO
+    types = N.append(types, tmp_type)    
     print 'fake qso density',density
 
     print 'fake qsos',len(nra), len(types)
@@ -280,9 +279,9 @@ def write_catalog(icat=0, fitsoutput=False):
     nra      = data[ 'RA'][end_badqso+1:end_badlrg].astype('f4')
     ndc      = data['DEC'][end_badqso+1:end_badlrg].astype('f4')
     nzz      = N.zeros(nra.size,dtype='f4')
-    nid      = N.zeros(nra.size,dtype='i4')+6
-    npp      = N.zeros(nra.size,dtype='f4')+3
-    nno      = N.zeros(nra.size,dtype='i4')+1
+    nid      = N.zeros(nra.size,dtype='i4') + 6
+    npp      = N.zeros(nra.size,dtype='f4') + desi_mask['LRG'].priorities['UNOBS'] 
+    nno      = N.zeros(nra.size,dtype='i4') + 1
     ra       = N.append(ra,nra)
     dc       = N.append(dc,ndc)
     zz       = N.append(zz,nzz)
@@ -291,9 +290,10 @@ def write_catalog(icat=0, fitsoutput=False):
     no       = N.append(no,nno)
     density=len(nra)/total_area
 
-    tmp_type = N.chararray(nra.size, itemsize=8)
-    tmp_type[:] = 'LRG'
+    tmp_type = N.ones(nra.size, dtype='i8') * desi_mask.LRG
     types = N.append(types, tmp_type)
+    
+    print 'fake qso density',density
 
     print 'fake lrg density',density
     
@@ -304,8 +304,8 @@ def write_catalog(icat=0, fitsoutput=False):
     ndc      = data['DEC'][end_badlrg+1:end_standardstar].astype('f4')
     nzz      = N.zeros(nra.size,dtype='f4')
     nid      = N.zeros(nra.size,dtype='i4')+7
-    npp      = N.zeros(nra.size,dtype='f4')+3
-    nno      = N.zeros(nra.size,dtype='i4')+1
+    npp      = N.zeros(nra.size,dtype='f4') + 100
+    nno      = N.zeros(nra.size,dtype='i4') + 1
     ra       = N.append(ra,nra)
     dc       = N.append(dc,ndc)
     zz       = N.append(zz,nzz)
@@ -315,8 +315,7 @@ def write_catalog(icat=0, fitsoutput=False):
     density=len(nra)/total_area
 
 
-    tmp_type = N.chararray(nra.size, itemsize=8)
-    tmp_type[:] = 'STDSTAR'
+    tmp_type = N.ones(nra.size, dtype='i8') * desi_mask.STD_FSTAR
     types = N.append(types, tmp_type)
 
     print 'standardstar density',density
@@ -329,7 +328,7 @@ def write_catalog(icat=0, fitsoutput=False):
     ndc      = data['DEC'][end_standardstar+1:end_skyfiber].astype('f4')
     nzz      = N.zeros(nra.size,dtype='f4')
     nid      = N.zeros(nra.size,dtype='i4')+8
-    npp      = N.zeros(nra.size,dtype='f4')+3
+    npp      = N.zeros(nra.size,dtype='f4') + 200
     nno      = N.zeros(nra.size,dtype='i4')+1
     ra       = N.append(ra,nra)
     dc       = N.append(dc,ndc)
@@ -339,8 +338,8 @@ def write_catalog(icat=0, fitsoutput=False):
     no       = N.append(no,nno)
     density=len(nra)/total_area
     
-    tmp_type = N.chararray(nra.size, itemsize=8)
-    tmp_type[:] = 'SKY'
+
+    tmp_type = N.ones(nra.size, dtype='i8') * desi_mask.SKY
     types = N.append(types, tmp_type)
     
     print 'sky fiber density',density
@@ -383,9 +382,19 @@ def write_catalog(icat=0, fitsoutput=False):
         data['TARGETID'] = N.arange(ra.size)
         data['RA'] = ra
         data['DEC'] = dc
-        data['BRICKNAME'][:] = "0simple0"
+        data['BRICKNAME'][:] = "00000000"
         data['NUMOBS'] = no
         data['PRIORITY'] = pp
+
+
+        desi_target = N.zeros(ra.size, dtype=N.int64)
+        bgs_target = N.zeros(desi_target.size, dtype=N.int64)
+        mws_target = N.zeros(desi_target.size, dtype=N.int64)
+
+        desi_target = N.int_(types)
+        data = rfn.append_fields(data,
+        ['DESI_TARGET', 'BGS_TARGET', 'MWS_TARGET'],
+        [desi_target, bgs_target, mws_target], usemask=False)
 
         #- Create header to include versions, etc.
         hdr = F.FITSHDR()
@@ -398,15 +407,13 @@ def write_catalog(icat=0, fitsoutput=False):
             ('TARGETID', '>i8'),
             ('BRICKNAME', '|S20'),
             ('Z', '>f8'),
-            ('TYPE', '|S20'),
-            ('SUBTYPE', '|S20')
+            ('TYPE', '>i8')
         ]
         data = N.ndarray(shape=ra.size, dtype=type_table) 
         data['TARGETID'] = N.arange(ra.size)
-        data['BRICKNAME'][:] = "0simple0"
+        data['BRICKNAME'][:] = "00000000"
         data['Z'] = zz
         data['TYPE'] = types
-        data['SUBTYPE'] = types
 
         hdr = F.FITSHDR()
         hdr['DEPNAM00'] = 'makecatalog-truth'
