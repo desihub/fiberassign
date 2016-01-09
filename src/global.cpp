@@ -529,70 +529,6 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 	print_time(t,"# ... took :");
 }
 
-<<<<<<< HEAD
-// Other useful functions --------------------------------------------------------------------------------------------
-void results_on_inputs(str outdir, const MTL& M, const Plates& P, const Feat& F, bool latex) {
-	printf("# Results on inputs :\n");
-	// How many galaxies in range of a fiber ?
-	List data;
-	for (int j=0; j<F.Nplate; j++) for (int k=0; k<F.Nfiber; k++) data.push_back(P[j].av_gals[k].size());
-	print_list("  How many galaxies in range of a fiber :",histogram(data,1));
-
-	// 1 Histograms on number of av gals per plate and per fiber
-	Cube T = initCube(F.Categories-2,F.Nplate,F.Nfiber);
-	for (int j=0; j<F.Nplate; j++) {
-		for (int k=0; k<F.Nfiber; k++) {
-			List gals = P[j].av_gals[k];
-			for (int g=0; g<gals.size(); g++) T[M[gals[g]].id][j][k]++;
-		}
-	}
-	Table hist1;
-	for (int id=0; id<F.Categories-2; id++) hist1.push_back(histogram(T[id],1));
-	print_mult_table_latex("Available galaxies (by kind) for a TF",outdir+"avgalhist.dat",hist1,1);
-
-	// 2 Histograms on number of av tfs per galaxy
-	Table Tg = initTable(F.Categories,0);
-	for (int g=0; g<F.Ngal; g++) {
-		int n = M[g].av_tfs.size();
-		Tg[M[g].id].push_back(n);
-	}
-	Table hist2;
-	for (int id=0; id<F.Categories-2; id++) hist2.push_back(histogram(Tg[id],1));
-	print_mult_table_latex("Available tile-fibers for a galaxy (by kind)",outdir+"avtfhist.dat",hist2,1);
-
-	// 3 Histogram of number of times (by different plates) reachable galaxies
-	List countgals;
-	List countgals_nopass;
-	for (int g=0; g<F.Ngal; g++) {
-		int id = M[g].id;
-		List plates;
-		for (int i=0; i<M[g].av_tfs.size(); i++) {
-			int j = M[g].av_tfs[i].f;
-            //if (!isfound(j,plates) && P[j].ipass!=F.Npass-1) plates.push_back(j);
-			if (!isfound(j,plates) && P[j].ipass!=4) plates.push_back(j);
-		}
-		countgals.push_back(plates.size());
-	}
-	Dtable countstot;
-	List h00 = histogram(countgals,1);
-	countstot.push_back(percents(h00,sumlist(h00))); 
-	print_mult_Dtable_latex("Histogram of percents (by different plates) reachable galaxies (not 5th pass)",outdir+"reachplate.dat",countstot,1);
-
-    Dtable countsz = initDtable(3,0);
-	
-    double intervalz = 0.02;
-	for (int g=0; g<F.Ngal; g++) {
-		int kind = M[g].id;
-		int kind0 = -1;
-		if (kind==F.id("QSOLy-a") || kind==F.id("QSOTracer") || kind==F.id("FakeQSO")) kind0 = 0;
-		if (kind==F.id("LRG") || kind==F.id("FakeLRG")) kind0 = 1;
-		if (kind==F.id("ELG")) kind0 = 2;
-		//if (kind0!=-1) countsz[kind0].push_back(M[g].z);  n
-	}
-	Dtable hist3;
-	for (int id=0; id<3; id++) hist3.push_back(histogram(countsz[id],intervalz));
-	print_mult_Dtable_latex("dn/dz",outdir+"redshifts.dat",hist3,intervalz);
-}
 
 void diagnostic(const MTL& M, const Gals& Secret, Feat& F, const Assignment& A){
     // diagnostic  allows us to peek at the actual id of each galaxy
@@ -708,7 +644,6 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 			for (int id=0; id<nk; id++) Ttim[id].push_back(l[id]);
 		}
 	}
-	print_mult_table_latex("Observed galaxies complete (interval 10)",outdir+"time2.dat",Ttim,interval);
 	}
 
 	// 4 Histogram of percentages of seen Ly-a
@@ -731,7 +666,6 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 			Percseen[i-1][j] += Percseen[i][j];
 		}
 	}
-	print_mult_table_latex("Available tile-fibers for a galaxy (by kind)",outdir+"obsly.dat",Percseen,1);
 	}
 
 	// 5 Histogram of time between 2 obs of Ly a
@@ -759,7 +693,6 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 	List histo0 = histogram(deltas,10);
 	//print_hist("Plate interval between 2 consecutive obs of Ly-a (interval 100)",100,histogram(deltas,100));
 	Table delts; delts.push_back(histo0); delts.push_back(cumulate(histo0));
-	print_mult_table_latex("Plate interval between 2 consecutive obs of Ly-a (interval 10)",outdir+"dist2ly.dat",delts,10);
 	}
 
 	// 6 Free fibers histogram
@@ -767,7 +700,6 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 	Table unused_fbp = A.unused_fbp(pp,F);
 	make_square(unused_fbp);
 	Table hist0; hist0.push_back(histogram(unused_fbp,1));
-	print_mult_table_latex("Number of petals with this many free fiber (interval 1)",outdir+"freefib.dat",hist0,1);
 	}
 
 	// 7 Free fibers in function of time (plates)
@@ -775,7 +707,6 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 	List freefibtime = initList(F.Nplate);
 	for (int j=0; j<F.Nplate; j++) freefibtime[j] = A.unused_f(j,F);
 	Table fft; fft.push_back(freefibtime);
-	print_mult_table_latex("Free fibers in function of time (plates)",outdir+"fft.dat",fft);
 	}
  
 	// 8 Percentage of seen objects as a function of density of objects
@@ -815,7 +746,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 	}
 	Dtable densit = initDtable(F.Categories-2+1,max_row(densities));
 	for (int t=0; t<F.Categories-2+1; t++) for (int i=0; i<densities[t].size(); i++) densit[t][i] = sumlist(densities[t][i])/densities[t][i].size();
-	print_mult_Dtable_latex("Perc of seen obj as a fun of dens of objs",outdir+"seendens.dat",densit,1);
+
 	}
 	
 	// 9 Collision histogram of distances between galaxies
@@ -841,7 +772,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 	Dlist histcoldist = histogram(coldist,intervaldist);
 	Dlist redhistcol = percents(histcoldist,sumlist(histcoldist));
 	Dtable Dtd; Dtd.push_back(redhistcol); Dtd.push_back(cumulate(redhistcol));
-	print_mult_Dtable_latex("Collision histogram of distances between galaxies",outdir+"coldist.dat",Dtd,intervaldist);
+
 	}
 
 	// Collision rate

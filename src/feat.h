@@ -18,7 +18,6 @@
 
 // Feat --------------------------------------------------
 class Feat { // F for features
-
 	public:
 	// Set by features file
 	str galFile;
@@ -34,71 +33,16 @@ class Feat { // F for features
     bool PrintAscii;
     bool diagnose;
 
-  //  List prio; // Priorities  int
-  //  List priopost; // Priorities when we know the kind int
-  //  List goal;
-  //  List goalpost;
-  //  List SS;
-  //  List SF;
-  List lastpass;
-  List pass_intervals;
-  Slist kind;
-  Slist type;
-  
-  int InterPlate; 
-  bool Randomize; 
-  bool Pacman; 
-  int Npass;
-  int MaxSS;
-  int MaxSF;
-  double PlateRadius;
-  int Analysis;
-  bool InfDens;
-  double TotalArea;
-  double invFibArea;
-  int moduloGal;
-  int moduloFiber;
-  int PrintGalObs;
-  
-  bool Collision; // True when we take collisions into account
-  bool Exact;
-  double AvCollide;
-  double Collide;
-  double NoCollide;
-  double PatrolRad;
-  double NeighborRad;
-  
-  bool PlotObsTime;
-  bool PlotHistLya;
-  bool PlotDistLya;
-  bool PlotFreeFibHist;
-  bool PlotFreeFibTime;
-  bool PlotSeenDens;
-  bool Verif;
-  bool Ascii;
-  bool BrightTime;
-  
-  double MaxDec;
-  double MinDec;
-  double MaxRa;
-  double MinRa;
-  // Indirectly set by features file
-  int Categories;
-  Slist types; // Same as type but with only QSO LRG ELG SS SF
-  Smap ids; // Redundtant but optimizes (inv of kind)
-  Smap ids_types; // Same but for types (inv of types) (1 to QSO, ...)
-  
-  // Set after reading other input files
-  int Nplate;
-  int Ngal;
-  int Nfiber;
-  int Npetal;
-  int Nfbp; // Number of fibers by petals
-  
-  // Memorizes geometry of central body and fiber holder
-  polygon cb;
-  polygon fh;
-
+	List prio; // Priorities  int
+	List priopost; // Priorities when we know the kind int
+	List goal;
+    List goalpost;
+    List SS;
+    List SF;
+    List lastpass;
+    List pass_intervals;
+	Slist kind;
+	Slist type;
 
 	int InterPlate; 
 	bool Randomize; 

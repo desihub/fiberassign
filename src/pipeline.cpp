@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
     
 
     
-    print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
+
     
     // Smooth out distribution of free fibers, and increase the number of assignments
     
@@ -133,7 +133,7 @@ int main(int argc, char **argv) {
         redistribute_tf(M,P,pp,F,A,0);
     }
     init_time_at(time,"# assign SS and SF ",t);
-    print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false);
+
     //try assigning SF and SS before real time assignment
     for (int jused=0;jused<F.NUsedplate;++jused){
         
@@ -195,7 +195,7 @@ int main(int argc, char **argv) {
         int j=A.suborder[jused];
         fa_write(j,F.outDir,M,P,pp,F,A); // Write output
     }
-  }
+
   
   print_time(t,"# Finished !... in");
   

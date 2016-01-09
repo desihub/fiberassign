@@ -382,6 +382,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
     long *targetid;
     int *numobs;
     int *priority;
+    int *lastpass;
     float *ra;
     float *dec;    
     int colnum;
@@ -430,7 +431,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
 	myexit(1);
       }
 
-      if(!(lastpass= (float *)malloc(nrows * sizeof(int)))){
+      if(!(lastpass= (int *)malloc(nrows * sizeof(int)))){
 	fprintf(stderr, "problem with lastpass allocation\n");
 	myexit(1);
       }
