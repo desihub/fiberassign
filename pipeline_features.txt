@@ -1,8 +1,7 @@
 galFile /project/projectdirs/desi/mocks/preliminary/objects_ss_sf0.rdzipn
 tileFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/footprint/desi-tiles.par
 fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
-
-outDir /project/projectdirs/desi/users/rncahn/fa_output/
+outDir /global/cscratch1/sd/rncahn/fa_output
 SStarsfile /project/projectdirs/desi/mocks/preliminary/SStarsfile.txt
 SkyFfile  /project/projectdirs/desi/mocks/preliminary/SkyFfile.txt
 
