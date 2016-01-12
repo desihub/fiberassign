@@ -1,0 +1,18 @@
+#!/bin/bash -l
+
+#SBATCH -p debug
+#SBATCH -N 1
+#SBATCH -t 0:30:00
+
+cd $SLURM_SUBMIT_DIR
+
+if [ $NERSC_HOST == "cori" ]
+then export OMP_NUM_THREADS=32
+fi
+if [ $NERSC_HOST == "edison" ]
+then export OMP_NUM_THREADS=24
+fi
+
+echo "# Running assign"
+
+srun  -N 1  bin/fiberassign_surveysim fa_surveysim_features.txt

@@ -8,7 +8,11 @@ cd $SLURM_SUBMIT_DIR
 if [ $NERSC_HOST == "cori" ]
 then export OMP_NUM_THREADS=32
 fi
+if [ $NERSC_HOST == "edison" ]
+then export OMP_NUM_THREADS=24
+fi
+
 
 echo "# Running assign"
 
-srun  -N 1  bin/fiberassign pipeline_features.txt
+srun  -N 1  bin/fiberassign fa_features.txt
