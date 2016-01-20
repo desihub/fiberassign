@@ -95,7 +95,72 @@ def reduce(ra,dec,zz,frac):
     
     return( (yra,ydec,yzz))
 
-def write_catalog(icat=0, fitsoutput=False):
+
+
+
+def write_mtl(ra, dc, no, pp, lastpass, zz, types, icat=0, basename="targets"):
+    fitsname="{}_{}_mtl_0.fits".format(basename,icat)
+    print("writing to file {}".format(fitsname))
+    if(os.path.exists(fitsname)):
+        os.remove(fitsname)
+        # structure for output data
+    type_table = [
+        ('TARGETID', '>i4'), 
+        ('BRICKNAME', '|S8'),
+        ('RA', '>f4'), 
+        ('DEC', '>f4'),
+        ('NUMOBS', '>i4'), 
+        ('PRIORITY', '>i4'),
+        ('LASTPASS', '>i4')
+        ]
+    
+
+    data = N.ndarray(shape=ra.size, dtype=type_table) 
+    data['TARGETID'] = N.arange(ra.size)
+    data['RA'] = ra
+    data['DEC'] = dc
+    data['BRICKNAME'][:] = "00000000"
+    data['NUMOBS'] = no
+    data['PRIORITY'] = pp
+    data['LASTPASS'] = lastpass
+    
+    
+    desi_target = N.int_(types)
+    bgs_target = N.zeros(ra.size, dtype=N.int64)
+    mws_target = N.zeros(ra.size, dtype=N.int64)    
+
+
+    data = rfn.append_fields(data,
+                             ['DESI_TARGET', 'BGS_TARGET', 'MWS_TARGET'],
+                             [desi_target, bgs_target, mws_target], usemask=False)
+    
+        #- Create header to include versions, etc.
+    hdr = F.FITSHDR()
+    hdr['DEPNAM00'] = 'makecatalog'
+    F.write(fitsname, data, extname='MTL', header=hdr, clobber=True)
+    print('wrote {} items to target file'.format(len(ra)))
+    
+        #structure for truth file
+    type_table = [
+        ('TARGETID', '>i8'),
+        ('BRICKNAME', '|S20'),
+        ('Z', '>f8'),
+        ('TYPE', '>i8')
+        ]
+    data = N.ndarray(shape=ra.size, dtype=type_table) 
+    data['TARGETID'] = N.arange(ra.size)
+    data['BRICKNAME'][:] = "00000000"
+    data['Z'] = zz
+    data['TYPE'] = types
+
+    hdr = F.FITSHDR()
+    hdr['DEPNAM00'] = 'makecatalog-truth'
+    F.write('truth_'+fitsname, data, extname='MTL', header=hdr, clobber=True)
+    print('wrote {} items to truth target file'.format(len(ra)))
+    return 
+
+
+def write_catalog(icat=0):
     """
     write_catalog(icat=0):
     Writes the catalog information to a file.
@@ -104,8 +169,7 @@ def write_catalog(icat=0, fitsoutput=False):
     catalog files.
     """
     
-    if(fitsoutput):
-        print "FITS output enabled"
+
 
     goal_qsoI=120.
     goal_qsoII=50.
@@ -298,54 +362,35 @@ def write_catalog(icat=0, fitsoutput=False):
     print 'fake lrg density',density
     
     print 'fake lrgs added', len(nra), len(types)
-    
+    print  'total ra, types', len(ra), len(types) 
+    lastpass = N.zeros(ra.size, dtype='int')    
+
     #now need standard stars at 140/sq deg
-    nra      = data[ 'RA'][end_badlrg+1:end_standardstar].astype('f4')
-    ndc      = data['DEC'][end_badlrg+1:end_standardstar].astype('f4')
-    nzz      = N.zeros(nra.size,dtype='f4')
-    nid      = N.zeros(nra.size,dtype='i4')+7
-    npp      = N.zeros(nra.size,dtype='f4') + 100
-    nno      = N.zeros(nra.size,dtype='i4') + 1
-    ra       = N.append(ra,nra)
-    dc       = N.append(dc,ndc)
-    zz       = N.append(zz,nzz)
-    id       = N.append(id,nid)
-    pp       = N.append(pp,npp)
-    no       = N.append(no,nno)
-    density=len(nra)/total_area
+    star_ra      = data[ 'RA'][end_badlrg+1:end_standardstar].astype('f4')
+    star_dc      = data['DEC'][end_badlrg+1:end_standardstar].astype('f4')
+    star_zz      = N.zeros(star_ra.size,dtype='f4')
+    star_id      = N.zeros(star_ra.size,dtype='i4')+7
+    star_pp      = N.zeros(star_ra.size,dtype='f4') + 100
+    star_no      = N.zeros(star_ra.size,dtype='i4') + 10
+    star_type = N.ones(star_ra.size, dtype='i8') * desi_mask.STD_FSTAR
+    star_lastpass = N.zeros(star_ra.size, dtype='int')    
 
-
-    tmp_type = N.ones(nra.size, dtype='i8') * desi_mask.STD_FSTAR
-    types = N.append(types, tmp_type)
-
+    density=len(star_ra)/total_area
     print 'standardstar density',density
     
-    print 'standardstar added', len(nra)
-    print  'total ra, types', len(ra), len(types) 
-    
     #now need sky fibers at 1400/sq deg
-    nra      = data[ 'RA'][end_standardstar+1:end_skyfiber].astype('f4')
-    ndc      = data['DEC'][end_standardstar+1:end_skyfiber].astype('f4')
-    nzz      = N.zeros(nra.size,dtype='f4')
-    nid      = N.zeros(nra.size,dtype='i4')+8
-    npp      = N.zeros(nra.size,dtype='f4') + 200
-    nno      = N.zeros(nra.size,dtype='i4')+1
-    ra       = N.append(ra,nra)
-    dc       = N.append(dc,ndc)
-    zz       = N.append(zz,nzz)
-    id       = N.append(id,nid)
-    pp       = N.append(pp,npp)
-    no       = N.append(no,nno)
-    density=len(nra)/total_area
-    
+    sky_ra      = data[ 'RA'][end_standardstar+1:end_skyfiber].astype('f4')
+    sky_dc      = data['DEC'][end_standardstar+1:end_skyfiber].astype('f4')
+    sky_zz      = N.zeros(sky_ra.size, dtype='f4')
+    sky_id     = N.zeros(sky_ra.size, dtype='i4')+8
+    sky_pp      = N.zeros(sky_ra.size, dtype='f4') + 200
+    sky_no      = N.zeros(sky_ra.size, dtype='i4')+10
+    sky_type   = N.ones(sky_ra.size, dtype='i8') * desi_mask.SKY
+    sky_lastpass = N.zeros(sky_ra.size, dtype='int')    
 
-    tmp_type = N.ones(nra.size, dtype='i8') * desi_mask.SKY
-    types = N.append(types, tmp_type)
-    
-    print 'sky fiber density',density
-    
-    print 'sky fiber density added', len(nra)
-    print  'total ra, types', len(ra), len(types) 
+    density=len(sky_ra)/total_area
+    print 'sky fiber density',density    
+
    
     #
     print "Writing information for ",ra.size," objects."
@@ -361,71 +406,9 @@ def write_catalog(icat=0, fitsoutput=False):
     fout.close()
     #
     print  'total ra, types', len(ra), len(types) 
-
-
-
-    if(fitsoutput):
-        fitsname="objects_ss_sf%d.fits"%icat
-        if(os.path.exists(fitsname)):
-            os.remove(fitsname)
-        # structure for output data
-        type_table = [
-            ('TARGETID', '>i4'), 
-            ('BRICKNAME', '|S8'),
-            ('RA', '>f4'), 
-            ('DEC', '>f4'),
-            ('NUMOBS', '>i4'), 
-            ('PRIORITY', '>i4')
-        ]
-
-        data = N.ndarray(shape=ra.size, dtype=type_table) 
-        data['TARGETID'] = N.arange(ra.size)
-        data['RA'] = ra
-        data['DEC'] = dc
-        data['BRICKNAME'][:] = "00000000"
-        data['NUMOBS'] = no
-        data['PRIORITY'] = pp
-
-
-        desi_target = N.zeros(ra.size, dtype=N.int64)
-        bgs_target = N.zeros(desi_target.size, dtype=N.int64)
-        mws_target = N.zeros(desi_target.size, dtype=N.int64)
-
-        desi_target = N.int_(types)
-        data = rfn.append_fields(data,
-        ['DESI_TARGET', 'BGS_TARGET', 'MWS_TARGET'],
-        [desi_target, bgs_target, mws_target], usemask=False)
-
-        #- Create header to include versions, etc.
-        hdr = F.FITSHDR()
-        hdr['DEPNAM00'] = 'makecatalog'
-        F.write(fitsname, data, extname='MTL', header=hdr, clobber=True)
-        print('wrote {} items to target file'.format(len(ra)))
-        
-        #structure for truth file
-        type_table = [
-            ('TARGETID', '>i8'),
-            ('BRICKNAME', '|S20'),
-            ('Z', '>f8'),
-            ('TYPE', '>i8')
-        ]
-        data = N.ndarray(shape=ra.size, dtype=type_table) 
-        data['TARGETID'] = N.arange(ra.size)
-        data['BRICKNAME'][:] = "00000000"
-        data['Z'] = zz
-        data['TYPE'] = types
-
-        hdr = F.FITSHDR()
-        hdr['DEPNAM00'] = 'makecatalog-truth'
-        F.write('truth_'+fitsname, data, extname='MTL', header=hdr, clobber=True)
-        print('wrote {} items to truth target file'.format(len(ra)))
-
+    write_mtl(ra, dc, no, pp, lastpass, zz, types, basename="targets", icat=icat)
+    write_mtl(star_ra, star_dc, star_no, star_pp, star_lastpass, star_zz, star_type, basename="stdstar", icat=icat)
+    write_mtl(sky_ra, sky_dc, sky_no, sky_pp, sky_lastpass, sky_zz, sky_type, basename="sky", icat=icat)
 
 if __name__=="__main__":
-    args = sys.argv
-
-    fitsoutput = False
-    if ('--fits' in args):
-        fitsoutput = True
-
-    write_catalog(fitsoutput=fitsoutput)
+    write_catalog()
