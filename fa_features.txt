@@ -6,7 +6,7 @@ SStarsfile /project/projectdirs/desi/mocks/preliminary/SStarsfile.txt
 SkyFfile  /project/projectdirs/desi/mocks/preliminary/SkyFfile.txt
 
 PrintAscii false
-PrintFits true
+PrintFits false
 Targfile /project/projectdirs/desi/mocks/preliminary/Targfile.txt
 diagnose false
 
