@@ -1,11 +1,13 @@
 #include	<cstdlib>
 #include	<cmath>
+#include        <cstdio>
 #include	<fstream>
 #include	<sstream>
 #include	<iostream>
 #include	<iomanip>
 #include	<string>
 #include        <string.h>
+#include        <cstring>
 #include	<vector>
 #include	<algorithm>
 #include	<exception>
@@ -230,14 +232,14 @@ inline int improve_fiber(int jused_begin, int jused, int k, MTL& M, Plates& P, c
 void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
 	Time t;
 	init_time(t,"# Begin simple assignment :");
-    int countme=0;
+	int countme=0;
 	for (int j=0; j<F.Nplate; j++) {
 
         int best=-1;
-		for (int k=0; k<F.Nfiber; k++) { // Fiber
-            best=assign_fiber(j,k,M,P,pp,F,A);
-            if (best!=-1)countme++;
-		}
+	for (int k=0; k<F.Nfiber; k++) { // Fiber
+	  best=assign_fiber(j,k,M,P,pp,F,A);
+	  if (best!=-1)countme++;
+	}
 	}
 	print_time(t,"# ... took :");
     printf(" countme %d \n",countme);
@@ -260,6 +262,7 @@ void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int 
 
 // If there are galaxies discovered as fake for example, they won't be observed several times in the plan
 // has access to G,not just M, because it needs to know the truth
+
 
 void update_plan_from_one_obs(int jused,const Gals& Secret, MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A) {
 	int cnt_deassign(0);
@@ -314,6 +317,7 @@ void update_plan_from_one_obs(int jused,const Gals& Secret, MTL& M, Plates&P, co
     }
 	//int na_end(A.na(F,j0,n));
 }
+
 
 
 void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
@@ -525,69 +529,6 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 	print_time(t,"# ... took :");
 }
 
-// Other useful functions --------------------------------------------------------------------------------------------
-void results_on_inputs(str outdir, const MTL& M, const Plates& P, const Feat& F, bool latex) {
-	printf("# Results on inputs :\n");
-	// How many galaxies in range of a fiber ?
-	List data;
-	for (int j=0; j<F.Nplate; j++) for (int k=0; k<F.Nfiber; k++) data.push_back(P[j].av_gals[k].size());
-	print_list("  How many galaxies in range of a fiber :",histogram(data,1));
-
-	// 1 Histograms on number of av gals per plate and per fiber
-	Cube T = initCube(F.Categories-2,F.Nplate,F.Nfiber);
-	for (int j=0; j<F.Nplate; j++) {
-		for (int k=0; k<F.Nfiber; k++) {
-			List gals = P[j].av_gals[k];
-			for (int g=0; g<gals.size(); g++) T[M[gals[g]].id][j][k]++;
-		}
-	}
-	Table hist1;
-	for (int id=0; id<F.Categories-2; id++) hist1.push_back(histogram(T[id],1));
-	print_mult_table_latex("Available galaxies (by kind) for a TF",outdir+"avgalhist.dat",hist1,1);
-
-	// 2 Histograms on number of av tfs per galaxy
-	Table Tg = initTable(F.Categories,0);
-	for (int g=0; g<F.Ngal; g++) {
-		int n = M[g].av_tfs.size();
-		Tg[M[g].id].push_back(n);
-	}
-	Table hist2;
-	for (int id=0; id<F.Categories-2; id++) hist2.push_back(histogram(Tg[id],1));
-	print_mult_table_latex("Available tile-fibers for a galaxy (by kind)",outdir+"avtfhist.dat",hist2,1);
-
-	// 3 Histogram of number of times (by different plates) reachable galaxies
-	List countgals;
-	List countgals_nopass;
-	for (int g=0; g<F.Ngal; g++) {
-		int id = M[g].id;
-		List plates;
-		for (int i=0; i<M[g].av_tfs.size(); i++) {
-			int j = M[g].av_tfs[i].f;
-            //if (!isfound(j,plates) && P[j].ipass!=F.Npass-1) plates.push_back(j);
-			if (!isfound(j,plates) && P[j].ipass!=4) plates.push_back(j);
-		}
-		countgals.push_back(plates.size());
-	}
-	Dtable countstot;
-	List h00 = histogram(countgals,1);
-	countstot.push_back(percents(h00,sumlist(h00))); 
-	print_mult_Dtable_latex("Histogram of percents (by different plates) reachable galaxies (not 5th pass)",outdir+"reachplate.dat",countstot,1);
-
-    Dtable countsz = initDtable(3,0);
-	
-    double intervalz = 0.02;
-	for (int g=0; g<F.Ngal; g++) {
-		int kind = M[g].id;
-		int kind0 = -1;
-		if (kind==F.id("QSOLy-a") || kind==F.id("QSOTracer") || kind==F.id("FakeQSO")) kind0 = 0;
-		if (kind==F.id("LRG") || kind==F.id("FakeLRG")) kind0 = 1;
-		if (kind==F.id("ELG")) kind0 = 2;
-		//if (kind0!=-1) countsz[kind0].push_back(M[g].z);  n
-	}
-	Dtable hist3;
-	for (int id=0; id<3; id++) hist3.push_back(histogram(countsz[id],intervalz));
-	print_mult_Dtable_latex("dn/dz",outdir+"redshifts.dat",hist3,intervalz);
-}
 
 void diagnostic(const MTL& M, const Gals& Secret, Feat& F, const Assignment& A){
     // diagnostic  allows us to peek at the actual id of each galaxy
@@ -703,7 +644,6 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 			for (int id=0; id<nk; id++) Ttim[id].push_back(l[id]);
 		}
 	}
-	print_mult_table_latex("Observed galaxies complete (interval 10)",outdir+"time2.dat",Ttim,interval);
 	}
 
 	// 4 Histogram of percentages of seen Ly-a
@@ -726,7 +666,6 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 			Percseen[i-1][j] += Percseen[i][j];
 		}
 	}
-	print_mult_table_latex("Available tile-fibers for a galaxy (by kind)",outdir+"obsly.dat",Percseen,1);
 	}
 
 	// 5 Histogram of time between 2 obs of Ly a
@@ -754,7 +693,6 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 	List histo0 = histogram(deltas,10);
 	//print_hist("Plate interval between 2 consecutive obs of Ly-a (interval 100)",100,histogram(deltas,100));
 	Table delts; delts.push_back(histo0); delts.push_back(cumulate(histo0));
-	print_mult_table_latex("Plate interval between 2 consecutive obs of Ly-a (interval 10)",outdir+"dist2ly.dat",delts,10);
 	}
 
 	// 6 Free fibers histogram
@@ -762,7 +700,6 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 	Table unused_fbp = A.unused_fbp(pp,F);
 	make_square(unused_fbp);
 	Table hist0; hist0.push_back(histogram(unused_fbp,1));
-	print_mult_table_latex("Number of petals with this many free fiber (interval 1)",outdir+"freefib.dat",hist0,1);
 	}
 
 	// 7 Free fibers in function of time (plates)
@@ -770,7 +707,6 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 	List freefibtime = initList(F.Nplate);
 	for (int j=0; j<F.Nplate; j++) freefibtime[j] = A.unused_f(j,F);
 	Table fft; fft.push_back(freefibtime);
-	print_mult_table_latex("Free fibers in function of time (plates)",outdir+"fft.dat",fft);
 	}
  
 	// 8 Percentage of seen objects as a function of density of objects
@@ -810,7 +746,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 	}
 	Dtable densit = initDtable(F.Categories-2+1,max_row(densities));
 	for (int t=0; t<F.Categories-2+1; t++) for (int i=0; i<densities[t].size(); i++) densit[t][i] = sumlist(densities[t][i])/densities[t][i].size();
-	print_mult_Dtable_latex("Perc of seen obj as a fun of dens of objs",outdir+"seendens.dat",densit,1);
+
 	}
 	
 	// 9 Collision histogram of distances between galaxies
@@ -836,7 +772,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 	Dlist histcoldist = histogram(coldist,intervaldist);
 	Dlist redhistcol = percents(histcoldist,sumlist(histcoldist));
 	Dtable Dtd; Dtd.push_back(redhistcol); Dtd.push_back(cumulate(redhistcol));
-	print_mult_Dtable_latex("Collision histogram of distances between galaxies",outdir+"coldist.dat",Dtd,intervaldist);
+
 	}
 
 	// Collision rate
@@ -871,11 +807,11 @@ void write_FAtile_ascii(int j, str outdir, const MTL& M, const Plates& P, const 
 		// Number of potential galaxies
 		fprintf(FA,"%lu ",av_gals.size());
 		// IDs of potential galaxies
-		for (int i=0; i<av_gals.size(); i++) fprintf(FA,"%d ",M[av_gals[i]].id);
+		for (int i=0; i<av_gals.size(); i++) fprintf(FA,"%ld ",M[av_gals[i]].id);
 		// galaxy number, ra, dec, x, y
 		if (g!=-1) {
 			dpair Gal = projection(g,j,M,P);
-            fprintf(FA,"%d %f %f %f %f\n",M[g].id,M[g].ra,M[g].dec,Gal.f,Gal.s);
+            fprintf(FA,"%ld %f %f %f %f\n",M[g].id,M[g].ra,M[g].dec,Gal.f,Gal.s);
 		}
 		else fprintf(FA,"-1\n");
 	}
@@ -883,49 +819,6 @@ void write_FAtile_ascii(int j, str outdir, const MTL& M, const Plates& P, const 
 }
 
 
-/*
-void pyplotTile(int j, str directory, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
-	std::vector<char> colors;
-	colors.resize(F.Categories);
-	colors[0] = 'k'; colors[1] = 'g'; colors[2] = 'r'; colors[3] = 'b'; colors[4] = 'm'; colors[5] = 'y'; colors[6] = 'w'; colors[7] = 'c';
-	polygon pol;
-	PosP posp(3,3);
-	for (int k=0; k<F.Nfiber; k++) {
-		dpair O = pp.coords(k);
-		int g = A.TF[j][k];
-		if (g!=-1) {
-			dpair Ga = projection(g,j,G,P);
-			polygon fh = F.fh;
-			polygon cb = F.cb;
-			repos_cb_fh(cb,fh,O,Ga,posp);
-			//if (A.is_collision(j,k,pp,G,P,F)!=-1) {
-				//cb.set_color('r');
-				//fh.set_color('r');
-			//}
-			cb.set_color(colors[M[g].id]);
-			fh.set_color(colors[M[g].id]);
-			pol.add(cb);
-			pol.add(fh);
-			pol.add(element(O,colors[G[g].id],0.3,5));
-		}
-		else pol.add(element(O,'k',0.1,3));
-		List av_gals = P[j].av_gals[k];
-		for (int i=0; i<av_gals.size(); i++) {
-			int gg = av_gals[i];
-			if (1<=A.nobs_time(gg,j,M,F)) {
-				//if (A.nobs_time(gg,j,G,F)!=A.nobs(gg,G,F)) printf("%d %d %s - ",A.nobs_time(gg,j,G,F),A.nobs(gg,G,F),F.kind[G[gg].id].c_str());
-				int kind = G[gg].id;
-				dpair Ga = projection(gg,j,M,P);
-				if (kind==F.ids.at("QSOLy-a")) pol.add(element(Ga,colors[kind],1,A.is_assigned_jg(j,gg)==-1?0.9:0.5));
-				else pol.add(element(Ga,colors[kind],1,0.5));
-			}
-		}
-	}
-	pyplot pyp(pol);
-	//for (int k=0; k<F.Nfiber; k++) pyp.addtext(pp.coords(k),i2s(k)); // Plot fibers identifiers
-	pyp.plot_tile(directory,j,F); 
-}
-*/
 
 void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp, const Feat & F, const Assignment & A) {
     
@@ -1201,14 +1094,14 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
 
 
 void overlappingTiles(str fname, const Feat& F, const Assignment& A) {
-	FILE * file;
-	file = fopen(fname.c_str(),"w");
-	for (int g=0; g<F.Ngal; g++) {
-		if (A.GL[g].size()==5) {
-			fprintf(file,"%d ",g);
-			for (int i=0; i<A.GL[g].size(); i++) fprintf(file,"(%d,%d) ",A.GL[g][i].f,A.GL[g][i].s);
-			fprintf(file,"\n");
-		}
-	}
-	fclose(file);
+  FILE * file;
+  file = fopen(fname.c_str(),"w");
+  for (int g=0; g<F.Ngal; g++) {
+    if (A.GL[g].size()==5) {
+      fprintf(file,"%d ",g);
+      for (int i=0; i<A.GL[g].size(); i++) fprintf(file,"(%d,%d) ",A.GL[g][i].f,A.GL[g][i].s);
+      fprintf(file,"\n");
+    }
+  }
+  fclose(file);
 }
