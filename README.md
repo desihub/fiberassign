@@ -4,31 +4,24 @@
 
 Several executables are available for fiber assignment.  The scripts for running the code are in the directory "scripts"
 
-At present - January 2, 2016 - only the cori machine is available at NERSC.  The scripts for running the code on cori are as follows:
+The two primary executables are fiberassign and fiberassign_surveysim.  fiberassign is intended to function as part of the data flow, receiving its input from the merged target list.  fiberassign_surveysim simulates the full data flow.  In particular, by looking at a file containing the truth for every galaxy target, it updates the target list, requiring additional observations where necessary and eliminating them where not required.  fiberassign_surveysim provides a summary of how well it did in observing each category of target.
 
-cori_fa:   This uses mocks for ELGs, LRGs, and QSOs, together with random mocks for standard stars and sky fibers, with densities chosen to be appropriate to the DESI experiment.  At the end, the yield of the various types is displayed.  The performance is controlled by an ascii file "fa_features."  In particular, you can choose have output giving the fiber assignments, and whether to have it as ascii or FITS. Unfortunately, this now takes a bit over 30 minutes. 
+In addition to the executables, configuration files (currently called features files) are provided, as well as sample scripts for running the code at NERSC on cori or edison. The features files specify the galaxy collections and the tiles to be used. The scripts for running fiber assign are as follows:
 
-cori_shortrun_fa:  Same as cori_fa, except that there are only about one million targets (0<RA<10, -10<DEC<10).
+do_fa:  This runs fiberassign with the configuration file fa_features.txt.
 
-cori_pipeline: This is a stripped down version of the full code.  It doesn't read a full galaxy collections but a reduced tareget file, which doesn't reveal the details, e.g. whether a QSO target is a  Lyman-alpha forest or not.  It also uses files for standard stars and sky fibers.
+do_fa_surveysim:  This runs fiberassign_surveysim with the configuration file fa_surveysim_features.txt.
 
-cori_run_mtl:  This generates a complete set of input files - Targ, SStars, SkyF, and Secret.  All these are derived from Martin White's mocks.  Targ = target files, SStars = standard stars, SkyF = skyfibers, Secret = information not available in pipeline, revealing true nature of each target
+do_short_fa_surveysim:  The same as do_fa_surveysim, but runs on a very reduced galaxy sample from 200 sq. deg.  It uses shortrun_features.txt.
 
-When edison is operative, the following scripts are appropriate.
-
-run_fa:  This uses mocks for ELGs, LRGs, and QSOs, together with random mocks for standard stars and sky fibers, with densities chosen to be appropriate to the DESI experiment.  At the end, the yield of the various types is displayed.  The performance is controlled by an ascii file "fa_features."  In particular, you can choose have output giving the fiber assignments, and whether to have it as ascii or FITS.
-
-shortrun_fa: Same as assign_fa, except that there are only about one million targets (0<RA<10, -10<DEC<10).
-
-assign_pipeline This is a stripped down version of the full code.  It doesn't read a full galaxy collections but a reduced one, which doesn't reveal the details, e.g. whether a QSO target is a  Lyman-alpha forest or not.  The input is called the MTLfile and is specified in mtl_features.
-
-run_mtl:  This generates a complete set of input files - Targ, SStars, SkyF, and Secret.  All these are derived from Martin White's mocks.  Targ = target files, SStars = standard stars, SkyF = skyfibers, Secret = information not available in pipeline, revealing true nature of each target
-
-assign_mtl: This creates an MTLfile suitable for pipeline_fa
-
-pipeline_fa: This is a stripped down version of the full code.  It doesn't read a full galaxy collections but a reduced tareget file, which doesn't reveal the details, e.g. whether a QSO target is a  Lyman-alpha forest or not.  It also uses files for standard stars and sky fibers.
+do_bright_fa_surveysim:  Again, runs fiberassign_surveysim, but with a bright time galaxy collection as specified in bright_time_features.
 
 
+In addition, there are executables for creating the files of targets and of standard stars and sky fibers.  In particular
+
+do_split_targ_secret takes a collection of galaxies and creates the target and "secret" files.  The target file contains the targets without disclosing whether, for example, a QSO target is a Ly-a, a target QSO (z<2.1), or a fake QSO.  This information is in the secret file, which is used in updating the target list and in evaluating the performance of the fiber assignment algorithm.
+
+do_split_targ_secret_sky_std and do_short_split_targ_secret_sky_std shouldn't be needed.'
 
 ##Building
 
@@ -39,35 +32,24 @@ software, go to the top source directory:
 
     $> cd fiberassign
 
-To create the executable for run_fa,
+To create all the executables,
 
-    $> make clean_fa (optional)
-    $> make install_fa
+    $> make clean (optional)
+    $> make install
 
-To create the executable for pipeline_fa
-
-    $> make clean_pipeline (optional)
-    $> make install_pipeline (optional)
-
-To create the executable for run_mtl
-
-    $> make clean_mtl
-    $> make install_mtl
 
 ##The features files
-fa_features: used by cori_fa, assign_fa
+fa_features: used by do_fa
     specifies all the input files for the targets, positioners, tiles, etc.
     specifies output files, which need to be modified to the user's area
 
-shortrun_features: used by cori_shortrun_fa, shortrun_fa
+fa_surveysims_features: used by do_fa_surveysim
     specifies all the input files for the targets, positioners, tiles, etc.
     specifies output files, which need to be modified to the user's area
 
-mtl_features: used to make target, standard star, skyfiber, secret files
+shortrun_features: used by do_short_fa_surveysim
 
-
-pipeline_features: used by cori_pipeline
-   
+bright_time_features: used by do_bright_fa_surveysim
 
     
 These are intended as templates.  You can make your own variations.
@@ -96,16 +78,10 @@ wish to use.
 
 ## Running
 
-On cori
+from fiberassign on cori or edison
 
+sbatch ./script/do_fa
 
-sbatch ./script/cori_fa 
+sbatch ./script/do_fa_surveysim
 
-or
-
-sbatch ./script/cori_shortrun_fa
-
-or 
-
-sbatch ./script/cori_pipeline
-
+etc.
