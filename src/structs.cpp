@@ -604,6 +604,7 @@ Plates read_plate_centers(const Feat& F) {
                 try {P.push_back(Q);} catch(std::exception& e) {myexception(e);
                 //}
             }
+            if(P.size()<100)printf( "i %d  tileid %d",P.size(),tileid);
 		}
 	}
 	fs.close();
