@@ -608,7 +608,7 @@ Plates read_plate_centers(const Feat& F) {
 	}
 	fs.close();
     int all_used_tiles=P.size();
-    int all_tiles=28810
+    int all_tiles=28810;
     std::vec<int> invert(all_tiles,-1);
     for (int i=0;i<all_used_tiles;++i) invert[P[i].tileid]=i;
     for(int i=0;i<all_used_tiles;++i){
