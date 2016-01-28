@@ -606,7 +606,7 @@ Plates read_plate_centers(const Feat& F) {
 		}
 	}
 	fs.close();
-    for(i=0;i<P.size();++i) PP[survey_list[i]]=P[i]
+    for(int i=0;i<P.size();++i) PP[survey_list[i]]=P[i]
 	return(PP);
 }
 // Assignment -----------------------------------------------------------------------------
