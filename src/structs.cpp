@@ -553,6 +553,7 @@ Plates read_plate_centers(const Feat& F) {
     }
 	// Reserve some storage, since we expect we'll be reading quite a few
 	// lines from this file.
+    // will need to know mapping of tile number to place in list of all tiles
 	try {P.reserve(4000000);} catch (std::exception& e) {myexception(e);}
 
 	double ra,dec,ebv,airmass,exposefac;
@@ -606,7 +607,16 @@ Plates read_plate_centers(const Feat& F) {
 		}
 	}
 	fs.close();
-    for(int i=0;i<P.size();++i) PP[survey_list[i]]=P[i];
+    int all_used_tiles=P.size();
+    int all_tiles=28810
+    std::vec<int> invert(all_tiles,-1);
+    for (int i=0;i<all_used_tiles;++i)
+        invert[P[i].tileid]=i;
+    for(int i=0;i<all_used_tiles;++i){
+        int j=invert[survey_list[i]]
+        PP[i]=P[j];
+    }
+ 
 	return(PP);
 }
 // Assignment -----------------------------------------------------------------------------
