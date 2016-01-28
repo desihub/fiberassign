@@ -613,6 +613,8 @@ Plates read_plate_centers(const Feat& F) {
     for (int i=0;i<all_used_tiles;++i) invert[P[i].tileid]=i;
     for(int i=0;i<all_used_tiles;++i){
         int j=invert[survey_list[i]];
+        printf("i =  %d  j = %d\n",i,j);
+        std::cout.flush();
         PP[i]=P[j];
     }
  
