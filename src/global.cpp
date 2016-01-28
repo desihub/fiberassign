@@ -642,7 +642,11 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 	for (int g=0; g<M.size(); g++) {
         if(!M[g].SS && !M[g].SF){
 		int c= Secret[g].id;
+            /*
 		int m = min(M[g].nobs_done,MaxObs);
+             */
+            int m=0;
+            for(int k=0;k<GL[g].size();++k)++m;
         obsrv[c][m]++; //
         }
 	}
