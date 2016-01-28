@@ -632,7 +632,7 @@ void diagnostic(const MTL& M, const Gals& Secret, Feat& F, const Assignment& A){
        //end diagnostic
 }
 
-void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& P, const PP& pp, Feat& F, const Assignment& A, bool latex) {
+void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& P, const PP& pp, Feat& F, const Assignment& A, bool latex, int last_tile) {
 	printf("# Results :\n");
 
 	// 1 Raw numbers of galaxies by id and number of remaining observations
@@ -646,7 +646,9 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 		int m = min(M[g].nobs_done,MaxObs);
              */
             int m=0;
-            for(int k=0;k<GL[g].size();++k)++m;
+            for(int k=0;k<GL[g].size();++k){
+                if(GL[g][k].f<last_tile)++m
+            }
         obsrv[c][m]++; //
         }
 	}

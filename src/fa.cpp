@@ -196,6 +196,7 @@ int main(int argc, char **argv) {
         improve(M,P,pp,F,A,starter);
         redistribute_tf(M,P,pp,F,A,starter);
         if(F.diagnose)diagnostic(M,Secret,F,A);
+        display_results("doc/figs/",Secret,M,P,pp,F,A,true,update_intervals[i+1]);
     }
     // check on SS and SF
 
@@ -244,7 +245,7 @@ int main(int argc, char **argv) {
     }
     
 
-	display_results("doc/figs/",Secret,M,P,pp,F,A,true);
+	display_results("doc/figs/",Secret,M,P,pp,F,A,true,F.Nplate);
 	if (F.Verif) A.verif(P,M,pp,F); // Verification that the assignment is sane
 
 
