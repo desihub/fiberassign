@@ -610,14 +610,14 @@ Plates read_plate_centers(const Feat& F) {
 	fs.close();
     int all_used_tiles=P.size();
     int all_tiles=28810;
-    Plates PP(all_used_tiles);
+    Plates PP;
     std::vector<int> invert(all_tiles,-1);
     for (int i=0;i<all_used_tiles;++i) invert[P[i].tileid]=i;
     for(int i=0;i<all_used_tiles;++i){
         int j=invert[survey_list[i]];
         printf("i =  %d  j = %d\n",i,j);
         std::cout.flush();
-        PP[i]=P[j];
+        PP.append(P[j]);
     }
  
 	return(PP);
