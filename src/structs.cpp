@@ -533,7 +533,7 @@ List plate::av_gals_plate(const Feat& F,const MTL& M, const PP& pp) const {//lis
 // Read positions of the plate centers from an ascii file "center_name", and fill in a structure
 // Allow for a survey file to define the strategy  1/28/16
 Plates read_plate_centers(const Feat& F) {
-	Plates P,PP;
+	Plates P;
         std::string buf;
 	std::ifstream fs(F.tileFile.c_str());
 	if (!fs) {  // An error occurred opening the file.
@@ -610,6 +610,7 @@ Plates read_plate_centers(const Feat& F) {
 	fs.close();
     int all_used_tiles=P.size();
     int all_tiles=28810;
+    Plates PP(all_used_tiles);
     std::vector<int> invert(all_tiles,-1);
     for (int i=0;i<all_used_tiles;++i) invert[P[i].tileid]=i;
     for(int i=0;i<all_used_tiles;++i){
