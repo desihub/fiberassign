@@ -632,7 +632,7 @@ void diagnostic(const MTL& M, const Gals& Secret, Feat& F, const Assignment& A){
        //end diagnostic
 }
 
-void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& P, const PP& pp, Feat& F, const Assignment& A, bool latex, int last_tile) {
+void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& P, const PP& pp, Feat& F, const Assignment& A,  int last_tile,bool latex) {
 	printf("# Results :\n");
 
 	// 1 Raw numbers of galaxies by id and number of remaining observations
@@ -651,7 +651,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
             }
         obsrv[c][m]++; //
         }
-	}
+    }
     printf(" collected obsrv \n");
 	// Add the 3 columns of tot, fibs, obs
 	Table with_tots = obsrv;

@@ -195,7 +195,7 @@ int main(int argc, char **argv) {
         fa_write(j,F.outDir,M,P,pp,F,A); // Write output
     }
     /*
-	display_results("doc/figs/",G,M,P,pp,F,A,true,F.NPlate);
+	display_results("doc/figs/",G,M,P,pp,F,A,F.NPlate,true);
 	if (F.Verif) A.verif(P,M,pp,F); // Verification that the assignment is sane
      */
 
