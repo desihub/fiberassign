@@ -646,8 +646,8 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 		int m = min(M[g].nobs_done,MaxObs);
              */
             int m=0;
-            for(int k=0;k<GL[g].size();++k){
-                if(GL[g][k].f<last_tile)++m
+            for(int k=0;k<A.GL[g].size();++k){
+                if(A.GL[g][k].f<last_tile)++m;
             }
         obsrv[c][m]++; //
         }
