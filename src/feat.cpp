@@ -77,6 +77,7 @@ void Feat::readInputFile(const char file[]) {
 			if (tok[0]=="galFile") galFile = tok[1];
 			if (tok[0]=="tileFile") tileFile= tok[1];
 			if (tok[0]=="fibFile") fibFile= tok[1];
+            if (tok[0]=="surveyFile") surveyFile= tok[1];
 			if (tok[0]=="outDir") outDir= tok[1];
 			if (tok[0]=="PrintAscii") PrintAscii= s2b(tok[1]);
             if (tok[0]=="PrintFits") PrintFits= s2b(tok[1]);
