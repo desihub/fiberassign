@@ -617,7 +617,7 @@ Plates read_plate_centers(const Feat& F) {
         int j=invert[survey_list[i]];
         printf("i =  %d  j = %d\n",i,j);
         std::cout.flush();
-        PP.append(P[j]);
+        PP.push_back(P[j]);
     }
  
 	return(PP);
