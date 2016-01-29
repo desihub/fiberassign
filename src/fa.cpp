@@ -196,7 +196,7 @@ int main(int argc, char **argv) {
         improve(M,P,pp,F,A,starter);
         redistribute_tf(M,P,pp,F,A,starter);
         if(F.diagnose)diagnostic(M,Secret,F,A);
-        display_results("doc/figs/",Secret,M,P,pp,F,A,update_intervals[i+1],true);
+
     }
     // check on SS and SF
 

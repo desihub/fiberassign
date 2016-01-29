@@ -682,11 +682,12 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 		perc[id][1] = percent(d,tot*goal);
 	}
 	print_table("Obs per sqd and percentages",concatenate(obs_per_sqd,perc),latex,F.kind);
+    std::cout.flush();
 
 	// 3 Observed galaxies in function of time
 	// Lya 1,2,3,4,5, LRG 1,2
 	if (F.PlotObsTime) {
-	int interval = 10;
+	int interval = 1000;
 	int nk = 9;
 	Table Ttim = initTable(nk,0);
 	List galaxs = initList(F.Ngal);
