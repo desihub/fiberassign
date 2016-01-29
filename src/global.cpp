@@ -700,10 +700,10 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 			for (int g=0; g<F.Ngal; g++) {
 				int n = galaxs[g];
 				if (1<=n) {
-					if (M[g].id == 0) l[n-1]++;
-					if (M[g].id == 2) l[n-1+5]++;
-					if (M[g].id == 1) l[n+6]++;
-					if (M[g].id == 3) l[n+7]++;
+					if (Secret[g].id == 0) l[n-1]++;
+					if (Secret[g].id == 2) l[n-1+5]++;
+					if (Secret[g].id == 1) l[n+6]++;
+					if (Secret[g].id == 3) l[n+7]++;
 				}
 			}
 			for (int id=0; id<nk; id++) Ttim[id].push_back(l[id]);
