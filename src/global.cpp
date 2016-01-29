@@ -687,7 +687,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 	// 3 Observed galaxies in function of time
 	// Lya 1,2,3,4,5, LRG 1,2
 	if (F.PlotObsTime) {
-	int interval = 1000;
+	int interval = 100;
 	int nk = 9;
 	Table Ttim = initTable(nk,0);
 	List galaxs = initList(F.Ngal);
@@ -697,7 +697,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 			int g = A.TF[j][k];
 			if (g!=-1) galaxs[g]++;
 		}
-		if (j%interval==0) {
+		if (jused%interval==0) {
 			List l = initList(9);
 			for (int g=0; g<F.Ngal; g++) {
 				int n = galaxs[g];
