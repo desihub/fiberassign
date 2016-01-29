@@ -691,7 +691,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 	int nk = 9;
 	Table Ttim = initTable(nk,0);
 	List galaxs = initList(F.Ngal);
-	for (int jused=0; j<F.NUsedplate; jused++) {
+	for (int jused=0; jused<F.NUsedplate; jused++) {
 		for (int k=0; k<F.Nfiber; k++) {
             int j=A.suborder[jused];
 			int g = A.TF[j][k];
