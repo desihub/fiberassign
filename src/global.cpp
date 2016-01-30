@@ -704,10 +704,12 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 			List l = initList(9);
 			for (int g=0; g<F.Ngal; g++) {
                 if(g<100){
-                    printf("g = %d  n = %d  \n",g,n);
+                    printf("g = %d    \n",g);
                     std::cout.flush();
                 }
 				int n = galaxs[g];
+                printf("n  %d \n",n);
+                std::cxout.flush();
 
 				if (1<=n) {
 					if (Secret[g].id == 0) l[n-1]++;
