@@ -704,7 +704,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
         std::cout.flush();
 		if (jused%interval==0) {
 			List l = initList(9);
-			for (int g=0; g<N.Ftarg; g++) {
+			for (int g=0; g<F.Ntarg; g++) {
 				int n = galaxs[g];
                 
                 //if(n>0)printf("g  %d n  %d   sec  %d\n",g,n,Secret[g].id);
