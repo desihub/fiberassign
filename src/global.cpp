@@ -695,7 +695,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
         int j=A.suborder[jused];
 		for (int k=0; k<F.Nfiber; k++) {
 			int g = A.TF[j][k];
-			if (g!=-1) galaxs[g]++
+            if (g!=-1) galaxs[g]++;
 		}
         printf(" j = %d   jused = %d ",j,jused);
         std::cout.flush();
