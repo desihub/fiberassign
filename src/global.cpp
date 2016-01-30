@@ -691,9 +691,10 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 	int nk = 9;
 	Table Ttim = initTable(nk,0);
     printf("don't include SS or SF\n");
-    
+    std::cout.flush();
 	List galaxs = initList(F.Ntarg);
-        printf(" F.Ntarg = %d",F.Ntarg);
+    printf(" F.Ntarg = %d",F.Ntarg);
+        std::cout.flush();
 	for (int jused=0; jused<F.NUsedplate; jused++) {
         int j=A.suborder[jused];
 		for (int k=0; k<F.Nfiber; k++) {
