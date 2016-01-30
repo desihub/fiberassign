@@ -92,6 +92,7 @@ class Feat { // F for features
 	int Nplate;
     int NUsedplate;
 	int Ngal;
+    int Ntarg;
 	int Nfiber;
 	int Npetal;
 	int Nfbp; // Number of fibers by petals
