@@ -690,7 +690,9 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 	int interval = 100;
 	int nk = 9;
 	Table Ttim = initTable(nk,0);
-	List galaxs = initList(F.Ngal);
+    //don't include SS or SF
+    
+	List galaxs = initList(F.Ntarg);
 	for (int jused=0; jused<F.NUsedplate; jused++) {
         int j=A.suborder[jused];
 		for (int k=0; k<F.Nfiber; k++) {
@@ -702,7 +704,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
         std::cout.flush();
 		if (jused%interval==0) {
 			List l = initList(9);
-			for (int g=0; g<F.Ngal; g++) {
+			for (int g=0; g<N.Ftarg; g++) {
 				int n = galaxs[g];
                 
                 if(n>0)printf("g  %d n  %d   sec  %d\n",g,n,Secret[g].id);
@@ -726,7 +728,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 	int id = F.ids.at("QSOLy-a");
 	int goal = F.goal[id];
 	Table Percseen = initTable(goal+1,0);
-	for (int g=0; g<F.Ngal; g++) {
+	for (int g=0; g<F.Ntarg; g++) {
 		if (M[g].id==id) {
 			int n = M[g].av_tfs.size();
 			int p = A.chosen_tfs(g,F).size();
@@ -747,7 +749,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 	// 5 Histogram of time between 2 obs of Ly a
 	if (F.PlotDistLya) {
 	Table deltas;
-	for (int g=0; g<F.Ngal; g++) {
+	for (int g=0; g<F.Ntarg; g++) {
 		if (M[g].id == F.ids.at("QSOLy-a")) {
 			Plist tfs = A.chosen_tfs(g,F);
 			if (tfs.size()>=2) {

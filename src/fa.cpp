@@ -57,6 +57,7 @@ int main(int argc, char **argv) {
     M.insert(M.end(),SkyF.begin(),SkyF.end());
     printf(" M size %d \n",M.size());
     F.Ngal=M.size();
+    F.Ntarg=Secret.size();
     
     //establish priority classes
     init_time_at(time,"# establish priority clasess",t);
