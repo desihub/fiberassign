@@ -697,7 +697,8 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 			int g = A.TF[j][k];
             if (g!=-1) galaxs[g]++;
 		}
-        printf(" j = %d   jused = %d ",j,jused);
+        printf(" j = %d   jused = %d  g= %d ",j,jused,g);
+
         std::cout.flush();
 		if (jused%interval==0) {
 			List l = initList(9);
