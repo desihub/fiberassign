@@ -707,7 +707,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 			for (int g=0; g<F.Ntarg; g++) {
 				int n = galaxs[g];
                 
-                if(n>0)printf("g  %d n  %d   sec  %d\n",g,n,Secret[g].id);
+                //if(n>0)printf("g  %d n  %d   sec  %d\n",g,n,Secret[g].id);
                 std::cout.flush();
 
 				if (1<=n) {
@@ -745,7 +745,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 		}
 	}
 	print_mult_table_latex("Available tile-fibers for a galaxy (by kind)",outdir+"obsly.dat",Percseen,1);
-	}
+    }
 
 	// 5 Histogram of time between 2 obs of Ly a
 	if (F.PlotDistLya) {
@@ -773,7 +773,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 	//print_hist("Plate interval between 2 consecutive obs of Ly-a (interval 100)",100,histogram(deltas,100));
 	Table delts; delts.push_back(histo0); delts.push_back(cumulate(histo0));
 	print_mult_table_latex("Plate interval between 2 consecutive obs of Ly-a (interval 10)",outdir+"dist2ly.dat",delts,10);
-	}
+    }
 
 	// 6 Free fibers histogram
 	if (F.PlotFreeFibHist) {
@@ -789,7 +789,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 	for (int j=0; j<F.Nplate; j++) freefibtime[j] = A.unused_f(j,F);
 	Table fft; fft.push_back(freefibtime);
 	print_mult_table_latex("Free fibers in function of time (plates)",outdir+"fft.dat",fft);
-	}
+    }
  
 	// 8 Percentage of seen objects as a function of density of objects
 	if (F.PlotSeenDens) {
@@ -829,7 +829,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 	Dtable densit = initDtable(F.Categories-2+1,max_row(densities));
 	for (int t=0; t<F.Categories-2+1; t++) for (int i=0; i<densities[t].size(); i++) densit[t][i] = sumlist(densities[t][i])/densities[t][i].size();
 	print_mult_Dtable_latex("Perc of seen obj as a fun of dens of objs",outdir+"seendens.dat",densit,1);
-	}
+    }
 	
 	// 9 Collision histogram of distances between galaxies
 	if (F.Collision) {
@@ -855,13 +855,13 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 	Dlist redhistcol = percents(histcoldist,sumlist(histcoldist));
 	Dtable Dtd; Dtd.push_back(redhistcol); Dtd.push_back(cumulate(redhistcol));
 	print_mult_Dtable_latex("Collision histogram of distances between galaxies",outdir+"coldist.dat",Dtd,intervaldist);
-	}
+    }
 
 	// Collision rate
 	if (F.Collision) printf("Collision rate : %f %% \n",A.colrate(pp,M,P,F));
 
 	// Percentage of fibers assigned
-	printf("  %s assignments in total (%.4f %% of all fibers)\n",f(A.na(F)).c_str(),percent(A.na(F),F.Nplate*F.Nfiber));
+	//printf("  %s assignments in total (%.4f %% of all fibers)\n",f(A.na(F)).c_str(),percent(A.na(F),F.Nplate*F.Nfiber));
 
 	// Count
 	if (F.Count!=0) printf("Count = %d \n",F.Count);
