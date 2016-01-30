@@ -709,7 +709,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
                 }
 				int n = galaxs[g];
                 printf("n  %d \n",n);
-                std::cxout.flush();
+                std::cout.flush();
 
 				if (1<=n) {
 					if (Secret[g].id == 0) l[n-1]++;
