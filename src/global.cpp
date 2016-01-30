@@ -697,14 +697,14 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 			int g = A.TF[j][k];
             if (g!=-1) galaxs[g]++;
 		}
-        printf(" j = %d   jused = %d  g= %d ",j,jused,g);
+        printf(" j = %d   jused = %d ",j,jused,g);
 
         std::cout.flush();
 		if (jused%interval==0) {
 			List l = initList(9);
 			for (int g=0; g<F.Ngal; g++) {
 				int n = galaxs[g];
-                if(g<100)printf("g = %d  n = %d  sec =%d\n",g,n,Secret[g].id);
+                if(g<100)printf("g = %d  n = %d  \n",g,n);
 				if (1<=n) {
 					if (Secret[g].id == 0) l[n-1]++;
 					if (Secret[g].id == 2) l[n-1+5]++;
