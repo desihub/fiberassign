@@ -693,15 +693,18 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
     printf("don't include SS or SF\n");
     std::cout.flush();
 	List galaxs = initList(F.Ntarg);
-    printf(" F.Ntarg = %d",F.Ntarg);
+    printf(" F.Ntarg = %d\n",F.Ntarg);
         std::cout.flush();
 	for (int jused=0; jused<F.NUsedplate; jused++) {
         int j=A.suborder[jused];
+        printf(" j = %d   jused = %d\n ",j,jused);
+        std::cout.flush();
 		for (int k=0; k<F.Nfiber; k++) {
 			int g = A.TF[j][k];
+            
             if (g!=-1) galaxs[g]++;
 		}
-        printf(" j = %d   jused = %d ",j,jused);
+
 
         std::cout.flush();
 		if (jused%interval==0) {
