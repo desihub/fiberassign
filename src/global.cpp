@@ -721,7 +721,8 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 		}
 	}
 	print_mult_table_latex("Observed galaxies complete (interval 10)",outdir+"time2.dat",Ttim,interval);
-	}
+        printf("done with time table\n");
+    }
 
 	// 4 Histogram of percentages of seen Ly-a
 	if (F.PlotHistLya) {
