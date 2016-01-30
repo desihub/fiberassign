@@ -708,7 +708,8 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
                     std::cout.flush();
                 }
 				int n = galaxs[g];
-                printf("n  %d \n",n);
+                
+                if(n>0)printf("n  %d \n",n);
                 std::cout.flush();
 
 				if (1<=n) {
