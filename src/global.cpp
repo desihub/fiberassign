@@ -710,7 +710,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 				int n = galaxs[g];
                 
                 //if(n>0)printf("g  %d n  %d   sec  %d\n",g,n,Secret[g].id);
-                std::cout.flush();
+                //std::cout.flush();
 
 				if (1<=n) {
 					if (Secret[g].id == 0) l[n-1]++;
