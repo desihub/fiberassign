@@ -701,7 +701,6 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
         std::cout.flush();
 		for (int k=0; k<F.Nfiber; k++) {
 			int g = A.TF[j][k];
-            printf("k %d  g %d\n",k,g);
             std::cout.flush();
             if (g!=-1) galaxs[g]++;
 		}
@@ -710,7 +709,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 			for (int g=0; g<F.Ntarg; g++) {
 				int n = galaxs[g];
                 
-                if(n>0)printf("g  %d n  %d   sec  %d\n",g,n,Secret[g].id);
+                //if(n>0)printf("g  %d n  %d   sec  %d\n",g,n,Secret[g].id);
                 std::cout.flush();
 
 				if (1<=n) {
