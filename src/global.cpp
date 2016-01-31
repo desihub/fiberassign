@@ -697,8 +697,8 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
         std::cout.flush();
 	for (int jused=0; jused<F.NUsedplate; jused++) {
         int j=A.suborder[jused];
-       // printf(" j = %d   jused = %d\n ",j,jused);
-        std::cout.flush();
+        //printf(" j = %d   jused = %d\n ",j,jused);
+        //std::cout.flush();
 		for (int k=0; k<F.Nfiber; k++) {
 			int g = A.TF[j][k];
             std::cout.flush();
