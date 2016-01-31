@@ -692,7 +692,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 	Table Ttim = initTable(nk,0);
     printf("don't include SS or SF\n");
     std::cout.flush();
-	List galaxs = initList(F.Ntarg);
+	List galaxs = initList(F.Ngal);
     printf(" F.Ntarg = %d\n",F.Ntarg);
         std::cout.flush();
 	for (int jused=0; jused<F.NUsedplate; jused++) {
