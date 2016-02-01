@@ -728,7 +728,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
                     }
                     if (Secret[g].id == 3){
                         l[n+7]++;
-                        if(n>1)printf("ELG observed %d times\n",n)
+                        if(n>1)printf("ELG observed %d times\n",n);
                     }
 				}
          
