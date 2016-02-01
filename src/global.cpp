@@ -719,10 +719,10 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 					if (Secret[g].id == 3) l[n+7]++;
 				}
 			}
-			for (int id=0; id<nk; id++) Ttim[id].push_back(l[id]);
+			//for (int id=0; id<nk; id++) Ttim[id].push_back(l[id]);
 		}
 	}
-	print_mult_table_latex("Observed galaxies complete (interval 10)",outdir+"time2.dat",Ttim,interval);
+	//print_mult_table_latex("Observed galaxies complete (interval 10)",outdir+"time2.dat",Ttim,interval);
         printf("done with time table\n");
     }
 
