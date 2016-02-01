@@ -704,7 +704,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
             std::cout.flush();
             if (g!=-1) galaxs[g]++;
 		}
-        /*
+        
 		if (jused%interval==0) {
 			List l = initList(9);
 			for (int g=0; g<F.Ntarg; g++) {
@@ -712,17 +712,18 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
                 
                 //if(n>0)printf("g  %d n  %d   sec  %d\n",g,n,Secret[g].id);
                 //std::cout.flush();
-
+               /*
 				if (1<=n) {
 					if (Secret[g].id == 0) l[n-1]++;
 					if (Secret[g].id == 2) l[n-1+5]++;
 					if (Secret[g].id == 1) l[n+6]++;
 					if (Secret[g].id == 3) l[n+7]++;
 				}
-			}
-			for (int id=0; id<nk; id++) Ttim[id].push_back(l[id]);
-        }
          */
+			}
+			//for (int id=0; id<nk; id++) Ttim[id].push_back(l[id]);
+        }
+         
           
     }
 	//print_mult_table_latex("Observed galaxies complete (interval 10)",outdir+"time2.dat",Ttim,interval);
