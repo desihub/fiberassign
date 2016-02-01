@@ -714,10 +714,22 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
                 //std::cout.flush();
               
 				if (1<=n) {
-					if (Secret[g].id == 0) l[n-1]++;
-					if (Secret[g].id == 2) l[n-1+5]++;
-					if (Secret[g].id == 1) l[n+6]++;
-					if (Secret[g].id == 3) l[n+7]++;
+                    if (Secret[g].id == 0){
+                        l[n-1]++;
+                        if(n>5)printf(" QSO Ly-a observed %d times\n",n);
+                    }
+                    if (Secret[g].id == 2){
+                        l[n-1+5]++;
+                        if(n>2)printf(" LRG observed %d times\n",n);
+                    }
+                    if (Secret[g].id == 1) {
+                        l[n+6]++;
+                        if(n>1)printf("QSO tracer observed %d times\n",n);
+                    }
+                    if (Secret[g].id == 3){
+                        l[n+7]++;
+                        if(n>1)printf("ELG observed %d times\n",n)
+                    }
 				}
          
 			}
