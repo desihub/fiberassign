@@ -327,7 +327,7 @@ Gals read_Secretfile(str readfile, const Feat&F){
     fname= s.c_str();
     std::ifstream fs(fname);
     if (!fs) {  // An error occurred opening the file.
-        std::cerr << "Unable to open MTLfile " << fname << std::endl;
+        std::cerr << "Unable to open Secretfile " << fname << std::endl;
         myexit(1);
     }
     // Reserve some storage, since we expect we'll be reading quite a few
@@ -339,7 +339,7 @@ Gals read_Secretfile(str readfile, const Feat&F){
         getline(fs,buf);
     }
     while (fs.eof()==0) {
-        double ra,dec;
+        double ra,dec,z;
         int id, i;
         str xname;
         std::istringstream(buf)>> i>>xname>> ra >> dec>> z>>id ;
