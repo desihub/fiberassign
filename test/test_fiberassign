@@ -1,0 +1,79 @@
+#!/usr/bin/env python
+
+"""
+Test fiberassign code at NERSC
+"""
+
+from __future__ import print_function, division
+import sys, os
+from glob import glob
+
+#-------------------------------------------------------------------------
+#- Basic setup of directories and environment
+if 'FIBERASSIGN' in os.environ:
+    fiberassign_dir = os.environ['FIBERASSIGN']
+else:
+    script = os.path.abspath(sys.argv[0])
+    fiberassign_dir = os.path.dirname(os.path.dirname(script))
+
+testdir = os.path.join(fiberassign_dir, 'test')
+
+#- output directory
+if 'FIBERASSIGN_OUTDIR' in os.environ:
+    outdir = os.environ['FIBERASSIGN_OUTDIR']
+elif 'SCRATCH' in os.environ:
+    outdir = os.path.join(os.environ['SCRATCH'], 'desi', 'test_fiberassign')
+else:
+    outdir = os.path.join(fiberassign_dir, 'test', 'output')
+
+print('Test output dir '+outdir)    
+
+if not os.path.exists(outdir):
+    os.makedirs(outdir)
+
+#- dangerous
+for fitsfile in glob(outdir+'/*.fits'):
+    os.remove(fitsfile)
+    
+#-------------------------------------------------------------------------
+#- test compilation
+print('---------------------------------------------------------')
+print('-- Testing compiling')
+os.chdir(fiberassign_dir)
+for command in ('make clean', 'make', 'make install'):
+    err = os.system(command)
+    assert err==0, "FAILED: " + command
+
+#-------------------------------------------------------------------------
+#- test fiberassign    
+print('---------------------------------------------------------')
+print('-- Testing fiberassign')
+params = ''.join(open(testdir+'/template_fiberassign.txt').readlines())
+tilefile = os.path.join(testdir, 'desi-tiles-test.par')
+paramfile = os.path.join(testdir, 'params_fiberassign.txt')
+fx = open(paramfile, 'w')
+fx.write(params.format(tilefile=tilefile, outdir=outdir))
+fx.close()
+
+command = 'export OMP_NUM_THREADS=24; srun -n 1 fiberassign '+paramfile
+print(command)
+# err = os.system(command)
+# assert err==0, 'FAILED: '+command
+
+#-------------------------------------------------------------------------
+#- Test fiberassign_surveysim
+print('---------------------------------------------------------')
+print('-- Testing fiberassign_surveysim')
+params = ''.join(open(testdir+'/template_surveysim.txt').readlines())
+tilefile = os.path.join(testdir, 'desi-tiles-test.par')
+paramfile = os.path.join(testdir, 'params_surveysim.txt')
+fx = open(paramfile, 'w')
+fx.write(params.format(tilefile=tilefile, outdir=outdir))
+fx.close()
+
+command = 'export OMP_NUM_THREADS=24; srun -n 1 fiberassign_surveysim '+paramfile
+print(command)
+# err = os.system(command)
+# assert err==0, 'FAILED: '+command
+
+
