@@ -338,7 +338,7 @@ Gals read_Secretfile(str readfile, const Feat&F){
         getline(fs,buf);
     }
     while (fs.eof()==0) {
-        double ra,dec;
+        double ra,dec,z;
         int id, i;
         str xname;
         std::istringstream(buf)>> i>>xname>> ra >> dec>>z>> id ;
