@@ -223,9 +223,8 @@ void make_MTL_SS_SF(const Gals& G, MTL& Targ, MTL& SStars, MTL& SkyF, Gals& Secr
 }
 
 void make_Targ_Secret(const Gals& G, MTL& Targ, Gals& Secret, const Feat& F){
-    // Targ contains only galaxy targets
-    // SStars contains only standard stars
     // SkyF contains only sky fibers
+    // G should not contain SS or SF
     int Nobj=G.size();
     struct target targ;
     int special_count(0);
@@ -246,7 +245,8 @@ void make_Targ_Secret(const Gals& G, MTL& Targ, Gals& Secret, const Feat& F){
         
         targ.lastpass=F.lastpass[G[i].id];
         //make list of priorities
-                        Targ.push_back(targ);
+        
+                Targ.push_back(targ);
                 Secret.push_back(G[i]);
     }
     
@@ -341,7 +341,7 @@ Gals read_Secretfile(str readfile, const Feat&F){
         double ra,dec;
         int id, i;
         str xname;
-        std::istringstream(buf)>> i>>xname>> ra >> dec>> id ;
+        std::istringstream(buf)>> i>>xname>> ra >> dec>>z>> id ;
 
         if (ra<   0.) {ra += 360.;}
         if (ra>=360.) {ra -= 360.;}
@@ -352,6 +352,7 @@ Gals read_Secretfile(str readfile, const Feat&F){
         struct galaxy Q;
         Q.ra = ra;
         Q.dec = dec;
+        Q.z=z;
         Q.id = id;
         Secret.push_back(Q);
         getline(fs,buf);
