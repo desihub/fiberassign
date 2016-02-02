@@ -48,6 +48,12 @@ int main(int argc, char **argv) {
     MTL Targ=read_MTLfile(F.Targfile,F,0,0);
     MTL SStars=read_MTLfile(F.SStarsfile,F,1,0);
     MTL SkyF=read_MTLfile(F.SkyFfile,F,0,1);
+    
+    if(Targ.size() == 0) {
+        std::cerr << "ERROR: No targets found in " << F.Targfile << std::endl;
+        myexit(1);
+    }
+    
     print_time(time,"# ... took :");
     //combine the three input files
     M=Targ;

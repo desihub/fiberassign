@@ -351,11 +351,15 @@ Gals read_Secretfile(str readfile, const Feat&F){
             std::cout << "DEC="<<dec<<" out of range reading "<<fname<<std::endl;
             myexit(1);
         }
-        struct galaxy Q;
-        Q.ra = ra;
-        Q.dec = dec;
-        Q.id = id;
-        Secret.push_back(Q);
+        
+        if(F.MinRa <= ra && ra <= F.MaxRa &&
+	   F.MinDec <= dec && dec <= F.MaxDec ) {
+                struct galaxy Q;
+                Q.ra = ra;
+                Q.dec = dec;
+                Q.id = id;
+                Secret.push_back(Q);
+        }
         getline(fs,buf);
     }
     return Secret;
@@ -511,39 +515,42 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
 	  std::cout << "DEC="<<dec<<" out of range reading "<<fname<<std::endl;
 	  myexit(1);
 	}
-	double theta = (90.0 - dec[ii])*M_PI/180.;
-	double phi   = (ra[ii]        )*M_PI/180.;
-	struct target Q;
-	Q.nhat[0]    = cos(phi)*sin(theta);
-	Q.nhat[1]    = sin(phi)*sin(theta);
-	Q.nhat[2]    = cos(theta);
-	Q.t_priority = priority[ii];//priority is proxy for id, starts at zero
-	Q.nobs_remain= numobs[ii];
-	Q.nobs_done=0;//need to keep track of this, too
-	Q.once_obs=0;//changed only in update_plan
-	Q.ra = ra[ii];
-	Q.dec = dec[ii];
-	Q.id = targetid[ii];
-	Q.lastpass = lastpass[ii];
-	Q.SS=SS;
-	Q.SF=SF;
-	try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
+	
+	if(F.MinRa <= ra[ii] && ra[ii] <= F.MaxRa &&
+	   F.MinDec <= dec[ii] && dec[ii] <= F.MaxDec ) {
+           	double theta = (90.0 - dec[ii])*M_PI/180.;
+           	double phi   = (ra[ii]        )*M_PI/180.;
+           	struct target Q;
+           	Q.nhat[0]    = cos(phi)*sin(theta);
+           	Q.nhat[1]    = sin(phi)*sin(theta);
+           	Q.nhat[2]    = cos(theta);
+           	Q.t_priority = priority[ii];//priority is proxy for id, starts at zero
+           	Q.nobs_remain= numobs[ii];
+           	Q.nobs_done=0;//need to keep track of this, too
+           	Q.once_obs=0;//changed only in update_plan
+           	Q.ra = ra[ii];
+           	Q.dec = dec[ii];
+           	Q.id = targetid[ii];
+           	Q.lastpass = lastpass[ii];
+           	Q.SS=SS;
+           	Q.SF=SF;
+           	try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
 
-	//	
-	//	fprintf(stdout, "%ld %ld %f %f\n", Q.id, targetid[ii], Q.ra, Q.dec);
-	//if (targetid[ii]%F.moduloGal == 0) {
-	//	  try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
-	//	}
-	bool in=false;
-	for (int j=0;j<M.priority_list.size();++j){
-	  if(Q.t_priority==M.priority_list[j]){in=true;
-	  }
-	}
-	if(!in){
-	  M.priority_list.push_back(Q.t_priority);
-	}
-	       	
-      }
+           	//	
+           	//	fprintf(stdout, "%ld %ld %f %f\n", Q.id, targetid[ii], Q.ra, Q.dec);
+           	//if (targetid[ii]%F.moduloGal == 0) {
+           	//	  try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
+           	//	}
+           	bool in=false;
+           	for (int j=0;j<M.priority_list.size();++j){
+           	  if(Q.t_priority==M.priority_list[j]){in=true;
+           	  }
+           	}
+           	if(!in){
+           	  M.priority_list.push_back(Q.t_priority);
+           	}
+	   }  // end if within RA,dec bounds
+      } // end ii loop over targets
       std::sort(M.priority_list.begin(),M.priority_list.end());
       return(M);  
     }
