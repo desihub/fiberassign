@@ -44,6 +44,8 @@ structs.o
 
 EXECUTABLES = fiberassign fiberassign_surveysim split_targ_secret_sky_std split_targ_secret
 COMPILE = $(CXXFLAGS) $(OMPFLAGS) -I. $(CFITSIO_CPPFLAGS)
+# valgrind
+#COMPILE = -g -O0 -m64 -fPIC -DNDEBUG -std=c++11 $(OMPFLAGS) -I. $(CFITSIO_CPPFLAGS)
 LINK = $(OMPFLAGS) $(CFITSIO)
 
 all : $(EXECUTABLES)
