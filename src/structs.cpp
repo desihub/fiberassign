@@ -294,7 +294,7 @@ void write_MTL_SS_SFfile(const MTL& Targ, const MTL& SStars,const MTL& SkyF,cons
     str sd=F.Secretfile;
     FD = fopen(sd.c_str(),"w");
     for (int i=0;i<Secret.size();++i){
-        fprintf(FD," %d Secret %f  %f  %d   \n",      i,Secret[i].ra,Secret[i].dec,Secret[i].id);
+        fprintf(FD," %d Secret %f  %f  %d   \n",      i,Secret[i].ra,Secret[i].dec,Secret[i].z,Secret[i].id);
     }
     fclose(FD);
 
@@ -313,7 +313,7 @@ void write_Targ_Secret(const MTL& Targ, const Gals& Secret, const Feat& F){
     str sd=F.Secretfile;
     FD = fopen(sd.c_str(),"w");
     for (int i=0;i<Secret.size();++i){
-        fprintf(FD," %d Secret %f  %f  %d   \n",      i,Secret[i].ra,Secret[i].dec,Secret[i].id);
+        fprintf(FD," %d Secret %f  %f  %d   \n",      i,Secret[i].ra,Secret[i].dec,Secret[i].z,Secret[i].id);
     }
     fclose(FD);
     
@@ -342,7 +342,7 @@ Gals read_Secretfile(str readfile, const Feat&F){
         double ra,dec;
         int id, i;
         str xname;
-        std::istringstream(buf)>> i>>xname>> ra >> dec>> id ;
+        std::istringstream(buf)>> i>>xname>> ra >> dec>> z>>id ;
 
         if (ra<   0.) {ra += 360.;}
         if (ra>=360.) {ra -= 360.;}
