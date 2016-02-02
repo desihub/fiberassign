@@ -2,6 +2,7 @@ galFile /project/projectdirs/desi/mocks/preliminary/objects_ss_sf0.rdzipn
 tileFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/footprint/desi-tiles.par
 fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
 outDir /project/projectdirs/desi/users/rncahn/fa_output/short/
+surveyFile default_survey_list.txt
 PrintAscii false
 PrintFits false
 Secretfile /project/projectdirs/desi/mocks/preliminary/smallSecretfile.txt
@@ -46,7 +47,7 @@ NoCollide 7.0
 PatrolRad 5.8
 NeighborRad 14.05
 
-PlotObsTime false
+PlotObsTime true
 PlotHistLya false
 PlotDistLya false
 PlotFreeFibHist false

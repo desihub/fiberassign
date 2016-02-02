@@ -10,6 +10,7 @@ SStarsfile /project/projectdirs/desi/mocks/preliminary/SStarsfile.txt
 SkyFfile /project/projectdirs/desi/mocks/preliminary/SkyFfile.txt
 Secretfile /project/projectdirs/desi/mocks/preliminary/Secretfile.txt
 diagnose true
+surveyFile default_survey_list.txt
 
 
 kind QSOLy-a QSOTracer LRG ELG FakeQSO FakeLRG SS SF
@@ -21,7 +22,7 @@ goalpost 5 1 2 1 1 1 5 5
 lastpass 0 0 0 1 0 0 1 1 
 SS       0 0 0 0 0 0 1 0
 SF       0 0 0 0 0 0 0 1
-pass_intervals 0 500 1000 2000 4000 8000
+pass_intervals 0 250 500 1000 1500 2000 4000 8000
 
 Randomize false
 Pacman false
@@ -46,7 +47,7 @@ NoCollide 7.0
 PatrolRad 5.8
 NeighborRad 14.05
 
-PlotObsTime false
+PlotObsTime true
 PlotHistLya false
 PlotDistLya false
 PlotFreeFibHist false
