@@ -30,7 +30,7 @@ OBJS_TARG_SECRET = \
 collision.o \
 feat.o \
 global.o \
-targ.o \
+targ_secret.o \
 misc.o \
 structs.o
 
