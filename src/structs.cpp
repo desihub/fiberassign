@@ -71,9 +71,9 @@ Gals read_galaxies(const Feat& F) {
             Q.ra = ra[i];
             Q.dec = dc[i];
             Q.z = zz[i];
-            //if(Q.dec<F.MaxDec && Q.dec>F.MinDec &&Q.ra<F.MaxRa && Q.ra>F.MinRa){
+            if(Q.dec<F.MaxDec && Q.dec>F.MinDec &&Q.ra<F.MaxRa && Q.ra>F.MinRa){
                 try{P.push_back(Q);}catch(std::exception& e) {myexception(e);}
-            //}
+            }
 		}
 	}
 	return P;
