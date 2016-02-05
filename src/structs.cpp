@@ -320,7 +320,7 @@ void write_Targ_Secret(const MTL& Targ, const Gals& Secret, const Feat& F){
     
 }
 
-Gals read_Secretfile(str readfile, const Feat&F){
+Gals read_Secretfile_ascii(str readfile, const Feat&F){
     str s=readfile;
     Gals Secret;
     std::string buf;
@@ -363,6 +363,121 @@ Gals read_Secretfile(str readfile, const Feat&F){
         getline(fs,buf);
     }
     return Secret;
+}
+
+
+Gals read_Secretfile(str readfile, const Feat&F){
+    str s=readfile;
+    Gals Secret;
+    std::string buf;
+    const char* fname;
+    fname= s.c_str();
+    std::ifstream fs(fname);
+    int ii;
+    fitsfile *fptr;        
+    int status = 0, anynulls;
+    int hdutype;
+    int nkeys;
+    int hdupos;
+    long nrows;
+    int ncols;
+    long *targetid;
+    int *targettype;
+    float *redshift;
+    int colnum;
+
+    if (! fits_open_file(&fptr, fname, READONLY, &status)){
+      std::cout << "opened truth file " << fname << std::endl;
+    }else{
+      std::cout << "problem opening gile" << fname << std::endl;
+      myexit(status);
+    }
+
+    if ( fits_movabs_hdu(fptr, 2, &hdutype, &status) )
+      myexit(status);
+    
+    fits_get_hdrspace(fptr, &nkeys, NULL, &status);            
+    fits_get_hdu_num(fptr, &hdupos);
+    fits_get_hdu_type(fptr, &hdutype, &status);  /* Get the HDU type */            
+    fits_get_num_rows(fptr, &nrows, &status);
+    fits_get_num_cols(fptr, &ncols, &status);
+    
+    printf("%d columns x %ld rows\n", ncols, nrows);
+    printf("\nHDU #%d  ", hdupos);
+    if (hdutype == ASCII_TBL){
+      printf("ASCII Table:  ");
+    }else{
+      printf("Binary Table: \n ");      
+    }
+    
+    if (!fs) {  // An error occurred opening the file.
+      std::cerr << "Unable to open TruthFile " << fname << std::endl;
+      myexit(1);
+    }
+    /*reserve space for temporary arrays*/
+    
+    fflush(stdout);
+    if(!(targetid= (long *)malloc(nrows * sizeof(long)))){
+      fprintf(stderr, "problem with targetid allocation\n");
+      myexit(1);
+    }
+    if(!(redshift= (float *)malloc(nrows * sizeof(float)))){
+      fprintf(stderr, "problem with ra allocation\n");
+      myexit(1);
+    } 
+    if(!(targettype= (int *)malloc(nrows * sizeof(int)))){
+      fprintf(stderr, "problem with priority allocation\n");
+      myexit(1);
+    }
+    
+    
+    /* find which column contains the TARGETID values */
+    if ( fits_get_colnum(fptr, CASEINSEN, (char *)"TARGETID", &colnum, &status) ){
+      fprintf(stderr, "error\n");
+      myexit(status);
+    }      
+    long frow, felem, nullval;
+    frow = 1;
+    felem = 1;
+    nullval = -99.;
+    if (fits_read_col(fptr, TLONG, colnum, frow, felem, nrows, 
+		      &nullval, targetid, &anynulls, &status) ){
+      fprintf(stderr, "error\n");
+      myexit(status);
+    }
+    
+    if ( fits_get_colnum(fptr, CASEINSEN, (char *)"Z", &colnum, &status) ){
+      fprintf(stderr, "error\n");
+      myexit(status);
+    }
+    if (fits_read_col(fptr, TFLOAT, colnum, frow, felem, nrows, 
+		      &nullval, redshift, &anynulls, &status) ){
+      fprintf(stderr, "error\n");
+      myexit(status);
+    }
+        
+    if ( fits_get_colnum(fptr, CASEINSEN, (char *)"TYPE", &colnum, &status) ){
+      fprintf(stderr, "error\n");
+      myexit(status);
+    }    
+    if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
+		      &nullval, targettype, &anynulls, &status) ){
+      fprintf(stderr, "error\n");
+      myexit(status);
+    }
+    
+    for(ii=0;ii<nrows;ii++){
+      int t_type;
+      long id;
+      float z;
+      
+      Q.t_type = targettype[ii];//priority is proxy for id, starts at zero
+      Q.id = targetid[ii];
+      Q.z = redshift[ii];
+      
+      try{Secret.push_back(Q);}catch(std::exception& e) {myexception(e);}
+    }
+    return(Secret);
 }
 
 
@@ -440,7 +555,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
 	myexit(1);
       }
      
-/* find which column contains the TARGETID values */
+      /* find which column contains the TARGETID values */
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"TARGETID", &colnum, &status) ){
 	fprintf(stderr, "error\n");
 	myexit(status);

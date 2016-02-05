@@ -39,7 +39,7 @@ class galaxy {
 	double nhat[3];
 	double ra, dec, z;
 	Plist av_tfs; // available tile/fibers
-
+	int t_type;	
 	void print_av_tfs();
 	str kind(const Feat& F) const;
 };
@@ -48,6 +48,7 @@ class Gals : public std::vector<struct galaxy> {};
 Gals read_galaxies(const Feat& F);
 Gals read_galaxies_ascii(const Feat& F);
 Gals read_Secretfile(str filename,const Feat& F);
+Gals read_Secretfile_ascii(str filename,const Feat& F);
 
 std::vector<int>count_galaxies(const Gals& G);
 
