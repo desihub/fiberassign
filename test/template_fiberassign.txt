@@ -1,6 +1,6 @@
-Targfile /project/projectdirs/desi/mocks/preliminary/mtl/targets_0_mtl_0.fits
-SStarsfile /project/projectdirs/desi/mocks/preliminary/mtl/stdstar_0_mtl_0.fits
-SkyFfile  /project/projectdirs/desi/mocks/preliminary/mtl/sky_0_mtl_0.fits
+Targfile /project/projectdirs/desi/mocks/preliminary/mtl-lite/targets_0_mtl_0.fits
+SStarsfile /project/projectdirs/desi/mocks/preliminary/mtl-lite/stdstar_0_mtl_0.fits
+SkyFfile  /project/projectdirs/desi/mocks/preliminary/mtl-lite/sky_0_mtl_0.fits
 
 tileFile {tilefile}
 fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
