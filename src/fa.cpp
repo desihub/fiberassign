@@ -160,6 +160,7 @@ int main(int argc, char **argv) {
     for (int jused=0;jused<F.NUsedplate;++jused){
 
         int j=A.suborder[jused];
+        printf("j = %d   jused= %d\n",j,jused);
         assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF for each tile
         assign_unused(j,M,P,pp,F,A);
     }
