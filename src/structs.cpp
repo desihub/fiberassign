@@ -502,7 +502,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
     
 
     if (! fits_open_file(&fptr, fname, READONLY, &status)){
-      std::cout << "opened MTL file " << fname << std::endl;
+      std::cout << "reading MTL file " << fname << std::endl;
 
       if ( fits_movabs_hdu(fptr, 2, &hdutype, &status) )
 	myexit(status);
@@ -514,8 +514,8 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
       fits_get_num_rows(fptr, &nrows, &status);
       fits_get_num_cols(fptr, &ncols, &status);
       
-      printf("%d columns x %ld rows\n", ncols, nrows);
-      printf("\nHDU #%d  ", hdupos);
+      // printf("%d columns x %ld rows\n", ncols, nrows);
+      printf("HDU #%d  ", hdupos);
       if (hdutype == ASCII_TBL){
 	printf("ASCII Table:  ");
       }else{

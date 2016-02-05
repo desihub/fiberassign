@@ -117,7 +117,7 @@ inline bool ok_for_limit_SS_SF(int g, int j, int k, const MTL& M, const Plates& 
     return !(is_SF && too_many_SF)&&!(is_SS && too_many_SS);
 }
 
-    
+
 
 // Find, for (j,k), find the best galaxy it can reach among the possible ones
 // Null list means you can take all possible kinds, otherwise you can only take, for the galaxy, a kind among this list
@@ -273,8 +273,6 @@ void update_plan_from_one_obs(int jused,const Gals& Secret, MTL& M, Plates&P, co
 	int jpast = jused-F.Analysis;//tile whose information we just learned
 	if (jpast<0) { printf("ERROR in update : jpast negative\n"); fl(); }
 	
-	// array bounds assertion checks
-    std::cout << jused << "/" << A.suborder.size() << std::endl;
     
     int j=A.suborder[jpast];
     //diagnostic

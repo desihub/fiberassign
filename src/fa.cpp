@@ -33,8 +33,7 @@ int main(int argc, char **argv) {
 	// Read Secretfile
     // Secret contains the identity of each target: QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF
     Gals Secret;
-    printf("before read secretfile \n");
-    init_time_at(time,"# read Secret file",t);
+    init_time_at(time,"# reading Secret file",t);
 
     // Secret=read_Secretfile_ascii(F.Secretfile,F);
     Secret=read_Secretfile(F.Secretfile,F);
@@ -75,7 +74,7 @@ int main(int argc, char **argv) {
         }
     }
     for(int i;i<M.priority_list.size();++i){
-        printf("  class  %d  number  %d\n",i,count_class[i]);
+        printf("  class %d  priority %d  number %d\n",i,M.priority_list[i],count_class[i]);
     }
 	print_time(time,"# ... took :");
     
