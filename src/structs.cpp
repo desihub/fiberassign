@@ -470,7 +470,7 @@ Gals read_Secretfile(str readfile, const Feat&F){
       int t_type;
       long id;
       float z;
-      struct target Q;      
+      struct galaxy Q;      
       Q.t_type = targettype[ii];//priority is proxy for id, starts at zero
       Q.id = targetid[ii];
       Q.z = redshift[ii];
