@@ -355,6 +355,7 @@ Gals read_Secretfile(str readfile, const Feat&F){
         Q.ra = ra;
         Q.dec = dec;
         Q.id = id;
+        Q.z = z;
         Secret.push_back(Q);
         getline(fs,buf);
     }
