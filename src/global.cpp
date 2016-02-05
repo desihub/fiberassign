@@ -272,6 +272,10 @@ void update_plan_from_one_obs(int jused,const Gals& Secret, MTL& M, Plates&P, co
     
 	int jpast = jused-F.Analysis;//tile whose information we just learned
 	if (jpast<0) { printf("ERROR in update : jpast negative\n"); fl(); }
+	
+	// array bounds assertion checks
+    std::cout << jused << "/" << A.suborder.size() << std::endl;
+    
     int j=A.suborder[jpast];
     //diagnostic
     //printf("j %d  jused %d \n",j,jused);

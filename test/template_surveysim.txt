@@ -1,10 +1,10 @@
 galFile /project/projectdirs/desi/mocks/preliminary/objects_ss_sf0.rdzipn
 
-Targfile /project/projectdirs/desi/mocks/preliminary/mtl/targets_0_mtl_0.fits
-SStarsfile /project/projectdirs/desi/mocks/preliminary/mtl/stdstar_0_mtl_0.fits
-SkyFfile  /project/projectdirs/desi/mocks/preliminary/mtl/sky_0_mtl_0.fits
+Targfile /project/projectdirs/desi/mocks/preliminary/mtl-lite/targets_0_mtl_0.fits
+SStarsfile /project/projectdirs/desi/mocks/preliminary/mtl-lite/stdstar_0_mtl_0.fits
+SkyFfile  /project/projectdirs/desi/mocks/preliminary/mtl-lite/sky_0_mtl_0.fits
 
-Secretfile /project/projectdirs/desi/mocks/preliminary/Secretfile.txt
+Secretfile /project/projectdirs/desi/mocks/preliminary/mtl-lite/truth_targets_0_mtl_0.fits
 
 tileFile {tilefile}
 fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
@@ -23,8 +23,7 @@ goalpost 5 1 2 1 1 1 5 5
 lastpass 0 0 0 1 0 0 1 1 
 SS       0 0 0 0 0 0 1 0
 SF       0 0 0 0 0 0 0 1 
-pass_intervals 0 500 1000 2000 4000 8000
-
+pass_intervals 0 200 400
 
 Randomize false
 Pacman false

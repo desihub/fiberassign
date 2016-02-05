@@ -35,11 +35,11 @@ class PP { // PP for plate parameters
 // galaxy -------------------------------------------------
 class galaxy {
 	public:
-	long id;
-	double nhat[3];
+        long targetid;          // the unique identifier
+	long id;                // the true type when used with a secret file
+	double nhat[3];         // (ra,dec) -> unit vector for faster calc
 	double ra, dec, z;
-	Plist av_tfs; // available tile/fibers
-	int t_type;	
+	Plist av_tfs;           // available tile/fibers
 	void print_av_tfs();
 	str kind(const Feat& F) const;
 };

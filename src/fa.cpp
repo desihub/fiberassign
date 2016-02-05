@@ -36,7 +36,8 @@ int main(int argc, char **argv) {
     printf("before read secretfile \n");
     init_time_at(time,"# read Secret file",t);
 
-    Secret=read_Secretfile_ascii(F.Secretfile,F);
+    // Secret=read_Secretfile_ascii(F.Secretfile,F);
+    Secret=read_Secretfile(F.Secretfile,F);
     printf("# Read %d galaxies from %s \n",Secret.size(),F.Secretfile.c_str());
 	print_time(time,"# ... took :");
     std::vector<int> count(10);
@@ -185,7 +186,8 @@ int main(int argc, char **argv) {
         int starter=update_intervals[i];
         //printf(" beginning at %d\n",starter);
         //std::cout.flush();
-        for (int jused=starter; jused<update_intervals[i+1]; jused++) {
+        printf("-- interval %d\n",i);
+        for (int jused=starter; jused<update_intervals[i+1] && jused<A.suborder.size()-1; jused++) {
             //printf(" jused %d\n",jused);
             //std::cout.flush();
 
@@ -198,13 +200,18 @@ int main(int argc, char **argv) {
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
 
         }
+        printf("-- redistribute %d\n",i);        
         redistribute_tf(M,P,pp,F,A,starter);
+        printf("-- improve %d\n",i);        
         improve(M,P,pp,F,A,starter);
+        printf("-- improve again %d\n",i);        
         redistribute_tf(M,P,pp,F,A,starter);
+        printf("-- diagnose %d\n",i);        
         if(F.diagnose)diagnostic(M,Secret,F,A);
     }
     // check on SS and SF
 
+    printf("-- Checking SS/SF\n");
     List SS_hist=initList(11,0);
     List SF_hist=initList(41,0);
     for(int jused=0;jused<F.NUsedplate;++jused){

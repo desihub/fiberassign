@@ -372,7 +372,6 @@ Gals read_Secretfile(str readfile, const Feat&F){
     std::string buf;
     const char* fname;
     fname= s.c_str();
-    std::ifstream fs(fname);
     int ii;
     fitsfile *fptr;        
     int status = 0, anynulls;
@@ -386,9 +385,9 @@ Gals read_Secretfile(str readfile, const Feat&F){
     float *redshift;
     int colnum;
 
-    fprintf(stdout, "file to read %s\n", fname);
+    fprintf(stdout, "Reading truth file %s\n", fname);
     if (! fits_open_file(&fptr, fname, READONLY, &status)){
-      std::cout << "opened truth file " << fname << std::endl;
+      std::cout << "opened truth file " << std::endl;
     }else{
       fprintf(stderr,"problem opening file %s\n", fname);
       myexit(status);
@@ -403,18 +402,14 @@ Gals read_Secretfile(str readfile, const Feat&F){
     fits_get_num_rows(fptr, &nrows, &status);
     fits_get_num_cols(fptr, &ncols, &status);
     
-    printf("%d columns x %ld rows\n", ncols, nrows);
-    printf("\nHDU #%d  ", hdupos);
-    if (hdutype == ASCII_TBL){
-      printf("ASCII Table:  ");
-    }else{
-      printf("Binary Table: \n ");      
-    }
+    // printf("%d columns x %ld rows\n", ncols, nrows);
+    // printf("\nHDU #%d  ", hdupos);
+    // if (hdutype == ASCII_TBL){
+    //   printf("ASCII Table:  ");
+    // }else{
+    //   printf("Binary Table: \n ");      
+    // }
     
-    if (!fs) {  // An error occurred opening the file.
-      std::cerr << "Unable to open TruthFile " << fname << std::endl;
-      myexit(1);
-    }
     /*reserve space for temporary arrays*/
     
     fflush(stdout);
@@ -468,12 +463,9 @@ Gals read_Secretfile(str readfile, const Feat&F){
     }
     
     for(ii=0;ii<nrows;ii++){
-      int t_type;
-      long id;
-      float z;
       struct galaxy Q;      
-      Q.t_type = targettype[ii];//priority is proxy for id, starts at zero
-      Q.id = targetid[ii];
+      Q.targetid = targetid[ii];
+      Q.id = targettype[ii];  // alas, 'id' is the type, not the targetid
       Q.z = redshift[ii];
       
       try{Secret.push_back(Q);}catch(std::exception& e) {myexception(e);}
@@ -498,6 +490,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
     int nkeys;
     int hdupos;
     long nrows;
+    long nkeep;
     int ncols;
     long *targetid;
     int *numobs;
@@ -618,7 +611,16 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
 	myexit(status);
       }
       
-      try {M.reserve(nrows);} catch (std::exception& e) {myexception(e);}
+      // count how many rows we will keep and reserve that amount
+      nkeep = 0;
+      for(int i=0; i<nrows; i++){
+        if(F.MinRa <= ra[i] && ra[i] <= F.MaxRa &&
+           F.MinDec <= dec[i] && dec[i] <= F.MaxDec ) {
+             nkeep++;
+        }
+      }
+      printf("Keeping %d targets within ra/dec ranges\n", nkeep);
+      try {M.reserve(nkeep);} catch (std::exception& e) {myexception(e);}
 
 
       for(ii=0;ii<nrows;ii++){
