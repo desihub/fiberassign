@@ -679,7 +679,6 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 		perc[id][1] = percent(d,tot*goal);
 	}
 	print_table("Obs per sqd and percentages",concatenate(obs_per_sqd,perc),latex,F.kind);
-    std::cout.flush();
 
 	// 3 Observed galaxies in function of time
 	// Lya 1,2,3,4,5, LRG 1,2
@@ -691,11 +690,10 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
     std::cout.flush();
 	List galaxs = initList(F.Ngal);
     printf(" F.Ntarg = %d\n",F.Ntarg);
-        std::cout.flush();
+
 	for (int jused=0; jused<F.NUsedplate; jused++) {
         int j=A.suborder[jused];
-        //printf(" j = %d   jused = %d\n ",j,jused);
-        //std::cout.flush();
+
 		for (int k=0; k<F.Nfiber; k++) {
 			int g = A.TF[j][k];
             std::cout.flush();
@@ -706,9 +704,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 			List l = initList(20);//was 9
 			for (int g=0; g<F.Ntarg; g++) {
 				int n = galaxs[g];
-                
-                //if(n>0)printf("g  %d n  %d   sec  %d\n",g,n,Secret[g].id);
-                //std::cout.flush();
+
               
 				if (1<=n) {
                     if (Secret[g].id == 0){
