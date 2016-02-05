@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
     printf("before read secretfile \n");
     init_time_at(time,"# read Secret file",t);
 
-    Secret=read_Secretfile(F.Secretfile,F);
+    Secret=read_Secretfile_ascii(F.Secretfile,F);
     printf("# Read %d galaxies from %s \n",Secret.size(),F.Secretfile.c_str());
 	print_time(time,"# ... took :");
     std::vector<int> count(10);

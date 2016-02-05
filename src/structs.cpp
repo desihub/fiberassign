@@ -386,10 +386,11 @@ Gals read_Secretfile(str readfile, const Feat&F){
     float *redshift;
     int colnum;
 
+    fprintf(stdout, "file to read %s\n", fname);
     if (! fits_open_file(&fptr, fname, READONLY, &status)){
       std::cout << "opened truth file " << fname << std::endl;
     }else{
-      std::cout << "problem opening gile" << fname << std::endl;
+      fprintf(stderr,"problem opening file %s\n", fname);
       myexit(status);
     }
 
