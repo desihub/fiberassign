@@ -227,6 +227,7 @@ void make_Targ_Secret(const Gals& G, MTL& Targ, Gals& Secret, const Feat& F){
     // Targ contains only galaxy targets
     // SStars contains only standard stars
     // SkyF contains only sky fibers
+    // G must not have SS or SF
     int Nobj=G.size();
     struct target targ;
     int special_count(0);
@@ -294,7 +295,7 @@ void write_MTL_SS_SFfile(const MTL& Targ, const MTL& SStars,const MTL& SkyF,cons
     str sd=F.Secretfile;
     FD = fopen(sd.c_str(),"w");
     for (int i=0;i<Secret.size();++i){
-        fprintf(FD," %d Secret %f  %f  %d   \n",      i,Secret[i].ra,Secret[i].dec,Secret[i].z,Secret[i].id);
+        fprintf(FD," %d Secret %f  %f  %f %d   \n",      i,Secret[i].ra,Secret[i].dec,Secret[i].z,Secret[i].id);
     }
     fclose(FD);
 
