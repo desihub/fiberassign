@@ -15,4 +15,4 @@ fi
 
 echo "# Running assign"
 
-srun  -N 1  bin/fiberassign_surveysim fa_surveysim_features.txt
+srun  -N 1  bin/fiberassign_surveysim jaime_fa_surveysim_features.txt
