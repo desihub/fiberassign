@@ -382,7 +382,7 @@ Gals read_Secretfile(str readfile, const Feat&F){
     int ncols;
     long *targetid;
     int *targettype;
-    float *redshift;
+    double *redshift;
     int colnum;
 
     fprintf(stdout, "Reading truth file %s\n", fname);
@@ -417,12 +417,12 @@ Gals read_Secretfile(str readfile, const Feat&F){
       fprintf(stderr, "problem with targetid allocation\n");
       myexit(1);
     }
-    if(!(redshift= (float *)malloc(nrows * sizeof(float)))){
-      fprintf(stderr, "problem with ra allocation\n");
+    if(!(redshift= (double *)malloc(nrows * sizeof(double)))){
+      fprintf(stderr, "problem with redshift allocation\n");
       myexit(1);
     } 
     if(!(targettype= (int *)malloc(nrows * sizeof(int)))){
-      fprintf(stderr, "problem with priority allocation\n");
+      fprintf(stderr, "problem with targettype allocation\n");
       myexit(1);
     }
     
@@ -442,16 +442,18 @@ Gals read_Secretfile(str readfile, const Feat&F){
       myexit(status);
     }
     
+    //----- Z
     if ( fits_get_colnum(fptr, CASEINSEN, (char *)"Z", &colnum, &status) ){
       fprintf(stderr, "error\n");
       myexit(status);
     }
-    if (fits_read_col(fptr, TFLOAT, colnum, frow, felem, nrows, 
+    if (fits_read_col(fptr, TDOUBLE, colnum, frow, felem, nrows, 
 		      &nullval, redshift, &anynulls, &status) ){
       fprintf(stderr, "error\n");
       myexit(status);
     }
         
+    //----- TYPE = integer true target type
     if ( fits_get_colnum(fptr, CASEINSEN, (char *)"TYPE", &colnum, &status) ){
       fprintf(stderr, "error\n");
       myexit(status);
@@ -496,8 +498,8 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
     int *numobs;
     int *priority;
     int *lastpass;
-    float *ra;
-    float *dec;    
+    double *ra;
+    double *dec;    
     int colnum;
     
 
@@ -535,11 +537,11 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
 	fprintf(stderr, "problem with priority allocation\n");
 	myexit(1);
       }
-      if(!(ra= (float *)malloc(nrows * sizeof(float)))){
+      if(!(ra= (double *)malloc(nrows * sizeof(double)))){
 	fprintf(stderr, "problem with ra allocation\n");
 	myexit(1);
       }      
-      if(!(dec= (float *)malloc(nrows * sizeof(float)))){
+      if(!(dec= (double *)malloc(nrows * sizeof(double)))){
 	fprintf(stderr, "problem with dec allocation\n");
 	myexit(1);
       }
@@ -565,24 +567,29 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
 	myexit(status);
       }
       
+      //----- RA
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"RA", &colnum, &status) ){
 	fprintf(stderr, "error\n");
 	myexit(status);
       }
-      if (fits_read_col(fptr, TFLOAT, colnum, frow, felem, nrows, 
+      if (fits_read_col(fptr, TDOUBLE, colnum, frow, felem, nrows, 
 			&nullval, ra, &anynulls, &status) ){
 	fprintf(stderr, "error\n");
 	myexit(status);
       }
+      
+      //----- DEC
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"DEC", &colnum, &status) ){
 	fprintf(stderr, "error\n");
 	myexit(status);
       }
-      if (fits_read_col(fptr, TFLOAT, colnum, frow, felem, nrows, 
+      if (fits_read_col(fptr, TDOUBLE, colnum, frow, felem, nrows, 
 			&nullval, dec, &anynulls, &status) ){
 	fprintf(stderr, "error\n");
 	myexit(status);
       }
+
+      //----- NUMOBS
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"NUMOBS", &colnum, &status) ){
 	fprintf(stderr, "error\n");
 	myexit(status);
@@ -592,6 +599,8 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
 	fprintf(stderr, "error\n");
 	myexit(status);
       }
+
+      //----- PRIORITY
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"PRIORITY", &colnum, &status) ){
 	fprintf(stderr, "error\n");
 	myexit(status);
@@ -601,6 +610,8 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
 	fprintf(stderr, "error\n");
 	myexit(status);
       }
+
+      //----- LASTPASS
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"LASTPASS", &colnum, &status) ){
 	fprintf(stderr, "error\n");
 	myexit(status);
@@ -630,7 +641,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
 	if (ra[ii]<   0.) {ra[ii] += 360.;}
 	if (ra[ii]>=360.) {ra[ii] -= 360.;}
 	if (dec[ii]<=-90. || dec[ii]>=90.) {
-	  std::cout << "DEC="<<dec<<" out of range reading "<<fname<<std::endl;
+	  std::cout << "DEC="<<dec[ii]<<" out of range reading "<<fname<<std::endl;
 	  myexit(1);
 	}
 	
