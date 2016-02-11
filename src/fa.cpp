@@ -33,9 +33,9 @@ int main(int argc, char **argv) {
 	// Read Secretfile
     // Secret contains the identity of each target: QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF
     Gals Secret;
-    printf("before read secretfile \n");
-    init_time_at(time,"# read Secret file",t);
+    init_time_at(time,"# reading Secret file",t);
 
+    // Secret=read_Secretfile_ascii(F.Secretfile,F);
     Secret=read_Secretfile(F.Secretfile,F);
     printf("# Read %d galaxies from %s \n",Secret.size(),F.Secretfile.c_str());
 	print_time(time,"# ... took :");
@@ -48,6 +48,12 @@ int main(int argc, char **argv) {
     MTL Targ=read_MTLfile(F.Targfile,F,0,0);
     MTL SStars=read_MTLfile(F.SStarsfile,F,1,0);
     MTL SkyF=read_MTLfile(F.SkyFfile,F,0,1);
+    
+    if(Targ.size() == 0) {
+        std::cerr << "ERROR: No targets found in " << F.Targfile << std::endl;
+        myexit(1);
+    }
+    
     print_time(time,"# ... took :");
     //combine the three input files
     M=Targ;
@@ -68,7 +74,7 @@ int main(int argc, char **argv) {
         }
     }
     for(int i;i<M.priority_list.size();++i){
-        printf("  class  %d  number  %d\n",i,count_class[i]);
+        printf("  class %d  priority %d  number %d\n",i,M.priority_list[i],count_class[i]);
     }
 	print_time(time,"# ... took :");
     
@@ -179,7 +185,8 @@ int main(int argc, char **argv) {
         int starter=update_intervals[i];
         //printf(" beginning at %d\n",starter);
         //std::cout.flush();
-        for (int jused=starter; jused<update_intervals[i+1]; jused++) {
+        printf("-- interval %d\n",i);
+        for (int jused=starter; jused<update_intervals[i+1] && jused<A.suborder.size()-1; jused++) {
             //printf(" jused %d\n",jused);
             //std::cout.flush();
 
@@ -192,13 +199,18 @@ int main(int argc, char **argv) {
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
 
         }
+        printf("-- redistribute %d\n",i);        
         redistribute_tf(M,P,pp,F,A,starter);
+        printf("-- improve %d\n",i);        
         improve(M,P,pp,F,A,starter);
+        printf("-- improve again %d\n",i);        
         redistribute_tf(M,P,pp,F,A,starter);
+        printf("-- diagnose %d\n",i);        
         if(F.diagnose)diagnostic(M,Secret,F,A);
     }
     // check on SS and SF
 
+    printf("-- Checking SS/SF\n");
     List SS_hist=initList(11,0);
     List SF_hist=initList(41,0);
     for(int jused=0;jused<F.NUsedplate;++jused){

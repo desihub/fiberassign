@@ -35,11 +35,11 @@ class PP { // PP for plate parameters
 // galaxy -------------------------------------------------
 class galaxy {
 	public:
-	int id;
-	double nhat[3];
+        long targetid;          // the unique identifier
+	long id;                // the true type when used with a secret file
+	double nhat[3];         // (ra,dec) -> unit vector for faster calc
 	double ra, dec, z;
-	Plist av_tfs; // available tile/fibers
-
+	Plist av_tfs;           // available tile/fibers
 	void print_av_tfs();
 	str kind(const Feat& F) const;
 };
@@ -48,22 +48,25 @@ class Gals : public std::vector<struct galaxy> {};
 Gals read_galaxies(const Feat& F);
 Gals read_galaxies_ascii(const Feat& F);
 Gals read_Secretfile(str filename,const Feat& F);
+Gals read_Secretfile_ascii(str filename,const Feat& F);
 
 std::vector<int>count_galaxies(const Gals& G);
 
 //target -----------------------------------------------------
 class target {
     public:
-    int id, nobs_remain, nobs_done;
-    double nhat[3];
-    double ra, dec;
-    int SS,SF,lastpass, priority_class, t_priority, once_obs;
-    Plist av_tfs;
+  long id; 
+  int nobs_remain, nobs_done;
+  double nhat[3];
+  double ra, dec;
+  int SS,SF,lastpass, priority_class, t_priority, once_obs;
+  Plist av_tfs;
 };
 class MTL : public std::vector<struct target> {
     public:
     std::vector<int> priority_list;
 };
+
 
 void make_MTL(const Gals& G, const Feat& F, Gals& Secret, MTL& M);
 void make_MTL_SS_SF(const Gals& G, MTL& Targ, MTL& SStars, MTL& SkyF,Gals& Secret, const Feat& F);

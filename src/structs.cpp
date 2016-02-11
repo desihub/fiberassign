@@ -15,6 +15,8 @@
 #include        "feat.h"
 #include        "structs.h"
 #include        "collision.h"
+#include        "fitsio.h"
+
 
 // Galaxies ------------------------------------------------------------------
 
@@ -136,7 +138,6 @@ Gals read_galaxies_ascii(const Feat& F)
 
         if (oid%F.moduloGal == 0) {
         try{P.push_back(Q);}catch(std::exception& e) {myexception(e);}
-
         }
 
         oid++;
@@ -151,6 +152,7 @@ bool galaxy_priority(target t1,target t2){return (t1.t_priority<t2.t_priority);}
 str galaxy::kind(const Feat& F) const {
 	return(F.kind[id]);
 }
+
 
 // targets -----------------------------------------------------------------------
 // derived from G, but includes priority and nobs_remain
@@ -318,7 +320,7 @@ void write_Targ_Secret(const MTL& Targ, const Gals& Secret, const Feat& F){
     
 }
 
-Gals read_Secretfile(str readfile, const Feat&F){
+Gals read_Secretfile_ascii(str readfile, const Feat&F){
     str s=readfile;
     Gals Secret;
     std::string buf;
@@ -348,17 +350,131 @@ Gals read_Secretfile(str readfile, const Feat&F){
         if (dec<=-90. || dec>=90.) {
             std::cout << "DEC="<<dec<<" out of range reading "<<fname<<std::endl;
             myexit(1);
+        }        
+        if(F.MinRa <= ra && ra <= F.MaxRa &&
+	   F.MinDec <= dec && dec <= F.MaxDec ) {
+                struct galaxy Q;
+                Q.ra = ra;
+                Q.dec = dec;
+                Q.z=z;
+                Q.id = id;
+                Secret.push_back(Q);
         }
-        struct galaxy Q;
-        Q.ra = ra;
-        Q.dec = dec;
-        Q.z=z;
-        Q.id = id;
-        Secret.push_back(Q);
         getline(fs,buf);
     }
     return Secret;
 }
+
+
+Gals read_Secretfile(str readfile, const Feat&F){
+    str s=readfile;
+    Gals Secret;
+    std::string buf;
+    const char* fname;
+    fname= s.c_str();
+    int ii;
+    fitsfile *fptr;        
+    int status = 0, anynulls;
+    int hdutype;
+    int nkeys;
+    int hdupos;
+    long nrows;
+    int ncols;
+    long *targetid;
+    int *targettype;
+    double *redshift;
+    int colnum;
+
+    fprintf(stdout, "Reading truth file %s\n", fname);
+    if (! fits_open_file(&fptr, fname, READONLY, &status)){
+      std::cout << "opened truth file " << std::endl;
+    }else{
+      fprintf(stderr,"problem opening file %s\n", fname);
+      myexit(status);
+    }
+
+    if ( fits_movabs_hdu(fptr, 2, &hdutype, &status) )
+      myexit(status);
+    
+    fits_get_hdrspace(fptr, &nkeys, NULL, &status);            
+    fits_get_hdu_num(fptr, &hdupos);
+    fits_get_hdu_type(fptr, &hdutype, &status);  /* Get the HDU type */            
+    fits_get_num_rows(fptr, &nrows, &status);
+    fits_get_num_cols(fptr, &ncols, &status);
+    
+    // printf("%d columns x %ld rows\n", ncols, nrows);
+    // printf("\nHDU #%d  ", hdupos);
+    // if (hdutype == ASCII_TBL){
+    //   printf("ASCII Table:  ");
+    // }else{
+    //   printf("Binary Table: \n ");      
+    // }
+    
+    /*reserve space for temporary arrays*/
+    
+    fflush(stdout);
+    if(!(targetid= (long *)malloc(nrows * sizeof(long)))){
+      fprintf(stderr, "problem with targetid allocation\n");
+      myexit(1);
+    }
+    if(!(redshift= (double *)malloc(nrows * sizeof(double)))){
+      fprintf(stderr, "problem with redshift allocation\n");
+      myexit(1);
+    } 
+    if(!(targettype= (int *)malloc(nrows * sizeof(int)))){
+      fprintf(stderr, "problem with targettype allocation\n");
+      myexit(1);
+    }
+    
+    
+    /* find which column contains the TARGETID values */
+    if ( fits_get_colnum(fptr, CASEINSEN, (char *)"TARGETID", &colnum, &status) ){
+      fprintf(stderr, "error\n");
+      myexit(status);
+    }      
+    long frow, felem, nullval;
+    frow = 1;
+    felem = 1;
+    nullval = -99.;
+    if (fits_read_col(fptr, TLONG, colnum, frow, felem, nrows, 
+		      &nullval, targetid, &anynulls, &status) ){
+      fprintf(stderr, "error\n");
+      myexit(status);
+    }
+    
+    //----- Z
+    if ( fits_get_colnum(fptr, CASEINSEN, (char *)"Z", &colnum, &status) ){
+      fprintf(stderr, "error\n");
+      myexit(status);
+    }
+    if (fits_read_col(fptr, TDOUBLE, colnum, frow, felem, nrows, 
+		      &nullval, redshift, &anynulls, &status) ){
+      fprintf(stderr, "error\n");
+      myexit(status);
+    }
+        
+    //----- TYPE = integer true target type
+    if ( fits_get_colnum(fptr, CASEINSEN, (char *)"TYPE", &colnum, &status) ){
+      fprintf(stderr, "error\n");
+      myexit(status);
+    }    
+    if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
+		      &nullval, targettype, &anynulls, &status) ){
+      fprintf(stderr, "error\n");
+      myexit(status);
+    }
+    
+    for(ii=0;ii<nrows;ii++){
+      struct galaxy Q;      
+      Q.targetid = targetid[ii];
+      Q.id = targettype[ii];  // alas, 'id' is the type, not the targetid
+      Q.z = redshift[ii];
+      
+      try{Secret.push_back(Q);}catch(std::exception& e) {myexception(e);}
+    }
+    return(Secret);
+}
+
 
 
 MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
@@ -369,65 +485,206 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
     const char* fname;
     fname= s.c_str();
     std::ifstream fs(fname);
-    if (!fs) {  // An error occurred opening the file.
-        std::cerr << "Unable to open MTLfile " << fname << std::endl;
-        myexit(1);
-        }
-        // Reserve some storage, since we expect we'll be reading quite a few
-        // lines from this file.
-        try {M.reserve(4000000);} catch (std::exception& e) {myexception(e);}
-        // Skip any leading lines beginning with #
-        getline(fs,buf);
-        while (fs.eof()==0 && buf[0]=='#') {
-            getline(fs,buf);
-        }
-        while (fs.eof()==0) {
-            double ra,dec;
-            int id, nobs_remain, priority, lastpass;
-            str xname;
-            std::istringstream(buf)>> id>>xname>> ra >> dec>> nobs_remain >>  priority >>lastpass ;
-            //std::istringstream(buf)>> id>> xname>>ra >> dec >>  nobs_remain>> priority;
-            if (ra<   0.) {ra += 360.;}
-            if (ra>=360.) {ra -= 360.;}
-            if (dec<=-90. || dec>=90.) {
-                std::cout << "DEC="<<dec<<" out of range reading "<<fname<<std::endl;
-                myexit(1);
-            }
-            double theta = (90.0 - dec)*M_PI/180.;
-            double phi   = (ra        )*M_PI/180.;
-            struct target Q;
-            Q.nhat[0]    = cos(phi)*sin(theta);
-            Q.nhat[1]    = sin(phi)*sin(theta);
-            Q.nhat[2]    = cos(theta);
-            Q.t_priority = priority;//priority is proxy for id, starts at zero
-            Q.nobs_remain= nobs_remain;
-            Q.nobs_done=0;//need to keep track of this, too
-            Q.once_obs=0;//changed only in update_plan
-            Q.ra = ra;
-            Q.dec = dec;
-            Q.id = id;
-            Q.lastpass = lastpass;
-            Q.SS=SS;
-            Q.SF=SF;
-            
-            if (id%F.moduloGal == 0) {
-                try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
-            }
-            bool in=false;
-            for (int j=0;j<M.priority_list.size();++j){
-                if(Q.t_priority==M.priority_list[j]){in=true;
-                }
-            }
-            if(!in){
-                M.priority_list.push_back(Q.t_priority);
-            }
+    int ii;
+    fitsfile *fptr;        
+    int status = 0, anynulls;
+    int hdutype;
+    int nkeys;
+    int hdupos;
+    long nrows;
+    long nkeep;
+    int ncols;
+    long *targetid;
+    int *numobs;
+    int *priority;
+    int *lastpass;
+    double *ra;
+    double *dec;    
+    int colnum;
+    
 
-            getline(fs,buf);
+    if (! fits_open_file(&fptr, fname, READONLY, &status)){
+      std::cout << "reading MTL file " << fname << std::endl;
+
+      if ( fits_movabs_hdu(fptr, 2, &hdutype, &status) )
+	myexit(status);
+      
+      
+      fits_get_hdrspace(fptr, &nkeys, NULL, &status);            
+      fits_get_hdu_num(fptr, &hdupos);
+      fits_get_hdu_type(fptr, &hdutype, &status);  /* Get the HDU type */            
+      fits_get_num_rows(fptr, &nrows, &status);
+      fits_get_num_cols(fptr, &ncols, &status);
+      
+      // printf("%d columns x %ld rows\n", ncols, nrows);
+      printf("HDU #%d  ", hdupos);
+      if (hdutype == ASCII_TBL){
+	printf("ASCII Table:  ");
+      }else{
+	printf("Binary Table: \n ");      
+      }
+
+      fflush(stdout);
+      if(!(targetid= (long *)malloc(nrows * sizeof(long)))){
+	fprintf(stderr, "problem with targetid allocation\n");
+	myexit(1);
+      }
+      if(!(numobs= (int *)malloc(nrows * sizeof(int)))){
+	fprintf(stderr, "problem with numobs allocation\n");
+	myexit(1);
+      }
+      if(!(priority= (int *)malloc(nrows * sizeof(int)))){
+	fprintf(stderr, "problem with priority allocation\n");
+	myexit(1);
+      }
+      if(!(ra= (double *)malloc(nrows * sizeof(double)))){
+	fprintf(stderr, "problem with ra allocation\n");
+	myexit(1);
+      }      
+      if(!(dec= (double *)malloc(nrows * sizeof(double)))){
+	fprintf(stderr, "problem with dec allocation\n");
+	myexit(1);
+      }
+
+      if(!(lastpass= (int *)malloc(nrows * sizeof(int)))){
+	fprintf(stderr, "problem with lastpass allocation\n");
+	myexit(1);
+      }
+     
+      /* find which column contains the TARGETID values */
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"TARGETID", &colnum, &status) ){
+	fprintf(stderr, "error\n");
+	myexit(status);
+      }
+      
+      long frow, felem, nullval;
+      frow = 1;
+      felem = 1;
+      nullval = -99.;
+      if (fits_read_col(fptr, TLONG, colnum, frow, felem, nrows, 
+			&nullval, targetid, &anynulls, &status) ){
+	fprintf(stderr, "error\n");
+	myexit(status);
+      }
+      
+      //----- RA
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"RA", &colnum, &status) ){
+	fprintf(stderr, "error\n");
+	myexit(status);
+      }
+      if (fits_read_col(fptr, TDOUBLE, colnum, frow, felem, nrows, 
+			&nullval, ra, &anynulls, &status) ){
+	fprintf(stderr, "error\n");
+	myexit(status);
+      }
+      
+      //----- DEC
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"DEC", &colnum, &status) ){
+	fprintf(stderr, "error\n");
+	myexit(status);
+      }
+      if (fits_read_col(fptr, TDOUBLE, colnum, frow, felem, nrows, 
+			&nullval, dec, &anynulls, &status) ){
+	fprintf(stderr, "error\n");
+	myexit(status);
+      }
+
+      //----- NUMOBS
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"NUMOBS", &colnum, &status) ){
+	fprintf(stderr, "error\n");
+	myexit(status);
+      }
+      if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
+			&nullval, numobs, &anynulls, &status) ){
+	fprintf(stderr, "error\n");
+	myexit(status);
+      }
+
+      //----- PRIORITY
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"PRIORITY", &colnum, &status) ){
+	fprintf(stderr, "error\n");
+	myexit(status);
+      }
+      if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
+			&nullval, priority, &anynulls, &status) ){
+	fprintf(stderr, "error\n");
+	myexit(status);
+      }
+
+      //----- LASTPASS
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"LASTPASS", &colnum, &status) ){
+	fprintf(stderr, "error\n");
+	myexit(status);
+      }
+      if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
+			&nullval, lastpass, &anynulls, &status) ){
+	fprintf(stderr, "error\n");
+	myexit(status);
+      }
+      
+      // count how many rows we will keep and reserve that amount
+      nkeep = 0;
+      for(int i=0; i<nrows; i++){
+        if(F.MinRa <= ra[i] && ra[i] <= F.MaxRa &&
+           F.MinDec <= dec[i] && dec[i] <= F.MaxDec ) {
+             nkeep++;
         }
-    std::sort(M.priority_list.begin(),M.priority_list.end());
-    fs.close();
-    return(M);
+      }
+      printf("Keeping %d targets within ra/dec ranges\n", nkeep);
+      try {M.reserve(nkeep);} catch (std::exception& e) {myexception(e);}
+
+
+      for(ii=0;ii<nrows;ii++){
+	str xname;
+	
+	//std::istringstream(buf)>> id>> xname>>ra >> dec >>  nobs_remain>> priority;
+	if (ra[ii]<   0.) {ra[ii] += 360.;}
+	if (ra[ii]>=360.) {ra[ii] -= 360.;}
+	if (dec[ii]<=-90. || dec[ii]>=90.) {
+	  std::cout << "DEC="<<dec[ii]<<" out of range reading "<<fname<<std::endl;
+	  myexit(1);
+	}
+	
+	if(F.MinRa <= ra[ii] && ra[ii] <= F.MaxRa &&
+	   F.MinDec <= dec[ii] && dec[ii] <= F.MaxDec ) {
+           	double theta = (90.0 - dec[ii])*M_PI/180.;
+           	double phi   = (ra[ii]        )*M_PI/180.;
+           	struct target Q;
+           	Q.nhat[0]    = cos(phi)*sin(theta);
+           	Q.nhat[1]    = sin(phi)*sin(theta);
+           	Q.nhat[2]    = cos(theta);
+           	Q.t_priority = priority[ii];//priority is proxy for id, starts at zero
+           	Q.nobs_remain= numobs[ii];
+           	Q.nobs_done=0;//need to keep track of this, too
+           	Q.once_obs=0;//changed only in update_plan
+           	Q.ra = ra[ii];
+           	Q.dec = dec[ii];
+           	Q.id = targetid[ii];
+           	Q.lastpass = lastpass[ii];
+           	Q.SS=SS;
+           	Q.SF=SF;
+           	try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
+
+           	//	
+           	//	fprintf(stdout, "%ld %ld %f %f\n", Q.id, targetid[ii], Q.ra, Q.dec);
+           	//if (targetid[ii]%F.moduloGal == 0) {
+           	//	  try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
+           	//	}
+           	bool in=false;
+           	for (int j=0;j<M.priority_list.size();++j){
+           	  if(Q.t_priority==M.priority_list[j]){in=true;
+           	  }
+           	}
+           	if(!in){
+           	  M.priority_list.push_back(Q.t_priority);
+           	}
+	   }  // end if within RA,dec bounds
+      } // end ii loop over targets
+      std::sort(M.priority_list.begin(),M.priority_list.end());
+      return(M);  
     }
+}
+
 void assign_priority_class(MTL& M){
     // assign each target to a priority class
     //this needs to be updated
@@ -569,7 +826,8 @@ Plates read_plate_centers(const Feat& F) {
 			double phi   = (ra        )*M_PI/180.;
 			struct plate Q;
 			Q.tileid = tileid;
-                        //std::cout << "TILEID " << tileid << std::endl;
+
+			//                        std::cout << "TILEID " << tileid << std::endl;
 			l++;
 			Q.tilera        = ra;
 			Q.tiledec       = dec;
