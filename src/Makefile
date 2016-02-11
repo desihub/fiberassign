@@ -10,36 +10,35 @@ global.h \
 misc.h \
 structs.h
 
-
 OBJS_SURVEYSIM = \
+surveysim.o \
 collision.o \
 feat.o \
 global.o \
-fa.o \
 misc.o \
 structs.o
 
 OBJS_SKYSTD = \
+split.o \
 collision.o \
 feat.o \
 global.o \
-mtl.o \
 misc.o \
 structs.o
 
 OBJS_TARG_SECRET = \
+targ.o \
 collision.o \
 feat.o \
 global.o \
-targ.o \
 misc.o \
 structs.o
 
 OBJS_FIBERASSIGN = \
+fiberassign.o \
 collision.o \
 feat.o \
 global.o \
-pipeline.o \
 misc.o \
 structs.o
 

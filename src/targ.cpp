@@ -11,11 +11,11 @@
 #include    <sys/time.h>
 #include    "modules/htmTree.h"
 #include    "modules/kdTree.h"
-#include        "misc.h"
-#include        "feat.h"
-#include        "structs.h"
-#include        "collision.h"
-#include        "global.h"
+#include    "misc.h"
+#include    "feat.h"
+#include    "structs.h"
+#include    "collision.h"
+#include    "global.h"
 //reduce redistributes, updates  07/02/15 rnc
 int main(int argc, char **argv) {
     //// Initializations ---------------------------------------------
