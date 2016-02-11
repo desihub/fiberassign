@@ -1,16 +1,15 @@
-Targfile /project/projectdirs/desi/mocks/preliminary/mtl-lite/targets_0_mtl_0.fits
-SStarsfile /project/projectdirs/desi/mocks/preliminary/mtl-lite/stdstar_0_mtl_0.fits
-SkyFfile  /project/projectdirs/desi/mocks/preliminary/mtl-lite/sky_0_mtl_0.fits
+Targfile /project/projectdirs/desi/mocks/preliminary/mtl/targets_mtl_lite.fits
+SStarsfile /project/projectdirs/desi/mocks/preliminary/mtl/stdstar_mtl_lite.fits
+SkyFfile  /project/projectdirs/desi/mocks/preliminary/mtl/sky_mtl_lite.fits
+Secretfile /project/projectdirs/desi/mocks/preliminary/mtl/truth_mtl_lite.fits
 
-tileFile {tilefile}
+tileFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/footprint/desi-tiles.par
 fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
 outDir {outdir}
 
-
-PrintAscii false
+PrintAscii true
 PrintFits true
-diagnose false
-
+diagnose true
 
 kind QSOLy-a QSOTracer LRG ELG FakeQSO FakeLRG SS SF
 type QSO QSO LRG ELG QSO LRG SS SF
@@ -21,8 +20,7 @@ goalpost 5 1 2 1 1 1 5 5
 lastpass 0 0 0 1 0 0 1 1 
 SS       0 0 0 0 0 0 1 0
 SF       0 0 0 0 0 0 0 1 
-pass_intervals 0 500 1000 2000 4000 8000
-
+pass_intervals 0 50 100 150 200
 
 Randomize false
 Pacman false
@@ -56,10 +54,10 @@ PlotSeenDens false
 PrintGalObs false
 
 
-MaxDec 20.
 MinDec -10.
-MinRa 100.
-MaxRa 150.
+MaxDec 10.
+MinRa 0.
+MaxRa 10.
 Verif false
 -------------------------------------------------
 -galFile : input file of objects

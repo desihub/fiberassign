@@ -8,6 +8,12 @@ from __future__ import print_function, division
 import sys, os
 from glob import glob
 
+import optparse
+
+parser = optparse.OptionParser(usage = "%prog [options]")
+parser.add_option("--skipcompile", action="store_true", help="Don't test compilation")
+opts, args = parser.parse_args()
+
 #-------------------------------------------------------------------------
 #- Basic setup of directories and environment
 if 'FIBERASSIGN' in os.environ:
@@ -32,29 +38,33 @@ if not os.path.exists(outdir):
     os.makedirs(outdir)
 
 #- dangerous
-for fitsfile in glob(outdir+'/*.fits'):
-    os.remove(fitsfile)
+def remove_output(outdir):
+    for fitsfile in glob(outdir+'/tile*.fits'):
+        os.remove(fitsfile)
     
 #-------------------------------------------------------------------------
 #- test compilation
-print('---------------------------------------------------------')
-print('-- Testing compiling')
-os.chdir(fiberassign_dir)
-for command in ('make clean', 'make', 'make install'):
-    err = os.system(command)
-    assert err==0, "FAILED: " + command
+if not opts.skipcompile:
+    print('---------------------------------------------------------')
+    print('-- Testing compiling')
+    os.chdir(fiberassign_dir)
+    for command in ('make clean', 'make', 'make install'):
+        err = os.system(command)
+        assert err==0, "FAILED: " + command
+
+#-------------------------------------------------------------------------
+#- write parameter file ("features file") with scratch output directory
+params = ''.join(open(testdir+'/template_fiberassign.txt').readlines())
+paramfile = os.path.join(testdir, 'params_fiberassign.txt')
+fx = open(paramfile, 'w')
+fx.write(params.format(outdir=outdir))
+fx.close()
 
 #-------------------------------------------------------------------------
 #- test fiberassign    
 print('---------------------------------------------------------')
 print('-- Testing fiberassign')
-params = ''.join(open(testdir+'/template_fiberassign.txt').readlines())
-tilefile = os.path.join(testdir, 'desi-tiles-test.par')
-paramfile = os.path.join(testdir, 'params_fiberassign.txt')
-fx = open(paramfile, 'w')
-fx.write(params.format(tilefile=tilefile, outdir=outdir))
-fx.close()
-
+remove_output(outdir)
 command = 'export OMP_NUM_THREADS=24; srun -n 1 fiberassign '+paramfile
 print(command)
 # err = os.system(command)
@@ -64,13 +74,7 @@ print(command)
 #- Test fiberassign_surveysim
 print('---------------------------------------------------------')
 print('-- Testing fiberassign_surveysim')
-params = ''.join(open(testdir+'/template_surveysim.txt').readlines())
-tilefile = os.path.join(testdir, 'desi-tiles-test.par')
-paramfile = os.path.join(testdir, 'params_surveysim.txt')
-fx = open(paramfile, 'w')
-fx.write(params.format(tilefile=tilefile, outdir=outdir))
-fx.close()
-
+remove_output(outdir)
 command = 'export OMP_NUM_THREADS=24; srun -n 1 fiberassign_surveysim '+paramfile
 print(command)
 # err = os.system(command)
