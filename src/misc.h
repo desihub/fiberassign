@@ -1,41 +1,41 @@
 #ifndef MISC_H
 #define MISC_H
 
-#include	<cstdlib>
-#include	<cmath>
-#include	<fstream>
-#include	<sstream>
-#include	<iostream>
-#include	<iomanip>
-#include	<string>
-#include	<vector>
-#include	<algorithm>
-#include	<exception>
-#include	<sys/time.h>
+#include    <cstdlib>
+#include    <cmath>
+#include    <fstream>
+#include    <sstream>
+#include    <iostream>
+#include    <iomanip>
+#include    <string>
+#include    <vector>
+#include    <algorithm>
+#include    <exception>
+#include    <sys/time.h>
 #include        <map>
 
 typedef std::string str;
 typedef std::map<str,int> Smap;
 // pair ------------------------------------------------------
 class pair {
-	public:
-	int f, s;
+    public:
+    int f, s;
 
-	pair();
-	pair(int a, int b);
-	void setnull();
-	bool isnull() const;
-	void print_pair() const;
+    pair();
+    pair(int a, int b);
+    void setnull();
+    bool isnull() const;
+    void print_pair() const;
 };
 
 class dpair {
-	public:
-	double f, s;
+    public:
+    double f, s;
 
-	dpair();
-	dpair(double a, double b);
-	void print() const;
-	bool isnull() const;
+    dpair();
+    dpair(double a, double b);
+    void print() const;
+    bool isnull() const;
 };
 dpair operator+(dpair const& a, dpair const& b); // Add coords of 2 points
 dpair operator-(dpair const& a, dpair const& b);
@@ -137,8 +137,8 @@ int max_row(const Dcube& C); // Max size of 2nd dim
 
 // Time ------------------------------------------------------
 struct Time { // Tstart, Tend (t.s & t.e)
-	double s, e;
-	Time();
+    double s, e;
+    Time();
 };
 double get_time(); // Time from the hardware
 double time_diff(Time t); // Difference e-s
