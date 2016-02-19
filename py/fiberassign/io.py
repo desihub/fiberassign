@@ -53,22 +53,7 @@ def read_rdzipn(filename):
     return ra, dec, z, itype, priority, numobs
 
 def rdzipn2mtl(rdzipn, mtl):
-    """
-    Convert a ...
-    """
     raise NotImplementedError
-# mtl = Table()
-# n = len(ra)
-# mtl.add_column(Column(np.arange(n), name='TARGETID'))
-# mtl.add_column(Column(np.zeros(n, dtype='S8'), name='BRICKNAME'))  #- TODO
-# mtl.add_column(Column(ra, name='RA'))
-# mtl.add_column(Column(ra, name='DEC'))
-# mtl.add_column(Column(numobs, name='NUMOBS'))
-# mtl.add_column(Column(priority, name='PRIORITY'))
-# mtl.add_column(Column(np.zeros(n, dtype='i4'), name='LASTPASS'))     #- TODO
-# mtl.add_column(Column(np.zeros(n, dtype='i8'), name='DESI_TARGET'))  #- TODO
-# mtl.add_column(Column(np.zeros(n, dtype='i8'), name='MWS_TARGET'))   #- TODO
-# mtl.add_column(Column(np.zeros(n, dtype='i8'), name='BGS_TARGET'))   #- TODO
 
 def write_mtl(filename, table):
     raise NotImplementedError
