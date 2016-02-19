@@ -32,21 +32,22 @@ class PP { // PP for plate parameters
     dpair coords(int k) const; // Coords of fiber k
 };
 
-// galaxy -------------------------------------------------
+// galaxy truth -------------------------------------------
 class galaxy {
     public:
-        long targetid;          // the unique identifier
-        long id;                // the true type when used with a secret file
-        double nhat[3];         // (ra,dec) -> unit vector for faster calc
-        double ra, dec, z;
-        Plist av_tfs;           // available tile/fibers
-        void print_av_tfs();
-        str kind(const Feat& F) const;
+        long targetid;      // the unique identifier
+        // long id;            // the true type when used with a secret file
+        int prio_pre;       // The priority before any observations
+        int prio_post;      // the priority after objtype is known
+        int numobs_pre;     // the initial guess for number of observations
+        int numobs_post;    // the total numobs needed after objtype is known
+        // double ra, dec;
+        // double z;
 };
 class Gals : public std::vector<struct galaxy> {};
 
-Gals read_galaxies(const Feat& F);
-Gals read_galaxies_ascii(const Feat& F);
+// Gals read_galaxies(const Feat& F);
+// Gals read_galaxies_ascii(const Feat& F);
 Gals read_Secretfile(str filename,const Feat& F);
 Gals read_Secretfile_ascii(str filename,const Feat& F);
 
@@ -68,11 +69,11 @@ class MTL : public std::vector<struct target> {
 };
 
 
-void make_MTL(const Gals& G, const Feat& F, Gals& Secret, MTL& M);
-void make_MTL_SS_SF(const Gals& G, MTL& Targ, MTL& SStars, MTL& SkyF,Gals& Secret, const Feat& F);
+// void make_MTL(const Gals& G, const Feat& F, Gals& Secret, MTL& M);
+// void make_MTL_SS_SF(const Gals& G, MTL& Targ, MTL& SStars, MTL& SkyF,Gals& Secret, const Feat& F);
 MTL read_MTLfile(str filename, const Feat& F, int SS, int SF);
-void make_Targ_Secret(const Gals& G, MTL& Targ, Gals& Secret, const Feat& F);
-void write_MTLfile(const Gals& Secret, const MTL& M, const Feat& F);
+// void make_Targ_Secret(const Gals& G, MTL& Targ, Gals& Secret, const Feat& F);
+// void write_MTLfile(const Gals& Secret, const MTL& M, const Feat& F);
 void write_MTL_SS_SFfile(const MTL& Targ, const MTL& SStars, const MTL& SkyF, const Gals& Secret, const Feat& F);
 void write_Targ_Secret(const MTL& Targ,  const Gals& Secret, const Feat& F);
 void assign_priority_class(MTL & M);

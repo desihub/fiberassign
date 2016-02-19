@@ -289,10 +289,10 @@ void update_plan_from_one_obs(int jused,const Gals& Secret, MTL& M, Plates&P, co
             //initially nobs_remain==goal
             if(M[g].once_obs==0){//first observation  otherwise should be ok
                 M[g].once_obs=1;//now observed
-                if(M[g].nobs_done>F.goalpost[Secret[g].id]){
+                if(M[g].nobs_done>Secret[g].numobs_post]){
                     to_update.push_back(g);}
                 else{
-                    M[g].nobs_remain=F.goalpost[Secret[g].id]-M[g].nobs_done;
+                    M[g].nobs_remain=Secret[g].numobs_post-M[g].nobs_done;
                 }
             }
         }
@@ -302,7 +302,7 @@ void update_plan_from_one_obs(int jused,const Gals& Secret, MTL& M, Plates&P, co
         int g = to_update[gg];
         Plist tfs = A.chosen_tfs(g,F,A.suborder[jused+1]); // Begin at j0+1, can't change assignment at j0 (already observed)
         
-        while (tfs.size()!=0 && M[g].nobs_done>F.goalpost[Secret[g].id]) {
+        while (tfs.size()!=0 && M[g].nobs_done>Secret[g].numobs_post) {
             int jp = tfs[0].f; int kp = tfs[0].s;
             
             std::cout.flush();

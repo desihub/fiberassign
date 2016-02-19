@@ -20,67 +20,6 @@
 
 // Galaxies ------------------------------------------------------------------
 
-// Read galaxies from binary file--format is ra, dec, z, priority and nobs
-// with ra/dec in degrees.
-//  Reads every n galaxies (to test more quickly)
-Gals read_galaxies(const Feat& F) {
-    Gals P;
-    const char* fname;
-    fname = F.galFile.c_str();
-    std::ifstream fs(fname,std::ios::binary);
-    if (!fs) {  // An error occurred opening the file.
-        std::cerr << "Unable to open file " << fname << std::endl;
-        myexit(1);
-    }
-    int Nobj;
-    fs.read((char *)&Nobj,sizeof(int));
-    if (fs.fail()) {std::cerr<<"Error reading "<<fname<<std::endl; myexit(1);}
-    std::vector<float> ra,dc,zz,pr;
-    std::vector<int>   id,no;
-    try {
-        ra.resize(Nobj);
-        dc.resize(Nobj);
-        zz.resize(Nobj);
-        id.resize(Nobj);
-        pr.resize(Nobj);
-        no.resize(Nobj);
-        P.reserve(Nobj);
-    } catch (std::exception& e) {myexception(e);}
-    fs.read((char *)&ra[0],Nobj*sizeof(float));
-    if (fs.fail()) {std::cerr<<"Error reading "<<fname<<std::endl;myexit(1);}
-    fs.read((char *)&dc[0],Nobj*sizeof(float));
-    // Could fseek over this, but maybe there will be a use for z someday.
-    if (fs.fail()) {std::cerr<<"Error reading "<<fname<<std::endl;myexit(1);}
-    fs.read((char *)&zz[0],Nobj*sizeof(float));
-    if (fs.fail()) {std::cerr<<"Error reading "<<fname<<std::endl;myexit(1);}
-    fs.read((char *)&id[0],Nobj*sizeof(int));
-    if (fs.fail()) {std::cerr<<"Error reading "<<fname<<std::endl;myexit(1);}
-    fs.read((char *)&pr[0],Nobj*sizeof(int));
-    if (fs.fail()) {std::cerr<<"Error reading "<<fname<<std::endl;myexit(1);}
-    fs.read((char *)&no[0],Nobj*sizeof(int));
-    if (fs.fail()) {std::cerr<<"Error reading "<<fname<<std::endl;myexit(1);}
-    fs.close();
-    // reduce time
-    for (int i=0; i<Nobj; i++) {
-        if (i%F.moduloGal == 0) {
-            double theta = (90 - (double)dc[i])*M_PI/180;
-            double phi   = ((double)ra[i]     )*M_PI/180;
-            struct galaxy Q;
-            Q.id         = id[i]-1; // -1 added
-            Q.nhat[0]    = sin(theta)*cos(phi);
-            Q.nhat[1]    = sin(theta)*sin(phi);
-            Q.nhat[2]    = cos(theta);
-            Q.ra = ra[i];
-            Q.dec = dc[i];
-            Q.z = zz[i];
-            //if(Q.dec<F.MaxDec && Q.dec>F.MinDec &&Q.ra<F.MaxRa && Q.ra>F.MinRa){
-                try{P.push_back(Q);}catch(std::exception& e) {myexception(e);}
-            //}
-        }
-    }
-    return P;
-}
-
 std::vector<int> count_galaxies(const Gals& G){
     std::vector <int> counter(10,0);
     for (int i=0;i<G.size();i++){
@@ -89,282 +28,12 @@ std::vector<int> count_galaxies(const Gals& G){
     return counter;
 }
 
-
-Gals read_galaxies_ascii(const Feat& F)
-// Read objects from ascii file--format is ra, dec, priority and nobs
-// with ra/dec in degrees.
-{
-    Gals P;
-    std::string buf;
-    const char* fname;
-    fname= F.galFile.c_str();
-    std::ifstream fs(fname);
-    if (!fs) {  // An error occurred opening the file.
-        std::cerr << "Unable to open file " << fname << std::endl;
-        myexit(1);
-    }
-    // Reserve some storage, since we expect we'll be reading quite a few
-    // lines from this file.
-    try {P.reserve(4000000);} catch (std::exception& e) {myexception(e);}
-    // Skip any leading lines beginning with #
-    getline(fs,buf);
-    while (fs.eof()==0 && buf[0]=='#') {
-        getline(fs,buf);
-    }
-    int oid=0;
-    while (fs.eof()==0) {
-        double ra,dec,redshift;  int nobs,priority;
-        std::istringstream(buf) >> ra >> dec >> redshift >> priority >> nobs ;
-        // use priority as proxy for id
-        if (ra<   0.) {ra += 360.;}
-        if (ra>=360.) {ra -= 360.;}
-        if (dec<=-90. || dec>=90.) {
-            std::cout << "DEC="<<dec<<" out of range reading "<<fname<<std::endl;
-            myexit(1);
-        }
-        double theta = (90.0 - dec)*M_PI/180.;
-        double phi   = (ra        )*M_PI/180.;
-        struct galaxy Q;
-        Q.nhat[0]    = cos(phi)*sin(theta);
-        Q.nhat[1]    = sin(phi)*sin(theta);
-        Q.nhat[2]    = cos(theta);
-        Q.id         = priority-1;//priority is proxy for id, starts at zero
-        //Q.priority   = priority;
-        //Q.nobs       = nobs;
-        Q.z = redshift;
-        Q.ra = ra;
-        Q.dec = dec;
-
-
-        if (oid%F.moduloGal == 0) {
-        try{P.push_back(Q);}catch(std::exception& e) {myexception(e);}
-        }
-
-        oid++;
-        getline(fs,buf);
-    }
-    fs.close();
-    return(P);
-}
 //to order galaxies by their priority
 bool galaxy_priority(target t1,target t2){return (t1.t_priority<t2.t_priority);}
-
-str galaxy::kind(const Feat& F) const {
-    return(F.kind[id]);
-}
 
 
 // targets -----------------------------------------------------------------------
 // derived from G, but includes priority and nobs_remain
-void make_MTL(const Gals& G, const Feat& F,  MTL& M){
-    
-    int Nobj=G.size();
-    struct target targ;
-    int special_count(0);
-    int stop_count(0);
-    for(int i=0;i<Nobj;++i){
-        targ.id=i;
-        targ.nhat[0]=G[i].nhat[0];
-        targ.nhat[1]=G[i].nhat[1];
-        targ.nhat[2]=G[i].nhat[2];
-        targ.ra=G[i].ra;
-        targ.dec=G[i].dec;
-        targ.t_priority=F.prio[G[i].id];
-        targ.nobs_remain=F.goal[G[i].id];//needs to be goal prior to knowledge!!
-        targ.nobs_done=0;//need to keep track of this, too
-        targ.once_obs=0;//changed only in update_plan
-        targ.SS=F.SS[G[i].id];
-        targ.SF=F.SF[G[i].id];
-
-        targ.lastpass=F.lastpass[G[i].id];
-        //make list of priorities
-        if(targ.dec<F.MaxDec && targ.dec>F.MinDec &&targ.ra<F.MaxRa && targ.ra>F.MinRa){
-            M.push_back(targ);
-
-        }
-        int g=M.size()-1;
-
-    }
-    
-}
-void make_MTL_SS_SF(const Gals& G, MTL& Targ, MTL& SStars, MTL& SkyF, Gals& Secret, const Feat& F){
-    // Targ contains only galaxy targets
-    // SStars contains only standard stars
-    // SkyF contains only sky fibers
-    int Nobj=G.size();
-    struct target targ;
-    int special_count(0);
-    int stop_count(0);
-    for(int i=0;i<Nobj;++i){
-        targ.id=i;
-        targ.nhat[0]=G[i].nhat[0];
-        targ.nhat[1]=G[i].nhat[1];
-        targ.nhat[2]=G[i].nhat[2];
-        targ.ra=G[i].ra;
-        targ.dec=G[i].dec;
-        targ.t_priority=F.prio[G[i].id];
-        targ.nobs_remain=F.goal[G[i].id];//needs to be goal prior to knowledge!!
-        targ.nobs_done=0;//need to keep track of this, too
-        targ.once_obs=0;//changed only in update_plan
-        targ.SS=F.SS[G[i].id];
-        targ.SF=F.SF[G[i].id];
-        
-        targ.lastpass=F.lastpass[G[i].id];
-        //make list of priorities
-        if(targ.dec<F.MaxDec && targ.dec>F.MinDec &&targ.ra<F.MaxRa && targ.ra>F.MinRa){
-        
-            if(targ.SS)SStars.push_back(targ);
-            else if(targ.SF)SkyF.push_back(targ);
-            else {
-                Targ.push_back(targ);
-                Secret.push_back(G[i]);
-            }
-        }
-    }
-    
-}
-
-void make_Targ_Secret(const Gals& G, MTL& Targ, Gals& Secret, const Feat& F){
-    // SkyF contains only sky fibers
-    // G should not contain SS or SF
-    int Nobj=G.size();
-    struct target targ;
-    int special_count(0);
-    int stop_count(0);
-    for(int i=0;i<Nobj;++i){
-        targ.id=i;
-        targ.nhat[0]=G[i].nhat[0];
-        targ.nhat[1]=G[i].nhat[1];
-        targ.nhat[2]=G[i].nhat[2];
-        targ.ra=G[i].ra;
-        targ.dec=G[i].dec;
-        targ.t_priority=F.prio[G[i].id];
-        targ.nobs_remain=F.goal[G[i].id];//needs to be goal prior to knowledge!!
-        targ.nobs_done=0;//need to keep track of this, too
-        targ.once_obs=0;//changed only in update_plan
-        targ.SS=0;
-        targ.SF=0;
-        
-        targ.lastpass=F.lastpass[G[i].id];
-        //make list of priorities
-        
-                Targ.push_back(targ);
-                Secret.push_back(G[i]);
-    }
-    
-}
-
-/*
-void write_MTLfile(const Gals& Secret, const MTL& M,const Feat& F){
-    FILE * FA;
-    str sa=F.MTLfile;
-    FA = fopen(sa.c_str(),"w");
-
-    for (int i=0;i<M.size();++i){
-        fprintf(FA," %d MartinsMocks %f  %f  %d  %d %d \n",i,M[i].ra,M[i].dec,M[i].nobs_remain,M[i].t_priority,M[i].lastpass);
-    }
-    fclose(FA);
-}
-*/
-void write_MTL_SS_SFfile(const MTL& Targ, const MTL& SStars,const MTL& SkyF,const Gals& Secret, const Feat& F){
-    FILE * FA;
-    str sa=F.Targfile;
-    FA = fopen(sa.c_str(),"w");
-    //str source="MartinsMocks";
-    for (int i=0;i<Targ.size();++i){
-        fprintf(FA," %d Target %f  %f  %d  %d %d \n",Targ[i].id,Targ[i].ra,Targ[i].dec,Targ[i].nobs_remain,Targ[i].t_priority,Targ[i].lastpass);
-    }
-    fclose(FA);
-    FILE * FB;
-    str sb=F.SStarsfile;
-    FB = fopen(sb.c_str(),"w");
-    //str source="MartinsMocks";
-    for (int i=0;i<SStars.size();++i){
-        fprintf(FB," %d SStars %f  %f  %d  %d %d \n",SStars[i].id,SStars[i].ra,SStars[i].dec,SStars[i].nobs_remain,SStars[i].t_priority,SStars[i].lastpass);
-    }
-    fclose(FB);
-    FILE * FC;
-    str sc=F.SkyFfile;
-    FC = fopen(sc.c_str(),"w");
-    //str source="MartinsMocks";
-    for (int i=0;i<SkyF.size();++i){
-        fprintf(FC," %d SkyF %f  %f  %d  %d %d \n",SkyF[i].id,SkyF[i].ra,SkyF[i].dec,SkyF[i].nobs_remain,SkyF[i].t_priority,SkyF[i].lastpass);
-    }
-    fclose(FC);
-    FILE * FD;
-    str sd=F.Secretfile;
-    FD = fopen(sd.c_str(),"w");
-    for (int i=0;i<Secret.size();++i){
-        fprintf(FD," %d Secret %f  %f  %f  %d   \n",      i,Secret[i].ra,Secret[i].dec,Secret[i].z,Secret[i].id);
-    }
-    fclose(FD);
-
-}
-void write_Targ_Secret(const MTL& Targ, const Gals& Secret, const Feat& F){
-    FILE * FA;
-    str sa=F.Targfile;
-    FA = fopen(sa.c_str(),"w");
-    //str source="MartinsMocks";
-    for (int i=0;i<Targ.size();++i){
-        fprintf(FA," %d Target %f  %f  %d  %d %d \n",Targ[i].id,Targ[i].ra,Targ[i].dec,Targ[i].nobs_remain,Targ[i].t_priority,Targ[i].lastpass);
-    }
-    fclose(FA);
-    
-    FILE * FD;
-    str sd=F.Secretfile;
-    FD = fopen(sd.c_str(),"w");
-    for (int i=0;i<Secret.size();++i){
-        fprintf(FD," %d Secret %f  %f  %f %d   \n",      i,Secret[i].ra,Secret[i].dec,Secret[i].z,Secret[i].id);
-    }
-    fclose(FD);
-    
-}
-
-Gals read_Secretfile_ascii(str readfile, const Feat&F){
-    str s=readfile;
-    Gals Secret;
-    std::string buf;
-    const char* fname;
-    fname= s.c_str();
-    std::ifstream fs(fname);
-    if (!fs) {  // An error occurred opening the file.
-        std::cerr << "Unable to open MTLfile " << fname << std::endl;
-        myexit(1);
-    }
-    // Reserve some storage, since we expect we'll be reading quite a few
-    // lines from this file.
-    try {Secret.reserve(4000000);} catch (std::exception& e) {myexception(e);}
-    // Skip any leading lines beginning with #
-    getline(fs,buf);
-    while (fs.eof()==0 && buf[0]=='#') {
-        getline(fs,buf);
-    }
-    while (fs.eof()==0) {
-        double ra,dec,z;
-        int id, i;
-        str xname;
-        std::istringstream(buf)>> i>>xname>> ra >> dec>>z>> id ;
-
-        if (ra<   0.) {ra += 360.;}
-        if (ra>=360.) {ra -= 360.;}
-        if (dec<=-90. || dec>=90.) {
-            std::cout << "DEC="<<dec<<" out of range reading "<<fname<<std::endl;
-            myexit(1);
-        }        
-        if(F.MinRa <= ra && ra <= F.MaxRa &&
-           F.MinDec <= dec && dec <= F.MaxDec ) {
-                struct galaxy Q;
-                Q.ra = ra;
-                Q.dec = dec;
-                Q.z=z;
-                Q.id = id;
-                Secret.push_back(Q);
-        }
-        getline(fs,buf);
-    }
-    return Secret;
-}
-
 
 Gals read_Secretfile(str readfile, const Feat&F){
     str s=readfile;
@@ -381,7 +50,8 @@ Gals read_Secretfile(str readfile, const Feat&F){
     long nrows;
     int ncols;
     long *targetid;
-    int *targettype;
+    int *prio_pre, *prio_post;
+    int *numobs_pre, *numobs_post;
     double *redshift;
     int colnum;
 
@@ -421,11 +91,22 @@ Gals read_Secretfile(str readfile, const Feat&F){
       fprintf(stderr, "problem with redshift allocation\n");
       myexit(1);
     } 
-    if(!(targettype= (int *)malloc(nrows * sizeof(int)))){
-      fprintf(stderr, "problem with targettype allocation\n");
+    if(!(prio_pre= (int *)malloc(nrows * sizeof(int)))){
+      fprintf(stderr, "problem with prio_pre allocation\n");
       myexit(1);
     }
-    
+    if(!(prio_post= (int *)malloc(nrows * sizeof(int)))){
+      fprintf(stderr, "problem with prio_post allocation\n");
+      myexit(1);
+    }
+    if(!(numobs_pre= (int *)malloc(nrows * sizeof(int)))){
+      fprintf(stderr, "problem with numobs_pre allocation\n");
+      myexit(1);
+    }
+    if(!(numobs_post= (int *)malloc(nrows * sizeof(int)))){
+      fprintf(stderr, "problem with numobs_post allocation\n");
+      myexit(1);
+    }
     
     /* find which column contains the TARGETID values */
     if ( fits_get_colnum(fptr, CASEINSEN, (char *)"TARGETID", &colnum, &status) ){
@@ -453,13 +134,13 @@ Gals read_Secretfile(str readfile, const Feat&F){
       myexit(status);
     }
         
-    //----- TYPE = integer true target type
-    if ( fits_get_colnum(fptr, CASEINSEN, (char *)"TYPE", &colnum, &status) ){
+    //----- PRIO_PRE = integer priority before any observations
+    if ( fits_get_colnum(fptr, CASEINSEN, (char *)"PRIO_PRE", &colnum, &status) ){
       fprintf(stderr, "error\n");
       myexit(status);
     }    
     if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
-                      &nullval, targettype, &anynulls, &status) ){
+                      &nullval, prio_pre, &anynulls, &status) ){
       fprintf(stderr, "error\n");
       myexit(status);
     }
@@ -467,8 +148,12 @@ Gals read_Secretfile(str readfile, const Feat&F){
     for(ii=0;ii<nrows;ii++){
       struct galaxy Q;      
       Q.targetid = targetid[ii];
-      Q.id = targettype[ii];  // alas, 'id' is the type, not the targetid
-      Q.z = redshift[ii];
+      Q.prio_pre = prio_pre[ii];
+      Q.prio_post = prio_post[ii];
+      Q.numobs_pre = numobs_pre[ii];
+      Q.numobs_post = numobs_post[ii];
+      // Q.id = targettype[ii];  // alas, 'id' is the type, not the targetid
+      // Q.z = redshift[ii];
       
       try{Secret.push_back(Q);}catch(std::exception& e) {myexception(e);}
     }
