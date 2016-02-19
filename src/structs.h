@@ -37,11 +37,11 @@ class galaxy {
     public:
         long targetid;          // the unique identifier
         long id;                // the true type when used with a secret file
-        // double nhat[3];         // (ra,dec) -> unit vector for faster calc
+        double nhat[3];         // (ra,dec) -> unit vector for faster calc
         double ra, dec, z;
-        // Plist av_tfs;           // available tile/fibers
-        // void print_av_tfs();
-        // str kind(const Feat& F) const;
+        Plist av_tfs;           // available tile/fibers
+        void print_av_tfs();
+        str kind(const Feat& F) const;
 };
 class Gals : public std::vector<struct galaxy> {};
 
