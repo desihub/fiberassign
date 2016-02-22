@@ -1,8 +1,8 @@
 #!/bin/bash -l
 
-#SBATCH -p regular
+#SBATCH -p debug
 #SBATCH -N 1
-#SBATCH -t 1:00:00
+#SBATCH -t 0:30:00
 
 cd $SLURM_SUBMIT_DIR
 
@@ -15,4 +15,4 @@ fi
 
 echo "# Running assign"
 
-srun  -N 1  bin/fiberassign_surveysim jaime_fa_surveysim_features.txt
+srun  -N 1  bin/fiberassign_surveysim fa_surveysim_features.txt
