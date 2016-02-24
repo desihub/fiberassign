@@ -36,13 +36,9 @@ class PP { // PP for plate parameters
 class galaxy {
     public:
         long targetid;      // the unique identifier
-        // long id;            // the true type when used with a secret file
-        int prio_pre;       // The priority before any observations
-        int prio_post;      // the priority after objtype is known
-        int numobs_pre;     // the initial guess for number of observations
-        int numobs_post;    // the total numobs needed after objtype is known
+        long category;      // the true type when used with a secret file
+        double z;
         // double ra, dec;
-        // double z;
 };
 class Gals : public std::vector<struct galaxy> {};
 

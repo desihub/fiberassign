@@ -23,7 +23,7 @@
 std::vector<int> count_galaxies(const Gals& G){
     std::vector <int> counter(10,0);
     for (int i=0;i<G.size();i++){
-    counter[G[i].id]+=1;
+    counter[G[i].category]+=1;
     }
     return counter;
 }
@@ -50,8 +50,7 @@ Gals read_Secretfile(str readfile, const Feat&F){
     long nrows;
     int ncols;
     long *targetid;
-    int *prio_pre, *prio_post;
-    int *numobs_pre, *numobs_post;
+    int *category;
     double *redshift;
     int colnum;
 
@@ -87,30 +86,18 @@ Gals read_Secretfile(str readfile, const Feat&F){
       fprintf(stderr, "problem with targetid allocation\n");
       myexit(1);
     }
+    if(!(category= (int *)malloc(nrows * sizeof(int)))){
+      fprintf(stderr, "problem with category allocation\n");
+      myexit(1);
+    } 
     if(!(redshift= (double *)malloc(nrows * sizeof(double)))){
       fprintf(stderr, "problem with redshift allocation\n");
       myexit(1);
     } 
-    if(!(prio_pre= (int *)malloc(nrows * sizeof(int)))){
-      fprintf(stderr, "problem with prio_pre allocation\n");
-      myexit(1);
-    }
-    if(!(prio_post= (int *)malloc(nrows * sizeof(int)))){
-      fprintf(stderr, "problem with prio_post allocation\n");
-      myexit(1);
-    }
-    if(!(numobs_pre= (int *)malloc(nrows * sizeof(int)))){
-      fprintf(stderr, "problem with numobs_pre allocation\n");
-      myexit(1);
-    }
-    if(!(numobs_post= (int *)malloc(nrows * sizeof(int)))){
-      fprintf(stderr, "problem with numobs_post allocation\n");
-      myexit(1);
-    }
     
-    /* find which column contains the TARGETID values */
+    // ----- TARGETID
     if ( fits_get_colnum(fptr, CASEINSEN, (char *)"TARGETID", &colnum, &status) ){
-      fprintf(stderr, "error\n");
+      fprintf(stderr, "error finding TARGETID column\n");
       myexit(status);
     }      
     long frow, felem, nullval;
@@ -119,41 +106,37 @@ Gals read_Secretfile(str readfile, const Feat&F){
     nullval = -99.;
     if (fits_read_col(fptr, TLONG, colnum, frow, felem, nrows, 
                       &nullval, targetid, &anynulls, &status) ){
-      fprintf(stderr, "error\n");
+      fprintf(stderr, "error reading TARGETID column\n");
+      myexit(status);
+    }
+
+    //----- CATEGORY
+    if ( fits_get_colnum(fptr, CASEINSEN, (char *)"CATEGORY", &colnum, &status) ){
+      fprintf(stderr, "error finding CATEGORY column\n");
+      myexit(status);
+    }
+    if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
+              &nullval, category, &anynulls, &status) ){
+      fprintf(stderr, "error reading CATEGORY column\n");
       myexit(status);
     }
     
-    //----- Z
-    if ( fits_get_colnum(fptr, CASEINSEN, (char *)"Z", &colnum, &status) ){
-      fprintf(stderr, "error\n");
+    //----- TRUEZ
+    if ( fits_get_colnum(fptr, CASEINSEN, (char *)"TRUEZ", &colnum, &status) ){
+      fprintf(stderr, "error finding TRUEZ column\n");
       myexit(status);
     }
     if (fits_read_col(fptr, TDOUBLE, colnum, frow, felem, nrows, 
               &nullval, redshift, &anynulls, &status) ){
-      fprintf(stderr, "error\n");
-      myexit(status);
-    }
-        
-    //----- PRIO_PRE = integer priority before any observations
-    if ( fits_get_colnum(fptr, CASEINSEN, (char *)"PRIO_PRE", &colnum, &status) ){
-      fprintf(stderr, "error\n");
-      myexit(status);
-    }    
-    if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
-                      &nullval, prio_pre, &anynulls, &status) ){
-      fprintf(stderr, "error\n");
+      fprintf(stderr, "error reading TRUEZ column\n");
       myexit(status);
     }
     
     for(ii=0;ii<nrows;ii++){
       struct galaxy Q;      
       Q.targetid = targetid[ii];
-      Q.prio_pre = prio_pre[ii];
-      Q.prio_post = prio_post[ii];
-      Q.numobs_pre = numobs_pre[ii];
-      Q.numobs_post = numobs_post[ii];
-      // Q.id = targettype[ii];  // alas, 'id' is the type, not the targetid
-      // Q.z = redshift[ii];
+      Q.category = category[ii];
+      Q.z = redshift[ii];
       
       try{Secret.push_back(Q);}catch(std::exception& e) {myexception(e);}
     }
@@ -204,9 +187,9 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
       // printf("%d columns x %ld rows\n", ncols, nrows);
       printf("HDU #%d  ", hdupos);
       if (hdutype == ASCII_TBL){
-          printf("ASCII Table:  ");
+          printf("ASCII Table:\n");
       }else{
-          printf("Binary Table: \n ");      
+          printf("Binary Table:\n");      
       }
 
       fflush(stdout);
@@ -238,7 +221,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
      
       /* find which column contains the TARGETID values */
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"TARGETID", &colnum, &status) ){
-        fprintf(stderr, "error\n");
+        fprintf(stderr, "error finding TARGETID column\n");
         myexit(status);
       }
       
@@ -248,62 +231,74 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
       nullval = -99.;
       if (fits_read_col(fptr, TLONG, colnum, frow, felem, nrows, 
                         &nullval, targetid, &anynulls, &status) ){
-        fprintf(stderr, "error\n");
+        fprintf(stderr, "error reading TARGETID column\n");
         myexit(status);
       }
       
       //----- RA
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"RA", &colnum, &status) ){
-        fprintf(stderr, "error\n");
+        fprintf(stderr, "error finding RA column\n");
         myexit(status);
       }
       if (fits_read_col(fptr, TDOUBLE, colnum, frow, felem, nrows, 
                         &nullval, ra, &anynulls, &status) ){
-        fprintf(stderr, "error\n");
+        fprintf(stderr, "error reading RA column\n");
         myexit(status);
       }
       
       //----- DEC
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"DEC", &colnum, &status) ){
-        fprintf(stderr, "error\n");
+        fprintf(stderr, "error finding DEC column\n");
         myexit(status);
       }
       if (fits_read_col(fptr, TDOUBLE, colnum, frow, felem, nrows, 
         &nullval, dec, &anynulls, &status) ){
-        fprintf(stderr, "error\n");
+        fprintf(stderr, "error reading DEC column\n");
         myexit(status);
       }
 
-      //----- NUMOBS
-      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"NUMOBS", &colnum, &status) ){
-        fprintf(stderr, "error\n");
-        myexit(status);
-      }
-      if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
+      // StdStar and Sky fiber inputs don't have NUMOBS_MORE, PRIORITY, or LASTPASS
+
+      //----- NUMOBS_MORE
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"NUMOBS_MORE", &colnum, &status) ){
+        // fprintf(stderr, "error finding NUMOBS_MORE column\n");
+        // myexit(status);
+          std::cout << "NUMOBS_MORE not found ... setting to 0" << std::endl;
+          for(int i=0; i<nrows; i++) {
+              numobs[i] = 0;
+          }
+      } else if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
                         &nullval, numobs, &anynulls, &status) ){
-        fprintf(stderr, "error\n");
+        fprintf(stderr, "error reading NUMOBS_MORE column\n");
         myexit(status);
       }
 
       //----- PRIORITY
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"PRIORITY", &colnum, &status) ){
-        fprintf(stderr, "error\n");
-        myexit(status);
-      }
-      if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
+        // fprintf(stderr, "error finding PRIORITY column\n");
+        // myexit(status);
+        std::cout << "PRIORITY not found ... setting to 0" << std::endl;
+        for(int i=0; i<nrows; i++) {
+            priority[i] = 0;
+        }
+      } else if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
                         &nullval, priority, &anynulls, &status) ){
-        fprintf(stderr, "error\n");
+        fprintf(stderr, "error reading PRIORITY column\n");
         myexit(status);
       }
 
       //----- LASTPASS
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"LASTPASS", &colnum, &status) ){
-        fprintf(stderr, "error\n");
-        myexit(status);
-      }
-      if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
+        // fprintf(stderr, "error finding LASTPASS column\n");
+        // myexit(status);
+        std::cout << "LASTPASS not found ... setting to 0" << std::endl;
+        for(int i=0; i<nrows; i++) {
+            lastpass[i] = 0;
+        }
+        
+      } else if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
                         &nullval, lastpass, &anynulls, &status) ){
-        fprintf(stderr, "error\n");
+        fprintf(stderr, "error reading LASTPASS column\n");
         myexit(status);
       }
       

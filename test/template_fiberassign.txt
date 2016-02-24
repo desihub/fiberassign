@@ -1,7 +1,7 @@
-Targfile /project/projectdirs/desi/mocks/preliminary/mtl/targets_mtl_lite.fits
-SStarsfile /project/projectdirs/desi/mocks/preliminary/mtl/stdstar_mtl_lite.fits
-SkyFfile  /project/projectdirs/desi/mocks/preliminary/mtl/sky_mtl_lite.fits
-Secretfile /project/projectdirs/desi/mocks/preliminary/mtl/truth_mtl_lite.fits
+Targfile /project/projectdirs/desi/mocks/preliminary/mtl/test/mtl.fits
+SStarsfile /project/projectdirs/desi/mocks/preliminary/mtl/test/stdstars.fits
+SkyFfile  /project/projectdirs/desi/mocks/preliminary/mtl/test/sky.fits
+Secretfile /project/projectdirs/desi/mocks/preliminary/mtl/test/truth.fits
 
 tileFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/footprint/desi-tiles.par
 fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
@@ -13,8 +13,8 @@ diagnose true
 
 kind QSOLy-a QSOTracer LRG ELG FakeQSO FakeLRG SS SF
 type QSO QSO LRG ELG QSO LRG SS SF
-prio 2000 2000 3000 4000 2000 3000 9900 9800
-priopost 0 2000 3000 4000 2000 3000 9900 9800
+prio 3400 3400 3200 3000 3400 3200 0 0
+priopost 3500 0 3200 0 0 0 0 0
 goal 5 5 2 1 5 2 5 5
 goalpost 5 1 2 1 1 1 5 5
 lastpass 0 0 0 1 0 0 1 1 
