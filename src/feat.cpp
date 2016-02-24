@@ -73,7 +73,7 @@ void Feat::readInputFile(const char file[]) {
         fIn.getline(buf,Mc);
         int n = 0; // a for-loop index
         Slist tok = s2vec(buf,delimiter);
-        if (2<=tok.size()) {
+        if (2<=tok.size() && tok[0][0] != '#') {
             if (tok[0]=="galFile") galFile = tok[1];
             if (tok[0]=="tileFile") tileFile= tok[1];
             if (tok[0]=="fibFile") fibFile= tok[1];

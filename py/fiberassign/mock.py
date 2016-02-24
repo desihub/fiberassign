@@ -82,9 +82,8 @@ def rdzipn2targets(infile):
 
     #- Misc other
     targetid = np.random.randint(2**62, size=n)
-    lastpass = elg.astype('i4')
-    brickname = np.zeros(n, dtype='S8')
-    ### brickname = desispec.brick.brickname(ra, dec)
+    ### brickname = np.zeros(n, dtype='S8')
+    brickname = desispec.brick.brickname(ra, dec)
     subpriority = np.random.uniform(0, 1, size=n)
 
     targets = Table()
@@ -99,9 +98,9 @@ def rdzipn2targets(infile):
 
     truth = Table()
     truth['TARGETID'] = targetid
-    # truth['BRICKNAME'] = brickname
-    # truth['RA'] = ra
-    # truth['DEC'] = dec
+    truth['BRICKNAME'] = brickname
+    truth['RA'] = ra
+    truth['DEC'] = dec
     truth['TRUEZ'] = z
     truth['TRUETYPE'] = truetype
     truth['CATEGORY'] = itype

@@ -257,7 +257,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
         myexit(status);
       }
 
-      // StdStar and Sky fiber inputs don't have NUMOBS_MORE, PRIORITY, or LASTPASS
+      // StdStar and Sky fiber inputs don't have NUMOBS_MORE, PRIORITY, or GRAYLAYER
 
       //----- NUMOBS_MORE
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"NUMOBS_MORE", &colnum, &status) ){
@@ -288,17 +288,17 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
       }
 
       //----- LASTPASS
-      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"LASTPASS", &colnum, &status) ){
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"GRAYLAYER", &colnum, &status) ){
         // fprintf(stderr, "error finding LASTPASS column\n");
         // myexit(status);
-        std::cout << "LASTPASS not found ... setting to 0" << std::endl;
+        std::cout << "GRAYLAYER not found ... setting to 0" << std::endl;
         for(int i=0; i<nrows; i++) {
             lastpass[i] = 0;
         }
         
       } else if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
                         &nullval, lastpass, &anynulls, &status) ){
-        fprintf(stderr, "error reading LASTPASS column\n");
+        fprintf(stderr, "error reading GRAYLAYER column\n");
         myexit(status);
       }
       
