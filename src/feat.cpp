@@ -17,8 +17,12 @@
 #include        "feat.h"
 // Features ------------------------------------------------------------------
 Feat::Feat() { 
-    Count = 0; 
-
+    Count = 0;
+    Categories = 0;
+    MinDec = -90.0;
+    MaxDec = 90.0;
+    MinRa = 0.0;
+    MaxRa = 360.0;
 }
 
 int Feat::id(str s) const {
@@ -73,7 +77,7 @@ void Feat::readInputFile(const char file[]) {
         fIn.getline(buf,Mc);
         int n = 0; // a for-loop index
         Slist tok = s2vec(buf,delimiter);
-        if (2<=tok.size()) {
+        if (2<=tok.size() && tok[0][0] != '#') {
             if (tok[0]=="galFile") galFile = tok[1];
             if (tok[0]=="tileFile") tileFile= tok[1];
             if (tok[0]=="fibFile") fibFile= tok[1];
