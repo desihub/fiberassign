@@ -65,6 +65,9 @@ void Feat::readInputFile(const char file[]) {
     const int Mc = 512; // Max chars per line
     char delimiter = ' ';
 
+    // no truth categories unless it actually finds the "kind" token
+    Categories = 0;
+
     std::ifstream fIn;
     fIn.open(file); // open a file
     if (!fIn.good()) myexit(1); // Not found
