@@ -17,8 +17,12 @@
 #include        "feat.h"
 // Features ------------------------------------------------------------------
 Feat::Feat() { 
-    Count = 0; 
-
+    Count = 0;
+    Categories = 0;
+    MinDec = -90.0;
+    MaxDec = 90.0;
+    MinRa = 0.0;
+    MaxRa = 360.0;
 }
 
 int Feat::id(str s) const {
@@ -64,9 +68,6 @@ bool Feat::iftype(int kind, str type) const {
 void Feat::readInputFile(const char file[]) {
     const int Mc = 512; // Max chars per line
     char delimiter = ' ';
-
-    // no truth categories unless it actually finds the "kind" token
-    Categories = 0;
 
     std::ifstream fIn;
     fIn.open(file); // open a file
