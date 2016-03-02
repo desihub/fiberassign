@@ -1,0 +1,303 @@
+qRunning the Fiber Assignment Code
+
+
+There are two primary modes for running fiber assignment: 
+
+fiberassign:  This is the stripped down version of fiber assignment, which will be appropriate for the real operations.  It takes input files for targets, standard stars, and sky fibers and makes assignments for all the tiles it is given without updating to reflect what is learned.  Thus every potential QSO target will be visited five times, if possible.  Therefore, only the beginning part of the assignment is sensible.  The proper usage of fiberassign is to combine it with other code that will produce updated target files repeatedly. 
+
+fiberassign_surveysim: This simulates a full survey and evaluates the efficiency of the fiber assignment algorithms.  The user can supply the target galaxies, including the "truth" for each target.  For example, a QSO target may turn out to be a Ly-a forest QSO, a target QSO (z<2.1), or a fake.  The user specifies intervals at which the information on all targets observed to that time are updated.  Thus a true QSO may require additional observations.  A tracer QSO that has been observed will not require any future observations, etc.  
+
+fiberassign:
+
+The script do_fa is
+
+************
+#!/bin/bash -l
+
+#SBATCH -p debug
+#SBATCH -N 1
+#SBATCH -t 0:29:59
+
+cd $SLURM_SUBMIT_DIR
+if [ $NERSC_HOST == "cori" ]
+then export OMP_NUM_THREADS=32
+fi
+if [ $NERSC_HOST == "edison" ]
+then export OMP_NUM_THREADS=24
+fi
+echo "# Running assign"
+
+srun  -N 1  bin/fiberassign fa_features.txt
+
+***************
+This script works on both cori and edison. 
+
+
+
+The file fa_features.txt specifies all the input files and many parameters.  The beginning of pipeline_features.txt is
+
+***************************
+galFile /project/projectdirs/desi/mocks/preliminary/objects_ss_sf0.rdzipn
+tileFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/footprint/desi-tiles.par
+fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
+outDir /global/cscratch1/sd/rncahn/fa_output/011216/
+SStarsfile /project/projectdirs/desi/mocks/preliminary/SStarsfile.txt
+SkyFfile  /project/projectdirs/desi/mocks/preliminary/SkyFfile.txt
+
+PrintAscii false
+PrintFits true
+Targfile /project/projectdirs/desi/mocks/preliminary/Targfile.txt
+****************************
+
+
+galFile isn't used.  
+tileFile gives the complete list of tiles (plates) to be used.
+fibFile gives the locations of the 5000 fibers in the focal plane
+outDir is where output may be written 
+SStarsfile gives the RA and DEC of standard stars
+SkyFfile gives the RA and DEC of sky fibers
+Targfile give the RA and DEC of target galaxies
+
+SStarsfile and SkyFfile are provided, but it is up to you to provide Targfile.  
+outDir has to be provided by the user.  Be careful to avoid overwriting files.
+
+Lines in Targfile look like
+
+ 0 Target 218.992416  -6.171044  5  2000 0 
+ 1 Target 219.079041  -2.998847  5  2000 0 
+
+Column 0 is the unique identifier of the target
+Column 1 is a string, which is not used
+Column 3 is the RA
+Column 4 is the DEC
+Column 5 is the number of observations sought (5 here means that these are unobserved QSO targets)
+Column 6 is the priority (at present, low numbers are high priority and 2000 is low, others are 3000 etc.)
+Column 7 is whether this target is allowed in the grey-time pass
+
+
+The tileFile looks like
+
+******************************
+typedef struct {
+ int tileid;
+ double ra;
+ double dec;
+ int pass;
+ int in_desi;
+ float ebv_med;
+ float airmass;
+ float exposefac;
+} STRUCT1;
+
+STRUCT1 1 304.11000 16.570000 1 0 0.185880 1.06788 3.36375
+STRUCT1 2 306.47000 15.110000 1 0 0.133772 1.07624 2.47382
+STRUCT1 3 308.79000 13.630000 1 0 0.0887509 1.08558 1.90149
+...
+*******************************
+
+The passes here are numbered 1 to 5.  This file covers the whole sky five times with 28810 tiles.  
+The content of the files is described in the typedef statement.
+
+
+
+To run fiberassign on cori, from the diretory fiberassign (from github)
+
+fiberassign> sbatch ./script/do_fa
+
+If fa_features.txt  has 
+
+PrintAscii  true
+
+or 
+
+PrintFits true
+
+output is written to outDir
+
+There is a file written for each plate that has some occupied fibers.
+A typical line of ascii output is
+
+1 6 21536942 54998933 60269791 11209247 61356806 42216823 54998933 333.757050 19.797127 298.222340 19.509874
+
+1 is the number of the fiber (0-4999)
+6 is the number of galaxies accessible to this fiber on this plate
+The next six integers, in this case, are the id numbers of the galaxies accessible
+The next integer is the galaxy to which the fiber is assigned.
+The next two floats are the RA and DEC
+The last two floats are the (approximate) x and y positions, in mm, of the fiber in the focal plane.
+
+
+
+
+Full simulation of fiber assignment:
+
+The script do_fa_surveysim is
+
+****************************
+#!/bin/bash -l
+
+#SBATCH -p debug
+#SBATCH -N 1
+#SBATCH -t 0:30:00
+
+cd $SLURM_SUBMIT_DIR 
+
+if [ $NERSC_HOST == "cori" ]
+then export OMP_NUM_THREADS=32
+fi
+if [ $NERSC_HOST == "edison" ]
+then export OMP_NUM_THREADS=24
+fi
+
+echo "# Running assign"
+
+srun  -N 1  bin/fiberassign_surveysim fa_surveysim_features.txt
+*******************************
+
+The file fa_features.txt begins
+
+******************************
+
+galFile /project/projectdirs/desi/mocks/preliminary/objects_ss_sf0.rdzipn
+tileFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/footprint/desi-tiles.par
+fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
+outDir /project/projectdirs/desi/users/rncahn/fa_output/
+PrintAscii false
+PrintFits false
+Targfile /project/projectdirs/desi/mocks/preliminary/Targfile.txt
+SStarsfile /project/projectdirs/desi/mocks/preliminary/SStarsfile.txt
+SkyFfile /project/projectdirs/desi/mocks/preliminary/SkyFfile.txt
+Secretfile /project/projectdirs/desi/mocks/preliminary/Secretfile.txt
+diagnose true
+
+The output file, outDir, needs to be changed to a file to which the user has access.  The files are similar to those for pipeline.
+The Secret file contains the truth about the targets, while the Targfile does not.
+For the full simulation, the user provides the Targfile and Secretfile while the standard stars and sky fiber files are universal.
+
+*************************************
+
+
+The executable split_targ_secret generates the Targfile and Secretfile from an input file, galFile.  For example the script do_bright_fa_surveysim
+***************************
+#!/bin/bash -l
+
+#SBATCH  -p debug
+#SBATCH -N 1
+#SBATCH -t 0:29:00
+
+cd $SLURM_SUBMIT_DIR
+
+if [ $NERSC_HOST == "cori" ]
+then export OMP_NUM_THREADS=32
+fi
+if [ $NERSC_HOST == "edison" ]
+then export OMP_NUM_THREADS=24
+fi
+
+echo "# Running assign"
+
+srun -N 1 bin/split_targ_secret bright_time_features.txt
+******************************
+
+runs the executable using parameters in bright_time_features.txt file, which begins
+
+galFile /project/projectdirs/desi/mocks/preliminary/gal_20_fain.dat
+tileFile /project/projectdirs/desi/mocks/preliminary/desi-tiles-intrim-3pass.par
+fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
+outDir /project/projectdirs/desi/users/rncahn/fa_output/
+PrintAscii false
+PrintFits false
+diagnose true
+Targfile /project/projectdirs/desi/mocks/preliminary/bright_Targfile.txt
+SStarsfile /project/projectdirs/desi/mocks/preliminary/SStarsfile.txt
+SkyFfile /project/projectdirs/desi/mocks/preliminary/SkyFfile.txt
+Secretfile /project/projectdirs/desi/mocks/preliminary/bright_Secretfile.txt
+
+So it takes gal_20_fain.dat, which begins
+
+176.00136 -2.92822 0.07496 1 1
+
+where the entries are RA, DEC, z, priority, and number of required observations
+
+and creates from it the Targfile  bright_Targfile.txt
+
+which begins
+
+0 Target 176.001360  -2.928220  1  1 1 
+
+where 0 is the galaxy id, "Target" isn't used, then come the RA, DEC, initial number of observations needed (so 5 for all QSO targets),
+the priority and whether is can be observed in the fifth pass (not relevant for the bright time survey with just three passes)
+
+
+On the other hand, Secretfile looks like 
+
+ 0 Secret 176.001360  -2.928220  0  
+
+Here the final 0 means this is of type 0.  From this identification, we can determine what it really is.  So if this collection had QSOs (which it doesn't since we are talking about the bright time survey) this could tell if this is a QSO-Lya.
+
+The simulated samples for the darktime survery are Targetfile.txt and Secretfile.txt.
+
+These begin
+
+Targfile.txt
+ 0 Target 218.992416  -6.171044  5  2000 0 
+
+Secretfile.txt
+0 Secret 218.992416  -6.171044  1   
+
+The type here is "1" which target QSO (z<2.1).  This while the Targetfile indicates that initially this target is believed to require 5 observations, it will be learned during the survey that it actually only requires a single observation.  The types for the full simulation are
+
+QSO-target =1
+QSO-Ly-a   =0
+LRG        =2
+ELG	   =3
+fake-QSO   =4
+fake-LRG   =5
+
+The files Secretfile.txt and Targfile.txt were generated from the fits file /project/projectdirs/desi/mock/preliminary/objects_ss_sf0.rdzipn (which, itself, was created using fiberassign/bin/make_catalog_starsandsky.py)with the code associated with mtl.cpp.
+
+
+A reduced set of targets has been generated for a patch (-10<DEC<10) (0<RA<10):
+
+smallSecretfile.txt
+smallSkyFfile.txt
+smallSStarsfile.txt
+smallTargfile.txt
+
+
+script files in fiberassign/script use corresponding features files (in fiberassign) and corresponding executables:
+
+For Fiber Assignment:
+do_fa                      fa_features.txt                        fiberassign
+do_fa_surveysim		   fa_surveysim_features.txt		  fiberassign_surveysim
+do_short_fa_surveysim	   shortrun_features.txt		  fiberassign_surveysim
+do_bright_fa_surveysim     bright_time_features.txt		  fiberassign_surveysim
+
+To create the Targfile and Secretfile:
+do_split_targ_secret_sky_std          mtl_features.txt		  split_targ_secret_sky_std
+do_short_split_targ_secret_sky_std    shortrun_features.txt       split_targ_secret_sky_std
+do_split_targ_secret		      bright_time_features.txt	  split_targ_secret
+
+
+
+Makefiles
+
+from fiberassign,  
+
+make clean
+make install
+
+takes care of all the executables
+
+
+Trying it out.
+
+Get fiberassign from github.
+
+from ./fiberassing
+
+sbatch ./script/do_short_fa_surveysim
+
+You can modify shortrun_features.txt .  
+
+R. Cahn 1/19/16 

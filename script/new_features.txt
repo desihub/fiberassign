@@ -4,12 +4,8 @@ fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplan
 outDir /project/projectdirs/desi/users/rncahn/fa_output/big/
 PrintAscii false
 PrintFits false
-MTLfile /project/projectdirs/desi/mocks/preliminary/big_MTLfile.txt
+MTLfile bigMTLfile.txt
 diagnose true
-Targfile /project/projectdirs/desi/mocks/preliminary/smallTargfile.txt
-SStarsfile /project/projectdirs/desi/mocks/preliminary/smallSStarsfile.txt
-SkyFfile /project/projectdirs/desi/mocks/preliminary/smallSkyFfile.txt
-Secretfile /project/projectdirs/desi/mocks/preliminary/smallSecretfile.txt
 
 kind QSOLy-a QSOTracer LRG ELG FakeQSO FakeLRG SS SF
 type QSO QSO LRG ELG QSO LRG SS SF
@@ -53,10 +49,10 @@ PlotFreeFibHist false
 PlotFreeFibTime false
 PlotSeenDens false
 PrintGalObs false
-MaxDec 10.
-MinDec -10.
+MaxDec 90.
+MinDec -90.
 MinRa 0.
-MaxRa 10.
+MaxRa 360.
 Verif false
 -------------------------------------------------
 

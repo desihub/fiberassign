@@ -1,33 +1,27 @@
 galFile /project/projectdirs/desi/mocks/preliminary/objects_ss_sf0.rdzipn
-tileFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/footprint/desi-tiles.par
-fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
-outDir /project/projectdirs/desi/users/rncahn/fa_output/big/
-PrintAscii false
-PrintFits false
-MTLfile /project/projectdirs/desi/mocks/preliminary/big_MTLfile.txt
-diagnose true
-Targfile /project/projectdirs/desi/mocks/preliminary/smallTargfile.txt
-SStarsfile /project/projectdirs/desi/mocks/preliminary/smallSStarsfile.txt
-SkyFfile /project/projectdirs/desi/mocks/preliminary/smallSkyFfile.txt
-Secretfile /project/projectdirs/desi/mocks/preliminary/smallSecretfile.txt
+tileFile /home/forero/desihub/desimodel/data/footprint/desi-tiles.par
+fibFile /home/forero/desihub/desimodel/data/focalplane/fiberpos.txt
+outDir /home/forero/desihub/desidata/fiberassign/mw_pass1/
+PrintAscii true
+PrintFits true
+MTLfile /home/forero/desihub/desidata/mtl/mtl1.fits
+diagnose false
 
 kind QSOLy-a QSOTracer LRG ELG FakeQSO FakeLRG SS SF
 type QSO QSO LRG ELG QSO LRG SS SF
-prio 3400 3400 3200 3000 3400 3200 0 0
-priopost 3500 0 3200 0 0 0 0 0
+prio 2000 2000 3000 4000 2000 3000 9900 9800
+priopost 0 2000 3000 4000 2000 3000 9900 9800
 goal 5 5 2 1 5 2 5 5
 goalpost 5 1 2 1 1 1 5 5
 lastpass 0 0 0 1 0 0 1 1 
-SS       0 0 0 0 0 0 1 0
-SF       0 0 0 0 0 0 0 1 
-
 pass_intervals 0 500 1000 2000 4000 8000
+
 
 Randomize false
 Pacman false
 Npass 5
-MaxSS 10
-MaxSF 40
+MaxSS 0
+MaxSF 0
 PlateRadius 1.65
 InterPlate 0
 Analysis 0
@@ -53,13 +47,14 @@ PlotFreeFibHist false
 PlotFreeFibTime false
 PlotSeenDens false
 PrintGalObs false
-MaxDec 10.
-MinDec -10.
+
+
+MaxDec 90.
+MinDec -90.
 MinRa 0.
-MaxRa 10.
+MaxRa 360.
 Verif false
 -------------------------------------------------
-
 -galFile : input file of objects
 -tileFile : input file of tiles
 -fibFile : input file of centers of locations of fiber positioners

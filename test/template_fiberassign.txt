@@ -1,15 +1,15 @@
-galFile /project/projectdirs/desi/mocks/preliminary/objects_ss_sf0.rdzipn
+Targfile /project/projectdirs/desi/mocks/preliminary/mtl/v2/mtl-lite.fits
+SStarsfile /project/projectdirs/desi/mocks/preliminary/mtl/v2/stdstars-lite.fits
+SkyFfile  /project/projectdirs/desi/mocks/preliminary/mtl/v2/sky-lite.fits
+Secretfile /project/projectdirs/desi/mocks/preliminary/mtl/v2/truth-lite.fits
+
 tileFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/footprint/desi-tiles.par
 fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
-outDir /project/projectdirs/desi/users/rncahn/fa_output/big/
+outDir {outdir}
+
 PrintAscii false
-PrintFits false
-MTLfile /project/projectdirs/desi/mocks/preliminary/big_MTLfile.txt
+PrintFits true
 diagnose true
-Targfile /project/projectdirs/desi/mocks/preliminary/smallTargfile.txt
-SStarsfile /project/projectdirs/desi/mocks/preliminary/smallSStarsfile.txt
-SkyFfile /project/projectdirs/desi/mocks/preliminary/smallSkyFfile.txt
-Secretfile /project/projectdirs/desi/mocks/preliminary/smallSecretfile.txt
 
 kind QSOLy-a QSOTracer LRG ELG FakeQSO FakeLRG SS SF
 type QSO QSO LRG ELG QSO LRG SS SF
@@ -20,8 +20,7 @@ goalpost 5 1 2 1 1 1 5 5
 lastpass 0 0 0 1 0 0 1 1 
 SS       0 0 0 0 0 0 1 0
 SF       0 0 0 0 0 0 0 1 
-
-pass_intervals 0 500 1000 2000 4000 8000
+pass_intervals 0 50 100 150 200
 
 Randomize false
 Pacman false
@@ -53,13 +52,14 @@ PlotFreeFibHist false
 PlotFreeFibTime false
 PlotSeenDens false
 PrintGalObs false
-MaxDec 10.
+
+
 MinDec -10.
+MaxDec 10.
 MinRa 0.
 MaxRa 10.
 Verif false
 -------------------------------------------------
-
 -galFile : input file of objects
 -tileFile : input file of tiles
 -fibFile : input file of centers of locations of fiber positioners
