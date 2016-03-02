@@ -87,7 +87,8 @@ int main(int argc, char **argv) {
     F.Nfbp = (int) (F.Nfiber/F.Npetal);// fibers per petal = 500
     pp.get_neighbors(F);
     pp.compute_fibsofsp(F);
-    
+    printf("computed neighbors\n");
+    std::cout.flush();
     //P is original list of plates
     Plates P = read_plate_centers(F);
     F.Nplate=P.size();
