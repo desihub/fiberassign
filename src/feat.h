@@ -91,18 +91,12 @@ class Feat { // F for features
     // Set after reading other input files
     int Nplate;
     int NUsedplate;
-<<<<<<< HEAD
+
 	int Ngal;
     int Ntarg;
 	int Nfiber;
 	int Npetal;
 	int Nfbp; // Number of fibers by petals
-=======
-    int Ngal;
-    int Nfiber;
-    int Npetal;
-    int Nfbp; // Number of fibers by petals
->>>>>>> master
 
     // Memorizes geometry of central body and fiber holder
     polygon cb;
