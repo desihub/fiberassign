@@ -14,4 +14,4 @@ fi
 
 echo "# Running assign"
 
-srun -N 1 bin/fiberassign_surveysim shortrun_features.txt
+srun -N 1 bin/fiberassign_surveysim test/template_fiberassign_lite.txt
