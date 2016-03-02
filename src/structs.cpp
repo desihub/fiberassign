@@ -536,7 +536,6 @@ Plates read_plate_centers(const Feat& F) {
 	}
 	fs.close();
     return(P);
->>>>>>> master
 }
 // Assignment -----------------------------------------------------------------------------
 Assignment::Assignment(const MTL& M, const Feat& F) {
