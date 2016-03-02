@@ -647,18 +647,18 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 
               
 				if (1<=n) {
-                    if (Secret[g].id == 0){
+                    if (Secret[g].category == 0){
                         l[n-1]++;
                         if(n>5)printf(" QSO Ly-a observed %d times\n",n);
                     }
-                    if (Secret[g].id == 2){
+                    if (Secret[g].category == 2){
                         l[n-1+5]++;
                         if(n>2)printf(" LRG observed %d times\n",n);
                     }
-                    if (Secret[g].id == 1) {
+                    if (Secret[g].category == 1) {
                         l[n+6]++;
                     }
-                    if (Secret[g].id == 3){
+                    if (Secret[g].category == 3){
                         l[n+7]++;
                      
                     }
