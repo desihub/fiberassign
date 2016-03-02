@@ -478,6 +478,17 @@ Plates read_plate_centers(const Feat& F) {
         std::cerr << "Unable to open file " << F.tileFile << std::endl;
         myexit(1);
     }
+    // read the strategy file
+    // survey_list is list of tiles in order of survey
+    std::ifstream fsurvey(F.surveyFile.c_str());
+    int survey_tile;
+    std::vector<int> survey_list;
+    while (fsurvey.eof()==0){
+        getline(fsurvey,buf);
+        std::istringstream ss(buf);
+        ss>>survey_tile;
+        survey_list.push_back(survey_tile);
+    }
     // Reserve some storage, since we expect we'll be reading quite a few
     // lines from this file.
     try {P.reserve(4000000);} catch (std::exception& e) {myexception(e);}
@@ -535,7 +546,8 @@ Plates read_plate_centers(const Feat& F) {
 		}
 	}
 	fs.close();
-    return(P);
+    for(int i=0;i<P.size();++i) PP[survey_list[i]]=P[i]
+        return(PP);
 }
 // Assignment -----------------------------------------------------------------------------
 Assignment::Assignment(const MTL& M, const Feat& F) {
