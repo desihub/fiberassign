@@ -486,7 +486,7 @@ Plates read_plate_centers(const Feat& F) {
     std::vector<int> survey_list;
 //    while (fsurvey.eof()==0){
 //        getline(fsurvey,buf);
-    while(getline(fsurvey,buf))
+    while(getline(fsurvey,buf)){
         std::istringstream ss(buf);
     if(!(ss>>survey_tile)){break};
         survey_list.push_back(survey_tile);
