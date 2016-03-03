@@ -94,6 +94,7 @@ int main(int argc, char **argv) {
     F.Nplate=P.size();
     printf(" full number of plates %d\n",F.Nplate);
     printf("# Read %d plates from %s and %d fibers from %s\n",F.Nplate,F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
+    std::cout.flush();
 
     // Computes geometries of cb and fh: pieces of positioner - used to determine possible collisions
     F.cb = create_cb(); // cb=central body

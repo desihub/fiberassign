@@ -526,8 +526,6 @@ Plates read_plate_centers(const Feat& F) {
 
             //                        std::cout << "TILEID " << tileid << std::endl;
             l++;
-            printf(" l= %d \n",l);
-            std::cout.flush();
             Q.tilera        = ra;
             Q.tiledec       = dec;
             Q.nhat[0]    = sin(theta)*cos(phi);
@@ -547,10 +545,12 @@ Plates read_plate_centers(const Feat& F) {
             //if(dec<F.MaxDec && dec>F.MinDec &&ra<F.MaxRa && ra>F.MinRa){
                 try {P.push_back(Q);} catch(std::exception& e) {myexception(e);
                 //}
-            }
-		}
-	}
+                }
+        }
+    }
 	fs.close();
+    printf(" size of P  %d\n",P.size());
+    std::cout.flush();
     for(int i=0;i<P.size();++i){ PP[survey_list[i]]=P[i];}
         return(PP);
 }
