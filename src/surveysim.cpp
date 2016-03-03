@@ -94,7 +94,7 @@ int main(int argc, char **argv) {
     F.Nplate=P.size();
     printf(" full number of plates %d\n",F.Nplate);
     printf("# Read %d plates from %s and %d fibers from %s\n",F.Nplate,F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
-   
+    std::cout.flush();
     // Computes geometries of cb and fh: pieces of positioner - used to determine possible collisions
     F.cb = create_cb(); // cb=central body
     F.fh = create_fh(); // fh=fiber holder
@@ -103,6 +103,7 @@ int main(int argc, char **argv) {
     // HTM Tree of galaxies
     const double MinTreeSize = 0.01;
     init_time_at(time,"# Start building HTM tree",t);
+    std::cout.flush();
     htmTree<struct target> T(M,MinTreeSize);
     print_time(time,"# ... took :");//T.stats();
     init_time_at(time,"# collect galaxies at ",t);
