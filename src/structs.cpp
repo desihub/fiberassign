@@ -489,6 +489,8 @@ Plates read_plate_centers(const Feat& F) {
         std::istringstream ss(buf);
         ss>>survey_tile;
         survey_list.push_back(survey_tile);
+        int size_now=survey_list.size();
+        printf(" number  %d  tile  %d \n",size_now,survey_list[size_now-1]);
     }
     printf(" number of tiles %d \n",survey_list.size());
     std::cout.flush();
