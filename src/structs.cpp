@@ -526,6 +526,8 @@ Plates read_plate_centers(const Feat& F) {
 
             //                        std::cout << "TILEID " << tileid << std::endl;
             l++;
+            printf(" l= %d \n",l);
+            std::cout.flush();
             Q.tilera        = ra;
             Q.tiledec       = dec;
             Q.nhat[0]    = sin(theta)*cos(phi);
