@@ -480,6 +480,7 @@ Plates read_plate_centers(const Feat& F) {
     std::vector<int> survey_list;
     //    while (fsurvey.eof()==0){
     //        getline(fsurvey,buf);
+        std::string buf;
     while(getline(fsurvey,buf)){
         std::istringstream ss(buf);
         if(!(ss>>survey_tile)){break;}
@@ -489,7 +490,7 @@ Plates read_plate_centers(const Feat& F) {
     }
     printf(" number of tiles %d \n",survey_list.size());
     //read list of file centers
-    std::string buf;
+
     std::ifstream fs(F.tileFile.c_str());
     if (!fs) {  // An error occurred opening the file.
         std::cerr << "Unable to open file " << F.tileFile << std::endl;
