@@ -571,15 +571,15 @@ Plates read_plate_centers(const Feat& F) {
         std::cout.flush();
     }
     for(int i=0;i<survey_list.size();++i){
-        printf("i %d\n",i);
-        std::cout.flush();
+        //printf("i %d\n",i);
+        //std::cout.flush();
         int j=survey_list[i];
-        printf("j %d\n",j);
-        std::cout.flush();
+        //printf("j %d\n",j);
+        //std::cout.flush();
         int k=invert_tile[j];
         printf("i %d  j %d   k  %d \n",i,j,k);
         std::cout.flush();
-        PP[i]=P[k];
+        PP.push_back(P[k]);
 
        
     }
