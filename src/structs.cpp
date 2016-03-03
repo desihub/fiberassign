@@ -482,6 +482,7 @@ Plates read_plate_centers(const Feat& F) {
     // survey_list is list of tiles in order of survey
     std::ifstream fsurvey(F.surveyFile.c_str());
     int survey_tile;
+    printf("getting file list\n");
     std::vector<int> survey_list;
     while (fsurvey.eof()==0){
         getline(fsurvey,buf);
@@ -489,6 +490,8 @@ Plates read_plate_centers(const Feat& F) {
         ss>>survey_tile;
         survey_list.push_back(survey_tile);
     }
+    printf(" number of tiles %d \n",survey_list.size());
+    std::cout.flush();
     // Reserve some storage, since we expect we'll be reading quite a few
     // lines from this file.
     try {P.reserve(4000000);} catch (std::exception& e) {myexception(e);}
