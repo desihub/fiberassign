@@ -471,30 +471,30 @@ List plate::av_gals_plate(const Feat& F,const MTL& M, const PP& pp) const {//lis
 // Read positions of the plate centers from an ascii file "center_name", and fill in a structure
 // Allow for a survey file to define the strategy  1/28/16
 Plates read_plate_centers(const Feat& F) {
-	    Plates P,PP;
-    std::string buf;
-    std::ifstream fs(F.tileFile.c_str());
-    if (!fs) {  // An error occurred opening the file.
-        std::cerr << "Unable to open file " << F.tileFile << std::endl;
-        myexit(1);
-    }
+    Plates P,PP;
     // read the strategy file
     // survey_list is list of tiles in order of survey
     std::ifstream fsurvey(F.surveyFile.c_str());
     int survey_tile;
     printf("getting file list\n");
     std::vector<int> survey_list;
-//    while (fsurvey.eof()==0){
-//        getline(fsurvey,buf);
+    //    while (fsurvey.eof()==0){
+    //        getline(fsurvey,buf);
     while(getline(fsurvey,buf)){
         std::istringstream ss(buf);
         if(!(ss>>survey_tile)){break;}
         survey_list.push_back(survey_tile);
-        int size_now=survey_list.size();
-        printf(" number  %d  tile  %d \n",size_now,survey_list[size_now-1]);
+        //        int size_now=survey_list.size();
+        //        printf(" number  %d  tile  %d \n",size_now,survey_list[size_now-1]);
     }
     printf(" number of tiles %d \n",survey_list.size());
-    std::cout.flush();
+    //read list of file centers
+    std::string buf;
+    std::ifstream fs(F.tileFile.c_str());
+    if (!fs) {  // An error occurred opening the file.
+        std::cerr << "Unable to open file " << F.tileFile << std::endl;
+        myexit(1);
+    }
     // Reserve some storage, since we expect we'll be reading quite a few
     // lines from this file.
     try {P.reserve(4000000);} catch (std::exception& e) {myexception(e);}
@@ -503,6 +503,8 @@ Plates read_plate_centers(const Feat& F) {
 
     int ipass,in_desi,tileid;
     int l = 0;
+
+
     while (fs.eof()==0) {
         getline(fs,buf);
                 if(buf.compare(0, 7, "STRUCT1") != 0) {
@@ -553,8 +555,15 @@ Plates read_plate_centers(const Feat& F) {
     }
 	fs.close();
     printf(" size of P  %d\n",P.size());
-    std::cout.flush();
-    for(int i=0;i<P.size();++i){ PP[survey_list[i]]=P[i];}
+    //need to be able to invert connection with absolute tile number
+    std::vector <int> invert_tile(P.size(),-1);
+    
+    for(int i=0;i<P.size();++i){ invert_tile[P[i].tileid]=i;}
+    for(int i=0;i<survey_list.size();++i){
+        int j=survey_list[i];
+        int k=invert_tile[j];
+        PP[i]=P[k];
+    }
         return(PP);
 }
 // Assignment -----------------------------------------------------------------------------
