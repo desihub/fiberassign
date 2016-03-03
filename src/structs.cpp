@@ -484,10 +484,11 @@ Plates read_plate_centers(const Feat& F) {
     int survey_tile;
     printf("getting file list\n");
     std::vector<int> survey_list;
-    while (fsurvey.eof()==0){
-        getline(fsurvey,buf);
+//    while (fsurvey.eof()==0){
+//        getline(fsurvey,buf);
+    while(getline(fsurvey,buf))
         std::istringstream ss(buf);
-        ss>>survey_tile;
+    if(!(ss>>survey_tile)){break};
         survey_list.push_back(survey_tile);
         int size_now=survey_list.size();
         printf(" number  %d  tile  %d \n",size_now,survey_list[size_now-1]);
