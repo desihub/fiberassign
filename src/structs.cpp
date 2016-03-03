@@ -486,8 +486,8 @@ Plates read_plate_centers(const Feat& F) {
         std::istringstream ss(buf);
         if(!(ss>>survey_tile)){break;}
         survey_list.push_back(survey_tile);
-                int size_now=survey_list.size();
-                printf(" number  %d  tile  %d \n",size_now,survey_list[size_now-1]);
+               // int size_now=survey_list.size();
+               // printf(" number  %d  tile  %d \n",size_now,survey_list[size_now-1]);
         std::cout.flush();
 
     }
@@ -573,9 +573,10 @@ Plates read_plate_centers(const Feat& F) {
     for(int i=0;i<survey_list.size();++i){
         int j=survey_list[i];
         int k=invert_tile[j];
-        PP[i]=P[k];
         printf("i %d  j%d   k  %d \n",i,j,k);
         std::cout.flush();
+        PP[i]=P[k];
+
        
     }
         return(PP);
