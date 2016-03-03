@@ -477,16 +477,19 @@ Plates read_plate_centers(const Feat& F) {
     std::ifstream fsurvey(F.surveyFile.c_str());
     int survey_tile;
     printf("getting file list\n");
+    std::cout.flush();
     std::vector<int> survey_list;
     //    while (fsurvey.eof()==0){
     //        getline(fsurvey,buf);
-        std::string buf;
+    std::string buf;
     while(getline(fsurvey,buf)){
         std::istringstream ss(buf);
         if(!(ss>>survey_tile)){break;}
         survey_list.push_back(survey_tile);
-        //        int size_now=survey_list.size();
-        //        printf(" number  %d  tile  %d \n",size_now,survey_list[size_now-1]);
+                int size_now=survey_list.size();
+                printf(" number  %d  tile  %d \n",size_now,survey_list[size_now-1]);
+        std::cout.flush();
+
     }
     printf(" number of tiles %d \n",survey_list.size());
     //read list of file centers
