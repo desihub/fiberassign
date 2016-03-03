@@ -565,7 +565,10 @@ Plates read_plate_centers(const Feat& F) {
     int total_tiles=28810;
     std::vector <int> invert_tile(total_tiles,-1);
     
-    for(int i=0;i<P.size();++i){ invert_tile[P[i].tileid]=i;}
+    for(int i=0;i<P.size();++i){
+        invert_tile[P[i].tileid]=i;
+        printf (" i %d  P[i].tileid %d  invert_tile[P[i].tileid] %d\n ",i ,P[i].tileid, invert_tile[P[i].tileid])
+    }
     for(int i=0;i<survey_list.size();++i){
         int j=survey_list[i];
         int k=invert_tile[j];
