@@ -492,6 +492,7 @@ Plates read_plate_centers(const Feat& F) {
 
     }
     printf(" number of tiles %d \n",survey_list.size());
+    std::cout.flush();
     //read list of file centers
 
     std::ifstream fs(F.tileFile.c_str());
@@ -559,6 +560,7 @@ Plates read_plate_centers(const Feat& F) {
     }
 	fs.close();
     printf(" size of P  %d\n",P.size());
+    std::cout.flush();
     //need to be able to invert connection with absolute tile number
     std::vector <int> invert_tile(P.size(),-1);
     
@@ -567,6 +569,7 @@ Plates read_plate_centers(const Feat& F) {
         int j=survey_list[i];
         int k=invert_tile[j];
         PP[i]=P[k];
+        printf("i %d  j%d   k  %d \n",i,j,k);  
     }
         return(PP);
 }
