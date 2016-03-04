@@ -589,7 +589,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
         obsrv[c][m]++; //
         }
     }
-    printf(" collected obsrv \n");
+
     // Add the 3 columns of tot, fibs, obs
     Table with_tots = obsrv;
     for (int i=0; i<F.Categories-2; i++) {
@@ -601,7 +601,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
         with_tots[i].push_back(fibs);
         with_tots[i].push_back(obs);
     }
-    printf(" did with_tots \n");
+
 	//print_table("  Remaining observations (without negative obs ones)",with_tots,latex,F.kind);
 	Dtable obs_per_sqd = ddivide_floor(with_tots,F.TotalArea);
 
@@ -626,8 +626,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 	int interval = 100;
 	int nk = 9;
 	Table Ttim = initTable(nk,0);
-    printf("don't include SS or SF\n");
-    std::cout.flush();
+
 	List galaxs = initList(F.Ngal);
     printf(" F.Ntarg = %d\n",F.Ntarg);
 
@@ -636,17 +635,14 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 
 		for (int k=0; k<F.Nfiber; k++) {
 			int g = A.TF[j][k];
-            std::cout.flush();
             if (g!=-1) galaxs[g]++;
 		}
-        
+        //only display at certain interval probably should be set in features file
 		if (jused%interval==0) {
 			List l = initList(20);//was 9
-			for (int g=0; g<F.Ntarg; g++) {
+			for (int g=0; g<F.Ntarg; g++) {//assumes targets have lowest numbers!
 				int n = galaxs[g];
-
-              
-				if (1<=n) {
+                if (1<=n) {
                     if (Secret[g].category == 0){
                         l[n-1]++;
                         if(n>5)printf(" QSO Ly-a observed %d times\n",n);
