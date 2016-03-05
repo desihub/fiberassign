@@ -1,14 +1,14 @@
-Targfile /project/projectdirs/desi/mocks/preliminary/mtl/v2/mtl-lite.fits
-SStarsfile /project/projectdirs/desi/mocks/preliminary/mtl/v2/stdstars-lite.fits
-SkyFfile  /project/projectdirs/desi/mocks/preliminary/mtl/v2/sky-lite.fits
-Secretfile /project/projectdirs/desi/mocks/preliminary/mtl/v2/truth-lite.fits
-
+Targfile /project/projectdirs/desi/mocks/preliminary/mtl/v2/mtl.fits
+SStarsfile /project/projectdirs/desi/mocks/preliminary/mtl/v2/stdstars.fits
+SkyFfile  /project/projectdirs/desi/mocks/preliminary/mtl/v2/sky.fits
+Secretfile /project/projectdirs/desi/mocks/preliminary/mtl/v2/truth.fits
+surveyFile default_survey_list.txt
 tileFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/footprint/desi-tiles.par
 fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
-outDir {outdir}
+outDir /project/projectdirs/desi/user/rncahn
 
 PrintAscii false
-PrintFits true
+PrintFits false
 diagnose true
 
 kind QSOLy-a QSOTracer LRG ELG FakeQSO FakeLRG SS SF
@@ -20,7 +20,7 @@ goalpost 5 1 2 1 1 1 5 5
 lastpass 0 0 0 1 0 0 1 1 
 SS       0 0 0 0 0 0 1 0
 SF       0 0 0 0 0 0 0 1 
-pass_intervals 0 50 100 150 200
+pass_intervals 0 500 1000 1500 2000 4000 8000
 
 Randomize false
 Pacman false
@@ -45,7 +45,7 @@ NoCollide 7.0
 PatrolRad 5.8
 NeighborRad 14.05
 
-PlotObsTime false
+PlotObsTime true
 PlotHistLya false
 PlotDistLya false
 PlotFreeFibHist false
@@ -54,10 +54,10 @@ PlotSeenDens false
 PrintGalObs false
 
 
-MinDec -10.
-MaxDec 10.
+MinDec -90.
+MaxDec 90.
 MinRa 0.
-MaxRa 10.
+MaxRa 360.
 Verif false
 -------------------------------------------------
 -galFile : input file of objects
