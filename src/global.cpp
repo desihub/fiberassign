@@ -662,8 +662,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
          
 			}
 			for (int id=0; id<nk; id++) Ttim[id].push_back(l[id]);
-        }
-         
+        }         
           
     }
         print_mult_table_latex("Observed galaxies complete (interval 100)",outdir+"time2.dat",Ttim,interval);
