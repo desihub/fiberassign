@@ -238,8 +238,11 @@ int main(int argc, char **argv) {
 
  
     // Results -------------------------------------------------------
-    if (F.PrintAscii) for (int jused=0; jused<F.NUsedplate; jused++){
+    if (F.PrintAscii){
+        printf("print Ascii\n");
+        for (int jused=0; jused<F.NUsedplate; jused++){
         write_FAtile_ascii(A.suborder[jused],F.outDir,M,P,pp,F,A);
+        }
     }
     
     if (F.PrintFits) for (int jused=0; jused<F.NUsedplate; jused++){
