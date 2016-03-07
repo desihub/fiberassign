@@ -825,7 +825,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 void write_FAtile_ascii(int j, str outdir, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
     FILE * FA;
     str s = outdir+"tile"+i2s(j)+".txt";
-    printf(" file %s\n",s);
+    printf(" file %s\n",s.c_str());
     FA = fopen(s.c_str(),"w");
     for (int k=0; k<F.Nfiber; k++) {
         int g = A.TF[j][k];
