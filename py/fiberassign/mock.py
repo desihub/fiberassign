@@ -12,16 +12,17 @@ import sys, os
 import numpy as np
 from astropy.table import Table, Column
 from fiberassign import io
-from desitarget import desi_mask as M
+from desitarget import desi_mask
+import desitarget
 import desispec.brick
 
-def load_rdzipn(infile):
+def rdzipn2targets(infile):
     """Read rdzipn infile and return target and truth tables
     """
     ra, dec, z, itype, priority, numobs = io.read_rdzipn(infile)
     n = len(ra)
 
-    #- Martin's itype is 1 to n, while Bob's is 0 to n-1
+    #- Martin's itype is 1 to n, while Bob's fiberassign is 0 to n-1
     itype -= 1
     assert np.min(itype >= 0)
 
@@ -29,108 +30,79 @@ def load_rdzipn(infile):
     ra = ra.astype('float64') % 360     #- enforce 0 <= ra < 360
     dec = dec.astype('float64')
 
-    #- MTL z is float64, which is probably overkill but ok
-    z = ra.astype('float64')
+    #- Hardcoded in rdzipn format
+    # 0 : 'QSO',      #- QSO-LyA
+    # 1 : 'QSO',      #- QSO-Tracer
+    # 2 : 'LRG',      #- LRG
+    # 3 : 'ELG',      #- ELG
+    # 4 : 'STAR',     #- QSO-Fake
+    # 5 : 'UNKNOWN',  #- LRG-Fake
+    # 6 : 'STAR',     #- StdStar
+    # 7 : 'SKY',      #- Sky
+    
+    qso_lya    = (itype==0)
+    qso_tracer = (itype==1)
+    qso_fake   = (itype==4)
+    qso = qso_lya | qso_tracer | qso_fake
+    lrg_real = (itype==2)
+    lrg_fake = (itype==5)
+    lrg      = lrg_real | lrg_fake
+    elg      = (itype==3)
+    std      = (itype==6)
+    sky      = (itype==7)
 
-    #- Also promote itype i4 -> i8
-    itype = itype.astype('i8')
-
-    #- Hack mapping of priorities
-    newpriority = np.zeros(n, dtype='i4')
-    qso = (itype==0) | (itype==1) | (itype==4)
-    lrg = (itype==2) | (itype==5)
-    elg = (itype==3)
-    star = (itype==6)
-    sky = (itype==7)
-
-    #- TODO: replace these priorities with desitarget priorities
-    newpriority[qso] = 2000
-    newpriority[lrg] = 3000
-    newpriority[elg] = 4000
-    newpriority[star] = 9900
-    newpriority[sky] = 9800
-    assert np.all(newpriority > 0)
-
+    if not np.any(std):
+        print("WARNING: no standard stars found")
+    if not np.any(sky):
+        print("WARNING: no sky locations found")
+    if not np.any(~(std | sky)):
+        print("WARNING: no science targets found")
+    
     #- Create a DESI_TARGET mask
     desi_target = np.zeros(n, dtype='i8')
-    desi_target[qso] |= M.QSO
-    desi_target[elg] |= M.ELG
-    desi_target[lrg] |= M.LRG
-    desi_target[sky] |= M.SKY
-    desi_target[star] |= M.STD_FSTAR
+    desi_target[qso] |= desi_mask.QSO
+    desi_target[elg] |= desi_mask.ELG
+    desi_target[lrg] |= desi_mask.LRG
+    desi_target[sky] |= desi_mask.SKY
+    desi_target[std] |= desi_mask.STD_FSTAR
     bgs_target = np.zeros(n, dtype='i8')    #- TODO
     mws_target = np.zeros(n, dtype='i8')    #- TODO
 
-    targetid = np.random.randint(2**62, size=n)
-    lastpass = elg.astype('i4')
-    brickname = desispec.brick.brickname(ra, dec)
+    #- True type
+    truetype = np.zeros(n, dtype='S10')
+    assert np.all(truetype == '')
+    truetype[qso_lya | qso_tracer] = 'QSO'
+    truetype[qso_fake] = 'STAR'
+    truetype[elg] = 'GALAXY'
+    truetype[lrg_real] = 'GALAXY'
+    truetype[lrg_fake] = 'UNKNOWN'
+    truetype[std] = 'STAR'
+    truetype[sky] = 'SKY'
+    assert np.all(truetype != '')
 
-    mtl = Table()
-    mtl.add_column(Column(np.arange(n), name='TARGETID'))
-    mtl.add_column(Column(brickname,    name='BRICKNAME'))
-    mtl.add_column(Column(ra,           name='RA'))
-    mtl.add_column(Column(dec,          name='DEC'))
-    mtl.add_column(Column(numobs,       name='NUMOBS'))
-    mtl.add_column(Column(newpriority,  name='PRIORITY'))
-    mtl.add_column(Column(lastpass,     name='LASTPASS'))
-    mtl.add_column(Column(desi_target,  name='DESI_TARGET'))
-    mtl.add_column(Column(bgs_target,   name='BGS_TARGET'))
-    mtl.add_column(Column(mws_target,   name='MWS_TARGET'))
+    #- Misc other
+    targetid = np.random.randint(2**62, size=n)
+    ### brickname = np.zeros(n, dtype='S8')
+    brickname = desispec.brick.brickname(ra, dec)
+    subpriority = np.random.uniform(0, 1, size=n)
+
+    targets = Table()
+    targets['TARGETID'] = targetid
+    targets['BRICKNAME'] = brickname
+    targets['RA'] = ra
+    targets['DEC'] = dec
+    targets['DESI_TARGET'] = desi_target
+    targets['BGS_TARGET'] = bgs_target
+    targets['MWS_TARGET'] = mws_target
+    targets['SUBPRIORITY'] = subpriority
 
     truth = Table()
-    truth.add_column(Column(np.arange(n), name='TARGETID'))
-    truth.add_column(Column(brickname, name='BRICKNAME'))
-    truth.add_column(Column(z, name='Z'))
-    truth.add_column(Column(itype, name='TYPE'))
+    truth['TARGETID'] = targetid
+    truth['BRICKNAME'] = brickname
+    truth['RA'] = ra
+    truth['DEC'] = dec
+    truth['TRUEZ'] = z
+    truth['TRUETYPE'] = truetype
+    truth['CATEGORY'] = itype
 
-    return mtl, truth
-
-def rdzipn2mtl(infile='objects_ss_sf0.rdzipn', basename='mtl', clobber=False):
-    """
-    Converts input rdzipn file into MTL files:
-    targets_mtl.fits, truth_mtl.fits, stdstars_mtl.fits, sky_mtl.fits
-    and *_mtl_lite.fits versions for testing
-    """
-    truthfile = 'truth_{}.fits'.format(basename)
-    targetfile = 'targets_{}.fits'.format(basename)
-    stdstarfile = 'stdstars_{}.fits'.format(basename)
-    skyfile = 'sky_{}.fits'.format(basename)
-    truthfile_lite = 'truth_{}_lite.fits'.format(basename)
-    targetfile_lite = 'targets_{}_lite.fits'.format(basename)
-    stdstarfile_lite = 'stdstars_{}_lite.fits'.format(basename)
-    skyfile_lite = 'sky_{}_lite.fits'.format(basename)
-
-    #- Check if output files already exist
-    ioerror = False
-    for filename in (
-        truthfile, targetfile, stdstarfile, skyfile,
-        truthfile_lite, targetfile_lite, stdstarfile_lite, skyfile_lite ):
-        if os.path.exists(filename):
-            if clobber:
-                os.remove(filename)
-            else:
-                print('{} already exists; use clobber=True to overwrite'.format(filename))
-                ioerror = True
-    if ioerror:
-        raise IOError('Output files already exist; use clobber=True to overwrite')
-                
-    #- Read input rdzipn file
-    mtl, truth = load_rdzipn(infile)
-    iitgt = truth['TYPE'] < 6
-    iistd = truth['TYPE'] == 6
-    iisky = truth['TYPE'] == 7
-
-    #- Write output files
-    truth[iitgt].write(truthfile)
-    mtl[iitgt].write(targetfile)
-    mtl[iistd].write(stdstarfile)
-    mtl[iisky].write(skyfile)
-
-    #- Write lite version for testing
-    lite = (mtl['RA'] <= 10) & (mtl['DEC'] <= 10) & (mtl['DEC'] >= -10)
-    truth[iitgt & lite].write(truthfile_lite)
-    mtl[iitgt & lite].write(targetfile_lite)
-    mtl[iistd & lite].write(stdstarfile_lite)
-    mtl[iisky & lite].write(skyfile_lite)
-
-        
+    return targets, truth

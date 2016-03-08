@@ -123,7 +123,7 @@ inline bool ok_for_limit_SS_SF(int g, int j, int k, const MTL& M, const Plates& 
 // Null list means you can take all possible kinds, otherwise you can only take, for the galaxy, a kind among this list
 // Not allowed to take the galaxy of id no_g
 inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
-    int best = -1; int mbest = -1; int pbest = 10000;
+    int best = -1; int mbest = -1; int pbest = 0;
     List av_gals = P[j].av_gals[k];
     // For all available galaxies
     for (int gg=0; gg<av_gals.size(); gg++) {
@@ -134,7 +134,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
             if (m>=1) {
                 int prio = M[g].t_priority;
                 // Takes it if better priority, or if same, if it needs more observations, so shares observations if two QSOs are close
-                if (prio<pbest || (prio==pbest && m>mbest)){
+                if (prio>pbest || (prio==pbest && m>mbest)){
                     // Check that g is not assigned yet on this plate, or on the InterPlate around, check with ok_to_assign
                     int isa=A.is_assigned_jg(j,g,M,F);
                     int ok=ok_assign_g_to_jk(g,j,k,P,M,pp,F,A);
@@ -146,7 +146,6 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
                 }
             }
         }
-       
     }
     return best;
 }
@@ -212,7 +211,7 @@ inline int improve_fiber(int jused_begin, int jused, int k, MTL& M, Plates& P, c
                                 int prio = M[g].t_priority;
                                 int m = M[g].nobs_remain;
                                 int unused = A.unused[jp][pp.spectrom[kp]]; // We take the most unused
-                                if (prio<pb || (prio==pb && m>mb) || (prio==pb && m==mb && unused>unusedb)) {
+                                if (prio>pb || (prio==pb && m>mb) || (prio==pb && m==mb && unused>unusedb)) {
                                     gb = g; bb = best; jpb = jp; kpb = kp; mb = m; pb = prio; unusedb = unused;
                             }}}}}}
             // Modify assignment
@@ -283,16 +282,16 @@ void update_plan_from_one_obs(int jused,const Gals& Secret, MTL& M, Plates&P, co
     for (int k=0; k<F.Nfiber; k++) {
         int g = A.TF[j][k];
          //       if(g!=-1){
-         //   printf(" g %d  M[g].SS  %d  M[g].SF  %d  Secret[g].id %d\n", g, M[g].SS, M[g].SF ,Secret[g].id );
+         //   printf(" g %d  M[g].SS  %d  M[g].SF  %d  Secret[g].category %d\n", g, M[g].SS, M[g].SF ,Secret[g].category );
          //   std::cout.flush();}
         if (g!=-1&&!M[g].SS && !M[g].SF){        // Don't update SS or SF
             //initially nobs_remain==goal
             if(M[g].once_obs==0){//first observation  otherwise should be ok
                 M[g].once_obs=1;//now observed
-                if(M[g].nobs_done>F.goalpost[Secret[g].id]){
+                if(M[g].nobs_done>F.goalpost[Secret[g].category]){
                     to_update.push_back(g);}
                 else{
-                    M[g].nobs_remain=F.goalpost[Secret[g].id]-M[g].nobs_done;
+                    M[g].nobs_remain=F.goalpost[Secret[g].category]-M[g].nobs_done;
                 }
             }
         }
@@ -302,7 +301,7 @@ void update_plan_from_one_obs(int jused,const Gals& Secret, MTL& M, Plates&P, co
         int g = to_update[gg];
         Plist tfs = A.chosen_tfs(g,F,A.suborder[jused+1]); // Begin at j0+1, can't change assignment at j0 (already observed)
         
-        while (tfs.size()!=0 && M[g].nobs_done>F.goalpost[Secret[g].id]) {
+        while (tfs.size()!=0 && M[g].nobs_done>F.goalpost[Secret[g].category]) {
             int jp = tfs[0].f; int kp = tfs[0].s;
             
             std::cout.flush();
@@ -394,13 +393,13 @@ void assign_unused(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assign
     for (int k=0; k<F.Nfiber; k++) {
         
         if (!A.is_assigned_tf(j,k)) {
-            int best = -1; int mbest = -1; int pbest = 100000; int jpb = -1; int kpb = -1;
+            int best = -1; int mbest = -1; int pbest = 0; int jpb = -1; int kpb = -1;
             List av_gals = P[j].av_gals[k];//all available galaxies for this fiber k
             for (int gg=0; gg<av_gals.size(); gg++) {
                 int g = av_gals[gg];//available galaxies
                 int m = M[g].nobs_remain;
                 int prio = M[g].t_priority;
-                if (prio<pbest || (prio==pbest && m>mbest)) {
+                if (prio>pbest || (prio==pbest && m>mbest)) {
                     if (A.is_assigned_jg(j,g,M,F)==-1 && ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                         //not assigned this plate or within excluded interval
                         for (int i=0; i<A.GL[g].size(); i++) { //GL[g].size() is number of tf that could observe g
@@ -543,8 +542,8 @@ void diagnostic(const MTL& M, const Gals& Secret, Feat& F, const Assignment& A){
         for(int k=0;k<F.Nfiber;++k){
             int g=A.TF[js][k];
             if(g!=-1&&!M[g].SS&&!M[g].SF){
-                //printf("g = %d  k = %d  id = %d \n",g,k,Secret[g].id);
-            count_by_kind[Secret[g].id]+=1;
+                //printf("g = %d  k = %d  id = %d \n",g,k,Secret[g].category);
+            count_by_kind[Secret[g].category]+=1;
             }
         }
     }
@@ -556,7 +555,7 @@ void diagnostic(const MTL& M, const Gals& Secret, Feat& F, const Assignment& A){
     
     for (int g=0; g<M.size(); g++) {
         if(!M[g].SS && !M[g].SF){
-        int c= Secret[g].id;
+        int c= Secret[g].category;
         int m = min(M[g].nobs_done,MaxObs);
         obsrv[c][m]++; //
         }
@@ -584,7 +583,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 
     for (int g=0; g<M.size(); g++) {
         if(!M[g].SS && !M[g].SF){
-        int c= Secret[g].id;
+        int c= Secret[g].category;
         int m = min(M[g].nobs_done,MaxObs);
         obsrv[c][m]++; //
         }
@@ -914,16 +913,16 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     strcpy(tform[4], "K");
     strcpy(tunit[4], "");
     
-    strcpy(ttype[5], "TARGETFLAG");
+    strcpy(ttype[5], "DESI_TARGET");
     strcpy(tform[5], "K");
     strcpy(tunit[5], "");
     
     strcpy(ttype[6], "RA");
-    strcpy(tform[6], "E");
+    strcpy(tform[6], "D");
     strcpy(tunit[6], "deg");
     
     strcpy(ttype[7], "DEC");
-    strcpy(tform[7], "E");
+    strcpy(tform[7], "D");
     strcpy(tunit[7], "deg");
     
     strcpy(ttype[8], "XFOCAL_DESIGN");
