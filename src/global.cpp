@@ -665,7 +665,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
         }         
           
     }
-        print_mult_table_latex("Observed galaxies complete (interval 100)",outdir+"time2.dat",Ttim,interval);
+        print_mult_table_latex("Observed galaxies complete (interval 100)",outdir+"/"+F.surveyFile.c_str()+"time2.dat",Ttim,interval);
         printf("done with time table\n");
     }
 
