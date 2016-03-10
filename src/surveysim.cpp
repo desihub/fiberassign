@@ -240,7 +240,7 @@ int main(int argc, char **argv) {
     // Results -------------------------------------------------------
     if (F.PrintAscii){
         for (int jused=0; jused<F.NUsedplate; jused++){
-            int j=suborder[jused];
+            int j=A.suborder[jused];
             printf (" printing Ascii jused %d  true_j %d \n",jused, P[j].tileid);
             write_FAtile_ascii(A.suborder[jused],F.outDir,M,P,pp,F,A);
         }
