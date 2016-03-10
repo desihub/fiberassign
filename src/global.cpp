@@ -824,7 +824,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 
 void write_FAtile_ascii(int j, str outdir, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
     FILE * FA;
-    int true_tile_no=P[j].tileid
+    int true_tile_no=P[j].tileid;
     str s = outdir+"/tile"+i2s(true_tile_no)+".txt";
 
     
