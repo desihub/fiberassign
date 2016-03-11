@@ -2,12 +2,12 @@ Targfile /project/projectdirs/desi/mocks/preliminary/mtl/v2/mtl-lite.fits
 SStarsfile /project/projectdirs/desi/mocks/preliminary/mtl/v2/stdstars-lite.fits
 SkyFfile  /project/projectdirs/desi/mocks/preliminary/mtl/v2/sky-lite.fits
 Secretfile /project/projectdirs/desi/mocks/preliminary/mtl/v2/truth-lite.fits
-
+surveyFile test/default_survey_list.txt
 tileFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/footprint/desi-tiles.par
 fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
-outDir {outdir}
+outDir {outdir}/
 
-PrintAscii false
+PrintAscii true
 PrintFits true
 diagnose true
 

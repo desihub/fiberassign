@@ -35,15 +35,14 @@ int main(int argc, char **argv) {
     Gals Secret;
     init_time_at(time,"# reading Secret file",t);
 
-    // Secret=read_Secretfile_ascii(F.Secretfile,F);
-    Secret=read_Secretfile(F.Secretfile,F);
+        Secret=read_Secretfile(F.Secretfile,F);
     printf("# Read %d galaxies from %s \n",Secret.size(),F.Secretfile.c_str());
     print_time(time,"# ... took :");
     std::vector<int> count(10);
     count=count_galaxies(Secret);
     printf(" Number of galaxies by type, QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF\n");
     for(int i=0;i<8;i++){if(count[i]>0)printf (" type %d number  %d  \n",i, count[i]);}
-    //read the three input files
+    //read the three input fits files
     init_time_at(time,"# read target, SS, SF files",t);
     MTL Targ=read_MTLfile(F.Targfile,F,0,0);
     MTL SStars=read_MTLfile(F.SStarsfile,F,1,0);
@@ -63,6 +62,7 @@ int main(int argc, char **argv) {
     M.insert(M.end(),SkyF.begin(),SkyF.end());
     printf(" M size %d \n",M.size());
     F.Ngal=M.size();
+    F.Ntarg=Secret.size();
     
     //establish priority classes
     init_time_at(time,"# establish priority clasess",t);
@@ -86,13 +86,13 @@ int main(int argc, char **argv) {
     F.Nfbp = (int) (F.Nfiber/F.Npetal);// fibers per petal = 500
     pp.get_neighbors(F);
     pp.compute_fibsofsp(F);
-    
-    //P is original list of plates
+    printf("computed neighbors\n");
+    std::cout.flush();
+    //P tiles in order specified by surveyFile
     Plates P = read_plate_centers(F);
     F.Nplate=P.size();
-    printf(" full number of plates %d\n",F.Nplate);
     printf("# Read %d plates from %s and %d fibers from %s\n",F.Nplate,F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
-   
+
     // Computes geometries of cb and fh: pieces of positioner - used to determine possible collisions
     F.cb = create_cb(); // cb=central body
     F.fh = create_fh(); // fh=fiber holder
@@ -101,6 +101,7 @@ int main(int argc, char **argv) {
     // HTM Tree of galaxies
     const double MinTreeSize = 0.01;
     init_time_at(time,"# Start building HTM tree",t);
+
     htmTree<struct target> T(M,MinTreeSize);
     print_time(time,"# ... took :");//T.stats();
     init_time_at(time,"# collect galaxies at ",t);
@@ -119,7 +120,6 @@ int main(int argc, char **argv) {
     Assignment A(M,F);
     
     print_time(t,"# Start assignment at : ");
-    std::cout.flush();
 
     // Make a plan ----------------------------------------------------
     // Plans whole survey without sky fibers, standard stars
@@ -136,13 +136,12 @@ int main(int argc, char **argv) {
         
         bool not_done=true;
         for(int k=0;k<F.Nfiber && not_done;++k){
-            if(A.TF[j][k]!=-1){
+            if(A.TF[j][k]!=-1){//fiber and therefore plate is used
                 A.suborder.push_back(j);//suborder[jused] is jused-th used plate
                 not_done=false;
                 A.inv_order[j]=inv_count;//inv_order[j] is -1 unless used
+                                //and otherwise the position of plate j in list of used plates
                 inv_count++;
-
-                //and otherwise the position of plate j in list of used plates
             }
         }
     }
@@ -156,14 +155,13 @@ int main(int argc, char **argv) {
     // Smooth out distribution of free fibers, and increase the number of assignments
     
     for (int i=0; i<1; i++) redistribute_tf(M,P,pp,F,A,0);// more iterations will improve performance slightly
-    for (int i=0; i<3; i++) {
+    for (int i=0; i<1; i++) {
         improve(M,P,pp,F,A,0);
         redistribute_tf(M,P,pp,F,A,0);
     }
     print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false);
     //try assigning SF and SS before real time assignment
     for (int jused=0;jused<F.NUsedplate;++jused){
-
         int j=A.suborder[jused];
         assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF for each tile
         assign_unused(j,M,P,pp,F,A);
@@ -174,7 +172,6 @@ int main(int argc, char **argv) {
     //Execute plan, updating targets at intervals
     for(int i=0;i<F.pass_intervals.size();i++){
         printf(" i=%d interval %d \n",i,F.pass_intervals[i]);
-        std::cout.flush();
     }
     std::vector <int> update_intervals=F.pass_intervals;
     update_intervals.push_back(F.NUsedplate);//to end intervals at last plate
@@ -183,17 +180,11 @@ int main(int argc, char **argv) {
     }
     for(int i=0;i<update_intervals.size()-1;++i){//go plate by used plate
         int starter=update_intervals[i];
-        //printf(" beginning at %d\n",starter);
-        //std::cout.flush();
         printf("-- interval %d\n",i);
         for (int jused=starter; jused<update_intervals[i+1] && jused<A.suborder.size()-1; jused++) {
-            //printf(" jused %d\n",jused);
-            //std::cout.flush();
 
             if (0<=jused-F.Analysis) {
                 update_plan_from_one_obs(jused,Secret,M,P,pp,F,A);
-                //printf(" 2 jused %d\n",jused);
-                //std::cout.flush();
             }
             else printf("\n no update\n");
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
@@ -207,6 +198,7 @@ int main(int argc, char **argv) {
         redistribute_tf(M,P,pp,F,A,starter);
         printf("-- diagnose %d\n",i);        
         if(F.diagnose)diagnostic(M,Secret,F,A);
+
     }
     // check on SS and SF
 
@@ -223,7 +215,6 @@ int main(int argc, char **argv) {
                 int g=A.TF[j][kk];
                 if(g!=-1 && M[g].SS)count_SS++;
                 if(g!=-1 && M[g].SF)count_SF++;
-                
             }
             SS_hist[count_SS]++;
             SF_hist[count_SF]++;
@@ -247,17 +238,23 @@ int main(int argc, char **argv) {
 
  
     // Results -------------------------------------------------------
-    if (F.PrintAscii) for (int jused=0; jused<F.NUsedplate; jused++){
-        write_FAtile_ascii(A.suborder[jused],F.outDir,M,P,pp,F,A);
+    if (F.PrintAscii){
+        for (int jused=0; jused<F.NUsedplate; jused++){
+            int j=A.suborder[jused];
+            write_FAtile_ascii(A.suborder[jused],F.outDir,M,P,pp,F,A);
+        }
     }
     
-    if (F.PrintFits) for (int jused=0; jused<F.NUsedplate; jused++){
-        fa_write(A.suborder[jused],F.outDir,M,P,pp,F,A); // Write output
+    if (F.PrintFits) {
+        for (int jused=0; jused<F.NUsedplate; jused++){
+            int j=A.suborder[jused];
+            fa_write(A.suborder[jused],F.outDir,M,P,pp,F,A); // Write outpu
+        }
     }
     
 
-    display_results("doc/figs/",Secret,M,P,pp,F,A,true);
-    if (F.Verif) A.verif(P,M,pp,F); // Verification that the assignment is sane
+	display_results("doc/figs/",Secret,M,P,pp,F,A,F.Nplate,true);
+	if (F.Verif) A.verif(P,M,pp,F); // Verification that the assignment is sane
 
 
     print_time(t,"# Finished !... in");
