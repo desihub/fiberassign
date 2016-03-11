@@ -826,8 +826,6 @@ void write_FAtile_ascii(int j, str outdir, const MTL& M, const Plates& P, const 
     FILE * FA;
     int true_tile_no=P[j].tileid;
     str s = outdir+"/tile"+i2s(true_tile_no)+".txt";
-
-    
     FA = fopen(s.c_str(),"w");
     for (int k=0; k<F.Nfiber; k++) {
         int g = A.TF[j][k];
