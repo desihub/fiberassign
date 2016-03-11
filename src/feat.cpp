@@ -69,20 +69,21 @@ void Feat::readInputFile(const char file[]) {
     const int Mc = 512; // Max chars per line
     char delimiter = ' ';
 
-    std::ifstream fIn;
-    fIn.open(file); // open a file
-    if (!fIn.good()) myexit(1); // Not found
-    while (!fIn.eof()) {
-        char buf[Mc];
-        fIn.getline(buf,Mc);
-        int n = 0; // a for-loop index
-        Slist tok = s2vec(buf,delimiter);
-        if (2<=tok.size() && tok[0][0] != '#') {
-            if (tok[0]=="galFile") galFile = tok[1];
-            if (tok[0]=="tileFile") tileFile= tok[1];
-            if (tok[0]=="fibFile") fibFile= tok[1];
-            if (tok[0]=="outDir") outDir= tok[1];
-            if (tok[0]=="PrintAscii") PrintAscii= s2b(tok[1]);
+	std::ifstream fIn;
+	fIn.open(file); // open a file
+	if (!fIn.good()) myexit(1); // Not found
+	while (!fIn.eof()) {
+		char buf[Mc];
+		fIn.getline(buf,Mc);
+		int n = 0; // a for-loop index
+		Slist tok = s2vec(buf,delimiter);
+		if (2<=tok.size()) {
+			if (tok[0]=="galFile") galFile = tok[1];
+			if (tok[0]=="tileFile") tileFile= tok[1];
+			if (tok[0]=="fibFile") fibFile= tok[1];
+            if (tok[0]=="surveyFile") surveyFile= tok[1];
+			if (tok[0]=="outDir") outDir= tok[1];
+			if (tok[0]=="PrintAscii") PrintAscii= s2b(tok[1]);
             if (tok[0]=="PrintFits") PrintFits= s2b(tok[1]);
             
             if (tok[0]=="MTLfile") MTLfile=tok[1];

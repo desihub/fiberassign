@@ -47,7 +47,7 @@ void assign_unused(int j, MTL& M,  Plates& P, const PP& pp, const Feat& F, Assig
 void diagnostic(const Gals& G, Feat& F, const Assignment& A);
 // Results functions --------------------------------------------------
 
-void display_results(str outdir, const Gals& G, const MTL& M, const Plates &P, const PP& pp, Feat& F, const Assignment& A, bool latex=false);
+void display_results(str outdir, const Gals& G, const MTL& M, const Plates &P, const PP& pp, Feat& F, const Assignment& A, int last_tile, bool latex=false);
 
 void diagnostic(const MTL& M, const Gals& G, Feat& F, const Assignment& A);
 

@@ -29,7 +29,8 @@ class Feat { // F for features
     str SStarsfile;
     str SkyFfile;
     str Secretfile;
-    bool PrintFits;
+    str surveyFile;
+	bool PrintFits;
     bool PrintAscii;
     bool diagnose;
 
@@ -90,10 +91,12 @@ class Feat { // F for features
     // Set after reading other input files
     int Nplate;
     int NUsedplate;
-    int Ngal;
-    int Nfiber;
-    int Npetal;
-    int Nfbp; // Number of fibers by petals
+
+	int Ngal;
+    int Ntarg;
+	int Nfiber;
+	int Npetal;
+	int Nfbp; // Number of fibers by petals
 
     // Memorizes geometry of central body and fiber holder
     polygon cb;

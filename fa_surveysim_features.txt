@@ -4,11 +4,13 @@ fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplan
 outDir /global/cscratch1/sd/rncahn/fa_output
 PrintAscii false
 PrintFits false
+
 Targfile /project/projectdirs/desi/mocks/preliminary/Targfile.txt
 SStarsfile /project/projectdirs/desi/mocks/preliminary/SStarsfile.txt
 SkyFfile /project/projectdirs/desi/mocks/preliminary/SkyFfile.txt
 Secretfile /project/projectdirs/desi/mocks/preliminary/Secretfile.txt
 diagnose true
+surveyFile default_survey_list.txt
 
 kind QSOLy-a QSOTracer LRG ELG FakeQSO FakeLRG SS SF
 type QSO QSO LRG ELG QSO LRG SS SF
@@ -21,7 +23,6 @@ SS       0 0 0 0 0 0 1 0
 SF       0 0 0 0 0 0 0 1 
 
 pass_intervals 0 500 1000 2000 4000 8000
-
 Randomize false
 Pacman false
 Npass 5
@@ -45,7 +46,7 @@ NoCollide 7.0
 PatrolRad 5.8
 NeighborRad 14.05
 
-PlotObsTime false
+PlotObsTime true
 PlotHistLya false
 PlotDistLya false
 PlotFreeFibHist false

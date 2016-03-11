@@ -281,9 +281,6 @@ void update_plan_from_one_obs(int jused,const Gals& Secret, MTL& M, Plates&P, co
     List to_update; // Get the list of galaxies to update in the plan
     for (int k=0; k<F.Nfiber; k++) {
         int g = A.TF[j][k];
-         //       if(g!=-1){
-         //   printf(" g %d  M[g].SS  %d  M[g].SF  %d  Secret[g].category %d\n", g, M[g].SS, M[g].SF ,Secret[g].category );
-         //   std::cout.flush();}
         if (g!=-1&&!M[g].SS && !M[g].SF){        // Don't update SS or SF
             //initially nobs_remain==goal
             if(M[g].once_obs==0){//first observation  otherwise should be ok
@@ -574,8 +571,9 @@ void diagnostic(const MTL& M, const Gals& Secret, Feat& F, const Assignment& A){
        //end diagnostic
 }
 
-void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& P, const PP& pp, Feat& F, const Assignment& A, bool latex) {
-    printf("# Results :\n");
+void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& P, const PP& pp, Feat& F, const Assignment& A,  int last_tile,bool latex) {
+	printf("# Results :\n");
+
 
     // 1 Raw numbers of galaxies by id and number of remaining observations
     int MaxObs = max(F.goal);
@@ -583,12 +581,15 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 
     for (int g=0; g<M.size(); g++) {
         if(!M[g].SS && !M[g].SF){
-        int c= Secret[g].category;
-        int m = min(M[g].nobs_done,MaxObs);
+		int c= Secret[g].category;
+            int m=0;
+            for(int k=0;k<A.GL[g].size();++k){
+                if(A.GL[g][k].f<last_tile)++m;
+            }
         obsrv[c][m]++; //
         }
     }
-    printf(" collected obsrv \n");
+
     // Add the 3 columns of tot, fibs, obs
     Table with_tots = obsrv;
     for (int i=0; i<F.Categories-2; i++) {
@@ -600,190 +601,215 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
         with_tots[i].push_back(fibs);
         with_tots[i].push_back(obs);
     }
-    printf(" did with_tots \n");
-    //print_table("  Remaining observations (without negative obs ones)",with_tots,latex,F.kind);
-    Dtable obs_per_sqd = ddivide_floor(with_tots,F.TotalArea);
 
-    // Add percentages of observation
-    Dtable perc = initDtable(F.Categories-2,2);
-    for (int id=0; id<F.Categories-2; id++) {
-        int tot = sumlist(obsrv[id]);
-        int goal = F.goal[id];
+	//print_table("  Remaining observations (without negative obs ones)",with_tots,latex,F.kind);
+	Dtable obs_per_sqd = ddivide_floor(with_tots,F.TotalArea);
 
-        perc[id][0] = percent(tot-obsrv[id][0],tot);
+	// Add percentages of observation
+	Dtable perc = initDtable(F.Categories-2,2);
+	for (int id=0; id<F.Categories-2; id++) {
+		int tot = sumlist(obsrv[id]);
+		int goal = F.goal[id];
 
-        // Weighted percentage
-        int d = 0;
-        for (int i=0; i<=goal; i++) d += obsrv[id][i]*i;
-        perc[id][1] = percent(d,tot*goal);
-    }
-    print_table("Obs per sqd and percentages",concatenate(obs_per_sqd,perc),latex,F.kind);
+		perc[id][0] = percent(tot-obsrv[id][0],tot);
 
-    // 3 Observed galaxies in function of time
-    // Lya 1,2,3,4,5, LRG 1,2
-    if (F.PlotObsTime) {
-    int interval = 10;
-    int nk = 9;
-    Table Ttim = initTable(nk,0);
-    List galaxs = initList(F.Ngal);
-    for (int j=0; j<F.Nplate; j++) {
-        for (int k=0; k<F.Nfiber; k++) {
-            int g = A.TF[j][k];
+		// Weighted percentage
+		int d = 0;
+		for (int i=0; i<=goal; i++) d += obsrv[id][i]*i;
+		perc[id][1] = percent(d,tot*goal);
+	}
+	print_table("Obs per sqd and percentages",concatenate(obs_per_sqd,perc),latex,F.kind);
+
+	// 3 Observed galaxies in function of time
+	// Lya 1,2,3,4,5, LRG 1,2
+	if (F.PlotObsTime) {
+	int interval = 100;
+	int nk = 9;
+	Table Ttim = initTable(nk,0);
+
+	List galaxs = initList(F.Ngal);
+    printf(" F.Ntarg = %d\n",F.Ntarg);
+
+	for (int jused=0; jused<F.NUsedplate; jused++) {
+        int j=A.suborder[jused];
+
+		for (int k=0; k<F.Nfiber; k++) {
+			int g = A.TF[j][k];
             if (g!=-1) galaxs[g]++;
-        }
-        if (j%interval==0) {
-            List l = initList(9);
-            for (int g=0; g<F.Ngal; g++) {
-                int n = galaxs[g];
+		}
+        //only display at certain interval probably should be set in features file
+		if (jused%interval==0) {
+			List l = initList(20);//was 9
+			for (int g=0; g<F.Ntarg; g++) {//assumes targets have lowest numbers!
+				int n = galaxs[g];
                 if (1<=n) {
-                    if (M[g].id == 0) l[n-1]++;
-                    if (M[g].id == 2) l[n-1+5]++;
-                    if (M[g].id == 1) l[n+6]++;
-                    if (M[g].id == 3) l[n+7]++;
-                }
-            }
-            for (int id=0; id<nk; id++) Ttim[id].push_back(l[id]);
-        }
+                    if (Secret[g].category == 0){
+                        l[n-1]++;
+                        if(n>5)printf(" QSO Ly-a observed %d times\n",n);
+                    }
+                    if (Secret[g].category == 2){
+                        l[n-1+5]++;
+                        if(n>2)printf(" LRG observed %d times\n",n);
+                    }
+                    if (Secret[g].category == 1) {
+                        l[n+6]++;
+                    }
+                    if (Secret[g].category == 3){
+                        l[n+7]++;
+                     
+                    }
+				}
+         
+			}
+			for (int id=0; id<nk; id++) Ttim[id].push_back(l[id]);
+        }         
+          
     }
-    }
-
-    // 4 Histogram of percentages of seen Ly-a
-    if (F.PlotHistLya) {
-    int id = F.ids.at("QSOLy-a");
-    int goal = F.goal[id];
-    Table Percseen = initTable(goal+1,0);
-    for (int g=0; g<F.Ngal; g++) {
-        if (M[g].id==id) {
-            int n = M[g].av_tfs.size();
-            int p = A.chosen_tfs(g,F).size();
-            if (n>=Percseen[p].size()) Percseen[p].resize(n+1);
-            Percseen[p][n]++;
-        }
-    }
-    make_square(Percseen);
-    //print_table("Number of QSO Ly-a : x - Number of available TF - y - Number of observations",Percseen);
-    for (int j=0; j<Percseen[0].size(); j++) {
-        for (int i=Percseen.size()-1; i!=0; i--) {
-            Percseen[i-1][j] += Percseen[i][j];
-        }
-    }
+        print_mult_table_latex("Observed galaxies complete (interval 100)",outdir+"time2.dat",Ttim,interval);
+        printf("done with time table\n");
     }
 
-    // 5 Histogram of time between 2 obs of Ly a
-    if (F.PlotDistLya) {
-    Table deltas;
-    for (int g=0; g<F.Ngal; g++) {
-        if (M[g].id == F.ids.at("QSOLy-a")) {
-            Plist tfs = A.chosen_tfs(g,F);
-            if (tfs.size()>=2) {
-                List unsorted;
-                List del;
-                for (int i=0; i<tfs.size(); i++) {
-                    unsorted.push_back(tfs[i].f);
-                }
-                List sorted = sort(unsorted);
-                for (int i=0; i<sorted.size()-1; i++) {
-                    int p1 = sorted[i];
-                    int p2 = sorted[i+1];
-                    del.push_back(p2-p1);
-                }
-                deltas.push_back(del);
-            }
-        }
-    }
-    List histo0 = histogram(deltas,10);
-    //print_hist("Plate interval between 2 consecutive obs of Ly-a (interval 100)",100,histogram(deltas,100));
-    Table delts; delts.push_back(histo0); delts.push_back(cumulate(histo0));
+	// 4 Histogram of percentages of seen Ly-a
+	if (F.PlotHistLya) {
+	int id = F.ids.at("QSOLy-a");
+	int goal = F.goal[id];
+	Table Percseen = initTable(goal+1,0);
+	for (int g=0; g<F.Ntarg; g++) {
+		if (M[g].id==id) {
+			int n = M[g].av_tfs.size();
+			int p = A.chosen_tfs(g,F).size();
+			if (n>=Percseen[p].size()) Percseen[p].resize(n+1);
+			Percseen[p][n]++;
+		}
+	}
+	make_square(Percseen);
+	//print_table("Number of QSO Ly-a : x - Number of available TF - y - Number of observations",Percseen);
+	for (int j=0; j<Percseen[0].size(); j++) {
+		for (int i=Percseen.size()-1; i!=0; i--) {
+			Percseen[i-1][j] += Percseen[i][j];
+		}
+	}
+	print_mult_table_latex("Available tile-fibers for a galaxy (by kind)",outdir+"obsly.dat",Percseen,1);
     }
 
-    // 6 Free fibers histogram
-    if (F.PlotFreeFibHist) {
-    Table unused_fbp = A.unused_fbp(pp,F);
-    make_square(unused_fbp);
-    Table hist0; hist0.push_back(histogram(unused_fbp,1));
+	// 5 Histogram of time between 2 obs of Ly a
+	if (F.PlotDistLya) {
+	Table deltas;
+	for (int g=0; g<F.Ntarg; g++) {
+		if (M[g].id == F.ids.at("QSOLy-a")) {
+			Plist tfs = A.chosen_tfs(g,F);
+			if (tfs.size()>=2) {
+				List unsorted;
+				List del;
+				for (int i=0; i<tfs.size(); i++) {
+					unsorted.push_back(tfs[i].f);
+				}
+				List sorted = sort(unsorted);
+				for (int i=0; i<sorted.size()-1; i++) {
+					int p1 = sorted[i];
+					int p2 = sorted[i+1];
+					del.push_back(p2-p1);
+				}
+				deltas.push_back(del);
+			}
+		}
+	}
+	List histo0 = histogram(deltas,10);
+	//print_hist("Plate interval between 2 consecutive obs of Ly-a (interval 100)",100,histogram(deltas,100));
+	Table delts; delts.push_back(histo0); delts.push_back(cumulate(histo0));
+	print_mult_table_latex("Plate interval between 2 consecutive obs of Ly-a (interval 10)",outdir+"dist2ly.dat",delts,10);
     }
 
-    // 7 Free fibers in function of time (plates)
-    if (F.PlotFreeFibTime) {
-    List freefibtime = initList(F.Nplate);
-    for (int j=0; j<F.Nplate; j++) freefibtime[j] = A.unused_f(j,F);
-    Table fft; fft.push_back(freefibtime);
+	// 6 Free fibers histogram
+	if (F.PlotFreeFibHist) {
+	Table unused_fbp = A.unused_fbp(pp,F);
+	make_square(unused_fbp);
+	Table hist0; hist0.push_back(histogram(unused_fbp,1));
+	print_mult_table_latex("Number of petals with this many free fiber (interval 1)",outdir+"freefib.dat",hist0,1);
+	}
+
+	// 7 Free fibers in function of time (plates)
+	if (F.PlotFreeFibTime) {
+	List freefibtime = initList(F.Nplate);
+	for (int j=0; j<F.Nplate; j++) freefibtime[j] = A.unused_f(j,F);
+	Table fft; fft.push_back(freefibtime);
+	print_mult_table_latex("Free fibers in function of time (plates)",outdir+"fft.dat",fft);
     }
  
-    // 8 Percentage of seen objects as a function of density of objects
-    if (F.PlotSeenDens) {
-    Dcube densities = initDcube(F.Categories+-21,0,0);
-    for (int j=0; j<F.Nplate; j++) {
-        for (int k=0; k<F.Nfiber; k++) {
-            // For all
-            int size = P[j].av_gals[k].size();
-            int oc = 0;
-            for (int i=0; i<size; i++) if (A.is_assigned_jg(j,P[j].av_gals[k][i])!=-1) oc++;
-            if (size!=0 && 1<=oc) { 
-                double d = percent(oc,size);
-                //printf("%f %f %f %d %d %d \n",d,x,invFibArea,size,oc,densities.size()); fl();
-                if (size>=densities[F.Categories].size()) densities[F.Categories].resize(size+1);
-                densities[F.Categories][size].push_back(d);
-            }
+	// 8 Percentage of seen objects as a function of density of objects
+	if (F.PlotSeenDens) {
+	Dcube densities = initDcube(F.Categories+-21,0,0);
+	for (int j=0; j<F.Nplate; j++) {
+		for (int k=0; k<F.Nfiber; k++) {
+			// For all
+			int size = P[j].av_gals[k].size();
+			int oc = 0;
+			for (int i=0; i<size; i++) if (A.is_assigned_jg(j,P[j].av_gals[k][i])!=-1) oc++;
+			if (size!=0 && 1<=oc) { 
+				double d = percent(oc,size);
+				//printf("%f %f %f %d %d %d \n",d,x,invFibArea,size,oc,densities.size()); fl();
+				if (size>=densities[F.Categories].size()) densities[F.Categories].resize(size+1);
+				densities[F.Categories][size].push_back(d);
+			}
 
-            // For kind
-            for (int t=0; t<F.Categories-2; t++) {
-                int nkind = 0;
-                int ock = 0;
-                for (int i=0; i<size; i++) {
-                    int g = P[j].av_gals[k][i];
-                    if (M[g].id == t) {
-                        nkind++;
-                        if (A.is_assigned_jg(j,g)!=-1) ock++;
-                    }
-                }
-                if (nkind!=0 && 1<=ock) { 
-                    double d = percent(ock,nkind);
-                    if (nkind>=densities[t].size()) densities[t].resize(nkind+1);
-                    densities[t][nkind].push_back(d);
-                }
-            }
-        }
+			// For kind
+			for (int t=0; t<F.Categories-2; t++) {
+				int nkind = 0;
+				int ock = 0;
+				for (int i=0; i<size; i++) {
+					int g = P[j].av_gals[k][i];
+					if (M[g].id == t) {
+						nkind++;
+						if (A.is_assigned_jg(j,g)!=-1) ock++;
+					}
+				}
+				if (nkind!=0 && 1<=ock) { 
+					double d = percent(ock,nkind);
+					if (nkind>=densities[t].size()) densities[t].resize(nkind+1);
+					densities[t][nkind].push_back(d);
+				}
+			}
+		}
+	}
+	Dtable densit = initDtable(F.Categories-2+1,max_row(densities));
+	for (int t=0; t<F.Categories-2+1; t++) for (int i=0; i<densities[t].size(); i++) densit[t][i] = sumlist(densities[t][i])/densities[t][i].size();
+	print_mult_Dtable_latex("Perc of seen obj as a fun of dens of objs",outdir+"seendens.dat",densit,1);
     }
-    Dtable densit = initDtable(F.Categories-2+1,max_row(densities));
-    for (int t=0; t<F.Categories-2+1; t++) for (int i=0; i<densities[t].size(); i++) densit[t][i] = sumlist(densities[t][i])/densities[t][i].size();
-
-    }
-    
-    // 9 Collision histogram of distances between galaxies
-    if (F.Collision) {
-    Dlist coldist;
-    for (int j=0; j<F.Nplate; j++) {
-        List done = initList(F.Nfiber);
-        for (int k=0; k<F.Nfiber; k++) {
-            if (done[k]==0) {
-                int c = A.is_collision(j,k,pp,M,P,F);
-                if (c!=-1) {
-                    done[c] = 1;
-                    dpair G1 = projection(A.TF[j][k],j,M,P);
-                    dpair G2 = projection(A.TF[j][c],j,M,P);
-                    double d = norm(G2-G1);
-                    coldist.push_back(d);
-                }
-            }
-        }
-    }
-    double intervaldist = 0.01;
-    
-    Dlist histcoldist = histogram(coldist,intervaldist);
-    Dlist redhistcol = percents(histcoldist,sumlist(histcoldist));
-    Dtable Dtd; Dtd.push_back(redhistcol); Dtd.push_back(cumulate(redhistcol));
-
+	
+	// 9 Collision histogram of distances between galaxies
+	if (F.Collision) {
+	Dlist coldist;
+	for (int j=0; j<F.Nplate; j++) {
+		List done = initList(F.Nfiber);
+		for (int k=0; k<F.Nfiber; k++) {
+			if (done[k]==0) {
+				int c = A.is_collision(j,k,pp,M,P,F);
+				if (c!=-1) {
+					done[c] = 1;
+					dpair G1 = projection(A.TF[j][k],j,M,P);
+					dpair G2 = projection(A.TF[j][c],j,M,P);
+					double d = norm(G2-G1);
+					coldist.push_back(d);
+				}
+			}
+		}
+	}
+	double intervaldist = 0.01;
+	
+	Dlist histcoldist = histogram(coldist,intervaldist);
+	Dlist redhistcol = percents(histcoldist,sumlist(histcoldist));
+	Dtable Dtd; Dtd.push_back(redhistcol); Dtd.push_back(cumulate(redhistcol));
+	print_mult_Dtable_latex("Collision histogram of distances between galaxies",outdir+"coldist.dat",Dtd,intervaldist);
     }
 
-    // Collision rate
-    if (F.Collision) printf("Collision rate : %f %% \n",A.colrate(pp,M,P,F));
+	// Collision rate
+	if (F.Collision) printf("Collision rate : %f %% \n",A.colrate(pp,M,P,F));
 
-    // Percentage of fibers assigned
-    printf("  %s assignments in total (%.4f %% of all fibers)\n",f(A.na(F)).c_str(),percent(A.na(F),F.Nplate*F.Nfiber));
+	// Percentage of fibers assigned
+	//printf("  %s assignments in total (%.4f %% of all fibers)\n",f(A.na(F)).c_str(),percent(A.na(F),F.Nplate*F.Nfiber));
 
-    // Count
-    if (F.Count!=0) printf("Count = %d \n",F.Count);
+	// Count
+	if (F.Count!=0) printf("Count = %d \n",F.Count);
     // print no. of times each galaxy is observed up to max of F.PrintGalObs
     if (F.PrintGalObs>0){
         printf(" F.PrintGalObs  %d \n",F.PrintGalObs);
@@ -798,7 +824,8 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 
 void write_FAtile_ascii(int j, str outdir, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
     FILE * FA;
-    str s = outdir+"/tile"+i2s(j)+".txt";
+    int true_tile_no=P[j].tileid;
+    str s = outdir+"/tile"+i2s(true_tile_no)+".txt";
     FA = fopen(s.c_str(),"w");
     for (int k=0; k<F.Nfiber; k++) {
         int g = A.TF[j][k];

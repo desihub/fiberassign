@@ -4,6 +4,7 @@ fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplan
 outDir /global/cscratch1/sd/rncahn/fa_output/011216/
 SStarsfile /project/projectdirs/desi/mocks/preliminary/SStarsfile.txt
 SkyFfile  /project/projectdirs/desi/mocks/preliminary/SkyFfile.txt
+surveyFile survey_tiles.txt
 
 PrintAscii false
 PrintFits false
