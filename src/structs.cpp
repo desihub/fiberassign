@@ -164,6 +164,9 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
     long nkeep;
     int ncols;
     long *targetid;
+    long *desi_target;
+    long *bgs_target;
+    long *mws_target;
     int *numobs;
     int *priority;
     int *lastpass;
@@ -198,6 +201,18 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
         fprintf(stderr, "problem with targetid allocation\n");
         myexit(1);
       }
+      if(!(desi_target= (long *)malloc(nrows * sizeof(long)))){
+        fprintf(stderr, "problem with desi_target allocation\n");
+        myexit(1);
+      }
+      if(!(mws_target= (long *)malloc(nrows * sizeof(long)))){
+        fprintf(stderr, "problem with mws_target allocation\n");
+        myexit(1);
+      }
+      if(!(bgs_target= (long *)malloc(nrows * sizeof(long)))){
+        fprintf(stderr, "problem with bgs_target allocation\n");
+        myexit(1);
+      }
       if(!(numobs= (int *)malloc(nrows * sizeof(int)))){
         fprintf(stderr, "problem with numobs allocation\n");
         myexit(1);
@@ -220,6 +235,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
         myexit(1);
       }
      
+      //----- TARGETID
       /* find which column contains the TARGETID values */
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"TARGETID", &colnum, &status) ){
         fprintf(stderr, "error finding TARGETID column\n");
@@ -255,6 +271,37 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
       if (fits_read_col(fptr, TDOUBLE, colnum, frow, felem, nrows, 
         &nullval, dec, &anynulls, &status) ){
         fprintf(stderr, "error reading DEC column\n");
+        myexit(status);
+      }
+
+      //----- Target mask bits
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"DESI_TARGET", &colnum, &status) ){
+        fprintf(stderr, "error finding DESI_TARGET column\n");
+        myexit(status);
+      }
+      if (fits_read_col(fptr, TLONG, colnum, frow, felem, nrows, 
+                        &nullval, desi_target, &anynulls, &status) ){
+        fprintf(stderr, "error reading DESI_TARGET column\n");
+        myexit(status);
+      }
+
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"MWS_TARGET", &colnum, &status) ){
+        fprintf(stderr, "error finding MWS_TARGET column\n");
+        myexit(status);
+      }
+      if (fits_read_col(fptr, TLONG, colnum, frow, felem, nrows, 
+                        &nullval, mws_target, &anynulls, &status) ){
+        fprintf(stderr, "error reading MWS_TARGET column\n");
+        myexit(status);
+      }
+
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"BGS_TARGET", &colnum, &status) ){
+        fprintf(stderr, "error finding BGS_TARGET column\n");
+        myexit(status);
+      }
+      if (fits_read_col(fptr, TLONG, colnum, frow, felem, nrows, 
+                        &nullval, bgs_target, &anynulls, &status) ){
+        fprintf(stderr, "error reading BGS_TARGET column\n");
         myexit(status);
       }
 
@@ -340,6 +387,9 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
              Q.ra = ra[ii];
              Q.dec = dec[ii];
              Q.id = targetid[ii];
+             Q.desi_target = desi_target[ii];
+             Q.mws_target = mws_target[ii];
+             Q.bgs_target = bgs_target[ii];
              Q.lastpass = lastpass[ii];
              Q.SS=SS;
              Q.SF=SF;

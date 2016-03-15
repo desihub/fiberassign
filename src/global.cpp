@@ -889,7 +889,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     // string arrays, since the CFITSIO API requires non-const pointers
     // to them (i.e. arrays of literals won't work).
     
-    size_t ncols = 10;
+    size_t ncols = 12;
     
     char ** ttype;
     char ** tform;
@@ -944,21 +944,29 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     strcpy(tform[5], "K");
     strcpy(tunit[5], "");
     
-    strcpy(ttype[6], "RA");
-    strcpy(tform[6], "D");
-    strcpy(tunit[6], "deg");
+    strcpy(ttype[6], "BGS_TARGET");
+    strcpy(tform[6], "K");
+    strcpy(tunit[6], "");
     
-    strcpy(ttype[7], "DEC");
-    strcpy(tform[7], "D");
-    strcpy(tunit[7], "deg");
+    strcpy(ttype[7], "MWS_TARGET");
+    strcpy(tform[7], "K");
+    strcpy(tunit[7], "");
     
-    strcpy(ttype[8], "XFOCAL_DESIGN");
-    strcpy(tform[8], "E");
-    strcpy(tunit[8], "mm");
+    strcpy(ttype[8], "RA");
+    strcpy(tform[8], "D");
+    strcpy(tunit[8], "deg");
     
-    strcpy(ttype[9], "YFOCAL_DESIGN");
-    strcpy(tform[9], "E");
-    strcpy(tunit[9], "mm");
+    strcpy(ttype[9], "DEC");
+    strcpy(tform[9], "D");
+    strcpy(tunit[9], "deg");
+    
+    strcpy(ttype[10], "XFOCAL_DESIGN");
+    strcpy(tform[10], "E");
+    strcpy(tunit[10], "mm");
+    
+    strcpy(ttype[11], "YFOCAL_DESIGN");
+    strcpy(tform[11], "E");
+    strcpy(tunit[11], "mm");
     
     char extname[FLEN_VALUE];
     
@@ -987,6 +995,8 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     }
     long long target_id[optimal];
     long long desi_target[optimal];
+    long long bgs_target[optimal];
+    long long mws_target[optimal];
     float ra[optimal];
     float dec[optimal];
     float x_focal[optimal];
@@ -1017,7 +1027,6 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
                 positioner_id[i] = fib;
                 num_target[i] = P[j].av_gals[fib].size();
 
-                desi_target[i] = 0;
         //PRUEBA
                 //target_id[i] = g; ********
                 if(g>0) target_id[i] = M[g].id;
@@ -1029,6 +1038,9 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
                     dec[i] = qNan;
                     x_focal[i] = qNan;
                     y_focal[i] = qNan;
+                    desi_target[i] = 0;
+                    bgs_target[i] = 0;
+                    mws_target[i] = 0;
                 } else {
                     //we aren't supposed to know the kind  use priority instead
                     //strncpy(objtype[i], F.kind[G[g].id].c_str(), objtypelen);
@@ -1038,6 +1050,9 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
                     x_focal[i] = proj.f;
                     y_focal[i] = proj.s;
                     t_priority[i]=M[g].t_priority;//new
+                    desi_target[i] = M[g].desi_target;
+                    bgs_target[i] = M[g].bgs_target;
+                    mws_target[i] = M[g].mws_target;
                 }
                 
                 for (int k = 0; k < P[j].av_gals[fib].size(); ++k) {
@@ -1073,17 +1088,23 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
             
             fits_write_col(fptr, TLONGLONG, 6, offset+1, 1, n, desi_target, &status);
             fits_report_error(stderr, status);
-            
-            fits_write_col(fptr, TFLOAT, 7, offset+1, 1, n, ra, &status);
+
+            fits_write_col(fptr, TLONGLONG, 7, offset+1, 1, n, bgs_target, &status);
+            fits_report_error(stderr, status);
+
+            fits_write_col(fptr, TLONGLONG, 8, offset+1, 1, n, mws_target, &status);
             fits_report_error(stderr, status);
             
-            fits_write_col(fptr, TFLOAT, 8, offset+1, 1, n, dec, &status);
+            fits_write_col(fptr, TFLOAT, 9, offset+1, 1, n, ra, &status);
             fits_report_error(stderr, status);
             
-            fits_write_col(fptr, TFLOAT, 9, offset+1, 1, n, x_focal, &status);
+            fits_write_col(fptr, TFLOAT, 10, offset+1, 1, n, dec, &status);
             fits_report_error(stderr, status);
             
-            fits_write_col(fptr, TFLOAT, 10, offset+1, 1, n, y_focal, &status);
+            fits_write_col(fptr, TFLOAT, 11, offset+1, 1, n, x_focal, &status);
+            fits_report_error(stderr, status);
+            
+            fits_write_col(fptr, TFLOAT, 12, offset+1, 1, n, y_focal, &status);
             fits_report_error(stderr, status);
         }
         

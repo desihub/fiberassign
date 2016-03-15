@@ -56,6 +56,7 @@ class target {
   int nobs_remain, nobs_done;
   double nhat[3];
   double ra, dec;
+  long desi_target, mws_target, bgs_target;
   int SS,SF,lastpass, priority_class, t_priority, once_obs;
   Plist av_tfs;
 };
