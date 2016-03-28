@@ -55,7 +55,10 @@ private:
     int l=0,r=P.size()-1;
     if (l!=r) {
       for (;;) {
-        int pivot=(int)(l+drand48()*(r-l+1));
+          //rnc 3/28/16 kill randomization
+        //int pivot=(int)(l+drand48()*(r-l+1));
+        int pivot=(int)(l+0.5*(r-l+1));
+
         pivot=partition(P,l,r,pivot,idim);
         if (pivot==mid)
           break;
