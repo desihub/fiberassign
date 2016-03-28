@@ -1,0 +1,13 @@
+
+# The serial C++ compiler
+export CXX := g++
+
+# Normal compile flags
+export CXXFLAGS := -O3
+
+# OpenMP flags (used for both compiling and linking)
+export OMPFLAGS := -fopenmp
+
+# CFITSIO include and linking commands
+export CFITSIO_CPPFLAGS := -I/usr/include/cfitsio
+export CFITSIO := -lcfitsio -lm
