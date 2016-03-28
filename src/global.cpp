@@ -240,11 +240,13 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
       best=assign_fiber(j,k,M,P,pp,F,A);
       if (best!=-1)countme++;
     }
-        printf(" j = %d  countme = %d\n",j,countme);
-        old_countme=countme;
+        if(countme!=old_countme){
+            printf(" j = %d  countme = %d\n",j,countme);
+            old_countme=countme;
+        }
     }
     print_time(t,"# ... took :");
-    if(countme!=old_countme) printf(" countme %d \n",countme);
+   printf(" countme %d \n",countme);
 
 }
 
