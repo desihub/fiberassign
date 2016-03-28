@@ -232,6 +232,7 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
     Time t;
     init_time(t,"# Begin simple assignment :");
     int countme=0;
+    int old_countme=-1;
     for (int j=0; j<F.Nplate; j++) {
 
         int best=-1;
@@ -242,7 +243,8 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
         printf(" j = %d  countme = %d\n",j,countme);
     }
     print_time(t,"# ... took :");
-    printf(" countme %d \n",countme);
+    if(countme!=old_countme) printf(" countme %d \n",countme);
+    old_countme=countme;
 }
 
 void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int jused_start) {
