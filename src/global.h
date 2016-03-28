@@ -1,22 +1,29 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
-#include	<cstdlib>
-#include	<cmath>
-#include	<fstream>
-#include	<sstream>
-#include	<iostream>
-#include	<iomanip>
-#include	<string>
-#include	<vector>
-#include	<algorithm>
-#include	<exception>
-#include	<sys/time.h>
-#include        "omp.h"
-#include        "misc.h"
-#include        "feat.h"
-#include        "structs.h"
-#include        <fitsio.h>
+#include    <cstdlib>
+#include    <cmath>
+#include    <fstream>
+#include    <sstream>
+#include    <iostream>
+#include    <iomanip>
+#include    <string>
+#include    <vector>
+#include    <algorithm>
+#include    <exception>
+#include    <sys/time.h>
+#include    <fitsio.h>
+#ifdef _OPENMP
+#include    <omp.h>
+#else
+static inline int omp_get_thread_num()
+{
+    return 0;
+}
+#endif
+#include    "misc.h"
+#include    "feat.h"
+#include    "structs.h"
 
 
 // Collect -----------------------------------------------------------

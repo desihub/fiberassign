@@ -1,27 +1,27 @@
 #include    <cstdlib>
 #include    <cmath>
-#include        <cstdio>
+#include    <cstdio>
 #include    <fstream>
 #include    <sstream>
 #include    <iostream>
 #include    <iomanip>
 #include    <string>
-#include        <string.h>
-#include        <cstring>
+#include    <string.h>
+#include    <cstring>
 #include    <vector>
 #include    <algorithm>
 #include    <exception>
-#include        <stdexcept>
+#include    <stdexcept>
 #include    <sys/time.h>
-#include        <stdlib.h>     /* srand, rand */
+#include    <sys/stat.h>
+#include    <stdlib.h>     /* srand, rand */
+
 #include    "modules/htmTree.h"
 #include    "modules/kdTree.h"
-#include        "omp.h"
-#include        "misc.h"
-#include        "feat.h"
-#include        "structs.h"
-#include        "global.h"
-#include    <sys/stat.h>
+#include    "misc.h"
+#include    "feat.h"
+#include    "structs.h"
+#include    "global.h"
 
 // Collecting information from input -------------------------------------------------------------------------------------
 void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Plates& P, const PP& pp, const Feat& F) {
