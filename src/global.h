@@ -16,7 +16,7 @@
 #include        "misc.h"
 #include        "feat.h"
 #include        "structs.h"
-#include        "fitsio.h"
+#include        <fitsio.h>
 
 
 // Collect -----------------------------------------------------------
