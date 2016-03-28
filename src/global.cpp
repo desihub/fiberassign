@@ -128,6 +128,9 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
     // For all available galaxies
     for (int gg=0; gg<av_gals.size(); gg++) {
         int g = av_gals[gg];
+        if(k==3 && j==144){
+            printf(" g %d m %d  prio %d \n",g,M[g].t_priority,M[g].nobs_remain);
+        }
         //if(ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){//don't assign SS, SF with find_best 11/20/15
         if(!M[g].SS && !M[g].SF){
             int m = M[g].nobs_remain; // Check whether it needs further observation
