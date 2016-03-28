@@ -241,10 +241,11 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
       if (best!=-1)countme++;
     }
         printf(" j = %d  countme = %d\n",j,countme);
+        old_countme=countme;
     }
     print_time(t,"# ... took :");
     if(countme!=old_countme) printf(" countme %d \n",countme);
-    old_countme=countme;
+
 }
 
 void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int jused_start) {
