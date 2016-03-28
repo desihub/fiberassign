@@ -142,6 +142,9 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
                         best = g;
                         pbest = prio;
                         mbest = m;
+                        if(j==144){
+                            printf("k %d best %d  pbest %d  mbest %d\n",k,best,pbest,mbest);
+                        }
                     }
                 }
             }
