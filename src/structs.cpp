@@ -525,6 +525,10 @@ Plates read_plate_centers(const Feat& F) {
     // read the strategy file
     // survey_list is list of tiles in order of survey
     std::ifstream fsurvey(F.surveyFile.c_str());
+    if (!fsurvey) {  // An error occurred opening the file.
+        std::cerr << "Unable to open file " << F.surveyFile << std::endl;
+        myexit(1);
+    }
     int survey_tile;
     printf("getting file list\n");
     std::cout.flush();
