@@ -8,6 +8,7 @@
 #include    <vector>
 #include    <algorithm>
 #include    <exception>
+#include    <stdexcept>
 #include    <sys/time.h>
 #include        <map>
 #include        <stdlib.h>     /* srand, rand */
@@ -522,8 +523,13 @@ List plate::av_gals_plate(const Feat& F,const MTL& M, const PP& pp) const {//lis
 // Allow for a survey file to define the strategy  1/28/16
 Plates read_plate_centers(const Feat& F) {
     Plates P,PP;
+
+    // Maximum possible value of tileid, equal to total number of tiles
+    // (minimum value is 1).
+    int total_tiles = 28810;
+
     // read the strategy file
-    // survey_list is list of tiles in order of survey
+    // survey_list is list of tiles specified by tileid (starting from 1) in order of survey
     std::ifstream fsurvey(F.surveyFile.c_str());
     if (!fsurvey) {  // An error occurred opening the file.
         std::cerr << "Unable to open file " << F.surveyFile << std::endl;
@@ -574,7 +580,7 @@ Plates read_plate_centers(const Feat& F) {
         std::istringstream ss(buf);
         str start;
         ss>> start;
-        ss>>tileid>>ra >> dec >> ipass>>in_desi>>ebv>>airmass>>exposefac;   
+        ss>>tileid>>ra >> dec >> ipass>>in_desi>>ebv>>airmass>>exposefac;
         //only keep those in footprint, fix ra to lie between 0 and 360
         if (in_desi==1) {
             if (ra<   0.) {ra += 360.;}
@@ -586,6 +592,13 @@ Plates read_plate_centers(const Feat& F) {
             double theta = (90.0 - dec)*M_PI/180.;
             double phi   = (ra        )*M_PI/180.;
             struct plate Q;
+
+            // Check tileid against allowed maximum (tileid starts at 1)
+            if ((tileid < 1) || (tileid > total_tiles)) {
+                std::ostringstream o;
+                o << "tileFile contains an invalid tileid value: " << tileid << " (range 1 to " << total_tiles << ").";
+                throw std::range_error(o.str().c_str());
+            }
             Q.tileid = tileid;
 
             //                        std::cout << "TILEID " << tileid << std::endl;
@@ -615,19 +628,45 @@ Plates read_plate_centers(const Feat& F) {
 	fs.close();
     printf(" size of P  %d\n",P.size());
     std::cout.flush();
-    //need to be able to invert connection with absolute tile number
-    int total_tiles=28810;
+
+    // Vector mapping each valid tileid in order to an index in P[]. For tiles
+    // not in P, invert_tile = -1.
     std::vector <int> invert_tile(total_tiles,-1);
-    
-    for(int i=0;i<P.size();++i){
-        invert_tile[P[i].tileid]=i;
+    for(unsigned i=0;i<P.size();++i)
+    {
+        // P[].tileid is checked for range when read above.
+        // Note that tileid starts at 1.
+        invert_tile[P[i].tileid-1] = i;
     }
-    for(int i=0;i<survey_list.size();++i){
-        int j=survey_list[i];
-        int k=invert_tile[j];
+
+    // Create PP, a subset of P containing those tileids specified in the
+    // surveyFile, in the order in which they are specified.
+    for(unsigned i=0;i<survey_list.size();++i){
+        tileid = survey_list[i];
+
+        // surveyFile may contain entries that are out of range for use as an
+        // index to invert_tile[].
+        if ((tileid < 1) || (tileid > total_tiles)){
+            std::ostringstream o;
+            o << "surveyFile contains an invalid tileid value: " << tileid << " (range 1 to " << total_tiles << ").";
+            throw std::range_error(o.str().c_str());
+        }
+
+        // Note that tileid starts at 1.
+        int k  = invert_tile[tileid-1];
+
+        // k should be a valid index into P, not default value of
+        // invert_tile=-1. This can happen if surveyFile contains valid tileids
+        // that have in_desi = 0 in the tileFile.
+        if (k<0){
+            std::ostringstream o;
+            o << "surveyFile contains tileid " << tileid << ", which is not included (or has in_desi = 0) in tileFile.";
+            throw std::range_error(o.str().c_str());
+        }
+
         PP.push_back(P[k]);
     }
-        return(PP);
+    return(PP);
 }
 // Assignment -----------------------------------------------------------------------------
 Assignment::Assignment(const MTL& M, const Feat& F) {
