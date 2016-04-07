@@ -10,6 +10,7 @@
 #include    <exception>
 #include    <stdexcept>
 #include    <sys/time.h>
+#include    <map>
 #include        <map>
 #include        <stdlib.h>     /* srand, rand */
 #include        "misc.h"
@@ -17,7 +18,6 @@
 #include        "structs.h"
 #include        "collision.h"
 #include        "fitsio.h"
-
 
 
 std::vector<int> count_galaxies(const Gals& G){
@@ -525,11 +525,12 @@ Plates read_plate_centers(const Feat& F) {
     Plates P,PP;
 
     // Maximum possible value of tileid, equal to total number of tiles
-    // (minimum value is 1).
-    int total_tiles = 28810;
+    // (minimum value is 1). No longer used, since tileid is not treated as an
+    // index now.
+    // int total_tiles = 28810;
 
     // read the strategy file
-    // survey_list is list of tiles specified by tileid (starting from 1) in order of survey
+    // survey_list is list of tiles specified by tileid (arbitrary int) in order of survey
     std::ifstream fsurvey(F.surveyFile.c_str());
     if (!fsurvey) {  // An error occurred opening the file.
         std::cerr << "Unable to open file " << F.surveyFile << std::endl;
@@ -569,7 +570,6 @@ Plates read_plate_centers(const Feat& F) {
     int ipass,in_desi,tileid;
     int l = 0;
 
-
     while (fs.eof()==0) {
         getline(fs,buf);
                 if(buf.compare(0, 7, "STRUCT1") != 0) {
@@ -593,12 +593,6 @@ Plates read_plate_centers(const Feat& F) {
             double phi   = (ra        )*M_PI/180.;
             struct plate Q;
 
-            // Check tileid against allowed maximum (tileid starts at 1)
-            if ((tileid < 1) || (tileid > total_tiles)) {
-                std::ostringstream o;
-                o << "tileFile contains an invalid tileid value: " << tileid << " (range 1 to " << total_tiles << ").";
-                throw std::range_error(o.str().c_str());
-            }
             Q.tileid = tileid;
 
             //                        std::cout << "TILEID " << tileid << std::endl;
@@ -629,42 +623,39 @@ Plates read_plate_centers(const Feat& F) {
     printf(" size of P  %d\n",P.size());
     std::cout.flush();
 
-    // Vector mapping each valid tileid in order to an index in P[]. For tiles
-    // not in P, invert_tile = -1.
-    std::vector <int> invert_tile(total_tiles,-1);
+    // Map each valid tileid in order to an index in P[].
+    // Tileid is an arbitrary int
+    std::map<int,int> invert_tile;
+    std::map<int,int>::iterator tileid_to_idx;
+    std::pair<std::map<int,int>::iterator,bool> ret;
+
     for(unsigned i=0;i<P.size();++i)
     {
-        // P[].tileid is checked for range when read above.
-        // Note that tileid starts at 1.
-        invert_tile[P[i].tileid-1] = i;
+        ret = invert_tile.insert(std::make_pair(P[i].tileid,i));
+        std::cout << "Insertng " << (ret.first)->first << " , " << (ret.first)->second << std::endl;
+        // Check for duplicates (std::map.insert only creates keys, fails on duplicate keys)
+        if ( ret.second == false ) {
+            std::ostringstream o;
+            o << "Duplicate tileid " << P[i].tileid << " in tileFile!";
+            throw std::logic_error(o.str().c_str());
+        }
     }
 
     // Create PP, a subset of P containing those tileids specified in the
     // surveyFile, in the order in which they are specified.
     for(unsigned i=0;i<survey_list.size();++i){
-        tileid = survey_list[i];
+        tileid        = survey_list[i];
+        tileid_to_idx = invert_tile.find(tileid);
 
-        // surveyFile may contain entries that are out of range for use as an
-        // index to invert_tile[].
-        if ((tileid < 1) || (tileid > total_tiles)){
-            std::ostringstream o;
-            o << "surveyFile contains an invalid tileid value: " << tileid << " (range 1 to " << total_tiles << ").";
-            throw std::range_error(o.str().c_str());
-        }
-
-        // Note that tileid starts at 1.
-        int k  = invert_tile[tileid-1];
-
-        // k should be a valid index into P, not default value of
-        // invert_tile=-1. This can happen if surveyFile contains valid tileids
-        // that have in_desi = 0 in the tileFile.
-        if (k<0){
+        if (tileid_to_idx == invert_tile.end()){
+            // Can end up with no mapping if surveyFile contains valid tileids that have in_desi = 0 in the tileFile.
             std::ostringstream o;
             o << "surveyFile contains tileid " << tileid << ", which is not included (or has in_desi = 0) in tileFile.";
             throw std::range_error(o.str().c_str());
         }
 
-        PP.push_back(P[k]);
+        // Found a valid index, push the tile to the ordered list.
+        PP.push_back(P[tileid_to_idx->second]);
     }
     return(PP);
 }
