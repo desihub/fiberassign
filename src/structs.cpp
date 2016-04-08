@@ -632,7 +632,6 @@ Plates read_plate_centers(const Feat& F) {
     for(unsigned i=0;i<P.size();++i)
     {
         ret = invert_tile.insert(std::make_pair(P[i].tileid,i));
-        std::cout << "Insertng " << (ret.first)->first << " , " << (ret.first)->second << std::endl;
         // Check for duplicates (std::map.insert only creates keys, fails on duplicate keys)
         if ( ret.second == false ) {
             std::ostringstream o;
