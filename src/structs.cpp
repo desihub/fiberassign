@@ -10,7 +10,6 @@
 #include    <exception>
 #include    <stdexcept>
 #include    <sys/time.h>
-#include    <map>
 #include        <map>
 #include        <stdlib.h>     /* srand, rand */
 #include        "misc.h"
