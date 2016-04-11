@@ -1006,7 +1006,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     float x_focal[optimal];
     float y_focal[optimal];
     //new
-    float t_priority[optimal];
+    int t_priority[optimal];
     
     std::vector <long long> potentialtargetid;
     

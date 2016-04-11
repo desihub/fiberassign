@@ -8,6 +8,7 @@
 #include    <vector>
 #include    <algorithm>
 #include    <exception>
+#include    <stdexcept>
 #include    <sys/time.h>
 #include        <map>
 #include        <stdlib.h>     /* srand, rand */
@@ -16,7 +17,6 @@
 #include        "structs.h"
 #include        "collision.h"
 #include        "fitsio.h"
-
 
 
 std::vector<int> count_galaxies(const Gals& G){
@@ -522,8 +522,14 @@ List plate::av_gals_plate(const Feat& F,const MTL& M, const PP& pp) const {//lis
 // Allow for a survey file to define the strategy  1/28/16
 Plates read_plate_centers(const Feat& F) {
     Plates P,PP;
+
+    // Maximum possible value of tileid, equal to total number of tiles
+    // (minimum value is 1). No longer used, since tileid is not treated as an
+    // index now.
+    // int total_tiles = 28810;
+
     // read the strategy file
-    // survey_list is list of tiles in order of survey
+    // survey_list is list of tiles specified by tileid (arbitrary int) in order of survey
     std::ifstream fsurvey(F.surveyFile.c_str());
     if (!fsurvey) {  // An error occurred opening the file.
         std::cerr << "Unable to open file " << F.surveyFile << std::endl;
@@ -563,7 +569,6 @@ Plates read_plate_centers(const Feat& F) {
     int ipass,in_desi,tileid;
     int l = 0;
 
-
     while (fs.eof()==0) {
         getline(fs,buf);
                 if(buf.compare(0, 7, "STRUCT1") != 0) {
@@ -574,7 +579,7 @@ Plates read_plate_centers(const Feat& F) {
         std::istringstream ss(buf);
         str start;
         ss>> start;
-        ss>>tileid>>ra >> dec >> ipass>>in_desi>>ebv>>airmass>>exposefac;   
+        ss>>tileid>>ra >> dec >> ipass>>in_desi>>ebv>>airmass>>exposefac;
         //only keep those in footprint, fix ra to lie between 0 and 360
         if (in_desi==1) {
             if (ra<   0.) {ra += 360.;}
@@ -586,6 +591,7 @@ Plates read_plate_centers(const Feat& F) {
             double theta = (90.0 - dec)*M_PI/180.;
             double phi   = (ra        )*M_PI/180.;
             struct plate Q;
+
             Q.tileid = tileid;
 
             //                        std::cout << "TILEID " << tileid << std::endl;
@@ -615,19 +621,41 @@ Plates read_plate_centers(const Feat& F) {
 	fs.close();
     printf(" size of P  %d\n",P.size());
     std::cout.flush();
-    //need to be able to invert connection with absolute tile number
-    int total_tiles=28810;
-    std::vector <int> invert_tile(total_tiles,-1);
-    
-    for(int i=0;i<P.size();++i){
-        invert_tile[P[i].tileid]=i;
+
+    // Map each valid tileid in order to an index in P[].
+    // Tileid is an arbitrary int
+    std::map<int,int> invert_tile;
+    std::map<int,int>::iterator tileid_to_idx;
+    std::pair<std::map<int,int>::iterator,bool> ret;
+
+    for(unsigned i=0;i<P.size();++i)
+    {
+        ret = invert_tile.insert(std::make_pair(P[i].tileid,i));
+        // Check for duplicates (std::map.insert only creates keys, fails on duplicate keys)
+        if ( ret.second == false ) {
+            std::ostringstream o;
+            o << "Duplicate tileid " << P[i].tileid << " in tileFile!";
+            throw std::logic_error(o.str().c_str());
+        }
     }
-    for(int i=0;i<survey_list.size();++i){
-        int j=survey_list[i];
-        int k=invert_tile[j];
-        PP.push_back(P[k]);
+
+    // Create PP, a subset of P containing those tileids specified in the
+    // surveyFile, in the order in which they are specified.
+    for(unsigned i=0;i<survey_list.size();++i){
+        tileid        = survey_list[i];
+        tileid_to_idx = invert_tile.find(tileid);
+
+        if (tileid_to_idx == invert_tile.end()){
+            // Can end up with no mapping if surveyFile contains valid tileids that have in_desi = 0 in the tileFile.
+            std::ostringstream o;
+            o << "surveyFile contains tileid " << tileid << ", which is not included (or has in_desi = 0) in tileFile.";
+            throw std::range_error(o.str().c_str());
+        }
+
+        // Found a valid index, push the tile to the ordered list.
+        PP.push_back(P[tileid_to_idx->second]);
     }
-        return(PP);
+    return(PP);
 }
 // Assignment -----------------------------------------------------------------------------
 Assignment::Assignment(const MTL& M, const Feat& F) {
