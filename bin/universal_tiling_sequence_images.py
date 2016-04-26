@@ -53,7 +53,7 @@ no=list()
 newfig=list()
 tilenames=[tileid,no,ra,dec,passs,in_desi]
 tiletypes=[str,int,float,float,int,int]
-fstandard=open('/project/projectdirs/desi/software/cori/desimodel/0.4desi-tiles.par','r')
+fstandard=open('/project/projectdirs/desi/software/cori/desimodel/0.4/desi-tiles.par','r')
 readmulticolumn(fstandard,tilenames,tiletypes)
 
 # get ordering of tile from external file specified in execution command
