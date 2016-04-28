@@ -30,7 +30,7 @@ names=[ra,dec,av_tfs1,av_tfs2]
 types=[float,float,int,int]
 
 
-tiling=input("Standard tiling=0   Randomized tiling=1")
+tiling=input("Standard tiling=0   Randomized tiling=1 ")
 if(tiling==0):
     fstandard=open('/project/projectdirs/desi/mocks/preliminary/new_random_map.txt','r')
 else:
@@ -55,11 +55,11 @@ while (1==1):
     dec_center=(dec_min+dec_max)/2.
 
     overlap=input("Don't include overlap of positioners=0  Do include overlap of positioners")
-    if (ra_min>0 & ra_max>0):
+    if (ra_min>=0 & ra_max>=0):
         ii=(mra<ra_max)&(mra>ra_min)&(mdec<dec_max)&(mdec>dec_min)
-    if (ra_min<0 & ra_max>0):
+    if (ra_min<0 & ra_max>=0):
         ii=(mdec<dec_max)&(mdec>dec_min)&(mra<ra_max|mra>ra_min+360)
-    if (ra_min<0 & ra_max<0):
+    if (ra_min<0 & ra_max<=0):
         ii=(360+mra<ra_max)&(360+mra>ra_min)&(mdec<dec_max)&(mdec>dec_min)
     nra=mra[ii]
     ndec=mdec[ii]
