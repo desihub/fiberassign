@@ -58,7 +58,8 @@ while (1==1):
     if (ra_min>=0 & ra_max>=0):
         ii=(mra<ra_max)&(mra>ra_min)&(mdec<dec_max)&(mdec>dec_min)
     if (ra_min<0 & ra_max>=0):
-        ii=(mdec<dec_max)&(mdec>dec_min)&N.any([mra<ra_max ,mra>ra_min+360])
+        split=(mra<ra_max) or (mra>ra_min+360)
+        ii=(mdec<dec_max)&(mdec>dec_min)&split
     if (ra_min<0 & ra_max<=0):
         ii=(mra<360+ra_max)&(mra>360+ra_min)&(mdec<dec_max)&(mdec>dec_min)
     nra=mra[ii]
@@ -66,7 +67,7 @@ while (1==1):
     if(overlap==0):
         nav_tfs=mav_tfs2[ii]
     else:
-        nav_tfs=mav_tfs2[ii]
+        nav_tfs=mav_tfs1[ii]
 
     max_av_tfs=N.amax(nav_tfs)
     min_av_tfs=N.amin(nav_tfs)
