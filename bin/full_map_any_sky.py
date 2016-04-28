@@ -58,7 +58,7 @@ while (1==1):
     if (ra_min>=0 & ra_max>=0):
         ii=(mra<ra_max)&(mra>ra_min)&(mdec<dec_max)&(mdec>dec_min)
     if (ra_min<0 & ra_max>=0):
-        ii=(mdec<dec_max)&(mdec>dec_min)&any([mra<ra_max ,mra>ra_min+360])
+        ii=(mdec<dec_max)&(mdec>dec_min)&N.any([mra<ra_max ,mra>ra_min+360])
     if (ra_min<0 & ra_max<=0):
         ii=(mra<360+ra_max)&(mra>360+ra_min)&(mdec<dec_max)&(mdec>dec_min)
     nra=mra[ii]
