@@ -55,8 +55,12 @@ while (1==1):
     dec_center=(dec_min+dec_max)/2.
 
     overlap=input("Don't include overlap of positioners=0  Do include overlap of positioners")
-
-    ii=(mra<ra_max)&(mra>ra_min)&(mdec<dec_max)&(mdec>dec_min)
+    if (ra_min>0 & ra_max>0):
+        ii=(mra<ra_max)&(mra>ra_min)&(mdec<dec_max)&(mdec>dec_min)
+    if (ra_min<0 & ra_max>0):
+        ii=(mdec<dec_max)&(mdec>dec_min)&(mra<ra_max|mra>ra_mix+360)
+    if (ra_min<0 & ra_max<0):
+        ii=(360+mra<ra_max)&(360+mra>ra_min)&(mdec<dec_max)&(mdec>dec_min)
     nra=mra[ii]
     ndec=mdec[ii]
     if(overlap==0):
