@@ -59,7 +59,7 @@ while (1==1):
         ii=(mra<ra_max)&(mra>ra_min)&(mdec<dec_max)&(mdec>dec_min)
     elif (ra_max<=0):
         ii=(mra<360+ra_max)&(mra>360+ra_min)&(mdec<dec_max)&(mdec>dec_min)
-    elif:
+    else:
         ii=(mdec<dec_max)&(mdec>dec_min)& any([(mra<ra_max),(mra>ra_min+360)])
     nra=mra[ii]
     ndec=mdec[ii]
