@@ -113,6 +113,21 @@ int main(int argc, char **argv) {
     // For each galaxy, computes available tilefibers  G[i].av_tfs = [(j1,k1),(j2,k2),..]
     collect_available_tilefibers(M,P,F);
     
+    //count number of galaxies in first pass and number not in first pass
+    
+    int inside=0;
+    int outside=0;
+    for(int g=0);g<FNtarg;++g){
+        Plist v=M[g].av_tfs;
+        for(int i=0);i<v.size();++i){
+            if(v[i].f==0){
+                ++outside;
+                break;
+            }
+            ++inside;
+        }
+    }
+    printf ("inside = %d  outisde = %d\n",inside,outside);
     //results_on_inputs("doc/figs/",G,P,F,true);
 
     //// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
