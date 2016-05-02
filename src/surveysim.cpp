@@ -116,19 +116,19 @@ int main(int argc, char **argv) {
     //count number of galaxies in first pass and number not in first pass
     
     int totalg=0;
-    int outside=0;
+    int inside=0;
     for(int g=0;g<F.Ntarg;++g){
         Plist v=M[g].av_tfs;
         int done=0;
         for(int i=0;i<v.size()&&done==0;++i){
-            if(P[v[i].f].ipass==0){
-                ++outside;
+            if(P[v[i].f].ipass==1){
+                ++inside;
                 done=1;
             }
         }
         ++totalg;
     }
-    printf ("total = %d  outisde = %d\n",totalg,outside);
+    printf ("total = %d  outisde = %d\n",totalg,inside);
     //results_on_inputs("doc/figs/",G,P,F,true);
 
     //// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
