@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
     
     int inside=0;
     int outside=0;
-    for(int g=0);g<FNtarg;++g){
+    for(int g=0;g<FNtarg;++g){
         Plist v=M[g].av_tfs;
         for(int i=0);i<v.size();++i){
             if(v[i].f==0){
