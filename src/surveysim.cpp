@@ -117,18 +117,20 @@ int main(int argc, char **argv) {
     
     int totalg=0;
     int inside=0;
+    int all_covered=0;
+    for(int g=0;g<F.Ntarg;++g)if(M[g].av_tfs.size()>0)++all_covered
     for(int g=0;g<F.Ntarg;++g){
         Plist v=M[g].av_tfs;
         int done=0;
         for(int i=0;i<v.size()&&done==0;++i){
-            if(P[v[i].f].ipass==1){
+            if(P[v[i].f]){
                 ++inside;
                 done=1;
             }
         }
         ++totalg;
     }
-    printf ("total = %d  outisde = %d\n",totalg,inside);
+    printf ("total = %d  inside = %d  covered  %d\n",totalg,inside, all_covered);
     //results_on_inputs("doc/figs/",G,P,F,true);
 
     //// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
