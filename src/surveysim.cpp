@@ -121,7 +121,7 @@ int main(int argc, char **argv) {
         Plist v=M[g].av_tfs;
         int done=0;
         for(int i=0;i<v.size()&&done==0;++i){
-            if(ipass[v[i].f]==0){
+            if(P[v[i].f].ipass==0){
                 ++outside;
                 done=1;
             }
