@@ -63,7 +63,7 @@ Gals read_Secretfile(str readfile, const Feat&F){
 
     if ( fits_movabs_hdu(fptr, 2, &hdutype, &status) )
       myexit(status);
-    
+
     fits_get_hdrspace(fptr, &nkeys, NULL, &status);            
     fits_get_hdu_num(fptr, &hdupos);
     fits_get_hdu_type(fptr, &hdutype, &status);  /* Get the HDU type */            
@@ -148,11 +148,11 @@ Gals read_Secretfile(str readfile, const Feat&F){
 
 MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
     //str s=F.MTLfile;
-    str s=readfile;
+    str s = readfile;
     MTL M;
     std::string buf;
     const char* fname;
-    fname= s.c_str();
+    fname = s.c_str();
     std::ifstream fs(fname);
     int ii;
     fitsfile *fptr;        
@@ -174,14 +174,39 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
     double *dec;    
     int colnum;
     
+    // General purpose output stream for exceptions
+    std::ostringstream o;
 
-    if (! fits_open_file(&fptr, fname, READONLY, &status)){
-      std::cout << "reading MTL file " << fname << std::endl;
+    // Check that input file exists and is readable by cfitsio
+    std::cout << "Finding file: " << fname << std::endl;
+    int file_exists;
+    fits_file_exists(fname,&file_exists,&status);
+    std::ostringstream exists_str;
+    exists_str << "(CFITSIO file_exists code: " << file_exists << ")";
+
+    // Throw exceptions for failed read, see cfitsio docs
+    if (! file_exists) {
+        switch (file_exists){
+        case -1:
+            o << "Input MTL file must be a disk file: " << fname << " " << exists_str.str();
+            throw std::runtime_error(o.str().c_str());
+        case  0:
+            o << "Could not find MTL input file: " << fname << " " << exists_str.str();
+            throw std::runtime_error(o.str().c_str());
+        case  2:
+            o << "Cannot handle zipped MTL input file: " << fname << " " << exists_str.str();
+            throw std::runtime_error(o.str().c_str());
+        }
+    }
+
+    std::cout << "Found MTL input file: " << fname << std::endl;
+
+    if (! fits_open_file(&fptr, fname, READONLY, &status) ){
+      std::cout << "Reading MTL input file " << fname << std::endl;
 
       if ( fits_movabs_hdu(fptr, 2, &hdutype, &status) )
           myexit(status);
-      
-      
+ 
       fits_get_hdrspace(fptr, &nkeys, NULL, &status);            
       fits_get_hdu_num(fptr, &hdupos);
       fits_get_hdu_type(fptr, &hdutype, &status);  /* Get the HDU type */            
@@ -413,6 +438,11 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
       } // end ii loop over targets
       std::sort(M.priority_list.begin(),M.priority_list.end());
       return(M);  
+    } else {
+        std::ostringstream open_status_str;
+        open_status_str << "(CFITSIO open_file status: " << status << ")";
+        o << "Problem opening input MTL fits file: " << fname << " " << open_status_str.str();
+        throw std::runtime_error(o.str().c_str());
     }
 }
 
