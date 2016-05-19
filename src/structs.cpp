@@ -870,6 +870,22 @@ List Assignment::fibs_unassigned(int j, int pet, const MTL& M, const PP& pp, con
     }
     return L;
 }
+/*
+ old version
+int Assignment::nobs_time(int g, int j, const Gals& G, const Feat& F) const {
+    int kind = G[g].id;
+    int cnt = once_obs[g] ? F.goal[kind] : F.maxgoal(kind);
+    for (int i=0; i<GL[g].size(); i++) if (GL[g][i].f<j) cnt--;
+    return cnt;
+}
+*/
+
+int Assignment::nobs_time(int g, int j, const Gals& Secret, const MTL& M,const Feat& F) const {
+    int kind = Secret[g].category;
+    int cnt = M[g].once_obs ? F.goal[kind] : F.maxgoal(kind);
+    for (int i=0; i<GL[g].size(); i++) if (GL[g][i].f<j) cnt--;
+    return cnt;
+
 // Returns the radial distance on the plate (mm) given the angle,
 // theta (radians).  This is simply a fit to the data provided.
 double plate_dist(const double theta) {
