@@ -1144,7 +1144,47 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     
     return;
 }
-
+void pyplotTile(int j, str directory, const Gals& G, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
+    std::vector<char> colors;
+    colors.resize(F.Categories);
+    colors[0] = 'k'; colors[1] = 'g'; colors[2] = 'r'; colors[3] = 'b'; colors[4] = 'm'; colors[5] = 'y'; colors[6] = 'w'; colors[7] = 'c';
+    polygon pol;
+    PosP posp(3,3);
+    for (int k=0; k<F.Nfiber; k++) {
+        dpair O = pp.coords(k);
+        int g = A.TF[j][k];
+        if (g!=-1) {
+            dpair Ga = projection(g,j,G,P);
+            polygon fh = F.fh;
+            polygon cb = F.cb;
+            repos_cb_fh(cb,fh,O,Ga,posp);
+            //if (A.is_collision(j,k,pp,G,P,F)!=-1) {
+            //cb.set_color('r');
+            //fh.set_color('r');
+            //}
+            cb.set_color(colors[G[g].id]);
+            fh.set_color(colors[G[g].id]);
+            pol.add(cb);
+            pol.add(fh);
+            pol.add(element(O,colors[G[g].id],0.3,5));
+        }
+        else pol.add(element(O,'k',0.1,3));
+        List av_gals = P[j].av_gals[k];
+        for (int i=0; i<av_gals.size(); i++) {
+            int gg = av_gals[i];
+            if (1<=A.nobs_time(gg,j,G,F)) {
+                //if (A.nobs_time(gg,j,G,F)!=A.nobs(gg,G,F)) printf("%d %d %s - ",A.nobs_time(gg,j,G,F),A.nobs(gg,G,F),F.kind[G[gg].id].c_str());
+                int kind = G[gg].id;
+                dpair Ga = projection(gg,j,G,P);
+                if (kind==F.ids.at("QSOLy-a")) pol.add(element(Ga,colors[kind],1,A.is_assigned_jg(j,gg)==-1?0.9:0.5));
+                else pol.add(element(Ga,colors[kind],1,0.5));
+            }
+        }
+    }
+    pyplot pyp(pol);
+    //for (int k=0; k<F.Nfiber; k++) pyp.addtext(pp.coords(k),i2s(k)); // Plot fibers identifiers
+    pyp.plot_tile(directory,j,F); 
+}
 
 void overlappingTiles(str fname, const Feat& F, const Assignment& A) {
   FILE * file;
