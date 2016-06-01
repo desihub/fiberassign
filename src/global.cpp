@@ -1172,7 +1172,7 @@ void pyplotTile(int j, str directory, const Gals& Secret, const MTL& M,const Pla
         List av_gals = P[j].av_gals[k];
         for (int i=0; i<av_gals.size(); i++) {
             int gg = av_gals[i];
-            if (1<=A.nobs_time(gg,j,M,F)) {
+            if (1<=A.nobs_time(gg,j,Secret,M,F)) {
                 //if (A.nobs_time(gg,j,G,F)!=A.nobs(gg,G,F)) printf("%d %d %s - ",A.nobs_time(gg,j,G,F),A.nobs(gg,G,F),F.kind[G[gg].id].c_str());
                 int kind = Secret[gg].category;
                 dpair Ga = projection(gg,j,M,P);
