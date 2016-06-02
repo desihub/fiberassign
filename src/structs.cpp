@@ -881,8 +881,10 @@ int Assignment::nobs_time(int g, int j, const Gals& G, const Feat& F) const {
 */
 
 int Assignment::nobs_time(int g, int j, const Gals& Secret, const MTL& M,const Feat& F) const {
+    //gives required number of observations after jth tile  rnc 6/1/16
     int kind = Secret[g].category;
-    int cnt = M[g].once_obs ? F.goal[kind] : F.maxgoal(kind);
+    //int cnt = M[g].once_obs ? F.goal[kind] : F.maxgoal(kind); old version
+    int cnt = M[g].once_obs ? F.goalpost[kind] : F.goal[kind];
     for (int i=0; i<GL[g].size(); i++) if (GL[g][i].f<j) cnt--;
     return cnt;
 }
