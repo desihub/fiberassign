@@ -1169,7 +1169,7 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
             pol.add(fh);
             pol.add(element(O,colors[Secret[g].category],0.3,5));
         }
-        else pol.add(element(O,'k',0.1,3));
+        else pol.add(element(O,'k',0.1,3));//unassigned fiber
         List av_gals = P[j].av_gals[k];
         for (int i=0; i<av_gals.size(); i++) {
             int gg = av_gals[i];
