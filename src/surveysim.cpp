@@ -114,7 +114,7 @@ int main(int argc, char **argv) {
     collect_available_tilefibers(M,P,F);
     
     //count number of galaxies in first pass and number not in first pass
-    
+   /*
     int totalg=0;
     int inside=0;
     int all_covered=0;
@@ -131,6 +131,7 @@ int main(int argc, char **argv) {
         ++totalg;
     }
     printf ("total = %d  inside = %d  covered  %d\n",totalg,inside, all_covered);
+    */
     //results_on_inputs("doc/figs/",G,P,F,true);
 
     //// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -205,7 +206,7 @@ int main(int argc, char **argv) {
                 update_plan_from_one_obs(jused,Secret,M,P,pp,F,A);
             }
             else printf("\n no update\n");
-            if (jused%100==0) pyplotTile(jused,"doc/figs",Secret,M,P,pp,F,A);
+            if (F.PlotPyplotTile && jused%F.PyplotInterval==0) pyplotTile(jused,"doc/figs",Secret,M,P,pp,F,A);
 
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
 
