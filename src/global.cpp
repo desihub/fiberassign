@@ -1150,9 +1150,9 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
     colors[0] = 'k'; colors[1] = 'g'; colors[2] = 'r'; colors[3] = 'b'; colors[4] = 'm'; colors[5] = 'y'; colors[6] = 'w'; colors[7] = 'c';
     polygon pol;
     PosP posp(3,3);
+    int j=A.suborder[jused];
     for (int k=0; k<F.Nfiber; k++) {
         dpair O = pp.coords(k);
-        int j=A.suborder[jused];
         int g = A.TF[j][k];
         if (g!=-1) {
             dpair Ga = projection(g,j,M,P);
