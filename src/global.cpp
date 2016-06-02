@@ -1177,7 +1177,7 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
                 //if (A.nobs_time(gg,j,G,F)!=A.nobs(gg,G,F)) printf("%d %d %s - ",A.nobs_time(gg,j,G,F),A.nobs(gg,G,F),F.kind[G[gg].id].c_str());
                 int kind = Secret[gg].category;
                 dpair Ga = projection(gg,j,M,P);
-                if (kind==F.ids.at("QSOLy-a")) pol.add(element(Ga,colors[kind],1,A.is_assigned_jg(j,gg)==-1?0.9:0.5));
+                //if (kind==F.ids.at("QSOLy-a")) pol.add(element(Ga,colors[kind],1,A.is_assigned_jg(j,gg)==-1?0.9:0.5));
                 else pol.add(element(Ga,colors[kind],1,0.5));
             }
         }
