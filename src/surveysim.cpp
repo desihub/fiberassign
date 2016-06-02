@@ -204,8 +204,9 @@ int main(int argc, char **argv) {
             if (0<=jused-F.Analysis) {
                 update_plan_from_one_obs(jused,Secret,M,P,pp,F,A);
             }
-            if (jused%500==0) pyplotTile(jused,"doc/figs",Secret,M,P,pp,F,A);
             else printf("\n no update\n");
+            if (jused%100==0) pyplotTile(jused,"doc/figs",Secret,M,P,pp,F,A);
+
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
 
         }
