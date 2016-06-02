@@ -201,7 +201,8 @@ int main(int argc, char **argv) {
         int starter=update_intervals[i];
         printf("-- interval %d\n",i);
         for (int jused=starter; jused<update_intervals[i+1] && jused<A.suborder.size()-1; jused++) {
-
+            printf(" jused = %d\n",jused);
+            std::cout.flush();
             if (0<=jused-F.Analysis) {
                 update_plan_from_one_obs(jused,Secret,M,P,pp,F,A);
             }
