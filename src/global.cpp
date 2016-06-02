@@ -1152,7 +1152,7 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
     PosP posp(3,3);
     for (int k=0; k<F.Nfiber; k++) {
         dpair O = pp.coords(k);
-        j=A.suborder[jused];
+        int j=A.suborder[jused];
         int g = A.TF[j][k];
         if (g!=-1) {
             dpair Ga = projection(g,j,M,P);
