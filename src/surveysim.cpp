@@ -204,7 +204,7 @@ int main(int argc, char **argv) {
             printf(" jused = %d\n",jused);
             std::cout.flush();
             if (0<=jused-F.Analysis) {
-                printf(" updating  jused = %d  j=%d \n",jused,j);
+                printf(" updating  jused = %d \n",jused);
                 update_plan_from_one_obs(jused,Secret,M,P,pp,F,A);
             }
             else printf("\n no update\n");
