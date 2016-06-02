@@ -1151,7 +1151,7 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
     polygon pol;
     PosP posp(3,3);
     int j=A.suborder[jused];
-    fprintf(" jused  %d  j  %d \n",jused,j);
+    printf(" jused  %d  j  %d \n",jused,j);
     for (int k=0; k<F.Nfiber; k++) {
         dpair O = pp.coords(k);
         int g = A.TF[j][k];
