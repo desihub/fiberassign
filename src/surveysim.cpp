@@ -204,9 +204,11 @@ int main(int argc, char **argv) {
             printf(" jused = %d\n",jused);
             std::cout.flush();
             if (0<=jused-F.Analysis) {
+                printf(" updating  jused = %d  j=%d \n",jused,j);
                 update_plan_from_one_obs(jused,Secret,M,P,pp,F,A);
             }
             else printf("\n no update\n");
+            std::cout.flush();
             if (F.PlotPyplotTile && jused%F.PyplotInterval-1==0) pyplotTile(jused,"doc/figs",Secret,M,P,pp,F,A);
 
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
