@@ -1169,11 +1169,15 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
             //cb.set_color('r');
             //fh.set_color('r');
             //}
-            cb.set_color(colors[Secret[g].category]);
-            fh.set_color(colors[Secret[g].category]);
+            //fix color assignment to account for Secret and SkyF
+            if (g<N.Fgal) char this_color=colors[Secret[g].category];
+            else if (g<N.Fgal+N.FSStars)char this_color='w';
+            else char this_color='c';
+            cb.set_color(this_color);
+            fh.set_color(this_color);
             pol.add(cb);
             pol.add(fh);
-            pol.add(element(O,colors[Secret[g].category],0.3,5));
+            pol.add(element(O,this_color,0.3,5));
         }
         else pol.add(element(O,'k',0.1,3));//unassigned fiber
         List av_gals = P[j].av_gals[k];
@@ -1181,10 +1185,14 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
             int gg = av_gals[i];
             if (1<=A.nobs_time(gg,j,Secret,M,F)) {
                 //if (A.nobs_time(gg,j,G,F)!=A.nobs(gg,G,F)) printf("%d %d %s - ",A.nobs_time(gg,j,G,F),A.nobs(gg,G,F),F.kind[G[gg].id].c_str());
-                int kind = Secret[gg].category;
+                //again account for secret and sky fibers
+                if (gg<N.Fgal) char this_color=colors[Secret[g].category];
+                else if (gg<N.Fgal+N.FSStars)char this_color='w';
+                else char this_color='c';
+
                 dpair Ga = projection(gg,j,M,P);
-                if (kind==0) pol.add(element(Ga,colors[kind],1,A.is_assigned_jg(j,gg)==-1?0.9:0.5));
-                else  pol.add(element(Ga,colors[kind],1,0.5));
+                if (this_color='k') pol.add(element(Ga,'k',1,A.is_assigned_jg(j,gg)==-1?0.9:0.5));
+                else  pol.add(element(Ga,this_color,1,0.5));
             }
         }
     }

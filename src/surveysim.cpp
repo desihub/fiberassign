@@ -63,6 +63,8 @@ int main(int argc, char **argv) {
     printf(" M size %d \n",M.size());
     F.Ngal=M.size();
     F.Ntarg=Secret.size();
+    F.NSstars=SStars.size();
+    F.NSkyF=SkyF.size();
     
     //establish priority classes
     init_time_at(time,"# establish priority clasess",t);
