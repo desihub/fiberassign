@@ -211,7 +211,7 @@ int main(int argc, char **argv) {
             printf("did update\n");
             std::cout.flush();
             if (F.PlotPyplotTile && jused%F.PyplotInterval-1==0){
-                printf("do pyplot  jused= %d\n"jused);
+                printf("do pyplot  jused= %d\n",jused);
                 pyplotTile(jused,"doc/figs",Secret,M,P,pp,F,A);
             }
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
