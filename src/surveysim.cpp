@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
     printf(" M size %d \n",M.size());
     F.Ngal=M.size();
     F.Ntarg=Secret.size();
-    F.NSSAtars=SStars.size();
+    F.NSSatars=SStars.size();
     F.NSkyF=SkyF.size();
     
     //establish priority classes
