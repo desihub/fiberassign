@@ -1187,7 +1187,7 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
             if (1<=A.nobs_time(gg,j,Secret,M,F)) {
                 //if (A.nobs_time(gg,j,G,F)!=A.nobs(gg,G,F)) printf("%d %d %s - ",A.nobs_time(gg,j,G,F),A.nobs(gg,G,F),F.kind[G[gg].id].c_str());
                 //again account for secret and sky fibers
-                char=this_color;
+                char this_color;
                 if (gg<F.Ngal) this_color=colors[Secret[g].category];
                 else if (gg<F.Ngal+F.NSStars)this_color='w';
                 else this_color='c';
