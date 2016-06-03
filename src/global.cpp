@@ -1184,7 +1184,7 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
         List av_gals = P[j].av_gals[k];
         for (int i=0; i<av_gals.size(); i++) {
             int gg = av_gals[i];
-            if (1<=A.nobs_time(gg,j,Secret,M,F)) {
+            if (gg>F.Ngal ||1<=A.nobs_time(gg,j,Secret,M,F)) {
                 //if (A.nobs_time(gg,j,G,F)!=A.nobs(gg,G,F)) printf("%d %d %s - ",A.nobs_time(gg,j,G,F),A.nobs(gg,G,F),F.kind[G[gg].id].c_str());
                 //again account for secret and sky fibers
                 char this_color;
