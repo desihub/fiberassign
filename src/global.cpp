@@ -1150,7 +1150,7 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
     colors[0] = 'k'; colors[1] = 'g'; colors[2] = 'r'; colors[3] = 'b'; colors[4] = 'm'; colors[5] = 'y'; colors[6] = 'w'; colors[7] = 'c';
     polygon pol;
     PosP posp(3,3);
-    printf("before suborder");
+    printf("before suborder\n");
     std::cout.flush();
     int j=A.suborder[jused];
     printf(" jused  %d  j  %d \n",jused,j);
@@ -1158,6 +1158,8 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
     for (int k=0; k<F.Nfiber; k++) {
         dpair O = pp.coords(k);
         int g = A.TF[j][k];
+        printf( "j = %d  k= %d g = d% \n",j,k,g);
+        std::cout.flush;
         if (g!=-1) {
             dpair Ga = projection(g,j,M,P);
             polygon fh = F.fh;
