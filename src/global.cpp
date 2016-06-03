@@ -1159,7 +1159,7 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
         dpair O = pp.coords(k);
         int g = A.TF[j][k];
         printf( "j = %d  k= %d g = d% \n",j,k,g);
-        std::cout.flush;
+        std::cout.flush();
         if (g!=-1) {
             dpair Ga = projection(g,j,M,P);
             polygon fh = F.fh;
