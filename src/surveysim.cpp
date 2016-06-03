@@ -165,10 +165,7 @@ int main(int argc, char **argv) {
         }
     }
     F.NUsedplate=A.suborder.size();
-    //diagnostic
-    for(int jused=0;jused<F.NUsedplate;++jused)printf("jused = %d j = %d \n",jused ,A.suborder[jused]);
-    printf(" Plates actually used %d \n",F.NUsedplate);
-
+   
     if(F.diagnose)diagnostic(M,Secret,F,A);
 
     print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
@@ -210,10 +207,13 @@ int main(int argc, char **argv) {
                 update_plan_from_one_obs(jused,Secret,M,P,pp,F,A);
             }
             else printf("\n no update\n");
-            std::cout.flush();
-            printf("did update\n");
-            if (F.PlotPyplotTile && jused%F.PyplotInterval-1==0) pyplotTile(jused,"doc/figs",Secret,M,P,pp,F,A);
 
+            printf("did update\n");
+            std::cout.flush();
+            if (F.PlotPyplotTile && jused%F.PyplotInterval-1==0){
+                printf("do pyplot  jused= %d\n"jused);
+                pyplotTile(jused,"doc/figs",Secret,M,P,pp,F,A);
+            }
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
 
         }
