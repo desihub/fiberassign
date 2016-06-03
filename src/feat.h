@@ -95,6 +95,8 @@ class Feat { // F for features
     int NUsedplate;
 
 	int Ngal;
+    int NSStars;
+    int NSkyF;
     int Ntarg;
 	int Nfiber;
 	int Npetal;
