@@ -165,6 +165,8 @@ int main(int argc, char **argv) {
         }
     }
     F.NUsedplate=A.suborder.size();
+    //diagnostic
+    for(int jused=0;jused<F.NUsedplate;++jused)printf("jused = %d j = %d \n",jused A.suborder[jused]);
     printf(" Plates actually used %d \n",F.NUsedplate);
 
     if(F.diagnose)diagnostic(M,Secret,F,A);
@@ -209,7 +211,7 @@ int main(int argc, char **argv) {
             }
             else printf("\n no update\n");
             std::cout.flush();
-            printf("did update");
+            printf("did update\n");
             if (F.PlotPyplotTile && jused%F.PyplotInterval-1==0) pyplotTile(jused,"doc/figs",Secret,M,P,pp,F,A);
 
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
