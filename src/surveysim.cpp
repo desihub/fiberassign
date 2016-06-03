@@ -166,7 +166,7 @@ int main(int argc, char **argv) {
     }
     F.NUsedplate=A.suborder.size();
     //diagnostic
-    for(int jused=0;jused<F.NUsedplate;++jused)printf("jused = %d j = %d \n",jused A.suborder[jused]);
+    for(int jused=0;jused<F.NUsedplate;++jused)printf("jused = %d j = %d \n",jused ,A.suborder[jused]);
     printf(" Plates actually used %d \n",F.NUsedplate);
 
     if(F.diagnose)diagnostic(M,Secret,F,A);
