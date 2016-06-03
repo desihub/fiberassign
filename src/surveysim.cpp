@@ -212,6 +212,7 @@ int main(int argc, char **argv) {
             std::cout.flush();
             if (F.PlotPyplotTile && jused%F.PyplotInterval-1==0){
                 printf("do pyplot  jused= %d\n",jused);
+                std::cout.flush();
                 pyplotTile(jused,"doc/figs",Secret,M,P,pp,F,A);
             }
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
