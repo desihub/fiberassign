@@ -1171,6 +1171,7 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
             //}
             //fix color assignment to account for Secret and SkyF
             char this_color;
+            printf("g= %d  category %d\n",g,Secret[g].category);
             if (g<F.Ntarg) this_color=colors[Secret[g].category];
             else if (g<F.Ntarg+F.NSStars) this_color='w';
             else this_color='c';
