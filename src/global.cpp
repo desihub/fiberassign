@@ -1216,6 +1216,7 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
                 this_color='w';
                 dpair Ga = projection(gg,j,M,P);
                 pol.add(element(Ga,this_color,1,0.5));
+                printf("gg  %d  color  %c \n",gg,this_color);
             }
             
                         
@@ -1223,13 +1224,19 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
                 this_color='c';
                 dpair Ga = projection(gg,j,M,P);
                 pol.add(element(Ga,this_color,1,0.5));
+                printf("gg  %d  color  %c \n",gg,this_color);
+
             }
             
             else if(1<=A.nobs_time(gg,j,Secret,M,F)){
                 this_color=colors[Secret[g].category];
+                printf("gg  %d  color  %c \n",gg,this_color);
+
                 dpair Ga = projection(gg,j,M,P);
                 if (this_color=='k') pol.add(element(Ga,'k',1,A.is_assigned_jg(j,gg)==-1?0.9:0.5));
                 else pol.add(element(Ga,this_color,1,0.5));
+                printf(" again gg  %d  color  %c \n",gg,this_color);
+
             }
             
                     
