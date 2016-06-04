@@ -66,11 +66,6 @@ int main(int argc, char **argv) {
     F.NSStars=SStars.size();
     F.NSkyF=SkyF.size();
     
-    //test secret
-    for (int g=0;g<F.Ntarg;++g){
-        if(Secret[g].category>7 || Secret[g]<0)printf("g %d  category %d\n",g,Secret[g].category);
-    }
-    
     //establish priority classes
     init_time_at(time,"# establish priority clasess",t);
     assign_priority_class(M);
@@ -80,7 +75,9 @@ int main(int argc, char **argv) {
         count_class[M[i].priority_class]+=1;
         }
     }
-    
+    for(int i;i<M.priority_list.size();++i){
+        printf("  class %d  priority %d  number %d\n",i,M.priority_list[i],count_class[i]);
+    }
     print_time(time,"# ... took :");
     
     // fiber positioners
