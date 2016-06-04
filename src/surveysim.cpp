@@ -66,6 +66,11 @@ int main(int argc, char **argv) {
     F.NSStars=SStars.size();
     F.NSkyF=SkyF.size();
     
+    //test secret
+    for (g=0;g<F.Ntarg;++g){
+        if(Secret[g].category>7)printf("g %d  category %d\n",g,Secret[g].category);
+    }
+    
     //establish priority classes
     init_time_at(time,"# establish priority clasess",t);
     assign_priority_class(M);
