@@ -80,9 +80,7 @@ int main(int argc, char **argv) {
         count_class[M[i].priority_class]+=1;
         }
     }
-    for(int i;i<M.priority_list.size();++i){
-        printf("  class %d  priority %d  number %d\n",i,M.priority_list[i],count_class[i]);
-    }
+    
     print_time(time,"# ... took :");
     
     // fiber positioners
