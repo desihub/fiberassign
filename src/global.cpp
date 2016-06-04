@@ -1171,15 +1171,11 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
             //}
             //fix color assignment to account for Secret and SkyF
             char this_color;
-            if(g<F.Ntarg)printf("g= %d  category %d\n",g,Secret[g].category);
-            std::cout.flush();
+
             if (g<F.Ntarg) this_color=colors[Secret[g].category];
             else if (g<F.Ntarg+F.NSStars) this_color='w';
             else this_color='c';
-            printf(" g  %d  \n",g);
-            std::cout.flush();
-            printf(" g  %d   color %c \n",g,this_color);
-            std::cout.flush();
+ 
             cb.set_color(this_color);
             fh.set_color(this_color);
             pol.add(cb);
@@ -1190,12 +1186,10 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
         List av_gals = P[j].av_gals[k];
         for (int i=0; i<av_gals.size(); i++) {
             int gg = av_gals[i];
-            printf("gg %d \n",gg);
-            std::cout.flush();
+
             if (gg>F.Ntarg ||1<=A.nobs_time(gg,j,Secret,M,F)) {
                 //if (A.nobs_time(gg,j,G,F)!=A.nobs(gg,G,F)) printf("%d %d %s - ",A.nobs_time(gg,j,G,F),A.nobs(gg,G,F),F.kind[G[gg].id].c_str());
                 //again account for secret and sky fibers
-                printf("will print this spot");
                 char this_color;
                 if (gg<F.Ntarg) this_color=colors[Secret[g].category];
                 else if (gg<F.Ntarg+F.NSStars)this_color='w';

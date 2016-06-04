@@ -191,8 +191,7 @@ int main(int argc, char **argv) {
 
     //Execute plan, updating targets at intervals
     for(int i=0;i<F.pass_intervals.size();i++){
-        printf(" i=%d interval %d \n",i,F.pass_intervals[i]);
-    }
+       }
     std::vector <int> update_intervals=F.pass_intervals;
     update_intervals.push_back(F.NUsedplate);//to end intervals at last plate
     for(int i=0;i<update_intervals.size();++i){
@@ -200,21 +199,15 @@ int main(int argc, char **argv) {
     }
     for(int i=0;i<update_intervals.size()-1;++i){//go plate by used plate
         int starter=update_intervals[i];
-        printf("-- interval %d\n",i);
+
         for (int jused=starter; jused<update_intervals[i+1] && jused<A.suborder.size()-1; jused++) {
-            printf(" jused = %d\n",jused);
-            std::cout.flush();
             if (0<=jused-F.Analysis) {
-                printf(" updating  jused = %d \n",jused);
                 update_plan_from_one_obs(jused,Secret,M,P,pp,F,A);
             }
             else printf("\n no update\n");
 
-            printf("did update\n");
-            std::cout.flush();
             if (F.PlotPyplotTile && jused%F.PyplotInterval-1==0){
-                printf("do pyplot  jused= %d\n",jused);
-                std::cout.flush();
+
                 pyplotTile(jused,"doc/figs",Secret,M,P,pp,F,A);
             }
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
