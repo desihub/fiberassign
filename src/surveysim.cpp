@@ -67,7 +67,7 @@ int main(int argc, char **argv) {
     F.NSkyF=SkyF.size();
     
     //test secret
-    for (g=0;g<F.Ntarg;++g){
+    for (int g=0;g<F.Ntarg;++g){
         if(Secret[g].category>7)printf("g %d  category %d\n",g,Secret[g].category);
     }
     
