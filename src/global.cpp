@@ -1193,9 +1193,11 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
         }
         else pol.add(element(O,'k',0.1,3));//unassigned fiber
         List av_gals = P[j].av_gals[k];
+        printf("number of available galaxies %d\n",av_gals.size());
         for (int i=0; i<av_gals.size(); i++) {
             int gg = av_gals[i];
             printf(" i %d  gg  %d \n",i,gg);
+            std::cout.flush();
 /*
             if (gg>F.Ntarg ||1<=A.nobs_time(gg,j,Secret,M,F))
                 //if (A.nobs_time(gg,j,G,F)!=A.nobs(gg,G,F)) printf("%d %d %s - ",A.nobs_time(gg,j,G,F),A.nobs(gg,G,F),F.kind[G[gg].id].c_str());
