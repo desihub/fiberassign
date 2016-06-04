@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
     
     //test secret
     for (int g=0;g<F.Ntarg;++g){
-        if(Secret[g].category>7)printf("g %d  category %d\n",g,Secret[g].category);
+        if(Secret[g].category>7 || Secret[g]<0)printf("g %d  category %d\n",g,Secret[g].category);
     }
     
     //establish priority classes

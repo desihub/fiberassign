@@ -1177,14 +1177,14 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
 
            
             if (g<F.Ntarg){
-                printf("category %d\n",Secret[g].category);
-                std::cout.flush();
+                //printf("category %d\n",Secret[g].category);
+                //std::cout.flush();
                 this_color=colors[Secret[g].category];
             }
             else if (g<F.Ntarg+F.NSStars) this_color='w';
             else this_color='c';
-            printf("color %c\n", this_color);
-            std::cout.flush();
+            //printf("color %c\n", this_color);
+            //std::cout.flush();
             cb.set_color(this_color);
             fh.set_color(this_color);
             pol.add(cb);
@@ -1193,11 +1193,11 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
         }
         else pol.add(element(O,'k',0.1,3));//unassigned fiber
         List av_gals = P[j].av_gals[k];
-        printf("number of available galaxies %d\n",av_gals.size());
+        //printf("number of available galaxies %d\n",av_gals.size());
         for (int i=0; i<av_gals.size(); i++) {
             int gg = av_gals[i];
-            printf(" i %d  gg  %d \n",i,gg);
-            std::cout.flush();
+            //printf(" i %d  gg  %d \n",i,gg);
+            //std::cout.flush();
 /*
             if (gg>F.Ntarg ||1<=A.nobs_time(gg,j,Secret,M,F))
                 //if (A.nobs_time(gg,j,G,F)!=A.nobs(gg,G,F)) printf("%d %d %s - ",A.nobs_time(gg,j,G,F),A.nobs(gg,G,F),F.kind[G[gg].id].c_str());
@@ -1216,8 +1216,8 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
                 this_color='w';
                 dpair Ga = projection(gg,j,M,P);
                 pol.add(element(Ga,this_color,1,0.5));
-                printf("gg  %d  color  %c \n",gg,this_color);
-                std::cout.flush();
+                //printf("gg  %d  color  %c \n",gg,this_color);
+                //std::cout.flush();
             }
             
                         
@@ -1225,19 +1225,19 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
                 this_color='c';
                 dpair Ga = projection(gg,j,M,P);
                 pol.add(element(Ga,this_color,1,0.5));
-                printf("gg  %d  color  %c \n",gg,this_color);
-                std::cout.flush();
+                //printf("gg  %d  color  %c \n",gg,this_color);
+                //std::cout.flush();
             }
             
             else if(1<=A.nobs_time(gg,j,Secret,M,F)){
-                this_color=colors[Secret[g].category];
-                printf("gg  %d  color  %c \n",gg,this_color);
-                std::cout.flush();
+                this_color=colors[Secret[gg].category];
+                //printf("gg  %d  color  %c \n",gg,this_color);
+                //std::cout.flush();
                 dpair Ga = projection(gg,j,M,P);
                 if (this_color=='k') pol.add(element(Ga,'k',1,A.is_assigned_jg(j,gg)==-1?0.9:0.5));
                 else pol.add(element(Ga,this_color,1,0.5));
-                printf(" again gg  %d  color  %c \n",gg,this_color);
-                std::cout.flush();
+                //printf(" again gg  %d  color  %c \n",gg,this_color);
+                //std::cout.flush();
             }
             
                     
