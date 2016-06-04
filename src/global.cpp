@@ -1174,6 +1174,7 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
             if (g<F.Ngal) this_color=colors[Secret[g].category];
             else if (g<F.Ngal+F.NSStars) this_color='w';
             else this_color='c';
+            printf(" g  %d   color %s \n",g,this_color.c_str()):
             cb.set_color(this_color);
             fh.set_color(this_color);
             pol.add(cb);
@@ -1184,9 +1185,11 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
         List av_gals = P[j].av_gals[k];
         for (int i=0; i<av_gals.size(); i++) {
             int gg = av_gals[i];
+            printf("gg %d \n",gg);
             if (gg>F.Ngal ||1<=A.nobs_time(gg,j,Secret,M,F)) {
                 //if (A.nobs_time(gg,j,G,F)!=A.nobs(gg,G,F)) printf("%d %d %s - ",A.nobs_time(gg,j,G,F),A.nobs(gg,G,F),F.kind[G[gg].id].c_str());
                 //again account for secret and sky fibers
+                printf("will print this spot");
                 char this_color;
                 if (gg<F.Ngal) this_color=colors[Secret[g].category];
                 else if (gg<F.Ngal+F.NSStars)this_color='w';
