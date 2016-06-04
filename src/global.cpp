@@ -1195,8 +1195,8 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
         List av_gals = P[j].av_gals[k];
         for (int i=0; i<av_gals.size(); i++) {
             int gg = av_gals[i];
-
-            if (gg>F.Ntarg ||1<=A.nobs_time(gg,j,Secret,M,F)) {
+/*
+            if (gg>F.Ntarg ||1<=A.nobs_time(gg,j,Secret,M,F))
                 //if (A.nobs_time(gg,j,G,F)!=A.nobs(gg,G,F)) printf("%d %d %s - ",A.nobs_time(gg,j,G,F),A.nobs(gg,G,F),F.kind[G[gg].id].c_str());
                 //again account for secret and sky fibers
                 char this_color;
@@ -1207,13 +1207,32 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
                 dpair Ga = projection(gg,j,M,P);
                 if (this_color=='k') pol.add(element(Ga,'k',1,A.is_assigned_jg(j,gg)==-1?0.9:0.5));
                 else  pol.add(element(Ga,this_color,1,0.5));
-            }
-        }
-    }
+ */
+            char this_color;
+            if (gg>F.Ntarg+F.NSStars){
+                this_color='w';
+                dpair Ga = projection(gg,j,M,P);
+                pol.add(element(Ga,this_color,1,0.5);
+                        }
+                        
+            else if (gg>N.targ){
+                this_color='c';
+                dpair Ga = projection(gg,j,M,P);
+                pol.add(element(Ga,this_color,1,0.5);
+                        }
+            else if(1<=A.nobs_time(gg,j,Secret,M,F)){
+                this_color=colors[Secret[g].category];
+                dpair Ga = projection(gg,j,M,P);
+                if (this_color=='k') pol.add(element(Ga,'k',1,A.is_assigned_jg(j,gg)==-1?0.9:0.5));
+                else pol.add(element(Ga,this_color,1,0.5);
+                             }
+                             }
+                    
+
     pyplot pyp(pol);
     //for (int k=0; k<F.Nfiber; k++) pyp.addtext(pp.coords(k),i2s(k)); // Plot fibers identifiers
     pyp.plot_tile(directory,j,F); 
-}
+                             }
 
 void overlappingTiles(str fname, const Feat& F, const Assignment& A) {
   FILE * file;
