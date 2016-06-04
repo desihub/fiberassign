@@ -1216,7 +1216,7 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
             }
             
                         
-            else if (gg>N.targ){
+            else if (gg>F.Ntarg){
                 this_color='c';
                 dpair Ga = projection(gg,j,M,P);
                 pol.add(element(Ga,this_color,1,0.5));
@@ -1236,6 +1236,7 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
     pyp.plot_tile(directory,j,F); 
         }
     }
+}
 
 void overlappingTiles(str fname, const Feat& F, const Assignment& A) {
   FILE * file;
