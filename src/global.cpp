@@ -1162,6 +1162,9 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
             printf( "j = %d  k= %d g = %d \n",j,k,g);
             std::cout.flush();
             dpair Ga = projection(g,j,M,P);
+            printf("after projection\n");
+            std::cout.flush();
+            
             polygon fh = F.fh;
             polygon cb = F.cb;
             repos_cb_fh(cb,fh,O,Ga,posp);
@@ -1172,10 +1175,11 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
             //fix color assignment to account for Secret and SkyF
             char this_color;
 
+           
             if (g<F.Ntarg) this_color=colors[Secret[g].category];
             else if (g<F.Ntarg+F.NSStars) this_color='w';
             else this_color='c';
- 
+            printf("color %c\n", this_color);
             cb.set_color(this_color);
             fh.set_color(this_color);
             pol.add(cb);
