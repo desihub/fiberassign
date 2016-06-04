@@ -1176,7 +1176,9 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
             if (g<F.Ntarg) this_color=colors[Secret[g].category];
             else if (g<F.Ntarg+F.NSStars) this_color='w';
             else this_color='c';
-            printf(" g  %d   color %s \n",g,this_color);
+            printf(" g  %d  \n",g);
+            std::cout.flush();
+            printf(" g  %d   color %c \n",g,this_color);
             std::cout.flush();
             cb.set_color(this_color);
             fh.set_color(this_color);
