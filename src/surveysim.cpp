@@ -137,7 +137,7 @@ int main(int argc, char **argv) {
     //results_on_inputs("doc/figs/",G,P,F,true);
 
     //// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
-    printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.Nplate, F.Ngal, F.Nfiber);
+    printf(" Nplate %d  Ngal %d  Ntarg %d NSStars %d  NSkyF  %d Nfiber %d \n", F.Nplate, F.Ngal, F.Ntarg, F.NSStars, F.NskyF, F.Nfiber);
     Assignment A(M,F);
     
     print_time(t,"# Start assignment at : ");
