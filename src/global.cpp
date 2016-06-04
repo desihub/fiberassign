@@ -1158,9 +1158,7 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
     for (int k=0; k<F.Nfiber; k++) {
         dpair O = pp.coords(k);
         int g = A.TF[j][k];
-        printf( "j = %d  k= %d g = %d \n",j,k,g);
-        std::cout.flush();
-        if (g!=-1) {
+            if (g!=-1) {
             dpair Ga = projection(g,j,M,P);
             polygon fh = F.fh;
             polygon cb = F.cb;
@@ -1196,7 +1194,7 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
                 else this_color='c';
 
                 dpair Ga = projection(gg,j,M,P);
-                if (this_color='k') pol.add(element(Ga,'k',1,A.is_assigned_jg(j,gg)==-1?0.9:0.5));
+                if (this_color=='k') pol.add(element(Ga,'k',1,A.is_assigned_jg(j,gg)==-1?0.9:0.5));
                 else  pol.add(element(Ga,this_color,1,0.5));
             }
         }
