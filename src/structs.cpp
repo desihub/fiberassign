@@ -1018,14 +1018,14 @@ void pyplot::plot_tile(str directory, int j, const Feat& F) const {
     Dlist lims = pol.limits();
     fprintf(file,"from pylab import *\nimport pylab as pl\nimport matplotlib.pyplot as plt\nfrom matplotlib import collections as mc\nax=subplot(aspect='equal')\naxes = plt.gca()\naxes.set_xlim([%f,%f])\naxes.set_ylim([%f,%f])\nax.axis('off')\nax.get_xaxis().set_visible(False)\nax.get_yaxis().set_visible(False)\nset_cmap('hot')\nfig = plt.gcf()\n\n",lims[0],lims[1],lims[2],lims[3]);
     if (j!=-1) fprintf(file,"plt.text(350,-350,'Tile %d',horizontalalignment='center',verticalalignment='center',size=5)\n\n",j);
-    if (j!=-1) fprintf(file,"plt.text(200,-375,'QSO-Ly-a',color='black',horizontalalignment='center',verticalalignment='center',size=5)\n\n",j);
-    if (j!=-1) fprintf(file,"plt.text(250,-375,'QSO-tracer',color='green',horizontalalignment='center',verticalalignment='center',size=5)\n\n",j);
-    if (j!=-1) fprintf(file,"plt.text(300,-375,'LRG',color='red',horizontalalignment='center',verticalalignment='center',size=5)\n\n",j);
-    if (j!=-1) fprintf(file,"plt.text(350,-375,'ELG',color='blue',horizontalalignment='center',verticalalignment='center',size=5)\n\n",j);
-    if (j!=-1) fprintf(file,"plt.text(200,-400,'Fake QSO',color='black',horizontalalignment='center',verticalalignment='center',size=5)\n\n",j);
-    if (j!=-1) fprintf(file,"plt.text(250,-400,'Fake LRG',color='black',horizontalalignment='center',verticalalignment='center',size=5)\n\n",j);
-    if (j!=-1) fprintf(file,"plt.text(300,-400,'Std. Star',color='black',horizontalalignment='center',verticalalignment='center',size=5)\n\n",j);
-    if (j!=-1) fprintf(file,"plt.text(350,-400,'Sky Fiber',color='black',horizontalalignment='center',verticalalignment='center',size=5)\n\n",j);
+    if (j!=-1) fprintf(file,"plt.text(200,-375,'QSO-Ly-a',color='black',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
+    if (j!=-1) fprintf(file,"plt.text(250,-375,'QSO-tracer',color='green',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
+    if (j!=-1) fprintf(file,"plt.text(300,-375,'LRG',color='red',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
+    if (j!=-1) fprintf(file,"plt.text(350,-375,'ELG',color='blue',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
+    if (j!=-1) fprintf(file,"plt.text(200,-400,'Fake QSO',color='m',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
+    if (j!=-1) fprintf(file,"plt.text(250,-400,'Fake LRG',color='y',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
+    if (j!=-1) fprintf(file,"plt.text(300,-400,'Std. Star',color='w',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
+    if (j!=-1) fprintf(file,"plt.text(350,-400,'Sky Fiber',color='c',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
     
     // Plot polygon
     for (int i=0; i<pol.elmts.size(); i++) {
