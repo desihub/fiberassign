@@ -1218,7 +1218,7 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
     pyplot pyp(pol);
 
     //for (int k=0; k<F.Nfiber; k++) pyp.addtext(pp.coords(k),i2s(k)); // Plot fibers identifiers
-    pyp.addtext(
+    
     pyp.plot_tile(directory,j,F); 
         
     
