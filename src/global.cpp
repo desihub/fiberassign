@@ -1168,7 +1168,7 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
             //fix color assignment to account for Secret and SkyF
             char this_color;
             if (g<F.Ntarg){
-                //printf("category %d\n",Secret[g].category);
+                //printf("category/Users/robertcahn/mygithub:fiberassign/src/global.cpp %d\n",Secret[g].category);
                 //std::cout.flush();
                 this_color=colors[Secret[g].category];
             }
@@ -1189,14 +1189,14 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
             int gg = av_gals[i];
             char this_color;
             if (gg>F.Ntarg+F.NSStars){
-                this_color='w';
+                this_color='c';
                 dpair Ga = projection(gg,j,M,P);
                 pol.add(element(Ga,this_color,1,0.5));
                 //printf("gg  %d  color  %c \n",gg,this_color);
                 //std::cout.flush();
             }
             else if (gg>F.Ntarg){
-                this_color='c';
+                this_color='w';
                 dpair Ga = projection(gg,j,M,P);
                 pol.add(element(Ga,this_color,1,0.5));
                 //printf("gg  %d  color  %c \n",gg,this_color);
