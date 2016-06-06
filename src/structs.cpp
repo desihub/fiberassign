@@ -1025,7 +1025,7 @@ void pyplot::plot_tile(str directory, int j, const Feat& F) const {
     if (j!=-1) fprintf(file,"plt.text(200,-400,'Fake QSO',color='m',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
     if (j!=-1) fprintf(file,"plt.text(250,-400,'Fake LRG',color='y',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
     if (j!=-1) fprintf(file,"plt.text(300,-400,'Std. Star',color='w',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
-    if (j!=-1) fprintf(file,"plt.text(350,-400,'Sky Fiber',color='c',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
+    if (j!=-1) fprintf(file,"plt.text(350,-400,'Sky Fiber',color='gray',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
     
     // Plot polygon
     for (int i=0; i<pol.elmts.size(); i++) {
