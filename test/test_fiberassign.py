@@ -66,7 +66,7 @@ print('---------------------------------------------------------')
 print('-- Testing fiberassign')
 remove_output(outdir)
 ### command = 'export OMP_NUM_THREADS=24; srun -n 1 fiberassign '+paramfile
-command = 'fiberassign '+paramfile
+command = './bin/fiberassign '+paramfile
 print(command)
 err = os.system(command)
 assert err==0, 'FAILED: '+command
@@ -77,7 +77,7 @@ print('---------------------------------------------------------')
 print('-- Testing fiberassign_surveysim')
 remove_output(outdir)
 ### command = 'export OMP_NUM_THREADS=24; srun -n 1 fiberassign_surveysim '+paramfile
-command = 'fiberassign_surveysim '+paramfile
+command = './bin/fiberassign_surveysim '+paramfile
 print(command)
 err_surveysim = os.system(command)
 assert err==0, 'FAILED: '+command
