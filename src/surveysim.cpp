@@ -63,6 +63,8 @@ int main(int argc, char **argv) {
     printf(" M size %d \n",M.size());
     F.Ngal=M.size();
     F.Ntarg=Secret.size();
+    F.NSStars=SStars.size();
+    F.NSkyF=SkyF.size();
     
     //establish priority classes
     init_time_at(time,"# establish priority clasess",t);
@@ -113,10 +115,29 @@ int main(int argc, char **argv) {
     // For each galaxy, computes available tilefibers  G[i].av_tfs = [(j1,k1),(j2,k2),..]
     collect_available_tilefibers(M,P,F);
     
+    //count number of galaxies in first pass and number not in first pass
+   /*
+    int totalg=0;
+    int inside=0;
+    int all_covered=0;
+    for(int g=0;g<F.Ntarg;++g)if(M[g].av_tfs.size()>0)++all_covered;
+    for(int g=0;g<F.Ntarg;++g){
+        Plist v=M[g].av_tfs;
+        int done=0;
+        for(int i=0;i<v.size()&&done==0;++i){
+            if(P[v[i].f].ipass==0){
+                ++inside;
+                done=1;
+            }
+        }
+        ++totalg;
+    }
+    printf ("total = %d  inside = %d  covered  %d\n",totalg,inside, all_covered);
+    */
     //results_on_inputs("doc/figs/",G,P,F,true);
 
     //// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
-    printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.Nplate, F.Ngal, F.Nfiber);
+    printf(" Nplate %d  Ngal %d  Ntarg %d NSStars %d  NSkyF  %d Nfiber %d \n", F.Nplate, F.Ngal, F.Ntarg, F.NSStars, F.NSkyF, F.Nfiber);
     Assignment A(M,F);
     
     print_time(t,"# Start assignment at : ");
@@ -146,8 +167,7 @@ int main(int argc, char **argv) {
         }
     }
     F.NUsedplate=A.suborder.size();
-    printf(" Plates actually used %d \n",F.NUsedplate);
-
+   
     if(F.diagnose)diagnostic(M,Secret,F,A);
 
     print_hist("Unused fibers",5,histogram(A.unused_fbp(pp,F),5),false); // Hist of unused fibs
@@ -171,8 +191,7 @@ int main(int argc, char **argv) {
 
     //Execute plan, updating targets at intervals
     for(int i=0;i<F.pass_intervals.size();i++){
-        printf(" i=%d interval %d \n",i,F.pass_intervals[i]);
-    }
+       }
     std::vector <int> update_intervals=F.pass_intervals;
     update_intervals.push_back(F.NUsedplate);//to end intervals at last plate
     for(int i=0;i<update_intervals.size();++i){
@@ -180,13 +199,17 @@ int main(int argc, char **argv) {
     }
     for(int i=0;i<update_intervals.size()-1;++i){//go plate by used plate
         int starter=update_intervals[i];
-        printf("-- interval %d\n",i);
-        for (int jused=starter; jused<update_intervals[i+1] && jused<A.suborder.size()-1; jused++) {
 
+        for (int jused=starter; jused<update_intervals[i+1] && jused<A.suborder.size()-1; jused++) {
             if (0<=jused-F.Analysis) {
                 update_plan_from_one_obs(jused,Secret,M,P,pp,F,A);
             }
             else printf("\n no update\n");
+
+            if (F.PlotPyplotTile && jused%F.PyplotInterval-1==0){
+
+                pyplotTile(jused,"doc/figs",Secret,M,P,pp,F,A);
+            }
             // Update corrects all future occurrences of wrong QSOs etc and tries to observe something else
 
         }

@@ -160,7 +160,7 @@ class Assignment {
     List unused_f(const Feat& F) const; //gives total number of unused fibers
     Table unused_fbp(const PP& pp, const Feat& F) const; // Unused fibers by petal
     float colrate(const PP& pp, const MTL& M, const Plates& P, const Feat& F, int j=-1) const; // Get collision rate, j = plate number
-    int nobs_time(int g, int j, const MTL& M, const Feat& F) const; // Know the number of remaining observations of g when the program is at the tile j, for pyplotTile
+    int nobs_time(int g, int j, const Gals& Secret,const MTL& M, const Feat& F) const; // Know the number of remaining observations of g when the program is at the tile j, for pyplotTile
 
     int unused_f(int j, const Feat& F) const; // Number of unused fiber on the j'th plate
     //not used

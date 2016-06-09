@@ -74,6 +74,8 @@ class Feat { // F for features
     bool PlotFreeFibHist;
     bool PlotFreeFibTime;
     bool PlotSeenDens;
+    bool PlotPyplotTile;
+    int  PyplotInterval;
     bool Verif;
     bool Ascii;
     bool BrightTime;
@@ -93,6 +95,8 @@ class Feat { // F for features
     int NUsedplate;
 
 	int Ngal;
+    int NSStars;
+    int NSkyF;
     int Ntarg;
 	int Nfiber;
 	int Npetal;

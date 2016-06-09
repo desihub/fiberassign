@@ -1144,7 +1144,77 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     
     return;
 }
+void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
+    std::vector<char> colors;
+    colors.resize(F.Categories);
+    colors[0] = 'k'; colors[1] = 'g'; colors[2] = 'r'; colors[3] = 'b'; colors[4] = 'm'; colors[5] = 'y'; colors[6] = 'w'; colors[7] = 'c';
+    polygon pol;
+    PosP posp(3,3);
 
+    int j=A.suborder[jused];
+    for (int k=0; k<F.Nfiber; k++) {
+        dpair O = pp.coords(k);
+        int g = A.TF[j][k];
+        if (g!=-1) {
+            dpair Ga = projection(g,j,M,P);
+            
+            polygon fh = F.fh;
+            polygon cb = F.cb;
+            repos_cb_fh(cb,fh,O,Ga,posp);
+            //if (A.is_collision(j,k,pp,G,P,F)!=-1) {
+            //cb.set_color('r');
+            //fh.set_color('r');
+            //}
+            //fix color assignment to account for Secret and SkyF
+            char this_color;
+            if (g<F.Ntarg){
+                this_color=colors[Secret[g].category];
+            }
+            else if (g<F.Ntarg+F.NSStars) this_color='w';
+            else this_color='c';
+
+            cb.set_color(this_color);
+            fh.set_color(this_color);
+            pol.add(cb);
+            pol.add(fh);
+            if(this_color!='w'){
+            pol.add(element(O,this_color,0.3,5));
+            }
+            else             pol.add(element(O,'k',0.1,5));
+        }
+        else pol.add(element(O,'k',0.1,3));//unassigned fiber
+        List av_gals = P[j].av_gals[k];
+
+        for (int i=0; i<av_gals.size(); i++) {
+            int gg = av_gals[i];
+            char this_color;
+            if (gg>F.Ntarg+F.NSStars){
+                this_color='c';
+                dpair Ga = projection(gg,j,M,P);
+                pol.add(element(Ga,this_color,1,0.5));
+             }
+            else if (gg>F.Ntarg){
+                this_color='w';
+                dpair Ga = projection(gg,j,M,P);
+                pol.add(element(Ga,this_color,1,0.5));
+            }
+            else if(1<=A.nobs_time(gg,j,Secret,M,F)){
+                this_color=colors[Secret[gg].category];
+                dpair Ga = projection(gg,j,M,P);
+                if (this_color=='k') pol.add(element(Ga,'k',1,A.is_assigned_jg(j,gg)==-1?0.9:0.5));
+                else pol.add(element(Ga,this_color,1,0.5));
+            }
+        }
+    }
+
+    pyplot pyp(pol);
+
+    //for (int k=0; k<F.Nfiber; k++) pyp.addtext(pp.coords(k),i2s(k)); // Plot fibers identifiers
+    
+    pyp.plot_tile(directory,j,F); 
+        
+    
+}
 
 void overlappingTiles(str fname, const Feat& F, const Assignment& A) {
   FILE * file;
