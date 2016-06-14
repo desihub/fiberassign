@@ -52,12 +52,13 @@ std::vector<int>count_galaxies(const Gals& G);
 //target -----------------------------------------------------
 class target {
     public:
-  long id; 
-  int nobs_remain, nobs_done;
-  double nhat[3];
-  double ra, dec;
-  long desi_target, mws_target, bgs_target;
-  int SS,SF,lastpass, priority_class, t_priority, once_obs;
+    long id;
+    int nobs_remain, nobs_done;
+    double nhat[3];
+    double ra, dec;
+    double subpriority;//substitutes for random number or differentiates between similar targets
+    long desi_target, mws_target, bgs_target;
+    int SS,SF,lastpass, priority_class, t_priority, once_obs;
   Plist av_tfs;
 };
 class MTL : public std::vector<struct target> {
