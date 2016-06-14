@@ -140,7 +140,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
                 double subprio = M[g].subpriority;
                 // Takes it if better priority, or if same, if it needs more observations, so shares observations if two QSOs are close
                 if (prio>pbest || (prio==pbest && m>mbest)){
-                    if (prio>pbest || (prio==pbest && m>mbest)||(prio=pbest && m=mbest && subprio>subpbest)){
+                    if (prio>pbest || (prio==pbest && m>mbest)||(prio==pbest && m==mbest && subprio>subpbest)){
 
                     // Check that g is not assigned yet on this plate, or on the InterPlate around, check with ok_to_assign
                     int isa=A.is_assigned_jg(j,g,M,F);
