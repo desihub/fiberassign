@@ -255,19 +255,19 @@ int main(int argc, char **argv) {
     }
     FILE * FFREE;
     FFREE = fopen("free_fibers.txt","w");
-    int nrows=F.NUsed/20 +1
+    int nrows=F.NUsedplate/20 +1
     for (int i=0;i<nrows;++i){
         for(int j=0);j<20;++j){
             fprintf(" %d ",free[20*i+j]);
         }
     }
-    for (int i=nrows*20);i<F.NUsed;i++){
+    for (int i=nrows*20);i<F.NUsedplate;i++){
         fprintf(" %d ",free[i]);
     }
     
-    std::vector<int> tot_free(F.NUsed,0);
+    std::vector<int> tot_free(F.NUsedplate,0);
     tot_free[0]=free[0];
-    for (i=1;i<F.NUsed;++i){
+    for (i=1;i<F.NUsedplate;++i){
         tot_free[i]=tot_free[i-1]+free[i];
     }
     for (int i=0;i<nrows;++i){
@@ -275,7 +275,7 @@ int main(int argc, char **argv) {
             fprintf(" %d ",tot_free[20*i+j]);
         }
     }
-    for (int i=nrows*20);i<F.NUsed;i++){
+    for (int i=nrows*20);i<F.NUsedplate;i++){
         fprintf(" %d ",tot_free[i]);
     }
     
