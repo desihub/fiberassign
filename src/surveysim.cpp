@@ -267,7 +267,7 @@ int main(int argc, char **argv) {
     
     std::vector<int> tot_free(F.NUsedplate,0);
     tot_free[0]=free[0];
-    for (i=1;i<F.NUsedplate;++i){
+    for (int i=1;i<F.NUsedplate;++i){
         tot_free[i]=tot_free[i-1]+free[i];
     }
     for (int i=0;i<nrows;++i){
