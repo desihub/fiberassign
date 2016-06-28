@@ -255,7 +255,7 @@ int main(int argc, char **argv) {
     }
     FILE * FFREE;
     FFREE = fopen("free_fibers.txt","w");
-    int nrows=F.NUsedplate/20 +1;
+    int nrows=F.NUsedplate/20 ;
     for (int i=0;i<nrows;++i){
         for(int j=0;j<20;++j){
             fprintf(FFREE," %d ",free[20*i+j]);
