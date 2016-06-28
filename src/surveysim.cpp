@@ -238,6 +238,23 @@ int main(int argc, char **argv) {
 
  
     // Results -------------------------------------------------------
+    
+    //special for clustering group 6/28/16
+    //for each tile how many fibers free?  how many to each type of target?
+    int free_tot=0;
+    for (int jused=0);jused<F.NUsedplate;jused++){
+        int free=0;
+        j=int j=A.suborder[jused];
+        for (int k=0);k<F.Nfiber;++k){
+            if A.TF[j][k]==-1{
+                free+=1;
+                free_tot+=1;
+            }
+        }
+        printf(" jused  %d   j  %d   free   %d   free total  %d \n",jused,j,free,free_tot)
+    }
+    
+    
     if (F.PrintAscii){
         for (int jused=0; jused<F.NUsedplate; jused++){
             int j=A.suborder[jused];
