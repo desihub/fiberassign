@@ -241,18 +241,44 @@ int main(int argc, char **argv) {
     
     //special for clustering group 6/28/16
     //for each tile how many fibers free?  how many to each type of target?
-    int free_tot=0;
+    std::vector<int> free(F.NUsed,0);
+    
     for (int jused=0;jused<F.NUsedplate;jused++){
-        int free=0;
         int j=A.suborder[jused];
+        this_tile=0;
         for (int k=0;k<F.Nfiber;++k){
             if (A.TF[j][k]==-1){
-                free+=1;
-                free_tot+=1;
+                this_tile+=1;
             }
         }
-        printf(" jused  %d   j  %d   free   %d   free total  %d \n",jused,j,free,free_tot);
+        free[jused]=this_tile;
     }
+    FILE * FFREE;
+    FFREE = fopen("free_fibers.txt","w");
+    int nrows=F.NUsed/20 +1
+    for (int i=0;i<nrows;++i){
+        for(int j=0);j<20;++j){
+            fprintf(" %d ",free[20*i+j]);
+        }
+    }
+    for (int i=nrows*20);i<F.NUsed;i++){
+        fprintf(" %d ",free[i]);
+    }
+    
+    std::vector<int> tot_free(F.NUsed,0);
+    tot_free[0]=free[0];
+    for (i=1;i<F.NUsed;++i){
+        tot_free[i]=tot_free[i-1]+free[i];
+    }
+    for (int i=0;i<nrows;++i){
+        for(int j=0);j<20;++j){
+            fprintf(" %d ",tot_free[20*i+j]);
+        }
+    }
+    for (int i=nrows*20);i<F.NUsed;i++){
+        fprintf(" %d ",tot_free[i]);
+    }
+    
     
     
     if (F.PrintAscii){
