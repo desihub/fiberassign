@@ -244,7 +244,7 @@ int main(int argc, char **argv) {
     int free_tot=0;
     for (int jused=0;jused<F.NUsedplate;jused++){
         int free=0;
-        j=int j=A.suborder[jused];
+        int j=A.suborder[jused];
         for (int k=0);k<F.Nfiber;++k){
             if A.TF[j][k]==-1{
                 free+=1;
