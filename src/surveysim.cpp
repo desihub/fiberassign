@@ -251,7 +251,7 @@ int main(int argc, char **argv) {
                 free_tot+=1;
             }
         }
-        printf(" jused  %d   j  %d   free   %d   free total  %d \n",jused,j,free,free_tot)
+        printf(" jused  %d   j  %d   free   %d   free total  %d \n",jused,j,free,free_tot);
     }
     
     
