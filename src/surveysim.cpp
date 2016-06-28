@@ -260,12 +260,12 @@ int main(int argc, char **argv) {
         for(int j=0;j<20;++j){
             fprintf(FFREE," %d ",free[20*i+j]);
         }
-        fprintf("  \n");
+        fprintf(FFREE,"  \n");
     }
     for (int i=nrows*20;i<F.NUsedplate;i++){
         fprintf(FFREE," %d ",free[i]);
     }
-        fprintf("  \n");
+        fprintf(FFREE,"  \n");
     
     std::vector<int> tot_free(F.NUsedplate,0);
     tot_free[0]=free[0];
@@ -276,12 +276,12 @@ int main(int argc, char **argv) {
         for(int j=0;j<20;++j){
             fprintf(FFREE," %d ",tot_free[20*i+j]);
         }
-        fprintf("  \n");
+        fprintf(FFREE,"  \n");
     }
     for (int i=nrows*20;i<F.NUsedplate;i++){
         fprintf(FFREE," %d ",tot_free[i]);
     }
-        fprintf("  \n");
+
     
     
     
