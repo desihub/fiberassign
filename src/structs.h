@@ -58,6 +58,7 @@ class target {
   double ra, dec;
   long desi_target, mws_target, bgs_target;
   int SS,SF,lastpass, priority_class, t_priority, once_obs;
+  char brickname [9];
   Plist av_tfs;
 };
 class MTL : public std::vector<struct target> {

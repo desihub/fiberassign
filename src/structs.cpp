@@ -17,7 +17,7 @@
 #include        "structs.h"
 #include        "collision.h"
 #include        "fitsio.h"
-
+#include <string.h>
 
 std::vector<int> count_galaxies(const Gals& G){
     std::vector <int> counter(10,0);
@@ -90,6 +90,7 @@ Gals read_Secretfile(str readfile, const Feat&F){
       fprintf(stderr, "problem with category allocation\n");
       myexit(1);
     } 
+
     if(!(redshift= (double *)malloc(nrows * sizeof(double)))){
       fprintf(stderr, "problem with redshift allocation\n");
       myexit(1);
@@ -133,6 +134,8 @@ Gals read_Secretfile(str readfile, const Feat&F){
       myexit(status);
     }
     
+
+
     for(ii=0;ii<nrows;ii++){
       struct galaxy Q;      
       Q.targetid = targetid[ii];
@@ -173,6 +176,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
     double *ra;
     double *dec;    
     int colnum;
+    char **brickname;
     
     // General purpose output stream for exceptions
     std::ostringstream o;
@@ -259,6 +263,18 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
         fprintf(stderr, "problem with lastpass allocation\n");
         myexit(1);
       }
+
+      if(!(brickname= (char **)malloc(nrows * sizeof(char *)))){
+        fprintf(stderr, "problem with brickname allocation\n");
+        myexit(1);
+      }
+
+      for(ii=0;ii<nrows;ii++){
+	if(!(brickname[ii]= (char *)malloc(9 * sizeof(char)))){
+	  fprintf(stderr, "problem with brickname allocation\n");
+	  myexit(1);
+	}
+      }
      
       //----- TARGETID
       /* find which column contains the TARGETID values */
@@ -330,6 +346,25 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
         myexit(status);
       }
 
+      //----- BRICKNAME
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"BRICKNAME", &colnum, &status) ){
+	fprintf(stderr, "error finding BRICKNAME column\n");
+	myexit(status);
+      }
+      if (fits_read_col(fptr, TSTRING, colnum, frow, felem, nrows, 
+			&nullval, brickname, &anynulls, &status) ){
+	fprintf(stderr, "error reading BRICKNAME column\n");
+	myexit(status);
+      }
+      /*
+      for(ii=0;ii<10;ii++){
+  	fprintf(stderr, "some bricknames %s RA %f DEC %f!\n", brickname[ii], ra[ii], dec[ii]);
+      }
+
+      for(ii=nrows-1;ii>nrows-10;ii--){
+	fprintf(stderr, "some bricknames %s RA %f DEC %f!\n", brickname[ii], ra[ii], dec[ii]);
+      }
+      */
       // StdStar and Sky fiber inputs don't have NUMOBS_MORE, PRIORITY, or GRAYLAYER
 
       //----- NUMOBS_MORE
@@ -418,6 +453,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
              Q.lastpass = lastpass[ii];
              Q.SS=SS;
              Q.SF=SF;
+	     strncpy(Q.brickname, brickname[ii], 9);
              try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
              
              // 

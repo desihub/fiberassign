@@ -866,7 +866,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     
     size_t cfilesize = 512;
     size_t objtypelen = 8;
-    
+    size_t bricklen = 8;
     // check if the file exists, and if so, throw an exception
     
     char filename[cfilesize];
@@ -893,7 +893,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     // string arrays, since the CFITSIO API requires non-const pointers
     // to them (i.e. arrays of literals won't work).
     
-    size_t ncols = 12;
+    size_t ncols = 13;
     
     char ** ttype;
     char ** tform;
@@ -971,6 +971,11 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     strcpy(ttype[11], "YFOCAL_DESIGN");
     strcpy(tform[11], "E");
     strcpy(tunit[11], "mm");
+
+    strcpy(ttype[12], "BRICKNAME");
+    snprintf(tform[12], FLEN_VALUE, "%dA", (int)bricklen);
+    strcpy(tunit[12], "");
+
     
     char extname[FLEN_VALUE];
     
@@ -993,9 +998,12 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     int positioner_id[optimal];
     int num_target[optimal];
     char objtype[optimal][objtypelen];
+    char brickname[optimal][bricklen+1];
+    char * bn_tmp[optimal];
     char * ot_tmp[optimal];
     for (int i = 0; i < optimal; i++) {
         ot_tmp[i] = objtype[i];
+	bn_tmp[i] = brickname[i];
     }
     long long target_id[optimal];
     long long desi_target[optimal];
@@ -1031,7 +1039,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
                 positioner_id[i] = fib;
                 num_target[i] = P[j].av_gals[fib].size();
 
-        //PRUEBA
+
                 //target_id[i] = g; ********
                 if(g>0) target_id[i] = M[g].id;
                 else target_id[i]=-1;
@@ -1045,6 +1053,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
                     desi_target[i] = 0;
                     bgs_target[i] = 0;
                     mws_target[i] = 0;
+		    strncpy(brickname[i], "notbrick", bricklen+1);
                 } else {
                     //we aren't supposed to know the kind  use priority instead
                     //strncpy(objtype[i], F.kind[G[g].id].c_str(), objtypelen);
@@ -1057,6 +1066,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
                     desi_target[i] = M[g].desi_target;
                     bgs_target[i] = M[g].bgs_target;
                     mws_target[i] = M[g].mws_target;
+		    strncpy(brickname[i], M[g].brickname, bricklen+1);
                 }
                 
                 for (int k = 0; k < P[j].av_gals[fib].size(); ++k) {
@@ -1110,6 +1120,9 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
             
             fits_write_col(fptr, TFLOAT, 12, offset+1, 1, n, y_focal, &status);
             fits_report_error(stderr, status);
+
+	    fits_write_col(fptr, TSTRING, 13, offset+1, 1, n, bn_tmp, &status);
+	    fits_report_error(stderr, status);
         }
         
         offset += n;
