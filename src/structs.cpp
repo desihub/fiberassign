@@ -785,7 +785,8 @@ Plates read_plate_centers(const Feat& F) {
 
       try {P.reserve(4000000);} catch (std::exception& e) {myexception(e);}      
       for(ii=0;ii<nrows;ii++){
-        if (in_desi[ii]==1) {
+	//	fprintf(stdout, "in desi %d\n", in_desi[ii]);
+        if ((in_desi[ii]==1) && (obsconditions[ii]!=0)) {
             if (ra[ii]<   0.) {ra[ii] += 360.;}
             if (ra[ii]>=360.) {ra[ii] -= 360.;}
             if (dec[ii]<-90. || dec[ii]>90.) {
@@ -798,7 +799,6 @@ Plates read_plate_centers(const Feat& F) {
 
             Q.tileid = tile_id[ii];
 	    Q.obsconditions = obsconditions[ii];
-
             //                        std::cout << "TILEID " << tileid << std::endl;
             Q.tilera        = ra[ii];
             Q.tiledec       = dec[ii];
