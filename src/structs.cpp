@@ -602,6 +602,7 @@ Plates read_plate_centers(const Feat& F) {
     int *obsconditions;
     int *in_desi;
     int *tile_id;   
+    int tileid;
     int *ipass;
     double *ra;
     double *dec;   
@@ -773,7 +774,7 @@ Plates read_plate_centers(const Feat& F) {
 
       //----- PASS
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"PASS", &colnum, &status) ){
-        fprintf(stderr, "error finding OBSCONDITIONS column\n");
+        fprintf(stderr, "error finding PASS column\n");
         myexit(status);
       }
       if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
@@ -796,6 +797,7 @@ Plates read_plate_centers(const Feat& F) {
             struct plate Q;
 
             Q.tileid = tile_id[ii];
+	    Q.obsconditions = obsconditions[ii];
 
             //                        std::cout << "TILEID " << tileid << std::endl;
             Q.tilera        = ra[ii];
