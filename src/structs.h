@@ -101,7 +101,7 @@ class plate {
     std::vector<int> SS_in_petal;//number of SS assigned to a petal in this plate
     std::vector<int> SF_in_petal;
     bool is_used;  //true if tile has some galaxies within reach
-
+    int obsconditions; // mask defining the kind of program (DARK, BRIGHT, GRAY)
     List av_gals_plate(const Feat& F, const MTL& M,const PP& pp) const; // Av gals of the plate
 };
 class Plates : public std::vector<struct plate> {};

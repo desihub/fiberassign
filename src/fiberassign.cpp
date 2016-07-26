@@ -31,6 +31,11 @@ int main(int argc, char **argv) {
     F.readInputFile(argv[1]);
     printFile(argv[1]);
 
+    //P is original list of plates
+    Plates P = read_plate_centers(F);
+    F.Nplate=P.size();
+    printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
+
     // Read input files for standards, skys and targets.
     // Try to read SS and SF before targets to avoid wasting time if these
     // smaller files can't be read.
@@ -70,10 +75,7 @@ int main(int argc, char **argv) {
     pp.get_neighbors(F);
     pp.compute_fibsofsp(F);
     
-    //P is original list of plates
-    Plates P = read_plate_centers(F);
-    F.Nplate=P.size();
-    printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
+
    
     // Computes geometries of cb and fh: pieces of positioner - used to determine possible collisions
     F.cb = create_cb(); // cb=central body
