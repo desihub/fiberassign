@@ -31,10 +31,6 @@ int main(int argc, char **argv) {
     F.readInputFile(argv[1]);
     printFile(argv[1]);
 
-    //P is original list of plates
-    Plates P = read_plate_centers(F);
-    F.Nplate=P.size();
-    printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
 
     // Read input files for standards, skys and targets.
     // Try to read SS and SF before targets to avoid wasting time if these
@@ -65,6 +61,7 @@ int main(int argc, char **argv) {
         printf("  class  %d  number  %d\n",i,count_class[i]);
     }
     print_time(time,"# ... took :");
+
     
     // fiber positioners
     PP pp;
@@ -74,7 +71,12 @@ int main(int argc, char **argv) {
     F.Nfbp = (int) (F.Nfiber/F.Npetal);// fibers per petal = 500
     pp.get_neighbors(F);
     pp.compute_fibsofsp(F);
-    
+
+
+    //P is original list of plates
+    Plates P = read_plate_centers(F);
+    F.Nplate=P.size();
+    printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());    
 
    
     // Computes geometries of cb and fh: pieces of positioner - used to determine possible collisions
