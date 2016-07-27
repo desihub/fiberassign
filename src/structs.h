@@ -14,6 +14,7 @@
 #include    <sys/time.h>
 #include        <map>
 #include        "feat.h"
+#include <cstdint>
 
 // PP ---------------------------------------------------
 class PP { // PP for plate parameters
@@ -38,6 +39,7 @@ class galaxy {
         long targetid;      // the unique identifier
         long category;      // the true type when used with a secret file
         double z;
+	uint16_t obsconditions;
         // double ra, dec;
 };
 class Gals : public std::vector<struct galaxy> {};
@@ -60,6 +62,7 @@ class target {
   int SS,SF,lastpass, priority_class, t_priority, once_obs;
   char brickname [9];
   Plist av_tfs;
+  uint16_t obsconditions; // 16bit mask indicating under what conditions this target can be observed.
 };
 class MTL : public std::vector<struct target> {
     public:
@@ -101,7 +104,7 @@ class plate {
     std::vector<int> SS_in_petal;//number of SS assigned to a petal in this plate
     std::vector<int> SF_in_petal;
     bool is_used;  //true if tile has some galaxies within reach
-    int obsconditions; // mask defining the kind of program (DARK, BRIGHT, GRAY)
+    uint16_t obsconditions; // mask defining the kind of program (DARK, BRIGHT, GRAY)
     List av_gals_plate(const Feat& F, const MTL& M,const PP& pp) const; // Av gals of the plate
 };
 class Plates : public std::vector<struct plate> {};

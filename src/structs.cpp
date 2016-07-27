@@ -18,6 +18,7 @@
 #include        "collision.h"
 #include        "fitsio.h"
 #include <string.h>
+#include <cstdint>
 
 std::vector<int> count_galaxies(const Gals& G){
     std::vector <int> counter(10,0);
@@ -171,12 +172,12 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
     long *mws_target;
     int *numobs;
     int *priority;
-    int *lastpass;
     double *ra;
     double *dec;    
     int colnum;
     char **brickname;
-    
+    uint16_t *obsconditions;    
+
     // General purpose output stream for exceptions
     std::ostringstream o;
 
@@ -258,10 +259,12 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
         myexit(1);
       }
 
-      if(!(lastpass= (int *)malloc(nrows * sizeof(int)))){
-        fprintf(stderr, "problem with lastpass allocation\n");
+
+      if(!(obsconditions = (uint16_t *)malloc(nrows * sizeof(int)))){
+        fprintf(stderr, "problem with obsconditions allocation\n");
         myexit(1);
       }
+
 
       if(!(brickname= (char **)malloc(nrows * sizeof(char *)))){
         fprintf(stderr, "problem with brickname allocation\n");
@@ -344,6 +347,17 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
         fprintf(stderr, "error reading BGS_TARGET column\n");
         myexit(status);
       }
+      
+      // OBSCONDITIONS
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"OBSCONDITIONS", &colnum, &status) ){
+        fprintf(stderr, "error finding OBSCONDITIONS column\n");
+        myexit(status);
+      }
+      if (fits_read_col(fptr, USHORT_IMG, colnum, frow, felem, nrows, 
+                        &nullval, obsconditions, &anynulls, &status) ){
+        fprintf(stderr, "error reading OBSCONDITIONS column\n");
+        myexit(status);
+      }
 
       //----- BRICKNAME
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"BRICKNAME", &colnum, &status) ){
@@ -394,20 +408,6 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
         myexit(status);
       }
 
-      //----- LASTPASS
-      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"GRAYLAYER", &colnum, &status) ){
-        // fprintf(stderr, "error finding LASTPASS column\n");
-        // myexit(status);
-        std::cout << "GRAYLAYER not found ... setting to 0" << std::endl;
-        for(int i=0; i<nrows; i++) {
-            lastpass[i] = 0;
-        }
-        
-      } else if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
-                        &nullval, lastpass, &anynulls, &status) ){
-        fprintf(stderr, "error reading GRAYLAYER column\n");
-        myexit(status);
-      }
       
       // count how many rows we will keep and reserve that amount
       nkeep = 0;
@@ -449,7 +449,6 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
              Q.desi_target = desi_target[ii];
              Q.mws_target = mws_target[ii];
              Q.bgs_target = bgs_target[ii];
-             Q.lastpass = lastpass[ii];
              Q.SS=SS;
              Q.SF=SF;
 	     strncpy(Q.brickname, brickname[ii], 9);
@@ -596,7 +595,7 @@ Plates read_plate_centers(const Feat& F) {
     long nkeep;
     int ncols;
     int ii;
-    int *obsconditions;
+    uint16_t *obsconditions;    
     int *in_desi;
     int *tile_id;   
     int tileid;
@@ -682,7 +681,7 @@ Plates read_plate_centers(const Feat& F) {
 
 
       
-      if(!(obsconditions = (int *)malloc(nrows * sizeof(int)))){
+      if(!(obsconditions = (uint16_t *)malloc(nrows * sizeof(int)))){
         fprintf(stderr, "problem with priority allocation\n");
         myexit(1);
       }
@@ -751,7 +750,7 @@ Plates read_plate_centers(const Feat& F) {
         fprintf(stderr, "error finding OBSCONDITIONS column\n");
         myexit(status);
       }
-      if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
+      if (fits_read_col(fptr, USHORT_IMG, colnum, frow, felem, nrows, 
                         &nullval, obsconditions, &anynulls, &status) ){
         fprintf(stderr, "error reading OBSCONDITIONS column\n");
         myexit(status);
