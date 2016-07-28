@@ -51,7 +51,10 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
                 int g = nbr[gg];
                 struct onplate op = change_coords(M[g],p);
                 op.id = g;
-                O.push_back(op);
+		// Check that the target corresponds to the right program
+		if(M[g].obsconditions & p.obsconditions){
+		  O.push_back(op);
+		}
             }
             // Build 2D KD tree of those galaxies
             KDtree<struct onplate> kdT(O,2);
@@ -102,8 +105,8 @@ void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) {
 // Allow (j,k) to observe g ?
 inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const MTL& M, const PP& pp, const Feat& F, const Assignment& A) {
  
-    if (P[j].ipass==4 && M[g].lastpass==0){
-        return false;} // Only ELG at the last pass
+  //    if (P[j].ipass==4 && M[g].lastpass==0){
+  //        return false;} // Only ELG at the last pass
     if (F.Collision) for (int i=0; i<pp.N[k].size(); i++) if (g==A.TF[j][pp.N[k][i]]) return false; // Avoid 2 neighboring fibers observe the same galaxy (can happen only when Collision=true)
     if (A.find_collision(j,k,g,pp,M,P,F)!=-1){
         return false;} // No collision
