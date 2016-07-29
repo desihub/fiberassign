@@ -130,7 +130,7 @@ inline bool ok_for_limit_SS_SF(int g, int j, int k, const MTL& M, const Plates& 
 // Null list means you can take all possible kinds, otherwise you can only take, for the galaxy, a kind among this list
 // Not allowed to take the galaxy of id no_g
 inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
-    int best = -1; int mbest = -1; int pbest = 0;
+    int best = -1; int mbest = -1; int pbest = 0; double subpbest=0.;
     List av_gals = P[j].av_gals[k];
     // For all available galaxies
     for (int gg=0; gg<av_gals.size(); gg++) {
@@ -140,14 +140,18 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
             int m = M[g].nobs_remain; // Check whether it needs further observation
             if (m>=1) {
                 int prio = M[g].t_priority;
+                double subprio = M[g].subpriority;
                 // Takes it if better priority, or if same, if it needs more observations, so shares observations if two QSOs are close
-                if (prio>pbest || (prio==pbest && m>mbest)){
+
+                    if (prio>pbest || (prio==pbest && m>mbest)||(prio==pbest && m==mbest && subprio>subpbest)){
+
                     // Check that g is not assigned yet on this plate, or on the InterPlate around, check with ok_to_assign
                     int isa=A.is_assigned_jg(j,g,M,F);
                     int ok=ok_assign_g_to_jk(g,j,k,P,M,pp,F,A);
                     if (isa==-1 && ok) {
                         best = g;
                         pbest = prio;
+                        subpbest=subprio;
                         mbest = m;
                     }
                 }
