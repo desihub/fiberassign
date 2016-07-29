@@ -56,7 +56,7 @@ void write_FAtile_ascii(int j, str outdir, const MTL& M, const Plates& P, const 
 void fa_write(int j, str outdir, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A);
 
 
-void pyplotTile(int j, str fname, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A);
+void pyplotTile(int j, str fname, const Gals& Secret, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A);
 
 void overlappingTiles(str fname, const Feat& F, const Assignment& A);
 #endif

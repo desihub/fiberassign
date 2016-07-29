@@ -17,7 +17,8 @@
 #include        "structs.h"
 #include        "collision.h"
 #include        "fitsio.h"
-
+#include <string.h>
+#include <cstdint>
 
 std::vector<int> count_galaxies(const Gals& G){
     std::vector <int> counter(10,0);
@@ -63,7 +64,7 @@ Gals read_Secretfile(str readfile, const Feat&F){
 
     if ( fits_movabs_hdu(fptr, 2, &hdutype, &status) )
       myexit(status);
-    
+
     fits_get_hdrspace(fptr, &nkeys, NULL, &status);            
     fits_get_hdu_num(fptr, &hdupos);
     fits_get_hdu_type(fptr, &hdutype, &status);  /* Get the HDU type */            
@@ -90,6 +91,7 @@ Gals read_Secretfile(str readfile, const Feat&F){
       fprintf(stderr, "problem with category allocation\n");
       myexit(1);
     } 
+
     if(!(redshift= (double *)malloc(nrows * sizeof(double)))){
       fprintf(stderr, "problem with redshift allocation\n");
       myexit(1);
@@ -133,6 +135,8 @@ Gals read_Secretfile(str readfile, const Feat&F){
       myexit(status);
     }
     
+
+
     for(ii=0;ii<nrows;ii++){
       struct galaxy Q;      
       Q.targetid = targetid[ii];
@@ -147,12 +151,11 @@ Gals read_Secretfile(str readfile, const Feat&F){
 
 
 MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
-    //str s=F.MTLfile;
-    str s=readfile;
+    str s = readfile;
     MTL M;
     std::string buf;
     const char* fname;
-    fname= s.c_str();
+    fname = s.c_str();
     std::ifstream fs(fname);
     int ii;
     fitsfile *fptr;        
@@ -169,19 +172,45 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
     long *mws_target;
     int *numobs;
     int *priority;
-    int *lastpass;
     double *ra;
     double *dec;    
     int colnum;
-    
+    char **brickname;
+    uint16_t *obsconditions;    
 
-    if (! fits_open_file(&fptr, fname, READONLY, &status)){
-      std::cout << "reading MTL file " << fname << std::endl;
+    // General purpose output stream for exceptions
+    std::ostringstream o;
+
+    // Check that input file exists and is readable by cfitsio
+    std::cout << "Finding file: " << fname << std::endl;
+    int file_exists;
+    fits_file_exists(fname,&file_exists,&status);
+    std::ostringstream exists_str;
+    exists_str << "(CFITSIO file_exists code: " << file_exists << ")";
+
+    // Throw exceptions for failed read, see cfitsio docs
+    if (! file_exists) {
+        switch (file_exists){
+        case -1:
+            o << "Input MTL file must be a disk file: " << fname << " " << exists_str.str();
+            throw std::runtime_error(o.str().c_str());
+        case  0:
+            o << "Could not find MTL input file: " << fname << " " << exists_str.str();
+            throw std::runtime_error(o.str().c_str());
+        case  2:
+            o << "Cannot handle zipped MTL input file: " << fname << " " << exists_str.str();
+            throw std::runtime_error(o.str().c_str());
+        }
+    }
+
+    std::cout << "Found MTL input file: " << fname << std::endl;
+
+    if (! fits_open_file(&fptr, fname, READONLY, &status) ){
+      std::cout << "Reading MTL input file " << fname << std::endl;
 
       if ( fits_movabs_hdu(fptr, 2, &hdutype, &status) )
           myexit(status);
-      
-      
+ 
       fits_get_hdrspace(fptr, &nkeys, NULL, &status);            
       fits_get_hdu_num(fptr, &hdupos);
       fits_get_hdu_type(fptr, &hdutype, &status);  /* Get the HDU type */            
@@ -230,9 +259,23 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
         myexit(1);
       }
 
-      if(!(lastpass= (int *)malloc(nrows * sizeof(int)))){
-        fprintf(stderr, "problem with lastpass allocation\n");
+
+      if(!(obsconditions = (uint16_t *)malloc(nrows * sizeof(int)))){
+        fprintf(stderr, "problem with obsconditions allocation\n");
         myexit(1);
+      }
+
+
+      if(!(brickname= (char **)malloc(nrows * sizeof(char *)))){
+        fprintf(stderr, "problem with brickname allocation\n");
+        myexit(1);
+      }
+
+      for(ii=0;ii<nrows;ii++){
+	if(!(brickname[ii]= (char *)malloc(9 * sizeof(char)))){
+	  fprintf(stderr, "problem with brickname allocation\n");
+	  myexit(1);
+	}
       }
      
       //----- TARGETID
@@ -304,7 +347,37 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
         fprintf(stderr, "error reading BGS_TARGET column\n");
         myexit(status);
       }
+      
+      // OBSCONDITIONS
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"OBSCONDITIONS", &colnum, &status) ){
+        fprintf(stderr, "error finding OBSCONDITIONS column\n");
+        myexit(status);
+      }
+      if (fits_read_col(fptr, USHORT_IMG, colnum, frow, felem, nrows, 
+                        &nullval, obsconditions, &anynulls, &status) ){
+        fprintf(stderr, "error reading OBSCONDITIONS column\n");
+        myexit(status);
+      }
 
+      //----- BRICKNAME
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"BRICKNAME", &colnum, &status) ){
+	fprintf(stderr, "error finding BRICKNAME column\n");
+	myexit(status);
+      }
+      if (fits_read_col(fptr, TSTRING, colnum, frow, felem, nrows, 
+			&nullval, brickname, &anynulls, &status) ){
+	fprintf(stderr, "error reading BRICKNAME column\n");
+	myexit(status);
+      }
+      /*
+      for(ii=0;ii<10;ii++){
+  	fprintf(stderr, "some bricknames %s RA %f DEC %f!\n", brickname[ii], ra[ii], dec[ii]);
+      }
+
+      for(ii=nrows-1;ii>nrows-10;ii--){
+	fprintf(stderr, "some bricknames %s RA %f DEC %f!\n", brickname[ii], ra[ii], dec[ii]);
+      }
+      */
       // StdStar and Sky fiber inputs don't have NUMOBS_MORE, PRIORITY, or GRAYLAYER
 
       //----- NUMOBS_MORE
@@ -335,20 +408,6 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
         myexit(status);
       }
 
-      //----- LASTPASS
-      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"GRAYLAYER", &colnum, &status) ){
-        // fprintf(stderr, "error finding LASTPASS column\n");
-        // myexit(status);
-        std::cout << "GRAYLAYER not found ... setting to 0" << std::endl;
-        for(int i=0; i<nrows; i++) {
-            lastpass[i] = 0;
-        }
-        
-      } else if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
-                        &nullval, lastpass, &anynulls, &status) ){
-        fprintf(stderr, "error reading GRAYLAYER column\n");
-        myexit(status);
-      }
       
       // count how many rows we will keep and reserve that amount
       nkeep = 0;
@@ -391,9 +450,9 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
              Q.desi_target = desi_target[ii];
              Q.mws_target = mws_target[ii];
              Q.bgs_target = bgs_target[ii];
-             Q.lastpass = lastpass[ii];
              Q.SS=SS;
              Q.SF=SF;
+	     strncpy(Q.brickname, brickname[ii], 9);
              try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
              
              // 
@@ -414,6 +473,11 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
       } // end ii loop over targets
       std::sort(M.priority_list.begin(),M.priority_list.end());
       return(M);  
+    } else {
+        std::ostringstream open_status_str;
+        open_status_str << "(CFITSIO open_file status: " << status << ")";
+        o << "Problem opening input MTL fits file: " << fname << " " << open_status_str.str();
+        throw std::runtime_error(o.str().c_str());
     }
 }
 
@@ -518,16 +582,32 @@ List plate::av_gals_plate(const Feat& F,const MTL& M, const PP& pp) const {//lis
 
 
 
-// Plates ---------------------------------------------------------------------------
-// Read positions of the plate centers from an ascii file "center_name", and fill in a structure
-// Allow for a survey file to define the strategy  1/28/16
 Plates read_plate_centers(const Feat& F) {
     Plates P,PP;
+    const char* fname;
 
-    // Maximum possible value of tileid, equal to total number of tiles
-    // (minimum value is 1). No longer used, since tileid is not treated as an
-    // index now.
-    // int total_tiles = 28810;
+    /*Variables used to read fits file*/
+    fitsfile *fptr;        
+    int status = 0, anynulls;
+    int hdutype;
+    int nkeys;
+    int hdupos;
+    long nrows;
+    long nkeep;
+    int ncols;
+    int ii;
+    uint16_t *obsconditions;    
+    int *in_desi;
+    int *tile_id;   
+    int tileid;
+    int *ipass;
+    double *ra;
+    double *dec;   
+    int colnum;
+    long frow, felem, nullval;
+    frow = 1;
+    felem = 1;
+    nullval = -99.;
 
     // read the strategy file
     // survey_list is list of tiles specified by tileid (arbitrary int) in order of survey
@@ -540,69 +620,189 @@ Plates read_plate_centers(const Feat& F) {
     printf("getting file list\n");
     std::cout.flush();
     std::vector<int> survey_list;
-    //    while (fsurvey.eof()==0){
-    //        getline(fsurvey,buf);
     std::string buf;
     while(getline(fsurvey,buf)){
         std::istringstream ss(buf);
         if(!(ss>>survey_tile)){break;}
         survey_list.push_back(survey_tile);
-               // int size_now=survey_list.size();
-               // printf(" number  %d  tile  %d \n",size_now,survey_list[size_now-1]);
+	// int size_now=survey_list.size();
+	// printf(" number  %d  tile  %d \n",size_now,survey_list[size_now-1]);
         std::cout.flush();
-
     }
     printf(" number of tiles %d \n",survey_list.size());
     std::cout.flush();
-    //read list of file centers
 
-    std::ifstream fs(F.tileFile.c_str());
-    if (!fs) {  // An error occurred opening the file.
-        std::cerr << "Unable to open file " << F.tileFile << std::endl;
-        myexit(1);
+    // NEW
+    // read list of tile centers
+    // Check that input file exists and is readable by cfitsio
+    fname = F.tileFile.c_str();
+    std::cout << "Finding file: " << fname << std::endl;
+    int file_exists;
+    fits_file_exists(fname,&file_exists,&status);
+    std::ostringstream exists_str;
+    exists_str << "(CFITSIO file_exists code: " << file_exists << ")";
+    std::ostringstream o;
+
+    // Throw exceptions for failed read, see cfitsio docs
+    if (! file_exists) {
+        switch (file_exists){
+        case -1:
+            o << "Input tile centers file must be a disk file: " << fname << " " << exists_str.str();
+            throw std::runtime_error(o.str().c_str());
+        case  0:
+            o << "Could not find input tile centers file: " << fname << " " << exists_str.str();
+            throw std::runtime_error(o.str().c_str());
+        case  2:
+            o << "Cannot handle zipped tile centers input file: " << fname << " " << exists_str.str();
+            throw std::runtime_error(o.str().c_str());
+        }
     }
-    // Reserve some storage, since we expect we'll be reading quite a few
-    // lines from this file.
-    try {P.reserve(4000000);} catch (std::exception& e) {myexception(e);}
 
-    double ra,dec,ebv,airmass,exposefac;
+    std::cout << "Found input tile centers file: " << fname << std::endl;
 
-    int ipass,in_desi,tileid;
-    int l = 0;
+    if (! fits_open_file(&fptr, fname, READONLY, &status) ){
+      std::cout << "Reading input tile centers file " << fname << std::endl;
 
-    while (fs.eof()==0) {
-        getline(fs,buf);
-                if(buf.compare(0, 7, "STRUCT1") != 0) {
-                    // std::cout << "Skipping " << buf << std::endl;
-                    continue;
-                }
-        //gymnastics to read line with string in first column
-        std::istringstream ss(buf);
-        str start;
-        ss>> start;
-        ss>>tileid>>ra >> dec >> ipass>>in_desi>>ebv>>airmass>>exposefac;
-        //only keep those in footprint, fix ra to lie between 0 and 360
-        if (in_desi==1) {
-            if (ra<   0.) {ra += 360.;}
-            if (ra>=360.) {ra -= 360.;}
-            if (dec<-90. || dec>90.) {
+      if ( fits_movabs_hdu(fptr, 2, &hdutype, &status) )
+	myexit(status);
+      
+      fits_get_hdrspace(fptr, &nkeys, NULL, &status);            
+      fits_get_hdu_num(fptr, &hdupos);
+      fits_get_hdu_type(fptr, &hdutype, &status);  /* Get the HDU type */            
+      fits_get_num_rows(fptr, &nrows, &status);
+      fits_get_num_cols(fptr, &ncols, &status);
+      
+      std::cout << ncols << " columns " << nrows << "nrows" << std::endl;
+      std::cout << "HDU " << hdupos << std::endl;
+      if (hdutype == ASCII_TBL){
+	std::cout << "ASCII TABLE: " << std::endl;
+      }else{
+	std::cout << "BINARY TABLE: " << std::endl;
+      }
+
+
+      
+      if(!(obsconditions = (uint16_t *)malloc(nrows * sizeof(int)))){
+        fprintf(stderr, "problem with priority allocation\n");
+        myexit(1);
+      }
+
+
+      if(!(ipass = (int *)malloc(nrows * sizeof(int)))){
+        fprintf(stderr, "problem with ipass allocation\n");
+        myexit(1);
+      }
+
+      if(!(in_desi = (int *)malloc(nrows * sizeof(int)))){
+        fprintf(stderr, "problem with priority allocation\n");
+        myexit(1);
+      }
+
+      if(!(tile_id = (int *)malloc(nrows * sizeof(int)))){
+        fprintf(stderr, "problem with priority allocation\n");
+        myexit(1);
+      }
+
+      if(!(ra= (double *)malloc(nrows * sizeof(double)))){
+        fprintf(stderr, "problem with ra allocation\n");
+        myexit(1);
+      }      
+      if(!(dec= (double *)malloc(nrows * sizeof(double)))){
+        fprintf(stderr, "problem with dec allocation\n");
+        myexit(1);
+      }
+
+      //----- RA
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"RA", &colnum, &status) ){
+        fprintf(stderr, "error finding RA column\n");
+        myexit(status);
+      }
+      if (fits_read_col(fptr, TDOUBLE, colnum, frow, felem, nrows, 
+                        &nullval, ra, &anynulls, &status) ){
+        fprintf(stderr, "error reading RA column\n");
+        myexit(status);
+      }
+      
+      //----- DEC
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"DEC", &colnum, &status) ){
+        fprintf(stderr, "error finding DEC column\n");
+        myexit(status);
+      }
+      if (fits_read_col(fptr, TDOUBLE, colnum, frow, felem, nrows, 
+			&nullval, dec, &anynulls, &status) ){
+        fprintf(stderr, "error reading DEC column\n");
+        myexit(status);
+      }
+      
+      //----- IN_DESI
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"IN_DESI", &colnum, &status) ){
+        fprintf(stderr, "error finding IN_DESI column\n");
+        myexit(status);
+      }
+      if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
+                        &nullval, in_desi, &anynulls, &status) ){
+        fprintf(stderr, "error reading IN_DESI column\n");
+        myexit(status);
+      }
+
+
+      //----- OBSCONDITIONS
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"OBSCONDITIONS", &colnum, &status) ){
+        fprintf(stderr, "error finding OBSCONDITIONS column\n");
+        myexit(status);
+      }
+      if (fits_read_col(fptr, USHORT_IMG, colnum, frow, felem, nrows, 
+                        &nullval, obsconditions, &anynulls, &status) ){
+        fprintf(stderr, "error reading OBSCONDITIONS column\n");
+        myexit(status);
+      }
+
+      //----- TILEID
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"TILEID", &colnum, &status) ){
+        fprintf(stderr, "error finding OBSCONDITIONS column\n");
+        myexit(status);
+      }
+      if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
+                        &nullval, tile_id, &anynulls, &status) ){
+        fprintf(stderr, "error reading TILEID column\n");
+        myexit(status);
+      }
+
+
+      //----- PASS
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"PASS", &colnum, &status) ){
+        fprintf(stderr, "error finding PASS column\n");
+        myexit(status);
+      }
+      if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
+                        &nullval, ipass, &anynulls, &status) ){
+        fprintf(stderr, "error reading PASS column\n");
+        myexit(status);
+      }
+
+      try {P.reserve(400000);} catch (std::exception& e) {myexception(e);}      
+      for(ii=0;ii<nrows;ii++){
+	//	fprintf(stdout, "in desi %d\n", in_desi[ii]);
+        if ((in_desi[ii]==1) && (obsconditions[ii]!=0)) {	  
+            if (ra[ii]<   0.) {ra[ii] += 360.;}
+            if (ra[ii]>=360.) {ra[ii] -= 360.;}
+            if (dec[ii]<-90. || dec[ii]>90.) {
                 std::cout << "DEC="<<dec<<" out of range reading " << F.tileFile<<std::endl;
                 myexit(1);
             }
-            double theta = (90.0 - dec)*M_PI/180.;
-            double phi   = (ra        )*M_PI/180.;
+            double theta = (90.0 - dec[ii])*M_PI/180.;
+            double phi   = (ra[ii]        )*M_PI/180.;
             struct plate Q;
 
-            Q.tileid = tileid;
-
+            Q.tileid = tile_id[ii];
+	    Q.obsconditions = obsconditions[ii];
             //                        std::cout << "TILEID " << tileid << std::endl;
-            l++;
-            Q.tilera        = ra;
-            Q.tiledec       = dec;
+            Q.tilera        = ra[ii];
+            Q.tiledec       = dec[ii];
             Q.nhat[0]    = sin(theta)*cos(phi);
             Q.nhat[1]    = sin(theta)*sin(phi);
             Q.nhat[2]    = cos(theta);
-            Q.ipass      = ipass-1; // <- be careful, format of input file
+            Q.ipass      = ipass[ii]; // <- be careful, format of input file
             Q.av_gals.resize(F.Nfiber); // <- added
             Q.density.resize(F.Nfiber); // <- added
             Q.SS_av_gal.resize(F.Npetal);//was Nfbp
@@ -614,12 +814,11 @@ Plates read_plate_centers(const Feat& F) {
             for (int i=0;i<F.Npetal;++i){Q.SS_in_petal[i]=0;}
             for (int i=0;i<F.Npetal;++i){Q.SF_in_petal[i]=0;}
             //if(dec<F.MaxDec && dec>F.MinDec &&ra<F.MaxRa && ra>F.MinRa){
-                try {P.push_back(Q);} catch(std::exception& e) {myexception(e);
-                //}
-                }
-        }
+	    try {P.push_back(Q);} catch(std::exception& e) {myexception(e);}
+	}
+      }
     }
-	fs.close();
+
     printf(" size of P  %d\n",P.size());
     std::cout.flush();
 
@@ -871,6 +1070,24 @@ List Assignment::fibs_unassigned(int j, int pet, const MTL& M, const PP& pp, con
     }
     return L;
 }
+/*
+ old version
+int Assignment::nobs_time(int g, int j, const Gals& G, const Feat& F) const {
+    int kind = G[g].id;
+    int cnt = once_obs[g] ? F.goal[kind] : F.maxgoal(kind);
+    for (int i=0; i<GL[g].size(); i++) if (GL[g][i].f<j) cnt--;
+    return cnt;
+}
+*/
+
+int Assignment::nobs_time(int g, int j, const Gals& Secret, const MTL& M,const Feat& F) const {
+    //gives required number of observations after jth tile  rnc 6/1/16
+    int kind = Secret[g].category;
+    //int cnt = M[g].once_obs ? F.goal[kind] : F.maxgoal(kind); old version
+    int cnt = M[g].once_obs ? F.goalpost[kind] : F.goal[kind];
+    for (int i=0; i<GL[g].size(); i++) if (GL[g][i].f<j) cnt--;
+    return cnt;
+}
 // Returns the radial distance on the plate (mm) given the angle,
 // theta (radians).  This is simply a fit to the data provided.
 double plate_dist(const double theta) {
@@ -1001,7 +1218,15 @@ void pyplot::plot_tile(str directory, int j, const Feat& F) const {
     Dlist lims = pol.limits();
     fprintf(file,"from pylab import *\nimport pylab as pl\nimport matplotlib.pyplot as plt\nfrom matplotlib import collections as mc\nax=subplot(aspect='equal')\naxes = plt.gca()\naxes.set_xlim([%f,%f])\naxes.set_ylim([%f,%f])\nax.axis('off')\nax.get_xaxis().set_visible(False)\nax.get_yaxis().set_visible(False)\nset_cmap('hot')\nfig = plt.gcf()\n\n",lims[0],lims[1],lims[2],lims[3]);
     if (j!=-1) fprintf(file,"plt.text(350,-350,'Tile %d',horizontalalignment='center',verticalalignment='center',size=5)\n\n",j);
-
+    if (j!=-1) fprintf(file,"plt.text(200,-375,'QSO-Ly-a',color='black',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
+    if (j!=-1) fprintf(file,"plt.text(250,-375,'QSO-tracer',color='green',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
+    if (j!=-1) fprintf(file,"plt.text(300,-375,'LRG',color='red',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
+    if (j!=-1) fprintf(file,"plt.text(350,-375,'ELG',color='blue',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
+    if (j!=-1) fprintf(file,"plt.text(200,-400,'Fake QSO',color='m',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
+    if (j!=-1) fprintf(file,"plt.text(250,-400,'Fake LRG',color='y',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
+    if (j!=-1) fprintf(file,"plt.text(300,-400,'Std. Star',color='gray',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
+    if (j!=-1) fprintf(file,"plt.text(350,-400,'Sky Fiber',color='c',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
+    
     // Plot polygon
     for (int i=0; i<pol.elmts.size(); i++) {
         element e = pol.elmts[i];

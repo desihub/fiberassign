@@ -51,7 +51,10 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
                 int g = nbr[gg];
                 struct onplate op = change_coords(M[g],p);
                 op.id = g;
-                O.push_back(op);
+		// Check that the target corresponds to the right program
+		if(M[g].obsconditions & p.obsconditions){
+		  O.push_back(op);
+		}
             }
             // Build 2D KD tree of those galaxies
             KDtree<struct onplate> kdT(O,2);
@@ -102,8 +105,8 @@ void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) {
 // Allow (j,k) to observe g ?
 inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const MTL& M, const PP& pp, const Feat& F, const Assignment& A) {
  
-    if (P[j].ipass==4 && M[g].lastpass==0){
-        return false;} // Only ELG at the last pass
+  //    if (P[j].ipass==4 && M[g].lastpass==0){
+  //        return false;} // Only ELG at the last pass
     if (F.Collision) for (int i=0; i<pp.N[k].size(); i++) if (g==A.TF[j][pp.N[k][i]]) return false; // Avoid 2 neighboring fibers observe the same galaxy (can happen only when Collision=true)
     if (A.find_collision(j,k,g,pp,M,P,F)!=-1){
         return false;} // No collision
@@ -870,7 +873,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     
     size_t cfilesize = 512;
     size_t objtypelen = 8;
-    
+    size_t bricklen = 8;
     // check if the file exists, and if so, throw an exception
     
     char filename[cfilesize];
@@ -897,7 +900,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     // string arrays, since the CFITSIO API requires non-const pointers
     // to them (i.e. arrays of literals won't work).
     
-    size_t ncols = 12;
+    size_t ncols = 13;
     
     char ** ttype;
     char ** tform;
@@ -975,6 +978,11 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     strcpy(ttype[11], "YFOCAL_DESIGN");
     strcpy(tform[11], "E");
     strcpy(tunit[11], "mm");
+
+    strcpy(ttype[12], "BRICKNAME");
+    snprintf(tform[12], FLEN_VALUE, "%dA", (int)bricklen);
+    strcpy(tunit[12], "");
+
     
     char extname[FLEN_VALUE];
     
@@ -997,9 +1005,12 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     int positioner_id[optimal];
     int num_target[optimal];
     char objtype[optimal][objtypelen];
+    char brickname[optimal][bricklen+1];
+    char * bn_tmp[optimal];
     char * ot_tmp[optimal];
     for (int i = 0; i < optimal; i++) {
         ot_tmp[i] = objtype[i];
+	bn_tmp[i] = brickname[i];
     }
     long long target_id[optimal];
     long long desi_target[optimal];
@@ -1035,7 +1046,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
                 positioner_id[i] = fib;
                 num_target[i] = P[j].av_gals[fib].size();
 
-        //PRUEBA
+
                 //target_id[i] = g; ********
                 if(g>0) target_id[i] = M[g].id;
                 else target_id[i]=-1;
@@ -1049,6 +1060,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
                     desi_target[i] = 0;
                     bgs_target[i] = 0;
                     mws_target[i] = 0;
+		    strncpy(brickname[i], "notbrick", bricklen+1);
                 } else {
                     //we aren't supposed to know the kind  use priority instead
                     //strncpy(objtype[i], F.kind[G[g].id].c_str(), objtypelen);
@@ -1061,6 +1073,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
                     desi_target[i] = M[g].desi_target;
                     bgs_target[i] = M[g].bgs_target;
                     mws_target[i] = M[g].mws_target;
+		    strncpy(brickname[i], M[g].brickname, bricklen+1);
                 }
                 
                 for (int k = 0; k < P[j].av_gals[fib].size(); ++k) {
@@ -1114,6 +1127,9 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
             
             fits_write_col(fptr, TFLOAT, 12, offset+1, 1, n, y_focal, &status);
             fits_report_error(stderr, status);
+
+	    fits_write_col(fptr, TSTRING, 13, offset+1, 1, n, bn_tmp, &status);
+	    fits_report_error(stderr, status);
         }
         
         offset += n;
@@ -1148,7 +1164,77 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     
     return;
 }
+void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
+    std::vector<char> colors;
+    colors.resize(F.Categories);
+    colors[0] = 'k'; colors[1] = 'g'; colors[2] = 'r'; colors[3] = 'b'; colors[4] = 'm'; colors[5] = 'y'; colors[6] = 'w'; colors[7] = 'c';
+    polygon pol;
+    PosP posp(3,3);
 
+    int j=A.suborder[jused];
+    for (int k=0; k<F.Nfiber; k++) {
+        dpair O = pp.coords(k);
+        int g = A.TF[j][k];
+        if (g!=-1) {
+            dpair Ga = projection(g,j,M,P);
+            
+            polygon fh = F.fh;
+            polygon cb = F.cb;
+            repos_cb_fh(cb,fh,O,Ga,posp);
+            //if (A.is_collision(j,k,pp,G,P,F)!=-1) {
+            //cb.set_color('r');
+            //fh.set_color('r');
+            //}
+            //fix color assignment to account for Secret and SkyF
+            char this_color;
+            if (g<F.Ntarg){
+                this_color=colors[Secret[g].category];
+            }
+            else if (g<F.Ntarg+F.NSStars) this_color='w';
+            else this_color='c';
+
+            cb.set_color(this_color);
+            fh.set_color(this_color);
+            pol.add(cb);
+            pol.add(fh);
+            if(this_color!='w'){
+            pol.add(element(O,this_color,0.3,5));
+            }
+            else             pol.add(element(O,'k',0.1,5));
+        }
+        else pol.add(element(O,'k',0.1,3));//unassigned fiber
+        List av_gals = P[j].av_gals[k];
+
+        for (int i=0; i<av_gals.size(); i++) {
+            int gg = av_gals[i];
+            char this_color;
+            if (gg>F.Ntarg+F.NSStars){
+                this_color='c';
+                dpair Ga = projection(gg,j,M,P);
+                pol.add(element(Ga,this_color,1,0.5));
+             }
+            else if (gg>F.Ntarg){
+                this_color='w';
+                dpair Ga = projection(gg,j,M,P);
+                pol.add(element(Ga,this_color,1,0.5));
+            }
+            else if(1<=A.nobs_time(gg,j,Secret,M,F)){
+                this_color=colors[Secret[gg].category];
+                dpair Ga = projection(gg,j,M,P);
+                if (this_color=='k') pol.add(element(Ga,'k',1,A.is_assigned_jg(j,gg)==-1?0.9:0.5));
+                else pol.add(element(Ga,this_color,1,0.5));
+            }
+        }
+    }
+
+    pyplot pyp(pol);
+
+    //for (int k=0; k<F.Nfiber; k++) pyp.addtext(pp.coords(k),i2s(k)); // Plot fibers identifiers
+    
+    pyp.plot_tile(directory,j,F); 
+        
+    
+}
 
 void overlappingTiles(str fname, const Feat& F, const Assignment& A) {
   FILE * file;

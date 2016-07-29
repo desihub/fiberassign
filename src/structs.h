@@ -14,6 +14,7 @@
 #include    <sys/time.h>
 #include        <map>
 #include        "feat.h"
+#include <cstdint>
 
 // PP ---------------------------------------------------
 class PP { // PP for plate parameters
@@ -38,6 +39,7 @@ class galaxy {
         long targetid;      // the unique identifier
         long category;      // the true type when used with a secret file
         double z;
+	uint16_t obsconditions;
         // double ra, dec;
 };
 class Gals : public std::vector<struct galaxy> {};
@@ -59,7 +61,8 @@ class target {
     double subpriority;//substitutes for random number or differentiates between similar targets
     long desi_target, mws_target, bgs_target;
     int SS,SF,lastpass, priority_class, t_priority, once_obs;
-  Plist av_tfs;
+    Plist av_tfs;
+    uint16_t obsconditions; // 16bit mask indicating under what conditions this target can be observed.
 };
 class MTL : public std::vector<struct target> {
     public:
@@ -101,7 +104,7 @@ class plate {
     std::vector<int> SS_in_petal;//number of SS assigned to a petal in this plate
     std::vector<int> SF_in_petal;
     bool is_used;  //true if tile has some galaxies within reach
-
+    uint16_t obsconditions; // mask defining the kind of program (DARK, BRIGHT, GRAY)
     List av_gals_plate(const Feat& F, const MTL& M,const PP& pp) const; // Av gals of the plate
 };
 class Plates : public std::vector<struct plate> {};
@@ -161,7 +164,7 @@ class Assignment {
     List unused_f(const Feat& F) const; //gives total number of unused fibers
     Table unused_fbp(const PP& pp, const Feat& F) const; // Unused fibers by petal
     float colrate(const PP& pp, const MTL& M, const Plates& P, const Feat& F, int j=-1) const; // Get collision rate, j = plate number
-    int nobs_time(int g, int j, const MTL& M, const Feat& F) const; // Know the number of remaining observations of g when the program is at the tile j, for pyplotTile
+    int nobs_time(int g, int j, const Gals& Secret,const MTL& M, const Feat& F) const; // Know the number of remaining observations of g when the program is at the tile j, for pyplotTile
 
     int unused_f(int j, const Feat& F) const; // Number of unused fiber on the j'th plate
     //not used
