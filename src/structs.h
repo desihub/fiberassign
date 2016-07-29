@@ -62,6 +62,7 @@ class target {
     long desi_target, mws_target, bgs_target;
     int SS,SF,lastpass, priority_class, t_priority, once_obs;
     Plist av_tfs;
+    char brickname [9];
     uint16_t obsconditions; // 16bit mask indicating under what conditions this target can be observed.
 };
 class MTL : public std::vector<struct target> {
