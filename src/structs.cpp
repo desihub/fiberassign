@@ -459,6 +459,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
              Q.nhat[1]    = sin(phi)*sin(theta);
              Q.nhat[2]    = cos(theta);
              Q.t_priority = priority[ii];//priority is proxy for id, starts at zero
+	     Q.subpriority = subpriority[ii];
              Q.nobs_remain= numobs[ii];
              Q.nobs_done=0;//need to keep track of this, too
              Q.once_obs=0;//changed only in update_plan

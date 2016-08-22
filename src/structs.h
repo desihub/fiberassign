@@ -58,7 +58,7 @@ class target {
   int nobs_remain, nobs_done;
   double nhat[3];
   double ra, dec;
-  long desi_target, mws_target, bgs_target;
+  long desi_target, mws_target, bgs_target,subpriority;
   int SS,SF,lastpass, priority_class, t_priority, once_obs;
   char brickname [9];
   Plist av_tfs;
