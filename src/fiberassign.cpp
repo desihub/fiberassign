@@ -30,7 +30,11 @@ int main(int argc, char **argv) {
     // Read parameters file //
     F.readInputFile(argv[1]);
     printFile(argv[1]);
-
+    // debug failure to assign any fibers 8/22/16
+    FILE * FB;
+    str s="/project/projectdirs/desi/users/rncahn/output.txt";
+    FB=fopen(s.c_str(),"w");
+    fprintf(FB,"test of output.txt\n");
 
     // Read input files for standards, skys and targets.
     // Try to read SS and SF before targets to avoid wasting time if these
@@ -77,7 +81,7 @@ int main(int argc, char **argv) {
     Plates P = read_plate_centers(F);
     F.Nplate=P.size();
     printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());    
-
+    fprintf(FB,"# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());  
    
     // Computes geometries of cb and fh: pieces of positioner - used to determine possible collisions
     F.cb = create_cb(); // cb=central body
@@ -103,6 +107,8 @@ int main(int argc, char **argv) {
 
     //// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
     printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.Nplate, F.Ngal, F.Nfiber);
+    fprintf(FB," Nplate %d  Ngal %d   Nfiber %d \n", F.Nplate, F.Ngal, F.Nfiber);
+
     Assignment A(M,F);
     // Make a plan ----------------------------------------------------
     print_time(t,"# Start assignment at : ");
@@ -119,6 +125,7 @@ int main(int argc, char **argv) {
         for(int k=0;k<F.Nfiber && not_done;++k){
             if(A.TF[j][k]!=-1){
                 A.suborder.push_back(j);//suborder[jused] is jused-th used plate
+		fprintf(FB," j  %d  k  %d  used jused  %d \n",j,k,inv_count);
                 not_done=false;
                 A.inv_order[j]=inv_count;//inv_order[j] is -1 unless used
                 inv_count++;
@@ -127,7 +134,8 @@ int main(int argc, char **argv) {
     }
     F.NUsedplate=A.suborder.size();
     printf(" Plates actually used %d \n",F.NUsedplate);
-    //for(int i=0;i<F.NUsedplate;i++)printf(" jused  %d  j  %d\n",i,A.suborder[i]);
+    fprintf(FB," Plates actually used %d \n",F.NUsedplate);
+    for(int i=0;i<F.NUsedplate;i++)fprintf(FB," jused  %d  j  %d\n",i,A.suborder[i]);
     
 
     
@@ -192,6 +200,8 @@ int main(int argc, char **argv) {
         printf(" class %2d   %5d",pr,total_used_by_class[pr]);
         std::cout.flush();
     }
+
+
     printf("\n");
     init_time_at(time,"# print txt files ",t);
     if (F.PrintAscii) for (int jused=0; jused<F.NUsedplate; jused++){
