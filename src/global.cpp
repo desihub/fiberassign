@@ -89,11 +89,15 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
 void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) {
     //M[i].av_tfs is list of tile-fiber pairs available to galaxy i
     Time t;
+    printf(" Nplate %d   Nfiber %d \n",F.Nplate,F.Nfiber);
     init_time(t,"# Begin computing available tilefibers");
     for(int j=0; j<F.Nplate; j++) {
+       
         for(int k=0; k<F.Nfiber; k++) {
+
             for(int m=0; m<P[j].av_gals[k].size(); m++) {
                 int i = P[j].av_gals[k][m];  //i is the id of the mth galaxy available to tile j and fiber k
+
                 M[i].av_tfs.push_back(pair(j,k));  //list of tile-fibers available to galaxy i
             }
         }
@@ -130,12 +134,12 @@ inline bool ok_for_limit_SS_SF(int g, int j, int k, const MTL& M, const Plates& 
 // Null list means you can take all possible kinds, otherwise you can only take, for the galaxy, a kind among this list
 // Not allowed to take the galaxy of id no_g
 inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
-  //FILE * FB;
-  //str s="/project/projectdirs/desi/users/rncahn/find_best.txt";
-    //FB=fopen(s.c_str(),"w");
-    //fprintf(FB,"test of output.txt\n");
+
   int best = -1; int mbest = -1; int pbest = 0; double subpbest = 0.;
     List av_gals = P[j].av_gals[k];
+    if(j<100 & av_gals.size()>0){
+      printf(" j %d  k  %d  available %d\n",j,k,av_gals.size());
+    }
     // For all available galaxies
     for (int gg=0; gg<av_gals.size(); gg++) {
         int g = av_gals[gg];
