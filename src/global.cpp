@@ -130,6 +130,10 @@ inline bool ok_for_limit_SS_SF(int g, int j, int k, const MTL& M, const Plates& 
 // Null list means you can take all possible kinds, otherwise you can only take, for the galaxy, a kind among this list
 // Not allowed to take the galaxy of id no_g
 inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
+  //FILE * FB;
+  //str s="/project/projectdirs/desi/users/rncahn/find_best.txt";
+    //FB=fopen(s.c_str(),"w");
+    //fprintf(FB,"test of output.txt\n");
   int best = -1; int mbest = -1; int pbest = 0; double subpbest = 0.;
     List av_gals = P[j].av_gals[k];
     // For all available galaxies
@@ -149,6 +153,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
                     int isa=A.is_assigned_jg(j,g,M,F);
                     int ok=ok_assign_g_to_jk(g,j,k,P,M,pp,F,A);
                     if (isa==-1 && ok) {
+		      //fprintf(FB," j %d  k  %d  g %d  \n",j,k,g);
                         best = g;
                         pbest = prio;
                         mbest = m;
