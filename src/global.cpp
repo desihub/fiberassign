@@ -36,7 +36,7 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
     {
         #pragma omp master
         {
-            printf(" ");
+	  printf("plate radius = %f in radians",rad);
         }
         // Collects for each plate
         // start at jj=0 not id
@@ -59,9 +59,11 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
             // Build 2D KD tree of those galaxies
             KDtree<struct onplate> kdT(O,2);
             // For each fiber, finds all reachable galaxies within patrol radius, thanks to the tree
+	    printf("j  %d   \n", j);
             for (int k=0; k<F.Nfiber; k++) {
                 dpair X = pp.coords(k);
                 std::vector<int> gals = kdT.near(&(pp.fp[2*k]),0.0,F.PatrolRad);
+		if(j==0 && k<100)printf(" j %d  k %d in reach  %d \n",j,k,gals.size());
                 for (int g=0; g<gals.size(); g++) {
                     dpair Xg = projection(gals[g],j,M,P);
                     if (sq(Xg,X)<sq(F.PatrolRad)){
