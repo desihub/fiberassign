@@ -79,7 +79,9 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
 
                     }
                 }
+
             }
+
         }
     }
 
@@ -94,7 +96,7 @@ void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) {
     for(int j=0; j<F.Nplate; j++) {
        
         for(int k=0; k<F.Nfiber; k++) {
-
+	  if(j==0 && k<10)printf("j,  %d  k  %d  available  %d \n",j, k, P[j].av_gals[k].size());
             for(int m=0; m<P[j].av_gals[k].size(); m++) {
                 int i = P[j].av_gals[k][m];  //i is the id of the mth galaxy available to tile j and fiber k
 
@@ -137,9 +139,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
 
   int best = -1; int mbest = -1; int pbest = 0; double subpbest = 0.;
     List av_gals = P[j].av_gals[k];
-    if(j<100 & av_gals.size()>0){
-      printf(" j %d  k  %d  available %d\n",j,k,av_gals.size());
-    }
+
     // For all available galaxies
     for (int gg=0; gg<av_gals.size(); gg++) {
         int g = av_gals[gg];
