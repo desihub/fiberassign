@@ -45,12 +45,18 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
             plate p = P[j];
             // Takes neighboring galaxies that fall on this plate
             std::vector<int> nbr = T.near(M,p.nhat,rad);
+	    //printf(" number of galaxies on plate j= %d  is %d\n", j, nbr.size());
             // Projects thoses galaxies on the focal plane
             Onplates O;
             for (int gg=0; gg<nbr.size(); gg++) {
                 int g = nbr[gg];
                 struct onplate op = change_coords(M[g],p);
                 op.id = g;
+                double dx=op.pos[0]-263.004780;
+		double dy=op.pos[1]-158.944029;
+		double dist=sqrt(dx*dx +dy*dy);
+		if(j==51 &&abs(dx)<6. &&abs(dy)<6. ){
+		  printf(" j %d g %d  x %f  y  %f  dist %f galaxy conditions %d  plate conditions %d\n",j,g,op.pos[0],op.pos[1],dist,M[g].obsconditions,p.obsconditions);}
 		// Check that the target corresponds to the right program
 		if(M[g].obsconditions & p.obsconditions){
 		  O.push_back(op);
@@ -59,11 +65,14 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
             // Build 2D KD tree of those galaxies
             KDtree<struct onplate> kdT(O,2);
             // For each fiber, finds all reachable galaxies within patrol radius, thanks to the tree
-	    printf("j  %d   \n", j);
+	    
             for (int k=0; k<F.Nfiber; k++) {
                 dpair X = pp.coords(k);
+		if(j==51 && k==51)printf(" ******j %d  k %d x %f  y  %f  patrol radius %f ****\n",j,k,X.f,X.s,F.PatrolRad);
                 std::vector<int> gals = kdT.near(&(pp.fp[2*k]),0.0,F.PatrolRad);
-		if(j==0 && k<100)printf(" j %d  k %d in reach  %d \n",j,k,gals.size());
+		if(j==51 && k==51)printf(" ******j %d  k %d in reach %d  ****\n",j,k,gals.size());
+
+
                 for (int g=0; g<gals.size(); g++) {
                     dpair Xg = projection(gals[g],j,M,P);
                     if (sq(Xg,X)<sq(F.PatrolRad)){
@@ -98,7 +107,7 @@ void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) {
     for(int j=0; j<F.Nplate; j++) {
        
         for(int k=0; k<F.Nfiber; k++) {
-	  if(j==0 && k<10)printf("j,  %d  k  %d  available  %d \n",j, k, P[j].av_gals[k].size());
+
             for(int m=0; m<P[j].av_gals[k].size(); m++) {
                 int i = P[j].av_gals[k][m];  //i is the id of the mth galaxy available to tile j and fiber k
 
