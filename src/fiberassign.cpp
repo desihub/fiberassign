@@ -40,12 +40,19 @@ int main(int argc, char **argv) {
     MTL SkyF   = read_MTLfile(F.SkyFfile,  F,0,1);
     MTL Targ   = read_MTLfile(F.Targfile,  F,0,0);
     print_time(time,"# ... took :");
+    
+    for(int g=0;g<Targ.size();++g){
 
+      if(Targ[g].obsconditions>10)printf("targ file obsc = %d\n",Targ[g].obsconditions);
+    }
+    
     //combine the three input files
     M=Targ;
     printf(" Target size %d \n",M.size());
+
     M.insert(M.end(),SStars.begin(),SStars.end());
     printf(" Standard Star size %d \n",M.size());
+
     M.insert(M.end(),SkyF.begin(),SkyF.end());
     printf(" Sky Fiber size %d \n",M.size());
 
@@ -87,6 +94,9 @@ int main(int argc, char **argv) {
     // HTM Tree of galaxies
     const double MinTreeSize = 0.01;
     init_time_at(time,"# Start building HTM tree",t);
+    for(int g=0;g<M.size();++g){
+      if(M[g].obsconditions>10)printf("before htmTree obsc = %d\n",M[g].obsconditions);
+    }
     htmTree<struct target> T(M,MinTreeSize);
     print_time(time,"# ... took :");//T.stats();
     init_time_at(time,"# collect galaxies at ",t);

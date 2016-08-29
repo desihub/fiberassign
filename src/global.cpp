@@ -61,6 +61,7 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
 		if(M[g].obsconditions & p.obsconditions){
 		  O.push_back(op);
 		}
+		else{printf(" *** obsconditions mismatch  M %d  p %d\n",M[g].obsconditions,p.obsconditions);}
             }
             // Build 2D KD tree of those galaxies
             KDtree<struct onplate> kdT(O,2);
