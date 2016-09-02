@@ -52,16 +52,10 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
                 int g = nbr[gg];
                 struct onplate op = change_coords(M[g],p);
                 op.id = g;
-                double dx=op.pos[0]-263.004780;
-		double dy=op.pos[1]-158.944029;
-		double dist=sqrt(dx*dx +dy*dy);
-		if(j==51 &&abs(dx)<6. &&abs(dy)<6. ){
-		  printf(" j %d g %d  x %f  y  %f  dist %f galaxy conditions %d  plate conditions %d\n",j,g,op.pos[0],op.pos[1],dist,M[g].obsconditions,p.obsconditions);}
 		// Check that the target corresponds to the right program
 		if(M[g].obsconditions & p.obsconditions){
 		  O.push_back(op);
 		}
-		else{printf(" *** obsconditions mismatch  M %d  p %d\n",M[g].obsconditions,p.obsconditions);}
             }
             // Build 2D KD tree of those galaxies
             KDtree<struct onplate> kdT(O,2);
@@ -69,11 +63,7 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
 	    
             for (int k=0; k<F.Nfiber; k++) {
                 dpair X = pp.coords(k);
-		if(j==51 && k==51)printf(" ******j %d  k %d x %f  y  %f  patrol radius %f ****\n",j,k,X.f,X.s,F.PatrolRad);
                 std::vector<int> gals = kdT.near(&(pp.fp[2*k]),0.0,F.PatrolRad);
-		if(j==51 && k==51)printf(" ******j %d  k %d in reach %d  ****\n",j,k,gals.size());
-
-
                 for (int g=0; g<gals.size(); g++) {
                     dpair Xg = projection(gals[g],j,M,P);
                     if (sq(Xg,X)<sq(F.PatrolRad)){
@@ -148,7 +138,6 @@ inline bool ok_for_limit_SS_SF(int g, int j, int k, const MTL& M, const Plates& 
 // Null list means you can take all possible kinds, otherwise you can only take, for the galaxy, a kind among this list
 // Not allowed to take the galaxy of id no_g
 inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
-
   int best = -1; int mbest = -1; int pbest = 0; double subpbest = 0.;
     List av_gals = P[j].av_gals[k];
 
@@ -161,15 +150,14 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
             if (m>=1) {
                 int prio = M[g].t_priority;
 		double subprio = M[g].subpriority;
-                // Takes it if better priority, or if same, if it needs more observations, so shares observations if two QSOs are close
+                // Takes it if better priority, or if same, if it needs more observations, 
+		//so shares observations if two QSOs are close
 		// If still tied, use subpriority
-                //if (prio>pbest || (prio==pbest && m>mbest) || (prio==pbest && m==mbest && subprio>subpbest)){
-                if (prio>pbest || (prio==pbest && m>mbest)){
+                if (prio>pbest || (prio==pbest && m>mbest) || (prio==pbest && m==mbest && subprio>subpbest)){
                     // Check that g is not assigned yet on this plate, or on the InterPlate around, check with ok_to_assign
                     int isa=A.is_assigned_jg(j,g,M,F);
                     int ok=ok_assign_g_to_jk(g,j,k,P,M,pp,F,A);
                     if (isa==-1 && ok) {
-		      //fprintf(FB," j %d  k  %d  g %d  \n",j,k,g);
                         best = g;
                         pbest = prio;
                         mbest = m;
