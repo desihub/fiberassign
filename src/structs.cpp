@@ -363,6 +363,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
         myexit(status);
       }
 
+
       //----- BRICKNAME
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"BRICKNAME", &colnum, &status) ){
 	fprintf(stderr, "error finding BRICKNAME column\n");
@@ -458,8 +459,9 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
              Q.nhat[0]    = cos(phi)*sin(theta);
              Q.nhat[1]    = sin(phi)*sin(theta);
              Q.nhat[2]    = cos(theta);
+	     Q.obsconditions = obsconditions[ii];
              Q.t_priority = priority[ii];//priority is proxy for id, starts at zero
-	     Q.subpriority = subpriority[ii];
+             Q.subpriority = subpriority[ii];
              Q.nobs_remain= numobs[ii];
              Q.nobs_done=0;//need to keep track of this, too
              Q.once_obs=0;//changed only in update_plan
@@ -474,8 +476,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
 	     strncpy(Q.brickname, brickname[ii], 9);
              try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
              
-             // 
-             // fprintf(stdout, "%ld %ld %f %f\n", Q.id, targetid[ii], Q.ra, Q.dec);
+
              //if (targetid[ii]%F.moduloGal == 0) {
              //   try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
              // }
@@ -491,6 +492,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
            }  // end if within RA,dec bounds
       } // end ii loop over targets
       std::sort(M.priority_list.begin(),M.priority_list.end());
+
       return(M);  
     } else {
         std::ostringstream open_status_str;
@@ -770,7 +772,7 @@ Plates read_plate_centers(const Feat& F) {
         fprintf(stderr, "error finding OBSCONDITIONS column\n");
         myexit(status);
       }
-      if (fits_read_col(fptr, USHORT_IMG, colnum, frow, felem, nrows, 
+      if (fits_read_col(fptr,USHORT_IMG, colnum, frow, felem, nrows, 
                         &nullval, obsconditions, &anynulls, &status) ){
         fprintf(stderr, "error reading OBSCONDITIONS column\n");
         myexit(status);
