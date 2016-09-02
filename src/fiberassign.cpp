@@ -30,7 +30,6 @@ int main(int argc, char **argv) {
     // Read parameters file //
     F.readInputFile(argv[1]);
     printFile(argv[1]);
-    // debug failure to assign any fibers 8/22/16
 
     // Read input files for standards, skys and targets.
     // Try to read SS and SF before targets to avoid wasting time if these
@@ -40,19 +39,12 @@ int main(int argc, char **argv) {
     MTL SkyF   = read_MTLfile(F.SkyFfile,  F,0,1);
     MTL Targ   = read_MTLfile(F.Targfile,  F,0,0);
     print_time(time,"# ... took :");
-    
-    for(int g=0;g<Targ.size();++g){
-
-      if(Targ[g].obsconditions>10)printf("targ file obsc = %d\n",Targ[g].obsconditions);
-    }
-    
+     
     //combine the three input files
     M=Targ;
     printf(" Target size %d \n",M.size());
-
     M.insert(M.end(),SStars.begin(),SStars.end());
     printf(" Standard Star size %d \n",M.size());
-
     M.insert(M.end(),SkyF.begin(),SkyF.end());
     printf(" Sky Fiber size %d \n",M.size());
 
@@ -84,8 +76,7 @@ int main(int argc, char **argv) {
     Plates P = read_plate_centers(F);
     F.Nplate=P.size();
     printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());    
-   
-   
+      
     // Computes geometries of cb and fh: pieces of positioner - used to determine possible collisions
     F.cb = create_cb(); // cb=central body
     F.fh = create_fh(); // fh=fiber holder
@@ -94,9 +85,6 @@ int main(int argc, char **argv) {
     // HTM Tree of galaxies
     const double MinTreeSize = 0.01;
     init_time_at(time,"# Start building HTM tree",t);
-    for(int g=0;g<M.size();++g){
-      if(M[g].obsconditions>10)printf("before htmTree obsc = %d\n",M[g].obsconditions);
-    }
     htmTree<struct target> T(M,MinTreeSize);
     print_time(time,"# ... took :");//T.stats();
     init_time_at(time,"# collect galaxies at ",t);
@@ -113,8 +101,6 @@ int main(int argc, char **argv) {
 
     //// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
     printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.Nplate, F.Ngal, F.Nfiber);
-
-
     Assignment A(M,F);
     // Make a plan ----------------------------------------------------
     print_time(t,"# Start assignment at : ");
@@ -131,7 +117,6 @@ int main(int argc, char **argv) {
         for(int k=0;k<F.Nfiber && not_done;++k){
             if(A.TF[j][k]!=-1){
                 A.suborder.push_back(j);//suborder[jused] is jused-th used plate
-
                 not_done=false;
                 A.inv_order[j]=inv_count;//inv_order[j] is -1 unless used
                 inv_count++;
