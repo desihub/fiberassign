@@ -36,7 +36,7 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
     {
         #pragma omp master
         {
-	  printf("plate radius = %f in radians",rad);
+	  printf(" ");
         }
         // Collects for each plate
         // start at jj=0 not id
@@ -45,7 +45,7 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
             plate p = P[j];
             // Takes neighboring galaxies that fall on this plate
             std::vector<int> nbr = T.near(M,p.nhat,rad);
-	    //printf(" number of galaxies on plate j= %d  is %d\n", j, nbr.size());
+
             // Projects thoses galaxies on the focal plane
             Onplates O;
             for (int gg=0; gg<nbr.size(); gg++) {
@@ -60,7 +60,6 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
             // Build 2D KD tree of those galaxies
             KDtree<struct onplate> kdT(O,2);
             // For each fiber, finds all reachable galaxies within patrol radius, thanks to the tree
-	    
             for (int k=0; k<F.Nfiber; k++) {
                 dpair X = pp.coords(k);
                 std::vector<int> gals = kdT.near(&(pp.fp[2*k]),0.0,F.PatrolRad);
@@ -93,15 +92,11 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
 void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) {
     //M[i].av_tfs is list of tile-fiber pairs available to galaxy i
     Time t;
-    printf(" Nplate %d   Nfiber %d \n",F.Nplate,F.Nfiber);
     init_time(t,"# Begin computing available tilefibers");
     for(int j=0; j<F.Nplate; j++) {
-       
         for(int k=0; k<F.Nfiber; k++) {
-
             for(int m=0; m<P[j].av_gals[k].size(); m++) {
                 int i = P[j].av_gals[k][m];  //i is the id of the mth galaxy available to tile j and fiber k
-
                 M[i].av_tfs.push_back(pair(j,k));  //list of tile-fibers available to galaxy i
             }
         }
@@ -138,7 +133,7 @@ inline bool ok_for_limit_SS_SF(int g, int j, int k, const MTL& M, const Plates& 
 // Null list means you can take all possible kinds, otherwise you can only take, for the galaxy, a kind among this list
 // Not allowed to take the galaxy of id no_g
 inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
-  int best = -1; int mbest = -1; int pbest = 0; double subpbest = 0.;
+      int best = -1; int mbest = -1; int pbest = 0; double subpbest = 0.;
     List av_gals = P[j].av_gals[k];
 
     // For all available galaxies
