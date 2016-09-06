@@ -363,7 +363,6 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
         myexit(status);
       }
 
-
       //----- BRICKNAME
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"BRICKNAME", &colnum, &status) ){
 	fprintf(stderr, "error finding BRICKNAME column\n");
@@ -772,7 +771,7 @@ Plates read_plate_centers(const Feat& F) {
         fprintf(stderr, "error finding OBSCONDITIONS column\n");
         myexit(status);
       }
-      if (fits_read_col(fptr,USHORT_IMG, colnum, frow, felem, nrows, 
+      if (fits_read_col(fptr, USHORT_IMG, colnum, frow, felem, nrows, 
                         &nullval, obsconditions, &anynulls, &status) ){
         fprintf(stderr, "error reading OBSCONDITIONS column\n");
         myexit(status);

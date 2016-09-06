@@ -36,7 +36,7 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
     {
         #pragma omp master
         {
-	  printf(" ");
+	    printf(" ");
         }
         // Collects for each plate
         // start at jj=0 not id
@@ -45,7 +45,6 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
             plate p = P[j];
             // Takes neighboring galaxies that fall on this plate
             std::vector<int> nbr = T.near(M,p.nhat,rad);
-
             // Projects thoses galaxies on the focal plane
             Onplates O;
             for (int gg=0; gg<nbr.size(); gg++) {
@@ -80,9 +79,7 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
 
                     }
                 }
-
             }
-
         }
     }
 
@@ -132,10 +129,9 @@ inline bool ok_for_limit_SS_SF(int g, int j, int k, const MTL& M, const Plates& 
 // Find, for (j,k), find the best galaxy it can reach among the possible ones
 // Null list means you can take all possible kinds, otherwise you can only take, for the galaxy, a kind among this list
 // Not allowed to take the galaxy of id no_g
-inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
-      int best = -1; int mbest = -1; int pbest = 0; double subpbest = 0.;
+inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {        
+    int best = -1; int mbest = -1; int pbest = 0; double subpbest = 0.;
     List av_gals = P[j].av_gals[k];
-
     // For all available galaxies
     for (int gg=0; gg<av_gals.size(); gg++) {
         int g = av_gals[gg];
