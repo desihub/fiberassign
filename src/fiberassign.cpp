@@ -30,8 +30,6 @@ int main(int argc, char **argv) {
     // Read parameters file //
     F.readInputFile(argv[1]);
     printFile(argv[1]);
-
-
     // Read input files for standards, skys and targets.
     // Try to read SS and SF before targets to avoid wasting time if these
     // smaller files can't be read.
@@ -40,7 +38,6 @@ int main(int argc, char **argv) {
     MTL SkyF   = read_MTLfile(F.SkyFfile,  F,0,1);
     MTL Targ   = read_MTLfile(F.Targfile,  F,0,0);
     print_time(time,"# ... took :");
-
     //combine the three input files
     M=Targ;
     printf(" Target size %d \n",M.size());
@@ -77,8 +74,6 @@ int main(int argc, char **argv) {
     Plates P = read_plate_centers(F);
     F.Nplate=P.size();
     printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());    
-
-   
     // Computes geometries of cb and fh: pieces of positioner - used to determine possible collisions
     F.cb = create_cb(); // cb=central body
     F.fh = create_fh(); // fh=fiber holder
@@ -127,12 +122,8 @@ int main(int argc, char **argv) {
     }
     F.NUsedplate=A.suborder.size();
     printf(" Plates actually used %d \n",F.NUsedplate);
-    //for(int i=0;i<F.NUsedplate;i++)printf(" jused  %d  j  %d\n",i,A.suborder[i]);
-    
 
-    
 
-    
     // Smooth out distribution of free fibers, and increase the number of assignments
     
     for (int i=0; i<1; i++) redistribute_tf(M,P,pp,F,A,0);// more iterations will improve performance slightly
@@ -192,6 +183,8 @@ int main(int argc, char **argv) {
         printf(" class %2d   %5d",pr,total_used_by_class[pr]);
         std::cout.flush();
     }
+
+
     printf("\n");
     init_time_at(time,"# print txt files ",t);
     if (F.PrintAscii) for (int jused=0; jused<F.NUsedplate; jused++){

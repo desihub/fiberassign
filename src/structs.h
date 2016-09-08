@@ -57,7 +57,7 @@ class target {
   long id; 
   int nobs_remain, nobs_done;
   double nhat[3];
-  double ra, dec;
+  double ra, dec,subpriority;
   long desi_target, mws_target, bgs_target;
   int SS,SF,lastpass, priority_class, t_priority, once_obs;
   char brickname [9];

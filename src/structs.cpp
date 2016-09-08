@@ -177,6 +177,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
     int colnum;
     char **brickname;
     uint16_t *obsconditions;    
+    double *subpriority;
 
     // General purpose output stream for exceptions
     std::ostringstream o;
@@ -250,6 +251,10 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
         fprintf(stderr, "problem with priority allocation\n");
         myexit(1);
       }
+      if(!(subpriority= (double *)malloc(nrows * sizeof(double)))){
+        fprintf(stderr, "problem with priority allocation\n");
+        myexit(1);
+      }
       if(!(ra= (double *)malloc(nrows * sizeof(double)))){
         fprintf(stderr, "problem with ra allocation\n");
         myexit(1);
@@ -258,19 +263,14 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
         fprintf(stderr, "problem with dec allocation\n");
         myexit(1);
       }
-
-
       if(!(obsconditions = (uint16_t *)malloc(nrows * sizeof(int)))){
         fprintf(stderr, "problem with obsconditions allocation\n");
         myexit(1);
       }
-
-
       if(!(brickname= (char **)malloc(nrows * sizeof(char *)))){
         fprintf(stderr, "problem with brickname allocation\n");
         myexit(1);
       }
-
       for(ii=0;ii<nrows;ii++){
 	if(!(brickname[ii]= (char *)malloc(9 * sizeof(char)))){
 	  fprintf(stderr, "problem with brickname allocation\n");
@@ -294,6 +294,10 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
         fprintf(stderr, "error reading TARGETID column\n");
         myexit(status);
       }
+
+
+
+
       
       //----- RA
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"RA", &colnum, &status) ){
@@ -369,6 +373,19 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
 	fprintf(stderr, "error reading BRICKNAME column\n");
 	myexit(status);
       }
+
+
+      //----- SUBPRIORITY
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"SUBPRIORITY", &colnum, &status) ){
+        fprintf(stderr, "error finding SUBPRIORITY column\n");
+        myexit(status);
+      }
+      if (fits_read_col(fptr, TDOUBLE, colnum, frow, felem, nrows, 
+        &nullval, subpriority, &anynulls, &status)){
+        fprintf(stderr, "error reading SUBPRIORITY column\n");
+        myexit(status);
+      }
+
       /*
       for(ii=0;ii<10;ii++){
   	fprintf(stderr, "some bricknames %s RA %f DEC %f!\n", brickname[ii], ra[ii], dec[ii]);
@@ -409,6 +426,8 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
       }
 
       
+
+      
       // count how many rows we will keep and reserve that amount
       nkeep = 0;
       for(int i=0; i<nrows; i++){
@@ -439,7 +458,9 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
              Q.nhat[0]    = cos(phi)*sin(theta);
              Q.nhat[1]    = sin(phi)*sin(theta);
              Q.nhat[2]    = cos(theta);
+	     Q.obsconditions = obsconditions[ii];
              Q.t_priority = priority[ii];//priority is proxy for id, starts at zero
+             Q.subpriority = subpriority[ii];
              Q.nobs_remain= numobs[ii];
              Q.nobs_done=0;//need to keep track of this, too
              Q.once_obs=0;//changed only in update_plan
@@ -454,8 +475,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
 	     strncpy(Q.brickname, brickname[ii], 9);
              try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
              
-             // 
-             // fprintf(stdout, "%ld %ld %f %f\n", Q.id, targetid[ii], Q.ra, Q.dec);
+
              //if (targetid[ii]%F.moduloGal == 0) {
              //   try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
              // }
@@ -471,6 +491,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
            }  // end if within RA,dec bounds
       } // end ii loop over targets
       std::sort(M.priority_list.begin(),M.priority_list.end());
+
       return(M);  
     } else {
         std::ostringstream open_status_str;
