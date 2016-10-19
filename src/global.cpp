@@ -1075,12 +1075,14 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
                     mws_target[i] = M[g].mws_target;
 		    strncpy(brickname[i], M[g].brickname, bricklen+1);
                 }
-                
+
+                // Store the potential targetids accesible to this fibre (the actual targetid, not the index).
                 for (int k = 0; k < P[j].av_gals[fib].size(); ++k) {
-                    potentialtargetid.push_back(P[j].av_gals[fib][k]);
-                }
+                    int gal_idx = P[j].av_gals[fib][k]; // MTL index for k'th target accessible to this fibre
+                    if (gal_idx >= 0) {
+                        potentialtargetid.push_back(M[gal_idx].id);
+                }}
             }
-            
         int tileid = P[j].tileid;
         float tilera = P[j].tilera;
         float tiledec = P[j].tiledec;
