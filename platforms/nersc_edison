@@ -7,7 +7,7 @@ DESI_EXTRA := $(DESI_CONDA)_extra
 export CXX := g++
 
 # Normal compile flags
-export CXXFLAGS := -O3 -fPIC -DNDEBUG
+export CXXFLAGS := -O3 -std=c++11 -fPIC -DNDEBUG
 
 # OpenMP flags (used for both compiling and linking)
 export OMPFLAGS := -fopenmp
