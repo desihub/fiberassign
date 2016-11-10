@@ -14,7 +14,7 @@ export TOPDIR := $(shell pwd)
 
 # where to place built executables
 ifdef INSTALL_DIR
-export INSTALL := $(INSTALL_DIR)
+export INSTALL := $(INSTALL_DIR)/bin
 endif
 ifndef INSTALL
 export INSTALL := $(TOPDIR)/bin
