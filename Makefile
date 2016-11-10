@@ -10,22 +10,21 @@ include platforms/$(PLATFORM)
 
 # absolute path to top source directory
 
-TOPDIR := $(shell pwd)
-export TOPDIR
+export TOPDIR := $(shell pwd)
 
 # where to place built executables
-
+ifdef INSTALL_DIR
+export INSTALL := $(INSTALL_DIR)/bin
+endif
 ifndef INSTALL
-  INSTALL := $(TOPDIR)/bin
+export INSTALL := $(TOPDIR)/bin
 endif
 
-export INSTALL
-
 all : 
-	@cd src; $(MAKE) all
+	$(MAKE) -C src all
 
 install :
-	@cd src; $(MAKE) install
+	$(MAKE) -C src install
 
 clean :
-	@cd src; $(MAKE) clean
+	$(MAKE) -C src clean
