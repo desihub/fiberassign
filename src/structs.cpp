@@ -106,7 +106,7 @@ Gals read_Secretfile(str readfile, const Feat&F){
     frow = 1;
     felem = 1;
     nullval = -99.;
-    if (fits_read_col(fptr, TLONG, colnum, frow, felem, nrows, 
+    if (fits_read_col(fptr, TLONGLONG, colnum, frow, felem, nrows, 
                       &nullval, targetid, &anynulls, &status) ){
       fprintf(stderr, "error reading TARGETID column\n");
       myexit(status);
