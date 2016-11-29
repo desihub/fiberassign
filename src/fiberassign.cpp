@@ -96,6 +96,11 @@ int main(int argc, char **argv) {
 
     //results_on_inputs("doc/figs/",G,P,F,true);
 
+    //save available galaxies for each tile-fiber
+
+    write_save_av_gals(F.outDir,M,P,pp,F); 
+
+
     //// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
     printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.Nplate, F.Ngal, F.Nfiber);
     Assignment A(M,F);
