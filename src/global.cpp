@@ -1000,7 +1000,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     fits_report_error(stderr, status);
     
     // initialize arrays to the optimal number of rows for writing.
-    
+    int tile_id[optimal];
     int fiber_id[optimal];
     int positioner_id[optimal];
     int num_target[optimal];
@@ -1167,16 +1167,19 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     return;
 }
 
-void write_save_av_gals (str outdir, const MTL & M, const Plates & P, const PP & pp, const Feat & F) {
-  
-  //based on Ted Kisner's fa_write function
+void write_save_av_gals (int j, str outdir, const MTL & M, const Plates & P, const PP & pp, const Feat & F) {
     
     // generate a quiet NaN to use for invalid entries.  We cannot
     // guarantee that we have C++11, so we can't use the nice functions
     // included in that standard...
+
+    // modify fa_write to keep only, for each fiber in a tile, the number of av_gals, 
+    // followed by a list of all of them for this tile
+
+    //so we need only keep fiber num_target and then the list of potential targets
     
-    ///const unsigned maxU = ~0;
-    ///const float qNan = *((float*)&maxU);
+    const unsigned maxU = ~0;
+    const float qNan = *((float*)&maxU);
     
     // constants for the filename length and fixed object
     // type length
@@ -1188,17 +1191,17 @@ void write_save_av_gals (str outdir, const MTL & M, const Plates & P, const PP &
     
     char filename[cfilesize];
     // int ret = snprintf(filename, cfilesize, "%s/tile_%05d.fits", outdir.c_str(), j);
-    int ret = snprintf(filename, cfilesize, "%s/saved_av_gals.fits", outdir.c_str());
+    int ret = snprintf(filename, cfilesize, "%s/save_av_gals_%05d.fits", outdir.c_str(), P[j].tileid);
     
     struct stat filestat;
     ret = ::stat(filename, &filestat );
-    /*
+    
     if (ret == 0) {
         std::ostringstream o;
         o << "output file " << filename << " already exists";
         throw std::runtime_error(o.str().c_str());
     }
-    */
+    
     // create the file
     
     int status = 0;
@@ -1210,7 +1213,7 @@ void write_save_av_gals (str outdir, const MTL & M, const Plates & P, const PP &
     // string arrays, since the CFITSIO API requires non-const pointers
     // to them (i.e. arrays of literals won't work).
     
-    size_t ncols = 3;
+    size_t ncols = 2;
     
     char ** ttype;
     char ** tform;
@@ -1241,14 +1244,14 @@ void write_save_av_gals (str outdir, const MTL & M, const Plates & P, const PP &
     strcpy(tform[0], "J");
     strcpy(tunit[0], "");
     
-    strcpy(ttype[1], "POSITIONER");
+    //strcpy(ttype[1], "POSITIONER");
+    //strcpy(tform[1], "J");
+    //strcpy(tunit[1], "");
+    
+    strcpy(ttype[1], "NUMTARGET");
     strcpy(tform[1], "J");
     strcpy(tunit[1], "");
-    
-    strcpy(ttype[2], "NUMTARGET");
-    strcpy(tform[2], "J");
-    strcpy(tunit[2], "");
-    /* 
+    /*
     strcpy(ttype[3], "PRIORITY");
     strcpy(tform[3], "J");
     strcpy(tunit[3], "");
@@ -1293,14 +1296,15 @@ void write_save_av_gals (str outdir, const MTL & M, const Plates & P, const PP &
     snprintf(tform[12], FLEN_VALUE, "%dA", (int)bricklen);
     strcpy(tunit[12], "");
     */
+
     
     char extname[FLEN_VALUE];
     
     strcpy(extname, "FIBER_ASSIGNMENTS");
     
     // create the table with the full size on disk.
-    int makenrows=F.Nplate * F.Nfiber;
-    ret = fits_create_tbl(fptr, BINARY_TBL,makenrows, ncols, ttype, tform, tunit, extname, &status);
+    
+    ret = fits_create_tbl(fptr, BINARY_TBL, F.Nfiber, ncols, ttype, tform, tunit, extname, &status);
     fits_report_error(stderr, status);
     
     // get the number of rows to write for each internal FITS buffer.
@@ -1312,18 +1316,17 @@ void write_save_av_gals (str outdir, const MTL & M, const Plates & P, const PP &
     // initialize arrays to the optimal number of rows for writing.
     
     int fiber_id[optimal];
-    int positioner_id[optimal];
+    //int positioner_id[optimal];
     int num_target[optimal];
-    /*
-    char objtype[optimal][objtypelen];
-    char brickname[optimal][bricklen+1];
-    char * bn_tmp[optimal];
-    char * ot_tmp[optimal];
-    for (int i = 0; i < optimal; i++) {
+    //char objtype[optimal][objtypelen];
+    //char brickname[optimal][bricklen+1];
+    //char * bn_tmp[optimal];
+    //char * ot_tmp[optimal];
+    /*for (int i = 0; i < optimal; i++) {
         ot_tmp[i] = objtype[i];
 	bn_tmp[i] = brickname[i];
-    }
-    long long target_id[optimal];
+	}
+	
     long long desi_target[optimal];
     long long bgs_target[optimal];
     long long mws_target[optimal];
@@ -1331,13 +1334,14 @@ void write_save_av_gals (str outdir, const MTL & M, const Plates & P, const PP &
     float dec[optimal];
     float x_focal[optimal];
     float y_focal[optimal];
+	*/
     //new
-    int t_priority[optimal];
-    */
+    //int t_priority[optimal];
+    
     std::vector <long long> potentialtargetid;
     
     // write data in buffered way
-    for(int j=0;j<F.Nplate;++j){
+    
     long long offset = 0;
     long long n = optimal;
     
@@ -1351,99 +1355,36 @@ void write_save_av_gals (str outdir, const MTL & M, const Plates & P, const PP &
             
             for (int i = 0; i < n; ++i) {
                 int fib = offset + i;
-                ///int g = A.TF[j][fib];
+                //int g = A.TF[j][fib];
                 
                 fiber_id[i] = fib;
-                positioner_id[i] = fib;
+                //positioner_id[i] = fib;
                 num_target[i] = P[j].av_gals[fib].size();
-		/*
 
-                //target_id[i] = g; ********
-                if(g>0) target_id[i] = M[g].id;
-                else target_id[i]=-1;
-
-                if (g < 0) {
-                    //strcpy(objtype[i], "NA");
-                    ra[i] = qNan;
-                    dec[i] = qNan;
-                    x_focal[i] = qNan;
-                    y_focal[i] = qNan;
-                    desi_target[i] = 0;
-                    bgs_target[i] = 0;
-                    mws_target[i] = 0;
-		    strncpy(brickname[i], "notbrick", bricklen+1);
-                } else {
-                    //we aren't supposed to know the kind  use priority instead
-                    //strncpy(objtype[i], F.kind[G[g].id].c_str(), objtypelen);
-                    ra[i] = M[g].ra;
-                    dec[i] = M[g].dec;
-                    dpair proj = projection(g,j,M,P);
-                    x_focal[i] = proj.f;
-                    y_focal[i] = proj.s;
-                    t_priority[i]=M[g].t_priority;//new
-                    desi_target[i] = M[g].desi_target;
-                    bgs_target[i] = M[g].bgs_target;
-                    mws_target[i] = M[g].mws_target;
-		    strncpy(brickname[i], M[g].brickname, bricklen+1);
-                }
-		*/
                 // Store the potential targetids accesible to this fibre (the actual targetid, not the index).
                 for (int k = 0; k < P[j].av_gals[fib].size(); ++k) {
                     int gal_idx = P[j].av_gals[fib][k]; // MTL index for k'th target accessible to this fibre
                     if (gal_idx >= 0) {
-                        potentialtargetid.push_back(M[gal_idx].id);
+		      //potentialtargetid.push_back(M[gal_idx].id); for now (11/1/16) use gal_idx instead
+		      potentialtargetid.push_back(gal_idx);
                 }}
             }
         int tileid = P[j].tileid;
-        float tilera = P[j].tilera;
-        float tiledec = P[j].tiledec;
+        //float tilera = P[j].tilera;
+        //float tiledec = P[j].tiledec;
 
         fits_write_key(fptr, TINT, "TILEID", &(tileid), "Tile ID number", &status);
-            fits_report_error(stderr, status);
-        fits_write_key(fptr, TFLOAT, "TILERA", &(tilera), "Tile RA [deg]", &status);
-        fits_report_error(stderr, status);
-        fits_write_key(fptr, TFLOAT, "TILEDEC", &(tiledec), "Tile DEC [deg]", &status);
             fits_report_error(stderr, status);
 
             fits_write_col(fptr, TINT, 1, offset+1, 1, n, fiber_id, &status);
             fits_report_error(stderr, status);
             
-            fits_write_col(fptr, TINT, 2, offset+1, 1, n, positioner_id, &status);
-            fits_report_error(stderr, status);
+            //fits_write_col(fptr, TINT, 2, offset+1, 1, n, positioner_id, &status);
+            //fits_report_error(stderr, status);
             
-            fits_write_col(fptr, TINT, 3, offset+1, 1, n, num_target, &status);
+            fits_write_col(fptr, TINT, 2, offset+1, 1, n, num_target, &status);
             fits_report_error(stderr, status);
-	    /*       
-            fits_write_col(fptr, TINT, 4, offset+1, 1, n, t_priority, &status);
-            fits_report_error(stderr, status);
-            
-            fits_write_col(fptr, TLONGLONG, 5, offset+1, 1, n, target_id, &status);
-            fits_report_error(stderr, status);
-            
-            fits_write_col(fptr, TLONGLONG, 6, offset+1, 1, n, desi_target, &status);
-            fits_report_error(stderr, status);
-
-            fits_write_col(fptr, TLONGLONG, 7, offset+1, 1, n, bgs_target, &status);
-            fits_report_error(stderr, status);
-
-            fits_write_col(fptr, TLONGLONG, 8, offset+1, 1, n, mws_target, &status);
-            fits_report_error(stderr, status);
-            
-            fits_write_col(fptr, TFLOAT, 9, offset+1, 1, n, ra, &status);
-            fits_report_error(stderr, status);
-            
-            fits_write_col(fptr, TFLOAT, 10, offset+1, 1, n, dec, &status);
-            fits_report_error(stderr, status);
-            
-            fits_write_col(fptr, TFLOAT, 11, offset+1, 1, n, x_focal, &status);
-            fits_report_error(stderr, status);
-            
-            fits_write_col(fptr, TFLOAT, 12, offset+1, 1, n, y_focal, &status);
-            fits_report_error(stderr, status);
-
-	    fits_write_col(fptr, TSTRING, 13, offset+1, 1, n, bn_tmp, &status);
-	    fits_report_error(stderr, status);
-	    */
+          
         }
         
         offset += n;
@@ -1453,7 +1394,7 @@ void write_save_av_gals (str outdir, const MTL & M, const Plates & P, const PP &
     // from a performance perspective to write the whole thing.
     
     strcpy(ttype[0], "POTENTIALTARGETID");
-    strcpy(tform[0], "K");
+    strcpy(tform[0], "J");//for now storing g not the TARGETID, which is a long long
     strcpy(tunit[0], "");
     
     strcpy(extname, "POTENTIAL_ASSIGNMENTS");
@@ -1475,10 +1416,11 @@ void write_save_av_gals (str outdir, const MTL & M, const Plates & P, const PP &
     free ( ttype );
     free ( tform );
     free ( tunit );
-    }
     
     return;
 }
+
+
 void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
     std::vector<char> colors;
     colors.resize(F.Categories);

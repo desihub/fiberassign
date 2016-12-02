@@ -71,13 +71,13 @@ Gals read_Secretfile(str readfile, const Feat&F){
     fits_get_num_rows(fptr, &nrows, &status);
     fits_get_num_cols(fptr, &ncols, &status);
     
-    // printf("%d columns x %ld rows\n", ncols, nrows);
-    // printf("\nHDU #%d  ", hdupos);
-    // if (hdutype == ASCII_TBL){
-    //   printf("ASCII Table:  ");
-    // }else{
-    //   printf("Binary Table: \n ");      
-    // }
+    printf("%d columns x %ld rows\n", ncols, nrows);
+    printf("\nHDU #%d  ", hdupos);
+    if (hdutype == ASCII_TBL){
+      printf("ASCII Table:  ");
+     }else{
+       printf("Binary Table: \n ");      
+    }
     
     /*reserve space for temporary arrays*/
     
@@ -137,7 +137,7 @@ Gals read_Secretfile(str readfile, const Feat&F){
     
 
 
-    for(ii=0;ii<nrows;ii++){
+    for(int ii=0;ii<nrows;ii++){
       struct galaxy Q;      
       Q.targetid = targetid[ii];
       Q.category = category[ii];
@@ -498,6 +498,166 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
         open_status_str << "(CFITSIO open_file status: " << status << ")";
         o << "Problem opening input MTL fits file: " << fname << " " << open_status_str.str();
         throw std::runtime_error(o.str().c_str());
+    }
+}
+void read_save_av_gals(str readfile, const Feat& F,Table &av_gals){
+    //will generate two vectors:  the fiberids and number of galaxies available to it
+    //runs over single file associated with single plate
+    //for tile j, we create P[j].av_gals[k], the list of available galaxies by
+    str s = readfile;
+    Plates P;
+    std::string buf;
+    const char* fname;
+    fname = s.c_str();
+    std::ifstream fs(fname);
+    int ii;
+    fitsfile *fptr;        
+    int status = 0, anynulls;
+    int hdutype;
+    int nkeys;
+    int hdupos;
+    long nrows;
+    long nkeep;
+    int ncols;
+    long *fiberid;
+    long long *numtarget;
+    long *potentialtargetid;
+
+
+    int colnum;
+
+    // General purpose output stream for exceptions
+    std::ostringstream o;
+
+    // Check that input file exists and is readable by cfitsio
+    std::cout << "Finding file: " << fname << std::endl;
+    int file_exists;
+    fits_file_exists(fname,&file_exists,&status);
+    std::ostringstream exists_str;
+    exists_str << "(CFITSIO file_exists code: " << file_exists << ")";
+
+    // Throw exceptions for failed read, see cfitsio docs
+    if (! file_exists) {
+        switch (file_exists){
+        case -1:
+            o << "Input save_av_gals  file must be a disk file: " << fname << " " << exists_str.str();
+            throw std::runtime_error(o.str().c_str());
+        case  0:
+            o << "Could not find save_av_gals input file: " << fname << " " << exists_str.str();
+            throw std::runtime_error(o.str().c_str());
+        case  2:
+            o << "Cannot handle zipped save_av_gals input file: " << fname << " " << exists_str.str();
+            throw std::runtime_error(o.str().c_str());
+        }
+    }
+
+    std::cout << "Found saved_av_gals file: " << fname << std::endl;
+
+    if (! fits_open_file(&fptr, fname, READONLY, &status) ){
+      std::cout << "Reading saved_av_gals input file " << fname << std::endl;
+
+     if ( fits_movabs_hdu(fptr, 2, &hdutype, &status) )
+          myexit(status);
+ 
+      fits_get_hdrspace(fptr, &nkeys, NULL, &status);            
+      fits_get_hdu_num(fptr, &hdupos);
+      fits_get_hdu_type(fptr, &hdutype, &status);  /* Get the HDU type */            
+      fits_get_num_rows(fptr, &nrows, &status);
+      fits_get_num_cols(fptr, &ncols, &status);
+      
+      // printf("%d columns x %ld rows\n", ncols, nrows);
+      printf("HDU #%d  ", hdupos);
+      if (hdutype == ASCII_TBL){
+          printf("ASCII Table:\n");
+      }else{
+          printf("Binary Table:\n");      
+      }
+      /*
+      fflush(stdout);
+      if(!(fiberid= (long *)malloc(nrows * sizeof(long)))){
+        fprintf(stderr, "problem with fiberid allocation\n");
+        myexit(1);
+      }
+      if(!(numtarget= (long *)malloc(nrows * sizeof(long)))){
+        fprintf(stderr, "problem with numtarget allocation\n");
+        myexit(1);
+      */
+      //----- FIBERID
+      /* find which column contains the FIBER values */
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"FIBER", &colnum, &status) ){
+        fprintf(stderr, "error finding FIBER column\n");
+        myexit(status);
+      }
+      
+      long frow, felem, nullval;
+      frow = 1;
+      felem = 1;
+      nullval = -99.;
+      if (fits_read_col(fptr, TLONG, colnum, frow, felem, nrows, 
+                        &nullval, fiberid, &anynulls, &status) ){
+        fprintf(stderr, "error reading FIBER column\n");
+        myexit(status);
+      }
+
+      //----- NUMTARGET
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"NUMTARGET", &colnum, &status) ){
+        fprintf(stderr, "error finding NUMTARGET column\n");
+        myexit(status);
+      }
+      if (fits_read_col(fptr, TLONGLONG, colnum, frow, felem, nrows, 
+                        &nullval, numtarget, &anynulls, &status) ){
+        fprintf(stderr, "error reading NUMTARGET column\n");
+        myexit(status);
+      }
+
+      //need to get all the P[j].av_gals[k] for now do it one tile at a time
+
+     
+    //go to second hdu for list of av_gals
+     fits_movabs_hdu(fptr, 2, &hdutype, &status);
+      
+      
+     fits_get_hdrspace(fptr, &nkeys, NULL, &status);            
+     fits_get_hdu_num(fptr, &hdupos);
+     fits_get_hdu_type(fptr, &hdutype, &status);  /* Get the HDU type */            
+     fits_get_num_rows(fptr, &nrows, &status);
+     fits_get_num_cols(fptr, &ncols, &status);
+
+    printf("%d columns x %ld rows\n", ncols, nrows);
+    printf("\nHDU #%d  ", hdupos);
+    if (hdutype == ASCII_TBL){
+      printf("ASCII Table:  ");
+     }else{
+       printf("Binary Table: \n ");      
+    }
+
+      //----- POTENTIALTARGETID
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"POTENTIALTARGETID", &colnum, &status) ){
+        fprintf(stderr, "error finding NUMTARGET column\n");
+        myexit(status);
+      }
+      if (fits_read_col(fptr, TLONGLONG, colnum, frow, felem, nrows, 
+                        &nullval, potentialtargetid, &anynulls, &status) ){
+        fprintf(stderr, "error reading NUMTARGET column\n");
+        myexit(status);}
+    //step through fibers
+      int av_gal_no=0;
+
+    for(int k=0;k<F.Nfiber;++k){
+      List collect;
+      for(int m=0;m<numtarget[k];++m){
+	collect.push_back(potentialtargetid[av_gal_no]);
+	av_gal_no+=1;
+      }
+      av_gals[k]=collect;
+    }
+    /*reserve space for temporary arrays*/
+    /*
+    fflush(stdout);
+    if(!(targetid= (long *)malloc(nrows * sizeof(long)))){
+      fprintf(stderr, "problem with targetid allocation\n");
+      myexit(1);
+    */
     }
 }
 
