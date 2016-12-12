@@ -641,16 +641,21 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals){
      }else{
        printf("Binary Table: \n ");      
     }
+    std::cout.flush();
 
       //----- POTENTIALTARGETID
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"POTENTIALTARGETID", &colnum, &status) ){
         fprintf(stderr, "error finding POTENTIAL column\n");
         myexit(status);
       }
+      printf(" get col POTENTIALTARGETID \n");
+    std::cout.flush();
       if (fits_read_col(fptr, TLONGLONG, colnum, frow, felem, nrows, 
                         &nullval, potentialtargetid, &anynulls, &status) ){
         fprintf(stderr, "error reading NUMTARGET column\n");
         myexit(status);}
+      printf(" read col POTENTIALTARGETID \n");
+    std::cout.flush();
     //step through fibers
       int av_gal_no=0;
 
@@ -661,6 +666,8 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals){
 	av_gal_no+=1;
       }
       av_gals[k]=collect;
+      printf(" number of galaxies for fiber %d is %d \n",k,collect.size());
+      std::cout.flush();
     }
     /*reserve space for temporary arrays*/
     /*
