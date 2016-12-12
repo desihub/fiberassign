@@ -520,7 +520,7 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals){
     long nkeep;
     int ncols;
     long *fiberid;
-    long long *numtarget;
+    long *numtarget;
     long *potentialtargetid;
 
 
@@ -556,8 +556,8 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals){
     if (! fits_open_file(&fptr, fname, READONLY, &status) ){
       std::cout << "Reading saved_av_gals input file " << fname << std::endl;
 
-     if ( fits_movabs_hdu(fptr, 2, &hdutype, &status) )
-          myexit(status);
+      if ( fits_movabs_hdu(fptr, 2, &hdutype, &status) )
+      myexit(status);
  
       fits_get_hdrspace(fptr, &nkeys, NULL, &status);            
       fits_get_hdu_num(fptr, &hdupos);
@@ -565,14 +565,14 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals){
       fits_get_num_rows(fptr, &nrows, &status);
       fits_get_num_cols(fptr, &ncols, &status);
       
-      // printf("%d columns x %ld rows\n", ncols, nrows);
+      printf("%d columns x %ld rows\n", ncols, nrows);
       printf("HDU #%d  ", hdupos);
       if (hdutype == ASCII_TBL){
           printf("ASCII Table:\n");
       }else{
           printf("Binary Table:\n");      
       }
-      /*
+      
       fflush(stdout);
       if(!(fiberid= (long *)malloc(nrows * sizeof(long)))){
         fprintf(stderr, "problem with fiberid allocation\n");
@@ -581,7 +581,9 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals){
       if(!(numtarget= (long *)malloc(nrows * sizeof(long)))){
         fprintf(stderr, "problem with numtarget allocation\n");
         myexit(1);
-      */
+      }
+      printf(" after malloc \n");
+      std::cout.flush();
       //----- FIBERID
       /* find which column contains the FIBER values */
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"FIBER", &colnum, &status) ){
@@ -599,6 +601,11 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals){
         myexit(status);
       }
 
+      printf(" read fiberid \n");
+      std::cout.flush();
+      
+
+
       //----- NUMTARGET
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"NUMTARGET", &colnum, &status) ){
         fprintf(stderr, "error finding NUMTARGET column\n");
@@ -609,12 +616,15 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals){
         fprintf(stderr, "error reading NUMTARGET column\n");
         myexit(status);
       }
-
+      printf(" read numtarget \n");
+      std::cout.flush();
       //need to get all the P[j].av_gals[k] for now do it one tile at a time
 
      
     //go to second hdu for list of av_gals
-     fits_movabs_hdu(fptr, 2, &hdutype, &status);
+      printf("just before second hdu \n");
+      std::cout.flush();
+     fits_movabs_hdu(fptr, 3, &hdutype, &status);
       
       
      fits_get_hdrspace(fptr, &nkeys, NULL, &status);            
@@ -625,6 +635,7 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals){
 
     printf("%d columns x %ld rows\n", ncols, nrows);
     printf("\nHDU #%d  ", hdupos);
+    std::cout.flush();
     if (hdutype == ASCII_TBL){
       printf("ASCII Table:  ");
      }else{
@@ -633,7 +644,7 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals){
 
       //----- POTENTIALTARGETID
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"POTENTIALTARGETID", &colnum, &status) ){
-        fprintf(stderr, "error finding NUMTARGET column\n");
+        fprintf(stderr, "error finding POTENTIAL column\n");
         myexit(status);
       }
       if (fits_read_col(fptr, TLONGLONG, colnum, frow, felem, nrows, 

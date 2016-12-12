@@ -82,22 +82,8 @@ int main(int argc, char **argv) {
     // HTM Tree of galaxies
 
     std::ifstream infile(filecheck); 
-    if(!infile.good()){//av_gals has not been saved yet
-      // make map between tiles in original list and their place in list
-    std::map<int,int> original_invert_tile;
-    std::map<int,int>::iterator tileid_to_idx;
-    std::pair<std::map<int,int>::iterator,bool> ret;
+    if(!infile.good()){//av_gals has not been saved yet ************************
 
-    for(unsigned i=0;i<P.size();++i)
-    {
-        ret = original_invert_tile.insert(std::make_pair(P[i].tileid,i));
-        // Check for duplicates (std::map.insert only creates keys, fails on duplicate keys)
-        if ( ret.second == false ) {
-            std::ostringstream o;
-            o << "Duplicate tileid " << P[i].tileid << " in tileFile!";
-            throw std::logic_error(o.str().c_str());
-        }
-    }
     const double MinTreeSize = 0.01;
     init_time_at(time,"# Start building HTM tree",t);
     htmTree<struct target> T(M,MinTreeSize);
@@ -112,27 +98,29 @@ int main(int argc, char **argv) {
     // For each galaxy, computes available tilefibers  G[i].av_tfs = [(j1,k1),(j2,k2),..]
     collect_available_tilefibers(M,P,F);
 
-    } else { //get P[j].av_gals from fits file
+    } else { //  av_gals have been saved
           // each new epoch has shorter list of tiles
           size_t cfilesize = 512;
 	  char filename[cfilesize];
-	  //
-	  //
-	  for(int j=F.Nplate-P.size();j<F.Nplate;j++){
-	  Table av_gals;
-	  printf("j  %d  P[j].tileid %d \n",j,P[j].tileid);
-	  int ret = snprintf(filename, cfilesize, "%s/save_av_gals_%05d.fits", F.outDir.c_str(), P[j].tileid);
-	  printf(" saved file %s \n",filename);
-	  read_save_av_gals(filename,  F,av_gals);
-	  P[j-(F.Nplate-P.size())].av_gals=av_gals;
-      }
+          printf(" F.Nplate = %d \n",F.Nplate);
+	  std::cout.flush();
+	  for(int j=0;j<F.Nplate;j++){
+	    Table av_gals;
+	    printf("j  %d  P[j].tileid %d \n",j,P[j].tileid);
+	    int ret = snprintf(filename, cfilesize, "%s/save_av_gals_%05d.fits", F.outDir.c_str(), P[j].tileid);
+	    printf(" saved file %s \n",filename);
+	    read_save_av_gals(filename,  F,av_gals);
+	    P[j].av_gals=av_gals;
+	    printf(" after read_save \n");
+	    std::cout.flush();
+	  }
     }
     //results_on_inputs("doc/figs/",G,P,F,true);
 
     //save available galaxies for each tile-fiber
 
-    //std::ifstream infile(filecheck); 
-    if(!infile.good()){
+
+    if(!infile.good()){//first epoch only, write files
         printf("no files there\n");
         for (int j=0; j<F.Nplate; j++){
 	    write_save_av_gals(j,F.outDir,M,P,pp,F);
