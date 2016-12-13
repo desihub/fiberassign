@@ -107,15 +107,16 @@ int main(int argc, char **argv) {
 	  for(int j=0;j<F.Nplate;j++){
 	    Table av_gals;
 	    bool diagnose;
-	    if(j<100){
+	    if(j<10){
 	      diagnose = true;}
 	    else diagnose = false;
-	    printf("j  %d  P[j].tileid %d \n",j,P[j].tileid);
+	    if(diagnose)printf(" j %d diagnose %d\n",j,diagnose);
+	    if(diagnose)printf("j  %d  P[j].tileid %d \n",j,P[j].tileid);
 	    int ret = snprintf(filename, cfilesize, "%s/save_av_gals_%05d.fits", F.outDir.c_str(), P[j].tileid);
-	    printf(" saved file %s \n",filename);
+	    if(diagnose)printf(" saved file %s \n",filename);
 	    read_save_av_gals(filename,  F,av_gals,diagnose);
 	    P[j].av_gals=av_gals;
-	    printf(" after read_save \n");
+	    if(diagnose)printf(" after read_save \n");
 	    std::cout.flush();
 	  }
     }

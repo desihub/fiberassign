@@ -530,7 +530,7 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals,bool diagnose)
     std::ostringstream o;
 
     // Check that input file exists and is readable by cfitsio
-    std::cout << "Finding file: " << fname << std::endl;
+    if(diagnose)std::cout << "Finding file: " << fname << std::endl;
     int file_exists;
     fits_file_exists(fname,&file_exists,&status);
     std::ostringstream exists_str;
@@ -551,10 +551,10 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals,bool diagnose)
         }
     }
 
-    std::cout << "Found saved_av_gals file: " << fname << std::endl;
+    if(diagnose)std::cout << "Found saved_av_gals file: " << fname << std::endl;
 
     if (! fits_open_file(&fptr, fname, READONLY, &status) ){
-      std::cout << "Reading saved_av_gals input file " << fname << std::endl;
+      if(diagnose)std::cout << "Reading saved_av_gals input file " << fname << std::endl;
 
       if ( fits_movabs_hdu(fptr, 2, &hdutype, &status) )
       myexit(status);
@@ -565,12 +565,12 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals,bool diagnose)
       fits_get_num_rows(fptr, &nrows, &status);
       fits_get_num_cols(fptr, &ncols, &status);
       
-      printf("%d columns x %ld rows\n", ncols, nrows);
-      printf("HDU #%d  ", hdupos);
+      if(diagnose)printf("%d columns x %ld rows\n", ncols, nrows);
+      if(diagnose)printf("HDU #%d  ", hdupos);
       if (hdutype == ASCII_TBL){
-          printf("ASCII Table:\n");
+          if(diagnose)printf("ASCII Table:\n");
       }else{
-          printf("Binary Table:\n");      
+          if(diagnose)printf("Binary Table:\n");      
       }
       
       fflush(stdout);
@@ -582,7 +582,7 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals,bool diagnose)
         fprintf(stderr, "problem with numtarget allocation\n");
         myexit(1);
       }
-      printf(" after malloc \n");
+      if(diagnose)printf(" after malloc \n");
       std::cout.flush();
       //----- FIBERID
       /* find which column contains the FIBER values */
@@ -602,7 +602,7 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals,bool diagnose)
       }
 
 
-      printf(" read fiberid \n");
+      if(diagnose)printf(" read fiberid \n");
       std::cout.flush();
       
 
@@ -617,13 +617,13 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals,bool diagnose)
         fprintf(stderr, "error reading NUMTARGET column\n");
         myexit(status);
       }
-      printf(" read numtarget \n");
+      if(diagnose)printf(" read numtarget \n");
       std::cout.flush();
       //need to get all the P[j].av_gals[k] for now do it one tile at a time
 
      
     //go to second hdu for list of av_gals
-      printf("just before second hdu \n");
+      if(diagnose)printf("just before second hdu \n");
       std::cout.flush();
       //for(int k=0;k<F.Nfiber;++k){
       //if(numtarget[k]>0)printf("k %d  numtarget[k] %d \n",k,numtarget[k]);
@@ -638,13 +638,13 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals,bool diagnose)
      fits_get_num_rows(fptr, &nrows, &status);
      fits_get_num_cols(fptr, &ncols, &status);
 
-    printf("%d columns x %ld rows\n", ncols, nrows);
-    printf("\nHDU #%d  ", hdupos);
+    if(diagnose)printf("%d columns x %ld rows\n", ncols, nrows);
+    if(diagnose)printf("\nHDU #%d  ", hdupos);
     std::cout.flush();
     if (hdutype == ASCII_TBL){
-      printf("ASCII Table:  ");
+      if(diagnose)printf("ASCII Table:  ");
      }else{
-       printf("Binary Table: \n ");      
+       if(diagnose)printf("Binary Table: \n ");      
     }
     std::cout.flush();
     /*reserve space for temporary arrays*/
@@ -661,14 +661,14 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals,bool diagnose)
         fprintf(stderr, "error finding POTENTIALTARGETID column\n");
         myexit(status);
       }
-      printf(" get col POTENTIALTARGETID colnum %d frow %d felem %d nrows %d status %d\n",colnum,frow,felem,nrows,status);
+      if(diagnose)printf(" get col POTENTIALTARGETID colnum %d frow %d felem %d nrows %d status %d\n",colnum,frow,felem,nrows,status);
     std::cout.flush();
       if (fits_read_col(fptr, TLONGLONG, colnum, frow, felem, nrows, 
                         &nullval, potentialtargetid, &anynulls, &status) ){
         fprintf(stderr, "error reading POTENTIALTARGETID column\n");
 	std::cout.flush();
         myexit(status);}
-      printf(" read col POTENTIALTARGETID \n" );
+      if(diagnose)printf(" read col POTENTIALTARGETID \n" );
     std::cout.flush();
     //step through fibers
       int av_gal_no=0;
@@ -680,22 +680,22 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals,bool diagnose)
 	for(int m=0;m<numtarget[k];++m){
 	  collect.push_back(potentialtargetid[av_gal_no]);
 	  av_gal_no+=1;
-          if(k<10){
-	    printf("file %s  k %d  av_gal_no %d which %d \n",readfile.c_str(),k,av_gal_no,potentialtargetid[av_gal_no]);
+          
+	  if(diagnose)printf("file %s  k %d  av_gal_no %d which %d \n",readfile.c_str(),k,av_gal_no,potentialtargetid[av_gal_no]);
 	  std::cout.flush();
-	  }
+	  
 	}
 
 	av_gals.push_back(collect);
-	//printf(" number of galaxies for fiber %d is %d \n",k,collect.size());
-	//std::cout.flush();
+	if(diagnose)printf(" number of galaxies for fiber %d is %d \n",k,collect.size());
+	std::cout.flush();
       }
       
 
     }
 
     }
-    printf("done with read_saved\n");
+    if(diagnose)printf("done with read_saved\n");
     fits_close_file(fptr, &status);
 }
 
