@@ -936,7 +936,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     strcpy(tunit[1], "");
     
     strcpy(ttype[2], "NUMTARGET");
-    strcpy(tform[2], "J");
+    strcpy(tform[2], "I");//int not long
     strcpy(tunit[2], "");
  
     strcpy(ttype[3], "PRIORITY");
@@ -1249,7 +1249,7 @@ void write_save_av_gals (int j, str outdir, const MTL & M, const Plates & P, con
     //strcpy(tunit[1], "");
     
     strcpy(ttype[1], "NUMTARGET");
-    strcpy(tform[1], "J");
+    strcpy(tform[1], "I");//int not long
     strcpy(tunit[1], "");
     /*
     strcpy(ttype[3], "PRIORITY");
@@ -1394,7 +1394,7 @@ void write_save_av_gals (int j, str outdir, const MTL & M, const Plates & P, con
     // from a performance perspective to write the whole thing.
     
     strcpy(ttype[0], "POTENTIALTARGETID");
-    strcpy(tform[0], "J");//for now storing g not the TARGETID, which is a long long
+    strcpy(tform[0], "K");// long long rnc 12/12/16
     strcpy(tunit[0], "");
     
     strcpy(extname, "POTENTIAL_ASSIGNMENTS");

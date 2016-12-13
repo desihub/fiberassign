@@ -500,7 +500,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
         throw std::runtime_error(o.str().c_str());
     }
 }
-void read_save_av_gals(str readfile, const Feat& F,Table &av_gals){
+void read_save_av_gals(str readfile, const Feat& F,Table &av_gals,bool diagnose){
     //will generate two vectors:  the fiberids and number of galaxies available to it
     //runs over single file associated with single plate
     //for tile j, we create P[j].av_gals[k], the list of available galaxies by
@@ -520,8 +520,8 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals){
     long nkeep;
     int ncols;
     long *fiberid;
-    long *numtarget;
-    long *potentialtargetid;
+    int *numtarget; //just number of possible targets for fiber
+    long long *potentialtargetid; //eventually the permanent targetid
 
 
     int colnum;
@@ -578,7 +578,7 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals){
         fprintf(stderr, "problem with fiberid allocation\n");
         myexit(1);
       }
-      if(!(numtarget= (long *)malloc(nrows * sizeof(long)))){
+      if(!(numtarget= (int *)malloc(nrows * sizeof(long)))){
         fprintf(stderr, "problem with numtarget allocation\n");
         myexit(1);
       }
@@ -601,6 +601,7 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals){
         myexit(status);
       }
 
+
       printf(" read fiberid \n");
       std::cout.flush();
       
@@ -611,7 +612,7 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals){
         fprintf(stderr, "error finding NUMTARGET column\n");
         myexit(status);
       }
-      if (fits_read_col(fptr, TLONGLONG, colnum, frow, felem, nrows, 
+      if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
                         &nullval, numtarget, &anynulls, &status) ){
         fprintf(stderr, "error reading NUMTARGET column\n");
         myexit(status);
@@ -624,6 +625,10 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals){
     //go to second hdu for list of av_gals
       printf("just before second hdu \n");
       std::cout.flush();
+      //for(int k=0;k<F.Nfiber;++k){
+      //if(numtarget[k]>0)printf("k %d  numtarget[k] %d \n",k,numtarget[k]);
+      //}
+
      fits_movabs_hdu(fptr, 3, &hdutype, &status);
       
       
@@ -642,41 +647,56 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals){
        printf("Binary Table: \n ");      
     }
     std::cout.flush();
+    /*reserve space for temporary arrays*/
+    
+   
+    if(!(potentialtargetid= (long long *)malloc(nrows * sizeof(long long)))){
+      fprintf(stderr, "problem with potentialtargetid allocation\n");
+      myexit(1);
+    }
+    
 
       //----- POTENTIALTARGETID
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"POTENTIALTARGETID", &colnum, &status) ){
-        fprintf(stderr, "error finding POTENTIAL column\n");
+        fprintf(stderr, "error finding POTENTIALTARGETID column\n");
         myexit(status);
       }
-      printf(" get col POTENTIALTARGETID \n");
+      printf(" get col POTENTIALTARGETID colnum %d frow %d felem %d nrows %d status %d\n",colnum,frow,felem,nrows,status);
     std::cout.flush();
       if (fits_read_col(fptr, TLONGLONG, colnum, frow, felem, nrows, 
                         &nullval, potentialtargetid, &anynulls, &status) ){
-        fprintf(stderr, "error reading NUMTARGET column\n");
+        fprintf(stderr, "error reading POTENTIALTARGETID column\n");
+	std::cout.flush();
         myexit(status);}
-      printf(" read col POTENTIALTARGETID \n");
+      printf(" read col POTENTIALTARGETID \n" );
     std::cout.flush();
     //step through fibers
       int av_gal_no=0;
 
     for(int k=0;k<F.Nfiber;++k){
-      List collect;
-      for(int m=0;m<numtarget[k];++m){
-	collect.push_back(potentialtargetid[av_gal_no]);
-	av_gal_no+=1;
+      List collect {};
+
+      if(numtarget[k]>0){
+	for(int m=0;m<numtarget[k];++m){
+	  collect.push_back(potentialtargetid[av_gal_no]);
+	  av_gal_no+=1;
+          if(k<10){
+	    printf("file %s  k %d  av_gal_no %d which %d \n",readfile.c_str(),k,av_gal_no,potentialtargetid[av_gal_no]);
+	  std::cout.flush();
+	  }
+	}
+
+	av_gals.push_back(collect);
+	//printf(" number of galaxies for fiber %d is %d \n",k,collect.size());
+	//std::cout.flush();
       }
-      av_gals[k]=collect;
-      printf(" number of galaxies for fiber %d is %d \n",k,collect.size());
-      std::cout.flush();
+      
+
     }
-    /*reserve space for temporary arrays*/
-    /*
-    fflush(stdout);
-    if(!(targetid= (long *)malloc(nrows * sizeof(long)))){
-      fprintf(stderr, "problem with targetid allocation\n");
-      myexit(1);
-    */
+
     }
+    printf("done with read_saved\n");
+    fits_close_file(fptr, &status);
 }
 
 void assign_priority_class(MTL& M){
@@ -827,8 +847,8 @@ Plates read_plate_centers(const Feat& F) {
 	// printf(" number  %d  tile  %d \n",size_now,survey_list[size_now-1]);
         std::cout.flush();
     }
-    printf(" number of tiles %d \n",survey_list.size());
-    std::cout.flush();
+    //printf(" number of tiles %d \n",survey_list.size());
+    //std::cout.flush();
 
     // NEW
     // read list of tile centers
@@ -1390,10 +1410,10 @@ float Assignment::colrate(const PP& pp, const MTL& M, const Plates& P, const Fea
 
 dpair projection(int g, int j, const MTL& M, const Plates& OP) {//x and y coordinates for galaxy observed on plate j
     // USE OLD LIST OF PLATES HERE
-    struct onplate op = change_coords(M[g],OP[j]);
+    struct onplate op = change_coords(M[g],OP[j]);/*
     if (op.pos[0]*op.pos[0]+op.pos[1]*op.pos[1]>500.*500.){
         printf("outside positioner range  g  %d  j  %d  x %f  y %f\n",g,j,op.pos[0],op.pos[1]);
-    }
+	}*/
     return dpair(op.pos[0],op.pos[1]);
 }
 
