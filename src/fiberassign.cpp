@@ -97,6 +97,20 @@ int main(int argc, char **argv) {
 
     // For each galaxy, computes available tilefibers  G[i].av_tfs = [(j1,k1),(j2,k2),..]
     collect_available_tilefibers(M,P,F);
+    // DIAGNOSTIC
+/*
+    printf("SPECIAL  \n");
+    for(int j=0;j<F.Nplate;++j){
+      if(P[j].tileid==13937){
+	printf(" this tile %d  j %d\n",P[j].tileid,j);
+    for(int k=0;k<F.Nfiber;++k){
+      printf("k %d\n",k);
+      for(int m=0;m<P[j].av_gals[k].size();++m){
+	printf(" galaxy %d \n",P[j].av_gals[k][m]);
+      }
+      }
+      }
+      }*/
 
     } else { //  av_gals have been saved
           // each new epoch has shorter list of tiles
@@ -106,17 +120,18 @@ int main(int argc, char **argv) {
 	  std::cout.flush();
 	  for(int j=0;j<F.Nplate;j++){
 	    Table av_gals;
-	    bool diagnose;
-	    if(j<10){
+	    bool diagnose;/*
+	    if(P[j].tileid==13937){
 	      diagnose = true;}
 	    else diagnose = false;
 	    if(diagnose)printf(" j %d diagnose %d\n",j,diagnose);
 	    if(diagnose)printf("j  %d  P[j].tileid %d \n",j,P[j].tileid);
+			  */
 	    int ret = snprintf(filename, cfilesize, "%s/save_av_gals_%05d.fits", F.outDir.c_str(), P[j].tileid);
-	    if(diagnose)printf(" saved file %s \n",filename);
+	    //if(diagnose)printf(" saved file %s \n",filename);
 	    read_save_av_gals(filename,  F,av_gals,diagnose);
 	    P[j].av_gals=av_gals;
-	    if(diagnose)printf(" after read_save \n");
+	    //if(diagnose)printf(" after read_save \n");
 	    std::cout.flush();
 	  }
     }

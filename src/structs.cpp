@@ -679,11 +679,11 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals,bool diagnose)
       if(numtarget[k]>0){
 	for(int m=0;m<numtarget[k];++m){
 	  collect.push_back(potentialtargetid[av_gal_no]);
-	  av_gal_no+=1;
+
           
 	  if(diagnose)printf("file %s  k %d  av_gal_no %d which %d \n",readfile.c_str(),k,av_gal_no,potentialtargetid[av_gal_no]);
 	  std::cout.flush();
-	  
+	  av_gal_no+=1;
 	}
 
 	av_gals.push_back(collect);
