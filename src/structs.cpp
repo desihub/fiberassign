@@ -521,8 +521,8 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals,bool diagnose)
     int ncols;
     long *fiberid;
     int *numtarget; //just number of possible targets for fiber
-    long long *potentialtargetid; //eventually the permanent targetid
-
+    long long *potentialtargetid; 
+    long long *temporarytargetid; 
 
     int colnum;
 
@@ -654,22 +654,42 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals,bool diagnose)
       fprintf(stderr, "problem with potentialtargetid allocation\n");
       myexit(1);
     }
-    
+    if(!(temporarytargetid= (long long *)malloc(nrows * sizeof(long long)))){
+      fprintf(stderr, "problem with temporarytargetid allocation\n");
+      myexit(1);
+    }    
 
       //----- POTENTIALTARGETID
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"POTENTIALTARGETID", &colnum, &status) ){
         fprintf(stderr, "error finding POTENTIALTARGETID column\n");
         myexit(status);
       }
-      if(diagnose)printf(" get col POTENTIALTARGETID colnum %d frow %d felem %d nrows %d status %d\n",colnum,frow,felem,nrows,status);
-    std::cout.flush();
+
       if (fits_read_col(fptr, TLONGLONG, colnum, frow, felem, nrows, 
                         &nullval, potentialtargetid, &anynulls, &status) ){
         fprintf(stderr, "error reading POTENTIALTARGETID column\n");
-	std::cout.flush();
         myexit(status);}
+
+
       if(diagnose)printf(" read col POTENTIALTARGETID \n" );
-    std::cout.flush();
+
+      if(diagnose)printf(" read col POTENTIALTARGETID \n" );
+      //----- TEMPORARYTARGETID
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"TEMPORARYTARGETID", &colnum, &status) ){
+        fprintf(stderr, "error finding TEMPORARYTARGETID column\n");
+        myexit(status);
+      }
+
+      if (fits_read_col(fptr, TLONGLONG, colnum, frow, felem, nrows, 
+                        &nullval, temporaryttargetid, &anynulls, &status) ){
+        fprintf(stderr, "error reading TEMPORARYTARGETID column\n");
+        myexit(status);}
+
+
+      if(diagnose)printf(" read col TEMPORARYTARGETID \n" );
+
+
+
     //step through fibers
       int av_gal_no=0;
 
@@ -678,10 +698,10 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals,bool diagnose)
 
       if(numtarget[k]>0){
 	for(int m=0;m<numtarget[k];++m){
-	  collect.push_back(potentialtargetid[av_gal_no]);
+	  collect.push_back(temporarytargetid[av_gal_no]);
 
           
-	  if(diagnose)printf("file %s  k %d  av_gal_no %d which %d \n",readfile.c_str(),k,av_gal_no,potentialtargetid[av_gal_no]);
+	  if(diagnose)printf("file %s  k %d  av_gal_no %d which %d \n",readfile.c_str(),k,av_gal_no,temporarytargetid[av_gal_no]);
 	  std::cout.flush();
 	  av_gal_no+=1;
 	}

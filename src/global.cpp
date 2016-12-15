@@ -1024,8 +1024,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     int t_priority[optimal];
     
     std::vector <long long> potentialtargetid;
-    
-    // write data in buffered way
+ 
     
     long long offset = 0;
     long long n = optimal;
@@ -1170,7 +1169,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
 void write_save_av_gals (int j, str outdir, const MTL & M, const Plates & P, const PP & pp, const Feat & F) {
     
     // generate a quiet NaN to use for invalid entries.  We cannot
-    // guarantee that we have C++11, so we can't use the nice functions
+    // guarantee that we have C++11, so we can't use the nice functions   
     // included in that standard...
 
     // modify fa_write to keep only, for each fiber in a tile, the number of av_gals, 
@@ -1185,7 +1184,7 @@ void write_save_av_gals (int j, str outdir, const MTL & M, const Plates & P, con
     // type length
     
     size_t cfilesize = 512;
-    size_t objtypelen = 8;
+    size_t objtypelen = 8;     
     size_t bricklen = 8;
     // check if the file exists, and if so, throw an exception
     
@@ -1243,59 +1242,11 @@ void write_save_av_gals (int j, str outdir, const MTL & M, const Plates & P, con
     strcpy(ttype[0], "FIBER");
     strcpy(tform[0], "J");
     strcpy(tunit[0], "");
-    
-    //strcpy(ttype[1], "POSITIONER");
-    //strcpy(tform[1], "J");
-    //strcpy(tunit[1], "");
+
     
     strcpy(ttype[1], "NUMTARGET");
     strcpy(tform[1], "I");//int not long
     strcpy(tunit[1], "");
-    /*
-    strcpy(ttype[3], "PRIORITY");
-    strcpy(tform[3], "J");
-    strcpy(tunit[3], "");
-
-    //strcpy(ttype[3], "objtype");
-    //snprintf(tform[3], FLEN_VALUE, "%dA", (int)objtypelen);
-    //strcpy(tunit[3], "");
-    
-    strcpy(ttype[4], "TARGETID");
-    strcpy(tform[4], "K");
-    strcpy(tunit[4], "");
-    
-    strcpy(ttype[5], "DESI_TARGET");
-    strcpy(tform[5], "K");
-    strcpy(tunit[5], "");
-    
-    strcpy(ttype[6], "BGS_TARGET");
-    strcpy(tform[6], "K");
-    strcpy(tunit[6], "");
-    
-    strcpy(ttype[7], "MWS_TARGET");
-    strcpy(tform[7], "K");
-    strcpy(tunit[7], "");
-    
-    strcpy(ttype[8], "RA");
-    strcpy(tform[8], "D");
-    strcpy(tunit[8], "deg");
-    
-    strcpy(ttype[9], "DEC");
-    strcpy(tform[9], "D");
-    strcpy(tunit[9], "deg");
-    
-    strcpy(ttype[10], "XFOCAL_DESIGN");
-    strcpy(tform[10], "E");
-    strcpy(tunit[10], "mm");
-    
-    strcpy(ttype[11], "YFOCAL_DESIGN");
-    strcpy(tform[11], "E");
-    strcpy(tunit[11], "mm");
-
-    strcpy(ttype[12], "BRICKNAME");
-    snprintf(tform[12], FLEN_VALUE, "%dA", (int)bricklen);
-    strcpy(tunit[12], "");
-    */
 
     
     char extname[FLEN_VALUE];
@@ -1318,28 +1269,11 @@ void write_save_av_gals (int j, str outdir, const MTL & M, const Plates & P, con
     int fiber_id[optimal];
     //int positioner_id[optimal];
     int num_target[optimal];
-    //char objtype[optimal][objtypelen];
-    //char brickname[optimal][bricklen+1];
-    //char * bn_tmp[optimal];
-    //char * ot_tmp[optimal];
-    /*for (int i = 0; i < optimal; i++) {
-        ot_tmp[i] = objtype[i];
-	bn_tmp[i] = brickname[i];
-	}
-	
-    long long desi_target[optimal];
-    long long bgs_target[optimal];
-    long long mws_target[optimal];
-    float ra[optimal];
-    float dec[optimal];
-    float x_focal[optimal];
-    float y_focal[optimal];
-	*/
-    //new
-    //int t_priority[optimal];
+
     
     std::vector <long long> potentialtargetid;
-    
+    std::vector <long long> temporarytargetid;//from list of targets, mutable
+     
     // write data in buffered way
     
     long long offset = 0;
@@ -1364,24 +1298,23 @@ void write_save_av_gals (int j, str outdir, const MTL & M, const Plates & P, con
                 // Store the potential targetids accesible to this fibre (the actual targetid, not the index).
                 for (int k = 0; k < P[j].av_gals[fib].size(); ++k) {
                     int gal_idx = P[j].av_gals[fib][k]; // MTL index for k'th target accessible to this fibre
+ if(M[gal_idx].id==62801214049073){
+		printf(" ****WRITING  TARGETID = 62801214049073, j = %d, k= %d, P[j].tileid= %d\n",j,k,P[j].tileid);
+	  }
                     if (gal_idx >= 0) {
-		      //potentialtargetid.push_back(M[gal_idx].id); for now (11/1/16) use gal_idx instead
-		      potentialtargetid.push_back(gal_idx);
+		      potentialtargetid.push_back(M[gal_idx].id); 
+		      temporarytargetid.push_back(gal_idx);
                 }}
             }
         int tileid = P[j].tileid;
-        //float tilera = P[j].tilera;
-        //float tiledec = P[j].tiledec;
+
 
         fits_write_key(fptr, TINT, "TILEID", &(tileid), "Tile ID number", &status);
             fits_report_error(stderr, status);
 
             fits_write_col(fptr, TINT, 1, offset+1, 1, n, fiber_id, &status);
             fits_report_error(stderr, status);
-            
-            //fits_write_col(fptr, TINT, 2, offset+1, 1, n, positioner_id, &status);
-            //fits_report_error(stderr, status);
-            
+
             fits_write_col(fptr, TINT, 2, offset+1, 1, n, num_target, &status);
             fits_report_error(stderr, status);
           
@@ -1393,17 +1326,28 @@ void write_save_av_gals (int j, str outdir, const MTL & M, const Plates & P, con
     // PotentialFiberMap table.  We have only one column, so it is safe
     // from a performance perspective to write the whole thing.
     
-    strcpy(ttype[0], "POTENTIALTARGETID");
+    strcpy(ttype[0], "TEMPORARYTARGETID");
     strcpy(tform[0], "K");// long long rnc 12/12/16
     strcpy(tunit[0], "");
     
+    strcpy(ttype[1], "POTENTIALTARGETID");
+    strcpy(tform[1], "K");// long long rnc 12/12/16
+    strcpy(tunit[1], "");
     strcpy(extname, "POTENTIAL_ASSIGNMENTS");
-    
+
     ret = fits_create_tbl(fptr, BINARY_TBL, potentialtargetid.size(), 1, ttype, tform, tunit, extname, &status);
     fits_report_error(stderr, status);
     
     fits_write_col(fptr, TLONGLONG, 1, 1, 1, potentialtargetid.size(), &(potentialtargetid[0]), &status);
     fits_report_error(stderr, status);
+    
+    ret = fits_create_tbl(fptr, BINARY_TBL, temporarytargetid.size(), 1, ttype, tform, tunit, extname, &status);
+    fits_report_error(stderr, status);
+    
+    fits_write_col(fptr, TLONGLONG, 2, 1, 1, temporarytargetid.size(), &(potentialtargetid[0]), &status);
+    fits_report_error(stderr, status);
+
+
     
     fits_close_file(fptr, &status);
     fits_report_error(stderr, status);
