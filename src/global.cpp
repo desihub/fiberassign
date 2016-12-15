@@ -1327,11 +1327,11 @@ void write_save_av_gals (int j, str outdir, const MTL & M, const Plates & P, con
     // PotentialFiberMap table.  We have only one column, so it is safe
     // from a performance perspective to write the whole thing.
     
-    strcpy(ttype[0], "TEMPORARYTARGETID");
+    strcpy(ttype[0], "POTENTIALTARGETID");
     strcpy(tform[0], "K");// long long rnc 12/12/16
     strcpy(tunit[0], "");
     
-    strcpy(ttype[1], "POTENTIALTARGETID");
+    strcpy(ttype[1], "TEMPORARYTARGETID");
     strcpy(tform[1], "K");// long long rnc 12/12/16
     strcpy(tunit[1], "");
     strcpy(extname, "POTENTIAL_ASSIGNMENTS");
@@ -1344,11 +1344,9 @@ void write_save_av_gals (int j, str outdir, const MTL & M, const Plates & P, con
 
     fits_write_col(fptr, TLONGLONG, 1, 1, 1, potentialtargetid.size(), &(potentialtargetid[0]), &status);
     fits_report_error(stderr, status);
+
     
-    ret = fits_create_tbl(fptr, BINARY_TBL, temporarytargetid.size(), 1, ttype, tform, tunit, extname, &status);
-    fits_report_error(stderr, status);
-    
-    fits_write_col(fptr, TLONGLONG, 2, 1, 1, temporarytargetid.size(), &(potentialtargetid[0]), &status);
+    fits_write_col(fptr, TLONGLONG, 2, 1, 1, temporarytargetid.size(), &(temporarytargetid[0]), &status);
     fits_report_error(stderr, status);
 
 

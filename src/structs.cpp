@@ -671,7 +671,7 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals,bool diagnose)
         myexit(status);}
 
 
-      if(diagnose)printf(" read col POTENTIALTARGETID \n" );
+     
 
       if(diagnose)printf(" read col POTENTIALTARGETID \n" );
       //----- TEMPORARYTARGETID
@@ -681,7 +681,7 @@ void read_save_av_gals(str readfile, const Feat& F,Table &av_gals,bool diagnose)
       }
 
       if (fits_read_col(fptr, TLONGLONG, colnum, frow, felem, nrows, 
-                        &nullval, temporaryttargetid, &anynulls, &status) ){
+                        &nullval, temporarytargetid, &anynulls, &status) ){
         fprintf(stderr, "error reading TEMPORARYTARGETID column\n");
         myexit(status);}
 
