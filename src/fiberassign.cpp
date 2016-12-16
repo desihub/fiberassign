@@ -71,6 +71,7 @@ int main(int argc, char **argv) {
 
 
     //P is original list of plates
+    bool savetime=true; 
     Plates P = read_plate_centers(F);
     F.Nplate=P.size();
     printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());    
@@ -82,7 +83,7 @@ int main(int argc, char **argv) {
     // HTM Tree of galaxies
 
     std::ifstream infile(filecheck); 
-    if(!infile.good()){//av_gals has not been saved yet ************************
+    if(!infile.good()||!savetime){//av_gals has not been saved yet or not saving time *************
 
     const double MinTreeSize = 0.01;
     init_time_at(time,"# Start building HTM tree",t);
@@ -92,25 +93,13 @@ int main(int argc, char **argv) {
 
     // For plates/fibers, collect available galaxies; done in parallel  P[plate j].av_gal[k]=[g1,g2,..]
     collect_galaxies_for_all(M,T,P,pp,F);
+
     print_time(time,"# ... took :");//T.stats();
     init_time_at(time,"# collect available tile-fibers at",t);
 
     // For each galaxy, computes available tilefibers  G[i].av_tfs = [(j1,k1),(j2,k2),..]
     collect_available_tilefibers(M,P,F);
-    // DIAGNOSTIC
-/*
-    printf("SPECIAL  \n");
-    for(int j=0;j<F.Nplate;++j){
-      if(P[j].tileid==13937){
-	printf(" this tile %d  j %d\n",P[j].tileid,j);
-    for(int k=0;k<F.Nfiber;++k){
-      printf("k %d\n",k);
-      for(int m=0;m<P[j].av_gals[k].size();++m){
-	printf(" galaxy %d \n",P[j].av_gals[k][m]);
-      }
-      }
-      }
-      }*/
+
 
     } else { //  av_gals have been saved
           // each new epoch has shorter list of tiles
@@ -120,13 +109,7 @@ int main(int argc, char **argv) {
 	  std::cout.flush();
 	  for(int j=0;j<F.Nplate;j++){
 	    Table av_gals;
-	    bool diagnose;/*
-	    if(P[j].tileid==13937){
-	      diagnose = true;}
-	    else diagnose = false;
-	    if(diagnose)printf(" j %d diagnose %d\n",j,diagnose);
-	    if(diagnose)printf("j  %d  P[j].tileid %d \n",j,P[j].tileid);
-			  */
+	    bool diagnose;
 	    int ret = snprintf(filename, cfilesize, "%s/save_av_gals_%05d.fits", F.outDir.c_str(), P[j].tileid);
 	    //if(diagnose)printf(" saved file %s \n",filename);
 	    read_save_av_gals(filename,  F,av_gals,diagnose);
@@ -140,7 +123,7 @@ int main(int argc, char **argv) {
     //save available galaxies for each tile-fiber
 
 
-    if(!infile.good()){//first epoch only, write files
+    if(!infile.good() && savetime){//first epoch only, write files
         printf("no files there\n");
         for (int j=0; j<F.Nplate; j++){
 	    write_save_av_gals(j,F.outDir,M,P,pp,F);
@@ -150,6 +133,17 @@ int main(int argc, char **argv) {
       printf("save files already there\n");
       std::cout.flush();
 
+    }
+    //search for particular targetid
+    for(int j=0;j<F.Nplate;++j){
+      for(int k=0;k<F.Nfiber;++k){
+	for(int m=0;m<P[j].av_gals[k].size();++m){
+	  int g=P[j].av_gals[k][m];
+	  if(M[g].id==62801214049073){
+	    printf(" **** TARGETID = 62801214049073, j = %d, k= %d, P[j].tileid= %d  new? %d\n",j,k,P[j].tileid,infile.good());
+	  }
+	}
+      }
     }
     
 
@@ -214,6 +208,11 @@ int main(int argc, char **argv) {
         for(int k=0;k<F.Nfiber;++k){
             int g=A.TF[j][k];
             if(g!=-1){
+	      //search for particular targetid
+	      if(M[g].id==62801214049073){
+		printf(" **** TARGETID = 62801214049073, j = %d, k= %d, P[j].tileid= %d chosen\n",j,k,P[j].tileid);
+	      }
+
                 if(M[g].SS){
                     total_used_SS++;
                     used_SS++;
