@@ -16,7 +16,7 @@
 #include        "structs.h"
 #include        "collision.h"
 #include        "global.h"
-
+#include     <map>
 //reduce redistributes, updates  07/02/15 rnc
 int main(int argc, char **argv) {
     //// Initializations ---------------------------------------------
@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
     init_time(t);
     Feat F;
     MTL M;
-
+    bool diagnose=true;
     // Read parameters file //
     F.readInputFile(argv[1]);
     printFile(argv[1]);
@@ -45,6 +45,25 @@ int main(int argc, char **argv) {
     printf(" Standard Star size %d \n",M.size());
     M.insert(M.end(),SkyF.begin(),SkyF.end());
     printf(" Sky Fiber size %d \n",M.size());
+
+    //need map between position in M and potentialtargetid
+    std::map<long long,int> invert_target;
+    std::map<long long,int>::iterator targetid_to_idx;
+    std::pair<std::map<long long,int>::iterator,bool> ret;
+    for(unsigned i=0;i<M.size();++i)
+    {
+        ret = invert_target.insert(std::make_pair(M[i].id,i));
+        // Check for duplicates (std::map.insert only creates keys, fails on duplicate keys)
+	/*
+        if ( ret.second == false ) {
+            std::ostringstream o;
+            o << "Duplicate tileid " << M[i].id << " in tileFile!";
+            throw std::logic_error(o.str().c_str());
+        }
+	*/
+    }
+
+
 
     F.Ngal = M.size();
     assign_priority_class(M);
@@ -108,20 +127,42 @@ int main(int argc, char **argv) {
           printf(" F.Nplate = %d \n",F.Nplate);
 	  std::cout.flush();
 	  for(int j=0;j<F.Nplate;j++){
-	    Table av_gals;
-	    bool diagnose;
+	    Table av_gals;//here we have int not long long so Table is ok
+	    std::vector<std::vector<long long> >av_gals_id;
+
 	    int ret = snprintf(filename, cfilesize, "%s/save_av_gals_%05d.fits", F.outDir.c_str(), P[j].tileid);
 	    //if(diagnose)printf(" saved file %s \n",filename);
-	    read_save_av_gals(filename,  F,av_gals,diagnose);
-	    P[j].av_gals=av_gals;
+	    //std::cout.flush();
+	    read_save_av_gals(filename,  F,av_gals_id,diagnose);
+	    //if(diagnose)printf("after read_save in fiberassign\n");
+	    std::cout.flush();
+	    //if(diagnose)for (int k=0;k<F.Nplate;++k){
+	    //printf(" k %d  av_gals_id[k].size() %d\n",k,av_gals_id[k].size());
+	    //std::cout.flush();
+	    //}
 	    //if(diagnose)printf(" after read_save \n");
 	    std::cout.flush();
+	    //need to change potentialtargetid to place in list of mtl
+	    for(int k=0;k<F.Nfiber;++k){
+	      List collect;
+	      //if(diagnose)printf(" fiber % d\n",k);
+	      //std::cout.flush();
+	      //if(diagnose)printf(" av_gals_id[k].size() %d\n",av_gals_id[k].size());
+	      //std::cout.flush();
+	      for(int m=0;m<av_gals_id[k].size();++m){
+		targetid_to_idx=invert_target.find(av_gals_id[k][m]);
+		collect.push_back(targetid_to_idx->second);
+	      }
+	      av_gals.push_back(collect);
+	      //if(diagnose)printf("length of collect %d\n",collect.size());
+	      //std::cout.flush();
+	    }
+	    P[j].av_gals=av_gals;
+	    //if(diagnose)printf(" after rebuilding P[j].av_gals \n");
+	    //std::cout.flush();
 	  }
     }
     //results_on_inputs("doc/figs/",G,P,F,true);
-
-    //save available galaxies for each tile-fiber
-
 
     if(!infile.good() && savetime){//first epoch only, write files
         printf("no files there\n");
@@ -134,6 +175,7 @@ int main(int argc, char **argv) {
       std::cout.flush();
 
     }
+    /*
     //search for particular targetid
     for(int j=0;j<F.Nplate;++j){
       for(int k=0;k<F.Nfiber;++k){
@@ -145,8 +187,14 @@ int main(int argc, char **argv) {
 	}
       }
     }
-    
-
+    */
+    if(diagnose){
+    for(int j=0;j<F.Nplate;++j){
+      for(int k=0;k<10;++k){
+	if (P[j].av_gals[k].size()>0)printf("j %d  k %d  available %d\n",j,k,P[j].av_gals[k].size());
+      }
+    }
+    }
 
 
     //// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
