@@ -107,7 +107,7 @@ int main(int argc, char **argv) {
     const double MinTreeSize = 0.01;
     init_time_at(time,"# Start building HTM tree",t);
     htmTree<struct target> T(M,MinTreeSize);
-    print_time(time,"# ... took :");//T.stats();
+    print_time(time,"# Doing kd-tree... took :");//T.stats();
     init_time_at(time,"# collect galaxies at ",t);
 
     // For plates/fibers, collect available galaxies; done in parallel  P[plate j].av_gal[k]=[g1,g2,..]
@@ -124,79 +124,77 @@ int main(int argc, char **argv) {
           // each new epoch has shorter list of tiles
           size_t cfilesize = 512;
 	  char filename[cfilesize];
-          printf(" F.Nplate = %d \n",F.Nplate);
+          printf(" Will read saved files F.Nplate = %d \n",F.Nplate);
 	  std::cout.flush();
 	  for(int j=0;j<F.Nplate;j++){
-	    Table av_gals;//here we have int not long long so Table is ok
-	    std::vector<std::vector<long long> >av_gals_id;
-
+	    Table av_gals,ss_av_gals,sf_av_gals;//here we have int not long long so Table is ok
+	    //printf(" j %d to read back P\n",j);
+	    //std::cout.flush();
+	    std::vector<std::vector<long long> >av_gals_id,ss_av_gals_id,sf_av_gals_id;
 	    int ret = snprintf(filename, cfilesize, "%s/save_av_gals_%05d.fits", F.outDir.c_str(), P[j].tileid);
-	    //if(diagnose)printf(" saved file %s \n",filename);
-	    //std::cout.flush();
-	    read_save_av_gals(filename,  F,av_gals_id,diagnose);
-	    //if(diagnose)printf("after read_save in fiberassign\n");
-	    std::cout.flush();
-	    //if(diagnose)for (int k=0;k<F.Nplate;++k){
-	    //printf(" k %d  av_gals_id[k].size() %d\n",k,av_gals_id[k].size());
-	    //std::cout.flush();
-	    //}
-	    //if(diagnose)printf(" after read_save \n");
-	    std::cout.flush();
-	    //need to change potentialtargetid to place in list of mtl
+	    read_save_av_gals(filename,  F,av_gals_id,ss_av_gals_id,sf_av_gals_id,diagnose);
+	    //need to change potentialtargetid  place in list of mtl
 	    for(int k=0;k<F.Nfiber;++k){
 	      List collect;
-	      //if(diagnose)printf(" fiber % d\n",k);
-	      //std::cout.flush();
-	      //if(diagnose)printf(" av_gals_id[k].size() %d\n",av_gals_id[k].size());
-	      //std::cout.flush();
 	      for(int m=0;m<av_gals_id[k].size();++m){
 		targetid_to_idx=invert_target.find(av_gals_id[k][m]);
 		collect.push_back(targetid_to_idx->second);
 	      }
 	      av_gals.push_back(collect);
-	      //if(diagnose)printf("length of collect %d\n",collect.size());
-	      //std::cout.flush();
+	      List collect_ss;
+	      for(int m=0;m<ss_av_gals_id[k].size();++m){
+		targetid_to_idx=invert_target.find(ss_av_gals_id[k][m]);
+		collect_ss.push_back(targetid_to_idx->second);
+	      }
+	      ss_av_gals.push_back(collect_ss);
+	      List collect_sf;
+	      for(int m=0;m<sf_av_gals_id[k].size();++m){
+		targetid_to_idx=invert_target.find(sf_av_gals_id[k][m]);
+		collect_sf.push_back(targetid_to_idx->second);
+	      }
+	      sf_av_gals.push_back(collect_sf);
+	     
 	    }
 	    P[j].av_gals=av_gals;
-	    //if(diagnose)printf(" after rebuilding P[j].av_gals \n");
-	    //std::cout.flush();
+	    P[j].SS_av_gal_fiber=ss_av_gals;
+	    P[j].SF_av_gal_fiber=sf_av_gals;
+            //generate lsit by petal
+            for(int k=0;k<F.Nfiber;++k){
+	      int p=pp.spectrom[k];
+	      for(int m=0;m<P[j].SS_av_gal_fiber[k].size();++m){
+		P[j].SS_av_gal[p].push_back(P[j].SS_av_gal_fiber[k][m]);
+	      }
+	      for(int m=0;m<P[j].SF_av_gal_fiber[k].size();++m){
+		P[j].SF_av_gal[p].push_back(P[j].SF_av_gal_fiber[k][m]);
+	      }
+	    }
 	  }
-    }
-    //results_on_inputs("doc/figs/",G,P,F,true);
+	  
 
+    //results_on_inputs("doc/figs/",G,P,F,true);
+    }
     if(!infile.good() && savetime){//first epoch only, write files
         printf("no files there\n");
-        for (int j=0; j<F.Nplate; j++){
-	    write_save_av_gals(j,F.outDir,M,P,pp,F);
-	   
+	std::cout.flush();
+        for (int j=0; j<F.Nplate; j++){	  
+	  write_save_av_gals(j,F.outDir,M,P,pp,F);
         }
     }else{
       printf("save files already there\n");
       std::cout.flush();
-
     }
-    /*
-    //search for particular targetid
+    //Diagnostic comparison
     for(int j=0;j<F.Nplate;++j){
-      for(int k=0;k<F.Nfiber;++k){
-	for(int m=0;m<P[j].av_gals[k].size();++m){
-	  int g=P[j].av_gals[k][m];
-	  if(M[g].id==62801214049073){
-	    printf(" **** TARGETID = 62801214049073, j = %d, k= %d, P[j].tileid= %d  new? %d\n",j,k,P[j].tileid,infile.good());
-	  }
+      int sum_av_gal=0;
+      int sum_ss_av_gal=0;
+      int sum_sf_av_gal=0;
+      for (int k=0;k<F.Nfiber;++k){
+	   sum_av_gal+=P[j].av_gals[k].size();
+	   sum_ss_av_gal+=P[j].SS_av_gal_fiber[k].size();
+	   sum_sf_av_gal+=P[j].SF_av_gal_fiber[k].size();
+      }
+      if (sum_av_gal>0)printf(" *** tile %d  sum_av_gal  %d  sum_ss_av_gal %d  sum_sf_av_gal %d\n",sum_av_gal,sum_ss_av_gal,sum_sf_av_gal);
 	}
-      }
-    }
-    */
-    if(diagnose){
-    for(int j=0;j<F.Nplate;++j){
-      for(int k=0;k<10;++k){
-	if (P[j].av_gals[k].size()>0)printf("j %d  k %d  available %d\n",j,k,P[j].av_gals[k].size());
-      }
-    }
-    }
-
-
     //// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
     printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.Nplate, F.Ngal, F.Nfiber);
     Assignment A(M,F);
@@ -256,10 +254,7 @@ int main(int argc, char **argv) {
         for(int k=0;k<F.Nfiber;++k){
             int g=A.TF[j][k];
             if(g!=-1){
-	      //search for particular targetid
-	      if(M[g].id==62801214049073){
-		printf(" **** TARGETID = 62801214049073, j = %d, k= %d, P[j].tileid= %d chosen\n",j,k,P[j].tileid);
-	      }
+
 
                 if(M[g].SS){
                     total_used_SS++;

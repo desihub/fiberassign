@@ -68,6 +68,8 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
                         P[j].av_gals[k].push_back(gals[g]);
                         int q=pp.spectrom[k];
                         //better to make SS & SF assigned to fibers
+
+
                         if(M[gals[g]].SS){
                             P[j].SS_av_gal[q].push_back(gals[g]);
                             P[j].SS_av_gal_fiber[k].push_back(gals[g]);
@@ -1177,6 +1179,8 @@ void write_save_av_gals (int j, str outdir, const MTL & M, const Plates & P, con
     // followed by a list of all of them for this tile
 
     //so we need only keep fiber num_target and then the list of potential targets
+
+    //need to inlcude SS and SF too 12/17/12
     
     const unsigned maxU = ~0;
     const float qNan = *((float*)&maxU);
@@ -1190,20 +1194,24 @@ void write_save_av_gals (int j, str outdir, const MTL & M, const Plates & P, con
     // check if the file exists, and if so, throw an exception
     
     char filename[cfilesize];
-    // int ret = snprintf(filename, cfilesize, "%s/tile_%05d.fits", outdir.c_str(), j);
-    int ret = snprintf(filename, cfilesize, "%s/save_av_gals_%05d.fits", outdir.c_str(), P[j].tileid);
+    int tileid = P[j].tileid;
+    Table table_av_gals;
+    int ret;
+
+    ret = snprintf(filename, cfilesize, "%s/save_av_gals_%05d.fits", outdir.c_str(), tileid);
     
     struct stat filestat;
     ret = ::stat(filename, &filestat );
+
     
     if (ret == 0) {
         std::ostringstream o;
         o << "output file " << filename << " already exists";
         throw std::runtime_error(o.str().c_str());
     }
-    
     // create the file
-    
+    //printf("starting write_save \n");
+    //std::cout.flush();
     int status = 0;
     fitsfile * fptr;
     fits_create_file (&fptr, filename, &status);
@@ -1213,7 +1221,7 @@ void write_save_av_gals (int j, str outdir, const MTL & M, const Plates & P, con
     // string arrays, since the CFITSIO API requires non-const pointers
     // to them (i.e. arrays of literals won't work).
     
-    size_t ncols = 2;
+    size_t ncols = 4;//added SS, SF
     
     char ** ttype;
     char ** tform;
@@ -1249,7 +1257,16 @@ void write_save_av_gals (int j, str outdir, const MTL & M, const Plates & P, con
     strcpy(tform[1], "I");//int not long
     strcpy(tunit[1], "");
 
-    
+    strcpy(ttype[2], "NUMTARGETSS");
+    strcpy(tform[2], "I");//int not long
+    strcpy(tunit[2], "");
+
+    strcpy(ttype[3], "NUMTARGETSF");
+    strcpy(tform[3], "I");//int not long
+    strcpy(tunit[3], "");    
+
+    //printf("continuing write_save\n");
+    //std::cout.flush();
     char extname[FLEN_VALUE];
     
     strcpy(extname, "FIBER_ASSIGNMENTS");
@@ -1270,6 +1287,8 @@ void write_save_av_gals (int j, str outdir, const MTL & M, const Plates & P, con
     int fiber_id[optimal];
     //int positioner_id[optimal];
     int num_target[optimal];
+    int num_target_ss[optimal];
+    int num_target_sf[optimal];
 
     
     std::vector <long long> potentialtargetid;
@@ -1290,35 +1309,87 @@ void write_save_av_gals (int j, str outdir, const MTL & M, const Plates & P, con
             
             for (int i = 0; i < n; ++i) {
                 int fib = offset + i;
-                //int g = A.TF[j][fib];
+
                 
                 fiber_id[i] = fib;
                 //positioner_id[i] = fib;
                 num_target[i] = P[j].av_gals[fib].size();
+		num_target_ss[i]= P[j].SS_av_gal_fiber[fib].size();
+		num_target_sf[i]= P[j].SF_av_gal_fiber[fib].size();
 
+		//printf("n %d i %d fib %d before av_gal \n",n,i,fib);
+		//std::cout.flush();
                 // Store the potential targetids accesible to this fibre (the actual targetid, not the index).
+		//if(P[j].av_gals[fib].size()>0)printf(" size %d\n",P[j].av_gals[fib].size());
+		//std::cout.flush();
+									
                 for (int k = 0; k < P[j].av_gals[fib].size(); ++k) {
+		  //printf(" k %d\n",k);
+		  //std::cout.flush();
                     int gal_idx = P[j].av_gals[fib][k]; // MTL index for k'th target accessible to this fibre
- if(M[gal_idx].id==62801214049073){
-		printf(" ****WRITING  TARGETID = 62801214049073, j = %d, k= %d, P[j].tileid= %d\n",j,k,P[j].tileid);
-	  }
+                    if (gal_idx >= 0) {
+		      //printf("k %d fib %d  gal_idx %d \n",k,fib,gal_idx);
+		      //std::cout.flush();
+		      potentialtargetid.push_back(M[gal_idx].id); 
+		      temporarytargetid.push_back(gal_idx);
+		    }
+		    //printf(" length of potentialtargetid %d\n",potentialtargetid.size());
+		    //std::cout.flush();
+		}
+		//printf("before ss_av_gal \n");
+		//std::cout.flush();
+		//if(P[j].SS_av_gal_fiber[fib].size()>0)printf(" size %d\n",P[j].SS_av_gal_fiber[fib].size());
+		//std::cout.flush();
+                for (int k = 0; k < P[j].SS_av_gal_fiber[fib].size(); ++k) {
+		  //printf(" k %d fib %d \n",k,fib);
+		  //std::cout.flush();
+                    int gal_idx = P[j].SS_av_gal_fiber[fib][k]; // MTL index for k'th target accessible to this fibre
+		    //printf(" k %d fib %d gal_idx %d \n",k,fib,gal_idx);
+		    //std::cout.flush();
                     if (gal_idx >= 0) {
 		      potentialtargetid.push_back(M[gal_idx].id); 
 		      temporarytargetid.push_back(gal_idx);
-                }}
-            }
-        int tileid = P[j].tileid;
+		    }
+		    //printf("ss: length of potentialtargetid %d\n",potentialtargetid.size());
+		    //std::cout.flush();
+		}
+		//printf("before sf_av_gal \n");
+		//std::cout.flush();
+		//if(P[j].SF_av_gal_fiber[fib].size()>0)printf(" size %d\n",P[j].SF_av_gal_fiber[fib].size());
+		//std::cout.flush();
+                for (int k = 0; k < P[j].SF_av_gal_fiber[fib].size(); ++k) {
+                    int gal_idx = P[j].SF_av_gal_fiber[fib][k]; // MTL index for k'th target accessible to this fibre
+                    if (gal_idx >= 0) {
+		      potentialtargetid.push_back(M[gal_idx].id); 
+		      temporarytargetid.push_back(gal_idx);
+		    }
+		    //printf("sf: length of potentialtargetid %d\n",potentialtargetid.size());
+		    //std::cout.flush();
+		}	
+	    }	    
 
+	    //printf("before write_key \n");
+	    //std::cout.flush();
 
         fits_write_key(fptr, TINT, "TILEID", &(tileid), "Tile ID number", &status);
             fits_report_error(stderr, status);
-
+	    
+	    //printf("before writing fiber_id\n");
+	    //std::cout.flush();
             fits_write_col(fptr, TINT, 1, offset+1, 1, n, fiber_id, &status);
             fits_report_error(stderr, status);
-
+	    //printf("before writing num_target\n");
+	    //std::cout.flush();
             fits_write_col(fptr, TINT, 2, offset+1, 1, n, num_target, &status);
             fits_report_error(stderr, status);
-          
+	    //printf("before writing num_target_ss\n");
+	    //std::cout.flush();
+            fits_write_col(fptr, TINT, 3, offset+1, 1, n, num_target_ss, &status);
+            fits_report_error(stderr, status);
+	    //printf("before writing num_target_sf\n");
+	    //std::cout.flush();
+            fits_write_col(fptr, TINT, 4, offset+1, 1, n, num_target_sf, &status);
+            fits_report_error(stderr, status);          
         }
         
         offset += n;

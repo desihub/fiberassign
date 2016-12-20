@@ -219,12 +219,14 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
       fits_get_num_cols(fptr, &ncols, &status);
       
       // printf("%d columns x %ld rows\n", ncols, nrows);
+      /*
       printf("HDU #%d  ", hdupos);
       if (hdutype == ASCII_TBL){
           printf("ASCII Table:\n");
       }else{
           printf("Binary Table:\n");      
       }
+      */
 
       fflush(stdout);
       if(!(targetid= (long *)malloc(nrows * sizeof(long)))){
@@ -500,7 +502,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
         throw std::runtime_error(o.str().c_str());
     }
 }
-void read_save_av_gals(str readfile, const Feat& F,std::vector<std::vector<long long> > &av_gals,bool diagnose){
+void read_save_av_gals(str readfile, const Feat& F,std::vector<std::vector<long long> > &av_gals,std::vector<std::vector<long long> > &ss_av_gals,std::vector<std::vector<long long> > &sf_av_gals, bool diagnose){
     //will generate two vectors:  the fiberids and number of galaxies available to it
     //runs over single file associated with single plate
     //for tile j, we create P[j].av_gals[k], the list of available galaxies by
@@ -520,7 +522,7 @@ void read_save_av_gals(str readfile, const Feat& F,std::vector<std::vector<long 
     long nkeep;
     int ncols;
     long *fiberid;
-    int *numtarget; //just number of possible targets for fibers
+    int *numtarget, *numtarget_ss,*numtarget_sf; //just number of possible targets for fibers
     long long *potentialtargetid; 
     long long *temporarytargetid; 
 
@@ -556,22 +558,23 @@ void read_save_av_gals(str readfile, const Feat& F,std::vector<std::vector<long 
     if (! fits_open_file(&fptr, fname, READONLY, &status) ){
       //if(diagnose)std::cout << "Reading saved_av_gals input file " << fname << std::endl;
 
-      if ( fits_movabs_hdu(fptr, 2, &hdutype, &status) )
+      if ( fits_movabs_hdu(fptr, 2, &hdutype, &status) ){
       myexit(status);
- 
+      }
       fits_get_hdrspace(fptr, &nkeys, NULL, &status);            
       fits_get_hdu_num(fptr, &hdupos);
       fits_get_hdu_type(fptr, &hdutype, &status);  /* Get the HDU type */            
       fits_get_num_rows(fptr, &nrows, &status);
       fits_get_num_cols(fptr, &ncols, &status);
       
+
       //if(diagnose)printf("%d columns x %ld rows\n", ncols, nrows);
       //if(diagnose)printf("HDU #%d  ", hdupos);
-      //if (hdutype == ASCII_TBL){
-      //    if(diagnose)printf("ASCII Table:\n");
-      //}else{
-      //    if(diagnose)printf("Binary Table:\n");      
-      //}
+      if (hdutype == ASCII_TBL){
+	//if(diagnose)printf("ASCII Table:\n");
+      }else{
+	//if(diagnose)printf("Binary Table:\n");      
+      }
       
       fflush(stdout);
       if(!(fiberid= (long *)malloc(nrows * sizeof(long)))){
@@ -582,8 +585,17 @@ void read_save_av_gals(str readfile, const Feat& F,std::vector<std::vector<long 
         fprintf(stderr, "problem with numtarget allocation\n");
         myexit(1);
       }
+      if(!(numtarget_ss= (int *)malloc(nrows * sizeof(long)))){
+        fprintf(stderr, "problem with numtarget allocation\n");
+        myexit(1);
+      }
+      if(!(numtarget_sf= (int *)malloc(nrows * sizeof(long)))){
+        fprintf(stderr, "problem with numtarget allocation\n");
+        myexit(1);
+      }
+
       //if(diagnose)printf(" after malloc \n");
-      //std::cout.flush();
+      std::cout.flush();
       //----- FIBERID
       /* find which column contains the FIBER values */
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"FIBER", &colnum, &status) ){
@@ -612,28 +624,47 @@ void read_save_av_gals(str readfile, const Feat& F,std::vector<std::vector<long 
         fprintf(stderr, "error reading NUMTARGET column\n");
         myexit(status);
       }
-      //if(diagnose)printf(" read numtarget \n");
-      //std::cout.flush();
-      //need to get all the P[j].av_gals[k] for now do it one tile at a time
-    //go to second hdu for list of av_gals
-      //if(diagnose)printf("just before second hdu \n");
-      //std::cout.flush();
+
+       //----- NUMTARGETSS
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"NUMTARGETSS", &colnum, &status) ){
+        fprintf(stderr, "error finding NUMTARGETSS column\n");
+        myexit(status);
+      }
+      if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
+                        &nullval, numtarget_ss, &anynulls, &status) ){
+        fprintf(stderr, "error reading NUMTARGETSS column\n");
+        myexit(status);
+      }
+
+       //----- NUMTARGETSF
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"NUMTARGETSF", &colnum, &status) ){
+        fprintf(stderr, "error finding NUMTARGETSF column\n");
+        myexit(status);
+      }
+      if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
+                        &nullval, numtarget_sf, &anynulls, &status) ){
+        fprintf(stderr, "error reading NUMTARGETSF column\n");
+        myexit(status);
+      }
+
+
      fits_movabs_hdu(fptr, 3, &hdutype, &status);
      fits_get_hdrspace(fptr, &nkeys, NULL, &status);            
      fits_get_hdu_num(fptr, &hdupos);
      fits_get_hdu_type(fptr, &hdutype, &status);  /* Get the HDU type */            
      fits_get_num_rows(fptr, &nrows, &status);
      fits_get_num_cols(fptr, &ncols, &status);
-
-     //if(diagnose)printf("%d columns x %ld rows\n", ncols, nrows);
-     //if(diagnose)printf("\nHDU #%d  ", hdupos);
-     //std::cout.flush();
-     //if (hdutype == ASCII_TBL){
-     //if(diagnose)printf("ASCII Table:  ");
-     //}else{
-     //if(diagnose)printf("Binary Table: \n ");      
-     //}
-     //std::cout.flush();
+     /*
+     if(diagnose)printf("%d columns x %ld rows\n", ncols, nrows);
+     if(diagnose)printf("\nHDU #%d  ", hdupos);
+     std::cout.flush();
+     if (hdutype == ASCII_TBL){
+     if(diagnose)printf("ASCII Table:  ");
+     }else{
+     if(diagnose)printf("Binary Table: \n ");      
+     }
+     std::cout.flush();
+     */
     /*reserve space for temporary arrays*/
     
    
@@ -656,8 +687,7 @@ void read_save_av_gals(str readfile, const Feat& F,std::vector<std::vector<long 
                         &nullval, potentialtargetid, &anynulls, &status) ){
         fprintf(stderr, "error reading POTENTIALTARGETID column\n");
         myexit(status);}
-      //if(diagnose)printf(" read col POTENTIALTARGETID \n" );
-      //std::cout.flush();
+
       //----- TEMPORARYTARGETID
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"TEMPORARYTARGETID", &colnum, &status) ){
         fprintf(stderr, "error finding TEMPORARYTARGETID column\n");
@@ -667,32 +697,42 @@ void read_save_av_gals(str readfile, const Feat& F,std::vector<std::vector<long 
                         &nullval, temporarytargetid, &anynulls, &status) ){
         fprintf(stderr, "error reading TEMPORARYTARGETID column\n");
         myexit(status);}
-      //if(diagnose)printf(" read col TEMPORARYTARGETID \n" );
+
       std::cout.flush();
     //step through fibers
       int av_gal_no=0;
 
     for(int k=0;k<F.Nfiber;++k){
-      std::vector<long long> collect {};
-      //if(diagnose)printf("collect size %d\n",collect.size());
-      //if(diagnose)printf("k = %d av_gal_no %d\n",k,av_gal_no);
-      //std::cout.flush();
-      //if(diagnose)printf("k %d  numtarget[k] %d \n",k,numtarget[k]);
+      std::vector<long long> collect {}, collect_ss {}, collect_sf {};
+			
       if(numtarget[k]>0){
 	for(int m=0;m<numtarget[k];++m){
 	  collect.push_back(potentialtargetid[av_gal_no]);
+	  //if(diagnose)printf("k %d  m  %d \n",k,m);
+	  //std::cout.flush();
 	  av_gal_no+=1;
 	}
       }
-      //if(diagnose)printf(" number of galaxies for fiber %d is %d \n",k,collect.size());
-      //std::cout.flush();
-    
-
 	av_gals.push_back(collect);
+      if(numtarget_ss[k]>0){
+	for(int m=0;m<numtarget_ss[k];++m){
+	  collect_ss.push_back(potentialtargetid[av_gal_no]);
+	  av_gal_no+=1;
+	}
+      }
+	ss_av_gals.push_back(collect_ss);
+      if(numtarget_sf[k]>0){
+	for(int m=0;m<numtarget_sf[k];++m){
+	  collect_sf.push_back(potentialtargetid[av_gal_no]);
+	  av_gal_no+=1;
+	}
+      }
+	sf_av_gals.push_back(collect_sf);
+
     }
+
     }
-    //if(diagnose)printf("done with read_saved\n");
-    //std::cout.flush();
+
     fits_close_file(fptr, &status);
 }
 
@@ -886,7 +926,7 @@ Plates read_plate_centers(const Feat& F) {
       fits_get_hdu_type(fptr, &hdutype, &status);  /* Get the HDU type */            
       fits_get_num_rows(fptr, &nrows, &status);
       fits_get_num_cols(fptr, &ncols, &status);
-      
+      /*
       std::cout << ncols << " columns " << nrows << "nrows" << std::endl;
       std::cout << "HDU " << hdupos << std::endl;
       if (hdutype == ASCII_TBL){
@@ -894,7 +934,7 @@ Plates read_plate_centers(const Feat& F) {
       }else{
 	std::cout << "BINARY TABLE: " << std::endl;
       }
-
+      */
 
       
       if(!(obsconditions = (uint16_t *)malloc(nrows * sizeof(int)))){
