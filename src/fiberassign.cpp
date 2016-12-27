@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
     printf(" Standard Star size %d \n",M.size());
     M.insert(M.end(),SkyF.begin(),SkyF.end());
     printf(" Sky Fiber size %d \n",M.size());
-
+    init_time_at(time,"# map position in target list to immutable targetid",t);
     //need map between position in M and potentialtargetid
     std::map<long long,int> invert_target;
     std::map<long long,int>::iterator targetid_to_idx;
@@ -54,17 +54,17 @@ int main(int argc, char **argv) {
     {
         ret = invert_target.insert(std::make_pair(M[i].id,i));
         // Check for duplicates (std::map.insert only creates keys, fails on duplicate keys)
-	/*
+	
         if ( ret.second == false ) {
             std::ostringstream o;
             o << "Duplicate tileid " << M[i].id << " in tileFile!";
             throw std::logic_error(o.str().c_str());
         }
-	*/
+	
     }
 
-
-
+    print_time(time,"#...mapping took :");
+    init_time_at(time,"# assign priority classes",t);
     F.Ngal = M.size();
     assign_priority_class(M);
     std::vector <int> count_class(M.priority_list.size(),0);
@@ -91,6 +91,7 @@ int main(int argc, char **argv) {
 
     //P is original list of plates
     bool savetime=true; 
+    printf("  savetime %d\n",savetime);
     Plates P = read_plate_centers(F);
     F.Nplate=P.size();
     printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());    
@@ -116,20 +117,16 @@ int main(int argc, char **argv) {
     print_time(time,"# ... took :");//T.stats();
     init_time_at(time,"# collect available tile-fibers at",t);
 
-    // For each galaxy, computes available tilefibers  G[i].av_tfs = [(j1,k1),(j2,k2),..]
-    collect_available_tilefibers(M,P,F);
-
 
     } else { //  av_gals have been saved
-          // each new epoch has shorter list of tiles
+          // remember each new epoch has shorter list of tiles
           size_t cfilesize = 512;
 	  char filename[cfilesize];
           printf(" Will read saved files F.Nplate = %d \n",F.Nplate);
 	  std::cout.flush();
 	  for(int j=0;j<F.Nplate;j++){
 	    Table av_gals,ss_av_gals,sf_av_gals;//here we have int not long long so Table is ok
-	    //printf(" j %d to read back P\n",j);
-	    //std::cout.flush();
+
 	    std::vector<std::vector<long long> >av_gals_id,ss_av_gals_id,sf_av_gals_id;
 	    int ret = snprintf(filename, cfilesize, "%s/save_av_gals_%05d.fits", F.outDir.c_str(), P[j].tileid);
 	    read_save_av_gals(filename,  F,av_gals_id,ss_av_gals_id,sf_av_gals_id,diagnose);
@@ -183,18 +180,10 @@ int main(int argc, char **argv) {
       printf("save files already there\n");
       std::cout.flush();
     }
-    //Diagnostic comparison
-    for(int j=0;j<F.Nplate;++j){
-      int sum_av_gal=0;
-      int sum_ss_av_gal=0;
-      int sum_sf_av_gal=0;
-      for (int k=0;k<F.Nfiber;++k){
-	   sum_av_gal+=P[j].av_gals[k].size();
-	   sum_ss_av_gal+=P[j].SS_av_gal_fiber[k].size();
-	   sum_sf_av_gal+=P[j].SF_av_gal_fiber[k].size();
-      }
-      if (sum_av_gal>0)printf(" *** tile %d  sum_av_gal  %d  sum_ss_av_gal %d  sum_sf_av_gal %d\n",sum_av_gal,sum_ss_av_gal,sum_sf_av_gal);
-	}
+
+    // For each galaxy, computes available tilefibers  G[i].av_tfs = [(j1,k1),(j2,k2),..]
+    collect_available_tilefibers(M,P,F);
+
     //// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
     printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.Nplate, F.Ngal, F.Nfiber);
     Assignment A(M,F);
@@ -224,12 +213,14 @@ int main(int argc, char **argv) {
 
 
     // Smooth out distribution of free fibers, and increase the number of assignments
-    
+    // disabled 12/22/16
+    /*
     for (int i=0; i<1; i++) redistribute_tf(M,P,pp,F,A,0);// more iterations will improve performance slightly
     for (int i=0; i<3; i++) {
         improve(M,P,pp,F,A,0);
         redistribute_tf(M,P,pp,F,A,0);
-    }
+	}*/
+
     init_time_at(time,"# assign SS and SF ",t);
 
     //try assigning SF and SS before real time assignment

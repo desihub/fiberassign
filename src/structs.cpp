@@ -1186,6 +1186,30 @@ void Assignment::assign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
 }
 
 void Assignment::unassign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
+  //diagnostic
+    long long check1[12]={847935767167138593,
+				   2571379355494302273, 
+				   461580782934952033,
+				   3615253671515263781,
+				   3624926324479972615,
+				   97545375925278889,
+				   2600286351427048455,
+				   2410910727569418000,
+				   2348870687867557040,
+				   336942943270937019,
+				   1108641814719065304,
+				   2235338930493374459};
+    long long check2[11]={4391202411706250241,
+				 115366268088352646,
+				 2751405623212413574,
+				 27843380336470376,
+				 4103840573755804746,
+				 790020059551124658,
+				 3586346193281110995,
+				 584602090547059989,
+				 2483578268826459285,
+				 2665441075110219477,
+				   1635881432462326942};
     if (TF[j][k]==-1) printf("### !!! ### TF (j,k) = (%d,%d) gets unassigned but was already not assigned\n",j,k);
     int a = isfound(pair(j,k),GL[g]);
     if (a==-1) printf("### !!! ### Galaxy g = %d gets unassigned but was already not assigned\n",g);
@@ -1202,6 +1226,18 @@ void Assignment::unassign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) 
         P[j].SS_in_petal[p]-=1;}
 
     unused[j][pp.spectrom[k]]++;
+    for(int i=0;i<12;++i){
+	if(M[g].id==check1[i]){
+
+	  printf("!!!!!!!!! j %d  k %d unassigned target g %d id %lld check1 priority %d\n",j,k,g,check1[i],M[g].t_priority);
+	}
+    }
+    for(int i=0;i<11;++i){
+	if(M[g].id==check2[i]){
+	  printf("!!!!!!!!! j %d  k %d unassigned target g %d id %lld check2 priority %d\n",j,k,g,check2[i],M[g].t_priority);
+	}
+      }
+
 }
 
 void Assignment::verif(const Plates& P, const MTL& M, const PP& pp, const Feat& F) const {

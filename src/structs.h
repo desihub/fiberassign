@@ -54,7 +54,7 @@ std::vector<int>count_galaxies(const Gals& G);
 //target -----------------------------------------------------
 class target {
     public:
-  long id; 
+  long long id; //note that this is how we read it in! not long
   int nobs_remain, nobs_done;
   double nhat[3];
   double ra, dec,subpriority;

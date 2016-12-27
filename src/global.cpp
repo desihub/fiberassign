@@ -135,6 +135,50 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
     int best = -1; int mbest = -1; int pbest = 0; double subpbest = 0.;
     List av_gals = P[j].av_gals[k];
     // For all available galaxies
+    // diagnostic to check for difference between savetime=false and savetime=true
+    long long check1[12]={847935767167138593,
+				   2571379355494302273, 
+				   461580782934952033,
+				   3615253671515263781,
+				   3624926324479972615,
+				   97545375925278889,
+				   2600286351427048455,
+				   2410910727569418000,
+				   2348870687867557040,
+				   336942943270937019,
+				   1108641814719065304,
+				   2235338930493374459};
+    long long check2[11]={4391202411706250241,
+				 115366268088352646,
+				 2751405623212413574,
+				 27843380336470376,
+				 4103840573755804746,
+				 790020059551124658,
+				 3586346193281110995,
+				 584602090547059989,
+				 2483578268826459285,
+				 2665441075110219477,
+				   1635881432462326942};
+    bool printit=false;
+    
+    for (int gg=0; gg<av_gals.size(); gg++) {
+      for(int i=0;i<12;++i){
+	int g=av_gals[gg];
+	if(M[g].id==check1[i]){
+	  printit=true;
+	  printf(" ##### questionable target g %d id %lld\n",g,check1[i]);
+	}
+      }
+    }
+    for (int gg=0; gg<av_gals.size(); gg++) {
+      for(int i=0;i<11;++i){
+	int g=av_gals[gg];
+	if(M[g].id==check2[i]){
+	  printit=true;
+	  printf(" ##### questionable target %d id %lld\n",g,check2[i]);
+	}
+      }
+    }
     for (int gg=0; gg<av_gals.size(); gg++) {
         int g = av_gals[gg];
         //if(ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){//don't assign SS, SF with find_best 11/20/15
@@ -155,11 +199,16 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
                         pbest = prio;
                         mbest = m;
 			subpbest = subprio;
+			if(printit)printf("j %d k %d g %d M[g].id %lld best %d pbest %d mbest %d subpbest %f \n",j,k, g,M[g].id,best,pbest,mbest,subpbest);
                     }
                 }
             }
         }
+
     }
+    //if(best!=-1){
+    // printf("j %d k %d g %d mbest %d priority %d subpriority %f \n",j,k,best,mbest,pbest,subpbest);
+    //}
     return best;
 }
 
@@ -334,6 +383,32 @@ void update_plan_from_one_obs(int jused,const Gals& Secret, MTL& M, Plates&P, co
 void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
     // do standard stars,going through priority classes from least to most
     //keep track of reassignments
+  //diagnostic
+  bool printthis=false;
+  if(j==4023) printthis=true;
+ long long check1[12]={847935767167138593,
+				   2571379355494302273, 
+				   461580782934952033,
+				   3615253671515263781,
+				   3624926324479972615,
+				   97545375925278889,
+				   2600286351427048455,
+				   2410910727569418000,
+				   2348870687867557040,
+				   336942943270937019,
+				   1108641814719065304,
+				   2235338930493374459};
+    long long check2[11]={4391202411706250241,
+				 115366268088352646,
+				 2751405623212413574,
+				 27843380336470376,
+				 4103840573755804746,
+				 790020059551124658,
+				 3586346193281110995,
+				 584602090547059989,
+				 2483578268826459285,
+				 2665441075110219477,
+				   1635881432462326942};
     int reassign_SS=0;
     int reassign_SF=0;
     int add_SS=0;
@@ -341,6 +416,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
     //can get all available SS,SF on plate from P[j].av_gals_plate restricting to plate p
     for(int c=M.priority_list.size()-1;P[j].SS_in_petal[p]<F.MaxSS && c>-1;--c ){//try to do this for lowest priority
         std::vector <int> gals=P[j].SS_av_gal[p]; //standard stars on this petal
+        
         for(int gg=0;gg<gals.size() ;++gg){
             int g=gals[gg];//a standard star
             if(A.is_assigned_jg(j,g)==-1){
@@ -354,11 +430,31 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                         if(g_old!=-1 && !M[g_old].SS && !M[g_old].SF){
                             if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                                 //right priority; this SS not already assigned on this plate
+			      if(printthis){
+				printf("SS j %d  p  %d  k  %d  g_old   %lld    g  %lld  \n",j,p,k,M[g_old].id,M[g].id);
+			      }
                                 A.unassign(j,k,g_old,M,P,pp);
                                 reassign_SS+=assign_galaxy(g_old,M,P,pp,F,A,j);//try to assign
                                 A.assign(j,k,g,M,P,pp);
                                 add_SS++;
                                 done=1;
+				/*
+ 
+      for(int i=0;i<12;++i){
+	if(M[g_old].id==check1[i]){
+
+	  printf(" unassigned M[g_old].id %lld in favor of SS M[g].id %lld \n",M[g_old].id,M[g].id);
+	}
+      }
+    
+
+      for(int i=0;i<11;++i){
+	if(M[g_old].id==check2[i]){
+
+	  printf(" unassigned M[g_old].id %lld in favor of SS M[g].id %lld \n",M[g_old].id,M[g].id);
+	}
+      }
+				*/
                             }
                         }
                     }
@@ -368,6 +464,13 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
     }
     for(int c=M.priority_list.size()-1;P[j].SF_in_petal[p]<F.MaxSF && c>-1;--c ){//try to do this for lowest priority
         std::vector <int> gals=P[j].SF_av_gal[p]; //sky fibers on this petak
+	//diagnostic
+	if(j==4023&&p==5){
+	  for(int gg=0;gg<gals.size();++gg){
+            int g=gals[gg];//a sky fiber;
+	    printf("j  %d  p %d  available SF  %lld\n",j,p,M[g].id);}
+	}
+
         for(int gg=0;gg<gals.size();++gg){
             int g=gals[gg];//a sky fiber
             if(A.is_assigned_jg(j,g)==-1){
@@ -379,12 +482,33 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                         int g_old=A.TF[j][k];//what is now at (j,k)
                         if(g_old!=-1 && !M[g_old].SS && !M[g_old].SF){
                             if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
+			      if(printthis){
+				printf("SF j %d  p  %d  k  %d  g_old   %lld    g  %lld  \n",j,p,k,M[g_old].id,M[g].id);
+			      }
                                 A.unassign(j,k,g_old,M,P,pp);
 
                                 reassign_SF+=assign_galaxy(g_old,M,P,pp,F,A,j);//try to assign
                                 A.assign(j,k,g,M,P,pp);
                                 add_SF++;
                                 done=1;
+				//diagnostic
+				/*
+      for(int i=0;i<12;++i){
+	if(M[g_old].id==check1[i]){
+
+	  printf(" unassigned M[g_old].id %lld in favor of SF M[g].id %lld \n",M[g_old].id,M[g].id);
+	}
+      }
+    
+
+      for(int i=0;i<11;++i){
+	if(M[g_old].id==check2[i]){
+
+	  printf(" unassigned M[g_old].id %lld in favor of SF M[g].id %lld \n",M[g_old].id,M[g].id);
+	}
+      }
+				*/
+
                             }
                         }
                     }
@@ -392,24 +516,27 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
             }
         }
     }
-   // printf(" j= %d   p= %d  added SS %d reassigned SS %d added SF %d reassigned SF %d\n",j,p,add_SS,reassign_SS,add_SF,reassign_SF);
+
 }
 
 
 void assign_unused(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
     // Tries to assign remaining fibers in tile jth tile with galaxies on it
     //even taking objects observed later
-    //js is a tile with galaxies on it
+    //js is a tile with galaxies on it//diagnostic
+   
     for (int k=0; k<F.Nfiber; k++) {
         
         if (!A.is_assigned_tf(j,k)) {
-            int best = -1; int mbest = -1; int pbest = 0; int jpb = -1; int kpb = -1;
+	  int best = -1; int mbest = -1; int pbest = 0; int jpb = -1; int kpb = -1; 
+	  double subpbest = 0;
             List av_gals = P[j].av_gals[k];//all available galaxies for this fiber k
             for (int gg=0; gg<av_gals.size(); gg++) {
                 int g = av_gals[gg];//available galaxies
                 int m = M[g].nobs_remain;
                 int prio = M[g].t_priority;
-                if (prio>pbest || (prio==pbest && m>mbest)) {
+		double subprio = M[g].subpriority;
+                if (prio>pbest || (prio==pbest && m>mbest) || (prio==pbest && m==mbest && subprio>subpbest)) {
                     if (A.is_assigned_jg(j,g,M,F)==-1 && ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                         //not assigned this plate or within excluded interval
                         for (int i=0; i<A.GL[g].size(); i++) { //GL[g].size() is number of tf that could observe g
@@ -419,6 +546,7 @@ void assign_unused(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assign
                                 best = g;
                                 pbest = prio;
                                 mbest = m;
+				subpbest = subprio;
                                 jpb = jp;
                                 kpb = kp;
                             }
@@ -454,7 +582,7 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
                 std::vector <int> SF_av_k=P[j].SF_av_gal_fiber[k];
                 if (A.TF[j][k]==-1){
                     int done=0;
-
+		    //
                     for (int gg=0; gg<SS_av_k.size()&&done==0; gg++) {
                         int g = SS_av_k[gg];//SS on this petal
                         if(A.is_assigned_jg(j,g,M,F)==-1&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)&&ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)){
