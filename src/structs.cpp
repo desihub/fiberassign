@@ -149,7 +149,6 @@ Gals read_Secretfile(str readfile, const Feat&F){
 }
 
 
-
 MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
     str s = readfile;
     MTL M;

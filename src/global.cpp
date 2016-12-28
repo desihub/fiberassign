@@ -325,7 +325,9 @@ void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int 
 // has access to G,not just M, because it needs to know the truth
 
 
+
 void update_plan_from_one_obs(int jused,const Gals& Secret, MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A) {
+
     int cnt_deassign(0);
     int cnt_replace(0);
 
@@ -378,7 +380,9 @@ void update_plan_from_one_obs(int jused,const Gals& Secret, MTL& M, Plates&P, co
     //int na_end(A.na(F,j0,n));
 }
 
-
+        bool pairCompare(const std::pair<double, int>& firstElem, const std::pair<double, int>& secondElem) {
+	  return firstElem.first < secondElem.first;//might want to reverse this
+	}
 
 void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
     // do standard stars,going through priority classes from least to most
@@ -413,11 +417,29 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
     int reassign_SF=0;
     int add_SS=0;
     int add_SF=0;
+
+
     //can get all available SS,SF on plate from P[j].av_gals_plate restricting to plate p
     for(int c=M.priority_list.size()-1;P[j].SS_in_petal[p]<F.MaxSS && c>-1;--c ){//try to do this for lowest priority
-        std::vector <int> gals=P[j].SS_av_gal[p]; //standard stars on this petal
-        
+        std::vector <int> gals_init=P[j].SS_av_gal[p]; //standard stars on this petal
+	//sort these by priority
+	std::vector<std::pair<double,int> > galaxy_pairs;
+        for(int gg=0;gg<gals_init.size() ;++gg){
+	  int g=gals_init[gg];
+	  std::pair <double,int> this_pair (M[g].subpriority,gg);
+	  galaxy_pairs.push_back(this_pair);
+	}
+
+	std::sort(galaxy_pairs.begin(),galaxy_pairs.end(),pairCompare);
+	std::vector <int> gals;
+	for(int gg=0;gg<gals_init.size();++gg){
+	  gals.push_back(galaxy_pairs[gg].second);
+	  if(j==4023 && p ==5 )printf(" %f   %d   galaxy %lld\n",galaxy_pairs[gg].first,galaxy_pairs[gg].second,
+				      M[gals[gg]].id);
+	    }
+
         for(int gg=0;gg<gals.size() ;++gg){
+
             int g=gals[gg];//a standard star
             if(A.is_assigned_jg(j,g)==-1){
                 Plist tfs=M[g].av_tfs;//all tiles and fibers that reach g
@@ -463,8 +485,20 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
         }
     }
     for(int c=M.priority_list.size()-1;P[j].SF_in_petal[p]<F.MaxSF && c>-1;--c ){//try to do this for lowest priority
-        std::vector <int> gals=P[j].SF_av_gal[p]; //sky fibers on this petak
+        std::vector <int> gals_init=P[j].SF_av_gal[p]; //sky fibers on this petak
 	//diagnostic
+
+
+	//sort these by priority
+	std::vector<std::pair<double,int> > galaxy_pairs;
+        for(int gg=0;gg<gals_init.size() ;++gg){
+	  int g=gals_init[gg];
+	  std::pair <double,int> this_pair (M[g].subpriority,gg);
+	  galaxy_pairs.push_back(this_pair);
+	}
+
+	std::sort(galaxy_pairs.begin(),galaxy_pairs.end(),pairCompare);
+	std::vector <int> gals;
 	if(j==4023&&p==5){
 	  for(int gg=0;gg<gals.size();++gg){
             int g=gals[gg];//a sky fiber;
