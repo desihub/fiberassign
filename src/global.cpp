@@ -136,12 +136,12 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
     List av_gals = P[j].av_gals[k];
     // For all available galaxies
     // diagnostic to check for difference between savetime=false and savetime=true
-    long long check1[2]={953164940398371,3177428832725497641};
+    long long check1[1]={78096264083924963};
 
     bool printit=false;
     
     for (int gg=0; gg<av_gals.size(); gg++) {
-      for(int i=0;i<2;++i){
+      for(int i=0;i<1;++i){
 	int g=av_gals[gg];
 	if(M[g].id==check1[i]){
 	  printit=true;
@@ -360,7 +360,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
     //keep track of reassignments
   //diagnostic
 
-     long long check1[2]={953164940398371,3177428832725497641};
+     long long check1[1]={78096264083924963};
 
     int reassign_SS=0;
     int reassign_SF=0;
@@ -410,7 +410,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                                 done=1;
 				
  
-				for(int i=0;i<2;++i){
+				for(int i=0;i<1;++i){
 				  if(M[g_old].id==check1[i]){
 
 				    printf(" unassigned M[g_old].id %lld in favor of SS M[g].id %lld \n",M[g_old].id,M[g].id);
@@ -458,7 +458,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                                 done=1;
 				//diagnostic
 				
-				for(int i=0;i<2;++i){
+				for(int i=0;i<1;++i){
 				  if(M[g_old].id==check1[i]){
 
 				    printf(" unassigned M[g_old].id %lld in favor of SF M[g].id %lld \n",M[g_old].id,M[g].id);
