@@ -136,33 +136,12 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
     List av_gals = P[j].av_gals[k];
     // For all available galaxies
     // diagnostic to check for difference between savetime=false and savetime=true
-    long long check1[12]={847935767167138593,
-				   2571379355494302273, 
-				   461580782934952033,
-				   3615253671515263781,
-				   3624926324479972615,
-				   97545375925278889,
-				   2600286351427048455,
-				   2410910727569418000,
-				   2348870687867557040,
-				   336942943270937019,
-				   1108641814719065304,
-				   2235338930493374459};
-    long long check2[11]={4391202411706250241,
-				 115366268088352646,
-				 2751405623212413574,
-				 27843380336470376,
-				 4103840573755804746,
-				 790020059551124658,
-				 3586346193281110995,
-				 584602090547059989,
-				 2483578268826459285,
-				 2665441075110219477,
-				   1635881432462326942};
+    long long check1[2]={953164940398371,3177428832725497641};
+
     bool printit=false;
     
     for (int gg=0; gg<av_gals.size(); gg++) {
-      for(int i=0;i<12;++i){
+      for(int i=0;i<2;++i){
 	int g=av_gals[gg];
 	if(M[g].id==check1[i]){
 	  printit=true;
@@ -170,15 +149,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
 	}
       }
     }
-    for (int gg=0; gg<av_gals.size(); gg++) {
-      for(int i=0;i<11;++i){
-	int g=av_gals[gg];
-	if(M[g].id==check2[i]){
-	  printit=true;
-	  printf(" ##### questionable target %d id %lld\n",g,check2[i]);
-	}
-      }
-    }
+
     for (int gg=0; gg<av_gals.size(); gg++) {
         int g = av_gals[gg];
         //if(ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){//don't assign SS, SF with find_best 11/20/15
@@ -388,31 +359,9 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
     // do standard stars,going through priority classes from least to most
     //keep track of reassignments
   //diagnostic
-  bool printthis=false;
-  if(j==4023) printthis=true;
- long long check1[12]={847935767167138593,
-				   2571379355494302273, 
-				   461580782934952033,
-				   3615253671515263781,
-				   3624926324479972615,
-				   97545375925278889,
-				   2600286351427048455,
-				   2410910727569418000,
-				   2348870687867557040,
-				   336942943270937019,
-				   1108641814719065304,
-				   2235338930493374459};
-    long long check2[11]={4391202411706250241,
-				 115366268088352646,
-				 2751405623212413574,
-				 27843380336470376,
-				 4103840573755804746,
-				 790020059551124658,
-				 3586346193281110995,
-				 584602090547059989,
-				 2483578268826459285,
-				 2665441075110219477,
-				   1635881432462326942};
+
+     long long check1[2]={953164940398371,3177428832725497641};
+
     int reassign_SS=0;
     int reassign_SF=0;
     int add_SS=0;
@@ -426,7 +375,8 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 	std::vector<std::pair<double,int> > galaxy_pairs;
         for(int gg=0;gg<gals_init.size() ;++gg){
 	  int g=gals_init[gg];
-	  std::pair <double,int> this_pair (M[g].subpriority,gg);
+
+	    std::pair <double,int> this_pair (M[g].subpriority,g);//gg-> g 18:30 12/28/16
 	  galaxy_pairs.push_back(this_pair);
 	}
 
@@ -434,14 +384,14 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 	std::vector <int> gals;
 	for(int gg=0;gg<gals_init.size();++gg){
 	  gals.push_back(galaxy_pairs[gg].second);
-	  if(j==4023 && p ==5 )printf(" %f   %d   galaxy %lld\n",galaxy_pairs[gg].first,galaxy_pairs[gg].second,
-				      M[gals[gg]].id);
-	    }
+	}
+	  //end sort by priority
 
         for(int gg=0;gg<gals.size() ;++gg){
 
             int g=gals[gg];//a standard star
-            if(A.is_assigned_jg(j,g)==-1){
+	    if(!M[g].SS)printf("NOT AN SS AFTER ALL!!!!!!\n");
+            if(A.is_assigned_jg(j,g)==-1){//not assigned on this tile
                 Plist tfs=M[g].av_tfs;//all tiles and fibers that reach g
                 
                 int done=0;//quit after we've used this SS
@@ -452,58 +402,41 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                         if(g_old!=-1 && !M[g_old].SS && !M[g_old].SF){
                             if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                                 //right priority; this SS not already assigned on this plate
-			      if(printthis){
-				printf("SS j %d  p  %d  k  %d  g_old   %lld    g  %lld  \n",j,p,k,M[g_old].id,M[g].id);
-			      }
+			      
                                 A.unassign(j,k,g_old,M,P,pp);
                                 reassign_SS+=assign_galaxy(g_old,M,P,pp,F,A,j);//try to assign
                                 A.assign(j,k,g,M,P,pp);
                                 add_SS++;
                                 done=1;
-				/*
+				
  
-      for(int i=0;i<12;++i){
-	if(M[g_old].id==check1[i]){
+				for(int i=0;i<2;++i){
+				  if(M[g_old].id==check1[i]){
 
-	  printf(" unassigned M[g_old].id %lld in favor of SS M[g].id %lld \n",M[g_old].id,M[g].id);
-	}
-      }
-    
-
-      for(int i=0;i<11;++i){
-	if(M[g_old].id==check2[i]){
-
-	  printf(" unassigned M[g_old].id %lld in favor of SS M[g].id %lld \n",M[g_old].id,M[g].id);
-	}
-      }
-				*/
+				    printf(" unassigned M[g_old].id %lld in favor of SS M[g].id %lld \n",M[g_old].id,M[g].id);
+				  }
+				}
                             }
                         }
                     }
                 }
             }
         }
-    }
+	}
     for(int c=M.priority_list.size()-1;P[j].SF_in_petal[p]<F.MaxSF && c>-1;--c ){//try to do this for lowest priority
         std::vector <int> gals_init=P[j].SF_av_gal[p]; //sky fibers on this petak
-	//diagnostic
-
 
 	//sort these by priority
 	std::vector<std::pair<double,int> > galaxy_pairs;
         for(int gg=0;gg<gals_init.size() ;++gg){
 	  int g=gals_init[gg];
-	  std::pair <double,int> this_pair (M[g].subpriority,gg);
+	  std::pair <double,int> this_pair (M[g].subpriority,g);
 	  galaxy_pairs.push_back(this_pair);
 	}
 
 	std::sort(galaxy_pairs.begin(),galaxy_pairs.end(),pairCompare);
 	std::vector <int> gals;
-	if(j==4023&&p==5){
-	  for(int gg=0;gg<gals.size();++gg){
-            int g=gals[gg];//a sky fiber;
-	    printf("j  %d  p %d  available SF  %lld\n",j,p,M[g].id);}
-	}
+
 
         for(int gg=0;gg<gals.size();++gg){
             int g=gals[gg];//a sky fiber
@@ -516,9 +449,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                         int g_old=A.TF[j][k];//what is now at (j,k)
                         if(g_old!=-1 && !M[g_old].SS && !M[g_old].SF){
                             if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
-			      if(printthis){
-				printf("SF j %d  p  %d  k  %d  g_old   %lld    g  %lld  \n",j,p,k,M[g_old].id,M[g].id);
-			      }
+
                                 A.unassign(j,k,g_old,M,P,pp);
 
                                 reassign_SF+=assign_galaxy(g_old,M,P,pp,F,A,j);//try to assign
@@ -526,31 +457,20 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                                 add_SF++;
                                 done=1;
 				//diagnostic
-				/*
-      for(int i=0;i<12;++i){
-	if(M[g_old].id==check1[i]){
+				
+				for(int i=0;i<2;++i){
+				  if(M[g_old].id==check1[i]){
 
-	  printf(" unassigned M[g_old].id %lld in favor of SF M[g].id %lld \n",M[g_old].id,M[g].id);
-	}
-      }
-    
-
-      for(int i=0;i<11;++i){
-	if(M[g_old].id==check2[i]){
-
-	  printf(" unassigned M[g_old].id %lld in favor of SF M[g].id %lld \n",M[g_old].id,M[g].id);
-	}
-      }
-				*/
-
-                            }
+				    printf(" unassigned M[g_old].id %lld in favor of SF M[g].id %lld \n",M[g_old].id,M[g].id);
+				  }
+				}
+                             }
                         }
                     }
                 }
             }
         }
     }
-
 }
 
 
