@@ -90,7 +90,7 @@ int main(int argc, char **argv) {
 
 
     //P is original list of plates
-    bool savetime=true; 
+    bool savetime=false; 
     printf("  savetime %d\n",savetime);
     Plates P = read_plate_centers(F);
     F.Nplate=P.size();
@@ -125,6 +125,7 @@ int main(int argc, char **argv) {
           printf(" Will read saved files F.Nplate = %d \n",F.Nplate);
 	  std::cout.flush();
 	  for(int j=0;j<F.Nplate;j++){
+	    //printf("j %d  P[j].tileid %d \n",j,P[j].tileid);
 	    Table av_gals,ss_av_gals,sf_av_gals;//here we have int not long long so Table is ok
 
 	    std::vector<std::vector<long long> >av_gals_id,ss_av_gals_id,sf_av_gals_id;
@@ -225,8 +226,9 @@ int main(int argc, char **argv) {
 
     //try assigning SF and SS before real time assignment
     for (int jused=0;jused<F.NUsedplate;++jused){
-        
+ 
         int j=A.suborder[jused];
+	//printf(" jused % d   j  %d P[j].tileid %d \n",jused,j,P[j].tileid);
         assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF for each tile
         assign_unused(j,M,P,pp,F,A);
     }

@@ -88,7 +88,7 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
     print_time(t,"# ... took :");
 }
 
-void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) {
+void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) { 
     //M[i].av_tfs is list of tile-fiber pairs available to galaxy i
     Time t;
     init_time(t,"# Begin computing available tilefibers");
@@ -170,7 +170,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
                         pbest = prio;
                         mbest = m;
 			subpbest = subprio;
-			if(printit)printf("j %d k %d g %d M[g].id %lld best %d pbest %d mbest %d subpbest %f \n",j,k, g,M[g].id,best,pbest,mbest,subpbest);
+			if(printit)printf("P[j].tilide %d j %d k %d g %d M[g].id %lld best %d pbest %d mbest %d subpbest %f \n",P[j].tileid,j,k, g,M[g].id,best,pbest,mbest,subpbest);
                     }
                 }
             }
@@ -369,7 +369,9 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 
 
     //can get all available SS,SF on plate from P[j].av_gals_plate restricting to plate p
-    for(int c=M.priority_list.size()-1;P[j].SS_in_petal[p]<F.MaxSS && c>-1;--c ){//try to do this for lowest priority
+    //forgot that we switched so high priority number is high priority 12/29/16 
+    //for(int c=M.priority_list.size()-1;P[j].SS_in_petal[p]<F.MaxSS && c>-1;--c ){//try to do this for lowest priority
+    for(int c=0;P[j].SS_in_petal[p]<F.MaxSS && c>M.priority_list.size();++c ){//try to do this for lowest priority
         std::vector <int> gals_init=P[j].SS_av_gal[p]; //standard stars on this petal
 	//sort these by priority
 	std::vector<std::pair<double,int> > galaxy_pairs;
