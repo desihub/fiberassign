@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
     MTL SStars = read_MTLfile(F.SStarsfile,F,1,0);
     MTL SkyF   = read_MTLfile(F.SkyFfile,  F,0,1);
     MTL Targ   = read_MTLfile(F.Targfile,  F,0,0);
-    print_time(time,"# ... took :");
+    print_time(time,"# ...read targets  took :");
     //combine the three input files
     M=Targ;
     printf(" Target size %d \n",M.size());
@@ -76,9 +76,9 @@ int main(int argc, char **argv) {
     for(int i=0;i<M.priority_list.size();++i){
         printf("  class  %d  number  %d\n",i,count_class[i]);
     }
-    print_time(time,"# ... took :");
+    print_time(time,"# ...priority list took :");
 
-    
+    init_time_at(time,"# Start positioners",t);
     // fiber positioners
     PP pp;
     pp.read_fiber_positions(F); 
@@ -87,14 +87,17 @@ int main(int argc, char **argv) {
     F.Nfbp = (int) (F.Nfiber/F.Npetal);// fibers per petal = 500
     pp.get_neighbors(F);
     pp.compute_fibsofsp(F);
-
-
+    print_time(time,"# ..posiioners  took :");
+    //
+    init_time_at(time,"# Start plates",t);
     //P is original list of plates
-    bool savetime=false; 
+    bool savetime=true; 
     printf("  savetime %d\n",savetime);
     Plates P = read_plate_centers(F);
     F.Nplate=P.size();
-    printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());    
+    printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
+    //    
+    print_time(time,"# ..plates   took :");
     // Computes geometries of cb and fh: pieces of positioner - used to determine possible collisions
     F.cb = create_cb(); // cb=central body
     F.fh = create_fh(); // fh=fiber holder

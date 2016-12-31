@@ -862,7 +862,8 @@ Plates read_plate_centers(const Feat& F) {
     frow = 1;
     felem = 1;
     nullval = -99.;
-
+    Time t, time; // t for global, time for local
+    init_time(t);
     // read the strategy file
     // survey_list is list of tiles specified by tileid (arbitrary int) in order of survey
     std::ifstream fsurvey(F.surveyFile.c_str());
@@ -1081,7 +1082,7 @@ Plates read_plate_centers(const Feat& F) {
     std::map<int,int> invert_tile;
     std::map<int,int>::iterator tileid_to_idx;
     std::pair<std::map<int,int>::iterator,bool> ret;
-
+    init_time_at(time,"# Start invert tiles",t);
     for(unsigned i=0;i<P.size();++i)
     {
         ret = invert_tile.insert(std::make_pair(P[i].tileid,i));
@@ -1092,9 +1093,10 @@ Plates read_plate_centers(const Feat& F) {
             throw std::logic_error(o.str().c_str());
         }
     }
-
+    print_time(time,"# ..inversion  took :");
     // Create PP, a subset of P containing those tileids specified in the
     // surveyFile, in the order in which they are specified.
+    init_time_at(time,"# do inversion of used plates",t);
     for(unsigned i=0;i<survey_list.size();++i){
         tileid        = survey_list[i];
         tileid_to_idx = invert_tile.find(tileid);
@@ -1109,23 +1111,24 @@ Plates read_plate_centers(const Feat& F) {
         // Found a valid index, push the tile to the ordered list.
         PP.push_back(P[tileid_to_idx->second]);
     }
+    print_time(time,"# .. sued plates inversion  took :");
     return(PP);
 }
 // Assignment -----------------------------------------------------------------------------
 Assignment::Assignment(const MTL& M, const Feat& F) {
 
-    printf("assignment constructor1\n");
+  //printf("assignment constructor1\n");
     std::cout.flush();
     TF=initTable(F.Nplate,F.Nfiber,-1);//galaxy assigned to tile-fiber TF[j][k]
-    printf("assignment constructor2\n");
+    //printf("assignment constructor2\n");
     std::cout.flush();
     
     GL = initPtable(F.Ngal,0); //tile-fiber pair for galaxy  GL[g]
-    printf("assignment constructor3\n");
+    //printf("assignment constructor3\n");
     std::cout.flush();
 
     inv_order=initList(F.Nplate,-1);
-    printf("assignment constructor4\n");
+    //printf("assignment constructor4\n");
     std::cout.flush();
 
     
@@ -1134,12 +1137,12 @@ Assignment::Assignment(const MTL& M, const Feat& F) {
     printf(" plate %d petal %d categories %d \n",F.Nplate,F.Npetal,F.Categories);
     std::cout.flush();
     kinds = initCube(F.Nplate,F.Npetal,F.Categories);
-    printf("assignment constructor5\n");
+    //printf("assignment constructor5\n");
     std::cout.flush();
     
     
     unused = initTable(F.Nplate,F.Npetal,F.Nfbp);//initialized to number of fibers on a petal
-    printf("assignment constructor6\n");
+    //printf("assignment constructor6\n");
     std::cout.flush();
     
     

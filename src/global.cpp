@@ -22,11 +22,12 @@
 #include    "feat.h"
 #include    "structs.h"
 #include    "global.h"
-
+    Time t; // t for global, time for local
+    
 // Collecting information from input -------------------------------------------------------------------------------------
 void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Plates& P, const PP& pp, const Feat& F) {
     //provides list of galaxies available to fiber k on tile j: P[j].av_gals[k]
-    Time t;
+    
     init_time(t,"# Begin collecting available galaxies");
     //List permut = random_permut(F.Nplate);
     double rad = F.PlateRadius*M_PI/180.;
@@ -360,7 +361,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
     //keep track of reassignments
   //diagnostic
 
-     long long check1[1]={78096264083924963};
+
 
     int reassign_SS=0;
     int reassign_SF=0;
@@ -371,7 +372,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
     //can get all available SS,SF on plate from P[j].av_gals_plate restricting to plate p
     //forgot that we switched so high priority number is high priority 12/29/16 
     //for(int c=M.priority_list.size()-1;P[j].SS_in_petal[p]<F.MaxSS && c>-1;--c ){//try to do this for lowest priority
-    for(int c=0;P[j].SS_in_petal[p]<F.MaxSS && c>M.priority_list.size();++c ){//try to do this for lowest priority
+    for(int c=0;P[j].SS_in_petal[p]<F.MaxSS && c<M.priority_list.size();++c ){//try to do this for lowest priority
         std::vector <int> gals_init=P[j].SS_av_gal[p]; //standard stars on this petal
 	//sort these by priority
 	std::vector<std::pair<double,int> > galaxy_pairs;
@@ -384,9 +385,15 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 
 	std::sort(galaxy_pairs.begin(),galaxy_pairs.end(),pairCompare);
 	std::vector <int> gals;
+
+
 	for(int gg=0;gg<gals_init.size();++gg){
 	  gals.push_back(galaxy_pairs[gg].second);
 	}
+	//diagnostic
+	//	for (int i=0;i<50;++i){
+	//  printf(" gals[i] %d M[gal[i]].subpriority %d \n", gals[i] , M[gals[i]].subpriority  );
+	//	}
 	  //end sort by priority
 
         for(int gg=0;gg<gals.size() ;++gg){
@@ -409,23 +416,15 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                                 reassign_SS+=assign_galaxy(g_old,M,P,pp,F,A,j);//try to assign
                                 A.assign(j,k,g,M,P,pp);
                                 add_SS++;
-                                done=1;
-				
- 
-				for(int i=0;i<1;++i){
-				  if(M[g_old].id==check1[i]){
-
-				    printf(" unassigned M[g_old].id %lld in favor of SS M[g].id %lld \n",M[g_old].id,M[g].id);
-				  }
-				}
+                                done=1;				
                             }
                         }
                     }
                 }
             }
         }
-	}
-    for(int c=M.priority_list.size()-1;P[j].SF_in_petal[p]<F.MaxSF && c>-1;--c ){//try to do this for lowest priority
+    }
+    for(int c=0;P[j].SF_in_petal[p]<F.MaxSF && c<M.priority_list.size();++c ){//try to do this for lowest priority
         std::vector <int> gals_init=P[j].SF_av_gal[p]; //sky fibers on this petak
 
 	//sort these by priority
@@ -438,6 +437,17 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 
 	std::sort(galaxy_pairs.begin(),galaxy_pairs.end(),pairCompare);
 	std::vector <int> gals;
+
+
+	for(int gg=0;gg<gals_init.size();++gg){
+	  gals.push_back(galaxy_pairs[gg].second);
+	}
+
+
+	//diagnostic
+	//	for (int i=0;i<50;++i){
+	//  printf(" gals[i] %d M[gal[i]].subpriority %d \n", gals[i] , M[gals[i]].subpriority  );
+	//	}
 
 
         for(int gg=0;gg<gals.size();++gg){
@@ -460,12 +470,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                                 done=1;
 				//diagnostic
 				
-				for(int i=0;i<1;++i){
-				  if(M[g_old].id==check1[i]){
 
-				    printf(" unassigned M[g_old].id %lld in favor of SF M[g].id %lld \n",M[g_old].id,M[g].id);
-				  }
-				}
                              }
                         }
                     }
