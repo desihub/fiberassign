@@ -1189,7 +1189,7 @@ void Assignment::assign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
 
 void Assignment::unassign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
   //diagnostic
-    long long check1[1]={78096264083924963}; 
+ 
     if (TF[j][k]==-1) printf("### !!! ### TF (j,k) = (%d,%d) gets unassigned but was already not assigned\n",j,k);
     int a = isfound(pair(j,k),GL[g]);
     if (a==-1) printf("### !!! ### Galaxy g = %d gets unassigned but was already not assigned\n",g);
@@ -1206,12 +1206,7 @@ void Assignment::unassign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) 
         P[j].SS_in_petal[p]-=1;}
 
     unused[j][pp.spectrom[k]]++;
-    for(int i=0;i<1;++i){
-	if(M[g].id==check1[i]){
 
-	  printf("!!!!!!!!! j %d  k %d unassigned target g %d id %lld check1 priority %d\n",j,k,g,check1[i],M[g].t_priority);
-	}
-    }
 
 
 }
