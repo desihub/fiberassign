@@ -359,6 +359,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
     int add_SF=0;
 
     bool thisplate=(P[j].tileid==13937 && p==5);
+    thisplate=false;
     //can get all available SS,SF on plate from P[j].av_gals_plate restricting to plate p
     //forgot that we switched so high priority number is high priority 12/29/16 
     //for(int c=M.priority_list.size()-1;P[j].SS_in_petal[p]<F.MaxSS && c>-1;--c ){//try to do this for lowest priority

@@ -94,6 +94,7 @@ int main(int argc, char **argv) {
     bool savetime=true; 
     printf("  savetime %d\n",savetime);
     Plates P = read_plate_centers(F);
+    Plates Psave = read_plate_centers(F);
     F.Nplate=P.size();
     printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
     //    
@@ -106,7 +107,9 @@ int main(int argc, char **argv) {
     // HTM Tree of galaxies
 
     std::ifstream infile(filecheck); 
-    if(!infile.good()||!savetime){//av_gals has not been saved yet or not saving time *************
+    //
+    //if(!infile.good()||!savetime)
+    {   //av_gals has not been saved yet or not saving time *************
 
     const double MinTreeSize = 0.01;
     init_time_at(time,"# Start building HTM tree",t);
@@ -119,16 +122,15 @@ int main(int argc, char **argv) {
 
     print_time(time,"# ... took :");//T.stats();
     init_time_at(time,"# collect available tile-fibers at",t);
-
-
-    } else { //  av_gals have been saved
+    } 
+    //else 
+    if(infile.good() && savetime)
+    { //  av_gals have been saved
           // remember each new epoch has shorter list of tiles
           size_t cfilesize = 512;
 	  char filename[cfilesize];
-          printf(" Will read saved files F.Nplate = %d \n",F.Nplate);
-	  std::cout.flush();
+
 	  for(int j=0;j<F.Nplate;j++){
-	    //printf("j %d  P[j].tileid %d \n",j,P[j].tileid);
 	    Table av_gals,ss_av_gals,sf_av_gals;//here we have int not long long so Table is ok
 
 	    std::vector<std::vector<long long> >av_gals_id,ss_av_gals_id,sf_av_gals_id;
@@ -154,26 +156,72 @@ int main(int argc, char **argv) {
 		collect_sf.push_back(targetid_to_idx->second);
 	      }
 	      sf_av_gals.push_back(collect_sf);
-	     
 	    }
-	    P[j].av_gals=av_gals;
-	    P[j].SS_av_gal_fiber=ss_av_gals;
-	    P[j].SF_av_gal_fiber=sf_av_gals;
-            //generate lsit by petal
+	    Psave[j].av_gals=av_gals;
+	    Psave[j].SS_av_gal_fiber=ss_av_gals;
+	    Psave[j].SF_av_gal_fiber=sf_av_gals;
+            //generate list by petal
             for(int k=0;k<F.Nfiber;++k){
+
 	      int p=pp.spectrom[k];
-	      for(int m=0;m<P[j].SS_av_gal_fiber[k].size();++m){
-		P[j].SS_av_gal[p].push_back(P[j].SS_av_gal_fiber[k][m]);
+	      for(int m=0;m<Psave[j].SS_av_gal_fiber[k].size();++m){
+		Psave[j].SS_av_gal[p].push_back(Psave[j].SS_av_gal_fiber[k][m]);
 	      }
-	      for(int m=0;m<P[j].SF_av_gal_fiber[k].size();++m){
-		P[j].SF_av_gal[p].push_back(P[j].SF_av_gal_fiber[k][m]);
+	      for(int m=0;m<Psave[j].SF_av_gal_fiber[k].size();++m){
+		Psave[j].SF_av_gal[p].push_back(Psave[j].SF_av_gal_fiber[k][m]);
 	      }
 	    }
 	  }
-	  
-
-    //results_on_inputs("doc/figs/",G,P,F,true);
     }
+
+	  //compare Psave to P
+    
+    if(infile.good() && savetime){
+	  int done=0;
+	  for(int j=0;j<F.Nplate;++j){
+
+	    for(int p=0;p<10;++p){
+	      if((Psave[j].SF_av_gal[p].size()!=P[j].SF_av_gal[p].size()||done==0 )&&P[j].SF_av_gal[p].size()>0){
+		printf( "SF j %d p %d Psave[j] %d P[j] %d\n",j, p,Psave[j].SF_av_gal[p].size(), P[j].SF_av_gal[p].size());
+	      }
+	    }
+	    for(int k=0;k<F.Nfiber;++k){
+	      for (int m=0;m<Psave[j].SF_av_gal_fiber[k].size();++m){
+		std::vector<int> ps=Psave[j].SF_av_gal_fiber[k];
+		std::sort(ps.begin(),ps.end());
+		std::vector<int> pnos=P[j].SF_av_gal_fiber[k];
+		std::sort(pnos.begin(),pnos.end());
+		if((ps!=pnos )||done<10){
+		  printf( "SF j %d k %d  Psave(j,k) %d  P(j,k) %d\n",j, k,Psave[j].SF_av_gal_fiber[k].size(), P[j].SF_av_gal_fiber[k].size());
+		  done+=1;
+		}
+	      }
+	    }
+	  }
+	  done=0;
+	  for(int j=0;j<F.Nplate;++j){
+	    for(int p=0;p<10;++p){
+	      if((Psave[j].SS_av_gal[p].size()!=P[j].SS_av_gal[p].size()||done==0 )&&P[j].SS_av_gal[p].size()>0){
+		printf( "SS j %d p %d Psave[j] %d P[j] %d\n",j, p,Psave[j].SS_av_gal[p].size(), P[j].SS_av_gal[p].size());
+	      }
+	    }
+	    for(int k=0;k<F.Nfiber;++k){
+	      for (int m=0;m<Psave[j].SS_av_gal_fiber[k].size();++m){
+		std::vector<int> ps=Psave[j].SS_av_gal_fiber[k];
+		std::sort(ps.begin(),ps.end());
+		std::vector<int> pnos=P[j].SS_av_gal_fiber[k];
+		std::sort(pnos.begin(),pnos.end());
+		if((ps!=pnos )||done<10){
+		  printf( "SS j %d k %d  Psave(j,k) %d P(j,k) %d\n",j, k,Psave[j].SS_av_gal_fiber[k].size(), P[j].SS_av_gal_fiber[k].size());	       		  done+=1;
+		}
+	      }
+	    }
+	     
+	  }
+    }
+
+    
+
     if(!infile.good() && savetime){//first epoch only, write files
         printf("no files there\n");
 	std::cout.flush();
@@ -184,6 +232,7 @@ int main(int argc, char **argv) {
       printf("save files already there\n");
       std::cout.flush();
     }
+    
 
     // For each galaxy, computes available tilefibers  G[i].av_tfs = [(j1,k1),(j2,k2),..]
     collect_available_tilefibers(M,P,F);
@@ -266,12 +315,7 @@ int main(int argc, char **argv) {
                     }
             }
         }
-       /* printf(" plate jused %5d j %5d  SS   %4d    SF   %4d",jused,j,used_SS,used_SF);
-        for (int pr=0;pr<M.priority_list.size();++pr){
-            printf(" class %2d   %5d",pr,used_by_class[pr]);
-        }
-        printf("\n");
-        */
+
     }
     init_time_at(time,"# count SS and SF ",t);
     printf(" Totals SS   %4d    SF   %4d",total_used_SS,total_used_SF);
@@ -299,3 +343,4 @@ int main(int argc, char **argv) {
   
   return(0);    
 }
+
