@@ -94,7 +94,7 @@ int main(int argc, char **argv) {
     bool savetime=true; 
     printf("  savetime %d\n",savetime);
     Plates P = read_plate_centers(F);
-    Plates Psave = read_plate_centers(F);
+    //Plates Psave = read_plate_centers(F);
     F.Nplate=P.size();
     printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
     //    
@@ -108,7 +108,7 @@ int main(int argc, char **argv) {
 
     std::ifstream infile(filecheck); 
     //
-    //if(!infile.good()||!savetime)
+    if(!infile.good()||!savetime)
     {   //av_gals has not been saved yet or not saving time *************
 
     const double MinTreeSize = 0.01;
@@ -123,8 +123,7 @@ int main(int argc, char **argv) {
     print_time(time,"# ... took :");//T.stats();
     init_time_at(time,"# collect available tile-fibers at",t);
     } 
-    //else 
-    if(infile.good() && savetime)
+    else 
     { //  av_gals have been saved
           // remember each new epoch has shorter list of tiles
           size_t cfilesize = 512;
@@ -157,18 +156,18 @@ int main(int argc, char **argv) {
 	      }
 	      sf_av_gals.push_back(collect_sf);
 	    }
-	    Psave[j].av_gals=av_gals;
-	    Psave[j].SS_av_gal_fiber=ss_av_gals;
-	    Psave[j].SF_av_gal_fiber=sf_av_gals;
+	    P[j].av_gals=av_gals;
+	    P[j].SS_av_gal_fiber=ss_av_gals;
+	    P[j].SF_av_gal_fiber=sf_av_gals;
             //generate list by petal
             for(int k=0;k<F.Nfiber;++k){
 
 	      int p=pp.spectrom[k];
-	      for(int m=0;m<Psave[j].SS_av_gal_fiber[k].size();++m){
-		Psave[j].SS_av_gal[p].push_back(Psave[j].SS_av_gal_fiber[k][m]);
+	      for(int m=0;m<P[j].SS_av_gal_fiber[k].size();++m){
+		P[j].SS_av_gal[p].push_back(P[j].SS_av_gal_fiber[k][m]);
 	      }
-	      for(int m=0;m<Psave[j].SF_av_gal_fiber[k].size();++m){
-		Psave[j].SF_av_gal[p].push_back(Psave[j].SF_av_gal_fiber[k][m]);
+	      for(int m=0;m<P[j].SF_av_gal_fiber[k].size();++m){
+		P[j].SF_av_gal[p].push_back(P[j].SF_av_gal_fiber[k][m]);
 	      }
 	    }
 	  }
@@ -176,7 +175,7 @@ int main(int argc, char **argv) {
 
 	  //compare Psave to P
     
-    if(infile.good() && savetime){
+    /*  if(infile.good() && savetime){
 	  int done=0;
 	  for(int j=0;j<F.Nplate;++j){
 
@@ -219,6 +218,7 @@ int main(int argc, char **argv) {
 	     
 	  }
     }
+*/
 
     
 

@@ -1153,6 +1153,7 @@ Assignment::~Assignment() {}
 
 // Assign g with tile/fiber (j,k), and check for duplicates
 void Assignment::assign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
+    std::vector<long long> checkit={3322731000358966525,3965814933122725990,3807388209790938306,2313813552052373160 };   
     // Assign (j,k)
     int q = TF[j][k];
     if (q != -1) {
@@ -1185,6 +1186,12 @@ void Assignment::assign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
         int q=pp.spectrom[k];
         P[j].SS_in_petal[q]+=1;}
     unused[j][pp.spectrom[k]]--;
+    //diagnostic
+      for (int j=0;j<1;++j){
+	if(M[g].id==checkit[j]){
+	  printf("found problem target in assign\n");
+	}
+      }
 }
 
 void Assignment::unassign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
