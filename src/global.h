@@ -62,3 +62,5 @@ void pyplotTile(int j, str fname, const Gals& Secret, const MTL& M, const Plates
 void overlappingTiles(str fname, const Feat& F, const Assignment& A);
 #endif
 bool myorder(int i, int j);
+
+std::vector<int> sort_by_subpriority(MTL & M,std::vector<int> init);
