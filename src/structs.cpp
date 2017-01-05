@@ -1187,9 +1187,9 @@ void Assignment::assign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
         P[j].SS_in_petal[q]+=1;}
     unused[j][pp.spectrom[k]]--;
     //diagnostic
-      for (int j=0;j<1;++j){
-	if(M[g].id==checkit[j]){
-	  printf("found problem target in assign\n");
+    for (int q=0;q<checkit.size();++q){
+	if(M[g].id==checkit[q]){
+	  printf("assigned g=%d targetid %lld to j %d tileid %d fiber %d \n",g,M[g].id,j,P[j].tileid,k);
 	}
       }
 }

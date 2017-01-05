@@ -160,7 +160,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
  
     bool printit=false;
     for (int gg=0;gg<av_gals.size();gg++){
-      for (int j=0;j<1;++j){
+      for (int j=0;j<checkit.size();++j){
 	if(M[av_gals[gg]].id==checkit[j]){
 	  printit=true;
 	  printf("found problem target in find_best\n");
@@ -415,7 +415,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 	gals=sort_by_subpriority(M,gals_init);
 	//now sorted by subpriority
         for(int gg=0;gg<gals.size();++gg){
-	  for (int j=0;j<1;++j){
+	  for (int j=0;j<checkit.size();++j){
 	    if(M[gals[gg]].id==checkit[j]){
 	      thisplate=true;
 	      printf("found problem SS in new_replace id= %lld\n",checkit[j]);
@@ -486,7 +486,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 	}
 	//now sorted by subpriority
         for(int gg=0;gg<gals.size();++gg){
-	  for (int j=0;j<1;++j){
+	  for (int j=0;j<checkit.size();++j){
 	    if(M[gals[gg]].id==checkit[j]){
 	      thisplate=true;
 	      printf("found problem  SF\n");
