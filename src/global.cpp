@@ -163,13 +163,14 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
       for (int j=0;j<checkit.size();++j){
 	if(M[av_gals[gg]].id==checkit[j]){
 	  printit=true;
-	  printf("found problem target in find_best\n");
+	  printf("found problem target in find_best %lld\n",checkit[j]);
 	}
       }
     }
     
     for (int gg=0; gg<av_gals.size(); gg++) {
         int g = av_gals[gg];
+	if(printit)printf(" targetid %lld\n",M[g].id);
         //if(ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){//don't assign SS, SF with find_best 11/20/15
         if(!M[g].SS && !M[g].SF){
             int m = M[g].nobs_remain; // Check whether it needs further observation
@@ -329,8 +330,7 @@ void update_plan_from_one_obs(int jused,const Gals& Secret, MTL& M, Plates&P, co
     
     int j=A.suborder[jpast];
     //diagnostic
-    //printf("j %d  jused %d \n",j,jused);
-    std::cout.flush();
+
     //int na_start(A.na(F,j0,n));//unassigned fibers in tiles from j0 to j0+n
     List to_update; // Get the list of galaxies to update in the plan
     for (int k=0; k<F.Nfiber; k++) {
@@ -354,8 +354,6 @@ void update_plan_from_one_obs(int jused,const Gals& Secret, MTL& M, Plates&P, co
         
         while (tfs.size()!=0 && M[g].nobs_done>F.goalpost[Secret[g].category]) {
             int jp = tfs[0].f; int kp = tfs[0].s;
-            
-            std::cout.flush();
             A.unassign(jp,kp,g,M,P,pp);
             cnt_deassign++;
             M[g].nobs_remain=0;
@@ -377,8 +375,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
     //keep track of reassignments
   //diagnostic
 
-
-
+  
     int reassign_SS=0;
     int reassign_SF=0;
     int add_SS=0;
@@ -388,46 +385,33 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
     //thisplate=false;
     //can get all available SS,SF on plate from P[j].av_gals_plate restricting to plate p
     //forgot that we switched so high priority number is high priority 12/29/16 
-    //for(int c=M.priority_list.size()-1;P[j].SS_in_petal[p]<F.MaxSS && c>-1;--c ){//try to do this for lowest priority
-
 
     for(int c=0;P[j].SS_in_petal[p]<F.MaxSS && c<M.priority_list.size();++c ){//try to do this for lowest priority
         std::vector <int> gals_init=P[j].SS_av_gal[p]; //standard stars on this petal
 	std::vector <int> gals;
 	bool thisplate=false;
 	//sort these by priority
-	/*
-	std::vector<std::pair<double,int> > galaxy_pairs;
-        for(int gg=0;gg<gals_init.size() ;++gg){
-	  int g=gals_init[gg];
-          std::pair <double,int> this_pair (M[g].subpriority,g);//gg-> g 18:30 12/28/16
-	  galaxy_pairs.push_back(this_pair);
-	}
 
-	std::sort(galaxy_pairs.begin(),galaxy_pairs.end(),pairCompare);
-
-
-
-	for(int gg=0;gg<gals_init.size();++gg){
-	  gals.push_back(galaxy_pairs[gg].second);
-	}
-	*/
 	gals=sort_by_subpriority(M,gals_init);
+
 	//now sorted by subpriority
         for(int gg=0;gg<gals.size();++gg){
 	  for (int j=0;j<checkit.size();++j){
 	    if(M[gals[gg]].id==checkit[j]){
 	      thisplate=true;
 	      printf("found problem SS in new_replace id= %lld\n",checkit[j]);
+	      std::cout.flush();
 	    }
 	  }
 	}
+
         for(int gg=0;gg<gals.size() ;++gg){//all the standard stars on this petal
             int g=gals[gg];//a standard star
 	    bool thisstar=false;
-	    for (int i=0;i<1;++i){
+	    for (int i=0;i<checkit.size();++i){
 	      if(M[g].id==checkit[i])thisstar=true;//this is one we are watching
 	    }
+	    printf("after bool thisstar\n");
             if(A.is_assigned_jg(j,g)==-1){//not assigned on this tile
                 Plist tfs=M[g].av_tfs;//all tiles and fibers that reach g
 		//diagnostic
@@ -439,30 +423,52 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 		  }
 		  printf("\n");
 		}
+		printf("before int done\n");
                 int done=0;//quit after we've used this SS
+		std::vector<int> could_be_replaced;
                 for(int i=0;i<tfs.size() && done==0;++i){//al the tile-fibers that can reach this standard star
+		  printf(" in new replace  j = %d  p= %d  i= %d\n",j,p,i);
                     if(tfs[i].f==j&&pp.spectrom[tfs[i].s]==p){//a tile fiber from this petal
                         int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                         int g_old=A.TF[j][k];//what is now at (j,k)  g_old can't be -1 or we would have used it already in assign_sf
-                        if(g_old!=-1 && !M[g_old].SS && !M[g_old].SF){
+			//require that this galaxy is used only once to keep things simple
+                        if(g_old!=-1 && !M[g_old].SS && !M[g_old].SF && A.GL[g_old].size()==1){
                             if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                                 //right priority; this SS not already assigned on this plate
-			      
-                                A.unassign(j,k,g_old,M,P,pp);
-                                reassign_SS+=assign_galaxy(g_old,M,P,pp,F,A,j);//try to assign
-                                A.assign(j,k,g,M,P,pp);
-                                add_SS++;
-                                done=1;	
-				if(thisstar){
-				  printf("standard star j %d k %d unassign %lld assign instead %lld\n",j,k,M[g_old].id,M[g].id);			
-				}
+			      // collect all possibilities and sort by subpriority  01/06/17 rnc
+			      could_be_replaced.push_back(g_old);
 			    }
 			}
 		    }
 		}
+		if(could_be_replaced.size()>0){
+		  //now have list of possible targets to be replaced with lowest priority
+		  //use subpriority to choose
+		  sort_by_subpriority(M,could_be_replaced);
+		  if(thisstar){//diagnostic
+		    for (int i=0;i<could_be_replaced.size();++i){
+		      int g=could_be_replaced[i];
+		      printf(" targetid %lld   subpriority %f\n",M[g].id,M[g].subpriority);
+		    }
+		  }
+		  int g_chosen=could_be_replaced[0];
+		  int j=A.GL[g_chosen][0].f;
+		  int k=A.GL[g_chosen][0].s;
+		  
+		  A.unassign(j,k,g_chosen,M,P,pp);
+		  reassign_SS+=assign_galaxy(g_chosen,M,P,pp,F,A,j);//try to assign
+		  A.assign(j,k,g,M,P,pp);
+		  add_SS++;
+		  done=1;	
+		  if(thisstar){
+		    printf("standard star j %d k %d unassign %lld assign instead %lld\n",j,k,M[g_chosen].id,M[g].id);			
+		  }
+		}
 	    }
 	}
     }
+
+
 
     //diagnostic
 
@@ -489,7 +495,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 	  for (int j=0;j<checkit.size();++j){
 	    if(M[gals[gg]].id==checkit[j]){
 	      thisplate=true;
-	      printf("found problem  SF\n");
+	      printf("found problem  SF: %lld\n",checkit[j]);
 	    }
 	  }
 	}
@@ -498,7 +504,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 
             int g=gals[gg];//a sky fiber
 	    bool thissky=false;
-	    for (int i=0;i<1;++i){
+	    for (int i=0;i<checkit.size();++i){
 	      if(M[g].id==checkit[i])thissky=true;
 	    }
 
@@ -515,30 +521,51 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 		}
 
                 int done=0;
+		std::vector<int> could_be_replaced; 
                 for(int i=0;i<tfs.size() && done==0;++i){
 		  if(thissky)printf("still good\n");
                     if(tfs[i].f==j&&pp.spectrom[tfs[i].s]==p){//g is accesible to j,k
                         int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                         int g_old=A.TF[j][k];//what is now at (j,k)
 			if(thissky)printf("g_old %d\n",g_old);
-                        if(g_old!=-1 && !M[g_old].SS && !M[g_old].SF){
+                        if(g_old!=-1 && !M[g_old].SS && !M[g_old].SF && A.GL[g_old].size()==1){
                             if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
-                                A.unassign(j,k,g_old,M,P,pp);
-                                reassign_SF+=assign_galaxy(g_old,M,P,pp,F,A,j);//try to assign
-                                A.assign(j,k,g,M,P,pp);
-                                add_SF++;
-                                done=1;
-				if(thissky){
-				  printf("sky fiber j %d k %d unassign %lld assign instead %lld\n",j,k,M[g_old].id,M[g].id);
-				}
+			      could_be_replaced.push_back(g_old);
 			    }
 			}
 		    }
+		}
+		//now have list of possible targets to be replaced with lowest priority
+		//use subpriority to choose
+		sort_by_subpriority(M,could_be_replaced);
+		if(could_be_replaced.size()>0){
+		  printf("after sorting could_be_replaced : size %d\n",could_be_replaced.size());
+		  if(thissky){//diagnostic
+		    for (int i=0;i<could_be_replaced.size();++i){
+		      int g=could_be_replaced[i];
+		      printf(" targetid %lld   subpriority %f\n",M[g].id,M[g].subpriority);
+		    }
+		  }
+
+		  int g_chosen=could_be_replaced[0];
+
+		  int j=A.GL[g_chosen][0].f;
+		  int k=A.GL[g_chosen][0].s;
+
+		  A.unassign(j,k,g_chosen,M,P,pp);
+		  reassign_SF+=assign_galaxy(g_chosen,M,P,pp,F,A,j);//try to assign
+		  A.assign(j,k,g,M,P,pp);
+		  add_SF++;
+		  done=1;
+		  if(thissky){
+		    printf("sky fiber j %d k %d unassign %lld assign instead %lld\n",j,k,M[g_chosen].id,M[g].id);
+		  }
 		}
 	    }
 	}
     }
 }
+
 
 
 
@@ -590,19 +617,19 @@ void assign_unused(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assign
 // If not enough SS and SF,
 
 void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
-    //List randPetals = random_permut(F.Npetal);
-
+  printf(" Begin assign_SF_SS \n");
     bool thisgalaxy=false;
     for (int ppet=0; ppet<F.Npetal; ppet++) {
-        //int p = randPetals[ppet];
         int p = ppet;
         std::vector <int> SS_av_init=P[j].SS_av_gal[p];
 	std::vector <int> SS_av;
         SS_av=sort_by_subpriority(M,SS_av_init);
 
+
         std::vector <int> SF_av_init=P[j].SF_av_gal[p];
         std::vector <int> SF_av;
-        SF_av=sort_by_subpriority(M,SF_av_init);	
+        SF_av=sort_by_subpriority(M,SF_av_init);
+	
         if(SS_av.size()>0 ||SF_av.size()>0){
             //look at fibers on this petal
             for (int kk=0; kk<F.Nfbp; kk++) {
@@ -645,9 +672,11 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
                     }
                 }
             }//fiber loop
+
         new_replace(j,p,M,P,pp,F,A);
         }// if any SS or SF on petal
     }//petal loop
+
 }
 
 void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int jused_start) {
@@ -666,7 +695,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
             count1++;
             if (Done[jused][k]==0) {
                 int g = A.TF[j][k];//current assignment of (j,k)  only look if assigned
-                std::cout.flush();
+ 
                 if (g!=-1 && !M[g].SS && !M[g].SF) {
                     int jpb = -1; int kpb = -1; int unusedb = A.unused[j][pp.spectrom[k]];
                     Plist av_tfs = M[g].av_tfs;  //all possible tile fibers for this galaxy
@@ -1384,8 +1413,7 @@ void write_save_av_gals (int j, str outdir, const MTL & M, const Plates & P, con
         throw std::runtime_error(o.str().c_str());
     }
     // create the file
-    //printf("starting write_save \n");
-    //std::cout.flush();
+
     int status = 0;
     fitsfile * fptr;
     fits_create_file (&fptr, filename, &status);
@@ -1439,8 +1467,7 @@ void write_save_av_gals (int j, str outdir, const MTL & M, const Plates & P, con
     strcpy(tform[3], "I");//int not long
     strcpy(tunit[3], "");    
 
-    //printf("continuing write_save\n");
-    //std::cout.flush();
+
     char extname[FLEN_VALUE];
     
     strcpy(extname, "FIBER_ASSIGNMENTS");
@@ -1491,77 +1518,56 @@ void write_save_av_gals (int j, str outdir, const MTL & M, const Plates & P, con
 		num_target_ss[i]= P[j].SS_av_gal_fiber[fib].size();
 		num_target_sf[i]= P[j].SF_av_gal_fiber[fib].size();
 
-		//printf("n %d i %d fib %d before av_gal \n",n,i,fib);
-		//std::cout.flush();
+
                 // Store the potential targetids accesible to this fibre (the actual targetid, not the index).
-		//if(P[j].av_gals[fib].size()>0)printf(" size %d\n",P[j].av_gals[fib].size());
-		//std::cout.flush();
+
 									
                 for (int k = 0; k < P[j].av_gals[fib].size(); ++k) {
-		  //printf(" k %d\n",k);
-		  //std::cout.flush();
+
                     int gal_idx = P[j].av_gals[fib][k]; // MTL index for k'th target accessible to this fibre
                     if (gal_idx >= 0) {
-		      //printf("k %d fib %d  gal_idx %d \n",k,fib,gal_idx);
-		      //std::cout.flush();
+
 		      potentialtargetid.push_back(M[gal_idx].id); 
 		      temporarytargetid.push_back(gal_idx);
 		    }
-		    //printf(" length of potentialtargetid %d\n",potentialtargetid.size());
-		    //std::cout.flush();
+
 		}
-		//printf("before ss_av_gal \n");
-		//std::cout.flush();
-		//if(P[j].SS_av_gal_fiber[fib].size()>0)printf(" size %d\n",P[j].SS_av_gal_fiber[fib].size());
-		//std::cout.flush();
+
                 for (int k = 0; k < P[j].SS_av_gal_fiber[fib].size(); ++k) {
-		  //printf(" k %d fib %d \n",k,fib);
-		  //std::cout.flush();
+
                     int gal_idx = P[j].SS_av_gal_fiber[fib][k]; // MTL index for k'th target accessible to this fibre
-		    //printf(" k %d fib %d gal_idx %d \n",k,fib,gal_idx);
-		    //std::cout.flush();
+
                     if (gal_idx >= 0) {
 		      potentialtargetid.push_back(M[gal_idx].id); 
 		      temporarytargetid.push_back(gal_idx);
 		    }
-		    //printf("ss: length of potentialtargetid %d\n",potentialtargetid.size());
-		    //std::cout.flush();
+
 		}
-		//printf("before sf_av_gal \n");
-		//std::cout.flush();
-		//if(P[j].SF_av_gal_fiber[fib].size()>0)printf(" size %d\n",P[j].SF_av_gal_fiber[fib].size());
-		//std::cout.flush();
+
                 for (int k = 0; k < P[j].SF_av_gal_fiber[fib].size(); ++k) {
                     int gal_idx = P[j].SF_av_gal_fiber[fib][k]; // MTL index for k'th target accessible to this fibre
                     if (gal_idx >= 0) {
 		      potentialtargetid.push_back(M[gal_idx].id); 
 		      temporarytargetid.push_back(gal_idx);
 		    }
-		    //printf("sf: length of potentialtargetid %d\n",potentialtargetid.size());
-		    //std::cout.flush();
+
 		}	
 	    }	    
 
-	    //printf("before write_key \n");
-	    //std::cout.flush();
+
 
         fits_write_key(fptr, TINT, "TILEID", &(tileid), "Tile ID number", &status);
             fits_report_error(stderr, status);
-	    
-	    //printf("before writing fiber_id\n");
-	    //std::cout.flush();
+
             fits_write_col(fptr, TINT, 1, offset+1, 1, n, fiber_id, &status);
             fits_report_error(stderr, status);
-	    //printf("before writing num_target\n");
-	    //std::cout.flush();
+
             fits_write_col(fptr, TINT, 2, offset+1, 1, n, num_target, &status);
             fits_report_error(stderr, status);
-	    //printf("before writing num_target_ss\n");
-	    //std::cout.flush();
+
             fits_write_col(fptr, TINT, 3, offset+1, 1, n, num_target_ss, &status);
             fits_report_error(stderr, status);
-	    //printf("before writing num_target_sf\n");
-	    //std::cout.flush();
+
             fits_write_col(fptr, TINT, 4, offset+1, 1, n, num_target_sf, &status);
             fits_report_error(stderr, status);          
         }

@@ -173,52 +173,6 @@ int main(int argc, char **argv) {
 	  }
     }
 
-	  //compare Psave to P
-    
-    /*  if(infile.good() && savetime){
-	  int done=0;
-	  for(int j=0;j<F.Nplate;++j){
-
-	    for(int p=0;p<10;++p){
-	      if((Psave[j].SF_av_gal[p].size()!=P[j].SF_av_gal[p].size()||done==0 )&&P[j].SF_av_gal[p].size()>0){
-		printf( "SF j %d p %d Psave[j] %d P[j] %d\n",j, p,Psave[j].SF_av_gal[p].size(), P[j].SF_av_gal[p].size());
-	      }
-	    }
-	    for(int k=0;k<F.Nfiber;++k){
-	      for (int m=0;m<Psave[j].SF_av_gal_fiber[k].size();++m){
-		std::vector<int> ps=Psave[j].SF_av_gal_fiber[k];
-		std::sort(ps.begin(),ps.end());
-		std::vector<int> pnos=P[j].SF_av_gal_fiber[k];
-		std::sort(pnos.begin(),pnos.end());
-		if((ps!=pnos )||done<10){
-		  printf( "SF j %d k %d  Psave(j,k) %d  P(j,k) %d\n",j, k,Psave[j].SF_av_gal_fiber[k].size(), P[j].SF_av_gal_fiber[k].size());
-		  done+=1;
-		}
-	      }
-	    }
-	  }
-	  done=0;
-	  for(int j=0;j<F.Nplate;++j){
-	    for(int p=0;p<10;++p){
-	      if((Psave[j].SS_av_gal[p].size()!=P[j].SS_av_gal[p].size()||done==0 )&&P[j].SS_av_gal[p].size()>0){
-		printf( "SS j %d p %d Psave[j] %d P[j] %d\n",j, p,Psave[j].SS_av_gal[p].size(), P[j].SS_av_gal[p].size());
-	      }
-	    }
-	    for(int k=0;k<F.Nfiber;++k){
-	      for (int m=0;m<Psave[j].SS_av_gal_fiber[k].size();++m){
-		std::vector<int> ps=Psave[j].SS_av_gal_fiber[k];
-		std::sort(ps.begin(),ps.end());
-		std::vector<int> pnos=P[j].SS_av_gal_fiber[k];
-		std::sort(pnos.begin(),pnos.end());
-		if((ps!=pnos )||done<10){
-		  printf( "SS j %d k %d  Psave(j,k) %d P(j,k) %d\n",j, k,Psave[j].SS_av_gal_fiber[k].size(), P[j].SS_av_gal_fiber[k].size());	       		  done+=1;
-		}
-	      }
-	    }
-	     
-	  }
-    }
-*/
 
     
 
@@ -280,7 +234,7 @@ int main(int argc, char **argv) {
     for (int jused=0;jused<F.NUsedplate;++jused){
  
         int j=A.suborder[jused];
-	//printf(" jused % d   j  %d P[j].tileid %d \n",jused,j,P[j].tileid);
+
         assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF for each tile
         assign_unused(j,M,P,pp,F,A);
     }
