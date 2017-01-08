@@ -332,7 +332,7 @@ void update_plan_from_one_obs(int jused,const Gals& Secret, MTL& M, Plates&P, co
     //diagnostic
 
     //int na_start(A.na(F,j0,n));//unassigned fibers in tiles from j0 to j0+n
-    List to_update; // Get the list of galaxies to update in the plan
+    std::vector<int> to_update; // Get the list of galaxies to update in the plan
     for (int k=0; k<F.Nfiber; k++) {
         int g = A.TF[j][k];
         if (g!=-1&&!M[g].SS && !M[g].SF){        // Don't update SS or SF
@@ -348,8 +348,11 @@ void update_plan_from_one_obs(int jused,const Gals& Secret, MTL& M, Plates&P, co
         }
     }
     // Update further in the plan
-    for (int gg=0; gg<to_update.size(); gg++) {
-        int g = to_update[gg];
+    std::vector<int> sorted_to_update=sort_by_subpriority(M,to_update);
+    for (int gg=0; gg<sorted_to_update.size(); gg++) {
+      // need to sort
+
+        int g = sorted_to_update[gg];
         Plist tfs = A.chosen_tfs(g,F,A.suborder[jused+1]); // Begin at j0+1, can't change assignment at j0 (already observed)
         
         while (tfs.size()!=0 && M[g].nobs_done>F.goalpost[Secret[g].category]) {
@@ -399,8 +402,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 	  for (int j=0;j<checkit.size();++j){
 	    if(M[gals[gg]].id==checkit[j]){
 	      thisplate=true;
-	      printf("found problem SS in new_replace id= %lld\n",checkit[j]);
-	      std::cout.flush();
+
 	    }
 	  }
 	}
@@ -411,7 +413,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 	    for (int i=0;i<checkit.size();++i){
 	      if(M[g].id==checkit[i])thisstar=true;//this is one we are watching
 	    }
-	    printf("after bool thisstar\n");
+
             if(A.is_assigned_jg(j,g)==-1){//not assigned on this tile
                 Plist tfs=M[g].av_tfs;//all tiles and fibers that reach g
 		//diagnostic
@@ -423,11 +425,12 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 		  }
 		  printf("\n");
 		}
-		printf("before int done\n");
+
                 int done=0;//quit after we've used this SS
 		std::vector<int> could_be_replaced;
+		std::vector<int> sorted_could_be_replaced;
                 for(int i=0;i<tfs.size() && done==0;++i){//al the tile-fibers that can reach this standard star
-		  printf(" in new replace  j = %d  p= %d  i= %d\n",j,p,i);
+
                     if(tfs[i].f==j&&pp.spectrom[tfs[i].s]==p){//a tile fiber from this petal
                         int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                         int g_old=A.TF[j][k];//what is now at (j,k)  g_old can't be -1 or we would have used it already in assign_sf
@@ -444,14 +447,14 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 		if(could_be_replaced.size()>0){
 		  //now have list of possible targets to be replaced with lowest priority
 		  //use subpriority to choose
-		  sort_by_subpriority(M,could_be_replaced);
+		  std::vector<int> sorted_could_be_replaced=sort_by_subpriority(M,could_be_replaced);
 		  if(thisstar){//diagnostic
-		    for (int i=0;i<could_be_replaced.size();++i){
-		      int g=could_be_replaced[i];
+		    for (int i=0;i<sorted_could_be_replaced.size();++i){
+		      int g=sorted_could_be_replaced[i];
 		      printf(" targetid %lld   subpriority %f\n",M[g].id,M[g].subpriority);
 		    }
 		  }
-		  int g_chosen=could_be_replaced[0];
+		  int g_chosen=sorted_could_be_replaced[0];
 		  int j=A.GL[g_chosen][0].f;
 		  int k=A.GL[g_chosen][0].s;
 		  
@@ -523,11 +526,11 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
                 int done=0;
 		std::vector<int> could_be_replaced; 
                 for(int i=0;i<tfs.size() && done==0;++i){
-		  if(thissky)printf("still good\n");
+
                     if(tfs[i].f==j&&pp.spectrom[tfs[i].s]==p){//g is accesible to j,k
                         int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                         int g_old=A.TF[j][k];//what is now at (j,k)
-			if(thissky)printf("g_old %d\n",g_old);
+
                         if(g_old!=-1 && !M[g_old].SS && !M[g_old].SF && A.GL[g_old].size()==1){
                             if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
 			      could_be_replaced.push_back(g_old);
@@ -539,7 +542,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 		//use subpriority to choose
 		sort_by_subpriority(M,could_be_replaced);
 		if(could_be_replaced.size()>0){
-		  printf("after sorting could_be_replaced : size %d\n",could_be_replaced.size());
+
 		  if(thissky){//diagnostic
 		    for (int i=0;i<could_be_replaced.size();++i){
 		      int g=could_be_replaced[i];
@@ -579,9 +582,10 @@ void assign_unused(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assign
         if (!A.is_assigned_tf(j,k)) {
 	  int best = -1; int mbest = -1; int pbest = 0; int jpb = -1; int kpb = -1; 
 	  double subpbest = 0;
-            List av_gals = P[j].av_gals[k];//all available galaxies for this fiber k
-            for (int gg=0; gg<av_gals.size(); gg++) {
-                int g = av_gals[gg];//available galaxies
+	  std::vector<int> av_gals = P[j].av_gals[k];//all available galaxies for this fiber k
+	  std::vector<int> sorted_av_gals=sort_by_subpriority(M,av_gals);
+            for (int gg=0; gg<sorted_av_gals.size(); gg++) {
+                int g = sorted_av_gals[gg];//available galaxies
                 int m = M[g].nobs_remain;
                 int prio = M[g].t_priority;
 		double subprio = M[g].subpriority;
@@ -617,7 +621,7 @@ void assign_unused(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assign
 // If not enough SS and SF,
 
 void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
-  printf(" Begin assign_SF_SS \n");
+
     bool thisgalaxy=false;
     for (int ppet=0; ppet<F.Npetal; ppet++) {
         int p = ppet;
@@ -663,7 +667,12 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
 			for(int i=0;i<checkit.size();++i){
 			  if(M[g].id==checkit[i])thisgalaxy=true;
 			}
-			
+			if(thisgalaxy){
+			  for(int i=0;i<SF_av_k.size();++i){
+			    int gal=SF_av_k[i];
+			    printf("gal %d subpriority %f \n",gal,M[gal].subpriority);
+			  }
+			}
                         if(A.is_assigned_jg(j,g,M,F)==-1&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)&&ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)){
                             A.assign(j,k,g,M,P,pp);
                             done=1;
