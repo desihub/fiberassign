@@ -145,7 +145,7 @@ inline bool ok_for_limit_SS_SF(int g, int j, int k, const MTL& M, const Plates& 
     return !(is_SF && too_many_SF)&&!(is_SS && too_many_SS);
 }
 
-    std::vector<long long> checkit={3322731000358966525,3965814933122725990,3807388209790938306,2313813552052373160 };   
+  
 
 // Find, for (j,k), find the best galaxy it can reach among the possible ones
 // Null list means you can take all possible kinds, otherwise you can only take, for the galaxy, a kind among this list
@@ -156,21 +156,9 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
     // For all available galaxies
     // diagnostic to check for difference between savetime=false and savetime=true
 
-
- 
-    bool printit=false;
-    for (int gg=0;gg<av_gals.size();gg++){
-      for (int j=0;j<checkit.size();++j){
-	if(M[av_gals[gg]].id==checkit[j]){
-	  printit=true;
-	  printf("found problem target in find_best %lld\n",checkit[j]);
-	}
-      }
-    }
-    
     for (int gg=0; gg<av_gals.size(); gg++) {
         int g = av_gals[gg];
-	if(printit)printf(" targetid %lld\n",M[g].id);
+
         //if(ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){//don't assign SS, SF with find_best 11/20/15
         if(!M[g].SS && !M[g].SF){
             int m = M[g].nobs_remain; // Check whether it needs further observation
@@ -189,7 +177,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
                         pbest = prio;
                         mbest = m;
 			subpbest = subprio;
-			if(printit)printf("P[j].tileid %d j %d k %d g %d M[g].id %lld best %d pbest %d mbest %d subpbest %f \n",P[j].tileid,j,k, g,M[g].id,best,pbest,mbest,subpbest);
+
                     }
                 }
             }
@@ -228,9 +216,7 @@ inline int assign_galaxy(int g,  MTL& M, Plates& P, const PP& pp, const Feat& F,
     if (jb!=-1){
         A.assign(jb,kb,g,M,P,pp);
 	
-	for (int i=0;i<checkit.size();++i){
-	  if(M[g].id==checkit[i])printf("checkit for id in assign_galaxy\n",M[g].id);
-	}
+
         return 1;}
     else return 0;
 }
@@ -397,22 +383,10 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 
 	gals=sort_by_subpriority(M,gals_init);
 
-	//now sorted by subpriority
-        for(int gg=0;gg<gals.size();++gg){
-	  for (int j=0;j<checkit.size();++j){
-	    if(M[gals[gg]].id==checkit[j]){
-	      thisplate=true;
-
-	    }
-	  }
-	}
 
         for(int gg=0;gg<gals.size() ;++gg){//all the standard stars on this petal
             int g=gals[gg];//a standard star
 	    bool thisstar=false;
-	    for (int i=0;i<checkit.size();++i){
-	      if(M[g].id==checkit[i])thisstar=true;//this is one we are watching
-	    }
 
             if(A.is_assigned_jg(j,g)==-1){//not assigned on this tile
                 Plist tfs=M[g].av_tfs;//all tiles and fibers that reach g
@@ -493,35 +467,16 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 	for(int gg=0;gg<gals_init.size();++gg){
 	  gals.push_back(galaxy_pairs[gg].second);
 	}
-	//now sorted by subpriority
-        for(int gg=0;gg<gals.size();++gg){
-	  for (int j=0;j<checkit.size();++j){
-	    if(M[gals[gg]].id==checkit[j]){
-	      thisplate=true;
-	      printf("found problem  SF: %lld\n",checkit[j]);
-	    }
-	  }
-	}
+
 
         for(int gg=0;gg<gals.size();++gg){
 
             int g=gals[gg];//a sky fiber
-	    bool thissky=false;
-	    for (int i=0;i<checkit.size();++i){
-	      if(M[g].id==checkit[i])thissky=true;
-	    }
+
 
             if(A.is_assigned_jg(j,g)==-1){
                 Plist tfs=M[g].av_tfs;
-		//diagnostic
-		if(thissky){
-		  printf("SF tile %d j %d p %d  g %d M[g].subpriority %f \n", P[j].tileid,j,p,g , M[g].subpriority  );
-		  printf(" g %d tile fiber:",g);
-		  for (int i=0;i<tfs.size();++i){
-		    printf(" ( %d , %d )",tfs[i].f,tfs[i].s);
-		  }
-		  printf("\n");
-		}
+
 
                 int done=0;
 		std::vector<int> could_be_replaced; 
@@ -543,12 +498,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 		sort_by_subpriority(M,could_be_replaced);
 		if(could_be_replaced.size()>0){
 
-		  if(thissky){//diagnostic
-		    for (int i=0;i<could_be_replaced.size();++i){
-		      int g=could_be_replaced[i];
-		      printf(" targetid %lld   subpriority %f\n",M[g].id,M[g].subpriority);
-		    }
-		  }
+
 
 		  int g_chosen=could_be_replaced[0];
 
@@ -560,9 +510,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 		  A.assign(j,k,g,M,P,pp);
 		  add_SF++;
 		  done=1;
-		  if(thissky){
-		    printf("sky fiber j %d k %d unassign %lld assign instead %lld\n",j,k,M[g_chosen].id,M[g].id);
-		  }
+
 		}
 	    }
 	}
@@ -649,34 +597,17 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
                     int done=0;
 		    //
                     for (int gg=0; gg<SS_av_k.size()&&done==0; gg++) {
-                        int g = SS_av_k[gg];//SS on this petal
-			thisgalaxy=false;
-			for(int i=0;i<checkit.size();++i){
-			  if(M[g].id==checkit[i])thisgalaxy=true;
-			}
-			
+                        int g = SS_av_k[gg];//SS on this petal			
                         if(A.is_assigned_jg(j,g,M,F)==-1&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)&&ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)){
                             A.assign(j,k,g,M,P,pp);
-                            done=1;
-			    if(thisgalaxy)printf("SS assigned id %ldd to tile  %d fiber %d \n",M[g].id,P[j].tileid,k);
+                            done=1;			   
                         }
                     }
                     for (int gg=0; gg<SF_av_k.size()&&done==0; gg++) {
-                        int g = SF_av_k[gg];//SF on this petal
-			thisgalaxy=false;
-			for(int i=0;i<checkit.size();++i){
-			  if(M[g].id==checkit[i])thisgalaxy=true;
-			}
-			if(thisgalaxy){
-			  for(int i=0;i<SF_av_k.size();++i){
-			    int gal=SF_av_k[i];
-			    printf("gal %d subpriority %f \n",gal,M[gal].subpriority);
-			  }
-			}
+                        int g = SF_av_k[gg];//SF on this petal						
                         if(A.is_assigned_jg(j,g,M,F)==-1&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)&&ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)){
                             A.assign(j,k,g,M,P,pp);
-                            done=1;
-			    if(thisgalaxy)printf("SF assigned id %lld to tile  %d fiber %d \n",M[g].id,P[j].tileid,k);
+                            done=1;			   
                         }
                     }
                 }
