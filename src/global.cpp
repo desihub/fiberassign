@@ -231,8 +231,10 @@ inline int improve_fiber(int jused_begin, int jused, int k, MTL& M, Plates& P, c
         if (g_try!=-1) return g_try;
         else { // Improve
             int gb = -1; int bb = -1; int jpb = -1; int kpb = -1; int mb = -1; int pb = 1e3; int unusedb = -1;
-            List av_g = P[j].av_gals[k];
+	    std::vector<int>  av_g_init = P[j].av_gals[k];
+	    std::vector<int> av_g;
             // For all available galaxies within reach that are already observed
+	    av_g=sort_by_subpriority(M,av_g_init);
             for (int i=0; i<av_g.size(); i++) {
                 int g = av_g[i];//a galaxy accessible to j,k
 

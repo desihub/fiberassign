@@ -91,7 +91,7 @@ int main(int argc, char **argv) {
     //
     init_time_at(time,"# Start plates",t);
     //P is original list of plates
-    bool savetime=false; 
+    bool savetime=true; 
     printf("  savetime %d\n",savetime);
     Plates P = read_plate_centers(F);
     //Plates Psave = read_plate_centers(F);
@@ -221,12 +221,12 @@ int main(int argc, char **argv) {
 
     // Smooth out distribution of free fibers, and increase the number of assignments
     // disabled 12/22/16
-    /*
+    
     for (int i=0; i<1; i++) redistribute_tf(M,P,pp,F,A,0);// more iterations will improve performance slightly
     for (int i=0; i<3; i++) {
         improve(M,P,pp,F,A,0);
         redistribute_tf(M,P,pp,F,A,0);
-	}*/
+	}
 
     init_time_at(time,"# assign SS and SF ",t);
 
