@@ -46,24 +46,20 @@ int main(int argc, char **argv) {
     M.insert(M.end(),SkyF.begin(),SkyF.end());
     printf(" Sky Fiber size %d \n",M.size());
     init_time_at(time,"# map position in target list to immutable targetid",t);
-    //need map between position in M and potentialtargetid
     std::map<long long,int> invert_target;
     std::map<long long,int>::iterator targetid_to_idx;
     std::pair<std::map<long long,int>::iterator,bool> ret;
     for(unsigned i=0;i<M.size();++i)
-    {
-        ret = invert_target.insert(std::make_pair(M[i].id,i));
-        // Check for duplicates (std::map.insert only creates keys, fails on duplicate keys)
-	
-        if ( ret.second == false ) {
-            std::ostringstream o;
-            o << "Duplicate tileid " << M[i].id << " in tileFile!";
-            throw std::logic_error(o.str().c_str());
-        }
-	
-    }
+      {
+	ret = invert_target.insert(std::make_pair(M[i].id,i));
+	//check for duplicates (std::map.insert only created keys, fails on duplicate keys)
+	if(ret.second == false){
+	  std::ostringstream o;
+	  o<<"Duplicate targetid "<<M[i].id<<" in MTL";
+	  throw std::logic_error(o.str().c_str());
+	}
+      }
 
-    print_time(time,"#...mapping took :");
     init_time_at(time,"# assign priority classes",t);
     F.Ngal = M.size();
     assign_priority_class(M);
@@ -94,23 +90,25 @@ int main(int argc, char **argv) {
     bool savetime=true; 
     printf("  savetime %d\n",savetime);
     Plates P = read_plate_centers(F);
-    //Plates Psave = read_plate_centers(F);
+
     F.Nplate=P.size();
+
     printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
     //    
     print_time(time,"# ..plates   took :");
     // Computes geometries of cb and fh: pieces of positioner - used to determine possible collisions
     F.cb = create_cb(); // cb=central body
     F.fh = create_fh(); // fh=fiber holder
+
     const char *filecheck="/project/projectdirs/desi/users/rncahn/large_mock_test/tmp/fiberassign/save_av_gals_00004.fits"; 
-    //// Collect available galaxies <-> tilefibers --------------------
-    // HTM Tree of galaxies
+ 
 
     std::ifstream infile(filecheck); 
     //
     if(!infile.good()||!savetime)
     {   //av_gals has not been saved yet or not saving time *************
-
+    //// Collect available galaxies <-> tilefibers --------------------
+    // HTM Tree of galaxies
     const double MinTreeSize = 0.01;
     init_time_at(time,"# Start building HTM tree",t);
     htmTree<struct target> T(M,MinTreeSize);
