@@ -91,7 +91,7 @@ int main(int argc, char **argv) {
     //
     init_time_at(time,"# Start plates",t);
     //P is original list of plates
-    bool savetime=true; 
+    bool savetime=false; 
     printf("  savetime %d\n",savetime);
     Plates P = read_plate_centers(F);
     //Plates Psave = read_plate_centers(F);

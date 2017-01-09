@@ -1153,14 +1153,13 @@ Assignment::~Assignment() {}
 
 // Assign g with tile/fiber (j,k), and check for duplicates
 void Assignment::assign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
-std::vector<long long> checkit={3322731000358966525,3965814933122725990,3807388209790938306,2313813552052373160 };   
+
     // Assign (j,k)
     int q = TF[j][k];
     if (q != -1) {
         printf("### !!! ### DUPLICATE (j,k) = (%d,%d) assigned with g = %d and %d ---> information on first g lost \n",j,k,q,g);
         myexit(1);
     }
-    //DIAGNOSTIC
 
     // Assign g
     TF[j][k]=g;
@@ -1178,7 +1177,7 @@ std::vector<long long> checkit={3322731000358966525,3965814933122725990,38073882
     M[g].nobs_done++;
     M[g].nobs_remain--;
     //
-    //if(P[j].ipass==4 && g%1000==0  && !M[g].SS && !M[g].SF)printf( "ipass %d   lastpass %d   g  %d type %d   j  %d   remain %d\n",P[j].ipass,M[g].lastpass,g,M[g].t_priority,j,M[g].nobs_remain);
+
     if(M[g].SF){
         int q=pp.spectrom[k];
         P[j].SF_in_petal[q]+=1;}
@@ -1186,17 +1185,12 @@ std::vector<long long> checkit={3322731000358966525,3965814933122725990,38073882
         int q=pp.spectrom[k];
         P[j].SS_in_petal[q]+=1;}
     unused[j][pp.spectrom[k]]--;
-    //diagnostic
-    for (int q=0;q<checkit.size();++q){
-	if(M[g].id==checkit[q]){
-	  printf("assigned g=%d targetid %lld to j %d tileid %d fiber %d \n",g,M[g].id,j,P[j].tileid,k);
-	}
-      }
+
 }
 
 void Assignment::unassign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
   //diagnostic
- std::vector<long long> checkit={3322731000358966525,3965814933122725990,3807388209790938306,2313813552052373160 }; 
+
     if (TF[j][k]==-1) printf("### !!! ### TF (j,k) = (%d,%d) gets unassigned but was already not assigned\n",j,k);
     int a = isfound(pair(j,k),GL[g]);
     if (a==-1) printf("### !!! ### Galaxy g = %d gets unassigned but was already not assigned\n",g);
@@ -1213,12 +1207,6 @@ void Assignment::unassign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) 
         P[j].SS_in_petal[p]-=1;}
 
     unused[j][pp.spectrom[k]]++;
-    for (int q=0;q<checkit.size();++q){
-	if(M[g].id==checkit[q]){
-	  printf("UNassigned g=%d targetid %lld to j %d tileid %d fiber %d \n",g,M[g].id,j,P[j].tileid,k);
-	}
-      }
-
 
 }
 

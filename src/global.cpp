@@ -390,15 +390,6 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 
             if(A.is_assigned_jg(j,g)==-1){//not assigned on this tile
                 Plist tfs=M[g].av_tfs;//all tiles and fibers that reach g
-		//diagnostic
-                if(thisstar){
-		  printf("SS tile %d j %d p %d  M[g].id %lld M[g].subpriority %f \n", P[j].tileid,j,p,M[g].id , M[g].subpriority  );
-		  printf(" g %d tile fibers:",g);
-		  for (int i=0;i<tfs.size();++i){
-		    printf("(  %d , %d ) ",tfs[i].f,tfs[i].s);
-		  }
-		  printf("\n");
-		}
 
                 int done=0;//quit after we've used this SS
 		std::vector<int> could_be_replaced;
@@ -422,12 +413,6 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 		  //now have list of possible targets to be replaced with lowest priority
 		  //use subpriority to choose
 		  std::vector<int> sorted_could_be_replaced=sort_by_subpriority(M,could_be_replaced);
-		  if(thisstar){//diagnostic
-		    for (int i=0;i<sorted_could_be_replaced.size();++i){
-		      int g=sorted_could_be_replaced[i];
-		      printf(" targetid %lld   subpriority %f\n",M[g].id,M[g].subpriority);
-		    }
-		  }
 		  int g_chosen=sorted_could_be_replaced[0];
 		  int j=A.GL[g_chosen][0].f;
 		  int k=A.GL[g_chosen][0].s;
@@ -437,18 +422,11 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 		  A.assign(j,k,g,M,P,pp);
 		  add_SS++;
 		  done=1;	
-		  if(thisstar){
-		    printf("standard star j %d k %d unassign %lld assign instead %lld\n",j,k,M[g_chosen].id,M[g].id);			
-		  }
+
 		}
 	    }
 	}
     }
-
-
-
-    //diagnostic
-
 
     for(int c=0;P[j].SF_in_petal[p]<F.MaxSF && c<M.priority_list.size();++c ){//try to do this for lowest priority
         std::vector <int> gals_init=P[j].SF_av_gal[p]; //sky fibers on this petak
