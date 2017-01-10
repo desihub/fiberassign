@@ -54,7 +54,7 @@ std::vector<int>count_galaxies(const Gals& G);
 //target -----------------------------------------------------
 class target {
     public:
-  long id; 
+  long long id; //note that this is how we read it in! not long
   int nobs_remain, nobs_done;
   double nhat[3];
   double ra, dec,subpriority;
@@ -67,6 +67,8 @@ class target {
 class MTL : public std::vector<struct target> {
     public:
     std::vector<int> priority_list;
+ 
+    
 };
 
 
@@ -110,6 +112,7 @@ class plate {
 class Plates : public std::vector<struct plate> {};
 
 Plates read_plate_centers(const Feat& F);
+void read_save_av_gals(str readfile, const Feat& F,std::vector<std::vector<long long> > &av_gals,std::vector<std::vector<long long> > &ss_av_gals,std::vector<std::vector<long long> > &sf_av_gals,bool diagnose);
 
 // Assignment ---------------------------------------------
 // 2 mappings of assignments : (j,k) -> id(gal) ; id(gal)[5] -> (j,k)

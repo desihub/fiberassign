@@ -16,7 +16,7 @@
 #include        "structs.h"
 #include        "collision.h"
 #include        "global.h"
-
+#include     <map>
 //reduce redistributes, updates  07/02/15 rnc
 int main(int argc, char **argv) {
     //// Initializations ---------------------------------------------
@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
     init_time(t);
     Feat F;
     MTL M;
-
+    bool diagnose=true;
     // Read parameters file //
     F.readInputFile(argv[1]);
     printFile(argv[1]);
@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
     MTL SStars = read_MTLfile(F.SStarsfile,F,1,0);
     MTL SkyF   = read_MTLfile(F.SkyFfile,  F,0,1);
     MTL Targ   = read_MTLfile(F.Targfile,  F,0,0);
-    print_time(time,"# ... took :");
+    print_time(time,"# ...read targets  took :");
     //combine the three input files
     M=Targ;
     printf(" Target size %d \n",M.size());
@@ -45,7 +45,22 @@ int main(int argc, char **argv) {
     printf(" Standard Star size %d \n",M.size());
     M.insert(M.end(),SkyF.begin(),SkyF.end());
     printf(" Sky Fiber size %d \n",M.size());
+    init_time_at(time,"# map position in target list to immutable targetid",t);
+    std::map<long long,int> invert_target;
+    std::map<long long,int>::iterator targetid_to_idx;
+    std::pair<std::map<long long,int>::iterator,bool> ret;
+    for(unsigned i=0;i<M.size();++i)
+      {
+	ret = invert_target.insert(std::make_pair(M[i].id,i));
+	//check for duplicates (std::map.insert only created keys, fails on duplicate keys)
+	if(ret.second == false){
+	  std::ostringstream o;
+	  o<<"Duplicate targetid "<<M[i].id<<" in MTL";
+	  throw std::logic_error(o.str().c_str());
+	}
+      }
 
+    init_time_at(time,"# assign priority classes",t);
     F.Ngal = M.size();
     assign_priority_class(M);
     std::vector <int> count_class(M.priority_list.size(),0);
@@ -57,9 +72,9 @@ int main(int argc, char **argv) {
     for(int i=0;i<M.priority_list.size();++i){
         printf("  class  %d  number  %d\n",i,count_class[i]);
     }
-    print_time(time,"# ... took :");
+    print_time(time,"# ...priority list took :");
 
-    
+    init_time_at(time,"# Start positioners",t);
     // fiber positioners
     PP pp;
     pp.read_fiber_positions(F); 
@@ -68,33 +83,40 @@ int main(int argc, char **argv) {
     F.Nfbp = (int) (F.Nfiber/F.Npetal);// fibers per petal = 500
     pp.get_neighbors(F);
     pp.compute_fibsofsp(F);
-
-
+    print_time(time,"# ..posiioners  took :");
+    //
+    init_time_at(time,"# Start plates",t);
     //P is original list of plates
+
     Plates P = read_plate_centers(F);
+
     F.Nplate=P.size();
-    printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());    
+
+    printf("# Read %s plate centers from %s and %d fibers from %s\n",f(F.Nplate).c_str(),F.tileFile.c_str(),F.Nfiber,F.fibFile.c_str());
+    //    
+    print_time(time,"# ..plates   took :");
     // Computes geometries of cb and fh: pieces of positioner - used to determine possible collisions
     F.cb = create_cb(); // cb=central body
     F.fh = create_fh(); // fh=fiber holder
+
 
     //// Collect available galaxies <-> tilefibers --------------------
     // HTM Tree of galaxies
     const double MinTreeSize = 0.01;
     init_time_at(time,"# Start building HTM tree",t);
     htmTree<struct target> T(M,MinTreeSize);
-    print_time(time,"# ... took :");//T.stats();
+    print_time(time,"# Doing kd-tree... took :");//T.stats();
     init_time_at(time,"# collect galaxies at ",t);
 
     // For plates/fibers, collect available galaxies; done in parallel  P[plate j].av_gal[k]=[g1,g2,..]
     collect_galaxies_for_all(M,T,P,pp,F);
+
     print_time(time,"# ... took :");//T.stats();
     init_time_at(time,"# collect available tile-fibers at",t);
 
+
     // For each galaxy, computes available tilefibers  G[i].av_tfs = [(j1,k1),(j2,k2),..]
     collect_available_tilefibers(M,P,F);
-
-    //results_on_inputs("doc/figs/",G,P,F,true);
 
     //// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
     printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.Nplate, F.Ngal, F.Nfiber);
@@ -125,18 +147,21 @@ int main(int argc, char **argv) {
 
 
     // Smooth out distribution of free fibers, and increase the number of assignments
+    // disabled 12/22/16
     
     for (int i=0; i<1; i++) redistribute_tf(M,P,pp,F,A,0);// more iterations will improve performance slightly
     for (int i=0; i<3; i++) {
         improve(M,P,pp,F,A,0);
         redistribute_tf(M,P,pp,F,A,0);
-    }
+	}
+
     init_time_at(time,"# assign SS and SF ",t);
 
     //try assigning SF and SS before real time assignment
     for (int jused=0;jused<F.NUsedplate;++jused){
-        
+ 
         int j=A.suborder[jused];
+
         assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF for each tile
         assign_unused(j,M,P,pp,F,A);
     }
@@ -155,6 +180,8 @@ int main(int argc, char **argv) {
         for(int k=0;k<F.Nfiber;++k){
             int g=A.TF[j][k];
             if(g!=-1){
+
+
                 if(M[g].SS){
                     total_used_SS++;
                     used_SS++;
@@ -169,12 +196,7 @@ int main(int argc, char **argv) {
                     }
             }
         }
-       /* printf(" plate jused %5d j %5d  SS   %4d    SF   %4d",jused,j,used_SS,used_SF);
-        for (int pr=0;pr<M.priority_list.size();++pr){
-            printf(" class %2d   %5d",pr,used_by_class[pr]);
-        }
-        printf("\n");
-        */
+
     }
     init_time_at(time,"# count SS and SF ",t);
     printf(" Totals SS   %4d    SF   %4d",total_used_SS,total_used_SF);
@@ -202,3 +224,4 @@ int main(int argc, char **argv) {
   
   return(0);    
 }
+
