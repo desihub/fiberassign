@@ -285,10 +285,7 @@ void update_plan_from_one_obs(int jused,const Gals& Secret, MTL& M, Plates&P, co
     
     
     int j=A.suborder[jpast];
-    //diagnostic
-    //printf("j %d  jused %d \n",j,jused);
-    std::cout.flush();
-    //int na_start(A.na(F,j0,n));//unassigned fibers in tiles from j0 to j0+n
+
     List to_update; // Get the list of galaxies to update in the plan
     for (int k=0; k<F.Nfiber; k++) {
         int g = A.TF[j][k];
@@ -311,17 +308,12 @@ void update_plan_from_one_obs(int jused,const Gals& Secret, MTL& M, Plates&P, co
         
         while (tfs.size()!=0 && M[g].nobs_done>F.goalpost[Secret[g].category]) {
             int jp = tfs[0].f; int kp = tfs[0].s;
-            
-            std::cout.flush();
+ 
             A.unassign(jp,kp,g,M,P,pp);
             cnt_deassign++;
             M[g].nobs_remain=0;
             int gp = -1;
-            //j0 runs to F.NUsedplate, jp runs to F.Nplate
-            //*****
-            //gp = improve_fiber(jused+1,A.inv_order[jp],kp,M,P,pp,F,A,g);//****************
             erase(0,tfs);
-            //if(gp!=-1)cnt_replace++;//number of replacements
         }
     }
     //int na_end(A.na(F,j0,n));
@@ -479,22 +471,16 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
     printf("start redistribute \n");
     Time t;
     init_time(t,"# Begin redistribute TF :");
-    int count1=0;
-    int count2=0;
-    int count3=0;
     int red(0);
     Table Done = initTable(F.NUsedplate,F.Nfiber);//consider every occupied plate and every fiber
     for (int jused=jused_start; jused<F.NUsedplate; jused++) {
         int j=A.suborder[jused];
         for (int k=0; k<F.Nfiber; k++) {
-            count1++;
             if (Done[jused][k]==0) {
                 int g = A.TF[j][k];//current assignment of (j,k)  only look if assigned
-                std::cout.flush();
                 if (g!=-1 && !M[g].SS && !M[g].SF) {
                     int jpb = -1; int kpb = -1; int unusedb = A.unused[j][pp.spectrom[k]];
                     Plist av_tfs = M[g].av_tfs;  //all possible tile fibers for this galaxy
-                    count2++;
                     for (int i=0; i<av_tfs.size(); i++) {
                         int jp = av_tfs[i].f;
                         int kp = av_tfs[i].s;
@@ -512,8 +498,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
                                                     jpb = jp;
                                                     kpb = kp;
                                                     unusedb = unused;
-                                                    count3++;
-                                                }
+                                               }
                                             }
                                         }
                                     }
@@ -534,7 +519,6 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
         }
     }
     printf("  %s redistributions of tile-fibers \n",f(red).c_str());
-    std::cout.flush();
     print_time(t,"# ... took :");
 }
 
@@ -833,30 +817,6 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
     }
 }
 
-void write_FAtile_ascii(int j, str outdir, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
-    FILE * FA;
-    int true_tile_no=P[j].tileid;
-    str s = outdir+"/tile"+i2s(true_tile_no)+".txt";
-    FA = fopen(s.c_str(),"w");
-    for (int k=0; k<F.Nfiber; k++) {
-        int g = A.TF[j][k];
-        // k
-        fprintf(FA,"%d ",k);
-        List av_gals = P[j].av_gals[k];
-        // Number of potential galaxies
-        fprintf(FA,"%lu ",av_gals.size());
-        // IDs of potential galaxies
-        for (int i=0; i<av_gals.size(); i++) fprintf(FA,"%ld ",M[av_gals[i]].id);
-        // galaxy number, ra, dec, x, y
-        if (g!=-1) {
-            dpair Gal = projection(g,j,M,P);
-            fprintf(FA,"%ld %f %f %f %f\n",M[g].id,M[g].ra,M[g].dec,Gal.f,Gal.s);
-        }
-        else fprintf(FA,"-1\n");
-    }
-    fclose(FA);
-}
-
 
 
 void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp, const Feat & F, const Assignment & A) {
@@ -877,7 +837,6 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     // check if the file exists, and if so, throw an exception
     
     char filename[cfilesize];
-    // int ret = snprintf(filename, cfilesize, "%s/tile_%05d.fits", outdir.c_str(), j);
     int ret = snprintf(filename, cfilesize, "%s/tile_%05d.fits", outdir.c_str(), P[j].tileid);
     
     struct stat filestat;
@@ -943,10 +902,6 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     strcpy(tform[3], "J");
     strcpy(tunit[3], "");
 
-    //strcpy(ttype[3], "objtype");
-    //snprintf(tform[3], FLEN_VALUE, "%dA", (int)objtypelen);
-    //strcpy(tunit[3], "");
-    
     strcpy(ttype[4], "TARGETID");
     strcpy(tform[4], "K");
     strcpy(tunit[4], "");
