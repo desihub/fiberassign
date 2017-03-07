@@ -200,19 +200,14 @@ int main(int argc, char **argv) {
     }
     init_time_at(time,"# count SS and SF ",t);
     printf(" Totals SS   %4d    SF   %4d",total_used_SS,total_used_SF);
-    std::cout.flush();
+
     for (int pr=0;pr<M.priority_list.size();++pr){
         printf(" class %2d   %5d",pr,total_used_by_class[pr]);
-        std::cout.flush();
     }
 
 
     printf("\n");
-    init_time_at(time,"# print txt files ",t);
-    if (F.PrintAscii) for (int jused=0; jused<F.NUsedplate; jused++){
-        int j=A.suborder[jused];
-        write_FAtile_ascii(j,F.outDir,M,P,pp,F,A);
-        }
+
     init_time_at(time,"# print fits files ",t);
     if (F.PrintFits) for (int jused=0; jused<F.NUsedplate; jused++){
         int j=A.suborder[jused];

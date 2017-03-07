@@ -872,20 +872,15 @@ Plates read_plate_centers(const Feat& F) {
         myexit(1);
     }
     int survey_tile;
-    printf("getting file list\n");
-    std::cout.flush();
+
     std::vector<int> survey_list;
     std::string buf;
     while(getline(fsurvey,buf)){
         std::istringstream ss(buf);
         if(!(ss>>survey_tile)){break;}
         survey_list.push_back(survey_tile);
-	// int size_now=survey_list.size();
-	// printf(" number  %d  tile  %d \n",size_now,survey_list[size_now-1]);
-        std::cout.flush();
     }
-    //printf(" number of tiles %d \n",survey_list.size());
-    //std::cout.flush();
+    printf(" number of tiles %d \n",survey_list.size());
 
     // NEW
     // read list of tile centers
@@ -1075,7 +1070,7 @@ Plates read_plate_centers(const Feat& F) {
     }
 
     printf(" size of P  %d\n",P.size());
-    std::cout.flush();
+
 
     // Map each valid tileid in order to an index in P[].
     // Tileid is an arbitrary int
@@ -1117,36 +1112,12 @@ Plates read_plate_centers(const Feat& F) {
 // Assignment -----------------------------------------------------------------------------
 Assignment::Assignment(const MTL& M, const Feat& F) {
 
-  //printf("assignment constructor1\n");
-    std::cout.flush();
     TF=initTable(F.Nplate,F.Nfiber,-1);//galaxy assigned to tile-fiber TF[j][k]
-    //printf("assignment constructor2\n");
-    std::cout.flush();
-    
     GL = initPtable(F.Ngal,0); //tile-fiber pair for galaxy  GL[g]
-    //printf("assignment constructor3\n");
-    std::cout.flush();
-
     inv_order=initList(F.Nplate,-1);
-    //printf("assignment constructor4\n");
-    std::cout.flush();
-
-    
-    //for (int i=0; i<F.Nplate; i++) order[i] = i;
     next_plate = 0;
-    printf(" plate %d petal %d categories %d \n",F.Nplate,F.Npetal,F.Categories);
-    std::cout.flush();
     kinds = initCube(F.Nplate,F.Npetal,F.Categories);
-    //printf("assignment constructor5\n");
-    std::cout.flush();
-    
-    
     unused = initTable(F.Nplate,F.Npetal,F.Nfbp);//initialized to number of fibers on a petal
-    //printf("assignment constructor6\n");
-    std::cout.flush();
-    
-    
-    //j runs to F.Nplate
     }
 
 Assignment::~Assignment() {}
@@ -1176,8 +1147,6 @@ void Assignment::assign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
     GL[g].push_back(p);
     M[g].nobs_done++;
     M[g].nobs_remain--;
-    //
-
     if(M[g].SF){
         int q=pp.spectrom[k];
         P[j].SF_in_petal[q]+=1;}
@@ -1219,7 +1188,7 @@ void Assignment::verif(const Plates& P, const MTL& M, const PP& pp, const Feat& 
             pair tf = tfs[i];
             int j0 = j1;
             int j1 = tf.f;
-            // Verif on TF
+
             if (TF[tf.f][tf.s]!=g) { printf("ERROR in verification of correspondance of galaxies !\n"); fl(); }
             // No 2 assignments within an interval of F.InterPlate
             //if (j0!=-1 && isfound(M[g].id,qso_lrg) && fabs(j1-j0)<F.InterPlate) { printf("ERROR in verification of F.InterPlate g=%d with j=%d and %d\n",g,j0,j1); fl(); }
@@ -1418,7 +1387,7 @@ int Assignment::find_collision(int j, int k, int g, const PP& pp, const MTL& M, 
     }
     return -1;
 }
-//probably not used
+
 bool Assignment::find_collision(int j, int k, int kn, int g, int gn, const PP& pp, const MTL& M, const Plates& P, const Feat& F, int col) const {//check two fibers
     bool bol = (col==-1) ? F.Collision : false;
     if (bol) return false;
