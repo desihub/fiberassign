@@ -71,13 +71,13 @@ Gals read_Secretfile(str readfile, const Feat&F){
     fits_get_num_rows(fptr, &nrows, &status);
     fits_get_num_cols(fptr, &ncols, &status);
     
-    // printf("%d columns x %ld rows\n", ncols, nrows);
-    // printf("\nHDU #%d  ", hdupos);
-    // if (hdutype == ASCII_TBL){
-    //   printf("ASCII Table:  ");
-    // }else{
-    //   printf("Binary Table: \n ");      
-    // }
+    printf("%d columns x %ld rows\n", ncols, nrows);
+    printf("\nHDU #%d  ", hdupos);
+    if (hdutype == ASCII_TBL){
+      printf("ASCII Table:  ");
+     }else{
+       printf("Binary Table: \n ");      
+    }
     
     /*reserve space for temporary arrays*/
     
@@ -137,7 +137,7 @@ Gals read_Secretfile(str readfile, const Feat&F){
     
 
 
-    for(ii=0;ii<nrows;ii++){
+    for(int ii=0;ii<nrows;ii++){
       struct galaxy Q;      
       Q.targetid = targetid[ii];
       Q.category = category[ii];
@@ -147,7 +147,6 @@ Gals read_Secretfile(str readfile, const Feat&F){
     }
     return(Secret);
 }
-
 
 
 MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
@@ -219,12 +218,14 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
       fits_get_num_cols(fptr, &ncols, &status);
       
       // printf("%d columns x %ld rows\n", ncols, nrows);
+      /*
       printf("HDU #%d  ", hdupos);
       if (hdutype == ASCII_TBL){
           printf("ASCII Table:\n");
       }else{
           printf("Binary Table:\n");      
       }
+      */
 
       fflush(stdout);
       if(!(targetid= (long *)malloc(nrows * sizeof(long)))){
@@ -500,6 +501,239 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
         throw std::runtime_error(o.str().c_str());
     }
 }
+void read_save_av_gals(str readfile, const Feat& F,std::vector<std::vector<long long> > &av_gals,std::vector<std::vector<long long> > &ss_av_gals,std::vector<std::vector<long long> > &sf_av_gals, bool diagnose){
+    //will generate two vectors:  the fiberids and number of galaxies available to it
+    //runs over single file associated with single plate
+    //for tile j, we create P[j].av_gals[k], the list of available galaxies by
+    str s = readfile;
+    Plates P;
+    std::string buf;
+    const char* fname;
+    fname = s.c_str();
+    std::ifstream fs(fname);
+    int ii;
+    fitsfile *fptr;        
+    int status = 0, anynulls;
+    int hdutype;
+    int nkeys;
+    int hdupos;
+    long nrows;
+    long nkeep;
+    int ncols;
+    long *fiberid;
+    int *numtarget, *numtarget_ss,*numtarget_sf; //just number of possible targets for fibers
+    long long *potentialtargetid; 
+    long long *temporarytargetid; 
+
+    int colnum;
+
+    // General purpose output stream for exceptions
+    std::ostringstream o;
+
+    // Check that input file exists and is readable by cfitsio
+    //if(diagnose)std::cout << "Finding file: " << fname << std::endl;
+    int file_exists;
+    fits_file_exists(fname,&file_exists,&status);
+    std::ostringstream exists_str;
+    exists_str << "(CFITSIO file_exists code: " << file_exists << ")";
+
+    // Throw exceptions for failed read, see cfitsio docs
+    if (! file_exists) {
+        switch (file_exists){
+        case -1:
+            o << "Input save_av_gals  file must be a disk file: " << fname << " " << exists_str.str();
+            throw std::runtime_error(o.str().c_str());
+        case  0:
+            o << "Could not find save_av_gals input file: " << fname << " " << exists_str.str();
+            throw std::runtime_error(o.str().c_str());
+        case  2:
+            o << "Cannot handle zipped save_av_gals input file: " << fname << " " << exists_str.str();
+            throw std::runtime_error(o.str().c_str());
+        }
+    }
+
+    //if(diagnose)std::cout << "Found saved_av_gals file: " << fname << std::endl;
+
+    if (! fits_open_file(&fptr, fname, READONLY, &status) ){
+      //if(diagnose)std::cout << "Reading saved_av_gals input file " << fname << std::endl;
+
+      if ( fits_movabs_hdu(fptr, 2, &hdutype, &status) ){
+      myexit(status);
+      }
+      fits_get_hdrspace(fptr, &nkeys, NULL, &status);            
+      fits_get_hdu_num(fptr, &hdupos);
+      fits_get_hdu_type(fptr, &hdutype, &status);  /* Get the HDU type */            
+      fits_get_num_rows(fptr, &nrows, &status);
+      fits_get_num_cols(fptr, &ncols, &status);
+      
+
+      //if(diagnose)printf("%d columns x %ld rows\n", ncols, nrows);
+      //if(diagnose)printf("HDU #%d  ", hdupos);
+      if (hdutype == ASCII_TBL){
+	//if(diagnose)printf("ASCII Table:\n");
+      }else{
+	//if(diagnose)printf("Binary Table:\n");      
+      }
+      
+      fflush(stdout);
+      if(!(fiberid= (long *)malloc(nrows * sizeof(long)))){
+        fprintf(stderr, "problem with fiberid allocation\n");
+        myexit(1);
+      }
+      if(!(numtarget= (int *)malloc(nrows * sizeof(long)))){
+        fprintf(stderr, "problem with numtarget allocation\n");
+        myexit(1);
+      }
+      if(!(numtarget_ss= (int *)malloc(nrows * sizeof(long)))){
+        fprintf(stderr, "problem with numtarget allocation\n");
+        myexit(1);
+      }
+      if(!(numtarget_sf= (int *)malloc(nrows * sizeof(long)))){
+        fprintf(stderr, "problem with numtarget allocation\n");
+        myexit(1);
+      }
+
+      //if(diagnose)printf(" after malloc \n");
+      std::cout.flush();
+      //----- FIBERID
+      /* find which column contains the FIBER values */
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"FIBER", &colnum, &status) ){
+        fprintf(stderr, "error finding FIBER column\n");
+        myexit(status);
+      }
+      
+      long frow, felem, nullval;
+      frow = 1;
+      felem = 1;
+      nullval = -99.;
+      if (fits_read_col(fptr, TLONG, colnum, frow, felem, nrows, 
+                        &nullval, fiberid, &anynulls, &status) ){
+        fprintf(stderr, "error reading FIBER column\n");
+        myexit(status);
+      }
+      //if(diagnose)printf(" read fiberid \n");
+      std::cout.flush();
+       //----- NUMTARGET
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"NUMTARGET", &colnum, &status) ){
+        fprintf(stderr, "error finding NUMTARGET column\n");
+        myexit(status);
+      }
+      if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
+                        &nullval, numtarget, &anynulls, &status) ){
+        fprintf(stderr, "error reading NUMTARGET column\n");
+        myexit(status);
+      }
+
+       //----- NUMTARGETSS
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"NUMTARGETSS", &colnum, &status) ){
+        fprintf(stderr, "error finding NUMTARGETSS column\n");
+        myexit(status);
+      }
+      if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
+                        &nullval, numtarget_ss, &anynulls, &status) ){
+        fprintf(stderr, "error reading NUMTARGETSS column\n");
+        myexit(status);
+      }
+
+       //----- NUMTARGETSF
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"NUMTARGETSF", &colnum, &status) ){
+        fprintf(stderr, "error finding NUMTARGETSF column\n");
+        myexit(status);
+      }
+      if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
+                        &nullval, numtarget_sf, &anynulls, &status) ){
+        fprintf(stderr, "error reading NUMTARGETSF column\n");
+        myexit(status);
+      }
+
+
+     fits_movabs_hdu(fptr, 3, &hdutype, &status);
+     fits_get_hdrspace(fptr, &nkeys, NULL, &status);            
+     fits_get_hdu_num(fptr, &hdupos);
+     fits_get_hdu_type(fptr, &hdutype, &status);  /* Get the HDU type */            
+     fits_get_num_rows(fptr, &nrows, &status);
+     fits_get_num_cols(fptr, &ncols, &status);
+     /*
+     if(diagnose)printf("%d columns x %ld rows\n", ncols, nrows);
+     if(diagnose)printf("\nHDU #%d  ", hdupos);
+     std::cout.flush();
+     if (hdutype == ASCII_TBL){
+     if(diagnose)printf("ASCII Table:  ");
+     }else{
+     if(diagnose)printf("Binary Table: \n ");      
+     }
+     std::cout.flush();
+     */
+    /*reserve space for temporary arrays*/
+    
+   
+    if(!(potentialtargetid= (long long *)malloc(nrows * sizeof(long long)))){
+      fprintf(stderr, "problem with potentialtargetid allocation\n");
+      myexit(1);
+    }
+    if(!(temporarytargetid= (long long *)malloc(nrows * sizeof(long long)))){
+      fprintf(stderr, "problem with temporarytargetid allocation\n");
+      myexit(1);
+    }    
+    //if(diagnose)printf("after saving space\n");
+      //----- POTENTIALTARGETID
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"POTENTIALTARGETID", &colnum, &status) ){
+        fprintf(stderr, "error finding POTENTIALTARGETID column\n");
+        myexit(status);
+      }
+      //  POTENTIALTARGETID is now the immutable one  12/16/16
+      if (fits_read_col(fptr, TLONGLONG, colnum, frow, felem, nrows, 
+                        &nullval, potentialtargetid, &anynulls, &status) ){
+        fprintf(stderr, "error reading POTENTIALTARGETID column\n");
+        myexit(status);}
+
+      //----- TEMPORARYTARGETID
+      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"TEMPORARYTARGETID", &colnum, &status) ){
+        fprintf(stderr, "error finding TEMPORARYTARGETID column\n");
+        myexit(status);
+      }
+      if (fits_read_col(fptr, TLONGLONG, colnum, frow, felem, nrows, 
+                        &nullval, temporarytargetid, &anynulls, &status) ){
+        fprintf(stderr, "error reading TEMPORARYTARGETID column\n");
+        myexit(status);}
+
+      std::cout.flush();
+    //step through fibers
+      int av_gal_no=0;
+
+    for(int k=0;k<F.Nfiber;++k){
+      std::vector<long long> collect {}, collect_ss {}, collect_sf {};
+			
+      if(numtarget[k]>0){
+	for(int m=0;m<numtarget[k];++m){
+	  collect.push_back(potentialtargetid[av_gal_no]);
+	  //if(diagnose)printf("k %d  m  %d \n",k,m);
+	  //std::cout.flush();
+	  av_gal_no+=1;
+	}
+      }
+	av_gals.push_back(collect);
+      if(numtarget_ss[k]>0){
+	for(int m=0;m<numtarget_ss[k];++m){
+	  collect_ss.push_back(potentialtargetid[av_gal_no]);
+	  av_gal_no+=1;
+	}
+      }
+	ss_av_gals.push_back(collect_ss);
+      if(numtarget_sf[k]>0){
+	for(int m=0;m<numtarget_sf[k];++m){
+	  collect_sf.push_back(potentialtargetid[av_gal_no]);
+	  av_gal_no+=1;
+	}
+      }
+	sf_av_gals.push_back(collect_sf);
+
+    }
+
+    }
+
+    fits_close_file(fptr, &status);
+}
 
 void assign_priority_class(MTL& M){
     // assign each target to a priority class
@@ -628,7 +862,8 @@ Plates read_plate_centers(const Feat& F) {
     frow = 1;
     felem = 1;
     nullval = -99.;
-
+    Time t, time; // t for global, time for local
+    init_time(t);
     // read the strategy file
     // survey_list is list of tiles specified by tileid (arbitrary int) in order of survey
     std::ifstream fsurvey(F.surveyFile.c_str());
@@ -646,7 +881,6 @@ Plates read_plate_centers(const Feat& F) {
         survey_list.push_back(survey_tile);
     }
     printf(" number of tiles %d \n",survey_list.size());
-
 
     // NEW
     // read list of tile centers
@@ -687,7 +921,7 @@ Plates read_plate_centers(const Feat& F) {
       fits_get_hdu_type(fptr, &hdutype, &status);  /* Get the HDU type */            
       fits_get_num_rows(fptr, &nrows, &status);
       fits_get_num_cols(fptr, &ncols, &status);
-      
+      /*
       std::cout << ncols << " columns " << nrows << "nrows" << std::endl;
       std::cout << "HDU " << hdupos << std::endl;
       if (hdutype == ASCII_TBL){
@@ -695,7 +929,7 @@ Plates read_plate_centers(const Feat& F) {
       }else{
 	std::cout << "BINARY TABLE: " << std::endl;
       }
-
+      */
 
       
       if(!(obsconditions = (uint16_t *)malloc(nrows * sizeof(int)))){
@@ -843,7 +1077,7 @@ Plates read_plate_centers(const Feat& F) {
     std::map<int,int> invert_tile;
     std::map<int,int>::iterator tileid_to_idx;
     std::pair<std::map<int,int>::iterator,bool> ret;
-
+    init_time_at(time,"# Start invert tiles",t);
     for(unsigned i=0;i<P.size();++i)
     {
         ret = invert_tile.insert(std::make_pair(P[i].tileid,i));
@@ -854,9 +1088,10 @@ Plates read_plate_centers(const Feat& F) {
             throw std::logic_error(o.str().c_str());
         }
     }
-
+    print_time(time,"# ..inversion  took :");
     // Create PP, a subset of P containing those tileids specified in the
     // surveyFile, in the order in which they are specified.
+    init_time_at(time,"# do inversion of used plates",t);
     for(unsigned i=0;i<survey_list.size();++i){
         tileid        = survey_list[i];
         tileid_to_idx = invert_tile.find(tileid);
@@ -871,6 +1106,7 @@ Plates read_plate_centers(const Feat& F) {
         // Found a valid index, push the tile to the ordered list.
         PP.push_back(P[tileid_to_idx->second]);
     }
+    print_time(time,"# .. sued plates inversion  took :");
     return(PP);
 }
 // Assignment -----------------------------------------------------------------------------
@@ -882,13 +1118,13 @@ Assignment::Assignment(const MTL& M, const Feat& F) {
     next_plate = 0;
     kinds = initCube(F.Nplate,F.Npetal,F.Categories);
     unused = initTable(F.Nplate,F.Npetal,F.Nfbp);//initialized to number of fibers on a petal
-
     }
 
 Assignment::~Assignment() {}
 
 // Assign g with tile/fiber (j,k), and check for duplicates
 void Assignment::assign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
+
     // Assign (j,k)
     int q = TF[j][k];
     if (q != -1) {
@@ -911,7 +1147,6 @@ void Assignment::assign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
     GL[g].push_back(p);
     M[g].nobs_done++;
     M[g].nobs_remain--;
-   
     if(M[g].SF){
         int q=pp.spectrom[k];
         P[j].SF_in_petal[q]+=1;}
@@ -919,9 +1154,12 @@ void Assignment::assign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
         int q=pp.spectrom[k];
         P[j].SS_in_petal[q]+=1;}
     unused[j][pp.spectrom[k]]--;
+
 }
 
 void Assignment::unassign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
+  //diagnostic
+
     if (TF[j][k]==-1) printf("### !!! ### TF (j,k) = (%d,%d) gets unassigned but was already not assigned\n",j,k);
     int a = isfound(pair(j,k),GL[g]);
     if (a==-1) printf("### !!! ### Galaxy g = %d gets unassigned but was already not assigned\n",g);
@@ -938,6 +1176,7 @@ void Assignment::unassign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) 
         P[j].SS_in_petal[p]-=1;}
 
     unused[j][pp.spectrom[k]]++;
+
 }
 
 void Assignment::verif(const Plates& P, const MTL& M, const PP& pp, const Feat& F) const {
@@ -1183,10 +1422,10 @@ float Assignment::colrate(const PP& pp, const MTL& M, const Plates& P, const Fea
 
 dpair projection(int g, int j, const MTL& M, const Plates& OP) {//x and y coordinates for galaxy observed on plate j
     // USE OLD LIST OF PLATES HERE
-    struct onplate op = change_coords(M[g],OP[j]);
+    struct onplate op = change_coords(M[g],OP[j]);/*
     if (op.pos[0]*op.pos[0]+op.pos[1]*op.pos[1]>500.*500.){
         printf("outside positioner range  g  %d  j  %d  x %f  y %f\n",g,j,op.pos[0],op.pos[1]);
-    }
+	}*/
     return dpair(op.pos[0],op.pos[1]);
 }
 
