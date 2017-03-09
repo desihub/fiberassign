@@ -304,55 +304,6 @@ void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int 
 
 
 
-void update_plan_from_one_obs(int jused,const Gals& Secret, MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A) {
-
-    int cnt_deassign(0);
-    int cnt_replace(0);
-
-    //jused is counted among used plates only
-    
-    int jpast = jused-F.Analysis;//tile whose information we just learned
-    if (jpast<0) { printf("ERROR in update : jpast negative\n"); fl(); }
-    
-    
-    int j=A.suborder[jpast];
-    std::vector<int> to_update; // Get the list of galaxies to update in the plan
-    for (int k=0; k<F.Nfiber; k++) {
-        int g = A.TF[j][k];
-        if (g!=-1&&!M[g].SS && !M[g].SF){        // Don't update SS or SF
-            //initially nobs_remain==goal
-            if(M[g].once_obs==0){//first observation  otherwise should be ok
-                M[g].once_obs=1;//now observed
-                if(M[g].nobs_done>F.goalpost[Secret[g].category]){
-                    to_update.push_back(g);}
-                else{
-                    M[g].nobs_remain=F.goalpost[Secret[g].category]-M[g].nobs_done;
-                }
-            }
-        }
-    }
-    // Update further in the plan
-    std::vector<int> sorted_to_update=sort_by_subpriority(M,to_update);
-    for (int gg=0; gg<sorted_to_update.size(); gg++) {
-      // need to sort
-
-        int g = sorted_to_update[gg];
-        Plist tfs = A.chosen_tfs(g,F,A.suborder[jused+1]); // Begin at j0+1, can't change assignment at j0 (already observed)
-        
-        while (tfs.size()!=0 && M[g].nobs_done>F.goalpost[Secret[g].category]) {
-            int jp = tfs[0].f; int kp = tfs[0].s;
-            A.unassign(jp,kp,g,M,P,pp);
-            cnt_deassign++;
-            M[g].nobs_remain=0;
-            int gp = -1;
-            erase(0,tfs);
-        }
-    }
-    //int na_end(A.na(F,j0,n));
-}
-
-
-
 void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
     // do standard stars,going through priority classes from least to most
     //keep track of reassignments

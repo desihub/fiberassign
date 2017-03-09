@@ -26,7 +26,7 @@ global.o \
 misc.o \
 structs.o
 
-EXECUTABLES = fiberassign fiberassign_surveysim
+EXECUTABLES = fiberassign 
 COMPILE = $(CXXFLAGS) $(OMPFLAGS) -I. $(CFITSIO_CPPFLAGS)
 # valgrind
 #COMPILE = -g -O0 -m64 -fPIC -DNDEBUG -std=c++11 $(OMPFLAGS) -I. $(CFITSIO_CPPFLAGS)
