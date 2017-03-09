@@ -14,7 +14,7 @@
 #include    <stdexcept>
 #include    <sys/time.h>
 #include    <sys/stat.h>
-#include    <stdlib.h>     /* srand, rand */
+#include    <stdlib.h>    
 
 #include    "modules/htmTree.h"
 #include    "modules/kdTree.h"
@@ -29,10 +29,9 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
     //provides list of galaxies available to fiber k on tile j: P[j].av_gals[k]
     
     init_time(t,"# Begin collecting available galaxies");
-    //List permut = random_permut(F.Nplate);
+
     double rad = F.PlateRadius*M_PI/180.;
-    //int jj;
-    //omp_set_num_threads(24);
+
     #pragma omp parallel
     {
         #pragma omp master
@@ -510,7 +509,6 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
         if(SS_av.size()>0 ||SF_av.size()>0){
             //look at fibers on this petal
             for (int kk=0; kk<F.Nfbp; kk++) {
-                //int k = randFibers[kk];
                 int k= pp.fibers_of_sp[p][kk];
                 std::vector <int> SS_av_k_init=P[j].SS_av_gal_fiber[k];
                 std::vector <int> SF_av_k_init=P[j].SF_av_gal_fiber[k];
@@ -1184,251 +1182,6 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
     
     fits_write_col(fptr, TLONGLONG, 1, 1, 1, potentialtargetid.size(), &(potentialtargetid[0]), &status);
     fits_report_error(stderr, status);
-    
-    fits_close_file(fptr, &status);
-    fits_report_error(stderr, status);
-    
-    for ( size_t c = 0; c < ncols; ++c ) {
-        free ( ttype[c] );
-        free ( tform[c] );
-        free ( tunit[c] );
-    }
-    free ( ttype );
-    free ( tform );
-    free ( tunit );
-    
-    return;
-}
-
-void write_save_av_gals (int j, str outdir, const MTL & M, const Plates & P, const PP & pp, const Feat & F) {
-    
-    // generate a quiet NaN to use for invalid entries.  We cannot
-    // guarantee that we have C++11, so we can't use the nice functions   
-    // included in that standard...
-
-    // modify fa_write to keep only, for each fiber in a tile, the number of av_gals, 
-    // followed by a list of all of them for this tile
-
-    //so we need only keep fiber num_target and then the list of potential targets
-
-    //need to inlcude SS and SF too 12/17/12
-    
-    const unsigned maxU = ~0;
-    const float qNan = *((float*)&maxU);
-    
-    // constants for the filename length and fixed object
-    // type length
-    
-    size_t cfilesize = 512;
-    size_t objtypelen = 8;     
-    size_t bricklen = 8;
-    // check if the file exists, and if so, throw an exception
-    
-    char filename[cfilesize];
-    int tileid = P[j].tileid;
-    Table table_av_gals;
-    int ret;
-
-    ret = snprintf(filename, cfilesize, "%s/save_av_gals_%05d.fits", outdir.c_str(), tileid);
-    
-    struct stat filestat;
-    ret = ::stat(filename, &filestat );
-
-    
-    if (ret == 0) {
-        std::ostringstream o;
-        o << "output file " << filename << " already exists";
-        throw std::runtime_error(o.str().c_str());
-    }
-    // create the file
-
-    int status = 0;
-    fitsfile * fptr;
-    fits_create_file (&fptr, filename, &status);
-    fits_report_error (stderr, status);
-    
-    // Set up the schema for the table.  We explicitly malloc these
-    // string arrays, since the CFITSIO API requires non-const pointers
-    // to them (i.e. arrays of literals won't work).
-    
-    size_t ncols = 4;//added SS, SF
-    
-    char ** ttype;
-    char ** tform;
-    char ** tunit;
-    
-    ttype = (char**) malloc ( ncols * sizeof(char*) );
-    tform = (char**) malloc ( ncols * sizeof(char*) );
-    tunit = (char**) malloc ( ncols * sizeof(char*) );
-    
-    if ( ! ( ttype && tform && tunit ) ) {
-        std::ostringstream o;
-        o << "cannot allocate column info for binary table";
-        throw std::runtime_error(o.str().c_str());
-    }
-    
-    for ( size_t c = 0; c < ncols; ++c ) {
-        ttype[c] = (char*) malloc ( FLEN_VALUE * sizeof(char) );
-        tform[c] = (char*) malloc ( FLEN_VALUE * sizeof(char) );
-        tunit[c] = (char*) malloc ( FLEN_VALUE * sizeof(char) );
-        if ( ! ( ttype[c] && tform[c] && tunit[c] ) ) {
-            std::ostringstream o;
-            o << "cannot allocate column info for binary table";
-            throw std::runtime_error(o.str().c_str());
-        }
-    }
-    
-    strcpy(ttype[0], "FIBER");
-    strcpy(tform[0], "J");
-    strcpy(tunit[0], "");
-
-    
-    strcpy(ttype[1], "NUMTARGET");
-    strcpy(tform[1], "I");//int not long
-    strcpy(tunit[1], "");
-
-    strcpy(ttype[2], "NUMTARGETSS");
-    strcpy(tform[2], "I");//int not long
-    strcpy(tunit[2], "");
-
-    strcpy(ttype[3], "NUMTARGETSF");
-    strcpy(tform[3], "I");//int not long
-    strcpy(tunit[3], "");    
-
-
-    char extname[FLEN_VALUE];
-    
-    strcpy(extname, "FIBER_ASSIGNMENTS");
-    
-    // create the table with the full size on disk.
-    
-    ret = fits_create_tbl(fptr, BINARY_TBL, F.Nfiber, ncols, ttype, tform, tunit, extname, &status);
-    fits_report_error(stderr, status);
-    
-    // get the number of rows to write for each internal FITS buffer.
-    
-    long optimal;
-    ret = fits_get_rowsize(fptr, &optimal, &status);
-    fits_report_error(stderr, status);
-    
-    // initialize arrays to the optimal number of rows for writing.
-    
-    int fiber_id[optimal];
-    //int positioner_id[optimal];
-    int num_target[optimal];
-    int num_target_ss[optimal];
-    int num_target_sf[optimal];
-
-    
-    std::vector <long long> potentialtargetid;
-    std::vector <long long> temporarytargetid;//from list of targets, mutable
-     
-    // write data in buffered way
-    
-    long long offset = 0;
-    long long n = optimal;
-    
-    while ( n == optimal ) {
-        
-        if ( offset + optimal > F.Nfiber ) {
-            n = F.Nfiber - offset;
-        }
-        
-        if ( n > 0 ) {
-            
-            for (int i = 0; i < n; ++i) {
-                int fib = offset + i;
-
-                
-                fiber_id[i] = fib;
-                //positioner_id[i] = fib;
-                num_target[i] = P[j].av_gals[fib].size();
-		num_target_ss[i]= P[j].SS_av_gal_fiber[fib].size();
-		num_target_sf[i]= P[j].SF_av_gal_fiber[fib].size();
-
-
-                // Store the potential targetids accesible to this fibre (the actual targetid, not the index).
-
-									
-                for (int k = 0; k < P[j].av_gals[fib].size(); ++k) {
-
-                    int gal_idx = P[j].av_gals[fib][k]; // MTL index for k'th target accessible to this fibre
-                    if (gal_idx >= 0) {
-
-		      potentialtargetid.push_back(M[gal_idx].id); 
-		      temporarytargetid.push_back(gal_idx);
-		    }
-
-		}
-
-                for (int k = 0; k < P[j].SS_av_gal_fiber[fib].size(); ++k) {
-
-                    int gal_idx = P[j].SS_av_gal_fiber[fib][k]; // MTL index for k'th target accessible to this fibre
-
-                    if (gal_idx >= 0) {
-		      potentialtargetid.push_back(M[gal_idx].id); 
-		      temporarytargetid.push_back(gal_idx);
-		    }
-
-		}
-
-                for (int k = 0; k < P[j].SF_av_gal_fiber[fib].size(); ++k) {
-                    int gal_idx = P[j].SF_av_gal_fiber[fib][k]; // MTL index for k'th target accessible to this fibre
-                    if (gal_idx >= 0) {
-		      potentialtargetid.push_back(M[gal_idx].id); 
-		      temporarytargetid.push_back(gal_idx);
-		    }
-
-		}	
-	    }	    
-
-
-
-        fits_write_key(fptr, TINT, "TILEID", &(tileid), "Tile ID number", &status);
-            fits_report_error(stderr, status);
-
-            fits_write_col(fptr, TINT, 1, offset+1, 1, n, fiber_id, &status);
-            fits_report_error(stderr, status);
-
-            fits_write_col(fptr, TINT, 2, offset+1, 1, n, num_target, &status);
-            fits_report_error(stderr, status);
-
-            fits_write_col(fptr, TINT, 3, offset+1, 1, n, num_target_ss, &status);
-            fits_report_error(stderr, status);
-
-            fits_write_col(fptr, TINT, 4, offset+1, 1, n, num_target_sf, &status);
-            fits_report_error(stderr, status);          
-        }
-        
-        offset += n;
-    }
-    
-    // PotentialFiberMap table.  We have only one column, so it is safe
-    // from a performance perspective to write the whole thing.
-    
-    strcpy(ttype[0], "POTENTIALTARGETID");
-    strcpy(tform[0], "K");// long long rnc 12/12/16
-    strcpy(tunit[0], "");
-    
-    strcpy(ttype[1], "TEMPORARYTARGETID");
-    strcpy(tform[1], "K");// long long rnc 12/12/16
-    strcpy(tunit[1], "");
-    strcpy(extname, "POTENTIAL_ASSIGNMENTS");
-
-    ret = fits_create_tbl(fptr, BINARY_TBL, potentialtargetid.size(), 2, ttype, tform, tunit, extname, &status);
-    fits_report_error(stderr, status);
-
-    ret = fits_get_rowsize(fptr, &optimal, &status);
-    fits_report_error(stderr, status);
-
-    fits_write_col(fptr, TLONGLONG, 1, 1, 1, potentialtargetid.size(), &(potentialtargetid[0]), &status);
-    fits_report_error(stderr, status);
-
-    
-    fits_write_col(fptr, TLONGLONG, 2, 1, 1, temporarytargetid.size(), &(temporarytargetid[0]), &status);
-    fits_report_error(stderr, status);
-
-
     
     fits_close_file(fptr, &status);
     fits_report_error(stderr, status);

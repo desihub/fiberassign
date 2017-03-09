@@ -19,8 +19,13 @@
 #include     <map>
 //reduce redistributes, updates  07/02/15 rnc
 int main(int argc, char **argv) {
+    // argv[1] is the features file
     //// Initializations ---------------------------------------------
-    srand48(1234); // Make sure we have reproducability
+    //
+    //  M is collection of targets, sky fibers, and standard stars
+    //  each target has a priority provided by the mtl file
+    //  all targets with the same priority are collected into a class
+
     check_args(argc);
     Time t, time; // t for global, time for local
     init_time(t);
@@ -46,6 +51,7 @@ int main(int argc, char **argv) {
     M.insert(M.end(),SkyF.begin(),SkyF.end());
     printf(" Sky Fiber size %d \n",M.size());
     init_time_at(time,"# map position in target list to immutable targetid",t);
+    //need to be able to match immutable target id to position in list
     std::map<long long,int> invert_target;
     std::map<long long,int>::iterator targetid_to_idx;
     std::pair<std::map<long long,int>::iterator,bool> ret;
@@ -78,11 +84,11 @@ int main(int argc, char **argv) {
     // fiber positioners
     PP pp;
     pp.read_fiber_positions(F); 
-    F.Nfiber = pp.fp.size()/2; 
-    F.Npetal = max(pp.spectrom)+1;
+    F.Nfiber = pp.fp.size()/2; //each fiber has two co-ordinates so divide by two
+    F.Npetal = max(pp.spectrom)+1;//spectrometers run 0 to 9
     F.Nfbp = (int) (F.Nfiber/F.Npetal);// fibers per petal = 500
-    pp.get_neighbors(F);
-    pp.compute_fibsofsp(F);
+    pp.get_neighbors(F); //list of all fibers within F.NeighborRad of given fiber
+    pp.compute_fibsofsp(F);//list of fibers on each spectrometer
     print_time(time,"# ..posiioners  took :");
     //
     init_time_at(time,"# Start plates",t);
@@ -131,9 +137,8 @@ int main(int argc, char **argv) {
     A.inv_order=initList(F.Nplate,-1);
     int inv_count=0;
     for (int j=0;j<F.Nplate ;++j){
-        
-        bool not_done=true;
-        for(int k=0;k<F.Nfiber && not_done;++k){
+         bool not_done=true;
+         for(int k=0;k<F.Nfiber && not_done;++k){
             if(A.TF[j][k]!=-1){
                 A.suborder.push_back(j);//suborder[jused] is jused-th used plate
                 not_done=false;
@@ -147,7 +152,8 @@ int main(int argc, char **argv) {
 
 
     // Smooth out distribution of free fibers, and increase the number of assignments
-    // disabled 12/22/16
+    // probably should not hard wire the limits i<1, i<3 in redistribute and improve
+   
     
     for (int i=0; i<1; i++) redistribute_tf(M,P,pp,F,A,0);// more iterations will improve performance slightly
     for (int i=0; i<3; i++) {
@@ -159,14 +165,10 @@ int main(int argc, char **argv) {
 
     //try assigning SF and SS before real time assignment
     for (int jused=0;jused<F.NUsedplate;++jused){
- 
         int j=A.suborder[jused];
-
         assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF for each tile
         assign_unused(j,M,P,pp,F,A);
     }
-
-    
 
     // Results -------------------------------------------------------*/
     std::vector <int> total_used_by_class(M.priority_list.size(),0);
