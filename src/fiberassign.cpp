@@ -105,7 +105,6 @@ int main(int argc, char **argv) {
     F.cb = create_cb(); // cb=central body
     F.fh = create_fh(); // fh=fiber holder
 
-
     //// Collect available galaxies <-> tilefibers --------------------
     // HTM Tree of galaxies
     const double MinTreeSize = 0.01;
@@ -120,7 +119,6 @@ int main(int argc, char **argv) {
     print_time(time,"# ... took :");//T.stats();
     init_time_at(time,"# collect available tile-fibers at",t);
 
-
     // For each galaxy, computes available tilefibers  G[i].av_tfs = [(j1,k1),(j2,k2),..]
     collect_available_tilefibers(M,P,F);
 
@@ -132,8 +130,7 @@ int main(int argc, char **argv) {
     simple_assign(M,P,pp,F,A);
 
     //check to see if there are tiles with no galaxies
-    //need to keep mapping of old tile list to new tile list
-    //and inverse map
+    //need to keep mapping of old tile list to new tile list and inverse map
     A.inv_order=initList(F.Nplate,-1);
     int inv_count=0;
     for (int j=0;j<F.Nplate ;++j){
@@ -150,11 +147,9 @@ int main(int argc, char **argv) {
     F.NUsedplate=A.suborder.size();
     printf(" Plates actually used %d \n",F.NUsedplate);
 
-
     // Smooth out distribution of free fibers, and increase the number of assignments
     // probably should not hard wire the limits i<1, i<3 in redistribute and improve
-   
-    
+       
     for (int i=0; i<1; i++) redistribute_tf(M,P,pp,F,A,0);// more iterations will improve performance slightly
     for (int i=0; i<3; i++) {
         improve(M,P,pp,F,A,0);
@@ -182,8 +177,6 @@ int main(int argc, char **argv) {
         for(int k=0;k<F.Nfiber;++k){
             int g=A.TF[j][k];
             if(g!=-1){
-
-
                 if(M[g].SS){
                     total_used_SS++;
                     used_SS++;
@@ -206,8 +199,6 @@ int main(int argc, char **argv) {
     for (int pr=0;pr<M.priority_list.size();++pr){
         printf(" class %2d   %5d",pr,total_used_by_class[pr]);
     }
-
-
     printf("\n");
 
     init_time_at(time,"# print fits files ",t);
@@ -215,7 +206,6 @@ int main(int argc, char **argv) {
         int j=A.suborder[jused];
         fa_write(j,F.outDir,M,P,pp,F,A); // Write output
     }
-
   
   print_time(t,"# Finished !... in");
   
