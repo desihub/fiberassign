@@ -88,10 +88,11 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
 }
 
 bool pairCompare(const std::pair<double, int>& firstElem, const std::pair<double, int>& secondElem) {
-	return firstElem.first < secondElem.first;//might want to reverse this
+	return firstElem.first < secondElem.first;//used to sort galaxies by subpriority
 }
 
 std::vector<int> sort_by_subpriority(MTL & M,std::vector<int> init){
+  //sorts list of galaxies by subpriority
     std::vector <int> out;
     std::vector<std::pair<double,int> > pairs;
     for(int gg=0;gg<init.size();++gg){
