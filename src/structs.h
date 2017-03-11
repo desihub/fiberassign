@@ -36,7 +36,7 @@ class PP { // PP for plate parameters
 // galaxy truth -------------------------------------------
 class galaxy {
     public:
-        long targetid;      // the unique identifier
+        long long targetid;      // the unique identifier
         long category;      // the true type when used with a secret file
         double z;
 	uint16_t obsconditions;

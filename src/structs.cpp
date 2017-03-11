@@ -40,7 +40,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
     long nrows;
     long nkeep;
     int ncols;
-    long *targetid;
+    long long *targetid;
     long *desi_target;
     long *bgs_target;
     long *mws_target;
@@ -93,7 +93,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
       fits_get_num_cols(fptr, &ncols, &status);
 
       fflush(stdout);
-      if(!(targetid= (long *)malloc(nrows * sizeof(long)))){
+      if(!(targetid= (long long *)malloc(nrows * sizeof(long long)))){
         fprintf(stderr, "problem with targetid allocation\n");
         myexit(1);
       }
@@ -155,7 +155,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
       frow = 1;
       felem = 1;
       nullval = -99.;
-      if (fits_read_col(fptr, TLONG, colnum, frow, felem, nrows, 
+      if (fits_read_col(fptr, TLONGLONG, colnum, frow, felem, nrows, 
                         &nullval, targetid, &anynulls, &status) ){
         fprintf(stderr, "error reading TARGETID column\n");
         myexit(status);
