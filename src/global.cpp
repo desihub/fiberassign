@@ -1055,9 +1055,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
                 //target_id[i] = g; ********
                 if(g>0) target_id[i] = M[g].id;
                 else target_id[i]=-1;
-                if(g%1000==0){
-		  printf(" g  %d   target_id[i] %d  m[g].id %d \n",g,target_id[i],M[g].id);
-		}
+
                 if (g < 0) {
                     //strcpy(objtype[i], "NA");
                     ra[i] = qNan;
