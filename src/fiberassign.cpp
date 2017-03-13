@@ -42,12 +42,7 @@ int main(int argc, char **argv) {
     MTL SStars = read_MTLfile(F.SStarsfile,F,1,0);
     MTL SkyF   = read_MTLfile(F.SkyFfile,  F,0,1);
     MTL Targ   = read_MTLfile(F.Targfile,  F,0,0);
-    //diagnostic
-    for(int i=0;i<200;++i){
-      int g=1000*i;
-      printf(" g  %d  M[g].id %d \n",g,Targ[g].id);
-      std::cout.flush();
-    }
+
     print_time(time,"# ...read targets  took :");
     //combine the three input files
     M=Targ;
