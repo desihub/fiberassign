@@ -120,6 +120,12 @@ void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) {
         }
     }
     print_time(t,"# ... took :");
+    int count_outside=0;
+    for(int g=0;g<M.size();++g){
+      if(M[g].av_tfs.size()==0 && !M[g].SS && !M[g].SF)++count_outside;
+    }
+    printf("galaxies outside footprint %d\n",count_outside);
+      
 }
 
 // Assignment sub-functions -------------------------------------------------------------------------------------
@@ -574,48 +580,6 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 }
 
 
-void diagnostic(const MTL& M, const Gals& Secret, Feat& F, const Assignment& A){
-    // diagnostic  allows us to peek at the actual id of each galaxy
-    printf("Diagnostics using types:QSO-Ly-a, QSO-tracers, LRG, ELG, fake QSO, fake LRG, SS, SF\n");
-    std::vector<int> count_by_kind(F.Categories-2,0);
-    for (int j=0;j<F.NUsedplate;++j){
-        int js=A.suborder[j];
-        //printf(" js = %d\n",js);
-        //printf(" Secret size %d\n",Secret.size());
-        for(int k=0;k<F.Nfiber;++k){
-            int g=A.TF[js][k];
-            if(g!=-1&&!M[g].SS&&!M[g].SF){
-                //printf("g = %d  k = %d  id = %d \n",g,k,Secret[g].category);
-            count_by_kind[Secret[g].category]+=1;
-            }
-        }
-    }
-    for(int i=0;i<F.Categories-2;++i){
-        printf(" i  %d    number  %d \n",i,count_by_kind[i]);
-    }
-    int MaxObs = max(F.goal);
-    Table obsrv = initTable(F.Categories,MaxObs+1);
-    
-    for (int g=0; g<M.size(); g++) {
-        if(!M[g].SS && !M[g].SF){
-        int c= Secret[g].category;
-        int m = min(M[g].nobs_done,MaxObs);
-        obsrv[c][m]++; //
-        }
-    }
-    for (int c=0;c<F.Categories-2;++c){
-        int tot=0;
-        for (int m=0;m<MaxObs+1;++m){
-            tot+=obsrv[c][m];
-        }
-        for (int m=0;m<MaxObs+1;++m){
-            double ratio=float(obsrv[c][m])/float(tot);
-            printf("   %f  ",ratio);
-        }
-        printf("\n");
-    }
-       //end diagnostic
-}
 
 void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& P, const PP& pp, Feat& F, const Assignment& A,  int last_tile,bool latex) {
 	printf("# Results :\n");
@@ -1244,17 +1208,4 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
     pyp.plot_tile(directory,j,F); 
         
     
-}
-
-void overlappingTiles(str fname, const Feat& F, const Assignment& A) {
-  FILE * file;
-  file = fopen(fname.c_str(),"w");
-  for (int g=0; g<F.Ngal; g++) {
-    if (A.GL[g].size()==5) {
-      fprintf(file,"%d ",g);
-      for (int i=0; i<A.GL[g].size(); i++) fprintf(file,"(%d,%d) ",A.GL[g][i].f,A.GL[g][i].s);
-      fprintf(file,"\n");
-    }
-  }
-  fclose(file);
 }

@@ -331,11 +331,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
              Q.SF=SF;
 	     strncpy(Q.brickname, brickname[ii], 9);
              try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
-             
-
-             //if (targetid[ii]%F.moduloGal == 0) {
-             //   try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
-             // }
+ 
              bool in=false;
              for (int j=0;j<M.priority_list.size();++j){
                if(Q.t_priority==M.priority_list[j]){
@@ -357,239 +353,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
         throw std::runtime_error(o.str().c_str());
     }
 }
-void read_save_av_gals(str readfile, const Feat& F,std::vector<std::vector<long long> > &av_gals,std::vector<std::vector<long long> > &ss_av_gals,std::vector<std::vector<long long> > &sf_av_gals, bool diagnose){
-    //will generate two vectors:  the fiberids and number of galaxies available to it
-    //runs over single file associated with single plate
-    //for tile j, we create P[j].av_gals[k], the list of available galaxies by
-    str s = readfile;
-    Plates P;
-    std::string buf;
-    const char* fname;
-    fname = s.c_str();
-    std::ifstream fs(fname);
-    int ii;
-    fitsfile *fptr;        
-    int status = 0, anynulls;
-    int hdutype;
-    int nkeys;
-    int hdupos;
-    long nrows;
-    long nkeep;
-    int ncols;
-    long *fiberid;
-    int *numtarget, *numtarget_ss,*numtarget_sf; //just number of possible targets for fibers
-    long long *potentialtargetid; 
-    long long *temporarytargetid; 
 
-    int colnum;
-
-    // General purpose output stream for exceptions
-    std::ostringstream o;
-
-    // Check that input file exists and is readable by cfitsio
-    //if(diagnose)std::cout << "Finding file: " << fname << std::endl;
-    int file_exists;
-    fits_file_exists(fname,&file_exists,&status);
-    std::ostringstream exists_str;
-    exists_str << "(CFITSIO file_exists code: " << file_exists << ")";
-
-    // Throw exceptions for failed read, see cfitsio docs
-    if (! file_exists) {
-        switch (file_exists){
-        case -1:
-            o << "Input save_av_gals  file must be a disk file: " << fname << " " << exists_str.str();
-            throw std::runtime_error(o.str().c_str());
-        case  0:
-            o << "Could not find save_av_gals input file: " << fname << " " << exists_str.str();
-            throw std::runtime_error(o.str().c_str());
-        case  2:
-            o << "Cannot handle zipped save_av_gals input file: " << fname << " " << exists_str.str();
-            throw std::runtime_error(o.str().c_str());
-        }
-    }
-
-    //if(diagnose)std::cout << "Found saved_av_gals file: " << fname << std::endl;
-
-    if (! fits_open_file(&fptr, fname, READONLY, &status) ){
-      //if(diagnose)std::cout << "Reading saved_av_gals input file " << fname << std::endl;
-
-      if ( fits_movabs_hdu(fptr, 2, &hdutype, &status) ){
-      myexit(status);
-      }
-      fits_get_hdrspace(fptr, &nkeys, NULL, &status);            
-      fits_get_hdu_num(fptr, &hdupos);
-      fits_get_hdu_type(fptr, &hdutype, &status);  /* Get the HDU type */            
-      fits_get_num_rows(fptr, &nrows, &status);
-      fits_get_num_cols(fptr, &ncols, &status);
-      
-
-      //if(diagnose)printf("%d columns x %ld rows\n", ncols, nrows);
-      //if(diagnose)printf("HDU #%d  ", hdupos);
-      if (hdutype == ASCII_TBL){
-	//if(diagnose)printf("ASCII Table:\n");
-      }else{
-	//if(diagnose)printf("Binary Table:\n");      
-      }
-      
-      fflush(stdout);
-      if(!(fiberid= (long *)malloc(nrows * sizeof(long)))){
-        fprintf(stderr, "problem with fiberid allocation\n");
-        myexit(1);
-      }
-      if(!(numtarget= (int *)malloc(nrows * sizeof(long)))){
-        fprintf(stderr, "problem with numtarget allocation\n");
-        myexit(1);
-      }
-      if(!(numtarget_ss= (int *)malloc(nrows * sizeof(long)))){
-        fprintf(stderr, "problem with numtarget allocation\n");
-        myexit(1);
-      }
-      if(!(numtarget_sf= (int *)malloc(nrows * sizeof(long)))){
-        fprintf(stderr, "problem with numtarget allocation\n");
-        myexit(1);
-      }
-
-      //if(diagnose)printf(" after malloc \n");
-      std::cout.flush();
-      //----- FIBERID
-      /* find which column contains the FIBER values */
-      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"FIBER", &colnum, &status) ){
-        fprintf(stderr, "error finding FIBER column\n");
-        myexit(status);
-      }
-      
-      long frow, felem, nullval;
-      frow = 1;
-      felem = 1;
-      nullval = -99.;
-      if (fits_read_col(fptr, TLONG, colnum, frow, felem, nrows, 
-                        &nullval, fiberid, &anynulls, &status) ){
-        fprintf(stderr, "error reading FIBER column\n");
-        myexit(status);
-      }
-      //if(diagnose)printf(" read fiberid \n");
-      std::cout.flush();
-       //----- NUMTARGET
-      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"NUMTARGET", &colnum, &status) ){
-        fprintf(stderr, "error finding NUMTARGET column\n");
-        myexit(status);
-      }
-      if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
-                        &nullval, numtarget, &anynulls, &status) ){
-        fprintf(stderr, "error reading NUMTARGET column\n");
-        myexit(status);
-      }
-
-       //----- NUMTARGETSS
-      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"NUMTARGETSS", &colnum, &status) ){
-        fprintf(stderr, "error finding NUMTARGETSS column\n");
-        myexit(status);
-      }
-      if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
-                        &nullval, numtarget_ss, &anynulls, &status) ){
-        fprintf(stderr, "error reading NUMTARGETSS column\n");
-        myexit(status);
-      }
-
-       //----- NUMTARGETSF
-      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"NUMTARGETSF", &colnum, &status) ){
-        fprintf(stderr, "error finding NUMTARGETSF column\n");
-        myexit(status);
-      }
-      if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
-                        &nullval, numtarget_sf, &anynulls, &status) ){
-        fprintf(stderr, "error reading NUMTARGETSF column\n");
-        myexit(status);
-      }
-
-
-     fits_movabs_hdu(fptr, 3, &hdutype, &status);
-     fits_get_hdrspace(fptr, &nkeys, NULL, &status);            
-     fits_get_hdu_num(fptr, &hdupos);
-     fits_get_hdu_type(fptr, &hdutype, &status);  /* Get the HDU type */            
-     fits_get_num_rows(fptr, &nrows, &status);
-     fits_get_num_cols(fptr, &ncols, &status);
-     /*
-     if(diagnose)printf("%d columns x %ld rows\n", ncols, nrows);
-     if(diagnose)printf("\nHDU #%d  ", hdupos);
-     std::cout.flush();
-     if (hdutype == ASCII_TBL){
-     if(diagnose)printf("ASCII Table:  ");
-     }else{
-     if(diagnose)printf("Binary Table: \n ");      
-     }
-     std::cout.flush();
-     */
-    /*reserve space for temporary arrays*/
-    
-   
-    if(!(potentialtargetid= (long long *)malloc(nrows * sizeof(long long)))){
-      fprintf(stderr, "problem with potentialtargetid allocation\n");
-      myexit(1);
-    }
-    if(!(temporarytargetid= (long long *)malloc(nrows * sizeof(long long)))){
-      fprintf(stderr, "problem with temporarytargetid allocation\n");
-      myexit(1);
-    }    
-    //if(diagnose)printf("after saving space\n");
-      //----- POTENTIALTARGETID
-      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"POTENTIALTARGETID", &colnum, &status) ){
-        fprintf(stderr, "error finding POTENTIALTARGETID column\n");
-        myexit(status);
-      }
-      //  POTENTIALTARGETID is now the immutable one  12/16/16
-      if (fits_read_col(fptr, TLONGLONG, colnum, frow, felem, nrows, 
-                        &nullval, potentialtargetid, &anynulls, &status) ){
-        fprintf(stderr, "error reading POTENTIALTARGETID column\n");
-        myexit(status);}
-
-      //----- TEMPORARYTARGETID
-      if ( fits_get_colnum(fptr, CASEINSEN, (char *)"TEMPORARYTARGETID", &colnum, &status) ){
-        fprintf(stderr, "error finding TEMPORARYTARGETID column\n");
-        myexit(status);
-      }
-      if (fits_read_col(fptr, TLONGLONG, colnum, frow, felem, nrows, 
-                        &nullval, temporarytargetid, &anynulls, &status) ){
-        fprintf(stderr, "error reading TEMPORARYTARGETID column\n");
-        myexit(status);}
-
-      std::cout.flush();
-    //step through fibers
-      int av_gal_no=0;
-
-    for(int k=0;k<F.Nfiber;++k){
-      std::vector<long long> collect {}, collect_ss {}, collect_sf {};
-			
-      if(numtarget[k]>0){
-	for(int m=0;m<numtarget[k];++m){
-	  collect.push_back(potentialtargetid[av_gal_no]);
-	  //if(diagnose)printf("k %d  m  %d \n",k,m);
-	  //std::cout.flush();
-	  av_gal_no+=1;
-	}
-      }
-	av_gals.push_back(collect);
-      if(numtarget_ss[k]>0){
-	for(int m=0;m<numtarget_ss[k];++m){
-	  collect_ss.push_back(potentialtargetid[av_gal_no]);
-	  av_gal_no+=1;
-	}
-      }
-	ss_av_gals.push_back(collect_ss);
-      if(numtarget_sf[k]>0){
-	for(int m=0;m<numtarget_sf[k];++m){
-	  collect_sf.push_back(potentialtargetid[av_gal_no]);
-	  av_gal_no+=1;
-	}
-      }
-	sf_av_gals.push_back(collect_sf);
-
-    }
-
-    }
-
-    fits_close_file(fptr, &status);
-}
 
 void assign_priority_class(MTL& M){
     // assign each target to a priority class
@@ -633,7 +397,7 @@ void PP::read_fiber_positions(const Feat& F) {
     while (fs.eof()==0) {
         double x,y; int fiber,positioner,spectro,remove; 
         std::istringstream(buf) >> fiber >> positioner >> spectro >> x >> y;
-        if (i%F.moduloFiber == 0) {
+
         if (!F.Pacman || isfound(spectro,petals_pacL)) {
         try{
             fp.push_back(x);
@@ -642,7 +406,7 @@ void PP::read_fiber_positions(const Feat& F) {
             spectrom.push_back(sp);  
         } catch(std::exception& e) {myexception(e);}
         }
-        }
+        
         getline(fs,buf);
         i++;
     }
