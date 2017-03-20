@@ -107,6 +107,7 @@ std::vector<int> sort_by_subpriority(MTL & M,std::vector<int> init){
     return out;
 }
 
+
 void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) { 
     //M[i].av_tfs is list of tile-fiber pairs available to galaxy i
     Time t;
@@ -121,11 +122,12 @@ void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) {
     }
     print_time(t,"# ... took :");
     int count_outside=0;
-    for(int g=0;g<M.size();++g){
-      if(M[g].av_tfs.size()==0 && !M[g].SS && !M[g].SF)++count_outside;
-    }
+      for(int g=0;g<M.size();++g){
+	if(M[g].av_tfs.size()==0 && M[g].SF){
+	++count_outside;
+	}
+      }
     printf("galaxies outside footprint %d\n",count_outside);
-      
 }
 
 // Assignment sub-functions -------------------------------------------------------------------------------------

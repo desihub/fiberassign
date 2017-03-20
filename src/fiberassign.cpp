@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
     init_time(t);
     Feat F;
     MTL M;
-    bool diagnose=true;
+
     // Read parameters file //
     F.readInputFile(argv[1]);
     printFile(argv[1]);
@@ -152,7 +152,7 @@ int main(int argc, char **argv) {
     // probably should not hard wire the limits i<1, i<3 in redistribute and improve
        
     for (int i=0; i<1; i++) redistribute_tf(M,P,pp,F,A,0);// more iterations will improve performance slightly
-    for (int i=0; i<3; i++) {
+    for (int i=0; i<1; i++) {
         improve(M,P,pp,F,A,0);
         redistribute_tf(M,P,pp,F,A,0);
 	}
