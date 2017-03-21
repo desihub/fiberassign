@@ -19,14 +19,19 @@
 #include     <map>
 //reduce redistributes, updates  07/02/15 rnc
 int main(int argc, char **argv) {
+    // argv[1] is the features file
     //// Initializations ---------------------------------------------
-    srand48(1234); // Make sure we have reproducability
+    //
+    //  M is collection of targets, sky fibers, and standard stars
+    //  each target has a priority provided by the mtl file
+    //  all targets with the same priority are collected into a class
+
     check_args(argc);
     Time t, time; // t for global, time for local
     init_time(t);
     Feat F;
     MTL M;
-    bool diagnose=true;
+
     // Read parameters file //
     F.readInputFile(argv[1]);
     printFile(argv[1]);
@@ -37,6 +42,7 @@ int main(int argc, char **argv) {
     MTL SStars = read_MTLfile(F.SStarsfile,F,1,0);
     MTL SkyF   = read_MTLfile(F.SkyFfile,  F,0,1);
     MTL Targ   = read_MTLfile(F.Targfile,  F,0,0);
+
     print_time(time,"# ...read targets  took :");
     //combine the three input files
     M=Targ;
@@ -46,6 +52,7 @@ int main(int argc, char **argv) {
     M.insert(M.end(),SkyF.begin(),SkyF.end());
     printf(" Sky Fiber size %d \n",M.size());
     init_time_at(time,"# map position in target list to immutable targetid",t);
+    //need to be able to match immutable target id to position in list
     std::map<long long,int> invert_target;
     std::map<long long,int>::iterator targetid_to_idx;
     std::pair<std::map<long long,int>::iterator,bool> ret;
@@ -78,11 +85,11 @@ int main(int argc, char **argv) {
     // fiber positioners
     PP pp;
     pp.read_fiber_positions(F); 
-    F.Nfiber = pp.fp.size()/2; 
-    F.Npetal = max(pp.spectrom)+1;
+    F.Nfiber = pp.fp.size()/2; //each fiber has two co-ordinates so divide by two
+    F.Npetal = max(pp.spectrom)+1;//spectrometers run 0 to 9
     F.Nfbp = (int) (F.Nfiber/F.Npetal);// fibers per petal = 500
-    pp.get_neighbors(F);
-    pp.compute_fibsofsp(F);
+    pp.get_neighbors(F); //list of all fibers within F.NeighborRad of given fiber
+    pp.compute_fibsofsp(F);//list of fibers on each spectrometer
     print_time(time,"# ..posiioners  took :");
     //
     init_time_at(time,"# Start plates",t);
@@ -99,7 +106,6 @@ int main(int argc, char **argv) {
     F.cb = create_cb(); // cb=central body
     F.fh = create_fh(); // fh=fiber holder
 
-
     //// Collect available galaxies <-> tilefibers --------------------
     // HTM Tree of galaxies
     const double MinTreeSize = 0.01;
@@ -114,7 +120,6 @@ int main(int argc, char **argv) {
     print_time(time,"# ... took :");//T.stats();
     init_time_at(time,"# collect available tile-fibers at",t);
 
-
     // For each galaxy, computes available tilefibers  G[i].av_tfs = [(j1,k1),(j2,k2),..]
     collect_available_tilefibers(M,P,F);
 
@@ -126,14 +131,12 @@ int main(int argc, char **argv) {
     simple_assign(M,P,pp,F,A);
 
     //check to see if there are tiles with no galaxies
-    //need to keep mapping of old tile list to new tile list
-    //and inverse map
+    //need to keep mapping of old tile list to new tile list and inverse map
     A.inv_order=initList(F.Nplate,-1);
     int inv_count=0;
     for (int j=0;j<F.Nplate ;++j){
-        
-        bool not_done=true;
-        for(int k=0;k<F.Nfiber && not_done;++k){
+         bool not_done=true;
+         for(int k=0;k<F.Nfiber && not_done;++k){
             if(A.TF[j][k]!=-1){
                 A.suborder.push_back(j);//suborder[jused] is jused-th used plate
                 not_done=false;
@@ -145,12 +148,11 @@ int main(int argc, char **argv) {
     F.NUsedplate=A.suborder.size();
     printf(" Plates actually used %d \n",F.NUsedplate);
 
-
     // Smooth out distribution of free fibers, and increase the number of assignments
-    // disabled 12/22/16
-    
+    // probably should not hard wire the limits i<1, i<3 in redistribute and improve
+       
     for (int i=0; i<1; i++) redistribute_tf(M,P,pp,F,A,0);// more iterations will improve performance slightly
-    for (int i=0; i<3; i++) {
+    for (int i=0; i<1; i++) {
         improve(M,P,pp,F,A,0);
         redistribute_tf(M,P,pp,F,A,0);
 	}
@@ -159,14 +161,10 @@ int main(int argc, char **argv) {
 
     //try assigning SF and SS before real time assignment
     for (int jused=0;jused<F.NUsedplate;++jused){
- 
         int j=A.suborder[jused];
-
         assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF for each tile
         assign_unused(j,M,P,pp,F,A);
     }
-
-    
 
     // Results -------------------------------------------------------*/
     std::vector <int> total_used_by_class(M.priority_list.size(),0);
@@ -180,8 +178,6 @@ int main(int argc, char **argv) {
         for(int k=0;k<F.Nfiber;++k){
             int g=A.TF[j][k];
             if(g!=-1){
-
-
                 if(M[g].SS){
                     total_used_SS++;
                     used_SS++;
@@ -204,8 +200,6 @@ int main(int argc, char **argv) {
     for (int pr=0;pr<M.priority_list.size();++pr){
         printf(" class %2d   %5d",pr,total_used_by_class[pr]);
     }
-
-
     printf("\n");
 
     init_time_at(time,"# print fits files ",t);
@@ -213,7 +207,6 @@ int main(int argc, char **argv) {
         int j=A.suborder[jused];
         fa_write(j,F.outDir,M,P,pp,F,A); // Write output
     }
-
   
   print_time(t,"# Finished !... in");
   

@@ -91,8 +91,7 @@ void Feat::readInputFile(const char file[]) {
             if (tok[0]=="SStarsfile")SStarsfile=tok[1];
             if (tok[0]=="SkyFfile") SkyFfile=tok[1];
             if (tok[0]=="Secretfile") Secretfile=tok[1];
-            
-            if (tok[0]=="diagnose") diagnose=s2b(tok[1]);
+
 
             if (tok[0]=="kind") {
                 Categories = tok.size()-1;
@@ -127,7 +126,7 @@ void Feat::readInputFile(const char file[]) {
       if (tok[0]=="MaxSF") MaxSF = s2i(tok[1]);
       if (tok[0]=="PlateRadius") PlateRadius = s2d(tok[1]);
       if (tok[0]=="Analysis") Analysis = s2i(tok[1]);
-      if (tok[0]=="InfDens") InfDens = s2b(tok[1]);
+
       
       if (tok[0]=="TotalArea") TotalArea = s2d(tok[1]);
       if (tok[0]=="invFibArea") invFibArea = s2d(tok[1]);

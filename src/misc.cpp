@@ -107,24 +107,6 @@ Slist initList(str l[], int size) {
     return L;
 }
 
-List random_permut(int n) {
-    List L;
-    try { L.resize(n); } 
-    catch(std::exception& e) {myexception(e);}
-    for (int i=0; i<n; i++) L[i]=i;
-    std::random_shuffle(L.begin(),L.end());
-    return L;
-}
-
-List random_permut(const List& L) {
-    int n = L.size();
-    List perm = random_permut(n);
-    List l;
-    try { l.resize(n); } 
-    catch(std::exception& e) {myexception(e);}
-    for (int i=0; i<n; i++) l[i] = L[perm[i]];
-    return l;
-}
 
 void print_list(str s, const List& L) {
     printf("%s \n",s.c_str());
@@ -380,24 +362,8 @@ void addlist(List& L, const List& l) {
     for (int i=0; i<l.size(); i++) L.push_back(l[i]);
 }
 
-Dlist var(const List& L) {
-    Dlist v;
-    for (int i=0; i<L.size(); i++) v.push_back(L[i]+fRand(0,0.2));
-    return v;
-}
 
-List get_permut_sort(const List& l) {
-    List perm = initList(l.size());
-    Dlist lp = var(l);
-    Dlist L = lp;
-    std::sort(L.begin(), L.end());  
-    for (int i=0; i<L.size(); i++) {
-        int pos = isfound_pos(L[i],lp);
-        if (pos==-1) printf("Error in get_permut_sort\n");
-        else perm[i] = pos;
-    }
-    return perm;
-}
+
 
 // Table -----------------------------------------------------
 Table initTable(int l, int c, int val) {
@@ -1030,7 +996,3 @@ double norm(dpair p) { return(sqrt(p.f*p.f + p.s*p.s)); }
 double percent(int a, int b) { return(a*100./b); }
 void fl() { std::cout.flush(); }
 
-double fRand(double fMin, double fMax) {
-    double f = (double)rand() / RAND_MAX;
-    return fMin + f * (fMax - fMin);
-}
