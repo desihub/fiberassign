@@ -1,0 +1,524 @@
+\documentclass[12pt]{article}
+\begin{document}
+\def\begeq{\begin{equation}}
+\def\endeq{\end{equation}}
+\def\begeqar{\begin{eqnarray}}
+\def\endeqar{\end{eqnarray}}
+\def\half{\frac 12}
+\def\non{\nonumber\\}
+\def\fest{f_{est}}
+\def\fnew{f^{new}_{est}}
+\def\file#1{{\bf\it#1}}
+\def\struc#1{{\bf #1}}
+\def\func#1{{\it#1}\ }
+\def\class#1{{\underline{\bf#1}}}
+\def\var#1{{\underline{#1}}}
+\begin{Large}
+\begin{center}
+Guide to DESI Fiber Assignment Code\\[0.2in]
+R. Cahn\\[0.2in]
+\today
+\end{center}
+\end{Large}
+\section{Purpose}
+At the heart of DESI is the focal plane with its 5000 robotically controlled positioners, capable of placing each optical fibers within a few microns of the desired location inside a radius of 6 mm. The positioners are arrayed in 10 petals shaped like pie slices.   With about 10,000 pointings, the system can reach about 50 million targets.  The instrumented area of the focal plane is 7.5 square degrees and given the anticipated density of targets, about 25,000 targets fall on the focal plane for each pointing (generally called a tile or plate).  With a total coverage of about 14,000 square degrees, the average coverage of each point in the footprint is about 75/14=5.35.
+
+
+
+For each tile, choices must be made among the potential targets.  Priorities are set in accordance with the scientific value of each target class.  These classes include QSOs, LRGs, and ELGs.  In addition, fibers must be assigned to measure the sky background (``sky fibers'') and for calibration on standard stars. Both Ly-$\alpha$ QSOs and LRGs require multiple observations.
+
+The fiber assignment code receives a variety of inputs. A fixed input is the list of the locations of the positioners in the focal plane.   The survey plan is a list of pointings of the telescope.  The actual decisions about which pointings to use on a particular night will be made on the spot, but these will be drawn from a list giving the basic outline of the survey.  The targets are provided in a file \file{mtl.fits}.  The standard stars and sky fibers are provided by \file{stdstars.fits} and \file{sky.fits}.  
+
+After the fiber assignment code has run, it writes a file for each tile not yet observed.  Each of the files gives the assignment for each of the 5000 fibers.  These files have names like \file{tile\_18924.fits}.  These are passed to DOS, where choices are made for observation.  The results of observations inform the next version of \file{mtl.fits} to be passed to fiber assignment.  Fiber assignment could be run every day during observing periods, or it might be run less frequently.   
+
+
+
+
+\section{Context}
+
+The fiber assignment code is written in C++, but it is surrounded by python code.  For the purposes of testing the code and running simulations, packages have been written, primarily by Jaime Feroro-Romero, to provide all the necessary inputs for fiber assignment.  The relevant packages are \file{desisim} and \file{desitarget}.  The latter provides the targets.  The former simulates the survey, presenting it as a series of epochs.  Each epoch results in a single instance of fiber assignment.  After each epoch, the status of the target list is updated to reflect new information.  Some targets that have been observed will need additional observations and those are retained. Others are dropped.  The updated \file{mtl.fits} is passed back to fiber assignment along with the list of tiles in the next epoch.  The results of the observations are collected in \file{zcat.fits}.  At the end, some summary statistics can be displayed.  The python code wrapping fiber assignment is allowed to know the truth about each target: its true type and its true redshift.  This information is in \file{truth.fits}, but is not accessible to fiber assignment since we want the fiber assignment code to really be what would be used ultimately in the experiment.  
+
+\section{History}
+The existing fiber assignment code was initiated by Martin White and expanded by Lile Wang, who became a grad student at Princeton.  The code was further developed by Arthur Stril, then at Ecole Normale Superieure in Paris, and by successor interns from ENS, Cyrille Doux, Aldo Riello, Louis Garrigue, and Lucas Pinol.  Ted Kisner and Jaime Forero-Romero have contributed importantly.
+
+\section{Structure of the Fiber Assignment Code}
+\subsection{Notation}
+	Throughout, we indicate tiles by j, fibers by k, spectrometers or petals by p.  
+
+\subsection{\file{fiberassign.cpp}}
+The main portion of the code contains several parts:
+\begin{itemize}
+\item Read input files for targets, sky fibers, and standard stars.   The location of the files is specified through \file{F.Targfile,  F.SStarsfile, F.Skyfile}.  If fiberassign is run through the python code in desisim, the location is specified in the calling sequence for quicksurvey, which specifies the location of a ``features'' file.  Reading the features file is actually the first action and sets out many of the parameters (F.xxx) for the code .  Currently (Feb. 2017) \file{F.Targfile} is \newline \file{/project/projectdirs/desi/datachallenge/quicksurvey2016/input/dark/targets.fits}.
+
+\item Combine these into a structure of type \struc{MTL}.  Each galaxy carries a number of characteristics as specified in \file{structs.cpp}, including RA, dec, and priority.  
+ The complete list read by fiberassign: TARGETID, RA, DEC, DESI\_TARGET, MWS\_TARGET, BGS\_TARGET, OBSCONDITIONS, BRICKNAME, SUBPRIORITY, PRIORITY.  The fiberassign code doesn't know the true nature or redshifts of the targets.   TARGETID enables us to relate a single galaxy appearing in several files.  
+
+\item Determine the number of different priorities and create priority classes, collections of targets all of which have the same priority.  For example, there might be just three for ELGs, LRGs, and QSOs.  
+\item Read the file containing the locations of the positioners in the focal plane.  Determine which fibers are neighbors and note which petal each fiber is on.
+\item Read the RA and dec of the centers of each of the 10,000 or so plates (tiles), i.e. the centers of the fields to be observed.  In addition, read \var{IN\_DESI}, specifying whether a tile is in the footprint, \var{TILEID}, \var{OBSCONDITIONS}, specifying under which conditions the tile may be observed,
+obsconditions:
+\begin{itemize}
+   \item  - [DARK,        0, "Moon is down"]
+    \item - [GRAY,        1, "Moon up; illum fraction$<0.6$ and (illum*elev)$<30$ deg"]
+    \item - [BRIGHT,      2, "Moon up and bright (not GRAY)"]
+    \item - [POOR,        3, "Very bad seeing, high extinction, or bright cloud cover"]
+    \item - [TWILIGHT12,  4, "Between sunset/sunrise and 12 degree twilight"]
+    \item - [TWILIGHT18,  5, "Between 12 and 18 degree twilight"]
+    \item- [DAY,         6, "Daytime calibrations"]
+    \item- [CLOSED,      7, "Nighttime but dome is closed due to rain, wind, dew..."]
+    \item- [APOCALYPSE,  8, "Conditions are so bad that the world is ending anyway"]    
+\end{itemize}
+  \var{PASS}= (0,1,2,3,...)
+\item Establish the geometry of the positioners using file \file{collision.cpp}.  This is needed to make calculations identifying colliding positioners.
+\item Use kd-tree in \func{collect\_galaxies\_for\_all} to detemine which targets are within reach of each fiber for each plate. Code is in \file{src/modules}.
+\item For each tile-fiber, determine which galaxies are within its reach. \var{P[j].av\_gals[k]} is that list.
+\item For each galaxy, determine which tile-fibers can reach it: \var{M[g].av\_tfs} is list of
+pairs \var{(j,k)}.
+\item Check to see how many targets are out of reach of the survey.
+\item Use \func{simple\_assign} to make a preliminary assignment of a galaxy to reach tile-fiber.  Assignment is \var{A.TF[j][k]}.
+\item Determine which of the tiles in the list aren't used by any of the targets. \var{A.inv\_order[j]} gives the original tile number of the jth tile used.
+\item Smooth out the distribution of galaxies.  The initial distribution will result in unused fibers accumulating at the end of the survey.  In order to add in the required standard stars and sky fibers, we want unused fibers to be distributed throughout the survey.  A combination of \func{redistribute} and \func{improve} is used for this.  At present the number of iterations of these processes is hard-coded here, but probably should not be.
+\item Assign sky fibers and standard stars. The nominal requirement is 10 standard stars and 40 sky fibers for each petal, using altogether 10\% of the fibers.
+\item Try to use unassigned fibers with \func{assign\_unused}.
+\item Write some statistics.
+\item Write assignments of targets to each fiber for each tile, e.g. \file{tile\_18924.fits}.
+\end{itemize}
+
+\subsection{\file{structs.cpp}}
+This establishes many of the basic features of the code.
+\begin{itemize}
+\item \func{read\_MTLfile} reads a fits file, extracting for each target, among other things,  the \var{targetid} (should be a long long),\var{numobs} (the number of observations remaining to be taken), \var{RA}, \var{dec} \var{priority}, \var{subpriority} (a random number that is permanently affixed to this target).
+\item \func{read\_fiber\_positions} does that, in x,y coordinates in mm. Each fiber position takes up two entries in the list of fiber positions.
+\item \func{get\_neighbors} \var{N[i]}  for fiber $i$ is list of all other fibers within a distance \var{F.NeighborRad}.
+\item \func{compute\_fibsofsp}  gives list \var{fibers\_of\_sp[k}]of fibers that go to spectrometer $k$ (or petal) 0, 1,...9
+\item \func{read\_plate\_centers} gets the tileid,  RA and dec, for each tile and the pass (0 - 4 or 1-5?) to which it
+ belongs.
+ \item A mapping, \var{invert\_tile}, between the true tileid and where it is in the list of tiles.
+
+ \item \class{Assignment} class:
+ 	\begin{itemize}
+ 	\item \var{TF} (tile-fiber)  TF[j][k] is the galaxy assigned to tile j, fiber k.
+	\item \var{GL} GL[g] is the pair (j,k) to which g is assigned.
+	\item \func{assign} assigns galaxy g to (j,k), updates GL, M[g], keeps track of the number of standard stars and sky fibers in each petal.
+	\item \func{unassign} unassigns, updates just as assign does.	
+	\item \func{is\_assigned\_jg} checks whether galaxy g is already assigned on tile j.
+	\item \func{is\_assign\_tf} returns true if already (j,k) is assigned.
+	\item \func{chosen\_tfs} list of all tile-fibers that have chosen g.
+	\item \func{unused\_fbp} gives number of unused fibers on a particular petal of a given plate.
+	\item \func{unused\_f} counts unused fibers on plates.
+
+	\end{itemize}
+\item \func{plate\_dist} gives radial distance at angle theta.  Needs to be checked.
+\item \func{change\_coords} given the center of the plate and the location of target, both in RA and dec, returns x-y coordinates of image in focal plane.  Needs to be checked!
+\item \func{collision} checks for collisions of positioners.
+\item \func{Assignment::find\_collision} finds if assigning galaxy g to (j,k) would cause a collision.
+\item \func{is\_collision} returns true if the galaxy assigned to (j,k) is in collision.
+\item \func{colrate} returns percentage of collisions.
+\item \func{projection} returns x,y of galaxy g assigned to (j,k).
+\item \func{pyplot::plot\_tile} fancy plot of tile with assignments.
+
+
+
+\end{itemize}
+\subsection{\file{global.cpp}}
+\begin{itemize}
+\item \func{collect\_galaxies\_for\_all} provides list of galaxies available to each tile-fiber (j,k): P[j].av\_gals[k].
+\item\func{pairCompare} used to compare the subpriorities of two targets.
+\item\func{sort\_by\_sub priority} does just that.
+\item\func{collect\_available\_tilefibers} for each galaxy, g, finds list of tile-fibers that can reach it: M[g].av\_tfs.
+\item\func{ok\_assign\_g\_to jk} checks for collisions with other fibers.
+\item\func{ok\_for\_limit\_SS\_SF} makes sure we don't exceed requirements for SS or SF.
+\item\func{find\_best}uses remaining observations, priority, and subpriority to find best target for (j,k)
+\item\func{assign\_fiber} uses \func{find\_best} to pick target for given (j,k)
+\item\func{assign\_galaxy} goes through list of available tile-fibers and selects unused ones and among these uses the one on the petal with the most free fibers.
+\item\func{improve\_fiber}tries to assign a galaxy to unused (j,k).  If this is immediately possible, it makes the assignment.  If not, it looks at all the galaxies it can reach, sorts them by subpriority.  For highest subpriority galaxy, it looks at what could be done with its current tile-fiber and takes the best opportunity, provided there is one. Otherwise, it goes to the second best subpriority of galaxies within reach of (j,k).  This increases the number of measured galaxies by one, when it succeeds.
+\item\func{simple\_assign}goes through every tile and fiber using \func{assign\_fiber}.
+\item\func{improve}goes through every tile and fiber using \func{improve\_fiber}.
+
+\item\func{new\_replace}Put in standard stars and sky fibers as required.
+\item\func{assign\_unused}not clear what the value is if it just exchanges one observation for another.
+\item\func{redistribute}Move galaxy to petal with most unused fibers.
+\item\func{diagnostic}Not used in fiberassign.
+\item\func{display\_result} as it says.
+\item\func{fa\_write}writes file for each tiles giving assignment of each fiber, in fits format.
+\item\func{pyplotTile} Makes Louis' plot of fiber positioners and targets.
+\end{itemize}
+\subsection{\file{feat.cpp}}
+\subsubsection{Features file}
+This file covers the various inputs passed in the features file. 
+Let's look at at an example section by section:
+
+\begin{verbatim}
+
+
+SStarsfile {targetdir}/stdstars.fits
+SkyFfile  {targetdir}/sky.fits
+Secretfile {targetdir}/truth.fits
+tileFile /project/projectdirs/desi/software/edison/desimodel/master/data/footprint/desi-tiles.fits
+fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
+outDir {inputdir}/fiberassign/
+surveyFile {inputdir}/survey_list.txt
+\end{verbatim}
+
+The values of \var{targetdir} and \var{inputdir} are derived from the calling sequence for quicksurvey.
+For example:
+\begin{verbatim}
+./quicksurvey -O /global/homes/r/rncahn/desisim/desisim/temp_out -T /project/projectdirs/desi/
+datachallenge/quicksurvey2016/input/dark/lite/ -f /global/homes/r/rncahn/garrigue/fiberassign/
+bin/./fiberassign -E ~/garrigue/fiberassign/test/two_epochs -t /project/projectdirs/desi/users
+/rncahn/large_mock_test/input/template/lite_template_fiberassign.txt --n_epochs 2
+\end{verbatim}
+
+
+
+\begin{itemize}
+\item Targfile columns:['TARGETID',
+ 'RA',
+ 'DEC',
+ 'DESI\_TARGET',
+ 'BGS\_TARGET',
+ 'MWS\_TARGET',
+ 'SUBPRIORITY',
+ 'OBSCONDITIONS',
+ 'BRICKNAME',
+ 'DECAM\_FLUX',
+ 'SHAPEDEV\_R',
+ 'SHAPEEXP\_R',
+ 'DEPTH\_R',
+ 'GALDEPTH\_R']
+ \item SStarsfile, Skyfile,  columns:['TARGETID',
+ 'RA',
+ 'DEC',
+ 'DESI\_TARGET',
+ 'BGS\_TARGET',
+ 'MWS\_TARGET',
+ 'SUBPRIORITY',
+ 'OBSCONDITIONS',
+ 'BRICKNAME']
+\item Secretfile columns: ['TARGETID',
+ 'RA',
+ 'DEC',
+ 'TRUEZ',
+ 'TRUETYPE',
+ 'SOURCETYPE',
+ 'BRICKNAME',
+ 'MOCKID',
+ 'OIIFLUX']
+ \begin{itemize}
+ \item 'TRUETYPE'= {'GALAXY', 'QSO', 'STAR'}
+ \end{itemize}
+ \begin{itemize}
+ \item 'SOURCETYPE'= {'ELG', 'LRG', 'QSO'}
+ \end{itemize}
+ A true QSO has `TRUETYPE'= 'QSO' and 'SOURCETYPE'=  'QSO', while a fake QSO has `TRUETYPE'= STAR' and 'SOURCETYPE'=  'QSO'.  A true ELG has 'TRUETYPE'= 'GALAXY' and  'SOURCETYPE'=  'ELG.' Typically, no fake ELGs are included in the mock catalogs.  A true LRG has 'TRUETYPE'= 'GALAXY' and  'SOURCETYPE'=  'LRG.' IF there are fake LRGs, they would have   'TRUETYPE'= 'STAR' and  'SOURCETYPE'=  'LRG.'
+\item Tilefile columns: ['TILEID',
+ 'RA',
+ 'DEC',
+ 'PASS',
+ 'IN\_DESI',
+ 'EBV\_MED',
+ 'AIRMASS',
+ 'STAR\_DENSITY',
+ 'EXPOSEFAC',
+ 'PROGRAM',
+ 'OBSCONDITIONS']
+\item fibFile:
+\begin{verbatim}
+#- Fiber to positioner mapping; x,y,z in mm on focal plane
+#- See doc/fiberpos.md for more details.
+#- Coordinates at zenith: +x = East = +RA; +y = South = -dec
+
+#- fiber positioner spectro  x  y  z
+   0   131   0    184.393230     95.818601     -4.671885
+   1   284   0    299.120215     23.228125     -9.925561
+   ...
+   \end{verbatim}
+   \item outFile specifies area into which to write results
+   \item surveyFile is simply a list of the files used, specified by their position in the list given by tileFile
+   
+ \end{itemize}
+ The next section specifies whether to print output files.  For the use of fiberassign, you must writeout put: 
+ 
+ PrintFits true
+ 
+ This is necessary because fiberassign uses these output files to update its list of galaxies, indicating which galaxies are yet to be observed.  
+ 
+
+
+The next section is 
+\begin{verbatim}
+Pacman false
+Npass 5
+MaxSS 10
+MaxSF 40
+PlateRadius 1.65
+\end{verbatim}
+\var{Pacmac} is reduced layout of the focal plane. \var{Npass} is the number of layers, usually 5.  \var{MaxSS} is the requirfed number of standard stars to be assigned to each of the ten petals for every tile.  Similarly, \var{MaxSF} is the required number of sky fibers for each petal.  \var{PlateRadius} is the radius of the focal plane in degrees.
+\begin{verbatim}
+Collision false
+Exact true
+AvCollide 3.2
+Collide 1.98
+NoCollide 7.0
+PatrolRad 5.8
+NeighborRad 14.05
+\end{verbatim}
+
+\var{Collision} is whether we allow collisions of positioners. \\
+ \var{Exact} is whether we use the exact shape of the positioners. \\
+  \var{AvCollide} is  the distance (mm) between two galaxies beyond which we consider there isn't a collision for the positioners, and before which we consider that there is (in case of Exact=false)
+ \\
+ \var{Collide} is the distance (mm) between two galaxies that guarantees a collision.\\
+ \var{NoCollide} is the distance (mm) between two galaxies that guarantees there is not a collision.\\
+ \var{PatrolRad} is the distance (mm) of allowed reach of a fiber.\\
+ \var{NeighborhoodRad} is the distance (mm) between two positioners beyond which there are no collisions possible.
+ 
+ \begin{verbatim}
+PlotObsTime false
+PlotHistLya false
+PlotDistLya false
+PlotFreeFibHist false
+PlotFreeFibTime false
+PlotSeenDens false
+PrintGalObs false
+PlotPyplotTile true
+PyplotInterval 50
+\end{verbatim}
+These control plotting, graphics, etc.
+
+\begin{verbatim}
+MinDec -90.
+MaxDec 90.
+MinRa 0.
+MaxRa 360.
+
+\end{verbatim}
+
+These control the domain in which we consider targets. 
+
+
+
+
+\subsection{\file{misc.cpp}}
+Miscellaneous tools for list, tables, etc.
+\subsection{\file{collision.cpp}}
+\begin{itemize}
+\item\func{orientation} p-q-r is it clockwise or counter-clockwise?\\
+ See 10th slides from following link for derivation of the formula\\
+    http://www.dcs.gla.ac.uk/~pat/52233/slides/Geometry1x1.pdf
+\item\func{intersect}do two segments intersect?
+\item\func{intersect\_seg\_circle}do segment and circle intersect?
+\item \class{element} class provides tools for coloring, rotating, translating segments, circles
+\item \class{polygon} class provides tools for creating polygons, coloring, rotating them etc.\\
+ In particular, there is \func{create\_fh} for fiber holders, and 
+\func{create\_cb} for the central body of the positioner.
+
+\end{itemize}
+
+\subsection{\file{structs.h}}
+\begin{itemize}
+\item \class{PP}
+	Plate parameters:
+	\begin{itemize}
+		\item \var{fp} fiber positions (x,y) in mm.
+		\item  \var{spectrom} All spectrometer assignments of fibers.	
+		\item \var{fibers\_of\_sp} fibers associated with a spectrometer.
+		\item \var{N} fibers that neighbor fiber k.
+		\item \func{read\_fiber\_positions}
+		\item \func{get\_neighbors}
+		\item \func{fibs\_of\_some\_pet} fibers of a petal
+		\item \var{coords} coordinates (x,y) of fiber k
+		\end{itemize}
+\item \class{galaxy} contains truth information
+	\begin{itemize}
+		\item \var{z} redshift
+		\item \var{targetid} unique identifier
+		\item \var{category} true category, hidden from fiberassign	
+		\end{itemize}
+\item \class{target} contains only information that would be fed to fiberassign 
+	\begin{itemize}
+		\item \var{id} long long immutable identifier.
+		\item \var{nobs\_remain} number of observations remaining for g
+		\item \var{nobs\_done}  number of observations done for g
+		\item \var{nhat} cartesian direction to g
+		\item \var{ra,dec} 
+		\item \var{subpriority} immutable number between 0 and 1 used in place of random number
+		\item \var{desi\_target, mws\_target, bgs\_target}  masks 		
+		\item \var{SS} effectively boolean, yes for standard star
+		\item \var{SF} effectively boolean, yes for sky fiber
+		\item \var{priority\_class} galaxies grouped into classes by t\_priority
+		\item \var{t\_priority} priority of galaxy a prior, e.g. QSO=3400, LRG=3200, ELG=3000.  High number is high priority.
+		\item \var{brickname} 
+		\item \var{av\_tfs} for each target the available tile-files
+		\item \var{obsconditions} observation conditions, 16-bit mask
+		
+	\end{itemize}
+\item\class{MTL} vector of targets
+	\begin{itemize}
+	\item\var{priority\_list} list of all priorities, e.g. 3000,3200,..
+	\item\func{read\_MTLfile}
+	\item\func{assign\_priority\_class} group together targets with same priority
+	\end{itemize}
+\item\class{onplate} position in focal plane 
+	\begin{itemize}
+		\item \var{id}
+		\item \var{pos} pair giving x and y
+	\end{itemize}
+\item\class{Onplates}  vector of onplates
+\item\class{plate}
+	\begin{itemize}	
+		\item\var{tileid}
+		\item\var{tilera}
+		\item\var{tiledec}
+		\item\var{nhat} three-vector pointing to center of tile
+		\item\var{ipass} which pass tile belongs to
+		\item\var{av\_gals} P[j].av\_gals[k] is list of galaxies accessible to fiber k on plate j	
+		\item\var{SS\_av\_gal} standard stars available to some petal
+		\item\var{SF\_av\_gal}sky fibers available to some petal
+		\item\var{SS\_av\_gal\_fiber}standard stars available to some fiber
+		\item\var{SF\_av\_gal\_fiber}sky fibers available to some fiber	
+		\item\var{SS\_in\_petal} standard stars assigned to a petal
+		\item\var{SF\_in\_petal}sky fibers assigned to petal
+		\item\var{obsconditions} defines program, e.g. DARK, BRIGHT, GRAY
+		
+		
+	\end{itemize}
+
+\item\class{Plates} vector of plates
+\item\func{read\_plate\_centers}
+\item\func{read\_save\_av\_gals} used only when we write initial results of kd-tree
+
+\item\class{Assignment}
+	\begin{itemize}
+		\item\var{TF} TF[j][k] is the target assigned to tile-fiber (j,k)
+		\item\var{suborder}:list of plates actually used in order of planned survey
+		\item\var{inv\_order}: inverse of suborder
+		\item\var{GL} GL[g] is list of tile-fibers to which target g is assigned
+		\item\var{kinds} kinds[j][sp][id] is number of fibers in spectrometer sp, plate j, of kind id
+		\item\var{unused} unused[j][p] is number of unused fibers on petal p
+		\item Methods
+		\item \var{assign} assign g to (j,k)
+		\item \var{unassign}
+		\item \var{find\_collision}
+		\item \var{is\_collision}
+		\item \var{is\_assigned\_jg}
+		\item \var{is\_assigned\_tf}
+		\item \var{nobs}
+		\item \var{chosen\_tfs} surveys\_sim only
+		\item \var{nkind} survey\_sim only
+		\item \var{nobs} how many more times object needs to be 
+		\item \var{unused\_f} total number of unused fibers
+		\item \var{unused\_fbp} unused fibers by petal
+		\item \var{colrate} collision rate
+		\item\var{nobs\_time}
+		\item \var{collision} checks for collision between two fibers
+		\item\var{plate\_dist}plate scale calculation
+		\item\var{change\_coords} change co-ordinates from RA and dec to x,y
+		\item \var{projection} projects a target onto a plate
+	\end{itemize}
+\item\class{pyplot}
+	\begin{itemize}
+		\item\var{pol}
+		\item\var{text}
+		\item\var{textpos}
+		\item\func{polygon}
+		\item\func{addtext}
+		\item\func{plot\_tile}
+	\end{itemize}	
+				
+	
+	
+						
+
+\end{itemize}
+	
+\section{Running the code}
+
+\subsection{Compiling}
+After obtaining the code from the fiberassign section of desihub you need to construct the executable for fiberassign. There is a Makefile in ./fiberassign in github.  It calls a Makefile in fiberassign/src.  The executable will appear in ./fiberassign/bin.
+
+\subsection{Running fiberassign}
+In practice, fiberassign will be invoked from python.  However, it is possible to run it directly by providing a collection of files, including both mocks and specifications of the layout of the focal plane.  An example is provided in 
+/project/projectdirs/desi/mocks/fiberassign\_example.  
+
+\begin{verbatim}
+drwxrws---+  2 rncahn   131072 Mar 21 12:31 outfiles
+-rw-r-----   1 rncahn      818 Mar 21 11:27 lite_template_fiberassign.txt
+drwxrws---+  3 rncahn      512 Mar 21 11:27 .
+-rw-r-----   1 rncahn    56269 Mar 21 11:23 survey.txt
+-rw-rw----   1 rncahn 66859200 Mar 21 11:22 mtl.fits
+-rw-rw----   1 rncahn 64428480 Mar 21 11:21 targets.fits
+-rw-rw----   1 rncahn  1920960 Mar 21 11:21 stdstars.fits
+-rw-rw----   1 rncahn 18711360 Mar 21 11:21 sky.fits
+\end{verbatim}
+
+Starting at the very beginning, you can get the fiberassign code from github:
+
+git clone https://github.com/desihub/fiberassign
+
+Then 
+
+source  /project/projectdirs/desi/software/desi\_environment.sh
+
+From the directory where you put the fiberassign code:
+
+make install
+
+This puts the executable in fiberassign/bin
+
+Now clear out any old output files
+
+rm -rf /project/projectdirs/desi/mocks/fiberassign\_example/outfiles/*.*
+
+From the fiberassign directory, run the code
+
+./bin/fiberassign /project/projectdirs/desi/mocks/fiberassign\_example/lite\_template\_fiberassign.txt
+
+This should run quite quickly
+
+\file{lite\_template\_fiberassign.txt} looks like
+
+\begin{verbatim}
+Targfile /project/projectdirs/desi/mocks/fiberassign_example/mtl.fits
+SStarsfile  /project/projectdirs/desi/mocks/fiberassign_example/stdstars.fits
+SkyFfile  /project/projectdirs/desi/mocks/fiberassign_example/sky.fits
+
+tileFile /project/projectdirs/desi/software/edison/desimodel/master/data/footprint/desi-tiles.fits
+fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
+outDir  /project/projectdirs/desi/mocks/fiberassign_example/outfiles
+surveyFile  /project/projectdirs/desi/mocks/fiberassign_example/survey.txt
+
+PrintFits true
+Pacman false
+
+MaxSS 10
+MaxSF 40
+PlateRadius 1.65
+InterPlate 0
+
+TotalArea 15789.0
+invFibArea 700
+
+Collision false
+Exact true
+AvCollide 3.2
+Collide 1.98
+NoCollide 7.0
+PatrolRad 5.8
+NeighborRad 14.05
+
+MinDec-10.
+MaxDec 10.
+MinRa 0.
+MaxRa 10.
+\end{verbatim}
+
+The various lines are described in the text above.  The \file{mtl.fits} contains the targets for a restricted portion of the sky: 0$<$RA$<$10, -10$<$dec$<$10, i.e. 200 sqaure degrees.
+
+At completion, files are written to the subdirectory \file{outfiles}, one for each tile.  
+
+
+
+
+
+\end{document}

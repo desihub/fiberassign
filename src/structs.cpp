@@ -400,6 +400,7 @@ void PP::read_fiber_positions(const Feat& F) {
 
         if (!F.Pacman || isfound(spectro,petals_pacL)) {
         try{
+	  fib_num.push_back(fiber);
             fp.push_back(x);
             fp.push_back(y);
             int sp = F.Pacman ? inv[spectro] : spectro;

@@ -21,6 +21,7 @@ class PP { // PP for plate parameters
     public:
     Dlist fp; // All fiber positions (x,y) in mm
     List spectrom; // All spectrometer assignments of fibers
+    List fib_num; //true fiber (not positioner) number
     Table fibers_of_sp; // Inv map of spectrom, fibers_of_sp[sp] are fibers of spectrom sp, redundant but optimizes
     Table N; // Identify neighboring positioners : neighbors of fiber k are N[k]
     

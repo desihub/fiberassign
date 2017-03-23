@@ -64,3 +64,5 @@ void overlappingTiles(str fname, const Feat& F, const Assignment& A);
 bool myorder(int i, int j);
 
 
+List sort_by_fiber_number(PP & pp,std::vector<int> v);
+Dlist sort_doublet_by_fiber_number(PP & pp, Dlist v);
