@@ -369,11 +369,10 @@ void assign_priority_class(MTL& M){
 }
 
 
-// PP ----------------------------------------------------------------------------
-// Read the positions of the fibers on each plate.  Assumes the format
-// of fiberpos.txt produced by "F.Randomize_fibers".
+// FP ----------------------------------------------------------------------------
+// Read the positions of the fibers on each plate.
 // need also to get the petal, i.e. spectrometer  rnc 1/16/15  added S
-void PP::read_fiber_positions(const Feat& F) {
+FP  read_fiber_positions(const Feat& F) {
     std::string buf;
     std::ifstream fs(F.fibFile.c_str());
 
@@ -382,10 +381,6 @@ void PP::read_fiber_positions(const Feat& F) {
         myexit(1);
     }
 
-    // Reserve some storage, since we expect we'll be reading quite a few
-    // lines from this file.
-    try {fp.reserve(11000);} catch (std::exception& e) {myexception(e);}
-    // Skip any leading lines beginning with # or blank lines.
     getline(fs,buf);
     while (fs.eof()==0 && ( (buf[0]=='#') || (buf.size()==0) )) {
         getline(fs,buf);
@@ -394,53 +389,69 @@ void PP::read_fiber_positions(const Feat& F) {
     int petals_pac[] = {0,1,2,7,8,9};
     List petals_pacL = initList(petals_pac,6);
     List inv = inverse(petals_pacL);
+    FP FibPos; //collection of fibersfound(spectro,petals_pacL)) {
+    fpos fiber_pos;
+    printf("before reading positioners \n");
+    std::cout.flush();
     while (fs.eof()==0) {
         double x,y; int fiber,positioner,spectro,remove; 
         std::istringstream(buf) >> fiber >> positioner >> spectro >> x >> y;
-
-        if (!F.Pacman || isfound(spectro,petals_pacL)) {
-        try{
-	  fib_num.push_back(fiber);
-            fp.push_back(x);
-            fp.push_back(y);
+    try{
+	    fiber_pos.fib_num=fiber;
+            fiber_pos.fp_x=x;
+            fiber_pos.fp_y=y;
             int sp = F.Pacman ? inv[spectro] : spectro;
-            spectrom.push_back(sp);  
-        } catch(std::exception& e) {myexception(e);}
-        }
-        
+            fiber_pos.spectrom=spectro;  
+	    fiber_pos.coords=dpair(x,y);
+    } catch(std::exception& e) {myexception(e);}
+    
+        FibPos.push_back(fiber_pos);
         getline(fs,buf);
         i++;
     }
+
     fs.close();
-}
-
-PP::PP() {}
-
-void PP::get_neighbors(const Feat& F) {
-    N.resize(F.Nfiber);
-    for(int i=0; i<F.Nfiber; i++) {
-        for (int j=0; j<F.Nfiber; j++) {
+    printf("read the positioner file\n");
+    std::cout.flush();
+    int fiber_size=FibPos.size();
+    printf(" fiber size %d \n",fiber_size);
+    std::cout.flush();
+    //for (int k=0;k<fiber_size;++k){
+    //printf(" %d  FibPos[k].fp_x %f  FibPos[k].fp_y %f  FibPos[k].spectrom %d \n",k, FibPos[k].fp_x,  FibPos[k].fp_y,  FibPos[k].spectrom);
+    //std::cout.flush();
+    //}
+    //create fibers_of_sp
+    FibPos.fibers_of_sp.resize(F.Npetal);
+    for (int k=0; k<fiber_size; k++){
+      FibPos.fibers_of_sp[FibPos[k].spectrom].push_back(k);
+      //printf("  k  %d  FibPos[k].spectrom  %d \n",  k  ,  FibPos[k].spectrom );
+    }
+   printf("made fibers_of_sp \n");
+   std::cout.flush();
+   for (int p=0;p<10;++p){
+     printf(" p %d number of fibers %d \n",p, FibPos.fibers_of_sp[p].size());
+     std::cout.flush();
+   }
+  
+   //create table of Neighbors    
+    for(int i=0; i<fiber_size; i++) {
+        for (int j=0; j<fiber_size; j++) {
             if(i!=j) {
-                if(sq(fp[2*i]-fp[2*j],fp[2*i+1]-fp[2*j+1]) < sq(F.NeighborRad)) {
-                    N[i].push_back(j); }}}}
+	      if(sq(FibPos[i].fp_x-FibPos[j].fp_x)+sq(FibPos[i].fp_y-FibPos[j].fp_y) < sq(F.NeighborRad)) {
+                    FibPos[i].N.push_back(j); }
+	    }
+	}
+    }   
+    printf(" made neighbors \n");
+    return (FibPos);
 }
 
-void PP::compute_fibsofsp(const Feat& F) {//list of fibers on each spectrometer
-    fibers_of_sp.resize(F.Npetal);
-    for (int k=0; k<F.Nfiber; k++) fibers_of_sp[spectrom[k]].push_back(k);
-}
+//FP::FP() {};
 
-List PP::fibs_of_same_pet(int k) const {//all fibers on same spectrometer as fiber k
-    return(fibers_of_sp[spectrom[k]]);
-}
-
-dpair PP::coords(int k) const {// x and y in mm
-    return dpair(fp[2*k],fp[2*k+1]);
-}
 
 // plate ---------------------------------------------------------------------------
 
-List plate::av_gals_plate(const Feat& F,const MTL& M, const PP& pp) const {//list of galaxies available to plate no repetitions
+List plate::av_gals_plate(const Feat& F,const MTL& M, const FP& pp) const {//list of galaxies available to plate no repetitions
     List gals = initList(F.Ngal);
     List L = initList(0);
 
@@ -458,7 +469,7 @@ List plate::av_gals_plate(const Feat& F,const MTL& M, const PP& pp) const {//lis
 
 
 Plates read_plate_centers(const Feat& F) {
-    Plates P,PP;
+    Plates P,PQ;
     const char* fname;
 
     /*Variables used to read fits file*/
@@ -710,7 +721,7 @@ Plates read_plate_centers(const Feat& F) {
         }
     }
     print_time(time,"# ..inversion  took :");
-    // Create PP, a subset of P containing those tileids specified in the
+    // Create PQ, a subset of P containing those tileids specified in the
     // surveyFile, in the order in which they are specified.
     init_time_at(time,"# do inversion of used plates",t);
     for(unsigned i=0;i<survey_list.size();++i){
@@ -725,10 +736,10 @@ Plates read_plate_centers(const Feat& F) {
         }
 
         // Found a valid index, push the tile to the ordered list.
-        PP.push_back(P[tileid_to_idx->second]);
+        PQ.push_back(P[tileid_to_idx->second]);
     }
     print_time(time,"# .. sued plates inversion  took :");
-    return(PP);
+    return(PQ);
 }
 // Assignment -----------------------------------------------------------------------------
 Assignment::Assignment(const MTL& M, const Feat& F) {
@@ -744,7 +755,7 @@ Assignment::Assignment(const MTL& M, const Feat& F) {
 Assignment::~Assignment() {}
 
 // Assign g with tile/fiber (j,k), and check for duplicates
-void Assignment::assign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
+void Assignment::assign(int j, int k, int g, MTL& M, Plates& P, const FP& pp) {
 
     // Assign (j,k)
     int q = TF[j][k];
@@ -769,16 +780,16 @@ void Assignment::assign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
     M[g].nobs_done++;
     M[g].nobs_remain--;
     if(M[g].SF){
-        int q=pp.spectrom[k];
+        int q=pp[k].spectrom;
         P[j].SF_in_petal[q]+=1;}
     if(M[g].SS){
-        int q=pp.spectrom[k];
+        int q=pp[k].spectrom;
         P[j].SS_in_petal[q]+=1;}
-    unused[j][pp.spectrom[k]]--;
+    unused[j][pp[k].spectrom]--;
 
 }
 
-void Assignment::unassign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) {
+void Assignment::unassign(int j, int k, int g, MTL& M, Plates& P, const FP& pp) {
   //diagnostic
 
     if (TF[j][k]==-1) printf("### !!! ### TF (j,k) = (%d,%d) gets unassigned but was already not assigned\n",j,k);
@@ -790,17 +801,17 @@ void Assignment::unassign(int j, int k, int g, MTL& M, Plates& P, const PP& pp) 
     M[g].nobs_done--;
     M[g].nobs_remain++;
     if(M[g].SF){
-        int p=pp.spectrom[k];
+        int p=pp[k].spectrom;
         P[j].SF_in_petal[p]-=1;}
     if(M[g].SS){
-        int p=pp.spectrom[k];
+        int p=pp[k].spectrom;
         P[j].SS_in_petal[p]-=1;}
 
-    unused[j][pp.spectrom[k]]++;
+    unused[j][pp[k].spectrom]++;
 
 }
 
-void Assignment::verif(const Plates& P, const MTL& M, const PP& pp, const Feat& F) const {
+void Assignment::verif(const Plates& P, const MTL& M, const FP& pp, const Feat& F) const {
     str qso_lrgA[] = {"QSOLy-a","QSOTracer","FakeQSO","LRG","FakeLRG"}; List qso_lrg = F.init_ids_list(qso_lrgA,5);
     for (int g=0; g<F.Ngal; g++) {// make sure observations are separated by at least InterPlate
         Plist tfs = GL[g];
@@ -872,12 +883,12 @@ Plist Assignment::chosen_tfs(int g, const Feat& F, int begin) const {//creates l
     return chosen;
 }
 
-Table Assignment::unused_fbp(const PP& pp, const Feat& F) const {//table unused fibers on petal  on tile  j
+Table Assignment::unused_fbp(const FP& pp, const Feat& F) const {//table unused fibers on petal  on tile  j
     Table unused = initTable(F.Nplate,F.Npetal);
-    List Sp = pp.spectrom;
+    //List Sp = pp.spectrom;
     for(int j=0; j<F.Nplate; j++) {
         for (int k=0; k<F.Nfiber; k++) {
-            if (!is_assigned_tf(j,k)) unused[j][Sp[k]]++;
+            if (!is_assigned_tf(j,k)) unused[j][pp[k].spectrom]++;
         }
     }
     return unused;
@@ -898,8 +909,8 @@ int Assignment::unused_f(int j, const Feat& F) const {//unused fibers on tile j
     for (int k=0; k<F.Nfiber; k++) if (!is_assigned_tf(j,k)) unused++;
     return unused;
 }
-int Assignment::unused_fbp(int j, int k, const PP& pp, const Feat& F) const {//unused fibers on petal contain fiber k, tile j
-    List fibs = pp.fibers_of_sp[pp.spectrom[k]];
+int Assignment::unused_fbp(int j, int k, const FP& pp, const Feat& F) const {//unused fibers on petal containing fiber k, tile j
+    List fibs = pp.fibers_of_sp[pp[k].spectrom];
     int unused(0);
     for (int i=0; i<fibs.size(); i++) {
         if (!is_assigned_tf(j,fibs[i])) unused++;
@@ -907,12 +918,12 @@ int Assignment::unused_fbp(int j, int k, const PP& pp, const Feat& F) const {//u
     return unused;
 }
 
-int Assignment::nkind(int j, int k, int kind, const MTL& M, const Plates& P, const PP& pp, const Feat& F, bool pet) const {
+int Assignment::nkind(int j, int k, int kind, const MTL& M, const Plates& P, const FP& pp, const Feat& F, bool pet) const {
     //if pet is false, used petal of fiber k,, if pet is true use petal k        
-    if (!pet) return kinds[j][pp.spectrom[k]][kind];
+    if (!pet) return kinds[j][pp[k].spectrom][kind];
     else return kinds[j][k][kind];
 }
-List Assignment::fibs_unassigned(int j, int pet, const MTL& M, const PP& pp, const Feat& F) const {//list of unassigned fibers on petal pet
+List Assignment::fibs_unassigned(int j, int pet, const MTL& M, const FP& pp, const Feat& F) const {//list of unassigned fibers on petal pet
     List L;
     List fibs = pp.fibers_of_sp[pet];
     for (int kk=0; kk<F.Nfbp; kk++) {
@@ -985,38 +996,38 @@ bool collision(dpair O1, dpair G1, dpair O2, dpair G2, const Feat& F) {
 
 // (On plate p) finds if there is a collision if fiber k would observe galaxy g (collision with neighbor)
 //  j is in list that runs to F.Nplate since it is used in TF[j][k]
-int Assignment::find_collision(int j, int k, int g, const PP& pp, const MTL& M, const Plates& P, const Feat& F, int col) const {//check all neighboring fibers
+int Assignment::find_collision(int j, int k, int g, const FP& pp, const MTL& M, const Plates& P, const Feat& F, int col) const {//check all neighboring fibers
     bool bol = (col==-1) ? F.Collision : false;
     if (bol) return -1;
     dpair G1 = projection(g,j,M,P);
-    for (int i=0; i<pp.N[k].size(); i++) {// i numbers the fibers neighboring fiber k
-        int kn = pp.N[k][i];
+    for (int i=0; i<pp[k].N.size(); i++) {// i numbers the fibers neighboring fiber k
+        int kn = pp[k].N[i];
         int gn = TF[j][kn];
         if (gn!=-1) {
             dpair G2 = projection(gn,j,M,P);
-            bool b = F.Exact ? collision(pp.coords(k),G1,pp.coords(kn),G2,F) : (sq(G1,G2) < sq(F.AvCollide));
+            bool b = F.Exact ? collision(pp[k].coords,G1,pp[kn].coords,G2,F) : (sq(G1,G2) < sq(F.AvCollide));
             if (b) return kn;
         }
     }
     return -1;
 }
 
-bool Assignment::find_collision(int j, int k, int kn, int g, int gn, const PP& pp, const MTL& M, const Plates& P, const Feat& F, int col) const {//check two fibers
+bool Assignment::find_collision(int j, int k, int kn, int g, int gn, const FP& pp, const MTL& M, const Plates& P, const Feat& F, int col) const {//check two fibers
     bool bol = (col==-1) ? F.Collision : false;
     if (bol) return false;
     dpair G1 = projection(g,j,M,P);
     dpair G2 = projection(gn,j,M,P);
-    return F.Exact ? collision(pp.coords(k),G1,pp.coords(kn),G2,F) : (sq(G1,G2) < sq(F.AvCollide));
+    return F.Exact ? collision(pp[k].coords,G1,pp[k].coords,G2,F) : (sq(G1,G2) < sq(F.AvCollide));
 }
 
-int Assignment::is_collision(int j, int k, const PP& pp, const MTL& M, const Plates& P, const Feat& F) const {
+int Assignment::is_collision(int j, int k, const FP& pp, const MTL& M, const Plates& P, const Feat& F) const {
     //find collision for galaxy g
     int g = TF[j][k];
     if (g!=-1) return find_collision(j,k,g,pp,M,P,F,0);
     else return -1;
 }
 
-float Assignment::colrate(const PP& pp, const MTL& M, const Plates& P, const Feat& F, int jend0) const {
+float Assignment::colrate(const FP& pp, const MTL& M, const Plates& P, const Feat& F, int jend0) const {
     //rate of collisions
     int jend = (jend0==-1) ? F.Nplate : jend0;
     int col = 0;
