@@ -279,7 +279,7 @@ inline int improve_fiber(int jused_begin, int jused, int k, MTL& M, Plates& P, c
                             if (best!=-1 && (A.is_assigned_jg(j,g,M,F)==-1 || jp==j)) {
                                 int prio = M[g].t_priority;
                                 int m = M[g].nobs_remain;
-                                int unused = A.unused[jp][pp[k].spectrom]; // We take the most unused
+                                int unused = A.unused[jp][pp[kp].spectrom]; // We take the most unused
                                 if (prio>pb || (prio==pb && m>mb) || (prio==pb && m==mb && unused>unusedb)) {
                                     gb = g; bb = best; jpb = jp; kpb = kp; mb = m; pb = prio; unusedb = unused;
                             }}}}}}
