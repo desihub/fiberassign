@@ -46,7 +46,7 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
             // Takes neighboring galaxies that fall on this plate
             std::vector<int> nbr = T.near(M,p.nhat,rad);
             // Projects thoses galaxies on the focal plane
-	    printf(" size of nbr  %d \n",nbr.size());
+	   
             Onplates O;
             for (int gg=0; gg<nbr.size(); gg++) {
                 int g = nbr[gg];
@@ -64,9 +64,7 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
 	      dpair X = pp[k].coords;
 	      std::vector<double>posit={pp[k].fp_x,pp[k].fp_y};
 	      std::vector<int> gals = kdT.near(&posit[0],0.0,F.PatrolRad);
-	      if(k<10 && j<10){
-		printf("j % d k %d pp[k].coords.f %f  pp[k].coords.s %f  size %d\n",j,k, pp[k].coords.f,  pp[k].coords.s,gals.size() );
-	      }	
+
                 for (int g=0; g<gals.size(); g++) {
                     dpair Xg = projection(gals[g],j,M,P);
                     if (sq(Xg,X)<sq(F.PatrolRad)){
