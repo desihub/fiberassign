@@ -412,26 +412,37 @@ FP  read_fiber_positions(const Feat& F) {
 
     fs.close();
     printf("read the positioner file\n");
-    std::cout.flush();
+    
+    for (int i=0;i<10;++i){
+      printf(" i %d FibPos[i].fib_num %d \n",i, FibPos[i].fib_num);
+    }
+
     int fiber_size=FibPos.size();
-    printf(" fiber size %d \n",fiber_size);
-    std::cout.flush();
-    //for (int k=0;k<fiber_size;++k){
-    //printf(" %d  FibPos[k].fp_x %f  FibPos[k].fp_y %f  FibPos[k].spectrom %d \n",k, FibPos[k].fp_x,  FibPos[k].fp_y,  FibPos[k].spectrom);
-    //std::cout.flush();
-    //}
+
+    //sort by fiber number
+
+    std::vector<std::pair<int,int> >pairs;
+    for(int f=0;f<FibPos.size();++f){
+       std::pair <int,int> this_pair (FibPos[f].fib_num,f);
+       pairs.push_back(this_pair);
+    }
+    std::sort(pairs.begin(),pairs.end(),int_pairCompare);
+    std::vector<fpos>out;
+    for(int f=0;f<FibPos.size();++f){
+       out.push_back(FibPos[pairs[f].second]);
+    }
+    copy(out.begin(),out.end(),FibPos.begin());
+    printf(" sorted by fiber number\n");
+    for (int i=0;i<10;++i){
+      printf(" i %d FibPos[i].fib_num %d \n",i, FibPos[i].fib_num);
+    }
+
     //create fibers_of_sp
     FibPos.fibers_of_sp.resize(F.Npetal);
     for (int k=0; k<fiber_size; k++){
       FibPos.fibers_of_sp[FibPos[k].spectrom].push_back(k);
-      //printf("  k  %d  FibPos[k].spectrom  %d \n",  k  ,  FibPos[k].spectrom );
     }
-   printf("made fibers_of_sp \n");
-   std::cout.flush();
-   for (int p=0;p<10;++p){
-     printf(" p %d number of fibers %d \n",p, FibPos.fibers_of_sp[p].size());
-     std::cout.flush();
-   }
+
   
    //create table of Neighbors    
     for(int i=0; i<fiber_size; i++) {
