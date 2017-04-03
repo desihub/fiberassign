@@ -412,10 +412,6 @@ FP  read_fiber_positions(const Feat& F) {
 
     fs.close();
     printf("read the positioner file\n");
-    
-    for (int i=0;i<10;++i){
-      printf(" i %d FibPos[i].fib_num %d \n",i, FibPos[i].fib_num);
-    }
 
     int fiber_size=FibPos.size();
 

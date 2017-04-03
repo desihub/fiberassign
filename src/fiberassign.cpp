@@ -47,25 +47,27 @@ int main(int argc, char **argv) {
     //combine the three input files
     M=Targ;
     printf(" Target size %d \n",M.size());
-    M.insert(M.end(),SStars.begin(),SStars.end());
-    printf(" Standard Star size %d \n",M.size());
-    M.insert(M.end(),SkyF.begin(),SkyF.end());
-    printf(" Sky Fiber size %d \n",M.size());
-    init_time_at(time,"# map position in target list to immutable targetid",t);
     //need to be able to match immutable target id to position in list
     std::map<long long,int> invert_target;
     std::map<long long,int>::iterator targetid_to_idx;
     std::pair<std::map<long long,int>::iterator,bool> ret;
+
+    M.insert(M.end(),SStars.begin(),SStars.end());
+    printf(" Standard Star size %d \n",M.size());
+    M.insert(M.end(),SkyF.begin(),SkyF.end());
+    printf(" Sky Fiber size %d \n",M.size());
     for(unsigned i=0;i<M.size();++i)
       {
 	ret = invert_target.insert(std::make_pair(M[i].id,i));
 	//check for duplicates (std::map.insert only created keys, fails on duplicate keys)
-	if(ret.second == false){
+	if(ret.second == false ){
 	  std::ostringstream o;
 	  o<<"Duplicate targetid "<<M[i].id<<" in MTL";
 	  throw std::logic_error(o.str().c_str());
 	}
       }
+
+    init_time_at(time,"# map position in target list to immutable targetid",t);
 
     init_time_at(time,"# assign priority classes",t);
     F.Ngal = M.size();

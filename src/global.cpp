@@ -113,38 +113,7 @@ std::vector<int> sort_by_subpriority(MTL & M,std::vector<int> init){
 bool int_pairCompare(const std::pair<int, int>& firstElem, const std::pair<int, int>& secondElem) {
 	return firstElem.first < secondElem.first;//used to sort fibers by fib_num
 }
-/*
-List sort_by_fiber_number(FP & pp,std::vector<int> init){
-  //sorts all the Lists associated with pp by fiber number
-  List out;
-  std::vector<std::pair<int,int> >pairs;
-  for(int f=0;f<pp.size();++f){
-    std::pair <int,int> this_pair (pp[f].fib_num,f);
-    pairs.push_back(this_pair);
-  }
-  std::sort(pairs.begin(),pairs.end(),int_pairCompare);
-  for(int f=0;f<init.size();++f){
-    out.push_back(init[pairs[f].second]);
-  }			 
-  return out;
-}
-*/
-std::vector<fpos>  sort_by_fiber_number(FP & pp){
-  //sorts all the Lists associated with pp by fiber number
-  std::vector<fpos> out;
-  std::vector<std::pair<int,int> >pairs;
-  for(int f=0;f<pp.size();++f){
-    std::pair <int,int> this_pair (pp[f].fib_num,f);
-    pairs.push_back(this_pair);
-  }
-  std::sort(pairs.begin(),pairs.end(),int_pairCompare);
-  for(int f=0;f<pp.size();++f){
-    out.push_back(pp[pairs[f].second]);
-  }			 
-  return out;
-}
 
-     
 
 void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) { 
     //M[i].av_tfs is list of tile-fiber pairs available to galaxy i
