@@ -25,7 +25,7 @@
     Time t; // t for global, time for local
     
 // Collecting information from input -------------------------------------------------------------------------------------
-void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Plates& P, const PP& pp, const Feat& F) {
+void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Plates& P, const FP& pp, const Feat& F) {
     //provides list of galaxies available to fiber k on tile j: P[j].av_gals[k]
     
     init_time(t,"# Begin collecting available galaxies");
@@ -46,6 +46,7 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
             // Takes neighboring galaxies that fall on this plate
             std::vector<int> nbr = T.near(M,p.nhat,rad);
             // Projects thoses galaxies on the focal plane
+	   
             Onplates O;
             for (int gg=0; gg<nbr.size(); gg++) {
                 int g = nbr[gg];
@@ -60,13 +61,16 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
             KDtree<struct onplate> kdT(O,2);
             // For each fiber, finds all reachable galaxies within patrol radius, thanks to the tree
             for (int k=0; k<F.Nfiber; k++) {
-                dpair X = pp.coords(k);
-                std::vector<int> gals = kdT.near(&(pp.fp[2*k]),0.0,F.PatrolRad);
+	      dpair X = pp[k].coords;
+	      std::vector<double>posit={pp[k].fp_x,pp[k].fp_y};
+	      std::vector<int> gals = kdT.near(&posit[0],0.0,F.PatrolRad);
+
                 for (int g=0; g<gals.size(); g++) {
                     dpair Xg = projection(gals[g],j,M,P);
                     if (sq(Xg,X)<sq(F.PatrolRad)){
                         P[j].av_gals[k].push_back(gals[g]);
-                        int q=pp.spectrom[k];
+                        int q=pp[k].spectrom;
+
                         //better to make SS & SF assigned to fibers
 
                         if(M[gals[g]].SS){
@@ -110,12 +114,12 @@ bool int_pairCompare(const std::pair<int, int>& firstElem, const std::pair<int, 
 	return firstElem.first < secondElem.first;//used to sort fibers by fib_num
 }
 
-List sort_by_fiber_number(PP & pp,std::vector<int> init){
+List sort_by_fiber_number(FP & pp,std::vector<int> init){
   //sorts all the Lists associated with pp by fiber number
   List out;
   std::vector<std::pair<int,int> >pairs;
-  for(int f=0;f<pp.fib_num.size();++f){
-    std::pair <int,int> this_pair (pp.fib_num[f],f);
+  for(int f=0;f<pp.size();++f){
+    std::pair <int,int> this_pair (pp[f].fib_num,f);
     pairs.push_back(this_pair);
   }
   std::sort(pairs.begin(),pairs.end(),int_pairCompare);
@@ -124,26 +128,7 @@ List sort_by_fiber_number(PP & pp,std::vector<int> init){
   }			 
   return out;
 }
-Dlist sort_doublet_by_fiber_number(PP & pp,Dlist init ){
-  //sorts all the Dlists associated with pp by fiber number
-  //needed for fp which has (x,y) entries
-  Dlist out;
-  std::vector<std::pair<int,int> >pairs;
-  for(int f=0;f<pp.fib_num.size();++f){
-    std::pair <int,int> this_pair (pp.fib_num[f],f);
-    pairs.push_back(this_pair);
-  }
-  printf("sorted by fib_num\n");
-  std::cout.flush();
-  std::sort(pairs.begin(),pairs.end(),int_pairCompare);
-  printf("sorted fp\n");
-  std::cout.flush();
-  for(int f=0;f<init.size()/2;++f){
-    out.push_back(init[2*pairs[f].second]);
-    out.push_back(init[2*pairs[f].second+1]);
-  }
-  return out;
-} 
+
      
 
 void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) { 
@@ -170,9 +155,9 @@ void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) {
 
 // Assignment sub-functions -------------------------------------------------------------------------------------
 // Allow (j,k) to observe g ?
-inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const MTL& M, const PP& pp, const Feat& F, const Assignment& A) {
+inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const MTL& M, const FP& pp, const Feat& F, const Assignment& A) {
 
-    if (F.Collision) for (int i=0; i<pp.N[k].size(); i++) if (g==A.TF[j][pp.N[k][i]]) return false; 
+    if (F.Collision) for (int i=0; i<pp[k].N.size(); i++) if (g==A.TF[j][pp[k].N[i]]) return false; 
     // Avoid 2 neighboring fibers observe the same galaxy (can happen only when Collision=true)
     if (A.find_collision(j,k,g,pp,M,P,F)!=-1){
         return false;} // No collision
@@ -182,11 +167,11 @@ inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const MTL& M
 }
 
 // makes sure we don't exceed limit on SS and SF
-inline bool ok_for_limit_SS_SF(int g, int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F){
+inline bool ok_for_limit_SS_SF(int g, int j, int k, const MTL& M, const Plates& P, const FP& pp, const Feat& F){
      bool is_SF=M[g].SF;
-    bool too_many_SF=P[j].SF_in_petal[pp.spectrom[k]]>F.MaxSF-1;
+    bool too_many_SF=P[j].SF_in_petal[pp[k].spectrom]>F.MaxSF-1;
     bool is_SS=M[g].SS;
-    bool too_many_SS=P[j].SS_in_petal[pp.spectrom[k]]>F.MaxSS-1;
+    bool too_many_SS=P[j].SS_in_petal[pp[k].spectrom]>F.MaxSS-1;
     return !(is_SF && too_many_SF)&&!(is_SS && too_many_SS);
 }
 
@@ -195,7 +180,7 @@ inline bool ok_for_limit_SS_SF(int g, int j, int k, const MTL& M, const Plates& 
 // Find, for (j,k), find the best galaxy it can reach among the possible ones
 // Null list means you can take all possible kinds, otherwise you can only take, for the galaxy, a kind among this list
 // Not allowed to take the galaxy of id no_g
-inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {        
+inline int find_best(int j, int k, const MTL& M, const Plates& P, const FP& pp, const Feat& F, const Assignment& A) {        
     int best = -1; int mbest = -1; int pbest = 0; double subpbest = 0.;
     List av_gals = P[j].av_gals[k];
     // For all available galaxies
@@ -232,7 +217,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const PP& pp, 
 }
 
 // Tries to assign the fiber (j,k)
-inline int assign_fiber(int j, int k, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
+inline int assign_fiber(int j, int k, MTL& M, Plates& P, const FP& pp, const Feat& F, Assignment& A) {
     if (A.is_assigned_tf(j,k)) return -1;
     int best = find_best(j,k,M,P,pp,F,A);
     if (best!=-1) A.assign(j,k,best,M,P,pp);
@@ -241,7 +226,7 @@ inline int assign_fiber(int j, int k, MTL& M, Plates& P, const PP& pp, const Fea
 
 
 
-inline int assign_galaxy(int g,  MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A, int jstart) {
+inline int assign_galaxy(int g,  MTL& M, Plates& P, const FP& pp, const Feat& F, Assignment& A, int jstart) {
     // Tries to assign the galaxy g to one of the used plates after jstart
     //jstart runs possibly to F.Nplate
     int jb = -1; int kb = -1; int unusedb = -1;
@@ -252,7 +237,7 @@ inline int assign_galaxy(int g,  MTL& M, Plates& P, const PP& pp, const Feat& F,
         int k = av_tfs[tfs].s;
         // Check if the assignment is possible, if ok, if the tf is not used yet, and if the plate is in the list
         if (jstart<j && !A.is_assigned_tf(j,k) && ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)) {
-            int unused = A.unused[j][pp.spectrom[k]];//unused fibers on this petal
+            int unused = A.unused[j][pp[k].spectrom];//unused fibers on this petal
             if (unusedb<unused) {
                 jb = j; kb = k; unusedb = unused;//observe this galaxy by fiber on petal with most free fibefs
             }
@@ -266,7 +251,7 @@ inline int assign_galaxy(int g,  MTL& M, Plates& P, const PP& pp, const Feat& F,
 
 // Takes an unassigned fiber and tries to assign it with the "improve" technique described in the doc
 // not used for SS or SF   
-inline int improve_fiber(int jused_begin, int jused, int k, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A, int no_g=-1) {
+inline int improve_fiber(int jused_begin, int jused, int k, MTL& M, Plates& P, const FP& pp, const Feat& F, Assignment& A, int no_g=-1) {
 
     int j=A.suborder[jused];
     if (!A.is_assigned_tf(j,k)) { // Unused tilefiber (j,k)
@@ -294,7 +279,7 @@ inline int improve_fiber(int jused_begin, int jused, int k, MTL& M, Plates& P, c
                             if (best!=-1 && (A.is_assigned_jg(j,g,M,F)==-1 || jp==j)) {
                                 int prio = M[g].t_priority;
                                 int m = M[g].nobs_remain;
-                                int unused = A.unused[jp][pp.spectrom[kp]]; // We take the most unused
+                                int unused = A.unused[jp][pp[kp].spectrom]; // We take the most unused
                                 if (prio>pb || (prio==pb && m>mb) || (prio==pb && m==mb && unused>unusedb)) {
                                     gb = g; bb = best; jpb = jp; kpb = kp; mb = m; pb = prio; unusedb = unused;
                             }}}}}}
@@ -312,7 +297,7 @@ inline int improve_fiber(int jused_begin, int jused, int k, MTL& M, Plates& P, c
 // Assignment functions ------------------------------------------------------------------------------------------
 // Assign fibers naively
 
-void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
+void simple_assign(MTL &M, Plates& P, const FP& pp, const Feat& F, Assignment& A) {
     Time t;
     init_time(t,"# Begin simple assignment :");
     int countme=0;
@@ -328,7 +313,7 @@ void simple_assign(MTL &M, Plates& P, const PP& pp, const Feat& F, Assignment& A
     printf(" countme %d \n",countme);
 }
 
-void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int jused_start) {
+void improve( MTL& M, Plates&P, const FP& pp, const Feat& F, Assignment& A, int jused_start) {
     //jstart is in list from 0 to F.NUsedplate
     Time t;
     init_time(t,"# Begin improve :");
@@ -348,7 +333,7 @@ void improve( MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int 
 
 
 
-void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
+void new_replace( int j, int p, MTL& M, Plates& P, const FP& pp, const Feat& F, Assignment& A) {
     // do standard stars,going through priority classes from least to most
     //keep track of reassignments
 
@@ -378,7 +363,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 		std::vector<int> sorted_could_be_replaced;
                 for(int i=0;i<tfs.size() && done==0;++i){//al the tile-fibers that can reach this standard star
 
-                    if(tfs[i].f==j&&pp.spectrom[tfs[i].s]==p){//a tile fiber from this petal
+                    if(tfs[i].f==j&&pp[tfs[i].s].spectrom==p){//a tile fiber from this petal
                         int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                         int g_old=A.TF[j][k];//what is now at (j,k)  g_old can't be -1 or we would have used it already in assign_sf
 			//require that this galaxy is used only once to keep things simple
@@ -433,7 +418,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 		std::vector<int> could_be_replaced; 
                 for(int i=0;i<tfs.size() && done==0;++i){
 
-                    if(tfs[i].f==j&&pp.spectrom[tfs[i].s]==p){//g is accesible to j,k
+                    if(tfs[i].f==j&&pp[tfs[i].s].spectrom==p){//g is accesible to j,k
                         int k=tfs[i].s;//we know g can be reached by this petal of plate j and fiber k
                         int g_old=A.TF[j][k];//what is now at (j,k)
 
@@ -466,7 +451,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const PP& pp, const Feat& F, 
 
 
 
-void assign_unused(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
+void assign_unused(int j, MTL& M, Plates& P, const FP& pp, const Feat& F, Assignment& A) {
     // Tries to assign remaining fibers in tile jth tile with galaxies on it
     //even taking objects observed later
     //js is a tile with galaxies on it
@@ -511,7 +496,7 @@ void assign_unused(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assign
 }
 
 
-void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignment& A) {
+void assign_sf_ss(int j, MTL& M, Plates& P, const FP& pp, const Feat& F, Assignment& A) {
     //assigns sky fibers and standard stars to unused fibers
     bool thisgalaxy=false;
     for (int ppet=0; ppet<F.Npetal; ppet++) {
@@ -563,7 +548,7 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const PP& pp, const Feat& F, Assignm
 
 }
 
-void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& A, int jused_start) {
+void redistribute_tf(MTL& M, Plates&P, const FP& pp, const Feat& F, Assignment& A, int jused_start) {
     //diagnostic
     printf("start redistribute \n");
     Time t;
@@ -576,12 +561,12 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
             if (Done[jused][k]==0) {
                 int g = A.TF[j][k];//current assignment of (j,k)  only look if assigned
                 if (g!=-1 && !M[g].SS && !M[g].SF) {
-                    int jpb = -1; int kpb = -1; int unusedb = A.unused[j][pp.spectrom[k]];
+                    int jpb = -1; int kpb = -1; int unusedb = A.unused[j][pp[k].spectrom];
                     Plist av_tfs = M[g].av_tfs;  //all possible tile fibers for this galaxy
                     for (int i=0; i<av_tfs.size(); i++) {
                         int jp = av_tfs[i].f;
                         int kp = av_tfs[i].s;
-                        int unused = A.unused[jp][pp.spectrom[kp]];//unused for jp, spectrom[kp]
+                        int unused = A.unused[jp][pp[kp].spectrom];//unused for jp, spectrom[kp]
                         if(A.inv_order[jp]!=-1)//necessary because underdense targets may leave some plates unused
                         {
                         if(A.inv_order[jp]>F.NUsedplate || A.inv_order[jp]<0)printf("**out range  %d\n",A.inv_order[jp]);
@@ -621,7 +606,7 @@ void redistribute_tf(MTL& M, Plates&P, const PP& pp, const Feat& F, Assignment& 
 
 
 
-void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& P, const PP& pp, Feat& F, const Assignment& A,  int last_tile,bool latex) {
+void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& P, const FP& pp, Feat& F, const Assignment& A,  int last_tile,bool latex) {
 	printf("# Results :\n");
 
 
@@ -874,7 +859,7 @@ void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& 
 
 
 
-void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp, const Feat & F, const Assignment & A) {
+void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp, const Feat & F, const Assignment & A) {
     
     // generate a quiet NaN to use for invalid entries.  We cannot
     // guarantee that we have C++11, so we can't use the nice functions
@@ -1178,7 +1163,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const PP & pp
 }
 
 
-void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const Plates& P, const PP& pp, const Feat& F, const Assignment& A) {
+void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const Plates& P, const FP& pp, const Feat& F, const Assignment& A) {
     std::vector<char> colors;
     colors.resize(F.Categories);
     colors[0] = 'k'; colors[1] = 'g'; colors[2] = 'r'; colors[3] = 'b'; colors[4] = 'm'; colors[5] = 'y'; colors[6] = 'w'; colors[7] = 'c';
@@ -1187,7 +1172,7 @@ void pyplotTile(int jused, str directory, const Gals& Secret, const MTL& M,const
 
     int j=A.suborder[jused];
     for (int k=0; k<F.Nfiber; k++) {
-        dpair O = pp.coords(k);
+      dpair O = pp[k].coords;
         int g = A.TF[j][k];
         if (g!=-1) {
             dpair Ga = projection(g,j,M,P);

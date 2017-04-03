@@ -48,13 +48,13 @@ The existing fiber assignment code was initiated by Martin White and expanded by
 \subsection{\file{fiberassign.cpp}}
 The main portion of the code contains several parts:
 \begin{itemize}
-\item Read input files for targets, sky fibers, and standard stars.   The location of the files is specified through \file{F.Targfile,  F.SStarsfile, F.Skyfile}.  If fiberassign is run through the python code in desisim, the location is specified in the calling sequence for quicksurvey, which specifies the location of a ``features'' file.  Reading the features file is actually the first action and sets out many of the parameters (F.xxx) for the code .  If fiberassign is run directly, the target file must be provided.  If fiberassign is run from the python wrapper in desisim, an mtl file is provided by \file{make\_mtl.py} in desitarget.
+\item Read input files for targets, sky fibers, and standard stars.   The location of the files is specified through \file{F.Targfile,  F.SStarsfile, F.Skyfile}.  If fiberassign is run through the python code in desisim, the location is specified in the calling sequence for quicksurvey, which specifies the location of a ``features'' file.  Reading the features file is actually the first action and sets out many of the parameters (F.xxx) for the code .  Currently (Feb. 2017) \file{F.Targfile} is \newline \file{/project/projectdirs/desi/datachallenge/quicksurvey2016/input/dark/targets.fits}.
 
 \item Combine these into a structure of type \struc{MTL}.  Each galaxy carries a number of characteristics as specified in \file{structs.cpp}, including RA, dec, and priority.  
  The complete list read by fiberassign: TARGETID, RA, DEC, DESI\_TARGET, MWS\_TARGET, BGS\_TARGET, OBSCONDITIONS, BRICKNAME, SUBPRIORITY, PRIORITY.  The fiberassign code doesn't know the true nature or redshifts of the targets.   TARGETID enables us to relate a single galaxy appearing in several files.  
 
 \item Determine the number of different priorities and create priority classes, collections of targets all of which have the same priority.  For example, there might be just three for ELGs, LRGs, and QSOs.  
-\item Read the file containing the locations of the positioners in the focal plane.  Determine which fibers are neighbors and note which petal each fiber is on. 
+\item Read the file containing the locations of the positioners in the focal plane.  Determine which fibers are neighbors and note which petal each fiber is on.
 \item Read the RA and dec of the centers of each of the 10,000 or so plates (tiles), i.e. the centers of the fields to be observed.  In addition, read \var{IN\_DESI}, specifying whether a tile is in the footprint, \var{TILEID}, \var{OBSCONDITIONS}, specifying under which conditions the tile may be observed,
 obsconditions:
 \begin{itemize}
@@ -88,10 +88,10 @@ pairs \var{(j,k)}.
 This establishes many of the basic features of the code.
 \begin{itemize}
 \item \func{read\_MTLfile} reads a fits file, extracting for each target, among other things,  the \var{targetid} (should be a long long),\var{numobs} (the number of observations remaining to be taken), \var{RA}, \var{dec} \var{priority}, \var{subpriority} (a random number that is permanently affixed to this target).
-\item \func{read\_fiber\_positions} does that, in x,y coordinates in mm. Fiber positioners are in \class{fpos}, whose members are \var{fib\_num}, the immutable number of the fiber, which may or may not be its position in the list being read, \var{fp\_x} and \var{fp\_y}, the x and y coordinates in the focal plane in mm (roughly -400$<x,y<$400), \var{spectrom}, the spectrometer number (0-9) to which this fiber is connected.  After the fiber locations are read, we first re-order the fibers by their true number, \var{fib\_num}.  We then compute 
-\var{N[i]}  for fiber $i$, the list of all other fibers within a distance \var{F.NeighborRad} and
-the  list \var{fibers\_of\_sp[k]} of fibers that go to spectrometer $k$ (or petal) 0, 1,...9
-\item \func{read\_plate\_centers} gets the tile-id,  RA and dec, for each tile and the pass (0 - 4 or 1-5?) to which it
+\item \func{read\_fiber\_positions} does that, in x,y coordinates in mm. Each fiber position takes up two entries in the list of fiber positions.
+\item \func{get\_neighbors} \var{N[i]}  for fiber $i$ is list of all other fibers within a distance \var{F.NeighborRad}.
+\item \func{compute\_fibsofsp}  gives list \var{fibers\_of\_sp[k}]of fibers that go to spectrometer $k$ (or petal) 0, 1,...9
+\item \func{read\_plate\_centers} gets the tileid,  RA and dec, for each tile and the pass (0 - 4 or 1-5?) to which it
  belongs.
  \item A mapping, \var{invert\_tile}, between the true tileid and where it is in the list of tiles.
 
@@ -317,13 +317,16 @@ Miscellaneous tools for list, tables, etc.
 
 \subsection{\file{structs.h}}
 \begin{itemize}
-\item \class{FP}
+\item \class{PP}
 	Plate parameters:
 	\begin{itemize}
-		\item \var{fp\_x, fp\_y} fiber positions (x,y) in mm.
+		\item \var{fp} fiber positions (x,y) in mm.
 		\item  \var{spectrom} All spectrometer assignments of fibers.	
 		\item \var{fibers\_of\_sp} fibers associated with a spectrometer.
 		\item \var{N} fibers that neighbor fiber k.
+		\item \func{read\_fiber\_positions}
+		\item \func{get\_neighbors}
+		\item \func{fibs\_of\_some\_pet} fibers of a petal
 		\item \var{coords} coordinates (x,y) of fiber k
 		\end{itemize}
 \item \class{galaxy} contains truth information

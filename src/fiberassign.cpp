@@ -83,23 +83,15 @@ int main(int argc, char **argv) {
 
     init_time_at(time,"# Start positioners",t);
     // fiber positioners
-    PP pp;
-    pp.read_fiber_positions(F); 
-    std::vector<int> spectrom_init=pp.spectrom;
-    pp.spectrom=sort_by_fiber_number(pp,spectrom_init);
-    printf("sorted positioners\n");
-    std::cout.flush();
-    Dlist fp_init=pp.fp;
-    pp.fp=sort_doublet_by_fiber_number(pp,fp_init);
     
+    FP pp =read_fiber_positions(F); 
     //order the fibers by their fiber number (fib_num) not simply order in list
     //need to fix spectrom (List) and fp
     
-    F.Nfiber = pp.fp.size()/2; //each fiber has two co-ordinates so divide by two
-    F.Npetal = max(pp.spectrom)+1;//spectrometers run 0 to 9
-    F.Nfbp = (int) (F.Nfiber/F.Npetal);// fibers per petal = 500
-    pp.get_neighbors(F); //list of all fibers within F.NeighborRad of given fiber
-    pp.compute_fibsofsp(F);//list of fibers on each spectrometer
+    F.Nfiber = pp.size(); //each fiber has two co-ordinates so divide by two
+    F.Npetal = 10;//spectrometers run 0 to 9 unless pacman
+    F.Nfbp = F.Nfiber/F.Npetal;// fibers per petal = 500
+
     print_time(time,"# ..posiioners  took :");
     //
     init_time_at(time,"# Start plates",t);
