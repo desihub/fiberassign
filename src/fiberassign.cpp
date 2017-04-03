@@ -48,14 +48,10 @@ int main(int argc, char **argv) {
     M=Targ;
     printf(" Target size %d \n",M.size());
     //need to be able to match immutable target id to position in list
+    //check for duplicates on mtl only to allow duplication with SS
     std::map<long long,int> invert_target;
     std::map<long long,int>::iterator targetid_to_idx;
     std::pair<std::map<long long,int>::iterator,bool> ret;
-
-    M.insert(M.end(),SStars.begin(),SStars.end());
-    printf(" Standard Star size %d \n",M.size());
-    M.insert(M.end(),SkyF.begin(),SkyF.end());
-    printf(" Sky Fiber size %d \n",M.size());
     for(unsigned i=0;i<M.size();++i)
       {
 	ret = invert_target.insert(std::make_pair(M[i].id,i));
@@ -66,6 +62,11 @@ int main(int argc, char **argv) {
 	  throw std::logic_error(o.str().c_str());
 	}
       }
+    M.insert(M.end(),SStars.begin(),SStars.end());
+    printf(" Standard Star size %d \n",M.size());
+    M.insert(M.end(),SkyF.begin(),SkyF.end());
+    printf(" Sky Fiber size %d \n",M.size());
+
 
     init_time_at(time,"# map position in target list to immutable targetid",t);
 
