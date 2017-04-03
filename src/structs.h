@@ -29,36 +29,12 @@ class fpos {
 class FP  : public std::vector<struct fpos>{ 
     public:
 
-
-    void get_neighbors(const Feat& F);
     Table fibers_of_sp;// Inv map of spectrom, fibers_of_sp[sp] are fibers of spectrom sp, redundant
-
 };
 
 FP  read_fiber_positions(const Feat& F);
+bool int_pairCompare(const std::pair<int, int>& firstElem, const std::pair<int, int>& secondElem);
 
-
-
-
-// PP ---------------------------------------------------
-/*
-class PP { // PP for plate parameters
-    public:
-    Dlist fp; // All fiber positions (x,y) in mm
-    List spectrom; // All spectrometer assignments of fibers
-    List fib_num; //true fiber (not positioner) number
-    Table fibers_of_sp; // Inv map of spectrom, fibers_of_sp[sp] are fibers of spectrom sp, redundant but optimizes
-    Table N; // Identify neighboring positioners : neighbors of fiber k are N[k]
-    
-    PP();
-    void read_fiber_positions(const Feat& F);
-    void get_neighbors(const Feat& F);
-    void compute_fibsofsp(const Feat& F); // Computes fibers_of_sp
-    //not used
-    List fibs_of_same_pet(int k) const;
-    dpair coords(int k) const; // Coords of fiber k
-};
-*/
 // galaxy truth -------------------------------------------
 class galaxy {
     public:
@@ -66,12 +42,9 @@ class galaxy {
         long category;      // the true type when used with a secret file
         double z;
 	uint16_t obsconditions;
-        // double ra, dec;
 };
 class Gals : public std::vector<struct galaxy> {};
 
-// Gals read_galaxies(const Feat& F);
-// Gals read_galaxies_ascii(const Feat& F);
 Gals read_Secretfile(str filename,const Feat& F);
 Gals read_Secretfile_ascii(str filename,const Feat& F);
 
@@ -93,27 +66,19 @@ class target {
 class MTL : public std::vector<struct target> {
     public:
     std::vector<int> priority_list;
- 
-    
 };
 
-
-// void make_MTL(const Gals& G, const Feat& F, Gals& Secret, MTL& M);
-// void make_MTL_SS_SF(const Gals& G, MTL& Targ, MTL& SStars, MTL& SkyF,Gals& Secret, const Feat& F);
 MTL read_MTLfile(str filename, const Feat& F, int SS, int SF);
-// void make_Targ_Secret(const Gals& G, MTL& Targ, Gals& Secret, const Feat& F);
-// void write_MTLfile(const Gals& Secret, const MTL& M, const Feat& F);
-void write_MTL_SS_SFfile(const MTL& Targ, const MTL& SStars, const MTL& SkyF, const Gals& Secret, const Feat& F);
-void write_Targ_Secret(const MTL& Targ,  const Gals& Secret, const Feat& F);
+
 void assign_priority_class(MTL & M);
-// petal--------------------------------------------------
+
 
 // Plate -------------------------------------------------
 struct onplate { // The position of a galaxy in plate coordinates
     int id;
     double pos[2];
 };
-//not used
+
 class Onplates : public std::vector<struct onplate> {};
 
 class plate {
@@ -138,7 +103,7 @@ class plate {
 class Plates : public std::vector<struct plate> {};
 
 Plates read_plate_centers(const Feat& F);
-void read_save_av_gals(str readfile, const Feat& F,std::vector<std::vector<long long> > &av_gals,std::vector<std::vector<long long> > &ss_av_gals,std::vector<std::vector<long long> > &sf_av_gals,bool diagnose);
+
 
 // Assignment ---------------------------------------------
 // 2 mappings of assignments : (j,k) -> id(gal) ; id(gal)[5] -> (j,k)
@@ -182,14 +147,10 @@ class Assignment {
     List sort_fibs_dens(int j, const List& fibs, const MTL& M, const Plates& P, const FP& pp, const Feat& F) const; // Sort this list of fibers by decreasing density
     List fibs_unassigned(int j, int pet, const MTL& M, const FP& pp, const Feat& F) const; // Sublist of unassigned fibers for (j,p)
 
-    // Update information
-    //void update_nobsv_tmp_for_one(int j, const Feat& F);//update for plate j
-    //void update_once_obs(int j, const Feat& F);
 
     // Used to compute results at the end
-    //not used
-    Table infos_petal(int j, int pet, const MTL& M, const Plates& P, const FP& pp, const Feat& F) const;
-    //not used
+
+
     List unused_f(const Feat& F) const; //gives total number of unused fibers
     Table unused_fbp(const FP& pp, const Feat& F) const; // Unused fibers by petal
     float colrate(const FP& pp, const MTL& M, const Plates& P, const Feat& F, int j=-1) const; // Get collision rate, j = plate number

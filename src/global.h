@@ -62,7 +62,3 @@ void pyplotTile(int j, str fname, const Gals& Secret, const MTL& M, const Plates
 void overlappingTiles(str fname, const Feat& F, const Assignment& A);
 #endif
 bool myorder(int i, int j);
-
-
-List sort_by_fiber_number(FP & pp,std::vector<int> v);
-Dlist sort_doublet_by_fiber_number(FP & pp, Dlist v);
