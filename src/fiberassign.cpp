@@ -47,6 +47,7 @@ int main(int argc, char **argv) {
     //combine the three input files
     M=Targ;
     printf(" Target size %d \n",M.size());
+    std::cout.flush();
     //need to be able to match immutable target id to position in list
     std::map<long long,int> invert_target;
     std::map<long long,int>::iterator targetid_to_idx;
