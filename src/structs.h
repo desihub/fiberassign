@@ -21,6 +21,7 @@ class fpos {
     int fib_num; //number of fiber(!)  not positioner, read from fibpos file
     double fp_x; //x position in mm of positioner
     double fp_y; //y position in mm of positioner
+    int location; //location of fiber
     int spectrom;//which spectrometer 0 - 9
     std::vector<int> N;// Identify neighboring positioners : neighbors of fiber k are N[k] 
     dpair coords; 

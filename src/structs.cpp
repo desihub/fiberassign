@@ -394,10 +394,11 @@ FP  read_fiber_positions(const Feat& F) {
     printf("before reading positioners \n");
     std::cout.flush();
     while (fs.eof()==0) {
-        double x,y; int fiber,positioner,spectro,remove; 
-        std::istringstream(buf) >> fiber >> positioner >> spectro >> x >> y;
+        double x,y; int fiber,location,spectro,remove; 
+        std::istringstream(buf) >> fiber >> location >> spectro >> x >> y;
     try{
 	    fiber_pos.fib_num=fiber;
+	    fiber_pos.location=location;
             fiber_pos.fp_x=x;
             fiber_pos.fp_y=y;
             int sp = F.Pacman ? inv[spectro] : spectro;
