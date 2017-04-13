@@ -914,7 +914,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
     strcpy(tform[0], "J");
     strcpy(tunit[0], "");
     
-    strcpy(ttype[1], "POSITIONER");
+    strcpy(ttype[1], "LOCATION");
     strcpy(tform[1], "J");
     strcpy(tunit[1], "");
     
@@ -1021,7 +1021,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
                 int g = A.TF[j][fib];
                 
                 fiber_id[i] = fib;
-                positioner_id[i] = fib;
+                positioner_id[i] = pp[i].location;//previously absent 4/11/17
                 num_target[i] = P[j].av_gals[fib].size();
 
 
