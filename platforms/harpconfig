@@ -1,0 +1,23 @@
+# This platform files gets it compile variables from
+# harpconfig, which is installed as part of HARP and
+# is a dependency for specex (and hence the spectro
+# pipeline).
+
+# The serial C++ compiler
+export CXX := $(shell harpconfig --cxx)
+
+# Normal compile flags
+export CXXFLAGS := $(shell harpconfig --cxxflags)
+
+# OpenMP flags (used for both compiling and linking)
+OS := $(shell uname)
+ifeq ($(OS), Darwin)
+  export OMPFLAGS := 
+else
+  export OMPFLAGS := -fopenmp
+endif
+
+# CFITSIO include and linking commands
+export CFITSIO_CPPFLAGS := $(shell harpconfig --cppflags)
+export CFITSIO := $(shell harpconfig --ldflags) -lcfitsio -lm
+
