@@ -88,12 +88,12 @@ int main(int argc, char **argv) {
     init_time_at(time,"# Start positioners",t);
     // fiber positioners
     
+    F.Npetal = 10;//spectrometers run 0 to 9 unless pacman
     FP pp =read_fiber_positions(F); 
     //order the fibers by their fiber number (fib_num) not simply order in list
     //need to fix spectrom (List) and fp
     
     F.Nfiber = pp.size(); //each fiber has two co-ordinates so divide by two
-    F.Npetal = 10;//spectrometers run 0 to 9 unless pacman
     F.Nfbp = F.Nfiber/F.Npetal;// fibers per petal = 500
 
     print_time(time,"# ..posiioners  took :");
