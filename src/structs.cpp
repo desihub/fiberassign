@@ -397,13 +397,13 @@ FP  read_fiber_positions(const Feat& F) {
         double x,y; int fiber,location,spectro,remove; 
         std::istringstream(buf) >> fiber >> location >> spectro >> x >> y;
     try{
-	    fiber_pos.fib_num=fiber;
-	    fiber_pos.location=location;
+            fiber_pos.fib_num=fiber;
+            fiber_pos.location=location;
             fiber_pos.fp_x=x;
             fiber_pos.fp_y=y;
             int sp = F.Pacman ? inv[spectro] : spectro;
             fiber_pos.spectrom=spectro;  
-	    fiber_pos.coords=dpair(x,y);
+            fiber_pos.coords=dpair(x,y);
     } catch(std::exception& e) {myexception(e);}
     
         FibPos.push_back(fiber_pos);
@@ -440,15 +440,14 @@ FP  read_fiber_positions(const Feat& F) {
       FibPos.fibers_of_sp[FibPos[k].spectrom].push_back(k);
     }
 
-  
    //create table of Neighbors    
     for(int i=0; i<fiber_size; i++) {
         for (int j=0; j<fiber_size; j++) {
             if(i!=j) {
-	      if(sq(FibPos[i].fp_x-FibPos[j].fp_x)+sq(FibPos[i].fp_y-FibPos[j].fp_y) < sq(F.NeighborRad)) {
+                if(sq(FibPos[i].fp_x-FibPos[j].fp_x)+sq(FibPos[i].fp_y-FibPos[j].fp_y) < sq(F.NeighborRad)) {
                     FibPos[i].N.push_back(j); }
-	    }
-	}
+            }
+        }
     }   
     printf(" made neighbors \n");
     return (FibPos);
