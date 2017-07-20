@@ -74,7 +74,9 @@ Verif false
 """
 
 #-------------------------------------------------------------------------
-parser = argparse.ArgumentParser(usage = "{prog} [options]")
+parser = argparse.ArgumentParser(
+    description = "Writes a fiberassign configuration file for the given inputs/outputs"
+    )
 parser.add_argument("--mtl", type=str, required=True, help="input MTL target file")
 parser.add_argument("--stdstars", type=str, required=True, help="input standard stars file")
 parser.add_argument("--sky", type=str, required=True, help="input sky locations file")
