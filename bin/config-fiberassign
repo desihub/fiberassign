@@ -1,0 +1,117 @@
+#!/usr/bin/env python
+
+"""
+Utility script to generate a fiberassign configuration file
+"""
+
+from __future__ import absolute_import, division, print_function
+import sys, os
+import argparse
+import desimodel.io
+
+#-------------------------------------------------------------------------
+template = """
+Targfile {mtlfile}
+SStarsfile {stdfile}
+SkyFfile  {skyfile}
+surveyFile {surveytilesfile}
+outDir {outdir}
+
+tileFile {tilefile}
+fibFile {fiberposfile}
+
+PrintAscii false
+PrintFits true
+diagnose true
+
+kind QSOLy-a QSOTracer LRG ELG FakeQSO FakeLRG SS SF
+type QSO QSO LRG ELG QSO LRG SS SF
+prio 3400 3400 3200 3000 3400 3200 0 0
+priopost 3500 0 3200 0 0 0 0 0
+goal 5 5 2 1 5 2 5 5
+goalpost 5 1 2 1 1 1 5 5
+lastpass 0 0 0 1 0 0 1 1 
+SS       0 0 0 0 0 0 1 0
+SF       0 0 0 0 0 0 0 1 
+pass_intervals 0 50 100 150 200
+
+Randomize false
+Pacman false
+Npass 5
+MaxSS 10
+MaxSF 40
+PlateRadius 1.65
+InterPlate 0
+Analysis 0
+InfDens false
+
+TotalArea 15789.0
+invFibArea 700
+moduloGal 1
+moduloFiber 1
+
+Collision false
+Exact true
+AvCollide 3.2
+Collide 1.98
+NoCollide 7.0
+PatrolRad 5.8
+NeighborRad 14.05
+
+PlotObsTime false
+PlotHistLya false
+PlotDistLya false
+PlotFreeFibHist false
+PlotFreeFibTime false
+PlotSeenDens false
+PrintGalObs false
+
+MinDec -90.
+MaxDec 90.
+MinRa 0.
+MaxRa 360.
+Verif false
+"""
+
+#-------------------------------------------------------------------------
+parser = argparse.ArgumentParser(
+    description = "Writes a fiberassign configuration file for the given inputs/outputs"
+    )
+parser.add_argument("--mtl", type=str, required=True, help="input MTL target file")
+parser.add_argument("--stdstars", type=str, required=True, help="input standard stars file")
+parser.add_argument("--sky", type=str, required=True, help="input sky locations file")
+parser.add_argument("--outdir", type=str, required=True, help="fiberassign output directory")
+parser.add_argument("--surveytiles", type=str, required=True, help="ascii file of TILEIDs to assign")
+parser.add_argument("--config", type=str, required=True, help="config file to write")
+parser.add_argument("--tilefile", type=str, help="override $DESIMODEL/data/footprint/desi-tiles.fits")
+args = parser.parse_args()
+
+if args.tilefile is None:
+    args.tilefile = desimodel.io.findfile('footprint/desi-tiles.fits')
+
+missing = False
+for filetype, filepath in [
+        ('MTL', args.mtl),
+        ('stdstars', args.stdstars),
+        ('sky', args.sky),
+        ('surveytiles', args.surveytiles),
+    ]:
+    if not os.path.exists(filepath):
+        print('ERROR: Missing {} file {}'.format(filetype, filepath))
+        missing = True
+if missing:
+    sys.exit(1)
+
+tx = template.format(
+    mtlfile = args.mtl,
+    stdfile = args.stdstars,
+    skyfile = args.sky,
+    surveytilesfile = args.surveytiles,
+    outdir = args.outdir,
+    tilefile = args.tilefile,
+    fiberposfile = desimodel.io.findfile('focalplane/fiberpos.txt'),
+    )
+
+with open(args.config, 'w') as fx:
+    fx.write(tx)
+
