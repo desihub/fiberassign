@@ -17,6 +17,7 @@
 #include        "collision.h"
 #include        "global.h"
 #include     <map>
+#include  <stdexcept>
 //reduce redistributes, updates  07/02/15 rnc
 int main(int argc, char **argv) {
     // argv[1] is the features file
