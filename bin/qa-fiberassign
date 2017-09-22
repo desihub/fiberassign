@@ -82,6 +82,7 @@ for fa in assigned:
     fa.meta.clear()
 
 assigned = vstack(assigned)
+unique_assigned_targetids = np.unique(assigned['TARGETID'])
 covered = np.concatenate(covered)
 
 targets = Table.read(args.targets)
@@ -135,21 +136,21 @@ nt = Counter(covered)
 cn = Counter(nt.values())
 print()
 print('Percent of targets covered N times')
-print('            1     2     3     4     5     6     7     8')
+print('            1     2     3     4     5     6     7     8     9')
 print('        ', end='')
-for i in range(1,9):
+for i in range(1,10):
     pcov = 100 * cn[i] / len(targets)
     print('{:6.1f}'.format(pcov), end='')
 print()
 
 print()
 print('Percent of targets covered at least N times')
-print('            1     2     3     4     5     6     7     8')
+print('            1     2     3     4     5     6     7     8     9')
 print('        ', end='')
-n = 0.0
-for i in range(1,9):
-    n += cn[i]
+n = len(targets)
+for i in range(1,10):
     pcov = 100 * n / len(targets)
+    n -= cn[i]
     print('{:6.1f}'.format(pcov), end='')
 print()
 
@@ -157,7 +158,7 @@ print()
 #- Efficiency for assignment as a function of coverage
 print()
 print('Assignment probability if covered at least N times')
-print('            1     2     3     4     5     6     7     8')
+print('            1     2     3     4     5     6     7     8     9')
 for objtype in ['ELG', 'LRG', 'QSO', 'MWS_ANY', 'BGS_ANY']:
     #- tx: targetids for targets of this objtype
     ii = (targets['DESI_TARGET'] & desi_mask.mask(objtype)) != 0
@@ -169,8 +170,11 @@ for objtype in ['ELG', 'LRG', 'QSO', 'MWS_ANY', 'BGS_ANY']:
     ntx_keys = np.asarray(list(ntx.keys()))
     ntx_values = np.asarray(list(ntx.values()))
     print('{:8s}'.format(objtype), end='')
-    for n in range(1,9):
-        nobs = np.count_nonzero(ntx_values <= n)
-        pobs = 100.0 * nobs / len(tx)
+    for n in range(1,10):
+        #- Targets covered n or less times
+        kk = (ntx_values <= n)
+        nassigned = np.count_nonzero(np.in1d(unique_assigned_targetids, ntx_keys[kk]))
+        pobs = 100.0 * nassigned / len(tx)
         print('{:6.1f}'.format(pobs), end='')
+
     print()
