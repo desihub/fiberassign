@@ -396,7 +396,7 @@ FP  read_fiber_positions(const Feat& F) {
     while (fs.eof()==0) {
         double x,y; int fiber,location,spectro,remove; 
         std::istringstream(buf) >> fiber >> location >> spectro >> x >> y;
-    try{
+        try{
             fiber_pos.fib_num=fiber;
             fiber_pos.location=location;
             fiber_pos.fp_x=x;
@@ -404,7 +404,7 @@ FP  read_fiber_positions(const Feat& F) {
             int sp = F.Pacman ? inv[spectro] : spectro;
             fiber_pos.spectrom=spectro;  
             fiber_pos.coords=dpair(x,y);
-    } catch(std::exception& e) {myexception(e);}
+        } catch(std::exception& e) {myexception(e);}
     
         FibPos.push_back(fiber_pos);
         getline(fs,buf);

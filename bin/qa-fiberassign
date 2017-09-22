@@ -1,0 +1,176 @@
+#!/usr/bin/env python
+
+"""
+QA for fiberassign
+"""
+
+from __future__ import absolute_import, division, print_function
+import sys, os
+import argparse
+from collections import Counter
+
+import numpy as np
+from astropy.table import Table, vstack
+from astropy.io import fits
+
+from desitarget import desi_mask
+import desimodel.io
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--targets", type=str,  help="input data")
+parser.add_argument("tilefiles", type=str, nargs='+', help="fiber assign tile files")
+
+args = parser.parse_args()
+
+fiberpos = Table(desimodel.io.load_fiberpos())
+fiberpos.sort('FIBER')
+fiber_locations = sorted(zip(fiberpos['FIBER'], fiberpos['LOCATION']))
+
+nfail = 0
+assigned = list()
+covered = list()
+n5k = np.arange(5000, dtype=int)
+for filename in args.tilefiles:
+    fa = Table.read(filename, 'FIBER_ASSIGNMENTS')
+    fa.sort('FIBER')
+    assigned.append(fa)
+    tmp = Table.read(filename, 'POTENTIAL_ASSIGNMENTS')['POTENTIALTARGETID']
+    covered.append(np.unique(tmp))
+    errors = list()
+
+    if len(np.unique(fa['FIBER'])) != 5000:
+        errors.append('Repeated fiber numbers')
+
+    if len(np.unique(fa['LOCATION'])) != 5000:
+        errors.append('Repeated location numbers')
+
+    if np.any(fa['TARGETID'] < 0):
+        n = np.count_nonzero(fa['TARGETID'] < 0)
+        errors.append('{} unassigned fibers'.format(n))
+
+    tx = fa['TARGETID'][fa['TARGETID']>0]
+    if len(tx) != len(np.unique(tx)):
+        errors.append('{} repeated TARGETID'.format(
+            len(tx) - len(np.unique(tx))))
+
+    if sorted(zip(fa['FIBER'], fa['LOCATION'])) != fiber_locations:
+        errors.append('fiber:location map incorrect')
+
+    ii = fa['TARGETID'] >= 0
+    dx = (fa['XFOCAL_DESIGN'][ii] - fiberpos['X'][ii])
+    dy = (fa['YFOCAL_DESIGN'][ii] - fiberpos['Y'][ii])
+    r = np.sqrt(dx**2 + dy**2)
+    if np.max(r) > 6:
+        errors.append('Fibers assigned to more than 6mm from positioner center')
+
+    if len(errors) == 0:
+        print('{} - OK'.format(filename))
+    else:
+        nfail += 1
+        print('{} - ERROR'.format(filename))
+        for err in errors:
+            print('  {}'.format(err))
+
+print('{}/{} tiles had errors'.format(nfail, len(args.tilefiles)))
+
+if args.targets is None:
+    print('Option --targets not specified; stopping')
+    sys.exit(0)
+
+#- Clear metadata keywords to avoid stacking name collisions
+for fa in assigned:
+    fa.meta.clear()
+
+assigned = vstack(assigned)
+covered = np.concatenate(covered)
+
+targets = Table.read(args.targets)
+#- TODO: count and remove sky targets
+
+if len(targets) != len(np.unique(targets['TARGETID'])):
+    print('ERROR: target catalog has repeated TARGETIDs')
+
+print('----------')
+ntargets = len(targets)
+iicovered = np.in1d(targets['TARGETID'], covered)
+ncovered = np.count_nonzero(iicovered)
+ntiles = len(args.tilefiles)
+pcovered = 100.0*ncovered/ntargets
+print('{:.1f}% targets ({}/{}) covered by {} tiles'.format(
+    pcovered, ncovered, ntargets, ntiles))
+if ncovered < ntargets:
+    print('  Dropping {} targets not covered by any tile:fiber'.format(ntargets-ncovered))
+    targets = targets[iicovered]
+else:
+    print('  All targets covered by at least one tile:fiber')
+
+#- Drop covered IDs that are not in targets list (presumably sky and standards)
+iitarg = np.in1d(covered, targets['TARGETID'])
+covered = covered[iitarg]
+
+#-----
+if not np.all( np.in1d(covered, targets['TARGETID']) ):
+    ii = np.in1d(covered, targets['TARGETID'])
+    extra = np.unique(covered[ii])
+    print('ERROR: {} targets in coverage list but not in target list'.format(len(extra)))
+
+#-----
+print('Fiber assignment efficiency')
+for objtype in ['ELG', 'LRG', 'QSO', 'MWS_ANY', 'BGS_ANY']:
+    ii = (targets['DESI_TARGET'] & desi_mask.mask(objtype)) != 0
+    ntot = np.count_nonzero(ii)
+    nx = np.count_nonzero(np.in1d(targets['TARGETID'][ii], assigned['TARGETID']))
+    print('  {:8s} {:5.1f}%  ({}/{})'.format(objtype, 100*nx/ntot, nx, ntot))
+
+print('\n---------------------------------------------------------------')
+print("WORK IN PROGRESS")
+print("The stats below mix dark/bright/gray without considering that a")
+print("dark target can't be observed on a bright tile")
+print('---------------------------------------------------------------')
+
+#-----
+#- Number of times each target was covered
+nt = Counter(covered)
+#- histogram of how many targets were covered how many times
+cn = Counter(nt.values())
+print()
+print('Percent of targets covered N times')
+print('            1     2     3     4     5     6     7     8')
+print('        ', end='')
+for i in range(1,9):
+    pcov = 100 * cn[i] / len(targets)
+    print('{:6.1f}'.format(pcov), end='')
+print()
+
+print()
+print('Percent of targets covered at least N times')
+print('            1     2     3     4     5     6     7     8')
+print('        ', end='')
+n = 0.0
+for i in range(1,9):
+    n += cn[i]
+    pcov = 100 * n / len(targets)
+    print('{:6.1f}'.format(pcov), end='')
+print()
+
+#-----
+#- Efficiency for assignment as a function of coverage
+print()
+print('Assignment probability if covered at least N times')
+print('            1     2     3     4     5     6     7     8')
+for objtype in ['ELG', 'LRG', 'QSO', 'MWS_ANY', 'BGS_ANY']:
+    #- tx: targetids for targets of this objtype
+    ii = (targets['DESI_TARGET'] & desi_mask.mask(objtype)) != 0
+    tx = targets['TARGETID'][ii]
+    #- nt: coverage counts for just those targets
+    jj = np.in1d(covered, tx)
+    ntx = Counter(covered[jj])
+    #- Count how many targets are covered n times for this objtype
+    ntx_keys = np.asarray(list(ntx.keys()))
+    ntx_values = np.asarray(list(ntx.values()))
+    print('{:8s}'.format(objtype), end='')
+    for n in range(1,9):
+        nobs = np.count_nonzero(ntx_values <= n)
+        pobs = 100.0 * nobs / len(tx)
+        print('{:6.1f}'.format(pobs), end='')
+    print()

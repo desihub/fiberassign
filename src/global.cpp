@@ -971,6 +971,18 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
     
     ret = fits_create_tbl(fptr, BINARY_TBL, F.Nfiber, ncols, ttype, tform, tunit, extname, &status);
     fits_report_error(stderr, status);
+
+    int tileid = P[j].tileid;
+    float tilera = P[j].tilera;
+    float tiledec = P[j].tiledec;
+
+    fits_write_key(fptr, TINT, "TILEID", &(tileid), "Tile ID number", &status);
+    fits_report_error(stderr, status);
+    fits_write_key(fptr, TFLOAT, "TILERA", &(tilera), "Tile RA [deg]", &status);
+    fits_report_error(stderr, status);
+    fits_write_key(fptr, TFLOAT, "TILEDEC", &(tiledec), "Tile DEC [deg]", &status);
+    fits_report_error(stderr, status);
+
     
     // get the number of rows to write for each internal FITS buffer.
     
@@ -989,7 +1001,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
     char * ot_tmp[optimal];
     for (int i = 0; i < optimal; i++) {
         ot_tmp[i] = objtype[i];
-	bn_tmp[i] = brickname[i];
+        bn_tmp[i] = brickname[i];
     }
     long long target_id[optimal];
     long long desi_target[optimal];
@@ -1021,9 +1033,8 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
                 int g = A.TF[j][fib];
                 
                 fiber_id[i] = fib;
-                positioner_id[i] = pp[i].location;//previously absent 4/11/17
+                positioner_id[i] = pp[fib].location;
                 num_target[i] = P[j].av_gals[fib].size();
-
 
                 //target_id[i] = g; ********
                 if(g>0) target_id[i] = M[g].id;
@@ -1038,7 +1049,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
                     desi_target[i] = 0;
                     bgs_target[i] = 0;
                     mws_target[i] = 0;
-		    strncpy(brickname[i], "notbrick", bricklen+1);
+                    strncpy(brickname[i], "notbrick", bricklen+1);
                 } else {
                     //we aren't supposed to know the kind  use priority instead
                     //strncpy(objtype[i], F.kind[G[g].id].c_str(), objtypelen);
@@ -1051,7 +1062,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
                     desi_target[i] = M[g].desi_target;
                     bgs_target[i] = M[g].bgs_target;
                     mws_target[i] = M[g].mws_target;
-		    strncpy(brickname[i], M[g].brickname, bricklen+1);
+                    strncpy(brickname[i], M[g].brickname, bricklen+1);
                 }
 
                 // Store the potential targetids accesible to this fibre (the actual targetid, not the index).
@@ -1061,55 +1072,44 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
                         potentialtargetid.push_back(M[gal_idx].id);
                 }}
             }
-        int tileid = P[j].tileid;
-        float tilera = P[j].tilera;
-        float tiledec = P[j].tiledec;
-
-        fits_write_key(fptr, TINT, "TILEID", &(tileid), "Tile ID number", &status);
-            fits_report_error(stderr, status);
-        fits_write_key(fptr, TFLOAT, "TILERA", &(tilera), "Tile RA [deg]", &status);
+        fits_write_col(fptr, TINT, 1, offset+1, 1, n, fiber_id, &status);
         fits_report_error(stderr, status);
-        fits_write_key(fptr, TFLOAT, "TILEDEC", &(tiledec), "Tile DEC [deg]", &status);
-            fits_report_error(stderr, status);
 
-            fits_write_col(fptr, TINT, 1, offset+1, 1, n, fiber_id, &status);
-            fits_report_error(stderr, status);
-            
-            fits_write_col(fptr, TINT, 2, offset+1, 1, n, positioner_id, &status);
-            fits_report_error(stderr, status);
-            
-            fits_write_col(fptr, TINT, 3, offset+1, 1, n, num_target, &status);
-            fits_report_error(stderr, status);
-            
-            fits_write_col(fptr, TINT, 4, offset+1, 1, n, t_priority, &status);
-            fits_report_error(stderr, status);
-            
-            fits_write_col(fptr, TLONGLONG, 5, offset+1, 1, n, target_id, &status);
-            fits_report_error(stderr, status);
-            
-            fits_write_col(fptr, TLONGLONG, 6, offset+1, 1, n, desi_target, &status);
-            fits_report_error(stderr, status);
+        fits_write_col(fptr, TINT, 2, offset+1, 1, n, positioner_id, &status);
+        fits_report_error(stderr, status);
 
-            fits_write_col(fptr, TLONGLONG, 7, offset+1, 1, n, bgs_target, &status);
-            fits_report_error(stderr, status);
+        fits_write_col(fptr, TINT, 3, offset+1, 1, n, num_target, &status);
+        fits_report_error(stderr, status);
 
-            fits_write_col(fptr, TLONGLONG, 8, offset+1, 1, n, mws_target, &status);
-            fits_report_error(stderr, status);
-            
-            fits_write_col(fptr, TFLOAT, 9, offset+1, 1, n, ra, &status);
-            fits_report_error(stderr, status);
-            
-            fits_write_col(fptr, TFLOAT, 10, offset+1, 1, n, dec, &status);
-            fits_report_error(stderr, status);
-            
-            fits_write_col(fptr, TFLOAT, 11, offset+1, 1, n, x_focal, &status);
-            fits_report_error(stderr, status);
-            
-            fits_write_col(fptr, TFLOAT, 12, offset+1, 1, n, y_focal, &status);
-            fits_report_error(stderr, status);
+        fits_write_col(fptr, TINT, 4, offset+1, 1, n, t_priority, &status);
+        fits_report_error(stderr, status);
 
-	    fits_write_col(fptr, TSTRING, 13, offset+1, 1, n, bn_tmp, &status);
-	    fits_report_error(stderr, status);
+        fits_write_col(fptr, TLONGLONG, 5, offset+1, 1, n, target_id, &status);
+        fits_report_error(stderr, status);
+
+        fits_write_col(fptr, TLONGLONG, 6, offset+1, 1, n, desi_target, &status);
+        fits_report_error(stderr, status);
+
+        fits_write_col(fptr, TLONGLONG, 7, offset+1, 1, n, bgs_target, &status);
+        fits_report_error(stderr, status);
+
+        fits_write_col(fptr, TLONGLONG, 8, offset+1, 1, n, mws_target, &status);
+        fits_report_error(stderr, status);
+
+        fits_write_col(fptr, TFLOAT, 9, offset+1, 1, n, ra, &status);
+        fits_report_error(stderr, status);
+
+        fits_write_col(fptr, TFLOAT, 10, offset+1, 1, n, dec, &status);
+        fits_report_error(stderr, status);
+
+        fits_write_col(fptr, TFLOAT, 11, offset+1, 1, n, x_focal, &status);
+        fits_report_error(stderr, status);
+
+        fits_write_col(fptr, TFLOAT, 12, offset+1, 1, n, y_focal, &status);
+        fits_report_error(stderr, status);
+
+        fits_write_col(fptr, TSTRING, 13, offset+1, 1, n, bn_tmp, &status);
+        fits_report_error(stderr, status);
         }
         
         offset += n;
