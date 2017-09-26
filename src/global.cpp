@@ -352,7 +352,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const FP& pp, const Feat& F, 
                         int g_old=A.TF[j][k];//what is now at (j,k)  g_old can't be -1 or we would have used it already in assign_sf
 			//require that this galaxy is used only once to keep things simple
                         if(g_old!=-1 && !M[g_old].SS && !M[g_old].SF && A.GL[g_old].size()==1){
-                            if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
+                            if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)&&ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)){
                                 //right priority; this SS not already assigned on this plate
 			      could_be_replaced.push_back(g_old);
 			    }
@@ -407,7 +407,7 @@ void new_replace( int j, int p, MTL& M, Plates& P, const FP& pp, const Feat& F, 
                         int g_old=A.TF[j][k];//what is now at (j,k)
 
                         if(g_old!=-1 && !M[g_old].SS && !M[g_old].SF && A.GL[g_old].size()==1){
-                            if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
+                            if (M[g_old].priority_class==c&&A.is_assigned_jg(j,g,M,F)==-1 && ok_for_limit_SS_SF(g,j,k,M,P,pp,F)&&ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)){
 			      could_be_replaced.push_back(g_old);
 			    }
 			}
