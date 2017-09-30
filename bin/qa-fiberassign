@@ -120,8 +120,12 @@ print('Fiber assignment efficiency')
 for objtype in ['ELG', 'LRG', 'QSO', 'MWS_ANY', 'BGS_ANY']:
     ii = (targets['DESI_TARGET'] & desi_mask.mask(objtype)) != 0
     ntot = np.count_nonzero(ii)
-    nx = np.count_nonzero(np.in1d(targets['TARGETID'][ii], assigned['TARGETID']))
-    print('  {:8s} {:5.1f}%  ({}/{})'.format(objtype, 100*nx/ntot, nx, ntot))
+    if ntot == 0:
+        print('  {:8s}  no targets'.format(objtype))
+    else:
+        nx = np.count_nonzero(np.in1d(targets['TARGETID'][ii],
+                                      assigned['TARGETID']))
+        print('  {:8s} {:5.1f}%  ({}/{})'.format(objtype,100*nx/ntot,nx,ntot))
 
 print('\n---------------------------------------------------------------')
 print("WORK IN PROGRESS")
@@ -135,7 +139,7 @@ nt = Counter(covered)
 #- histogram of how many targets were covered how many times
 cn = Counter(nt.values())
 print()
-print('Percent of targets covered N times')
+print('Percent of targets covered exactly N times')
 print('            1     2     3     4     5     6     7     8     9')
 print('        ', end='')
 for i in range(1,10):
@@ -157,24 +161,34 @@ print()
 #-----
 #- Efficiency for assignment as a function of coverage
 print()
-print('Assignment probability if covered at least N times')
+print('Assignment probability if covered exactly N times')
 print('            1     2     3     4     5     6     7     8     9')
 for objtype in ['ELG', 'LRG', 'QSO', 'MWS_ANY', 'BGS_ANY']:
+    print('{:8s}'.format(objtype), end='')
     #- tx: targetids for targets of this objtype
     ii = (targets['DESI_TARGET'] & desi_mask.mask(objtype)) != 0
     tx = targets['TARGETID'][ii]
+    if len(tx) == 0:
+        print('no targets')
+        continue
+
     #- nt: coverage counts for just those targets
     jj = np.in1d(covered, tx)
     ntx = Counter(covered[jj])
     #- Count how many targets are covered n times for this objtype
     ntx_keys = np.asarray(list(ntx.keys()))
     ntx_values = np.asarray(list(ntx.values()))
-    print('{:8s}'.format(objtype), end='')
+
     for n in range(1,10):
         #- Targets covered n or less times
-        kk = (ntx_values <= n)
-        nassigned = np.count_nonzero(np.in1d(unique_assigned_targetids, ntx_keys[kk]))
-        pobs = 100.0 * nassigned / len(tx)
-        print('{:6.1f}'.format(pobs), end='')
+        kk = (ntx_values == n)
+        if np.count_nonzero(kk) > 0:
+            ncovered = len(np.unique(ntx_keys[kk]))
+            nassigned = np.count_nonzero(np.in1d(unique_assigned_targetids,
+                                                 ntx_keys[kk]))
+            pobs = 100.0 * nassigned / ncovered
+            print('{:6.1f}'.format(pobs), end='')
+        else:
+            print('   ---', end='')
 
     print()
