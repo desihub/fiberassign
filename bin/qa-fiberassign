@@ -26,6 +26,9 @@ fiberpos = Table(desimodel.io.load_fiberpos())
 fiberpos.sort('FIBER')
 fiber_locations = sorted(zip(fiberpos['FIBER'], fiberpos['LOCATION']))
 
+sky_mask = desi_mask.SKY
+std_mask = (desi_mask.STD_FSTAR | desi_mask.STD_BRIGHT | desi_mask.STD_WD)
+
 nfail = 0
 assigned = list()
 covered = list()
@@ -63,6 +66,15 @@ for filename in args.tilefiles:
     if np.max(r) > 6:
         errors.append('Fibers assigned to more than 6mm from positioner center')
 
+    for petal in range(10):
+        ii = (fa['FIBER'] // 500) == petal
+        nstd = np.count_nonzero(fa['DESI_TARGET'][ii] & std_mask)
+        nsky = np.count_nonzero(fa['DESI_TARGET'][ii] & sky_mask)
+        if nstd < 10:
+            errors.append('Petal {} has {}/10 stdstars'.format(petal, nstd))
+        if nsky < 40:
+            errors.append('Petal {} has {}/40 sky'.format(petal, nsky))
+
     if len(errors) == 0:
         print('{} - OK'.format(filename))
     else:
@@ -70,6 +82,7 @@ for filename in args.tilefiles:
         print('{} - ERROR'.format(filename))
         for err in errors:
             print('  {}'.format(err))
+
 
 print('{}/{} tiles had errors'.format(nfail, len(args.tilefiles)))
 
