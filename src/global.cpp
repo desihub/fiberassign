@@ -280,6 +280,9 @@ inline int improve_fiber(int jused_begin, int jused, int k, MTL& M, Plates& P, c
 }
 // Assignment functions ------------------------------------------------------------------------------------------
 // Assign fibers naively
+bool inverse_pairCompare(const std::pair<double, int>& firstElem, const std::pair<double, int>& secondElem) {
+    return firstElem.first > secondElem.first;//used to sort galaxies by subpriority
+}
 
 void simple_assign(MTL &M, Plates& P, const FP& pp, const Feat& F, Assignment& A) {
     Time t;
@@ -287,11 +290,44 @@ void simple_assign(MTL &M, Plates& P, const FP& pp, const Feat& F, Assignment& A
     int countme=0;
     for (int j=0; j<F.Nplate; j++) {
 
+       std::vector<std::pair<double,int>> pairs;
+       for (int k=0; k<F.Nfiber; k++) {
+            List av_gals = P[j].av_gals[k];
+            double Max_fiber_priority = 0.;
+            //loop over the potential list to find pbest and subpbest
+            // and then combine them to give the fiber_weight
+            for (int gg=0; gg<av_gals.size(); gg++) {
+                int g = av_gals[gg];
+                //not SS and SF				
+                if(!M[g].SS && !M[g].SF){
+                    int m = M[g].nobs_remain;
+                    //unobserved
+                    if (m>=1) { 
+                        int prio = M[g].t_priority;
+                        double subprio = M[g].subpriority;
+                        double fiber_priority = (double)prio + subprio;
+                        if (fiber_priority>Max_fiber_priority){
+                            Max_fiber_priority = fiber_priority;
+                        }
+                    }
+                }
+            }
+            std::pair <double,int> this_pair(Max_fiber_priority,k);
+            pairs.push_back(this_pair);
+        }
+
+        std::sort(pairs.begin(),pairs.end(),inverse_pairCompare);
+		
+        std::vector<int> fiber_loop_order;
+        for (int k=0; k<F.Nfiber; k++) {
+            fiber_loop_order.push_back(pairs[k].second);
+        }
+		
         int best=-1;
-    for (int k=0; k<F.Nfiber; k++) { // Fiber
-      best=assign_fiber(j,k,M,P,pp,F,A);
-      if (best!=-1)countme++;
-    }
+        for (int k=0; k<F.Nfiber; k++) { // Fiber
+            best=assign_fiber(j,fiber_loop_order[k],M,P,pp,F,A);
+            if (best!=-1)countme++;
+        }
     }
     print_time(t,"# ... took :");
     printf(" countme %d \n",countme);
