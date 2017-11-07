@@ -299,7 +299,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
       for(ii=0;ii<nrows;ii++){
         str xname;
 
-	// make sure ra is between 0 and 360
+        // make sure ra is between 0 and 360
         if (ra[ii]<   0.) {ra[ii] += 360.;}
         if (ra[ii]>=360.) {ra[ii] -= 360.;}
         if (dec[ii]<=-90. || dec[ii]>=90.) {
@@ -315,7 +315,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
              Q.nhat[0]    = cos(phi)*sin(theta);
              Q.nhat[1]    = sin(phi)*sin(theta);
              Q.nhat[2]    = cos(theta);
-	     Q.obsconditions = obsconditions[ii];
+             Q.obsconditions = obsconditions[ii];
              Q.t_priority = priority[ii];//priority not present for sky fibers or standard stars
              Q.subpriority = subpriority[ii];
              Q.nobs_remain= numobs[ii];
@@ -329,7 +329,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
              Q.bgs_target = bgs_target[ii];
              Q.SS=SS;
              Q.SF=SF;
-	     strncpy(Q.brickname, brickname[ii], 9);
+             strncpy(Q.brickname, brickname[ii], 9);
              try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
  
              bool in=false;

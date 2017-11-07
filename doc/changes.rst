@@ -5,6 +5,7 @@ fiberassign change log
 ------------------
 
 * Guarantee that higher priority targets are placed first (PR #84)
+* Keep ra,dec as double precision, not single precision
 
 0.5.3 (2017-09-30)
 ------------------

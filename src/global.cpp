@@ -885,8 +885,9 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
     // guarantee that we have C++11, so we can't use the nice functions
     // included in that standard...
     
-    const unsigned maxU = ~0;
-    const float qNan = *((float*)&maxU);
+    // const unsigned long maxU = ~0;
+    // const double qNan = *((double*)&maxU);
+    double qNan = nan("");
     
     // constants for the filename length and fixed object
     // type length
@@ -1009,14 +1010,14 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
     fits_report_error(stderr, status);
 
     int tileid = P[j].tileid;
-    float tilera = P[j].tilera;
-    float tiledec = P[j].tiledec;
+    double tilera = P[j].tilera;
+    double tiledec = P[j].tiledec;
 
     fits_write_key(fptr, TINT, "TILEID", &(tileid), "Tile ID number", &status);
     fits_report_error(stderr, status);
-    fits_write_key(fptr, TFLOAT, "TILERA", &(tilera), "Tile RA [deg]", &status);
+    fits_write_key(fptr, TDOUBLE, "TILERA", &(tilera), "Tile RA [deg]", &status);
     fits_report_error(stderr, status);
-    fits_write_key(fptr, TFLOAT, "TILEDEC", &(tiledec), "Tile DEC [deg]", &status);
+    fits_write_key(fptr, TDOUBLE, "TILEDEC", &(tiledec), "Tile DEC [deg]", &status);
     fits_report_error(stderr, status);
 
     
@@ -1043,10 +1044,10 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
     long long desi_target[optimal];
     long long bgs_target[optimal];
     long long mws_target[optimal];
-    float ra[optimal];
-    float dec[optimal];
-    float x_focal[optimal];
-    float y_focal[optimal];
+    double ra[optimal];
+    double dec[optimal];
+    double x_focal[optimal];
+    double y_focal[optimal];
     //new
     int t_priority[optimal];
     
@@ -1132,16 +1133,16 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
         fits_write_col(fptr, TLONGLONG, 8, offset+1, 1, n, mws_target, &status);
         fits_report_error(stderr, status);
 
-        fits_write_col(fptr, TFLOAT, 9, offset+1, 1, n, ra, &status);
+        fits_write_col(fptr, TDOUBLE, 9, offset+1, 1, n, ra, &status);
         fits_report_error(stderr, status);
 
-        fits_write_col(fptr, TFLOAT, 10, offset+1, 1, n, dec, &status);
+        fits_write_col(fptr, TDOUBLE, 10, offset+1, 1, n, dec, &status);
         fits_report_error(stderr, status);
 
-        fits_write_col(fptr, TFLOAT, 11, offset+1, 1, n, x_focal, &status);
+        fits_write_col(fptr, TDOUBLE, 11, offset+1, 1, n, x_focal, &status);
         fits_report_error(stderr, status);
 
-        fits_write_col(fptr, TFLOAT, 12, offset+1, 1, n, y_focal, &status);
+        fits_write_col(fptr, TDOUBLE, 12, offset+1, 1, n, y_focal, &status);
         fits_report_error(stderr, status);
 
         fits_write_col(fptr, TSTRING, 13, offset+1, 1, n, bn_tmp, &status);
