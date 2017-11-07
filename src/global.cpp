@@ -885,8 +885,9 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
     // guarantee that we have C++11, so we can't use the nice functions
     // included in that standard...
     
-    const unsigned maxU = ~0;
-    const double qNan = *((double*)&maxU);
+    // const unsigned long maxU = ~0;
+    // const double qNan = *((double*)&maxU);
+    double qNan = nan("");
     
     // constants for the filename length and fixed object
     // type length
