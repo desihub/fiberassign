@@ -1,7 +1,12 @@
 fiberassign change log
 ======================
 
-0.5.4 (unreleased)
+0.6.1 (unreleased)
+------------------
+
+* No changes yet.
+
+0.6.0 (2017-11-09)
 ------------------
 
 * Guarantee that higher priority targets are placed first (PR #84)
