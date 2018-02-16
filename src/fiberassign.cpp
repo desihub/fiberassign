@@ -172,6 +172,12 @@ int main(int argc, char **argv) {
         assign_sf_ss(j,M,P,pp,F,A); // Assign SS and SF for each tile
         assign_unused(j,M,P,pp,F,A);
     }
+    
+    //fill all unused fibers with sky fibers
+    for (int jused=0;jused<F.NUsedplate;++jused){
+        int j=A.suborder[jused];
+        fill_unused_with_sf(j,M,P,pp,F,A);
+    }
 
     // Results -------------------------------------------------------*/
     std::vector <int> total_used_by_class(M.priority_list.size(),0);

@@ -41,6 +41,8 @@ void update_plan_from_one_obs(int j, const Gals& G, MTL& M, Plates&P, const FP& 
 void redistribute_tf(MTL& M, Plates&P, const FP& pp, const Feat& F, Assignment& A, int jstart);
 void assign_sf_ss(int j, MTL& M, Plates& P, const FP& pp, const Feat& F, Assignment& A);
 
+void fill_unused_with_sf(int j, MTL& M, Plates& P, const FP& pp, const Feat& F, Assignment& A);
+
 void assign_unused(int j, MTL& M,  Plates& P, const FP& pp, const Feat& F, Assignment& A);
 
 void diagnostic(const Gals& G, Feat& F, const Assignment& A);

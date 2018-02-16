@@ -568,6 +568,45 @@ void assign_sf_ss(int j, MTL& M, Plates& P, const FP& pp, const Feat& F, Assignm
 
 }
 
+void fill_unused_with_sf(int j, MTL& M, Plates& P, const FP& pp, const Feat& F, Assignment& A) {
+    //assigns sky fibers to fill all unused fibers
+    bool thisgalaxy=false;
+    for (int ppet=0; ppet<F.Npetal; ppet++) {
+      //for each petal
+        int p = ppet;
+	//use subpriority to order SF (Sky Fiber)
+
+        std::vector <int> SF_av_init=P[j].SF_av_gal[p];
+        std::vector <int> SF_av;
+        SF_av=sort_by_subpriority(M,SF_av_init);
+	
+        if(SF_av.size()>0){
+            //look at fibers on this petal
+            for (int kk=0; kk<F.Nfbp; kk++) {
+                int k= pp.fibers_of_sp[p][kk];
+		//for a particular fiber on this petal consider SF by subpriority order
+                std::vector <int> SF_av_k_init=P[j].SF_av_gal_fiber[k];
+		std::vector <int> SF_av_k;
+		SF_av_k=sort_by_subpriority(M,SF_av_k_init);		
+                if (A.TF[j][k]==-1){//this fiber isn't assigned yet
+                    int done=0;
+		    //
+
+                    for (int gg=0; gg<SF_av_k.size()&&done==0; gg++) {
+                        int g = SF_av_k[gg];//SF on this petal						
+                        if(A.is_assigned_jg(j,g,M,F)==-1&&ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)){
+                            A.assign(j,k,g,M,P,pp);
+                            done=1;			   
+                        }
+                    }
+                }
+            }
+        new_replace(j,p,M,P,pp,F,A);
+        }
+    }
+
+}
+
 void redistribute_tf(MTL& M, Plates&P, const FP& pp, const Feat& F, Assignment& A, int jused_start) {
     //diagnostic
     printf("start redistribute \n");
