@@ -4,7 +4,7 @@ fiberassign change log
 0.6.1 (unreleased)
 ------------------
 
-* No changes yet.
+* Fill unassigned fibers with sky and stdstars if possible (PR #100)
 
 0.6.0 (2017-11-09)
 ------------------
