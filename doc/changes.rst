@@ -1,7 +1,12 @@
 fiberassign change log
 ======================
 
-0.6.1 (unreleased)
+0.7.0 (unreleased)
+------------------
+
+* No changes yet.
+
+0.7.0 (2018-02-23)
 ------------------
 
 * Fill unassigned fibers with sky and stdstars if possible (PR #100)
