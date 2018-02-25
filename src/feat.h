@@ -30,6 +30,7 @@ class Feat { // F for features
     str SkyFfile;
     str Secretfile;
     str surveyFile;
+    str fibstatusFile;
 	bool PrintFits;
     bool PrintAscii;
     bool diagnose;
