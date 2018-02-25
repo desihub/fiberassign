@@ -91,6 +91,7 @@ int main(int argc, char **argv) {
     
     F.Npetal = 10;//spectrometers run 0 to 9 unless pacman
     FP pp =read_fiber_positions(F); 
+    read_fiber_status(pp, F);
     //order the fibers by their fiber number (fib_num) not simply order in list
     //need to fix spectrom (List) and fp
     

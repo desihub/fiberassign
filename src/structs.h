@@ -23,17 +23,21 @@ class fpos {
     double fp_y; //y position in mm of positioner
     int location; //location of fiber
     int spectrom;//which spectrometer 0 - 9
+    int stuck=0; // 0=OK
+    int broken=0; // 0=OK
     std::vector<int> N;// Identify neighboring positioners : neighbors of fiber k are N[k] 
     dpair coords; 
 };
 
 class FP  : public std::vector<struct fpos>{ 
     public:
-
     Table fibers_of_sp;// Inv map of spectrom, fibers_of_sp[sp] are fibers of spectrom sp, redundant
 };
 
+    
 FP  read_fiber_positions(const Feat& F);
+void read_fiber_status(FP& FibPos, const Feat& F);
+
 bool int_pairCompare(const std::pair<int, int>& firstElem, const std::pair<int, int>& secondElem);
 
 // galaxy truth -------------------------------------------

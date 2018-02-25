@@ -454,7 +454,61 @@ FP  read_fiber_positions(const Feat& F) {
 }
 
 //FP::FP() {};
+void read_fiber_status(FP& FibPos, const Feat &F){
+    std::string buf;
+    std::ifstream fs(F.fibstatusFile.c_str());
+    int fiber_size=FibPos.size();
 
+
+    if (!fs) { // An error occurred opening the file.
+        std::cerr << "Unable to open file " << F.fibFile << std::endl;
+        myexit(1);
+    }
+    getline(fs,buf);
+    while (fs.eof()==0 && ( (buf[0]=='#') || (buf.size()==0) )) {
+        getline(fs,buf);
+    }
+    //getline(fs,buf);
+    std::cout.flush();
+    
+    int i(0);
+    printf("before reading status \n");
+    std::cout.flush();
+    while (fs.eof()==0) {
+        double x,y; int fiber,location,broken,stuck; 
+        getline(fs,buf);
+        std::istringstream(buf) >> fiber >> location >> x >> y >> broken >> stuck;
+        fprintf(stdout, "Read from fiber status: Fiber_pos %d Location %d Broken %d Stuck %d\n", 
+                fiber, location, broken, stuck);
+        i++;
+            
+         for(int j=0; j<fiber_size; j++) {
+             if (fiber==FibPos[j].fib_num){
+                 if (location==FibPos[j].location){
+                     fprintf(stdout, "Changing fiberastatus entry: Fiber %d Location %d\n", fiber, location);
+                     if(broken==1){
+                        fprintf(stdout, "BROKEN\n");
+                        FibPos[j].broken = broken;
+                        FibPos[j].fp_x = x;
+                        FibPos[j].fp_y = y;
+                    }
+                     if(stuck==1){
+                        fprintf(stdout, "STUCK\n");
+                        FibPos[j].stuck = stuck;
+                        FibPos[j].fp_x = x;
+                        FibPos[j].fp_y = y;
+                     }
+                 }else{
+                    std::cerr << "Fiber ID Matches But Not Location ID " << F.fibFile << std::endl;
+                    myexit(1);     
+                 }
+             }
+     }
+    }
+    fs.close();
+    printf("read status file\n");
+
+}
 
 // plate ---------------------------------------------------------------------------
 
