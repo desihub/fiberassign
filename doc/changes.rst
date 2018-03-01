@@ -4,7 +4,7 @@ fiberassign change log
 0.7.1 (unreleased)
 ------------------
 
-* Fixed `qa-fiberassign` imports for desitarget 0.19.0
+* Fixed `qa-fiberassign` imports for desitarget 0.19.0 (PR #102)
 
 0.7.0 (2018-02-23)
 ------------------
