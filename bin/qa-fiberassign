@@ -13,7 +13,7 @@ import numpy as np
 from astropy.table import Table, vstack
 from astropy.io import fits
 
-from desitarget import desi_mask
+from desitarget.targetmask import desi_mask
 import desimodel.io
 
 parser = argparse.ArgumentParser()
