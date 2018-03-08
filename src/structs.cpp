@@ -456,6 +456,8 @@ FP  read_fiber_positions(const Feat& F) {
 //FP::FP() {};
 void read_fiber_status(FP& FibPos, const Feat &F){
     std::string buf;
+    char date_init[512];
+    char date_end[512];
     std::ifstream fs(F.fibstatusFile.c_str());
     int fiber_size=FibPos.size();
 
@@ -477,9 +479,9 @@ void read_fiber_status(FP& FibPos, const Feat &F){
     while (fs.eof()==0) {
         double x,y; int fiber,location,broken,stuck; 
         getline(fs,buf);
-        std::istringstream(buf) >> fiber >> location >> x >> y >> broken >> stuck;
-        fprintf(stdout, "Read from fiber status: Fiber_pos %d Location %d Broken %d Stuck %d\n", 
-                fiber, location, broken, stuck);
+        std::istringstream(buf) >> fiber >> location >> x >> y >> broken >> stuck >> date_init >> date_end;
+        fprintf(stdout, "Read from fiber status: Fiber_pos %d Location %d Broken %d Stuck %d dates %s %s\n", 
+                fiber, location, broken, stuck, date_init, date_end);
         i++;
             
          for(int j=0; j<fiber_size; j++) {
