@@ -456,25 +456,52 @@ FP  read_fiber_positions(const Feat& F) {
 }
 
 //FP::FP() {};
+int A_less_than_B(int year_A, int month_A, int day_A, int year_B, int month_B, int day_B){
+    if(((year_A + month_A/12.0)<(year_B + month_B/12.0))){
+        return 1;
+    }
+    if(((year_A + month_A/12.0)>(year_B + month_B/12.0))){
+         return 0;   
+    }
+    if(((year_A + month_A/12.0)==(year_B + month_B/12.0))){
+        if(day_A<day_B){
+            return 1;
+        }else{
+             return 0;
+        }
+    }
+}
+
 void read_fiber_status(FP& FibPos, const Feat &F){
     std::string buf;
+    char date_now[512];
     char date_init[512];
     char date_end[512];
     std::ifstream fs(F.fibstatusFile.c_str());
     int fiber_size=FibPos.size();
-    
-    auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     std::tm input_time = {};
     std::tm init_time = {};
     std::tm end_time = {};
+    std::tm current_time = {};
+
+    //current time
+    auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    current_time = *(std::gmtime(&now));
+    
+    //input time
     std::stringstream ss(F.runDate);
     ss >> std::get_time(&input_time, "%Y-%m-%d");
     
-  //  auto tp = std::chrono::system_clock::from_time_t(std::mktime(&input_time));
+    if(A_less_than_B(
+        current_time.tm_year, current_time.tm_mon, current_time.tm_mday,
+        input_time.tm_year, input_time.tm_mon, input_time.tm_mday)){
+        current_time = input_time;
+        std::cout << "UPDATE Time";
+    }
     
-    std::cout << "Input Time" <<  std::put_time(&input_time, "%c");
-    std::cout << "Current Time" <<  ctime(&now);
-
+    std::cout << "Input Time" <<  std::put_time(&input_time, "%c") << "\n";
+    std::cout << "Current Time" <<  std::put_time(&current_time, "%c") << "\n";
+    
     
     if (!fs) { // An error occurred opening the file.
         std::cerr << "Unable to open file " << F.fibFile << std::endl;
