@@ -9,6 +9,8 @@
 #include    <algorithm>
 #include    <exception>
 #include    <stdexcept>
+#include <chrono>
+#include <ctime>
 #include    <sys/time.h>
 #include        <map>
 #include        <stdlib.h>     /* srand, rand */
@@ -460,8 +462,20 @@ void read_fiber_status(FP& FibPos, const Feat &F){
     char date_end[512];
     std::ifstream fs(F.fibstatusFile.c_str());
     int fiber_size=FibPos.size();
+    
+    auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    std::tm input_time = {};
+    std::tm init_time = {};
+    std::tm end_time = {};
+    std::stringstream ss(F.runDate);
+    ss >> std::get_time(&input_time, "%Y-%m-%d");
+    
+  //  auto tp = std::chrono::system_clock::from_time_t(std::mktime(&input_time));
+    
+    std::cout << "Input Time" <<  std::put_time(&input_time, "%c");
+    std::cout << "Current Time" <<  ctime(&now);
 
-
+    
     if (!fs) { // An error occurred opening the file.
         std::cerr << "Unable to open file " << F.fibFile << std::endl;
         myexit(1);
@@ -480,8 +494,18 @@ void read_fiber_status(FP& FibPos, const Feat &F){
         double x,y; int fiber,location,broken,stuck; 
         getline(fs,buf);
         std::istringstream(buf) >> fiber >> location >> x >> y >> broken >> stuck >> date_init >> date_end;
-        fprintf(stdout, "Read from fiber status: Fiber_pos %d Location %d Broken %d Stuck %d dates %s %s\n", 
+        fprintf(stdout, "Read from fiber status: Fiber_pos %d Location %d Broken %d Stuck %d dates %s %s \n", 
                 fiber, location, broken, stuck, date_init, date_end);
+        
+        std::stringstream si(date_init);
+        si >> std::get_time(&init_time, "%Y-%m-%dT%H:%M:%S");
+        std::cout << "Init Time for Fiber" <<  std::put_time(&init_time, "%c") << "\n";
+        
+        //std::stringstream ss(date_end);
+        std::stringstream se(date_end);
+        se >> std::get_time(&end_time, "%Y-%m-%dT%H:%M:%S");
+        std::cout << "End Time for Fiber" <<  std::put_time(&end_time, "%c") << "\n";
+
         i++;
             
          for(int j=0; j<fiber_size; j++) {

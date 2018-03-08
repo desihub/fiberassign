@@ -92,7 +92,7 @@ void Feat::readInputFile(const char file[]) {
             if (tok[0]=="SStarsfile")SStarsfile=tok[1];
             if (tok[0]=="SkyFfile") SkyFfile=tok[1];
             if (tok[0]=="Secretfile") Secretfile=tok[1];
-
+            if (tok[0]=="runDate") runDate=tok[1];
 
             if (tok[0]=="kind") {
                 Categories = tok.size()-1;

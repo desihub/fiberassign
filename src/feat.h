@@ -31,6 +31,7 @@ class Feat { // F for features
     str Secretfile;
     str surveyFile;
     str fibstatusFile;
+    str runDate;
 	bool PrintFits;
     bool PrintAscii;
     bool diagnose;
