@@ -457,6 +457,7 @@ FP  read_fiber_positions(const Feat& F) {
 
 //FP::FP() {};
 int A_less_than_B(int year_A, int month_A, int day_A, int year_B, int month_B, int day_B){
+    //fprintf(stdout, "%d %d %d %d %d %d\n",year_A, month_A, day_A, year_B, month_B, day_B);
     if(((year_A + month_A/12.0)<(year_B + month_B/12.0))){
         return 1;
     }
@@ -492,11 +493,10 @@ void read_fiber_status(FP& FibPos, const Feat &F){
     std::stringstream ss(F.runDate);
     ss >> std::get_time(&input_time, "%Y-%m-%d");
     
-    if(A_less_than_B(
-        current_time.tm_year, current_time.tm_mon, current_time.tm_mday,
-        input_time.tm_year, input_time.tm_mon, input_time.tm_mday)){
+    if(A_less_than_B(input_time.tm_year, input_time.tm_mon, input_time.tm_mday,1, 1, 1)){
+        std::cout << "INPUT time is not set";
+    }else{
         current_time = input_time;
-        std::cout << "UPDATE Time";
     }
     
     std::cout << "Input Time" <<  std::put_time(&input_time, "%c") << "\n";
@@ -535,6 +535,12 @@ void read_fiber_status(FP& FibPos, const Feat &F){
 
         i++;
             
+        
+        if(A_less_than_B(init_time.tm_year, init_time.tm_mon, init_time.tm_mday,
+                        current_time.tm_year, current_time.tm_mon, current_time.tm_mday)&&
+             A_less_than_B(current_time.tm_year, current_time.tm_mon, current_time.tm_mday,
+                        end_time.tm_year, end_time.tm_mon, end_time.tm_mday)){
+            
          for(int j=0; j<fiber_size; j++) {
              if (fiber==FibPos[j].fib_num){
                  if (location==FibPos[j].location){
@@ -556,6 +562,7 @@ void read_fiber_status(FP& FibPos, const Feat &F){
                     myexit(1);     
                  }
              }
+         }
      }
     }
     fs.close();
