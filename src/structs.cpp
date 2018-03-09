@@ -493,6 +493,7 @@ void read_fiber_status(FP& FibPos, const Feat &F){
     std::stringstream ss(F.runDate);
     ss >> std::get_time(&input_time, "%Y-%m-%d");
     
+    //if the input time was set in the input file, then override the current machine time with the input time
     if(A_less_than_B(input_time.tm_year, input_time.tm_mon, input_time.tm_mday,1, 1, 1)){
         std::cout << "INPUT time is not set";
     }else{
@@ -502,7 +503,6 @@ void read_fiber_status(FP& FibPos, const Feat &F){
     std::cout << "Input Time" <<  std::put_time(&input_time, "%c") << "\n";
     std::cout << "Current Time" <<  std::put_time(&current_time, "%c") << "\n";
     
-    
     if (!fs) { // An error occurred opening the file.
         std::cerr << "Unable to open file " << F.fibFile << std::endl;
         myexit(1);
@@ -511,7 +511,6 @@ void read_fiber_status(FP& FibPos, const Feat &F){
     while (fs.eof()==0 && ( (buf[0]=='#') || (buf.size()==0) )) {
         getline(fs,buf);
     }
-    //getline(fs,buf);
     std::cout.flush();
     
     int i(0);
@@ -535,7 +534,7 @@ void read_fiber_status(FP& FibPos, const Feat &F){
 
         i++;
             
-        
+        //if the current time is within the time interval for the stuck/broken fiber, then make the change
         if(A_less_than_B(init_time.tm_year, init_time.tm_mon, init_time.tm_mday,
                         current_time.tm_year, current_time.tm_mon, current_time.tm_mday)&&
              A_less_than_B(current_time.tm_year, current_time.tm_mon, current_time.tm_mday,
@@ -548,8 +547,6 @@ void read_fiber_status(FP& FibPos, const Feat &F){
                      if(broken==1){
                         fprintf(stdout, "BROKEN\n");
                         FibPos[j].broken = broken;
-                        FibPos[j].fp_x = x;
-                        FibPos[j].fp_y = y;
                     }
                      if(stuck==1){
                         fprintf(stdout, "STUCK\n");
