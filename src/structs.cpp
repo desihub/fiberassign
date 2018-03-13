@@ -899,12 +899,14 @@ void Assignment::assign(int j, int k, int g, MTL& M, Plates& P, const FP& pp) {
     M[g].nobs_remain--;
     if(M[g].SF){
         int q=pp[k].spectrom;
-        P[j].SF_in_petal[q]+=1;}
+        P[j].SF_in_petal[q]+=1;
+    }
     if(M[g].SS){
         int q=pp[k].spectrom;
-        P[j].SS_in_petal[q]+=1;}
+        P[j].SS_in_petal[q]+=1;
+    }
     unused[j][pp[k].spectrom]--;
-
+    
 }
 
 void Assignment::unassign(int j, int k, int g, MTL& M, Plates& P, const FP& pp) {
