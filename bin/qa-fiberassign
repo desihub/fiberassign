@@ -13,7 +13,7 @@ import numpy as np
 from astropy.table import Table, vstack
 from astropy.io import fits
 
-from desitarget import desi_mask
+from desitarget.targetmask import desi_mask
 import desimodel.io
 
 parser = argparse.ArgumentParser()
@@ -88,6 +88,9 @@ for filename in args.tilefiles:
         for err in errors:
             print('  {}'.format(err))
 
+    n_stuck = np.count_nonzero(fa['TARGETID']==-2)
+    n_broken = np.count_nonzero(fa['TARGETID']==-3)
+    print('{} stuck fibers\n{} broken fibers'.format(n_stuck, n_broken))
 
 print('{}/{} tiles had errors'.format(nfail, len(args.tilefiles)))
 
