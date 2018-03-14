@@ -180,6 +180,7 @@ int main(int argc, char **argv) {
         fill_unused_with_sf(j,M,P,pp,F,A);
     }
 
+
     // Results -------------------------------------------------------*/
     std::vector <int> total_used_by_class(M.priority_list.size(),0);
     int total_used_SS=0;

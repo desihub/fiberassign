@@ -1131,19 +1131,48 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
                 num_target[i] = P[j].av_gals[fib].size();
 
                 //target_id[i] = g; ********
-                if(g>0) target_id[i] = M[g].id;
-                else target_id[i]=-1;
+                if(g>0){
+                    target_id[i] = M[g].id;
+                }else{
+                    if(pp[fib].broken){
+                        target_id[i] = -2;
+                    }else if(pp[fib].stuck){
+                        target_id[i] = -3;
+                    }else{
+                        target_id[i]=-1;
+                    }
+                }
 
                 if (g < 0) {
-                    //strcpy(objtype[i], "NA");
-                    ra[i] = qNan;
-                    dec[i] = qNan;
-                    x_focal[i] = qNan;
-                    y_focal[i] = qNan;
-                    desi_target[i] = 0;
-                    bgs_target[i] = 0;
-                    mws_target[i] = 0;
-                    strncpy(brickname[i], "notbrick", bricklen+1);
+                    if(pp[fib].stuck){
+                        ra[i] = qNan;
+                        dec[i] = qNan;
+                        x_focal[i] = pp[fib].fp_x;
+                        y_focal[i] = pp[fib].fp_y;
+                        desi_target[i] = 512;
+                        bgs_target[i] = 512;
+                        mws_target[i] = 512;
+                        strncpy(brickname[i], "notbrick", bricklen+1);
+                    }else if (pp[fib].broken){
+                        ra[i] = qNan;
+                        dec[i] = qNan;
+                        x_focal[i] = pp[fib].fp_x;
+                        y_focal[i] = pp[fib].fp_y;
+                        desi_target[i] = 1024;
+                        bgs_target[i] = 1024;
+                        mws_target[i] = 1024;
+                        strncpy(brickname[i], "notbrick", bricklen+1);
+                    }else{
+                        //strcpy(objtype[i], "NA");
+                        ra[i] = qNan;
+                        dec[i] = qNan;
+                        x_focal[i] = qNan;
+                        y_focal[i] = qNan;
+                        desi_target[i] = 0;
+                        bgs_target[i] = 0;
+                        mws_target[i] = 0;
+                        strncpy(brickname[i], "notbrick", bricklen+1);
+                    }
                 } else {
                     //we aren't supposed to know the kind  use priority instead
                     //strncpy(objtype[i], F.kind[G[g].id].c_str(), objtypelen);
