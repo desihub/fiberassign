@@ -4,10 +4,10 @@ fiberassign change log
 0.7.2 (unreleased)
 ------------------
 
-* Make fiberassign take more responsibility for installing itself (PR `#103`_).
+* Make fiberassign take more responsibility for installing itself (PR `#104`_).
 * Allow fiberassign to report its version.
 
-.. _`#103`: https://github.com/desihub/fiberassign/pull/103
+.. _`#103`: https://github.com/desihub/fiberassign/pull/104
 
 0.7.1 (2018-03-01)
 ------------------
