@@ -70,8 +70,8 @@ all :
 	@ for f in $(SUBDIRS); do $(MAKE) -C $$f all ; done
 
 install : all
-	/bin/mkdir -p ${INSTALL_DIR}
-	@ for d in bin py script test; do  /bin/cp -a $$d ${INSTALL_DIR} ; done
+	- /bin/mkdir -p $(INSTALL_DIR)
+	@ for d in bin py script test; do test ! -d $(INSTALL_DIR)/$$d && /bin/cp -a $$d $(INSTALL_DIR) ; done
 	@ for f in $(SUBDIRS); do $(MAKE) -C $$f install ; done
 
 clean :
