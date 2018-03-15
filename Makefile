@@ -38,7 +38,8 @@ ifdef NERSC_HOST
 
 ifeq ($(NERSC_HOST), edison)
 PLATFORM := nersc_edison
-else ($(NERSC_HOST), cori)
+endif
+ifeq ($(NERSC_HOST), cori)
 PLATFORM := nesrc_cori_haswell
 endif
 
@@ -54,7 +55,7 @@ else
 #
 PLATFORM := generic
 endif
-
+endif
 endif
 include platforms/$(PLATFORM)
 #
@@ -70,8 +71,14 @@ all :
 
 install : all
 	/bin/mkdir -p ${INSTALL_DIR}
-	@ for d in bin py; do  /bin/cp -a $$d ${INSTALL_DIR} ; done
+	@ for d in bin py script test; do  /bin/cp -a $$d ${INSTALL_DIR} ; done
 	@ for f in $(SUBDIRS); do $(MAKE) -C $$f install ; done
 
 clean :
 	@ for f in $(SUBDIRS); do $(MAKE) -C $$f clean ; done
+#
+# Enable 'make version' to update the version string.
+# Do make TAG=0.1.2 version to set the tag explicitly.
+#
+version :
+	$(MAKE) -C src version
