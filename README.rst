@@ -2,7 +2,10 @@
 fiberassign
 ===========
 
-This repository provides code for DESI fiber assignment, i.e. assigning
+Introduction
+------------
+
+This repository provides code for DESI fiber assignment, *i.e.* assigning
 which fibers of which telescope pointings (tiles) should be assigned to
 observe which objects in a target catalog.
 
@@ -10,9 +13,9 @@ Compiling
 ---------
 
 To compile the code, set ``$PLATFORM`` to one of the recipes in the
-``platforms/`` and then run ``make install``.  e.g. on Cori Haswell::
+``platforms/`` and then run ``make install``;  *e.g.* on Cori Haswell::
 
-PLATFORM=nesrc_cori_haswell make install
+    PLATFORM=nesrc_cori_haswell make install
 
 This will create the ``bin/fiberassign`` executable.
 
@@ -28,4 +31,3 @@ file locations.  Run ``config-fiberassign --help`` for options.
 ``doc/Guide_to_FiberAssignment.tex`` contains more details.  A pdf snapshot
 is available to DESI collaborators at
 https://desi.lbl.gov/DocDB/cgi-bin/private/ShowDocument?docid=2742 .
-
