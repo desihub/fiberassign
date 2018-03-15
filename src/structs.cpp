@@ -9,6 +9,8 @@
 #include    <algorithm>
 #include    <exception>
 #include    <stdexcept>
+#include <chrono>
+#include <ctime>
 #include    <sys/time.h>
 #include        <map>
 #include        <stdlib.h>     /* srand, rand */
@@ -454,7 +456,116 @@ FP  read_fiber_positions(const Feat& F) {
 }
 
 //FP::FP() {};
+int A_less_than_B(int year_A, int month_A, int day_A, int year_B, int month_B, int day_B){
+    //fprintf(stdout, "%d %d %d %d %d %d\n",year_A, month_A, day_A, year_B, month_B, day_B);
+    if(((year_A + month_A/12.0)<(year_B + month_B/12.0))){
+        return 1;
+    }
+    if(((year_A + month_A/12.0)>(year_B + month_B/12.0))){
+         return 0;   
+    }
+    if(((year_A + month_A/12.0)==(year_B + month_B/12.0))){
+        if(day_A<day_B){
+            return 1;
+        }else{
+             return 0;
+        }
+    }
+}
 
+void read_fiber_status(FP& FibPos, const Feat &F){
+    std::string buf;
+    char date_now[512];
+    char date_init[512];
+    char date_end[512];
+    std::ifstream fs(F.fibstatusFile.c_str());
+    int fiber_size=FibPos.size();
+    std::tm input_time = {};
+    std::tm init_time = {};
+    std::tm end_time = {};
+    std::tm current_time = {};
+
+    //current time
+    auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    current_time = *(std::gmtime(&now));
+    
+    //input time
+    std::stringstream ss(F.runDate);
+    ss >> std::get_time(&input_time, "%Y-%m-%d");
+    
+    //if the input time was set in the input file, then override the current machine time with the input time
+    if(A_less_than_B(input_time.tm_year, input_time.tm_mon, input_time.tm_mday,1, 1, 1)){
+        std::cout << "INPUT time is not set";
+    }else{
+        current_time = input_time;
+    }
+    
+    std::cout << "Input Time" <<  std::put_time(&input_time, "%c") << "\n";
+    std::cout << "Current Time" <<  std::put_time(&current_time, "%c") << "\n";
+    
+    if (!fs) { // An error occurred opening the file.
+        std::cerr << "Unable to open file " << F.fibFile << std::endl;
+        myexit(1);
+    }
+    getline(fs,buf);
+    while (fs.eof()==0 && ( (buf[0]=='#') || (buf.size()==0) )) {
+        getline(fs,buf);
+    }
+    std::cout.flush();
+    
+    int i(0);
+    printf("before reading status \n");
+    std::cout.flush();
+    while (fs.eof()==0) {
+        double x,y; int fiber,location,broken,stuck; 
+        getline(fs,buf);
+        std::istringstream(buf) >> fiber >> location >> x >> y >> broken >> stuck >> date_init >> date_end;
+        fprintf(stdout, "Read from fiber status: Fiber_pos %d Location %d Broken %d Stuck %d dates %s %s \n", 
+                fiber, location, broken, stuck, date_init, date_end);
+        
+        std::stringstream si(date_init);
+        si >> std::get_time(&init_time, "%Y-%m-%dT%H:%M:%S");
+        std::cout << "Init Time for Fiber" <<  std::put_time(&init_time, "%c") << "\n";
+        
+        //std::stringstream ss(date_end);
+        std::stringstream se(date_end);
+        se >> std::get_time(&end_time, "%Y-%m-%dT%H:%M:%S");
+        std::cout << "End Time for Fiber" <<  std::put_time(&end_time, "%c") << "\n";
+
+        i++;
+            
+        //if the current time is within the time interval for the stuck/broken fiber, then make the change
+        if(A_less_than_B(init_time.tm_year, init_time.tm_mon, init_time.tm_mday,
+                        current_time.tm_year, current_time.tm_mon, current_time.tm_mday)&&
+             A_less_than_B(current_time.tm_year, current_time.tm_mon, current_time.tm_mday,
+                        end_time.tm_year, end_time.tm_mon, end_time.tm_mday)){
+            
+         for(int j=0; j<fiber_size; j++) {
+             if (fiber==FibPos[j].fib_num){
+                 if (location==FibPos[j].location){
+                     fprintf(stdout, "Changing fiberastatus entry: Fiber %d Location %d\n", fiber, location);
+                     if(broken==1){
+                        fprintf(stdout, "BROKEN\n");
+                        FibPos[j].broken = broken;
+                    }
+                     if(stuck==1){
+                        fprintf(stdout, "STUCK\n");
+                        FibPos[j].stuck = stuck;
+                        FibPos[j].fp_x = x;
+                        FibPos[j].fp_y = y;
+                     }
+                 }else{
+                    std::cerr << "Fiber ID Matches But Not Location ID " << F.fibFile << std::endl;
+                    myexit(1);     
+                 }
+             }
+         }
+     }
+    }
+    fs.close();
+    printf("read status file\n");
+
+}
 
 // plate ---------------------------------------------------------------------------
 
@@ -788,12 +899,14 @@ void Assignment::assign(int j, int k, int g, MTL& M, Plates& P, const FP& pp) {
     M[g].nobs_remain--;
     if(M[g].SF){
         int q=pp[k].spectrom;
-        P[j].SF_in_petal[q]+=1;}
+        P[j].SF_in_petal[q]+=1;
+    }
     if(M[g].SS){
         int q=pp[k].spectrom;
-        P[j].SS_in_petal[q]+=1;}
+        P[j].SS_in_petal[q]+=1;
+    }
     unused[j][pp[k].spectrom]--;
-
+    
 }
 
 void Assignment::unassign(int j, int k, int g, MTL& M, Plates& P, const FP& pp) {

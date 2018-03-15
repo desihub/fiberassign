@@ -10,6 +10,7 @@ fiberassign change log
 ------------------
 
 * Fill unassigned fibers with sky and stdstars if possible (PR #100)
+* Account for broken fibers and stuck positioners (PR #101)
 
 0.6.0 (2017-11-09)
 ------------------

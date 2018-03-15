@@ -5,7 +5,9 @@ Secretfile /project/projectdirs/desi/mocks/preliminary/mtl/v2/truth-lite.fits
 surveyFile test/default_survey_list.txt
 tileFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/footprint/desi-tiles.par
 fibFile /project/projectdirs/desi/software/edison/desimodel/0.3.1/data/focalplane/fiberpos.txt
+fibstatusFile test/fiberstatus.ecsv
 outDir {outdir}/
+
 
 PrintAscii true
 PrintFits true

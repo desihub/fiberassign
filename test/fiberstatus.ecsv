@@ -1,0 +1,17 @@
+# %ECSV 0.9
+# ---
+# datatype:
+# - {name: FIBER, datatype: int64, description: Fiber number on spectrographs}
+# - {name: LOCATION, datatype: int64, description: Fiber hole location on focal plane}
+# - {name: X, unit: mm, datatype: float64, description: Fiber x location on focal plane}
+# - {name: Y, unit: mm, datatype: float64, description: Fiber y location on focal plane}
+# - {name: BROKEN, datatype: int64, description: 1=broken; 0=good}
+# - {name: STUCK, datatype: int64, description: '1=stuck at (X,Y); 0=good'}
+# - {name: START_DATE, datatype: string, description: UTC start date of problem}
+# - {name: END_DATE, datatype: string, description: UTC end date of problem}
+FIBER LOCATION  X              Y             BROKEN STUCK START_DATE          END_DATE
+0     95       -4.13464340313 -176.016389199 1      0     2018-02-21T09:23:51 2100-02-21T09:24:24
+1     62       -45.5863791815 -157.134697634 1      0     2018-02-21T09:23:51 2100-02-21T09:24:24
+2     102        -48.26471976  -194.58679079 0      1     2018-02-21T09:23:51 2100-02-21T09:24:24
+3     82       -31.5795923296 -172.635369698 0      1     2018-02-21T09:23:51 2100-02-21T09:24:24
+4     131       6.67200636809 -201.385810488 0      1     2018-02-21T09:23:51 2100-02-21T09:24:24

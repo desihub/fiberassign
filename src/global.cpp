@@ -140,12 +140,24 @@ void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F) {
 // Assignment sub-functions -------------------------------------------------------------------------------------
 // Allow (j,k) to observe g ?
 inline bool ok_assign_g_to_jk(int g, int j, int k, const Plates& P, const MTL& M, const FP& pp, const Feat& F, const Assignment& A) {
-
-    if (F.Collision) for (int i=0; i<pp[k].N.size(); i++) if (g==A.TF[j][pp[k].N[i]]) return false; 
+    //if fiber is stuck or broken do not assign anything
+    if(pp[k].stuck || pp[k].broken){
+        return false;
+    }
+    
+    if (F.Collision){ 
+        for (int i=0; i<pp[k].N.size(); i++){
+            if (g==A.TF[j][pp[k].N[i]]){ 
+                return false; 
+            }
+        }
+    }
     // Avoid 2 neighboring fibers observe the same galaxy (can happen only when Collision=true)
     if (A.find_collision(j,k,g,pp,M,P,F)!=-1){
-        return false;} // No collision
+        return false;
+    } // No collision
     return true;
+    
     //doesn't require that jk is unassigned//doesn't require that g isn't assigned already on this plate
     //use is_assigned_jg for this
 }
@@ -177,10 +189,10 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const FP& pp, 
             int m = M[g].nobs_remain; // Check whether it needs further observation
             if (m>=1) {
                 int prio = M[g].t_priority;
-		double subprio = M[g].subpriority;
+                double subprio = M[g].subpriority;
                 // Takes it if better priority, or if same, if it needs more observations, 
-		//so shares observations if two QSOs are close
-		// If still tied, use subpriority
+                //so shares observations if two QSOs are close
+            // If still tied, use subpriority
                 if (prio>pbest || (prio==pbest && m>mbest) || (prio==pbest && m==mbest && subprio>subpbest)){
                     // Check that g is not assigned yet on this plate, or on the InterPlate around, check with ok_to_assign
                     int isa=A.is_assigned_jg(j,g,M,F);
@@ -189,8 +201,7 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const FP& pp, 
                         best = g;
                         pbest = prio;
                         mbest = m;
-			subpbest = subprio;
-
+                        subpbest = subprio;
                     }
                 }
             }
@@ -202,9 +213,13 @@ inline int find_best(int j, int k, const MTL& M, const Plates& P, const FP& pp, 
 
 // Tries to assign the fiber (j,k)
 inline int assign_fiber(int j, int k, MTL& M, Plates& P, const FP& pp, const Feat& F, Assignment& A) {
-    if (A.is_assigned_tf(j,k)) return -1;
+    if (A.is_assigned_tf(j,k)){
+        return -1;
+    }
     int best = find_best(j,k,M,P,pp,F,A);
-    if (best!=-1) A.assign(j,k,best,M,P,pp);
+    if (best!=-1){
+        A.assign(j,k,best,M,P,pp);
+    }
     return best;
 }
 
@@ -223,14 +238,18 @@ inline int assign_galaxy(int g,  MTL& M, Plates& P, const FP& pp, const Feat& F,
         if (jstart<j && !A.is_assigned_tf(j,k) && ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)) {
             int unused = A.unused[j][pp[k].spectrom];//unused fibers on this petal
             if (unusedb<unused) {
-                jb = j; kb = k; unusedb = unused;//observe this galaxy by fiber on petal with most free fibefs
+                jb = j; 
+                kb = k; 
+                unusedb = unused;//observe this galaxy by fiber on petal with most free fibefs
             }
         }
     }
     if (jb!=-1){
         A.assign(jb,kb,g,M,P,pp);
-        return 1;}
-    else return 0;
+        return 1;
+    }else{ 
+        return 0;
+    }
 }
 
 // Takes an unassigned fiber and tries to assign it with the "improve" technique described in the doc
@@ -240,13 +259,13 @@ inline int improve_fiber(int jused_begin, int jused, int k, MTL& M, Plates& P, c
     int j=A.suborder[jused];
     if (!A.is_assigned_tf(j,k)) { // Unused tilefiber (j,k)
         int g_try = assign_fiber(j,k,M,P,pp,F,A);//maybe doesn't allow SS or SF
-        if (g_try!=-1) return g_try;
+        if (g_try!=-1 && g_try!=-2) return g_try;
         else { // Improve
             int gb = -1; int bb = -1; int jpb = -1; int kpb = -1; int mb = -1; int pb = 1e3; int unusedb = -1;
-	    std::vector<int>  av_g_init = P[j].av_gals[k];
-	    std::vector<int> av_g;
+            std::vector<int>  av_g_init = P[j].av_gals[k];
+            std::vector<int> av_g;
             // For all available galaxies within reach that are already observed
-	    av_g=sort_by_subpriority(M,av_g_init);
+            av_g=sort_by_subpriority(M,av_g_init);
             for (int i=0; i<av_g.size(); i++) {
                 int g = av_g[i];//a galaxy accessible to j,k
 
@@ -314,19 +333,20 @@ void simple_assign(MTL &M, Plates& P, const FP& pp, const Feat& F, Assignment& A
             }
             std::pair <double,int> this_pair(Max_fiber_priority,k);
             pairs.push_back(this_pair);
+         
         }
 
         std::sort(pairs.begin(),pairs.end(),inverse_pairCompare);
 		
         std::vector<int> fiber_loop_order;
         for (int k=0; k<F.Nfiber; k++) {
-            fiber_loop_order.push_back(pairs[k].second);
+                fiber_loop_order.push_back(pairs[k].second);
         }
 		
         int best=-1;
         for (int k=0; k<F.Nfiber; k++) { // Fiber
-            best=assign_fiber(j,fiber_loop_order[k],M,P,pp,F,A);
-            if (best!=-1)countme++;
+                best = assign_fiber(j,fiber_loop_order[k],M,P,pp,F,A);
+                if (best!=-1 || best!=-2)countme++;
         }
     }
     print_time(t,"# ... took :");
@@ -477,17 +497,16 @@ void assign_unused(int j, MTL& M, Plates& P, const FP& pp, const Feat& F, Assign
     //js is a tile with galaxies on it
    
     for (int k=0; k<F.Nfiber; k++) {
-        
         if (!A.is_assigned_tf(j,k)) {
-	  int best = -1; int mbest = -1; int pbest = 0; int jpb = -1; int kpb = -1; 
-	  double subpbest = 0;
-	  std::vector<int> av_gals = P[j].av_gals[k];//all available galaxies for this fiber k
-	  std::vector<int> sorted_av_gals=sort_by_subpriority(M,av_gals);
+          int best = -1; int mbest = -1; int pbest = 0; int jpb = -1; int kpb = -1; 
+          double subpbest = 0;
+          std::vector<int> av_gals = P[j].av_gals[k];//all available galaxies for this fiber k
+          std::vector<int> sorted_av_gals=sort_by_subpriority(M,av_gals);
             for (int gg=0; gg<sorted_av_gals.size(); gg++) {
                 int g = sorted_av_gals[gg];//available galaxies
                 int m = M[g].nobs_remain;
                 int prio = M[g].t_priority;
-		double subprio = M[g].subpriority;
+                double subprio = M[g].subpriority;
                 if (prio>pbest || (prio==pbest && m>mbest) || (prio==pbest && m==mbest && subprio>subpbest)) {
                     if (A.is_assigned_jg(j,g,M,F)==-1 && ok_assign_g_to_jk(g,j,k,P,M,pp,F,A)&&ok_for_limit_SS_SF(g,j,k,M,P,pp,F)){
                         //not assigned this plate or within excluded interval
@@ -498,7 +517,7 @@ void assign_unused(int j, MTL& M, Plates& P, const FP& pp, const Feat& F, Assign
                                 best = g;
                                 pbest = prio;
                                 mbest = m;
-				subpbest = subprio;
+                                subpbest = subprio;
                                 jpb = jp;
                                 kpb = kp;
                             }
@@ -508,8 +527,7 @@ void assign_unused(int j, MTL& M, Plates& P, const FP& pp, const Feat& F, Assign
             }
             if (best!=-1) {
                 A.unassign(jpb,kpb,best,M,P,pp);
-                A.assign(j,k,best,M,P,pp);
-                
+                A.assign(j,k,best,M,P,pp);   
             }
         }
     }
@@ -1113,19 +1131,48 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
                 num_target[i] = P[j].av_gals[fib].size();
 
                 //target_id[i] = g; ********
-                if(g>0) target_id[i] = M[g].id;
-                else target_id[i]=-1;
+                if(g>0){
+                    target_id[i] = M[g].id;
+                }else{
+                    if(pp[fib].broken){
+                        target_id[i] = -2;
+                    }else if(pp[fib].stuck){
+                        target_id[i] = -3;
+                    }else{
+                        target_id[i]=-1;
+                    }
+                }
 
                 if (g < 0) {
-                    //strcpy(objtype[i], "NA");
-                    ra[i] = qNan;
-                    dec[i] = qNan;
-                    x_focal[i] = qNan;
-                    y_focal[i] = qNan;
-                    desi_target[i] = 0;
-                    bgs_target[i] = 0;
-                    mws_target[i] = 0;
-                    strncpy(brickname[i], "notbrick", bricklen+1);
+                    if(pp[fib].stuck){
+                        ra[i] = qNan;
+                        dec[i] = qNan;
+                        x_focal[i] = pp[fib].fp_x;
+                        y_focal[i] = pp[fib].fp_y;
+                        desi_target[i] = 512;
+                        bgs_target[i] = 512;
+                        mws_target[i] = 512;
+                        strncpy(brickname[i], "notbrick", bricklen+1);
+                    }else if (pp[fib].broken){
+                        ra[i] = qNan;
+                        dec[i] = qNan;
+                        x_focal[i] = pp[fib].fp_x;
+                        y_focal[i] = pp[fib].fp_y;
+                        desi_target[i] = 1024;
+                        bgs_target[i] = 1024;
+                        mws_target[i] = 1024;
+                        strncpy(brickname[i], "notbrick", bricklen+1);
+                    }else{
+                        //strcpy(objtype[i], "NA");
+                        ra[i] = qNan;
+                        dec[i] = qNan;
+                        x_focal[i] = qNan;
+                        y_focal[i] = qNan;
+                        desi_target[i] = 0;
+                        bgs_target[i] = 0;
+                        mws_target[i] = 0;
+                        strncpy(brickname[i], "notbrick", bricklen+1);
+                    }
                 } else {
                     //we aren't supposed to know the kind  use priority instead
                     //strncpy(objtype[i], F.kind[G[g].id].c_str(), objtypelen);
