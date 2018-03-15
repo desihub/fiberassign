@@ -61,8 +61,7 @@ include platforms/$(PLATFORM)
 #
 # This is a message to make that these targets are 'actions' not files.
 #
-# .PHONY : all clean install uninstall version
-.PHONY : all clean install
+.PHONY : all clean install version
 #
 # This should compile all code prior to it being installed.
 #
