@@ -288,13 +288,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
 
       
       // count how many rows we will keep and reserve that amount
-      nkeep = 0;
-      for(int i=0; i<nrows; i++){
-        if(F.MinRa <= ra[i] && ra[i] <= F.MaxRa &&
-           F.MinDec <= dec[i] && dec[i] <= F.MaxDec ) {
-             nkeep++;
-        }
-      }
+      nkeep = nrows;
       printf("Keeping %d targets within ra/dec ranges\n", nkeep);
       try {M.reserve(nkeep);} catch (std::exception& e) {myexception(e);}
 
@@ -309,8 +303,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
           myexit(1);
         }
         
-        if(F.MinRa <= ra[ii] && ra[ii] <= F.MaxRa &&
-           F.MinDec <= dec[ii] && dec[ii] <= F.MaxDec ) {
+       
              double theta = (90.0 - dec[ii])*M_PI/180.;
              double phi   = (ra[ii]        )*M_PI/180.;
              struct target Q;
@@ -343,7 +336,6 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
              if(!in){
                M.priority_list.push_back(Q.t_priority);
              }
-           }  // end if within RA,dec bounds
       } // end ii loop over targets
       std::sort(M.priority_list.begin(),M.priority_list.end());
 
@@ -813,7 +805,6 @@ Plates read_plate_centers(const Feat& F) {
             Q.SF_av_gal_fiber.resize(F.Nfiber);
             for (int i=0;i<F.Npetal;++i){Q.SS_in_petal[i]=0;}
             for (int i=0;i<F.Npetal;++i){Q.SF_in_petal[i]=0;}
-            //if(dec<F.MaxDec && dec>F.MinDec &&ra<F.MaxRa && ra>F.MinRa){
 	    try {P.push_back(Q);} catch(std::exception& e) {myexception(e);}
 	}
       }
