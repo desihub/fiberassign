@@ -8,7 +8,9 @@ collision.h \
 feat.h \
 global.h \
 misc.h \
-structs.h
+structs.h \
+version.h \
+_version.h
 
 OBJS_SURVEYSIM = \
 surveysim.o \
@@ -16,7 +18,8 @@ collision.o \
 feat.o \
 global.o \
 misc.o \
-structs.o
+structs.o \
+version.o
 
 OBJS_FIBERASSIGN = \
 fiberassign.o \
@@ -24,9 +27,10 @@ collision.o \
 feat.o \
 global.o \
 misc.o \
-structs.o
+structs.o \
+version.o
 
-EXECUTABLES = fiberassign 
+EXECUTABLES = fiberassign
 COMPILE = $(CXXFLAGS) $(OMPFLAGS) -I. $(CFITSIO_CPPFLAGS)
 # valgrind
 #COMPILE = -g -O0 -m64 -fPIC -DNDEBUG -std=c++11 $(OMPFLAGS) -I. $(CFITSIO_CPPFLAGS)
@@ -36,7 +40,7 @@ LINK = $(OMPFLAGS) $(CFITSIO)
 all : $(EXECUTABLES)
 
 install : all
-	cp $(EXECUTABLES) $(INSTALL)
+	/bin/cp -a $(EXECUTABLES) $(INSTALL_DIR)/bin
 
 fiberassign : $(OBJS_FIBERASSIGN)
 	$(CXX) -o $@ $^ $(LINK)
@@ -48,8 +52,21 @@ fiberassign_surveysim : $(OBJS_SURVEYSIM)
 %.o : %.cpp $(HEADERS)
 	$(CXX) $(COMPILE) -o $@ -c $<
 
-
+#
+# GNU make pre-defines $(RM).  The - in front of $(RM) causes make to
+# ignore any errors produced by $(RM).
+#
 clean :
-	rm -f $(EXECUTABLES)
-	rm -f *.o *~
-	@cd $(INSTALL); rm -f $(EXECUTABLES)
+	- $(RM) $(EXECUTABLES)
+	- $(RM) *.o *~
+	@ for e in $(EXECUTABLES); do $(RM) $(INSTALL_DIR)/bin/$$e ; done
+#
+# Enable 'make version' to update the version string.
+# Do make TAG=0.1.2 version to set the tag explicitly.
+#
+LASTTAG := $(shell git describe --tags --dirty --always | cut -d- -f1)
+COUNT := $(shell git rev-list --count HEAD)
+version :
+	- $(RM) _version.h
+	@ if test -n "$(TAG)"; then v=$(TAG); else v=$(LASTTAG).dev$(COUNT); fi; \
+		echo "#define VERSION_STRING \"$$v\"" > _version.h

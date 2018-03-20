@@ -1,8 +1,4 @@
 
-# The install location of CFITSIO and other compiled
-# libraries
-DESI_EXTRA := $(DESI_CONDA)_extra
-
 # The serial C++ compiler
 export CXX := g++
 
@@ -13,5 +9,5 @@ export CXXFLAGS := -O3 -std=c++11 -fPIC -DNDEBUG
 export OMPFLAGS := -fopenmp
 
 # CFITSIO include and linking commands
-export CFITSIO_CPPFLAGS := -I$(DESI_EXTRA)/include
-export CFITSIO := -L$(DESI_EXTRA)/lib -lcfitsio -lm
+export CFITSIO_CPPFLAGS := -I$(DESICONDA_EXTRA)/include
+export CFITSIO := -L$(DESICONDA_EXTRA)/lib -lcfitsio -lm
