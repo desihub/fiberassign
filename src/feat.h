@@ -36,21 +36,10 @@ class Feat { // F for features
     bool PrintAscii;
     bool diagnose;
 
-    List prio; // Priorities  int
-    List priopost; // Priorities when we know the kind int
-    List goal;
-    List goalpost;
-    List SS;
-    List SF;
-    List lastpass;
-    List pass_intervals;
-    Slist kind;
-    Slist type;
 
     int InterPlate; 
     bool Randomize; 
     bool Pacman; 
-    int Npass;
     int MaxSS;
     int MaxSF;
     double PlateRadius;

@@ -683,58 +683,6 @@ void redistribute_tf(MTL& M, Plates&P, const FP& pp, const Feat& F, Assignment& 
 
 
 
-void display_results(str outdir, const Gals& Secret,const MTL& M, const Plates& P, const FP& pp, Feat& F, const Assignment& A,  int last_tile,bool latex) {
-	printf("# Results :\n");
-
-
-    // 1 Raw numbers of galaxies by id and number of remaining observations
-    int MaxObs = max(F.goal);
-    Table obsrv = initTable(F.Categories-2,MaxObs+1);
-
-    for (int g=0; g<M.size(); g++) {
-        if(!M[g].SS && !M[g].SF){
-		int c= Secret[g].category;
-            int m=0;
-            for(int k=0;k<A.GL[g].size();++k){
-                if(A.GL[g][k].f<last_tile)++m;
-            }
-        obsrv[c][m]++; //
-        }
-    }
-
-    // Add the 3 columns of tot, fibs, obs
-    Table with_tots = obsrv;
-    for (int i=0; i<F.Categories-2; i++) {
-        int fibs = 0; int obs = 0; int tot =0;
-        for (int j=0; j<=MaxObs; j++) tot += obsrv[i][j];
-        for (int j=0; j<=MaxObs; j++) fibs += obsrv[i][j]*j;
-        for (int j=1; j<=MaxObs; j++) obs += obsrv[i][j];
-        with_tots[i].push_back(tot);
-        with_tots[i].push_back(fibs);
-        with_tots[i].push_back(obs);
-    }
-
-	//print_table("  Remaining observations (without negative obs ones)",with_tots,latex,F.kind);
-	Dtable obs_per_sqd = ddivide_floor(with_tots,F.TotalArea);
-
-	// Add percentages of observation
-	Dtable perc = initDtable(F.Categories-2,2);
-	for (int id=0; id<F.Categories-2; id++) {
-		int tot = sumlist(obsrv[id]);
-		int goal = F.goal[id];
-
-		perc[id][0] = percent(tot-obsrv[id][0],tot);
-
-		// Weighted percentage
-		int d = 0;
-		for (int i=0; i<=goal; i++) d += obsrv[id][i]*i;
-		perc[id][1] = percent(d,tot*goal);
-	}
-	print_table("Obs per sqd and percentages",concatenate(obs_per_sqd,perc),latex,F.kind);
-
-}
-
-
 
 void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp, const Feat & F, const Assignment & A) {
     

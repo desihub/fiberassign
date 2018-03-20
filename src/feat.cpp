@@ -19,47 +19,13 @@
 Feat::Feat() { 
     Count = 0;
     Categories = 0;
+    AvCollide = 3.2;
+    Collide = 1.98;
+    NoCollide = 7.0;
+    PatrolRad = 5.8;
+    NeighborRad = 14.05;
 }
 
-int Feat::id(str s) const {
-    for (int i=0; i<Categories; i++) if (kind[i]==s) return i;
-    std::cout << "ERROR in Feat id(), string not found in kind" << std::endl;
-    return -1;
-}
-
-void Feat::init_ids() {
-    for (int i=0; i<Categories; i++) ids[kind[i]] = i;
-}
-
-void Feat::init_ids_types() {
-    for (int i=0; i<Categories; i++) ids_types[kind[i]] = i;
-}
-
-List Feat::init_ids_list(str l[], int size) const {
-    List L;
-    L.resize(size);
-    for (int i=0; i<size; i++) L[i] = ids.at(l[i]);
-    return L;
-}
-
-void Feat::init_types() {
-    for (int i=0; i<type.size(); i++) if (!isfound(type[i],types)) types.push_back(type[i]);
-}
-
-void Feat::init_no_ss_sf() {
-    //str noA[] = {"LRG","FakeLRG","ELG","QSOLy-a","QSOTracer","FakeQSO"};
-    for(int i=0;i<kind.size()-2;++i)no_ss_sf.push_back(i);
-    //no_ss_sf = init_ids_list(noA,6);
-}
-
-void Feat::init_ss_sf() {
-    str A[] = {"SS","SF"}; 
-    ss_sf = init_ids_list(A,2);
-}
-        
-bool Feat::iftype(int kind, str type) const {
-    return ids_types.at(type)==type[kind];
-}
 
 void Feat::readInputFile(const char file[]) {
     const int Mc = 512; // Max chars per line
@@ -90,35 +56,10 @@ void Feat::readInputFile(const char file[]) {
             if (tok[0]=="Secretfile") Secretfile=tok[1];
             if (tok[0]=="runDate") runDate=tok[1];
 
-            if (tok[0]=="kind") {
-                Categories = tok.size()-1;
-                for (int i=0; i<Categories; i++) kind.push_back(tok[i+1]);
-                init_ids();
-                init_ss_sf();
-                init_no_ss_sf();
-            }
-            if (tok[0]=="type") {
-                Categories = tok.size()-1;
-                for (int i=0; i<Categories; i++) type.push_back(tok[i+1]);
-                init_types();
-                init_ids_types();
-            }
-            if (tok[0]=="prio")  for (int i=0; i<Categories; i++){prio.push_back(s2i(tok[i+1]));}
-            if (tok[0]=="priopost") for (int i=0; i<Categories; i++) priopost.push_back(s2i(tok[i+1]));
-            if (tok[0]=="goal") for (int i=0; i<Categories; i++) goal.push_back(s2i(tok[i+1]));
-            if (tok[0]=="goalpost") for (int i=0; i<Categories; i++) goalpost.push_back(s2i(tok[i+1]));
-            if (tok[0]=="lastpass") for(int i=0; i<Categories;i++)lastpass.push_back(s2i(tok[i+1]));
-            if (tok[0]=="SS") for(int i=0; i<Categories;i++)SS.push_back(s2i(tok[i+1]));
-            if (tok[0]=="SF") for(int i=0; i<Categories;i++)SF.push_back(s2i(tok[i+1]));
-            if (tok[0]=="pass_intervals"){
-                int n_intervals=tok.size()-1;
-                for (int i=0;i<n_intervals;++i) pass_intervals.push_back(s2i(tok[i+1]));
-            }
             
       if (tok[0]=="InterPlate") InterPlate = s2i(tok[1]);
       if (tok[0]=="Randomize") Randomize = s2b(tok[1]);
       if (tok[0]=="Pacman") Pacman = s2b(tok[1]);
-      if (tok[0]=="Npass") Npass = s2i(tok[1]);
       if (tok[0]=="MaxSS") MaxSS = s2i(tok[1]);
       if (tok[0]=="MaxSF") MaxSF = s2i(tok[1]);
       if (tok[0]=="PlateRadius") PlateRadius = s2d(tok[1]);
@@ -132,11 +73,6 @@ void Feat::readInputFile(const char file[]) {
       
       if (tok[0]=="Collision") Collision = s2b(tok[1]);
       if (tok[0]=="Exact") Exact = s2b(tok[1]);
-      if (tok[0]=="AvCollide") AvCollide = s2d(tok[1]);
-      if (tok[0]=="Collide") Collide = s2d(tok[1]);
-      if (tok[0]=="NoCollide") NoCollide = s2d(tok[1]);
-      if (tok[0]=="PatrolRad") PatrolRad = s2d(tok[1]);
-      if (tok[0]=="NeighborRad") NeighborRad = s2d(tok[1]);
       
       if (tok[0]=="Verif") Verif = s2b(tok[1]);
       if (tok[0]=="Ascii") Ascii = s2b(tok[1]);

@@ -923,20 +923,7 @@ void Assignment::unassign(int j, int k, int g, MTL& M, Plates& P, const FP& pp) 
 }
 
 void Assignment::verif(const Plates& P, const MTL& M, const FP& pp, const Feat& F) const {
-    str qso_lrgA[] = {"QSOLy-a","QSOTracer","FakeQSO","LRG","FakeLRG"}; List qso_lrg = F.init_ids_list(qso_lrgA,5);
-    for (int g=0; g<F.Ngal; g++) {// make sure observations are separated by at least InterPlate
-        Plist tfs = GL[g];
-        int j0(-1); int j1(-1);
-        for (int i=0; i<tfs.size(); i++) {
-            pair tf = tfs[i];
-            int j0 = j1;
-            int j1 = tf.f;
 
-            if (TF[tf.f][tf.s]!=g) { printf("ERROR in verification of correspondance of galaxies !\n"); fl(); }
-            // No 2 assignments within an interval of F.InterPlate
-            //if (j0!=-1 && isfound(M[g].id,qso_lrg) && fabs(j1-j0)<F.InterPlate) { printf("ERROR in verification of F.InterPlate g=%d with j=%d and %d\n",g,j0,j1); fl(); }
-        }
-    }
     for (int j=0; j<F.Nplate; j++) {
         List gals = initList(F.Ngal);
         for (int k=0; k<F.Nfiber; k++) {
@@ -1045,14 +1032,6 @@ List Assignment::fibs_unassigned(int j, int pet, const MTL& M, const FP& pp, con
 }
 
 
-int Assignment::nobs_time(int g, int j, const Gals& Secret, const MTL& M,const Feat& F) const {
-    //gives required number of observations after jth tile  rnc 6/1/16
-    //used in pyplotTile
-    int kind = Secret[g].category;
-    int cnt = M[g].once_obs ? F.goalpost[kind] : F.goal[kind];
-    for (int i=0; i<GL[g].size(); i++) if (GL[g][i].f<j) cnt--;
-    return cnt;
-}
 // Returns the radial distance on the plate (mm) given the angle,
 // theta (radians).  This is simply a fit to the data provided.
 double plate_dist(const double theta) {
