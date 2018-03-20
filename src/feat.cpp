@@ -59,7 +59,6 @@ void Feat::readInputFile(const char file[]) {
             
       if (tok[0]=="InterPlate") InterPlate = s2i(tok[1]);
       if (tok[0]=="Randomize") Randomize = s2b(tok[1]);
-      if (tok[0]=="Pacman") Pacman = s2b(tok[1]);
       if (tok[0]=="MaxSS") MaxSS = s2i(tok[1]);
       if (tok[0]=="MaxSF") MaxSF = s2i(tok[1]);
       if (tok[0]=="PlateRadius") PlateRadius = s2d(tok[1]);

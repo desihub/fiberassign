@@ -395,7 +395,7 @@ FP  read_fiber_positions(const Feat& F) {
             fiber_pos.location=location;
             fiber_pos.fp_x=x;
             fiber_pos.fp_y=y;
-            int sp = F.Pacman ? inv[spectro] : spectro;
+            int sp =  spectro;
             fiber_pos.spectrom=spectro;  
             fiber_pos.coords=dpair(x,y);
         } catch(std::exception& e) {myexception(e);}
@@ -922,29 +922,8 @@ void Assignment::unassign(int j, int k, int g, MTL& M, Plates& P, const FP& pp) 
 
 }
 
-void Assignment::verif(const Plates& P, const MTL& M, const FP& pp, const Feat& F) const {
 
-    for (int j=0; j<F.Nplate; j++) {
-        List gals = initList(F.Ngal);
-        for (int k=0; k<F.Nfiber; k++) {
-            int g = TF[j][k];
-            if (g!=-1) {
-                // Verif on GL: is it consistent with TF?
-                if (isfound(pair(j,k),GL[g])==-1) { printf("ERROR in verification of correspondance of tfs !\n"); fl(); }
-                // Verif that a galaxy isn't observed twice
-                if (gals[g]==1) printf("ERROR in verification, twice the same galaxy by (%d,%d)\n",j,k);
-                else gals[g] = 1;
-                // Collision checking
-                if (!F.Collision && is_collision(j,k,pp,M,P,F)!=-1) printf("ERROR in verification : collisions\n");
-            }
-        }
-    }
-    for (int j=0; j<F.Nplate; j++) {// right number of SS and SF
-        for (int n=0; n<F.Npetal; n++){
-            if (kinds[j][n][F.ids.at("SS")]!=F.MaxSS || kinds[j][n][F.ids.at("SF")]!=F.MaxSF) printf("ERROR in verification : number of SF or SS\n");
-        }
-    }
-}
+
 
 int Assignment::is_assigned_jg(int j, int g) const {// is galaxy g assigned on tile j
     for (int i=0; i<GL[g].size(); i++) if (GL[g][i].f == j) return i;

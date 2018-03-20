@@ -39,7 +39,6 @@ class Feat { // F for features
 
     int InterPlate; 
     bool Randomize; 
-    bool Pacman; 
     int MaxSS;
     int MaxSF;
     double PlateRadius;
@@ -63,15 +62,7 @@ class Feat { // F for features
     bool Ascii;
     bool BrightTime;
     
-    double MaxDec;
-    double MinDec;
-    double MaxRa;
-    double MinRa;
-    // Indirectly set by features file
     int Categories;
-    Slist types; // Same as type but with only QSO LRG ELG SS SF
-    Smap ids; // Redundtant but optimizes (inv of kind)
-    Smap ids_types; // Same but for types (inv of types) (1 to QSO, ...)
 
     // Set after reading other input files
     int Nplate;
