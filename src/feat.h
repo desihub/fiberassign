@@ -70,14 +70,6 @@ class Feat { // F for features
     double PatrolRad;
     double NeighborRad;
 
-    bool PlotObsTime;
-    bool PlotHistLya;
-    bool PlotDistLya;
-    bool PlotFreeFibHist;
-    bool PlotFreeFibTime;
-    bool PlotSeenDens;
-    bool PlotPyplotTile;
-    int  PyplotInterval;
     bool Verif;
     bool Ascii;
     bool BrightTime;

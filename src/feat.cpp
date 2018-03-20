@@ -142,14 +142,6 @@ void Feat::readInputFile(const char file[]) {
       if (tok[0]=="PatrolRad") PatrolRad = s2d(tok[1]);
       if (tok[0]=="NeighborRad") NeighborRad = s2d(tok[1]);
       
-      if (tok[0]=="PlotObsTime") PlotObsTime = s2b(tok[1]);
-      if (tok[0]=="PlotHistLya") PlotHistLya = s2b(tok[1]);
-      if (tok[0]=="PlotDistLya") PlotDistLya = s2b(tok[1]);
-      if (tok[0]=="PlotFreeFibHist") PlotFreeFibHist = s2b(tok[1]);
-      if (tok[0]=="PlotFreeFibTime") PlotFreeFibTime = s2b(tok[1]);
-      if (tok[0]=="PlotSeenDens") PlotSeenDens = s2b(tok[1]);
-      if (tok[0]=="PlotPyplotTile")PlotPyplotTile = s2b(tok[1]);
-      if (tok[0]=="PyplotInterval")PyplotInterval = s2i(tok[1]);
       if (tok[0]=="Verif") Verif = s2b(tok[1]);
       if (tok[0]=="Ascii") Ascii = s2b(tok[1]);
       if (tok[0]=="PrintGalObs") PrintGalObs = s2i(tok[1]);
