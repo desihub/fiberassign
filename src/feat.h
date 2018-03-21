@@ -77,6 +77,7 @@ class Feat { // F for features
     // Methods
     Feat();
     void readInputFile(const char fname[]);
+    void parseCommandLine(int argc, char ** argv);
     int id(str s) const;
 
     void init_ids(); // Init ids member
