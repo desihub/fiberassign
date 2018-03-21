@@ -16,6 +16,22 @@
 #include        "misc.h"
 #include        "collision.h"
 #include        "feat.h"
+
+void Usage(char *ExecName)
+{
+    std::cout << "Usage:  "<<ExecName;
+    std::cout << " -target <target_filename> ";
+    std::cout << " -sky <sky_filename> ";
+    std::cout << " -star <star_filename> ";
+    std::cout << " -survey <surveytiles_filename> ";
+    std::cout << " -tilefile <tilelist_filename> ";
+    std::cout << " -fibfile <fiberpos_filename> ";
+    std::cout << " -fibstatusfile <fiberstatus_filename> ";
+    std::cout << " -outdir <outputdirectory> ";
+    std::cout << " [-rundate <YYYY-MM-DD>]"<< std::endl;
+    exit(0);
+}
+
 // Features ------------------------------------------------------------------
 Feat::Feat() { 
     Count = 0;
@@ -62,10 +78,11 @@ void Feat::readInputFile(const char file[]) {
   fIn.close();
 }
 
+
+
 void Feat::parseCommandLine(int argc, char **argv) {
     int i;
     for (i=1;i<argc;){
-        std::cout << i << "en esta vamos\n";
         if (!strcmp(argv[i],"-target")){
         i++;
          Targfile = str(argv[i]);
@@ -93,12 +110,10 @@ void Feat::parseCommandLine(int argc, char **argv) {
         }else if (!strcmp(argv[i],"-fibfile")){
         i++;
             fibFile = str(argv[i]);
-            std::cout << fibFile << std::endl;
         i++;    
         }else if (!strcmp(argv[i],"-fibstatusfile")){
         i++;
             fibstatusFile = str(argv[i]);
-            std::cout << fibstatusFile << std::endl;
         i++;    
         }else if (!strcmp(argv[i],"-rundate")){
         i++;
@@ -106,7 +121,8 @@ void Feat::parseCommandLine(int argc, char **argv) {
         i++;   
         }else{
          fprintf (stderr,"\nUnrecognized option: %s\n\n",argv[i]);
-         exit(0);
+         Usage(argv[0]);
         } 
     }
 }
+
