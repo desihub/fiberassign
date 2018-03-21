@@ -496,7 +496,7 @@ void read_fiber_status(FP& FibPos, const Feat &F){
     std::cout << "Current Time" <<  std::put_time(&current_time, "%c") << "\n";
     
     if (!fs) { // An error occurred opening the file.
-        std::cerr << "Unable to open file " << F.fibFile << std::endl;
+        std::cerr << "Unable to open file " << F.fibstatusFile << std::endl;
         myexit(1);
     }
     getline(fs,buf);

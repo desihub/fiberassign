@@ -65,6 +65,7 @@ void Feat::readInputFile(const char file[]) {
 void Feat::parseCommandLine(int argc, char **argv) {
     int i;
     for (i=1;i<argc;){
+        std::cout << i << "en esta vamos\n";
         if (!strcmp(argv[i],"-target")){
         i++;
          Targfile = str(argv[i]);
@@ -87,20 +88,25 @@ void Feat::parseCommandLine(int argc, char **argv) {
         i++;    
         }else if (!strcmp(argv[i],"-tilefile")){
         i++;
-        tileFile= str(argv[i]);
+            tileFile= str(argv[i]);
         i++;    
         }else if (!strcmp(argv[i],"-fibfile")){
         i++;
-        fibFile = str(argv[i]);
+            fibFile = str(argv[i]);
+            std::cout << fibFile << std::endl;
         i++;    
         }else if (!strcmp(argv[i],"-fibstatusfile")){
         i++;
-        fibstatusFile = str(argv[i]);
+            fibstatusFile = str(argv[i]);
+            std::cout << fibstatusFile << std::endl;
         i++;    
         }else if (!strcmp(argv[i],"-rundate")){
         i++;
-        fibstatusFile = str(argv[i]);
+            runDate = str(argv[i]);
         i++;   
-        }   
+        }else{
+         fprintf (stderr,"\nUnrecognized option: %s\n\n",argv[i]);
+         exit(0);
+        } 
     }
 }
