@@ -21,12 +21,12 @@
 void Usage(char *ExecName)
 {
     std::cout << "Usage:  "<<ExecName;
-    std::cout << " -target <target_filename> ";
+    std::cout << " -mtl <target_filename> ";
     std::cout << " -sky <sky_filename> ";
     std::cout << " -star <star_filename> ";
-    std::cout << " -survey <surveytiles_filename> ";
-    std::cout << " -tilefile <tilelist_filename> ";
-    std::cout << " -fibfile <fiberpos_filename> ";
+    std::cout << " -surveytiles <surveytiles_filename> ";
+    std::cout << " -footprint <tilelist_filename> ";
+    std::cout << " -positioners <fiberpos_filename> ";
     std::cout << " -fibstatusfile <fiberstatus_filename> ";
     std::cout << " -outdir <outputdirectory> ";
     std::cout << " [-rundate <YYYY-MM-DD>]"<< std::endl;
@@ -84,7 +84,7 @@ void Feat::readInputFile(const char file[]) {
 void Feat::parseCommandLine(int argc, char **argv) {
     int i;
     for (i=1;i<argc;){
-        if (!strcmp(argv[i],"-target")){
+        if (!strcmp(argv[i],"-mtl")){
         i++;
          Targfile = str(argv[i]);
         i++;    
@@ -96,7 +96,7 @@ void Feat::parseCommandLine(int argc, char **argv) {
         i++;
             SStarsfile = str(argv[i]);
         i++;    
-        }else if (!strcmp(argv[i],"-survey")){
+        }else if (!strcmp(argv[i],"-surveytiles")){
         i++;
          surveyFile = str(argv[i]);
         i++;    
@@ -104,11 +104,11 @@ void Feat::parseCommandLine(int argc, char **argv) {
         i++;
         outDir = str(argv[i]);
         i++;    
-        }else if (!strcmp(argv[i],"-tilefile")){
+        }else if (!strcmp(argv[i],"-footprint")){
         i++;
             tileFile= str(argv[i]);
         i++;    
-        }else if (!strcmp(argv[i],"-fibfile")){
+        }else if (!strcmp(argv[i],"-positioners")){
         i++;
             fibFile = str(argv[i]);
         i++;    
