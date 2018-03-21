@@ -17,6 +17,7 @@
 #include        "collision.h"
 #include        "feat.h"
 
+
 void Usage(char *ExecName)
 {
     std::cout << "Usage:  "<<ExecName;
