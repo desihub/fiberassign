@@ -32,11 +32,9 @@ class Feat { // F for features
     str surveyFile;
     str fibstatusFile;
     str runDate;
-    bool diagnose;
 
 
     int InterPlate; 
-    bool Randomize; 
     int MaxSS;
     int MaxSF;
     double PlateRadius;

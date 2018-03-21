@@ -25,6 +25,8 @@ Feat::Feat() {
     PatrolRad = 5.8;
     NeighborRad = 14.05;
     PlateRadius = 1.65;
+    MaxSS = 10;
+    MaxSF = 40;
 }
 
 
@@ -57,9 +59,6 @@ void Feat::readInputFile(const char file[]) {
 
             
       if (tok[0]=="InterPlate") InterPlate = s2i(tok[1]);
-      if (tok[0]=="Randomize") Randomize = s2b(tok[1]);
-      if (tok[0]=="MaxSS") MaxSS = s2i(tok[1]);
-      if (tok[0]=="MaxSF") MaxSF = s2i(tok[1]);
       if (tok[0]=="Analysis") Analysis = s2i(tok[1]);
 
       
