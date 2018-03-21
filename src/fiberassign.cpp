@@ -218,7 +218,7 @@ int main(int argc, char **argv) {
     printf("\n");
 
     init_time_at(time,"# print fits files ",t);
-    if (F.PrintFits) for (int jused=0; jused<F.NUsedplate; jused++){
+    for (int jused=0; jused<F.NUsedplate; jused++){
         int j=A.suborder[jused];
         fa_write(j,F.outDir,M,P,pp,F,A); // Write output
     }

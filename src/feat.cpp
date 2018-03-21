@@ -46,8 +46,6 @@ void Feat::readInputFile(const char file[]) {
             if (tok[0]=="fibstatusFile") fibstatusFile = tok[1];
             if (tok[0]=="surveyFile") surveyFile= tok[1];
 			if (tok[0]=="outDir") outDir= tok[1];
-			if (tok[0]=="PrintAscii") PrintAscii= s2b(tok[1]);
-            if (tok[0]=="PrintFits") PrintFits= s2b(tok[1]);
             
             if (tok[0]=="MTLfile") MTLfile=tok[1];
             if (tok[0]=="Targfile") Targfile=tok[1];
