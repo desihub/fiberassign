@@ -20,15 +20,12 @@
 class Feat { // F for features
     public:
     // Set by features file
-    str galFile;
     str tileFile;
     str fibFile;
     str outDir;
-    str MTLfile;
     str Targfile;
     str SStarsfile;
     str SkyFfile;
-    str Secretfile;
     str surveyFile;
     str fibstatusFile;
     str runDate;
@@ -38,12 +35,6 @@ class Feat { // F for features
     int MaxSS;
     int MaxSF;
     double PlateRadius;
-    int Analysis;
-    bool InfDens;
-    double TotalArea;
-    double invFibArea;
-    int moduloGal;
-    int moduloFiber;
     int PrintGalObs;
     
     bool Collision; // True when we take collisions into account

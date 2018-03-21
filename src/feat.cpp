@@ -27,6 +27,9 @@ Feat::Feat() {
     PlateRadius = 1.65;
     MaxSS = 10;
     MaxSF = 40;
+    InterPlate = 0;
+    Collision = false;
+    Exact = true;
 }
 
 
@@ -43,39 +46,16 @@ void Feat::readInputFile(const char file[]) {
 		int n = 0; // a for-loop index
 		Slist tok = s2vec(buf,delimiter);
 		if (2<=tok.size()) {
-			if (tok[0]=="galFile") galFile = tok[1];
-			if (tok[0]=="tileFile") tileFile= tok[1];
-			if (tok[0]=="fibFile") fibFile= tok[1];
+            if (tok[0]=="tileFile") tileFile= tok[1];
+            if (tok[0]=="fibFile") fibFile= tok[1];
             if (tok[0]=="fibstatusFile") fibstatusFile = tok[1];
             if (tok[0]=="surveyFile") surveyFile= tok[1];
-			if (tok[0]=="outDir") outDir= tok[1];
-            
-            if (tok[0]=="MTLfile") MTLfile=tok[1];
+            if (tok[0]=="outDir") outDir= tok[1];
             if (tok[0]=="Targfile") Targfile=tok[1];
             if (tok[0]=="SStarsfile")SStarsfile=tok[1];
             if (tok[0]=="SkyFfile") SkyFfile=tok[1];
-            if (tok[0]=="Secretfile") Secretfile=tok[1];
             if (tok[0]=="runDate") runDate=tok[1];
-
-            
-      if (tok[0]=="InterPlate") InterPlate = s2i(tok[1]);
-      if (tok[0]=="Analysis") Analysis = s2i(tok[1]);
-
-      
-      if (tok[0]=="TotalArea") TotalArea = s2d(tok[1]);
-      if (tok[0]=="invFibArea") invFibArea = s2d(tok[1]);
-      if (tok[0]=="moduloGal") moduloGal = s2i(tok[1]);
-      if (tok[0]=="moduloFiber") moduloFiber = s2i(tok[1]);
-      
-      if (tok[0]=="Collision") Collision = s2b(tok[1]);
-      if (tok[0]=="Exact") Exact = s2b(tok[1]);
-      
-      if (tok[0]=="Verif") Verif = s2b(tok[1]);
-      if (tok[0]=="Ascii") Ascii = s2b(tok[1]);
-      if (tok[0]=="PrintGalObs") PrintGalObs = s2i(tok[1]);
-      if (tok[0]=="BrightTime") BrightTime = s2b(tok[1]);
-      
-      
+                
     }
   }
   
