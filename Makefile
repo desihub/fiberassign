@@ -40,7 +40,7 @@ ifeq ($(NERSC_HOST), edison)
 PLATFORM := nersc_edison
 endif
 ifeq ($(NERSC_HOST), cori)
-PLATFORM := nesrc_cori_haswell
+PLATFORM := nersc_cori_haswell
 endif
 
 else
@@ -70,7 +70,7 @@ all :
 
 install : all
 	- /bin/mkdir -p $(INSTALL_DIR)
-	@ for d in bin py script test; do test ! -d $(INSTALL_DIR)/$$d && /bin/cp -a $$d $(INSTALL_DIR) ; done
+	@ for d in bin py script test; do if [ ! -d $(INSTALL_DIR)/$$d ]; then /bin/cp -a $$d $(INSTALL_DIR) ; fi ; done
 	@ for f in $(SUBDIRS); do $(MAKE) -C $$f install ; done
 
 clean :
