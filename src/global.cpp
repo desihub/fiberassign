@@ -709,9 +709,11 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
     ret = ::stat(filename, &filestat );
     
     if (ret == 0) {
-        std::ostringstream o;
-        o << "output file " << filename << " already exists";
-        throw std::runtime_error(o.str().c_str());
+        std::cerr << "ERROR: output file " << filename << " already exists" << std::endl;
+        std::exit(1);
+        // std::ostringstream o;
+        // o << "output file " << filename << " already exists";
+        // throw std::runtime_error(o.str().c_str());
     }
     
     // create the file

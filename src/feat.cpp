@@ -21,15 +21,15 @@
 void Usage(char *ExecName)
 {
     std::cout << "Usage:  "<<ExecName;
-    std::cout << " -mtl <target_filename> ";
-    std::cout << " -sky <sky_filename> ";
-    std::cout << " -star <star_filename> ";
-    std::cout << " -surveytiles <surveytiles_filename> ";
-    std::cout << " -footprint <tilelist_filename> ";
-    std::cout << " -positioners <fiberpos_filename> ";
-    std::cout << " -fibstatusfile <fiberstatus_filename> ";
-    std::cout << " -outdir <outputdirectory> ";
-    std::cout << " [-rundate <YYYY-MM-DD>]"<< std::endl;
+    std::cout << " --mtl <target_filename> ";
+    std::cout << " --sky <sky_filename> ";
+    std::cout << " --stdstar <star_filename> ";
+    std::cout << " --surveytiles <surveytiles_filename> ";
+    std::cout << " --footprint <tilelist_filename> ";
+    std::cout << " --positioners <fiberpos_filename> ";
+    std::cout << " --fibstatusfile <fiberstatus_filename> ";
+    std::cout << " --outdir <outputdirectory> ";
+    std::cout << " [--rundate <YYYY-MM-DD>]"<< std::endl;
     exit(0);
 }
 
@@ -84,45 +84,49 @@ void Feat::readInputFile(const char file[]) {
 void Feat::parseCommandLine(int argc, char **argv) {
     int i;
     for (i=1;i<argc;){
-        if (!strcmp(argv[i],"-mtl")){
-        i++;
-         Targfile = str(argv[i]);
-        i++;    
-        }else if (!strcmp(argv[i],"-sky")){
-        i++;
-        SkyFfile = str(argv[i]);
-        i++;    
-        }else if (!strcmp(argv[i],"-star")){
-        i++;
+        if (!strcmp(argv[i],"--mtl")){
+            i++;
+            Targfile = str(argv[i]);
+            i++;
+        }else if (!strcmp(argv[i],"--sky")){
+            i++;
+            SkyFfile = str(argv[i]);
+            i++;
+        }else if (!strcmp(argv[i],"--stdstar")){
+            i++;
             SStarsfile = str(argv[i]);
-        i++;    
-        }else if (!strcmp(argv[i],"-surveytiles")){
-        i++;
-         surveyFile = str(argv[i]);
-        i++;    
-        }else if (!strcmp(argv[i],"-outdir")){
-        i++;
-        outDir = str(argv[i]);
-        i++;    
-        }else if (!strcmp(argv[i],"-footprint")){
-        i++;
+            i++;
+        }else if (!strcmp(argv[i],"--surveytiles")){
+            i++;
+            surveyFile = str(argv[i]);
+            i++;
+        }else if (!strcmp(argv[i],"--outdir")){
+            i++;
+            outDir = str(argv[i]);
+            i++;
+        }else if (!strcmp(argv[i],"--footprint")){
+            i++;
             tileFile= str(argv[i]);
-        i++;    
-        }else if (!strcmp(argv[i],"-positioners")){
-        i++;
+            i++;
+        }else if (!strcmp(argv[i],"--positioners")){
+            i++;
             fibFile = str(argv[i]);
-        i++;    
-        }else if (!strcmp(argv[i],"-fibstatusfile")){
-        i++;
+            i++;
+        }else if (!strcmp(argv[i],"--fibstatusfile")){
+            i++;
             fibstatusFile = str(argv[i]);
-        i++;    
+            i++;
         }else if (!strcmp(argv[i],"-rundate")){
-        i++;
+            i++;
             runDate = str(argv[i]);
-        i++;   
+            i++;
+        }else if (!strcmp(argv[i],"--help")){
+            Usage(argv[0]);
+        }else if (!strcmp(argv[i],"-h")){
+            Usage(argv[0]);
         }else{
-         fprintf (stderr,"\nUnrecognized option: %s\n\n",argv[i]);
-         Usage(argv[0]);
+            fprintf (stderr,"\nUnrecognized option: %s\n\n",argv[i]);
+            Usage(argv[0]);
         } 
     }
 }

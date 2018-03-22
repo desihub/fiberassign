@@ -824,9 +824,11 @@ Plates read_plate_centers(const Feat& F) {
         ret = invert_tile.insert(std::make_pair(P[i].tileid,i));
         // Check for duplicates (std::map.insert only creates keys, fails on duplicate keys)
         if ( ret.second == false ) {
-            std::ostringstream o;
-            o << "Duplicate tileid " << P[i].tileid << " in tileFile!";
-            throw std::logic_error(o.str().c_str());
+            std::cerr << "ERROR: Duplicate tileid " << P[i].tileid << " in tileFile!" << std::endl;
+            std::exit(1);
+            // std::ostringstream o;
+            // o << "Duplicate tileid " << P[i].tileid << " in tileFile!";
+            // throw std::logic_error(o.str().c_str());
         }
     }
     print_time(time,"# ..inversion  took :");
@@ -839,9 +841,11 @@ Plates read_plate_centers(const Feat& F) {
 
         if (tileid_to_idx == invert_tile.end()){
             // Can end up with no mapping if surveyFile contains valid tileids that have in_desi = 0 in the tileFile.
-            std::ostringstream o;
-            o << "surveyFile contains tileid " << tileid << ", which is not included (or has in_desi = 0) in tileFile.";
-            throw std::range_error(o.str().c_str());
+            std::cerr << "ERROR: surveyFile contains tileid " << tileid << ", which is not included (or has in_desi = 0) in tileFile." << std::endl;
+            std::exit(1);
+            // std::ostringstream o;
+            // o << "surveyFile contains tileid " << tileid << ", which is not included (or has in_desi = 0) in tileFile.";
+            // throw std::range_error(o.str().c_str());
         }
 
         // Found a valid index, push the tile to the ordered list.
