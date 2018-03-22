@@ -27,15 +27,16 @@ int main(int argc, char **argv) {
     //  each target has a priority provided by the mtl file
     //  all targets with the same priority are collected into a class
 
-    check_args(argc);
+    //check_args(argc);
     Time t, time; // t for global, time for local
     init_time(t);
     Feat F;
     MTL M;
 
     // Read parameters file //
-    F.readInputFile(argv[1]);
-    printFile(argv[1]);
+    //F.readInputFile(argv[1]);
+    F.parseCommandLine(argc, argv);
+    //printFile(argv[1]);
     // Read input files for standards, skys and targets.
     // Try to read SS and SF before targets to avoid wasting time if these
     // smaller files can't be read.
@@ -218,7 +219,7 @@ int main(int argc, char **argv) {
     printf("\n");
 
     init_time_at(time,"# print fits files ",t);
-    if (F.PrintFits) for (int jused=0; jused<F.NUsedplate; jused++){
+    for (int jused=0; jused<F.NUsedplate; jused++){
         int j=A.suborder[jused];
         fa_write(j,F.outDir,M,P,pp,F,A); // Write output
     }

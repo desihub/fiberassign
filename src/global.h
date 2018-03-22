@@ -48,7 +48,6 @@ void assign_unused(int j, MTL& M,  Plates& P, const FP& pp, const Feat& F, Assig
 void diagnostic(const Gals& G, Feat& F, const Assignment& A);
 // Results functions --------------------------------------------------
 
-void display_results(str outdir, const Gals& G, const MTL& M, const Plates &P, const FP& pp, Feat& F, const Assignment& A, int last_tile, bool latex=false);
 
 void diagnostic(const MTL& M, const Gals& G, Feat& F, const Assignment& A);
 
@@ -59,7 +58,6 @@ void fa_write(int j, str outdir, const MTL& M, const Plates& P, const FP& pp, co
 
 void write_save_av_gals(int j, str outdir, const MTL& M, const Plates& P, const FP& pp, const Feat& F);
 
-void pyplotTile(int j, str fname, const Gals& Secret, const MTL& M, const Plates& P, const FP& pp, const Feat& F, const Assignment& A);
 
 void overlappingTiles(str fname, const Feat& F, const Assignment& A);
 #endif

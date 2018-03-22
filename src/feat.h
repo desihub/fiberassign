@@ -20,46 +20,21 @@
 class Feat { // F for features
     public:
     // Set by features file
-    str galFile;
     str tileFile;
     str fibFile;
     str outDir;
-    str MTLfile;
     str Targfile;
     str SStarsfile;
     str SkyFfile;
-    str Secretfile;
     str surveyFile;
     str fibstatusFile;
     str runDate;
-	bool PrintFits;
-    bool PrintAscii;
-    bool diagnose;
 
-    List prio; // Priorities  int
-    List priopost; // Priorities when we know the kind int
-    List goal;
-    List goalpost;
-    List SS;
-    List SF;
-    List lastpass;
-    List pass_intervals;
-    Slist kind;
-    Slist type;
 
     int InterPlate; 
-    bool Randomize; 
-    bool Pacman; 
-    int Npass;
     int MaxSS;
     int MaxSF;
     double PlateRadius;
-    int Analysis;
-    bool InfDens;
-    double TotalArea;
-    double invFibArea;
-    int moduloGal;
-    int moduloFiber;
     int PrintGalObs;
     
     bool Collision; // True when we take collisions into account
@@ -70,27 +45,11 @@ class Feat { // F for features
     double PatrolRad;
     double NeighborRad;
 
-    bool PlotObsTime;
-    bool PlotHistLya;
-    bool PlotDistLya;
-    bool PlotFreeFibHist;
-    bool PlotFreeFibTime;
-    bool PlotSeenDens;
-    bool PlotPyplotTile;
-    int  PyplotInterval;
     bool Verif;
     bool Ascii;
     bool BrightTime;
     
-    double MaxDec;
-    double MinDec;
-    double MaxRa;
-    double MinRa;
-    // Indirectly set by features file
     int Categories;
-    Slist types; // Same as type but with only QSO LRG ELG SS SF
-    Smap ids; // Redundtant but optimizes (inv of kind)
-    Smap ids_types; // Same but for types (inv of types) (1 to QSO, ...)
 
     // Set after reading other input files
     int Nplate;
@@ -118,6 +77,7 @@ class Feat { // F for features
     // Methods
     Feat();
     void readInputFile(const char fname[]);
+    void parseCommandLine(int argc, char ** argv);
     int id(str s) const;
 
     void init_ids(); // Init ids member

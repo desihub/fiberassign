@@ -288,13 +288,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
 
       
       // count how many rows we will keep and reserve that amount
-      nkeep = 0;
-      for(int i=0; i<nrows; i++){
-        if(F.MinRa <= ra[i] && ra[i] <= F.MaxRa &&
-           F.MinDec <= dec[i] && dec[i] <= F.MaxDec ) {
-             nkeep++;
-        }
-      }
+      nkeep = nrows;
       printf("Keeping %d targets within ra/dec ranges\n", nkeep);
       try {M.reserve(nkeep);} catch (std::exception& e) {myexception(e);}
 
@@ -309,8 +303,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
           myexit(1);
         }
         
-        if(F.MinRa <= ra[ii] && ra[ii] <= F.MaxRa &&
-           F.MinDec <= dec[ii] && dec[ii] <= F.MaxDec ) {
+       
              double theta = (90.0 - dec[ii])*M_PI/180.;
              double phi   = (ra[ii]        )*M_PI/180.;
              struct target Q;
@@ -343,7 +336,6 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
              if(!in){
                M.priority_list.push_back(Q.t_priority);
              }
-           }  // end if within RA,dec bounds
       } // end ii loop over targets
       std::sort(M.priority_list.begin(),M.priority_list.end());
 
@@ -403,7 +395,7 @@ FP  read_fiber_positions(const Feat& F) {
             fiber_pos.location=location;
             fiber_pos.fp_x=x;
             fiber_pos.fp_y=y;
-            int sp = F.Pacman ? inv[spectro] : spectro;
+            int sp =  spectro;
             fiber_pos.spectrom=spectro;  
             fiber_pos.coords=dpair(x,y);
         } catch(std::exception& e) {myexception(e);}
@@ -504,7 +496,7 @@ void read_fiber_status(FP& FibPos, const Feat &F){
     std::cout << "Current Time" <<  std::put_time(&current_time, "%c") << "\n";
     
     if (!fs) { // An error occurred opening the file.
-        std::cerr << "Unable to open file " << F.fibFile << std::endl;
+        std::cerr << "Unable to open file " << F.fibstatusFile << std::endl;
         myexit(1);
     }
     getline(fs,buf);
@@ -813,7 +805,6 @@ Plates read_plate_centers(const Feat& F) {
             Q.SF_av_gal_fiber.resize(F.Nfiber);
             for (int i=0;i<F.Npetal;++i){Q.SS_in_petal[i]=0;}
             for (int i=0;i<F.Npetal;++i){Q.SF_in_petal[i]=0;}
-            //if(dec<F.MaxDec && dec>F.MinDec &&ra<F.MaxRa && ra>F.MinRa){
 	    try {P.push_back(Q);} catch(std::exception& e) {myexception(e);}
 	}
       }
@@ -833,9 +824,11 @@ Plates read_plate_centers(const Feat& F) {
         ret = invert_tile.insert(std::make_pair(P[i].tileid,i));
         // Check for duplicates (std::map.insert only creates keys, fails on duplicate keys)
         if ( ret.second == false ) {
-            std::ostringstream o;
-            o << "Duplicate tileid " << P[i].tileid << " in tileFile!";
-            throw std::logic_error(o.str().c_str());
+            std::cerr << "ERROR: Duplicate tileid " << P[i].tileid << " in tileFile!" << std::endl;
+            std::exit(1);
+            // std::ostringstream o;
+            // o << "Duplicate tileid " << P[i].tileid << " in tileFile!";
+            // throw std::logic_error(o.str().c_str());
         }
     }
     print_time(time,"# ..inversion  took :");
@@ -848,9 +841,11 @@ Plates read_plate_centers(const Feat& F) {
 
         if (tileid_to_idx == invert_tile.end()){
             // Can end up with no mapping if surveyFile contains valid tileids that have in_desi = 0 in the tileFile.
-            std::ostringstream o;
-            o << "surveyFile contains tileid " << tileid << ", which is not included (or has in_desi = 0) in tileFile.";
-            throw std::range_error(o.str().c_str());
+            std::cerr << "ERROR: surveyFile contains tileid " << tileid << ", which is not included (or has in_desi = 0) in tileFile." << std::endl;
+            std::exit(1);
+            // std::ostringstream o;
+            // o << "surveyFile contains tileid " << tileid << ", which is not included (or has in_desi = 0) in tileFile.";
+            // throw std::range_error(o.str().c_str());
         }
 
         // Found a valid index, push the tile to the ordered list.
@@ -931,42 +926,8 @@ void Assignment::unassign(int j, int k, int g, MTL& M, Plates& P, const FP& pp) 
 
 }
 
-void Assignment::verif(const Plates& P, const MTL& M, const FP& pp, const Feat& F) const {
-    str qso_lrgA[] = {"QSOLy-a","QSOTracer","FakeQSO","LRG","FakeLRG"}; List qso_lrg = F.init_ids_list(qso_lrgA,5);
-    for (int g=0; g<F.Ngal; g++) {// make sure observations are separated by at least InterPlate
-        Plist tfs = GL[g];
-        int j0(-1); int j1(-1);
-        for (int i=0; i<tfs.size(); i++) {
-            pair tf = tfs[i];
-            int j0 = j1;
-            int j1 = tf.f;
 
-            if (TF[tf.f][tf.s]!=g) { printf("ERROR in verification of correspondance of galaxies !\n"); fl(); }
-            // No 2 assignments within an interval of F.InterPlate
-            //if (j0!=-1 && isfound(M[g].id,qso_lrg) && fabs(j1-j0)<F.InterPlate) { printf("ERROR in verification of F.InterPlate g=%d with j=%d and %d\n",g,j0,j1); fl(); }
-        }
-    }
-    for (int j=0; j<F.Nplate; j++) {
-        List gals = initList(F.Ngal);
-        for (int k=0; k<F.Nfiber; k++) {
-            int g = TF[j][k];
-            if (g!=-1) {
-                // Verif on GL: is it consistent with TF?
-                if (isfound(pair(j,k),GL[g])==-1) { printf("ERROR in verification of correspondance of tfs !\n"); fl(); }
-                // Verif that a galaxy isn't observed twice
-                if (gals[g]==1) printf("ERROR in verification, twice the same galaxy by (%d,%d)\n",j,k);
-                else gals[g] = 1;
-                // Collision checking
-                if (!F.Collision && is_collision(j,k,pp,M,P,F)!=-1) printf("ERROR in verification : collisions\n");
-            }
-        }
-    }
-    for (int j=0; j<F.Nplate; j++) {// right number of SS and SF
-        for (int n=0; n<F.Npetal; n++){
-            if (kinds[j][n][F.ids.at("SS")]!=F.MaxSS || kinds[j][n][F.ids.at("SF")]!=F.MaxSF) printf("ERROR in verification : number of SF or SS\n");
-        }
-    }
-}
+
 
 int Assignment::is_assigned_jg(int j, int g) const {// is galaxy g assigned on tile j
     for (int i=0; i<GL[g].size(); i++) if (GL[g][i].f == j) return i;
@@ -1054,14 +1015,6 @@ List Assignment::fibs_unassigned(int j, int pet, const MTL& M, const FP& pp, con
 }
 
 
-int Assignment::nobs_time(int g, int j, const Gals& Secret, const MTL& M,const Feat& F) const {
-    //gives required number of observations after jth tile  rnc 6/1/16
-    //used in pyplotTile
-    int kind = Secret[g].category;
-    int cnt = M[g].once_obs ? F.goalpost[kind] : F.goal[kind];
-    for (int i=0; i<GL[g].size(); i++) if (GL[g][i].f<j) cnt--;
-    return cnt;
-}
 // Returns the radial distance on the plate (mm) given the angle,
 // theta (radians).  This is simply a fit to the data provided.
 double plate_dist(const double theta) {
@@ -1172,57 +1125,3 @@ dpair projection(int g, int j, const MTL& M, const Plates& OP) {
     return dpair(op.pos[0],op.pos[1]);
 }
 
-
-pyplot::pyplot(polygon p) {
-    pol = p;
-}
-
-void pyplot::addtext(dpair p, str s) {
-    text.push_back(s);
-    textpos.push_back(p);
-}
-
-void pyplot::plot_tile(str directory, int j, const Feat& F) const {
-    FILE * file;
-    str fname = directory+"/tile"+i2s(j)+".py";
-    file = fopen(fname.c_str(),"w");
-
-    // Header
-    Dlist lims = pol.limits();
-    fprintf(file,"from pylab import *\nimport pylab as pl\nimport matplotlib.pyplot as plt\nfrom matplotlib import collections as mc\nax=subplot(aspect='equal')\naxes = plt.gca()\naxes.set_xlim([%f,%f])\naxes.set_ylim([%f,%f])\nax.axis('off')\nax.get_xaxis().set_visible(False)\nax.get_yaxis().set_visible(False)\nset_cmap('hot')\nfig = plt.gcf()\n\n",lims[0],lims[1],lims[2],lims[3]);
-    if (j!=-1) fprintf(file,"plt.text(350,-350,'Tile %d',horizontalalignment='center',verticalalignment='center',size=5)\n\n",j);
-    if (j!=-1) fprintf(file,"plt.text(200,-375,'QSO-Ly-a',color='black',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
-    if (j!=-1) fprintf(file,"plt.text(250,-375,'QSO-tracer',color='green',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
-    if (j!=-1) fprintf(file,"plt.text(300,-375,'LRG',color='red',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
-    if (j!=-1) fprintf(file,"plt.text(350,-375,'ELG',color='blue',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
-    if (j!=-1) fprintf(file,"plt.text(200,-400,'Fake QSO',color='m',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
-    if (j!=-1) fprintf(file,"plt.text(250,-400,'Fake LRG',color='y',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
-    if (j!=-1) fprintf(file,"plt.text(300,-400,'Std. Star',color='gray',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
-    if (j!=-1) fprintf(file,"plt.text(350,-400,'Sky Fiber',color='c',horizontalalignment='center',verticalalignment='center',size=4)\n\n",j);
-    
-    // Plot polygon
-    for (int i=0; i<pol.elmts.size(); i++) {
-        element e = pol.elmts[i];
-        if (e.is_seg) {
-            if (1<e.segs.size()) {
-                fprintf(file,"lines = [[");
-                for (int j=0; j<e.segs.size(); j++) fprintf(file,"(%f,%f),",e.segs[j].f,e.segs[j].s);
-                if (e.color!='w') fprintf(file,"]]\nlc = mc.LineCollection(lines,linewidths=0.2,color='%c')\nax.add_collection(lc)\n",e.color);
-                else fprintf(file,"]]\nlc = mc.LineCollection(lines,linewidths=0.2,color='k',alpha=0.4)\nax.add_collection(lc)\n");
-            }
-            if (e.segs.size()==1) fprintf(file,"circ=plt.Circle((%f,%f),%f,fill=True,linewidth=0.1,alpha=%f,edgecolor='none',fc='%c')\nfig.gca().add_artist(circ)\n",e.segs[0].f,e.segs[0].s,e.radplot,e.transparency,e.color);
-        }
-        else {
-            if (e.color!='w') fprintf(file,"circ=plt.Circle((%f,%f),%f,fill=False,linewidth=0.2,color='%c')\nfig.gca().add_artist(circ)\n",e.O.f,e.O.s,e.rad,e.color);
-            else fprintf(file,"circ=plt.Circle((%f,%f),%f,fill=False,linewidth=0.2,color='k',alpha=0.4)\nfig.gca().add_artist(circ)\n",e.O.f,e.O.s,e.rad);
-        }
-    }
-
-    // Plot text
-    if (text.size()!=textpos.size()) printf("Error sizes pyplot text\n");
-    else for (int i=0; i<text.size(); i++) fprintf(file,"plt.text(%f,%f,'%s',horizontalalignment='center',verticalalignment='center',size=1)\n\n",textpos[i].f,textpos[i].s,text[i].c_str());
-    
-    // Finally
-    fprintf(file,"\nfig.savefig('tile%d.pdf',bbox_inches='tight',pad_inches=0,dpi=(300))",j);
-    fclose(file);
-}
