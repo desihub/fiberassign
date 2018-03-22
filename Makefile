@@ -40,7 +40,7 @@ ifeq ($(NERSC_HOST), edison)
 PLATFORM := nersc_edison
 endif
 ifeq ($(NERSC_HOST), cori)
-PLATFORM := nesrc_cori_haswell
+PLATFORM := nersc_cori_haswell
 endif
 
 else
