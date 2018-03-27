@@ -4,10 +4,12 @@ fiberassign change log
 0.7.2 (unreleased)
 ------------------
 
+* Clean up the command-line interface (PR `#105`_).
 * Make fiberassign take more responsibility for installing itself (PR `#104`_).
-* Allow fiberassign to report its version.
+* Allow fiberassign to report its version (PR `#104`_).
 
-.. _`#103`: https://github.com/desihub/fiberassign/pull/104
+.. _`#105`: https://github.com/desihub/fiberassign/pull/105
+.. _`#104`: https://github.com/desihub/fiberassign/pull/104
 
 0.7.1 (2018-03-01)
 ------------------
