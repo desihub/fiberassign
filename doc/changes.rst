@@ -1,7 +1,12 @@
 fiberassign change log
 ======================
 
-0.7.2 (unreleased)
+0.8.1 (unreleased)
+------------------
+
+* No changes yet.
+
+0.8.0 (2019-03-29)
 ------------------
 
 * Clean up the command-line interface (PR `#105`_).
