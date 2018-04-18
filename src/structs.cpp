@@ -1049,6 +1049,11 @@ struct onplate change_coords(const struct target& O, const struct plate& P) {
     return obj; 
 }
 
+// Returns the ra-dec position of an x, y position on the focal plane given the telescope pointing telra, teldec
+void xy2radec(double *ra, double *dec, double telra, double teldec, double x, double y){
+    //following https://github.com/desihub/desimodel/blob/master/py/desimodel/focalplane.py#L187
+    double radius;
+}
 
 bool collision(dpair O1, dpair G1, dpair O2, dpair G2, const Feat& F) {
     double dist_sq = sq(G1,G2);
