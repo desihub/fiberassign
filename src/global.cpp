@@ -693,6 +693,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
     // const unsigned long maxU = ~0;
     // const double qNan = *((double*)&maxU);
     double qNan = nan("");
+    double testra, testdec;
     
     // constants for the filename length and fixed object
     // type length
@@ -895,8 +896,6 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
                 if (g < 0) {
                     if(pp[fib].stuck){
                         fibermask[i] = 2;
-                        ra[i] = qNan;
-                        dec[i] = qNan;
                         x_focal[i] = pp[fib].fp_x;
                         y_focal[i] = pp[fib].fp_y;
                         xy2radec(&(ra[i]), &(dec[i]), tilera, tiledec, x_focal[i], y_focal[i]);
@@ -905,22 +904,19 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
                         mws_target[i] = 0;
                         strncpy(brickname[i], "notbrick", bricklen+1);
                     }else if (pp[fib].broken){
-                        fibermask[i] = 4;
-                        ra[i] = qNan;
-                        dec[i] = qNan;
+                        fibermask[i] = 4;                        
                         x_focal[i] = pp[fib].fp_x;
                         y_focal[i] = pp[fib].fp_y;
+                        xy2radec(&(ra[i]), &(dec[i]), tilera, tiledec, x_focal[i], y_focal[i]);
                         desi_target[i] = 0;
                         bgs_target[i] = 0;
                         mws_target[i] = 0;
                         strncpy(brickname[i], "notbrick", bricklen+1);
                     }else{
                         fibermask[i] = 1;
-                        //strcpy(objtype[i], "NA");
-                        ra[i] = qNan;
-                        dec[i] = qNan;
-                        x_focal[i] = qNan;
-                        y_focal[i] = qNan;
+                        x_focal[i] = pp[fib].fp_x;
+                        y_focal[i] = pp[fib].fp_y;
+                        xy2radec(&(ra[i]), &(dec[i]), tilera, tiledec, x_focal[i], y_focal[i]);
                         desi_target[i] = 0;
                         bgs_target[i] = 0;
                         mws_target[i] = 0;
@@ -935,6 +931,18 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
                     dpair proj = projection(g,j,M,P);
                     x_focal[i] = proj.f;
                     y_focal[i] = proj.s;
+                    
+                    //testing that xy2radec is working with good precision.
+                    xy2radec(&testra, &testdec, tilera, tiledec, x_focal[i], y_focal[i]);
+                    if(fabs(testra-ra[i])>(1.0/3600.0)){//arcsecond precision
+                        fprintf(stderr, "problem with xy2radec conversion [RA]: %f %f\n", testra, ra[i]);
+                        myexit(1);
+                    }
+                    if(fabs(testdec-dec[i])>(1.0/3600.0)){//arcsecond precision
+                        fprintf(stderr, "problem with xy2radec conversion [DEC]: %f %f\n", testdec, dec[i]);
+                        myexit(1);
+                    }
+                    
                     t_priority[i]=M[g].t_priority;//new
                     desi_target[i] = M[g].desi_target;
                     bgs_target[i] = M[g].bgs_target;

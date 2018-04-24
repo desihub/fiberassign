@@ -1029,16 +1029,15 @@ double plate_dist(const double theta) {
 
 double plate_angle(double r_plate){
     double theta;
-    double delta_theta = 1E-3;
+    double delta_theta = 1E-4;
     double error = 1.0;
     theta = 0.0;
     
-    while(abs(error) > 1E-6){
+    while(abs(error) > 1E-7){
         error = plate_dist(theta) - r_plate;
         theta -= (error)/((plate_dist(theta+delta_theta)-plate_dist(theta))/delta_theta);
     }
-    fprintf(stdout, "%f %f %f\n", r_plate, theta, plate_dist(theta));
-//    std::cout << r_plate << " "<< theta << " "<< plate_dist(theta)<< std::endl; 
+    //fprintf(stdout, "%f %f %f\n", r_plate, theta, plate_dist(theta));
     
     return theta;
 }
@@ -1071,10 +1070,52 @@ struct onplate change_coords(const struct target& O, const struct plate& P) {
 // Returns the ra-dec position of an x, y position on the focal plane given the telescope pointing telra, teldec
 void xy2radec(double *ra, double *dec, double telra, double teldec, double x, double y){
     //following https://github.com/desihub/desimodel/blob/master/py/desimodel/focalplane.py#L187
+    double coord[3], coord1[3], coord2[3], coord3[3], coord4[3];
+    double teldec_rad = teldec*M_PI/180.;
+    double telra_rad = telra*M_PI/180.;
     double radius;
     double theta;
-    radius = 1.0*sqrt(x*x + y*y);
+    double q;
+    double ra_rad, dec_rad;
+    //fprintf(stdout, "tel ra %f tel dec %f\n", telra, teldec);
+    // q signifies the angle the position makes with the +x-axis of focal plane
+    q = atan2(y, x);
+    
+    //radial distance on the focal plane in radians
+    radius = sqrt(x*x + y*y);
     theta = plate_angle(radius);
+    //fprintf(stdout, "theta %f\n", theta);
+    
+    coord[0]=1.0; coord[1]=0.0; coord[2]=0.0;
+    // Clockwise rotation around the z-axis by the radial distance to a point on the focal plane in radians
+    coord1[0] = cos(theta)*coord[0] + sin(theta)*coord[1];
+    coord1[1] = -sin(theta)*coord[0] + cos(theta)*coord[1];
+    coord1[2] = coord[2];
+    
+    // Counter-clockwise rotation around the x-axis
+    coord2[0] = coord1[0];
+    coord2[1] = cos(q)*coord1[1] - sin(q)*coord1[2];
+    coord2[2] = sin(q)*coord1[1] + cos(q)*coord1[2];
+    
+    // Counter-clockwise rotation around y axis by declination of the tile center
+    coord3[0] = cos(teldec_rad)*coord2[0] - sin(teldec_rad)*coord2[2];
+    coord3[1] = coord2[1];
+    coord3[2] = sin(teldec_rad)*coord2[0] + cos(teldec_rad)*coord2[2];
+    
+    // Counter-clockwise rotation around the z-axis by the right ascension of the tile center
+    coord4[0] = cos(telra_rad)*coord3[0] - sin(telra_rad)*coord3[1];
+    coord4[1] = sin(telra_rad)*coord3[0] + cos(telra_rad)*coord3[1];
+    coord4[2] = coord3[2];
+
+    ra_rad = atan2(coord4[1],coord4[0]);
+    if(ra_rad<0){
+        ra_rad = 2.0*M_PI + ra_rad;
+    }
+    //fprintf(stdout, "NORM %f %f %f\n", coord4[0], coord4[1], coord4[2]);
+    dec_rad = (M_PI / 2.0) - acos(coord4[2] / (sqrt(pow(coord4[0],2.0) + pow(coord4[1],2.0) + pow(coord4[2],2.0))));
+    *ra = std::fmod((ra_rad * 180.0/M_PI),360.0);
+    *dec = dec_rad * 180.0/M_PI;
+    //fprintf(stdout, "FINAL: %f %f \n", *ra, *dec);
 }
 
 bool collision(dpair O1, dpair G1, dpair O2, dpair G2, const Feat& F) {
