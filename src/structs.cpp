@@ -1024,6 +1024,25 @@ double plate_dist(const double theta) {
     return rr;
 }
 
+// returns the angle (theta) on the plate given the distance
+// on the plate (mm)
+
+double plate_angle(double r_plate){
+    double theta;
+    double delta_theta = 1E-3;
+    double error = 1.0;
+    theta = 0.0;
+    
+    while(abs(error) > 1E-6){
+        error = plate_dist(theta) - r_plate;
+        theta -= (error)/((plate_dist(theta+delta_theta)-plate_dist(theta))/delta_theta);
+    }
+    fprintf(stdout, "%f %f %f\n", r_plate, theta, plate_dist(theta));
+//    std::cout << r_plate << " "<< theta << " "<< plate_dist(theta)<< std::endl; 
+    
+    return theta;
+}
+
 // Returns the x-y position on the plate centered at P for galaxy O.
 struct onplate change_coords(const struct target& O, const struct plate& P) {
     struct onplate obj;
@@ -1053,6 +1072,9 @@ struct onplate change_coords(const struct target& O, const struct plate& P) {
 void xy2radec(double *ra, double *dec, double telra, double teldec, double x, double y){
     //following https://github.com/desihub/desimodel/blob/master/py/desimodel/focalplane.py#L187
     double radius;
+    double theta;
+    radius = 1.0*sqrt(x*x + y*y);
+    theta = plate_angle(radius);
 }
 
 bool collision(dpair O1, dpair G1, dpair O2, dpair G2, const Feat& F) {

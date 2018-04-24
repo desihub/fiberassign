@@ -899,6 +899,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
                         dec[i] = qNan;
                         x_focal[i] = pp[fib].fp_x;
                         y_focal[i] = pp[fib].fp_y;
+                        xy2radec(&(ra[i]), &(dec[i]), tilera, tiledec, x_focal[i], y_focal[i]);
                         desi_target[i] = 0;
                         bgs_target[i] = 0;
                         mws_target[i] = 0;
