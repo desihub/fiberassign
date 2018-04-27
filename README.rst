@@ -15,7 +15,7 @@ Compiling
 To compile the code, set ``$PLATFORM`` to one of the recipes in the
 ``platforms/`` and then run ``make install``;  *e.g.* on Cori Haswell::
 
-    make PLATFORM=nesrc_cori_haswell install
+    make PLATFORM=nersc_cori_haswell install
 
 This will create the ``bin/fiberassign`` executable.
 
