@@ -17,6 +17,10 @@
 #include    "feat.h"
 #include    "structs.h"
 
+#define FIBER_BROKEN 4
+#define FIBER_STUCK 2
+#define FIBER_UNUSED 1
+#define FIBER_USED 0
 
 // Collect -----------------------------------------------------------
 // From the HTM tree, collects for each fiber and for each plate, the available galaxies

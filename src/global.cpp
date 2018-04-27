@@ -895,7 +895,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
 
                 if (g < 0) {
                     if(pp[fib].stuck){
-                        fibermask[i] = 2;
+                        fibermask[i] = FIBER_STUCK;
                         x_focal[i] = pp[fib].fp_x;
                         y_focal[i] = pp[fib].fp_y;
                         xy2radec(&(ra[i]), &(dec[i]), tilera, tiledec, x_focal[i], y_focal[i]);
@@ -904,7 +904,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
                         mws_target[i] = 0;
                         strncpy(brickname[i], "notbrick", bricklen+1);
                     }else if (pp[fib].broken){
-                        fibermask[i] = 4;                        
+                        fibermask[i] = FIBER_BROKEN;                        
                         x_focal[i] = pp[fib].fp_x;
                         y_focal[i] = pp[fib].fp_y;
                         xy2radec(&(ra[i]), &(dec[i]), tilera, tiledec, x_focal[i], y_focal[i]);
@@ -913,7 +913,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
                         mws_target[i] = 0;
                         strncpy(brickname[i], "notbrick", bricklen+1);
                     }else{
-                        fibermask[i] = 1;
+                        fibermask[i] = FIBER_UNUSED;
                         x_focal[i] = pp[fib].fp_x;
                         y_focal[i] = pp[fib].fp_y;
                         xy2radec(&(ra[i]), &(dec[i]), tilera, tiledec, x_focal[i], y_focal[i]);
@@ -925,7 +925,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
                 } else {
                     //we aren't supposed to know the kind  use priority instead
                     //strncpy(objtype[i], F.kind[G[g].id].c_str(), objtypelen);
-                    fibermask[i] = 0;
+                    fibermask[i] = FIBER_USED;
                     ra[i] = M[g].ra;
                     dec[i] = M[g].dec;
                     dpair proj = projection(g,j,M,P);
