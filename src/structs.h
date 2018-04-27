@@ -176,6 +176,7 @@ double plate_angle(double r_plate);
 double plate_dist(const double theta);//plate scale conversion
 void xy2radec(double *ra, double *dec, double telra, double teldec, double x, double y);
 struct onplate change_coords(const struct target& O, const struct plate& P);
+struct onplate radec2xy(const struct target& O, const struct plate& P) ;
 dpair projection(int g, int j, const MTL& M , const Plates& P); // Projection of g on j
 int num_av_gals(int j, int k, const MTL& M, const Plates& P, const Feat& F, const Assignment& A); // weighted (and only with remaining observation according to the moment in the survey), and doesn't take into account other kinds than QSO LRG ELG not used
 int A_less_than_B(int year_A, int month_A, int day_A, int year_B, int month_B, int day_B);

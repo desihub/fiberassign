@@ -1031,7 +1031,7 @@ double plate_angle(double r_plate){
     double theta;
     double delta_theta = 1E-4;
     double error = 1.0;
-    theta = 0.0;
+    theta = 0.1;
     
     while(abs(error) > 1E-7){
         error = plate_dist(theta) - r_plate;
@@ -1065,6 +1065,53 @@ struct onplate change_coords(const struct target& O, const struct plate& P) {
     obj.pos[0] = nhat2[0]/tht * rad;
     obj.pos[1] = nhat2[1]/tht * rad;
     return obj; 
+}
+
+struct onplate radec2xy(const struct target& O, const struct plate& P) {
+    //following https://github.com/desihub/desimodel/blob/master/py/desimodel/focalplane.py#L259
+    struct onplate obj;
+    double inc;//inclination
+    double coord[3], coord1[3], coord2[3];
+    double deg_to_rad = M_PI/180.0;
+    double x, y, z, x0, y0, z0, x_focalplane, y_focalplane, radius_rad;
+    double newteldec, newtelra, ra_rad, dec_rad, q_rad, radius_mm;
+    
+    inc = 90.0 - O.dec;
+    x0 = sin(inc * deg_to_rad) * cos(O.ra * deg_to_rad);
+    y0 = sin(inc * deg_to_rad) * sin(O.ra * deg_to_rad);
+    z0 = cos(inc * deg_to_rad);
+    coord[0] = x0; coord[1]= y0; coord[2] = z0;
+    
+    coord1[0] = cos(P.tilera * deg_to_rad)*coord[0] + sin(P.tilera * deg_to_rad)*coord[1];
+    coord1[1] = -sin(P.tilera * deg_to_rad)*coord[0] + cos(P.tilera * deg_to_rad)*coord[1];
+    coord1[2] = coord[2];
+    
+    coord2[0] = cos(P.tiledec * deg_to_rad)*coord1[0] + sin(P.tiledec * deg_to_rad)*coord1[2];
+    coord2[1] =  coord1[1];
+    coord2[2] = -sin(P.tiledec * deg_to_rad)*coord1[0] + cos(P.tiledec * deg_to_rad)*coord1[2];
+    
+    x = coord2[0];
+    y = coord2[1];
+    z = coord2[2];
+
+    newteldec = 0;
+    newtelra = 0;
+    ra_rad = atan2(y, x);
+    if(ra_rad<0){
+        ra_rad = 2.0*M_PI + ra_rad;
+    }
+    dec_rad = (M_PI / 2) - acos(z / sqrt((x*x) + (y*y) + (z*z)));
+    radius_rad = 2 * asin(sqrt((pow(sin((dec_rad - newteldec) / 2),2)) + ((cos(newteldec)) * cos(dec_rad) * (pow(sin((ra_rad - newtelra) / 2),2)))));
+    
+
+    q_rad = atan2(-z, -y);
+
+    radius_mm = plate_dist(radius_rad);
+    x_focalplane = radius_mm * cos(q_rad);
+    y_focalplane = radius_mm * sin(q_rad);
+    obj.pos[0] = x_focalplane;
+    obj.pos[1] = y_focalplane;
+    return obj;
 }
 
 // Returns the ra-dec position of an x, y position on the focal plane given the telescope pointing telra, teldec
@@ -1189,7 +1236,8 @@ float Assignment::colrate(const FP& pp, const MTL& M, const Plates& P, const Fea
 
 dpair projection(int g, int j, const MTL& M, const Plates& OP) {
     //x and y coordinates for galaxy observed on plate j
-    struct onplate op = change_coords(M[g],OP[j]);
+    //struct onplate op = change_coords(M[g],OP[j]);
+    struct onplate op = radec2xy(M[g],OP[j]);
     return dpair(op.pos[0],op.pos[1]);
 }
 

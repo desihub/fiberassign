@@ -50,7 +50,8 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
             Onplates O;
             for (int gg=0; gg<nbr.size(); gg++) {
                 int g = nbr[gg];
-                struct onplate op = change_coords(M[g],p);
+                //struct onplate op = change_coords(M[g],p);
+                struct onplate op = radec2xy(M[g],p);
                 op.id = g;
 		// Check that the target corresponds to the right program
 		if(M[g].obsconditions & p.obsconditions){
@@ -694,6 +695,8 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
     // const double qNan = *((double*)&maxU);
     double qNan = nan("");
     double testra, testdec;
+    double arcsec = 1.0/3600.0;
+    double dra, ddec;
     
     // constants for the filename length and fixed object
     // type length
@@ -934,12 +937,16 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
                     
                     //testing that xy2radec is working with good precision.
                     xy2radec(&testra, &testdec, tilera, tiledec, x_focal[i], y_focal[i]);
-                    if(fabs(testra-ra[i])>(1.0/3600.0)){//arcsecond precision
-                        fprintf(stderr, "problem with xy2radec conversion [RA]: %f %f\n", testra, ra[i]);
+                    double dra = (testra*cos(testdec * M_PI/180.0)-ra[i]*cos(dec[i] * M_PI/180.0))/arcsec;
+                    double ddec = (testdec-dec[i])/arcsec;
+                    if(fabs(dra)>0.01){//arcsecond precision
+                        fprintf(stderr, "problem with xy2radec conversion [dRA (arcsec)]: %f\n",dra); 
+                        fprintf(stderr, "[dDEC (arcsec)]: %f \n", ddec);
                         myexit(1);
                     }
-                    if(fabs(testdec-dec[i])>(1.0/3600.0)){//arcsecond precision
-                        fprintf(stderr, "problem with xy2radec conversion [DEC]: %f %f\n", testdec, dec[i]);
+                    if(fabs(ddec)>0.01){//arcsecond precision
+                        fprintf(stderr, "problem with xy2radec conversion [dDEC]: %f\n",ddec);
+                        fprintf(stderr, "[dRA]: %f\n", dra);
                         myexit(1);
                     }
                     
@@ -962,7 +969,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
 
         fits_write_col(fptr, TINT, 2, offset+1, 1, n, positioner_id, &status);
         fits_report_error(stderr, status);
-
+    
         fits_write_col(fptr, TINT, 3, offset+1, 1, n, num_target, &status);
         fits_report_error(stderr, status);
 
