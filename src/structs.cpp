@@ -1075,6 +1075,8 @@ struct onplate radec2xy(const struct target& O, const struct plate& P) {
     double deg_to_rad = M_PI/180.0;
     double x, y, z, x0, y0, z0, x_focalplane, y_focalplane, radius_rad;
     double newteldec, newtelra, ra_rad, dec_rad, q_rad, radius_mm;
+    double testra, testdec, dra, ddec;
+    double arcsec = 1.0/3600.0;
     
     inc = 90.0 - O.dec;
     x0 = sin(inc * deg_to_rad) * cos(O.ra * deg_to_rad);
@@ -1111,6 +1113,21 @@ struct onplate radec2xy(const struct target& O, const struct plate& P) {
     y_focalplane = radius_mm * sin(q_rad);
     obj.pos[0] = x_focalplane;
     obj.pos[1] = y_focalplane;
+    
+    //test the conversion
+    xy2radec(&testra, &testdec, P.tilera, P.tiledec, obj.pos[0], obj.pos[1]);
+    dra = (testra*cos(testdec * M_PI/180.0)-O.ra*cos(O.dec * M_PI/180.0))/arcsec;
+    ddec = (testdec-O.dec)/arcsec;
+    if(fabs(dra)>0.01){//0.01 arcsecond precision
+        fprintf(stderr, "onplate problem with xy2radec conversion [dRA (arcsec)]: %f\n",dra); 
+        fprintf(stderr, "[dDEC (arcsec)]: %f \n", ddec);
+        myexit(1);
+        }
+    if(fabs(ddec)>0.01){//0.01 arcsecond precision
+        fprintf(stderr, "onplate problem with xy2radec conversion [dDEC]: %f\n",ddec);
+        fprintf(stderr, "[dRA]: %f\n", dra);
+        myexit(1);
+    }
     return obj;
 }
 
