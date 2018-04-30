@@ -1024,6 +1024,24 @@ double plate_dist(const double theta) {
     return rr;
 }
 
+// returns the angle (theta) on the plate given the distance
+// on the plate (mm)
+
+double plate_angle(double r_plate){
+    double theta;
+    double delta_theta = 1E-4;
+    double error = 1.0;
+    theta = 0.1;
+    
+    while(abs(error) > 1E-7){
+        error = plate_dist(theta) - r_plate;
+        theta -= (error)/((plate_dist(theta+delta_theta)-plate_dist(theta))/delta_theta);
+    }
+    //fprintf(stdout, "%f %f %f\n", r_plate, theta, plate_dist(theta));
+    
+    return theta;
+}
+
 // Returns the x-y position on the plate centered at P for galaxy O.
 struct onplate change_coords(const struct target& O, const struct plate& P) {
     struct onplate obj;
@@ -1049,6 +1067,120 @@ struct onplate change_coords(const struct target& O, const struct plate& P) {
     return obj; 
 }
 
+struct onplate radec2xy(const struct target& O, const struct plate& P) {
+    //following https://github.com/desihub/desimodel/blob/master/py/desimodel/focalplane.py#L259
+    struct onplate obj;
+    double inc;//inclination
+    double coord[3], coord1[3], coord2[3];
+    double deg_to_rad = M_PI/180.0;
+    double x, y, z, x0, y0, z0, x_focalplane, y_focalplane, radius_rad;
+    double newteldec, newtelra, ra_rad, dec_rad, q_rad, radius_mm;
+    double testra, testdec, dra, ddec;
+    double arcsec = 1.0/3600.0;
+    
+    inc = 90.0 - O.dec;
+    x0 = sin(inc * deg_to_rad) * cos(O.ra * deg_to_rad);
+    y0 = sin(inc * deg_to_rad) * sin(O.ra * deg_to_rad);
+    z0 = cos(inc * deg_to_rad);
+    coord[0] = x0; coord[1]= y0; coord[2] = z0;
+    
+    coord1[0] = cos(P.tilera * deg_to_rad)*coord[0] + sin(P.tilera * deg_to_rad)*coord[1];
+    coord1[1] = -sin(P.tilera * deg_to_rad)*coord[0] + cos(P.tilera * deg_to_rad)*coord[1];
+    coord1[2] = coord[2];
+    
+    coord2[0] = cos(P.tiledec * deg_to_rad)*coord1[0] + sin(P.tiledec * deg_to_rad)*coord1[2];
+    coord2[1] =  coord1[1];
+    coord2[2] = -sin(P.tiledec * deg_to_rad)*coord1[0] + cos(P.tiledec * deg_to_rad)*coord1[2];
+    
+    x = coord2[0];
+    y = coord2[1];
+    z = coord2[2];
+
+    newteldec = 0;
+    newtelra = 0;
+    ra_rad = atan2(y, x);
+    if(ra_rad<0){
+        ra_rad = 2.0*M_PI + ra_rad;
+    }
+    dec_rad = (M_PI / 2) - acos(z / sqrt((x*x) + (y*y) + (z*z)));
+    radius_rad = 2 * asin(sqrt((pow(sin((dec_rad - newteldec) / 2),2)) + ((cos(newteldec)) * cos(dec_rad) * (pow(sin((ra_rad - newtelra) / 2),2)))));
+    
+
+    q_rad = atan2(-z, -y);
+
+    radius_mm = plate_dist(radius_rad);
+    x_focalplane = radius_mm * cos(q_rad);
+    y_focalplane = radius_mm * sin(q_rad);
+    obj.pos[0] = x_focalplane;
+    obj.pos[1] = y_focalplane;
+    
+    //test the conversion
+    xy2radec(&testra, &testdec, P.tilera, P.tiledec, obj.pos[0], obj.pos[1]);
+    dra = (testra*cos(testdec * M_PI/180.0)-O.ra*cos(O.dec * M_PI/180.0))/arcsec;
+    ddec = (testdec-O.dec)/arcsec;
+    if(fabs(dra)>0.01){//0.01 arcsecond precision
+        fprintf(stderr, "onplate problem with xy2radec conversion [dRA (arcsec)]: %f\n",dra); 
+        fprintf(stderr, "[dDEC (arcsec)]: %f \n", ddec);
+        myexit(1);
+        }
+    if(fabs(ddec)>0.01){//0.01 arcsecond precision
+        fprintf(stderr, "onplate problem with xy2radec conversion [dDEC]: %f\n",ddec);
+        fprintf(stderr, "[dRA]: %f\n", dra);
+        myexit(1);
+    }
+    return obj;
+}
+
+// Returns the ra-dec position of an x, y position on the focal plane given the telescope pointing telra, teldec
+void xy2radec(double *ra, double *dec, double telra, double teldec, double x, double y){
+    //following https://github.com/desihub/desimodel/blob/master/py/desimodel/focalplane.py#L187
+    double coord[3], coord1[3], coord2[3], coord3[3], coord4[3];
+    double teldec_rad = teldec*M_PI/180.;
+    double telra_rad = telra*M_PI/180.;
+    double radius;
+    double theta;
+    double q;
+    double ra_rad, dec_rad;
+    //fprintf(stdout, "tel ra %f tel dec %f\n", telra, teldec);
+    // q signifies the angle the position makes with the +x-axis of focal plane
+    q = atan2(y, x);
+    
+    //radial distance on the focal plane in radians
+    radius = sqrt(x*x + y*y);
+    theta = plate_angle(radius);
+    //fprintf(stdout, "theta %f\n", theta);
+    
+    coord[0]=1.0; coord[1]=0.0; coord[2]=0.0;
+    // Clockwise rotation around the z-axis by the radial distance to a point on the focal plane in radians
+    coord1[0] = cos(theta)*coord[0] + sin(theta)*coord[1];
+    coord1[1] = -sin(theta)*coord[0] + cos(theta)*coord[1];
+    coord1[2] = coord[2];
+    
+    // Counter-clockwise rotation around the x-axis
+    coord2[0] = coord1[0];
+    coord2[1] = cos(q)*coord1[1] - sin(q)*coord1[2];
+    coord2[2] = sin(q)*coord1[1] + cos(q)*coord1[2];
+    
+    // Counter-clockwise rotation around y axis by declination of the tile center
+    coord3[0] = cos(teldec_rad)*coord2[0] - sin(teldec_rad)*coord2[2];
+    coord3[1] = coord2[1];
+    coord3[2] = sin(teldec_rad)*coord2[0] + cos(teldec_rad)*coord2[2];
+    
+    // Counter-clockwise rotation around the z-axis by the right ascension of the tile center
+    coord4[0] = cos(telra_rad)*coord3[0] - sin(telra_rad)*coord3[1];
+    coord4[1] = sin(telra_rad)*coord3[0] + cos(telra_rad)*coord3[1];
+    coord4[2] = coord3[2];
+
+    ra_rad = atan2(coord4[1],coord4[0]);
+    if(ra_rad<0){
+        ra_rad = 2.0*M_PI + ra_rad;
+    }
+    //fprintf(stdout, "NORM %f %f %f\n", coord4[0], coord4[1], coord4[2]);
+    dec_rad = (M_PI / 2.0) - acos(coord4[2] / (sqrt(pow(coord4[0],2.0) + pow(coord4[1],2.0) + pow(coord4[2],2.0))));
+    *ra = std::fmod((ra_rad * 180.0/M_PI),360.0);
+    *dec = dec_rad * 180.0/M_PI;
+    //fprintf(stdout, "FINAL: %f %f \n", *ra, *dec);
+}
 
 bool collision(dpair O1, dpair G1, dpair O2, dpair G2, const Feat& F) {
     double dist_sq = sq(G1,G2);
@@ -1121,7 +1253,8 @@ float Assignment::colrate(const FP& pp, const MTL& M, const Plates& P, const Fea
 
 dpair projection(int g, int j, const MTL& M, const Plates& OP) {
     //x and y coordinates for galaxy observed on plate j
-    struct onplate op = change_coords(M[g],OP[j]);
+    //struct onplate op = change_coords(M[g],OP[j]);
+    struct onplate op = radec2xy(M[g],OP[j]);
     return dpair(op.pos[0],op.pos[1]);
 }
 

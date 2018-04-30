@@ -50,7 +50,8 @@ void collect_galaxies_for_all(const MTL& M, const htmTree<struct target>& T, Pla
             Onplates O;
             for (int gg=0; gg<nbr.size(); gg++) {
                 int g = nbr[gg];
-                struct onplate op = change_coords(M[g],p);
+                //struct onplate op = change_coords(M[g],p);
+                struct onplate op = radec2xy(M[g],p);
                 op.id = g;
 		// Check that the target corresponds to the right program
 		if(M[g].obsconditions & p.obsconditions){
@@ -693,6 +694,9 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
     // const unsigned long maxU = ~0;
     // const double qNan = *((double*)&maxU);
     double qNan = nan("");
+    double testra, testdec;
+    double arcsec = 1.0/3600.0;
+    double dra, ddec;
     
     // constants for the filename length and fixed object
     // type length
@@ -727,7 +731,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
     // string arrays, since the CFITSIO API requires non-const pointers
     // to them (i.e. arrays of literals won't work).
     
-    size_t ncols = 13;
+    size_t ncols = 14;
     
     char ** ttype;
     char ** tform;
@@ -805,6 +809,10 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
     strcpy(ttype[12], "BRICKNAME");
     snprintf(tform[12], FLEN_VALUE, "%dA", (int)bricklen);
     strcpy(tunit[12], "");
+    
+    strcpy(ttype[13], "FIBERMASK");
+    strcpy(tform[13], "J");
+    strcpy(tunit[13], "");
 
     
     char extname[FLEN_VALUE];
@@ -839,6 +847,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
     int fiber_id[optimal];
     int positioner_id[optimal];
     int num_target[optimal];
+    int fibermask[optimal];
     char objtype[optimal][objtypelen];
     char brickname[optimal][bricklen+1];
     char * bn_tmp[optimal];
@@ -884,40 +893,33 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
                 if(g>0){
                     target_id[i] = M[g].id;
                 }else{
-                    if(pp[fib].broken){
-                        target_id[i] = -2;
-                    }else if(pp[fib].stuck){
-                        target_id[i] = -3;
-                    }else{
-                        target_id[i]=-1;
-                    }
+                    target_id[i]=-1;
                 }
 
                 if (g < 0) {
                     if(pp[fib].stuck){
-                        ra[i] = qNan;
-                        dec[i] = qNan;
+                        fibermask[i] = FIBER_STUCK;
                         x_focal[i] = pp[fib].fp_x;
                         y_focal[i] = pp[fib].fp_y;
-                        desi_target[i] = 512;
-                        bgs_target[i] = 512;
-                        mws_target[i] = 512;
+                        xy2radec(&(ra[i]), &(dec[i]), tilera, tiledec, x_focal[i], y_focal[i]);
+                        desi_target[i] = 0;
+                        bgs_target[i] = 0;
+                        mws_target[i] = 0;
                         strncpy(brickname[i], "notbrick", bricklen+1);
                     }else if (pp[fib].broken){
-                        ra[i] = qNan;
-                        dec[i] = qNan;
+                        fibermask[i] = FIBER_BROKEN;                        
                         x_focal[i] = pp[fib].fp_x;
                         y_focal[i] = pp[fib].fp_y;
-                        desi_target[i] = 1024;
-                        bgs_target[i] = 1024;
-                        mws_target[i] = 1024;
+                        xy2radec(&(ra[i]), &(dec[i]), tilera, tiledec, x_focal[i], y_focal[i]);
+                        desi_target[i] = 0;
+                        bgs_target[i] = 0;
+                        mws_target[i] = 0;
                         strncpy(brickname[i], "notbrick", bricklen+1);
                     }else{
-                        //strcpy(objtype[i], "NA");
-                        ra[i] = qNan;
-                        dec[i] = qNan;
-                        x_focal[i] = qNan;
-                        y_focal[i] = qNan;
+                        fibermask[i] = FIBER_UNUSED;
+                        x_focal[i] = pp[fib].fp_x;
+                        y_focal[i] = pp[fib].fp_y;
+                        xy2radec(&(ra[i]), &(dec[i]), tilera, tiledec, x_focal[i], y_focal[i]);
                         desi_target[i] = 0;
                         bgs_target[i] = 0;
                         mws_target[i] = 0;
@@ -926,11 +928,28 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
                 } else {
                     //we aren't supposed to know the kind  use priority instead
                     //strncpy(objtype[i], F.kind[G[g].id].c_str(), objtypelen);
+                    fibermask[i] = FIBER_USED;
                     ra[i] = M[g].ra;
                     dec[i] = M[g].dec;
                     dpair proj = projection(g,j,M,P);
                     x_focal[i] = proj.f;
                     y_focal[i] = proj.s;
+                    
+                    //testing that xy2radec is working with good precision.
+                    xy2radec(&testra, &testdec, tilera, tiledec, x_focal[i], y_focal[i]);
+                    double dra = (testra*cos(testdec * M_PI/180.0)-ra[i]*cos(dec[i] * M_PI/180.0))/arcsec;
+                    double ddec = (testdec-dec[i])/arcsec;
+                    if(fabs(dra)>0.01){//arcsecond precision
+                        fprintf(stderr, "problem with xy2radec conversion [dRA (arcsec)]: %f\n",dra); 
+                        fprintf(stderr, "[dDEC (arcsec)]: %f \n", ddec);
+                        myexit(1);
+                    }
+                    if(fabs(ddec)>0.01){//arcsecond precision
+                        fprintf(stderr, "problem with xy2radec conversion [dDEC]: %f\n",ddec);
+                        fprintf(stderr, "[dRA]: %f\n", dra);
+                        myexit(1);
+                    }
+                    
                     t_priority[i]=M[g].t_priority;//new
                     desi_target[i] = M[g].desi_target;
                     bgs_target[i] = M[g].bgs_target;
@@ -950,7 +969,7 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
 
         fits_write_col(fptr, TINT, 2, offset+1, 1, n, positioner_id, &status);
         fits_report_error(stderr, status);
-
+    
         fits_write_col(fptr, TINT, 3, offset+1, 1, n, num_target, &status);
         fits_report_error(stderr, status);
 
@@ -982,6 +1001,9 @@ void fa_write (int j, str outdir, const MTL & M, const Plates & P, const FP & pp
         fits_report_error(stderr, status);
 
         fits_write_col(fptr, TSTRING, 13, offset+1, 1, n, bn_tmp, &status);
+        fits_report_error(stderr, status);
+            
+        fits_write_col(fptr, TINT, 14, offset+1, 1, n, fibermask, &status);
         fits_report_error(stderr, status);
         }
         
