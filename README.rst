@@ -32,11 +32,20 @@ to set the version when tagging.
 Running
 -------
 
-The main executable ``fiberassign`` takes a single argument that is a
-configuration file.  An example is in ``test/template_fiberassign.txt``.
-The script ``config-fiberassign`` can be used to generate a configuration
-file updating the most commonly changed parameters of the input and output
-file locations.  Run ``config-fiberassign --help`` for options.
+The main executable ``fiberassign`` takes its arguments (eight in total) through the command line.
+
+An example would be
+
+```
+fiberassign  --mtl mtl.fits \
+    --stdstar standards-dark.fits \
+    --sky sky.fits \
+    --surveytiles dark-tiles.txt \
+    --footprint $DESIMODEL/data/footprint/desi-tiles.fits \
+    --positioners $DESIMODEL/data/focalplane/fiberpos.txt \
+    --fibstatusfile fiberstatus.ecsv \
+    --outdir ./
+```
 
 ``doc/Guide_to_FiberAssignment.tex`` contains more details.  A pdf snapshot
 is available to DESI collaborators at
