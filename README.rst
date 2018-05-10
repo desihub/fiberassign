@@ -34,18 +34,11 @@ Running
 
 The main executable ``fiberassign`` takes its arguments (eight in total) through the command line.
 
-An example would be
+An example would be:: 
 
-```
-fiberassign  --mtl mtl.fits \
-    --stdstar standards-dark.fits \
-    --sky sky.fits \
-    --surveytiles dark-tiles.txt \
-    --footprint $DESIMODEL/data/footprint/desi-tiles.fits \
-    --positioners $DESIMODEL/data/focalplane/fiberpos.txt \
-    --fibstatusfile fiberstatus.ecsv \
-    --outdir ./
-```
+    fiberassign  --mtl mtl.fits --stdstar standards-dark.fits --sky sky.fits \
+    --surveytiles dark-tiles.txt --footprint $DESIMODEL/data/footprint/desi-tiles.fits \
+    --positioners $DESIMODEL/data/focalplane/fiberpos.txt --fibstatusfile fiberstatus.ecsv --outdir ./
 
 ``doc/Guide_to_FiberAssignment.tex`` contains more details.  A pdf snapshot
 is available to DESI collaborators at
