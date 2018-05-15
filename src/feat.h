@@ -31,6 +31,7 @@ class Feat { // F for features
     str runDate;
 
 
+    int StarMask;
     int InterPlate; 
     int MaxSS;
     int MaxSF;

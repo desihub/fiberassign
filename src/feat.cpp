@@ -29,6 +29,7 @@ void Usage(char *ExecName)
     std::cout << " --positioners <fiberpos_filename> ";
     std::cout << " --fibstatusfile <fiberstatus_filename> ";
     std::cout << " --outdir <outputdirectory> ";
+    std::cout << " --starmask <starmask_integer>";
     std::cout << " [--rundate <YYYY-MM-DD>]"<< std::endl;
     exit(0);
 }
@@ -48,6 +49,7 @@ Feat::Feat() {
     InterPlate = 0;
     Collision = false;
     Exact = true;
+    StarMask = 4;
 }
 
 
@@ -73,7 +75,6 @@ void Feat::readInputFile(const char file[]) {
             if (tok[0]=="SStarsfile")SStarsfile=tok[1];
             if (tok[0]=="SkyFfile") SkyFfile=tok[1];
             if (tok[0]=="runDate") runDate=tok[1];
-                
     }
   }  
   fIn.close();
@@ -84,6 +85,7 @@ void Feat::readInputFile(const char file[]) {
 void Feat::parseCommandLine(int argc, char **argv) {
     int i;
     for (i=1;i<argc;){
+        
         if (!strcmp(argv[i],"--mtl")){
             i++;
             Targfile = str(argv[i]);
@@ -116,9 +118,13 @@ void Feat::parseCommandLine(int argc, char **argv) {
             i++;
             fibstatusFile = str(argv[i]);
             i++;
-        }else if (!strcmp(argv[i],"-rundate")){
+        }else if (!strcmp(argv[i],"--rundate")){
             i++;
             runDate = str(argv[i]);
+            i++;   
+        }else if (!strcmp(argv[i],"--starMask")){
+            i++;
+            StarMask = atoi(argv[i]);
             i++;
         }else if (!strcmp(argv[i],"--help")){
             Usage(argv[0]);
