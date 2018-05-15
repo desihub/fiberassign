@@ -46,7 +46,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
     long *desi_target;
     long *bgs_target;
     long *mws_target;
-    long starflag = 2^SS;
+    long starflag = 1L<<SS;
     int *numobs;
     int *priority;
     double *ra;
@@ -332,7 +332,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
              Q.SF=SF;
              strncpy(Q.brickname, brickname[ii], 9);
           
-            if( ((SS!=0) && ((desi_target[ii] & starflag)!=0)) || (SS==0) ){
+            if( ((SS!=-1) && ((desi_target[ii] & starflag)!=0)) || (SS==0) ){
                  try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
          
                  bool in=false;

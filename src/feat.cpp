@@ -29,7 +29,7 @@ void Usage(char *ExecName)
     std::cout << " --positioners <fiberpos_filename> ";
     std::cout << " --fibstatusfile <fiberstatus_filename> ";
     std::cout << " --outdir <outputdirectory> ";
-    std::cout << " --starmask <starmask_integer>";
+    std::cout << " --starbit <starbit_integer]";
     std::cout << " [--rundate <YYYY-MM-DD>]"<< std::endl;
     exit(0);
 }
