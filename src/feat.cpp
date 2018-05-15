@@ -49,7 +49,7 @@ Feat::Feat() {
     InterPlate = 0;
     Collision = false;
     Exact = true;
-    StarMask = 4;
+    StarBit = 33;
 }
 
 
@@ -122,9 +122,9 @@ void Feat::parseCommandLine(int argc, char **argv) {
             i++;
             runDate = str(argv[i]);
             i++;   
-        }else if (!strcmp(argv[i],"--starMask")){
+        }else if (!strcmp(argv[i],"--starbit")){
             i++;
-            StarMask = atoi(argv[i]);
+            StarBit = atoi(argv[i]);
             i++;
         }else if (!strcmp(argv[i],"--help")){
             Usage(argv[0]);

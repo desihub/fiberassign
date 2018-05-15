@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
     // Try to read SS and SF before targets to avoid wasting time if these
     // smaller files can't be read.
     init_time_at(time,"# Read target, SS, SF files",t);
-    MTL SStars = read_MTLfile(F.SStarsfile,F,1,0);
+    MTL SStars = read_MTLfile(F.SStarsfile,F,F.StarBit,0);
     MTL SkyF   = read_MTLfile(F.SkyFfile,  F,0,1);
     MTL Targ   = read_MTLfile(F.Targfile,  F,0,0);
 

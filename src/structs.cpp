@@ -46,6 +46,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
     long *desi_target;
     long *bgs_target;
     long *mws_target;
+    long starflag = 2^SS;
     int *numobs;
     int *priority;
     double *ra;
@@ -54,7 +55,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
     char **brickname;
     uint16_t *obsconditions;    
     double *subpriority;
-
+    fprintf(stdout, "star flag %ld\n", starflag); 
     // General purpose output stream for exceptions
     std::ostringstream o;
 
@@ -284,11 +285,16 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
         myexit(status);
       }
 
-      
+      nkeep = 0;
+      for(ii=0;ii<nrows;ii++){
+           if( ((SS!=0) && ((desi_target[ii] & starflag)!=0)) || (SS==0) ){
+               nkeep++;
+           }
+      }
 
       
       // count how many rows we will keep and reserve that amount
-      nkeep = nrows;
+      //nkeep = nrows;
       printf("Keeping %d targets within ra/dec ranges\n", nkeep);
       try {M.reserve(nkeep);} catch (std::exception& e) {myexception(e);}
 
@@ -325,16 +331,19 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
              Q.SS=SS;
              Q.SF=SF;
              strncpy(Q.brickname, brickname[ii], 9);
-             try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
- 
-             bool in=false;
-             for (int j=0;j<M.priority_list.size();++j){
-               if(Q.t_priority==M.priority_list[j]){
-                 in=true;
-               }
-             }
-             if(!in){
-               M.priority_list.push_back(Q.t_priority);
+          
+            if( ((SS!=0) && ((desi_target[ii] & starflag)!=0)) || (SS==0) ){
+                 try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
+         
+                 bool in=false;
+                 for (int j=0;j<M.priority_list.size();++j){
+                   if(Q.t_priority==M.priority_list[j]){
+                     in=true;
+                    }
+                 }
+                 if(!in){
+                   M.priority_list.push_back(Q.t_priority);
+                 }
              }
       } // end ii loop over targets
       std::sort(M.priority_list.begin(),M.priority_list.end());
