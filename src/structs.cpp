@@ -25,7 +25,7 @@
 
 // targets -----------------------------------------------------------------------
 
-MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
+MTL read_MTLfile(str readfile, const Feat& F, long SS, long SF){
   //reads fits files, specifically mtl, standard stars, sky fibers
     str s = readfile;
     MTL M;
@@ -46,7 +46,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
     long *desi_target;
     long *bgs_target;
     long *mws_target;
-    long starflag = 1L<<SS;
+    long starmask = SS;
     int *numobs;
     int *priority;
     double *ra;
@@ -55,7 +55,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
     char **brickname;
     uint16_t *obsconditions;    
     double *subpriority;
-    fprintf(stdout, "star flag %ld\n", starflag); 
+    fprintf(stdout, "star mask %ld\n", starmask); 
     // General purpose output stream for exceptions
     std::ostringstream o;
 
@@ -287,7 +287,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
 
       nkeep = 0;
       for(ii=0;ii<nrows;ii++){
-           if( ((SS!=0) && ((desi_target[ii] & starflag)!=0)) || (SS==0) ){
+           if( ((SS!=0) && ((desi_target[ii] & starmask)!=0)) || (SS==0) ){
                nkeep++;
            }
       }
@@ -332,7 +332,7 @@ MTL read_MTLfile(str readfile, const Feat& F, int SS, int SF){
              Q.SF=SF;
              strncpy(Q.brickname, brickname[ii], 9);
           
-            if( ((SS!=-1) && ((desi_target[ii] & starflag)!=0)) || (SS==0) ){
+            if( ((SS!=-1) && ((desi_target[ii] & starmask)!=0)) || (SS==0) ){
                  try{M.push_back(Q);}catch(std::exception& e) {myexception(e);}
          
                  bool in=false;

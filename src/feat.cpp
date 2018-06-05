@@ -29,7 +29,7 @@ void Usage(char *ExecName)
     std::cout << " --positioners <fiberpos_filename> ";
     std::cout << " --fibstatusfile <fiberstatus_filename> ";
     std::cout << " --outdir <outputdirectory> ";
-    std::cout << " --starbit <starbit_integer]";
+    std::cout << " --starmask <starbit_mask]";
     std::cout << " [--rundate <YYYY-MM-DD>]"<< std::endl;
     exit(0);
 }
@@ -49,7 +49,7 @@ Feat::Feat() {
     InterPlate = 0;
     Collision = false;
     Exact = true;
-    StarBit = 33;
+    StarMask = 60129542144;
 }
 
 
@@ -122,9 +122,9 @@ void Feat::parseCommandLine(int argc, char **argv) {
             i++;
             runDate = str(argv[i]);
             i++;   
-        }else if (!strcmp(argv[i],"--starbit")){
+        }else if (!strcmp(argv[i],"--starmask")){
             i++;
-            StarBit = atoi(argv[i]);
+            StarMask = atol(argv[i]);
             i++;
         }else if (!strcmp(argv[i],"--help")){
             Usage(argv[0]);

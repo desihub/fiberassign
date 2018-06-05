@@ -31,7 +31,7 @@ class Feat { // F for features
     str runDate;
 
 
-    int StarBit; //bit in desi_target that signals a standard star
+    long StarMask; //bit in desi_target that signals a standard star
     
     int InterPlate; 
     int MaxSS;

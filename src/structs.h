@@ -73,7 +73,7 @@ class MTL : public std::vector<struct target> {
     std::vector<int> priority_list;
 };
 
-MTL read_MTLfile(str filename, const Feat& F, int SS, int SF);
+MTL read_MTLfile(str filename, const Feat& F, long SS, long SF);
 
 void assign_priority_class(MTL & M);
 
