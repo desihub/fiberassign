@@ -6,8 +6,11 @@ fiberassign change log
 
 * New FIBERMASK columns in fibermap files. (PR `#112`_).
 * Computes RA+dec for unassigned, stuck, and broken fibers. (PR `#112`_).
+* Standard star DESI_TARGET mask as input parameter (PR `#114`_)
 
 .. _`#112`: https://github.com/desihub/fiberassign/pull/112
+.. _`#114`: https://github.com/desihub/fiberassign/pull/114
+
 
 0.8.0 (2019-03-29)
 ------------------
