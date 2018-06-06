@@ -25,6 +25,7 @@ parser.add_argument("--surveytiles", type=str,  help="set of tiles to run fibera
 parser.add_argument("--telra", type=float, help="Right Ascension of arbitrary pointing - overrides --surveytiles")
 parser.add_argument("--teldec", type=float, help="Declination of arbitrary pointing - overrides --surveytiles")
 parser.add_argument("--tileid", type=int, help="Integer ID of arbitrary pointing - overrides --surveytiles")
+parser.add_argument("--tileobsconditions", type=int, help="Mask describing observing program (DARK:1, GRAY:2, BRIGHT:4) - overrides --surveytiles")
 
 parser.add_argument("--outdir", type=str,  help="output directory", default="./")
 parser.add_argument("--starmask", type=int,  help="integer mask defining standard stars")
@@ -51,10 +52,14 @@ if args.rundate is None:
     now = datetime.datetime.now()
     args.rundate = '{:04d}-{:02d}-{:02d}'.format(now.year, now.month, now.day)
 
-if (args.telra is not None) and (args.teldec is not None) and (args.tileid is not None):
+if (args.telra is not None) and (args.teldec is not None) and (args.tileid is not None) and (args.tileobsconditions is not None):
     from astropy.table import Table
-    
-
+    tiles = Table([[args.tileid], [args.telra], [args.teldec], [args.tileobsconditions], [1], [1]], 
+                  names=('TILEID', 'RA', 'DEC', 'OBSCONDITIONS', 'IN_DESI', 'PASS'))
+    tiles.write("tmp_footprint.fits", overwrite=True)
+    args.footprint = "tmp_footprint.fits"
+    np.savetxt('tmp_surveytiles.txt', [args.tileid], fmt='%d')
+    args.surveytiles = 'tmp_surveytiles.txt'
 
 fiberassign_command ="fiberassign_exec --mtl {mtl}  --sky {sky} --stdstar {stdstar}  --fibstatusfile {fiberstatusfile}  \
             --outdir {outdir} \
