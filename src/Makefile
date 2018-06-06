@@ -30,7 +30,7 @@ misc.o \
 structs.o \
 version.o
 
-EXECUTABLES = fiberassign
+EXECUTABLES = fiberassign_exec
 COMPILE = $(CXXFLAGS) $(OMPFLAGS) -I. $(CFITSIO_CPPFLAGS)
 # valgrind
 #COMPILE = -g -O0 -m64 -fPIC -DNDEBUG -std=c++11 $(OMPFLAGS) -I. $(CFITSIO_CPPFLAGS)
@@ -42,7 +42,7 @@ all : $(EXECUTABLES)
 install : all
 	/bin/cp -a $(EXECUTABLES) $(INSTALL_DIR)/bin
 
-fiberassign : $(OBJS_FIBERASSIGN)
+fiberassign_exec : $(OBJS_FIBERASSIGN)
 	$(CXX) -o $@ $^ $(LINK)
 
 fiberassign_surveysim : $(OBJS_SURVEYSIM)
