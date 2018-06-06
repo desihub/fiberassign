@@ -61,6 +61,26 @@ if (args.telra is not None) and (args.teldec is not None) and (args.tileid is no
     np.savetxt('tmp_surveytiles.txt', [args.tileid], fmt='%d')
     args.surveytiles = 'tmp_surveytiles.txt'
 
+# Make sure that output directory exists
+if not os.path.isdir(args.outdir):
+    os.makedirs(args.outdir)
+
+# Check if output files already exist
+existing_files = False
+for line in open(args.surveytiles):
+    line = line.strip()
+    if line.startswith('#') or len(line)<2:
+        continue
+    tileid = int(line)
+    tilefile = os.path.join(args.outdir, 'tile_{:05d}.fits'.format(tileid))
+    if os.path.exists(tilefile):
+        existing_files = True
+        print('ERROR: {} already exists'.format(tilefile))
+
+if existing_files:
+    print('Remove pre-existing tile files or specify different --outdir')
+    sys.exit(1)
+
 fiberassign_command ="fiberassign_exec --mtl {mtl}  --sky {sky} --stdstar {stdstar}  --fibstatusfile {fiberstatusfile}  \
             --outdir {outdir} \
             --surveytiles {surveytiles}  \
