@@ -1,0 +1,69 @@
+#!/usr/bin/env python
+
+"""
+Script handling fiberassign inputs
+"""
+
+import sys, os
+import argparse
+import desimodel.io
+import numpy as np
+import datetime
+from desitarget.targetmask import desi_mask
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--mtl", type=str,  help="input targets (FITS file)", required=True)
+parser.add_argument("--sky", type=str,  help="input sky positions (FITS file)", required=True)
+parser.add_argument("--stdstar", type=str,  help="input std stars (FITS file)", required=True)
+parser.add_argument("--fibstatusfile", type=str,  help="list of positioners and its status (ECSV file)", required=True)
+parser.add_argument("--footprint", type=str,  help="list of tiles defining the footprint (FITS file)")
+parser.add_argument("--positioners", type=str,  help="list of positioners on the focal plane (text file)")
+
+parser.add_argument("--surveytiles", type=str,  help="set of tiles to run fiberassign on (text file)")
+
+parser.add_argument("--ra_tile", type=str, help="Right Ascension of arbitrary pointing - overrides --surveytiles")
+parser.add_argument("--dec_tile", type=str, help="Declination of arbitrary pointing - overrides --surveytiles")
+
+parser.add_argument("--outdir", type=str,  help="output directory", default="./")
+parser.add_argument("--starmask", type=int,  help="integer mask defining standard stars")
+parser.add_argument("--rundate", type=str,  help="run date [YYYY-MM-DD]")
+
+
+
+args = parser.parse_args()
+
+if args.footprint is None:
+    args.footprint =  desimodel.io.findfile('footprint/desi-tiles.fits')
+
+if args.positioners is None:
+    args.positioners = desimodel.io.findfile('focalplane/fiberpos.txt')
+
+if args.surveytiles is None:
+    data = desimodel.io.load_tiles()
+    np.savetxt('tmp_surveytiles.txt', np.int_(data['TILEID']), fmt='%d')
+    args.surveytiles = 'tmp_surveytiles.txt'
+
+if args.starmask is None:
+    args.starmask = (desi_mask.STD_FSTAR | desi_mask.STD_BRIGHT | desi_mask.STD_WD)
+
+if args.rundate is None:
+    now = datetime.datetime.now()
+    args.rundate = '{:04d}-{:02d}-{:02d}'.format(now.year, now.month, now.day)
+
+#print(args)
+#parser.add_argument("tilefiles", type=str, nargs='+', help="fiber assign tile files")
+
+fiberassign_command ="fiberassign_exec --mtl {mtl}  --sky {sky} --stdstar {stdstar}  --fibstatusfile {fiberstatusfile}  \
+            --outdir {outdir} \
+            --surveytiles {surveytiles}  \
+            --footprint {footprint}  \
+            --positioners {positioners} \
+            --starmask {starmask} \
+            --rundate {rundate}"
+
+cmd = fiberassign_command.format(mtl=args.mtl, sky=args.sky, stdstar=args.stdstar, fiberstatusfile=args.fibstatusfile, 
+                                 outdir=args.outdir, surveytiles=args.surveytiles, starmask = args.starmask, 
+                                 footprint=args.footprint, positioners=args.positioners, rundate=args.rundate)
+
+os.system(cmd)
