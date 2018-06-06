@@ -24,7 +24,7 @@ parser.add_argument("--surveytiles", type=str,  help="set of tiles to run fibera
 
 parser.add_argument("--telra", type=float, help="Right Ascension of arbitrary pointing - overrides --surveytiles")
 parser.add_argument("--teldec", type=float, help="Declination of arbitrary pointing - overrides --surveytiles")
-parser.add_argument("--telID", type=int, help="Integer ID of arbitrary pointing - overrides --surveytiles")
+parser.add_argument("--tileid", type=int, help="Integer ID of arbitrary pointing - overrides --surveytiles")
 
 parser.add_argument("--outdir", type=str,  help="output directory", default="./")
 parser.add_argument("--starmask", type=int,  help="integer mask defining standard stars")
@@ -32,8 +32,6 @@ parser.add_argument("--rundate", type=str,  help="run date [YYYY-MM-DD]")
 
 
 args = parser.parse_args()
-
-
 
 if args.footprint is None:
     args.footprint =  desimodel.io.findfile('footprint/desi-tiles.fits')
@@ -53,6 +51,10 @@ if args.rundate is None:
     now = datetime.datetime.now()
     args.rundate = '{:04d}-{:02d}-{:02d}'.format(now.year, now.month, now.day)
 
+if (args.telra is not None) and (args.teldec is not None) and (args.tileid is not None):
+    from astropy.table import Table
+    
+
 
 fiberassign_command ="fiberassign_exec --mtl {mtl}  --sky {sky} --stdstar {stdstar}  --fibstatusfile {fiberstatusfile}  \
             --outdir {outdir} \
@@ -65,5 +67,5 @@ fiberassign_command ="fiberassign_exec --mtl {mtl}  --sky {sky} --stdstar {stdst
 cmd = fiberassign_command.format(mtl=args.mtl, sky=args.sky, stdstar=args.stdstar, fiberstatusfile=args.fibstatusfile, 
                                  outdir=args.outdir, surveytiles=args.surveytiles, starmask = args.starmask, 
                                  footprint=args.footprint, positioners=args.positioners, rundate=args.rundate)
-
+print(cmd)
 os.system(cmd)
