@@ -22,8 +22,9 @@ parser.add_argument("--positioners", type=str,  help="list of positioners on the
 
 parser.add_argument("--surveytiles", type=str,  help="set of tiles to run fiberassign on (text file)")
 
-parser.add_argument("--ra_tile", type=str, help="Right Ascension of arbitrary pointing - overrides --surveytiles")
-parser.add_argument("--dec_tile", type=str, help="Declination of arbitrary pointing - overrides --surveytiles")
+parser.add_argument("--telra", type=float, help="Right Ascension of arbitrary pointing - overrides --surveytiles")
+parser.add_argument("--teldec", type=float, help="Declination of arbitrary pointing - overrides --surveytiles")
+parser.add_argument("--telID", type=int, help="Integer ID of arbitrary pointing - overrides --surveytiles")
 
 parser.add_argument("--outdir", type=str,  help="output directory", default="./")
 parser.add_argument("--starmask", type=int,  help="integer mask defining standard stars")
@@ -31,6 +32,8 @@ parser.add_argument("--rundate", type=str,  help="run date [YYYY-MM-DD]")
 
 
 args = parser.parse_args()
+
+
 
 if args.footprint is None:
     args.footprint =  desimodel.io.findfile('footprint/desi-tiles.fits')
