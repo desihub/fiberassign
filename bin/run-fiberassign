@@ -30,7 +30,6 @@ parser.add_argument("--starmask", type=int,  help="integer mask defining standar
 parser.add_argument("--rundate", type=str,  help="run date [YYYY-MM-DD]")
 
 
-
 args = parser.parse_args()
 
 if args.footprint is None:
@@ -51,8 +50,6 @@ if args.rundate is None:
     now = datetime.datetime.now()
     args.rundate = '{:04d}-{:02d}-{:02d}'.format(now.year, now.month, now.day)
 
-#print(args)
-#parser.add_argument("tilefiles", type=str, nargs='+', help="fiber assign tile files")
 
 fiberassign_command ="fiberassign_exec --mtl {mtl}  --sky {sky} --stdstar {stdstar}  --fibstatusfile {fiberstatusfile}  \
             --outdir {outdir} \
