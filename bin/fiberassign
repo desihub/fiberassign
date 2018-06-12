@@ -11,6 +11,8 @@ import numpy as np
 import datetime
 from desitarget.targetmask import desi_mask
 from astropy.table import Table
+import fitsio
+import glob
 
 
 parser = argparse.ArgumentParser()
@@ -139,3 +141,46 @@ cmd = fiberassign_command.format(mtl=args.sky, sky=args.sky, stdstar=args.sky, f
                                  footprint=args.footprint, positioners=tmp_fiber_sky, rundate=args.rundate)
 print(cmd)
 os.system(cmd)
+
+# join targets+sky tiles
+
+targets = glob.glob(os.path.join(tmp_targets_dir,'tile_*.fits'))
+skys = glob.glob(os.path.join(tmp_sky_dir,'tile_*.fits'))
+
+
+sky_tile_id = {}
+for sky_file in skys:
+    f = sky_file.split('/')[-1]
+    fileid = f.split("_")[-1]
+    fileid = fileid[0:5]
+    sky_tile_id[fileid] = sky_file
+
+target_tile_id = {}
+for target_file in targets:
+    f = target_file.split('/')[-1]
+    fileid = f.split("_")[-1]
+    fileid = fileid[0:5]
+    target_tile_id[fileid] = target_file
+    
+
+for sky_id in sky_tile_id.keys():
+    if sky_id in target_tile_id.keys():
+            print('rewriting tilefile for tileid {}'.format(sky_id))
+            sky_data = fitsio.read(sky_tile_id[sky_id])
+            fiber_data = fitsio.read(target_tile_id[sky_id], ext=1)
+            potential_data = fitsio.read(target_tile_id[sky_id], ext=2)
+
+            tileout = os.path.join(args.outdir, 'tile_{}.fits'.format(sky_id))
+            fitsio.write(tileout, fiber_data, extname='FIBERASSIGN', clobber=True)
+            fitsio.write(tileout, potential_data, extname='POTENTIAL')
+            fitsio.write(tileout, sky_data, extname='SKYETC')
+    
+# remove tmp files
+tmp_files = glob.glob("tmp_*/*")
+for f in tmp_files:
+    os.remove(f)
+os.rmdir(tmp_targets_dir) 
+os.rmdir(tmp_sky_dir)
+os.rmdir(tmp_gfa_dir)
+os.remove(tmp_fiber_pos)
+os.remove(tmp_fiber_sky)
