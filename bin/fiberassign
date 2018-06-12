@@ -10,6 +10,7 @@ import desimodel.io
 import numpy as np
 import datetime
 from desitarget.targetmask import desi_mask
+from astropy.table import Table
 
 
 parser = argparse.ArgumentParser()
@@ -38,7 +39,7 @@ if args.footprint is None:
     args.footprint =  desimodel.io.findfile('footprint/desi-tiles.fits')
 
 if args.positioners is None:
-    args.positioners = desimodel.io.findfile('focalplane/fiberpos.txt')
+    args.positioners = desimodel.io.findfile('focalplane/fiberpos-all.fits')
 
 if args.surveytiles is None:
     data = desimodel.io.load_tiles()
@@ -82,6 +83,20 @@ def check_existing_files(checkdir):
         print('Remove pre-existing tile files or specify different --outdir')
         sys.exit(1)
     
+def rewrite_fiberpos(fiberpos_fits_file, postype='POS'):
+    data = Table.read(fiberpos_fits_file)
+    data = data[data['DEVICE_TYPE']==postype]
+    data = data[['FIBER', 'LOCATION', 'SPECTRO', 'X', 'Y', 'Z']]
+#    if postype != 'POS':
+#        n_points = len(data)
+#        data['FIBER'] = np.arange(n_points)
+    txtposfilename = "tmp_{}_pos.txt".format(postype)
+    np.savetxt(txtposfilename, np.array(data).T, fmt='%d\t %d\t %d\t %f\t %f\t %f')
+    return txtposfilename
+
+# tmp fiberpos
+tmp_fiber_pos = rewrite_fiberpos(args.positioners)
+tmp_fiber_sky = rewrite_fiberpos(args.positioners, postype='ETC')
 
 # tmp output directories
 tmp_targets_dir = os.path.join(args.outdir, 'tmp_targets')
@@ -103,7 +118,6 @@ check_existing_files(tmp_sky_dir)
 check_existing_files(tmp_gfa_dir)
 
 
-# fiberassign targets
 fiberassign_command ="fiberassign_exec --mtl {mtl}  --sky {sky} --stdstar {stdstar}  --fibstatusfile {fiberstatusfile}  \
             --outdir {outdir} \
             --surveytiles {surveytiles}  \
@@ -112,10 +126,16 @@ fiberassign_command ="fiberassign_exec --mtl {mtl}  --sky {sky} --stdstar {stdst
             --starmask {starmask} \
             --rundate {rundate}"
 
+# fiberassign targets
 cmd = fiberassign_command.format(mtl=args.mtl, sky=args.sky, stdstar=args.stdstar, fiberstatusfile=args.fibstatusfile, 
                                  outdir=tmp_targets_dir, surveytiles=args.surveytiles, starmask = args.starmask, 
-                                 footprint=args.footprint, positioners=args.positioners, rundate=args.rundate)
+                                 footprint=args.footprint, positioners=tmp_fiber_pos, rundate=args.rundate)
 print(cmd)
 os.system(cmd)
 
 #fiberassign sky
+cmd = fiberassign_command.format(mtl=args.sky, sky=args.sky, stdstar=args.sky, fiberstatusfile=args.fibstatusfile, 
+                                 outdir=tmp_sky_dir, surveytiles=args.surveytiles, starmask = args.starmask, 
+                                 footprint=args.footprint, positioners=tmp_fiber_sky, rundate=args.rundate)
+print(cmd)
+os.system(cmd)
