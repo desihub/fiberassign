@@ -66,21 +66,44 @@ if not os.path.isdir(args.outdir):
     os.makedirs(args.outdir)
 
 # Check if output files already exist
-existing_files = False
-for line in open(args.surveytiles):
-    line = line.strip()
-    if line.startswith('#') or len(line)<2:
-        continue
-    tileid = int(line)
-    tilefile = os.path.join(args.outdir, 'tile_{:05d}.fits'.format(tileid))
-    if os.path.exists(tilefile):
-        existing_files = True
-        print('ERROR: {} already exists'.format(tilefile))
+def check_existing_files(checkdir):
+    existing_files = False
+    for line in open(args.surveytiles):
+        line = line.strip()
+        if line.startswith('#') or len(line)<2:
+            continue
+        tileid = int(line)
+        tilefile = os.path.join(checkdir, 'tile_{:05d}.fits'.format(tileid))
+        if os.path.exists(tilefile):
+            existing_files = True
+            print('ERROR: {} already exists'.format(tilefile))
 
-if existing_files:
-    print('Remove pre-existing tile files or specify different --outdir')
-    sys.exit(1)
+    if existing_files:
+        print('Remove pre-existing tile files or specify different --outdir')
+        sys.exit(1)
+    
 
+# tmp output directories
+tmp_targets_dir = os.path.join(args.outdir, 'tmp_targets')
+tmp_sky_dir = os.path.join(args.outdir, 'tmp_sky')
+tmp_gfa_dir = os.path.join(args.outdir, 'tmp_gfa')
+
+if not os.path.exists(tmp_targets_dir):
+    os.makedirs(tmp_targets_dir)
+    
+if not os.path.exists(tmp_sky_dir):
+    os.makedirs(tmp_sky_dir)
+    
+if not os.path.exists(tmp_gfa_dir):
+    os.makedirs(tmp_gfa_dir)
+
+check_existing_files(args.outdir)
+check_existing_files(tmp_targets_dir)
+check_existing_files(tmp_sky_dir)
+check_existing_files(tmp_gfa_dir)
+
+
+# fiberassign targets
 fiberassign_command ="fiberassign_exec --mtl {mtl}  --sky {sky} --stdstar {stdstar}  --fibstatusfile {fiberstatusfile}  \
             --outdir {outdir} \
             --surveytiles {surveytiles}  \
@@ -90,7 +113,9 @@ fiberassign_command ="fiberassign_exec --mtl {mtl}  --sky {sky} --stdstar {stdst
             --rundate {rundate}"
 
 cmd = fiberassign_command.format(mtl=args.mtl, sky=args.sky, stdstar=args.stdstar, fiberstatusfile=args.fibstatusfile, 
-                                 outdir=args.outdir, surveytiles=args.surveytiles, starmask = args.starmask, 
+                                 outdir=tmp_targets_dir, surveytiles=args.surveytiles, starmask = args.starmask, 
                                  footprint=args.footprint, positioners=args.positioners, rundate=args.rundate)
 print(cmd)
 os.system(cmd)
+
+#fiberassign sky
