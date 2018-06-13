@@ -21,7 +21,7 @@ parser.add_argument("--sky", type=str,  help="input sky positions (FITS file)", 
 parser.add_argument("--stdstar", type=str,  help="input std stars (FITS file)", required=True)
 parser.add_argument("--fibstatusfile", type=str,  help="list of positioners and its status (ECSV file)", required=True)
 parser.add_argument("--footprint", type=str,  help="list of tiles defining the footprint (FITS file)")
-parser.add_argument("--positioners", type=str,  help="list of positioners on the focal plane (text file)")
+parser.add_argument("--positioners", type=str,  help="list of positioners on the focal plane (FITS file)")
 
 parser.add_argument("--surveytiles", type=str,  help="set of tiles to run fiberassign on (text file)")
 
