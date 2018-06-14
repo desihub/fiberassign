@@ -181,8 +181,8 @@ if args.gfafile is not None:
     tiles = footprint[ii]
     
     for telra, teldec, tileid in zip(tiles['RA'], tiles['DEC'], tiles['TILEID']):
-        gfa_data = gfa.targets_on_gfa(telra, teldec, data)
         gfaout = os.path.join(tmp_gfa_dir, 'tile_{:05d}.fits'.format(tileid))
+        gfa_data = gfa.targets_on_gfa(telra, teldec, data)
         t = Table(gfa_data)
         t.write(gfaout, overwrite=True)
         
@@ -207,6 +207,7 @@ for sky_id in sky_tile_id.keys():
             fitsio.write(tileout, sky_data, extname='SKYETC')
             
             if args.gfafile is not None:
+                print(gfa_tile_id[sky_id])
                 gfa_data = fitsio.read(gfa_tile_id[sky_id])
                 fitsio.write(tileout, gfa_data, extname='GFA')
     
