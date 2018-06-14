@@ -3,14 +3,9 @@
 # from the top-level Makefile.  DO NOT use this
 # Makefile directly (build from the top level).
 
-HEADERS = \
-collision.h \
-feat.h \
-global.h \
-misc.h \
-structs.h \
-version.h \
-_version.h
+HEADERS = $(wildcard *.h)
+
+SOURCES = $(wildcard *.cpp)
 
 OBJS_SURVEYSIM = \
 surveysim.o \
@@ -36,6 +31,8 @@ COMPILE = $(CXXFLAGS) $(OMPFLAGS) -I. $(CFITSIO_CPPFLAGS)
 #COMPILE = -g -O0 -m64 -fPIC -DNDEBUG -std=c++11 $(OMPFLAGS) -I. $(CFITSIO_CPPFLAGS)
 LINK = $(OMPFLAGS) $(CFITSIO)
 
+.PHONY : reformat
+
 
 all : $(EXECUTABLES)
 
@@ -47,6 +44,11 @@ fiberassign_exec : $(OBJS_FIBERASSIGN)
 
 fiberassign_surveysim : $(OBJS_SURVEYSIM)
 	$(CXX) -o $@ $^ $(LINK)
+
+reformat : $(HEADERS) $(SOURCES)
+	for sfile in $(HEADERS) $(SOURCES); do \
+	uncrustify -c uncrustify.cfg --replace --no-backup -l CPP $${sfile}; \
+	done
 
 
 %.o : %.cpp $(HEADERS)
