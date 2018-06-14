@@ -182,8 +182,6 @@ if args.gfafile is not None:
     
     for telra, teldec, tileid in zip(tiles['RA'], tiles['DEC'], tiles['TILEID']):
         gfa_data = gfa.targets_on_gfa(telra, teldec, data)
-        print(type(data))
-        print(gfa_data)
         gfaout = os.path.join(tmp_gfa_dir, 'tile_{:05d}.fits'.format(tileid))
         t = Table(gfa_data)
         t.write(gfaout, overwrite=True)
