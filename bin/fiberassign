@@ -172,17 +172,34 @@ for target_file in targets:
     tile_id.append(int(fileid))
 
 # compute GFA
-#if args.gfafile is not None:
-#    print('loading GFA file')
-#    data = fitsio.read(args.gfafile, columns=['RA', 'DEC', 'TARGETID'])
+if args.gfafile is not None:
+    from desimodel.focalplane import GFALocations
+    gfa = GFALocations()
     
-#    footprint = fitsio.read(args.footprint)
-#    ii = np.in1d(footprint['TILEID'], np.array(tile_id))
-#    tiles = footprint[ii]
-#    print(tiles)
-#    for telra, teldec in zip(tiles['RA'], tiles['DEC']):
-#        aa,bb = desimodel.focalplane.on_gfa(telra, teldec, data['RA'], data['DEC'])
-#        print(len(aa))
+    print('loading GFA file')
+    data = fitsio.read(args.gfafile, columns=['RA', 'DEC', 'TARGETID'])
+    
+    print('selecting computed tiles')
+    footprint = fitsio.read(args.footprint)
+    ii = np.in1d(footprint['TILEID'], np.array(tile_id))
+    tiles = footprint[ii]
+    print(tiles)
+    
+    for telra, teldec, tileid in zip(tiles['RA'], tiles['DEC'], tiles['TILEID']):
+        gfa_data = gfa.targets_on_gfa(telra, teldec, data)
+        print(type(data))
+        print(gfa_data)
+        gfaout = os.path.join(tmp_gfa_dir, 'tile_{:05d}.fits'.format(tileid))
+        t = Table(gfa_data)
+        t.write(gfaout, overwrite=True)
+        
+    gfas = glob.glob(os.path.join(tmp_gfa_dir,'tile_*.fits'))
+    gfa_tile_id = {}
+    for gfa_file in gfas:
+        f = gfa_file.split('/')[-1]
+        fileid = f.split("_")[-1]
+        fileid = fileid[0:5]
+        gfa_tile_id[fileid] = gfa_file
     
 for sky_id in sky_tile_id.keys():
     if sky_id in target_tile_id.keys():
@@ -195,6 +212,10 @@ for sky_id in sky_tile_id.keys():
             fitsio.write(tileout, fiber_data, extname='FIBERASSIGN', clobber=True)
             fitsio.write(tileout, potential_data, extname='POTENTIAL')
             fitsio.write(tileout, sky_data, extname='SKYETC')
+            
+            if args.gfafile is not None:
+                gfa_data = fitsio.read(gfa_tile_id[sky_id])
+                fitsio.write(tileout, gfa_data, extname='GFA')
     
 # remove tmp files
 if args.cleanup:
