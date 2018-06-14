@@ -4,7 +4,7 @@
 # Makefile directly (build from the top level).
 
 HEADERS = $(wildcard *.h)
-
+MODS = $(wildcard modules/*.h)
 SOURCES = $(wildcard *.cpp)
 
 OBJS_SURVEYSIM = \
@@ -46,7 +46,7 @@ fiberassign_surveysim : $(OBJS_SURVEYSIM)
 	$(CXX) -o $@ $^ $(LINK)
 
 reformat : $(HEADERS) $(SOURCES)
-	for sfile in $(HEADERS) $(SOURCES); do \
+	for sfile in $(HEADERS) $(SOURCES) $(MODS); do \
 	uncrustify -c uncrustify.cfg --replace --no-backup -l CPP $${sfile}; \
 	done
 

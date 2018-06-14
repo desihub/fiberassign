@@ -1,17 +1,19 @@
-#include    <cstdlib>
-#include    <cmath>
-#include        <math.h>
-#include    <fstream>
-#include    <sstream>
-#include    <iostream>
-#include    <iomanip>
-#include        <stdio.h>
-#include    <string>
-#include    <vector>
-#include    <algorithm>
-#include    <exception>
-#include    <sys/time.h>
-#include        "misc.h"
+#include <cstdlib>
+#include <cmath>
+#include <math.h>
+#include <fstream>
+#include <sstream>
+#include <iostream>
+#include <iomanip>
+#include <stdio.h>
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <exception>
+#include <sys/time.h>
+#include "misc.h"
+
+
 // pair ------------------------------------------------------
 pair::pair() {f = -1; s = -1;}
 pair::pair(int a, int b) {f = a; s = b;}
@@ -112,7 +114,7 @@ void print_list(str s, const List& L) {
     printf("%s \n",s.c_str());
     int n = L.size();
     //if (n==0) { // doesn't want to be compiled... mystery
-        //printf("   ! Empty list\n"); 
+        //printf("   ! Empty list\n");
         //return;
     //}
     for (int i=0; i<n; i++) printf("%5d : %s \n",i,f(L[i]).c_str());
@@ -123,7 +125,7 @@ void print_list(str s, Slist L) {
     printf("%s \n",s.c_str());
     int n = L.size();
     //if (n==0) { // doesn't want to be compiled... mystery
-        //printf("   ! Empty list\n"); 
+        //printf("   ! Empty list\n");
         //return;
     //}
     for (int i=0; i<n; i++) printf("%5d : %s \n",i,L[i].c_str());
@@ -322,7 +324,7 @@ void switch_elmts(int a, int b, List& L) {
 
 List sort(const List& L) {
     List l = L;
-    std::sort(l.begin(), l.end());  
+    std::sort(l.begin(), l.end());
     return l;
 }
 
@@ -362,9 +364,6 @@ void addlist(List& L, const List& l) {
     for (int i=0; i<l.size(); i++) L.push_back(l[i]);
 }
 
-
-
-
 // Table -----------------------------------------------------
 Table initTable(int l, int c, int val) {
     Table T;
@@ -386,7 +385,7 @@ Dtable initDtable(int l, int c, double val) {
     for (int i=0; i<l; i++) T[i].resize(c,val);
     return T;
 }
-        
+
 void verif(const Table& T) {
     int l = T.size();
     if (l==0) {
@@ -510,10 +509,9 @@ void print_table(str s, const Dtable& T, bool latex, Slist labels) {
     bool labelsB = isnull(labels);
     str space(6,' ');
     printf("%s", space.c_str());
-    //rnc 10/25/15
+
     printf("Obs. made ");
     for (int j=0; j<6;j++){
-    //for (int j=0; j<max; j++) {
         str s = (j==max-1) ? slash : et;
         printf("%s%s",format(maxRow[j],f(j)).c_str(),s.c_str());
     }
@@ -865,7 +863,7 @@ str f(int i) {
     return str.c_str();
 }
 
-str f(double i) { 
+str f(double i) {
     std::stringstream ss;
     ss << i;
     str s = ss.str();
@@ -971,7 +969,9 @@ void printFile(const char file[]) {
 }
 
 // Other ------------------------------------------------------
-void check_args(int n) { // Check if the arguments of the executable are right
+
+// Check if the arguments of the executable are right
+void check_args(int n) {
     if (n != 2) {
         std::cerr << "Usage: assign <Parameters file>" << std::endl;
         myexit(1);
@@ -995,4 +995,3 @@ double norm(double a, double b) { return(sqrt(a*a + b*b)); }
 double norm(dpair p) { return(sqrt(p.f*p.f + p.s*p.s)); }
 double percent(int a, int b) { return(a*100./b); }
 void fl() { std::cout.flush(); }
-

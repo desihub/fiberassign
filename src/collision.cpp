@@ -8,9 +8,9 @@
 #include    <vector>
 #include    <algorithm>
 #include    <exception>
-#include        <map>
-#include        "misc.h"
-#include        "collision.h"
+#include    <map>
+#include    "misc.h"
+#include    "collision.h"
 
 // Angles are dpair (cos t, sin t)
 
@@ -31,13 +31,15 @@ int orientation(const dpair& p, const dpair& q, const dpair& r) {
         return 0;  // colinear
     }
     */
-    return (val > 0) ? 1 : 2; // clock or counterclock wise
+    // clock or counterclock wise
+    return (val > 0) ? 1 : 2;
 }
- 
+
 bool intersect(const dpair& p1, const dpair& q1, const dpair& p2, const dpair& q2) {
     int o1 = orientation(p1, q1, p2);
     int o2 = orientation(p1, q1, q2);
-    if (o1 == o2) return false; // (when error) terminate called after throwing an instance of 'std::bad_alloc'
+    // (when error) terminate called after throwing an instance of 'std::bad_alloc'
+    if (o1 == o2) return false;
     int o3 = orientation(p2, q2, p1);
     int o4 = orientation(p2, q2, q1);
     if (o3 == o4) return false;

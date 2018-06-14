@@ -1,18 +1,16 @@
 #ifndef	_HTMTREE_H_
 #define	_HTMTREE_H_
 
-#include	<cstdlib>
-#include	<cmath>
-#include	<fstream>
-#include	<sstream>
-#include	<iostream>
-#include	<iomanip>
-#include	<string>
-#include	<vector>
-#include	<algorithm>
-#include	<exception>
-
-
+#include <cstdlib>
+#include <cmath>
+#include <fstream>
+#include <sstream>
+#include <iostream>
+#include <iomanip>
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <exception>
 
 /*
 
@@ -24,17 +22,17 @@ Written:	20-May-2014
 Modified:	21-May-2014
 */
 
-
 extern void	myexit(const int flag);
 extern void	myexception(const std::exception& e);
-
 
 
 template<class Ttype> class htmTree {
 protected:
   struct triangle {
-    double	v[9],c[3];	// vertices and center nhat components.
-    double	syze;		// an angular size.
+      // vertices and center nhat components.
+    double	v[9],c[3];
+    // an angular size.
+    double	syze;
   };
   struct treenode {
     struct triangle	t;
@@ -95,8 +93,10 @@ protected:
       if (in_triangle(P,T[T[cur].child[ichild]].t))
         c=ichild;
     }
-    if (c==-1) {	// Some kind of round-off error must have
-      double cmax=-1;	// occurred for me to get here.  Use brute force.
+    if (c==-1) {
+        // Some kind of round-off error must have
+        // occurred for me to get here.  Use brute force.
+      double cmax=-1;
       for (int ichild=0; ichild<4; ++ichild) {
         double cdot=0;
         for (int i=0; i<3; ++i)
@@ -113,13 +113,19 @@ protected:
     // Creates the 4 children of node nn, having them point to -2.
     struct treenode tn;
     // Child 0.
-    for (int i=0; i<3; ++i)	// Vertex 0 is the same.
+
+    // Vertex 0 is the same.
+    for (int i=0; i<3; ++i)
       tn.t.v[3*0+i]=T[nn].t.v[3*0+i];
     unitize(&tn.t.v[0]);
-    for (int i=0; i<3; ++i)	// Vertex 1 is midway between 0 & 1.
+
+    // Vertex 1 is midway between 0 & 1.
+    for (int i=0; i<3; ++i)
       tn.t.v[3*1+i]= (T[nn].t.v[3*0+i]+T[nn].t.v[3*1+i])/2.;
     unitize(&tn.t.v[3]);
-    for (int i=0; i<3; ++i)	// Vertex 2 is midway between 0 & 2.
+
+    // Vertex 2 is midway between 0 & 2.
+    for (int i=0; i<3; ++i)
       tn.t.v[3*2+i]= (T[nn].t.v[3*0+i]+T[nn].t.v[3*2+i])/2.;
     unitize(&tn.t.v[6]);
     set_center_size(tn.t);
@@ -127,14 +133,21 @@ protected:
     T[nn].child[0] = T.size();
     try {T.push_back(tn);}
     catch(std::exception& e) {myexception(e);}
+
     // Child 1.
-    for (int i=0; i<3; ++i)	// Vertex 0 is midway between 0 & 1.
+
+    // Vertex 0 is midway between 0 & 1.
+    for (int i=0; i<3; ++i)
       tn.t.v[3*0+i]= (T[nn].t.v[3*0+i]+T[nn].t.v[3*1+i])/2.;
     unitize(&tn.t.v[0]);
-    for (int i=0; i<3; ++i)	// Vertex 1 is the same
+
+    // Vertex 1 is the same
+    for (int i=0; i<3; ++i)
       tn.t.v[3*1+i]= T[nn].t.v[3*1+i];
     unitize(&tn.t.v[3]);
-    for (int i=0; i<3; ++i)	// Vertex 2 is midway between 1 & 2.
+
+    // Vertex 2 is midway between 1 & 2.
+    for (int i=0; i<3; ++i)
       tn.t.v[3*2+i]= (T[nn].t.v[3*1+i]+T[nn].t.v[3*2+i])/2.;
     unitize(&tn.t.v[6]);
     set_center_size(tn.t);
@@ -142,14 +155,21 @@ protected:
     T[nn].child[1] = T.size();
     try {T.push_back(tn);}
     catch(std::exception& e) {myexception(e);}
+
     // Child 2.
-    for (int i=0; i<3; ++i)	// Vertex 0 is midway between 0 & 2.
+
+    // Vertex 0 is midway between 0 & 2.
+    for (int i=0; i<3; ++i)
       tn.t.v[3*0+i]= (T[nn].t.v[3*0+i]+T[nn].t.v[3*2+i])/2.;
     unitize(&tn.t.v[0]);
-    for (int i=0; i<3; ++i)	// Vertex 1 is midway between 1 & 2.
+
+    // Vertex 1 is midway between 1 & 2.
+    for (int i=0; i<3; ++i)
       tn.t.v[3*1+i]= (T[nn].t.v[3*1+i]+T[nn].t.v[3*2+i])/2.;
     unitize(&tn.t.v[3]);
-    for (int i=0; i<3; ++i)	// Vertex 2 is the same.
+
+    // Vertex 2 is the same.
+    for (int i=0; i<3; ++i)
       tn.t.v[3*2+i]= T[nn].t.v[3*2+i];
     unitize(&tn.t.v[6]);
     set_center_size(tn.t);
@@ -157,14 +177,21 @@ protected:
     T[nn].child[2] = T.size();
     try {T.push_back(tn);}
     catch(std::exception& e) {myexception(e);}
+
     // Child 3.
-    for (int i=0; i<3; ++i)	// Vertex 0 is midway between 1 & 2.
+
+    // Vertex 0 is midway between 1 & 2.
+    for (int i=0; i<3; ++i)
       tn.t.v[3*0+i]= (T[nn].t.v[3*1+i]+T[nn].t.v[3*2+i])/2.;
     unitize(&tn.t.v[0]);
-    for (int i=0; i<3; ++i)	// Vertex 1 is midway between 0 & 2.
+
+    // Vertex 1 is midway between 0 & 2.
+    for (int i=0; i<3; ++i)
       tn.t.v[3*1+i]= (T[nn].t.v[3*0+i]+T[nn].t.v[3*2+i])/2.;
     unitize(&tn.t.v[3]);
-    for (int i=0; i<3; ++i)	// Vertex 2 is midway between 0 & 1.
+
+    // Vertex 2 is midway between 0 & 1.
+    for (int i=0; i<3; ++i)
       tn.t.v[3*2+i]= (T[nn].t.v[3*0+i]+T[nn].t.v[3*1+i])/2.;
     unitize(&tn.t.v[6]);
     set_center_size(tn.t);
@@ -254,7 +281,8 @@ protected:
           else if (T[cur].indx>=0) {
             // Current node points to a particle--need to refine.
             int pid = T[cur].indx;
-            if (T[cur].t.syze>min_node_size) {	// Should subdivide.
+            if (T[cur].t.syze>min_node_size) {
+                // Should subdivide.
               create_children(cur);
               T[cur].indx=-1;
               int c=which_child(P[pid],cur);
@@ -262,7 +290,8 @@ protected:
               c=which_child(P[i],cur);
               cur= T[cur].child[c];
             }
-            else {	// Promote to a terminal node and put in particle.
+            else {
+                // Promote to a terminal node and put in particle.
               T[cur].indx=-1;
               try {
                 T[cur].lst.push_back(pid);
@@ -298,7 +327,9 @@ public:
     int    maxlen =  -1,totlen = 0;
     for (int i=0; i<T.size(); i++) {
       double lsiz = T[i].t.syze;
-      int    llen = T[i].lst.size();	// Need to do this for some reason.
+
+      // Need to do this for some reason.
+      int    llen = T[i].lst.size();
       if (minsize > lsiz) {minsize= lsiz;}
       if (maxlen  < llen) {maxlen = llen;  smlsize=lsiz;}
       totlen += llen;
@@ -331,7 +362,8 @@ public:
     for (int i=0; i<8; ++i) clist.push_back(i);
     while (clist.size()>0) {
       int cur = clist.back();  clist.pop_back();
-      if (T[cur].indx >= 0) {	// I am a leaf pointing at a particle.
+      if (T[cur].indx >= 0) {
+          // I am a leaf pointing at a particle.
         int indx = T[cur].indx;
         double dotv=0,dst=0;
         for (int i=0; i<3; i++)

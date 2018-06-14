@@ -1,21 +1,21 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
-#include    <cstdlib>
-#include    <cmath>
-#include    <fstream>
-#include    <sstream>
-#include    <iostream>
-#include    <iomanip>
-#include    <string>
-#include    <vector>
-#include    <algorithm>
-#include    <exception>
-#include    <sys/time.h>
-#include    <fitsio.h>
-#include    "misc.h"
-#include    "feat.h"
-#include    "structs.h"
+#include <cstdlib>
+#include <cmath>
+#include <fstream>
+#include <sstream>
+#include <iostream>
+#include <iomanip>
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <exception>
+#include <sys/time.h>
+#include <fitsio.h>
+#include "misc.h"
+#include "feat.h"
+#include "structs.h"
 
 #define FIBER_BROKEN 4
 #define FIBER_STUCK 2
@@ -33,7 +33,7 @@ void collect_available_tilefibers(MTL& M, const Plates& P, const Feat& F);
 // First simple assignment plan, executing find_best on every plate on every fiber
 void simple_assign(MTL& M, Plates& P, const FP& pp, const Feat& F, Assignment& A);
 
-// More fine first assignment plan, 
+// More fine first assignment plan,
 
 void improve(MTL& M, Plates&P, const FP& pp, const Feat& F, Assignment& A, int jstart);
 
@@ -64,5 +64,8 @@ void write_save_av_gals(int j, str outdir, const MTL& M, const Plates& P, const 
 
 
 void overlappingTiles(str fname, const Feat& F, const Assignment& A);
-#endif
+
 bool myorder(int i, int j);
+
+
+#endif

@@ -1,25 +1,19 @@
-#ifndef	_KDTREE_H_
-#define	_KDTREE_H_
+#ifndef _KDTREE_H_
+#define _KDTREE_H_
 
-#include	<cstdlib>
-#include	<cmath>
-#include	<iostream>
-#include	<iomanip>
-#include	<sstream>
-#include	<fstream>
-#include	<vector>
-#include	<algorithm>
-#include	<exception>
-
-
+#include <cstdlib>
+#include <cmath>
+#include <iostream>
+#include <iomanip>
+#include <sstream>
+#include <fstream>
+#include <vector>
+#include <algorithm>
+#include <exception>
 
 
 extern void	myexit(const int flag);
 extern void	myexception(const std::exception& e);
-
-
-
-
 
 
 template <class Ttype> class	KDtree {
@@ -73,7 +67,8 @@ private:
     // The main method used to (recursively) build the tree.
     // This uses a post-order "scheme".
     const int Nmax=32;
-    if (P.size()>Nmax) {	// Will split this node.
+    if (P.size()>Nmax) {
+        // Will split this node.
       // Select along the relevant axis.
       int median = P.size() / 2;
       quickselect(P,idim%Ndim,median);
@@ -237,7 +232,8 @@ public:
     // Create and load the tree -- the elements of P are sorted repeatedly.
     // Ttype should have a member .pos[].
     Ndim = Ndim0;
-    std::vector<Ttype> P = Pin;	// Copy in case want to preserve Pin.
+    // Copy in case want to preserve Pin.
+    std::vector<Ttype> P = Pin;
     np   = P.size();
     // Build the tree recursively and initialize the parent fields.
     buildtree(P,0);

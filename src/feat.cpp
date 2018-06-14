@@ -1,21 +1,21 @@
-#include    <cstdlib>
-#include    <cmath>
-#include    <fstream>
-#include    <sstream>
-#include    <iostream>
-#include        <cstring>
-#include    <iomanip>
-#include    <string>
-#include    <vector>
-#include    <algorithm>
-#include    <exception>
-#include    <sys/time.h>
-#include        <map>
-#include        <stdlib.h>     /* srand, rand */
+#include <cstdlib>
+#include <cmath>
+#include <fstream>
+#include <sstream>
+#include <iostream>
+#include <cstring>
+#include <iomanip>
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <exception>
+#include <sys/time.h>
+#include <map>
+#include <stdlib.h>     /* srand, rand */
 #include <string.h>
-#include        "misc.h"
-#include        "collision.h"
-#include        "feat.h"
+#include "misc.h"
+#include "collision.h"
+#include "feat.h"
 
 
 void Usage(char *ExecName)
@@ -35,7 +35,7 @@ void Usage(char *ExecName)
 }
 
 // Features ------------------------------------------------------------------
-Feat::Feat() { 
+Feat::Feat() {
     Count = 0;
     Categories = 0;
     AvCollide = 3.2;
@@ -76,7 +76,7 @@ void Feat::readInputFile(const char file[]) {
             if (tok[0]=="SkyFfile") SkyFfile=tok[1];
             if (tok[0]=="runDate") runDate=tok[1];
     }
-  }  
+  }
   fIn.close();
 }
 
@@ -85,7 +85,7 @@ void Feat::readInputFile(const char file[]) {
 void Feat::parseCommandLine(int argc, char **argv) {
     int i;
     for (i=1;i<argc;){
-        
+
         if (!strcmp(argv[i],"--mtl")){
             i++;
             Targfile = str(argv[i]);
@@ -121,7 +121,7 @@ void Feat::parseCommandLine(int argc, char **argv) {
         }else if (!strcmp(argv[i],"--rundate")){
             i++;
             runDate = str(argv[i]);
-            i++;   
+            i++;
         }else if (!strcmp(argv[i],"--starmask")){
             i++;
             StarMask = atol(argv[i]);
@@ -133,7 +133,6 @@ void Feat::parseCommandLine(int argc, char **argv) {
         }else{
             fprintf (stderr,"\nUnrecognized option: %s\n\n",argv[i]);
             Usage(argv[0]);
-        } 
+        }
     }
 }
-

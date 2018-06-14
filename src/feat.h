@@ -1,23 +1,25 @@
 #ifndef FEAT_H
 #define FEAT_H
 
-#include    <cstdlib>
-#include    <cmath>
-#include    <fstream>
-#include    <sstream>
-#include    <iostream>
-#include    <iomanip>
-#include    <string>
-#include    <vector>
-#include    <algorithm>
-#include    <exception>
-#include    <sys/time.h>
-#include        <map>
-#include        "misc.h"
-#include        "collision.h"
+#include <cstdlib>
+#include <cmath>
+#include <fstream>
+#include <sstream>
+#include <iostream>
+#include <iomanip>
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <exception>
+#include <sys/time.h>
+#include <map>
+#include "misc.h"
+#include "collision.h"
+
 
 // Feat --------------------------------------------------
-class Feat { // F for features
+// F for features
+class Feat {
     public:
     // Set by features file
     str tileFile;
@@ -30,16 +32,17 @@ class Feat { // F for features
     str fibstatusFile;
     str runDate;
 
+    // bit in desi_target that signals a standard star
+    long StarMask;
 
-    long StarMask; //bit in desi_target that signals a standard star
-    
-    int InterPlate; 
+    int InterPlate;
     int MaxSS;
     int MaxSF;
     double PlateRadius;
     int PrintGalObs;
-    
-    bool Collision; // True when we take collisions into account
+
+    // True when we take collisions into account
+    bool Collision;
     bool Exact;
     double AvCollide;
     double Collide;
@@ -50,7 +53,7 @@ class Feat { // F for features
     bool Verif;
     bool Ascii;
     bool BrightTime;
-    
+
     int Categories;
 
     // Set after reading other input files
@@ -63,7 +66,9 @@ class Feat { // F for features
     int Ntarg;
 	int Nfiber;
 	int Npetal;
-	int Nfbp; // Number of fibers by petals
+
+    // Number of fibers by petals
+	int Nfbp;
 
     // Memorizes geometry of central body and fiber holder
     polygon cb;
@@ -82,12 +87,18 @@ class Feat { // F for features
     void parseCommandLine(int argc, char ** argv);
     int id(str s) const;
 
-    void init_ids(); // Init ids member
-    void init_ids_types(); // Same
+    // Init ids member
+    void init_ids();
+
+    // Same
+    void init_ids_types();
+
     List init_ids_list(str l[], int size) const;
     void init_types();
     void init_no_ss_sf();
     void init_ss_sf();
-    bool iftype(int kind, str type) const; // Whether kind is of type "type"
+
+    // Whether kind is of type "type"
+    bool iftype(int kind, str type) const;
 };
 #endif
