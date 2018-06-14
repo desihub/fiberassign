@@ -43,7 +43,6 @@ parser.add_argument("--nocleanup", dest='cleanup', action='store_false')
 
 args = parser.parse_args()
 
-print(args)
 
 if args.footprint is None:
     args.footprint =  desimodel.io.findfile('footprint/desi-tiles.fits')
@@ -107,11 +106,8 @@ tmp_fiber_sky = rewrite_fiberpos(args.positioners, postype='ETC')
 
 # tmp output directories
 tmp_targets_dir = tempfile.mkdtemp()
-#os.path.join(args.outdir, 'tmp_targets')
 tmp_sky_dir = tempfile.mkdtemp()
-#os.path.join(args.outdir, 'tmp_sky')
 tmp_gfa_dir = tempfile.mkdtemp()
-#os.path.join(args.outdir, 'tmp_gfa')
 
 if not os.path.exists(tmp_targets_dir):
     os.makedirs(tmp_targets_dir)
@@ -183,13 +179,10 @@ if args.gfafile is not None:
     footprint = fitsio.read(args.footprint)
     ii = np.in1d(footprint['TILEID'], np.array(tile_id))
     tiles = footprint[ii]
-    print(tiles)
     
     for telra, teldec, tileid in zip(tiles['RA'], tiles['DEC'], tiles['TILEID']):
-        gfa_data = gfa.targets_on_gfa(telra, teldec, data)
-        print(type(data))
-        print(gfa_data)
         gfaout = os.path.join(tmp_gfa_dir, 'tile_{:05d}.fits'.format(tileid))
+        gfa_data = gfa.targets_on_gfa(telra, teldec, data)
         t = Table(gfa_data)
         t.write(gfaout, overwrite=True)
         
@@ -214,6 +207,7 @@ for sky_id in sky_tile_id.keys():
             fitsio.write(tileout, sky_data, extname='SKYETC')
             
             if args.gfafile is not None:
+                print(gfa_tile_id[sky_id])
                 gfa_data = fitsio.read(gfa_tile_id[sky_id])
                 fitsio.write(tileout, gfa_data, extname='GFA')
     
