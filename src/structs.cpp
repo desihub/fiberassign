@@ -261,9 +261,9 @@ MTL read_MTLfile(str readfile, const Feat& F, long SS, long SF){
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"NUMOBS_MORE", &colnum, &status) ){
         // fprintf(stderr, "error finding NUMOBS_MORE column\n");
         // myexit(status);
-          std::cout << "NUMOBS_MORE not found ... setting to 0" << std::endl;
+          std::cout << "NUMOBS_MORE not found ... setting to 1" << std::endl;
           for(int i=0; i<nrows; i++) {
-              numobs[i] = 0;
+              numobs[i] = 1;
           }
       } else if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
                         &nullval, numobs, &anynulls, &status) ){
@@ -275,9 +275,9 @@ MTL read_MTLfile(str readfile, const Feat& F, long SS, long SF){
       if ( fits_get_colnum(fptr, CASEINSEN, (char *)"PRIORITY", &colnum, &status) ){
         // fprintf(stderr, "error finding PRIORITY column\n");
         // myexit(status);
-        std::cout << "PRIORITY not found ... setting to 0" << std::endl;
+        std::cout << "PRIORITY not found ... setting to 1" << std::endl;
         for(int i=0; i<nrows; i++) {
-            priority[i] = 0;
+            priority[i] = 1;
         }
       } else if (fits_read_col(fptr, TINT, colnum, frow, felem, nrows, 
                         &nullval, priority, &anynulls, &status) ){
