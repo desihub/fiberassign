@@ -4,6 +4,6 @@
 #include <string>
 #include "_version.h"
 
-std::string version(void);
+std::string version (void);
 
 #endif
