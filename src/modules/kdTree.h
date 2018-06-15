@@ -74,8 +74,7 @@ template <class Ttype> class KDtree {
             }
         }
 
-        void buildtree (std::vector <Ttype> & P,
-                        const int idim) {
+        void buildtree (std::vector <Ttype> & P, const int idim) {
             // The main method used to (recursively) build the tree.
             // This uses a post-order "scheme".
             const int Nmax = 32;
@@ -219,6 +218,7 @@ template <class Ttype> class KDtree {
                     double maxdst = 0;
                     if (bound(n, jdim, 1) - pos[jdim] > maxdst) {
                         maxdst = bound(n, jdim, 1) - pos[jdim];
+                    }
                     if (pos[jdim] - bound(n, jdim, 0) > maxdst) {
                         maxdst = pos[jdim] - bound(n, jdim, 0);
                     }
