@@ -45,7 +45,7 @@ fiberassign_exec : $(OBJS_FIBERASSIGN)
 fiberassign_surveysim : $(OBJS_SURVEYSIM)
 	$(CXX) -o $@ $^ $(LINK)
 
-reformat : $(HEADERS) $(SOURCES)
+reformat : $(HEADERS) $(SOURCES) uncrustify.cfg
 	for sfile in $(HEADERS) $(SOURCES) $(MODS); do \
 	uncrustify -c uncrustify.cfg --replace --no-backup -l CPP $${sfile}; \
 	done

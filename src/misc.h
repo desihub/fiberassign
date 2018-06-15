@@ -21,7 +21,6 @@ typedef std::map <str, int> Smap;
 class pair {
     public:
         int f, s;
-
         pair ();
         pair (int a, int b);
         void setnull ();
@@ -32,7 +31,6 @@ class pair {
 class dpair {
     public:
         double f, s;
-
         dpair ();
         dpair (double a, double b);
         void print () const;
@@ -41,9 +39,7 @@ class dpair {
 
 // Add coords of 2 points
 dpair operator+ (dpair const & a, dpair const & b);
-
 dpair operator- (dpair const & a, dpair const & b);
-
 dpair operator- (dpair const & a, double b);
 
 // Gives cartesian coordinates of a point defined by polar coords
@@ -60,7 +56,6 @@ dpair sum_angles (dpair p1, dpair p2);
 
 // Distance between 2 points
 double dist (dpair c1, dpair c2);
-
 double norm (dpair p);
 
 // Norm squared of a point
@@ -85,12 +80,10 @@ class Dplist : public std::vector <dpair> {};
 class Slist : public std::vector <str> {};
 
 List Null ();
-
 Slist Snull ();
 
 // Initialize a list of size l, with values val
 List initList (int l, int val = 0);
-
 Dlist initDlist (int l, double val = 0.0);
 
 // Transform l into the List type
@@ -98,16 +91,12 @@ List initList (std::vector <int> l);
 
 // Initialize a list from array l which is of size size
 List initList (int l[], int size);
-
 Slist initList (str l[], int size);
 
 // Print list L, printing the message s before
 void print_list (str s, const List & L);
-
 void print_list (str s, Slist L);
-
 void print_Dlist (str s, const Dlist & L);
-
 void print_Plist (const Plist & L, str s = "");
 
 // Print on a line
@@ -121,7 +110,6 @@ bool isnull (const Slist & L);
 
 // Sum of the list
 int sumlist (const List & L);
-
 double sumlist (const Dlist & L);
 
 // Max of the list
@@ -129,7 +117,6 @@ int max (const List & L);
 
 // List of 100*L[i]/n
 Dlist percents (const List & L, int n);
-
 Dlist percents (const Dlist & L, double n);
 
 // True iff n is found in L
@@ -140,7 +127,6 @@ int isfound_pos (double n, const Dlist & L);
 
 // Return the position of where p is found, -1 if not
 int isfound (pair p, const Plist & L);
-
 bool isfound (str n, const Slist & L);
 
 // List of different taken values (ex 1,1,5,2,5 gives 1,5,2)
@@ -179,7 +165,6 @@ List inverse (const List & L);
 
 // Cumulated sum of L (integral)
 List cumulate (const List & L);
-
 Dlist cumulate (const Dlist & L);
 
 // L[i]/d
@@ -194,7 +179,6 @@ Dlist var (const List & L);
 // Get permutation that leads to sort this list
 List get_permut_sort (const List & l);
 
-
 // Table -----------------------------------------------------
 
 class Table : public std::vector <List> {};
@@ -204,39 +188,30 @@ class Dtable : public std::vector <Dlist> {};
 class Ptable : public std::vector <Plist> {};
 
 Table initTable (int l, int c, int val = 0);
-
 Table initTable (const Table & T);
-
 Ptable initPtable (int l, int c);
-
 Dtable initDtable (int l, int c, double val = 0.0);
 
 // Verifies it's square
 void verif (const Table & T);
 
-void print_table (str s, const Table & T, bool latex = false, Slist labels =
-                      Snull() );
-
-void print_table (str s, const Dtable & T, bool latex = false, Slist labels =
-                      Snull() );
-
+void print_table (str s, const Table & T, bool latex = false,
+                  Slist labels = Snull() );
+void print_table (str s, const Dtable & T, bool latex = false,
+                  Slist labels = Snull() );
 void print_table (str s, const Ptable & T);
 
 // Other constr wouldn't work if we would define a constructor in class Table
-
 // Build histogram of interval interval from values in T
 List histogram (const Table & T, int interval);
 
 // Build histogram of interval interval from values in L
 List histogram (const List & L, int interval);
-
 Dlist histogram (const Dlist & L, double interval);
-
 Dlist histogram (const Dplist & L, double interval);
 
 // Print, in latex format, data from table T in file ss, writing s on cout
 void print_mult_table_latex (str s, str ss, Table T, int multX = 1);
-
 void print_mult_Dtable_latex (str s, str ss, Dtable T, double multX = 1);
 
 // Add a row with sum of lines
@@ -244,7 +219,6 @@ Table with_tot (const Table & T);
 
 // Max number of rows
 int max_row (const Table & T);
-
 int max_row (const Dtable & T);
 
 // List of max on each row
@@ -254,9 +228,7 @@ List max_on_row (const Table & T);
 void make_square (Table & T);
 
 Dtable divide (const Table & T, double d);
-
 Dtable divide (const Dtable & T, double d);
-
 Dtable mult (const Dtable & T, double d);
 
 // floor(T[i][j]/d)
@@ -268,13 +240,11 @@ Dtable ddivide_floor (const Table & T, double d);
 // Horizontal concatenation T1:T2
 Dtable concatenate (const Dtable & T1, const Dtable & T2);
 
-
 // Cube ------------------------------------------------------
 
 class Cube : public std::vector <Table> {};
 
 Cube initCube (int l, int c, int d, int val = 0);
-
 class Dcube : public std::vector <Dtable> {};
 
 Dcube initDcube (int l, int c, int d, double val = 0.0);
@@ -282,8 +252,8 @@ Dcube initDcube (int l, int c, int d, double val = 0.0);
 // Max size of 2nd dim
 int max_row (const Dcube & C);
 
-
 // Time ------------------------------------------------------
+
 struct Time {
     // Tstart, Tend (t.s & t.e)
     double s, e;
@@ -305,33 +275,25 @@ void init_time (Time & t, const str s = "");
 // Init time, printing global time t
 void init_time_at (Time & time, const str s, Time & t);
 
-
 // Errors -----------------------------------------------------
 
 void myexit (const int i);
-
 void myexception (const std::exception & e);
 
 // Intel compiler needs this version too
 void myexception (std::exception & e);
-... void error (str s);
+void error (str s);
 
 // Used for debug, just prints a
 void deb (int a);
-
 void deb (str a);
-
 void deb (int a, int b);
-
 void deb (double a);
 
 // Debug : debl prints without skipping a line
 void debl (int a);
-
 void debl (str a);
-
 void debl (double a);
-
 
 // Conversions ------------------------------------------------
 
@@ -343,17 +305,11 @@ str f (double i);
 
 // int to string
 str i2s (int i);
-
 str d2s (double i);
-
 str p2s (pair p);
-
 str p2s (int j, int k);
-
 int s2i (str s);
-
 bool s2b (str s);
-
 double s2d (str s);
 
 // like in prinft("%5s") where 5 = size
@@ -361,7 +317,6 @@ str format (int size, str s);
 
 // Same str without spaces
 str erase_spaces (str s);
-
 
 // Parse ------------------------------------------------------
 
@@ -371,19 +326,15 @@ Slist s2vec (str const & s, char const delimiter);
 // Print the file
 void printFile (const char file[]);
 
-
 // Other ------------------------------------------------------
 
 // Check number of arguments
 void check_args (int n);
-
 int max (int a, int b);
-
 int min (int a, int b);
 
 // n*n
 int sq (int n);
-
 double sq (double n);
 
 // a*a+b*b
@@ -391,7 +342,6 @@ double sq (double a, double b);
 
 // sqrt(a*a+b*b)
 double norm (double a, double b);
-
 double percent (int a, int b);
 
 // cout.flush()

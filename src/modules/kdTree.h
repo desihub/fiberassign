@@ -15,7 +15,6 @@
 extern void myexit (const int flag);
 extern void myexception (const std::exception & e);
 
-
 template <class Ttype> class KDtree {
     private:
         struct TreeNode {
@@ -26,9 +25,9 @@ template <class Ttype> class KDtree {
         std::vector <TreeNode> tree;
         std::vector <double>   bndbox;
         int Ndim, root, np;
-        int   partition (std::vector <Ttype> & P, const int left, const int
-                         right, const int pivot, const int
-                         idim) {
+        int partition (std::vector <Ttype> & P, const int left,
+                       const int right, const int pivot,
+                       const int idim) {
             // This is the partition step of the quickselect algorithm, it is a
             // helper algorithm.
             Ttype tmp;
@@ -51,18 +50,18 @@ template <class Ttype> class KDtree {
             return (store);
         }
 
-        void  quickselect (std::vector <Ttype> & P, const int idim, const int
-                           mid) {
+        void quickselect (std::vector <Ttype> & P, const int idim,
+                          const int mid) {
             // Arranges the array so that objects less than the median are on
             // the
             // left and objects greater than the median are on the right.
-            int l = 0, r = P.size() - 1;
+            int l = 0;
+            int r = P.size() - 1;
             if (l != r) {
                 for (;; ) {
                     // rnc 3/28/16 kill randomization
                     // int pivot=(int)(l+drand48()*(r-l+1));
                     int pivot = (int)(l + 0.5 * (r - l + 1) );
-
                     pivot = partition(P, l, r, pivot, idim);
                     if (pivot == mid) {
                         break;
@@ -75,7 +74,8 @@ template <class Ttype> class KDtree {
             }
         }
 
-        void  buildtree (std::vector <Ttype> & P, const int idim) {
+        void buildtree (std::vector <Ttype> & P,
+                        const int idim) {
             // The main method used to (recursively) build the tree.
             // This uses a post-order "scheme".
             const int Nmax = 32;
@@ -90,7 +90,9 @@ template <class Ttype> class KDtree {
                 try {
                     left.assign( P.begin(), P.begin() + median);
                     right.assign(P.begin() + median, P.end() );
-                } catch (std::exception & e) {myexception(e);}
+                } catch (std::exception & e) {
+                    myexception(e);
+                }
                 // Set up the entry for the split point, this recursively puts
                 // in
                 // the left and right children--note I am always added last.
@@ -111,35 +113,38 @@ template <class Ttype> class KDtree {
                 }
                 try {
                     tree.push_back(cur);
-                } catch (std::exception & e) {myexception(e);}
-            } else { // Don't split this.
+                } catch (std::exception & e) {
+                    myexception(e);
+                }
+            } else {
+                // Don't split this.
                 struct TreeNode cur;
                 cur.split = 0;
                 cur.axis  = -1;
                 try {
                     cur.objs.assign(P.begin(), P.end() );
-                } catch (std::exception & e) {myexception(e);}
+                } catch (std::exception & e) {
+                    myexception(e);
+                }
                 cur.left_child  = -1;
                 cur.right_child = -1;
-                try {tree.push_back(cur);} catch (std::exception & e) {
+                try {
+                    tree.push_back(cur);
+                } catch (std::exception & e) {
                     myexception(e);
                 }
             }
         }
 
-        void  updatebndry (const int nodeptr) {
+        void updatebndry (const int nodeptr) {
             // Uses the parent boundary and current split point to update the
             // boundary.
             int par = tree[nodeptr].parent;
             for (int jdim = 0; jdim < Ndim; ++jdim) {
-                bndbox[2 * (Ndim * nodeptr + jdim) + 0] = bndbox[2 * (Ndim *
-                                                                      par +
-                                                                      jdim) +
-                                                                 0]; // Min
-                bndbox[2 * (Ndim * nodeptr + jdim) + 1] = bndbox[2 * (Ndim *
-                                                                      par +
-                                                                      jdim) +
-                                                                 1]; // Max
+                bndbox[2 * (Ndim * nodeptr + jdim) + 0] =
+                    bndbox[2 * (Ndim * par + jdim) + 0]; // Min
+                bndbox[2 * (Ndim * nodeptr + jdim) + 1] =
+                    bndbox[2 * (Ndim * par + jdim) + 1]; // Max
             }
             int j = tree[par].axis;
             if (nodeptr == tree[par].left_child) {
@@ -147,30 +152,37 @@ template <class Ttype> class KDtree {
             } else {
                 bndbox[2 * (Ndim * nodeptr + j) + 0] = tree[par].split;
             }
-            if (tree[nodeptr].left_child > -1) updatebndry(
-                    tree[nodeptr].left_child);
-            if (tree[nodeptr].right_child > -1) updatebndry(
-                    tree[nodeptr].right_child);
+            if (tree[nodeptr].left_child > -1) {
+                updatebndry(tree[nodeptr].left_child);
+            }
+            if (tree[nodeptr].right_child > -1) {
+                updatebndry(tree[nodeptr].right_child);
+            }
         }
 
-        void  setbndry (const std::vector <double> & xmin, const
-                        std::vector <double> & xmax) {
+        void setbndry (const std::vector <double> & xmin,
+                       const std::vector <double> & xmax) {
             // Sets the bounding box for each tree node.  This is dynamically
             // allocated as one big double array, starting with the root node,
             // which explains the odd format.
             try {
                 bndbox.resize(2 * Ndim * tree.size() );
-            } catch (std::exception & e) {myexception(e);}
+            } catch (std::exception & e) {
+                myexception(e);
+            }
             for (int jdim = 0; jdim < Ndim; ++jdim) {
                 bndbox[2 * (Ndim * root + jdim) + 0] = xmin[jdim];
                 bndbox[2 * (Ndim * root + jdim) + 1] = xmax[jdim];
             }
-            if (tree[root].left_child > -1) updatebndry(tree[root].left_child);
-            if (tree[root].right_child > -1) updatebndry(
-                    tree[root].right_child);
+            if (tree[root].left_child > -1) {
+                updatebndry(tree[root].left_child);
+            }
+            if (tree[root].right_child > -1) {
+                updatebndry(tree[root].right_child);
+            }
         }
 
-        void  setparent (const int nodeptr) {
+        void setparent (const int nodeptr) {
             if (tree[nodeptr].left_child > -1) {
                 tree[tree[nodeptr].left_child].parent = nodeptr;
                 setparent(tree[nodeptr].left_child);
@@ -181,34 +193,35 @@ template <class Ttype> class KDtree {
             }
         }
 
-        std::vector <int> near (const int n, const double pos[], const double
-                                rmin, const double rmax) const {
+        std::vector <int> near (const int n, const double pos[],
+                                const double rmin, const double rmax) const {
             // Returns a vector of object ids near pos within node n.
             std::vector <int> retlist;
             const double rmax2 = rmax * rmax, rmin2 = rmin * rmin;
             double mindst2 = 0;
             for (int jdim = 0; jdim < Ndim; ++jdim) {
                 double mindst = 0;
-                if (bound(n, jdim, 0) - pos[jdim] > mindst) mindst = bound(n,
-                                                                           jdim,
-                                                                           0) -
-                                                                     pos[jdim];
-                if (pos[jdim] - bound(n, jdim, 1) > mindst) mindst =
-                        pos[jdim] - bound(n, jdim, 1);
-                if ( ( pos[jdim] >= bound(n, jdim, 0) ) && ( pos[jdim] <=
-                                                             bound(n, jdim,
-                                                                   1) ) )
+                if (bound(n, jdim, 0) - pos[jdim] > mindst) {
+                    mindst = bound(n, jdim, 0) - pos[jdim];
+                }
+                if (pos[jdim] - bound(n, jdim, 1) > mindst) {
+                    mindst = pos[jdim] - bound(n, jdim, 1);
+                }
+                if ( ( pos[jdim] >= bound(n, jdim, 0) ) &&
+                     ( pos[jdim] <= bound(n, jdim, 1) ) ) {
                     mindst = 0;
+                }
                 mindst2 += mindst * mindst;
             }
             if (mindst2 < rmax2) {
                 double maxdst2 = 0;
                 for (int jdim = 0; jdim < Ndim; ++jdim) {
                     double maxdst = 0;
-                    if (bound(n, jdim, 1) - pos[jdim] > maxdst) maxdst = bound(
-                            n, jdim, 1) - pos[jdim];
-                    if (pos[jdim] - bound(n, jdim, 0) > maxdst) maxdst =
-                            pos[jdim] - bound(n, jdim, 0);
+                    if (bound(n, jdim, 1) - pos[jdim] > maxdst) {
+                        maxdst = bound(n, jdim, 1) - pos[jdim];
+                    if (pos[jdim] - bound(n, jdim, 0) > maxdst) {
+                        maxdst = pos[jdim] - bound(n, jdim, 0);
+                    }
                     maxdst2 += maxdst * maxdst;
                 }
                 if (maxdst2 > rmin2) {
@@ -217,7 +230,9 @@ template <class Ttype> class KDtree {
                         // Contents of cell are entirely within range.
                         try {
                             retlist.resize(tree[n].objs.size() );
-                        } catch (std::exception & e) {myexception(e);}
+                        } catch (std::exception & e) {
+                            myexception(e);
+                        }
                         for (int i = 0; i < tree[n].objs.size(); ++i) {
                             retlist[i] = tree[n].objs[i].id;
                         }
@@ -228,36 +243,41 @@ template <class Ttype> class KDtree {
                         for (int i = 0; i < nobj(n); ++i) {
                             double r2 = 0;
                             for (int jdim = 0; jdim < Ndim; ++jdim) {
-                                r2 += (posn(n, i, jdim) - pos[jdim]) * (posn(n,
-                                                                             i,
-                                                                             jdim)
-                                                                        - pos[
-                                                                            jdim
-                                                                        ]);
+                                r2 += (posn(n, i, jdim) - pos[jdim]) *
+                                    (posn(n, i, jdim) - pos[jdim]);
                             }
                             if ( ( r2 < rmax2) && ( r2 > rmin2) ) {
                                 try {
                                     retlist.push_back(tree[n].objs[i].id);
-                                } catch (std::exception & e) {myexception(e);}
+                                } catch (std::exception & e) {
+                                    myexception(e);
+                                }
                             }
                         }
-                    } else { // Traverse down the hierarchy.
+                    } else {
+                        // Traverse down the hierarchy.
                         int m;
                         if ( (m = get_left_child(n) ) >= 0) {
                             std::vector <int> nbr = near(m, pos, rmin, rmax);
-                            if (nbr.size() > 0)
+                            if (nbr.size() > 0) {
                                 try {
-                                    retlist.insert(retlist.end(), nbr.begin(),
-                                                   nbr.end() );
-                                } catch (std::exception & e) {myexception(e);}
+                                    retlist.insert(retlist.end(),
+                                                   nbr.begin(), nbr.end() );
+                                } catch (std::exception & e) {
+                                    myexception(e);
+                                }
+                            }
                         }
                         if ( (m = get_right_child(n) ) >= 0) {
                             std::vector <int> nbr = near(m, pos, rmin, rmax);
-                            if (nbr.size() > 0)
+                            if (nbr.size() > 0) {
                                 try {
-                                    retlist.insert(retlist.end(), nbr.begin(),
-                                                   nbr.end() );
-                                } catch (std::exception & e) {myexception(e);}
+                                    retlist.insert(retlist.end(),
+                                                   nbr.begin(), nbr.end() );
+                                } catch (std::exception & e) {
+                                    myexception(e);
+                                }
+                            }
                         }
                     }
                 }
@@ -273,7 +293,7 @@ template <class Ttype> class KDtree {
             Ndim = Ndim0;
             // Copy in case want to preserve Pin.
             std::vector <Ttype> P = Pin;
-            np   = P.size();
+            np = P.size();
             // Build the tree recursively and initialize the parent fields.
             buildtree(P, 0);
             root = tree.size() - 1;
@@ -284,23 +304,27 @@ template <class Ttype> class KDtree {
             try {
                 xmin.resize(Ndim);
                 xmax.resize(Ndim);
-            } catch (std::exception & e) {myexception(e);}
+            } catch (std::exception & e) {
+                myexception(e);
+            }
             for (int jdim = 0; jdim < Ndim; ++jdim) {
                 xmin[jdim] = 1e30;
                 xmax[jdim] = -1e30;
             }
             for (int nn = 0; nn < np; ++nn) {
                 for (int jdim = 0; jdim < Ndim; ++jdim) {
-                    if (xmin[jdim] > P[nn].pos[jdim]) xmin[jdim] =
-                            P[nn].pos[jdim];
-                    if (xmax[jdim] < P[nn].pos[jdim]) xmax[jdim] =
-                            P[nn].pos[jdim];
+                    if (xmin[jdim] > P[nn].pos[jdim]) {
+                        xmin[jdim] = P[nn].pos[jdim];
+                    }
+                    if (xmax[jdim] < P[nn].pos[jdim]) {
+                        xmax[jdim] = P[nn].pos[jdim];
+                    }
                 }
             }
             setbndry(xmin, xmax);
         }
 
-        ~KDtree (void) {}; // Do nothing.
+        ~KDtree (void) {};  // Do nothing.
         void print_stats () const {
             // Print some stats.
             std::cout << "Tree has Ndim=" << Ndim << ", np=" << np <<
@@ -316,13 +340,10 @@ template <class Ttype> class KDtree {
                     for (int i = 0; i < tree[n].objs.size(); ++i) {
                         std::cout << std::fixed << std::setw(10) <<
                             std::setprecision(2) << tree[n].objs[i].pos[0] <<
-                            " " <<
-                            std::fixed << std::setw(10) << std::setprecision(
-                            2) <<
-                            tree[n].objs[i].pos[1] << " " << std::fixed <<
-                            std::setw(
-                            10) << std::setprecision(2) <<
-                            tree[n].objs[i].pos[2] <<
+                            " " << std::fixed << std::setw(10) <<
+                            std::setprecision(2) << tree[n].objs[i].pos[1] <<
+                            " " << std::fixed << std::setw(10) <<
+                            std::setprecision(2) << tree[n].objs[i].pos[2] <<
                             std::endl;
                     }
                 } else {
@@ -369,8 +390,8 @@ template <class Ttype> class KDtree {
             return (tree[n].right_child);
         }
 
-        std::vector <int> near (const double pos[], const double rmin, const
-                                double rmax) const {
+        std::vector <int> near (const double pos[], const double rmin,
+                                const double rmax) const {
             return (near(root, pos, rmin, rmax) );
         }
 };

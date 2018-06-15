@@ -1,19 +1,18 @@
-#include    <cstdlib>
-#include    <cmath>
-#include    <fstream>
-#include    <sstream>
-#include    <iostream>
-#include    <iomanip>
-#include    <string>
-#include    <vector>
-#include    <algorithm>
-#include    <exception>
-#include    <map>
-#include    "misc.h"
-#include    "collision.h"
+#include <cstdlib>
+#include <cmath>
+#include <fstream>
+#include <sstream>
+#include <iostream>
+#include <iomanip>
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <exception>
+#include <map>
+#include "misc.h"
+#include "collision.h"
 
 // Angles are dpair (cos t, sin t)
-
 // PosP
 PosP::PosP (double r10, double r20) {
     r1 = r10;
@@ -21,7 +20,6 @@ PosP::PosP (double r10, double r20) {
 }
 
 // Intersection of segments
-
 int orientation (const dpair & p, const dpair & q, const dpair & r) {
     // See 10th slides from following link for derivation of the formula
     // http://www.dcs.gla.ac.uk/~pat/52233/slides/Geometry1x1.pdf
@@ -35,33 +33,39 @@ int orientation (const dpair & p, const dpair & q, const dpair & r) {
     return (val > 0) ? 1 : 2;
 }
 
-bool intersect (const dpair & p1, const dpair & q1, const dpair & p2, const
-                dpair & q2) {
+bool intersect (const dpair & p1, const dpair & q1, const dpair & p2,
+                const dpair & q2) {
     int o1 = orientation(p1, q1, p2);
     int o2 = orientation(p1, q1, q2);
     // (when error) terminate called after throwing an instance of
     // 'std::bad_alloc'
-    if (o1 == o2) return false;
+    if (o1 == o2) {
+        return false;
+    }
     int o3 = orientation(p2, q2, p1);
     int o4 = orientation(p2, q2, q1);
-    if (o3 == o4) {return false;} else {return true;}
+    if (o3 == o4) {
+        return false;
+    } else {
+        return true;
+    }
 }
 
 // Intersection of segment and circle
-
 bool intersect_seg_circ (const dpair & A, const dpair & B, const dpair & O,
                          const double & rad) {
     // Make a drawing, with C the projection of O on (AB), use scalar products
     double rad_sq = sq(rad);
-
     double AO_sq = sq(A, O);
     double AB_AO = scalar_prod(A, B, O);
-    if (AB_AO <= 0) return AO_sq < rad_sq;
-
+    if (AB_AO <= 0) {
+        return AO_sq < rad_sq;
+    }
     double BO_sq = sq(B, O);
     double BA_BO = scalar_prod(B, A, O);
-    if (BA_BO <= 0) return BO_sq < rad_sq;
-
+    if (BA_BO <= 0) {
+        return BO_sq < rad_sq;
+    }
     double AB_sq = sq(A, B);
     return AO_sq * (1 - sq(AB_AO) / (AO_sq * AB_sq) ) < rad_sq;
 }
@@ -76,21 +80,24 @@ element::element (bool b) {
     color = 'k';
 }
 
-element::element (const dpair & Ocenter, const double & rad0) {
+element::element (const dpair & Ocenter,
+                  const double & rad0) {
     is_seg = false;
     O = Ocenter;
     rad = rad0;
     color = 'k';
 }
 
-element::element (const dpair & A, const dpair & B) {
+element::element (const dpair & A,
+                  const dpair & B) {
     is_seg = true;
     add(A);
     add(B);
     color = 'k';
 }
 
-element::element (const dpair & A, char c, double transp, double rad0) {
+element::element (const dpair & A, char c, double transp,
+                  double rad0) {
     is_seg = true;
     add(A);
     color = c;
@@ -98,28 +105,32 @@ element::element (const dpair & A, char c, double transp, double rad0) {
     radplot = rad0;
 }
 
-void element::add (const double & a, const double & b) {
+void element::add (const double & a,
+                   const double & b) {
     segs.push_back(dpair(a, b) );
 }
-
 void element::add (const dpair & p) {
     segs.push_back(p);
 }
-
 void element::transl (const dpair & t) {
     if (is_seg) {
         for (int i = 0; i < segs.size(); i++) {
             segs[i] = segs[i] + t;
         }
-    } else { O = O + t;}
+    } else {
+        O = O + t;
+    }
 }
 
-void element::rotation (const dpair & t, const dpair & axis) {
+void element::rotation (const dpair & t,
+                        const dpair & axis) {
     if (is_seg) {
         for (int i = 0; i < segs.size(); i++) {
             rot_pt(segs[i], axis, t);
         }
-    } else { rot_pt(O, axis, t);}
+    } else {
+        rot_pt(O, axis, t);
+    }
 }
 
 void element::print () const {
@@ -136,7 +147,9 @@ void element::print () const {
         for (int i = 0; i < segs.size(); i++) {
             segs[i].print();
         }
-    } else {printf(" no seg ");}
+    } else {
+        printf(" no seg ");
+    }
     printf("\n");
     fl();
 }
@@ -170,18 +183,17 @@ bool intersect (const element & e1, const element & e2) {
     }
     if (e1.is_seg && !e2.is_seg) {
         for (int i = 0; i < e1.segs.size() - 1; i++) {
-            return intersect_seg_circ(e1.segs[i], e1.segs[i + 1], e2.O,
-                                      e2.rad);
+            return intersect_seg_circ(e1.segs[i], e1.segs[i + 1], e2.O, e2.rad);
         }
     }
     if (!e1.is_seg && e2.is_seg) {
         for (int i = 0; i < e2.segs.size() - 1; i++) {
-            return intersect_seg_circ(e2.segs[i], e2.segs[i + 1], e1.O,
-                                      e1.rad);
+            return intersect_seg_circ(e2.segs[i], e2.segs[i + 1], e1.O, e1.rad);
         }
     }
-    if (!e1.is_seg && !e2.is_seg) return (sq(e1.O, e2.O) < sq(e1.rad +
-                                                              e2.rad) );
+    if (!e1.is_seg && !e2.is_seg) {
+        return (sq(e1.O, e2.O) < sq(e1.rad + e2.rad) );
+    }
 }
 
 // polygon
@@ -245,7 +257,6 @@ Dlist polygon::limits () const {
 polygon create_fh () {
     polygon fh;
     fh.axis = dpair(-3.0, 0);
-
     // Only segments
     // element el;
     // el.add(-4.240,0.514); el.add(-3.514,1.240); el.add(-2.668,1.240);
@@ -255,7 +266,6 @@ polygon create_fh () {
     // el.add(-2.944,-1.339); el.add(-3.682,-1.072); el.add(-4.240,-0.514);
     // el.add(-4.240,0.514);
     // fh.add(el);
-
     // Segments and disks
     fh.add(element(dpair(), 0.967) );  // Head disk
     fh.add(element(dpair(-3.0, 0.990), dpair(0, 0.990) ) );  // Upper segment
@@ -266,7 +276,6 @@ polygon create_fh () {
     set.add(-1.844, -0.990);
     set.add(0, -0.990);
     fh.add(set);
-
     fh.transl(dpair(6.0, 0) );
     return fh;
 }
@@ -274,7 +283,6 @@ polygon create_fh () {
 polygon create_cb () {
     polygon cb;
     cb.axis = dpair(3.0, 0);
-
     // Segments and disks
     cb.add(element(dpair(3.0, 0), 2.095) );
     element set(true);
@@ -312,9 +320,11 @@ void repos_cb_fh (polygon & cb, polygon & fh, const dpair & O, const dpair & G,
                   const PosP & posp) {
     // repositions positioner (central body, ferule holder)
     dpair Gp = G - O;
-    if (sq(posp.r1 + posp.r2) < sq(Gp) ) printf(
-            "Error galaxy out of range of fiber in repos_fiber O.f %f O.s %f G.f %f  G.s %f\n",
-            O.f, O.s, G.f, G.s );
+    if (sq(posp.r1 + posp.r2) < sq(Gp) ) {
+        printf(
+            "Error galaxy out of range of fiber in repos_fiber O.f %f O.s %f G.f %f  G.s %f\n", O.f, O.s, G.f,
+            G.s );
+    }
     Dlist anglesT = angles(Gp, posp);
     dpair theta_ = dpair(anglesT[0], anglesT[1]);
     dpair phi_ = dpair(anglesT[2], anglesT[3]);
@@ -328,7 +338,9 @@ void repos_cb_fh (polygon & cb, polygon & fh, const dpair & O, const dpair & G,
 bool collision (const polygon & p1, const polygon & p2) {
     for (int i = 0; i < p1.elmts.size(); i++) {
         for (int j = 0; j < p2.elmts.size(); j++) {
-            if (intersect(p1.elmts[i], p2.elmts[j]) ) return true;
+            if (intersect(p1.elmts[i], p2.elmts[j]) ) {
+                return true;
+            }
         }
     }
     return false;

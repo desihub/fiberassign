@@ -11,7 +11,6 @@
 #include <vector>
 #include <algorithm>
 #include <exception>
-
 /*
 
    A hierarchical triangular mesh (quad)tree structure for returning
@@ -21,11 +20,8 @@
    Written: 20-May-2014
    Modified:    21-May-2014
  */
-
 extern void myexit (const int flag);
 extern void myexception (const std::exception & e);
-
-
 template <class Ttype> class htmTree {
     protected:
         struct triangle {
@@ -36,7 +32,7 @@ template <class Ttype> class htmTree {
         };
         struct treenode {
             struct triangle t;
-            std::vector <int>    lst;
+            std::vector <int> lst;
             int indx, child[4];
         };
         static const int MaxList = 1024;
@@ -63,8 +59,8 @@ template <class Ttype> class htmTree {
             // average --
             // and the triangle "size".
             for (int i = 0; i < 3; ++i) {
-                t.c[i] = (t.v[3 * 0 + i] + t.v[3 * 1 + i] + t.v[3 * 2 + i]) /
-                         3.;
+                t.c[i] = (t.v[3 * 0 + i] + t.v[3 * 1 + i]
+                    + t.v[3 * 2 + i]) / 3.;
             }
             unitize(t.c);
             double cmin = 1;
@@ -84,61 +80,27 @@ template <class Ttype> class htmTree {
 
         bool in_triangle (const Ttype & P, const struct triangle tt) const {
             // True if P lies in triangle tt.
-            if ( P.nhat[0] * (tt.v[3 * 0 + 1] * tt.v[3 * 1 + 2] - tt.v[3 * 0 +
-                                                                       2] *
-                              tt.v[3 * 1 + 1]) + P.nhat[1] * (tt.v[3 * 0 + 2] *
-                                                              tt.v[3 * 1 +
-                                                                   0
-                                                              ] - tt.v[3 * 0 +
-                                                                       0] *
-                                                              tt.v[3 * 1 +
-                                                                   2]) +
-                 P.nhat[2] * (tt.v[3 * 0 +
-                                   0
-                              ]
-                              *
-                              tt
-                              .
-                              v[3 * 1 + 1] - tt.v[3 * 0 + 1] * tt.v[3 * 1 +
-                                                                    0]) >
-                 0) return (false);
-            if ( P.nhat[0] * (tt.v[3 * 1 + 1] * tt.v[3 * 2 + 2] - tt.v[3 * 1 +
-                                                                       2] *
-                              tt.v[3 * 2 + 1]) + P.nhat[1] * (tt.v[3 * 1 + 2] *
-                                                              tt.v[3 * 2 +
-                                                                   0
-                                                              ] - tt.v[3 * 1 +
-                                                                       0] *
-                                                              tt.v[3 * 2 +
-                                                                   2]) +
-                 P.nhat[2] * (tt.v[3 * 1 +
-                                   0
-                              ]
-                              *
-                              tt
-                              .
-                              v[3 * 2 + 1] - tt.v[3 * 1 + 1] * tt.v[3 * 2 +
-                                                                    0]) >
-                 0) return (false);
-            if ( P.nhat[0] * (tt.v[3 * 2 + 1] * tt.v[3 * 0 + 2] - tt.v[3 * 2 +
-                                                                       2] *
-                              tt.v[3 * 0 + 1]) + P.nhat[1] * (tt.v[3 * 2 + 2] *
-                                                              tt.v[3 * 0 +
-                                                                   0
-                                                              ] - tt.v[3 * 2 +
-                                                                       0] *
-                                                              tt.v[3 * 0 +
-                                                                   2]) +
-                 P.nhat[2] * (tt.v[3 * 2 +
-                                   0
-                              ]
-                              *
-                              tt
-                              .
-                              v[3 * 0 + 1] - tt.v[3 * 2 + 1] * tt.v[3 * 0 +
-                                                                    0]) >
-                 0) return (false);
-            return (true);
+            if ( P.nhat[0] *
+                 (tt.v[3 * 0 + 1] * tt.v[3 * 1 + 2] - tt.v[3 * 0 + 2] *
+                  tt.v[3 * 1 + 1]) + P.nhat[1] *
+                 (tt.v[3 * 0 + 2] * tt.v[3 * 1 + 0] - tt.v[3 * 0 + 0] *
+                  tt.v[3 * 1 + 2]) + P.nhat[2] *
+                 (tt.v[3 * 0 + 0] * tt.v[3 * 1 + 1] - tt.v[3 * 0 + 1] *
+                  tt.v[3 * 1 + 0]) > 0) return (false);
+            if ( P.nhat[0] *
+                 (tt.v[3 * 1 + 1] * tt.v[3 * 2 + 2] - tt.v[3 * 1 + 2] *
+                  tt.v[3 * 2 + 1]) + P.nhat[1] *
+                 (tt.v[3 * 1 + 2] * tt.v[3 * 2 + 0] - tt.v[3 * 1 + 0] *
+                  tt.v[3 * 2 + 2]) + P.nhat[2] *
+                 (tt.v[3 * 1 + 0] * tt.v[3 * 2 + 1] - tt.v[3 * 1 + 1] *
+                  tt.v[3 * 2 + 0]) > 0) return (false);
+            if ( P.nhat[0] *
+                 (tt.v[3 * 2 + 1] * tt.v[3 * 0 + 2] - tt.v[3 * 2 + 2] *
+                  tt.v[3 * 0 + 1]) + P.nhat[1] *
+                 (tt.v[3 * 2 + 2] * tt.v[3 * 0 + 0] - tt.v[3 * 2 + 0] *
+                  tt.v[3 * 0 + 2]) + P.nhat[2] *
+                 (tt.v[3 * 2 + 0] * tt.v[3 * 0 + 1] - tt.v[3 * 2 + 1] *
+                  tt.v[3 * 0 + 0]) > 0) return (false); return (true);
         }
 
         int which_child (const Ttype & P, const int cur) const {
@@ -169,109 +131,122 @@ template <class Ttype> class htmTree {
             // Creates the 4 children of node nn, having them point to -2.
             struct treenode tn;
             // Child 0.
-
             // Vertex 0 is the same.
             for (int i = 0; i < 3; ++i) {
                 tn.t.v[3 * 0 + i] = T[nn].t.v[3 * 0 + i];
             }
             unitize(&tn.t.v[0]);
-
             // Vertex 1 is midway between 0 & 1.
             for (int i = 0; i < 3; ++i) {
-                tn.t.v[3 * 1 + i] = (T[nn].t.v[3 * 0 + i] + T[nn].t.v[3 * 1 +
-                                                                      i]) / 2.;
+                tn.t.v[3 * 1 + i] =
+                    (T[nn].t.v[3 * 0 + i] + T[nn].t.v[3 * 1 + i]) / 2.;
             }
             unitize(&tn.t.v[3]);
-
             // Vertex 2 is midway between 0 & 2.
             for (int i = 0; i < 3; ++i) {
-                tn.t.v[3 * 2 + i] = (T[nn].t.v[3 * 0 + i] + T[nn].t.v[3 * 2 +
-                                                                      i]) / 2.;
+                tn.t.v[3 * 2 + i] =
+                    (T[nn].t.v[3 * 0 + i] + T[nn].t.v[3 * 2 + i]) / 2.;
             }
             unitize(&tn.t.v[6]);
             set_center_size(tn.t);
-            for (int i = 0; i < 4; ++i) { tn.child[i] = -1;} tn.indx = -2;
+            for (int i = 0; i < 4; ++i) {
+                tn.child[i] = -1;
+            }
+            tn.indx = -2;
             T[nn].child[0] = T.size();
-            try {T.push_back(tn);} catch (std::exception & e) {myexception(e);}
-
+            try {
+                T.push_back(tn);
+            } catch (std::exception & e) {
+                myexception(e);
+            }
             // Child 1.
-
             // Vertex 0 is midway between 0 & 1.
             for (int i = 0; i < 3; ++i) {
-                tn.t.v[3 * 0 + i] = (T[nn].t.v[3 * 0 + i] + T[nn].t.v[3 * 1 +
-                                                                      i]) / 2.;
+                tn.t.v[3 * 0 + i] =
+                    (T[nn].t.v[3 * 0 + i] + T[nn].t.v[3 * 1 + i]) / 2.;
             }
             unitize(&tn.t.v[0]);
-
             // Vertex 1 is the same
             for (int i = 0; i < 3; ++i) {
                 tn.t.v[3 * 1 + i] = T[nn].t.v[3 * 1 + i];
             }
             unitize(&tn.t.v[3]);
-
             // Vertex 2 is midway between 1 & 2.
             for (int i = 0; i < 3; ++i) {
-                tn.t.v[3 * 2 + i] = (T[nn].t.v[3 * 1 + i] + T[nn].t.v[3 * 2 +
-                                                                      i]) / 2.;
+                tn.t.v[3 * 2 + i] =
+                    (T[nn].t.v[3 * 1 + i] + T[nn].t.v[3 * 2 + i]) / 2.;
             }
             unitize(&tn.t.v[6]);
             set_center_size(tn.t);
-            for (int i = 0; i < 4; ++i) { tn.child[i] = -1;} tn.indx = -2;
+            for (int i = 0; i < 4; ++i) {
+                tn.child[i] = -1;
+            }
+            tn.indx = -2;
             T[nn].child[1] = T.size();
-            try {T.push_back(tn);} catch (std::exception & e) {myexception(e);}
-
+            try {
+                T.push_back(tn);
+            } catch (std::exception & e) {
+                myexception(e);
+            }
             // Child 2.
-
             // Vertex 0 is midway between 0 & 2.
             for (int i = 0; i < 3; ++i) {
-                tn.t.v[3 * 0 + i] = (T[nn].t.v[3 * 0 + i] + T[nn].t.v[3 * 2 +
-                                                                      i]) / 2.;
+                tn.t.v[3 * 0 + i] =
+                    (T[nn].t.v[3 * 0 + i] + T[nn].t.v[3 * 2 + i]) / 2.;
             }
             unitize(&tn.t.v[0]);
-
             // Vertex 1 is midway between 1 & 2.
             for (int i = 0; i < 3; ++i) {
-                tn.t.v[3 * 1 + i] = (T[nn].t.v[3 * 1 + i] + T[nn].t.v[3 * 2 +
-                                                                      i]) / 2.;
+                tn.t.v[3 * 1 + i] =
+                    (T[nn].t.v[3 * 1 + i] + T[nn].t.v[3 * 2 + i]) / 2.;
             }
             unitize(&tn.t.v[3]);
-
             // Vertex 2 is the same.
             for (int i = 0; i < 3; ++i) {
                 tn.t.v[3 * 2 + i] = T[nn].t.v[3 * 2 + i];
             }
             unitize(&tn.t.v[6]);
             set_center_size(tn.t);
-            for (int i = 0; i < 4; ++i) { tn.child[i] = -1;} tn.indx = -2;
+            for (int i = 0; i < 4; ++i) {
+                tn.child[i] = -1;
+            }
+            tn.indx = -2;
             T[nn].child[2] = T.size();
-            try {T.push_back(tn);} catch (std::exception & e) {myexception(e);}
-
+            try {
+                T.push_back(tn);
+            } catch (std::exception & e) {
+                myexception(e);
+            }
             // Child 3.
-
             // Vertex 0 is midway between 1 & 2.
             for (int i = 0; i < 3; ++i) {
-                tn.t.v[3 * 0 + i] = (T[nn].t.v[3 * 1 + i] + T[nn].t.v[3 * 2 +
-                                                                      i]) / 2.;
+                tn.t.v[3 * 0 + i] =
+                    (T[nn].t.v[3 * 1 + i] + T[nn].t.v[3 * 2 + i]) / 2.;
             }
             unitize(&tn.t.v[0]);
-
             // Vertex 1 is midway between 0 & 2.
             for (int i = 0; i < 3; ++i) {
-                tn.t.v[3 * 1 + i] = (T[nn].t.v[3 * 0 + i] + T[nn].t.v[3 * 2 +
-                                                                      i]) / 2.;
+                tn.t.v[3 * 1 + i] =
+                    (T[nn].t.v[3 * 0 + i] + T[nn].t.v[3 * 2 + i]) / 2.;
             }
             unitize(&tn.t.v[3]);
-
             // Vertex 2 is midway between 0 & 1.
             for (int i = 0; i < 3; ++i) {
-                tn.t.v[3 * 2 + i] = (T[nn].t.v[3 * 0 + i] + T[nn].t.v[3 * 1 +
-                                                                      i]) / 2.;
+                tn.t.v[3 * 2 + i] =
+                    (T[nn].t.v[3 * 0 + i] + T[nn].t.v[3 * 1 + i]) / 2.;
             }
             unitize(&tn.t.v[6]);
             set_center_size(tn.t);
-            for (int i = 0; i < 4; ++i) { tn.child[i] = -1;} tn.indx = -2;
+            for (int i = 0; i < 4; ++i) {
+                tn.child[i] = -1;
+            }
+            tn.indx = -2;
             T[nn].child[3] = T.size();
-            try {T.push_back(tn);} catch (std::exception & e) {myexception(e);}
+            try {
+                T.push_back(tn);
+            } catch (std::exception & e) {
+                myexception(e);
+            }
         }
 
         void set_base (void) {
@@ -289,7 +264,10 @@ template <class Ttype> class htmTree {
             tn.t.v[7] =  0;
             tn.t.v[8] =  0;
             set_center_size(tn.t);
-            for (int i = 0; i < 4; ++i) { tn.child[i] = -1;} tn.indx = -2;
+            for (int i = 0; i < 4; ++i) {
+                tn.child[i] = -1;
+            }
+            tn.indx = -2;
             T.push_back(tn);
             tn.t.v[0] =  0;
             tn.t.v[1] =  0;
@@ -301,7 +279,10 @@ template <class Ttype> class htmTree {
             tn.t.v[7] =  1;
             tn.t.v[8] =  0;
             set_center_size(tn.t);
-            for (int i = 0; i < 4; ++i) { tn.child[i] = -1;} tn.indx = -2;
+            for (int i = 0; i < 4; ++i) {
+                tn.child[i] = -1;
+            }
+            tn.indx = -2;
             T.push_back(tn);
             tn.t.v[0] =  0;
             tn.t.v[1] =  0;
@@ -313,7 +294,10 @@ template <class Ttype> class htmTree {
             tn.t.v[7] =  0;
             tn.t.v[8] =  0;
             set_center_size(tn.t);
-            for (int i = 0; i < 4; ++i) { tn.child[i] = -1;} tn.indx = -2;
+            for (int i = 0; i < 4; ++i) {
+                tn.child[i] = -1;
+            }
+            tn.indx = -2;
             T.push_back(tn);
             tn.t.v[0] =  0;
             tn.t.v[1] =  0;
@@ -325,7 +309,10 @@ template <class Ttype> class htmTree {
             tn.t.v[7] = -1;
             tn.t.v[8] =  0;
             set_center_size(tn.t);
-            for (int i = 0; i < 4; ++i) { tn.child[i] = -1;} tn.indx = -2;
+            for (int i = 0; i < 4; ++i) {
+                tn.child[i] = -1;
+            }
+            tn.indx = -2;
             T.push_back(tn);
             tn.t.v[0] =  0;
             tn.t.v[1] =  0;
@@ -337,7 +324,10 @@ template <class Ttype> class htmTree {
             tn.t.v[7] =  1;
             tn.t.v[8] =  0;
             set_center_size(tn.t);
-            for (int i = 0; i < 4; ++i) { tn.child[i] = -1;} tn.indx = -2;
+            for (int i = 0; i < 4; ++i) {
+                tn.child[i] = -1;
+            }
+            tn.indx = -2;
             T.push_back(tn);
             tn.t.v[0] =  0;
             tn.t.v[1] =  0;
@@ -349,7 +339,10 @@ template <class Ttype> class htmTree {
             tn.t.v[7] =  0;
             tn.t.v[8] =  0;
             set_center_size(tn.t);
-            for (int i = 0; i < 4; ++i) { tn.child[i] = -1;} tn.indx = -2;
+            for (int i = 0; i < 4; ++i) {
+                tn.child[i] = -1;
+            }
+            tn.indx = -2;
             T.push_back(tn);
             tn.t.v[0] =  0;
             tn.t.v[1] =  0;
@@ -361,7 +354,10 @@ template <class Ttype> class htmTree {
             tn.t.v[7] = -1;
             tn.t.v[8] =  0;
             set_center_size(tn.t);
-            for (int i = 0; i < 4; ++i) { tn.child[i] = -1;} tn.indx = -2;
+            for (int i = 0; i < 4; ++i) {
+                tn.child[i] = -1;
+            }
+            tn.indx = -2;
             T.push_back(tn);
             tn.t.v[0] =  0;
             tn.t.v[1] =  0;
@@ -373,7 +369,10 @@ template <class Ttype> class htmTree {
             tn.t.v[7] =  0;
             tn.t.v[8] =  0;
             set_center_size(tn.t);
-            for (int i = 0; i < 4; ++i) { tn.child[i] = -1;} tn.indx = -2;
+            for (int i = 0; i < 4; ++i) {
+                tn.child[i] = -1;
+            }
+            tn.indx = -2;
             T.push_back(tn);
         }
 
@@ -393,7 +392,9 @@ template <class Ttype> class htmTree {
                             // append.
                             try {
                                 T[cur].lst.push_back(i);
-                            } catch (std::exception & e) {myexception(e);}
+                            } catch (std::exception & e) {
+                                myexception(e);
+                            }
                             notput = false;
                         } else if ( ( T[cur].indx == -1) &&
                                     ( T[cur].lst.size() == 0) ) {
@@ -421,7 +422,9 @@ template <class Ttype> class htmTree {
                                 try {
                                     T[cur].lst.push_back(pid);
                                     T[cur].lst.push_back(i);
-                                } catch (std::exception & e) {myexception(e);}
+                                } catch (std::exception & e) {
+                                    myexception(e);
+                                }
                                 notput = false;
                             }
                         }
@@ -431,7 +434,8 @@ template <class Ttype> class htmTree {
         }
 
     public:
-        ~htmTree (void) {} // Do nothing.
+        ~htmTree () {} // Do nothing.
+
         void load (const std::vector <Ttype> & P) {
             // Load an existing tree with objects.
             set_base();
@@ -440,7 +444,7 @@ template <class Ttype> class htmTree {
             }
         }
 
-        htmTree (void) {
+        htmTree () {
             // Set up an empty tree.
             min_node_size = 1e-3;
             set_base();
@@ -458,19 +462,21 @@ template <class Ttype> class htmTree {
             int maxlen =  -1, totlen = 0;
             for (int i = 0; i < T.size(); i++) {
                 double lsiz = T[i].t.syze;
-
                 // Need to do this for some reason.
                 int llen = T[i].lst.size();
-                if (minsize > lsiz) minsize = lsiz; if (maxlen  < llen) {
+                if (minsize > lsiz) {
+                    minsize = lsiz;
+                }
+                if (maxlen  < llen) {
                     maxlen = llen;
                     smlsize = lsiz;
                 }
                 totlen += llen;
             }
             std::cout << "# Tree has " << T.size() << " nodes." << std::endl;
-            std::cout << "# Memory load is " << T.size() * sizeof(struct
-                                                                  treenode) /
-                1024. / 1024. << " MB (excluding lists)." << std::endl;
+            std::cout << "# Memory load is " << T.size() *
+                sizeof(struct treenode) / 1024. / 1024. <<
+                " MB (excluding lists)." << std::endl;
             std::cout << "# Longest list length is " << maxlen << std::endl;
             std::cout << "# Occurs for node of size " << smlsize << std::endl;
             std::cout << "# Total cumulative list length is " << totlen <<
@@ -483,24 +489,26 @@ template <class Ttype> class htmTree {
         void which_base (const Ttype & P) {
             // Prints which base(s) point P lies in.
             for (int ibase = 0; ibase < 8; ++ibase) {
-                if (in_triangle(P, T[ibase].t) ) std::cout << std::fixed <<
-                        std::setw(8) << std::setprecision(4) << P.nhat[0] <<
+                if (in_triangle(P, T[ibase].t) ) {
+                    std::cout << std::fixed << std::setw(8) <<
+                        std::setprecision(4) << P.nhat[0] << std::fixed <<
+                        std::setw(8) << std::setprecision(4) << P.nhat[1] <<
                         std::fixed << std::setw(8) << std::setprecision(4) <<
-                        P.nhat[1] << std::fixed << std::setw(8) <<
-                        std::setprecision(
-                        4) << P.nhat[2] << std::fixed << std::setw(8) <<
-                        ibase <<
+                        P.nhat[2] << std::fixed << std::setw(8) << ibase <<
                         std::endl;
+                }
             }
         }
 
-        std::vector <int> near (const std::vector <Ttype> & P, const double
-                                nhat[], const double rad) const {
+        std::vector <int> near (const std::vector <Ttype> & P,
+                                const double nhat[], const double rad) const {
             // Returns a list (vector) of indices of objects "near" nhat.
             // Distances refer to \theta, not 2sin(theta/2).
             const double cosr = cos(rad);
             std::vector <int> clist, nbr;
-            for (int i = 0; i < 8; ++i) { clist.push_back(i);}
+            for (int i = 0; i < 8; ++i) {
+                clist.push_back(i);
+            }
             while (clist.size() > 0) {
                 int cur = clist.back();
                 clist.pop_back();
@@ -511,28 +519,36 @@ template <class Ttype> class htmTree {
                     for (int i = 0; i < 3; i++) {
                         dotv += nhat[i] * P[indx].nhat[i];
                     }
-                    if (dotv < 1) dst = acos(dotv);
+                    if (dotv < 1) {
+                        dst = acos(dotv);
+                    }
                     if (dst < rad) {
-                        try {nbr.push_back(indx);} catch (std::exception & e) {
+                        try {
+                            nbr.push_back(indx);
+                        } catch (std::exception & e) {
                             myexception(e);
                         }
                     }
-                } else if ( ( T[cur].indx == -1) && ( T[cur].lst.size() >
-                                                      0) ) {
+                } else if ( ( T[cur].indx == -1) && ( T[cur].lst.size() > 0) ) {
                     // I am a leaf node with a list.
                     for (int j = 0; j < T[cur].lst.size(); ++j) {
                         double dotv = 0, dst = 0;
                         for (int i = 0; i < 3; i++) {
                             dotv += nhat[i] * P[T[cur].lst[j]].nhat[i];
                         }
-                        if (dotv < 1) dst = acos(dotv);
+                        if (dotv < 1) {
+                            dst = acos(dotv);
+                        }
                         if (dst < rad) {
-                            try {nbr.push_back(T[cur].lst[j]);
-                            } catch (std::exception & e) {myexception(e);}
+                            try {
+                                nbr.push_back(T[cur].lst[j]);
+                            } catch (std::exception & e) {
+                                myexception(e);
+                            }
                         }
                     }
-                } else if ( ( T[cur].indx == -1) && ( T[cur].lst.size() ==
-                                                      0) ) {
+                } else if ( ( T[cur].indx == -1) &&
+                            ( T[cur].lst.size() == 0) ) {
                     // I am an internal node, with children.
                     // Compute "distance" from nhat to center of triangle.
                     double dotv = 0;
@@ -542,10 +558,11 @@ template <class Ttype> class htmTree {
                     // and subtract "size" of triangle.
                     // If the smallest distance lies within search, open ...
                     double dmin = acos(dotv) - T[cur].t.syze;
-                    if ( ( dotv >= 1) || ( dmin < rad) )
+                    if ( ( dotv >= 1) || ( dmin < rad) ) {
                         for (int i = 0; i < 4; ++i) {
                             clist.push_back(T[cur].child[i]);
                         }
+                    }
                 }
             }
             return (nbr);

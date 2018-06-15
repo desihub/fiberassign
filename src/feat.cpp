@@ -54,7 +54,6 @@ Feat::Feat () {
 void Feat::readInputFile (const char file[]) {
     const int Mc = 512;  // Max chars per line
     char delimiter = ' ';
-
     std::ifstream fIn;
     fIn.open(file);  // open a file
     if (!fIn.good() ) myexit(1); // Not found
@@ -85,47 +84,47 @@ void Feat::parseCommandLine (int argc, char * * argv) {
             i++;
             Targfile = str(argv[i]);
             i++;
-        } else if (!strcmp(argv[i], "--sky") )    {
+        } else if (!strcmp(argv[i], "--sky") ) {
             i++;
             SkyFfile = str(argv[i]);
             i++;
-        } else if (!strcmp(argv[i], "--stdstar") )    {
+        } else if (!strcmp(argv[i], "--stdstar") ) {
             i++;
             SStarsfile = str(argv[i]);
             i++;
-        } else if (!strcmp(argv[i], "--surveytiles") )    {
+        } else if (!strcmp(argv[i], "--surveytiles") ) {
             i++;
             surveyFile = str(argv[i]);
             i++;
-        } else if (!strcmp(argv[i], "--outdir") )    {
+        } else if (!strcmp(argv[i], "--outdir") ) {
             i++;
             outDir = str(argv[i]);
             i++;
-        } else if (!strcmp(argv[i], "--footprint") )    {
+        } else if (!strcmp(argv[i], "--footprint") ) {
             i++;
             tileFile = str(argv[i]);
             i++;
-        } else if (!strcmp(argv[i], "--positioners") )    {
+        } else if (!strcmp(argv[i], "--positioners") ) {
             i++;
             fibFile = str(argv[i]);
             i++;
-        } else if (!strcmp(argv[i], "--fibstatusfile") )    {
+        } else if (!strcmp(argv[i], "--fibstatusfile") ) {
             i++;
             fibstatusFile = str(argv[i]);
             i++;
-        } else if (!strcmp(argv[i], "--rundate") )    {
+        } else if (!strcmp(argv[i], "--rundate") ) {
             i++;
             runDate = str(argv[i]);
             i++;
-        } else if (!strcmp(argv[i], "--starmask") )    {
+        } else if (!strcmp(argv[i], "--starmask") ) {
             i++;
             StarMask = atol(argv[i]);
             i++;
-        } else if (!strcmp(argv[i], "--help") )    {
+        } else if (!strcmp(argv[i], "--help") ) {
             Usage(argv[0]);
-        } else if (!strcmp(argv[i], "-h") )    {
+        } else if (!strcmp(argv[i], "-h") ) {
             Usage(argv[0]);
-        } else  {
+        } else {
             fprintf (stderr, "\nUnrecognized option: %s\n\n", argv[i]);
             Usage(argv[0]);
         }

@@ -20,16 +20,14 @@
 #include "global.h"
 
 
-int main (int argc, char * * argv) {
+int main (int argc, char ** argv) {
     // argv[1] is the features file
     //// Initializations ---------------------------------------------
     //
     //  M is collection of targets, sky fibers, and standard stars
     //  each target has a priority provided by the mtl file
     //  all targets with the same priority are collected into a class
-
     // check_args(argc);
-
     // t for global, time for local
     Time t, time;
     init_time(t);
@@ -40,6 +38,7 @@ int main (int argc, char * * argv) {
     // F.readInputFile(argv[1]);
     F.parseCommandLine(argc, argv);
     // printFile(argv[1]);
+
     // Read input files for standards, skys and targets.
     // Try to read SS and SF before targets to avoid wasting time if these
     // smaller files can't be read.
@@ -47,7 +46,6 @@ int main (int argc, char * * argv) {
     MTL SStars = read_MTLfile(F.SStarsfile, F, F.StarMask, 0);
     MTL SkyF   = read_MTLfile(F.SkyFfile,   F, 0, 1);
     MTL Targ   = read_MTLfile(F.Targfile,   F, 0, 0);
-
     print_time(time, "# ...read targets  took :");
 
     // combine the three input files
@@ -62,7 +60,6 @@ int main (int argc, char * * argv) {
     std::pair <std::map <long long, int>::iterator, bool> ret;
     for (unsigned i = 0; i < M.size(); ++i) {
         ret = invert_target.insert(std::make_pair(M[i].id, i) );
-
         // check for duplicates (std::map.insert only created keys, fails on
         // duplicate keys)
         if (ret.second == false ) {
@@ -75,56 +72,49 @@ int main (int argc, char * * argv) {
     printf(" Standard Star size %d \n", M.size() );
     M.insert(M.end(), SkyF.begin(), SkyF.end() );
     printf(" Sky Fiber size %d \n", M.size() );
-
     init_time_at(time, "# map position in target list to immutable targetid",
                  t);
-
     init_time_at(time, "# assign priority classes", t);
     F.Ngal = M.size();
     assign_priority_class(M);
     std::vector <int> count_class(M.priority_list.size(), 0);
     for (int i = 0; i < M.size(); ++i) {
-        if (!M[i].SS && !M[i].SF) count_class[M[i].priority_class] += 1;
+        if (!M[i].SS && !M[i].SF) {
+            count_class[M[i].priority_class] += 1;
+        }
     }
     for (int i = 0; i < M.priority_list.size(); ++i) {
         printf("  class  %d  number  %d\n", i, count_class[i]);
     }
     print_time(time, "# ...priority list took :");
-
     init_time_at(time, "# Start positioners", t);
-    // fiber positioners
 
+    // fiber positioners
     F.Npetal = 10;  // spectrometers run 0 to 9 unless pacman
     FP pp = read_fiber_positions(F);
     read_fiber_status(pp, F);
+
     // order the fibers by their fiber number (fib_num) not simply order in
     // list
     // need to fix spectrom (List) and fp
-
     // each fiber has two co-ordinates so divide by two
     F.Nfiber = pp.size();
 
     // fibers per petal = 500
     F.Nfbp = F.Nfiber / F.Npetal;
-
     print_time(time, "# ..posiioners  took :");
-
     init_time_at(time, "# Start plates", t);
 
     // P is original list of plates
     Plates P = read_plate_centers(F);
-
     F.Nplate = P.size();
-
-    printf("# Read %s plate centers from %s and %d fibers from %s\n", f(
-               F.Nplate).c_str(), F.tileFile.c_str(), F.Nfiber,
+    printf("# Read %s plate centers from %s and %d fibers from %s\n",
+           f(F.Nplate).c_str(), F.tileFile.c_str(), F.Nfiber,
            F.fibFile.c_str() );
-
     print_time(time, "# ..plates   took :");
 
     // Computes geometries of cb and fh: pieces of positioner - used to
     // determine possible collisions
-
     F.cb = create_cb();  // cb=central body
     F.fh = create_fh();  // fh=fiber holder
 
@@ -139,7 +129,6 @@ int main (int argc, char * * argv) {
     // For plates/fibers, collect available galaxies; done in parallel  P[plate
     // j].av_gal[k]=[g1,g2,..]
     collect_galaxies_for_all(M, T, P, pp, F);
-
     print_time(time, "# ... took :");  // T.stats();
     init_time_at(time, "# collect available tile-fibers at", t);
 
@@ -150,6 +139,7 @@ int main (int argc, char * * argv) {
     //// Assignment |||||||||||||||||||||||||||||||||||||||||||||||||||
     printf(" Nplate %d  Ngal %d   Nfiber %d \n", F.Nplate, F.Ngal, F.Nfiber);
     Assignment A(M, F);
+
     // Make a plan ----------------------------------------------------
     print_time(t, "# Start assignment at : ");
     simple_assign(M, P, pp, F, A);
@@ -165,7 +155,6 @@ int main (int argc, char * * argv) {
                 // suborder[jused] is jused-th used plate
                 A.suborder.push_back(j);
                 not_done = false;
-
                 // inv_order[j] is -1 unless used
                 A.inv_order[j] = inv_count;
                 inv_count++;
@@ -179,7 +168,6 @@ int main (int argc, char * * argv) {
     // assignments
     // probably should not hard wire the limits i<1, i<3 in redistribute and
     // improve
-
     // more iterations will improve performance slightly
     for (int i = 0; i < 1; i++) {
         redistribute_tf(M, P, pp, F, A, 0);
@@ -188,7 +176,6 @@ int main (int argc, char * * argv) {
         improve(M, P, pp, F, A, 0);
         redistribute_tf(M, P, pp, F, A, 0);
     }
-
     init_time_at(time, "# assign SS and SF ", t);
 
     // try assigning SF and SS before real time assignment
@@ -230,9 +217,9 @@ int main (int argc, char * * argv) {
             }
         }
     }
+
     init_time_at(time, "# count SS and SF ", t);
     printf(" Totals SS   %4d    SF   %4d", total_used_SS, total_used_SF);
-
     for (int pr = 0; pr < M.priority_list.size(); ++pr) {
         printf(" class %2d   %5d", pr, total_used_by_class[pr]);
     }
@@ -243,8 +230,6 @@ int main (int argc, char * * argv) {
         int j = A.suborder[jused];
         fa_write(j, F.outDir, M, P, pp, F, A);  // Write output
     }
-
     print_time(t, "# Finished !... in");
-
     return (0);
 }

@@ -13,7 +13,6 @@
 #include <sys/time.h>
 #include "misc.h"
 
-
 // pair ------------------------------------------------------
 pair::pair () {
     f = -1;
@@ -31,7 +30,9 @@ void pair::setnull () {
 }
 
 bool pair::isnull () const {
-    if ( (f == -1) && (s == -1) ) return true;
+    if ( (f == -1) && (s == -1) ) {
+        return true;
+    }
     return false;
 }
 
@@ -54,19 +55,24 @@ dpair::dpair (double a, double b) {
 dpair operator+ (dpair const & a, dpair const & b) {
     return dpair(a.f + b.f, a.s + b.s);
 }
+
 dpair operator- (dpair const & a, dpair const & b) {
     return dpair(a.f - b.f, a.s - b.s);
 }
+
 dpair operator- (dpair const & a, double b) {
     return dpair(a.f - b, a.s - b);
 }
+
 void dpair::print () const {
     printf("(%f,%f) ", f, s);
     fl();
 }
 
 bool dpair::isnull () const {
-    if ( (f == 0) && (s == 0) ) return true;
+    if ( (f == 0) && (s == 0) ) {
+        return true;
+    }
     return false;
 }
 
@@ -104,6 +110,7 @@ double scalar_prod (dpair p, dpair q, dpair d) {
 }
 
 // List ------------------------------------------------------
+
 List Null () {
     List L;
     return L;
@@ -208,21 +215,27 @@ void print_Plist (const Plist & L, str s) {
     printf("\n");
 }
 
-bool isnull (const List & L) {  // Test if the list is null
+bool isnull (const List & L) {
+    // Test if the list is null
     for (int i = 0; i < L.size(); i++) {
-        if (L[i] != 0) return false;
+        if (L[i] != 0) {
+            return false;
+        }
     }
     return true;
 }
 
 bool isnull (const Slist & L) {
     for (int i = 0; i < L.size(); i++) {
-        if (L[i] != "") return false;
+        if (L[i] != "") {
+            return false;
+        }
     }
     return true;
 }
 
-int sumlist (const List & L) {  // Sum of the list
+int sumlist (const List & L) {
+    // Sum of the list
     int s(0);
     for (int i = 0; i < L.size(); i++) {
         s += L[i];
@@ -241,7 +254,9 @@ double sumlist (const Dlist & L) {
 int max (const List & L) {
     int m(-1e8);
     for (int i = 0; i < L.size(); i++) {
-        if (L[i] > m) m = L[i];
+        if (L[i] > m) {
+            m = L[i];
+        }
     }
     return m;
 }
@@ -263,17 +278,25 @@ Dlist percents (const Dlist & L, double n) {
 }
 
 bool isfound (int n, const List & L) {
-    if (L.size() == 0) return false;
+    if (L.size() == 0) {
+        return false;
+    }
     for (int i = 0; i < L.size(); i++) {
-        if (L[i] == n) return true;
+        if (L[i] == n) {
+            return true;
+        }
     }
     return false;
 }
 
 int isfound_pos (double n, const Dlist & L) {
-    if (L.size() == 0) return -1;
+    if (L.size() == 0) {
+        return -1;
+    }
     for (int i = 0; i < L.size(); i++) {
-        if (L[i] == n) return i;
+        if (L[i] == n) {
+            return i;
+        }
     }
     return -1;
 }
@@ -281,16 +304,25 @@ int isfound_pos (double n, const Dlist & L) {
 int isfound (pair p, const Plist & L) {
     int j = p.f;
     int k = p.s;
-    if (L.size() == 0) return -1;
+    if (L.size() == 0) {
+        return -1;
+    }
     for (int i = 0; i < L.size(); i++) {
-        if ( ( L[i].f == j) && ( L[i].s == k) ) return i; }
+        if ( ( L[i].f == j) && ( L[i].s == k) ) {
+            return i;
+        }
+    }
     return -1;
 }
 
 bool isfound (str n, const Slist & L) {
-    if (L.size() == 0) return false;
+    if (L.size() == 0) {
+        return false;
+    }
     for (int i = 0; i < L.size(); i++) {
-        if (L[i] == n) return true;
+        if (L[i] == n) {
+            return true;
+        }
     }
     return false;
 }
@@ -299,7 +331,9 @@ List values (const List & L) {
     List l;
     for (int i = 0; i < L.size(); i++) {
         int n = L[i];
-        if (!isfound(n, l) ) l.push_back(n);
+        if (!isfound(n, l) ) {
+            l.push_back(n);
+        }
     }
     return l;
 }
@@ -307,20 +341,22 @@ List values (const List & L) {
 void print_hist (str s, int i0, List hist, bool latex) {
     str et = latex ? " & " : " | ";
     str slash = latex ? "\\\\ \n" : "\n";
-
     str rrr(10, 'r');
     if (latex) {
         printf(
             "\\begin{table}[H]\\begin{center} \n \\caption{%s (interval %d)} \n \\begin{tabular}{%s}\n",
             s.c_str(), i0, rrr.c_str() );
-    } else { printf("%s (interval %d)\n", s.c_str(), i0);}
-
+    } else {
+        printf("%s (interval %d)\n", s.c_str(), i0);
+    }
     int size = hist.size();
     for (int i = 0; i < size; i++) {
         str s = ( (i + 1) % 10 == 0 || i == size - 1) ? slash : et;
         printf("%4s %s", f(hist[i]).c_str(), s.c_str() );
     }
-    if (latex) printf("\\end{tabular}\\end{center}\\end{table} \n");
+    if (latex) {
+        printf("\\end{tabular}\\end{center}\\end{table} \n");
+    }
     fl();
 }
 
@@ -333,7 +369,6 @@ void print_mult_table_latex (str s, str ss, Table T, int multX) {
         fl();
         myexit(1);
     }
-
     fprintf(pFile, "x ");
     for (int i = 0; i < T.size(); i++) {
         fprintf(pFile, "%d ", i);
@@ -343,7 +378,9 @@ void print_mult_table_latex (str s, str ss, Table T, int multX) {
     for (int j = 0; j < maxrow; j++) {
         fprintf(pFile, "%d ", j * multX);
         for (int i = 0; i < T.size(); i++) {
-            if (j < T[i].size() ) {fprintf(pFile, "%d ", T[i][j]);} else {
+            if (j < T[i].size() ) {
+                fprintf(pFile, "%d ", T[i][j]);
+            } else {
                 fprintf(pFile, "0 ");
             }
         }
@@ -361,7 +398,6 @@ void print_mult_Dtable_latex (str s, str ss, Dtable T, double multX) {
         fl();
         myexit(1);
     }
-
     fprintf(pFile, "x ");
     for (int i = 0; i < T.size(); i++) {
         fprintf(pFile, "%d ", i);
@@ -371,7 +407,9 @@ void print_mult_Dtable_latex (str s, str ss, Dtable T, double multX) {
     for (int j = 0; j < maxrow; j++) {
         fprintf(pFile, "%f ", j * multX);
         for (int i = 0; i < T.size(); i++) {
-            if (j < T[i].size() ) {fprintf(pFile, "%f ", T[i][j]);} else {
+            if (j < T[i].size() ) {
+                fprintf(pFile, "%f ", T[i][j]);
+            } else {
                 fprintf(pFile, "0 ");
             }
         }
@@ -383,11 +421,9 @@ void print_mult_Dtable_latex (str s, str ss, Dtable T, double multX) {
 void erase (int i, List & L) {
     L.erase (L.begin() + i);
 }
-
 void erase (int i, Plist & L) {
     L.erase (L.begin() + i);
 }
-
 List complementary (int size, const List & L) {
     List l = initList(size);
     for (int i = 0; i < size; i++) {
@@ -513,7 +549,9 @@ int max_row (const Table & T) {
     int max(0);
     for (int i = 0; i < T.size(); i++) {
         int c = T[i].size();
-        if (c > max) max = c;
+        if (c > max) {
+            max = c;
+        }
     }
     return max;
 }
@@ -522,27 +560,32 @@ int max_row (const Dtable & T) {
     int max(0);
     for (int i = 0; i < T.size(); i++) {
         int c = T[i].size();
-        if (c > max) max = c;
+        if (c > max) {
+            max = c;
+        }
     }
     return max;
 }
 
-void print_table (str s, const Table & T, bool latex, Slist labels) {
+void print_table (str s, const Table & T, bool latex,
+                  Slist labels) {
     int SIZE = 7;
     int MAXSIZE = 10;
     int MAXLINE = 50;
     int STANDARDSIZE = 1;
-
     bool square(true);
     int l = T.size();
-    if (MAXLINE < l) printf(
-            "Cautious, table is of size %d, only %d will be displayed \n", l,
-            MAXLINE);
+    if (MAXLINE < l) {
+        printf(
+        "Cautious, table is of size %d, only %d will be displayed \n", l,
+        MAXLINE);
+    }
     int cc = T[0].size();
     for (int i = 0; i < l; i++) {
-        if (T[i].size() != cc) square = false;
+        if (T[i].size() != cc) {
+            square = false;
+        }
     }
-
     int max = max_row(T);
     List maxRow = initList(max);
     if (square) {
@@ -554,15 +597,14 @@ void print_table (str s, const Table & T, bool latex, Slist labels) {
             }
         }
         maxRow = max_on_row(sizestr);
-    } else {maxRow = initList(max, STANDARDSIZE);}
-
+    } else {
+        maxRow = initList(max, STANDARDSIZE);
+    }
     str et = latex ? " &" : "|";
     str slash = latex ? " \\\\ \n" : "\n";
-
     str rrr(T[0].size(), 'r');
     printf("%s", s.c_str() );
     printf("\n");
-
     bool labelsB = isnull(labels);
     str space(6, ' ');
     printf("%s", space.c_str() );
@@ -584,22 +626,25 @@ void print_table (str s, const Table & T, bool latex, Slist labels) {
     printf("\n");
 }
 
-void print_table (str s, const Dtable & T, bool latex, Slist labels) {
+void print_table (str s, const Dtable & T, bool latex,
+                  Slist labels) {
     int SIZE = 7;
     int MAXSIZE = 10;
     int MAXLINE = 50;
     int STANDARDSIZE = 1;
-
     bool square(true);
     int l = T.size();
-    if (MAXLINE < l) printf(
-            "Cautious, table is of size %d, only %d will be displayed \n", l,
-            MAXLINE);
+    if (MAXLINE < l) {
+        printf(
+        "Cautious, table is of size %d, only %d will be displayed \n", l,
+        MAXLINE);
+    }
     int cc = T[0].size();
     for (int i = 0; i < l; i++) {
-        if (T[i].size() != cc) square = false;
+        if (T[i].size() != cc) {
+            square = false;
+        }
     }
-
     int max = max_row(T);
     List maxRow = initList(max);
     if (square) {
@@ -611,19 +656,17 @@ void print_table (str s, const Dtable & T, bool latex, Slist labels) {
             }
         }
         maxRow = max_on_row(sizestr);
-    } else {maxRow = initList(max, STANDARDSIZE);}
-
+    } else {
+        maxRow = initList(max, STANDARDSIZE);
+    }
     str et = latex ? " &" : "|";
     str slash = latex ? " \\\\ \n" : "\n";
-
     str rrr(T[0].size(), 'r');
     printf("%s", s.c_str() );
     printf("\n");
-
     bool labelsB = isnull(labels);
     str space(6, ' ');
     printf("%s", space.c_str() );
-
     printf("Obs. made ");
     for (int j = 0; j < 6; j++) {
         str s = (j == max - 1) ? slash : et;
@@ -685,11 +728,17 @@ List histogram (const Table & T, int interval) {
         for (int j = 0; j < c; j++) {
             int a = T[i][j];
             if (a != -1) {
-                if (a < 0) { printf("Error in print_hist, neg\n"); fl(); }
+                if (a < 0) {
+                    printf("Error in print_hist, neg\n");
+                    fl();
+                }
                 int n = floor(a / interval);
                 // printf("%d %d %d %d-",n,a,i,j);
                 // makes histogram size expand to include last element
-                if (n >= hist.size() ) { hist.resize(n + 1); hist[n] = 0;}
+                if (n >= hist.size() ) {
+                    hist.resize(n + 1);
+                    hist[n] = 0;
+                }
                 hist[n]++;
             }
         }
@@ -703,9 +752,15 @@ List histogram (const List & L, int interval) {
     for (int i = 0; i < l; i++) {
         int a = L[i];
         if (a != -1) {
-            if (a < 0) { printf("Error in print_hist, neg\n"); fl(); }
+            if (a < 0) {
+                printf("Error in print_hist, neg\n");
+                fl();
+            }
             int n = floor(a / interval);
-            if (n >= hist.size() ) { hist.resize(n + 1); hist[n] = 0;}
+            if (n >= hist.size() ) {
+                hist.resize(n + 1);
+                hist[n] = 0;
+            }
             hist[n]++;
         }
     }
@@ -718,9 +773,15 @@ Dlist histogram (const Dlist & L, double interval) {
     for (int i = 0; i < l; i++) {
         double a = L[i];
         if (a != -1) {
-            if (a < 0) { printf("Error in print_hist, neg\n"); fl(); }
+            if (a < 0) {
+                printf("Error in print_hist, neg\n");
+                fl();
+            }
             int n = floor(a / interval);
-            if (n >= hist.size() ) { hist.resize(n + 1); hist[n] = 0;}
+            if (n >= hist.size() ) {
+                hist.resize(n + 1);
+                hist[n] = 0;
+            }
             hist[n]++;
         }
     }
@@ -733,9 +794,15 @@ Dlist histogram (const Dplist & L, double interval) {
     for (int i = 0; i < l; i++) {
         double a = L[i].f;
         if (a != -1) {
-            if (a < 0) { printf("Error in print_hist, neg\n"); fl(); }
+            if (a < 0) {
+                printf("Error in print_hist, neg\n");
+                fl();
+            }
             int n = floor(a / interval);
-            if (n >= hist.size() ) { hist.resize(n + 1); hist[n] = 0;}
+            if (n >= hist.size() ) {
+                hist.resize(n + 1);
+                hist[n] = 0;
+            }
             hist[n] += L[i].s;
         }
     }
@@ -767,7 +834,9 @@ List max_on_row (const Table & T) {
 void make_square (Table & T) {
     int max = max_row(T);
     for (int i = 0; i < T.size(); i++) {
-        if (T[i].size() < max) T[i].resize(max);
+        if (T[i].size() < max) {
+            T[i].resize(max);
+        }
     }
 }
 
@@ -874,7 +943,9 @@ int max_row (const Dcube & C) {
     int max(0);
     for (int i = 0; i < C.size(); i++) {
         int c = C[i].size();
-        if (c > max) max = c;
+        if (c > max) {
+            max = c;
+        }
     }
     return max;
 }
@@ -885,7 +956,8 @@ Time::Time () {
     e = get_time();
 }
 
-double get_time () {  // Get wall time
+double get_time () {
+    // Get wall time
     struct timeval time;
     if (gettimeofday(&time, NULL) ) {
         return (0);
@@ -900,7 +972,9 @@ double time_diff (Time t) {
 
 void init_time (Time & t, const str s) {
     t.s = get_time();
-    if (s.size() != 0) std::cout << s << std::endl;
+    if (s.size() != 0) {
+        std::cout << s << std::endl;
+    }
 }
 
 void init_time_at (Time & time, const str s, Time & t) {
@@ -914,16 +988,17 @@ void print_time (Time & t, const str s) {
     double d = time_diff(t);
     if (d < 60.) {
         std::cout << s << " " << std::setprecision(3) << d << " s\n" <<
-            std::flush;
+        std::flush;
     } else {
         int mn = floor(d / 60);
         double sc = d - (mn * 60);
         std::cout << s << " " << mn << " mn " << std::setprecision(3) << sc <<
-            " s\n" << std::flush;
+        " s\n" << std::flush;
     }
 }
 
 // Errors -----------------------------------------------------
+
 void myexit (const int flag) {
     std::cout.flush();
     std::cerr.flush();
@@ -982,7 +1057,9 @@ void debl (bool a) {
 void deb (double a) {
     std::cout << " " << a << std::endl;
 }
+
 // Conversions ------------------------------------------------
+
 str f (int i) {
     std::stringstream ss;
     ss << i;
@@ -991,7 +1068,9 @@ str f (int i) {
     int n = s.size();
     for (int l = 0; l < n; l++) {
         str.push_back(s[l]);
-        if ( ( (n - 1 - l) % 3 == 0) && (n - l - 1 != 0) ) str.push_back(',');
+        if ( ( (n - 1 - l) % 3 == 0) && (n - l - 1 != 0) ) {
+            str.push_back(',');
+        }
     }
     return str.c_str();
 }
@@ -1007,18 +1086,28 @@ str f (double i) {
     int dot_pos(-1);
     // for (int a=0; a<n; a++) printf("%c",s[a]);
     for (int a = 0; a < n; a++) {
-        if (s[a] == '.') dot_pos = a;
+        if (s[a] == '.') {
+            dot_pos = a;
+        }
     }
-    if (dot_pos == -1) dot_pos = n;
+    if (dot_pos == -1) {
+        dot_pos = n;
+    }
     int bef(n - dot_pos);
     for (int l = 0; l < n; l++) {
-        if (s[l] == '.') dot = false;
-        if (dot) {str.push_back(s[l]);} else if (dec <= 3) {
+        if (s[l] == '.') {
+            dot = false;
+        }
+        if (dot) {
+            str.push_back(s[l]);
+        } else if (dec <= 3) {
             dec++;
             str.push_back(s[l]);
         }
-        if ( ( (n - bef - 1 - l) % 3 == 0) && (n - bef - l - 1 != 0) &&
-             dot) str.push_back(',');
+        if ( ( (n - bef - 1 - l) % 3 == 0) &&
+            (n - bef - l - 1 != 0) && dot) {
+            str.push_back(',');
+        }
     }
     return str.c_str();
 }
@@ -1066,33 +1155,42 @@ str format (int size, str s) {
     str S = s;
     str sp = "";
     int n = s.size();
-    if (size > n) for (int h = 0; h < size - n; h++) {
+    if (size > n) {
+        for (int h = 0; h < size - n; h++) {
             sp.push_back(' ');
         }
+    }
     return sp + s;
 }
 
 str erase_spaces (str s) {
     str ss = "";
     for (int h = 0; h < s.size(); h++) {
-        if (s[h] != ' ') ss.push_back(s[h]);
+        if (s[h] != ' ') {
+            ss.push_back(s[h]);
+        }
     }
     return ss;
 }
 
 // Parse ------------------------------------------------------
+
 Slist s2vec (str const & s, char const delimiter) {
     Slist vec;
     str element;
     for (int i = 0; i < s.length(); i++) {
         char ch = s[i];
-        if (ch != delimiter) {element += ch;} else if (element.length() > 0) {
+        if (ch != delimiter) {
+            element += ch;
+        } else if (element.length() > 0) {
             vec.push_back(element);
             element.clear();
         }
     }
     // Push in the last element if the string does not end with the delimiter
-    if (element.length() > 0) vec.push_back(element);
+    if (element.length() > 0) {
+        vec.push_back(element);
+    }
     return vec;
 }
 
@@ -1121,12 +1219,16 @@ void check_args (int n) {
 }
 
 int max (int a, int b) {
-    if (a > b) return a;
+    if (a > b) {
+        return a;
+    }
     return b;
 }
 
 int min (int a, int b) {
-    if (a > b) return b;
+    if (a > b) {
+        return b;
+    }
     return a;
 }
 
