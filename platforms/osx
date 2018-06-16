@@ -3,10 +3,10 @@
 export CXX := clang++
 
 # Normal compile flags
-export CXXFLAGS := -O3
+export CXXFLAGS := -O3 -std=c++11
 
 # OpenMP flags (used for both compiling and linking)
-export OMPFLAGS := 
+export OMPFLAGS :=
 
 # CFITSIO include and linking commands
 export CFITSIO_CPPFLAGS :=

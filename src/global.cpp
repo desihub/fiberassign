@@ -68,7 +68,9 @@ void collect_galaxies_for_all (const MTL & M,
             // radius, thanks to the tree
             for (int k = 0; k < F.Nfiber; k++) {
                 dpair X = pp[k].coords;
-                std::vector <double> posit = {pp[k].fp_x, pp[k].fp_y};
+                std::vector <double> posit;
+                posit.push_back(pp[k].fp_x);
+                posit.push_back(pp[k].fp_y);
                 std::vector <int> gals = kdT.near(&posit[0], 0.0, F.PatrolRad);
                 for (size_t g = 0; g < gals.size(); g++) {
                     dpair Xg = projection(gals[g], j, M, P);
