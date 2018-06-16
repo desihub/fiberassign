@@ -1,0 +1,25 @@
+
+# The serial C++ compiler
+export CXX := g++
+
+# Did the user actually load a newer gcc?  We don't want to use the ancient
+# version in /usr/bin/g++.
+
+export GCCVERSION := $(shell gcc --version | grep ^gcc | sed -e 's/^.* //g' -e 's/\.\([0-9][0-9]\)/\1/g' -e 's/\.\([0-9]\)/0\1/g')
+
+export GCC_GTEQ_6 := $(shell expr `echo $GCCVERSION` \>= 60000)
+
+ifeq "$(GCC_GTEQ_6)" "0"
+$(error You are using an old gcc version.  Did you "module load gcc"?)
+endif
+
+# Normal compile flags
+export CXXFLAGS := -O3 -std=c++11 -fPIC -DNDEBUG
+
+# OpenMP flags (used for both compiling and linking)
+export OMPFLAGS := -fopenmp
+
+# CFITSIO include and linking commands.  When building with gcc, the user
+# is on their own and must have installed cfitsio somewhere...
+export CFITSIO_CPPFLAGS :=
+export CFITSIO := -lcfitsio -lm

@@ -22,6 +22,7 @@
  */
 extern void myexit (const int flag);
 extern void myexception (const std::exception & e);
+
 template <class Ttype> class htmTree {
     protected:
         struct triangle {
@@ -86,21 +87,28 @@ template <class Ttype> class htmTree {
                  (tt.v[3 * 0 + 2] * tt.v[3 * 1 + 0] - tt.v[3 * 0 + 0] *
                   tt.v[3 * 1 + 2]) + P.nhat[2] *
                  (tt.v[3 * 0 + 0] * tt.v[3 * 1 + 1] - tt.v[3 * 0 + 1] *
-                  tt.v[3 * 1 + 0]) > 0) return (false);
+                  tt.v[3 * 1 + 0]) > 0) {
+                return (false);
+            }
             if ( P.nhat[0] *
                  (tt.v[3 * 1 + 1] * tt.v[3 * 2 + 2] - tt.v[3 * 1 + 2] *
                   tt.v[3 * 2 + 1]) + P.nhat[1] *
                  (tt.v[3 * 1 + 2] * tt.v[3 * 2 + 0] - tt.v[3 * 1 + 0] *
                   tt.v[3 * 2 + 2]) + P.nhat[2] *
                  (tt.v[3 * 1 + 0] * tt.v[3 * 2 + 1] - tt.v[3 * 1 + 1] *
-                  tt.v[3 * 2 + 0]) > 0) return (false);
+                  tt.v[3 * 2 + 0]) > 0) {
+                return (false);
+            }
             if ( P.nhat[0] *
                  (tt.v[3 * 2 + 1] * tt.v[3 * 0 + 2] - tt.v[3 * 2 + 2] *
                   tt.v[3 * 0 + 1]) + P.nhat[1] *
                  (tt.v[3 * 2 + 2] * tt.v[3 * 0 + 0] - tt.v[3 * 2 + 0] *
                   tt.v[3 * 0 + 2]) + P.nhat[2] *
                  (tt.v[3 * 2 + 0] * tt.v[3 * 0 + 1] - tt.v[3 * 2 + 1] *
-                  tt.v[3 * 0 + 0]) > 0) return (false); return (true);
+                  tt.v[3 * 0 + 0]) > 0) {
+                return (false);
+            }
+            return (true);
         }
 
         int which_child (const Ttype & P, const int cur) const {
@@ -376,7 +384,7 @@ template <class Ttype> class htmTree {
             T.push_back(tn);
         }
 
-        void add_object (const int i, const std::vector <Ttype> & P) {
+        void add_object (const size_t i, const std::vector <Ttype> & P) {
             // Adds on object to the tree.
             bool notput = true;
             for (int ibase = 0; ibase < 8 && notput; ++ibase) {
@@ -439,7 +447,7 @@ template <class Ttype> class htmTree {
         void load (const std::vector <Ttype> & P) {
             // Load an existing tree with objects.
             set_base();
-            for (int i = 0; i < P.size(); ++i) {
+            for (size_t i = 0; i < P.size(); ++i) {
                 add_object(i, P);
             }
         }
@@ -504,7 +512,7 @@ template <class Ttype> class htmTree {
                                 const double nhat[], const double rad) const {
             // Returns a list (vector) of indices of objects "near" nhat.
             // Distances refer to \theta, not 2sin(theta/2).
-            const double cosr = cos(rad);
+            //const double cosr = cos(rad);
             std::vector <int> clist, nbr;
             for (int i = 0; i < 8; ++i) {
                 clist.push_back(i);
@@ -531,7 +539,7 @@ template <class Ttype> class htmTree {
                     }
                 } else if ( ( T[cur].indx == -1) && ( T[cur].lst.size() > 0) ) {
                     // I am a leaf node with a list.
-                    for (int j = 0; j < T[cur].lst.size(); ++j) {
+                    for (size_t j = 0; j < T[cur].lst.size(); ++j) {
                         double dotv = 0, dst = 0;
                         for (int i = 0; i < 3; i++) {
                             dotv += nhat[i] * P[T[cur].lst[j]].nhat[i];

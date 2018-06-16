@@ -36,12 +36,19 @@ ifndef PLATFORM
 
 ifdef NERSC_HOST
 
-ifeq ($(NERSC_HOST), edison)
-PLATFORM := nersc_edison
+# At NERSC, we want to use the harpconfig tool from desiconda if
+# available.  Otherwise, we will error.
+ifeq "x$(DESICONDA_EXTRA)" "x"
+define errmsg
+
+You are building at NERSC, but do not have desiconda loaded.
+Either load that or manually install CFITSIO with gcc and use
+PLATFORM=nersc_gcc.
+
+endef
+$(error $(errmsg))
 endif
-ifeq ($(NERSC_HOST), cori)
-PLATFORM := nersc_cori_haswell
-endif
+PLATFORM := nersc_desiconda
 
 else
 
@@ -50,21 +57,34 @@ UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
 PLATFORM := osx
 else
-#
-# Not sure of the best way to select 'fedora'.
-#
+
+define defaultmsg
+
+You have not selected a build configuration.  Generic Linux
+settings will be used.  To customize your build, make a new
+file in the platforms directory and then do:
+
+%> PLATFORM=<name> make <command>
+
+When running make.
+
+endef
+$(warning $(defaultmsg))
 PLATFORM := generic
+
 endif
+
 endif
+
 endif
+
 include platforms/$(PLATFORM)
-#
-# This is a message to make that these targets are 'actions' not files.
-#
+
+# Make sure that these targets are 'actions' not files.
 .PHONY : all clean install version
-#
+
 # This should compile all code prior to it being installed.
-#
+
 all :
 	@ for f in $(SUBDIRS); do $(MAKE) -C $$f all ; done
 
@@ -75,9 +95,8 @@ install : all
 
 clean :
 	@ for f in $(SUBDIRS); do $(MAKE) -C $$f clean ; done
-#
+
 # Enable 'make version' to update the version string.
 # Do make TAG=0.1.2 version to set the tag explicitly.
-#
 version :
 	$(MAKE) -C src version

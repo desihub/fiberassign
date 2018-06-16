@@ -3,11 +3,11 @@
 export CXX := g++
 
 # Normal compile flags
-export CXXFLAGS := -O3 -std=c++11 -fPIC -DNDEBUG
+export CXXFLAGS := -O0 -g -Wall
 
 # OpenMP flags (used for both compiling and linking)
 export OMPFLAGS := -fopenmp
 
 # CFITSIO include and linking commands
-export CFITSIO_CPPFLAGS := -I$(DESICONDA_EXTRA)/include
-export CFITSIO := -L$(DESICONDA_EXTRA)/lib -lcfitsio -lm
+export CFITSIO_CPPFLAGS :=
+export CFITSIO := -lcfitsio -lm
