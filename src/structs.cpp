@@ -284,7 +284,7 @@ MTL read_MTLfile (str readfile, const Feat & F, long SS, long SF) {
         }
         // count how many rows we will keep and reserve that amount
         // nkeep = nrows;
-        printf("Keeping %d targets within ra/dec ranges\n", nkeep);
+        printf("Keeping %ld targets within ra/dec ranges\n", nkeep);
         try {
             M.reserve(nkeep);
         } catch (std::exception & e) {
@@ -323,6 +323,9 @@ MTL read_MTLfile (str readfile, const Feat & F, long SS, long SF) {
             Q.bgs_target = bgs_target[ii];
             Q.SS = SS;
             Q.SF = SF;
+            // These variables were not initialized elsewhere
+            Q.lastpass = 0;
+            Q.priority_class = 0;
             strncpy(Q.brickname, brickname[ii], 9);
             if ( ( (SS != -1) && ( (desi_target[ii] & starmask) != 0) ) ||
                  (SS == 0) ) {
@@ -332,7 +335,7 @@ MTL read_MTLfile (str readfile, const Feat & F, long SS, long SF) {
                     myexception(e);
                 }
                 bool in = false;
-                for (int j = 0; j < M.priority_list.size(); ++j) {
+                for (size_t j = 0; j < M.priority_list.size(); ++j) {
                     if (Q.t_priority == M.priority_list[j]) {
                         in = true;
                     }
@@ -342,6 +345,26 @@ MTL read_MTLfile (str readfile, const Feat & F, long SS, long SF) {
                 }
             }
         }  // end ii loop over targets
+
+        // Free memory
+        free(targetid);
+        free(desi_target);
+        free(mws_target);
+        free(bgs_target);
+        free(numobs);
+        free(priority);
+        free(subpriority);
+        free(ra);
+        free(dec);
+        free(obsconditions);
+        for (ii = 0; ii < nrows; ii++) {
+            free(brickname[ii]);
+        }
+        free(brickname);
+
+        // Close file
+        fits_close_file(fptr, &status);
+
         std::sort(M.priority_list.begin(), M.priority_list.end() );
         return (M);
     } else {
@@ -356,9 +379,9 @@ MTL read_MTLfile (str readfile, const Feat & F, long SS, long SF) {
 void assign_priority_class (MTL & M) {
     // assign each target to a priority class
     // this needs to be updated
-    for (int i = 0; i < M.size(); ++i) {
+    for (size_t i = 0; i < M.size(); ++i) {
         if (!M[i].SS && !M[i].SF) {
-            for (int j = 0; j < M.priority_list.size(); ++j) {
+            for (size_t j = 0; j < M.priority_list.size(); ++j) {
                 if (M[i].t_priority == M.priority_list[j]) {
                     M[i].priority_class = j;
                 }
@@ -395,14 +418,14 @@ FP  read_fiber_positions (const Feat & F) {
     std::cout.flush();
     while (fs.eof() == 0) {
         double x, y;
-        int fiber, location, spectro, remove;
+        int fiber, location, spectro;
         std::istringstream(buf) >> fiber >> location >> spectro >> x >> y;
         try {
             fiber_pos.fib_num = fiber;
             fiber_pos.location = location;
             fiber_pos.fp_x = x;
             fiber_pos.fp_y = y;
-            int sp =  spectro;
+            //int sp =  spectro;
             fiber_pos.spectrom = spectro;
             fiber_pos.coords = dpair(x, y);
         } catch (std::exception & e) {
@@ -417,13 +440,13 @@ FP  read_fiber_positions (const Feat & F) {
     int fiber_size = FibPos.size();
     // sort by fiber number
     std::vector <std::pair <int, int> > pairs;
-    for (int f = 0; f < FibPos.size(); ++f) {
+    for (size_t f = 0; f < FibPos.size(); ++f) {
         std::pair <int, int> this_pair (FibPos[f].fib_num, f);
         pairs.push_back(this_pair);
     }
     std::sort(pairs.begin(), pairs.end(), int_pairCompare);
     std::vector <fpos> out;
-    for (int f = 0; f < FibPos.size(); ++f) {
+    for (size_t f = 0; f < FibPos.size(); ++f) {
         out.push_back(FibPos[pairs[f].second]);
     }
     copy(out.begin(), out.end(), FibPos.begin() );
@@ -466,11 +489,12 @@ int A_less_than_B (int year_A, int month_A, int day_A, int year_B, int month_B,
             return 0;
         }
     }
+    return -1;
 }
 
 void read_fiber_status (FP & FibPos, const Feat & F) {
     std::string buf;
-    char date_now[512];
+    //char date_now[512];
     char date_init[512];
     char date_end[512];
     std::ifstream fs(F.fibstatusFile.c_str() );
@@ -575,7 +599,7 @@ List plate::av_gals_plate (const Feat & F, const MTL & M,
     List gals = initList(F.Ngal);
     List L = initList(0);
     for (int k = 0; k < F.Nfiber; k++) {
-        for (int i = 0; i < av_gals[k].size(); i++) {
+        for (size_t i = 0; i < av_gals[k].size(); i++) {
             if (gals[av_gals[k][i]] == 0) {
                 gals[av_gals[k][i]] = 1;
                 L.push_back(i);
@@ -595,7 +619,7 @@ Plates read_plate_centers (const Feat & F) {
     int nkeys;
     int hdupos;
     long nrows;
-    long nkeep;
+    //long nkeep;
     int ncols;
     int ii;
     uint16_t * obsconditions;
@@ -629,7 +653,7 @@ Plates read_plate_centers (const Feat & F) {
         if (!(ss >> survey_tile) ) break;
         survey_list.push_back(survey_tile);
     }
-    printf(" number of tiles %d \n", survey_list.size() );
+    printf(" number of tiles %lu \n", survey_list.size() );
     // NEW
     // read list of tile centers
     // Check that input file exists and is readable by cfitsio
@@ -821,8 +845,20 @@ Plates read_plate_centers (const Feat & F) {
                 }
             }
         }
+
+        // Free memory
+        free(obsconditions);
+        free(ipass);
+        free(in_desi);
+        free(tile_id);
+        free(ra);
+        free(dec);
+
+        // Close file
+        fits_close_file(fptr, &status);
+
     }
-    printf(" size of P  %d\n", P.size() );
+    printf(" size of P  %lu\n", P.size() );
     // Map each valid tileid in order to an index in P[].
     // Tileid is an arbitrary int
     std::map <int, int> invert_tile;
@@ -846,7 +882,7 @@ Plates read_plate_centers (const Feat & F) {
     // Create PQ, a subset of P containing those tileids specified in the
     // surveyFile, in the order in which they are specified.
     init_time_at(time, "# do inversion of used plates", t);
-    for (unsigned i = 0; i < survey_list.size(); ++i) {
+    for (size_t i = 0; i < survey_list.size(); ++i) {
         tileid        = survey_list[i];
         tileid_to_idx = invert_tile.find(tileid);
         if (tileid_to_idx == invert_tile.end() ) {
@@ -901,7 +937,7 @@ void Assignment::assign (int j, int k, int g, MTL & M, Plates & P,
     // pair list, tf's for this g
     Plist pl = GL[g];
     pair p = pair(j, k);
-    for (int i = 0; i < pl.size(); i++) {
+    for (size_t i = 0; i < pl.size(); i++) {
         if (pl[i].f == j) {
             printf(
                 "### !!! ### DUPLICATE g = %d assigned with (j,k) = (%d,%d) and (%d,%d) ---> information on first (j,k) lost \n", g,
@@ -955,9 +991,9 @@ void Assignment::unassign (int j, int k, int g, MTL & M, Plates & P,
 
 int Assignment::is_assigned_jg (int j, int g) const {
     // is galaxy g assigned on tile j
-    for (int i = 0; i < GL[g].size(); i++) {
+    for (size_t i = 0; i < GL[g].size(); i++) {
         if (GL[g][i].f == j) {
-            return i;
+            return (int)i;
         }
     }
     return -1;
@@ -966,7 +1002,7 @@ int Assignment::is_assigned_jg (int j, int g) const {
 int Assignment::is_assigned_jg (int j, int g, const MTL & M,
                                 const Feat & F) const {
     // No occurrence too nearby in tiles
-    for (int i = 0; i < GL[g].size(); i++) {
+    for (size_t i = 0; i < GL[g].size(); i++) {
         if ( ( fabs(j - GL[g][i].f) < F.InterPlate) ||
              ( j == GL[g][i].f) ) {
             return i;
@@ -996,7 +1032,7 @@ int Assignment::na (const Feat & F, int begin, int size) const {
 Plist Assignment::chosen_tfs (int g, const Feat & F, int begin) const {
     // creates list of tile-fibers observing g starting from plate begin
     Plist chosen;
-    for (int i = 0; i < GL[g].size(); i++) {
+    for (size_t i = 0; i < GL[g].size(); i++) {
         pair tf = GL[g][i];
         if (begin <= tf.f ) {
             if (TF[tf.f][tf.s] != g) {
@@ -1053,7 +1089,7 @@ int Assignment::unused_fbp (int j, int k, const FP & pp,
     // unused fibers on petal containing fiber k, tile j
     List fibs = pp.fibers_of_sp[pp[k].spectrom];
     int unused(0);
-    for (int i = 0; i < fibs.size(); i++) {
+    for (size_t i = 0; i < fibs.size(); i++) {
         if (!is_assigned_tf(j, fibs[i]) ) {
             unused++;
         }
@@ -1291,7 +1327,7 @@ int Assignment::find_collision (int j, int k, int g, const FP & pp,
         return -1;
     }
     dpair G1 = projection(g, j, M, P);
-    for (int i = 0; i < pp[k].N.size(); i++) {
+    for (size_t i = 0; i < pp[k].N.size(); i++) {
         // i numbers the fibers neighboring fiber k
         int kn = pp[k].N[i];
         int gn = TF[j][kn];

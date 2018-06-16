@@ -233,7 +233,7 @@ template <class Ttype> class KDtree {
                         } catch (std::exception & e) {
                             myexception(e);
                         }
-                        for (int i = 0; i < tree[n].objs.size(); ++i) {
+                        for (size_t i = 0; i < tree[n].objs.size(); ++i) {
                             retlist[i] = tree[n].objs[i].id;
                         }
                         return (retlist);

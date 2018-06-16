@@ -11,6 +11,7 @@ patrol*
 simple*
 assign*
 src/fiberassign
+src/fiberassign_exec
 src/fiberassign_surveysim
 src/split_*
 bin/fiberassign

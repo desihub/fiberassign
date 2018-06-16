@@ -60,7 +60,6 @@ void Feat::readInputFile (const char file[]) {
     while (!fIn.eof() ) {
         char buf[Mc];
         fIn.getline(buf, Mc);
-        int n = 0;  // a for-loop index
         Slist tok = s2vec(buf, delimiter);
         if (2 <= tok.size() ) {
             if (tok[0] == "Targfile") Targfile = tok[1];

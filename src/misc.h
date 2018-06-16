@@ -218,8 +218,8 @@ void print_mult_Dtable_latex (str s, str ss, Dtable T, double multX = 1);
 Table with_tot (const Table & T);
 
 // Max number of rows
-int max_row (const Table & T);
-int max_row (const Dtable & T);
+size_t max_row (const Table & T);
+size_t max_row (const Dtable & T);
 
 // List of max on each row
 List max_on_row (const Table & T);
@@ -250,7 +250,7 @@ class Dcube : public std::vector <Dtable> {};
 Dcube initDcube (int l, int c, int d, double val = 0.0);
 
 // Max size of 2nd dim
-int max_row (const Dcube & C);
+size_t max_row (const Dcube & C);
 
 // Time ------------------------------------------------------
 

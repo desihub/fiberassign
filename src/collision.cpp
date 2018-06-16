@@ -114,7 +114,7 @@ void element::add (const dpair & p) {
 }
 void element::transl (const dpair & t) {
     if (is_seg) {
-        for (int i = 0; i < segs.size(); i++) {
+        for (size_t i = 0; i < segs.size(); i++) {
             segs[i] = segs[i] + t;
         }
     } else {
@@ -125,7 +125,7 @@ void element::transl (const dpair & t) {
 void element::rotation (const dpair & t,
                         const dpair & axis) {
     if (is_seg) {
-        for (int i = 0; i < segs.size(); i++) {
+        for (size_t i = 0; i < segs.size(); i++) {
             rot_pt(segs[i], axis, t);
         }
     } else {
@@ -144,7 +144,7 @@ void element::print () const {
     fl();
     if (0 < segs.size() ) {
         debl(" - segs : ");
-        for (int i = 0; i < segs.size(); i++) {
+        for (size_t i = 0; i < segs.size(); i++) {
             segs[i].print();
         }
     } else {
@@ -156,7 +156,7 @@ void element::print () const {
 
 void element::limits (Dlist & lims) const {
     if (is_seg) {
-        for (int i = 0; i < segs.size(); i++) {
+        for (size_t i = 0; i < segs.size(); i++) {
             if (segs[i].f < lims[0]) lims[0] = segs[i].f;
             if (segs[i].s < lims[2]) lims[2] = segs[i].s;
             if (segs[i].f > lims[1]) lims[1] = segs[i].f;
@@ -172,8 +172,8 @@ void element::limits (Dlist & lims) const {
 
 bool intersect (const element & e1, const element & e2) {
     if (e1.is_seg && e2.is_seg) {
-        for (int i = 0; i < e1.segs.size() - 1; i++) {
-            for (int j = 0; j < e2.segs.size() - 1; j++) {
+        for (size_t i = 0; i < e1.segs.size() - 1; i++) {
+            for (size_t j = 0; j < e2.segs.size() - 1; j++) {
                 bool b = intersect(e1.segs[i], e1.segs[i + 1], e2.segs[j],
                                    e2.segs[j + 1]);
                 if (b) return true;
@@ -182,18 +182,19 @@ bool intersect (const element & e1, const element & e2) {
         return false;
     }
     if (e1.is_seg && !e2.is_seg) {
-        for (int i = 0; i < e1.segs.size() - 1; i++) {
+        for (size_t i = 0; i < e1.segs.size() - 1; i++) {
             return intersect_seg_circ(e1.segs[i], e1.segs[i + 1], e2.O, e2.rad);
         }
     }
     if (!e1.is_seg && e2.is_seg) {
-        for (int i = 0; i < e2.segs.size() - 1; i++) {
+        for (size_t i = 0; i < e2.segs.size() - 1; i++) {
             return intersect_seg_circ(e2.segs[i], e2.segs[i + 1], e1.O, e1.rad);
         }
     }
     if (!e1.is_seg && !e2.is_seg) {
         return (sq(e1.O, e2.O) < sq(e1.rad + e2.rad) );
     }
+    return false;
 }
 
 // polygon
@@ -202,34 +203,34 @@ void polygon::add (const element & el) {
 }
 
 void polygon::add (const polygon & p) {
-    for (int i = 0; i < p.elmts.size(); i++) {
+    for (size_t i = 0; i < p.elmts.size(); i++) {
         elmts.push_back(p.elmts[i]);
     }
 }
 
 void polygon::transl (const dpair & t) {
-    for (int i = 0; i < elmts.size(); i++) {
+    for (size_t i = 0; i < elmts.size(); i++) {
         elmts[i].transl(t);
     }
     axis = axis + t;
 }
 
 void polygon::rotation (const dpair & t) {
-    for (int i = 0; i < elmts.size(); i++) {
+    for (size_t i = 0; i < elmts.size(); i++) {
         elmts[i].rotation(t, axis);
     }
 }
 
 void polygon::rotation_origin (const dpair & t) {
     dpair origin = dpair();
-    for (int i = 0; i < elmts.size(); i++) {
+    for (size_t i = 0; i < elmts.size(); i++) {
         elmts[i].rotation(t, origin);
     }
     rot_pt(axis, origin, t);
 }
 
 void polygon::print () const {
-    for (int i = 0; i < elmts.size(); i++) {
+    for (size_t i = 0; i < elmts.size(); i++) {
         elmts[i].print();
     }
     printf(" - axis : ");
@@ -237,7 +238,7 @@ void polygon::print () const {
 }
 
 void polygon::set_color (char c) {
-    for (int i = 0; i < elmts.size(); i++) {
+    for (size_t i = 0; i < elmts.size(); i++) {
         elmts[i].color = c;
     }
 }
@@ -248,7 +249,7 @@ Dlist polygon::limits () const {
     lims[2] = 1e4;
     lims[1] = -1e4;
     lims[3] = -1e4;
-    for (int i = 0; i < elmts.size(); i++) {
+    for (size_t i = 0; i < elmts.size(); i++) {
         elmts[i].limits(lims);
     }
     return lims;
@@ -336,8 +337,8 @@ void repos_cb_fh (polygon & cb, polygon & fh, const dpair & O, const dpair & G,
 }
 
 bool collision (const polygon & p1, const polygon & p2) {
-    for (int i = 0; i < p1.elmts.size(); i++) {
-        for (int j = 0; j < p2.elmts.size(); j++) {
+    for (size_t i = 0; i < p1.elmts.size(); i++) {
+        for (size_t j = 0; j < p2.elmts.size(); j++) {
             if (intersect(p1.elmts[i], p2.elmts[j]) ) {
                 return true;
             }

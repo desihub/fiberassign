@@ -93,7 +93,8 @@ class target {
 };
 
 class MTL : public std::vector <struct target> {
-    public: std::vector <int> priority_list;
+    public:
+        std::vector <int> priority_list;
 };
 
 MTL read_MTLfile (str filename, const Feat & F, long SS, long SF);

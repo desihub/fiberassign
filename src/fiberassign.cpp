@@ -50,7 +50,7 @@ int main (int argc, char ** argv) {
 
     // combine the three input files
     M = Targ;
-    printf(" Target size %d \n", M.size() );
+    printf(" Target size %lu \n", M.size() );
     std::cout.flush();
 
     // need to be able to match immutable target id to position in list
@@ -69,22 +69,22 @@ int main (int argc, char ** argv) {
         }
     }
     M.insert(M.end(), SStars.begin(), SStars.end() );
-    printf(" Standard Star size %d \n", M.size() );
+    printf(" Standard Star size %lu \n", M.size() );
     M.insert(M.end(), SkyF.begin(), SkyF.end() );
-    printf(" Sky Fiber size %d \n", M.size() );
+    printf(" Sky Fiber size %lu \n", M.size() );
     init_time_at(time, "# map position in target list to immutable targetid",
                  t);
     init_time_at(time, "# assign priority classes", t);
     F.Ngal = M.size();
     assign_priority_class(M);
     std::vector <int> count_class(M.priority_list.size(), 0);
-    for (int i = 0; i < M.size(); ++i) {
+    for (size_t i = 0; i < M.size(); ++i) {
         if (!M[i].SS && !M[i].SF) {
             count_class[M[i].priority_class] += 1;
         }
     }
-    for (int i = 0; i < M.priority_list.size(); ++i) {
-        printf("  class  %d  number  %d\n", i, count_class[i]);
+    for (size_t i = 0; i < M.priority_list.size(); ++i) {
+        printf("  class  %lu  number  %d\n", i, count_class[i]);
     }
     print_time(time, "# ...priority list took :");
     init_time_at(time, "# Start positioners", t);
@@ -220,8 +220,8 @@ int main (int argc, char ** argv) {
 
     init_time_at(time, "# count SS and SF ", t);
     printf(" Totals SS   %4d    SF   %4d", total_used_SS, total_used_SF);
-    for (int pr = 0; pr < M.priority_list.size(); ++pr) {
-        printf(" class %2d   %5d", pr, total_used_by_class[pr]);
+    for (size_t pr = 0; pr < M.priority_list.size(); ++pr) {
+        printf(" class %2lu   %5d", pr, total_used_by_class[pr]);
     }
     printf("\n");
 
