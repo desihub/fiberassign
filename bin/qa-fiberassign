@@ -34,10 +34,10 @@ assigned = list()
 covered = list()
 n5k = np.arange(5000, dtype=int)
 for filename in args.tilefiles:
-    fa = Table.read(filename, 'FIBER_ASSIGNMENTS')
+    fa = Table.read(filename, 'FIBERASSIGN')
     fa.sort('FIBER')
     assigned.append(fa)
-    tmp = Table.read(filename, 'POTENTIAL_ASSIGNMENTS')['POTENTIALTARGETID']
+    tmp = Table.read(filename, 'POTENTIAL')['POTENTIALTARGETID']
     covered.append(np.unique(tmp))
     errors = list()
 
