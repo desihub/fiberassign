@@ -4,15 +4,17 @@ fiberassign change log
 0.8.2 (unreleased)
 ------------------
 
-* Standard star DESI_TARGET mask as input parameter (PR `#114`_)
-* `fiberassign` is now a python wrapper around the C++ executable (PR `#116`_)
-* Adds sky monitor fiber assignments (PR `#119`_)
-* Adds GFA targets HDU $(PR `#122`_)
+* Standard star DESI_TARGET mask as input parameter (PR `#114`_).
+* `fiberassign` is now a python wrapper around the C++ executable (PR `#116`_).
+* Adds sky monitor fiber assignments (PR `#119`_).
+* Adds GFA targets HDU (PR `#122`_).
+* Bug fix: do not assume tileid is 5 digits long (PR `#126`_).
 
 .. _`#114`: https://github.com/desihub/fiberassign/pull/114
 .. _`#116`: https://github.com/desihub/fiberassign/pull/116
 .. _`#119`: https://github.com/desihub/fiberassign/pull/119
 .. _`#122`: https://github.com/desihub/fiberassign/pull/122
+.. _`#126`: https://github.com/desihub/fiberassign/pull/126
 
 
 0.8.1 (2018-05-10)
