@@ -8,14 +8,19 @@ fiberassign change log
 * `fiberassign` is now a python wrapper around the C++ executable (PR `#116`_).
 * Adds sky monitor fiber assignments (PR `#119`_).
 * Adds GFA targets HDU (PR `#122`_).
+* Code format cleanup (PR `#123`_).
+* Update build files; fix valgrind / compiler warnings (PR `#124`_).
 * Bug fix: do not assume tileid is 5 digits long (PR `#126`_).
+* Fixes sign flip in x,y <-> RA,dec conversions  (PR `#127`_).
 
 .. _`#114`: https://github.com/desihub/fiberassign/pull/114
 .. _`#116`: https://github.com/desihub/fiberassign/pull/116
 .. _`#119`: https://github.com/desihub/fiberassign/pull/119
 .. _`#122`: https://github.com/desihub/fiberassign/pull/122
+.. _`#123`: https://github.com/desihub/fiberassign/pull/123
+.. _`#124`: https://github.com/desihub/fiberassign/pull/124
 .. _`#126`: https://github.com/desihub/fiberassign/pull/126
-
+.. _`#127`: https://github.com/desihub/fiberassign/pull/127
 
 0.8.1 (2018-05-10)
 ------------------
