@@ -1186,6 +1186,8 @@ struct onplate radec2xy (const struct target & O, const struct plate & P) {
     double newteldec, newtelra, ra_rad, dec_rad, q_rad, radius_mm;
     double testra, testdec, dra, ddec;
     double arcsec = 1.0 / 3600.0;
+    
+    // Inclination is 90 degrees minus the declination in degrees
     inc = 90.0 - O.dec;
     x0 = sin(inc * deg_to_rad) * cos(O.ra * deg_to_rad);
     y0 = sin(inc * deg_to_rad) * sin(O.ra * deg_to_rad);
@@ -1193,11 +1195,13 @@ struct onplate radec2xy (const struct target & O, const struct plate & P) {
     coord[0] = x0;
     coord[1] = y0;
     coord[2] = z0;
+    
     coord1[0] = cos(P.tilera * deg_to_rad) * coord[0] + sin(
         P.tilera * deg_to_rad) * coord[1];
     coord1[1] = -sin(P.tilera * deg_to_rad) * coord[0] + cos(
         P.tilera * deg_to_rad) * coord[1];
     coord1[2] = coord[2];
+    
     coord2[0] = cos(P.tiledec * deg_to_rad) * coord1[0] + sin(
         P.tiledec * deg_to_rad) * coord1[2];
     coord2[1] =  coord1[1];
@@ -1217,7 +1221,7 @@ struct onplate radec2xy (const struct target & O, const struct plate & P) {
         asin(sqrt( (pow(sin( (dec_rad - newteldec) / 2), 2) ) +
         ( (cos(newteldec) ) * cos(dec_rad) *
         (pow(sin( (   ra_rad - newtelra) / 2), 2) ) ) ) );
-    q_rad = atan2(-z, -y);
+    q_rad = atan2(z, -y);
     radius_mm = plate_dist(radius_rad);
     x_focalplane = radius_mm * cos(q_rad);
     y_focalplane = radius_mm * sin(q_rad);
@@ -1251,48 +1255,67 @@ struct onplate radec2xy (const struct target & O, const struct plate & P) {
 void xy2radec (double * ra, double * dec, double telra, double teldec,
                double x, double y) {
     // following
-    // https://github.com/desihub/desimodel/blob/master/py/desimodel/focalplane.py#L187
-    double coord[3], coord1[3], coord2[3], coord3[3], coord4[3];
+    // https://github.com/desihub/desimodel/blob/master/py/desimodel/focalplane/geometry.py#L165
+    double coord[3], coord1[3], coord2[3];
+    double x1, y1, z1, x2, y2, z2;
     double teldec_rad = teldec * M_PI / 180.;
     double telra_rad = telra * M_PI / 180.;
     double radius;
-    double theta;
-    double q;
+    double r_rad;
+    double q, q_rad;
     double ra_rad, dec_rad;
-    // fprintf(stdout, "tel ra %f tel dec %f\n", telra, teldec);
-    // q signifies the angle the position makes with the +x-axis of focal plane
-    q = atan2(y, x);
+    
     // radial distance on the focal plane in radians
     radius = sqrt(x * x + y * y);
-    theta = plate_angle(radius);
-    // fprintf(stdout, "theta %f\n", theta);
-    coord[0] = 1.0;
-    coord[1] = 0.0;
-    coord[2] = 0.0;
-    // Clockwise rotation around the z-axis by the radial distance to a point
-    // on the focal plane in radians
-    coord1[0] = cos(theta) * coord[0] + sin(theta) * coord[1];
-    coord1[1] = -sin(theta) * coord[0] + cos(theta) * coord[1];
-    coord1[2] = coord[2];
-    // Counter-clockwise rotation around the x-axis
-    coord2[0] = coord1[0];
-    coord2[1] = cos(q) * coord1[1] - sin(q) * coord1[2];
-    coord2[2] = sin(q) * coord1[1] + cos(q) * coord1[2];
-    // Counter-clockwise rotation around y axis by declination of the tile
-    // center
-    coord3[0] = cos(teldec_rad) * coord2[0] - sin(teldec_rad) * coord2[2];
-    coord3[1] = coord2[1];
-    coord3[2] = sin(teldec_rad) * coord2[0] + cos(teldec_rad) * coord2[2];
-    // Counter-clockwise rotation around the z-axis by the right ascension of
-    // the tile center
-    coord4[0] = cos(telra_rad) * coord3[0] - sin(telra_rad) * coord3[1];
-    coord4[1] = sin(telra_rad) * coord3[0] + cos(telra_rad) * coord3[1];
-    coord4[2] = coord3[2];
-    ra_rad = atan2(coord4[1], coord4[0]);
+    r_rad = plate_angle(radius);
+    
+    // fprintf(stdout, "tel ra %f tel dec %f\n", telra, teldec);
+    // q signifies the angle the position makes with the +x-axis of focal plane
+    q_rad = atan2(y, x);
+    q = q_rad * 180.0 / M_PI;
+    
+    // The focal plane is oriented with +yfocal = +dec but +xfocal = -RA
+    // Rotate clockwise around z by r_rad
+    // zrotate = np.zeros(shape=(3,3))
+    // zrotate[0] = [np.cos(r_rad), np.sin(r_rad), 0]
+    // zrotate[1] = [-np.sin(r_rad), np.cos(r_rad), 0]
+    // zrotate[2] = [0, 0, 1]
+    // v1 = zrotate.dot(v0)
+
+    x1 = cos(r_rad);     // y0=0 so drop sin(r_rad) term
+    y1 = -sin(r_rad);    // y0=0 so drop cos(r_rad) term
+    z1 = 0.0;
+    
+    // clockwise rotation around the x-axis
+    // xrotate = np.zeros(shape=(3,3))
+    // q_rad = np.radians(q)
+    // xrotate[0] = [1, 0, 0]
+    // xrotate[1] = [0, np.cos(q_rad), np.sin(q_rad)]
+    // xrotate[2] = [0, -np.sin(q_rad), np.cos(q_rad)]
+    
+    x2 = x1;
+    y2 = y1 * cos(q_rad);           //# z1=0 so drop sin(q_rad) term
+    z2 = -y1 * sin(q_rad);    
+
+    coord[0] = x2;
+    coord[1] = y2;
+    coord[2] = z2;
+    
+    // Clockwise rotation around y axis by declination of the tile center
+    coord1[0] = cos(teldec_rad) * coord[0] - sin(teldec_rad) * coord[2];
+    coord1[1] = coord[1];
+    coord1[2] = sin(teldec_rad) * coord[0] + cos(teldec_rad) * coord[2];
+
+    // Counter-clockwise rotation around the z-axis by the right ascension of the tile center
+    coord2[0] = cos(telra_rad) * coord1[0] - sin(telra_rad) * coord1[1];
+    coord2[1] = sin(telra_rad) * coord1[0] + cos(telra_rad) * coord1[1];
+    coord2[2] = coord1[2];
+
+    ra_rad = atan2(coord2[1], coord2[0]);
     if (ra_rad < 0) ra_rad = 2.0 * M_PI + ra_rad;
     // fprintf(stdout, "NORM %f %f %f\n", coord4[0], coord4[1], coord4[2]);
-    dec_rad = (M_PI / 2.0) - acos(coord4[2] / (sqrt(pow(coord4[0], 2.0)
-        + pow(coord4[1], 2.0) + pow(coord4[2], 2.0) ) ) );
+    dec_rad = (M_PI / 2.0) - acos(coord2[2]);
+    
     *ra = std::fmod( (ra_rad * 180.0 / M_PI), 360.0);
     *dec = dec_rad * 180.0 / M_PI;
     // fprintf(stdout, "FINAL: %f %f \n", *ra, *dec);
