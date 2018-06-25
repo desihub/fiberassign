@@ -155,7 +155,7 @@ sky_tile_id = {}
 for sky_file in skys:
     f = sky_file.split('/')[-1]
     fileid = f.split("_")[-1]
-    fileid = fileid[0:5]
+    fileid = fileid[:-5]
     sky_tile_id[fileid] = sky_file
 
 target_tile_id = {}
@@ -163,7 +163,7 @@ tile_id = []
 for target_file in targets:
     f = target_file.split('/')[-1]
     fileid = f.split("_")[-1]
-    fileid = fileid[0:5]
+    fileid = fileid[:-5]
     target_tile_id[fileid] = target_file
     tile_id.append(int(fileid))
 
@@ -191,7 +191,7 @@ if args.gfafile is not None:
     for gfa_file in gfas:
         f = gfa_file.split('/')[-1]
         fileid = f.split("_")[-1]
-        fileid = fileid[0:5]
+        fileid = fileid[:-5]
         gfa_tile_id[fileid] = gfa_file
     
 for sky_id in sky_tile_id.keys():
