@@ -78,7 +78,7 @@ if not os.path.isdir(args.outdir):
     
 def is_file_missing(filename):
     if not os.path.exists(filename):
-        print('ERROR: file {} does not exist'.forma(filena))
+        print('ERROR: file {} does not exist'.format(filename))
         sys.exit(1)
 
 # Check if output files already exist
