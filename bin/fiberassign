@@ -75,6 +75,12 @@ if (args.telra is not None) and (args.teldec is not None) and (args.tileid is no
 if not os.path.isdir(args.outdir):
     os.makedirs(args.outdir)
 
+    
+def is_file_missing(filename):
+    if not os.path.exists(filename):
+        print('ERROR: file {} does not exist'.forma(filena))
+        sys.exit(1)
+
 # Check if output files already exist
 def check_existing_files(checkdir):
     existing_files = False
@@ -99,6 +105,18 @@ def rewrite_fiberpos(fiberpos_fits_file, postype='POS'):
     txtposfilename = os.path.join(args.outdir,"tmp_{}_pos.txt".format(postype))
     np.savetxt(txtposfilename, np.array(data).T, fmt='%d\t %d\t %d\t %f\t %f\t %f')
     return txtposfilename
+
+#checks that all files exist
+is_file_missing(args.mtl)
+is_file_missing(args.sky)
+is_file_missing(args.stdstar)
+is_file_missing(args.fibstatusfile)
+is_file_missing(args.surveytiles)
+is_file_missing(args.footprint)
+if args.gfafile is not None:
+    is_file_missing(args.gfafile)
+
+
 
 # tmp fiberpos
 tmp_fiber_pos = rewrite_fiberpos(args.positioners)
