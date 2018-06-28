@@ -13,7 +13,7 @@ from desitarget.targetmask import desi_mask
 from astropy.table import Table
 import fitsio
 import glob
-import desimodel.focalplane 
+import desimodel.focalplane
 import tempfile
 import shutil
 
@@ -64,7 +64,7 @@ if args.rundate is None:
 
 if (args.telra is not None) and (args.teldec is not None) and (args.tileid is not None) and (args.tileobsconditions is not None):
     from astropy.table import Table
-    tiles = Table([[args.tileid], [args.telra], [args.teldec], [args.tileobsconditions], [1], [1]], 
+    tiles = Table([[args.tileid], [args.telra], [args.teldec], [args.tileobsconditions], [1], [1]],
                   names=('TILEID', 'RA', 'DEC', 'OBSCONDITIONS', 'IN_DESI', 'PASS'))
     tiles.write(os.path.join(args.outdir, "tmp_footprint.fits"), overwrite=True)
     args.footprint = os.path.join(args.outdir, "tmp_footprint.fits")
@@ -75,7 +75,7 @@ if (args.telra is not None) and (args.teldec is not None) and (args.tileid is no
 if not os.path.isdir(args.outdir):
     os.makedirs(args.outdir)
 
-    
+
 def is_file_missing(filename):
     if not os.path.exists(filename):
         print('ERROR: file {} does not exist'.format(filename))
@@ -84,20 +84,21 @@ def is_file_missing(filename):
 # Check if output files already exist
 def check_existing_files(checkdir):
     existing_files = False
-    for line in open(args.surveytiles):
-        line = line.strip()
-        if line.startswith('#') or len(line)<2:
-            continue
-        tileid = int(line)
-        tilefile = os.path.join(checkdir, 'tile_{:05d}.fits'.format(tileid))
-        if os.path.exists(tilefile):
-            existing_files = True
-            print('ERROR: {} already exists'.format(tilefile))
+    with open(args.surveytiles) as survey:
+        for line in survey:
+            line = line.strip()
+            if line.startswith('#') or len(line)<2:
+                continue
+            tileid = int(line)
+            tilefile = os.path.join(checkdir, 'tile_{:05d}.fits'.format(tileid))
+            if os.path.exists(tilefile):
+                existing_files = True
+                print('ERROR: {} already exists'.format(tilefile))
 
     if existing_files:
         print('Remove pre-existing tile files or specify different --outdir')
         sys.exit(1)
-    
+
 def rewrite_fiberpos(fiberpos_fits_file, postype='POS'):
     data = Table.read(fiberpos_fits_file)
     data = data[data['DEVICE_TYPE']==postype]
@@ -129,10 +130,10 @@ tmp_gfa_dir = tempfile.mkdtemp()
 
 if not os.path.exists(tmp_targets_dir):
     os.makedirs(tmp_targets_dir)
-    
+
 if not os.path.exists(tmp_sky_dir):
     os.makedirs(tmp_sky_dir)
-    
+
 if not os.path.exists(tmp_gfa_dir):
     os.makedirs(tmp_gfa_dir)
 
@@ -150,15 +151,15 @@ fiberassign_command ="fiberassign_exec --mtl {mtl}  --sky {sky} --stdstar {stdst
             --rundate {rundate}"
 
 # fiberassign targets
-cmd = fiberassign_command.format(mtl=args.mtl, sky=args.sky, stdstar=args.stdstar, fiberstatusfile=args.fibstatusfile, 
-                                 outdir=tmp_targets_dir, surveytiles=args.surveytiles, starmask = args.starmask, 
+cmd = fiberassign_command.format(mtl=args.mtl, sky=args.sky, stdstar=args.stdstar, fiberstatusfile=args.fibstatusfile,
+                                 outdir=tmp_targets_dir, surveytiles=args.surveytiles, starmask = args.starmask,
                                  footprint=args.footprint, positioners=tmp_fiber_pos, rundate=args.rundate)
 print(cmd)
 os.system(cmd)
 
 #fiberassign sky
-cmd = fiberassign_command.format(mtl=args.sky, sky=args.sky, stdstar=args.sky, fiberstatusfile=args.fibstatusfile, 
-                                 outdir=tmp_sky_dir, surveytiles=args.surveytiles, starmask = args.starmask, 
+cmd = fiberassign_command.format(mtl=args.sky, sky=args.sky, stdstar=args.sky, fiberstatusfile=args.fibstatusfile,
+                                 outdir=tmp_sky_dir, surveytiles=args.surveytiles, starmask = args.starmask,
                                  footprint=args.footprint, positioners=tmp_fiber_sky, rundate=args.rundate)
 print(cmd)
 os.system(cmd)
@@ -189,21 +190,21 @@ for target_file in targets:
 if args.gfafile is not None:
     from desimodel.focalplane import GFALocations
     gfa = GFALocations()
-    
+
     print('loading GFA file')
     data = fitsio.read(args.gfafile, columns=['RA', 'DEC', 'TARGETID'])
-    
+
     print('selecting computed tiles')
     footprint = fitsio.read(args.footprint)
     ii = np.in1d(footprint['TILEID'], np.array(tile_id))
     tiles = footprint[ii]
-    
+
     for telra, teldec, tileid in zip(tiles['RA'], tiles['DEC'], tiles['TILEID']):
         gfaout = os.path.join(tmp_gfa_dir, 'tile_{:05d}.fits'.format(tileid))
         gfa_data = gfa.targets_on_gfa(telra, teldec, data)
         t = Table(gfa_data)
         t.write(gfaout, overwrite=True)
-        
+
     gfas = glob.glob(os.path.join(tmp_gfa_dir,'tile_*.fits'))
     gfa_tile_id = {}
     for gfa_file in gfas:
@@ -211,7 +212,7 @@ if args.gfafile is not None:
         fileid = f.split("_")[-1]
         fileid = fileid[:-5]
         gfa_tile_id[fileid] = gfa_file
-    
+
 for sky_id in sky_tile_id.keys():
     if sky_id in target_tile_id.keys():
             print('rewriting tilefile for tileid {}'.format(sky_id))
@@ -223,12 +224,12 @@ for sky_id in sky_tile_id.keys():
             fitsio.write(tileout, fiber_data, extname='FIBERASSIGN', clobber=True)
             fitsio.write(tileout, potential_data, extname='POTENTIAL')
             fitsio.write(tileout, sky_data, extname='SKYETC')
-            
+
             if args.gfafile is not None:
                 print(gfa_tile_id[sky_id])
                 gfa_data = fitsio.read(gfa_tile_id[sky_id])
                 fitsio.write(tileout, gfa_data, extname='GFA')
-    
+
 # remove tmp files
 if args.cleanup:
     shutil.rmtree(tmp_targets_dir)

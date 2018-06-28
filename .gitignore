@@ -10,11 +10,10 @@ patrol*
 10m*
 simple*
 assign*
-src/fiberassign
 src/fiberassign_exec
 src/fiberassign_surveysim
 src/split_*
-bin/fiberassign
+bin/fiberassign_exec
 bin/fiberassign_surveysim
 bin/split_*
 slurm*
