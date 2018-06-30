@@ -13,6 +13,7 @@ fiberassign change log
 * Bug fix: do not assume tileid is 5 digits long (PR `#126`_).
 * Fixes sign flip in x,y <-> RA,dec conversions  (PR `#127`_).
 * Checks for missing files (PR `#128`_).
+* Fix unclosed file error (PR `#129`_).
 
 .. _`#114`: https://github.com/desihub/fiberassign/pull/114
 .. _`#116`: https://github.com/desihub/fiberassign/pull/116
@@ -23,6 +24,7 @@ fiberassign change log
 .. _`#126`: https://github.com/desihub/fiberassign/pull/126
 .. _`#127`: https://github.com/desihub/fiberassign/pull/127
 .. _`#128`: https://github.com/desihub/fiberassign/pull/128
+.. _`#129`: https://github.com/desihub/fiberassign/pull/129
 
 0.8.1 (2018-05-10)
 ------------------
