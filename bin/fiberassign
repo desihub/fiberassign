@@ -51,7 +51,7 @@ if args.positioners is None:
     args.positioners = desimodel.io.findfile('focalplane/fiberpos-all.fits')
 
 if args.surveytiles is None:
-    data = desimodel.io.load_tiles()
+    data = desimodel.io.load_tiles(tilesfile=args.footprint)
     np.savetxt(os.path.join(args.outdir, "tmp_surveytiles.txt"), np.int_(data['TILEID']), fmt='%d')
     args.surveytiles = os.path.join(args.outdir, "tmp_surveytiles.txt")
 
