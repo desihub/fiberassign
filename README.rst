@@ -13,11 +13,9 @@ Compiling
 ---------
 
 To compile the code, set ``$PLATFORM`` to one of the recipes in the
-``platforms/`` and then run ``make install``;  *e.g.* on Cori Haswell::
+``platforms/`` and then run ``make install``;  *e.g.* at NERSC::
 
-    make PLATFORM=nersc_cori_haswell install
-
-This will create the ``bin/fiberassign`` executable.
+    make PLATFORM=nersc_desiconda install
 
 The version of fiberassign can be updated with::
 
@@ -32,14 +30,21 @@ to set the version when tagging.
 Running
 -------
 
-The main executable ``fiberassign`` takes its arguments (eight in total) through the command line.
+The main executable ``fiberassign`` is a python wrapper around the
+C++ ``fiberassign_exec`` code.  Run ``fiberassign --help`` to see the
+full set of command line options.
 
 An example would be:: 
 
-    fiberassign  --mtl mtl.fits --stdstar standards-dark.fits --sky sky.fits \
-    --surveytiles dark-tiles.txt --footprint $DESIMODEL/data/footprint/desi-tiles.fits \
-    --positioners $DESIMODEL/data/focalplane/fiberpos.txt --fibstatusfile fiberstatus.ecsv --outdir ./
+  fiberassign  \
+    --mtl targets/mtl.fits \
+    --stdstar targets/standards-dark.fits \
+    --sky targets/sky.fits \
+    --surveytiles fiberassign/dark-tiles.txt \
+    --fibstatusfile fiberstatus.ecsv \
+    --outdir $SCRATCH/temp/
 
-``doc/Guide_to_FiberAssignment.tex`` contains more details.  A pdf snapshot
-is available to DESI collaborators at
+``doc/Guide_to_FiberAssignment.tex`` contains more details about underlying
+algorithms but is out of date for the details of running fiberassign.
+A pdf snapshot is available to DESI collaborators at
 https://desi.lbl.gov/DocDB/cgi-bin/private/ShowDocument?docid=2742 .
