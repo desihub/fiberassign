@@ -383,8 +383,6 @@ void simple_assign (MTL & M, Plates & P, const FP & pp, const Feat & F,
     init_time(t, "# Begin simple assignment :");
     int countme = 0;
     for (int j = 0; j < F.Nplate; j++) {
-        fprintf(stdout, "plate %d out of %d\n", j, F.Nplate);
-        fflush(stdout);
         std::vector <std::pair <double, int> > pairs;
         for (int k = 0; k < F.Nfiber; k++) {
 
@@ -667,17 +665,16 @@ void assign_sf_ss (int j, MTL & M, Plates & P, const FP & pp, const Feat & F,
                 if (A.TF[j][k] == -1) {
 		   // this fiber isn't assigned yet
 		   int done = 0;
-
 		   for (size_t gg = 0; gg < SS_av_k.size() && done == 0; gg++) {
-                        // SS on this with reach of this fiber
+                       // SS on this with reach of this fiber
                        int g = SS_av_k[gg];
-                        // if g isn't already assigned on this fiber and we
-                        // still need it and it's ok to assign, then assign
+                       // if g isn't already assigned on this fiber and we
+                       // still need it and it's ok to assign, then assign
                        if ( (A.is_assigned_jg(j, g, M, F) == -1) &&
                              ok_for_limit_SS_SF(g, j, k, M, P, pp, F) &&
                              ok_assign_g_to_jk(g, j, k, P, M, pp, F, A) ) {
-                            A.assign(j, k, g, M, P, pp);
-                            done = 1;
+                           A.assign(j, k, g, M, P, pp);
+                           done = 1;
                        }
                     }
                     for (size_t gg = 0; gg < SF_av_k.size()
