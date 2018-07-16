@@ -387,8 +387,6 @@ void simple_assign (MTL & M, Plates & P, const FP & pp, const Feat & F,
         fflush(stdout);
         std::vector <std::pair <double, int> > pairs;
         for (int k = 0; k < F.Nfiber; k++) {
-            //fprintf(stdout, "fiber %d out of %d\n", k, F.Nfiber);
-            //        fflush(stdout);
 
             List av_gals = P[j].av_gals[k];
             double Max_fiber_priority = 0.;
@@ -669,19 +667,20 @@ void assign_sf_ss (int j, MTL & M, Plates & P, const FP & pp, const Feat & F,
                 SS_av_k = sort_by_subpriority(M, SS_av_k_init);
                 SF_av_k = sort_by_subpriority(M, SF_av_k_init);
                 if (A.TF[j][k] == -1) {
-                    // this fiber isn't assigned yet
-                    int done = 0;
-		    for (size_t gg = 0; gg < SS_av_k.size() && done == 0; gg++) {
+		   // this fiber isn't assigned yet
+		   int done = 0;
+
+		   for (size_t gg = 0; gg < SS_av_k.size() && done == 0; gg++) {
                         // SS on this with reach of this fiber
-                        int g = SS_av_k[gg];
+                       int g = SS_av_k[gg];
                         // if g isn't already assigned on this fiber and we
                         // still need it and it's ok to assign, then assign
-                        if ( (A.is_assigned_jg(j, g, M, F) == -1) &&
+                       if ( (A.is_assigned_jg(j, g, M, F) == -1) &&
                              ok_for_limit_SS_SF(g, j, k, M, P, pp, F) &&
                              ok_assign_g_to_jk(g, j, k, P, M, pp, F, A) ) {
                             A.assign(j, k, g, M, P, pp);
                             done = 1;
-                        }
+                       }
                     }
                     for (size_t gg = 0; gg < SF_av_k.size()
                         && done == 0; gg++) {
