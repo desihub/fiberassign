@@ -14,6 +14,7 @@ fiberassign change log
 * Fixes sign flip in x,y <-> RA,dec conversions  (PR `#127`_).
 * Checks for missing files (PR `#128`_).
 * Fix unclosed file error (PR `#129`_).
+* Bug fix: overflowing integer for SS flag (PR `#131`_).
 
 .. _`#114`: https://github.com/desihub/fiberassign/pull/114
 .. _`#116`: https://github.com/desihub/fiberassign/pull/116
@@ -25,6 +26,7 @@ fiberassign change log
 .. _`#127`: https://github.com/desihub/fiberassign/pull/127
 .. _`#128`: https://github.com/desihub/fiberassign/pull/128
 .. _`#129`: https://github.com/desihub/fiberassign/pull/129
+.. _`#131`: https://github.com/desihub/fiberassign/pull/131
 
 0.8.1 (2018-05-10)
 ------------------
