@@ -383,13 +383,20 @@ void simple_assign (MTL & M, Plates & P, const FP & pp, const Feat & F,
     init_time(t, "# Begin simple assignment :");
     int countme = 0;
     for (int j = 0; j < F.Nplate; j++) {
+        fprintf(stdout, "plate %d out of %d\n", j, F.Nplate);
+        fflush(stdout);
         std::vector <std::pair <double, int> > pairs;
         for (int k = 0; k < F.Nfiber; k++) {
+            //fprintf(stdout, "fiber %d out of %d\n", k, F.Nfiber);
+            //        fflush(stdout);
+
             List av_gals = P[j].av_gals[k];
             double Max_fiber_priority = 0.;
             // loop over the potential list to find pbest and subpbest
             // and then combine them to give the fiber_weight
             for (size_t gg = 0; gg < av_gals.size(); gg++) {
+                //fprintf(stdout, "available gal %d out of %d\n", gg, av_gals.size());
+                //    fflush(stdout);
                 int g = av_gals[gg];
                 // not SS and SF
                 if (!M[g].SS && !M[g].SF) {
@@ -664,7 +671,7 @@ void assign_sf_ss (int j, MTL & M, Plates & P, const FP & pp, const Feat & F,
                 if (A.TF[j][k] == -1) {
                     // this fiber isn't assigned yet
                     int done = 0;
-                    for (size_t gg = 0; gg < SS_av_k.size() && done == 0; gg++) {
+		    for (size_t gg = 0; gg < SS_av_k.size() && done == 0; gg++) {
                         // SS on this with reach of this fiber
                         int g = SS_av_k[gg];
                         // if g isn't already assigned on this fiber and we
