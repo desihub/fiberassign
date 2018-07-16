@@ -321,7 +321,11 @@ MTL read_MTLfile (str readfile, const Feat & F, long SS, long SF) {
             Q.desi_target = desi_target[ii];
             Q.mws_target = mws_target[ii];
             Q.bgs_target = bgs_target[ii];
-            Q.SS = SS;
+	    if(SS!=0){
+	      Q.SS = 1;
+	    }else{
+	      Q.SS = SS;
+	    }
             Q.SF = SF;
             // These variables were not initialized elsewhere
             Q.lastpass = 0;
