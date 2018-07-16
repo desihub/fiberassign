@@ -393,8 +393,6 @@ void simple_assign (MTL & M, Plates & P, const FP & pp, const Feat & F,
             // loop over the potential list to find pbest and subpbest
             // and then combine them to give the fiber_weight
             for (size_t gg = 0; gg < av_gals.size(); gg++) {
-                //fprintf(stdout, "available gal %d out of %d\n", gg, av_gals.size());
-                //    fflush(stdout);
                 int g = av_gals[gg];
                 // not SS and SF
                 if (!M[g].SS && !M[g].SF) {
