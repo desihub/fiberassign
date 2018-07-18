@@ -18,6 +18,7 @@ import desimodel.io
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--targets", type=str,  help="input data")
+parser.add_argument("--verbose", action="store_true",  help="print non-error info per tile")
 parser.add_argument("tilefiles", type=str, nargs='+', help="fiber assign tile files")
 
 args = parser.parse_args()
@@ -28,6 +29,10 @@ fiber_locations = sorted(zip(fiberpos['FIBER'], fiberpos['LOCATION']))
 
 sky_mask = desi_mask.SKY
 std_mask = (desi_mask.STD_FSTAR | desi_mask.STD_BRIGHT | desi_mask.STD_WD)
+
+#- TODO: take hardcoded from src/global.h into config file
+stuck_mask = 2**1
+broken_mask = 2**2
 
 nfail = 0
 assigned = list()
@@ -47,9 +52,12 @@ for filename in args.tilefiles:
     if len(np.unique(fa['LOCATION'])) != 5000:
         errors.append('Repeated location numbers')
 
-    if np.any(fa['TARGETID'] < 0):
-        n = np.count_nonzero(fa['TARGETID'] < 0)
-        errors.append('{} unassigned fibers'.format(n))
+    is_stuck = ((fa['FIBERMASK'] & stuck_mask) != 0)
+    is_broken = ((fa['FIBERMASK'] & broken_mask) != 0)
+    is_unassigned = (fa['TARGETID'] < 0)
+    n_good_unassigned = np.count_nonzero(is_unassigned & ~(is_stuck | is_broken))
+    if n_good_unassigned > 0:
+        errors.append('{} unassigned good fibers'.format(n_good_unassigned))
 
     tx = fa['TARGETID'][fa['TARGETID']>0]
     if len(tx) != len(np.unique(tx)):
@@ -67,30 +75,34 @@ for filename in args.tilefiles:
         errors.append('Fibers assigned to more than 6mm from positioner center')
 
     nsky_total = 0
-    nstar_total = 0
+    nstdstar_total = 0
     for petal in range(10):
         ii = (fa['FIBER'] // 500) == petal
         nstd = np.count_nonzero(fa['DESI_TARGET'][ii] & std_mask)
         nsky = np.count_nonzero(fa['DESI_TARGET'][ii] & sky_mask)
         nsky_total += nsky
-        nstar_total += nstd
+        nstdstar_total += nstd
         if nstd < 10:
             errors.append('Petal {} has {}/10 stdstars'.format(petal, nstd))
         if nsky < 40:
             errors.append('Petal {} has {}/40 sky'.format(petal, nsky))
-    print('Total SKY fibers {}'.format(nsky_total))
-    print('Total STDSTAR fibers {}'.format(nstar_total))
+
+    #- Print any errors
     if len(errors) == 0:
         print('{} - OK'.format(filename))
     else:
         nfail += 1
         print('{} - ERROR'.format(filename))
         for err in errors:
-            print('  {}'.format(err))
+            print('    {}'.format(err))
 
-    n_stuck = np.count_nonzero(fa['TARGETID']==-2)
-    n_broken = np.count_nonzero(fa['TARGETID']==-3)
-    print('{} stuck fibers\n{} broken fibers'.format(n_stuck, n_broken))
+    #- Then print non-error informational stats
+    if args.verbose:
+        n_stuck = np.count_nonzero(is_stuck)
+        n_broken = np.count_nonzero(is_broken)
+        print('    {} stuck, {} broken, {} sky, {} stdstars'.format(
+            n_stuck, n_broken, nsky_total, nstdstar_total))
+
 
 print('{}/{} tiles had errors'.format(nfail, len(args.tilefiles)))
 
