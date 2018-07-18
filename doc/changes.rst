@@ -1,11 +1,11 @@
 fiberassign change log
 ======================
 
-0.8.2 (unreleased)
+0.9.0 (2018-07-18)
 ------------------
 
 * Standard star DESI_TARGET mask as input parameter (PR `#114`_).
-* `fiberassign` is now a python wrapper around the C++ executable (PR `#116`_).
+* :command:`fiberassign` is now a python wrapper around the C++ executable (PR `#116`_).
 * Adds sky monitor fiber assignments (PR `#119`_).
 * Adds GFA targets HDU (PR `#122`_).
 * Code format cleanup (PR `#123`_).
@@ -15,6 +15,7 @@ fiberassign change log
 * Checks for missing files (PR `#128`_).
 * Fix unclosed file error (PR `#129`_).
 * Bug fix: overflowing integer for SS flag (PR `#131`_).
+* Show stuck/broken/unassigned fibers in :command:`qa-fiberassign` (PR `#132`_).
 
 .. _`#114`: https://github.com/desihub/fiberassign/pull/114
 .. _`#116`: https://github.com/desihub/fiberassign/pull/116
@@ -27,6 +28,7 @@ fiberassign change log
 .. _`#128`: https://github.com/desihub/fiberassign/pull/128
 .. _`#129`: https://github.com/desihub/fiberassign/pull/129
 .. _`#131`: https://github.com/desihub/fiberassign/pull/131
+.. _`#132`: https://github.com/desihub/fiberassign/pull/132
 
 0.8.1 (2018-05-10)
 ------------------
