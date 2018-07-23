@@ -133,6 +133,8 @@ ext_modules = [
         ],
         library_dirs=[cfitsio_ldf],
         libraries=['cfitsio'],
+        extra_compile_args=['-fopenmp'],
+        extra_link_args=['-fopenmp'],
         language='c++'
     ),
 ]
@@ -189,7 +191,7 @@ class BuildExt(build_ext):
         elif ct == 'msvc':
             opts.append('/DVERSION_INFO=\\"%s\\"' % self.distribution.get_version())
         for ext in self.extensions:
-            ext.extra_compile_args = opts
+            ext.extra_compile_args.extend(opts)
         build_ext.build_extensions(self)
 
 

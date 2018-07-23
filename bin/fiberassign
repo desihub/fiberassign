@@ -17,6 +17,8 @@ import desimodel.focalplane
 import tempfile
 import shutil
 
+import fiberassign as fba
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--mtl", type=str,  help="input targets (FITS file)", required=True)
@@ -142,27 +144,35 @@ check_existing_files(tmp_targets_dir)
 check_existing_files(tmp_sky_dir)
 check_existing_files(tmp_gfa_dir)
 
-fiberassign_command ="fiberassign_exec --mtl {mtl}  --sky {sky} --stdstar {stdstar}  --fibstatusfile {fiberstatusfile}  \
-            --outdir {outdir} \
-            --surveytiles {surveytiles}  \
-            --footprint {footprint}  \
-            --positioners {positioners} \
-            --starmask {starmask} \
-            --rundate {rundate}"
-
 # fiberassign targets
-cmd = fiberassign_command.format(mtl=args.mtl, sky=args.sky, stdstar=args.stdstar, fiberstatusfile=args.fibstatusfile,
-                                 outdir=tmp_targets_dir, surveytiles=args.surveytiles, starmask = args.starmask,
-                                 footprint=args.footprint, positioners=tmp_fiber_pos, rundate=args.rundate)
-print(cmd)
-os.system(cmd)
 
-#fiberassign sky
-cmd = fiberassign_command.format(mtl=args.sky, sky=args.sky, stdstar=args.sky, fiberstatusfile=args.fibstatusfile,
-                                 outdir=tmp_sky_dir, surveytiles=args.surveytiles, starmask = args.starmask,
-                                 footprint=args.footprint, positioners=tmp_fiber_sky, rundate=args.rundate)
-print(cmd)
-os.system(cmd)
+fba.fiberassign_exec(
+    args.mtl,
+    args.sky,
+    args.stdstar,
+    args.surveytiles,
+    args.footprint,
+    tmp_fiber_pos,
+    args.fibstatusfile,
+    args.rundate,
+    tmp_targets_dir,
+    args.starmask
+)
+
+# fiberassign sky
+
+fba.fiberassign_exec(
+    args.sky,
+    args.sky,
+    args.sky,
+    args.surveytiles,
+    args.footprint,
+    tmp_fiber_sky,
+    args.fibstatusfile,
+    args.rundate,
+    tmp_sky_dir,
+    args.starmask
+)
 
 # join targets+sky+gfa tiles
 
