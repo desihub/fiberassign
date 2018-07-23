@@ -104,41 +104,16 @@ def find_cfitsio():
 
     return inc, ldf
 
+cfitsio_inc, cfitsio_ldf = find_cfitsio()
+print("Using CFITSIO include directory: {}".format(cfitsio_inc))
+print("Using CFITSIO library directory: {}".format(cfitsio_ldf))
+
 
 # These classes allow us to build a compiled extension that uses pybind11.
 # For more details, see:
 #
 #  https://github.com/pybind/python_example
 #
-
-cfitsio_inc, cfitsio_ldf = find_cfitsio()
-print("Using CFITSIO include directory: {}".format(cfitsio_inc))
-print("Using CFITSIO library directory: {}".format(cfitsio_ldf))
-
-ext_modules = [
-    Extension(
-        'fiberassign._internal',
-        [
-            'src/structs.cpp',
-            'src/misc.cpp',
-            'src/feat.cpp',
-            'src/collision.cpp',
-            'src/global.cpp',
-            'src/fiberassign.cpp',
-            'src/_pyfiberassign.cpp'
-        ],
-        include_dirs=[
-            'src',
-            cfitsio_inc,
-        ],
-        library_dirs=[cfitsio_ldf],
-        libraries=['cfitsio'],
-        extra_compile_args=['-fopenmp'],
-        extra_link_args=['-fopenmp'],
-        language='c++'
-    ),
-]
-
 
 # As of Python 3.6, CCompiler has a `has_flag` method.
 # cf http://bugs.python.org/issue26689
@@ -188,12 +163,38 @@ class BuildExt(build_ext):
             opts.append(cpp_flag(self.compiler))
             if has_flag(self.compiler, '-fvisibility=hidden'):
                 opts.append('-fvisibility=hidden')
+            if has_flag(self.compiler, '-fopenmp'):
+                opts.append('-fopenmp')
         elif ct == 'msvc':
             opts.append('/DVERSION_INFO=\\"%s\\"' % self.distribution.get_version())
         for ext in self.extensions:
             ext.extra_compile_args.extend(opts)
         build_ext.build_extensions(self)
 
+
+ext_modules = [
+    Extension(
+        'fiberassign._internal',
+        [
+            'src/structs.cpp',
+            'src/misc.cpp',
+            'src/feat.cpp',
+            'src/collision.cpp',
+            'src/global.cpp',
+            'src/fiberassign.cpp',
+            'src/_pyfiberassign.cpp'
+        ],
+        include_dirs=[
+            'src',
+            cfitsio_inc,
+        ],
+        library_dirs=[cfitsio_ldf],
+        libraries=['cfitsio'],
+        extra_compile_args=[],
+        extra_link_args=[],
+        language='c++'
+    ),
+]
 
 setup_keywords['ext_modules'] = ext_modules
 setup_keywords['cmdclass']['build_ext'] = BuildExt
