@@ -1,21 +1,30 @@
-Assign.*
-assign
+# Compiled files
+*.py[co]
+
+# Other generated files
+htmlcov
+.coverage
+
+# Sphinx
+doc/api
+doc/_build
+
+# Packages/installer info
+*.egg
+*.egg-info
+tmp
+dist
+build
+eggs
+parts
+var
+sdist
+develop-eggs
+.installed.cfg
+distribute-*.tar.gz
+
+# Other
 *~
-*.o
-*.jaime~
-Assign.*
-*.txt~
-*/*.o
-patrol*
-10m*
-simple*
-assign*
-src/fiberassign_exec
-src/fiberassign_surveysim
-src/split_*
-bin/fiberassign_exec
-bin/fiberassign_surveysim
-bin/split_*
-slurm*
-*.pyc
-*diff*
+
+# Mac OSX
+.DS_Store

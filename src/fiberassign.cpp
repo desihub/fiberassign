@@ -19,25 +19,48 @@
 #include "collision.h"
 #include "global.h"
 
+#include <pybind11/pybind11.h>
+#include <pybind11/operators.h>
+#include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 
-int main (int argc, char ** argv) {
-    // argv[1] is the features file
-    //// Initializations ---------------------------------------------
-    //
-    //  M is collection of targets, sky fibers, and standard stars
-    //  each target has a priority provided by the mtl file
-    //  all targets with the same priority are collected into a class
-    // check_args(argc);
+
+namespace py = pybind11;
+
+using ShapeContainer = py::detail::any_container<ssize_t>;
+
+
+void fiberassign_exec (
+    std::string mtlfile,
+    std::string skyfile,
+    std::string stdstarfile,
+    std::string surveyfile,
+    std::string tilefile,
+    std::string fiberfile,
+    std::string statusfile,
+    std::string rundate,
+    std::string outdir,
+    long starmask
+    ) {
+
     // t for global, time for local
     Time t, time;
     init_time(t);
     Feat F;
     MTL M;
 
-    // Read parameters file //
-    // F.readInputFile(argv[1]);
-    F.parseCommandLine(argc, argv);
-    // printFile(argv[1]);
+    // Assign members of Feat class.
+    // FIXME:  This should really be in the constructor.
+    F.Targfile = mtlfile;
+    F.SkyFfile = skyfile;
+    F.SStarsfile = stdstarfile;
+    F.surveyFile = surveyfile;
+    F.outDir = outdir;
+    F.tileFile = tilefile;
+    F.fibFile = fiberfile;
+    F.fibstatusFile = statusfile;
+    F.runDate = rundate;
+    F.StarMask = starmask;
 
     // Read input files for standards, skys and targets.
     // Try to read SS and SF before targets to avoid wasting time if these
@@ -231,5 +254,5 @@ int main (int argc, char ** argv) {
         fa_write(j, F.outDir, M, P, pp, F, A);  // Write output
     }
     print_time(t, "# Finished !... in");
-    return (0);
+    return;
 }

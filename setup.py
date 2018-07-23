@@ -11,7 +11,8 @@ import sys
 # setuptools' sdist command ignores MANIFEST.in
 #
 from distutils.command.sdist import sdist as DistutilsSdist
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Extension
+from setuptools.command.build_ext import build_ext
 #
 # DESI support code.
 #
@@ -68,30 +69,55 @@ setup_keywords['test_suite']='{name}.test.{name}_test_suite.{name}_test_suite'.f
 #setup_keywords['package_data'] = {'fiberassign': ['data/*',]}
 #
 
+def find_cfitsio():
+    """Helper function to find cfitsio include and library paths.
+
+    If the user has specified the CFITSIO_DIR environment variable, then it
+    uses that blindly.  Otherwise it tries to use pkg-config to get the needed
+    flags.  If that fails, it just assumes that cfitsio is in the default CPATH
+    and LD_LIBRARY_PATH / LIBRARY_PATH search locations.
+
+    """
+    inc = ""
+    ldf = ""
+    if "CFITSIO_DIR" in os.environ:
+        inc = os.path.join(os.environ["CFITSIO_DIR"], "include")
+        ldf = os.path.join(os.environ["CFITSIO_DIR"], "lib")
+    else:
+        import subprocess as sp
+        import re
+        try:
+            sp.check_call(["pkg-config", "--version"])
+            # Ok, we have pkg-config...
+            inc = sp.check_output(
+                ["pkg-config", "--cflags-only-I", "cfitsio"],
+                universal_newlines=True).strip()
+            ldf = sp.check_output(
+                ["pkg-config", "--libs-only-L", "cfitsio"],
+                universal_newlines=True).strip()
+            inc = inc.replace("-I", "")
+            ldf = ldf.replace("-L", "")
+        except OSError as e:
+            # Leave the variables blank and assume they are in the default
+            # search path
+            pass
+
+    return inc, ldf
+
+
 # These classes allow us to build a compiled extension that uses pybind11.
 # For more details, see:
 #
 #  https://github.com/pybind/python_example
 #
 
-class get_pybind_include(object):
-    """Helper class to determine the pybind11 include path
-
-    The purpose of this class is to postpone importing pybind11
-    until it is actually installed, so that the ``get_include()``
-    method can be invoked. """
-
-    def __init__(self, user=False):
-        self.user = user
-
-    def __str__(self):
-        import pybind11
-        return pybind11.get_include(self.user)
-
+cfitsio_inc, cfitsio_ldf = find_cfitsio()
+print("Using CFITSIO include directory: {}".format(cfitsio_inc))
+print("Using CFITSIO library directory: {}".format(cfitsio_ldf))
 
 ext_modules = [
     Extension(
-        '_fiberassign',
+        'fiberassign._internal',
         [
             'src/structs.cpp',
             'src/misc.cpp',
@@ -99,13 +125,14 @@ ext_modules = [
             'src/collision.cpp',
             'src/global.cpp',
             'src/fiberassign.cpp',
+            'src/_pyfiberassign.cpp'
         ],
         include_dirs=[
-            # Path to pybind11 headers
-            get_pybind_include(),
-            get_pybind_include(user=True),
             'src',
+            cfitsio_inc,
         ],
+        library_dirs=[cfitsio_ldf],
+        libraries=['cfitsio'],
         language='c++'
     ),
 ]
