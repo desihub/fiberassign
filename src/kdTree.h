@@ -2,6 +2,7 @@
 #define _KDTREE_H_
 
 #include <cstdlib>
+#include <cstdint>
 #include <cmath>
 #include <iostream>
 #include <iomanip>
@@ -9,11 +10,9 @@
 #include <fstream>
 #include <vector>
 #include <algorithm>
-#include <exception>
 
+#include <utils.h>
 
-extern void myexit (const int flag);
-extern void myexception (const std::exception & e);
 
 template <class Ttype> class KDtree {
     private:
@@ -90,7 +89,7 @@ template <class Ttype> class KDtree {
                     left.assign( P.begin(), P.begin() + median);
                     right.assign(P.begin() + median, P.end() );
                 } catch (std::exception & e) {
-                    myexception(e);
+                    fiberassign::myexception(e);
                 }
                 // Set up the entry for the split point, this recursively puts
                 // in
@@ -113,7 +112,7 @@ template <class Ttype> class KDtree {
                 try {
                     tree.push_back(cur);
                 } catch (std::exception & e) {
-                    myexception(e);
+                    fiberassign::myexception(e);
                 }
             } else {
                 // Don't split this.
@@ -123,14 +122,14 @@ template <class Ttype> class KDtree {
                 try {
                     cur.objs.assign(P.begin(), P.end() );
                 } catch (std::exception & e) {
-                    myexception(e);
+                    fiberassign::myexception(e);
                 }
                 cur.left_child  = -1;
                 cur.right_child = -1;
                 try {
                     tree.push_back(cur);
                 } catch (std::exception & e) {
-                    myexception(e);
+                    fiberassign::myexception(e);
                 }
             }
         }
@@ -167,7 +166,7 @@ template <class Ttype> class KDtree {
             try {
                 bndbox.resize(2 * Ndim * tree.size() );
             } catch (std::exception & e) {
-                myexception(e);
+                fiberassign::myexception(e);
             }
             for (int jdim = 0; jdim < Ndim; ++jdim) {
                 bndbox[2 * (Ndim * root + jdim) + 0] = xmin[jdim];
@@ -192,10 +191,10 @@ template <class Ttype> class KDtree {
             }
         }
 
-        std::vector <int> near (const int n, const double pos[],
+        std::vector <int64_t> near (const int n, const double pos[],
                                 const double rmin, const double rmax) const {
             // Returns a vector of object ids near pos within node n.
-            std::vector <int> retlist;
+            std::vector <int64_t> retlist;
             const double rmax2 = rmax * rmax, rmin2 = rmin * rmin;
             double mindst2 = 0;
             for (int jdim = 0; jdim < Ndim; ++jdim) {
@@ -231,7 +230,7 @@ template <class Ttype> class KDtree {
                         try {
                             retlist.resize(tree[n].objs.size() );
                         } catch (std::exception & e) {
-                            myexception(e);
+                            fiberassign::myexception(e);
                         }
                         for (size_t i = 0; i < tree[n].objs.size(); ++i) {
                             retlist[i] = tree[n].objs[i].id;
@@ -250,7 +249,7 @@ template <class Ttype> class KDtree {
                                 try {
                                     retlist.push_back(tree[n].objs[i].id);
                                 } catch (std::exception & e) {
-                                    myexception(e);
+                                    fiberassign::myexception(e);
                                 }
                             }
                         }
@@ -258,24 +257,24 @@ template <class Ttype> class KDtree {
                         // Traverse down the hierarchy.
                         int m;
                         if ( (m = get_left_child(n) ) >= 0) {
-                            std::vector <int> nbr = near(m, pos, rmin, rmax);
+                            std::vector <int64_t> nbr = near(m, pos, rmin, rmax);
                             if (nbr.size() > 0) {
                                 try {
                                     retlist.insert(retlist.end(),
                                                    nbr.begin(), nbr.end() );
                                 } catch (std::exception & e) {
-                                    myexception(e);
+                                    fiberassign::myexception(e);
                                 }
                             }
                         }
                         if ( (m = get_right_child(n) ) >= 0) {
-                            std::vector <int> nbr = near(m, pos, rmin, rmax);
+                            std::vector <int64_t> nbr = near(m, pos, rmin, rmax);
                             if (nbr.size() > 0) {
                                 try {
                                     retlist.insert(retlist.end(),
                                                    nbr.begin(), nbr.end() );
                                 } catch (std::exception & e) {
-                                    myexception(e);
+                                    fiberassign::myexception(e);
                                 }
                             }
                         }
@@ -305,7 +304,7 @@ template <class Ttype> class KDtree {
                 xmin.resize(Ndim);
                 xmax.resize(Ndim);
             } catch (std::exception & e) {
-                myexception(e);
+                fiberassign::myexception(e);
             }
             for (int jdim = 0; jdim < Ndim; ++jdim) {
                 xmin[jdim] = 1e30;
@@ -390,7 +389,7 @@ template <class Ttype> class KDtree {
             return (tree[n].right_child);
         }
 
-        std::vector <int> near (const double pos[], const double rmin,
+        std::vector <int64_t> near (const double pos[], const double rmin,
                                 const double rmax) const {
             return (near(root, pos, rmin, rmax) );
         }

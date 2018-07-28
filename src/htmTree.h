@@ -11,6 +11,9 @@
 #include <vector>
 #include <algorithm>
 #include <exception>
+
+#include <utils.h>
+
 /*
 
    A hierarchical triangular mesh (quad)tree structure for returning
@@ -20,8 +23,6 @@
    Written: 20-May-2014
    Modified:    21-May-2014
  */
-extern void myexit (const int flag);
-extern void myexception (const std::exception & e);
 
 template <class Ttype> class htmTree {
     protected:
@@ -48,7 +49,7 @@ template <class Ttype> class htmTree {
             ll = sqrt(ll);
             if (ll <= 0) {
                 std::cerr << "Vector length 0!" << std::endl;
-                myexit(1);
+                fiberassign::myexit(1);
             }
             for (int i = 0; i < 3; i++) {
                 vv[i] /= ll;
@@ -165,7 +166,7 @@ template <class Ttype> class htmTree {
             try {
                 T.push_back(tn);
             } catch (std::exception & e) {
-                myexception(e);
+                fiberassign::myexception(e);
             }
             // Child 1.
             // Vertex 0 is midway between 0 & 1.
@@ -194,7 +195,7 @@ template <class Ttype> class htmTree {
             try {
                 T.push_back(tn);
             } catch (std::exception & e) {
-                myexception(e);
+                fiberassign::myexception(e);
             }
             // Child 2.
             // Vertex 0 is midway between 0 & 2.
@@ -223,7 +224,7 @@ template <class Ttype> class htmTree {
             try {
                 T.push_back(tn);
             } catch (std::exception & e) {
-                myexception(e);
+                fiberassign::myexception(e);
             }
             // Child 3.
             // Vertex 0 is midway between 1 & 2.
@@ -253,7 +254,7 @@ template <class Ttype> class htmTree {
             try {
                 T.push_back(tn);
             } catch (std::exception & e) {
-                myexception(e);
+                fiberassign::myexception(e);
             }
         }
 
@@ -401,7 +402,7 @@ template <class Ttype> class htmTree {
                             try {
                                 T[cur].lst.push_back(i);
                             } catch (std::exception & e) {
-                                myexception(e);
+                                fiberassign::myexception(e);
                             }
                             notput = false;
                         } else if ( ( T[cur].indx == -1) &&
@@ -431,7 +432,7 @@ template <class Ttype> class htmTree {
                                     T[cur].lst.push_back(pid);
                                     T[cur].lst.push_back(i);
                                 } catch (std::exception & e) {
-                                    myexception(e);
+                                    fiberassign::myexception(e);
                                 }
                                 notput = false;
                             }
@@ -468,7 +469,7 @@ template <class Ttype> class htmTree {
             // Prints some (possibly) useful statistics.
             double minsize = 1e10, smlsize = 100.;
             int maxlen =  -1, totlen = 0;
-            for (int i = 0; i < T.size(); i++) {
+            for (size_t i = 0; i < T.size(); i++) {
                 double lsiz = T[i].t.syze;
                 // Need to do this for some reason.
                 int llen = T[i].lst.size();
@@ -481,17 +482,20 @@ template <class Ttype> class htmTree {
                 }
                 totlen += llen;
             }
-            std::cout << "# Tree has " << T.size() << " nodes." << std::endl;
-            std::cout << "# Memory load is " << T.size() *
-                sizeof(struct treenode) / 1024. / 1024. <<
-                " MB (excluding lists)." << std::endl;
-            std::cout << "# Longest list length is " << maxlen << std::endl;
-            std::cout << "# Occurs for node of size " << smlsize << std::endl;
-            std::cout << "# Total cumulative list length is " << totlen <<
-                std::endl;
-            std::cout << "# Minimum node size is " << std::scientific <<
-                minsize << " (min_node_size=" << min_node_size << ")." <<
-                std::endl;
+            fiberassign::Logger & logger = fiberassign::Logger::get();
+            std::ostringstream logmsg;
+            logmsg << "htmTree:  " << T.size() << " nodes, " << (T.size() *
+                sizeof(struct treenode) / 1024. / 1024.) << " MB";
+            logger.debug(logmsg.str().c_str());
+            logmsg.str("");
+            logmsg << "htmTree:  max list len = " << maxlen
+                << " at node size " << smlsize;
+            logger.debug(logmsg.str().c_str());
+            logmsg.str("");
+            logmsg << "htmTree:  total list len = "
+                << totlen << ", min node size = "
+                << std::scientific << minsize;
+            logger.debug(logmsg.str().c_str());
         }
 
         void which_base (const Ttype & P) {
@@ -534,7 +538,7 @@ template <class Ttype> class htmTree {
                         try {
                             nbr.push_back(indx);
                         } catch (std::exception & e) {
-                            myexception(e);
+                            fiberassign::myexception(e);
                         }
                     }
                 } else if ( ( T[cur].indx == -1) && ( T[cur].lst.size() > 0) ) {
@@ -551,7 +555,7 @@ template <class Ttype> class htmTree {
                             try {
                                 nbr.push_back(T[cur].lst[j]);
                             } catch (std::exception & e) {
-                                myexception(e);
+                                fiberassign::myexception(e);
                             }
                         }
                     }

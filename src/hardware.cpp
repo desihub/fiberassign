@@ -1,0 +1,693 @@
+// Licensed under a 3-clause BSD style license - see LICENSE.rst
+
+#include <hardware.h>
+
+#include <cmath>
+#include <iostream>
+#include <algorithm>
+#include <sstream>
+
+
+namespace fba = fiberassign;
+
+namespace fbg = fiberassign::geom;
+
+
+fba::Hardware::Hardware(std::vector <int32_t> const & fiber,
+                        std::vector <int32_t> const & petal,
+                        std::vector <int32_t> const & spectro,
+                        std::vector <double> const & x_mm,
+                        std::vector <double> const & y_mm,
+                        std::vector <double> const & z_mm,
+                        std::vector <int32_t> const & status) {
+    nfiber = fiber.size();
+
+    int32_t maxpetal = 0;
+    for (auto const & p : petal) {
+        if (p > maxpetal) {
+            maxpetal = p;
+        }
+    }
+    npetal = static_cast <size_t> (maxpetal + 1);
+
+    center_mm.clear();
+    center_z_mm.clear();
+    fiber_petal.clear();
+    fiber_spectro.clear();
+    fiber_id.resize(0);
+    state.clear();
+
+    petal_fibers.clear();
+    for (int32_t i = 0; i < npetal; ++i) {
+        petal_fibers[i].resize(0);
+    }
+
+    for (int32_t i = 0; i < nfiber; ++i) {
+        fiber_id.push_back(fiber[i]);
+        fiber_petal[fiber[i]] = petal[i];
+        fiber_spectro[fiber[i]] = spectro[i];
+        petal_fibers[petal[i]].push_back(fiber[i]);
+        center_mm[fiber[i]] = std::make_pair(x_mm[i], y_mm[i]);
+        center_z_mm[fiber[i]] = z_mm[i];
+        state[fiber[i]] = status[i];
+        neighbors[fiber[i]].clear();
+    }
+
+    // Sort the fiber IDs
+    std::stable_sort(fiber_id.begin(), fiber_id.end());
+    for (int32_t i = 0; i < npetal; ++i) {
+        std::stable_sort(petal_fibers[i].begin(), petal_fibers[i].end());
+    }
+
+    // hardcode for now...
+    nfiber_petal = 500;
+
+    // hardcode these for now...
+
+    focalplane_radius_deg = 1.65;
+
+    patrol_mm = 5.8;
+
+    collide_mm = 1.98;
+
+    collide_avg_mm = 3.2;
+
+    no_collide_mm = 7.0;
+
+    neighbor_radius_mm = 14.05;
+
+    // FIXME:  this hardcoded number is taken from the original code.  Should
+    // be verified...
+    positioner_range = std::make_pair(3.0, 3.0);
+    pos_theta_max_deg = 380.0;
+    pos_phi_max_deg = 200.0;
+    pos_theta_max = pos_theta_max_deg * M_PI / 180.0;
+    pos_phi_max = pos_phi_max_deg * M_PI / 180.0;
+
+    // Compute neighboring fibers
+    for (int32_t x = 0; x < nfiber; ++x) {
+        int32_t xid = fiber_id[x];
+        for (int32_t y = x + 1; y < nfiber; ++y) {
+            int32_t yid = fiber_id[y];
+            double dist = fbg::dist(center_mm[xid], center_mm[yid]);
+            if (dist <= neighbor_radius_mm) {
+                neighbors[xid].push_back(yid);
+                neighbors[yid].push_back(xid);
+            }
+        }
+    }
+
+    // for (auto const & nb : neighbors) {
+    //     int32_t fid = nb.first;
+    //     std::ostringstream nstr;
+    //     for (auto const & n : nb.second) {
+    //         nstr << n << ", ";
+    //     }
+    //     std::cout << "NGHBOR:  " << fid << " = " << nstr.str() << std::endl;
+    // }
+    //
+    // for (auto const & nb : neighbors) {
+    //     int32_t fid = nb.first;
+    //     std::cout << "NGHBOR:  " << fid << " (" << center_mm[fid].first << "," << center_mm[fid].second << ")" << std::endl;
+    //     for (auto const & n : nb.second) {
+    //         std::cout << "NGHBOR:    " << n << " (" << center_mm[n].first << "," << center_mm[n].second << ") dist = " << fbg::dist(center_mm[fid], center_mm[n]) << std::endl;
+    //     }
+    // }
+
+    ferrule_holder = create_ferrule_holder();
+    central_body = create_central_body();
+}
+
+
+// Returns the radial distance on the focalplane (mm) given the angle,
+// theta (radians).  This is simply a fit to the data provided.
+double fba::Hardware::radial_ang2dist (double const & theta_rad) const {
+    const double p[4] = {8.297e5, -1750., 1.394e4, 0.0};
+    double dist_mm = 0.0;
+    for (size_t i = 0; i < 4; ++i) {
+        dist_mm = theta_rad * dist_mm + p[i];
+    }
+    return dist_mm;
+}
+
+
+// Returns the radial angle (theta) on the focalplane given the distance (mm)
+double fba::Hardware::radial_dist2ang (double const & dist_mm) const {
+    double delta_theta = 1e-4;
+    double inv_delta = 1.0 / delta_theta;
+
+    // starting guess
+    double theta_rad = 0.1;
+
+    double distcur;
+    double distdelta;
+    double correction;
+    double error = 1.0;
+
+    while (::abs(error) > 1e-7) {
+        distcur = radial_ang2dist(theta_rad);
+        distdelta = radial_ang2dist(theta_rad + delta_theta);
+        error = distcur - dist_mm;
+        correction = error / (inv_delta * (distdelta - distcur));
+        //std::cerr << "    dist2ang: theta = " << theta_rad << " err = " << error << " correction = " << correction << std::endl;
+        theta_rad -= correction;
+    }
+    return theta_rad;
+}
+
+
+fiberassign::geom::dpair fba::Hardware::radec2xy(
+    double const & tilera, double const & tiledec, double const & ra,
+    double const & dec) const {
+
+    double deg_to_rad = M_PI / 180.0;
+
+    // Inclination is 90 degrees minus the declination in degrees
+    double inc_rad = (90.0 - dec) * deg_to_rad;
+
+    double ra_rad = ra * deg_to_rad;
+    //double dec_rad = dec * deg_to_rad;
+    double tilera_rad = tilera * deg_to_rad;
+    double tiledec_rad = tiledec * deg_to_rad;
+
+    double sin_inc_rad = ::sin(inc_rad);
+    double x0 = sin_inc_rad * ::cos(ra_rad);
+    double y0 = sin_inc_rad * ::sin(ra_rad);
+    double z0 = ::cos(inc_rad);
+
+    double cos_tilera_rad = ::cos(tilera_rad);
+    double sin_tilera_rad = ::sin(tilera_rad);
+    double x1 = cos_tilera_rad * x0 + sin_tilera_rad * y0;
+    double y1 = -sin_tilera_rad * x0 + cos_tilera_rad * y0;
+    double z1 = z0;
+
+    double cos_tiledec_rad = ::cos(tiledec_rad);
+    double sin_tiledec_rad = ::sin(tiledec_rad);
+    double x = cos_tiledec_rad * x1 + sin_tiledec_rad * z1;
+    double y = y1;
+    double z = -sin_tiledec_rad * x1 + cos_tiledec_rad * z1;
+
+    double ra_ang_rad = ::atan2(y, x);
+    if (ra_ang_rad < 0) {
+        ra_ang_rad = 2.0 * M_PI + ra_ang_rad;
+    }
+
+    double dec_ang_rad = (M_PI / 2)
+        - ::acos(z / ::sqrt((x*x) + (y*y) + (z*z)) );
+
+    double radius_rad = 2 *
+        ::asin( ::sqrt( ::pow( ::sin(dec_ang_rad / 2), 2) +
+        ::cos(dec_ang_rad) * ::pow( ::sin(ra_ang_rad / 2), 2) ) );
+
+    double q_rad = ::atan2(z, -y);
+
+    double radius_mm = radial_ang2dist(radius_rad);
+    //std::cerr << "RADEC2XY:  radius_mm = " << radius_mm << std::endl;
+
+    double x_focalplane = radius_mm * ::cos(q_rad);
+    double y_focalplane = radius_mm * ::sin(q_rad);
+
+    return std::make_pair(x_focalplane, y_focalplane);
+}
+
+
+void fba::Hardware::radec2xy_multi(
+    double const & tilera, double const & tiledec,
+    std::vector <double> const & ra,
+    std::vector <double> const & dec,
+    std::vector <std::pair <double, double> > & xy) const {
+
+    size_t ntg = ra.size();
+    xy.resize(ntg);
+
+    #pragma omp parallel for schedule(static) default(none) shared(ntg, tilera, tiledec, xy, ra, dec)
+    for (size_t t = 0; t < ntg; ++t) {
+        xy[t] = radec2xy(tilera, tiledec, ra[t], dec[t]);
+    }
+
+    return;
+}
+
+
+void fba::Hardware::xy2radec(double const & tilera, double const & tiledec,
+              double const & x_mm, double const & y_mm,
+              double & ra, double & dec) const {
+
+    double deg_to_rad = M_PI / 180.0;
+    double rad_to_deg = 180.0 / M_PI;
+
+    double tilera_rad = tilera * deg_to_rad;
+    double tiledec_rad = tiledec * deg_to_rad;
+
+    // radial distance on the focal plane
+    double radius_mm = ::sqrt(x_mm * x_mm + y_mm * y_mm);
+    double radius_rad = radial_dist2ang(radius_mm);
+
+    // q is the angle the position makes with the +x-axis of focal plane
+    double q_rad = ::atan2(y_mm, x_mm);
+    //double q_deg = q_rad * 180.0 / M_PI;
+
+    // The focal plane is oriented with +yfocal = +dec but +xfocal = -RA
+    // Rotate clockwise around z by r_rad
+
+    double x1 = ::cos(radius_rad);     // y0=0 so drop sin(r_rad) term
+    double y1 = -::sin(radius_rad);    // y0=0 so drop cos(r_rad) term
+    //double z1 = 0.0;
+
+    // clockwise rotation around the x-axis
+
+    double x2 = x1;
+    double y2 = y1 * ::cos(q_rad);    // z1=0 so drop sin(q_rad) term
+    double z2 = -y1 * ::sin(q_rad);
+
+    double cos_tiledec = ::cos(tiledec_rad);
+    double sin_tiledec = ::sin(tiledec_rad);
+    double cos_tilera = ::cos(tilera_rad);
+    double sin_tilera = ::sin(tilera_rad);
+
+    // Clockwise rotation around y axis by declination of the tile center
+
+    double x3 = cos_tiledec * x2 - sin_tiledec * z2;
+    double y3 = y2;
+    double z3 = sin_tiledec * x2 + cos_tiledec * z2;
+
+    // Counter-clockwise rotation around the z-axis by the right
+    // ascension of the tile center
+    double x4 = cos_tilera * x3 - sin_tilera * y3;
+    double y4 = sin_tilera * x3 + cos_tilera * y3;
+    double z4 = z3;
+
+    double ra_rad = ::atan2(y4, x4);
+    if (ra_rad < 0.0) {
+        ra_rad = 2.0 * M_PI + ra_rad;
+    }
+
+    double dec_rad = M_PI_2 - ::acos(z4);
+
+    ra = ::fmod( (ra_rad * rad_to_deg), 360.0);
+    dec = dec_rad * rad_to_deg;
+
+    return;
+}
+
+
+fbg::shape fba::Hardware::create_ferrule_holder() const {
+    // Head disk
+    fbg::circle head(std::make_pair(0.0, 0.0), 0.967);
+
+    // Upper segment
+    std::vector <fbg::dpair> points;
+    points.push_back(std::make_pair(-3.0, 0.990));
+    points.push_back(std::make_pair(0, 0.990));
+    fbg::segments upper(points);
+
+    // Lower segment
+    points.clear();
+    points.push_back(std::make_pair(-2.944, -1.339));
+    points.push_back(std::make_pair(-2.944, -2.015));
+    points.push_back(std::make_pair(-1.981, -1.757));
+    points.push_back(std::make_pair(-1.844, -0.990));
+    points.push_back(std::make_pair(0.0, -0.990));
+    fbg::segments lower(points);
+
+    // Construct the total shape
+    fbg::circle_list circs;
+    circs.push_back(head);
+    fbg::segments_list segs;
+    segs.push_back(upper);
+    segs.push_back(lower);
+    fbg::shape fh(std::make_pair(-3.0, 0.0), circs, segs);
+
+    // Translate to proper location
+    fh.transl(std::make_pair(6.0, 0.0));
+
+    return fh;
+}
+
+
+fbg::shape fba::Hardware::create_central_body() const {
+    // Disk
+    fbg::circle disk(std::make_pair(3.0, 0.0), 2.095);
+
+    // Segments
+    std::vector <fbg::dpair> points;
+    points.push_back(std::make_pair(5.095, -0.474));
+    points.push_back(std::make_pair(4.358, -2.5));
+    points.push_back(std::make_pair(2.771, -2.5));
+    points.push_back(std::make_pair(1.759, -2.792));
+    points.push_back(std::make_pair(0.905, -0.356));
+    fbg::segments seg(points);
+
+    // Total shape
+    fbg::circle_list circs;
+    circs.push_back(disk);
+    fbg::segments_list segs;
+    segs.push_back(seg);
+    fbg::shape cb(std::make_pair(3.0, 0.0), circs, segs);
+
+    return cb;
+}
+
+
+std::array <double, 4> fba::Hardware::pos_angles(
+        fbg::dpair const & A, fbg::dpair const & posp) const {
+    fba::Logger & logger = fba::Logger::get();
+    std::array <double, 4> ang;
+    double na = fbg::norm(A);
+    double phi = 2.0 * ::acos(na / (2.0 * posp.first) );
+    if ((phi < 0.0) || (phi > pos_phi_max)) {
+        std::ostringstream o;
+        o << "cannot move positioner to phi angle " << (phi * 180.0 / M_PI);
+        logger.error(o.str().c_str());
+    }
+    // NOTE:  This was how theta was calculated in the original code.  The
+    // reduction of theta range does not seem to make sense...
+    // double theta = ::atan2(A.second, A.first) - (0.5 * phi)
+    //     + (A.first < 0.0 ? M_PI : 0.0);
+    double theta = ::atan2(A.second, A.first) - (0.5 * phi);
+    // NOTE: theta range is currently 0-380 degrees, and atan2 return value
+    // is in range +- 2PI.  So should not need a range check here...
+    ang[0] = ::cos(theta);
+    ang[1] = ::sin(theta);
+    ang[2] = ::cos(phi);
+    ang[3] = ::sin(phi);
+    return ang;
+}
+
+
+void fba::Hardware::reposition_fiber(fbg::shape & cb, fbg::shape & fh,
+                                     fbg::dpair const & center,
+                                     fbg::dpair const & position,
+                                     fbg::dpair const & posp) const {
+    fba::Logger & logger = fba::Logger::get();
+    // repositions positioner (central body, ferule holder)
+    fbg::dpair offset = std::make_pair(position.first - center.first,
+                                       position.second - center.second);
+    if (fbg::sq(posp.first + posp.second) < fbg::sq(offset)) {
+        std::ostringstream o;
+        o << "cannot move fiber at (" << center.first << ", "
+            << center.second << ") to position (" << position.first
+            << ", " << position.second << ")";
+        logger.error(o.str().c_str());
+    }
+
+    std::array <double, 4> ang = pos_angles(offset, posp);
+    fbg::dpair theta = std::make_pair(ang[0], ang[1]);
+    if (std::isnan(theta.first) || std::isnan(theta.second)) {
+        std::ostringstream o;
+        o << "Moving fiber at (" << center.first << ", "
+            << center.second << ") to position (" << position.first
+            << ", " << position.second << "): theta angle is NaN";
+        logger.error(o.str().c_str());
+    }
+    fbg::dpair phi = std::make_pair(ang[2], ang[3]);
+    if (std::isnan(phi.first) || std::isnan(phi.second)) {
+        std::ostringstream o;
+        o << "Moving fiber at (" << center.first << ", "
+            << center.second << ") to position (" << position.first
+            << ", " << position.second << "): phi angle is NaN";
+        logger.error(o.str().c_str());
+    }
+
+    cb.rotation_origin(theta);
+    fh.rotation_origin(theta);
+    fh.rotation(phi);
+    fh.transl(center);
+    cb.transl(center);
+    return;
+}
+
+
+bool fba::Hardware::collide(fbg::dpair center1, fbg::dpair position1,
+                            fbg::dpair center2, fbg::dpair position2) const {
+    // Check for collisions if we move fibers at given central positions
+    // (in mm) to the x/y positions specified.
+    double dist = fbg::dist(position1, position2);
+
+    if (dist < collide_mm) {
+        // Guaranteed to collide.
+        return true;
+    }
+
+    if (dist > no_collide_mm) {
+        // Guaranteed to NOT collide.
+        return false;
+    }
+
+    // We need to do a detailed calculation of the fiber holder and central
+    // body positions and test for intersection.
+
+    fbg::shape fh1(ferrule_holder);
+    fbg::shape fh2(ferrule_holder);
+    fbg::shape cb1(central_body);
+    fbg::shape cb2(central_body);
+
+    reposition_fiber(cb1, fh1, center1, position1, positioner_range);
+    reposition_fiber(cb2, fh2, center2, position2, positioner_range);
+
+    if (fbg::intersect(fh1, fh2)) {
+        return true;
+    }
+    if (fbg::intersect(cb1, fh2)) {
+        return true;
+    }
+    if (fbg::intersect(cb2, fh1)) {
+        return true;
+    }
+
+    return false;
+}
+
+
+std::pair <fbg::shape, fbg::shape> fba::Hardware::fiber_position(
+    int32_t fiber_id, fbg::dpair const & xy) const {
+
+    // Construct a positioner shape for a given fiber and location.
+    fbg::shape fh(ferrule_holder);
+    fbg::shape cb(central_body);
+
+    auto const & center = center_mm.at(fiber_id);
+
+    reposition_fiber(cb, fh, center, xy, positioner_range);
+    return std::make_pair(cb, fh);
+}
+
+
+std::vector <std::pair <fbg::shape, fbg::shape> >
+    fba::Hardware::fiber_position_multi(
+        std::vector <int32_t> const & fiber_id,
+        std::vector <fbg::dpair> const & xy) const {
+    size_t nfiber = fiber_id.size();
+    std::vector <std::pair <fbg::shape, fbg::shape> > result(nfiber);
+
+    #pragma omp parallel for schedule(static) default(none) shared(nfiber, fiber_id, xy, result)
+    for (size_t f = 0; f < nfiber; ++f) {
+        int32_t fid = fiber_id[f];
+        // Construct a positioner shape for a given fiber and location.
+        fbg::shape fh(ferrule_holder);
+        fbg::shape cb(central_body);
+        auto const & center = center_mm.at(fid);
+        reposition_fiber(cb, fh, center, xy[f], positioner_range);
+        result[f] = std::make_pair(cb, fh);
+    }
+    return result;
+}
+
+
+std::vector <bool> fba::Hardware::check_collisions_xy(
+    std::vector <int32_t> const & fiber_id,
+    std::vector <fbg::dpair> const & xy) const {
+
+    size_t nfiber = fiber_id.size();
+
+    auto fpos = fiber_position_multi(fiber_id, xy);
+
+    std::map <int32_t, int32_t> fiber_indx;
+
+    // Build list of all fiber pairs to check for a collision
+    std::map <int32_t, std::vector <int32_t> > checklookup;
+    size_t idx = 0;
+    for (auto const & fid : fiber_id) {
+        fiber_indx[fid] = idx;
+        for (auto const & nb : neighbors.at(fid)) {
+            int32_t low;
+            int32_t high;
+            if (fid < nb) {
+                low = fid;
+                high = nb;
+            } else {
+                low = nb;
+                high = fid;
+            }
+            if (checklookup.count(low) == 0) {
+                checklookup[low].clear();
+            }
+            bool found = false;
+            for (auto const & ck : checklookup[low]) {
+                if (ck == high) {
+                    found = true;
+                }
+            }
+            if (! found) {
+                checklookup[low].push_back(high);
+            }
+        }
+        idx++;
+    }
+    std::vector <std::pair <int32_t, int32_t> > checkpairs;
+    for (auto const & it : checklookup) {
+        int32_t low = it.first;
+        for (auto const & high : it.second) {
+            checkpairs.push_back(std::make_pair(low, high));
+        }
+    }
+    checklookup.clear();
+
+    size_t npairs = checkpairs.size();
+
+    std::vector <bool> result(nfiber);
+    result.assign(nfiber, false);
+
+    #pragma omp parallel for schedule(static) default(none) shared(npairs, checkpairs, fpos, result, fiber_indx)
+    for (size_t p = 0; p < npairs; ++p) {
+        int32_t flow = checkpairs[p].first;
+        int32_t fhigh = checkpairs[p].second;
+        bool hit = false;
+        auto const & cb1 = fpos[fiber_indx[flow]].first;
+        auto const & fh1 = fpos[fiber_indx[flow]].second;
+        auto const & cb2 = fpos[fiber_indx[fhigh]].first;
+        auto const & fh2 = fpos[fiber_indx[fhigh]].second;
+        if (fbg::intersect(fh1, fh2)) {
+            hit = true;
+        }
+        if (fbg::intersect(cb1, fh2)) {
+            hit = true;
+        }
+        if (fbg::intersect(cb2, fh1)) {
+            hit = true;
+        }
+        if (hit) {
+            #pragma omp critical
+            {
+                result[flow] = true;
+                result[fhigh] = true;
+            }
+        }
+    }
+    return result;
+}
+
+
+std::vector <bool> fba::Hardware::check_collisions_thetaphi(
+    std::vector <int32_t> const & fiber_id,
+    std::vector <double> const & theta,
+    std::vector <double> const & phi) const {
+
+    size_t nfiber = fiber_id.size();
+
+    std::map <int32_t, int32_t> fiber_indx;
+
+    // Build list of all fiber pairs to check for a collision
+    std::map <int32_t, std::vector <int32_t> > checklookup;
+    size_t idx = 0;
+    for (auto const & fid : fiber_id) {
+        fiber_indx[fid] = idx;
+        for (auto const & nb : neighbors.at(fid)) {
+            int32_t low;
+            int32_t high;
+            if (fid < nb) {
+                low = fid;
+                high = nb;
+            } else {
+                low = nb;
+                high = fid;
+            }
+            if (checklookup.count(low) == 0) {
+                checklookup[low].clear();
+            }
+            bool found = false;
+            for (auto const & ck : checklookup[low]) {
+                if (ck == high) {
+                    found = true;
+                }
+            }
+            if (! found) {
+                checklookup[low].push_back(high);
+            }
+        }
+        idx++;
+    }
+    std::vector <std::pair <int32_t, int32_t> > checkpairs;
+    for (auto const & it : checklookup) {
+        int32_t low = it.first;
+        for (auto const & high : it.second) {
+            checkpairs.push_back(std::make_pair(low, high));
+        }
+    }
+    checklookup.clear();
+
+    size_t npairs = checkpairs.size();
+
+    std::vector <bool> result(nfiber);
+    result.assign(nfiber, false);
+
+    #pragma omp parallel for schedule(static) default(none) shared(npairs, checkpairs, result, fiber_indx, theta, phi)
+    for (size_t p = 0; p < npairs; ++p) {
+        int32_t flow = checkpairs[p].first;
+        int32_t fhigh = checkpairs[p].second;
+        double thetalow = theta[fiber_indx[flow]];
+        double philow = phi[fiber_indx[flow]];
+        double thetahigh = theta[fiber_indx[fhigh]];
+        double phihigh = phi[fiber_indx[fhigh]];
+
+        fbg::shape fhlow(ferrule_holder);
+        fbg::shape fhhigh(ferrule_holder);
+        fbg::shape cblow(central_body);
+        fbg::shape cbhigh(central_body);
+
+        double costheta = ::cos(thetalow);
+        double sintheta = ::sin(thetalow);
+        double cosphi = ::cos(philow);
+        double sinphi = ::sin(philow);
+        std::pair <double, double> cossintheta = std::make_pair(costheta,
+                                                                sintheta);
+        std::pair <double, double> cossinphi = std::make_pair(cosphi,
+                                                              sinphi);
+        cblow.rotation_origin(cossintheta);
+        fhlow.rotation_origin(cossintheta);
+        fhlow.rotation(cossinphi);
+        fhlow.transl(center_mm.at(flow));
+        cblow.transl(center_mm.at(flow));
+
+        costheta = ::cos(thetahigh);
+        sintheta = ::sin(thetahigh);
+        cosphi = ::cos(phihigh);
+        sinphi = ::sin(phihigh);
+        cossintheta = std::make_pair(costheta, sintheta);
+        cossinphi = std::make_pair(cosphi, sinphi);
+        cbhigh.rotation_origin(cossintheta);
+        fhhigh.rotation_origin(cossintheta);
+        fhhigh.rotation(cossinphi);
+        fhhigh.transl(center_mm.at(fhigh));
+        cbhigh.transl(center_mm.at(fhigh));
+
+        bool hit = false;
+        if (fbg::intersect(fhlow, fhhigh)) {
+            hit = true;
+        }
+        if (fbg::intersect(cblow, fhhigh)) {
+            hit = true;
+        }
+        if (fbg::intersect(cblow, fhhigh)) {
+            hit = true;
+        }
+        if (hit) {
+            #pragma omp critical
+            {
+                result[flow] = true;
+                result[fhigh] = true;
+            }
+        }
+    }
+    return result;
+}

@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+"""
+Merge fiberassign results with input target files.
+"""
+import os
+
+import argparse
+
+from fiberassign.assign import merge_results
+
+
+def main():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--targets", type=str, required=True, action="append",
+                        help="Input file with targets of any type.  This "
+                        "argument can be specified multiple times (for "
+                        "example if standards / skies / science targets are "
+                        "in different files).")
+
+    parser.add_argument("--dir", type=str, required=True, default=None,
+                        help="Directory containing fiberassign outputs.")
+
+    parser.add_argument("--prefix", type=str, required=False,
+                        default="fiberassign",
+                        help="Prefix of each file (before the _<tile>.fits).")
+
+    parser.add_argument("--columns", type=str, required=False, default=None,
+                        help="Override the column names of target data to be "
+                        "copied from the target files into the fiber "
+                        "assignment files.  This should be a comma-separated "
+                        "list.")
+
+    args = parser.parse_args()
+
+    # Check directory
+    if not os.path.isdir(args.dir):
+        raise RuntimeError("Results directory {} does not exist"
+                           .format(args.dir))
+
+    # Check columns
+    columns = None
+    if args.columns is not None:
+        coltest = args.columns.split(",")
+        columns = [x for x in coltest if x != "TARGETID"]
+
+    merge_results(args.targets, resultdir=args.dir,
+                  result_prefix=args.prefix, columns=columns)
+
+    return
+
+
+if __name__ == "__main__":
+    main()

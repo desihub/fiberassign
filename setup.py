@@ -7,12 +7,14 @@ from __future__ import absolute_import, division, print_function
 import glob
 import os
 import sys
+import shutil
 #
 # setuptools' sdist command ignores MANIFEST.in
 #
 from distutils.command.sdist import sdist as DistutilsSdist
 from setuptools import setup, find_packages, Extension
 from setuptools.command.build_ext import build_ext
+from distutils.command.clean import clean
 #
 # DESI support code.
 #
@@ -69,45 +71,29 @@ setup_keywords['test_suite']='{name}.test.{name}_test_suite.{name}_test_suite'.f
 #setup_keywords['package_data'] = {'fiberassign': ['data/*',]}
 #
 
-def find_cfitsio():
-    """Helper function to find cfitsio include and library paths.
-
-    If the user has specified the CFITSIO_DIR environment variable, then it
-    uses that blindly.  Otherwise it tries to use pkg-config to get the needed
-    flags.  If that fails, it just assumes that cfitsio is in the default CPATH
-    and LD_LIBRARY_PATH / LIBRARY_PATH search locations.
-
-    """
-    inc = ""
-    ldf = ""
-    if "CFITSIO_DIR" in os.environ:
-        inc = os.path.join(os.environ["CFITSIO_DIR"], "include")
-        ldf = os.path.join(os.environ["CFITSIO_DIR"], "lib")
-    else:
-        import subprocess as sp
-        import re
-        try:
-            sp.check_call(["pkg-config", "--version"])
-            # Ok, we have pkg-config...
-            inc = sp.check_output(
-                ["pkg-config", "--cflags-only-I", "cfitsio"],
-                universal_newlines=True).strip()
-            ldf = sp.check_output(
-                ["pkg-config", "--libs-only-L", "cfitsio"],
-                universal_newlines=True).strip()
-            inc = inc.replace("-I", "")
-            ldf = ldf.replace("-L", "")
-        except OSError as e:
-            # Leave the variables blank and assume they are in the default
-            # search path
-            pass
-
-    return inc, ldf
-
-cfitsio_inc, cfitsio_ldf = find_cfitsio()
-print("Using CFITSIO include directory: {}".format(cfitsio_inc))
-print("Using CFITSIO library directory: {}".format(cfitsio_ldf))
-
+# Add a custom clean command that removes in-tree files like the
+# compiled extension.
+class RealClean(clean):
+    def run(self):
+        super().run()
+        clean_files = [
+            "./build",
+            "./dist",
+            "py/fiberassign/_internal*",
+            "py/fiberassign/__pycache__",
+            "py/fiberassign/test/__pycache__",
+            "./*.egg-info",
+            "py/*.egg-info"
+        ]
+        for cf in clean_files:
+            # Make paths absolute and relative to this path
+            apaths = glob.glob(os.path.abspath(cf))
+            for path in apaths:
+                if os.path.isdir(path):
+                    shutil.rmtree(path)
+                elif os.path.isfile(path):
+                    os.remove(path)
+        return
 
 # These classes allow us to build a compiled extension that uses pybind11.
 # For more details, see:
@@ -159,37 +145,34 @@ class BuildExt(build_ext):
         ct = self.compiler.compiler_type
         opts = self.c_opts.get(ct, [])
         if ct == 'unix':
-            opts.append('-DVERSION_INFO="%s"' % self.distribution.get_version())
+            opts.append('-DVERSION_INFO="%s"' %
+                        self.distribution.get_version())
             opts.append(cpp_flag(self.compiler))
             if has_flag(self.compiler, '-fvisibility=hidden'):
                 opts.append('-fvisibility=hidden')
             if has_flag(self.compiler, '-fopenmp'):
                 opts.append('-fopenmp')
         elif ct == 'msvc':
-            opts.append('/DVERSION_INFO=\\"%s\\"' % self.distribution.get_version())
+            opts.append('/DVERSION_INFO=\\"%s\\"' %
+                        self.distribution.get_version())
         for ext in self.extensions:
             ext.extra_compile_args.extend(opts)
         build_ext.build_extensions(self)
-
 
 ext_modules = [
     Extension(
         'fiberassign._internal',
         [
-            'src/structs.cpp',
-            'src/misc.cpp',
-            'src/feat.cpp',
-            'src/collision.cpp',
-            'src/global.cpp',
-            'src/fiberassign.cpp',
+            'src/utils.cpp',
+            'src/hardware.cpp',
+            'src/tiles.cpp',
+            'src/targets.cpp',
+            'src/assign.cpp',
             'src/_pyfiberassign.cpp'
         ],
         include_dirs=[
             'src',
-            cfitsio_inc,
         ],
-        library_dirs=[cfitsio_ldf],
-        libraries=['cfitsio'],
         extra_compile_args=[],
         extra_link_args=[],
         language='c++'
@@ -198,6 +181,7 @@ ext_modules = [
 
 setup_keywords['ext_modules'] = ext_modules
 setup_keywords['cmdclass']['build_ext'] = BuildExt
+setup_keywords['cmdclass']['clean'] = RealClean
 
 #
 # Run setup command.
