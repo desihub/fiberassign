@@ -28,7 +28,7 @@ fiberpos.sort('FIBER')
 fiber_locations = sorted(zip(fiberpos['FIBER'], fiberpos['LOCATION']))
 
 sky_mask = desi_mask.SKY
-std_mask = (desi_mask.STD_FSTAR | desi_mask.STD_BRIGHT | desi_mask.STD_WD)
+std_mask = (desi_mask.STD | desi_mask.STD_BRIGHT | desi_mask.STD_WD)
 
 #- TODO: take hardcoded from src/global.h into config file
 stuck_mask = 2**1
