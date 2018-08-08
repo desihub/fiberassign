@@ -4,7 +4,9 @@ fiberassign change log
 0.9.1 (unreleased)
 ------------------
 
-* No changes yet.
+* Support both STD_FSTAR and STD bit names (PR `#139`).
+
+.. _`#139`: https://github.com/desihub/fiberassign/pull/139
 
 0.9.0 (2018-07-18)
 ------------------

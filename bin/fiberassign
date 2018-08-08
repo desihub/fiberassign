@@ -56,7 +56,11 @@ if args.surveytiles is None:
     args.surveytiles = os.path.join(args.outdir, "tmp_surveytiles.txt")
 
 if args.starmask is None:
-    args.starmask = (desi_mask.STD | desi_mask.STD_BRIGHT | desi_mask.STD_WD)
+    if 'STD' in desi_mask.names():
+        args.starmask = (desi_mask.STD | desi_mask.STD_BRIGHT | desi_mask.STD_WD)
+    else:
+        #- Old name
+        args.starmask = (desi_mask.STD_FSTAR | desi_mask.STD_BRIGHT | desi_mask.STD_WD)
 
 if args.rundate is None:
     now = datetime.datetime.now()
