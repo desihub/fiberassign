@@ -60,7 +60,8 @@ if args.starmask is None:
     for name in ['STD', 'STD_FSTAR', 'STD_WD',
                  'STD_FAINT', 'STD_FAINT_BEST',
                  'STD_BRIGHT', 'STD_BRIGHT_BEST']:
-        args.starmask |= desi_mask[name]
+        if name in desi_mask.names():
+            args.starmask |= desi_mask[name]
 
 if args.rundate is None:
     now = datetime.datetime.now()
