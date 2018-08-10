@@ -29,6 +29,8 @@ void Usage (char * ExecName) {
     std::cout << " --fibstatusfile <fiberstatus_filename> ";
     std::cout << " --outdir <outputdirectory> ";
     std::cout << " --starmask <starbit_mask]";
+    std::cout << " --nstarpetal <number of standard stars per petal>";
+    std::cout << " --nskypetal <numer of sky fibers per petal>";
     std::cout << " [--rundate <YYYY-MM-DD>]" << std::endl;
     exit(0);
 }
@@ -118,6 +120,14 @@ void Feat::parseCommandLine (int argc, char * * argv) {
         } else if (!strcmp(argv[i], "--starmask") ) {
             i++;
             StarMask = atol(argv[i]);
+            i++;
+        } else if (!strcmp(argv[i], "--nstarpetal") ) {
+            i++;
+            MaxSS = atoi(argv[i]);
+            i++;
+        } else if (!strcmp(argv[i], "--nskypetal") ) {
+            i++;
+            MaxSF = atoi(argv[i]);
             i++;
         } else if (!strcmp(argv[i], "--help") ) {
             Usage(argv[0]);
