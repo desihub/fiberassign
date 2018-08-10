@@ -1235,27 +1235,23 @@ struct onplate radec2xy (const struct target & O, const struct plate & P) {
     obj.pos[1] = y_focalplane;
     // test the conversion
     xy2radec(&testra, &testdec, P.tilera, P.tiledec, obj.pos[0], obj.pos[1]);
-    dra = (testra * cos(testdec * M_PI / 180.0) - (O.ra *
-	 cos(O.dec * M_PI / 180.0) ) ) / arcsec;
+    dra = (testra * cos(testdec * M_PI / 180.0) - O.ra *
+        cos(O.dec * M_PI / 180.0) ) / arcsec;
     ddec = (testdec - O.dec) / arcsec;
     if (fabs(dra) > 0.01) {
         // 0.01 arcsecond precision
-        fprintf(stderr, "Plate RA: %f dec: %f\n", P.tilera, P.tiledec);
-        fprintf(stderr, "Object RA: %f dec: %f\n", O.ra, O.dec);
         fprintf(stderr,
                 "onplate problem with xy2radec conversion [dRA (arcsec)]: %f\n",
                 dra);
-        fprintf(stderr, "[dDEC (arcsec)]: %f \n", ddec, O);
-	//        myexit(1);
+        fprintf(stderr, "[dDEC (arcsec)]: %f \n", ddec);
+        myexit(1);
     }
     if (fabs(ddec) > 0.01) {
         // 0.01 arcsecond precision
-        fprintf(stderr, "Plate RA: %f dec: %f\n", P.tilera, P.tiledec);
-        fprintf(stderr, "Object RA: %f dec: %f\n", O.ra, O.dec);
         fprintf(stderr,
                 "onplate problem with xy2radec conversion [dDEC]: %f\n", ddec);
         fprintf(stderr, "[dRA]: %f\n", dra);
-	//        myexit(1);
+        myexit(1);
     }
     return obj;
 }
