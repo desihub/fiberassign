@@ -175,29 +175,7 @@ cmd = fiberassign_command.format(mtl=args.sky, sky=args.sky, stdstar=args.sky, f
 print(cmd)
 os.system(cmd)
 
-# join targets+sky+gfa tiles
-
-targets = glob.glob(os.path.join(tmp_targets_dir,'tile_*.fits'))
-skys = glob.glob(os.path.join(tmp_sky_dir,'tile_*.fits'))
-
-
-sky_tile_id = {}
-for sky_file in skys:
-    f = sky_file.split('/')[-1]
-    fileid = f.split("_")[-1]
-    fileid = fileid[:-5]
-    sky_tile_id[fileid] = sky_file
-
-target_tile_id = {}
-tile_id = []
-for target_file in targets:
-    f = target_file.split('/')[-1]
-    fileid = f.split("_")[-1]
-    fileid = fileid[:-5]
-    target_tile_id[fileid] = target_file
-    tile_id.append(int(fileid))
-
-# compute GFA
+# GFA targets
 if args.gfafile is not None:
     from desimodel.focalplane import GFALocations
     gfa = GFALocations()
@@ -216,12 +194,31 @@ if args.gfafile is not None:
         t = Table(gfa_data)
         t.write(gfaout, overwrite=True)
 
+
+# join targets+sky+gfa tiles
+targets = glob.glob(os.path.join(tmp_targets_dir,'tile_*.fits'))
+skys = glob.glob(os.path.join(tmp_sky_dir,'tile_*.fits'))
+
+# Gather ID for target files
+target_tile_id = {}
+tile_id = []
+for target_file in targets:
+    fileid = target_file.split('/')[-1].split('_')[-1].split('.')[0]
+    target_tile_id[fileid] = target_file
+    tile_id.append(int(fileid))
+
+# Gather TILEID for sky files
+sky_tile_id = {}
+for sky_file in skys:
+    fileid = sky_file.split('/')[-1].split('_')[-1].split('.')[0]
+    sky_tile_id[fileid] = sky_file
+
+# Gather ID for gfa files
+if args.gfafile is not None:
     gfas = glob.glob(os.path.join(tmp_gfa_dir,'tile_*.fits'))
     gfa_tile_id = {}
     for gfa_file in gfas:
-        f = gfa_file.split('/')[-1]
-        fileid = f.split("_")[-1]
-        fileid = fileid[:-5]
+        fileid = gfa_file.split('/')[-1].split('_')[-1].split('.')[0]
         gfa_tile_id[fileid] = gfa_file
 
 for sky_id in sky_tile_id.keys():
