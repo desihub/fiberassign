@@ -181,7 +181,7 @@ if args.gfafile is not None:
     gfa = GFALocations()
 
     print('loading GFA file')
-    data = fitsio.read(args.gfafile, columns=['RA', 'DEC', 'TARGETID'])
+    data = fitsio.read(args.gfafile)
 
     print('selecting computed tiles')
     footprint = fitsio.read(args.footprint)
