@@ -175,26 +175,6 @@ cmd = fiberassign_command.format(mtl=args.sky, sky=args.sky, stdstar=args.sky, f
 print(cmd)
 os.system(cmd)
 
-# GFA targets
-if args.gfafile is not None:
-    from desimodel.focalplane import GFALocations
-    gfa = GFALocations()
-
-    print('loading GFA file')
-    data = fitsio.read(args.gfafile)
-
-    print('selecting computed tiles')
-    footprint = fitsio.read(args.footprint)
-    ii = np.in1d(footprint['TILEID'], np.array(tile_id))
-    tiles = footprint[ii]
-
-    for telra, teldec, tileid in zip(tiles['RA'], tiles['DEC'], tiles['TILEID']):
-        gfaout = os.path.join(tmp_gfa_dir, 'tile_{:05d}.fits'.format(tileid))
-        gfa_data = gfa.targets_on_gfa(telra, teldec, data)
-        t = Table(gfa_data)
-        t.write(gfaout, overwrite=True)
-
-
 # join targets+sky+gfa tiles
 targets = glob.glob(os.path.join(tmp_targets_dir,'tile_*.fits'))
 skys = glob.glob(os.path.join(tmp_sky_dir,'tile_*.fits'))
@@ -214,7 +194,25 @@ for sky_file in skys:
     sky_tile_id[fileid] = sky_file
 
 # Gather ID for gfa files
+# GFA targets
 if args.gfafile is not None:
+    from desimodel.focalplane import GFALocations
+    gfa = GFALocations()
+
+    print('loading GFA file')
+    data = fitsio.read(args.gfafile)
+
+    print('selecting computed tiles')
+    footprint = fitsio.read(args.footprint)
+    ii = np.in1d(footprint['TILEID'], np.array(tile_id))
+    tiles = footprint[ii]
+
+    for telra, teldec, tileid in zip(tiles['RA'], tiles['DEC'], tiles['TILEID']):
+        gfaout = os.path.join(tmp_gfa_dir, 'tile_{:05d}.fits'.format(tileid))
+        gfa_data = gfa.targets_on_gfa(telra, teldec, data)
+        t = Table(gfa_data)
+        t.write(gfaout, overwrite=True)
+
     gfas = glob.glob(os.path.join(tmp_gfa_dir,'tile_*.fits'))
     gfa_tile_id = {}
     for gfa_file in gfas:
