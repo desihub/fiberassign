@@ -167,6 +167,8 @@ cmd = fiberassign_command.format(mtl=args.mtl, sky=args.sky, stdstar=args.stdsta
 print(cmd)
 os.system(cmd)
 
+# Add new columns to fiberassign targets
+
 #fiberassign sky
 cmd = fiberassign_command.format(mtl=args.sky, sky=args.sky, stdstar=args.sky, fiberstatusfile=args.fibstatusfile,
                                  outdir=tmp_sky_dir, surveytiles=args.surveytiles, starmask = args.starmask,
@@ -206,12 +208,12 @@ if args.gfafile is not None:
     footprint = fitsio.read(args.footprint)
     ii = np.in1d(footprint['TILEID'], np.array(tile_id))
     tiles = footprint[ii]
-
     for telra, teldec, tileid in zip(tiles['RA'], tiles['DEC'], tiles['TILEID']):
         gfaout = os.path.join(tmp_gfa_dir, 'tile_{:05d}.fits'.format(tileid))
         gfa_data = gfa.targets_on_gfa(telra, teldec, data)
         t = Table(gfa_data)
         t.write(gfaout, overwrite=True)
+
 
     gfas = glob.glob(os.path.join(tmp_gfa_dir,'tile_*.fits'))
     gfa_tile_id = {}
@@ -219,6 +221,19 @@ if args.gfafile is not None:
         fileid = gfa_file.split('/')[-1].split('_')[-1].split('.')[0]
         gfa_tile_id[fileid] = gfa_file
 
+def add_fiber_data_columns(fiber_data, mtl_data, positioner_data):
+    print('adding columns')
+    ii = np.in1d(positioner_data['FIBER'], fiber_data['FIBER'],)
+    fiber_data = np.lib.recfunctions.append_fields(fiber_data, 'PETAL_LOC', positioner_data[ii]['PETAL'],dtypes=np.int16)
+    fiber_data = np.lib.recfunctions.append_fields(fiber_data, 'DEVICE_LOC', positioner_data[ii]['DEVICE'],dtypes=np.int32)    
+    #fiber_data = np.lib.recfunctions.append_fields(fiber_data, 'LOCATION', positioner_data[ii]['LOCATION'],dtypes=np.int32,)    
+
+    return fiber_data
+
+mtl_data = Table.read(args.mtl)
+positioner_data = Table.read(args.positioners)
+positioner_data = positioner_data[positioner_data['DEVICE_TYPE']=='POS']
+positioner_data = np.sort(positioner_data, order='FIBER')
 for sky_id in sky_tile_id.keys():
     if sky_id in target_tile_id.keys():
             print('rewriting tilefile for tileid {}'.format(sky_id))
@@ -226,13 +241,14 @@ for sky_id in sky_tile_id.keys():
             fiber_data = fitsio.read(target_tile_id[sky_id], ext=1)
             potential_data = fitsio.read(target_tile_id[sky_id], ext=2)
 
+            fiber_data = add_fiber_data_columns(fiber_data, mtl_data, positioner_data)
+
             tileout = os.path.join(args.outdir, 'tile_{}.fits'.format(sky_id))
             fitsio.write(tileout, fiber_data, extname='FIBERASSIGN', clobber=True)
             fitsio.write(tileout, potential_data, extname='POTENTIAL')
             fitsio.write(tileout, sky_data, extname='SKYETC')
 
             if args.gfafile is not None:
-                print(gfa_tile_id[sky_id])
                 gfa_data = fitsio.read(gfa_tile_id[sky_id])
                 fitsio.write(tileout, gfa_data, extname='GFA')
 
