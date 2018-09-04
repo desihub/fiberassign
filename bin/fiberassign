@@ -10,7 +10,7 @@ import desimodel.io
 import numpy as np
 import datetime
 from desitarget.targetmask import desi_mask
-from astropy.table import Table
+from astropy.table import Table, join
 import fitsio
 import glob
 import desimodel.focalplane
@@ -167,6 +167,8 @@ cmd = fiberassign_command.format(mtl=args.mtl, sky=args.sky, stdstar=args.stdsta
 print(cmd)
 os.system(cmd)
 
+# Add new columns to fiberassign targets
+
 #fiberassign sky
 cmd = fiberassign_command.format(mtl=args.sky, sky=args.sky, stdstar=args.sky, fiberstatusfile=args.fibstatusfile,
                                  outdir=tmp_sky_dir, surveytiles=args.surveytiles, starmask = args.starmask,
@@ -206,18 +208,39 @@ if args.gfafile is not None:
     footprint = fitsio.read(args.footprint)
     ii = np.in1d(footprint['TILEID'], np.array(tile_id))
     tiles = footprint[ii]
-
     for telra, teldec, tileid in zip(tiles['RA'], tiles['DEC'], tiles['TILEID']):
         gfaout = os.path.join(tmp_gfa_dir, 'tile_{:05d}.fits'.format(tileid))
         gfa_data = gfa.targets_on_gfa(telra, teldec, data)
         t = Table(gfa_data)
         t.write(gfaout, overwrite=True)
 
+
     gfas = glob.glob(os.path.join(tmp_gfa_dir,'tile_*.fits'))
     gfa_tile_id = {}
     for gfa_file in gfas:
         fileid = gfa_file.split('/')[-1].split('_')[-1].split('.')[0]
         gfa_tile_id[fileid] = gfa_file
+
+def add_fiber_data_columns(fiberassign_data, mtl_data, sky_data, positioner_data):
+    print('adding columns')
+    positioner_data = positioner_data[positioner_data['DEVICE_TYPE']=='POS']
+    positioner_data = np.sort(positioner_data, order='FIBER')
+    ii = np.in1d(positioner_data['FIBER'], fiber_data['FIBER'],)
+    fiberassign_data = np.lib.recfunctions.append_fields(fiberassign_data, 'PETAL_LOC', positioner_data[ii]['PETAL'],dtypes=np.int16)
+    fiberassign_data = np.lib.recfunctions.append_fields(fiberassign_data, 'DEVICE_LOC', positioner_data[ii]['DEVICE'],dtypes=np.int32)    
+
+    print('joining mtl data')
+    columns=['TARGETID','SUBPRIORITY']
+    fiberassign_data = join(fiberassign_data, mtl_data[columns], join_type='left', keys='TARGETID')
+    if fiberassign_data.masked:
+        unmatched = fiberassign_data['SUBPRIORITY'].mask
+        fiberassign_data['SUBPRIORITY'][unmatched] = 0
+        
+    return np.array(fiberassign_data)
+
+mtl_data = Table.read(args.mtl)
+sky_data = Table.read(args.sky)
+positioner_data = Table.read(args.positioners)
 
 for sky_id in sky_tile_id.keys():
     if sky_id in target_tile_id.keys():
@@ -226,13 +249,14 @@ for sky_id in sky_tile_id.keys():
             fiber_data = fitsio.read(target_tile_id[sky_id], ext=1)
             potential_data = fitsio.read(target_tile_id[sky_id], ext=2)
 
+            fiber_data = add_fiber_data_columns(fiber_data, mtl_data, sky_data, positioner_data)
+
             tileout = os.path.join(args.outdir, 'tile_{}.fits'.format(sky_id))
             fitsio.write(tileout, fiber_data, extname='FIBERASSIGN', clobber=True)
             fitsio.write(tileout, potential_data, extname='POTENTIAL')
             fitsio.write(tileout, sky_data, extname='SKYETC')
 
             if args.gfafile is not None:
-                print(gfa_tile_id[sky_id])
                 gfa_data = fitsio.read(gfa_tile_id[sky_id])
                 fitsio.write(tileout, gfa_data, extname='GFA')
 
