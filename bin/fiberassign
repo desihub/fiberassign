@@ -222,7 +222,7 @@ if args.gfafile is not None:
         gfa_tile_id[fileid] = gfa_file
 
 def add_fiber_data_columns(fiberassign_data, mtl_data, sky_data, positioner_data):
-    print('adding columns')
+    print('adding columns from positioner data')
     positioner_data = positioner_data[positioner_data['DEVICE_TYPE']=='POS']
     positioner_data = np.sort(positioner_data, order='FIBER')
     ii = np.in1d(positioner_data['FIBER'], fiber_data['FIBER'],)
@@ -230,12 +230,17 @@ def add_fiber_data_columns(fiberassign_data, mtl_data, sky_data, positioner_data
     fiberassign_data = np.lib.recfunctions.append_fields(fiberassign_data, 'DEVICE_LOC', positioner_data[ii]['DEVICE'],dtypes=np.int32)    
 
     print('joining mtl data')
-    columns=['TARGETID','SUBPRIORITY']
+    columns=['TARGETID','SUBPRIORITY', 'BRICKID', 'BRICK_OBJID', 'REF_ID',
+            'PMRA', 'PMDEC', 'PMRA_IVAR', 'PMDEC_IVAR', 'FLUX_G', 'FLUX_R', 'FLUX_Z',
+            'FLUX_W1', 'FLUX_W2', 'FLUX_IVAR_G', 'FLUX_IVAR_R', 'FLUX_IVAR_Z',
+            'FLUX_IVAR_W1', 'FLUX_IVAR_W2', 'RA_IVAR', 'DEC_IVAR']
     fiberassign_data = join(fiberassign_data, mtl_data[columns], join_type='left', keys='TARGETID')
     if fiberassign_data.masked:
         unmatched = fiberassign_data['SUBPRIORITY'].mask
-        fiberassign_data['SUBPRIORITY'][unmatched] = 0
-        
+        fiberassign_data['SUBPRIORITY'][unmatched] = 1
+    
+    print('adding new columns by computation')
+
     return np.array(fiberassign_data)
 
 mtl_data = Table.read(args.mtl)
