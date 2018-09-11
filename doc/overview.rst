@@ -4,21 +4,46 @@
 Overview
 ==============
 
-At the heart of DESI is the focal plane with robotically controlled
-positioners capable of placing optical fibers on desired locations.
-`fiberassignment` implements the algoritms that decide which fibers of
-which should be assigned to observe which objects in series of
-telescope pointings.   
+At DESI's focal plane there are robotically controlled positioners
+capable of placing optical fibers on desired locations. 
+`fiberassign` implements the algoritms that decide which positioners
+should be assigned to observe which objects in a series of telescope
+pointings. 
 
+General constraints
+-------------------
 
-The focal plane contains 5000 robotically controlled positioners with
+The focal plane has 5000 robotically controlled positioners with
 a patrol radius of 6 mm and a positioning precision close to a few microns.
 The positioners are arrayed in 10 petals shaped like pie slices. 
-With about 10k pointings during the life of the survey, the system can
+With about 10000 pointings (also called tiles) during the life of the survey, the system can
 reach about 50 million targets. 
-The instrumented area of the focal plane is 7.5 square degrees and
-given the anticipated density of targets, about 25k targets fall on
-the focal plane for each pointing (generally called a tile or
-plate). With a total coverage of about 14,000 square degrees, the
-average coverage of each point in the footprint is about 75/14=5.35. 
+The instrumented area of the focal plane is 7.5 square degrees.
+The anticipated density of targets is 25000 objets per squared degree.
+
+Algorithmic overview
+--------------------
+
+For each positioner in every tile choices must be made among the
+potential targets. 
+Priorities are set in accordance with the scientific value of each
+target class. 
+For the main (dark) survey program these classes include QSOs, LRGs, and
+ELGs; for the secondary (bright) survey program these clases include
+BGS (Bright Galaxies) and MWS (Milky Way Stars).
+In addition, for both programs, fibers must be assigned to measure the
+sky background (“sky fibers”) and calibration on standard stars. 
+
+
+The fiber assignment code needs a variety of inputs. The inputs
+describe the hardware (i.e. locations of the positioners in the focal
+plane), the observational strategy (a list of tiles), the targets
+available for observation and calibration, together with their
+relative observational priorities.
+
+The outputs are a series of files describing the assignments. 
+There are individual files for each tile.
+Each file contains the information about the target assigned to each
+fiber, the list of of potential targets available to each fiber and
+the list of targets for Guide/Focus/Alignment cameras.
 
