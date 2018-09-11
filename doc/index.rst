@@ -11,6 +11,7 @@ Welcome to fiberassign's documentation!
 
     overview.rst
     install.rst
+    running.rst
     qa.rst
     changes.rst
 
