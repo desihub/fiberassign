@@ -10,7 +10,7 @@ capable of placing optical fibers on desired locations.
 should be assigned to observe which objects in a series of telescope
 pointings. 
 
-General constraints
+Constraints
 -------------------
 
 The focal plane has 5000 robotically controlled positioners with
@@ -21,7 +21,7 @@ reach about 50 million targets.
 The instrumented area of the focal plane is 7.5 square degrees.
 The anticipated density of targets is 25000 objets per squared degree.
 
-Algorithmic overview
+Algorithm
 --------------------
 
 For each positioner in every tile choices must be made among the
@@ -47,3 +47,15 @@ Each file contains the information about the target assigned to each
 fiber, the list of of potential targets available to each fiber and
 the list of targets for Guide/Focus/Alignment cameras.
 
+History
+--------
+
+The first version of `fiberassign` was written by Martin White.
+Later under the supervision of Bob Cahn it was expanded by Lile Wang,
+Arthur Stril, Cyrille Doux, Aldo Riello, Louis Garrigue and Lucas
+Pinol.
+Current development and maintenance is done by Stephen Bailey, Ted
+Kisner and Jaime E. Forero-Romero.
+
+A full list of contributors can be seen on the github repository:
+https://github.com/desihub/fiberassign/graphs/contributors 
