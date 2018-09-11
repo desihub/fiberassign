@@ -221,7 +221,10 @@ if args.gfafile is not None:
         fileid = gfa_file.split('/')[-1].split('_')[-1].split('.')[0]
         gfa_tile_id[fileid] = gfa_file
 
-def add_fiber_data_columns(fiberassign_data, mtl_data, sky_data, positioner_data):
+def add_fiber_data_columns(tile_data, fiberassign_data, mtl_data, sky_data, positioner_data):
+    print('computing columns from positioner data')
+    print('TILE info', tile_data['RA'], tile_data['DEC'])
+    
     print('adding columns from positioner data')
     positioner_data = positioner_data[positioner_data['DEVICE_TYPE']=='POS']
     positioner_data = np.sort(positioner_data, order='FIBER')
@@ -246,6 +249,7 @@ def add_fiber_data_columns(fiberassign_data, mtl_data, sky_data, positioner_data
 mtl_data = Table.read(args.mtl)
 sky_data = Table.read(args.sky)
 positioner_data = Table.read(args.positioners)
+footprint = fitsio.read(args.footprint)
 
 for sky_id in sky_tile_id.keys():
     if sky_id in target_tile_id.keys():
@@ -253,8 +257,8 @@ for sky_id in sky_tile_id.keys():
             sky_data = fitsio.read(sky_tile_id[sky_id])
             fiber_data = fitsio.read(target_tile_id[sky_id], ext=1)
             potential_data = fitsio.read(target_tile_id[sky_id], ext=2)
-
-            fiber_data = add_fiber_data_columns(fiber_data, mtl_data, sky_data, positioner_data)
+            tile_data  = footprint[footprint['TILEID']==np.int(sky_id)]
+            fiber_data = add_fiber_data_columns(tile_data, fiber_data, mtl_data, sky_data, positioner_data)
 
             tileout = os.path.join(args.outdir, 'tile_{}.fits'.format(sky_id))
             fitsio.write(tileout, fiber_data, extname='FIBERASSIGN', clobber=True)
