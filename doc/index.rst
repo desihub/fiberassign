@@ -9,6 +9,9 @@ Welcome to fiberassign's documentation!
 .. toctree::
     :maxdepth: 1
 
+    overview.rst
+    install.rst
+    qa.rst
     changes.rst
 
 
