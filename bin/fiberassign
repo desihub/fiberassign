@@ -222,8 +222,11 @@ if args.gfafile is not None:
         gfa_tile_id[fileid] = gfa_file
 
 def add_fiber_data_columns(tile_data, fiberassign_data, mtl_data, sky_data, positioner_data):
-    print('computing columns from positioner data')
+    print('adding new columns by computation')
     print('TILE info', tile_data['RA'], tile_data['DEC'])
+    q, s = desimodel.focalplane.xy2qs(fiberassign_data['XFOCAL_DESIGN'], fiberassign_data['YFOCAL_DESIGN'])
+    fiberassign_data = np.lib.recfunctions.append_fields(fiberassign_data, 'DESIGN_Q', q, dtypes=np.float32)
+    fiberassign_data = np.lib.recfunctions.append_fields(fiberassign_data, 'DESIGN_S', s, dtypes=np.float32)
     
     print('adding columns from positioner data')
     positioner_data = positioner_data[positioner_data['DEVICE_TYPE']=='POS']
@@ -242,8 +245,9 @@ def add_fiber_data_columns(tile_data, fiberassign_data, mtl_data, sky_data, posi
         unmatched = fiberassign_data['SUBPRIORITY'].mask
         fiberassign_data['SUBPRIORITY'][unmatched] = 1
     
-    print('adding new columns by computation')
-
+    
+    
+    
     return np.array(fiberassign_data)
 
 mtl_data = Table.read(args.mtl)
