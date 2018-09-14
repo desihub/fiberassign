@@ -4,7 +4,7 @@
 Script handling fiberassign inputs
 """
 
-import sys, os
+import sys, os, time
 import argparse
 import desimodel.io
 import numpy as np
@@ -41,7 +41,7 @@ parser.add_argument("--gfafile", type=str, help="GFA file (FITS tile)")
 parser.add_argument("--nstarpetal", type=int, help="number of standard stars per petal (default=10)", default=10)
 parser.add_argument("--nskypetal", type=int, help="number of sky fibers per petal (default=40)", default=40)
 
-parser.add_argument("--nocleanup", dest='cleanup', action='store_false')
+parser.add_argument("--nocleanup", dest='cleanup', default=True, action='store_false')
 
 args = parser.parse_args()
 
@@ -159,7 +159,7 @@ fiberassign_command ="fiberassign_exec --mtl {mtl}  --sky {sky} --stdstar {stdst
             --nstarpetal {nstarpetal} \
             --nskypetal {nskypetal}"
 
-# fiberassign targets
+# fiberassign 5k fibers for science targets, sky spectra, and standard stars
 cmd = fiberassign_command.format(mtl=args.mtl, sky=args.sky, stdstar=args.stdstar, fiberstatusfile=args.fibstatusfile,
                                  outdir=tmp_targets_dir, surveytiles=args.surveytiles, starmask = args.starmask,
                                  footprint=args.footprint, positioners=tmp_fiber_pos, rundate=args.rundate,
@@ -169,7 +169,7 @@ os.system(cmd)
 
 # Add new columns to fiberassign targets
 
-#fiberassign sky
+#fiberassign 20 sky monitor fibers
 cmd = fiberassign_command.format(mtl=args.sky, sky=args.sky, stdstar=args.sky, fiberstatusfile=args.fibstatusfile,
                                  outdir=tmp_sky_dir, surveytiles=args.surveytiles, starmask = args.starmask,
                                  footprint=args.footprint, positioners=tmp_fiber_sky, rundate=args.rundate,
@@ -224,57 +224,100 @@ if args.gfafile is not None:
 def add_fiber_data_columns(tile_data, fiberassign_data, mtl_data, sky_data, positioner_data):
     n_objects = len(fiberassign_data)
     
-    print('adding new columns by computation')
+    print('  adding new columns by computation')
     #print('TILE info', tile_data['RA'], tile_data['DEC'])
     q, s = desimodel.focalplane.xy2qs(fiberassign_data['XFOCAL_DESIGN'], fiberassign_data['YFOCAL_DESIGN'])
     fiberassign_data = np.lib.recfunctions.append_fields(fiberassign_data, 'DESIGN_Q', q, dtypes=np.float32)
     fiberassign_data = np.lib.recfunctions.append_fields(fiberassign_data, 'DESIGN_S', s, dtypes=np.float32)
     lambda_ref = np.ones(n_objects) * 5400.0
     fiberassign_data = np.lib.recfunctions.append_fields(fiberassign_data, 'LAMBDA_REF', lambda_ref, dtypes=np.float32)
-    
-    print('adding columns from positioner data')
-    positioner_data = positioner_data[positioner_data['DEVICE_TYPE']=='POS']
+
+    objtype = np.zeros(n_objects, dtype='S3')
+    objtype[:] = 'TGT'
+    isSky = (fiberassign_data['DESI_TARGET'] & desi_mask.SKY) != 0
+    objtype[isSky] = 'SKY'
+    badmask = desi_mask.mask('BAD_SKY|NO_TARGET|IN_BRIGHT_OBJECT')
+    isBad = (fiberassign_data['DESI_TARGET'] & badmask) != 0
+    objtype[isBad] = 'BAD'
+    fiberassign_data = np.lib.recfunctions.append_fields(fiberassign_data, 'OBJTYPE', objtype, dtypes='S3')
+
+    print('  adding columns from positioner data')
+    #- handle bytes (fitsio) vs. string (astropy)
+    isPOS = (positioner_data['DEVICE_TYPE']==b'POS') | (positioner_data['DEVICE_TYPE']=='POS')
+    positioner_data = positioner_data[isPOS]
     positioner_data = np.sort(positioner_data, order='FIBER')
-    ii = np.in1d(positioner_data['FIBER'], fiber_data['FIBER'],)
+    ii = np.in1d(positioner_data['FIBER'], fiber_data['FIBER'])
+
     fiberassign_data = np.lib.recfunctions.append_fields(fiberassign_data, 'PETAL_LOC', positioner_data[ii]['PETAL'],dtypes=np.int16)
     fiberassign_data = np.lib.recfunctions.append_fields(fiberassign_data, 'DEVICE_LOC', positioner_data[ii]['DEVICE'],dtypes=np.int32)   
     
-    print('adding columns from mtl data')
+    print('  adding columns from mtl data')
     columns=['TARGETID','SUBPRIORITY', 'BRICKID', 'BRICK_OBJID', 'REF_ID',
             'PMRA', 'PMDEC', 'PMRA_IVAR', 'PMDEC_IVAR', 'FLUX_G', 'FLUX_R', 'FLUX_Z',
             'FLUX_W1', 'FLUX_W2', 'FLUX_IVAR_G', 'FLUX_IVAR_R', 'FLUX_IVAR_Z',
             'FLUX_IVAR_W1', 'FLUX_IVAR_W2', 'RA_IVAR', 'DEC_IVAR',
+            'EBV', 'MORPHTYPE',
+            'MW_TRANSMISSION_G', 'MW_TRANSMISSION_R', 'MW_TRANSMISSION_Z',
+            'PHOTSYS',
             'FIBERFLUX_G', 'FIBERFLUX_R', 'FIBERFLUX_Z', 
             'FIBERTOTFLUX_G', 'FIBERTOTFLUX_R', 'FIBERTOTFLUX_Z', 'HPXPIXEL']
-    fiberassign_data = join(fiberassign_data, mtl_data[columns], join_type='left', keys='TARGETID')
+
+    ii = np.in1d(mtl_data['TARGETID'], fiberassign_data['TARGETID'])
+    fiberassign_data = join(fiberassign_data, mtl_data[ii][columns], join_type='left', keys='TARGETID')
     if fiberassign_data.masked:
         unmatched = fiberassign_data['SUBPRIORITY'].mask
         fiberassign_data['SUBPRIORITY'][unmatched] = 1
     
     return np.array(fiberassign_data)
 
-mtl_data = Table.read(args.mtl)
-sky_data = Table.read(args.sky)
-positioner_data = Table.read(args.positioners)
+mtl_data = fitsio.read(args.mtl)
+sky_data = fitsio.read(args.sky)
+positioner_data = fitsio.read(args.positioners)
 footprint = fitsio.read(args.footprint)
+
+#- Pre-filter what targets cover what tiles with some buffer.
+#- find_points_in_tiles returns a list of lists;
+#- convert to dictionary of lists keyed by tileid
+mtl_tile_indices = dict()
+ii = desimodel.footprint.find_points_in_tiles(footprint, mtl_data['RA'], mtl_data['DEC'], radius=1.8)
+for i, tileid in enumerate(footprint['TILEID']):
+    mtl_tile_indices[tileid] = ii[i]
 
 for sky_id in sky_tile_id.keys():
     if sky_id in target_tile_id.keys():
-            print('rewriting tilefile for tileid {}'.format(sky_id))
-            sky_data = fitsio.read(sky_tile_id[sky_id])
-            fiber_data = fitsio.read(target_tile_id[sky_id], ext=1)
-            potential_data = fitsio.read(target_tile_id[sky_id], ext=2)
-            tile_data  = footprint[footprint['TILEID']==np.int(sky_id)]
-            fiber_data = add_fiber_data_columns(tile_data, fiber_data, mtl_data, sky_data, positioner_data)
+        print('rewriting tilefile for tileid {}'.format(sky_id))
+        sky_data = fitsio.read(sky_tile_id[sky_id])
+        fiber_data = fitsio.read(target_tile_id[sky_id], ext=1)
+        potential_data = fitsio.read(target_tile_id[sky_id], ext=2)
+        tile_data  = footprint[footprint['TILEID']==np.int(sky_id)]
+        fiber_data = add_fiber_data_columns(tile_data, fiber_data, mtl_data[mtl_tile_indices[int(sky_id)]], sky_data, positioner_data)
 
-            tileout = os.path.join(args.outdir, 'tile_{}.fits'.format(sky_id))
-            fitsio.write(tileout, fiber_data, extname='FIBERASSIGN', clobber=True)
-            fitsio.write(tileout, potential_data, extname='POTENTIAL')
-            fitsio.write(tileout, sky_data, extname='SKYETC')
+        #- Rename some columns (leave C++ alone; it is being refactored)
+        colnames = list(fiber_data.dtype.names)
+        for oldname, newname in [
+            #- target catalog input renames
+            ('RA', 'TARGET_RA'),
+            ('DEC', 'TARGET_DEC'),
+            ('RA_IVAR', 'TARGET_RA_IVAR'),
+            ('DEC_IVAR', 'TARGET_DEC_IVAR'),
+            #- C++ output renames
+            ('XFOCAL_DESIGN', 'DESIGN_X'),
+            ('YFOCAL_DESIGN', 'DESIGN_Y'),
+            ('FIBERMASK', 'FIBERSTATUS'),
+            ]:
+            i = colnames.index(oldname)
+            colnames[i] = newname
 
-            if args.gfafile is not None:
-                gfa_data = fitsio.read(gfa_tile_id[sky_id])
-                fitsio.write(tileout, gfa_data, extname='GFA')
+        fiber_data.dtype.names = tuple(colnames)
+
+        tileout = os.path.join(args.outdir, 'tile_{}.fits'.format(sky_id))
+        fitsio.write(tileout, fiber_data, extname='FIBERASSIGN', clobber=True)
+        fitsio.write(tileout, potential_data, extname='POTENTIAL')
+        fitsio.write(tileout, sky_data, extname='SKYETC')
+
+        if args.gfafile is not None:
+            gfa_data = fitsio.read(gfa_tile_id[sky_id])
+            fitsio.write(tileout, gfa_data, extname='GFA')
 
 # remove tmp files
 if args.cleanup:
