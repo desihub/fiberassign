@@ -222,31 +222,34 @@ if args.gfafile is not None:
         gfa_tile_id[fileid] = gfa_file
 
 def add_fiber_data_columns(tile_data, fiberassign_data, mtl_data, sky_data, positioner_data):
+    n_objects = len(fiberassign_data)
+    
     print('adding new columns by computation')
-    print('TILE info', tile_data['RA'], tile_data['DEC'])
+    #print('TILE info', tile_data['RA'], tile_data['DEC'])
     q, s = desimodel.focalplane.xy2qs(fiberassign_data['XFOCAL_DESIGN'], fiberassign_data['YFOCAL_DESIGN'])
     fiberassign_data = np.lib.recfunctions.append_fields(fiberassign_data, 'DESIGN_Q', q, dtypes=np.float32)
     fiberassign_data = np.lib.recfunctions.append_fields(fiberassign_data, 'DESIGN_S', s, dtypes=np.float32)
+    lambda_ref = np.ones(n_objects) * 5400.0
+    fiberassign_data = np.lib.recfunctions.append_fields(fiberassign_data, 'LAMBDA_REF', lambda_ref, dtypes=np.float32)
     
     print('adding columns from positioner data')
     positioner_data = positioner_data[positioner_data['DEVICE_TYPE']=='POS']
     positioner_data = np.sort(positioner_data, order='FIBER')
     ii = np.in1d(positioner_data['FIBER'], fiber_data['FIBER'],)
     fiberassign_data = np.lib.recfunctions.append_fields(fiberassign_data, 'PETAL_LOC', positioner_data[ii]['PETAL'],dtypes=np.int16)
-    fiberassign_data = np.lib.recfunctions.append_fields(fiberassign_data, 'DEVICE_LOC', positioner_data[ii]['DEVICE'],dtypes=np.int32)    
-
-    print('joining mtl data')
+    fiberassign_data = np.lib.recfunctions.append_fields(fiberassign_data, 'DEVICE_LOC', positioner_data[ii]['DEVICE'],dtypes=np.int32)   
+    
+    print('adding columns from mtl data')
     columns=['TARGETID','SUBPRIORITY', 'BRICKID', 'BRICK_OBJID', 'REF_ID',
             'PMRA', 'PMDEC', 'PMRA_IVAR', 'PMDEC_IVAR', 'FLUX_G', 'FLUX_R', 'FLUX_Z',
             'FLUX_W1', 'FLUX_W2', 'FLUX_IVAR_G', 'FLUX_IVAR_R', 'FLUX_IVAR_Z',
-            'FLUX_IVAR_W1', 'FLUX_IVAR_W2', 'RA_IVAR', 'DEC_IVAR']
+            'FLUX_IVAR_W1', 'FLUX_IVAR_W2', 'RA_IVAR', 'DEC_IVAR',
+            'FIBERFLUX_G', 'FIBERFLUX_R', 'FIBERFLUX_Z', 
+            'FIBERTOTFLUX_G', 'FIBERTOTFLUX_R', 'FIBERTOTFLUX_Z', 'HPXPIXEL']
     fiberassign_data = join(fiberassign_data, mtl_data[columns], join_type='left', keys='TARGETID')
     if fiberassign_data.masked:
         unmatched = fiberassign_data['SUBPRIORITY'].mask
         fiberassign_data['SUBPRIORITY'][unmatched] = 1
-    
-    
-    
     
     return np.array(fiberassign_data)
 
