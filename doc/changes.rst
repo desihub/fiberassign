@@ -1,12 +1,14 @@
 fiberassign change log
 ======================
 
-0.9.1 (unreleased)
+0.10.0 (unreleased)
 ------------------
 
 * Support both STD_FSTAR and STD bit names (PR `#139`).
+* Add more columns to output (PR `#141`).
 
 .. _`#139`: https://github.com/desihub/fiberassign/pull/139
+.. _`#141`: https://github.com/desihub/fiberassign/pull/141
 
 0.9.0 (2018-07-18)
 ------------------
