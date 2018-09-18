@@ -202,16 +202,25 @@ if args.gfafile is not None:
     gfa = GFALocations()
 
     print('loading GFA file')
-    data = fitsio.read(args.gfafile)
+    gfa_data = fitsio.read(args.gfafile)
+    footprint = fitsio.read(args.footprint)
+
+    
+    #- Pre-filter what GFA targets cover what tiles with some buffer.
+    #- find_points_in_tiles returns a list of lists;
+    #- convert to dictionary of lists keyed by tileid
+    gfa_tile_indices = dict()
+    ii = desimodel.footprint.find_points_in_tiles(footprint, gfa_data['RA'], gfa_data['DEC'], radius=1.8)
+    for i, tileid in enumerate(footprint['TILEID']):
+        gfa_tile_indices[tileid] = ii[i]
 
     print('selecting computed tiles')
-    footprint = fitsio.read(args.footprint)
     ii = np.in1d(footprint['TILEID'], np.array(tile_id))
     tiles = footprint[ii]
     for telra, teldec, tileid in zip(tiles['RA'], tiles['DEC'], tiles['TILEID']):
         gfaout = os.path.join(tmp_gfa_dir, 'tile_{:05d}.fits'.format(tileid))
-        gfa_data = gfa.targets_on_gfa(telra, teldec, data)
-        t = Table(gfa_data)
+        gfa_data_tmp = gfa.targets_on_gfa(telra, teldec, gfa_data[gfa_tile_indices[tileid]])
+        t = Table(gfa_data_tmp)
         t.write(gfaout, overwrite=True)
 
 
@@ -262,8 +271,10 @@ def add_fiber_data_columns(tile_data, fiberassign_data, mtl_data, sky_data, posi
             'FIBERFLUX_G', 'FIBERFLUX_R', 'FIBERFLUX_Z', 
             'FIBERTOTFLUX_G', 'FIBERTOTFLUX_R', 'FIBERTOTFLUX_Z', 'HPXPIXEL']
 
-    ii = np.in1d(mtl_data['TARGETID'], fiberassign_data['TARGETID'])
-    fiberassign_data = join(fiberassign_data, mtl_data[ii][columns], join_type='left', keys='TARGETID')
+    print('Tile ID {} Total of MTL points {}. Total of fiberassign_data {}'.format(
+            tile_data['TILEID'], len(mtl_data), len(fiberassign_data)))
+    #ii = np.in1d(mtl_data['TARGETID'], fiberassign_data['TARGETID'])
+    fiberassign_data = join(fiberassign_data, mtl_data[columns], join_type='left', keys='TARGETID')
     if fiberassign_data.masked:
         unmatched = fiberassign_data['SUBPRIORITY'].mask
         fiberassign_data['SUBPRIORITY'][unmatched] = 1
