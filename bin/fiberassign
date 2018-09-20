@@ -230,6 +230,10 @@ if args.gfafile is not None:
         fileid = gfa_file.split('/')[-1].split('_')[-1].split('.')[0]
         gfa_tile_id[fileid] = gfa_file
 
+def add_potential_data_columns(potential_data, tile_data, fiberassign_data, mtl_data, sky_data, positioner_data):
+    n_objects = len(potential_data)
+    
+
 def add_fiber_data_columns(tile_data, fiberassign_data, mtl_data, sky_data, positioner_data):
     n_objects = len(fiberassign_data)
     
@@ -289,8 +293,19 @@ def make_target_hdu_data(fiberassign_data, mtl_data):
     print('  adding all columns from mtl data in make_target_hdu_data')
     print(' Total of MTL points {}. Total of new_target_data {}'.format(
             len(mtl_data), len(new_target_data)))
+    columns=['TARGETID','SUBPRIORITY', 'BRICKID', 'BRICK_OBJID', 'REF_ID',
+             'FLUX_G', 'FLUX_R', 'FLUX_Z', 'FLUX_W1', 'FLUX_W2', 
+             'MW_TRANSMISSION_G', 'MW_TRANSMISSION_R', 'MW_TRANSMISSION_Z',
+             'PSFDEPTH_G', 'PSFDEPTH_R', 'PSFDEPTH_Z',
+             'GALDEPTH_G', 'GALDEPTH_R', 'GALDEPTH_Z', 
+             'SHAPEDEV_R', 'SHAPEDEV_E1', 'SHAPEDEV_E2', 
+             'SHAPEEXP_R', 'SHAPEEXP_E1', 'SHAPEEXP_E2',
+             'FIBERFLUX_G', 'FIBERFLUX_R', 'FIBERFLUX_Z', 
+             'FIBERTOTFLUX_G', 'FIBERTOTFLUX_R', 'FIBERTOTFLUX_Z', 'HPXPIXEL']
+#to be implemented
+#'PSFDEPTH_W1', 'PSFDEPTH_W1',
 
-    new_target_data = join(new_target_data, mtl_data, join_type='left', keys='TARGETID')
+    new_target_data = join(new_target_data, mtl_data[columns], join_type='left', keys='TARGETID')
     if new_target_data.masked:
         unmatched = new_target_data['SUBPRIORITY'].mask
         new_target_data['SUBPRIORITY'][unmatched] = 1
@@ -320,6 +335,9 @@ for sky_id in sky_tile_id.keys():
         target_data = make_target_hdu_data(fiber_data, mtl_data[mtl_tile_indices[int(sky_id)]])
         tile_data  = footprint[footprint['TILEID']==np.int(sky_id)]
         fiber_data = add_fiber_data_columns(tile_data, fiber_data, mtl_data[mtl_tile_indices[int(sky_id)]], sky_data, positioner_data)
+
+        # Make sur that the TARGETID ordering is the same both for target_data and fiber_data
+        assert np.all(target_data['TARGETID'] == fiber_data['TARGETID'])
 
         #- Rename some columns (leave C++ alone; it is being refactored)
         colnames = list(fiber_data.dtype.names)
