@@ -230,6 +230,24 @@ if args.gfafile is not None:
         fileid = gfa_file.split('/')[-1].split('_')[-1].split('.')[0]
         gfa_tile_id[fileid] = gfa_file
 
+def add_potential_data_columns(potential_data, fiberassign_data):
+    potential_data.dtype.names = tuple(['TARGETID'])
+    n_objects = len(potential_data)
+    assert (np.sum(fiberassign_data['NUMTARGET'])==len(potential_data))
+    fiber_array = np.ones(n_objects, dtype=np.int32) # 'FIBER'
+    location_array = np.ones(n_objects, dtype=np.int32) # `LOCATION`
+
+    for i in range(len(fiberassign_data)):
+        min_i = fiberassign_data['NUMTARGET'][:i].sum()
+        max_i = min_i + fiberassign_data['NUMTARGET'][i]
+        fiber_array[min_i:max_i] = fiberassign_data['FIBER'][i]
+        location_array[min_i:max_i] = fiberassign_data['LOCATION'][i]
+
+    potential_data = np.lib.recfunctions.append_fields(potential_data, 'FIBER', fiber_array, dtypes=np.int32)
+    potential_data = np.lib.recfunctions.append_fields(potential_data, 'LOCATION', location_array, dtypes=np.int32)  
+    return potential_data
+    
+
 def add_fiber_data_columns(tile_data, fiberassign_data, mtl_data, sky_data, positioner_data):
     n_objects = len(fiberassign_data)
     
@@ -281,6 +299,23 @@ def add_fiber_data_columns(tile_data, fiberassign_data, mtl_data, sky_data, posi
     
     return np.array(fiberassign_data)
 
+
+def make_target_hdu_data(fiberassign_data, mtl_data):
+    new_target_data = fiberassign_data[['TARGETID']]
+    n_objects = len(new_target_data)
+    
+    print('  adding all columns from mtl data in make_target_hdu_data')
+    print(' Total of MTL points {}. Total of new_target_data {}'.format(
+            len(mtl_data), len(new_target_data)))
+
+    new_target_data = join(new_target_data, mtl_data, join_type='left', keys='TARGETID')
+    if new_target_data.masked:
+        unmatched = new_target_data['SUBPRIORITY'].mask
+        new_target_data['SUBPRIORITY'][unmatched] = 1
+    
+    return np.array(new_target_data)
+
+
 mtl_data = fitsio.read(args.mtl)
 sky_data = fitsio.read(args.sky)
 positioner_data = fitsio.read(args.positioners)
@@ -300,8 +335,14 @@ for sky_id in sky_tile_id.keys():
         sky_data = fitsio.read(sky_tile_id[sky_id])
         fiber_data = fitsio.read(target_tile_id[sky_id], ext=1)
         potential_data = fitsio.read(target_tile_id[sky_id], ext=2)
+        
+        target_data = make_target_hdu_data(fiber_data, mtl_data[mtl_tile_indices[int(sky_id)]])
         tile_data  = footprint[footprint['TILEID']==np.int(sky_id)]
         fiber_data = add_fiber_data_columns(tile_data, fiber_data, mtl_data[mtl_tile_indices[int(sky_id)]], sky_data, positioner_data)
+        potential_data = add_potential_data_columns(potential_data, fiber_data)
+        
+        # Make sure that the TARGETID ordering is the same both for target_data and fiber_data
+        assert np.all(target_data['TARGETID'] == fiber_data['TARGETID'])
 
         #- Rename some columns (leave C++ alone; it is being refactored)
         colnames = list(fiber_data.dtype.names)
@@ -325,6 +366,7 @@ for sky_id in sky_tile_id.keys():
         fitsio.write(tileout, fiber_data, extname='FIBERASSIGN', clobber=True)
         fitsio.write(tileout, potential_data, extname='POTENTIAL')
         fitsio.write(tileout, sky_data, extname='SKYETC')
+        fitsio.write(tileout, target_data, extname='TARGETS')
 
         if args.gfafile is not None:
             gfa_data = fitsio.read(gfa_tile_id[sky_id])
