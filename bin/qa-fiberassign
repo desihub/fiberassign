@@ -47,7 +47,7 @@ for filename in args.tilefiles:
     fa = Table.read(filename, 'FIBERASSIGN')
     fa.sort('FIBER')
     assigned.append(fa)
-    tmp = Table.read(filename, 'POTENTIAL')['POTENTIALTARGETID']
+    tmp = Table.read(filename, 'POTENTIAL')['TARGETID']
     covered.append(np.unique(tmp))
     errors = list()
 
@@ -57,8 +57,8 @@ for filename in args.tilefiles:
     if len(np.unique(fa['LOCATION'])) != 5000:
         errors.append('Repeated location numbers')
 
-    is_stuck = ((fa['FIBERMASK'] & stuck_mask) != 0)
-    is_broken = ((fa['FIBERMASK'] & broken_mask) != 0)
+    is_stuck = ((fa['FIBERSTATUS'] & stuck_mask) != 0)
+    is_broken = ((fa['FIBERSTATUS'] & broken_mask) != 0)
     is_unassigned = (fa['TARGETID'] < 0)
     n_good_unassigned = np.count_nonzero(is_unassigned & ~(is_stuck | is_broken))
     if n_good_unassigned > 0:
@@ -73,8 +73,8 @@ for filename in args.tilefiles:
         errors.append('fiber:location map incorrect')
 
     ii = fa['TARGETID'] >= 0
-    dx = (fa['XFOCAL_DESIGN'][ii] - fiberpos['X'][ii])
-    dy = (fa['YFOCAL_DESIGN'][ii] - fiberpos['Y'][ii])
+    dx = (fa['DESIGN_X'][ii] - fiberpos['X'][ii])
+    dy = (fa['DESIGN_Y'][ii] - fiberpos['Y'][ii])
     r = np.sqrt(dx**2 + dy**2)
     if np.max(r) > 6:
         errors.append('Fibers assigned to more than 6mm from positioner center')
