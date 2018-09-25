@@ -183,13 +183,23 @@ bool intersect (const element & e1, const element & e2) {
     }
     if (e1.is_seg && !e2.is_seg) {
         for (size_t i = 0; i < e1.segs.size() - 1; i++) {
-            return intersect_seg_circ(e1.segs[i], e1.segs[i + 1], e2.O, e2.rad);
+            bool b = intersect_seg_circ(e1.segs[i], e1.segs[i + 1], e2.O,
+                                        e2.rad);
+            if (b) {
+                return true;
+            }
         }
+        return false;
     }
     if (!e1.is_seg && e2.is_seg) {
         for (size_t i = 0; i < e2.segs.size() - 1; i++) {
-            return intersect_seg_circ(e2.segs[i], e2.segs[i + 1], e1.O, e1.rad);
+            bool b = intersect_seg_circ(e2.segs[i], e2.segs[i + 1], e1.O,
+                                        e1.rad);
+            if (b) {
+                return true;
+            }
         }
+        return false;
     }
     if (!e1.is_seg && !e2.is_seg) {
         return (sq(e1.O, e2.O) < sq(e1.rad + e2.rad) );
