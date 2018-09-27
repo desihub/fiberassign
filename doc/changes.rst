@@ -1,14 +1,19 @@
 fiberassign change log
 ======================
 
-0.10.0 (unreleased)
-------------------
+0.10.0 (2018-09-26)
+-------------------
 
-* Support both STD_FSTAR and STD bit names (PR `#139`).
-* Add more columns to output (PR `#141`).
+* Support both STD_FSTAR and STD bit names (PR `#139`_).
+* Add more columns to output (PR `#141`_).
+* Additional changes to try to match the data model (PR `#144`_).
+* Fix collision calculation (PR `#146`_).
 
 .. _`#139`: https://github.com/desihub/fiberassign/pull/139
 .. _`#141`: https://github.com/desihub/fiberassign/pull/141
+.. _`#144`: https://github.com/desihub/fiberassign/pull/144
+.. _`#146`: https://github.com/desihub/fiberassign/pull/146
+
 
 0.9.0 (2018-07-18)
 ------------------
