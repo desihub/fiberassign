@@ -363,10 +363,11 @@ for sky_id in sky_tile_id.keys():
         fiber_data.dtype.names = tuple(colnames)
 
         tileout = os.path.join(args.outdir, 'tile_{}.fits'.format(sky_id))
-        fitsio.write(tileout, fiber_data, extname='FIBERASSIGN', clobber=True)
+        ii = np.argsort(fiber_data['FIBER'])
+        fitsio.write(tileout, fiber_data[ii], extname='FIBERASSIGN', clobber=True)
         fitsio.write(tileout, potential_data, extname='POTENTIAL')
         fitsio.write(tileout, sky_data, extname='SKYETC')
-        fitsio.write(tileout, target_data, extname='TARGETS')
+        fitsio.write(tileout, target_data[ii], extname='TARGETS')
 
         if args.gfafile is not None:
             gfa_data = fitsio.read(gfa_tile_id[sky_id])
