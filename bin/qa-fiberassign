@@ -15,46 +15,17 @@ from astropy.io import fits
 
 from desitarget.targetmask import desi_mask
 import desimodel.io
-from desimodel.focalplane.geometry import xy2radec
-
-import matplotlib
-matplotlib.use('Agg') 
-
-import matplotlib.pyplot as plt
-import time
-#plt.ion()
-#plt.show()
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--targets", type=str,  help="input data")
 parser.add_argument("--verbose", action="store_true",  help="print non-error info per tile")
-parser.add_argument("--tilefile", type=str, help="txt file with fiber assign tile files")
-parser.add_argument("--plotdir", type=str, help="directory for plots")
+parser.add_argument("tilefiles", type=str, nargs='+', help="fiber assign tile files")
 
 args = parser.parse_args()
-
-tilelist_arr = []
-#niteration = 4
-iteration = 0
-#for iteration in range(niteration):
-
-tilefile = open(args.tilefile,'r')
-for line in tilefile:
-	#if os.path.exists('dark_ra20.00_30.00_dec-5.00_5.00_PR372/fiber_output_{}/tile_{:05d}.fits'.format(
-	#	iteration,int(line.split('\n')[0]))):
-	#	tilelist_arr.append('dark_ra20.00_30.00_dec-5.00_5.00_PR372/fiber_output_{}/tile_{:05d}.fits'.format(
-	#		iteration,int(line.split('\n')[0])))
-	tilelist_arr.append(line.split('\n')[0])
-tilefile.close()
-
-targfile = 'dark_ra20.00_30.00_dec-5.00_5.00_PR372/targets_dark.fits'
-targets = Table.read(args.targets)
 
 fiberpos = Table(desimodel.io.load_fiberpos())
 fiberpos.sort('FIBER')
 fiber_locations = sorted(zip(fiberpos['FIBER'], fiberpos['LOCATION']))
-
-tiles = Table(desimodel.io.load_tiles())
 
 sky_mask = desi_mask.SKY
 std_mask = 0
@@ -72,152 +43,77 @@ nfail = 0
 assigned = list()
 covered = list()
 n5k = np.arange(5000, dtype=int)
-t0 = time.time()
-for filename in tilelist_arr:
-	fa = Table.read(filename, 'FIBERASSIGN')
-	fa.sort('FIBER')
-	assigned.append(fa)
-	pot = Table.read(filename, 'POTENTIAL')
-	tmp = pot['TARGETID']
-	covered.append(np.unique(tmp))
-	errors = list()
+for filename in args.tilefiles:
+    fa = Table.read(filename, 'FIBERASSIGN')
+    fa.sort('FIBER')
+    assigned.append(fa)
+    tmp = Table.read(filename, 'POTENTIAL')['TARGETID']
+    covered.append(np.unique(tmp))
+    errors = list()
 
-	if len(np.unique(fa['FIBER'])) != 5000:
-		errors.append('Repeated fiber numbers')
+    if len(np.unique(fa['FIBER'])) != 5000:
+        errors.append('Repeated fiber numbers')
 
-	if len(np.unique(fa['LOCATION'])) != 5000:
-		errors.append('Repeated location numbers')
+    if len(np.unique(fa['LOCATION'])) != 5000:
+        errors.append('Repeated location numbers')
 
-	is_stuck = ((fa['FIBERSTATUS'] & stuck_mask) != 0)
-	is_broken = ((fa['FIBERSTATUS'] & broken_mask) != 0)
-	is_unassigned = (fa['TARGETID'] < 0)
-	n_good_unassigned = np.count_nonzero(is_unassigned & ~(is_stuck | is_broken))
-	if n_good_unassigned > 0:
-		errors.append('{} unassigned good fibers'.format(n_good_unassigned))
+    is_stuck = ((fa['FIBERSTATUS'] & stuck_mask) != 0)
+    is_broken = ((fa['FIBERSTATUS'] & broken_mask) != 0)
+    is_unassigned = (fa['TARGETID'] < 0)
+    n_good_unassigned = np.count_nonzero(is_unassigned & ~(is_stuck | is_broken))
+    if n_good_unassigned > 0:
+        errors.append('{} unassigned good fibers'.format(n_good_unassigned))
 
-	tx = fa['TARGETID'][fa['TARGETID']>0]
-	if len(tx) != len(np.unique(tx)):
-		errors.append('{} repeated TARGETID'.format(
-			len(tx) - len(np.unique(tx))))
+    tx = fa['TARGETID'][fa['TARGETID']>0]
+    if len(tx) != len(np.unique(tx)):
+        errors.append('{} repeated TARGETID'.format(
+            len(tx) - len(np.unique(tx))))
 
-	if sorted(zip(fa['FIBER'], fa['LOCATION'])) != fiber_locations:
-		errors.append('fiber:location map incorrect')
+    if sorted(zip(fa['FIBER'], fa['LOCATION'])) != fiber_locations:
+        errors.append('fiber:location map incorrect')
 
-	ii = fa['TARGETID'] >= 0
-	dx = (fa['DESIGN_X'][ii] - fiberpos['X'][ii])
-	dy = (fa['DESIGN_Y'][ii] - fiberpos['Y'][ii])
-	r = np.sqrt(dx**2 + dy**2)
-	if np.max(r) > 6:
-		errors.append('Fibers assigned to more than 6mm from positioner center')
+    ii = fa['TARGETID'] >= 0
+    dx = (fa['DESIGN_X'][ii] - fiberpos['X'][ii])
+    dy = (fa['DESIGN_Y'][ii] - fiberpos['Y'][ii])
+    r = np.sqrt(dx**2 + dy**2)
+    if np.max(r) > 6:
+        errors.append('Fibers assigned to more than 6mm from positioner center')
 
-	nsky_total = 0
-	nstdstar_total = 0
-	for petal in range(10):
-		ii = (fa['FIBER'] // 500) == petal
-		nstd = np.count_nonzero(fa['DESI_TARGET'][ii] & std_mask)
-		nsky = np.count_nonzero(fa['DESI_TARGET'][ii] & sky_mask)
-		nsky_total += nsky
-		nstdstar_total += nstd
-		if nstd < 10:
-			errors.append('Petal {} has {}/10 stdstars'.format(petal, nstd))
-		if nsky < 40:
-			errors.append('Petal {} has {}/40 sky'.format(petal, nsky))
+    nsky_total = 0
+    nstdstar_total = 0
+    for petal in range(10):
+        ii = (fa['FIBER'] // 500) == petal
+        nstd = np.count_nonzero(fa['DESI_TARGET'][ii] & std_mask)
+        nsky = np.count_nonzero(fa['DESI_TARGET'][ii] & sky_mask)
+        nsky_total += nsky
+        nstdstar_total += nstd
+        if nstd < 10:
+            errors.append('Petal {} has {}/10 stdstars'.format(petal, nstd))
+        if nsky < 40:
+            errors.append('Petal {} has {}/40 sky'.format(petal, nsky))
 
-	#- Print any errors
-	if len(errors) == 0:
-		print('{} - OK'.format(filename))
-	else:
-		nfail += 1
-		print('{} - ERROR'.format(filename))
-		for err in errors:
-			print('    {}'.format(err))
+    #- Print any errors
+    if len(errors) == 0:
+        print('{} - OK'.format(filename))
+    else:
+        nfail += 1
+        print('{} - ERROR'.format(filename))
+        for err in errors:
+            print('    {}'.format(err))
 
-	#- Then print non-error informational stats
-	#if args.verbose:
-	#    n_stuck = np.count_nonzero(is_stuck)
-	#    n_broken = np.count_nonzero(is_broken)
-	#    print('    {} stuck, {} broken, {} sky, {} stdstars'.format(
-	#        n_stuck, n_broken, nsky_total, nstdstar_total))
-	#print(time.time()-t0)
-	# Make plot
-	fig = plt.figure(figsize=(10,11))
-	ax = fig.add_subplot(111)
-	#print(time.time()-t0)
-	tid = float(filename.split('tile_')[-1].split('.fits')[0])
-	tileloc = tiles['TILEID']==tid
-	ra, dec = xy2radec(tiles['RA'][tileloc],tiles['DEC'][tileloc],fiberpos['X'],fiberpos['Y'])
-	#print(time.time()-t0)
-	# loop through fibres, plotting each patrol region as a coloured circle
-	# each tile is a different colour
-	for i in range(len(ra)):
-		c = plt.Circle((ra[i], dec[i]), 0.024, color="C", alpha=0.4,
-					   zorder=0)
-		ax.add_artist(c)
+    #- Then print non-error informational stats
+    if args.verbose:
+        n_stuck = np.count_nonzero(is_stuck)
+        n_broken = np.count_nonzero(is_broken)
+        print('    {} stuck, {} broken, {} sky, {} stdstars'.format(
+            n_stuck, n_broken, nsky_total, nstdstar_total))
 
-	#fa # just assigned
-	#tmp # all
-	#print(time.time()-t0)
-	not_targeted = (~np.in1d(tmp,fa['TARGETID']))
-	targeted = (np.in1d(tmp,fa['TARGETID']))
-	
-	dsorted = np.argsort(targets['TARGETID'])
-	ypos = np.searchsorted(targets['TARGETID'][dsorted],tmp)
-	inds = np.zeros_like(ypos)
-	inds[tmp <= np.max(targets['TARGETID'])] = dsorted[ypos[tmp <= np.max(targets['TARGETID'])]]
-	#print(time.time()-t0)
-	
-	elg = (targets[inds]['DESI_TARGET'] & desi_mask.mask('ELG') != 0)
-	lrg = (targets[inds]['DESI_TARGET'] & desi_mask.mask('LRG') != 0)
-	qso = (targets[inds]['DESI_TARGET'] & desi_mask.mask('QSO') != 0)
-	
-	s = 15
-	import matplotlib as mpl
-	mpl.rcParams['lines.linewidth'] = 0.8
-	plt.scatter(targets[inds]['RA'][targeted & elg & (tmp <= np.max(targets['TARGETID']))],
-				targets[inds]['DEC'][targeted & elg & (tmp <= np.max(targets['TARGETID']))], s=s, edgecolor="none", c="b",
-				zorder=10,label='ELG')
-				
-	plt.scatter(targets[inds]['RA'][not_targeted & elg & (tmp <= np.max(targets['TARGETID']))],
-				targets[inds]['DEC'][not_targeted & elg & (tmp <= np.max(targets['TARGETID']))], s=s, edgecolor="none", c="b",
-				marker="x",
-				zorder=10,label='Not targeted')
-				
-	plt.scatter(targets[inds]['RA'][targeted & lrg & (tmp <= np.max(targets['TARGETID']))],
-				targets[inds]['DEC'][targeted & lrg & (tmp <= np.max(targets['TARGETID']))], s=s, edgecolor="none", c="r",
-				zorder=10,label='LRG')
-				
-	plt.scatter(targets[inds]['RA'][not_targeted & lrg & (tmp <= np.max(targets['TARGETID']))],
-				targets[inds]['DEC'][not_targeted & lrg & (tmp <= np.max(targets['TARGETID']))], s=s, edgecolor="none", c="r",
-				marker="x",
-				zorder=10,label='_nolegend_')
-				
-	plt.scatter(targets[inds]['RA'][targeted & qso & (tmp <= np.max(targets['TARGETID']))],
-				targets[inds]['DEC'][targeted & qso & (tmp <= np.max(targets['TARGETID']))], s=s, edgecolor="none", c="g",
-				zorder=10,label='QSO')
-				
-	plt.scatter(targets[inds]['RA'][not_targeted & qso & (tmp <= np.max(targets['TARGETID']))],
-				targets[inds]['DEC'][not_targeted & qso & (tmp <= np.max(targets['TARGETID']))], s=s, edgecolor="none", c="g",
-				marker="x",
-				zorder=10,label='_nolegend_')
-	# unbelievably you need to explicitly *tell* matplotlib not to label a set of points
-	# (or else it makes up its own stupid label)
 
-	plt.xlim(tiles['RA'][tileloc]-0.5,tiles['RA'][tileloc]+0.5)
-	plt.ylim(tiles['DEC'][tileloc]-0.5,tiles['DEC'][tileloc]+0.5)
-	plt.legend(frameon=True)
-	plt.axes().set_aspect('equal','datalim')
-	plt.minorticks_on()
-	if not os.path.exists(args.plotdir):
-		os.system('mkdir {}'.format(args.plotdir))
-	plt.savefig(args.plotdir+'{}.png'.format(int(tid)),dpi=600)
-	#print(time.time()-t0)
-	#print(5/0)
+print('{}/{} tiles had errors'.format(nfail, len(args.tilefiles)))
 
-print('{}/{} tiles had errors'.format(nfail, len(tilelist_arr)))
-
-#if args.targets is None:
-#    print('Option --targets not specified; stopping')
-#    sys.exit(0)
+if args.targets is None:
+    print('Option --targets not specified; stopping')
+    sys.exit(0)
 
 #- Clear metadata keywords to avoid stacking name collisions
 for fa in assigned:
@@ -227,6 +123,7 @@ assigned = vstack(assigned)
 unique_assigned_targetids = np.unique(assigned['TARGETID'])
 covered = np.concatenate(covered)
 
+targets = Table.read(args.targets)
 #- TODO: count and remove sky targets
 
 if len(targets) != len(np.unique(targets['TARGETID'])):
@@ -236,7 +133,7 @@ print('----------')
 ntargets = len(targets)
 iicovered = np.in1d(targets['TARGETID'], covered)
 ncovered = np.count_nonzero(iicovered)
-ntiles = len(tilelist_arr)
+ntiles = len(args.tilefiles)
 pcovered = 100.0*ncovered/ntargets
 print('{:.1f}% targets ({}/{}) covered by {} tiles'.format(
     pcovered, ncovered, ntargets, ntiles))
