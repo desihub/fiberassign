@@ -16,13 +16,13 @@ import glob
 import desimodel.focalplane
 import tempfile
 import shutil
-
+import subprocess
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--mtl", type=str,  help="input targets (FITS file)", required=True)
 parser.add_argument("--sky", type=str,  help="input sky positions (FITS file)", required=True)
-parser.add_argument("--stdstar", type=str,  help="input std stars (FITS file)", required=True)
-parser.add_argument("--fibstatusfile", type=str,  help="list of positioners and its status (ECSV file)", required=True)
+parser.add_argument("--stdstar", type=str,  help="input std stars (FITS file)")
+parser.add_argument("--fibstatusfile", type=str,  help="list of positioners and its status (ECSV or txt file)")
 parser.add_argument("--footprint", type=str,  help="list of tiles defining the footprint (FITS file)")
 parser.add_argument("--positioners", type=str,  help="list of positioners on the focal plane (FITS file)")
 
@@ -52,10 +52,19 @@ if args.footprint is None:
 if args.positioners is None:
     args.positioners = desimodel.io.findfile('focalplane/fiberpos-all.fits')
 
+tmp_surveytiles = None
 if args.surveytiles is None:
     data = desimodel.io.load_tiles(tilesfile=args.footprint)
-    np.savetxt(os.path.join(args.outdir, "tmp_surveytiles.txt"), np.int_(data['TILEID']), fmt='%d')
-    args.surveytiles = os.path.join(args.outdir, "tmp_surveytiles.txt")
+    tmp_surveytiles = os.path.join(args.outdir, "tmp_surveytiles.txt")
+    np.savetxt(tmp_surveytiles, np.int_(data['TILEID']), fmt='%d')
+    args.surveytiles = tmp_surveytiles
+
+tmp_fiberstatusfile = None
+if args.fibstatusfile is None:
+    tmp_fiberstatusfile = os.path.join(args.outdir, "tmp_fiberstatus.txt")
+    with open(tmp_fiberstatusfile, 'w') as fx:
+        fx.write("FIBER LOCATION  X              Y             BROKEN STUCK START_DATE          END_DATE\n")
+    args.fibstatusfile = tmp_fiberstatusfile
 
 if args.starmask is None:
     args.starmask = 0
@@ -65,18 +74,34 @@ if args.starmask is None:
         if name in desi_mask.names():
             args.starmask |= desi_mask[name]
 
+tmp_stdstarfile = None
+if args.stdstar is None:
+    #- These are currently required by C++ code,
+    #- but may be more than really needed (e.g. BRICKNAME, MWS/BGS_TARGET)
+    stdcolumns = ['TARGETID', 'RA', 'DEC', 'OBSCONDITIONS', 'SUBPRIORITY',
+                  'BRICKNAME', 'DESI_TARGET', 'MWS_TARGET', 'BGS_TARGET']
+    stdstars = fitsio.read(args.mtl, 'MTL', columns=stdcolumns)
+    ii = (stdstars['DESI_TARGET'] & args.starmask) != 0
+    stdstars = stdstars[ii]
+    tmp_stdstarfile = os.path.join(args.outdir, 'tmp_stdstars.fits')
+    args.stdstar = tmp_stdstarfile
+    fitsio.write(tmp_stdstarfile, stdstars, extname='STD', clobber=True)
+    del stdstars
+
 if args.rundate is None:
     now = datetime.datetime.now()
     args.rundate = '{:04d}-{:02d}-{:02d}'.format(now.year, now.month, now.day)
 
-if (args.telra is not None) and (args.teldec is not None) and (args.tileid is not None) and (args.tileobsconditions is not None):
+if (args.telra is not None) and (args.teldec is not None) and \
+   (args.tileid is not None) and (args.tileobsconditions is not None):
     from astropy.table import Table
     tiles = Table([[args.tileid], [args.telra], [args.teldec], [args.tileobsconditions], [1], [1]],
                   names=('TILEID', 'RA', 'DEC', 'OBSCONDITIONS', 'IN_DESI', 'PASS'))
     tiles.write(os.path.join(args.outdir, "tmp_footprint.fits"), overwrite=True)
     args.footprint = os.path.join(args.outdir, "tmp_footprint.fits")
-    np.savetxt(os.path.join(args.outdir, "tmp_surveytiles.txt"), [args.tileid], fmt='%d')
-    args.surveytiles = os.path.join(args.outdir, "tmp_surveytiles.txt")
+    tmp_surveytiles = "tmp_surveytiles.txt"
+    np.savetxt(tmp_surveytiles, [args.tileid], fmt='%d')
+    args.surveytiles = tmp_surveytiles
 
 # Make sure that output directory exists
 if not os.path.isdir(args.outdir):
@@ -165,7 +190,10 @@ cmd = fiberassign_command.format(mtl=args.mtl, sky=args.sky, stdstar=args.stdsta
                                  footprint=args.footprint, positioners=tmp_fiber_pos, rundate=args.rundate,
                                  nstarpetal=args.nstarpetal, nskypetal=args.nskypetal)
 print(cmd)
-os.system(cmd)
+err = subprocess.call(cmd.split())
+if err:
+    print('fiberassign failed with error code {}; exiting'.format(err))
+    sys.exit(err)
 
 # Add new columns to fiberassign targets
 
@@ -175,7 +203,10 @@ cmd = fiberassign_command.format(mtl=args.sky, sky=args.sky, stdstar=args.sky, f
                                  footprint=args.footprint, positioners=tmp_fiber_sky, rundate=args.rundate,
                                  nstarpetal=args.nstarpetal, nskypetal=args.nskypetal)
 print(cmd)
-os.system(cmd)
+err = subprocess.call(cmd.split())
+if err:
+    print('fiberassign of sky monitor fibers failed with error code {}; exiting'.format(err))
+    sys.exit(err)
 
 # join targets+sky+gfa tiles
 targets = glob.glob(os.path.join(tmp_targets_dir,'tile_*.fits'))
@@ -251,7 +282,7 @@ def add_potential_data_columns(potential_data, fiberassign_data):
 def add_fiber_data_columns(tile_data, fiberassign_data, mtl_data, sky_data, positioner_data):
     n_objects = len(fiberassign_data)
     
-    print('  adding new columns by computation')
+    #print('  adding new columns by computation')
     #print('TILE info', tile_data['RA'], tile_data['DEC'])
     q, s = desimodel.focalplane.xy2qs(fiberassign_data['XFOCAL_DESIGN'], fiberassign_data['YFOCAL_DESIGN'])
     fiberassign_data = np.lib.recfunctions.append_fields(fiberassign_data, 'DESIGN_Q', q, dtypes=np.float32)
@@ -268,7 +299,7 @@ def add_fiber_data_columns(tile_data, fiberassign_data, mtl_data, sky_data, posi
     objtype[isBad] = 'BAD'
     fiberassign_data = np.lib.recfunctions.append_fields(fiberassign_data, 'OBJTYPE', objtype, dtypes='S3')
 
-    print('  adding columns from positioner data')
+    #print('  adding columns from positioner data')
     #- handle bytes (fitsio) vs. string (astropy)
     isPOS = (positioner_data['DEVICE_TYPE']==b'POS') | (positioner_data['DEVICE_TYPE']=='POS')
     positioner_data = positioner_data[isPOS]
@@ -278,20 +309,14 @@ def add_fiber_data_columns(tile_data, fiberassign_data, mtl_data, sky_data, posi
     fiberassign_data = np.lib.recfunctions.append_fields(fiberassign_data, 'PETAL_LOC', positioner_data[ii]['PETAL'],dtypes=np.int16)
     fiberassign_data = np.lib.recfunctions.append_fields(fiberassign_data, 'DEVICE_LOC', positioner_data[ii]['DEVICE'],dtypes=np.int32)   
     
-    print('  adding columns from mtl data')
-    columns=['TARGETID','SUBPRIORITY', 'BRICKID', 'BRICK_OBJID', 'REF_ID',
-            'PMRA', 'PMDEC', 'PMRA_IVAR', 'PMDEC_IVAR', 'FLUX_G', 'FLUX_R', 'FLUX_Z',
-            'FLUX_W1', 'FLUX_W2', 'FLUX_IVAR_G', 'FLUX_IVAR_R', 'FLUX_IVAR_Z',
-            'FLUX_IVAR_W1', 'FLUX_IVAR_W2', 'RA_IVAR', 'DEC_IVAR',
-            'EBV', 'MORPHTYPE',
-            'MW_TRANSMISSION_G', 'MW_TRANSMISSION_R', 'MW_TRANSMISSION_Z',
-            'PHOTSYS',
-            'FIBERFLUX_G', 'FIBERFLUX_R', 'FIBERFLUX_Z', 
-            'FIBERTOTFLUX_G', 'FIBERTOTFLUX_R', 'FIBERTOTFLUX_Z', 'HPXPIXEL']
+    #print('  adding columns from mtl data')
+    columns = list()
+    for c in mtl_data.dtype.names:
+        if (c not in fiberassign_data.dtype.names) or c == 'TARGETID':
+            columns.append(c)
 
-    print('Tile ID {} Total of MTL points {}. Total of fiberassign_data {}'.format(
-            tile_data['TILEID'], len(mtl_data), len(fiberassign_data)))
-    #ii = np.in1d(mtl_data['TARGETID'], fiberassign_data['TARGETID'])
+    #print('Tile ID {} Total of MTL points {}. Total of fiberassign_data {}'.format(
+    #        tile_data['TILEID'], len(mtl_data), len(fiberassign_data)))
     fiberassign_data = join(fiberassign_data, mtl_data[columns], join_type='left', keys='TARGETID')
     if fiberassign_data.masked:
         unmatched = fiberassign_data['SUBPRIORITY'].mask
@@ -304,9 +329,9 @@ def make_target_hdu_data(fiberassign_data, mtl_data):
     new_target_data = fiberassign_data[['TARGETID']]
     n_objects = len(new_target_data)
     
-    print('  adding all columns from mtl data in make_target_hdu_data')
-    print(' Total of MTL points {}. Total of new_target_data {}'.format(
-            len(mtl_data), len(new_target_data)))
+    # print('  adding all columns from mtl data in make_target_hdu_data')
+    # print('  Total of MTL points {}. Total of new_target_data {}'.format(
+    #         len(mtl_data), len(new_target_data)))
 
     new_target_data = join(new_target_data, mtl_data, join_type='left', keys='TARGETID')
     if new_target_data.masked:
@@ -357,8 +382,9 @@ for sky_id in sky_tile_id.keys():
             ('YFOCAL_DESIGN', 'DESIGN_Y'),
             ('FIBERMASK', 'FIBERSTATUS'),
             ]:
-            i = colnames.index(oldname)
-            colnames[i] = newname
+            if oldname in colnames:
+                i = colnames.index(oldname)
+                colnames[i] = newname
 
         fiber_data.dtype.names = tuple(colnames)
 
@@ -380,6 +406,13 @@ if args.cleanup:
     shutil.rmtree(tmp_gfa_dir)
     os.remove(tmp_fiber_pos)
     os.remove(tmp_fiber_sky)
+    if tmp_fiberstatusfile is not None:
+        os.remove(tmp_fiberstatusfile)
+    if tmp_surveytiles is not None:
+        os.remove(tmp_surveytiles)
+    if tmp_stdstarfile is not None:
+        os.remove(tmp_stdstarfile)
+
 else:
     print('tmp_targets_dir {}'.format(tmp_targets_dir))
     print('tmp_sky_dir {}'.format(tmp_sky_dir))
