@@ -119,7 +119,7 @@ def check_existing_files(checkdir):
     with open(args.surveytiles) as survey:
         for line in survey:
             line = line.strip()
-            if line.startswith('#') or len(line)<2:
+            if line.startswith('#') or len(line)==0:
                 continue
             tileid = int(line)
             tilefile = os.path.join(checkdir, 'tile_{:05d}.fits'.format(tileid))
@@ -171,8 +171,6 @@ if not os.path.exists(tmp_gfa_dir):
 
 check_existing_files(args.outdir)
 check_existing_files(tmp_targets_dir)
-check_existing_files(tmp_sky_dir)
-check_existing_files(tmp_gfa_dir)
 
 fiberassign_command ="fiberassign_exec --mtl {mtl}  --sky {sky} --stdstar {stdstar}  --fibstatusfile {fiberstatusfile}  \
             --outdir {outdir} \
