@@ -16,6 +16,7 @@
 #include "misc.h"
 #include "collision.h"
 #include "feat.h"
+#include "version.h"
 
 
 void Usage (char * ExecName) {
@@ -32,6 +33,9 @@ void Usage (char * ExecName) {
     std::cout << " --nstarpetal <number of standard stars per petal>";
     std::cout << " --nskypetal <numer of sky fibers per petal>";
     std::cout << " [--rundate <YYYY-MM-DD>]" << std::endl;
+    std::cout << std::endl;
+    std::cout << " Or to print version to STDOUT: ";
+    std::cout << " --version" << std::endl;
     exit(0);
 }
 
@@ -133,6 +137,9 @@ void Feat::parseCommandLine (int argc, char * * argv) {
             Usage(argv[0]);
         } else if (!strcmp(argv[i], "-h") ) {
             Usage(argv[0]);
+        } else if (!strcmp(argv[i], "--version") ) {
+            std::cout << version() << std::endl;
+            exit(0);
         } else {
             fprintf (stderr, "\nUnrecognized option: %s\n\n", argv[i]);
             Usage(argv[0]);
