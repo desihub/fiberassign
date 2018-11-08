@@ -1,10 +1,21 @@
 fiberassign change log
 ======================
 
-0.10.1 (unreleased)
+0.10.3 (unreleased)
 -------------------
 
 * No changes yet.
+
+0.10.2 (2018-11-07)
+-------------------
+
+* Sort output by fiberid (PR `#147`_).
+* Simplify required options (PR `#149`_).
+* Add `--version` option (PR `#150`_).
+
+.. _`#147`: https://github.com/desihub/fiberassign/pull/147
+.. _`#149`: https://github.com/desihub/fiberassign/pull/149
+.. _`#150`: https://github.com/desihub/fiberassign/pull/150
 
 0.10.0 (2018-09-26)
 -------------------
