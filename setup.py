@@ -174,7 +174,7 @@ ext_modules = [
             'src',
         ],
         extra_compile_args=[],
-        extra_link_args=[],
+        extra_link_args=['-fopenmp'],
         language='c++'
     ),
 ]
