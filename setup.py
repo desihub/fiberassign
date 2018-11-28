@@ -144,6 +144,7 @@ class BuildExt(build_ext):
     def build_extensions(self):
         ct = self.compiler.compiler_type
         opts = self.c_opts.get(ct, [])
+        linkopts = []
         if ct == 'unix':
             opts.append('-DVERSION_INFO="%s"' %
                         self.distribution.get_version())
@@ -152,11 +153,13 @@ class BuildExt(build_ext):
                 opts.append('-fvisibility=hidden')
             if has_flag(self.compiler, '-fopenmp'):
                 opts.append('-fopenmp')
+                linkopts.append('-fopenmp')
         elif ct == 'msvc':
             opts.append('/DVERSION_INFO=\\"%s\\"' %
                         self.distribution.get_version())
         for ext in self.extensions:
             ext.extra_compile_args.extend(opts)
+            ext.extra_link_args.extend(linkopts)
         build_ext.build_extensions(self)
 
 ext_modules = [
@@ -173,8 +176,6 @@ ext_modules = [
         include_dirs=[
             'src',
         ],
-        extra_compile_args=[],
-        extra_link_args=['-fopenmp'],
         language='c++'
     ),
 ]
