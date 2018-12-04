@@ -17,6 +17,8 @@
 
 namespace fiberassign {
 
+#include <_version.h>
+
 // Some helpful typedefs used when we want to access elements
 // of a vector in some order sorted by a weight (both ascending
 // and descending).

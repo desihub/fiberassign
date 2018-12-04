@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <sstream>
 #include <iostream>
+#include <cstdio>
 
 namespace fba = fiberassign;
 
@@ -1760,3 +1761,52 @@ fba::TargetsAvailable::pshr fba::Assignment::targets_avail() const {
 fba::FibersAvailable::pshr fba::Assignment::fibers_avail() const {
     return favail_;
 }
+
+
+// void fba::Assignment::dump_fits(std::string const & prefix) const {
+//     fba::Timer tm;
+//     tm.start();
+//
+//     fba::GlobalTimers & gtm = fba::GlobalTimers::get();
+//     std::ostringstream gtmname;
+//
+//     fba::Logger & logger = fba::Logger::get();
+//     std::ostringstream logmsg;
+//
+//     gtmname.str("");
+//     gtmname << "Assignment dump_fits";
+//     gtm.start(gtmname.str());
+//
+//     fba::Tiles::pshr tiles = tgsavail_->tiles();
+//     size_t ntile = tiles->id.size();
+//
+//     auto const * ptiles = tiles.get();
+//     auto const * phw = hw_.get();
+//     auto const * ptgs = tgs_.get();
+//     auto const * ptgsavail = tgsavail_.get();
+//
+//     #pragma omp parallel for schedule(dynamic) default(none) shared(ntile, ptiles, phw, ptgs, ptgsavail, tile_target_xy, logmsg, logger)
+//     for (size_t t = 0; t < ntile; ++t) {
+//         int32_t tile_id = ptiles->id[t];
+//         double tile_ra = ptiles->ra[t];
+//         double tile_dec = ptiles->dec[t];
+//         char tile_file[1024];
+//         int ret = snprintf(tile_file, 1024, "%s_%06d.fits", prefix, tile_id);
+//
+//
+//
+//     }
+//
+//     gtm.stop(gtmname.str());
+//
+//     gtmname.str("");
+//     gtmname << "Assignment dump_fits";
+//     gtm.stop(gtmname.str());
+//
+//     logmsg.str("");
+//     logmsg << "Assignment dump_fits";
+//     tm.stop();
+//     tm.report(logmsg.str().c_str());
+//
+//     return;
+// }
