@@ -16,6 +16,7 @@ import re
 import numpy as np
 
 import multiprocessing as mp
+from multiprocessing.sharedctypes import RawArray
 from functools import partial
 
 from collections import OrderedDict
@@ -58,16 +59,19 @@ def write_assignment_fits_tile(outroot, tgs, tile_id, tile_ra, tile_dec,
     # The recarray dtype for the assignment and available targets
     assign_dtype = np.dtype([(x, y) for x, y in assign_result_columns.items()])
     avail_dtype = np.dtype([("FIBER", "i4"), ("TARGETID", "i8")])
+    log.debug("Write:  indexing tile {}".format(tile_id))
     # Reverse lookup
+    # tm = Timer()
+    # tm.start()
     tgfiber = {y: x for x, y in tdata.items()}
     # Compute the total list of targets
-    alltgid = set()
-    navail = 0
-    for f, av in avail.items():
-        alltgid.update(av)
-        navail += len(av)
-    tgids = list(sorted(alltgid))
+    navail = np.sum([len(avail[x]) for x in avail.keys()])
+    tgids = np.unique(np.concatenate([np.array(avail[x], dtype=np.int64)
+                                      for x in avail.keys()]))
+    tgfids = [tgfiber[x] if x in tgfiber.keys() else -1 for x in tgids]
 
+    # tm.stop()
+    # tm.report("indexing tile {}".format(tile_id))
     # Output tile file
     tfile = "{}_{:06d}.fits".format(outroot, tile_id)
     if len(tgids) > 0:
@@ -79,24 +83,37 @@ def write_assignment_fits_tile(outroot, tgs, tile_id, tile_ra, tile_dec,
         # Create the file
         fd = fitsio.FITS(tfile, "rw")
         # Construct the output recarray for the assignment and write
+        log.debug("Write:  copying assignment data for tile {}".format(tile_id))
+        # tm.clear()
+        # tm.start()
         fdata = np.zeros(len(tgids), dtype=assign_dtype)
         off = 0
-        for tg in tgids:
-            fid = -1
-            if tg in tgfiber:
-                fid = tgfiber[tg]
+        for tg, fid in zip(tgids, tgfids):
             props = tgs.get(tg)
+            obsrem = 0
+            if props.obs_remain > 0:
+                obsrem = props.obs_remain
             fdata[off] = (tg, fid, props.ra, props.dec, props.type,
                           props.priority, props.subpriority, props.obscond,
-                          props.obs_remain)
+                          obsrem)
             off += 1
+        # tm.stop()
+        # tm.report("copy data tile {}".format(tile_id))
         header = dict()
         header["TILE_RA"] = tile_ra
         header["TILE_DEC"] = tile_dec
         header["FBAVER"] = __version__
+        log.debug("Write:  FITS write tile {}".format(tile_id))
+        # tm.clear()
+        # tm.start()
         fd.write(fdata, header=header)
         del fdata
+        # tm.stop()
+        # tm.report("write / del tile {}".format(tile_id))
         # Construct recarray for available targets and write
+        log.debug("Write:  available targets for tile {}".format(tile_id))
+        # tm.clear()
+        # tm.start()
         fdata = np.zeros(navail, dtype=avail_dtype)
         off = 0
         for fid in sorted(avail.keys()):
@@ -105,6 +122,9 @@ def write_assignment_fits_tile(outroot, tgs, tile_id, tile_ra, tile_dec,
                 off += 1
         fd.write(fdata, header=header)
         del fdata
+        # tm.stop()
+        # tm.report("write / del avail tile {}".format(tile_id))
+    return
 
 
 def write_assignment_fits(tiles, asgn, outdir=".", out_prefix="fiberassign"):
@@ -203,7 +223,21 @@ def read_assignment_fits_tile(outroot, params):
     return header, tgindx, tgdata, avail
 
 
-def merge_results_tile(outroot, out_dtype, tgdata, tgrow, params):
+merge_results_tile_tgbuffers = None
+merge_results_tile_tgdtypes = None
+merge_results_tile_tgshapes = None
+
+def merge_results_tile_initialize(bufs, dtypes, shapes):
+    global merge_results_tile_tgbuffers
+    global merge_results_tile_tgdtypes
+    global merge_results_tile_tgshapes
+    merge_results_tile_tgbuffers = bufs
+    merge_results_tile_tgdtypes = dtypes
+    merge_results_tile_tgshapes = shapes
+    return
+
+
+def merge_results_tile(outroot, out_dtype, params):
     """Merge results for one tile.
     """
     (tile_id,) = params
@@ -217,26 +251,29 @@ def merge_results_tile(outroot, out_dtype, tgdata, tgrow, params):
     indata = infd[1].read()
     # Mapping of target ID to row
     tgs = indata["TARGETID"]
-    trow = {x: y for y, x in enumerate(tgs)}
     # Construct output recarray
     outdata = np.zeros(len(tgs), dtype=out_dtype)
     # Copy original data
     for field in assign_result_columns:
         outdata[field] = indata[field]
     # Loop over input target files and copy data
-    targetfiles = list(tgdata.keys())
+    targetfiles = list(merge_results_tile_tgbuffers.keys())
     for tf in targetfiles:
+        tgview = np.frombuffer(merge_results_tile_tgbuffers[tf],
+                               dtype=merge_results_tile_tgdtypes[tf])\
+                               .reshape(merge_results_tile_tgshapes[tf])
         # Some columns may not exist in all target files (e.g. PRIORITY),
         # So we select the valid columns for this file and only copy those.
+        log.debug("  {} Computing overlap for {}".format(infile, tf))
+        inrows = np.where(np.isin(tgview["TARGETID"], tgs))
+        outrows = np.where(np.isin(tgs, tgview["TARGETID"]))
         tfcols = [x for x in out_dtype.names
-                  if x in tgdata[tf].dtype.names]
-        overlap = np.isin(tgs, tgdata[tf]["TARGETID"])
-        inrows = np.array([tgrow[tf][x] for x in tgs[overlap]])
-        outrows = np.array([trow[x] for x in tgs[overlap]])
+                  if x in tgview.dtype.names]
+        log.debug("  {} Copying data from {}".format(infile, tf))
         if len(outrows) > 0:
             for irw, orw in zip(inrows, outrows):
                 for c in tfcols:
-                    outdata[c][orw] = tgdata[tf][c][irw]
+                    outdata[c][orw] = tgview[c][irw]
     # Write this HDU
     if os.path.isfile(outfile):
         os.remove(outfile)
@@ -276,42 +313,52 @@ def merge_results(targetfiles, resultdir=".", result_prefix="fiberassign",
     # construct the output recarray dtype from the columns in that file.
     out_dtype = None
     tgdata = dict()
+    tgdtype = dict()
+    tgshape = dict()
     tghead = dict()
-    tgrow = dict()
     for tf in targetfiles:
         tm = Timer()
         tm.start()
-        tgdata[tf], tghead[tf] = fitsio.read(tf, ext=1, header=True)
+        fd = fitsio.FITS(tf)
+        tghead[tf] = fd[1].read_header()
+        # Allocate a shared memory buffer for the target data
+        tglen = fd[1].get_nrows()
+        tgshape[tf] = (tglen,)
+        tgdtype[tf], tempoff, tempisvararray = fd[1].get_rec_dtype()
+        tgbytes = tglen * tgdtype[tf].itemsize
+        tgdata[tf] = RawArray("B", tgbytes)
+        tgview = np.frombuffer(tgdata[tf],
+                               dtype=tgdtype[tf]).reshape(tgshape[tf])
+        # Read data directly into shared buffer
+        tgview[:] = fd[1].read()
+
         tm.stop()
-        tm.report("Read {} into memory".format(tf))
+        tm.report("Read {} into shared memory".format(tf))
         if out_dtype is None:
             # This is the first target file
             if columns is None:
-                columns = list(tgdata[tf].dtype.names)
+                columns = list(tgview.dtype.names)
             extra = [x for x in columns
                      if x not in assign_result_columns.keys()]
             dcols = [(x, y) for x, y in assign_result_columns.items()]
-            dcols.extend([(x, tgdata[tf].dtype[x].str) for x in extra])
+            dcols.extend([(x, tgview.dtype[x].str) for x in extra])
             out_dtype = np.dtype(dcols)
-        tm.clear()
-        tm.start()
-        tgrow[tf] = {x: y for y, x in enumerate(tgdata[tf]["TARGETID"])}
-        tm.stop()
-        tm.report("Build row index for {}".format(tf))
 
     # For each tile, find the target IDs used.  Construct the output recarray
     # and copy data into place.
 
     outroot = os.path.join(resultdir, result_prefix)
 
-    merge_tile = partial(merge_results_tile, outroot, out_dtype, tgdata, tgrow)
+    merge_tile = partial(merge_results_tile, outroot, out_dtype)
 
     tile_map_list = [(x,) for x in tiles]
 
     # for tid in tiles:
     #     merge_tile((tid,))
 
-    with mp.Pool(processes=default_mp_proc) as pool:
+    with mp.Pool(processes=default_mp_proc,
+                 initializer=merge_results_tile_initialize,
+                 initargs=(tgdata, tgdtype, tgshape)) as pool:
         results = pool.map(merge_tile, tile_map_list)
 
     return
