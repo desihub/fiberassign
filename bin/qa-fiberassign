@@ -57,6 +57,10 @@ for filename in args.tilefiles:
     if len(np.unique(fa['LOCATION'])) != 5000:
         errors.append('Repeated location numbers')
 
+    num_no_desitarget = np.count_nonzero(fa['DESI_TARGET'] == 0)
+    if num_no_desitarget > 0:
+        errors.append('{} fibers with DESI_TARGET=0'.format(num_no_desitarget))
+
     is_stuck = ((fa['FIBERSTATUS'] & stuck_mask) != 0)
     is_broken = ((fa['FIBERSTATUS'] & broken_mask) != 0)
     is_unassigned = (fa['TARGETID'] < 0)
