@@ -284,6 +284,10 @@ def add_potential_data_columns(potential_data, fiberassign_data):
 
 def add_fiber_data_columns(tile_data, fiberassign_data, mtl_data, sky_data, positioner_data):
     n_objects = len(fiberassign_data)
+
+    # update DESI_TARGET for unassigned / broken / stuck fibers
+    ii = (fiberassign_data['FIBERMASK'] != 0)
+    fiberassign_data['DESI_TARGET'][ii] = desi_mask.NO_TARGET
     
     #print('  adding new columns by computation')
     #print('TILE info', tile_data['RA'], tile_data['DEC'])
