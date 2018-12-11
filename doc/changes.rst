@@ -4,7 +4,10 @@ fiberassign change log
 0.10.3 (unreleased)
 -------------------
 
-* No changes yet.
+* Set `OBJTYPE='BAD'` and `DESI_TARGET=desi_mask.NO_TARGET` for broken, stuck,
+  and unassigned fibers (PR `#154`_).
+
+.. _`#154`: https://github.com/desihub/fiberassign/pull/154
 
 0.10.2 (2018-11-07)
 -------------------
