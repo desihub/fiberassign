@@ -1513,8 +1513,18 @@ void fba::Assignment::assign_tilefiber(fba::Hardware const * hw,
     ftarg[fiber] = target;
     target_fiber[target][tile] = fiber;
 
-    nassign_tile.at(type).at(tile)++;
-    nassign_petal.at(type).at(tile).at(petal)++;
+    // Objects can be more than one type (e.g. standards and science).  When
+    // incrementing the counts of object types per tile and petal, we want
+    // to update the counts for valid types of this object.
+    static const std::vector <uint8_t> target_types = {
+        TARGET_TYPE_SCIENCE, TARGET_TYPE_STANDARD,
+        TARGET_TYPE_SKY, TARGET_TYPE_SAFE};
+    for (auto const & tt : target_types) {
+        if (tgobj.is_type(tt)) {
+            nassign_tile.at(tt).at(tile)++;
+            nassign_petal.at(tt).at(tile).at(petal)++;
+        }
+    }
     tgobj.obs_remain--;
 
     return;
@@ -1566,8 +1576,18 @@ void fba::Assignment::unassign_tilefiber(fba::Hardware const * hw,
 
     int32_t petal = hw->fiber_petal.at(fiber);
 
-    nassign_tile.at(type).at(tile)--;
-    nassign_petal.at(type).at(tile).at(petal)--;
+    // Objects can be more than one type (e.g. standards and science).  When
+    // incrementing the counts of object types per tile and petal, we want
+    // to update the counts for valid types of this object.
+    static const std::vector <uint8_t> target_types = {
+        TARGET_TYPE_SCIENCE, TARGET_TYPE_STANDARD,
+        TARGET_TYPE_SKY, TARGET_TYPE_SAFE};
+    for (auto const & tt : target_types) {
+        if (tgobj.is_type(tt)) {
+            nassign_tile.at(tt).at(tile)--;
+            nassign_petal.at(tt).at(tile).at(petal)--;
+        }
+    }
     tgobj.obs_remain++;
 
     target_fiber[target].erase(tile);

@@ -27,6 +27,10 @@ def main():
                         help="Comma-separated list of petals to plot "
                         "(default is all petals)")
 
+    parser.add_argument("--old", required=False, default=False,
+                        action="store_true",
+                        help="Files are old format.")
+
     args = parser.parse_args()
 
     # Check directory
@@ -43,7 +47,7 @@ def main():
         petals = [int(x) for x in args.petals.split(",")]
 
     plot_tiles(resultdir=args.dir, result_prefix=args.prefix, tiles=tiles,
-               petals=petals)
+               petals=petals, old=args.old)
 
     return
 

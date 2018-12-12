@@ -23,6 +23,8 @@ from collections import OrderedDict
 
 import fitsio
 
+from desitarget.targetmask import desi_mask
+
 from ._version import __version__
 
 from .utils import Logger, Timer, default_mp_proc
@@ -196,6 +198,93 @@ def write_assignment_ascii(tiles, asgn, outdir=".", out_prefix="fiberassign",
     return
 
 
+def old_target_type(desi_target):
+    """Used for constructing the target type from an old file.
+    """
+    sciencemask = 0
+    sciencemask |= desi_mask["LRG"].mask
+    sciencemask |= desi_mask["ELG"].mask
+    sciencemask |= desi_mask["QSO"].mask
+    # Note: BAD_SKY are treated as science targets with priority == 0
+    sciencemask |= desi_mask["BAD_SKY"].mask
+    sciencemask |= desi_mask["BGS_ANY"].mask
+    sciencemask |= desi_mask["MWS_ANY"].mask
+    sciencemask |= desi_mask["SECONDARY_ANY"].mask
+
+    stdmask = 0
+    stdmask |= desi_mask["STD_FAINT"].mask
+    stdmask |= desi_mask["STD_WD"].mask
+    stdmask |= desi_mask["STD_BRIGHT"].mask
+
+    skymask = 0
+    skymask |= desi_mask["SKY"].mask
+
+    ttype = 0
+    if desi_target & sciencemask != 0:
+        ttype |= TARGET_TYPE_SCIENCE
+    if desi_target & stdmask != 0:
+        ttype |= TARGET_TYPE_STANDARD
+    if desi_target & skymask != 0:
+        ttype |= TARGET_TYPE_SKY
+    return ttype
+
+
+def read_assignment_fits_tile_old(outroot, params):
+    """Read in results from the old format.
+    """
+    (tile_id,) = params
+    log = Logger()
+    # Output tile file
+    tfile = "{}_{:05d}.fits".format(outroot, tile_id)
+    if not os.path.isfile(tfile):
+        raise RuntimeError("input file {} does not exist".format(tfile))
+    log.debug("Reading tile data {}".format(tfile))
+    # Open the file
+    fd = fitsio.FITS(tfile, "r")
+    header = fd[1].read_header()
+    rawdata = fd[1].read()
+    # Repack this data into our expected dtype
+    # The recarray dtype for the assignment and available targets
+    assign_dtype = np.dtype([(x, y) for x, y in assign_result_columns.items()])
+    tgdata = np.empty((fd[1].get_nrows(),), dtype=assign_dtype)
+    tgdata["TARGETID"] = rawdata["TARGETID"]
+    tgdata["FIBER"] = rawdata["FIBER"]
+    if "TARGET_RA" in rawdata.dtype.names:
+        tgdata["RA"] = rawdata["TARGET_RA"]
+        tgdata["DEC"] = rawdata["TARGET_DEC"]
+    else:
+        tgdata["RA"] = rawdata["RA"]
+        tgdata["DEC"] = rawdata["DEC"]
+    tgdata["PRIORITY"] = rawdata["PRIORITY"]
+    if "SUBPRIORITY" in rawdata.dtype.names:
+        tgdata["SUBPRIORITY"] = rawdata["SUBPRIORITY"]
+    else:
+        tgdata["SUBPRIORITY"] = 0.0
+    if "OBSCONDITIONS" in rawdata.dtype.names:
+        tgdata["OBSCONDITIONS"] = rawdata["OBSCONDITIONS"]
+    else:
+        tgdata["OBSCONDITIONS"] = 0
+    if "NUMOBS_MORE" in rawdata.dtype.names:
+        tgdata["NUMOBS_MORE"] = rawdata["NUMOBS_MORE"]
+    else:
+        tgdata["NUMOBS_MORE"] = 0
+    tgdata["FBATYPE"] = [old_target_type(x) for x in rawdata["DESI_TARGET"]]
+    del rawdata
+    adata = fd[2].read()
+    avail = dict()
+    if "POTENTIALTARGETID" not in adata.dtype.names:
+        # safe to read this.
+        for row in adata:
+            fid = row["FIBER"]
+            tgid = row["TARGETID"]
+            if fid in avail:
+                avail[fid].append(tgid)
+            else:
+                avail[fid] = list([tgid])
+        avail = {f: np.array(av) for f, av in avail.items()}
+    return header, tgdata, avail
+
+
 def read_assignment_fits_tile(outroot, params):
     """Read in results.
     """
@@ -203,29 +292,42 @@ def read_assignment_fits_tile(outroot, params):
     log = Logger()
     # Output tile file
     tfile = "{}_{:06d}.fits".format(outroot, tile_id)
-    log.debug("Reading tile data {}".format(tfile))
     if not os.path.isfile(tfile):
-        raise RuntimeError("input file {} does not exist".format(tfile))
+        # Try old naming
+        tfile = "{}_{:05d}.fits".format(outroot, tile_id)
+        if not os.path.isfile(tfile):
+            raise RuntimeError("input file {} does not exist".format(tfile))
+    log.debug("Reading tile data {}".format(tfile))
     # Open the file
     fd = fitsio.FITS(tfile, "r")
     header = fd[1].read_header()
     tgdata = fd[1].read()
-    tgindx = {y: x for x, y in enumerate(tgdata["TARGETID"])}
     adata = fd[2].read()
     avail = dict()
-    for row in adata:
-        fid = row["FIBER"]
-        tgid = row["TARGETID"]
-        if fid in avail:
-            avail[fid].append(tgid)
-        else:
-            avail[fid] = list([tgid])
-    return header, tgindx, tgdata, avail
+    if "FBATYPE" not in tgdata.dtype.names:
+        for row in adata:
+            fid = row["LOCATION"]
+            tgid = row["TARGETID"]
+            if fid in avail:
+                avail[fid].append(tgid)
+            else:
+                avail[fid] = list([tgid])
+    else:
+        for row in adata:
+            fid = row["FIBER"]
+            tgid = row["TARGETID"]
+            if fid in avail:
+                avail[fid].append(tgid)
+            else:
+                avail[fid] = list([tgid])
+    avail = {f: np.array(av) for f, av in avail.items()}
+    return header, tgdata, avail
 
 
 merge_results_tile_tgbuffers = None
 merge_results_tile_tgdtypes = None
 merge_results_tile_tgshapes = None
+
 
 def merge_results_tile_initialize(bufs, dtypes, shapes):
     global merge_results_tile_tgbuffers
@@ -265,8 +367,8 @@ def merge_results_tile(outroot, out_dtype, params):
         # Some columns may not exist in all target files (e.g. PRIORITY),
         # So we select the valid columns for this file and only copy those.
         log.debug("  {} Computing overlap for {}".format(infile, tf))
-        inrows = np.where(np.isin(tgview["TARGETID"], tgs))
-        outrows = np.where(np.isin(tgs, tgview["TARGETID"]))
+        inrows = np.where(np.isin(tgview["TARGETID"], tgs))[0]
+        outrows = np.where(np.isin(tgs, tgview["TARGETID"]))[0]
         tfcols = [x for x in out_dtype.names
                   if x in tgview.dtype.names]
         log.debug("  {} Copying data from {}".format(infile, tf))

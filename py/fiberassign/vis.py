@@ -27,14 +27,18 @@ import matplotlib.pyplot as plt
 import multiprocessing as mp
 from functools import partial
 
+import fitsio
+
 from .utils import Logger, default_mp_proc
 
 from .hardware import load_hardware
 
+from .tiles import load_tiles
+
 from .targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                       TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE)
 
-from .assign import read_assignment_fits_tile
+from .assign import read_assignment_fits_tile, read_assignment_fits_tile_old
 
 
 def plot_target_type_color(tgtype):
@@ -95,55 +99,42 @@ def plot_positioner(ax, fiber, center, cb, fh, color="k", linewidth=0.2):
 
 
 def plot_tile_targets_props(hw, tile_ra, tile_dec, tgs, tile_avail, fibers):
-    alltgid = np.unique([x for f in fibers for x in tile_avail[f]])
-    ra = np.empty(len(alltgid), dtype=np.float64)
-    dec = np.empty(len(alltgid), dtype=np.float64)
+    avail_tgid = np.unique([x for f in fibers for x in tile_avail[f]])
+    ra = np.empty(len(avail_tgid), dtype=np.float64)
+    dec = np.empty(len(avail_tgid), dtype=np.float64)
     color = list()
-    for idx, tgid in enumerate(alltgid):
+    for idx, tgid in enumerate(avail_tgid):
         tg = tgs.get(tgid)
         ra[idx] = tg.ra
         dec[idx] = tg.dec
         color.append(plot_target_type_color(tg.type))
     tgxy = hw.radec2xy_multi(tile_ra, tile_dec, ra, dec)
-    props = dict()
-    for tgid, xy, cl in zip(alltgid, tgxy, color):
-        props[tgid] = dict()
-        props[tgid]["xy"] = xy
-        props[tgid]["color"] = cl
+    props = {tgid: {"xy": xy, "color": cl} for tgid, xy, cl
+             in zip(avail_tgid, tgxy, color)}
     return props
 
 
-def plot_tile_target_table_props(hw, tile_ra, tile_dec, tgidx, tgs,
-                                 tile_avail, fibers):
-    tempid = list()
-    for f in fibers:
-        if f in tile_avail:
-            tempid.extend(tile_avail[f])
-    alltgid = np.unique(tempid)
-    ra = np.empty(len(alltgid), dtype=np.float64)
-    dec = np.empty(len(alltgid), dtype=np.float64)
-    color = list()
-    for idx, tgid in enumerate(alltgid):
-        tgrow = tgidx[tgid]
-        tgentry = tgs[tgrow]
-        ra[idx] = tgentry["RA"]
-        dec[idx] = tgentry["DEC"]
-        color.append(plot_target_type_color(tgentry["FBATYPE"]))
+def plot_tile_target_table_props(hw, tile_ra, tile_dec, tgs):
+    # We can only plot targets which are listed in the targets table and have
+    # RA / DEC positions.  If some target IDs are listed in the available
+    # targets, but do not exist in the target table, these will get ignored
+    # for plotting purposes.
+    tgrows = np.where(tgs["TARGETID"] >= 0)
+    ra = np.array(tgs["RA"][tgrows])
+    dec = np.array(tgs["DEC"][tgrows])
+    color = [plot_target_type_color(x) for x in tgs["FBATYPE"][tgrows]]
     tgxy = hw.radec2xy_multi(tile_ra, tile_dec, ra, dec)
-    props = dict()
-    for tgid, xy, cl in zip(alltgid, tgxy, color):
-        props[tgid] = dict()
-        props[tgid]["xy"] = xy
-        props[tgid]["color"] = cl
+    props = {tgid: {"xy": xy, "color": cl} for tgid, xy, cl
+             in zip(tgs["TARGETID"][tgrows], tgxy, color)}
     return props
 
 
-def plot_available(ax, targetprops, linewidth=0.1):
+def plot_available(ax, targetprops, selected, linewidth=0.1):
     mwidth = 5.0 * linewidth
-    xdata = np.empty(len(targetprops), dtype=np.float64)
-    ydata = np.empty(len(targetprops), dtype=np.float64)
+    xdata = np.empty(len(selected), dtype=np.float64)
+    ydata = np.empty(len(selected), dtype=np.float64)
     color = list()
-    for idx, tgid in enumerate(sorted(targetprops.keys())):
+    for idx, tgid in enumerate(selected):
         xdata[idx] = targetprops[tgid]["xy"][0]
         ydata[idx] = targetprops[tgid]["xy"][1]
         color.append(targetprops[tgid]["color"])
@@ -152,14 +143,15 @@ def plot_available(ax, targetprops, linewidth=0.1):
     return
 
 
-def plot_assignment(ax, hw, targetprops, fibers, tile_assigned, linewidth=0.1):
+def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1):
     center_mm = hw.center_mm
-    for fid in fibers:
+    assigned = np.array(sorted(tile_assigned.keys()), dtype=np.int32)
+    for fid in assigned:
         center = center_mm[fid]
-        if fid in tile_assigned:
+        tgid = tile_assigned[fid]
+        if tgid >= 0:
             # This fiber is assigned.  Plot the positioner located at the
             # assigned target.
-            tgid = tile_assigned[fid]
             cb, fh = hw.fiber_position(fid, targetprops[tgid]["xy"])
             plot_positioner(ax, fid, center, cb, fh,
                             color=targetprops[tgid]["color"],
@@ -174,7 +166,7 @@ def plot_assignment(ax, hw, targetprops, fibers, tile_assigned, linewidth=0.1):
     return
 
 
-def plot_assignment_tile_file(hw, outroot, fibers, params):
+def plot_assignment_tile_file(hw, outroot, fibers, old, params):
     (tile_id,) = params
     log = Logger()
 
@@ -186,24 +178,50 @@ def plot_assignment_tile_file(hw, outroot, fibers, params):
     else:
         log.info("Creating {}".format(outfile))
 
-    header, tgindx, tgdata, tavail = read_assignment_fits_tile(outroot,
+    if old:
+        header, tgdata, tavail = read_assignment_fits_tile_old(outroot,
                                                                (tile_id,))
-    tile_ra = header["TILE_RA"]
-    tile_dec = header["TILE_DEC"]
+    else:
+        header, tgdata, tavail = read_assignment_fits_tile(outroot, (tile_id,))
+
+    tile_ra = None
+    tile_dec = None
+    if old:
+        tiles = load_tiles(hw)
+        tile_ra = tiles.ra[tiles.order[tile_id]]
+        tile_dec = tiles.dec[tiles.order[tile_id]]
+    else:
+        tile_ra = header["TILE_RA"]
+        tile_dec = header["TILE_DEC"]
+    print("tile RA = ",tile_ra, flush=True)
+    print("tile DEC = ",tile_dec, flush=True)
 
     fig = plt.figure(figsize=(12, 12))
     ax = fig.add_subplot(1, 1, 1)
     ax.set_aspect("equal")
 
-    tassign = {x["FIBER"]: x["TARGETID"] for x in tgdata if x["FIBER"] >= 0}
+    # Target properties (x, y, color) for plotting
+    targetprops = plot_tile_target_table_props(hw, tile_ra, tile_dec, tgdata)
 
-    # Target properties for plotting
-    targetprops = plot_tile_target_table_props(hw, tile_ra, tile_dec, tgindx,
-                                               tgdata, tavail, fibers)
+    # Available targets for our selected fibers.  Old data is just wrong.
+    if not old:
+        avtg_fibers = [f for f in fibers if f in tavail]
+        avtg = np.unique([x for f in avtg_fibers for x in tavail[f]])
+        plot_available(ax, targetprops, avtg, linewidth=0.1)
 
-    plot_available(ax, targetprops, linewidth=0.1)
+    if old:
+        # Old files do not always include the assigned targets in the
+        # available list, so plot them separately.
+        old_assign = [x["TARGETID"] for x in tgdata if (x["FIBER"] in fibers)
+                      and (x["TARGETID"] >= 0)]
+        plot_available(ax, targetprops, old_assign, linewidth=0.1)
 
-    plot_assignment(ax, hw, targetprops, fibers, tassign, linewidth=0.1)
+    # Assigned targets for our selected fibers
+    tassign = {x["FIBER"]: x["TARGETID"] for x in tgdata
+               if (x["FIBER"] in fibers)}
+    fassign = {f: tassign[f] if f in tassign else -1 for f in fibers}
+
+    plot_assignment(ax, hw, targetprops, fassign, linewidth=0.1)
 
     ax.set_xlabel("Millimeters", fontsize="large")
     ax.set_ylabel("Millimeters", fontsize="large")
@@ -212,7 +230,7 @@ def plot_assignment_tile_file(hw, outroot, fibers, params):
 
 
 def plot_tiles(resultdir=".", result_prefix="fiberassign", tiles=None,
-               petals=None):
+               petals=None, old=False):
     log = Logger()
     # Find all the per-tile files and get the tile IDs
     alltiles = list()
@@ -237,16 +255,16 @@ def plot_tiles(resultdir=".", result_prefix="fiberassign", tiles=None,
         fibers = list()
         for p in petals:
             fibers.extend([x for x in petal_fibers[p]])
+    fibers = np.array(fibers)
 
-    plot_tile = partial(plot_assignment_tile_file, hw, outroot, fibers)
-
+    plot_tile = partial(plot_assignment_tile_file, hw, outroot,
+                        fibers, old)
     tile_map_list = None
     if tiles is None:
         tile_map_list = [(x,) for x in alltiles]
     else:
         tile_map_list = [(x,) for x in tiles]
     log.info("Selecting {} fiberassign tile files".format(len(tile_map_list)))
-
     with mp.Pool(processes=default_mp_proc) as pool:
         pool.map(plot_tile, tile_map_list)
 
