@@ -38,19 +38,16 @@ def main():
         raise RuntimeError("Results directory {} does not exist"
                            .format(args.dir))
 
-    outdir = args.out
-    if outdir is None:
-        outdir = args.dir
-
-FIXME: file, not dir
-
+    outfile = args.out
+    if outfile is None:
+        outfile = os.path.join(args.dir, "qa.json")
 
     tiles = None
     if args.tiles is not None:
         tiles = [int(x) for x in args.tiles.split(",")]
 
     qa_tiles(resultdir=args.dir, result_prefix=args.prefix,
-             qa_out=outdir, tiles=tiles, old=args.old)
+             qa_out=outfile, tiles=tiles, old=args.old)
 
     return
 
