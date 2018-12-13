@@ -52,16 +52,19 @@ def qa_tile(hw, tile_id, tgs, tile_assign, tile_avail):
     nstd = 0
     nsky = 0
     for fid in fibers:
-        if fid in tile_assign:
-            nassign += 1
-            tgid = tile_assign[fid]
-            tg = tgs.get(tgid)
-            if tg.is_science():
-                nscience += 1
-            if tg.is_standard():
-                nstd += 1
-            if tg.is_sky():
-                nsky += 1
+        if fid not in tile_assign:
+            continue
+        tgid = tile_assign[fid]
+        if tgid < 0:
+            continue
+        nassign += 1
+        tg = tgs.get(tgid)
+        if tg.is_science():
+            nscience += 1
+        if tg.is_standard():
+            nstd += 1
+        if tg.is_sky():
+            nsky += 1
     nunassign = len(fibers) - nassign
     props["unassigned"] = nunassign
     props["assign_total"] = nassign
