@@ -6,8 +6,10 @@ fiberassign change log
 
 * Set `OBJTYPE='BAD'` and `DESI_TARGET=desi_mask.NO_TARGET` for broken, stuck,
   and unassigned fibers (PR `#154`_).
+* Fix POTENTIAL target assignments HDU (broken in 0.10.2) (PR `#156`_)
 
 .. _`#154`: https://github.com/desihub/fiberassign/pull/154
+.. _`#156`: https://github.com/desihub/fiberassign/pull/156
 
 0.10.2 (2018-11-07)
 -------------------
