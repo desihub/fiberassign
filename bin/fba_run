@@ -68,6 +68,14 @@ def main():
     parser.add_argument("--outdir", type=str, required=False, default=None,
                         help="Optional output directory.")
 
+    parser.add_argument("--standards_per_petal", type=int, required=False,
+                        default=10, help="Required number of standards per"
+                        " petal")
+
+    parser.add_argument("--sky_per_petal", type=int, required=False,
+                        default=40, help="Required number of sky targets per"
+                        " petal")
+
     args = parser.parse_args()
 
     # Get run date
@@ -134,20 +142,13 @@ def main():
     # Redistribute science targets across available petals
     asgn.redistribute_science()
 
-    # Assign standards to unused fibers, up to 10 per petal
-    asgn.assign_unused(TARGET_TYPE_STANDARD, 10)
+    # Assign standards, 10 per petal
+    asgn.assign_unused(TARGET_TYPE_STANDARD, args.standards_per_petal)
+    asgn.assign_force(TARGET_TYPE_STANDARD, args.standards_per_petal)
 
     # Assign sky to unused fibers, up to 40 per petal
-    asgn.assign_unused(TARGET_TYPE_SKY, 40)
-
-    # Force assignment of sufficient standards: 10 per petal
-    asgn.assign_force(TARGET_TYPE_STANDARD, 10)
-
-    # Force assignment of sufficient standards: 40 per petal
-    asgn.assign_force(TARGET_TYPE_SKY, 40)
-
-    # Assign sky to unused fibers (no maximum)
-    asgn.assign_unused(TARGET_TYPE_SKY)
+    asgn.assign_unused(TARGET_TYPE_SKY, args.sky_per_petal)
+    asgn.assign_force(TARGET_TYPE_SKY, args.sky_per_petal)
 
     # NOTE:  This was removed since we are treating BAD_SKY as science targets
     # with very low priority.

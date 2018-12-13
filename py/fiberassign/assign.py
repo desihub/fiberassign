@@ -23,8 +23,6 @@ from collections import OrderedDict
 
 import fitsio
 
-from desitarget.targetmask import desi_mask
-
 from ._version import __version__
 
 from .utils import Logger, Timer, default_mp_proc
@@ -34,7 +32,7 @@ from .tiles import load_tiles
 from .targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                       TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE,
                       TargetTree, TargetsAvailable, FibersAvailable,
-                      load_target_file)
+                      load_target_file, desi_target_type)
 
 from .hardware import load_hardware
 
@@ -85,7 +83,8 @@ def write_assignment_fits_tile(outroot, tgs, tile_id, tile_ra, tile_dec,
         # Create the file
         fd = fitsio.FITS(tfile, "rw")
         # Construct the output recarray for the assignment and write
-        log.debug("Write:  copying assignment data for tile {}".format(tile_id))
+        log.debug("Write:  copying assignment data for tile {}"
+                  .format(tile_id))
         # tm.clear()
         # tm.start()
         fdata = np.zeros(len(tgids), dtype=assign_dtype)
@@ -198,37 +197,6 @@ def write_assignment_ascii(tiles, asgn, outdir=".", out_prefix="fiberassign",
     return
 
 
-def old_target_type(desi_target):
-    """Used for constructing the target type from an old file.
-    """
-    sciencemask = 0
-    sciencemask |= desi_mask["LRG"].mask
-    sciencemask |= desi_mask["ELG"].mask
-    sciencemask |= desi_mask["QSO"].mask
-    # Note: BAD_SKY are treated as science targets with priority == 0
-    sciencemask |= desi_mask["BAD_SKY"].mask
-    sciencemask |= desi_mask["BGS_ANY"].mask
-    sciencemask |= desi_mask["MWS_ANY"].mask
-    sciencemask |= desi_mask["SECONDARY_ANY"].mask
-
-    stdmask = 0
-    stdmask |= desi_mask["STD_FAINT"].mask
-    stdmask |= desi_mask["STD_WD"].mask
-    stdmask |= desi_mask["STD_BRIGHT"].mask
-
-    skymask = 0
-    skymask |= desi_mask["SKY"].mask
-
-    ttype = 0
-    if desi_target & sciencemask != 0:
-        ttype |= TARGET_TYPE_SCIENCE
-    if desi_target & stdmask != 0:
-        ttype |= TARGET_TYPE_STANDARD
-    if desi_target & skymask != 0:
-        ttype |= TARGET_TYPE_SKY
-    return ttype
-
-
 def read_assignment_fits_tile_old(outroot, params):
     """Read in results from the old format.
     """
@@ -268,7 +236,7 @@ def read_assignment_fits_tile_old(outroot, params):
         tgdata["NUMOBS_MORE"] = rawdata["NUMOBS_MORE"]
     else:
         tgdata["NUMOBS_MORE"] = 0
-    tgdata["FBATYPE"] = [old_target_type(x) for x in rawdata["DESI_TARGET"]]
+    tgdata["FBATYPE"] = [desi_target_type(x) for x in rawdata["DESI_TARGET"]]
     del rawdata
     adata = fd[2].read()
     avail = dict()

@@ -24,7 +24,7 @@ def load_tiles(hw, tiles_file=None, select=None):
 
     keeprows = np.arange(len(tiles_data))
     if select is not None:
-        keeprows = np.where(tiles_data["TILEID"] in select)
+        keeprows = np.where(np.isin(tiles_data["TILEID"], select))
 
     tls = Tiles(hw, tiles_data["TILEID"][keeprows], tiles_data["RA"][keeprows],
                 tiles_data["DEC"][keeprows],
