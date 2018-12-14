@@ -268,7 +268,94 @@ def plot_tiles(resultdir=".", result_prefix="fiberassign", plotdir=".",
     return
 
 
-def plot_qa(data, outroot):
+def plot_qa_tile_color(desired, value):
+    incr = 0.1
+    des_color = "green"
+    low_one_color = "gold"
+    low_two_color = "red"
+    low_color = "black"
+    high_color = "cyan"
+    if value == desired:
+        return des_color
+    if value > desired:
+        return high_color
+    frac = float(value) / float(desired)
+    rem = 1.0 - frac
+    if rem > (2.0 * incr):
+        return low_color
+    if rem > incr:
+        return low_two_color
+    return low_one_color
+
+
+def plot_qa(data, outroot, outformat="svg"):
     """Make plots of QA data.
     """
+    hw = load_hardware()
+    tile_radius = hw.focalplane_radius_deg
+    fontpt = int(5.0 * tile_radius)
+    linewidth = 2.0
+
+    fig = plt.figure(figsize=(12, 12))
+
+    plot_param = [
+        ("Total", "assign_total", 5000),
+        ("Standards", "assign_std", 100),
+        ("Sky", "assign_sky", 400),
+    ]
+
+    pindx = 1
+    for title, key, desired in plot_param:
+        ax = fig.add_subplot(1, 3, pindx)
+        ax.set_aspect("equal")
+        xmin = 360.0
+        xmax = 0.0
+        ymin = 90.0
+        ymax = -90.0
+        for tid, props in data.items():
+            xcent = props["tile_ra"]
+            ycent = props["tile_dec"]
+            if xcent > xmax:
+                xmax = xcent
+            if xcent < xmin:
+                xmin = xcent
+            if ycent > ymax:
+                ymax = ycent
+            if ycent < ymin:
+                ymin = ycent
+            color = plot_qa_tile_color(desired, props[key])
+            circ = plt.Circle((xcent, ycent), radius=tile_radius, fc="none",
+                              ec=color, linewidth=linewidth)
+            ax.add_artist(circ)
+            ax.text(xcent, ycent, "{}".format(tid),
+                    color=color, fontsize=fontpt,
+                    horizontalalignment='center',
+                    verticalalignment='center',
+                    bbox=None)
+
+        margin = 1.1 * tile_radius
+
+        xmin -= margin
+        xmax += margin
+        ymin -= margin
+        ymax += margin
+        if xmin < 0.0:
+            xmin = 0.0
+        if xmax > 360.0:
+            xmax = 360.0
+        if ymin < -90.0:
+            ymin = -90.0
+        if ymax > 90.0:
+            ymax = 90.0
+
+        ax.set_xlim(left=xmin, right=xmax)
+        ax.set_ylim(bottom=ymin, top=ymax)
+        ax.set_xlabel("RA (degrees)", fontsize="large")
+        ax.set_ylabel("DEC (degrees)", fontsize="large")
+        ax.set_title(title)
+        pindx += 1
+
+    outfile = "{}.{}".format(outroot, outformat)
+    plt.savefig(outfile, dpi=300, format="svg")
+
     return

@@ -51,11 +51,14 @@ def qa_tile(hw, tile_id, tgs, tile_assign, tile_avail):
     nscience = 0
     nstd = 0
     nsky = 0
+    unassigned = list()
     for fid in fibers:
         if fid not in tile_assign:
+            unassigned.append(int(fid))
             continue
         tgid = tile_assign[fid]
         if tgid < 0:
+            unassigned.append(int(fid))
             continue
         nassign += 1
         tg = tgs.get(tgid)
@@ -65,8 +68,7 @@ def qa_tile(hw, tile_id, tgs, tile_assign, tile_avail):
             nstd += 1
         if tg.is_sky():
             nsky += 1
-    nunassign = len(fibers) - nassign
-    props["unassigned"] = nunassign
+    props["unassigned"] = unassigned
     props["assign_total"] = nassign
     props["assign_science"] = nscience
     props["assign_std"] = nstd
@@ -98,39 +100,41 @@ def qa_tile_file(hw, inroot, old, params):
     return qa_data
 
 
-def qa_tiles(resultdir=".", result_prefix="fiberassign", qa_out=None,
-             tiles=None, old=False):
+def qa_tiles(hw, tiles, resultdir=".", result_prefix="fiberassign",
+             qa_out=None, old=False):
     log = Logger()
-    # Find all the per-tile files and get the tile IDs
-    alltiles = list()
+
+    foundtiles = list()
     for root, dirs, files in os.walk(resultdir):
         for f in files:
             mat = re.match(r"{}_(\d+).fits".format(result_prefix), f)
             if mat is not None:
                 # Matches the prefix
-                alltiles.append(int(mat.group(1)))
+                foundtiles.append(int(mat.group(1)))
         break
-    log.info("Found {} fiberassign tile files".format(len(alltiles)))
+    log.info("Found {} fiberassign tile files".format(len(foundtiles)))
 
-    inroot = os.path.join(resultdir, result_prefix)
     if qa_out is None:
         qa_out = os.path.join(resultdir, "qa.json")
 
-    hw = load_hardware()
-
+    inroot = os.path.join(resultdir, result_prefix)
     qa_tile = partial(qa_tile_file, hw, inroot, old)
 
-    if tiles is None:
-        tiles = alltiles
-    tile_map_list = [(x,) for x in tiles]
+    tile_map_list = [(x,) for x in foundtiles]
 
     log.info("Selecting {} fiberassign tile files".format(len(tile_map_list)))
     with mp.Pool(processes=default_mp_proc) as pool:
         qa_result = pool.map(qa_tile, tile_map_list)
 
-    qa_total = {x: y for x, y in zip(tiles, qa_result)}
+    qa_full = dict()
+    for tid, props in zip(foundtiles, qa_result):
+        tidx = tiles.order[tid]
+        props["tile_ra"] = float(tiles.ra[tidx])
+        props["tile_dec"] = float(tiles.dec[tidx])
+        props["tile_obscond"] = int(tiles.obscond[tidx])
+        qa_full[tid] = props
 
     with open(qa_out, "w") as f:
-        json.dump(qa_total, f, indent=4, sort_keys=True)
+        json.dump(qa_full, f, indent=4, sort_keys=True)
 
     return

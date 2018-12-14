@@ -8,7 +8,6 @@ import argparse
 
 import json
 
-
 from fiberassign.vis import plot_qa
 
 
@@ -27,9 +26,15 @@ def main():
     if not os.path.isfile(args.qafile):
         raise RuntimeError("Input file {} does not exist".format(args.qafile))
 
+    outroot = args.outroot
+    if outroot is None:
+        outroot = os.path.splitext(args.qafile)[0]
+
     qadata = None
     with open(args.qafile, "r") as f:
         qadata = json.load(f)
+
+    plot_qa(qadata, outroot)
 
     return
 
