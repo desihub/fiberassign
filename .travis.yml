@@ -26,7 +26,6 @@ matrix:
             - libcfitsio3-dev
             - gcc-4.9
             - g++-4.9
-            - gfortran-4.9
       env:
         - MATRIX_EVAL="export CC=$(which gcc-4.9) && export CXX=$(which g++-4.9)"
     # GCC 5 - default version for ubuntu 16.04 LTS
@@ -47,7 +46,6 @@ matrix:
             - libcfitsio3-dev
             - gcc-5
             - g++-5
-            - gfortran-5
       env:
         - MATRIX_EVAL="export CC=$(which gcc-5) && export CXX=$(which g++-5)"
     # GCC 7 - default version for ubuntu 18.04 LTS
@@ -68,7 +66,6 @@ matrix:
             - libcfitsio3-dev
             - gcc-7
             - g++-7
-            - gfortran-7
       env:
         - MATRIX_EVAL="export CC=$(which gcc-7) && export CXX=$(which g++-7)"
     - os: osx

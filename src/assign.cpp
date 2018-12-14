@@ -73,7 +73,7 @@ fba::Assignment::Assignment(fba::Targets::pshr tgs,
     gtmname << "Assignment ctor: project targets";
     gtm.start(gtmname.str());
 
-    #pragma omp parallel for schedule(dynamic) default(none) shared(ntile, ptiles, phw, ptgs, ptgsavail, tile_target_xy, logmsg, logger)
+    #pragma omp parallel for schedule(dynamic) default(none) shared(ntile, ptiles, phw, ptgs, ptgsavail, logmsg, logger)
     for (size_t t = 0; t < ntile; ++t) {
         int32_t tile_id = ptiles->id[t];
         double tile_ra = ptiles->ra[t];
