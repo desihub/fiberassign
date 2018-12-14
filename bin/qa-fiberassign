@@ -47,7 +47,11 @@ for filename in args.tilefiles:
     fa = Table.read(filename, 'FIBERASSIGN')
     fa.sort('FIBER')
     assigned.append(fa)
-    potential = Table.read(filename, 'POTENTIAL')
+    try:
+        potential = Table.read(filename, 'POTENTIAL_ASSIGNMENTS')
+    except KeyError:
+        potential = Table.read(filename, 'POTENTIAL')
+
     covered.append(np.unique(potential['TARGETID']))
 
     errors = list()
