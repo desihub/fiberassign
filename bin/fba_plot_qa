@@ -20,6 +20,10 @@ def main():
     parser.add_argument("--outroot", type=str, required=False, default=None,
                         help="Output root file name.  Default uses input.")
 
+    parser.add_argument("--fiber_labels", required=False, default=False,
+                        action="store_true",
+                        help="Output root file name.  Default uses input.")
+
     args = parser.parse_args()
 
     # Check directory
@@ -34,7 +38,7 @@ def main():
     with open(args.qafile, "r") as f:
         qadata = json.load(f)
 
-    plot_qa(qadata, outroot)
+    plot_qa(qadata, outroot, fiber_labels=args.fiber_labels)
 
     return
 

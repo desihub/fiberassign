@@ -23,6 +23,7 @@ import matplotlib
 #         matplotlib.use("svg")
 matplotlib.use("svg")
 import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
 
 import multiprocessing as mp
 from functools import partial
@@ -268,8 +269,7 @@ def plot_tiles(resultdir=".", result_prefix="fiberassign", plotdir=".",
     return
 
 
-def plot_qa_tile_color(desired, value):
-    incr = 0.1
+def plot_qa_tile_color(desired, value, incr):
     des_color = "green"
     low_one_color = "gold"
     low_two_color = "red"
@@ -279,34 +279,33 @@ def plot_qa_tile_color(desired, value):
         return des_color
     if value > desired:
         return high_color
-    frac = float(value) / float(desired)
-    rem = 1.0 - frac
-    if rem > (2.0 * incr):
+    if value < (desired - 2 * incr):
         return low_color
-    if rem > incr:
+    if value < (desired - incr):
         return low_two_color
     return low_one_color
 
 
-def plot_qa(data, outroot, outformat="svg"):
+def plot_qa(data, outroot, outformat="svg", fiber_labels=False):
     """Make plots of QA data.
     """
     hw = load_hardware()
     tile_radius = hw.focalplane_radius_deg
-    fontpt = int(5.0 * tile_radius)
-    linewidth = 2.0
 
-    fig = plt.figure(figsize=(12, 12))
+    fontpt = 1
+    linewidth = 0.1
+
+    fig = plt.figure(figsize=(12, 10))
 
     plot_param = [
-        ("Total", "assign_total", 5000),
-        ("Standards", "assign_std", 100),
-        ("Sky", "assign_sky", 400),
+        ("Total Fibers Assigned Per Tile", "assign_total", 5000, 5),
+        ("Standards Assigned Per Tile", "assign_std", 100, 2),
+        ("Sky Assigned Per Tile", "assign_sky", 400, 2),
     ]
 
     pindx = 1
-    for title, key, desired in plot_param:
-        ax = fig.add_subplot(1, 3, pindx)
+    for title, key, desired, incr in plot_param:
+        ax = fig.add_subplot(3, 1, pindx)
         ax.set_aspect("equal")
         xmin = 360.0
         xmax = 0.0
@@ -323,15 +322,16 @@ def plot_qa(data, outroot, outformat="svg"):
                 ymax = ycent
             if ycent < ymin:
                 ymin = ycent
-            color = plot_qa_tile_color(desired, props[key])
+            color = plot_qa_tile_color(desired, props[key], incr)
             circ = plt.Circle((xcent, ycent), radius=tile_radius, fc="none",
                               ec=color, linewidth=linewidth)
             ax.add_artist(circ)
-            ax.text(xcent, ycent, "{}".format(tid),
-                    color=color, fontsize=fontpt,
-                    horizontalalignment='center',
-                    verticalalignment='center',
-                    bbox=None)
+            if fiber_labels:
+                ax.text(xcent, ycent, "{}".format(tid),
+                        color=color, fontsize=fontpt,
+                        horizontalalignment='center',
+                        verticalalignment='center',
+                        bbox=None)
 
         margin = 1.1 * tile_radius
 
@@ -353,6 +353,30 @@ def plot_qa(data, outroot, outformat="svg"):
         ax.set_xlabel("RA (degrees)", fontsize="large")
         ax.set_ylabel("DEC (degrees)", fontsize="large")
         ax.set_title(title)
+
+        c_high = plot_qa_tile_color(desired, desired+1, incr)
+        c_exact = plot_qa_tile_color(desired, desired, incr)
+        c_low_one = plot_qa_tile_color(desired, desired-incr, incr)
+        c_low_two = plot_qa_tile_color(desired, desired-2*incr, incr)
+        c_low = plot_qa_tile_color(desired, 0, incr)
+
+        c_low_two_val = desired - incr
+        c_low_val = desired - 2 * incr
+
+        legend_elements = [
+            Patch(facecolor=c_high, edgecolor="none",
+                  label="> {} assigned".format(desired)),
+            Patch(facecolor=c_exact, edgecolor="none",
+                  label="Exactly {} assigned".format(desired)),
+            Patch(facecolor=c_low_one, edgecolor="none",
+                  label="< {} assigned".format(desired)),
+            Patch(facecolor=c_low_two, edgecolor="none",
+                  label="< {} assigned".format(c_low_two_val)),
+            Patch(facecolor=c_low, edgecolor="none",
+                  label="< {} assigned".format(c_low_val)),
+        ]
+        ax.legend(handles=legend_elements, loc="best",
+                  fontsize="x-small")
         pindx += 1
 
     outfile = "{}.{}".format(outroot, outformat)
