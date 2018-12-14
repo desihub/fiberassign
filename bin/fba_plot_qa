@@ -22,7 +22,7 @@ def main():
 
     parser.add_argument("--fiber_labels", required=False, default=False,
                         action="store_true",
-                        help="Output root file name.  Default uses input.")
+                        help="Plot tile IDs at center of circles.")
 
     args = parser.parse_args()
 
