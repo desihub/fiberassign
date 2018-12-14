@@ -150,6 +150,10 @@ def main():
     asgn.assign_unused(TARGET_TYPE_SKY, args.sky_per_petal)
     asgn.assign_force(TARGET_TYPE_SKY, args.sky_per_petal)
 
+    # If there are any unassigned fibers, try to place them somewhere.
+    asgn.assign_unused(TARGET_TYPE_SCIENCE)
+    asgn.assign_unused(TARGET_TYPE_SKY)
+
     # NOTE:  This was removed since we are treating BAD_SKY as science targets
     # with very low priority.
     #
