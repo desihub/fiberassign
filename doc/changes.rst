@@ -1,15 +1,22 @@
 fiberassign change log
 ======================
 
-0.10.3 (unreleased)
+0.11.1 (unreleased)
 -------------------
 
+* No changes yet.
+
+0.11.0 (2018-12-16)
+-------------------
+
+* Format updates to be closer to ICS fiberassign data model (PR `#157`_).
 * Set `OBJTYPE='BAD'` and `DESI_TARGET=desi_mask.NO_TARGET` for broken, stuck,
   and unassigned fibers (PR `#154`_).
-* Fix POTENTIAL target assignments HDU (broken in 0.10.2) (PR `#156`_)
+* Fix POTENTIAL target assignments HDU (broken in 0.10.2) (PR `#156`_).
 
 .. _`#154`: https://github.com/desihub/fiberassign/pull/154
 .. _`#156`: https://github.com/desihub/fiberassign/pull/156
+.. _`#157`: https://github.com/desihub/fiberassign/pull/157
 
 0.10.2 (2018-11-07)
 -------------------
