@@ -287,7 +287,7 @@ def plot_qa_tile_color(desired, value, incr):
     return low_one_color
 
 
-def plot_qa(data, outroot, outformat="svg", fiber_labels=False):
+def plot_qa(data, outroot, outformat="svg", labels=False):
     """Make plots of QA data.
     """
     hw = load_hardware()
@@ -327,7 +327,7 @@ def plot_qa(data, outroot, outformat="svg", fiber_labels=False):
             circ = plt.Circle((xcent, ycent), radius=tile_radius, fc="none",
                               ec=color, linewidth=linewidth)
             ax.add_artist(circ)
-            if fiber_labels:
+            if labels:
                 ax.text(xcent, ycent, "{}".format(tid),
                         color=color, fontsize=fontpt,
                         horizontalalignment='center',

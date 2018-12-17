@@ -11,20 +11,30 @@ Basic Tools
 There are several command-line programs which can be used to drive the fiber assignment process.  The first is the `fba_run` script which takes one or more target files and other options::
 
     %> fba_run --targets mtl.fits --targets standards.fits \
-       --targets sky.fits --targets other_stuff.fits \
+       --targets sky.fits --targets other_targets.fits \
        --outdir out_test
 
-This will produce an output directory of files (one per tile) containing the basic target information and assignment results.  For convenience, it is sometimes desired to copy extra columns of target information from the original input files into the output assignment files.  This can be done using a separate script::
+The names of the target files above are arbitrary and they can contain any targets.  The full list of targets is built up in memory from the contents of these files.  Running this command will produce an output directory of files (one per tile) containing the basic target information and assignment results.  For convenience, it is sometimes desired to copy extra columns of target information from the original input files into the output assignment files.  This can be done using a separate script::
 
     %> fba_merge_results --targets mtl.fits \
        --targets standards.fits \
-       --targets sky.fits --targets other_stuff.fits \
+       --targets sky.fits --targets other_targets.fits \
        --dir out_test
 
 It is also frequently useful to plot the results of the assignment.  There are many customized plotting options possible using the low-level tools, but there
-is also a command-line script to create a vector graphics (SVG) format plot of each tile.  Running this will require several minutes per tile, but multiple processes will be used::
+is also a command-line script to create a vector graphics (SVG) format plot of each tile.  Running this will require several minutes per tile, but multiple processes will be used to plot tiles in parallel::
 
     %> fba_plot_results --dir out_test
+
+Some simple QA on the assignments can be run with::
+
+    %> fba_run_qa --dir out_test
+
+Which by default produces a JSON format named "qa.json" in the output directory.  To plot a simple sky representation of these results do::
+
+    %> fba_plot_qa --qafile "out_test/qa.json"
+
+If you are only plotting a few tiles and want to see the tile IDs on the plot, use the "--labels" option.
 
 
 Debugging and Testing

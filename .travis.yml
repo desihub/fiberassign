@@ -69,7 +69,7 @@ matrix:
       env:
         - MATRIX_EVAL="export CC=$(which gcc-7) && export CXX=$(which g++-7)"
     - os: osx
-      osx_image: xcode9.4
+      osx_image: xcode10.1
       language: generic
       addons:
         homebrew:
