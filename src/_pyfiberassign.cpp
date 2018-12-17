@@ -291,7 +291,7 @@ PYBIND11_MODULE(_internal, m) {
                     y_mm, z_mm, status);
             },
             [](py::tuple t) { // __setstate__
-                return new fba::Hardware(
+                return fba::Hardware::pshr(new fba::Hardware(
                     t[0].cast<std::vector<int32_t> >(),
                     t[1].cast<std::vector<int32_t> >(),
                     t[2].cast<std::vector<int32_t> >(),
@@ -299,7 +299,7 @@ PYBIND11_MODULE(_internal, m) {
                     t[4].cast<std::vector<double> >(),
                     t[5].cast<std::vector<double> >(),
                     t[6].cast<std::vector<int32_t> >()
-                );
+                ));
             }
         ));
 
