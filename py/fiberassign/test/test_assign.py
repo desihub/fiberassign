@@ -156,6 +156,6 @@ class TestAssign(unittest.TestCase):
             self.assertTrue(len(props["unassigned"]) == 0)
 
         plot_qa(qadata, "{}_qa".format(outdir), outformat="svg",
-                fiber_labels=True)
+                labels=True)
 
         return

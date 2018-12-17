@@ -55,6 +55,20 @@ assign_result_columns = OrderedDict([
 
 def write_assignment_fits_tile(outroot, tgs, tile_id, tile_ra, tile_dec,
                                tdata, avail):
+    """Write a single tile assignment to a FITS file.
+
+    Args:
+        outroot (str):  full path of the output root file name.
+        tgs (Targets):  the target properties.
+        tile_id (int):  the tile ID.
+        tile_ra (float):  the RA of the tile center in degrees.
+        tile_dec (float):  the DEC of the tile center in degrees.
+        tdata (dict):  the assignment as a dictionary of target ID for every
+            fiber.
+        avail (dict):  the available targets as a dictionary of arrays of
+            target IDs for every fiber.
+
+    """
     log = Logger()
     # The recarray dtype for the assignment and available targets
     assign_dtype = np.dtype([(x, y) for x, y in assign_result_columns.items()])
@@ -163,7 +177,10 @@ def write_assignment_fits(tiles, asgn, outdir=".", out_prefix="fiberassign"):
 
 def write_assignment_ascii(tiles, asgn, outdir=".", out_prefix="fiberassign",
                            single=False):
-    """Write out results.
+    """Write assignment to text file(s).
+
+    Args:
+
 
     """
     log = Logger()
