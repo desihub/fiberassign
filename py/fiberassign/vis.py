@@ -112,15 +112,19 @@ def plot_parse_table(tgdata):
 
 def plot_tile_targets_props(hw, tile_ra, tile_dec, tgs):
     avail_tgid = tgs.ids()
+    # print("  DBG:  avail_tgid len = ", len(avail_tgid), flush=True)
     ra = np.empty(len(avail_tgid), dtype=np.float64)
     dec = np.empty(len(avail_tgid), dtype=np.float64)
     color = list()
     for idx, tgid in enumerate(avail_tgid):
         tg = tgs.get(tgid)
+        # print("  DBG:  ",idx," tgid ",tgid," = ",tg, flush=True)
         ra[idx] = tg.ra
         dec[idx] = tg.dec
         color.append(plot_target_type_color(tg.type))
-    tgxy = hw.radec2xy_multi(tile_ra, tile_dec, ra, dec)
+    # We disable threading here, since it does not interact well with
+    # multiprocessing.
+    tgxy = hw.radec2xy_multi(tile_ra, tile_dec, ra, dec, 1)
     props = {tgid: {"xy": xy, "color": cl} for tgid, xy, cl
              in zip(avail_tgid, tgxy, color)}
     return props
@@ -164,7 +168,7 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1):
 
 
 def plot_assignment_tile_file(hw, inroot, outroot, fibers, old, params):
-    (tile_id,) = params
+    (tile_id, tile_ra, tile_dec) = params
     log = Logger()
 
     outformat = "svg"
@@ -181,15 +185,8 @@ def plot_assignment_tile_file(hw, inroot, outroot, fibers, old, params):
     else:
         header, tgdata, tavail = read_assignment_fits_tile(inroot, (tile_id,))
 
-    tile_ra = None
-    tile_dec = None
-    if old:
-        tiles = load_tiles(hw)
-        tile_ra = tiles.ra[tiles.order[tile_id]]
-        tile_dec = tiles.dec[tiles.order[tile_id]]
-    else:
-        tile_ra = header["TILE_RA"]
-        tile_dec = header["TILE_DEC"]
+    log.debug("  tile {} at RA/DEC {} / {}".format(tile_id, tile_ra,
+                                                   tile_dec))
 
     fig = plt.figure(figsize=(12, 12))
     ax = fig.add_subplot(1, 1, 1)
@@ -197,7 +194,10 @@ def plot_assignment_tile_file(hw, inroot, outroot, fibers, old, params):
 
     # Target properties (x, y, color) for plotting
     tgs = plot_parse_table(tgdata)
+
     targetprops = plot_tile_targets_props(hw, tile_ra, tile_dec, tgs)
+    log.debug("  tile {} has {} targets with properties"
+              .format(tile_id, len(tgdata)))
 
     if old:
         # Old files do not include target info for available targets- only
@@ -214,6 +214,8 @@ def plot_assignment_tile_file(hw, inroot, outroot, fibers, old, params):
     # Assigned targets for our selected fibers
     tassign = {x["FIBER"]: x["TARGETID"] for x in tgdata
                if (x["FIBER"] in fibers)}
+    log.debug("  tile {} plotting {} assigned fibers"
+              .format(tile_id, len(tassign)))
     fassign = {f: tassign[f] if f in tassign else -1 for f in fibers}
 
     plot_assignment(ax, hw, targetprops, fassign, linewidth=0.1)
@@ -224,45 +226,44 @@ def plot_assignment_tile_file(hw, inroot, outroot, fibers, old, params):
     return
 
 
-def plot_tiles(resultdir=".", result_prefix="fiberassign", plotdir=".",
-               tiles=None, petals=None, old=False):
+def plot_tiles(hw, tiles, resultdir=".", result_prefix="fiberassign",
+               plotdir=".", petals=None, old=False):
     log = Logger()
     # Find all the per-tile files and get the tile IDs
-    alltiles = list()
+    foundtiles = list()
     for root, dirs, files in os.walk(resultdir):
         for f in files:
             mat = re.match(r"{}_(\d+).fits".format(result_prefix), f)
             if mat is not None:
                 # Matches the prefix
-                alltiles.append(int(mat.group(1)))
+                foundtiles.append(int(mat.group(1)))
         break
-    log.info("Found {} fiberassign tile files".format(len(alltiles)))
+    log.info("Found {} fiberassign tile files".format(len(foundtiles)))
 
     inroot = os.path.join(resultdir, result_prefix)
     if not os.path.isdir(plotdir):
         os.makedirs(plotdir)
     outroot = os.path.join(plotdir, "fiberassign")
 
-    hw = load_hardware()
-    fiber_id = hw.fiber_id
-    petal_fibers = hw.petal_fibers
     fibers = None
     if petals is None:
-        fibers = [x for x in fiber_id]
+        fibers = [x for x in hw.fiber_id]
     else:
         fibers = list()
         for p in petals:
-            fibers.extend([x for x in petal_fibers[p]])
+            fibers.extend([x for x in hw.petal_fibers[p]])
     fibers = np.array(fibers)
 
     plot_tile = partial(plot_assignment_tile_file, hw, inroot, outroot,
                         fibers, old)
-    tile_map_list = None
-    if tiles is None:
-        tile_map_list = [(x,) for x in alltiles]
-    else:
-        tile_map_list = [(x,) for x in tiles]
+
+    avail_tiles = np.array(tiles.id)
+    select_tiles = [x for x in foundtiles if x in avail_tiles]
+
+    tile_map_list = [(x, tiles.ra[tiles.order[x]], tiles.dec[tiles.order[x]])
+                     for x in select_tiles]
     log.info("Selecting {} fiberassign tile files".format(len(tile_map_list)))
+
     with mp.Pool(processes=default_mp_proc) as pool:
         pool.map(plot_tile, tile_map_list)
 
@@ -380,6 +381,7 @@ def plot_qa(data, outroot, outformat="svg", fiber_labels=False):
         pindx += 1
 
     outfile = "{}.{}".format(outroot, outformat)
+    plt.tight_layout()
     plt.savefig(outfile, dpi=300, format="svg")
 
     return

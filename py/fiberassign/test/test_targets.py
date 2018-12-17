@@ -3,70 +3,57 @@ Test fiberassign target operations.
 """
 
 import os
+
 import unittest
-
-from pkg_resources import resource_filename
-
-from fiberassign._internal import (Targets, TargetTree, TargetsAvailable,
-                                   FibersAvailable)
 
 from fiberassign.hardware import load_hardware
 
 from fiberassign.tiles import load_tiles
 
-from fiberassign.targets import load_target_file
+from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
+                                 TARGET_TYPE_STANDARD, load_target_file,
+                                 Targets, TargetTree, TargetsAvailable,
+                                 FibersAvailable)
+
+from .simulate import (sim_data_dir, sim_tiles, sim_targets)
 
 
 class TestTargets(unittest.TestCase):
 
     def setUp(self):
-        # Find test data
-        self.has_data = True
-        self.input_mtl = resource_filename("fiberassign", "test/data/mtl.fits")
-        self.input_sky = resource_filename("fiberassign", "test/data/sky.fits")
-        self.input_std = resource_filename("fiberassign",
-                                           "test/data/standards-dark.fits")
-        if not os.path.isfile(self.input_mtl):
-            self.has_data = False
-        if not os.path.isfile(self.input_sky):
-            self.has_data = False
-        if not os.path.isfile(self.input_std):
-            self.has_data = False
-        return
+        pass
 
     def tearDown(self):
         pass
 
-    # def test_read(self):
-    #     testfile = "/global/cscratch1/sd/kisner/desi/fiberassign/input/mtl_large.fits"
-    #     tgs = Targets()
-    #     load_target_file(tgs, testfile)
-    #     return
+    def test_available(self):
+        input_mtl = os.path.join(sim_data_dir(), "mtl.fits")
+        input_std = os.path.join(sim_data_dir(), "standards.fits")
+        input_sky = os.path.join(sim_data_dir(), "sky.fits")
+        nscience = sim_targets(input_mtl, TARGET_TYPE_SCIENCE, 0)
+        nstd = sim_targets(input_std, TARGET_TYPE_STANDARD, nscience)
+        nsky = sim_targets(input_sky, TARGET_TYPE_SKY, (nscience + nstd))
 
+        tgs = Targets()
+        load_target_file(tgs, input_mtl)
+        load_target_file(tgs, input_std)
+        load_target_file(tgs, input_sky)
+        print(tgs)
 
-    # def test_available(self):
-    #     input_mtl = resource_filename("fiberassign", "test/data/mtl.fits")
-    #     input_sky = resource_filename("fiberassign", "test/data/sky.fits")
-    #     input_std = resource_filename("fiberassign", "test/data/standards-dark.fits")
-    #     #tgs = read_targets([input_mtl])
-    #     tgs = read_targets([input_mtl, input_sky, input_std])
-    #     print(tgs)
-    #
-    #     # Create a hierarchical triangle mesh lookup of the targets positions
-    #     tree = TargetsTree(tgs, 0.01)
-    #
-    #     # Compute the targets available to each fiber for each tile.
-    #     hw = load_hardware()
-    #     tiles = read_tiles(hw)
-    #     tgsavail = TargetsAvailable(tiles, tree)
-    #     print("ASS: done with targets available", flush=True)
-    #
-    #     # Free the tree
-    #     del tree
-    #     print("ASS: free tree", flush=True)
-    #
-    #     # Compute the fibers on all tiles available for each target
-    #     favail = FibersAvailable(tgsavail)
-    #     print("ASS: done with fibers available", flush=True)
-    #
-    #     return
+        # Create a hierarchical triangle mesh lookup of the targets positions
+        tree = TargetTree(tgs, 0.01)
+
+        # Compute the targets available to each fiber for each tile.
+        hw = load_hardware()
+        tfile = os.path.join(sim_data_dir(), "footprint.fits")
+        sim_tiles(tfile)
+        tiles = load_tiles(hw, tiles_file=tfile)
+        tgsavail = TargetsAvailable(tgs, tiles, tree)
+
+        # Free the tree
+        del tree
+
+        # Compute the fibers on all tiles available for each target
+        favail = FibersAvailable(tgsavail)
+
+        return

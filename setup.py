@@ -15,6 +15,7 @@ from distutils.command.sdist import sdist as DistutilsSdist
 from setuptools import setup, find_packages, Extension
 from setuptools.command.build_ext import build_ext
 from distutils.command.clean import clean
+from distutils.errors import CompileError
 #
 # DESI support code.
 #
@@ -56,29 +57,39 @@ if os.path.exists('README.rst'):
 # Treat everything in bin/ except *.rst as a script to be installed.
 #
 if os.path.isdir('bin'):
-    setup_keywords['scripts'] = [fname for fname in glob.glob(os.path.join('bin', '*'))
-        if not os.path.basename(fname).endswith('.rst')]
+    setup_keywords['scripts'] = [fname for fname in
+                                 glob.glob(os.path.join('bin', '*'))
+                                 if not os.path.basename(fname)
+                                 .endswith('.rst')]
 setup_keywords['provides'] = [setup_keywords['name']]
 setup_keywords['requires'] = ['Python (>2.7.0)']
 # setup_keywords['install_requires'] = ['Python (>2.7.0)']
 setup_keywords['zip_safe'] = False
 setup_keywords['use_2to3'] = False
 setup_keywords['packages'] = find_packages('py')
-setup_keywords['package_dir'] = {'':'py'}
-setup_keywords['cmdclass'] = {'version': DesiVersion, 'test': DesiTest, 'sdist': DistutilsSdist}
-setup_keywords['test_suite']='{name}.test.{name}_test_suite.{name}_test_suite'.format(**setup_keywords)
+setup_keywords['package_dir'] = {'': 'py'}
+setup_keywords['cmdclass'] = {'version': DesiVersion, 'test': DesiTest,
+                              'sdist': DistutilsSdist}
+test_suite_name = \
+    '{name}.test.{name}_test_suite.{name}_test_suite'.format(**setup_keywords)
+setup_keywords['test_suite'] = test_suite_name
+
 #
 # Autogenerate command-line scripts.
 #
-# setup_keywords['entry_points'] = {'console_scripts':['desiInstall = desiutil.install.main:main']}
+# setup_keywords['entry_points'] =
+# {'console_scripts':['desiInstall = desiutil.install.main:main']}
 #
 # Add internal data directories.
 #
-#setup_keywords['package_data'] = {'fiberassign': ['data/*',]}
+# setup_keywords['package_data'] = {'fiberassign': ['data/*',]}
 #
+
 
 # Add a custom clean command that removes in-tree files like the
 # compiled extension.
+
+
 class RealClean(clean):
     def run(self):
         super().run()
@@ -101,6 +112,7 @@ class RealClean(clean):
                     os.remove(path)
         return
 
+
 # These classes allow us to build a compiled extension that uses pybind11.
 # For more details, see:
 #
@@ -109,6 +121,8 @@ class RealClean(clean):
 
 # As of Python 3.6, CCompiler has a `has_flag` method.
 # cf http://bugs.python.org/issue26689
+
+
 def has_flag(compiler, flagname):
     """Return a boolean indicating whether a flag name is supported on
     the specified compiler.
@@ -118,7 +132,7 @@ def has_flag(compiler, flagname):
         f.write('int main (int argc, char **argv) { return 0; }')
         try:
             compiler.compile([f.name], extra_postargs=[flagname])
-        except setuptools.distutils.errors.CompileError:
+        except CompileError:
             return False
     return True
 
@@ -167,6 +181,7 @@ class BuildExt(build_ext):
             ext.extra_compile_args.extend(opts)
             ext.extra_link_args.extend(linkopts)
         build_ext.build_extensions(self)
+
 
 ext_modules = [
     Extension(

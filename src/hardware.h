@@ -55,7 +55,7 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
                             std::vector <double> const & ra,
                             std::vector <double> const & dec,
                             std::vector <std::pair <double, double> >
-                                & xy) const;
+                                & xy, int threads = 0) const;
 
         void xy2radec(double const & tilera, double const & tiledec,
                       double const & x_mm, double const & y_mm,
@@ -74,16 +74,16 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
 
         std::vector <std::pair <fbg::shape, fbg::shape> > fiber_position_multi(
             std::vector <int32_t> const & fiber_id,
-            std::vector <fbg::dpair> const & xy) const;
+            std::vector <fbg::dpair> const & xy, int threads = 0) const;
 
         std::vector <bool> check_collisions_xy(
             std::vector <int32_t> const & fiber_id,
-            std::vector <fbg::dpair> const & xy) const;
+            std::vector <fbg::dpair> const & xy, int threads = 0) const;
 
         std::vector <bool> check_collisions_thetaphi(
             std::vector <int32_t> const & fiber_id,
             std::vector <double> const & theta,
-            std::vector <double> const & phi) const;
+            std::vector <double> const & phi, int threads = 0) const;
 
         // The (constant) total number of fibers.
         int32_t nfiber;

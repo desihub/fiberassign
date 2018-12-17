@@ -69,7 +69,7 @@ matrix:
       env:
         - MATRIX_EVAL="export CC=$(which gcc-7) && export CXX=$(which g++-7)"
     - os: osx
-      osx_image: xcode6.4
+      osx_image: xcode9.4
       addons:
         homebrew:
           packages:
@@ -87,7 +87,7 @@ python:
 env:
     global:
         # Binary packages to install with pip.
-        - PIP_BINARY="scipy matplotlib numpy astropy sphinx"
+        - PIP_BINARY="pyyaml scipy matplotlib numpy astropy sphinx"
         # Packages to build with pip
         - PIP_SOURCE="fitsio"
         # DESI packages to install.

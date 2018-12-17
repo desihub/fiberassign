@@ -38,7 +38,7 @@ class TestHardware(unittest.TestCase):
             yoff = rotrad * np.sin(rot * rotincr)
             xy = [(center_mm[p][0] + xoff, center_mm[p][1] + yoff)
                   for p in fiber_id]
-            result = hw.check_collisions_xy(fiber_id, xy)
+            result = hw.check_collisions_xy(fiber_id, xy, 0)
         tm.stop()
         tm.report("check_collisions_xy 100 configurations")
         return
@@ -56,7 +56,7 @@ class TestHardware(unittest.TestCase):
             for phirot in range(nphi):
                 theta = [thetarot * thetaincr for x in fiber_id]
                 phi = [phirot * phiincr for x in fiber_id]
-                result = hw.check_collisions_thetaphi(fiber_id, theta, phi)
+                result = hw.check_collisions_thetaphi(fiber_id, theta, phi, 0)
         tm.stop()
         tm.report("check_collisions_thetaphi 100 configurations")
         return

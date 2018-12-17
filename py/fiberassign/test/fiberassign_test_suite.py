@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 fiberassign.test.fiberassign_test_suite
-=================================
+===================================================
 
 Used to initialize the unit test framework via ``python setup.py test``.
 """
@@ -30,6 +30,7 @@ def runtests():
     tests = fiberassign_test_suite()
     # Run them
     unittest.TextTestRunner(verbosity=2).run(tests)
+
 
 if __name__ == "__main__":
     runtests()

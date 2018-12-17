@@ -257,9 +257,9 @@ PYBIND11_MODULE(_internal, m) {
         .def("radec2xy", &fba::Hardware::radec2xy)
         .def("radec2xy_multi", [](fba::Hardware & self, double tile_ra,
             double tile_dec, std::vector <double> const & ra,
-            std::vector <double> const & dec) {
+            std::vector <double> const & dec, int threads) {
             std::vector <std::pair <double, double> > xy;
-            self.radec2xy_multi(tile_ra, tile_dec, ra, dec, xy);
+            self.radec2xy_multi(tile_ra, tile_dec, ra, dec, xy, threads);
             return xy;
         }, py::return_value_policy::take_ownership)
         .def("pos_angles", &fba::Hardware::pos_angles)
@@ -271,6 +271,7 @@ PYBIND11_MODULE(_internal, m) {
         .def(py::pickle(
             [](fba::Hardware const & p) { // __getstate__
                 int32_t nfiber = p.fiber_id.size();
+                std::vector <int32_t> fid(nfiber);
                 std::vector <int32_t> petal(nfiber);
                 std::vector <int32_t> spectro(nfiber);
                 std::vector <double> x_mm(nfiber);
@@ -278,14 +279,15 @@ PYBIND11_MODULE(_internal, m) {
                 std::vector <double> z_mm(nfiber);
                 std::vector <int32_t> status(nfiber);
                 for (int32_t i = 0; i < nfiber; ++i) {
-                    petal[i] = p.fiber_petal.at(p.fiber_id.at(i));
-                    spectro[i] = p.fiber_spectro.at(p.fiber_id.at(i));
-                    x_mm[i] = p.center_mm.at(p.fiber_id.at(i)).first;
-                    y_mm[i] = p.center_mm.at(p.fiber_id.at(i)).second;
-                    z_mm[i] = p.center_z_mm.at(p.fiber_id.at(i));
-                    status[i] = p.state.at(p.fiber_id.at(i));
+                    fid[i] = p.fiber_id.at(i);
+                    petal[i] = p.fiber_petal.at(fid[i]);
+                    spectro[i] = p.fiber_spectro.at(fid[i]);
+                    x_mm[i] = p.center_mm.at(fid[i]).first;
+                    y_mm[i] = p.center_mm.at(fid[i]).second;
+                    z_mm[i] = p.center_z_mm.at(fid[i]);
+                    status[i] = p.state.at(fid[i]);
                 }
-                return py::make_tuple(p.fiber_id, petal, spectro, x_mm,
+                return py::make_tuple(fid, petal, spectro, x_mm,
                     y_mm, z_mm, status);
             },
             [](py::tuple t) { // __setstate__

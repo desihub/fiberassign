@@ -7,6 +7,9 @@
 #include <algorithm>
 #include <sstream>
 
+#ifdef _OPENMP
+#  include <omp.h>
+#endif
 
 namespace fba = fiberassign;
 
@@ -215,12 +218,26 @@ void fba::Hardware::radec2xy_multi(
     double const & tilera, double const & tiledec,
     std::vector <double> const & ra,
     std::vector <double> const & dec,
-    std::vector <std::pair <double, double> > & xy) const {
+    std::vector <std::pair <double, double> > & xy, int threads) const {
 
     size_t ntg = ra.size();
     xy.resize(ntg);
 
-    #pragma omp parallel for schedule(static) default(none) shared(ntg, tilera, tiledec, xy, ra, dec)
+    int max_threads = 1;
+    #ifdef _OPENMP
+    max_threads = omp_get_num_threads();
+    #endif
+    int run_threads;
+    if (threads > 0) {
+        run_threads = threads;
+    } else {
+        run_threads = max_threads;
+    }
+    if (run_threads > max_threads) {
+        run_threads = max_threads;
+    }
+
+    #pragma omp parallel for schedule(static) default(none) shared(ntg, tilera, tiledec, xy, ra, dec) num_threads(run_threads)
     for (size_t t = 0; t < ntg; ++t) {
         xy[t] = radec2xy(tilera, tiledec, ra[t], dec[t]);
     }
@@ -476,11 +493,25 @@ std::pair <fbg::shape, fbg::shape> fba::Hardware::fiber_position(
 std::vector <std::pair <fbg::shape, fbg::shape> >
     fba::Hardware::fiber_position_multi(
         std::vector <int32_t> const & fiber_id,
-        std::vector <fbg::dpair> const & xy) const {
+        std::vector <fbg::dpair> const & xy, int threads) const {
     size_t nfiber = fiber_id.size();
     std::vector <std::pair <fbg::shape, fbg::shape> > result(nfiber);
 
-    #pragma omp parallel for schedule(static) default(none) shared(nfiber, fiber_id, xy, result)
+    int max_threads = 1;
+    #ifdef _OPENMP
+    max_threads = omp_get_num_threads();
+    #endif
+    int run_threads = 1;
+    if (threads > 0) {
+        run_threads = threads;
+    } else {
+        run_threads = max_threads;
+    }
+    if (run_threads > max_threads) {
+        run_threads = max_threads;
+    }
+
+    #pragma omp parallel for schedule(static) default(none) shared(nfiber, fiber_id, xy, result) num_threads(run_threads)
     for (size_t f = 0; f < nfiber; ++f) {
         int32_t fid = fiber_id[f];
         // Construct a positioner shape for a given fiber and location.
@@ -496,7 +527,7 @@ std::vector <std::pair <fbg::shape, fbg::shape> >
 
 std::vector <bool> fba::Hardware::check_collisions_xy(
     std::vector <int32_t> const & fiber_id,
-    std::vector <fbg::dpair> const & xy) const {
+    std::vector <fbg::dpair> const & xy, int threads) const {
 
     size_t nfiber = fiber_id.size();
 
@@ -548,7 +579,21 @@ std::vector <bool> fba::Hardware::check_collisions_xy(
     std::vector <bool> result(nfiber);
     result.assign(nfiber, false);
 
-    #pragma omp parallel for schedule(static) default(none) shared(npairs, checkpairs, fpos, result, fiber_indx)
+    int max_threads = 1;
+    #ifdef _OPENMP
+    max_threads = omp_get_num_threads();
+    #endif
+    int run_threads = 1;
+    if (threads > 0) {
+        run_threads = threads;
+    } else {
+        run_threads = max_threads;
+    }
+    if (run_threads > max_threads) {
+        run_threads = max_threads;
+    }
+
+    #pragma omp parallel for schedule(static) default(none) shared(npairs, checkpairs, fpos, result, fiber_indx) num_threads(run_threads)
     for (size_t p = 0; p < npairs; ++p) {
         int32_t flow = checkpairs[p].first;
         int32_t fhigh = checkpairs[p].second;
@@ -581,7 +626,7 @@ std::vector <bool> fba::Hardware::check_collisions_xy(
 std::vector <bool> fba::Hardware::check_collisions_thetaphi(
     std::vector <int32_t> const & fiber_id,
     std::vector <double> const & theta,
-    std::vector <double> const & phi) const {
+    std::vector <double> const & phi, int threads) const {
 
     size_t nfiber = fiber_id.size();
 
@@ -631,7 +676,21 @@ std::vector <bool> fba::Hardware::check_collisions_thetaphi(
     std::vector <bool> result(nfiber);
     result.assign(nfiber, false);
 
-    #pragma omp parallel for schedule(static) default(none) shared(npairs, checkpairs, result, fiber_indx, theta, phi)
+    int max_threads = 1;
+    #ifdef _OPENMP
+    max_threads = omp_get_num_threads();
+    #endif
+    int run_threads = 1;
+    if (threads > 0) {
+        run_threads = threads;
+    } else {
+        run_threads = max_threads;
+    }
+    if (run_threads > max_threads) {
+        run_threads = max_threads;
+    }
+
+    #pragma omp parallel for schedule(static) default(none) shared(npairs, checkpairs, result, fiber_indx, theta, phi) num_threads(run_threads)
     for (size_t p = 0; p < npairs; ++p) {
         int32_t flow = checkpairs[p].first;
         int32_t fhigh = checkpairs[p].second;

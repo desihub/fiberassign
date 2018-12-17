@@ -20,10 +20,6 @@ import json
 
 from .utils import Logger, default_mp_proc
 
-from .hardware import load_hardware
-
-# from .tiles import load_tiles
-
 from .targets import (Targets, append_target_table)
 
 from .assign import read_assignment_fits_tile, read_assignment_fits_tile_old
@@ -120,7 +116,10 @@ def qa_tiles(hw, tiles, resultdir=".", result_prefix="fiberassign",
     inroot = os.path.join(resultdir, result_prefix)
     qa_tile = partial(qa_tile_file, hw, inroot, old)
 
-    tile_map_list = [(x,) for x in foundtiles]
+    avail_tiles = np.array(tiles.id)
+    select_tiles = [x for x in foundtiles if x in avail_tiles]
+
+    tile_map_list = [(x,) for x in select_tiles]
 
     log.info("Selecting {} fiberassign tile files".format(len(tile_map_list)))
     with mp.Pool(processes=default_mp_proc) as pool:

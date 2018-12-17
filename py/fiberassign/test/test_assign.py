@@ -1,11 +1,15 @@
 """
 Test fiberassign target operations.
 """
-
 import os
+
+import shutil
+
 import unittest
 
-from pkg_resources import resource_filename
+import json
+
+import numpy as np
 
 from fiberassign.hardware import load_hardware
 
@@ -19,147 +23,139 @@ from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
 from fiberassign.assign import (Assignment, write_assignment_fits,
                                 write_assignment_ascii)
 
+from fiberassign.qa import qa_tiles
+
+from fiberassign.vis import plot_tiles, plot_qa
+
+from .simulate import (sim_data_dir, sim_tiles, sim_targets)
+
 
 class TestAssign(unittest.TestCase):
 
     def setUp(self):
-        # Find test data
-        self.has_data = True
-        self.input_mtl = resource_filename("fiberassign", "test/data/mtl.fits")
-        self.input_sky = resource_filename("fiberassign", "test/data/sky.fits")
-        self.input_std = resource_filename("fiberassign",
-                                           "test/data/standards-dark.fits")
-        if not os.path.isfile(self.input_mtl):
-            self.has_data = False
-        if not os.path.isfile(self.input_sky):
-            self.has_data = False
-        if not os.path.isfile(self.input_std):
-            self.has_data = False
-        return
-
+        pass
 
     def tearDown(self):
         pass
 
+    def test_io(self):
+        input_mtl = os.path.join(sim_data_dir(), "mtl.fits")
+        input_std = os.path.join(sim_data_dir(), "standards.fits")
+        input_sky = os.path.join(sim_data_dir(), "sky.fits")
+        nscience = sim_targets(input_mtl, TARGET_TYPE_SCIENCE, 0)
+        nstd = sim_targets(input_std, TARGET_TYPE_STANDARD, nscience)
+        nsky = sim_targets(input_sky, TARGET_TYPE_SKY, (nscience + nstd))
 
-    # def test_io(self):
-    #     if not self.has_data:
-    #         print("Test data not found- skipping")
-    #         return
-    #
-    #     # Read hardware properties and tiles
-    #     hw = load_hardware()
-    #     tiles = load_tiles(hw)
-    #     print("done with hardware + tiles", flush=True)
-    #
-    #     # Read targets
-    #     tgs = Targets()
-    #
-    #     # FIXME:  stop using the force option once we have new test files with
-    #     # correct bits.
-    #
-    #     load_target_file(tgs, self.input_sky, typeforce=TARGET_TYPE_SKY)
-    #     load_target_file(tgs, self.input_std, typeforce=TARGET_TYPE_STANDARD)
-    #     load_target_file(tgs, self.input_mtl, typeforce=TARGET_TYPE_SCIENCE)
-    #
-    #     # Create a hierarchical triangle mesh lookup of the targets positions
-    #     tree = TargetTree(tgs)
-    #
-    #     # Compute the targets available to each fiber for each tile.
-    #     tgsavail = TargetsAvailable(tgs, tiles, tree)
-    #
-    #     # Free the tree
-    #     del tree
-    #
-    #     # Compute the fibers on all tiles available for each target and sky
-    #     favail = FibersAvailable(tgsavail)
-    #
-    #     # First pass assignment
-    #     asgn = Assignment(tgs, tgsavail, favail)
-    #     asgn.assign_unused(TARGET_TYPE_SCIENCE)
-    #
-    #     # Write out
-    #
-    #     #mtls = [self.input_mtl, self.input_std, self.input_sky]
-    #     write_assignment_ascii(tiles, asgn, outroot="out-test_io", single=True)
-    #
-    #     return
+        tgs = Targets()
+        load_target_file(tgs, input_mtl)
+        load_target_file(tgs, input_std)
+        load_target_file(tgs, input_sky)
 
+        # Create a hierarchical triangle mesh lookup of the targets positions
+        tree = TargetTree(tgs, 0.01)
 
-    # def test_full(self):
-    #     # if not self.has_data:
-    #     #     print("Test data not found- skipping")
-    #     #     return
-    #
-    #     # Read hardware properties and tiles
-    #     hw = load_hardware()
-    #     tiles = load_tiles(hw)
-    #
-    #     tgs = Targets()
-    #
-    #     # FIXME:  stop using the force option once we have new test files with
-    #     # correct bits.
-    #
-    #     # load_target_file(tgs, self.input_sky, typeforce=TARGET_TYPE_SKY)
-    #     # load_target_file(tgs, self.input_std, typeforce=TARGET_TYPE_STANDARD)
-    #     # load_target_file(tgs, self.input_mtl, typeforce=TARGET_TYPE_SCIENCE)
-    #
-    #     load_target_file(tgs, "/global/cscratch1/sd/kisner/desi/fiberassign/input/mtl_large.fits")
-    #     load_target_file(tgs, "/global/cscratch1/sd/kisner/desi/fiberassign/input/std_large.fits")
-    #     load_target_file(tgs, "/global/cscratch1/sd/kisner/desi/fiberassign/input/sky_large.fits")
-    #
-    #     # Create a hierarchical triangle mesh lookup of the targets positions
-    #     tree = TargetTree(tgs)
-    #
-    #     # Compute the targets available to each fiber for each tile.
-    #     tgsavail = TargetsAvailable(tgs, tiles, tree)
-    #
-    #     # Free the tree
-    #     del tree
-    #
-    #     # Compute the fibers on all tiles available for each target and sky
-    #     favail = FibersAvailable(tgsavail)
-    #
-    #     # Create assignment object
-    #     asgn = Assignment(tgs, tgsavail, favail)
-    #
-    #     # First-pass assignment of science targets
-    #     asgn.assign_unused(TARGET_TYPE_SCIENCE)
-    #
-    #     # outfile = "out-test_full-firstpass"
-    #     # write_assignment_ascii(tiles, asgn, outroot=outfile, single=True)
-    #
-    #     # Redistribute science targets
-    #     asgn.redistribute_science()
-    #
-    #     # outfile = "out-test_full-redist"
-    #     # write_assignment_ascii(tiles, asgn, outroot=outfile, single=True)
-    #
-    #     # Assign standards to unused fibers
-    #     asgn.assign_unused(TARGET_TYPE_STANDARD, 10)
-    #
-    #     # Assign sky to unused fibers
-    #     asgn.assign_unused(TARGET_TYPE_SKY, 40)
-    #     #
-    #     # # outfile = "out-test_full-stdsky_unused"
-    #     # # write_assignment_ascii(tiles, asgn, outroot=outfile, single=True)
-    #     #
-    #     # # Force assignment of sufficient standards
-    #     # asgn.assign_force(TARGET_TYPE_STANDARD, 10)
-    #     #
-    #     # # Force assignment of sufficient standards
-    #     # asgn.assign_force(TARGET_TYPE_SKY, 40)
-    #     #
-    #     # # outfile = "out-test_full-stdsky_force"
-    #     # # write_assignment_ascii(tiles, asgn, outroot=outfile, single=True)
-    #     #
-    #     # # Assign sky to unused fibers
-    #     # asgn.assign_unused(TARGET_TYPE_SKY)
-    #     #
-    #     # # Assign safe location to unused fibers
-    #     # asgn.assign_unused(TARGET_TYPE_SAFE)
-    #     #
-    #     # # outfile = "out-test_full-final"
-    #     # # write_assignment_ascii(tiles, asgn, outroot=outfile, single=True)
-    #
-    #     return
+        # Compute the targets available to each fiber for each tile.
+        hw = load_hardware()
+        tfile = os.path.join(sim_data_dir(), "footprint.fits")
+        sim_tiles(tfile)
+        tiles = load_tiles(hw, tiles_file=tfile)
+        tgsavail = TargetsAvailable(tgs, tiles, tree)
+
+        # Free the tree
+        del tree
+
+        # Compute the fibers on all tiles available for each target
+        favail = FibersAvailable(tgsavail)
+
+        # First pass assignment
+        asgn = Assignment(tgs, tgsavail, favail)
+        asgn.assign_unused(TARGET_TYPE_SCIENCE)
+
+        # Write out
+        write_assignment_ascii(tiles, asgn, outdir=sim_data_dir(),
+                               out_prefix="test_io_ascii", single=True)
+        return
+
+    def test_full(self):
+        np.random.seed(123456789)
+        input_mtl = os.path.join(sim_data_dir(), "mtl.fits")
+        input_std = os.path.join(sim_data_dir(), "standards.fits")
+        input_sky = os.path.join(sim_data_dir(), "sky.fits")
+        nscience = sim_targets(input_mtl, TARGET_TYPE_SCIENCE, 0)
+        nstd = sim_targets(input_std, TARGET_TYPE_STANDARD, nscience)
+        nsky = sim_targets(input_sky, TARGET_TYPE_SKY, (nscience + nstd))
+
+        tgs = Targets()
+        load_target_file(tgs, input_mtl)
+        load_target_file(tgs, input_std)
+        load_target_file(tgs, input_sky)
+
+        # Create a hierarchical triangle mesh lookup of the targets positions
+        tree = TargetTree(tgs, 0.01)
+
+        # Compute the targets available to each fiber for each tile.
+        hw = load_hardware()
+        tfile = os.path.join(sim_data_dir(), "footprint.fits")
+        sim_tiles(tfile)
+        tiles = load_tiles(hw, tiles_file=tfile)
+        tgsavail = TargetsAvailable(tgs, tiles, tree)
+
+        # Free the tree
+        del tree
+
+        # Compute the fibers on all tiles available for each target
+        favail = FibersAvailable(tgsavail)
+
+        # Create assignment object
+        asgn = Assignment(tgs, tgsavail, favail)
+
+        # First-pass assignment of science targets
+        asgn.assign_unused(TARGET_TYPE_SCIENCE)
+
+        # Redistribute science targets
+        asgn.redistribute_science()
+
+        # Assign standards, 10 per petal
+        asgn.assign_unused(TARGET_TYPE_STANDARD, 10)
+        asgn.assign_force(TARGET_TYPE_STANDARD, 10)
+
+        # Assign sky to unused fibers, up to 40 per petal
+        asgn.assign_unused(TARGET_TYPE_SKY, 40)
+        asgn.assign_force(TARGET_TYPE_SKY, 40)
+
+        # If there are any unassigned fibers, try to place them somewhere.
+        asgn.assign_unused(TARGET_TYPE_SCIENCE)
+        asgn.assign_unused(TARGET_TYPE_SKY)
+
+        outdir = os.path.join(sim_data_dir(), "test_full")
+        if os.path.isdir(outdir):
+            shutil.rmtree(outdir)
+        os.makedirs(outdir)
+
+        write_assignment_fits(tiles, asgn, outdir=outdir,
+                              out_prefix="fiberassign")
+
+        plotdir = "{}_plots".format(outdir)
+        if os.path.isdir(plotdir):
+            shutil.rmtree(plotdir)
+        os.makedirs(plotdir)
+
+        plot_tiles(hw, tiles, resultdir=outdir, result_prefix="fiberassign",
+                   plotdir=plotdir, petals=[0])
+
+        qa_tiles(hw, tiles, resultdir=outdir, result_prefix="fiberassign")
+
+        qadata = None
+        with open(os.path.join(outdir, "qa.json"), "r") as f:
+            qadata = json.load(f)
+
+        for tile, props in qadata.items():
+            self.assertEqual(4500, props["assign_science"])
+            self.assertEqual(100, props["assign_std"])
+            self.assertEqual(400, props["assign_sky"])
+            self.assertTrue(len(props["unassigned"]) == 0)
+
+        plot_qa(qadata, "{}_qa".format(outdir), outformat="svg",
+                fiber_labels=True)
+
+        return

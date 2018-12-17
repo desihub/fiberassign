@@ -170,7 +170,7 @@ def write_assignment_ascii(tiles, asgn, outdir=".", out_prefix="fiberassign",
     # Go through the assignment, one tile at a time.  For each tile, get the
     # best assignment and potential targets.
 
-    tileids = tiles.id
+    tileids = asgn.tiles_assigned()
 
     outroot = os.path.join(outdir, out_prefix)
 
