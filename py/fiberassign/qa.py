@@ -74,7 +74,7 @@ def qa_tile(hw, tile_id, tgs, tile_assign, tile_avail):
 
 def qa_tile_file(hw, inroot, old, params):
     (tile_id, ) = params
-    log = Logger()
+    log = Logger.get()
 
     log.info("Processing tile {}".format(tile_id))
 
@@ -98,7 +98,7 @@ def qa_tile_file(hw, inroot, old, params):
 
 def qa_tiles(hw, tiles, resultdir=".", result_prefix="fiberassign",
              qa_out=None, old=False):
-    log = Logger()
+    log = Logger.get()
 
     foundtiles = list()
     for root, dirs, files in os.walk(resultdir):

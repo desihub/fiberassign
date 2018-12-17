@@ -170,7 +170,7 @@ def main():
     write_assignment_fits(tiles, asgn, outdir=outdir,
                           out_prefix="fiberassign")
 
-    gt = GlobalTimers()
+    gt = GlobalTimers.get()
     gt.report()
 
     return

@@ -104,11 +104,11 @@ PYBIND11_MODULE(_internal, m) {
         This class stores timers that can be started / stopped anywhere in
         the code to accumulate the total time for different operations.
         )")
-        .def(py::init([](){
+        .def("get", [](){
             return std::unique_ptr<fba::GlobalTimers, py::nodelete>
                 (&fba::GlobalTimers::get());
             }
-        ))
+        )
         .def("start", &fba::GlobalTimers::start)
         .def("stop", &fba::GlobalTimers::stop)
         .def("seconds", &fba::GlobalTimers::seconds)
@@ -123,11 +123,11 @@ PYBIND11_MODULE(_internal, m) {
 
         This class mimics the python logger in C++ and respects DESI_LOGLEVEL.
         )")
-        .def(py::init([](){
+        .def("get", [](){
             return std::unique_ptr<fba::Logger, py::nodelete>
                 (&fba::Logger::get());
             }
-        ))
+        )
         .def("debug", &fba::Logger::debug, R"(
             Print a DEBUG level message.
         )")
@@ -291,7 +291,7 @@ PYBIND11_MODULE(_internal, m) {
                     y_mm, z_mm, status);
             },
             [](py::tuple t) { // __setstate__
-                return fba::Hardware::pshr(new fba::Hardware(
+                return new fba::Hardware(
                     t[0].cast<std::vector<int32_t> >(),
                     t[1].cast<std::vector<int32_t> >(),
                     t[2].cast<std::vector<int32_t> >(),
@@ -299,7 +299,7 @@ PYBIND11_MODULE(_internal, m) {
                     t[4].cast<std::vector<double> >(),
                     t[5].cast<std::vector<double> >(),
                     t[6].cast<std::vector<int32_t> >()
-                ));
+                );
             }
         ));
 

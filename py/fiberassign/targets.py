@@ -149,7 +149,7 @@ def load_target_file(tgs, tfile, typeforce=None, typecol="DESI_TARGET",
     tm = Timer()
     tm.start()
 
-    log = Logger()
+    log = Logger.get()
 
     # Open file
     fits = fitsio.FITS(tfile, mode="r")

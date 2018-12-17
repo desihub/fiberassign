@@ -69,7 +69,7 @@ def write_assignment_fits_tile(outroot, tgs, tile_id, tile_ra, tile_dec,
             target IDs for every fiber.
 
     """
-    log = Logger()
+    log = Logger.get()
     # The recarray dtype for the assignment and available targets
     assign_dtype = np.dtype([(x, y) for x, y in assign_result_columns.items()])
     avail_dtype = np.dtype([("FIBER", "i4"), ("TARGETID", "i8")])
@@ -183,7 +183,7 @@ def write_assignment_ascii(tiles, asgn, outdir=".", out_prefix="fiberassign",
 
 
     """
-    log = Logger()
+    log = Logger.get()
     # Go through the assignment, one tile at a time.  For each tile, get the
     # best assignment and potential targets.
 
@@ -218,7 +218,7 @@ def read_assignment_fits_tile_old(outroot, params):
     """Read in results from the old format.
     """
     (tile_id,) = params
-    log = Logger()
+    log = Logger.get()
     # Output tile file
     tfile = "{}_{:05d}.fits".format(outroot, tile_id)
     if not os.path.isfile(tfile):
@@ -274,7 +274,7 @@ def read_assignment_fits_tile(outroot, params):
     """Read in results.
     """
     (tile_id,) = params
-    log = Logger()
+    log = Logger.get()
     # Output tile file
     tfile = "{}_{:06d}.fits".format(outroot, tile_id)
     if not os.path.isfile(tfile):
@@ -328,7 +328,7 @@ def merge_results_tile(outroot, out_dtype, params):
     """Merge results for one tile.
     """
     (tile_id,) = params
-    log = Logger()
+    log = Logger.get()
     # file names
     infile = "{}_{:06d}.fits".format(outroot, tile_id)
     outfile = "{}_all_{:06d}.fits".format(outroot, tile_id)
@@ -381,7 +381,7 @@ def merge_results(targetfiles, resultdir=".", result_prefix="fiberassign",
     """Merge target files and assignment output.
     """
     # import multiprocessing as mp
-    log = Logger()
+    log = Logger.get()
 
     # Find all the per-tile files and get the tile IDs
     tiles = list()

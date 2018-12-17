@@ -30,7 +30,7 @@ def load_hardware(fiberpos_file=None, gfa_file=None, rundate=None,
     describing other properties of the fiber positioners, etc.
 
     """
-    log = Logger()
+    log = Logger.get()
 
     # Read the fiber positioner data
     if fiberpos_file is None:
