@@ -46,6 +46,7 @@ parser.add_argument("--nstarpetal", type=int, help="number of standard stars per
 parser.add_argument("--nskypetal", type=int, help="number of sky fibers per petal (default=40)", default=40)
 
 parser.add_argument("--nocleanup", dest='cleanup', default=True, action='store_false')
+parser.add_argument("--overwrite", action='store_true', help='overwrite pre-existing output files')
 parser.add_argument("--version",help='Print C code version and exit',
                     action='version',version='{:s}'.format(version))
 
@@ -119,7 +120,7 @@ def is_file_missing(filename):
         sys.exit(1)
 
 # Check if output files already exist
-def check_existing_files(checkdir):
+def check_existing_files(checkdir, overwrite):
     existing_files = False
     with open(args.surveytiles) as survey:
         for line in survey:
@@ -127,13 +128,17 @@ def check_existing_files(checkdir):
             if line.startswith('#') or len(line)==0:
                 continue
             tileid = int(line)
-            tilefile = os.path.join(checkdir, 'tile_{:05d}.fits'.format(tileid))
-            if os.path.exists(tilefile):
-                existing_files = True
-                print('ERROR: {} already exists'.format(tilefile))
+            for prefix in ('tile_', 'tile-', 'gfa-'):
+                tilefile = os.path.join(checkdir, '{}{:05d}.fits'.format(prefix, tileid))
+                if os.path.exists(tilefile):
+                    if overwrite:
+                        os.remove(tilefile)
+                    else:
+                        existing_files = True
+                        print('ERROR: {} already exists'.format(tilefile))
 
     if existing_files:
-        print('Remove pre-existing tile files or specify different --outdir')
+        print('Remove pre-existing tile files, use --overwrite, or specify different --outdir')
         sys.exit(1)
 
 def rewrite_fiberpos(fiberpos_fits_file, postype='POS'):
@@ -174,8 +179,8 @@ if not os.path.exists(tmp_sky_dir):
 if not os.path.exists(tmp_gfa_dir):
     os.makedirs(tmp_gfa_dir)
 
-check_existing_files(args.outdir)
-check_existing_files(tmp_targets_dir)
+check_existing_files(args.outdir, args.overwrite)
+check_existing_files(tmp_targets_dir, args.overwrite)
 
 fiberassign_command ="fiberassign_exec --mtl {mtl}  --sky {sky} --stdstar {stdstar}  --fibstatusfile {fiberstatusfile}  \
             --outdir {outdir} \
@@ -239,30 +244,57 @@ if args.gfafile is not None:
     gfa_data = fitsio.read(args.gfafile)
     footprint = fitsio.read(args.footprint)
 
+    #- Trim to just the tiles that we are using here
+    ii = np.in1d(footprint['TILEID'], np.array(tile_id))
+    tiles = footprint[ii]
     
     #- Pre-filter what GFA targets cover what tiles with some buffer.
     #- find_points_in_tiles returns a list of lists;
     #- convert to dictionary of lists keyed by tileid
+    print('Finding overlap of {} GFA targets on {} tiles'.format(
+        len(gfa_data), len(tiles)))
     gfa_tile_indices = dict()
-    ii = desimodel.footprint.find_points_in_tiles(footprint, gfa_data['RA'], gfa_data['DEC'], radius=1.8)
-    for i, tileid in enumerate(footprint['TILEID']):
+    ii = desimodel.footprint.find_points_in_tiles(tiles, gfa_data['RA'], gfa_data['DEC'], radius=1.8)
+    for i, tileid in enumerate(tiles['TILEID']):
         gfa_tile_indices[tileid] = ii[i]
 
-    print('selecting computed tiles')
-    ii = np.in1d(footprint['TILEID'], np.array(tile_id))
-    tiles = footprint[ii]
+    print('Writing temporary GFA files')
     for telra, teldec, tileid in zip(tiles['RA'], tiles['DEC'], tiles['TILEID']):
-        gfaout = os.path.join(tmp_gfa_dir, 'tile_{:05d}.fits'.format(tileid))
+        gfaout = os.path.join(tmp_gfa_dir, 'gfa-{:05d}.fits'.format(tileid))
         gfa_data_tmp = gfa.targets_on_gfa(telra, teldec, gfa_data[gfa_tile_indices[tileid]])
         t = Table(gfa_data_tmp)
+
+        for oldname, newname in [
+                ('TYPE', 'MORPHTYPE'),
+                ('RA', 'TARGET_RA'),
+                ('DEC', 'TARGET_DEC'),
+                ('RA_IVAR', 'TARGET_RA_IVAR'),
+                ('DEC_IVAR', 'TARGET_DEC_IVAR'),
+            ]:
+            if oldname in t.colnames:
+                t.rename_column(oldname, newname)
+
+        #- Add flags for ETC/GUIDE/FOCUS (0==good)
+        flag = np.ones(len(t), dtype='i2')
+        ii = (t['MORPHTYPE'] == 'PSF') | (t['MORPHTYPE'] == 'PSF ')
+        if np.count_nonzero(ii) == 0:
+            print('ERROR: no good GFA targets for '
+                  'ETC/GUIDE/FOCUS on tile {}'.format(tileid))
+
+        flag[ii] = 0
+        t['ETC_FLAG'] = flag
+        t['GUIDE_FLAG'] = flag
+        t['FOCUS_FLAG'] = flag
+
         t.write(gfaout, overwrite=True)
 
-
-    gfas = glob.glob(os.path.join(tmp_gfa_dir,'tile_*.fits'))
+    gfas = glob.glob(os.path.join(tmp_gfa_dir,'gfa-*.fits'))
     gfa_tile_id = {}
     for gfa_file in gfas:
-        fileid = gfa_file.split('/')[-1].split('_')[-1].split('.')[0]
+        fileid = gfa_file.split('/')[-1].split('-')[-1].split('.')[0]
         gfa_tile_id[fileid] = gfa_file
+
+    print('Done with GFAs')
 
 def add_potential_data_columns(potential_data, fiberassign_data):
     potential_data.dtype.names = tuple(['TARGETID'])
@@ -282,7 +314,22 @@ def add_potential_data_columns(potential_data, fiberassign_data):
     return potential_data
     
 
-def add_fiber_data_columns(tile_data, fiberassign_data, mtl_data, sky_data, positioner_data):
+def add_fiber_data_columns(fiberassign_data, mtl_data,
+        positioner_data, addcolumns=None):
+    '''
+    Augments fiberassing_data table with new columns
+
+    Args:
+        fiberassign_data: original table from fiber assignment
+        mtl_data: Merged target list table covering this tile
+        positioner_data: positioner locations table
+
+    Options:
+        addcolumns = list of new column names to add from mtl; default to all
+
+    Returns table with new columns
+    '''
+
     n_objects = len(fiberassign_data)
 
     # update DESI_TARGET for unassigned / broken / stuck fibers
@@ -290,7 +337,6 @@ def add_fiber_data_columns(tile_data, fiberassign_data, mtl_data, sky_data, posi
     fiberassign_data['DESI_TARGET'][ii] = desi_mask.NO_TARGET
     
     #print('  adding new columns by computation')
-    #print('TILE info', tile_data['RA'], tile_data['DEC'])
     q, s = desimodel.focalplane.xy2qs(fiberassign_data['XFOCAL_DESIGN'], fiberassign_data['YFOCAL_DESIGN'])
     fiberassign_data = np.lib.recfunctions.append_fields(fiberassign_data, 'DESIGN_Q', q, dtypes=np.float32)
     fiberassign_data = np.lib.recfunctions.append_fields(fiberassign_data, 'DESIGN_S', s, dtypes=np.float32)
@@ -317,8 +363,11 @@ def add_fiber_data_columns(tile_data, fiberassign_data, mtl_data, sky_data, posi
     fiberassign_data = np.lib.recfunctions.append_fields(fiberassign_data, 'DEVICE_LOC', positioner_data[ii]['DEVICE'],dtypes=np.int32)   
     
     #print('  adding columns from mtl data')
+    if addcolumns is None:
+        addcolumns = mtl_data.dtype.names
+
     columns = list()
-    for c in mtl_data.dtype.names:
+    for c in addcolumns:
         if (c not in fiberassign_data.dtype.names) or c == 'TARGETID':
             columns.append(c)
 
@@ -331,6 +380,20 @@ def add_fiber_data_columns(tile_data, fiberassign_data, mtl_data, sky_data, posi
     
     return np.array(fiberassign_data)
 
+def add_sky_data_columns(sky_data, positioner_data):
+    q, s = desimodel.focalplane.xy2qs(sky_data['XFOCAL_DESIGN'], sky_data['YFOCAL_DESIGN'])
+    sky_data = np.lib.recfunctions.append_fields(sky_data, 'DESIGN_Q', q, dtypes=np.float32)
+    sky_data = np.lib.recfunctions.append_fields(sky_data, 'DESIGN_S', s, dtypes=np.float32)
+
+    isPOS = (positioner_data['DEVICE_TYPE']==b'ETC') | (positioner_data['DEVICE_TYPE']=='ETC')
+    positioner_data = positioner_data[isPOS]
+    positioner_data = np.sort(positioner_data, order='FIBER')
+    ii = np.in1d(positioner_data['FIBER'], sky_data['FIBER'])
+
+    sky_data = np.lib.recfunctions.append_fields(sky_data, 'PETAL_LOC', positioner_data[ii]['PETAL'], dtypes=np.int16)
+    sky_data = np.lib.recfunctions.append_fields(sky_data, 'DEVICE_LOC', positioner_data[ii]['DEVICE'], dtypes=np.int32)
+
+    return np.array(sky_data)
 
 def make_target_hdu_data(fiberassign_data, mtl_data):
     new_target_data = fiberassign_data[['TARGETID']]
@@ -347,11 +410,38 @@ def make_target_hdu_data(fiberassign_data, mtl_data):
     
     return np.array(new_target_data)
 
+def rename_columns(data, oldnew):
+    '''
+    Modified column names in data
 
+    Args:
+        data: numpy structured array
+        oldnew: list of tuples (oldname, newname)
+
+    Modifies `data` column names in-place; does not change data
+
+    Note: it is ok if an oldname isn't in the data column names
+    '''
+    colnames = list(data.dtype.names)
+    for oldname, newname in oldnew:
+        if oldname in colnames:
+            i = colnames.index(oldname)
+            colnames[i] = newname
+
+    data.dtype.names = tuple(colnames)
+
+#-------------------------------------------------------------------------
 mtl_data = fitsio.read(args.mtl)
 sky_data = fitsio.read(args.sky)
 positioner_data = fitsio.read(args.positioners)
 footprint = fitsio.read(args.footprint)
+
+#- Load DESI tiles to provide header keywords; convert to dict for fast lookup
+tiles = desimodel.io.load_tiles()
+tileinfo = dict()
+for i in range(len(tiles)):
+    tileid = tiles['TILEID'][i]
+    tileinfo[tileid] = tiles[i]
 
 #- Pre-filter what targets cover what tiles with some buffer.
 #- find_points_in_tiles returns a list of lists;
@@ -363,14 +453,18 @@ for i, tileid in enumerate(footprint['TILEID']):
 
 for sky_id in sky_tile_id.keys():
     if sky_id in target_tile_id.keys():
+        tileid = int(sky_id)
         print('rewriting tilefile for tileid {}'.format(sky_id))
         sky_data = fitsio.read(sky_tile_id[sky_id])
         fiber_data = fitsio.read(target_tile_id[sky_id], ext=1)
         potential_data = fitsio.read(target_tile_id[sky_id], ext=2)
 
         target_data = make_target_hdu_data(fiber_data, mtl_data[mtl_tile_indices[int(sky_id)]])
-        tile_data  = footprint[footprint['TILEID']==np.int(sky_id)]
-        fiber_data = add_fiber_data_columns(tile_data, fiber_data, mtl_data[mtl_tile_indices[int(sky_id)]], sky_data, positioner_data)
+        fiber_data = add_fiber_data_columns(fiber_data, mtl_data[mtl_tile_indices[int(sky_id)]], positioner_data)
+
+        sky_data = add_sky_data_columns(sky_data, positioner_data)
+        ii = np.argsort(sky_data['FIBER'])
+        sky_data = sky_data[ii]
 
         #- The joins in make_target_hdu_data and add_fiber_data_columns
         #- sort by TARGETID; get back to FIBERID sorting to be able to
@@ -385,8 +479,7 @@ for sky_id in sky_tile_id.keys():
         potential_data = add_potential_data_columns(potential_data, fiber_data)
 
         #- Rename some columns (leave C++ alone; it is being refactored)
-        colnames = list(fiber_data.dtype.names)
-        for oldname, newname in [
+        oldnew = [
             #- target catalog input renames
             ('RA', 'TARGET_RA'),
             ('DEC', 'TARGET_DEC'),
@@ -396,22 +489,41 @@ for sky_id in sky_tile_id.keys():
             ('XFOCAL_DESIGN', 'DESIGN_X'),
             ('YFOCAL_DESIGN', 'DESIGN_Y'),
             ('FIBERMASK', 'FIBERSTATUS'),
-            ]:
-            if oldname in colnames:
-                i = colnames.index(oldname)
-                colnames[i] = newname
+            ]
+        rename_columns(fiber_data, oldnew)
+        rename_columns(sky_data, oldnew)
 
-        fiber_data.dtype.names = tuple(colnames)
+        header = list()
+        header.append(dict(name='REQRA', value=tileinfo[tileid]['RA'],
+            comment = 'Requested pointing RA [degrees]'))
+        header.append(dict(name='REQDEC', value=tileinfo[tileid]['DEC'],
+            comment = 'Requested pointing declination [degrees]'))
+        header.append(dict(name='TILERA', value=tileinfo[tileid]['RA'],
+            comment = 'Tile RA [degrees]'))
+        header.append(dict(name='TILEDEC', value=tileinfo[tileid]['DEC'],
+            comment = 'Tile declination [degrees]'))
+        header.append(dict(name='FIELDNUM', value=0,
+            comment = 'Field configuration number'))
+        header.append(dict(name='TILEID', value=sky_id,
+            comment = 'DESI tile ID'))
 
-        tileout = os.path.join(args.outdir, 'tile_{}.fits'.format(sky_id))
-        fitsio.write(tileout, fiber_data, extname='FIBERASSIGN', clobber=True)
-        fitsio.write(tileout, potential_data, extname='POTENTIAL')
-        fitsio.write(tileout, sky_data, extname='SKYETC')
-        fitsio.write(tileout, target_data, extname='TARGETS')
+        #- Blank HDU 0 with just header keywords
+        tileout = os.path.join(args.outdir, 'tile-{}.fits'.format(sky_id))
+        fitsio.write(tileout, None, extname='PRIMARY',
+                     header=header, clobber=True)
 
+        #- Write FIBERASSIGN table with the same header to HDU 1
+        fitsio.write(tileout, fiber_data, extname='FIBERASSIGN', header=header)
+
+        #- Proceed with other HDUs
         if args.gfafile is not None:
             gfa_data = fitsio.read(gfa_tile_id[sky_id])
-            fitsio.write(tileout, gfa_data, extname='GFA')
+            fitsio.write(tileout, gfa_data, extname='GFA_TARGETS')
+
+        fitsio.write(tileout, sky_data, extname='SKY_MONITOR')
+        fitsio.write(tileout, target_data, extname='TARGETS')
+        fitsio.write(tileout, potential_data, extname='POTENTIAL_ASSIGNMENTS')
+
 
 # remove tmp files
 if args.cleanup:
