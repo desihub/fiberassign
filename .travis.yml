@@ -70,11 +70,13 @@ matrix:
         - MATRIX_EVAL="export CC=$(which gcc-7) && export CXX=$(which g++-7)"
     - os: osx
       osx_image: xcode9.4
+      language: generic
       addons:
         homebrew:
           packages:
             - git
             - cfitsio
+            - python3
       env:
         - MATRIX_EVAL="export CC=$(which clang) && export CXX=$(which clang++)"
 
@@ -103,23 +105,23 @@ before_install:
     - echo "  CC = ${CC} $(${CC} -dumpversion)"
     - echo "  CXX = ${CXX} $(${CXX} -dumpversion)"
     # Install binary python dependencies.
-    - pip install -q $PIP_BINARY
+    - pip3 install -q $PIP_BINARY
     # Install from source (use quotes here to escape colon from yaml)
-    - "pip install --no-binary :all: $PIP_SOURCE"
+    - "pip3 install --no-binary :all: $PIP_SOURCE"
     # Install DESI dependencies
-    - for p in $DESIHUB_PIP; do r=$(echo $p | cut -d= -f1); v=$(echo $p | cut -d= -f2); pip install git+https://github.com/desihub/${r}.git@${v}#egg=${r}; done
+    - for p in $DESIHUB_PIP; do r=$(echo $p | cut -d= -f1); v=$(echo $p | cut -d= -f2); pip3 install git+https://github.com/desihub/${r}.git@${v}#egg=${r}; done
     # Download desimodel data if we are running tests (and not just
     # checking documentation builds).
     - export DESIMODEL=${HOME}/desimodel/${DESIMODEL_VERSION}
     - mkdir -p ${DESIMODEL}
-    - if [[ $SETUP_CMD == test* ]]; then svn export https://desi.lbl.gov/svn/code/desimodel/${DESIMODEL_DATA}/data ${DESIMODEL}/data; fi
+    - svn export https://desi.lbl.gov/svn/code/desimodel/${DESIMODEL_DATA}/data ${DESIMODEL}/data
 
 # Install fiberassign
 
 install:
-    - python setup.py install
+    - python3 setup.py install
 
 # Run tests
 
 script:
-    - python setup.py test
+    - python3 setup.py test
