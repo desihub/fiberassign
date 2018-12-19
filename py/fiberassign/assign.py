@@ -449,7 +449,12 @@ def merge_results(targetfiles, result_dir=".", result_prefix="fiberassign",
             extra = [x for x in columns
                      if x not in assign_result_columns.keys()]
             dcols = [(x, y) for x, y in assign_result_columns.items()]
-            dcols.extend([(x, tgview.dtype[x].str) for x in extra])
+            for col in extra:
+                subd = tgview.dtype[col].subdtype
+                if subd is None:
+                    dcols.extend([(col, tgview.dtype[col].str)])
+                else:
+                    dcols.extend([(col, subd[0], subd[1])])
             out_dtype = np.dtype(dcols)
 
     # For each tile, find the target IDs used.  Construct the output recarray
