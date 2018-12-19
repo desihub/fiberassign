@@ -167,7 +167,7 @@ def main():
         os.makedirs(outdir)
 
     # Write output
-    write_assignment_fits(tiles, asgn, outdir=outdir,
+    write_assignment_fits(tiles, asgn, out_dir=outdir,
                           out_prefix="fiberassign")
 
     gt = GlobalTimers.get()

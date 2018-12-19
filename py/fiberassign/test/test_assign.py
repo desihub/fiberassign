@@ -72,8 +72,8 @@ class TestAssign(unittest.TestCase):
         asgn.assign_unused(TARGET_TYPE_SCIENCE)
 
         # Write out
-        write_assignment_ascii(tiles, asgn, outdir=sim_data_dir(),
-                               out_prefix="test_io_ascii", single=True)
+        write_assignment_ascii(tiles, asgn, out_dir=sim_data_dir(),
+                               out_prefix="test_io_ascii")
         return
 
     def test_full(self):
@@ -132,7 +132,7 @@ class TestAssign(unittest.TestCase):
             shutil.rmtree(outdir)
         os.makedirs(outdir)
 
-        write_assignment_fits(tiles, asgn, outdir=outdir,
+        write_assignment_fits(tiles, asgn, out_dir=outdir,
                               out_prefix="fiberassign")
 
         plotdir = "{}_plots".format(outdir)
@@ -140,10 +140,10 @@ class TestAssign(unittest.TestCase):
             shutil.rmtree(plotdir)
         os.makedirs(plotdir)
 
-        plot_tiles(hw, tiles, resultdir=outdir, result_prefix="fiberassign",
-                   plotdir=plotdir, petals=[0])
+        plot_tiles(hw, tiles, result_dir=outdir, result_prefix="fiberassign",
+                   plot_dir=plotdir, petals=[0])
 
-        qa_tiles(hw, tiles, resultdir=outdir, result_prefix="fiberassign")
+        qa_tiles(hw, tiles, result_dir=outdir, result_prefix="fiberassign")
 
         qadata = None
         with open(os.path.join(outdir, "qa.json"), "r") as f:

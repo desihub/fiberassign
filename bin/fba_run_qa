@@ -95,7 +95,7 @@ def main():
                     pass
     tiles = load_tiles(hw, tiles_file=args.footprint, select=tileselect)
 
-    qa_tiles(hw, tiles, resultdir=args.dir, result_prefix=args.prefix,
+    qa_tiles(hw, tiles, result_dir=args.dir, result_prefix=args.prefix,
              qa_out=outfile, old=args.old)
 
     return

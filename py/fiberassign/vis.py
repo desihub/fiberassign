@@ -237,12 +237,12 @@ def plot_assignment_tile_file(inroot, outroot, fibers, old, params):
     return
 
 
-def plot_tiles(hw, tiles, resultdir=".", result_prefix="fiberassign",
-               plotdir=".", petals=None, old=False):
+def plot_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign",
+               plot_dir=".", petals=None, old=False):
     log = Logger.get()
     # Find all the per-tile files and get the tile IDs
     foundtiles = list()
-    for root, dirs, files in os.walk(resultdir):
+    for root, dirs, files in os.walk(result_dir):
         for f in files:
             mat = re.match(r"{}_(\d+).fits".format(result_prefix), f)
             if mat is not None:
@@ -251,10 +251,10 @@ def plot_tiles(hw, tiles, resultdir=".", result_prefix="fiberassign",
         break
     log.info("Found {} fiberassign tile files".format(len(foundtiles)))
 
-    inroot = os.path.join(resultdir, result_prefix)
-    if not os.path.isdir(plotdir):
-        os.makedirs(plotdir)
-    outroot = os.path.join(plotdir, "fiberassign")
+    inroot = os.path.join(result_dir, result_prefix)
+    if not os.path.isdir(plot_dir):
+        os.makedirs(plot_dir)
+    outroot = os.path.join(plot_dir, "fiberassign")
 
     fibers = None
     if petals is None:

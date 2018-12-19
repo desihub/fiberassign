@@ -103,8 +103,8 @@ def main():
     if args.petals is not None:
         petals = [int(x) for x in args.petals.split(",")]
 
-    plot_tiles(hw, tiles, resultdir=args.dir, result_prefix=args.prefix,
-               plotdir=outdir, petals=petals, old=args.old)
+    plot_tiles(hw, tiles, result_dir=args.dir, result_prefix=args.prefix,
+               plot_dir=outdir, petals=petals, old=args.old)
 
     return
 

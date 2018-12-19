@@ -96,12 +96,12 @@ def qa_tile_file(hw, inroot, old, params):
     return qa_data
 
 
-def qa_tiles(hw, tiles, resultdir=".", result_prefix="fiberassign",
+def qa_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign",
              qa_out=None, old=False):
     log = Logger.get()
 
     foundtiles = list()
-    for root, dirs, files in os.walk(resultdir):
+    for root, dirs, files in os.walk(result_dir):
         for f in files:
             mat = re.match(r"{}_(\d+).fits".format(result_prefix), f)
             if mat is not None:
@@ -111,9 +111,9 @@ def qa_tiles(hw, tiles, resultdir=".", result_prefix="fiberassign",
     log.info("Found {} fiberassign tile files".format(len(foundtiles)))
 
     if qa_out is None:
-        qa_out = os.path.join(resultdir, "qa.json")
+        qa_out = os.path.join(result_dir, "qa.json")
 
-    inroot = os.path.join(resultdir, result_prefix)
+    inroot = os.path.join(result_dir, result_prefix)
     qa_tile = partial(qa_tile_file, hw, inroot, old)
 
     avail_tiles = np.array(tiles.id)

@@ -44,7 +44,7 @@ def main():
         coltest = args.columns.split(",")
         columns = [x for x in coltest if x != "TARGETID"]
 
-    merge_results(args.targets, resultdir=args.dir,
+    merge_results(args.targets, result_dir=args.dir,
                   result_prefix=args.prefix, columns=columns)
 
     return

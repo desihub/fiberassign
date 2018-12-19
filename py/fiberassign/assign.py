@@ -142,8 +142,19 @@ def write_assignment_fits_tile(outroot, tgs, tile_id, tile_ra, tile_dec,
     return
 
 
-def write_assignment_fits(tiles, asgn, outdir=".", out_prefix="fiberassign"):
-    """Write out results in FITS format.
+def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fiberassign"):
+    """Write out assignment results in FITS format.
+
+    For each tile, all available targets (not only the assigned targets) and
+    their properties are written to the first HDU.  The second HDU contains
+    one row for every fiber and target available to that fiber.
+
+    Args:
+        tiles (Tiles):  The Tiles object containing the properties of each
+            tile.
+        asgn (Assignment):  The assignment object.
+        out_dir (str):  The output directory for writing per-tile files.
+        out_prefix (str):  The output file name prefix.
 
     """
     tm = Timer()
@@ -161,7 +172,7 @@ def write_assignment_fits(tiles, asgn, outdir=".", out_prefix="fiberassign"):
     tilera = tiles.ra
     tiledec = tiles.dec
 
-    outroot = os.path.join(outdir, out_prefix)
+    outroot = os.path.join(out_dir, out_prefix)
 
     for tid in tileids:
         write_assignment_fits_tile(outroot, tgs, tid, tilera[tileorder[tid]],
@@ -175,12 +186,18 @@ def write_assignment_fits(tiles, asgn, outdir=".", out_prefix="fiberassign"):
     return
 
 
-def write_assignment_ascii(tiles, asgn, outdir=".", out_prefix="fiberassign",
-                           single=False):
-    """Write assignment to text file(s).
+def write_assignment_ascii(tiles, asgn, out_dir=".", out_prefix="fiberassign"):
+    """Write out assignment results in ASCII format.
+
+    For each tile, only the final assignment to each tile is written out.  For
+    the full information, including available targets, use the FITS format.
 
     Args:
-
+        tiles (Tiles):  The Tiles object containing the properties of each
+            tile.
+        asgn (Assignment):  The assignment object.
+        out_dir (str):  The output directory for writing per-tile files.
+        out_prefix (str):  The output file name prefix.
 
     """
     log = Logger.get()
@@ -188,29 +205,33 @@ def write_assignment_ascii(tiles, asgn, outdir=".", out_prefix="fiberassign",
     # best assignment and potential targets.
 
     tileids = asgn.tiles_assigned()
+    tileorder = tiles.order
+    tilera = tiles.ra
+    tiledec = tiles.dec
+    # Target properties
+    tgs = asgn.targets()
 
-    outroot = os.path.join(outdir, out_prefix)
+    outroot = os.path.join(out_dir, out_prefix)
 
-    if single:
-        outfile = "{}.txt".format(outroot)
-        with open(outfile, "w") as f:
-            for t in tileids:
-                tdata = asgn.tile_fiber_target(t)
-                nfiber = len(tdata)
-                if nfiber > 0:
-                    log.debug("Writing tile {}".format(t))
-                    for fid in sorted(tdata.keys()):
-                        f.write("{} {} {}\n".format(t, fid, tdata[fid]))
-    else:
-        for t in tileids:
-            tdata = asgn.tile_fiber_target(t)
-            nfiber = len(tdata)
-            tfile = "{}_{}.txt".format(outroot, t)
-            if nfiber > 0:
-                log.debug("Writing tile {}".format(t))
-                with open(tfile, "w") as f:
-                    for fid in sorted(tdata.keys()):
-                        f.write("{} {}\n".format(fid, tdata[fid]))
+    for t in tileids:
+        tdata = asgn.tile_fiber_target(t)
+        nfiber = len(tdata)
+        tfile = "{}_{}.txt".format(outroot, t)
+        if nfiber > 0:
+            log.debug("Writing tile {}".format(t))
+            with open(tfile, "w") as f:
+                f.write("# TILE_RA = {}\n".format(tilera[tileorder[t]]))
+                f.write("# TILE_DEC = {}\n".format(tiledec[tileorder[t]]))
+                f.write("#\n")
+                f.write("# FIBER  TARGETID  RA  DEC  PRIORITY  "
+                        "SUBPRIORITY  OBSCONDITIONS  NUMOBS_MORE  FBATYPE\n")
+                for fid in sorted(tdata.keys()):
+                    tgid = tdata[fid]
+                    tg = tgs.get(tgid)
+                    f.write("{:d} {:d} {:.6f} {:.6f}\n"
+                            .format(fid, tgid, tg.ra, tg.dec, tg.priority,
+                                    tg.subpriority, tg.obscond, tg.obs_remain,
+                                    tg.type))
     return
 
 
@@ -376,7 +397,7 @@ def merge_results_tile(outroot, out_dtype, params):
     return
 
 
-def merge_results(targetfiles, resultdir=".", result_prefix="fiberassign",
+def merge_results(targetfiles, result_dir=".", result_prefix="fiberassign",
                   columns=None):
     """Merge target files and assignment output.
     """
@@ -385,7 +406,7 @@ def merge_results(targetfiles, resultdir=".", result_prefix="fiberassign",
 
     # Find all the per-tile files and get the tile IDs
     tiles = list()
-    for root, dirs, files in os.walk(resultdir):
+    for root, dirs, files in os.walk(result_dir):
         for f in files:
             mat = re.match(r"{}_(\d+).fits".format(result_prefix), f)
             if mat is not None:
@@ -434,7 +455,7 @@ def merge_results(targetfiles, resultdir=".", result_prefix="fiberassign",
     # For each tile, find the target IDs used.  Construct the output recarray
     # and copy data into place.
 
-    outroot = os.path.join(resultdir, result_prefix)
+    outroot = os.path.join(result_dir, result_prefix)
 
     merge_tile = partial(merge_results_tile, outroot, out_dtype)
 
