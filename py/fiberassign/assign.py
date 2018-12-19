@@ -115,13 +115,17 @@ def write_assignment_fits_tile(outroot, tgs, tile_id, tile_ra, tile_dec,
         # tm.stop()
         # tm.report("copy data tile {}".format(tile_id))
         header = dict()
-        header["TILE_RA"] = tile_ra
-        header["TILE_DEC"] = tile_dec
+        header["TILEID"] = tile_id
+        header["TILERA"] = tile_ra
+        header["TILEDEC"] = tile_dec
+        header["FIELDNUM"] = 0
+        header["REQRA"] = tile_ra
+        header["REQDEC"] = tile_dec
         header["FBAVER"] = __version__
         log.debug("Write:  FITS write tile {}".format(tile_id))
         # tm.clear()
         # tm.start()
-        fd.write(fdata, header=header)
+        fd.write(fdata, header=header, extname='FIBERASSIGN')
         del fdata
         # tm.stop()
         # tm.report("write / del tile {}".format(tile_id))
@@ -135,7 +139,7 @@ def write_assignment_fits_tile(outroot, tgs, tile_id, tile_ra, tile_dec,
             for tg in avail[fid]:
                 fdata[off] = (fid, tg)
                 off += 1
-        fd.write(fdata, header=header)
+        fd.write(fdata, header=header, extname='POTENTIAL_ASSIGNMENTS')
         del fdata
         # tm.stop()
         # tm.report("write / del avail tile {}".format(tile_id))
@@ -355,8 +359,8 @@ def merge_results_tile(outroot, out_dtype, params):
     outfile = "{}_all_{:06d}.fits".format(outroot, tile_id)
     log.info("Reading tile data {}".format(infile))
     infd = fitsio.FITS(infile, "r")
-    inhead = infd[1].read_header()
-    indata = infd[1].read()
+    inhead = infd['FIBERASSIGN'].read_header()
+    indata = infd['FIBERASSIGN'].read()
     # Mapping of target ID to row
     tgs = indata["TARGETID"]
     # Construct output recarray
@@ -387,11 +391,11 @@ def merge_results_tile(outroot, out_dtype, params):
         os.remove(outfile)
     fd = fitsio.FITS(outfile, "rw")
     log.info("Writing new data {}".format(outfile))
-    fd.write(outdata, header=inhead)
+    fd.write(outdata, header=inhead, extname='FIBERASSIGN')
     # Copy the available targets HDU
-    inhead = infd[2].read_header()
-    indata = infd[2].read()
-    fd.write(indata, header=inhead)
+    inhead = infd['POTENTIAL_ASSIGNMENTS'].read_header()
+    indata = infd['POTENTIAL_ASSIGNMENTS'].read()
+    fd.write(indata, header=inhead, extname='POTENTIAL_ASSIGNMENTS')
     del fd
     del infd
     return
