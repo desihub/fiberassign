@@ -8,34 +8,42 @@ positioners for each exposure.  The fiberassign code uses information about
 the DESI instrument and applies that to lists of available targets with
 pre-assigned prioritization.
 
-Algorithm
+Target Priorities
+-----------------------
+
+Every science target is assigned an integer priority value prior to fiber assignment.  This integer value is the same for objects of the same classification ("QSO", "LRG", "ELG", etc).  Sky targets effectively have a priority of zero.  Calibration standards may also be assigned a priority value.  If a calibration target is **also** a science target (which often means it is listed in multiple input target files), then this object is given the larger of its priority values.  Each object is also assigned a "subpriority" value, which is a double precision number.  When two objects have the same integer priority value, the subpriority is used to indicate which object has a higher overall priority.  Sky targets are also given a random subpriority value.
+
+Algorithms
 ---------------
 
-The outermost command-line script basically goes through these steps:
+The main command-line script ("fba_run") basically loads hardware information,
+footprint / tile information, and lists of targets.  After some initialization
+steps, it makes use of three primary methods of the fiberassign::Assignment
+class.  The algorithms of these functions are described below.  See the documentation for the individual methods for the mechanics of using them.
 
-#.  Load hardware information and list of tiles.
+Assigning Targets to Unused Fibers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-#.  Load all targets and categorize them as "science", "standards", or "sky".
-    The "BAD_SKY" targets are treated as very low priority science targets.
+When assigning a particular class of target ("science", "standard", or "sky")
+to unused fibers, the same technique (and code) is used.
 
-#.  Compute available (reachable) targets for every fiber on every tile.
 
-#.  Assign unused fibers to science targets (no maximum).
 
-#.  Redistribute science targets.  If targets can be assigned to other tiles
-    which have fewer science targets on the available petal, then move those.
+Redistributing Science Targets
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-#.  Assign unused fibers to standards up to some maximum per petal.
 
-#.  Assign unused fibers to sky up to some maximum per petal.
+Forced Assignment of Standards and Sky
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-#.  Forcibly assign standards to fibers up to some number per petal.  Bump
-    low-priority science targets and attempt to reassign them.
+When calling this method, our goal is to displace science targets with either standards or sky targets in order to meet some required number per petal.  For each petal, we rank the available objects of interest (standards or sky) by total priority (priority + subpriority).  We also identify all science target priority values across the whole fiber assignment run and sort these from lowest to highest.
 
-#.  Forcibly assign sky to fibers up to some number per petal.  Bump
-    low-priority science targets and attempt to reassign them.
+For each petal, we do the following pseudocode::
 
-#.  Assign unused fibers to sky (no maximum).
-
-More details on the algorithms can be found in the docstrings for methods in
-the Assignment class.
+    for each science target priority "P" (lowest to highest)
+        for each object (standard or sky) in total priority from high to low
+            if object is reachable by fibers on targets with priority "P"
+                remove target and place fiber on object
+                re-assign target to unused fiber on future tile if possible
+                if enough objects on this petal
+                    break
