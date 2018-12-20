@@ -17,6 +17,7 @@ import numpy as np
 
 import multiprocessing as mp
 from multiprocessing.sharedctypes import RawArray
+
 from functools import partial
 
 from collections import OrderedDict
@@ -53,29 +54,41 @@ assign_result_columns = OrderedDict([
 ])
 
 
-def write_assignment_fits_tile(outroot, tgs, tile_id, tile_ra, tile_dec,
-                               tdata, avail):
+def write_assignment_fits_tile(outroot, asgn, params):
     """Write a single tile assignment to a FITS file.
 
     Args:
         outroot (str):  full path of the output root file name.
-        tgs (Targets):  the target properties.
-        tile_id (int):  the tile ID.
-        tile_ra (float):  the RA of the tile center in degrees.
-        tile_dec (float):  the DEC of the tile center in degrees.
-        tdata (dict):  the assignment as a dictionary of target ID for every
-            fiber.
-        avail (dict):  the available targets as a dictionary of arrays of
-            target IDs for every fiber.
+        asgn (Assignment):  the assignment class instance.
+        params (tuple):  tuple containing the tile ID, RA, and DEC.
 
     """
+    # tm = Timer()
+    # tm.start()
+    tile_id, tile_ra, tile_dec = params
     log = Logger.get()
+
+    # Targets available for all tile / fibers
+    tgsavail = asgn.targets_avail()
+
+    # Target properties
+    tgs = asgn.targets()
+
+    # Data for this tile
+    tdata = asgn.tile_fiber_target(tile_id)
+    avail = tgsavail.tile_data(tile_id)
+
     # The recarray dtype for the assignment and available targets
     assign_dtype = np.dtype([(x, y) for x, y in assign_result_columns.items()])
     avail_dtype = np.dtype([("FIBER", "i4"), ("TARGETID", "i8")])
+    # tm.stop()
+    # tm.report("  data pointers for tile {}".format(tile_id))
+
     log.debug("Write:  indexing tile {}".format(tile_id))
+
     # Reverse lookup
-    # tm = Timer()
+
+    # tm.clear()
     # tm.start()
     tgfiber = {y: x for x, y in tdata.items()}
     # Compute the total list of targets
@@ -85,10 +98,15 @@ def write_assignment_fits_tile(outroot, tgs, tile_id, tile_ra, tile_dec,
     tgfids = [tgfiber[x] if x in tgfiber.keys() else -1 for x in tgids]
 
     # tm.stop()
-    # tm.report("indexing tile {}".format(tile_id))
+    # tm.report("  indexing tile {}".format(tile_id))
+
     # Output tile file
     tfile = "{}_{:06d}.fits".format(outroot, tile_id)
+
     if len(tgids) > 0:
+        # tm.clear()
+        # tm.start()
+
         if os.path.isfile(tfile):
             raise RuntimeError("output file {} already exists"
                                .format(tfile))
@@ -99,21 +117,31 @@ def write_assignment_fits_tile(outroot, tgs, tile_id, tile_ra, tile_dec,
         # Construct the output recarray for the assignment and write
         log.debug("Write:  copying assignment data for tile {}"
                   .format(tile_id))
+
+        # tm.stop()
+        # tm.report("  opening file for tile {}".format(tile_id))
+        #
         # tm.clear()
         # tm.start()
         fdata = np.zeros(len(tgids), dtype=assign_dtype)
-        off = 0
-        for tg, fid in zip(tgids, tgfids):
-            props = tgs.get(tg)
-            obsrem = 0
-            if props.obs_remain > 0:
-                obsrem = props.obs_remain
-            fdata[off] = (tg, fid, props.ra, props.dec, props.type,
-                          props.priority, props.subpriority, props.obscond,
-                          obsrem)
-            off += 1
+
+        fdata[:] = [(x.id, fid, x.ra, x.dec, x.type, x.priority,
+                    x.subpriority, x.obscond, x.obs_remain) for x, fid
+                    in zip([tgs.get(y) for y in tgids], tgfids)]
+        #
+        # off = 0
+        # for tg, fid in zip(tgids, tgfids):
+        #     props = tgs.get(tg)
+        #     obsrem = 0
+        #     if props.obs_remain > 0:
+        #         obsrem = props.obs_remain
+        #     fdata[off] = (tg, fid, props.ra, props.dec, props.type,
+        #                   props.priority, props.subpriority, props.obscond,
+        #                   obsrem)
+        #     off += 1
         # tm.stop()
-        # tm.report("copy data tile {}".format(tile_id))
+        # tm.report("  copy data tile {}".format(tile_id))
+
         header = dict()
         header["TILEID"] = tile_id
         header["TILERA"] = tile_ra
@@ -123,14 +151,17 @@ def write_assignment_fits_tile(outroot, tgs, tile_id, tile_ra, tile_dec,
         header["REQDEC"] = tile_dec
         header["FBAVER"] = __version__
         log.debug("Write:  FITS write tile {}".format(tile_id))
+
         # tm.clear()
         # tm.start()
-        fd.write(fdata, header=header, extname='FIBERASSIGN')
+        fd.write(fdata, header=header, extname='FIBERASSIGN_RAW')
         del fdata
         # tm.stop()
-        # tm.report("write / del tile {}".format(tile_id))
+        # tm.report("  write / del assignment for tile {}".format(tile_id))
+
         # Construct recarray for available targets and write
         log.debug("Write:  available targets for tile {}".format(tile_id))
+
         # tm.clear()
         # tm.start()
         fdata = np.zeros(navail, dtype=avail_dtype)
@@ -142,7 +173,7 @@ def write_assignment_fits_tile(outroot, tgs, tile_id, tile_ra, tile_dec,
         fd.write(fdata, header=header, extname='POTENTIAL_ASSIGNMENTS')
         del fdata
         # tm.stop()
-        # tm.report("write / del avail tile {}".format(tile_id))
+        # tm.report("  write / del avail tile {}".format(tile_id))
     return
 
 
@@ -164,12 +195,6 @@ def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fiberassign"):
     tm = Timer()
     tm.start()
 
-    # Targets available for all tile / fibers
-    tgsavail = asgn.targets_avail()
-
-    # Target properties
-    tgs = asgn.targets()
-
     # The tile IDs that were assigned
     tileids = asgn.tiles_assigned()
     tileorder = tiles.order
@@ -178,11 +203,13 @@ def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fiberassign"):
 
     outroot = os.path.join(out_dir, out_prefix)
 
-    for tid in tileids:
-        write_assignment_fits_tile(outroot, tgs, tid, tilera[tileorder[tid]],
-                                   tiledec[tileorder[tid]],
-                                   asgn.tile_fiber_target(tid),
-                                   tgsavail.tile_data(tid))
+    write_tile = partial(write_assignment_fits_tile, outroot, asgn)
+
+    tile_map_list = [(tid, tilera[tileorder[tid]],
+                      tiledec[tileorder[tid]]) for tid in tileids]
+
+    for params in tile_map_list:
+        write_tile(params)
 
     tm.stop()
     tm.report("Write output files")

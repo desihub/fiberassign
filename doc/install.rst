@@ -77,11 +77,7 @@ To install fiberassign to some arbitrary location, run::
 
 To compile fiberassign and use it from the source tree::
 
-<<<<<<< HEAD
     %> python setup.py clean; python setup.py build_ext --inplace
-=======
-    %> python setup.py clean; python3 setup.py build_ext --inplace
->>>>>>> Work on docs
 
 In either case, you will need to modify your PATH and PYTHONPATH variables to
 point to the copy you wish to use.  Alternatively, if you are installing to a
