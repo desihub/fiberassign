@@ -4,6 +4,7 @@
 # Other generated files
 htmlcov
 .coverage
+/src/_version.h
 
 # Sphinx
 doc/api

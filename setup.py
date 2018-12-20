@@ -128,13 +128,24 @@ def has_flag(compiler, flagname):
     the specified compiler.
     """
     import tempfile
-    with tempfile.NamedTemporaryFile('w', suffix='.cpp') as f:
-        f.write('int main (int argc, char **argv) { return 0; }')
-        try:
-            compiler.compile([f.name], extra_postargs=[flagname])
-        except CompileError:
-            return False
-    return True
+    devnull = None
+    oldstderr = None
+    try:
+        with tempfile.NamedTemporaryFile('w', suffix='.cpp') as f:
+            f.write('int main (int argc, char **argv) { return 0; }')
+            try:
+                devnull = open('/dev/null', 'w')
+                oldstderr = os.dup(sys.stderr.fileno())
+                os.dup2(devnull.fileno(), sys.stderr.fileno())
+                compiler.compile([f.name], extra_postargs=[flagname])
+            except CompileError:
+                return False
+            return True
+    finally:
+        if oldstderr is not None:
+            os.dup2(oldstderr, sys.stderr.fileno())
+        if devnull is not None:
+            devnull.close()
 
 
 def cpp_flag(compiler):
@@ -158,7 +169,7 @@ class BuildExt(build_ext):
         'unix': [],
     }
 
-    if sys.platform == 'darwin':
+    if sys.platform.lower() == 'darwin':
         c_opts['unix'] += ['-stdlib=libc++', '-mmacosx-version-min=10.7']
 
     def build_extensions(self):
@@ -174,6 +185,8 @@ class BuildExt(build_ext):
             if has_flag(self.compiler, '-fopenmp'):
                 opts.append('-fopenmp')
                 linkopts.append('-fopenmp')
+            if sys.platform.lower() == 'darwin':
+                linkopts.append('-stdlib=libc++')
         elif ct == 'msvc':
             opts.append('/DVERSION_INFO=\\"%s\\"' %
                         self.distribution.get_version())
