@@ -2,9 +2,16 @@
 """
 Merge fiberassign results with input target files.
 """
+from mpi4py import MPI
+
 import os
+import sys
+
+import traceback
 
 import argparse
+
+import numpy as np
 
 from fiberassign.assign import merge_results, result_tiles
 
@@ -46,11 +53,23 @@ def main():
 
     tiles = result_tiles(result_dir=args.dir, result_prefix=args.prefix)
 
-    merge_results(args.targets, tiles, result_dir=args.dir,
-                  result_prefix=args.prefix, columns=columns)
+    comm = MPI.COMM_WORLD
+    ptiles = np.array_split(tiles, comm.size)[comm.rank]
 
+    if len(ptiles) > 0:
+        print("proc {} doing {} tiles".format(comm.rank, len(ptiles)),
+              flush=True)
+        merge_results(args.targets, ptiles, result_dir=args.dir,
+                      result_prefix=args.prefix, columns=columns)
     return
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
+        lines = ["Proc {}: {}".format(MPI.COMM_WORLD.rank, x) for x in lines]
+        print("".join(lines), flush=True)
+        MPI.COMM_WORLD.Abort()

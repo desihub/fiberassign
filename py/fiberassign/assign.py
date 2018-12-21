@@ -125,20 +125,20 @@ def write_assignment_fits_tile(outroot, asgn, params):
         # tm.start()
         fdata = np.zeros(len(tgids), dtype=assign_dtype)
 
-        fdata[:] = [(x.id, fid, x.ra, x.dec, x.type, x.priority,
-                    x.subpriority, x.obscond, x.obs_remain) for x, fid
-                    in zip([tgs.get(y) for y in tgids], tgfids)]
-        #
-        # off = 0
-        # for tg, fid in zip(tgids, tgfids):
-        #     props = tgs.get(tg)
-        #     obsrem = 0
-        #     if props.obs_remain > 0:
-        #         obsrem = props.obs_remain
-        #     fdata[off] = (tg, fid, props.ra, props.dec, props.type,
-        #                   props.priority, props.subpriority, props.obscond,
-        #                   obsrem)
-        #     off += 1
+        # fdata[:] = [(x.id, fid, x.ra, x.dec, x.type, x.priority,
+        #             x.subpriority, x.obscond, x.obs_remain) for x, fid
+        #             in zip([tgs.get(y) for y in tgids], tgfids)]
+
+        off = 0
+        for tg, fid in zip(tgids, tgfids):
+            props = tgs.get(tg)
+            obsrem = 0
+            if props.obs_remain > 0:
+                obsrem = props.obs_remain
+            fdata[off] = (tg, fid, props.ra, props.dec, props.type,
+                          props.priority, props.subpriority, props.obscond,
+                          obsrem)
+            off += 1
         # tm.stop()
         # tm.report("  copy data tile {}".format(tile_id))
 
@@ -154,7 +154,7 @@ def write_assignment_fits_tile(outroot, asgn, params):
 
         # tm.clear()
         # tm.start()
-        fd.write(fdata, header=header, extname='FIBERASSIGN_RAW')
+        fd.write(fdata, header=header, extname="FIBERASSIGN_RAW")
         del fdata
         # tm.stop()
         # tm.report("  write / del assignment for tile {}".format(tile_id))
@@ -170,7 +170,7 @@ def write_assignment_fits_tile(outroot, asgn, params):
             for tg in avail[fid]:
                 fdata[off] = (fid, tg)
                 off += 1
-        fd.write(fdata, header=header, extname='POTENTIAL_ASSIGNMENTS')
+        fd.write(fdata, header=header, extname="POTENTIAL_ASSIGNMENTS")
         del fdata
         # tm.stop()
         # tm.report("  write / del avail tile {}".format(tile_id))
@@ -361,6 +361,19 @@ def read_assignment_fits_tile(outroot, params):
     return header, tgdata, avail
 
 
+def result_tiles(result_dir=".", result_prefix="fiberassign"):
+    # Find all the per-tile files and get the tile IDs
+    tiles = list()
+    for root, dirs, files in os.walk(result_dir):
+        for f in files:
+            mat = re.match(r"{}_(\d+).fits".format(result_prefix), f)
+            if mat is not None:
+                # Matches the prefix
+                tiles.append(int(mat.group(1)))
+        break
+    return tiles
+
+
 merge_results_tile_tgbuffers = None
 merge_results_tile_tgdtypes = None
 merge_results_tile_tgshapes = None
@@ -386,8 +399,8 @@ def merge_results_tile(outroot, out_dtype, params):
     outfile = "{}_all_{:06d}.fits".format(outroot, tile_id)
     log.info("Reading tile data {}".format(infile))
     infd = fitsio.FITS(infile, "r")
-    inhead = infd['FIBERASSIGN'].read_header()
-    indata = infd['FIBERASSIGN'].read()
+    inhead = infd["FIBERASSIGN_RAW"].read_header()
+    indata = infd["FIBERASSIGN_RAW"].read()
     # Mapping of target ID to row
     tgs = indata["TARGETID"]
     # Construct output recarray
@@ -418,34 +431,20 @@ def merge_results_tile(outroot, out_dtype, params):
         os.remove(outfile)
     fd = fitsio.FITS(outfile, "rw")
     log.info("Writing new data {}".format(outfile))
-    fd.write(outdata, header=inhead, extname='FIBERASSIGN')
+    fd.write(outdata, header=inhead, extname="FIBERASSIGN")
     # Copy the available targets HDU
-    inhead = infd['POTENTIAL_ASSIGNMENTS'].read_header()
-    indata = infd['POTENTIAL_ASSIGNMENTS'].read()
-    fd.write(indata, header=inhead, extname='POTENTIAL_ASSIGNMENTS')
+    inhead = infd["POTENTIAL_ASSIGNMENTS"].read_header()
+    indata = infd["POTENTIAL_ASSIGNMENTS"].read()
+    fd.write(indata, header=inhead, extname="POTENTIAL_ASSIGNMENTS")
     del fd
     del infd
     return
 
 
-def merge_results(targetfiles, result_dir=".", result_prefix="fiberassign",
-                  columns=None):
+def merge_results(targetfiles, tiles, result_dir=".",
+                  result_prefix="fiberassign", columns=None):
     """Merge target files and assignment output.
     """
-    # import multiprocessing as mp
-    log = Logger.get()
-
-    # Find all the per-tile files and get the tile IDs
-    tiles = list()
-    for root, dirs, files in os.walk(result_dir):
-        for f in files:
-            mat = re.match(r"{}_(\d+).fits".format(result_prefix), f)
-            if mat is not None:
-                # Matches the prefix
-                tiles.append(int(mat.group(1)))
-        break
-    log.info("Found {} fiberassign tile files".format(len(tiles)))
-
     # Load the full set of target files into memory.  Also build a mapping of
     # target ID to row index.  We assume that the result columns have the same
     # dtype in any of the target files.  We take the first target file and
