@@ -154,7 +154,7 @@ def write_assignment_fits_tile(outroot, asgn, params):
 
         # tm.clear()
         # tm.start()
-        fd.write(fdata, header=header, extname="FIBERASSIGN_RAW")
+        fd.write(fdata, header=header, extname="FIBERASSIGN")
         del fdata
         # tm.stop()
         # tm.report("  write / del assignment for tile {}".format(tile_id))
@@ -399,8 +399,8 @@ def merge_results_tile(outroot, out_dtype, params):
     outfile = "{}_all_{:06d}.fits".format(outroot, tile_id)
     log.info("Reading tile data {}".format(infile))
     infd = fitsio.FITS(infile, "r")
-    inhead = infd["FIBERASSIGN_RAW"].read_header()
-    indata = infd["FIBERASSIGN_RAW"].read()
+    inhead = infd["FIBERASSIGN"].read_header()
+    indata = infd["FIBERASSIGN"].read()
     # Mapping of target ID to row
     tgs = indata["TARGETID"]
     # Construct output recarray
