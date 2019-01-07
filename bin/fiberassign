@@ -437,7 +437,7 @@ positioner_data = fitsio.read(args.positioners)
 footprint = fitsio.read(args.footprint)
 
 #- Load DESI tiles to provide header keywords; convert to dict for fast lookup
-tiles = desimodel.io.load_tiles()
+tiles = desimodel.io.load_tiles(tilesfile=args.footprint)
 tileinfo = dict()
 for i in range(len(tiles)):
     tileid = tiles['TILEID'][i]
