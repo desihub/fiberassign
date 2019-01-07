@@ -10,7 +10,7 @@ Visualization tools.
 from __future__ import absolute_import, division, print_function
 
 import os
-import re
+
 import numpy as np
 
 import matplotlib
@@ -39,7 +39,8 @@ from .tiles import load_tiles
 from .targets import (Targets, append_target_table, TARGET_TYPE_SCIENCE,
                       TARGET_TYPE_SKY, TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE)
 
-from .assign import read_assignment_fits_tile, read_assignment_fits_tile_old
+from .assign import (read_assignment_fits_tile, read_assignment_fits_tile_old,
+                     result_tiles, result_path)
 
 
 def plot_target_type_color(tgtype):
@@ -59,6 +60,47 @@ def plot_target_type_color(tgtype):
 
 
 def plot_positioner(ax, fiber, center, cb, fh, color="k", linewidth=0.2):
+    """Plot one fiber positioner.
+    """
+    # Plot the arm from the center to the body
+    cbcent = cb.circles[0].center
+    armwidth = 0.25
+    armlen = np.sqrt((cbcent[1] - center[1])**2 + (cbcent[0] - center[0])**2)
+    armang = np.arctan2(cbcent[1] - center[1], cbcent[0] - center[0])
+    sinarm = np.sin(armang)
+    cosarm = np.cos(armang)
+    arm_xoff = center[0] + (0.5*armwidth) * sinarm
+    arm_yoff = center[1] - (0.5*armwidth) * cosarm
+    armang_deg = armang * 180.0 / np.pi
+    arm = plt.Rectangle((arm_xoff, arm_yoff), armlen, armwidth,
+                        angle=armang_deg, color=color, linewidth=2*linewidth,
+                        fill=False)
+    ax.add_artist(arm)
+    for piece in [cb, fh]:
+        for circle in piece.circles:
+            xcent, ycent = circle.center
+            rad = circle.radius
+            circ = plt.Circle((xcent, ycent), radius=rad, fc="none", ec=color,
+                              linewidth=linewidth)
+            ax.add_artist(circ)
+        for segs in piece.segments:
+            xpts = np.array([p[0] for p in segs.points])
+            ypts = np.array([p[1] for p in segs.points])
+            ax.plot(xpts, ypts, linewidth=linewidth, color=color)
+    fontpix = armwidth * 2
+    fontpt = int(0.25 * fontpix)
+    xtxt = center[0] - armwidth * cosarm
+    ytxt = center[1] - armwidth * sinarm
+    ax.text(xtxt, ytxt, "{}".format(fiber),
+            color='k', fontsize=fontpt,
+            horizontalalignment='center',
+            verticalalignment='center',
+            bbox=None)
+    #        bbox=dict(fc='w', ec='none', pad=1, alpha=1.0))
+    return
+
+
+def plot_positioner_simple(ax, fiber, center, cb, fh, color="k", linewidth=0.2):
     """Plot one fiber positioner.
     """
     # Plot the arm from the center to the body
@@ -139,7 +181,7 @@ def plot_available(ax, targetprops, selected, linewidth=0.1):
         xdata[idx] = targetprops[tgid]["xy"][0]
         ydata[idx] = targetprops[tgid]["xy"][1]
         color.append(targetprops[tgid]["color"])
-    ax.scatter(xdata, ydata, color=color, marker="x",
+    ax.scatter(xdata, ydata, color=color, marker=".",
                linewidth=linewidth, s=mwidth)
     return
 
@@ -176,12 +218,10 @@ def plot_assignment_tile_file_initialize(hw):
     return
 
 
-def plot_assignment_tile_file(inroot, outroot, fibers, old, params):
-    (tile_id, tile_ra, tile_dec) = params
+def plot_assignment_tile_file(fibers, old, params):
+    (tile_id, tile_ra, tile_dec, infile, outfile) = params
     log = Logger.get()
 
-    outformat = "svg"
-    outfile = "{}_{:06d}.{}".format(outroot, tile_id, outformat)
     if os.path.isfile(outfile):
         log.info("Skipping existing plot {}".format(outfile))
         return
@@ -189,10 +229,10 @@ def plot_assignment_tile_file(inroot, outroot, fibers, old, params):
         log.info("Creating {}".format(outfile))
 
     if old:
-        header, tgdata, tavail = read_assignment_fits_tile_old(inroot,
-                                                               (tile_id,))
+        header, tgdata, tavail = read_assignment_fits_tile_old((tile_id,
+                                                                infile))
     else:
-        header, tgdata, tavail = read_assignment_fits_tile(inroot, (tile_id,))
+        header, tgdata, tavail = read_assignment_fits_tile((tile_id, infile))
 
     log.debug("  tile {} at RA/DEC {} / {}".format(tile_id, tile_ra,
                                                    tile_dec))
@@ -233,28 +273,18 @@ def plot_assignment_tile_file(inroot, outroot, fibers, old, params):
 
     ax.set_xlabel("Millimeters", fontsize="large")
     ax.set_ylabel("Millimeters", fontsize="large")
-    plt.savefig(outfile, dpi=300, format=outformat)
+    plt.savefig(outfile, dpi=300, format="svg")
     return
 
 
 def plot_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign",
                plot_dir=".", petals=None, old=False):
     log = Logger.get()
-    # Find all the per-tile files and get the tile IDs
-    foundtiles = list()
-    for root, dirs, files in os.walk(result_dir):
-        for f in files:
-            mat = re.match(r"{}_(\d+).fits".format(result_prefix), f)
-            if mat is not None:
-                # Matches the prefix
-                foundtiles.append(int(mat.group(1)))
-        break
-    log.info("Found {} fiberassign tile files".format(len(foundtiles)))
 
-    inroot = os.path.join(result_dir, result_prefix)
-    if not os.path.isdir(plot_dir):
-        os.makedirs(plot_dir)
-    outroot = os.path.join(plot_dir, "fiberassign")
+    foundtiles = result_tiles(result_dir=result_dir,
+                              result_prefix=result_prefix)
+
+    log.info("Found {} fiberassign tile files".format(len(foundtiles)))
 
     fibers = None
     if petals is None:
@@ -265,14 +295,17 @@ def plot_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign",
             fibers.extend([x for x in hw.petal_fibers[p]])
     fibers = np.array(fibers)
 
-    plot_tile = partial(plot_assignment_tile_file, inroot, outroot,
-                        fibers, old)
+    plot_tile = partial(plot_assignment_tile_file, fibers, old)
 
     avail_tiles = np.array(tiles.id)
     select_tiles = [x for x in foundtiles if x in avail_tiles]
 
-    tile_map_list = [(x, tiles.ra[tiles.order[x]], tiles.dec[tiles.order[x]])
+    tile_map_list = [(x, tiles.ra[tiles.order[x]], tiles.dec[tiles.order[x]],
+                      result_path(x, result_dir, result_prefix),
+                      result_path(x, plot_dir, result_prefix, ext="svg",
+                      create=True))
                      for x in select_tiles]
+
     log.info("Selecting {} fiberassign tile files".format(len(tile_map_list)))
 
     with mp.Pool(processes=default_mp_proc,

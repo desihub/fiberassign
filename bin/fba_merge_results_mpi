@@ -32,6 +32,14 @@ def main():
                         default="fiberassign",
                         help="Prefix of each file (before the _<tile>.fits).")
 
+    parser.add_argument("--out", type=str, required=False, default=None,
+                        help="Output directory for the merged files.  Default"
+                        " is the directory containing the fiberassign output.")
+
+    parser.add_argument("--out_prefix", type=str, required=False,
+                        default="tile",
+                        help="Prefix of each output file.")
+
     parser.add_argument("--columns", type=str, required=False, default=None,
                         help="Override the column names of target data to be "
                         "copied from the target files into the fiber "
@@ -60,7 +68,8 @@ def main():
         print("proc {} doing {} tiles".format(comm.rank, len(ptiles)),
               flush=True)
         merge_results(args.targets, ptiles, result_dir=args.dir,
-                      result_prefix=args.prefix, columns=columns)
+                      result_prefix=args.prefix, out_dir=args.out,
+                      out_prefix=args.out_prefix, columns=columns)
     return
 
 

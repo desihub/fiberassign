@@ -54,7 +54,30 @@ assign_result_columns = OrderedDict([
 ])
 
 
-def write_assignment_fits_tile(outroot, asgn, params):
+def result_tiles(result_dir=".", result_prefix="fiberassign"):
+    # Find all the per-tile files and get the tile IDs
+    tiles = list()
+    for root, dirs, files in os.walk(result_dir):
+        for f in files:
+            mat = re.match(r"{}_(\d+).fits".format(result_prefix), f)
+            if mat is not None:
+                # Matches the prefix
+                tiles.append(int(mat.group(1)))
+    return tiles
+
+
+def result_path(tile_id, result_dir=".", result_prefix="fiberassign",
+                ext="fits", create=False):
+    tilegroup = tile_id // 1000
+    tiledir = os.path.join(result_dir, "{:02d}".format(tilegroup))
+    if create:
+        os.makedirs(tiledir, exist_ok=True)
+    path = os.path.join(tiledir,
+                        "{}_{:05d}.{}".format(result_prefix, tile_id, ext))
+    return path
+
+
+def write_assignment_fits_tile(asgn, params):
     """Write a single tile assignment to a FITS file.
 
     Args:
@@ -65,7 +88,7 @@ def write_assignment_fits_tile(outroot, asgn, params):
     """
     # tm = Timer()
     # tm.start()
-    tile_id, tile_ra, tile_dec = params
+    tile_id, tile_ra, tile_dec, tile_file = params
     log = Logger.get()
 
     # Targets available for all tile / fibers
@@ -100,20 +123,17 @@ def write_assignment_fits_tile(outroot, asgn, params):
     # tm.stop()
     # tm.report("  indexing tile {}".format(tile_id))
 
-    # Output tile file
-    tfile = "{}_{:06d}.fits".format(outroot, tile_id)
-
     if len(tgids) > 0:
         # tm.clear()
         # tm.start()
 
-        if os.path.isfile(tfile):
+        if os.path.isfile(tile_file):
             raise RuntimeError("output file {} already exists"
-                               .format(tfile))
+                               .format(tile_file))
         # This tile has some available targets
         log.info("Writing tile {}".format(tile_id))
         # Create the file
-        fd = fitsio.FITS(tfile, "rw")
+        fd = fitsio.FITS(tile_file, "rw")
         # Construct the output recarray for the assignment and write
         log.debug("Write:  copying assignment data for tile {}"
                   .format(tile_id))
@@ -201,12 +221,12 @@ def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fiberassign"):
     tilera = tiles.ra
     tiledec = tiles.dec
 
-    outroot = os.path.join(out_dir, out_prefix)
+    write_tile = partial(write_assignment_fits_tile, asgn)
 
-    write_tile = partial(write_assignment_fits_tile, outroot, asgn)
-
-    tile_map_list = [(tid, tilera[tileorder[tid]],
-                      tiledec[tileorder[tid]]) for tid in tileids]
+    tile_map_list = [(tid, tilera[tileorder[tid]], tiledec[tileorder[tid]],
+                      result_path(tid, result_dir=out_dir,
+                                  result_prefix=out_prefix, create=True))
+                     for tid in tileids]
 
     for params in tile_map_list:
         write_tile(params)
@@ -242,12 +262,11 @@ def write_assignment_ascii(tiles, asgn, out_dir=".", out_prefix="fiberassign"):
     # Target properties
     tgs = asgn.targets()
 
-    outroot = os.path.join(out_dir, out_prefix)
-
     for t in tileids:
         tdata = asgn.tile_fiber_target(t)
         nfiber = len(tdata)
-        tfile = "{}_{}.txt".format(outroot, t)
+        tfile = result_path(t, result_dir=out_dir, result_prefix=out_prefix,
+                            create=True)
         if nfiber > 0:
             log.debug("Writing tile {}".format(t))
             with open(tfile, "w") as f:
@@ -266,18 +285,17 @@ def write_assignment_ascii(tiles, asgn, out_dir=".", out_prefix="fiberassign"):
     return
 
 
-def read_assignment_fits_tile_old(outroot, params):
+def read_assignment_fits_tile_old(params):
     """Read in results from the old format.
     """
-    (tile_id,) = params
+    (tile_id, tile_file) = params
     log = Logger.get()
     # Output tile file
-    tfile = "{}_{:05d}.fits".format(outroot, tile_id)
-    if not os.path.isfile(tfile):
-        raise RuntimeError("input file {} does not exist".format(tfile))
-    log.debug("Reading tile data {}".format(tfile))
+    if not os.path.isfile(tile_file):
+        raise RuntimeError("input file {} does not exist".format(tile_file))
+    log.debug("Reading tile data {}".format(tile_file))
     # Open the file
-    fd = fitsio.FITS(tfile, "r")
+    fd = fitsio.FITS(tile_file, "r")
     header = fd[1].read_header()
     rawdata = fd[1].read()
     # Repack this data into our expected dtype
@@ -322,21 +340,17 @@ def read_assignment_fits_tile_old(outroot, params):
     return header, tgdata, avail
 
 
-def read_assignment_fits_tile(outroot, params):
+def read_assignment_fits_tile(params):
     """Read in results.
     """
-    (tile_id,) = params
+    (tile_id, tile_file) = params
     log = Logger.get()
     # Output tile file
-    tfile = "{}_{:06d}.fits".format(outroot, tile_id)
-    if not os.path.isfile(tfile):
-        # Try old naming
-        tfile = "{}_{:05d}.fits".format(outroot, tile_id)
-        if not os.path.isfile(tfile):
-            raise RuntimeError("input file {} does not exist".format(tfile))
-    log.debug("Reading tile data {}".format(tfile))
+    if not os.path.isfile(tile_file):
+        raise RuntimeError("input file {} does not exist".format(tile_file))
+    log.debug("Reading tile data {}".format(tile_file))
     # Open the file
-    fd = fitsio.FITS(tfile, "r")
+    fd = fitsio.FITS(tile_file, "r")
     header = fd[1].read_header()
     tgdata = fd[1].read()
     adata = fd[2].read()
@@ -361,19 +375,6 @@ def read_assignment_fits_tile(outroot, params):
     return header, tgdata, avail
 
 
-def result_tiles(result_dir=".", result_prefix="fiberassign"):
-    # Find all the per-tile files and get the tile IDs
-    tiles = list()
-    for root, dirs, files in os.walk(result_dir):
-        for f in files:
-            mat = re.match(r"{}_(\d+).fits".format(result_prefix), f)
-            if mat is not None:
-                # Matches the prefix
-                tiles.append(int(mat.group(1)))
-        break
-    return tiles
-
-
 merge_results_tile_tgbuffers = None
 merge_results_tile_tgdtypes = None
 merge_results_tile_tgshapes = None
@@ -389,14 +390,12 @@ def merge_results_tile_initialize(bufs, dtypes, shapes):
     return
 
 
-def merge_results_tile(outroot, out_dtype, params):
+def merge_results_tile(out_dtype, params):
     """Merge results for one tile.
     """
-    (tile_id,) = params
+    (tile_id, infile, outfile) = params
     log = Logger.get()
     # file names
-    infile = "{}_{:06d}.fits".format(outroot, tile_id)
-    outfile = "{}_all_{:06d}.fits".format(outroot, tile_id)
     log.info("Reading tile data {}".format(infile))
     infd = fitsio.FITS(infile, "r")
     inhead = infd["FIBERASSIGN"].read_header()
@@ -442,7 +441,8 @@ def merge_results_tile(outroot, out_dtype, params):
 
 
 def merge_results(targetfiles, tiles, result_dir=".",
-                  result_prefix="fiberassign", columns=None):
+                  result_prefix="fiberassign", out_dir=None,
+                  out_prefix="tile", columns=None):
     """Merge target files and assignment output.
     """
     # Load the full set of target files into memory.  Also build a mapping of
@@ -490,14 +490,14 @@ def merge_results(targetfiles, tiles, result_dir=".",
     # For each tile, find the target IDs used.  Construct the output recarray
     # and copy data into place.
 
-    outroot = os.path.join(result_dir, result_prefix)
+    merge_tile = partial(merge_results_tile, out_dtype)
 
-    merge_tile = partial(merge_results_tile, outroot, out_dtype)
+    if out_dir is None:
+        out_dir = result_dir
 
-    tile_map_list = [(x,) for x in tiles]
-
-    # for tid in tiles:
-    #     merge_tile((tid,))
+    tile_map_list = [(x, result_path(x, result_dir, result_prefix),
+                      result_path(x, out_dir, out_prefix, create=True))
+                     for x in tiles]
 
     with mp.Pool(processes=default_mp_proc,
                  initializer=merge_results_tile_initialize,
