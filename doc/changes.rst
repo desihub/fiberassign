@@ -4,7 +4,9 @@ fiberassign change log
 0.11.1 (unreleased)
 -------------------
 
-* No changes yet.
+* Bug fix when using non-standard tiling (PR `#158`_).
+
+.. _`#158`: https://github.com/desihub/fiberassign/pull/158
 
 0.11.0 (2018-12-16)
 -------------------
