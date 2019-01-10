@@ -36,9 +36,16 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
             std::vector <int32_t> const & fiber,
             std::vector <int32_t> const & petal,
             std::vector <int32_t> const & spectro,
+            std::vector <int32_t> const & location,
+            std::vector <int32_t> const & slit,
+            std::vector <int32_t> const & slitblock,
+            std::vector <int32_t> const & blockfiber,
+            std::vector <int32_t> const & device,
             std::vector <double> const & x_mm,
             std::vector <double> const & y_mm,
             std::vector <double> const & z_mm,
+            std::vector <double> const & q_deg,
+            std::vector <double> const & s_mm,
             std::vector <int32_t> const & status
         );
 
@@ -57,9 +64,14 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
                             std::vector <std::pair <double, double> >
                                 & xy, int threads = 0) const;
 
-        void xy2radec(double const & tilera, double const & tiledec,
-                      double const & x_mm, double const & y_mm,
-                      double & ra, double & dec) const;
+        fbg::dpair xy2radec(double const & tilera, double const & tiledec,
+                            double const & x_mm, double const & y_mm) const;
+
+        void xy2radec_multi(double const & tilera, double const & tiledec,
+                            std::vector <double> const & x_mm,
+                            std::vector <double> const & y_mm,
+                            std::vector <std::pair <double, double> >
+                                & radec, int threads = 0) const;
 
         std::array <double, 4> pos_angles(fbg::dpair const & A,
             fbg::dpair const & posp) const;
@@ -100,12 +112,37 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
         // fiber IDs
         std::vector <int32_t> fiber_id;
 
-        // fiber IDs on each petal
+        // fiber ID to positioner centers in mm
+        std::map <int32_t, std::pair <double, double> > fiber_pos_xy_mm;
+        std::map <int32_t, double> fiber_pos_z_mm;
+
+        // fiber ID to petal
+        std::map <int32_t, int32_t> fiber_petal;
+
+        // petal to fiber IDs
         std::map <int32_t, std::vector <int32_t> > petal_fibers;
 
-        // fiber centers in mm
-        std::map <int32_t, std::pair <double, double> > center_mm;
-        std::map <int32_t, double> center_z_mm;
+        // fiber ID to device
+        std::map <int32_t, int32_t> fiber_device;
+
+        // fiber ID to location
+        std::map <int32_t, int32_t> fiber_location;
+
+        // fiber ID to spectrograph
+        std::map <int32_t, int32_t> fiber_spectro;
+
+        // fiber ID to positioner q/s
+        std::map <int32_t, double> fiber_pos_q_deg;
+        std::map <int32_t, double> fiber_pos_s_mm;
+
+        // fiber ID to slit
+        std::map <int32_t, int32_t> fiber_slit;
+
+        // fiber ID to slitblock
+        std::map <int32_t, int32_t> fiber_slitblock;
+
+        // fiber ID to blockfiber
+        std::map <int32_t, int32_t> fiber_blockfiber;
 
         // patrol radius in mm
         double patrol_mm;
@@ -135,12 +172,6 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
 
         // The neighbors of each fiber positioner
         std::map <int32_t, std::vector <int32_t> > neighbors;
-
-        // The petal location of each fiber
-        std::map <int32_t, int32_t> fiber_petal;
-
-        // The spectrograph of each fiber
-        std::map <int32_t, int32_t> fiber_spectro;
 
         // The geometric shape of the ferrule holder
         fbg::shape ferrule_holder;

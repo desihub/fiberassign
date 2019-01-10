@@ -265,8 +265,8 @@ fba::TargetsAvailable::TargetsAvailable(Targets::pshr objs, Tiles::pshr tiles,
 
     for (size_t j = 0; j < nfiber; ++j) {
         fiber_id[j] = hw->fiber_id[j];
-        double cx = hw->center_mm[fiber_id[j]].first;
-        double cy = hw->center_mm[fiber_id[j]].second;
+        double cx = hw->fiber_pos_xy_mm[fiber_id[j]].first;
+        double cy = hw->fiber_pos_xy_mm[fiber_id[j]].second;
         fiber_center_x[j] = cx;
         fiber_center_y[j] = cy;
     }

@@ -26,7 +26,7 @@ class TestHardware(unittest.TestCase):
 
     def test_collision_xy(self):
         hw = load_hardware()
-        center_mm = hw.center_mm
+        center_mm = hw.fiber_pos_xy_mm
         fiber_id = hw.fiber_id
         nrot = 100
         rotrad = 0.5

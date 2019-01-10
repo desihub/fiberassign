@@ -65,8 +65,16 @@ def main():
                         "Default uses the current date.  Format is "
                         "YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss in UTC time.")
 
-    parser.add_argument("--outdir", type=str, required=False, default=None,
-                        help="Optional output directory.")
+    parser.add_argument("--dir", type=str, required=False, default=None,
+                        help="Output directory.")
+
+    parser.add_argument("--prefix", type=str, required=False,
+                        default="fiberassign_",
+                        help="Prefix of each file (before the <tile>.fits).")
+
+    parser.add_argument("--split", required=False, default=False,
+                        action="store_true",
+                        help="Split output into tile prefix directories.")
 
     parser.add_argument("--standards_per_petal", type=int, required=False,
                         default=10, help="Required number of standards per"
@@ -75,6 +83,13 @@ def main():
     parser.add_argument("--sky_per_petal", type=int, required=False,
                         default=40, help="Required number of sky targets per"
                         " petal")
+
+    parser.add_argument("--write_all_targets", required=False, default=False,
+                        action="store_true",
+                        help="When writing target properties, write data "
+                        "for all available targets, not just those which are "
+                        "assigned.  This is convenient, but increases the "
+                        "write time and the file size.")
 
     args = parser.parse_args()
 
@@ -86,10 +101,10 @@ def main():
         rundate = datetime.datetime.fromisoformat(args.rundate)
 
     # Set output directory
-    outdir = args.outdir
-    if outdir is None:
+    out_dir = args.dir
+    if out_dir is None:
         rdstr = rundate.isoformat("T", "seconds")
-        outdir = "out_fiberassign_{}".format(rdstr)
+        out_dir = "out_fiberassign_{}".format(rdstr)
 
     # Read hardware properties
     hw = load_hardware(fiberpos_file=args.positioners, rundate=args.rundate,
@@ -163,12 +178,13 @@ def main():
     # asgn.assign_unused(TARGET_TYPE_SAFE)
 
     # Make sure that output directory exists
-    if not os.path.isdir(outdir):
-        os.makedirs(outdir)
+    if not os.path.isdir(out_dir):
+        os.makedirs(out_dir)
 
     # Write output
-    write_assignment_fits(tiles, asgn, out_dir=outdir,
-                          out_prefix="fiberassign")
+    write_assignment_fits(tiles, asgn, out_dir=out_dir,
+                          out_prefix=args.prefix, split_dir=args.split,
+                          all_targets=args.write_all_targets)
 
     gt = GlobalTimers.get()
     gt.report()

@@ -28,7 +28,7 @@ class TestVis(unittest.TestCase):
         hw = load_hardware()
         patrol_mm = hw.patrol_mm
         fiber_id = hw.fiber_id
-        center_mm = hw.center_mm
+        center_mm = hw.fiber_pos_xy_mm
 
         # Plot data range in mm
         width = 1.2 * (2.0 * patrol_mm)
@@ -55,13 +55,13 @@ class TestVis(unittest.TestCase):
             ax = fig.add_subplot(1, 1, 1)
             ax.set_aspect("equal")
             cb, fh = hw.fiber_position(fid, center_mm[fid])
-            plot_positioner(ax, fid, center, cb, fh, color="k")
+            plot_positioner(ax, patrol_mm, fid, center, cb, fh, color="k")
             for inc in range(nincr):
                 ang = inc * configincr
                 xoff = configrad * np.cos(ang) + center_mm[fid][0]
                 yoff = configrad * np.sin(ang) + center_mm[fid][1]
                 cb, fh = hw.fiber_position(fid, (xoff, yoff))
-                plot_positioner(ax, fid, center, cb, fh, color=col)
+                plot_positioner(ax, patrol_mm, fid, center, cb, fh, color=col)
                 xend = xoff
                 yend = yoff
                 ax.plot([center_mm[fid][0], xend], [center_mm[fid][1], yend],

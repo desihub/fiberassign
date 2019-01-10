@@ -1306,7 +1306,7 @@ bool fba::Assignment::ok_to_assign (fba::Hardware const * hw, int32_t tile,
     // and so will not collide with anything.
 
     // Center position and target location for this fiber.
-    fbg::dpair tcenter = hw->center_mm.at(fiber);
+    fbg::dpair tcenter = hw->fiber_pos_xy_mm.at(fiber);
     fbg::dpair tpos = target_xy.at(target);
 
     size_t nnb = nbs.size();
@@ -1321,7 +1321,7 @@ bool fba::Assignment::ok_to_assign (fba::Hardware const * hw, int32_t tile,
         int64_t nbt = nbtarget[b];
         fbg::dpair ncenter;
         fbg::dpair npos;
-        ncenter = hw->center_mm.at(nb);
+        ncenter = hw->fiber_pos_xy_mm.at(nb);
         npos = target_xy.at(nbt);
         collide = hw->collide(tcenter, tpos, ncenter, npos);
         // Remove these lines if switching back to threading.

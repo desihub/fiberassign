@@ -26,8 +26,17 @@ def load_hardware(fiberpos_file=None, gfa_file=None, rundate=None,
                   status_file=None):
     """Create a hardware class representing properties of the telescope.
 
-    Currently this just parses the fiber status, but could also read files
-    describing other properties of the fiber positioners, etc.
+    Args:
+        fiberpos_file (str):  Optional path to the fiber positioner FITS file.
+            If not specified, desimodel is used to get the location of the
+            default file.
+        gfa_file (str):  Optional path to the GFA file.
+        rundate ():  XXXX format time stamp
+        status_file (str):  Path to fiber status file.  If not specified, all
+            fibers are assumed good.
+
+    Returns:
+        (Hardware):  The hardware object.
 
     """
     log = Logger.get()
@@ -49,8 +58,18 @@ def load_hardware(fiberpos_file=None, gfa_file=None, rundate=None,
     status = np.empty(nfiber, dtype=np.int32)
     status[:] = FIBER_STATE_OK
 
-    hw = Hardware(fpdata["FIBER"][fprows], fpdata["PETAL"][fprows],
-                  fpdata["SPECTRO"][fprows], fpdata["X"][fprows],
-                  fpdata["Y"][fprows], fpdata["Z"][fprows], status)
-
+    hw = Hardware(fpdata["FIBER"][fprows],
+                  fpdata["PETAL"][fprows],
+                  fpdata["SPECTRO"][fprows],
+                  fpdata["LOCATION"][fprows],
+                  fpdata["SLIT"][fprows],
+                  fpdata["SLITBLOCK"][fprows],
+                  fpdata["BLOCKFIBER"][fprows],
+                  fpdata["DEVICE"][fprows],
+                  fpdata["X"][fprows],
+                  fpdata["Y"][fprows],
+                  fpdata["Z"][fprows],
+                  fpdata["Q"][fprows],
+                  fpdata["S"][fprows],
+                  status)
     return hw

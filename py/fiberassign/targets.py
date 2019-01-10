@@ -100,8 +100,14 @@ def append_target_table(tgs, tgdata, typeforce=None, typecol=None,
     d_prior = np.empty(nrows, dtype=np.int32)
     d_subprior = np.empty(nrows, dtype=np.float64)
     d_targetid[:] = tgdata["TARGETID"]
-    d_ra[:] = tgdata["RA"]
-    d_dec[:] = tgdata["DEC"]
+    if "TARGET_RA" in tgdata.dtype.names:
+        d_ra[:] = tgdata["TARGET_RA"]
+    else:
+        d_ra[:] = tgdata["RA"]
+    if "TARGET_DEC" in tgdata.dtype.names:
+        d_dec[:] = tgdata["TARGET_DEC"]
+    else:
+        d_dec[:] = tgdata["DEC"]
     if typeforce is not None:
         d_type[:] = typeforce
     else:

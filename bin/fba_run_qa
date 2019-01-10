@@ -22,8 +22,12 @@ def main():
                         help="Directory containing fiberassign outputs.")
 
     parser.add_argument("--prefix", type=str, required=False,
-                        default="fiberassign",
-                        help="Prefix of each file (before the _<tile>.fits).")
+                        default="fiberassign_",
+                        help="Prefix of each file (before the <tile>.fits).")
+
+    parser.add_argument("--split", required=False, default=False,
+                        action="store_true",
+                        help="Results are in tile prefix directories.")
 
     parser.add_argument("--out", type=str, required=False, default=None,
                         help="Output file for QA.  Default is a file in"
@@ -55,10 +59,6 @@ def main():
                         "to determine which fibers currently have problems.  "
                         "Default uses the current date.  Format is "
                         "YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss in UTC time.")
-
-    parser.add_argument("--old", required=False, default=False,
-                        action="store_true",
-                        help="Files are old format.")
 
     args = parser.parse_args()
 
@@ -96,7 +96,7 @@ def main():
     tiles = load_tiles(hw, tiles_file=args.footprint, select=tileselect)
 
     qa_tiles(hw, tiles, result_dir=args.dir, result_prefix=args.prefix,
-             qa_out=outfile, old=args.old)
+             result_split_dir=args.split, qa_out=outfile)
 
     return
 

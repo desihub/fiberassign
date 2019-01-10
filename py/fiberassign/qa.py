@@ -22,7 +22,8 @@ from .utils import Logger, default_mp_proc
 
 from .targets import (Targets, append_target_table)
 
-from .assign import read_assignment_fits_tile, read_assignment_fits_tile_old
+from .assign import (result_tiles, result_path, avail_table_to_dict,
+                     read_assignment_fits_tile)
 
 
 def qa_parse_table(tgdata):
@@ -72,24 +73,23 @@ def qa_tile(hw, tile_id, tgs, tile_assign, tile_avail):
     return props
 
 
-def qa_tile_file(hw, inroot, old, params):
-    (tile_id, ) = params
+def qa_tile_file(hw, params):
+    (tile_id, tile_file) = params
     log = Logger.get()
 
     log.info("Processing tile {}".format(tile_id))
 
-    if old:
-        header, tgdata, tavail = read_assignment_fits_tile_old(inroot,
-                                                               (tile_id,))
-    else:
-        header, tgdata, tavail = read_assignment_fits_tile(inroot, (tile_id,))
+    header, fiber_data, targets_data, avail_data = \
+        read_assignment_fits_tile((tile_id, tile_file))
 
     # Target properties
-    tgs = qa_parse_table(tgdata)
+    tgs = qa_parse_table(targets_data)
 
     # Target assignment
-    tassign = {x["FIBER"]: x["TARGETID"] for x in tgdata
+    tassign = {x["FIBER"]: x["TARGETID"] for x in fiber_data
                if (x["FIBER"] >= 0)}
+
+    tavail = avail_table_to_dict(avail_data)
 
     qa_data = qa_tile(hw, tile_id, tgs, tassign, tavail)
 
@@ -97,29 +97,37 @@ def qa_tile_file(hw, inroot, old, params):
 
 
 def qa_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign",
-             qa_out=None, old=False):
+             result_split_dir=False, qa_out=None):
+    """Plot assignment output.
+
+    Args:
+        hw (Hardware):  the hardware description.
+        tiles (list):  List of tile IDs to process.
+        result_dir (str):  Top-level directory of fiberassign results.
+        result_prefix (str):  Prefix of each per-tile file name.
+        result_split_dir (bool):  Results are in split tile directories.
+        qa_out (str):  Override the output path.
+
+    Returns:
+        None.
+
+    """
     log = Logger.get()
 
-    foundtiles = list()
-    for root, dirs, files in os.walk(result_dir):
-        for f in files:
-            mat = re.match(r"{}_(\d+).fits".format(result_prefix), f)
-            if mat is not None:
-                # Matches the prefix
-                foundtiles.append(int(mat.group(1)))
-        break
+    foundtiles = result_tiles(dir=result_dir, prefix=result_prefix)
     log.info("Found {} fiberassign tile files".format(len(foundtiles)))
 
     if qa_out is None:
         qa_out = os.path.join(result_dir, "qa.json")
 
-    inroot = os.path.join(result_dir, result_prefix)
-    qa_tile = partial(qa_tile_file, hw, inroot, old)
+    qa_tile = partial(qa_tile_file, hw)
 
     avail_tiles = np.array(tiles.id)
     select_tiles = [x for x in foundtiles if x in avail_tiles]
 
-    tile_map_list = [(x,) for x in select_tiles]
+    tile_map_list = [(x, result_path(x, dir=result_dir, prefix=result_prefix,
+                                     split=result_split_dir))
+                     for x in select_tiles]
 
     log.info("Selecting {} fiberassign tile files".format(len(tile_map_list)))
     with mp.Pool(processes=default_mp_proc) as pool:

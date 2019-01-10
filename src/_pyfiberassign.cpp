@@ -232,19 +232,39 @@ PYBIND11_MODULE(_internal, m) {
             status (array):  array of integers containing the fiber status.
 
         )")
-        .def(py::init < std::vector <int32_t> const &,
-            std::vector <int32_t> const &, std::vector <int32_t> const &,
-            std::vector <double> const &, std::vector <double> const &,
-            std::vector <double> const &, std::vector <int32_t> const & > ())
+        .def(py::init <
+            std::vector <int32_t> const &,
+            std::vector <int32_t> const &,
+            std::vector <int32_t> const &,
+            std::vector <int32_t> const &,
+            std::vector <int32_t> const &,
+            std::vector <int32_t> const &,
+            std::vector <int32_t> const &,
+            std::vector <int32_t> const &,
+            std::vector <double> const &,
+            std::vector <double> const &,
+            std::vector <double> const &,
+            std::vector <double> const &,
+            std::vector <double> const &,
+            std::vector <int32_t> const & > ())
         .def_readonly("nfiber", &fba::Hardware::nfiber)
         .def_readonly("npetal", &fba::Hardware::npetal)
         .def_readonly("nfiber_petal", &fba::Hardware::nfiber_petal)
         .def_readonly("focalplane_radius_deg",
                       &fba::Hardware::focalplane_radius_deg)
         .def_readonly("fiber_id", &fba::Hardware::fiber_id)
+        .def_readonly("fiber_petal", &fba::Hardware::fiber_petal)
         .def_readonly("petal_fibers", &fba::Hardware::petal_fibers)
-        .def_readonly("center_mm", &fba::Hardware::center_mm)
-        .def_readonly("center_z_mm", &fba::Hardware::center_z_mm)
+        .def_readonly("fiber_pos_xy_mm", &fba::Hardware::fiber_pos_xy_mm)
+        .def_readonly("fiber_pos_z_mm", &fba::Hardware::fiber_pos_z_mm)
+        .def_readonly("fiber_pos_q_deg", &fba::Hardware::fiber_pos_q_deg)
+        .def_readonly("fiber_pos_s_mm", &fba::Hardware::fiber_pos_s_mm)
+        .def_readonly("fiber_device", &fba::Hardware::fiber_device)
+        .def_readonly("fiber_location", &fba::Hardware::fiber_location)
+        .def_readonly("fiber_spectro", &fba::Hardware::fiber_spectro)
+        .def_readonly("fiber_slit", &fba::Hardware::fiber_slit)
+        .def_readonly("fiber_slitblock", &fba::Hardware::fiber_slitblock)
+        .def_readonly("fiber_blockfiber", &fba::Hardware::fiber_blockfiber)
         .def_readonly("patrol_mm", &fba::Hardware::patrol_mm)
         .def_readonly("collide_mm", &fba::Hardware::collide_mm)
         .def_readonly("collide_avg_mm", &fba::Hardware::collide_avg_mm)
@@ -253,7 +273,6 @@ PYBIND11_MODULE(_internal, m) {
         .def_readonly("positioner_range", &fba::Hardware::positioner_range)
         .def_readonly("state", &fba::Hardware::state)
         .def_readonly("neighbors", &fba::Hardware::neighbors)
-        .def_readonly("fiber_petal", &fba::Hardware::fiber_petal)
         .def("radec2xy", &fba::Hardware::radec2xy)
         .def("radec2xy_multi", [](fba::Hardware & self, double tile_ra,
             double tile_dec, std::vector <double> const & ra,
@@ -261,6 +280,14 @@ PYBIND11_MODULE(_internal, m) {
             std::vector <std::pair <double, double> > xy;
             self.radec2xy_multi(tile_ra, tile_dec, ra, dec, xy, threads);
             return xy;
+        }, py::return_value_policy::take_ownership)
+        .def("xy2radec", &fba::Hardware::xy2radec)
+        .def("xy2radec_multi", [](fba::Hardware & self, double tile_ra,
+            double tile_dec, std::vector <double> const & x_mm,
+            std::vector <double> const & y_mm, int threads) {
+            std::vector <std::pair <double, double> > radec;
+            self.xy2radec_multi(tile_ra, tile_dec, x_mm, y_mm, radec, threads);
+            return radec;
         }, py::return_value_policy::take_ownership)
         .def("pos_angles", &fba::Hardware::pos_angles)
         .def("collide", &fba::Hardware::collide)
@@ -274,31 +301,53 @@ PYBIND11_MODULE(_internal, m) {
                 std::vector <int32_t> fid(nfiber);
                 std::vector <int32_t> petal(nfiber);
                 std::vector <int32_t> spectro(nfiber);
+                std::vector <int32_t> location(nfiber);
+                std::vector <int32_t> slit(nfiber);
+                std::vector <int32_t> slitblock(nfiber);
+                std::vector <int32_t> blockfiber(nfiber);
+                std::vector <int32_t> device(nfiber);
                 std::vector <double> x_mm(nfiber);
                 std::vector <double> y_mm(nfiber);
                 std::vector <double> z_mm(nfiber);
+                std::vector <double> q_deg(nfiber);
+                std::vector <double> s_mm(nfiber);
                 std::vector <int32_t> status(nfiber);
                 for (int32_t i = 0; i < nfiber; ++i) {
                     fid[i] = p.fiber_id.at(i);
                     petal[i] = p.fiber_petal.at(fid[i]);
                     spectro[i] = p.fiber_spectro.at(fid[i]);
-                    x_mm[i] = p.center_mm.at(fid[i]).first;
-                    y_mm[i] = p.center_mm.at(fid[i]).second;
-                    z_mm[i] = p.center_z_mm.at(fid[i]);
+                    location[i] = p.fiber_location.at(fid[i]);
+                    slit[i] = p.fiber_slit.at(fid[i]);
+                    slitblock[i] = p.fiber_slitblock.at(fid[i]);
+                    blockfiber[i] = p.fiber_blockfiber.at(fid[i]);
+                    device[i] = p.fiber_device.at(fid[i]);
+                    x_mm[i] = p.fiber_pos_xy_mm.at(fid[i]).first;
+                    y_mm[i] = p.fiber_pos_xy_mm.at(fid[i]).second;
+                    z_mm[i] = p.fiber_pos_z_mm.at(fid[i]);
+                    q_deg[i] = p.fiber_pos_q_deg.at(fid[i]);
+                    s_mm[i] = p.fiber_pos_s_mm.at(fid[i]);
                     status[i] = p.state.at(fid[i]);
                 }
-                return py::make_tuple(fid, petal, spectro, x_mm,
-                    y_mm, z_mm, status);
+                return py::make_tuple(fid, petal, spectro, location, slit,
+                    slitblock, blockfiber, device, x_mm, y_mm, z_mm, q_deg,
+                    s_mm, status);
             },
             [](py::tuple t) { // __setstate__
                 return new fba::Hardware(
                     t[0].cast<std::vector<int32_t> >(),
                     t[1].cast<std::vector<int32_t> >(),
                     t[2].cast<std::vector<int32_t> >(),
-                    t[3].cast<std::vector<double> >(),
-                    t[4].cast<std::vector<double> >(),
-                    t[5].cast<std::vector<double> >(),
-                    t[6].cast<std::vector<int32_t> >()
+                    t[3].cast<std::vector<int32_t> >(),
+                    t[4].cast<std::vector<int32_t> >(),
+                    t[5].cast<std::vector<int32_t> >(),
+                    t[6].cast<std::vector<int32_t> >(),
+                    t[7].cast<std::vector<int32_t> >(),
+                    t[8].cast<std::vector<double> >(),
+                    t[9].cast<std::vector<double> >(),
+                    t[10].cast<std::vector<double> >(),
+                    t[11].cast<std::vector<double> >(),
+                    t[12].cast<std::vector<double> >(),
+                    t[13].cast<std::vector<int32_t> >()
                 );
             }
         ));

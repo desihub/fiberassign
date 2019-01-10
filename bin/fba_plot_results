@@ -19,19 +19,38 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--dir", type=str, required=True, default=None,
-                        help="Directory containing fiberassign outputs.")
+                        help="Directory containing fiberassign results.")
 
     parser.add_argument("--prefix", type=str, required=False,
-                        default="fiberassign",
-                        help="Prefix of each file (before the _<tile>.fits).")
+                        default="fiberassign_",
+                        help="Prefix of each file (before the <tile>.fits).")
+
+    parser.add_argument("--split", required=False, default=False,
+                        action="store_true",
+                        help="Results are in tile prefix directories.")
 
     parser.add_argument("--out", type=str, required=False, default=None,
                         help="Output directory for plots.  Default is the"
                         " directory containing the fiberassign output.")
 
+    parser.add_argument("--out_prefix", type=str, required=False,
+                        default=None,
+                        help="Prefix of each output file.")
+
+    parser.add_argument("--out_split", required=False, default=False,
+                        action="store_true",
+                        help="Split output into tile prefix directories.")
+
     parser.add_argument("--petals", type=str, required=False, default=None,
                         help="Comma-separated list of petals to plot "
                         "(default is all petals)")
+
+    parser.add_argument("--real_shapes", required=False, default=False,
+                        action="store_true",
+                        help="Plot the actual positioner shapes.  This looks"
+                        " better but takes much longer and makes bigger files."
+                        "  Recommended only for plotting limited "
+                        "tiles / petals.")
 
     parser.add_argument("--footprint", type=str, required=False, default=None,
                         help="Optional FITS file defining the footprint.  If"
@@ -60,10 +79,6 @@ def main():
                         "Default uses the current date.  Format is "
                         "YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss in UTC time.")
 
-    parser.add_argument("--old", required=False, default=False,
-                        action="store_true",
-                        help="Files are old format.")
-
     args = parser.parse_args()
 
     # Check directory
@@ -74,6 +89,10 @@ def main():
     outdir = args.out
     if outdir is None:
         outdir = args.dir
+
+    outprefix = args.out_prefix
+    if outprefix is None:
+        outprefix = args.prefix
 
     # Get run date
     rundate = args.rundate
@@ -104,7 +123,9 @@ def main():
         petals = [int(x) for x in args.petals.split(",")]
 
     plot_tiles(hw, tiles, result_dir=args.dir, result_prefix=args.prefix,
-               plot_dir=outdir, petals=petals, old=args.old)
+               result_split_dir=args.split, plot_dir=outdir,
+               plot_prefix=outprefix, plot_split_dir=args.out_split,
+               petals=petals, real_shapes=args.real_shapes)
 
     return
 

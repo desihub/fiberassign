@@ -19,9 +19,16 @@ namespace fbg = fiberassign::geom;
 fba::Hardware::Hardware(std::vector <int32_t> const & fiber,
                         std::vector <int32_t> const & petal,
                         std::vector <int32_t> const & spectro,
+                        std::vector <int32_t> const & location,
+                        std::vector <int32_t> const & slit,
+                        std::vector <int32_t> const & slitblock,
+                        std::vector <int32_t> const & blockfiber,
+                        std::vector <int32_t> const & device,
                         std::vector <double> const & x_mm,
                         std::vector <double> const & y_mm,
                         std::vector <double> const & z_mm,
+                        std::vector <double> const & q_deg,
+                        std::vector <double> const & s_mm,
                         std::vector <int32_t> const & status) {
     nfiber = fiber.size();
 
@@ -33,10 +40,17 @@ fba::Hardware::Hardware(std::vector <int32_t> const & fiber,
     }
     npetal = static_cast <size_t> (maxpetal + 1);
 
-    center_mm.clear();
-    center_z_mm.clear();
+    fiber_pos_xy_mm.clear();
+    fiber_pos_z_mm.clear();
+    fiber_pos_q_deg.clear();
+    fiber_pos_s_mm.clear();
     fiber_petal.clear();
     fiber_spectro.clear();
+    fiber_device.clear();
+    fiber_location.clear();
+    fiber_slit.clear();
+    fiber_slitblock.clear();
+    fiber_blockfiber.clear();
     fiber_id.resize(0);
     state.clear();
 
@@ -49,9 +63,16 @@ fba::Hardware::Hardware(std::vector <int32_t> const & fiber,
         fiber_id.push_back(fiber[i]);
         fiber_petal[fiber[i]] = petal[i];
         fiber_spectro[fiber[i]] = spectro[i];
+        fiber_device[fiber[i]] = device[i];
+        fiber_location[fiber[i]] = location[i];
+        fiber_slit[fiber[i]] = slit[i];
+        fiber_slitblock[fiber[i]] = slitblock[i];
+        fiber_blockfiber[fiber[i]] = blockfiber[i];
         petal_fibers[petal[i]].push_back(fiber[i]);
-        center_mm[fiber[i]] = std::make_pair(x_mm[i], y_mm[i]);
-        center_z_mm[fiber[i]] = z_mm[i];
+        fiber_pos_xy_mm[fiber[i]] = std::make_pair(x_mm[i], y_mm[i]);
+        fiber_pos_z_mm[fiber[i]] = z_mm[i];
+        fiber_pos_q_deg[fiber[i]] = q_deg[i];
+        fiber_pos_s_mm[fiber[i]] = s_mm[i];
         state[fiber[i]] = status[i];
         neighbors[fiber[i]].clear();
     }
@@ -92,30 +113,14 @@ fba::Hardware::Hardware(std::vector <int32_t> const & fiber,
         int32_t xid = fiber_id[x];
         for (int32_t y = x + 1; y < nfiber; ++y) {
             int32_t yid = fiber_id[y];
-            double dist = fbg::dist(center_mm[xid], center_mm[yid]);
+            double dist = fbg::dist(fiber_pos_xy_mm[xid],
+                                    fiber_pos_xy_mm[yid]);
             if (dist <= neighbor_radius_mm) {
                 neighbors[xid].push_back(yid);
                 neighbors[yid].push_back(xid);
             }
         }
     }
-
-    // for (auto const & nb : neighbors) {
-    //     int32_t fid = nb.first;
-    //     std::ostringstream nstr;
-    //     for (auto const & n : nb.second) {
-    //         nstr << n << ", ";
-    //     }
-    //     std::cout << "NGHBOR:  " << fid << " = " << nstr.str() << std::endl;
-    // }
-    //
-    // for (auto const & nb : neighbors) {
-    //     int32_t fid = nb.first;
-    //     std::cout << "NGHBOR:  " << fid << " (" << center_mm[fid].first << "," << center_mm[fid].second << ")" << std::endl;
-    //     for (auto const & n : nb.second) {
-    //         std::cout << "NGHBOR:    " << n << " (" << center_mm[n].first << "," << center_mm[n].second << ") dist = " << fbg::dist(center_mm[fid], center_mm[n]) << std::endl;
-    //     }
-    // }
 
     ferrule_holder = create_ferrule_holder();
     central_body = create_central_body();
@@ -140,7 +145,7 @@ double fba::Hardware::radial_dist2ang (double const & dist_mm) const {
     double inv_delta = 1.0 / delta_theta;
 
     // starting guess
-    double theta_rad = 0.1;
+    double theta_rad = 0.01;
 
     double distcur;
     double distdelta;
@@ -152,7 +157,6 @@ double fba::Hardware::radial_dist2ang (double const & dist_mm) const {
         distdelta = radial_ang2dist(theta_rad + delta_theta);
         error = distcur - dist_mm;
         correction = error / (inv_delta * (distdelta - distcur));
-        //std::cerr << "    dist2ang: theta = " << theta_rad << " err = " << error << " correction = " << correction << std::endl;
         theta_rad -= correction;
     }
     return theta_rad;
@@ -246,9 +250,9 @@ void fba::Hardware::radec2xy_multi(
 }
 
 
-void fba::Hardware::xy2radec(double const & tilera, double const & tiledec,
-              double const & x_mm, double const & y_mm,
-              double & ra, double & dec) const {
+fiberassign::geom::dpair fba::Hardware::xy2radec(
+        double const & tilera, double const & tiledec,
+        double const & x_mm, double const & y_mm) const {
 
     double deg_to_rad = M_PI / 180.0;
     double rad_to_deg = 180.0 / M_PI;
@@ -301,8 +305,38 @@ void fba::Hardware::xy2radec(double const & tilera, double const & tiledec,
 
     double dec_rad = M_PI_2 - ::acos(z4);
 
-    ra = ::fmod( (ra_rad * rad_to_deg), 360.0);
-    dec = dec_rad * rad_to_deg;
+    double ra = ::fmod( (ra_rad * rad_to_deg), 360.0);
+    double dec = dec_rad * rad_to_deg;
+
+    return std::make_pair(ra, dec);
+}
+
+
+void fba::Hardware::xy2radec_multi(
+        double const & tilera, double const & tiledec,
+        std::vector <double> const & x_mm, std::vector <double> const & y_mm,
+        std::vector <std::pair <double, double> > & radec, int threads) const {
+    size_t npos = x_mm.size();
+    radec.resize(npos);
+
+    int max_threads = 1;
+    #ifdef _OPENMP
+    max_threads = omp_get_num_threads();
+    #endif
+    int run_threads;
+    if (threads > 0) {
+        run_threads = threads;
+    } else {
+        run_threads = max_threads;
+    }
+    if (run_threads > max_threads) {
+        run_threads = max_threads;
+    }
+
+    #pragma omp parallel for schedule(static) default(none) shared(npos, tilera, tiledec, x_mm, y_mm, radec) num_threads(run_threads)
+    for (size_t i = 0; i < npos; ++i) {
+        radec[i] = xy2radec(tilera, tiledec, x_mm[i], y_mm[i]);
+    }
 
     return;
 }
@@ -483,7 +517,7 @@ std::pair <fbg::shape, fbg::shape> fba::Hardware::fiber_position(
     fbg::shape fh(ferrule_holder);
     fbg::shape cb(central_body);
 
-    auto const & center = center_mm.at(fiber_id);
+    auto const & center = fiber_pos_xy_mm.at(fiber_id);
 
     reposition_fiber(cb, fh, center, xy, positioner_range);
     return std::make_pair(cb, fh);
@@ -517,7 +551,7 @@ std::vector <std::pair <fbg::shape, fbg::shape> >
         // Construct a positioner shape for a given fiber and location.
         fbg::shape fh(ferrule_holder);
         fbg::shape cb(central_body);
-        auto const & center = center_mm.at(fid);
+        auto const & center = fiber_pos_xy_mm.at(fid);
         reposition_fiber(cb, fh, center, xy[f], positioner_range);
         result[f] = std::make_pair(cb, fh);
     }
@@ -715,8 +749,8 @@ std::vector <bool> fba::Hardware::check_collisions_thetaphi(
         cblow.rotation_origin(cossintheta);
         fhlow.rotation_origin(cossintheta);
         fhlow.rotation(cossinphi);
-        fhlow.transl(center_mm.at(flow));
-        cblow.transl(center_mm.at(flow));
+        fhlow.transl(fiber_pos_xy_mm.at(flow));
+        cblow.transl(fiber_pos_xy_mm.at(flow));
 
         costheta = ::cos(thetahigh);
         sintheta = ::sin(thetahigh);
@@ -727,8 +761,8 @@ std::vector <bool> fba::Hardware::check_collisions_thetaphi(
         cbhigh.rotation_origin(cossintheta);
         fhhigh.rotation_origin(cossintheta);
         fhhigh.rotation(cossinphi);
-        fhhigh.transl(center_mm.at(fhigh));
-        cbhigh.transl(center_mm.at(fhigh));
+        fhhigh.transl(fiber_pos_xy_mm.at(fhigh));
+        cbhigh.transl(fiber_pos_xy_mm.at(fhigh));
 
         bool hit = false;
         if (fbg::intersect(fhlow, fhhigh)) {

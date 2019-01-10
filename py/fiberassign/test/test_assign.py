@@ -133,17 +133,17 @@ class TestAssign(unittest.TestCase):
         os.makedirs(outdir)
 
         write_assignment_fits(tiles, asgn, out_dir=outdir,
-                              out_prefix="fiberassign")
+                              out_prefix="fiberassign_")
 
         plotdir = "{}_plots".format(outdir)
         if os.path.isdir(plotdir):
             shutil.rmtree(plotdir)
         os.makedirs(plotdir)
 
-        plot_tiles(hw, tiles, result_dir=outdir, result_prefix="fiberassign",
+        plot_tiles(hw, tiles, result_dir=outdir, result_prefix="fiberassign_",
                    plot_dir=plotdir, petals=[0])
 
-        qa_tiles(hw, tiles, result_dir=outdir, result_prefix="fiberassign")
+        qa_tiles(hw, tiles, result_dir=outdir, result_prefix="fiberassign_")
 
         qadata = None
         with open(os.path.join(outdir, "qa.json"), "r") as f:
@@ -155,7 +155,7 @@ class TestAssign(unittest.TestCase):
             self.assertEqual(400, props["assign_sky"])
             self.assertTrue(len(props["unassigned"]) == 0)
 
-        plot_qa(qadata, "{}_qa".format(outdir), outformat="svg",
+        plot_qa(qadata, "{}_qa".format(outdir), outformat="pdf",
                 labels=True)
 
         return

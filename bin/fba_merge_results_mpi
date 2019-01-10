@@ -26,19 +26,27 @@ def main():
                         "in different files).")
 
     parser.add_argument("--dir", type=str, required=True, default=None,
-                        help="Directory containing fiberassign outputs.")
+                        help="Directory containing fiberassign results.")
 
     parser.add_argument("--prefix", type=str, required=False,
-                        default="fiberassign",
-                        help="Prefix of each file (before the _<tile>.fits).")
+                        default="fiberassign_",
+                        help="Prefix of each file (before the <tile>.fits).")
+
+    parser.add_argument("--split", required=False, default=False,
+                        action="store_true",
+                        help="Results are in tile prefix directories.")
 
     parser.add_argument("--out", type=str, required=False, default=None,
                         help="Output directory for the merged files.  Default"
                         " is the directory containing the fiberassign output.")
 
     parser.add_argument("--out_prefix", type=str, required=False,
-                        default="tile",
+                        default="tile-",
                         help="Prefix of each output file.")
+
+    parser.add_argument("--out_split", required=False, default=False,
+                        action="store_true",
+                        help="Split output into tile prefix directories.")
 
     parser.add_argument("--columns", type=str, required=False, default=None,
                         help="Override the column names of target data to be "
@@ -59,7 +67,7 @@ def main():
         coltest = args.columns.split(",")
         columns = [x for x in coltest if x != "TARGETID"]
 
-    tiles = result_tiles(result_dir=args.dir, result_prefix=args.prefix)
+    tiles = result_tiles(dir=args.dir, prefix=args.prefix)
 
     comm = MPI.COMM_WORLD
     ptiles = np.array_split(tiles, comm.size)[comm.rank]
