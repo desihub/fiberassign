@@ -4,13 +4,15 @@ Main fiber assignment entry point
 """
 import os
 
+import sys
+
 import argparse
 
 from datetime import datetime
 
 import desimodel.io
 
-from fiberassign.utils import GlobalTimers
+from fiberassign.utils import GlobalTimers, Logger
 
 from fiberassign.hardware import load_hardware
 
@@ -24,10 +26,11 @@ from fiberassign.targets import (str_to_target_type, TARGET_TYPE_SCIENCE,
                                  TargetTree, FibersAvailable,
                                  load_target_file)
 
-from fiberassign.assign import (Assignment, write_assignment_fits)
+from fiberassign.assign import (Assignment, write_assignment_fits, result_path)
 
 
 def main():
+    log = Logger.get()
     gt = GlobalTimers.get()
     gt.start("total calculation")
 
@@ -101,6 +104,10 @@ def main():
                         "assigned.  This is convenient, but increases the "
                         "write time and the file size.")
 
+    parser.add_argument("--overwrite", required=False, default=False,
+                        action="store_true",
+                        help="Overwrite any pre-existing output files")
+
     args = parser.parse_args()
 
     # Get run date
@@ -132,6 +139,17 @@ def main():
                 except ValueError:
                     pass
     tiles = load_tiles(hw, tiles_file=args.footprint, select=tileselect)
+
+    # Before doing significant calculations, check for pre-existing files
+    if not args.overwrite:
+        for tileid in tiles.id:
+            outfile = result_path(tileid, dir=args.dir,
+                    prefix=args.prefix, split=args.split)
+            if os.path.exists(outfile):
+                outdir = os.path.split(outfile)[0]
+                log.error('Output files already exist in {}'.format(outdir))
+                log.error('either remove them or use --overwrite')
+                sys.exit(1)
 
     # Create empty target list
     tgs = Targets()
@@ -206,7 +224,7 @@ def main():
     write_assignment_fits(tiles, asgn, out_dir=out_dir,
                           out_prefix=args.prefix, split_dir=args.split,
                           all_targets=args.write_all_targets,
-                          gfa_targets=gfa_targets)
+                          gfa_targets=gfa_targets, overwrite=args.overwrite)
 
     gt.stop("total write output")
 
