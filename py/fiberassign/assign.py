@@ -543,7 +543,7 @@ def read_assignment_fits_tile(params):
 
     Returns:
         (tuple):  The FITS header, assignment recarray, target property
-            recarray and the available targets recarray.
+            recarray, the available targets recarray, and the GFA targets
 
     """
     (tile_id, tile_file) = params
@@ -601,7 +601,12 @@ def read_assignment_fits_tile(params):
         else:
             avail_data = fd["POTENTIAL_ASSIGNMENTS"].read()
 
-    return header, fiber_data, targets_data, avail_data
+    if "GFA_TARGETS" in fd:
+        gfa_targets = fd["GFA_TARGETS"].read()
+    else:
+        gfa_targets = None
+
+    return header, fiber_data, targets_data, avail_data, gfa_targets
 
 
 merge_results_tile_tgbuffers = None
@@ -683,8 +688,8 @@ def merge_results_tile(out_dtype, params):
     tm = Timer()
     tm.start()
 
-    inhead, fiber_data, targets_data, avail_data = read_assignment_fits_tile(
-        (tile_id, infile))
+    inhead, fiber_data, targets_data, avail_data, gfa_targets = \
+            read_assignment_fits_tile((tile_id, infile))
 
     tm.stop()
     tm.report("  read input data {}".format(tile_id))
@@ -824,6 +829,9 @@ def merge_results_tile(out_dtype, params):
     log.info("Writing new data {}".format(outfile))
     fd.write(outdata, header=inhead, extname="FIBERASSIGN")
 
+    if gfa_targets is not None:
+        fd.write(gfa_targets, extname="GFA_TARGETS")
+
     # Write the per-tile catalog information also.  Sadly, this HDU is
     # expected to have the original column names.  We swap them back, which
     # is fine since we are going to delete this data after writing anyway.
@@ -855,6 +863,7 @@ def merge_results_tile(out_dtype, params):
     fd.write(fiber_data, header=inhead, extname="FASSIGN")
     fd.write(targets_data, header=inhead, extname="FTARGETS")
     fd.write(avail_data, header=inhead, extname="FAVAIL")
+    fd.close()
 
     tm.stop()
     tm.report("  write data to file {}".format(tile_id))
