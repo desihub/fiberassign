@@ -186,34 +186,32 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
                     real_shapes=False):
     center_mm = hw.fiber_pos_xy_mm
     patrol_rad = hw.patrol_mm
+    device_type = dict(hw.fiber_device_type)
     assigned = np.array(sorted(tile_assigned.keys()), dtype=np.int32)
     for fid in assigned:
+        color = "gray"
+        if device_type[fid] != "POS":
+            color = "green"
+        cb = None
+        fh = None
         center = center_mm[fid]
         tgid = tile_assigned[fid]
+
         if tgid >= 0:
             # This fiber is assigned.  Plot the positioner located at the
             # assigned target.
             cb, fh = hw.fiber_position(fid, targetprops[tgid]["xy"])
-            if real_shapes:
-                plot_positioner(ax, patrol_rad, fid, center, cb, fh,
-                                color=targetprops[tgid]["color"],
-                                linewidth=linewidth)
-            else:
-                plot_positioner_simple(ax, patrol_rad, fid, center, cb, fh,
-                                       color=targetprops[tgid]["color"],
-                                       linewidth=linewidth)
+            color = targetprops[tgid]["color"]
         else:
             # This fiber is unassigned.  Plot the positioner in its home
             # position.
-            color = "gray"
             cb, fh = hw.fiber_position(fid, center)
-            if real_shapes:
-                plot_positioner(ax, patrol_rad, fid, center, cb, fh,
-                                color=color, linewidth=linewidth)
-            else:
-                plot_positioner_simple(ax, patrol_rad, fid, center, cb, fh,
-                                       color=color, linewidth=linewidth)
-
+        if real_shapes:
+            plot_positioner(ax, patrol_rad, fid, center, cb, fh,
+                            color=color, linewidth=linewidth)
+        else:
+            plot_positioner_simple(ax, patrol_rad, fid, center, cb, fh,
+                                   color=color, linewidth=linewidth)
     return
 
 

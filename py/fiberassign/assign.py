@@ -65,6 +65,7 @@ results_assign_columns = OrderedDict([
     ("LAMBDA_REF", "f4"),
     ("PETAL_LOC", "i2"),
     ("DEVICE_LOC", "i4"),
+    ("DEVICE_TYPE", "a3"),
     ("TARGET_RA", "f8"),
     ("TARGET_DEC", "f8"),
     ("DESIGN_X", "f4"),
@@ -241,7 +242,7 @@ def write_assignment_fits_tile(asgn, fulltarget, params):
 
         # For unassigned fibers, we give each fiber a unique negative
         # number based on the tile and fiber.
-        unassign_offset = tile_id * hw.npetal * hw.nfiber_petal
+        unassign_offset = tile_id * len(fibers)
         assigned_tgids = np.array([tdata[x] if x in tdata.keys()
                                   else -(unassign_offset + x)
                                   for x in fibers], dtype=np.int64)
@@ -303,6 +304,7 @@ def write_assignment_fits_tile(asgn, fulltarget, params):
         location = dict(hw.fiber_location)
         device = dict(hw.fiber_device)
         petal = dict(hw.fiber_petal)
+        device_type = dict(hw.fiber_device_type)
 
         fdata["LOCATION"] = np.array(
             [location[x] for x in fibers]).astype(np.int32)
@@ -310,6 +312,8 @@ def write_assignment_fits_tile(asgn, fulltarget, params):
             [device[x] for x in fibers]).astype(np.int32)
         fdata["PETAL_LOC"] = np.array(
             [petal[x] for x in fibers]).astype(np.int16)
+        fdata["DEVICE_TYPE"] = np.array(
+            [device_type[x] for x in fibers]).astype(np.dtype("a3"))
 
         # This hard-coded value copied from the original code...
         lambda_ref = np.ones(len(fibers), dtype=np.float32) * 5400.0
@@ -321,9 +325,9 @@ def write_assignment_fits_tile(asgn, fulltarget, params):
         # Set unused bit
         fstatus |= [0 if x in tdata.keys() else 1 for x in fibers]
         # Set stuck / broken bits
-        fstatus |= [2 if fstate[x] == FIBER_STATE_STUCK else 0
+        fstatus |= [2 if (fstate[x] & FIBER_STATE_STUCK) else 0
                     for x in fibers]
-        fstatus |= [4 if fstate[x] == FIBER_STATE_BROKEN else 0
+        fstatus |= [4 if (fstate[x] & FIBER_STATE_BROKEN) else 0
                     for x in fibers]
         fdata["FIBERSTATUS"] = fstatus
 
@@ -657,6 +661,27 @@ merged_fiberassign_req_columns = OrderedDict([
     ("NUMOBS_MORE", "i4")
 ])
 
+merged_skymon_columns = OrderedDict([
+    ("FIBER", "i4"),
+    ("LOCATION", "i4"),
+    ("NUMTARGET", "i2"),
+    ("TARGETID", "i8"),
+    ("DESI_TARGET", "i8"),
+    ("BGS_TARGET", "i8"),
+    ("MWS_TARGET", "i8"),
+    ("TARGET_RA", "f8"),
+    ("TARGET_DEC", "f8"),
+    ("DESIGN_X", "f4"),
+    ("DESIGN_Y", "f4"),
+    ("BRICKNAME", "a8"),
+    ("FIBERSTATUS", "i4"),
+    ("DESIGN_Q", "f4"),
+    ("DESIGN_S", "f4"),
+    ("PETAL_LOC", "i2"),
+    ("DEVICE_LOC", "i4"),
+    ("PRIORITY", "i4"),
+])
+
 merged_potential_columns = OrderedDict([
     ("TARGETID", "i8"),
     ("FIBER", "i4"),
@@ -703,9 +728,16 @@ def merge_results_tile(out_dtype, params):
     tile_tgids = np.copy(targets_data["TARGETID"])
     tile_tgindx = {y: x for x, y in enumerate(tile_tgids)}
 
+    # The row indices of our assigned targets.  These indices are valid for
+    # both the original input FTARGETS data and also our per-tile copy of the
+    # target catalog data.  These indices are essentially random access into
+    # the target table.
+    target_rows = np.array([tile_tgindx[x] for x in tile_tgids])
+
     # Extract just these targets from the full set of catalogs
 
-    tile_targets = np.zeros(len(tile_tgids), dtype=out_dtype)
+    tile_targets_dtype = np.dtype(out_dtype.fields)
+    tile_targets = np.empty(len(tile_tgids), dtype=tile_targets_dtype)
 
     # Loop over input target files and copy data.  Note: these are guaranteed
     # to be sorted by TARGETID, since that is done during staging to shared
@@ -757,6 +789,11 @@ def merge_results_tile(out_dtype, params):
     # relevant for this tile, and with data merged from all the files.
     # Next, merge this with the assignment information.
 
+    # Determine the rows of the assignment that are for science and sky
+    # monitor positioners.
+    science_rows = np.where(fiber_data["DEVICE_TYPE"] == b"POS")[0]
+    sky_rows = np.where(fiber_data["DEVICE_TYPE"] == b"ETC")[0]
+
     # Construct output recarray
     outdata = np.zeros(len(fiber_data), dtype=out_dtype)
 
@@ -765,15 +802,6 @@ def merge_results_tile(out_dtype, params):
 
     # Rows containing assigned fibers
     fassign_valid = np.where(fiber_data["TARGETID"] >= 0)[0]
-
-    # The target IDs assigned to fibers (note- NOT sorted)
-    fassign_tgids = np.copy(fiber_data["TARGETID"][fassign_valid])
-
-    # The row indices of our assigned targets.  These indices are valid for
-    # both the original input FTARGETS data and also our per-tile copy of the
-    # target catalog data.  These indices are essentially random access into
-    # the target table.
-    target_rows = np.array([tile_tgindx[x] for x in tile_tgids])
 
     tm.stop()
     tm.report("  fiber / target index mapping {}".format(tile_id))
@@ -825,9 +853,24 @@ def merge_results_tile(out_dtype, params):
         os.remove(outfile)
     fd = fitsio.FITS(outfile, "rw")
 
-    # Write the main HDU
+    # Write the main HDU- only the data for science positioners
     log.info("Writing new data {}".format(outfile))
-    fd.write(outdata, header=inhead, extname="FIBERASSIGN")
+    fd.write(outdata[science_rows], header=inhead, extname="FIBERASSIGN")
+
+    # Now write out the sky monitor fibers.  We extract the rows and columns
+    # from the already-computed recarray.
+
+    skymon_dtype = np.dtype([(x, y) for x, y in merged_skymon_columns.items()])
+    skymon = np.zeros(len(sky_rows), dtype=skymon_dtype)
+    # Sky monitor fake FIBER column with values 0-19.  The fake FIBER value in
+    # the raw data is already based on increasing LOCATION value.
+    skymon_fiber = np.arange(len(sky_rows), dtype=np.int32)
+    for field in skymon_dtype.names:
+        if field == "FIBER":
+            skymon["FIBER"] = skymon_fiber
+        else:
+            skymon[field] = outdata[field][sky_rows]
+    fd.write(skymon, header=inhead, extname="SKY_MONITOR")
 
     if gfa_targets is not None:
         fd.write(gfa_targets, extname="GFA_TARGETS")
@@ -934,10 +977,10 @@ def merge_results(targetfiles, tiles, result_dir=".",
         # Read data directly into shared buffer
         tgview[:] = fd[1].read()
 
-        # Sort rows by TARGETID
-        tgview.sort(order="TARGETID")
-
-        tgids = tgview["TARGETID"]
+        # Sort rows by TARGETID if not already done
+        tgviewids = tgview["TARGETID"]
+        if not np.all(tgviewids[:-1] <= tgviewids[1:]):
+            tgview.sort(order="TARGETID", kind="heapsort")
 
         tm.stop()
         tm.report("Read {} into shared memory".format(tf))

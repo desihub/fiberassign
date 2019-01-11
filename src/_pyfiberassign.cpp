@@ -241,6 +241,7 @@ PYBIND11_MODULE(_internal, m) {
             std::vector <int32_t> const &,
             std::vector <int32_t> const &,
             std::vector <int32_t> const &,
+            std::vector <std::string> const &,
             std::vector <double> const &,
             std::vector <double> const &,
             std::vector <double> const &,
@@ -260,6 +261,7 @@ PYBIND11_MODULE(_internal, m) {
         .def_readonly("fiber_pos_q_deg", &fba::Hardware::fiber_pos_q_deg)
         .def_readonly("fiber_pos_s_mm", &fba::Hardware::fiber_pos_s_mm)
         .def_readonly("fiber_device", &fba::Hardware::fiber_device)
+        .def_readonly("fiber_device_type", &fba::Hardware::fiber_device_type)
         .def_readonly("fiber_location", &fba::Hardware::fiber_location)
         .def_readonly("fiber_spectro", &fba::Hardware::fiber_spectro)
         .def_readonly("fiber_slit", &fba::Hardware::fiber_slit)
@@ -273,6 +275,7 @@ PYBIND11_MODULE(_internal, m) {
         .def_readonly("positioner_range", &fba::Hardware::positioner_range)
         .def_readonly("state", &fba::Hardware::state)
         .def_readonly("neighbors", &fba::Hardware::neighbors)
+        .def("device_fibers", &fba::Hardware::device_fibers)
         .def("radec2xy", &fba::Hardware::radec2xy)
         .def("radec2xy_multi", [](fba::Hardware & self, double tile_ra,
             double tile_dec, std::vector <double> const & ra,
@@ -306,6 +309,7 @@ PYBIND11_MODULE(_internal, m) {
                 std::vector <int32_t> slitblock(nfiber);
                 std::vector <int32_t> blockfiber(nfiber);
                 std::vector <int32_t> device(nfiber);
+                std::vector <std::string> device_type(nfiber);
                 std::vector <double> x_mm(nfiber);
                 std::vector <double> y_mm(nfiber);
                 std::vector <double> z_mm(nfiber);
@@ -321,6 +325,7 @@ PYBIND11_MODULE(_internal, m) {
                     slitblock[i] = p.fiber_slitblock.at(fid[i]);
                     blockfiber[i] = p.fiber_blockfiber.at(fid[i]);
                     device[i] = p.fiber_device.at(fid[i]);
+                    device_type[i] = p.fiber_device_type.at(fid[i]);
                     x_mm[i] = p.fiber_pos_xy_mm.at(fid[i]).first;
                     y_mm[i] = p.fiber_pos_xy_mm.at(fid[i]).second;
                     z_mm[i] = p.fiber_pos_z_mm.at(fid[i]);
@@ -329,7 +334,7 @@ PYBIND11_MODULE(_internal, m) {
                     status[i] = p.state.at(fid[i]);
                 }
                 return py::make_tuple(fid, petal, spectro, location, slit,
-                    slitblock, blockfiber, device, x_mm, y_mm, z_mm, q_deg,
+                    slitblock, blockfiber, device, device_type, x_mm, y_mm, z_mm, q_deg,
                     s_mm, status);
             },
             [](py::tuple t) { // __setstate__
@@ -342,12 +347,13 @@ PYBIND11_MODULE(_internal, m) {
                     t[5].cast<std::vector<int32_t> >(),
                     t[6].cast<std::vector<int32_t> >(),
                     t[7].cast<std::vector<int32_t> >(),
-                    t[8].cast<std::vector<double> >(),
+                    t[8].cast<std::vector<std::string> >(),
                     t[9].cast<std::vector<double> >(),
                     t[10].cast<std::vector<double> >(),
                     t[11].cast<std::vector<double> >(),
                     t[12].cast<std::vector<double> >(),
-                    t[13].cast<std::vector<int32_t> >()
+                    t[13].cast<std::vector<double> >(),
+                    t[14].cast<std::vector<int32_t> >()
                 );
             }
         ));
@@ -549,6 +555,7 @@ PYBIND11_MODULE(_internal, m) {
             py::return_value_policy::reference_internal)
         .def("assign_unused", &fba::Assignment::assign_unused,
              py::arg("tgtype")=TARGET_TYPE_SCIENCE, py::arg("max_per_petal")=-1,
+             py::arg("pos_type")=std::string("POS"),
              py::arg("start_tile")=-1, py::arg("stop_tile")=-1)
         .def("assign_force", &fba::Assignment::assign_force,
              py::arg("tgtype")=TARGET_TYPE_SCIENCE,

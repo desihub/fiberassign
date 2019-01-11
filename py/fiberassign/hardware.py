@@ -47,29 +47,42 @@ def load_hardware(fiberpos_file=None, gfa_file=None, rundate=None,
     log.info("Reading fiber positions from {}".format(fiberpos_file))
 
     fpdata = fitsio.read(fiberpos_file, ext=1)
-    log.debug("  fiber position table has {} rows"
-              .format(len(fpdata["DEVICE_TYPE"])))
-    fprows = np.where(fpdata["DEVICE_TYPE"] == b"POS")[0]
-    log.debug("  fiber position table has {} rows with DEVICE_TYPE==POS"
-              .format(len(fprows)))
-    nfiber = len(fpdata[fprows])
+    nfiber = len(fpdata)
+    log.debug("  fiber position table has {} rows".format(nfiber))
+
+    device_type = np.empty(nfiber, dtype="a8")
+    device_type[:] = fpdata["DEVICE_TYPE"]
+
+    # For non-science positioners, no fiber ID is assigned in the positioner
+    # file.  This is a pain, since all our quantities are indexed by fiber ID.
+    # Instead, we give every position a FIBER value which is unique and which
+    # is sorted by LOCATION.  We start these fake FIBER values at 5000.
+    fiber = np.copy(fpdata["FIBER"])
+    location = np.copy(fpdata["LOCATION"])
+    missing_fiber = [x for x, y in enumerate(fiber) if y < 0]
+    if len(missing_fiber) > 0:
+        missing_locsorted = np.sort(location[missing_fiber])
+        locfiber = {y: x for x, y in enumerate(missing_locsorted)}
+        fiber[missing_fiber] = [(5000 + locfiber[x]) for x in
+                                location[missing_fiber]]
 
     # Read the status file...
     status = np.empty(nfiber, dtype=np.int32)
     status[:] = FIBER_STATE_OK
 
-    hw = Hardware(fpdata["FIBER"][fprows],
-                  fpdata["PETAL"][fprows],
-                  fpdata["SPECTRO"][fprows],
-                  fpdata["LOCATION"][fprows],
-                  fpdata["SLIT"][fprows],
-                  fpdata["SLITBLOCK"][fprows],
-                  fpdata["BLOCKFIBER"][fprows],
-                  fpdata["DEVICE"][fprows],
-                  fpdata["X"][fprows],
-                  fpdata["Y"][fprows],
-                  fpdata["Z"][fprows],
-                  fpdata["Q"][fprows],
-                  fpdata["S"][fprows],
+    hw = Hardware(fiber,
+                  fpdata["PETAL"],
+                  fpdata["SPECTRO"],
+                  location,
+                  fpdata["SLIT"],
+                  fpdata["SLITBLOCK"],
+                  fpdata["BLOCKFIBER"],
+                  fpdata["DEVICE"],
+                  device_type,
+                  fpdata["X"],
+                  fpdata["Y"],
+                  fpdata["Z"],
+                  fpdata["Q"],
+                  fpdata["S"],
                   status)
     return hw

@@ -28,6 +28,9 @@ from fiberassign.assign import (Assignment, write_assignment_fits)
 
 
 def main():
+    gt = GlobalTimers.get()
+    gt.start("total calculation")
+
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--targets", type=str, required=True, action="append",
@@ -184,6 +187,12 @@ def main():
     # # So after this is run every fiber should be assigned to something.
     # asgn.assign_unused(TARGET_TYPE_SAFE)
 
+    # Assign sky monitor fibers
+    asgn.assign_unused(TARGET_TYPE_SKY, -1, "ETC")
+
+    gt.stop("total calculation")
+    gt.start("total write output")
+
     # Make sure that output directory exists
     if not os.path.isdir(out_dir):
         os.makedirs(out_dir)
@@ -199,7 +208,8 @@ def main():
                           all_targets=args.write_all_targets,
                           gfa_targets=gfa_targets)
 
-    gt = GlobalTimers.get()
+    gt.stop("total write output")
+
     gt.report()
 
     return

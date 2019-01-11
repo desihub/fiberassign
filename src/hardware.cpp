@@ -24,6 +24,7 @@ fba::Hardware::Hardware(std::vector <int32_t> const & fiber,
                         std::vector <int32_t> const & slitblock,
                         std::vector <int32_t> const & blockfiber,
                         std::vector <int32_t> const & device,
+                        std::vector <std::string> const & device_type,
                         std::vector <double> const & x_mm,
                         std::vector <double> const & y_mm,
                         std::vector <double> const & z_mm,
@@ -47,6 +48,7 @@ fba::Hardware::Hardware(std::vector <int32_t> const & fiber,
     fiber_petal.clear();
     fiber_spectro.clear();
     fiber_device.clear();
+    fiber_device_type.clear();
     fiber_location.clear();
     fiber_slit.clear();
     fiber_slitblock.clear();
@@ -64,6 +66,7 @@ fba::Hardware::Hardware(std::vector <int32_t> const & fiber,
         fiber_petal[fiber[i]] = petal[i];
         fiber_spectro[fiber[i]] = spectro[i];
         fiber_device[fiber[i]] = device[i];
+        fiber_device_type[fiber[i]] = device_type[i];
         fiber_location[fiber[i]] = location[i];
         fiber_slit[fiber[i]] = slit[i];
         fiber_slitblock[fiber[i]] = slitblock[i];
@@ -124,6 +127,18 @@ fba::Hardware::Hardware(std::vector <int32_t> const & fiber,
 
     ferrule_holder = create_ferrule_holder();
     central_body = create_central_body();
+}
+
+
+std::vector <int32_t> fba::Hardware::device_fibers(
+        std::string const & type) const {
+    std::vector <int32_t> ret;
+    for (auto const & fid : fiber_id) {
+        if (type.compare(fiber_device_type.at(fid)) == 0) {
+            ret.push_back(fid);
+        }
+    }
+    return ret;
 }
 
 

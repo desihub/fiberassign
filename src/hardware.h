@@ -41,6 +41,7 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
             std::vector <int32_t> const & slitblock,
             std::vector <int32_t> const & blockfiber,
             std::vector <int32_t> const & device,
+            std::vector <std::string> const & device_type,
             std::vector <double> const & x_mm,
             std::vector <double> const & y_mm,
             std::vector <double> const & z_mm,
@@ -97,6 +98,9 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
             std::vector <double> const & theta,
             std::vector <double> const & phi, int threads = 0) const;
 
+        // Get the fiber IDs for a particular device type
+        std::vector <int32_t> device_fibers(std::string const & type) const;
+
         // The (constant) total number of fibers.
         int32_t nfiber;
 
@@ -124,6 +128,7 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
 
         // fiber ID to device
         std::map <int32_t, int32_t> fiber_device;
+        std::map <int32_t, std::string> fiber_device_type;
 
         // fiber ID to location
         std::map <int32_t, int32_t> fiber_location;

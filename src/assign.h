@@ -31,6 +31,7 @@ class Assignment : public std::enable_shared_from_this <Assignment> {
                    FibersAvailable::pshr favail);
 
         void assign_unused(uint8_t tgtype, int32_t max_per_petal = -1,
+                           std::string const & pos_type = std::string("POS"),
                            int32_t start_tile = -1, int32_t stop_tile = -1);
 
         void assign_force(uint8_t tgtype, int32_t required_per_petal = 0,
@@ -85,7 +86,8 @@ class Assignment : public std::enable_shared_from_this <Assignment> {
             std::vector <int64_t> & tgids, std::vector <double> & tgra,
             std::vector <double> & tgdec) const;
 
-        void project_targets(Hardware const * hw, Targets const * tgs,
+        void project_targets(Hardware const * hw,
+                             Targets const * tgs,
                              TargetsAvailable const * tgsavail,
                              int32_t tile_id, double tile_ra,
                              double tile_dec,
