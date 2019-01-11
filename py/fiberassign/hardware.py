@@ -9,10 +9,13 @@ Functions for loading information about the telescope hardware.
 """
 from __future__ import absolute_import, division, print_function
 
+from datetime import datetime
+
 import numpy as np
 
 import fitsio
-# from astropy.table import Table
+
+from astropy.table import Table
 
 import desimodel.io as dmio
 
@@ -31,7 +34,8 @@ def load_hardware(fiberpos_file=None, gfa_file=None, rundate=None,
             If not specified, desimodel is used to get the location of the
             default file.
         gfa_file (str):  Optional path to the GFA file.
-        rundate ():  XXXX format time stamp
+        rundate (str):  ISO 8601 format time stamp as a string in the
+            format YYYY-MM-DDTHH:MM:SS.  If None, uses current time.
         status_file (str):  Path to fiber status file.  If not specified, all
             fibers are assumed good.
 
@@ -69,6 +73,30 @@ def load_hardware(fiberpos_file=None, gfa_file=None, rundate=None,
     # Read the status file...
     status = np.empty(nfiber, dtype=np.int32)
     status[:] = FIBER_STATE_OK
+
+    if status_file is not None:
+        runtime = None
+        if rundate is None:
+            runtime = datetime.utcnow()
+        else:
+            runtime = datetime.strptime(rundate, "%Y-%m-%dT%H:%M:%S")
+        locindx = {y: x for x, y in enumerate(location)}
+        statdata = Table.read(status_file, format="ascii.ecsv")
+        for row in statdata:
+            loc = row["LOCATION"]
+            broken = row["BROKEN"]
+            stuck = row["STUCK"]
+            start = datetime.strptime(row["START_DATE"],
+                                      "%Y-%m-%dT%H:%M:%S")
+            stop = datetime.strptime(row["END_DATE"],
+                                     "%Y-%m-%dT%H:%M:%S")
+            # Check if this row applies to our current run
+            if (runtime >= start) and (runtime < stop):
+                # yep...
+                if broken > 0:
+                    status[locindx[loc]] |= FIBER_STATE_BROKEN
+                if stuck > 0:
+                    status[locindx[loc]] |= FIBER_STATE_STUCK
 
     hw = Hardware(fiber,
                   fpdata["PETAL"],

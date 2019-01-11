@@ -6,7 +6,7 @@ import os
 
 import argparse
 
-import datetime
+from datetime import datetime
 
 import desimodel.io
 
@@ -73,7 +73,7 @@ def main():
                         "fiber assignment, used with the fiber status file "
                         "to determine which fibers currently have problems.  "
                         "Default uses the current date.  Format is "
-                        "YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss in UTC time.")
+                        "YYYY-MM-DDTHH:mm:ss in UTC time.")
 
     parser.add_argument("--dir", type=str, required=False, default=None,
                         help="Output directory.")
@@ -104,11 +104,11 @@ def main():
     args = parser.parse_args()
 
     # Get run date
-    rundate = args.rundate
-    if rundate is None:
-        rundate = datetime.datetime.now()
+    rundate = None
+    if args.rundate is None:
+        rundate = datetime.utcnow()
     else:
-        rundate = datetime.datetime.fromisoformat(args.rundate)
+        rundate = datetime.strptime(args.rundate, "%Y-%m-%dT%H:%M:%S")
 
     # Set output directory
     out_dir = args.dir
