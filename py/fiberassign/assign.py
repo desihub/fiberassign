@@ -26,6 +26,8 @@ import fitsio
 
 import desimodel.focalplane
 
+from desitarget.targetmask import desi_mask
+
 from ._version import __version__
 
 from .utils import Logger, Timer, default_mp_proc
@@ -842,7 +844,19 @@ def merge_results_tile(out_dtype, params):
         #             realname = merged_fiberassign_swap[c]
         #         outdata[realname][orw] = tile_targets[c][irw]
         for c in external_cols:
-            outdata[c][fassign_valid] = tile_targets[c][target_rows]
+            if c == "OBJTYPE":
+                objtype = np.zeros(len(fassign_valid), dtype="S3")
+                objtype[:] = "TGT"
+                is_sky = (tile_targets["DESI_TARGET"][target_rows]
+                          & desi_mask.SKY) != 0
+                objtype[is_sky] = "SKY"
+                badmask = desi_mask.mask("BAD_SKY|NO_TARGET|IN_BRIGHT_OBJECT")
+                is_bad = (tile_targets["DESI_TARGET"][target_rows]
+                          & badmask) != 0
+                objtype[is_bad] = "BAD"
+                outdata[c][fassign_valid] = objtype
+            else:
+                outdata[c][fassign_valid] = tile_targets[c][target_rows]
 
     tm.stop()
     tm.report("  copy external data to output {}".format(tile_id))
