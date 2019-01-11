@@ -393,11 +393,11 @@ def write_assignment_fits_tile(asgn, fulltarget, params):
 
         if gfa_targets is not None:
             try:
-                #- Astropy Table
-                fd.write(gfa_targets.as_array(), extname='GFA_TARGETS')
+                # Astropy Table
+                fd.write(gfa_targets.as_array(), extname="GFA_TARGETS")
             except AttributeError:
-                #- numpy structured array
-                fd.write(gfa_targets, extname='GFA_TARGETS')
+                # numpy structured array
+                fd.write(gfa_targets, extname="GFA_TARGETS")
 
         fd.close()
 
@@ -407,7 +407,8 @@ def write_assignment_fits_tile(asgn, fulltarget, params):
 
 
 def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fiberassign",
-                          split_dir=False, all_targets=False, gfa_targets=None):
+                          split_dir=False, all_targets=False,
+                          gfa_targets=None):
     """Write out assignment results in FITS format.
 
     For each tile, all available targets (not only the assigned targets) and
@@ -714,7 +715,7 @@ def merge_results_tile(out_dtype, params):
     tm.start()
 
     inhead, fiber_data, targets_data, avail_data, gfa_targets = \
-            read_assignment_fits_tile((tile_id, infile))
+        read_assignment_fits_tile((tile_id, infile))
 
     tm.stop()
     tm.report("  read input data {}".format(tile_id))
@@ -872,6 +873,7 @@ def merge_results_tile(out_dtype, params):
             skymon[field] = outdata[field][sky_rows]
     fd.write(skymon, header=inhead, extname="SKY_MONITOR")
 
+    # Copy GFA data if it exists
     if gfa_targets is not None:
         fd.write(gfa_targets, extname="GFA_TARGETS")
 

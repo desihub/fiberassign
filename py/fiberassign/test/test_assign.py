@@ -153,7 +153,6 @@ class TestAssign(unittest.TestCase):
             self.assertEqual(4500, props["assign_science"])
             self.assertEqual(100, props["assign_std"])
             self.assertEqual(400, props["assign_sky"])
-            self.assertTrue(len(props["unassigned"]) == 0)
 
         plot_qa(qadata, "{}_qa".format(outdir), outformat="pdf",
                 labels=True)
