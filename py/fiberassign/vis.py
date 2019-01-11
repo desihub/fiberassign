@@ -236,8 +236,8 @@ def plot_assignment_tile_file(fibers, real_shapes, params):
     else:
         log.info("Creating {}".format(outfile))
 
-    header, fiber_data, targets_data, avail_data = read_assignment_fits_tile(
-        (tile_id, infile))
+    header, fiber_data, targets_data, avail_data, gfa_data = \
+            read_assignment_fits_tile((tile_id, infile))
 
     tavail = avail_table_to_dict(avail_data)
 

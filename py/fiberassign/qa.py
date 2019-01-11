@@ -79,7 +79,7 @@ def qa_tile_file(hw, params):
 
     log.info("Processing tile {}".format(tile_id))
 
-    header, fiber_data, targets_data, avail_data = \
+    header, fiber_data, targets_data, avail_data, gfa_data = \
         read_assignment_fits_tile((tile_id, tile_file))
 
     # Target properties

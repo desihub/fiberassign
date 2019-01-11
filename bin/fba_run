@@ -8,11 +8,15 @@ import argparse
 
 import datetime
 
+import desimodel.io
+
 from fiberassign.utils import GlobalTimers
 
 from fiberassign.hardware import load_hardware
 
 from fiberassign.tiles import load_tiles
+
+from fiberassign.gfa import get_gfa_targets
 
 from fiberassign.targets import (str_to_target_type, TARGET_TYPE_SCIENCE,
                                  TARGET_TYPE_SKY, TARGET_TYPE_STANDARD,
@@ -37,6 +41,9 @@ def main():
                         "separated values that will be passed to the "
                         "arguments of the load_target_file() function.  "
                         "See docs for details.")
+
+    parser.add_argument("--gfafile", type=str, required=False, default=None,
+                        help="Optional GFA targets FITS file")
 
     parser.add_argument("--footprint", type=str, required=False, default=None,
                         help="Optional FITS file defining the footprint.  If"
@@ -181,10 +188,16 @@ def main():
     if not os.path.isdir(out_dir):
         os.makedirs(out_dir)
 
+    # Optionally get GFA targets
+    gfa_targets = None
+    if args.gfafile is not None:
+        gfa_targets = get_gfa_targets(tiles, args.gfafile)
+
     # Write output
     write_assignment_fits(tiles, asgn, out_dir=out_dir,
                           out_prefix=args.prefix, split_dir=args.split,
-                          all_targets=args.write_all_targets)
+                          all_targets=args.write_all_targets,
+                          gfa_targets=gfa_targets)
 
     gt = GlobalTimers.get()
     gt.report()
