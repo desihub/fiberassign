@@ -227,11 +227,16 @@ def write_assignment_fits_tile(asgn, fulltarget, params):
         tm.clear()
         tm.start()
 
+        # Write a header-only HDU 0 with some basic keywords
         header = dict()
         header["TILEID"] = tile_id
         header["TILERA"] = tile_ra
         header["TILEDEC"] = tile_dec
+        header["REQRA"] = tile_ra
+        header["REQDEC"] = tile_dec
+        header["FIELDNUM"] = 0
         header["FBAVER"] = __version__
+        fd.write(None, header=header, extname='PRIMARY')
 
         # FIXME:  write "-1" for unassigned targets.  Write all other fiber
         # status and other properties to this table.
@@ -868,7 +873,10 @@ def merge_results_tile(out_dtype, params):
         os.remove(outfile)
     fd = fitsio.FITS(outfile, "rw")
 
-    # Write the main HDU- only the data for science positioners
+    # Write a heaader-only primary HDU
+    fd.write(None, header=inhead, extname='PRIMARY')
+
+    # Write the main FIBERASSIGN HDU- only the data for science positioners
     log.info("Writing new data {}".format(outfile))
     fd.write(outdata[science_rows], header=inhead, extname="FIBERASSIGN")
 
