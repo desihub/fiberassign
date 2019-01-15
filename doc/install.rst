@@ -18,6 +18,16 @@ In addition to the usual numpy / scipy software stack, the "fitsio" package
 is also required.  There are multiple ways of installing a working python3 stack on both Linux and OS X.  The solution you choose likely depends on what other things you are using Python for- not just fiberassign.  In these examples, we'll be creating a python stack in ${HOME}/software/desi, however
 if you already have a python stack for use with DESI tools, just skip this section.
 
+Anaconda
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The officially supported DESI python environment is Anaconda.  After installing the main Anaconda distribution, the "conda" command should be available.  Create a new conda environment::
+
+  %> conda create --copy -m -p ${HOME}/software/desi
+  %> conda activate ~/software/desi
+  %> conda install numpy scipy astropy matplotlib
+  %> pip install --no-binary :all: fitsio
+
 Virtualenv and Pip
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -31,15 +41,7 @@ Now use pip to install the dependencies we need::
   %> pip install numpy scipy astropy
   %> pip install --no-binary :all: fitsio
 
-OR Anaconda
-~~~~~~~~~~~~~~
 
-After installing the main Anaconda distribution, the "conda" command should be available.  Create a new conda environment::
-
-  %> conda create --copy -m -p ${HOME}/software/desi
-  %> conda activate ~/software/desi
-  %> conda install numpy scipy astropy
-  %> pip install --no-binary :all: fitsio
 
 
 DESI Affiliated Dependencies

@@ -736,16 +736,15 @@ def merge_results_tile(out_dtype, params):
     tile_tgids = np.copy(targets_data["TARGETID"])
     tile_tgindx = {y: x for x, y in enumerate(tile_tgids)}
 
-    # The row indices of our assigned targets.  These indices are valid for
-    # both the original input FTARGETS data and also our per-tile copy of the
-    # target catalog data.  These indices are essentially random access into
-    # the target table.
-    target_rows = np.array([tile_tgindx[x] for x in tile_tgids])
-
     # Extract just these targets from the full set of catalogs
 
     tile_targets_dtype = np.dtype(out_dtype.fields)
     tile_targets = np.empty(len(tile_tgids), dtype=tile_targets_dtype)
+
+    tm.stop()
+    tm.report("  index input targets {}".format(tile_id))
+    tm.clear()
+    tm.start()
 
     # Loop over input target files and copy data.  Note: these are guaranteed
     # to be sorted by TARGETID, since that is done during staging to shared
@@ -810,6 +809,13 @@ def merge_results_tile(out_dtype, params):
 
     # Rows containing assigned fibers
     fassign_valid = np.where(fiber_data["TARGETID"] >= 0)[0]
+
+    # Rows in target tables containing assigned targets These indices are
+    # valid for both the original input FTARGETS data and also our per-tile
+    # copy of the target catalog data.  These indices are essentially random
+    # access into the target table.
+    target_rows = np.array([tile_tgindx[x] for x in
+                            fiber_data["TARGETID"][fassign_valid]])
 
     tm.stop()
     tm.report("  fiber / target index mapping {}".format(tile_id))

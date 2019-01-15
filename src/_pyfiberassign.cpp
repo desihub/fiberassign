@@ -493,8 +493,13 @@ PYBIND11_MODULE(_internal, m) {
 
         )")
         .def(py::init < fba::Targets::pshr, double > (),
-            py::arg(), py::arg("min_tree_size") = 0.01);
-
+            py::arg(), py::arg("min_tree_size") = 0.01)
+        .def("near", [](fba::TargetTree & self, double ra_deg,
+            double dec_deg, double radius_rad) {
+            std::vector <int64_t> result;
+            self.near(ra_deg, dec_deg, radius_rad, result);
+            return result;
+        }, py::return_value_policy::take_ownership);
 
     py::class_ <fba::TargetsAvailable, fba::TargetsAvailable::pshr > (m,
         "TargetsAvailable", R"(
