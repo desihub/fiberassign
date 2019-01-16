@@ -21,13 +21,14 @@ from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                                  FibersAvailable, load_target_file)
 
 from fiberassign.assign import (Assignment, write_assignment_fits,
-                                write_assignment_ascii)
+                                write_assignment_ascii, merge_results,
+                                read_assignment_fits_tile)
 
 from fiberassign.qa import qa_tiles
 
 from fiberassign.vis import plot_tiles, plot_qa
 
-from .simulate import (sim_data_dir, sim_tiles, sim_targets)
+from .simulate import (test_subdir_create, sim_tiles, sim_targets)
 
 
 class TestAssign(unittest.TestCase):
@@ -39,9 +40,10 @@ class TestAssign(unittest.TestCase):
         pass
 
     def test_io(self):
-        input_mtl = os.path.join(sim_data_dir(), "mtl.fits")
-        input_std = os.path.join(sim_data_dir(), "standards.fits")
-        input_sky = os.path.join(sim_data_dir(), "sky.fits")
+        test_dir = test_subdir_create("assign_test_io")
+        input_mtl = os.path.join(test_dir, "mtl.fits")
+        input_std = os.path.join(test_dir, "standards.fits")
+        input_sky = os.path.join(test_dir, "sky.fits")
         nscience = sim_targets(input_mtl, TARGET_TYPE_SCIENCE, 0)
         nstd = sim_targets(input_std, TARGET_TYPE_STANDARD, nscience)
         nsky = sim_targets(input_sky, TARGET_TYPE_SKY, (nscience + nstd))
@@ -56,7 +58,7 @@ class TestAssign(unittest.TestCase):
 
         # Compute the targets available to each fiber for each tile.
         hw = load_hardware()
-        tfile = os.path.join(sim_data_dir(), "footprint.fits")
+        tfile = os.path.join(test_dir, "footprint.fits")
         sim_tiles(tfile)
         tiles = load_tiles(hw, tiles_file=tfile)
         tgsavail = TargetsAvailable(tgs, tiles, tree)
@@ -71,16 +73,64 @@ class TestAssign(unittest.TestCase):
         asgn = Assignment(tgs, tgsavail, favail)
         asgn.assign_unused(TARGET_TYPE_SCIENCE)
 
-        # Write out
-        write_assignment_ascii(tiles, asgn, out_dir=sim_data_dir(),
+        # Write out, merge, read back in and verify
+
+        write_assignment_ascii(tiles, asgn, out_dir=test_dir,
                                out_prefix="test_io_ascii")
+
+        write_assignment_fits(tiles, asgn, out_dir=test_dir,
+                              out_prefix="basic_", all_targets=False)
+
+        write_assignment_fits(tiles, asgn, out_dir=test_dir,
+                              out_prefix="full_", all_targets=True)
+
+        target_files = [
+            input_mtl,
+            input_sky,
+            input_std
+        ]
+        tile_ids = list(tiles.id)
+        merge_results(target_files, tile_ids, result_dir=test_dir,
+                      result_prefix="basic_", out_dir=test_dir,
+                      out_prefix="basic_tile-", copy_fba=False)
+        merge_results(target_files, tile_ids, result_dir=test_dir,
+                      result_prefix="full_", out_dir=test_dir,
+                      out_prefix="full_tile-", copy_fba=False)
+
+        for tid in tile_ids:
+            tdata = asgn.tile_fiber_target(tid)
+            avail = tgsavail.tile_data(tid)
+            # Check basic format
+            infile = os.path.join(test_dir,
+                                  "basic_tile-{:05d}.fits".format(tid))
+            inhead, fiber_data, targets_data, avail_data, gfa_targets = \
+                read_assignment_fits_tile((tid, infile))
+            for fid, tgid in zip(fiber_data["FIBER"], fiber_data["TARGETID"]):
+                if tgid >= 0:
+                    # print("assignment {} = {}".format(fid, tdata[fid]),
+                    #       flush=True)
+                    # print("  file basic = {}".format(tgid), flush=True)
+                    self.assertEqual(tgid, tdata[fid])
+            # Check full format
+            infile = os.path.join(test_dir,
+                                  "full_tile-{:05d}.fits".format(tid))
+            inhead, fiber_data, targets_data, avail_data, gfa_targets = \
+                read_assignment_fits_tile((tid, infile))
+            for fid, tgid in zip(fiber_data["FIBER"], fiber_data["TARGETID"]):
+                if tgid >= 0:
+                    # print("assignment {} = {}".format(fid, tdata[fid]),
+                    #       flush=True)
+                    # print("  file full = {}".format(tgid), flush=True)
+                    self.assertEqual(tgid, tdata[fid])
+
         return
 
     def test_full(self):
+        test_dir = test_subdir_create("assign_test_full")
         np.random.seed(123456789)
-        input_mtl = os.path.join(sim_data_dir(), "mtl.fits")
-        input_std = os.path.join(sim_data_dir(), "standards.fits")
-        input_sky = os.path.join(sim_data_dir(), "sky.fits")
+        input_mtl = os.path.join(test_dir, "mtl.fits")
+        input_std = os.path.join(test_dir, "standards.fits")
+        input_sky = os.path.join(test_dir, "sky.fits")
         nscience = sim_targets(input_mtl, TARGET_TYPE_SCIENCE, 0)
         nstd = sim_targets(input_std, TARGET_TYPE_STANDARD, nscience)
         nsky = sim_targets(input_sky, TARGET_TYPE_SKY, (nscience + nstd))
@@ -95,7 +145,7 @@ class TestAssign(unittest.TestCase):
 
         # Compute the targets available to each fiber for each tile.
         hw = load_hardware()
-        tfile = os.path.join(sim_data_dir(), "footprint.fits")
+        tfile = os.path.join(test_dir, "footprint.fits")
         sim_tiles(tfile)
         tiles = load_tiles(hw, tiles_file=tfile)
         tgsavail = TargetsAvailable(tgs, tiles, tree)
@@ -127,26 +177,14 @@ class TestAssign(unittest.TestCase):
         asgn.assign_unused(TARGET_TYPE_SCIENCE)
         asgn.assign_unused(TARGET_TYPE_SKY)
 
-        outdir = os.path.join(sim_data_dir(), "test_full")
-        if os.path.isdir(outdir):
-            shutil.rmtree(outdir)
-        os.makedirs(outdir)
+        write_assignment_fits(tiles, asgn, out_dir=test_dir)
 
-        write_assignment_fits(tiles, asgn, out_dir=outdir,
-                              out_prefix="fiberassign_")
+        plot_tiles(hw, tiles, result_dir=test_dir, petals=[0])
 
-        plotdir = "{}_plots".format(outdir)
-        if os.path.isdir(plotdir):
-            shutil.rmtree(plotdir)
-        os.makedirs(plotdir)
-
-        plot_tiles(hw, tiles, result_dir=outdir, result_prefix="fiberassign_",
-                   plot_dir=plotdir, petals=[0])
-
-        qa_tiles(hw, tiles, result_dir=outdir, result_prefix="fiberassign_")
+        qa_tiles(hw, tiles, result_dir=test_dir)
 
         qadata = None
-        with open(os.path.join(outdir, "qa.json"), "r") as f:
+        with open(os.path.join(test_dir, "qa.json"), "r") as f:
             qadata = json.load(f)
 
         for tile, props in qadata.items():
@@ -154,7 +192,7 @@ class TestAssign(unittest.TestCase):
             self.assertEqual(100, props["assign_std"])
             self.assertEqual(400, props["assign_sky"])
 
-        plot_qa(qadata, "{}_qa".format(outdir), outformat="pdf",
+        plot_qa(qadata, "{}_qa".format(test_dir), outformat="pdf",
                 labels=True)
 
         return

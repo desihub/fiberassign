@@ -15,7 +15,7 @@ from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                                  Targets, TargetTree, TargetsAvailable,
                                  FibersAvailable)
 
-from .simulate import (sim_data_dir, sim_tiles, sim_targets)
+from .simulate import (test_subdir_create, sim_tiles, sim_targets)
 
 
 class TestTargets(unittest.TestCase):
@@ -27,9 +27,10 @@ class TestTargets(unittest.TestCase):
         pass
 
     def test_available(self):
-        input_mtl = os.path.join(sim_data_dir(), "mtl.fits")
-        input_std = os.path.join(sim_data_dir(), "standards.fits")
-        input_sky = os.path.join(sim_data_dir(), "sky.fits")
+        test_dir = test_subdir_create("targets_test_available")
+        input_mtl = os.path.join(test_dir, "mtl.fits")
+        input_std = os.path.join(test_dir, "standards.fits")
+        input_sky = os.path.join(test_dir, "sky.fits")
         nscience = sim_targets(input_mtl, TARGET_TYPE_SCIENCE, 0)
         nstd = sim_targets(input_std, TARGET_TYPE_STANDARD, nscience)
         nsky = sim_targets(input_sky, TARGET_TYPE_SKY, (nscience + nstd))
@@ -45,7 +46,7 @@ class TestTargets(unittest.TestCase):
 
         # Compute the targets available to each fiber for each tile.
         hw = load_hardware()
-        tfile = os.path.join(sim_data_dir(), "footprint.fits")
+        tfile = os.path.join(test_dir, "footprint.fits")
         sim_tiles(tfile)
         tiles = load_tiles(hw, tiles_file=tfile)
         tgsavail = TargetsAvailable(tgs, tiles, tree)

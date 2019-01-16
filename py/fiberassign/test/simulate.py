@@ -2,6 +2,7 @@
 Simulation utilities for fiberassign tests.
 """
 import os
+import shutil
 
 import numpy as np
 
@@ -22,6 +23,14 @@ def sim_data_dir():
     if not os.path.isdir(dir):
         os.makedirs(dir)
     return dir
+
+
+def test_subdir_create(name):
+    test_dir = os.path.join(sim_data_dir(), name)
+    if os.path.isdir(test_dir):
+        shutil.rmtree(test_dir)
+    os.makedirs(test_dir)
+    return test_dir
 
 
 def sim_tiles(path):

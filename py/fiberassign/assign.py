@@ -413,7 +413,7 @@ def write_assignment_fits_tile(asgn, fulltarget, params):
     return
 
 
-def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fiberassign",
+def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fiberassign_",
                           split_dir=False, all_targets=False,
                           gfa_targets=None):
     """Write out assignment results in FITS format.
@@ -463,7 +463,7 @@ def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fiberassign",
     return
 
 
-def write_assignment_ascii(tiles, asgn, out_dir=".", out_prefix="fiberassign",
+def write_assignment_ascii(tiles, asgn, out_dir=".", out_prefix="fiberassign_",
                            split_dir=False):
     """Write out assignment results in ASCII format.
 
@@ -587,23 +587,24 @@ def read_assignment_fits_tile(params):
         fbassign = fd["FIBERASSIGN"].read()
         assign_dtype = np.dtype([(x, y) for x, y in
                                 results_assign_columns.items()])
-        fiber_data = np.empty(nfiber, dtype=assign_dtype)
-        fiber_data[:] = [(x["FIBER"], x["TARGETID"]) for x in fbassign]
+        fiber_data = np.zeros(nfiber, dtype=assign_dtype)
+        for col in results_assign_columns.keys():
+            if col == "DEVICE_TYPE":
+                fiber_data[col][:] = "POS"
+            else:
+                fiber_data[col] = fbassign[col]
 
         tgrows = np.where(fbassign["TARGETID"] >= 0)[0]
         ntarget = np.sum([1 for x in tgrows])
         targets_dtype = np.dtype([(x, y) for x, y in
                                  results_targets_columns.items()])
-        targets_data = np.empty(ntarget, dtype=targets_dtype)
-        targets_data["TARGETID"] = fbassign["TARGETID"][tgrows]
-        targets_data["RA"] = fbassign["TARGET_RA"][tgrows]
-        targets_data["DEC"] = fbassign["TARGET_DEC"][tgrows]
-        targets_data["PRIORITY"] = fbassign["PRIORITY"][tgrows]
-        targets_data["SUBPRIORITY"] = fbassign["SUBPRIORITY"][tgrows]
-        targets_data["OBSCONDITIONS"] = fbassign["OBSCONDITIONS"][tgrows]
-        targets_data["NUMOBS_MORE"] = fbassign["NUMOBS_MORE"][tgrows]
-        targets_data["FBATYPE"] = [desi_target_type(x) for x in
-                                   fbassign["DESI_TARGET"][tgrows]]
+        targets_data = np.zeros(ntarget, dtype=targets_dtype)
+        for col in results_targets_columns.keys():
+            if col == "FBATYPE":
+                targets_data[col] = [desi_target_type(x) for x in
+                                     fbassign["DESI_TARGET"][tgrows]]
+            else:
+                targets_data[col] = fbassign[col][tgrows]
         del fbassign
         if "POTENTIALTARGETID" in fd:
             log.warning("File {} is an old format with an incompatible "
@@ -697,7 +698,7 @@ merged_potential_columns = OrderedDict([
 ])
 
 
-def merge_results_tile(out_dtype, params):
+def merge_results_tile(out_dtype, copy_fba, params):
     """Merge results for one tile.
 
     This uses target catalog data which has been pre-staged to shared memory.
@@ -707,6 +708,8 @@ def merge_results_tile(out_dtype, params):
     Args:
         out_dtype (np.dtype):  The output recarray dtype for the merged target
             HDU.  This is the union of columns chosen from the input catalogs.
+        copy_fba (bool):  If True, copy the original raw fiberassign HDUs onto
+            the end of the output file.
         params (tuple):  The tile ID and input / output files.  Set by
             multiprocessing call.
     Returns:
@@ -933,9 +936,12 @@ def merge_results_tile(out_dtype, params):
     fd.write(potential, header=inhead, extname="POTENTIAL_ASSIGNMENTS")
 
     # Now copy the original HDUs
-    fd.write(fiber_data, header=inhead, extname="FASSIGN")
-    fd.write(targets_data, header=inhead, extname="FTARGETS")
-    fd.write(avail_data, header=inhead, extname="FAVAIL")
+    if copy_fba:
+        fd.write(fiber_data, header=inhead, extname="FASSIGN")
+        fd.write(targets_data, header=inhead, extname="FTARGETS")
+        fd.write(avail_data, header=inhead, extname="FAVAIL")
+
+    # Close the file
     fd.close()
 
     tm.stop()
@@ -953,9 +959,9 @@ def merge_results_tile(out_dtype, params):
 
 
 def merge_results(targetfiles, tiles, result_dir=".",
-                  result_prefix="fiberassign", result_split_dir=False,
-                  out_dir=None, out_prefix="tile", out_split_dir=False,
-                  columns=None):
+                  result_prefix="fiberassign_", result_split_dir=False,
+                  out_dir=None, out_prefix="tile-", out_split_dir=False,
+                  columns=None, copy_fba=True):
     """Merge target files and assignment output.
 
     Full target data is stored in shared memory and then multiple processes
@@ -973,6 +979,8 @@ def merge_results(targetfiles, tiles, result_dir=".",
         out_split_dir (bool):  Write outputs in split tile directories.
         columns (list):  List of column names to propagate from the input
             target files (default is all).
+        copy_fba (bool):  If True, propagate the original raw HDUs at the end
+            of each merged output file.
 
     Returns:
         None.
@@ -1036,7 +1044,7 @@ def merge_results(targetfiles, tiles, result_dir=".",
     # For each tile, find the target IDs used.  Construct the output recarray
     # and copy data into place.
 
-    merge_tile = partial(merge_results_tile, out_dtype)
+    merge_tile = partial(merge_results_tile, out_dtype, copy_fba)
 
     if out_dir is None:
         out_dir = result_dir

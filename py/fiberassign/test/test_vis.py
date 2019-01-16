@@ -11,7 +11,7 @@ from fiberassign.hardware import load_hardware
 
 from fiberassign.vis import (plot_positioner, )
 
-from .simulate import sim_data_dir
+from .simulate import test_subdir_create
 
 import matplotlib.pyplot as plt
 
@@ -25,6 +25,7 @@ class TestVis(unittest.TestCase):
         pass
 
     def test_plotpos(self):
+        test_dir = test_subdir_create("vis_test_plotpos")
         hw = load_hardware()
         patrol_mm = hw.patrol_mm
         fiber_id = hw.fiber_id
@@ -80,7 +81,7 @@ class TestVis(unittest.TestCase):
             ax.set_xlim([pxcent-half_width, pxcent+half_width])
             ax.set_ylim([pycent-half_height, pycent+half_height])
 
-            outfile = os.path.join(sim_data_dir(),
+            outfile = os.path.join(test_dir,
                                    "test_plotpos_{}.png".format(configindx))
             plt.savefig(outfile)
             plt.close()
