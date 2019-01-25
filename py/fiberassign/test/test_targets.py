@@ -6,12 +6,17 @@ import os
 
 import unittest
 
+import numpy as np
+
+from desitarget.targetmask import desi_mask
+
 from fiberassign.hardware import load_hardware
 
 from fiberassign.tiles import load_tiles
 
 from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                                  TARGET_TYPE_STANDARD, load_target_file,
+                                 desi_target_type,
                                  Targets, TargetTree, TargetsAvailable,
                                  FibersAvailable)
 
@@ -58,3 +63,44 @@ class TestTargets(unittest.TestCase):
         favail = FibersAvailable(tgsavail)
 
         return
+
+    def test_target_type(self):
+        '''
+        test fiberassign.targets.desi_target_type()
+        '''
+        #- Array inputs
+        desi_target = [
+            desi_mask['ELG'].mask,
+            desi_mask['STD_FAINT'].mask,
+            desi_mask['SKY'].mask,
+            desi_mask['IN_BRIGHT_OBJECT'].mask,
+            ]
+        fbatype = np.array([
+            TARGET_TYPE_SCIENCE,
+            TARGET_TYPE_STANDARD,
+            TARGET_TYPE_SKY,
+            0
+            ])
+        result = desi_target_type(desi_target)
+        self.assertTrue(np.all(result == fbatype))
+
+        #- Scalar inputs
+        for i in range(len(desi_target)):
+            result = desi_target_type(desi_target[i])
+            self.assertEqual(result, fbatype[i])
+
+        #- Does excludemask work?
+        mask = desi_mask['ELG'].mask
+        result = desi_target_type(mask)
+        self.assertEqual(result, TARGET_TYPE_SCIENCE)
+        result = desi_target_type(mask, excludemask=mask)
+        self.assertEqual(result, 0)
+        result = desi_target_type([mask,mask], excludemask=mask)
+        self.assertTrue(not np.any(result))
+
+def test_suite():
+    """Allows testing of only this module with the command::
+
+        python setup.py test -m fiberassign.test.test_targets
+    """
+    return unittest.defaultTestLoader.loadTestsFromName(__name__)

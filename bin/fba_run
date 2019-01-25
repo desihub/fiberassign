@@ -12,6 +12,8 @@ from datetime import datetime
 
 import desimodel.io
 
+from desitarget.targetmask import desi_mask
+
 from fiberassign.utils import GlobalTimers, Logger
 
 from fiberassign.hardware import load_hardware
@@ -24,10 +26,12 @@ from fiberassign.targets import (str_to_target_type, TARGET_TYPE_SCIENCE,
                                  TARGET_TYPE_SKY, TARGET_TYPE_STANDARD,
                                  TARGET_TYPE_SAFE, Targets, TargetsAvailable,
                                  TargetTree, FibersAvailable,
-                                 load_target_file)
+                                 load_target_file,
+                                 get_sciencemask, get_stdmask, get_skymask,
+                                 get_safemask, get_excludemask
+                                 )
 
 from fiberassign.assign import (Assignment, write_assignment_fits, result_path)
-
 
 def main():
     log = Logger.get()
@@ -108,7 +112,51 @@ def main():
                         action="store_true",
                         help="Overwrite any pre-existing output files")
 
+    parser.add_argument("--sciencemask", required=False,
+                        default=get_sciencemask(),
+                        help="Default DESI_TARGET mask to use for science targets")
+
+    parser.add_argument("--stdmask", required=False,
+                        default=get_stdmask(),
+                        help="Default DESI_TARGET mask to use for stdstar targets")
+
+    parser.add_argument("--skymask", required=False,
+                        default=get_skymask(),
+                        help="Default DESI_TARGET mask to use for sky targets")
+
+    parser.add_argument("--safemask", required=False,
+                        default=get_safemask(),
+                        help="Default DESI_TARGET mask to use for safe "
+                        "backup targets")
+
+    parser.add_argument("--excludemask", required=False,
+                        default=get_excludemask(),
+                        help="Default DESI_TARGET mask to exclude from "
+                        "any assignments")
+
     args = parser.parse_args()
+
+    # Allow sciencemask, stdmask, etc. to be int or string
+    if type(args.sciencemask) == str:
+        args.sciencemask = desi_mask.mask(args.sciencemask)
+
+    if type(args.stdmask) == str:
+        args.stdmask = desi_mask.mask(args.stdmask)
+
+    if type(args.skymask) == str:
+        args.skymask = desi_mask.mask(args.skymask)
+
+    if type(args.safemask) == str:
+        args.safemask = desi_mask.mask(args.safemask)
+
+    if type(args.excludemask) == str:
+        args.excludemask = desi_mask.mask(args.excludemask)
+
+    log.info('sciencemask {}'.format(' '.join(desi_mask.names(args.sciencemask))))
+    log.info('stdmask     {}'.format(' '.join(desi_mask.names(args.stdmask))))
+    log.info('skymask     {}'.format(' '.join(desi_mask.names(args.skymask))))
+    log.info('safemask    {}'.format(' '.join(desi_mask.names(args.safemask))))
+    log.info('excludemask {}'.format(' '.join(desi_mask.names(args.excludemask))))
 
     # Get run date
     rundate = None
@@ -162,7 +210,13 @@ def main():
         if len(tgprops) > 1:
             # we are forcing the target type for this file
             typeforce = str_to_target_type(tgprops[1])
-        load_target_file(tgs, tgfile, typeforce=typeforce)
+        load_target_file(tgs, tgfile, typeforce=typeforce,
+            sciencemask=args.sciencemask,
+            stdmask=args.stdmask,
+            skymask=args.skymask,
+            safemask=args.safemask,
+            excludemask=args.excludemask,
+            )
 
     # Create a hierarchical triangle mesh lookup of the targets positions
     tree = TargetTree(tgs)
