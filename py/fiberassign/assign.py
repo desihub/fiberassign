@@ -118,7 +118,7 @@ def result_path(tile_id, dir=".", prefix="fiberassign_",
     return path
 
 
-def write_assignment_fits_tile(asgn, fulltarget, params):
+def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
     """Write a single tile assignment to a FITS file.
 
     Args:
@@ -126,6 +126,7 @@ def write_assignment_fits_tile(asgn, fulltarget, params):
         asgn (Assignment):  the assignment class instance.
         fulltarget (bool):  if True, dump the target information for all
             available targets, not just the ones that are assigned.
+        overwrite (bool): overwrite output files or not
         params (tuple):  tuple containing the tile ID, RA, DEC,
             output path, and GFA targets
 
@@ -178,11 +179,16 @@ def write_assignment_fits_tile(asgn, fulltarget, params):
         # tm.start()
 
         if os.path.isfile(tile_file):
-            raise RuntimeError("output file {} already exists"
-                               .format(tile_file))
+            if overwrite:
+                log.warning('Overwriting {}'.format(tile_file))
+                os.remove(tile_file)
+            else:
+                raise RuntimeError("output file {} already exists"
+                                   .format(tile_file))
         # This tile has some available targets
         log.info("Writing tile {}".format(tile_id))
-        fd = fitsio.FITS(tile_file, "rw")
+        tmp_file = tile_file + '.tmp'
+        fd = fitsio.FITS(tmp_file, "rw")
 
         tm.stop()
         tm.report("  opening file for tile {}".format(tile_id))
@@ -407,6 +413,7 @@ def write_assignment_fits_tile(asgn, fulltarget, params):
                 fd.write(gfa_targets, extname="GFA_TARGETS")
 
         fd.close()
+        os.rename(tmp_file, tile_file)
 
         tm.stop()
         tm.report("  write avail data tile {}".format(tile_id))
@@ -415,7 +422,7 @@ def write_assignment_fits_tile(asgn, fulltarget, params):
 
 def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fiberassign_",
                           split_dir=False, all_targets=False,
-                          gfa_targets=None):
+                          gfa_targets=None, overwrite=False):
     """Write out assignment results in FITS format.
 
     For each tile, all available targets (not only the assigned targets) and
@@ -433,6 +440,7 @@ def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fiberassign_",
             available targets for each tile.  If False, only dump the target
             properties of assigned targets.
         gfa_targets (list of numpy arrays): Include these as GFA_TARGETS HDUs
+        overwrite (bool): overwrite pre-existing output files
     """
     tm = Timer()
     tm.start()
@@ -443,7 +451,8 @@ def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fiberassign_",
     tilera = tiles.ra
     tiledec = tiles.dec
 
-    write_tile = partial(write_assignment_fits_tile, asgn, all_targets)
+    write_tile = partial(write_assignment_fits_tile,
+                         asgn, all_targets, overwrite)
 
     for i, tid in enumerate(tileids):
         tra = tilera[tileorder[tid]]
