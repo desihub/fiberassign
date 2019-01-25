@@ -180,14 +180,14 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
 
         if os.path.isfile(tile_file):
             if overwrite:
-                log.warning('Overwriting {}'.format(tile_file))
+                log.warning("Overwriting {}".format(tile_file))
                 os.remove(tile_file)
             else:
                 raise RuntimeError("output file {} already exists"
                                    .format(tile_file))
         # This tile has some available targets
         log.info("Writing tile {}".format(tile_id))
-        tmp_file = tile_file + '.tmp'
+        tmp_file = tile_file + ".tmp"
         fd = fitsio.FITS(tmp_file, "rw")
 
         tm.stop()

@@ -147,8 +147,8 @@ def main():
                     prefix=args.prefix, split=args.split)
             if os.path.exists(outfile):
                 outdir = os.path.split(outfile)[0]
-                log.error('Output files already exist in {}'.format(outdir))
-                log.error('either remove them or use --overwrite')
+                log.error("Output files already exist in {}".format(outdir))
+                log.error("either remove them or use --overwrite")
                 sys.exit(1)
 
     # Create empty target list
