@@ -37,49 +37,105 @@ def str_to_target_type(input):
     return None
 
 
+def get_sciencemask():
+    """Returns default mask for which DESI_TARGET bits are science targets"""
+    sciencemask = 0
+    sciencemask |= desi_mask["LRG"].mask
+    sciencemask |= desi_mask["ELG"].mask
+    sciencemask |= desi_mask["QSO"].mask
+    # Note: BAD_SKY are treated as science targets with priority == 0
+    sciencemask |= desi_mask["BAD_SKY"].mask
+    sciencemask |= desi_mask["BGS_ANY"].mask
+    sciencemask |= desi_mask["MWS_ANY"].mask
+    sciencemask |= desi_mask["SECONDARY_ANY"].mask
+    return sciencemask
+
+
+def get_stdmask():
+    """Returns default mask for which DESI_TARGET bits are stdstar targets"""
+    stdmask = 0
+    stdmask |= desi_mask["STD_FAINT"].mask
+    stdmask |= desi_mask["STD_WD"].mask
+    stdmask |= desi_mask["STD_BRIGHT"].mask
+    return stdmask
+
+
+def get_skymask():
+    """Returns default mask for which DESI_TARGET bits are sky targets"""
+    skymask = 0
+    skymask |= desi_mask["SKY"].mask
+    return skymask
+
+
+def get_safemask():
+    """
+    Returns default mask for which DESI_TARGET bits are backup/safe targets
+
+    Note: these are targets of last resort; they are safe locations where
+    we won't saturate the detector, but aren't good for anything else.
+    """
+    safemask = 0
+    safemask |= desi_mask.BAD_SKY
+    return safemask
+
+
+def get_excludemask():
+    """
+    Returns default DESI_TARGET mask for bits that should not be observed
+    """
+    excludemask = 0
+    # Exclude BRIGHT_OBJECT and IN_BRIGHT_OBJECT, but not NEAR_BRIGHT_OBJECT
+    excludemask |= desi_mask.BRIGHT_OBJECT
+    excludemask |= desi_mask.IN_BRIGHT_OBJECT
+    return excludemask
+
+
 def desi_target_type(desi_target, sciencemask=None, stdmask=None,
-                     skymask=None, safemask=None):
+                     skymask=None, safemask=None, excludemask=None):
     """Determine fiber assign type from DESI_TARGET.
     """
     if sciencemask is None:
-        sciencemask = 0
-        sciencemask |= desi_mask["LRG"].mask
-        sciencemask |= desi_mask["ELG"].mask
-        sciencemask |= desi_mask["QSO"].mask
-        # Note: BAD_SKY are treated as science targets with priority == 0
-        sciencemask |= desi_mask["BAD_SKY"].mask
-        sciencemask |= desi_mask["BGS_ANY"].mask
-        sciencemask |= desi_mask["MWS_ANY"].mask
-        sciencemask |= desi_mask["SECONDARY_ANY"].mask
+        sciencemask = get_sciencemask()
 
     if stdmask is None:
-        stdmask = 0
-        stdmask |= desi_mask["STD_FAINT"].mask
-        stdmask |= desi_mask["STD_WD"].mask
-        stdmask |= desi_mask["STD_BRIGHT"].mask
+        stdmask = get_stdmask()
 
     if skymask is None:
-        skymask = 0
-        skymask |= desi_mask["SKY"].mask
+        skymask = get_skymask()
 
     if safemask is None:
-        safemask = 0
+        safemask = get_safemask()
 
-    ttype = 0
-    if desi_target & sciencemask != 0:
-        ttype |= TARGET_TYPE_SCIENCE
-    if desi_target & stdmask != 0:
-        ttype |= TARGET_TYPE_STANDARD
-    if desi_target & skymask != 0:
-        ttype |= TARGET_TYPE_SKY
-    if desi_target & safemask != 0:
-        ttype |= TARGET_TYPE_SAFE
+    if excludemask is None:
+        excludemask = get_excludemask()
+
+    if np.isscalar(desi_target):
+        ttype = 0
+        if desi_target & sciencemask != 0:
+            ttype |= TARGET_TYPE_SCIENCE
+        if desi_target & stdmask != 0:
+            ttype |= TARGET_TYPE_STANDARD
+        if desi_target & skymask != 0:
+            ttype |= TARGET_TYPE_SKY
+        if desi_target & safemask != 0:
+            ttype |= TARGET_TYPE_SAFE
+        if desi_target & excludemask != 0:
+            ttype = 0
+    else:
+        desi_target = np.asarray(desi_target)
+        ttype = np.zeros(len(desi_target), dtype=int)
+        ttype[desi_target & sciencemask != 0] |= TARGET_TYPE_SCIENCE
+        ttype[desi_target & stdmask != 0] |= TARGET_TYPE_STANDARD
+        ttype[desi_target & skymask != 0] |= TARGET_TYPE_SKY
+        ttype[desi_target & safemask != 0] |= TARGET_TYPE_SAFE
+        ttype[desi_target & excludemask != 0] = 0
+
     return ttype
 
 
 def append_target_table(tgs, tgdata, typeforce=None, typecol=None,
                         sciencemask=None, stdmask=None, skymask=None,
-                        safemask=None):
+                        safemask=None, excludemask=None):
     validtypes = [
         TARGET_TYPE_SCIENCE,
         TARGET_TYPE_SKY,
@@ -117,9 +173,9 @@ def append_target_table(tgs, tgdata, typeforce=None, typecol=None,
                 raise RuntimeError("FBATYPE column not found- specify typecol")
             d_type[:] = tgdata["FBATYPE"]
         else:
-            d_type[:] = [desi_target_type(x, sciencemask=sciencemask,
-                         stdmask=stdmask, skymask=skymask,
-                         safemask=safemask) for x in tgdata[typecol]]
+            d_type[:] = desi_target_type(
+                tgdata[typecol], sciencemask=sciencemask, stdmask=stdmask,
+                skymask=skymask, safemask=safemask, excludemask=excludemask)
 
     if "OBSCONDITIONS" in tgdata.dtype.fields:
         d_obscond[:] = tgdata["OBSCONDITIONS"]
@@ -151,7 +207,7 @@ def append_target_table(tgs, tgdata, typeforce=None, typecol=None,
 
 def load_target_file(tgs, tfile, typeforce=None, typecol="DESI_TARGET",
                      sciencemask=None, stdmask=None, skymask=None,
-                     safemask=None, rowbuffer=100000):
+                     safemask=None, excludemask=None, rowbuffer=100000):
     tm = Timer()
     tm.start()
 
@@ -176,7 +232,8 @@ def load_target_file(tgs, tfile, typeforce=None, typecol="DESI_TARGET",
                   .format(tfile, offset, offset+n-1))
         append_target_table(tgs, data, typeforce=typeforce, typecol=typecol,
                             sciencemask=sciencemask, stdmask=stdmask,
-                            skymask=skymask, safemask=safemask)
+                            skymask=skymask, safemask=safemask,
+                            excludemask=excludemask)
         offset += n
 
     tm.stop()

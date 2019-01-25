@@ -610,8 +610,10 @@ def read_assignment_fits_tile(params):
         targets_data = np.zeros(ntarget, dtype=targets_dtype)
         for col in results_targets_columns.keys():
             if col == "FBATYPE":
-                targets_data[col] = [desi_target_type(x) for x in
-                                     fbassign["DESI_TARGET"][tgrows]]
+                # targets_data[col] = [desi_target_type(x) for x in
+                #                      fbassign["DESI_TARGET"][tgrows]]
+                targets_data[col] = \
+                    desi_target_type(fbassign["DESI_TARGET"][tgrows])
             else:
                 targets_data[col] = fbassign[col][tgrows]
         del fbassign
