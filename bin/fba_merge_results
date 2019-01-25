@@ -4,6 +4,8 @@ Merge fiberassign results with input target files.
 """
 import os
 
+import sys
+
 import argparse
 
 from fiberassign.assign import merge_results, result_tiles
@@ -12,7 +14,7 @@ from fiberassign.assign import merge_results, result_tiles
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--targets", type=str, required=True, action="append",
+    parser.add_argument("--targets", type=str, required=True, nargs="+",
                         help="Input file with targets of any type.  This "
                         "argument can be specified multiple times (for "
                         "example if standards / skies / science targets are "
@@ -53,6 +55,12 @@ def main():
                              "merged output.")
 
     args = parser.parse_args()
+
+    # Catch previous usage with multiple --targets arguments
+    if sys.argv.count("--targets") > 1:
+        log.error('Please use "--targets file1 file2" '
+                  'instead of "--targets file1 --targets file2"')
+        sys.exit(1)
 
     # Check directory
     if not os.path.isdir(args.dir):

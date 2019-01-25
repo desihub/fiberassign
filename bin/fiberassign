@@ -1,0 +1,129 @@
+#!/usr/bin/env python
+
+"""
+Wrapper script for fba_run and fba_merge to provide script API compatibility
+with the legacy branch of fiberassign.
+"""
+
+import sys
+
+import subprocess
+
+import argparse
+
+from desitarget.targetmask import desi_mask
+
+from fiberassign.utils import GlobalTimers, Logger
+
+import fiberassign
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument("--mtl",
+                    help="input targets (FITS file)", required=True)
+
+parser.add_argument("--sky",
+                    help="input sky positions (FITS file)", required=True)
+
+parser.add_argument("--stdstar",
+                    help="input std stars (FITS file)")
+
+parser.add_argument("--fibstatusfile",
+                    help="list of positioners and its status "
+                    "(ECSV or txt file)")
+
+parser.add_argument("--footprint",
+                    help="list of tiles defining the footprint (FITS file)")
+
+parser.add_argument("--positioners",
+                    help="list of positioners on the focal plane (FITS file)")
+
+parser.add_argument("--surveytiles",
+                    help="set of tiles to run fiberassign on (text file)")
+
+parser.add_argument("--outdir",
+                    help="output directory (default = ./)", default="./")
+
+parser.add_argument("--starmask",
+                    help="integer mask defining standard stars")
+
+parser.add_argument("--rundate", help="run date [YYYY-MM-DD]")
+
+parser.add_argument("--gfafile", help="GFA file (FITS tile)")
+
+parser.add_argument("--nstarpetal",
+                    help="number of standard stars per petal (default=10)",
+                    default=10)
+
+parser.add_argument("--nskypetal",
+                    help="number of sky fibers per petal (default=40)",
+                    default=40)
+
+parser.add_argument("--overwrite", action="store_true",
+                    help="overwrite pre-existing output files")
+
+parser.add_argument("--version",help="Print code version and exit",
+                    action='version', version=fiberassign.__version__)
+
+args = parser.parse_args()
+log = Logger.get()
+
+#------
+#- fba_run
+
+#- Required inputs
+cmd = "fba_run"
+cmd += " --targets {} {} {}".format(args.mtl, args.sky, args.stdstar)
+
+#- Options that have non-None defaults to propagate
+cmd += " --dir {}".format(args.outdir)
+cmd += " --standards_per_petal {}".format(args.nstarpetal)
+cmd += " --sky_per_petal {}".format(args.nskypetal)
+
+#- Completely optional; only propagate if specified
+if args.fibstatusfile is not None:
+    cmd += " --status {}".format(args.fibstatusfile)
+
+if args.footprint is not None:
+    cmd += " --footprint {}".format(args.footprint)
+
+if args.positioners is not None:
+    cmd += " --positioners {}".format(args.positioners)
+
+if args.surveytiles is not None:
+    cmd += " --tiles {}".format(args.surveytiles)
+
+if args.starmask is not None:
+    cmd += " --stdmask {}".format(args.starmask)
+
+if args.rundate is not None:
+    cmd += " --rundate {}".format(args.rundate)
+
+if args.gfafile is not None:
+    cmd += " --gfafile {}".format(args.gfafile)
+
+if args.overwrite:
+    cmd += " --overwrite"
+
+log.debug('RUNNING {}'.format(cmd))
+err = subprocess.call(cmd.split())
+if err:
+    sys.exit(err)
+
+#------
+#- fba_merge_results
+
+cmd = "fba_merge_results"
+cmd += " --targets {} {} {}".format(args.mtl, args.sky, args.stdstar)
+cmd += " --dir {}".format(args.outdir)
+cmd += " --out {}".format(args.outdir)
+
+log.debug('RUNNING {}'.format(cmd))
+err = subprocess.call(cmd.split())
+if err:
+    sys.exit(err)
+
+
+
+
+
