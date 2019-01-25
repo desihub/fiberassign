@@ -65,15 +65,15 @@ class TestTargets(unittest.TestCase):
         return
 
     def test_target_type(self):
-        '''
+        """
         test fiberassign.targets.desi_target_type()
-        '''
-        #- Array inputs
+        """
+        # Array inputs
         desi_target = [
-            desi_mask['ELG'].mask,
-            desi_mask['STD_FAINT'].mask,
-            desi_mask['SKY'].mask,
-            desi_mask['IN_BRIGHT_OBJECT'].mask,
+            desi_mask["ELG"].mask,
+            desi_mask["STD_FAINT"].mask,
+            desi_mask["SKY"].mask,
+            desi_mask["IN_BRIGHT_OBJECT"].mask,
             ]
         fbatype = np.array([
             TARGET_TYPE_SCIENCE,
@@ -84,19 +84,20 @@ class TestTargets(unittest.TestCase):
         result = desi_target_type(desi_target)
         self.assertTrue(np.all(result == fbatype))
 
-        #- Scalar inputs
+        # Scalar inputs
         for i in range(len(desi_target)):
             result = desi_target_type(desi_target[i])
             self.assertEqual(result, fbatype[i])
 
-        #- Does excludemask work?
-        mask = desi_mask['ELG'].mask
+        # Does excludemask work?
+        mask = desi_mask["ELG"].mask
         result = desi_target_type(mask)
         self.assertEqual(result, TARGET_TYPE_SCIENCE)
         result = desi_target_type(mask, excludemask=mask)
         self.assertEqual(result, 0)
-        result = desi_target_type([mask,mask], excludemask=mask)
+        result = desi_target_type([mask, mask], excludemask=mask)
         self.assertTrue(not np.any(result))
+
 
 def test_suite():
     """Allows testing of only this module with the command::

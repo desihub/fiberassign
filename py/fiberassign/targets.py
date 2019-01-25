@@ -36,8 +36,9 @@ def str_to_target_type(input):
         raise ValueError("unknown target type '{}'".format(input))
     return None
 
+
 def get_sciencemask():
-    '''Returns default mask for which DESI_TARGET bits are science targets'''
+    """Returns default mask for which DESI_TARGET bits are science targets"""
     sciencemask = 0
     sciencemask |= desi_mask["LRG"].mask
     sciencemask |= desi_mask["ELG"].mask
@@ -49,40 +50,45 @@ def get_sciencemask():
     sciencemask |= desi_mask["SECONDARY_ANY"].mask
     return sciencemask
 
+
 def get_stdmask():
-    '''Returns default mask for which DESI_TARGET bits are stdstar targets'''
+    """Returns default mask for which DESI_TARGET bits are stdstar targets"""
     stdmask = 0
     stdmask |= desi_mask["STD_FAINT"].mask
     stdmask |= desi_mask["STD_WD"].mask
     stdmask |= desi_mask["STD_BRIGHT"].mask
     return stdmask
 
+
 def get_skymask():
-    '''Returns default mask for which DESI_TARGET bits are sky targets'''
+    """Returns default mask for which DESI_TARGET bits are sky targets"""
     skymask = 0
     skymask |= desi_mask["SKY"].mask
     return skymask
 
+
 def get_safemask():
-    '''
+    """
     Returns default mask for which DESI_TARGET bits are backup/safe targets
 
     Note: these are targets of last resort; they are safe locations where
     we won't saturate the detector, but aren't good for anything else.
-    '''
+    """
     safemask = 0
     safemask |= desi_mask.BAD_SKY
     return safemask
 
+
 def get_excludemask():
-    '''
+    """
     Returns default DESI_TARGET mask for bits that should not be observed
-    '''
+    """
     excludemask = 0
-    #- Exclude BRIGHT_OBJECT and IN_BRIGHT_OBJECT, but not NEAR_BRIGHT_OBJECT
+    # Exclude BRIGHT_OBJECT and IN_BRIGHT_OBJECT, but not NEAR_BRIGHT_OBJECT
     excludemask |= desi_mask.BRIGHT_OBJECT
     excludemask |= desi_mask.IN_BRIGHT_OBJECT
     return excludemask
+
 
 def desi_target_type(desi_target, sciencemask=None, stdmask=None,
                      skymask=None, safemask=None, excludemask=None):
@@ -167,10 +173,9 @@ def append_target_table(tgs, tgdata, typeforce=None, typecol=None,
                 raise RuntimeError("FBATYPE column not found- specify typecol")
             d_type[:] = tgdata["FBATYPE"]
         else:
-            d_type[:] = desi_target_type(tgdata[typecol],
-                            sciencemask=sciencemask, stdmask=stdmask,
-                            skymask=skymask, safemask=safemask,
-                            excludemask=excludemask)
+            d_type[:] = desi_target_type(
+                tgdata[typecol], sciencemask=sciencemask, stdmask=stdmask,
+                skymask=skymask, safemask=safemask, excludemask=excludemask)
 
     if "OBSCONDITIONS" in tgdata.dtype.fields:
         d_obscond[:] = tgdata["OBSCONDITIONS"]

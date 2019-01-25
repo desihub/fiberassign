@@ -10,8 +10,6 @@ import argparse
 
 from datetime import datetime
 
-import desimodel.io
-
 from desitarget.targetmask import desi_mask
 
 from fiberassign.utils import GlobalTimers, Logger
@@ -32,6 +30,7 @@ from fiberassign.targets import (str_to_target_type, TARGET_TYPE_SCIENCE,
                                  )
 
 from fiberassign.assign import (Assignment, write_assignment_fits, result_path)
+
 
 def main():
     log = Logger.get()
@@ -114,11 +113,13 @@ def main():
 
     parser.add_argument("--sciencemask", required=False,
                         default=get_sciencemask(),
-                        help="Default DESI_TARGET mask to use for science targets")
+                        help="Default DESI_TARGET mask to use for science "
+                             "targets")
 
     parser.add_argument("--stdmask", required=False,
                         default=get_stdmask(),
-                        help="Default DESI_TARGET mask to use for stdstar targets")
+                        help="Default DESI_TARGET mask to use for stdstar "
+                             "targets")
 
     parser.add_argument("--skymask", required=False,
                         default=get_skymask(),
@@ -152,11 +153,13 @@ def main():
     if type(args.excludemask) == str:
         args.excludemask = desi_mask.mask(args.excludemask)
 
-    log.info('sciencemask {}'.format(' '.join(desi_mask.names(args.sciencemask))))
-    log.info('stdmask     {}'.format(' '.join(desi_mask.names(args.stdmask))))
-    log.info('skymask     {}'.format(' '.join(desi_mask.names(args.skymask))))
-    log.info('safemask    {}'.format(' '.join(desi_mask.names(args.safemask))))
-    log.info('excludemask {}'.format(' '.join(desi_mask.names(args.excludemask))))
+    log.info("sciencemask {}".format(
+        " ".join(desi_mask.names(args.sciencemask))))
+    log.info("stdmask     {}".format(" ".join(desi_mask.names(args.stdmask))))
+    log.info("skymask     {}".format(" ".join(desi_mask.names(args.skymask))))
+    log.info("safemask    {}".format(" ".join(desi_mask.names(args.safemask))))
+    log.info("excludemask {}".format(
+        " ".join(desi_mask.names(args.excludemask))))
 
     # Get run date
     rundate = None
@@ -192,11 +195,11 @@ def main():
     if not args.overwrite:
         for tileid in tiles.id:
             outfile = result_path(tileid, dir=args.dir,
-                    prefix=args.prefix, split=args.split)
+                                  prefix=args.prefix, split=args.split)
             if os.path.exists(outfile):
                 outdir = os.path.split(outfile)[0]
-                log.error('Output files already exist in {}'.format(outdir))
-                log.error('either remove them or use --overwrite')
+                log.error("Output files already exist in {}".format(outdir))
+                log.error("either remove them or use --overwrite")
                 sys.exit(1)
 
     # Create empty target list
@@ -211,12 +214,11 @@ def main():
             # we are forcing the target type for this file
             typeforce = str_to_target_type(tgprops[1])
         load_target_file(tgs, tgfile, typeforce=typeforce,
-            sciencemask=args.sciencemask,
-            stdmask=args.stdmask,
-            skymask=args.skymask,
-            safemask=args.safemask,
-            excludemask=args.excludemask,
-            )
+                         sciencemask=args.sciencemask,
+                         stdmask=args.stdmask,
+                         skymask=args.skymask,
+                         safemask=args.safemask,
+                         excludemask=args.excludemask)
 
     # Create a hierarchical triangle mesh lookup of the targets positions
     tree = TargetTree(tgs)
