@@ -139,19 +139,19 @@ def main():
 
     # Allow sciencemask, stdmask, etc. to be int or string
     if type(args.sciencemask) == str:
-        args.sciencemask = desi_mask.mask(args.sciencemask)
+        args.sciencemask = desi_mask.mask(args.sciencemask.replace(",", "|"))
 
     if type(args.stdmask) == str:
-        args.stdmask = desi_mask.mask(args.stdmask)
+        args.stdmask = desi_mask.mask(args.stdmask.replace(",", "|"))
 
     if type(args.skymask) == str:
-        args.skymask = desi_mask.mask(args.skymask)
+        args.skymask = desi_mask.mask(args.skymask.replace(",", "|"))
 
     if type(args.safemask) == str:
-        args.safemask = desi_mask.mask(args.safemask)
+        args.safemask = desi_mask.mask(args.safemask.replace(",", "|"))
 
     if type(args.excludemask) == str:
-        args.excludemask = desi_mask.mask(args.excludemask)
+        args.excludemask = desi_mask.mask(args.excludemask.replace(",", "|"))
 
     log.info("sciencemask {}".format(
         " ".join(desi_mask.names(args.sciencemask))))
