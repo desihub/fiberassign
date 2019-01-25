@@ -96,7 +96,7 @@ def qa_tile_file(hw, params):
     return qa_data
 
 
-def qa_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign",
+def qa_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign_",
              result_split_dir=False, qa_out=None):
     """Plot assignment output.
 

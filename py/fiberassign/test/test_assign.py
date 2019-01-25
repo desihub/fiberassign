@@ -28,7 +28,7 @@ from fiberassign.qa import qa_tiles
 
 from fiberassign.vis import plot_tiles, plot_qa
 
-from .simulate import (test_subdir_create, sim_tiles, sim_targets)
+from .simulate import (test_subdir_create, sim_tiles, sim_targets, sim_status)
 
 
 class TestAssign(unittest.TestCase):
@@ -57,7 +57,9 @@ class TestAssign(unittest.TestCase):
         tree = TargetTree(tgs, 0.01)
 
         # Compute the targets available to each fiber for each tile.
-        hw = load_hardware()
+        fstatus = os.path.join(test_dir, "fiberstatus.ecsv")
+        sim_status(fstatus)
+        hw = load_hardware(status_file=fstatus)
         tfile = os.path.join(test_dir, "footprint.fits")
         sim_tiles(tfile)
         tiles = load_tiles(hw, tiles_file=tfile)
@@ -76,7 +78,7 @@ class TestAssign(unittest.TestCase):
         # Write out, merge, read back in and verify
 
         write_assignment_ascii(tiles, asgn, out_dir=test_dir,
-                               out_prefix="test_io_ascii")
+                               out_prefix="test_io_ascii_")
 
         write_assignment_fits(tiles, asgn, out_dir=test_dir,
                               out_prefix="basic_", all_targets=False)
@@ -143,11 +145,15 @@ class TestAssign(unittest.TestCase):
         # Create a hierarchical triangle mesh lookup of the targets positions
         tree = TargetTree(tgs, 0.01)
 
-        # Compute the targets available to each fiber for each tile.
-        hw = load_hardware()
+        # Read hardware properties
+        fstatus = os.path.join(test_dir, "fiberstatus.ecsv")
+        sim_status(fstatus)
+        hw = load_hardware(status_file=fstatus)
         tfile = os.path.join(test_dir, "footprint.fits")
         sim_tiles(tfile)
         tiles = load_tiles(hw, tiles_file=tfile)
+
+        # Compute the targets available to each fiber for each tile.
         tgsavail = TargetsAvailable(tgs, tiles, tree)
 
         # Free the tree
@@ -179,7 +185,8 @@ class TestAssign(unittest.TestCase):
 
         write_assignment_fits(tiles, asgn, out_dir=test_dir)
 
-        plot_tiles(hw, tiles, result_dir=test_dir, petals=[0])
+        plot_tiles(hw, tiles, result_dir=test_dir, plot_dir=test_dir,
+                   petals=[0])
 
         qa_tiles(hw, tiles, result_dir=test_dir)
 
@@ -188,11 +195,11 @@ class TestAssign(unittest.TestCase):
             qadata = json.load(f)
 
         for tile, props in qadata.items():
-            self.assertEqual(4500, props["assign_science"])
+            self.assertEqual(4495, props["assign_science"])
             self.assertEqual(100, props["assign_std"])
             self.assertEqual(400, props["assign_sky"])
 
-        plot_qa(qadata, "{}_qa".format(test_dir), outformat="pdf",
+        plot_qa(qadata, os.path.join(test_dir, "qa"), outformat="pdf",
                 labels=True)
 
         return

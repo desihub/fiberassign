@@ -177,6 +177,8 @@ def plot_available(ax, targetprops, selected, linewidth=0.1):
         xdata[idx] = targetprops[tgid]["xy"][0]
         ydata[idx] = targetprops[tgid]["xy"][1]
         color.append(targetprops[tgid]["color"])
+        if ydata[idx] > 0:
+            print("DBG:  {} tg {}:  X = {}, Y = {}".format(idx, tgid, xdata[idx], ydata[idx]), flush=True)
     ax.scatter(xdata, ydata, color=color, marker=".",
                linewidth=linewidth, s=mwidth)
     return
@@ -288,8 +290,9 @@ def plot_assignment_tile_file(fibers, real_shapes, params):
     return
 
 
-def plot_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign",
-               result_split_dir=False, plot_dir=".", plot_prefix="fiberassign",
+def plot_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign_",
+               result_split_dir=False, plot_dir=".",
+               plot_prefix="fiberassign_",
                plot_split_dir=False, petals=None, real_shapes=False):
     """Plot assignment output.
 

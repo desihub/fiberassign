@@ -47,6 +47,11 @@ def main():
                         "assignment files.  This should be a comma-separated "
                         "list.")
 
+    parser.add_argument("--skip_raw", required=False, default=False,
+                        action="store_true",
+                        help="Do not copy the raw fiberassign HDUs to the "
+                             "merged output.")
+
     args = parser.parse_args()
 
     # Check directory
@@ -65,7 +70,8 @@ def main():
     merge_results(args.targets, tiles, result_dir=args.dir,
                   result_prefix=args.prefix, result_split_dir=args.split,
                   out_dir=args.out, out_prefix=args.out_prefix,
-                  out_split_dir=args.out_split, columns=columns)
+                  out_split_dir=args.out_split, columns=columns,
+                  copy_fba=(not args.skip_raw))
 
     return
 

@@ -3,10 +3,13 @@ Simulation utilities for fiberassign tests.
 """
 import os
 import shutil
+from datetime import datetime, timedelta
 
 import numpy as np
 
 import fitsio
+
+from astropy.table import Table
 
 from desitarget.targetmask import desi_mask
 
@@ -31,6 +34,27 @@ def test_subdir_create(name):
         shutil.rmtree(test_dir)
     os.makedirs(test_dir)
     return test_dir
+
+
+def sim_status(path):
+    start = datetime.utcnow() - timedelta(seconds=5.0)
+    stop = datetime.utcnow() + timedelta(seconds=1000.0)
+    sdtype = np.dtype([
+        ("LOCATION", "i4"),
+        ("BROKEN", "i4"),
+        ("STUCK", "i4"),
+        ("START_DATE", "a20"),
+        ("END_DATE", "a20")
+    ])
+    sdata = np.zeros(5, dtype=sdtype)
+    sdata["LOCATION"] = np.array([95, 62, 102, 82, 131])
+    sdata["BROKEN"] = np.array([1, 1, 0, 0, 0])
+    sdata["STUCK"] = np.array([0, 0, 1, 1, 1])
+    sdata["START_DATE"][:] = start.isoformat(timespec="seconds")
+    sdata["END_DATE"][:] = stop.isoformat(timespec="seconds")
+    tdata = Table(sdata)
+    tdata.write(path, format="ascii.ecsv")
+    return
 
 
 def sim_tiles(path):
