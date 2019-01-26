@@ -441,6 +441,24 @@ fba::TargetsAvailable::TargetsAvailable(Targets::pshr objs, Tiles::pshr tiles,
         }
     }
 
+    for (size_t i = 0; i < ntile; ++i) {
+        int32_t tid = ptiles->id[i];
+        if (data.count(tid) == 0) {
+            continue;
+        }
+        size_t total_avail = 0;
+        for (size_t j = 0; j < nfiber; ++j) {
+            if (data.at(tid).count(fiber_id[j]) > 0) {
+                total_avail += data.at(tid).at(fiber_id[j]).size();
+            }
+        }
+        std::ostringstream msg;
+        msg.str("");
+        msg << "targets avail:  tile " << tid
+            << ", " << total_avail << " total available targets";
+        logger.debug(msg.str().c_str());
+    }
+
     tm.stop();
     tm.report("Computing targets available to all tile / fibers");
 }

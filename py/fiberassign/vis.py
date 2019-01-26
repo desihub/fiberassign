@@ -148,8 +148,9 @@ def plot_parse_table(tgdata):
     return tgs
 
 
-def plot_tile_targets_props(hw, tile_ra, tile_dec, tgs):
-    avail_tgid = tgs.ids()
+def plot_tile_targets_props(hw, tile_ra, tile_dec, tgs, avail_tgid=None):
+    if avail_tgid is None:
+        avail_tgid = tgs.ids()
     # print("  DBG:  avail_tgid len = ", len(avail_tgid), flush=True)
     ra = np.empty(len(avail_tgid), dtype=np.float64)
     dec = np.empty(len(avail_tgid), dtype=np.float64)
@@ -363,11 +364,7 @@ def plot_assignment_tile(hw, tgs, tile_id, tile_ra, tile_dec, tile_assign,
             fibers.extend([x for x in hw.petal_fibers[p]])
     fibers = np.array(fibers)
 
-    # Target properties
-    targetprops = plot_tile_targets_props(hw, tile_ra, tile_dec, tgs)
-
     # Available targets for our selected fibers.
-
     avtg_fibers = None
     avtg_ids = None
     if tile_avail is None:
@@ -378,6 +375,10 @@ def plot_assignment_tile(hw, tgs, tile_id, tile_ra, tile_dec, tile_assign,
         # Plot all available targets
         avtg_fibers = [f for f in fibers if f in tile_avail]
         avtg_ids = np.unique([x for f in avtg_fibers for x in tile_avail[f]])
+
+    # Target properties
+    targetprops = plot_tile_targets_props(hw, tile_ra, tile_dec, tgs,
+                                          avail_tgid=avtg_ids)
 
     fig = plt.figure(figsize=(figsize, figsize))
     ax = fig.add_subplot(1, 1, 1)
