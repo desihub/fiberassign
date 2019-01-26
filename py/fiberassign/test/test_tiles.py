@@ -24,8 +24,13 @@ class TestTiles(unittest.TestCase):
     def test_read(self):
         test_dir = test_subdir_create("tiles_test_read")
         hw = load_hardware()
+        stiles = [1165, 18465, 16870]
         tfile = os.path.join(test_dir, "footprint.fits")
         sim_tiles(tfile)
-        tls = load_tiles(hw, tiles_file=tfile)
+        tls = load_tiles(hw, tiles_file=tfile, select=stiles)
         print(tls)
+        indx = 0
+        for st in stiles:
+            self.assertEqual(tls.order[st], indx)
+            indx += 1
         return

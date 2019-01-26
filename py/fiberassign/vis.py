@@ -14,13 +14,6 @@ import os
 import numpy as np
 
 import matplotlib
-# try:
-#     matplotlib.use("module://mplcairo.base")
-# except ModuleNotFoundError:
-#     try:
-#         matplotlib.use("cairo")
-#     except ModuleNotFoundError:
-#         matplotlib.use("svg")
 matplotlib.use("pdf")
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
@@ -178,8 +171,8 @@ def plot_available(ax, targetprops, selected, linewidth=0.1):
         xdata[idx] = targetprops[tgid]["xy"][0]
         ydata[idx] = targetprops[tgid]["xy"][1]
         color.append(targetprops[tgid]["color"])
-        if ydata[idx] > 0:
-            print("DBG:  {} tg {}:  X = {}, Y = {}".format(idx, tgid, xdata[idx], ydata[idx]), flush=True)
+        # if ydata[idx] > 0:
+        #     print("DBG:  {} tg {}:  X = {}, Y = {}".format(idx, tgid, xdata[idx], ydata[idx]), flush=True)
     ax.scatter(xdata, ydata, color=color, marker=".",
                linewidth=linewidth, s=mwidth)
     return
@@ -336,7 +329,7 @@ def plot_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign_",
     tile_map_list = [(x, tiles.ra[tiles.order[x]], tiles.dec[tiles.order[x]],
                       result_path(x, dir=result_dir, prefix=result_prefix,
                                   split=result_split_dir),
-                      result_path(x, dir=plot_dir, prefix=result_prefix,
+                      result_path(x, dir=plot_dir, prefix=plot_prefix,
                                   ext="pdf", create=True,
                                   split=plot_split_dir))
                      for x in select_tiles]

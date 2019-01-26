@@ -92,12 +92,24 @@ class TestAssign(unittest.TestCase):
             input_std
         ]
         tile_ids = list(tiles.id)
+
         merge_results(target_files, tile_ids, result_dir=test_dir,
                       result_prefix="basic_", out_dir=test_dir,
                       out_prefix="basic_tile-", copy_fba=False)
+
         merge_results(target_files, tile_ids, result_dir=test_dir,
                       result_prefix="full_", out_dir=test_dir,
                       out_prefix="full_tile-", copy_fba=False)
+
+        plot_tiles(hw, tiles, result_dir=test_dir,
+                   result_prefix="basic_tile-", plot_dir=test_dir,
+                   plot_prefix="basic_tile-",
+                   result_split_dir=False, petals=[0])
+
+        plot_tiles(hw, tiles, result_dir=test_dir,
+                   result_prefix="full_tile-", plot_dir=test_dir,
+                   plot_prefix="full_tile-",
+                   result_split_dir=False, petals=[0])
 
         for tid in tile_ids:
             tdata = asgn.tile_fiber_target(tid)
@@ -183,7 +195,7 @@ class TestAssign(unittest.TestCase):
         asgn.assign_unused(TARGET_TYPE_SCIENCE)
         asgn.assign_unused(TARGET_TYPE_SKY)
 
-        write_assignment_fits(tiles, asgn, out_dir=test_dir)
+        write_assignment_fits(tiles, asgn, out_dir=test_dir, all_targets=True)
 
         plot_tiles(hw, tiles, result_dir=test_dir, plot_dir=test_dir,
                    petals=[0])
