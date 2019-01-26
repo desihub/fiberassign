@@ -350,6 +350,58 @@ def plot_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign_",
     return
 
 
+def plot_assignment_tile(hw, tgs, tile_id, tile_ra, tile_dec, tile_assign,
+                         tile_avail=None, petals=None, real_shapes=False,
+                         outfile=None, figsize=8):
+    # Get selected fibers
+    fibers = None
+    if petals is None:
+        fibers = [x for x in hw.fiber_id]
+    else:
+        fibers = list()
+        for p in petals:
+            fibers.extend([x for x in hw.petal_fibers[p]])
+    fibers = np.array(fibers)
+
+    # Target properties
+    targetprops = plot_tile_targets_props(hw, tile_ra, tile_dec, tgs)
+
+    # Available targets for our selected fibers.
+
+    avtg_fibers = None
+    avtg_ids = None
+    if tile_avail is None:
+        # Just plot assigned targets
+        avtg_fibers = [f for f in fibers if f in tile_assign]
+        avtg_ids = [tile_assign[f] for f in avtg_fibers]
+    else:
+        # Plot all available targets
+        avtg_fibers = [f for f in fibers if f in tile_avail]
+        avtg_ids = np.unique([x for f in avtg_fibers for x in tile_avail[f]])
+
+    fig = plt.figure(figsize=(figsize, figsize))
+    ax = fig.add_subplot(1, 1, 1)
+    ax.set_aspect("equal")
+
+    plot_available(ax, targetprops, avtg_ids, linewidth=0.1)
+
+    # Assigned targets for our selected fibers
+    tassign = {x: tile_assign[x] for x in fibers if x in tile_assign}
+
+    fassign = {f: tassign[f] if f in tassign else -1 for f in fibers}
+
+    plot_assignment(ax, hw, targetprops, fassign,
+                    linewidth=0.1, real_shapes=real_shapes)
+
+    ax.set_xlabel("Millimeters", fontsize="large")
+    ax.set_ylabel("Millimeters", fontsize="large")
+    if outfile is None:
+        plt.show()
+    else:
+        plt.savefig(outfile, dpi=300, format="pdf")
+    return
+
+
 def plot_qa_tile_color(desired, value, incr):
     des_color = "green"
     low_one_color = "gold"
