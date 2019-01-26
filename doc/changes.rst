@@ -1,7 +1,17 @@
 fiberassign change log
 ======================
 
-0.11.1 (unreleased)
+1.0.0 (planned)
+---------------
+
+* First tag of refactor/rewrite after merge of tsk_refactor.
+
+0.11.2 (unreleased)
+-------------------
+
+* No changes yet.
+
+0.11.1 (2019-01-25)
 -------------------
 
 * Bug fix when using non-standard tiling (PR `#158`_).
