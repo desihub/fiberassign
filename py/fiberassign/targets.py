@@ -185,11 +185,15 @@ def append_target_table(tgs, tgdata, typeforce=None, typecol=None,
 
     if "NUMOBS_MORE" in tgdata.dtype.fields:
         d_nobs[:] = tgdata["NUMOBS_MORE"]
+    elif "NUMOBS_INIT" in tgdata.dtype.fields:
+        d_nobs[:] = tgdata["NUMOBS_INIT"]
     else:
         d_nobs[:] = np.zeros(nrows, dtype=np.int32)
 
     if "PRIORITY" in tgdata.dtype.fields:
         d_prior[:] = tgdata["PRIORITY"]
+    elif "PRIORITY_INIT" in tgdata.dtype.fields:
+        d_prior[:] = tgdata["PRIORITY_INIT"]
     else:
         d_prior[:] = np.zeros(nrows, dtype=np.int32)
 
