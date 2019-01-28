@@ -281,13 +281,15 @@ def plot_assignment_tile_file(fibers, real_shapes, params):
     ax.set_xlabel("Millimeters", fontsize="large")
     ax.set_ylabel("Millimeters", fontsize="large")
     plt.savefig(outfile, dpi=300, format="pdf")
+    plt.close()
     return
 
 
 def plot_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign_",
                result_split_dir=False, plot_dir=".",
                plot_prefix="fiberassign_",
-               plot_split_dir=False, petals=None, real_shapes=False):
+               plot_split_dir=False, petals=None, real_shapes=False,
+               serial=False):
     """Plot assignment output.
 
     Args:
@@ -301,6 +303,7 @@ def plot_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign_",
         plot_split_dir (bool):  Write outputs in split tile directories.
         petals (list):  List of petals to plot.
         real_shapes (bool):  If True, plot the full positioner shapes.
+        serial (bool):  If True, disable use of multiprocessing.
 
     Returns:
         None.
@@ -336,10 +339,15 @@ def plot_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign_",
 
     log.info("Selecting {} fiberassign tile files".format(len(tile_map_list)))
 
-    with mp.Pool(processes=default_mp_proc,
-                 initializer=plot_assignment_tile_file_initialize,
-                 initargs=(hw,)) as pool:
-        pool.map(plot_tile, tile_map_list)
+    if serial:
+        plot_assignment_tile_file_initialize(hw)
+        for params in tile_map_list:
+            plot_tile(params)
+    else:
+        with mp.Pool(processes=default_mp_proc,
+                     initializer=plot_assignment_tile_file_initialize,
+                     initargs=(hw,)) as pool:
+            pool.map(plot_tile, tile_map_list)
 
     return
 
@@ -393,6 +401,7 @@ def plot_assignment_tile(hw, tgs, tile_id, tile_ra, tile_dec, tile_assign,
         plt.show()
     else:
         plt.savefig(outfile, dpi=300, format="pdf")
+        plt.close()
     return
 
 

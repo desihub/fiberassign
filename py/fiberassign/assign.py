@@ -80,6 +80,8 @@ results_targets_columns = OrderedDict([
     ("TARGETID", "i8"),
     ("TARGET_RA", "f8"),
     ("TARGET_DEC", "f8"),
+    ("DESIGN_X", "f8"),
+    ("DESIGN_Y", "f8"),
     ("FBATYPE", "u1"),
     ("PRIORITY", "i4"),
     ("SUBPRIORITY", "f8"),
@@ -164,6 +166,7 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
     log.debug("Write:  indexing tile {}".format(tile_id))
 
     fibers = np.array(hw.fiber_id)
+    nfiber = len(fibers)
 
     # Compute the total list of targets
     navail = np.sum([len(avail[x]) for x in avail.keys()])
@@ -206,27 +209,39 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
             tgids = np.array(sorted([y for x, y in tdata.items()]),
                              dtype=np.int64)
 
-        tg_ra = np.empty(len(tgids), dtype=np.float64)
-        tg_dec = np.empty(len(tgids), dtype=np.float64)
-        tg_type = np.empty(len(tgids), dtype=np.uint8)
-        tg_priority = np.empty(len(tgids), dtype=np.int32)
-        tg_subpriority = np.empty(len(tgids), dtype=np.float64)
-        tg_obscond = np.empty(len(tgids), dtype=np.int32)
-        tg_obsrem = np.empty(len(tgids), dtype=np.int32)
-        off = 0
-        for tg in tgids:
+        ntarget = len(tgids)
+
+        tg_ra = np.empty(ntarget, dtype=np.float64)
+        tg_dec = np.empty(ntarget, dtype=np.float64)
+        tg_x = np.empty(ntarget, dtype=np.float64)
+        tg_y = np.empty(ntarget, dtype=np.float64)
+        tg_type = np.empty(ntarget, dtype=np.uint8)
+        tg_priority = np.empty(ntarget, dtype=np.int32)
+        tg_subpriority = np.empty(ntarget, dtype=np.float64)
+        tg_obscond = np.empty(ntarget, dtype=np.int32)
+        tg_obsrem = np.empty(ntarget, dtype=np.int32)
+        tg_indx = dict()
+        for indx, tg in enumerate(tgids):
+            tg_indx[tg] = indx
             props = tgs.get(tg)
-            tg_obsrem[off] = 0
+            tg_obsrem[indx] = 0
             if props.obs_remain > 0:
-                tg_obsrem[off] = props.obs_remain
-            tg_ra[off] = props.ra
-            tg_dec[off] = props.dec
-            tg_type[off] = props.type
-            tg_priority[off] = props.priority
-            tg_subpriority[off] = props.subpriority
-            tg_obscond[off] = props.obscond
-            off += 1
-        tg_indx = {y: x for x, y in enumerate(tgids)}
+                tg_obsrem[indx] = props.obs_remain
+            tg_ra[indx] = props.ra
+            tg_dec[indx] = props.dec
+            tg_type[indx] = props.type
+            tg_priority[indx] = props.priority
+            tg_subpriority[indx] = props.subpriority
+            tg_obscond[indx] = props.obscond
+
+        # We compute the X / Y focalplane coordinates for ALL available
+        # targets, not just the assigned ones.  This allows us to write out
+        # the focalplane coordinates of all available targets as computed by
+        # the code at the time it was run.
+        xy = hw.radec2xy_multi(tile_ra, tile_dec, tg_ra, tg_dec, 0)
+        for indx, fxy in enumerate(xy):
+            tg_x[indx] = fxy[0]
+            tg_y[indx] = fxy[1]
 
         tm.stop()
         tm.report("  extract target props for {}".format(tile_id))
@@ -250,12 +265,12 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         log.debug("Write:  copying assignment data for tile {}"
                   .format(tile_id))
 
-        fdata = np.empty(len(fibers), dtype=assign_dtype)
+        fdata = np.empty(nfiber, dtype=assign_dtype)
         fdata["FIBER"] = fibers
 
         # For unassigned fibers, we give each fiber a unique negative
         # number based on the tile and fiber.
-        unassign_offset = tile_id * len(fibers)
+        unassign_offset = tile_id * nfiber
         assigned_tgids = np.array([tdata[x] if x in tdata.keys()
                                   else -(unassign_offset + x)
                                   for x in fibers], dtype=np.int64)
@@ -266,10 +281,10 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         assigned_invalid = np.where(assigned_tgids < 0)[0]
 
         # Buffers for X/Y/RA/DEC
-        assigned_tgx = np.empty(len(assigned_tgids), dtype=np.float64)
-        assigned_tgy = np.empty(len(assigned_tgids), dtype=np.float64)
-        assigned_tgra = np.empty(len(assigned_tgids), dtype=np.float64)
-        assigned_tgdec = np.empty(len(assigned_tgids), dtype=np.float64)
+        assigned_tgx = np.empty(nfiber, dtype=np.float64)
+        assigned_tgy = np.empty(nfiber, dtype=np.float64)
+        assigned_tgra = np.empty(nfiber, dtype=np.float64)
+        assigned_tgdec = np.empty(nfiber, dtype=np.float64)
 
         if (len(assigned_invalid) > 0):
             # Fill our unassigned fiber X/Y coordinates with the central
@@ -293,15 +308,11 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
             # Mapping of our assigned target rows into the target properties.
             target_rows = [tg_indx[x] for x in assigned_real]
 
-            real_ra = np.array(tg_ra[target_rows])
-            real_dec = np.array(tg_dec[target_rows])
-
-            # Now fill in our real targets
-            xy = hw.radec2xy_multi(tile_ra, tile_dec, real_ra, real_dec, 0)
-            assigned_tgra[assigned_valid] = real_ra
-            assigned_tgdec[assigned_valid] = real_dec
-            assigned_tgx[assigned_valid] = [x for x, y in xy]
-            assigned_tgy[assigned_valid] = [y for x, y in xy]
+            # Copy values out of the full target list.
+            assigned_tgra[assigned_valid] = np.array(tg_ra[target_rows])
+            assigned_tgdec[assigned_valid] = np.array(tg_dec[target_rows])
+            assigned_tgx[assigned_valid] = np.array(tg_x[target_rows])
+            assigned_tgy[assigned_valid] = np.array(tg_y[target_rows])
 
         fdata["TARGET_RA"] = assigned_tgra
         fdata["TARGET_DEC"] = assigned_tgdec
@@ -329,12 +340,12 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
             [device_type[x] for x in fibers]).astype(np.dtype("a3"))
 
         # This hard-coded value copied from the original code...
-        lambda_ref = np.ones(len(fibers), dtype=np.float32) * 5400.0
+        lambda_ref = np.ones(nfiber, dtype=np.float32) * 5400.0
         fdata["LAMBDA_REF"] = lambda_ref
 
         # Fiber status
         fstate = dict(hw.state)
-        fstatus = np.zeros(len(fibers), dtype=np.int32)
+        fstatus = np.zeros(nfiber, dtype=np.int32)
         # Set unused bit
         fstatus |= [1 if x in tdata.keys() else 0 for x in fibers]
         # Set stuck / broken bits
@@ -363,7 +374,7 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         log.debug("Write:  writing target data for tile {}"
                   .format(tile_id))
 
-        fdata = np.empty(len(tgids), dtype=targets_dtype)
+        fdata = np.empty(ntarget, dtype=targets_dtype)
         fdata["TARGETID"] = tgids
         fdata["TARGET_RA"] = tg_ra
         fdata["TARGET_DEC"] = tg_dec
@@ -775,8 +786,8 @@ def merge_results_tile(out_dtype, copy_fba, params):
         # must build an explicit mapping from target catalog rows to output
         # table rows.
         tgids = tgview["TARGETID"]
-        inrows = np.where(np.isin(tgids, tile_tgids))[0]
-        outrows = np.where(np.isin(tile_tgids, tgids))[0]
+        inrows = np.where(np.isin(tgids, tile_tgids, assume_unique=True))[0]
+        outrows = np.where(np.isin(tile_tgids, tgids, assume_unique=True))[0]
         tfcolsin = list()
         tfcolsout = list()
         for c in tgview.dtype.names:

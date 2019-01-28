@@ -11,6 +11,8 @@ import json
 
 import numpy as np
 
+import fitsio
+
 from fiberassign.hardware import load_hardware
 
 from fiberassign.tiles import load_tiles
@@ -86,6 +88,18 @@ class TestAssign(unittest.TestCase):
         write_assignment_fits(tiles, asgn, out_dir=test_dir,
                               out_prefix="full_", all_targets=True)
 
+        plot_tiles(hw, tiles, result_dir=test_dir,
+                   result_prefix="basic_", plot_dir=test_dir,
+                   plot_prefix="basic_",
+                   result_split_dir=False, petals=[0],
+                   serial=True)
+
+        plot_tiles(hw, tiles, result_dir=test_dir,
+                   result_prefix="full_", plot_dir=test_dir,
+                   plot_prefix="full_",
+                   result_split_dir=False, petals=[0],
+                   serial=True)
+
         target_files = [
             input_mtl,
             input_sky,
@@ -101,15 +115,7 @@ class TestAssign(unittest.TestCase):
                       result_prefix="full_", out_dir=test_dir,
                       out_prefix="full_tile-", copy_fba=False)
 
-        plot_tiles(hw, tiles, result_dir=test_dir,
-                   result_prefix="basic_tile-", plot_dir=test_dir,
-                   plot_prefix="basic_tile-",
-                   result_split_dir=False, petals=[0])
-
-        plot_tiles(hw, tiles, result_dir=test_dir,
-                   result_prefix="full_tile-", plot_dir=test_dir,
-                   plot_prefix="full_tile-",
-                   result_split_dir=False, petals=[0])
+        # Here we test reading with the standard reading function
 
         for tid in tile_ids:
             tdata = asgn.tile_fiber_target(tid)
@@ -119,23 +125,122 @@ class TestAssign(unittest.TestCase):
                                   "basic_tile-{:05d}.fits".format(tid))
             inhead, fiber_data, targets_data, avail_data, gfa_targets = \
                 read_assignment_fits_tile((tid, infile))
-            for fid, tgid in zip(fiber_data["FIBER"], fiber_data["TARGETID"]):
+            for fid, tgid, tgra, tgdec in zip(
+                    fiber_data["FIBER"],
+                    fiber_data["TARGETID"],
+                    fiber_data["TARGET_RA"],
+                    fiber_data["TARGET_DEC"]):
                 if tgid >= 0:
-                    # print("assignment {} = {}".format(fid, tdata[fid]),
-                    #       flush=True)
-                    # print("  file basic = {}".format(tgid), flush=True)
                     self.assertEqual(tgid, tdata[fid])
+                    props = tgs.get(tgid)
+                    self.assertEqual(tgra, props.ra)
+                    self.assertEqual(tgdec, props.dec)
+
             # Check full format
             infile = os.path.join(test_dir,
                                   "full_tile-{:05d}.fits".format(tid))
             inhead, fiber_data, targets_data, avail_data, gfa_targets = \
                 read_assignment_fits_tile((tid, infile))
-            for fid, tgid in zip(fiber_data["FIBER"], fiber_data["TARGETID"]):
+            for fid, tgid, tgra, tgdec in zip(
+                    fiber_data["FIBER"],
+                    fiber_data["TARGETID"],
+                    fiber_data["TARGET_RA"],
+                    fiber_data["TARGET_DEC"]):
                 if tgid >= 0:
-                    # print("assignment {} = {}".format(fid, tdata[fid]),
-                    #       flush=True)
-                    # print("  file full = {}".format(tgid), flush=True)
                     self.assertEqual(tgid, tdata[fid])
+                    props = tgs.get(tgid)
+                    self.assertEqual(tgra, props.ra)
+                    self.assertEqual(tgdec, props.dec)
+
+        # Now read the files directly with fitsio and verify against the input
+        # target data.
+
+        for tid in tile_ids:
+            tdata = asgn.tile_fiber_target(tid)
+            avail = tgsavail.tile_data(tid)
+            # Check basic format
+            infile = os.path.join(test_dir,
+                                  "basic_tile-{:05d}.fits".format(tid))
+            fdata = fitsio.FITS(infile, "r")
+            fassign = fdata["FIBERASSIGN"].read()
+            ftargets = fdata["TARGETS"].read()
+            for fid, tgid, tgra, tgdec, tgsub, tgprior, tgobs in zip(
+                    fassign["FIBER"],
+                    fassign["TARGETID"],
+                    fassign["TARGET_RA"],
+                    fassign["TARGET_DEC"],
+                    fassign["SUBPRIORITY"],
+                    fassign["PRIORITY"],
+                    fassign["OBSCONDITIONS"]):
+                if tgid >= 0:
+                    self.assertEqual(tgid, tdata[fid])
+                    props = tgs.get(tgid)
+                    self.assertEqual(tgra, props.ra)
+                    self.assertEqual(tgdec, props.dec)
+                    self.assertEqual(tgsub, props.subpriority)
+                    self.assertEqual(tgprior, props.priority)
+                    self.assertEqual(tgobs, props.obscond)
+            for tgid, tgra, tgdec, tgsub, tgprior, tgobs in zip(
+                    ftargets["TARGETID"],
+                    ftargets["RA"],
+                    ftargets["DEC"],
+                    ftargets["SUBPRIORITY"],
+                    ftargets["PRIORITY"],
+                    ftargets["OBSCONDITIONS"]):
+                props = tgs.get(tgid)
+                self.assertEqual(tgra, props.ra)
+                self.assertEqual(tgdec, props.dec)
+                self.assertEqual(tgsub, props.subpriority)
+                self.assertEqual(tgprior, props.priority)
+                self.assertEqual(tgobs, props.obscond)
+
+            # Check full format
+            infile = os.path.join(test_dir,
+                                  "full_tile-{:05d}.fits".format(tid))
+            fdata = fitsio.FITS(infile, "r")
+            fassign = fdata["FIBERASSIGN"].read()
+            ftargets = fdata["TARGETS"].read()
+            for fid, tgid, tgra, tgdec, tgsub, tgprior, tgobs in zip(
+                    fassign["FIBER"],
+                    fassign["TARGETID"],
+                    fassign["TARGET_RA"],
+                    fassign["TARGET_DEC"],
+                    fassign["SUBPRIORITY"],
+                    fassign["PRIORITY"],
+                    fassign["OBSCONDITIONS"]):
+                if tgid >= 0:
+                    self.assertEqual(tgid, tdata[fid])
+                    props = tgs.get(tgid)
+                    self.assertEqual(tgra, props.ra)
+                    self.assertEqual(tgdec, props.dec)
+                    self.assertEqual(tgsub, props.subpriority)
+                    self.assertEqual(tgprior, props.priority)
+                    self.assertEqual(tgobs, props.obscond)
+            for tgid, tgra, tgdec, tgsub, tgprior, tgobs in zip(
+                    ftargets["TARGETID"],
+                    ftargets["RA"],
+                    ftargets["DEC"],
+                    ftargets["SUBPRIORITY"],
+                    ftargets["PRIORITY"],
+                    ftargets["OBSCONDITIONS"]):
+                props = tgs.get(tgid)
+                self.assertEqual(tgra, props.ra)
+                self.assertEqual(tgdec, props.dec)
+                self.assertEqual(tgsub, props.subpriority)
+                self.assertEqual(tgprior, props.priority)
+                self.assertEqual(tgobs, props.obscond)
+
+        plot_tiles(hw, tiles, result_dir=test_dir,
+                   result_prefix="basic_tile-", plot_dir=test_dir,
+                   plot_prefix="basic_tile-",
+                   result_split_dir=False, petals=[0],
+                   serial=True)
+
+        plot_tiles(hw, tiles, result_dir=test_dir,
+                   result_prefix="full_tile-", plot_dir=test_dir,
+                   plot_prefix="full_tile-",
+                   result_split_dir=False, petals=[0],
+                   serial=True)
 
         return
 
