@@ -546,11 +546,7 @@ def avail_table_to_dict(avail_data):
 
     """
     avail_target = avail_data["TARGETID"]
-    avail_fiber = None
-    if "LOCATION" in avail_data.dtype.names:
-        avail_fiber = avail_data["LOCATION"]
-    else:
-        avail_fiber = avail_data["FIBER"]
+    avail_fiber = avail_data["FIBER"]
     avail = dict()
     for fid, tgid in zip(avail_fiber, avail_target):
         if fid in avail:
