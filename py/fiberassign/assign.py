@@ -347,7 +347,7 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         fstate = dict(hw.state)
         fstatus = np.zeros(nfiber, dtype=np.int32)
         # Set unused bit
-        fstatus |= [1 if x in tdata.keys() else 0 for x in fibers]
+        fstatus |= [0 if x in tdata.keys() else 1 for x in fibers]
         # Set stuck / broken bits
         fstatus |= [2 if (fstate[x] & FIBER_STATE_STUCK) else 0
                     for x in fibers]
