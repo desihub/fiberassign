@@ -10,6 +10,7 @@ import argparse
 
 from fiberassign.assign import merge_results, result_tiles
 
+from fiberassign.utils import GlobalTimers, Logger
 
 def main():
     parser = argparse.ArgumentParser()
@@ -55,6 +56,8 @@ def main():
                              "merged output.")
 
     args = parser.parse_args()
+
+    log = Logger.get()
 
     # Catch previous usage with multiple --targets arguments
     if sys.argv.count("--targets") > 1:
