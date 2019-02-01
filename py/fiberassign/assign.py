@@ -645,8 +645,6 @@ def read_assignment_fits_tile(params):
                 if col in fbsky.dtype.names:
                     fiber_data[col][npos:] = fbsky[col]
 
-        print(fiber_data, flush=True)
-
         full_targets_columns = [(x, y) for x, y in
                                 results_targets_columns.items()]
         full_names = [x for x, y in results_targets_columns.items()]
