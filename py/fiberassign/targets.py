@@ -151,6 +151,9 @@ def append_target_table(tgs, tgdata, typeforce=None, typecol=None,
     d_targetid = np.empty(nrows, dtype=np.int64)
     d_ra = np.empty(nrows, dtype=np.float64)
     d_dec = np.empty(nrows, dtype=np.float64)
+    d_desitarget = np.zeros(nrows, dtype=np.int64)
+    d_bgstarget = np.zeros(nrows, dtype=np.int64)
+    d_mwstarget = np.zeros(nrows, dtype=np.int64)
     d_type = np.empty(nrows, dtype=np.uint8)
     d_nobs = np.empty(nrows, dtype=np.int32)
     d_prior = np.empty(nrows, dtype=np.int32)
@@ -164,6 +167,12 @@ def append_target_table(tgs, tgdata, typeforce=None, typecol=None,
         d_dec[:] = tgdata["TARGET_DEC"]
     else:
         d_dec[:] = tgdata["DEC"]
+    if "DESI_TARGET" in tgdata.dtype.names:
+        d_desitarget[:] = tgdata["DESI_TARGET"]
+    if "BGS_TARGET" in tgdata.dtype.names:
+        d_bgstarget[:] = tgdata["BGS_TARGET"]
+    if "MWS_TARGET" in tgdata.dtype.names:
+        d_mwstarget[:] = tgdata["MWS_TARGET"]
     if typeforce is not None:
         d_type[:] = typeforce
     else:
@@ -204,8 +213,8 @@ def append_target_table(tgs, tgdata, typeforce=None, typecol=None,
 
     # Append the data to our targets list.  This will print a
     # warning if there are duplicate target IDs.
-    tgs.append(d_targetid, d_ra, d_dec, d_nobs, d_prior, d_subprior,
-               d_obscond, d_type)
+    tgs.append(d_targetid, d_ra, d_dec, d_desitarget, d_bgstarget,
+               d_mwstarget, d_nobs, d_prior, d_subprior, d_obscond, d_type)
     return
 
 

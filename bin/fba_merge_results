@@ -8,11 +8,14 @@ import sys
 
 import argparse
 
+from fiberassign.utils import GlobalTimers, Logger
+
 from fiberassign.assign import merge_results, result_tiles
 
 from fiberassign.utils import GlobalTimers, Logger
 
 def main():
+    log = Logger.get()
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--targets", type=str, required=True, nargs="+",

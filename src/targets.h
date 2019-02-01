@@ -48,6 +48,9 @@ class Target {
             int64_t tid,
             double tra,
             double tdec,
+            int64_t desi_target,
+            int64_t bgs_target,
+            int64_t mws_target,
             int32_t tobs_remain,
             int32_t tpriority,
             double tsubpriority,
@@ -58,6 +61,9 @@ class Target {
         int64_t id;
         double ra;
         double dec;
+        int64_t desi_target;
+        int64_t bgs_target;
+        int64_t mws_target;
         int32_t obs_remain;
         int32_t priority;
         double subpriority;
@@ -87,6 +93,9 @@ class Targets : public std::enable_shared_from_this <Targets> {
             std::vector <int64_t> const & id,
             std::vector <double> const & ra,
             std::vector <double> const & dec,
+            std::vector <int64_t> const & desi_target,
+            std::vector <int64_t> const & bgs_target,
+            std::vector <int64_t> const & mws_target,
             std::vector <int32_t> const & obs_remain,
             std::vector <int32_t> const & priority,
             std::vector <double> const & subpriority,

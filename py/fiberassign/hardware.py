@@ -51,18 +51,22 @@ def load_hardware(fiberpos_file=None, gfa_file=None, rundate=None,
     log.info("Reading fiber positions from {}".format(fiberpos_file))
 
     fpdata = fitsio.read(fiberpos_file, ext=1)
-    nfiber = len(fpdata)
-    log.debug("  fiber position table has {} rows".format(nfiber))
+    pos_rows = np.where(fpdata["DEVICE_TYPE"] == b"POS")[0]
+    etc_rows = np.where(fpdata["DEVICE_TYPE"] == b"ETC")[0]
+    keep_rows = np.unique(np.concatenate((pos_rows, etc_rows)))
+
+    nfiber = len(keep_rows)
+    log.debug("  fiber position table keeping {} rows".format(nfiber))
 
     device_type = np.empty(nfiber, dtype="a8")
-    device_type[:] = fpdata["DEVICE_TYPE"]
+    device_type[:] = fpdata["DEVICE_TYPE"][keep_rows]
 
     # For non-science positioners, no fiber ID is assigned in the positioner
     # file.  This is a pain, since all our quantities are indexed by fiber ID.
     # Instead, we give every position a FIBER value which is unique and which
     # is sorted by LOCATION.  We start these fake FIBER values at 5000.
-    fiber = np.copy(fpdata["FIBER"])
-    location = np.copy(fpdata["LOCATION"])
+    fiber = np.copy(fpdata["FIBER"][keep_rows])
+    location = np.copy(fpdata["LOCATION"][keep_rows])
     missing_fiber = [x for x, y in enumerate(fiber) if y < 0]
     if len(missing_fiber) > 0:
         missing_locsorted = np.sort(location[missing_fiber])
@@ -99,18 +103,18 @@ def load_hardware(fiberpos_file=None, gfa_file=None, rundate=None,
                     status[locindx[loc]] |= FIBER_STATE_STUCK
 
     hw = Hardware(fiber,
-                  fpdata["PETAL"],
-                  fpdata["SPECTRO"],
+                  fpdata["PETAL"][keep_rows],
+                  fpdata["SPECTRO"][keep_rows],
                   location,
-                  fpdata["SLIT"],
-                  fpdata["SLITBLOCK"],
-                  fpdata["BLOCKFIBER"],
-                  fpdata["DEVICE"],
+                  fpdata["SLIT"][keep_rows],
+                  fpdata["SLITBLOCK"][keep_rows],
+                  fpdata["BLOCKFIBER"][keep_rows],
+                  fpdata["DEVICE"][keep_rows],
                   device_type,
-                  fpdata["X"],
-                  fpdata["Y"],
-                  fpdata["Z"],
-                  fpdata["Q"],
-                  fpdata["S"],
+                  fpdata["X"][keep_rows],
+                  fpdata["Y"][keep_rows],
+                  fpdata["Z"][keep_rows],
+                  fpdata["Q"][keep_rows],
+                  fpdata["S"][keep_rows],
                   status)
     return hw

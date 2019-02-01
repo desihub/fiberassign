@@ -46,7 +46,7 @@ def plot_target_type_color(tgtype):
     elif (tp & TARGET_TYPE_STANDARD) != 0:
         color = "gold"
         if (tp & TARGET_TYPE_SCIENCE) != 0:
-            color = "orange"
+            color = "green"
     elif (tp & TARGET_TYPE_SCIENCE) != 0:
         color = "red"
     return color
@@ -57,7 +57,7 @@ def plot_positioner(ax, patrol_rad, fiber, center, cb, fh, color="k",
     """Plot one fiber positioner.
     """
     patrol = plt.Circle((center[0], center[1]), radius=patrol_rad, fc=color,
-                        ec="none", alpha=0.07)
+                        ec="none", alpha=0.1)
     ax.add_artist(patrol)
     # Plot the arm from the center to the body
     cbcent = cb.circles[0].center
@@ -106,7 +106,7 @@ def plot_positioner_simple(ax, patrol_rad, fiber, center, cb, fh, color="k",
 
     """
     patrol = plt.Circle((center[0], center[1]), radius=patrol_rad, fc=color,
-                        ec="none", alpha=0.07)
+                        ec="none", alpha=0.1)
     ax.add_artist(patrol)
     # Plot the arm from the center to the body
     cbcent = cb.circles[0].center
@@ -171,8 +171,6 @@ def plot_available(ax, targetprops, selected, linewidth=0.1):
         xdata[idx] = targetprops[tgid]["xy"][0]
         ydata[idx] = targetprops[tgid]["xy"][1]
         color.append(targetprops[tgid]["color"])
-        # if ydata[idx] > 0:
-        #     print("DBG:  {} tg {}:  X = {}, Y = {}".format(idx, tgid, xdata[idx], ydata[idx]), flush=True)
     ax.scatter(xdata, ydata, color=color, marker=".",
                linewidth=linewidth, s=mwidth)
     return
@@ -186,8 +184,8 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
     assigned = np.array(sorted(tile_assigned.keys()), dtype=np.int32)
     for fid in assigned:
         color = "gray"
-        if device_type[fid] != "POS":
-            color = "green"
+        if (device_type[fid] != "POS") and (device_type[fid] != "ETC"):
+            continue
         cb = None
         fh = None
         center = center_mm[fid]
@@ -231,7 +229,7 @@ def plot_assignment_tile_file(fibers, real_shapes, params):
         log.info("Creating {}".format(outfile))
 
     header, fiber_data, targets_data, avail_data, gfa_data = \
-            read_assignment_fits_tile((tile_id, infile))
+        read_assignment_fits_tile((tile_id, infile))
 
     tavail = avail_table_to_dict(avail_data)
 

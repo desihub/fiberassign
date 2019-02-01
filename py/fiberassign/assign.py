@@ -70,6 +70,9 @@ results_assign_columns = OrderedDict([
     ("DEVICE_TYPE", "a3"),
     ("TARGET_RA", "f8"),
     ("TARGET_DEC", "f8"),
+    ("DESI_TARGET", "i8"),
+    ("BGS_TARGET", "i8"),
+    ("MWS_TARGET", "i8"),
     ("DESIGN_X", "f4"),
     ("DESIGN_Y", "f4"),
     ("DESIGN_Q", "f4"),
@@ -80,8 +83,9 @@ results_targets_columns = OrderedDict([
     ("TARGETID", "i8"),
     ("TARGET_RA", "f8"),
     ("TARGET_DEC", "f8"),
-    ("DESIGN_X", "f8"),
-    ("DESIGN_Y", "f8"),
+    ("DESI_TARGET", "i8"),
+    ("BGS_TARGET", "i8"),
+    ("MWS_TARGET", "i8"),
     ("FBATYPE", "u1"),
     ("PRIORITY", "i4"),
     ("SUBPRIORITY", "f8"),
@@ -213,6 +217,9 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
 
         tg_ra = np.empty(ntarget, dtype=np.float64)
         tg_dec = np.empty(ntarget, dtype=np.float64)
+        tg_desitarget = np.zeros(ntarget, dtype=np.int64)
+        tg_bgstarget = np.zeros(ntarget, dtype=np.int64)
+        tg_mwstarget = np.zeros(ntarget, dtype=np.int64)
         tg_x = np.empty(ntarget, dtype=np.float64)
         tg_y = np.empty(ntarget, dtype=np.float64)
         tg_type = np.empty(ntarget, dtype=np.uint8)
@@ -229,6 +236,9 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
                 tg_obsrem[indx] = props.obs_remain
             tg_ra[indx] = props.ra
             tg_dec[indx] = props.dec
+            tg_desitarget[indx] = props.desi_target
+            tg_bgstarget[indx] = props.bgs_target
+            tg_mwstarget[indx] = props.mws_target
             tg_type[indx] = props.type
             tg_priority[indx] = props.priority
             tg_subpriority[indx] = props.subpriority
@@ -285,6 +295,9 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         assigned_tgy = np.empty(nfiber, dtype=np.float64)
         assigned_tgra = np.empty(nfiber, dtype=np.float64)
         assigned_tgdec = np.empty(nfiber, dtype=np.float64)
+        assigned_tgdesi = np.zeros(nfiber, dtype=np.int64)
+        assigned_tgbgs = np.zeros(nfiber, dtype=np.int64)
+        assigned_tgmws = np.zeros(nfiber, dtype=np.int64)
 
         if (len(assigned_invalid) > 0):
             # Fill our unassigned fiber X/Y coordinates with the central
@@ -313,11 +326,20 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
             assigned_tgdec[assigned_valid] = np.array(tg_dec[target_rows])
             assigned_tgx[assigned_valid] = np.array(tg_x[target_rows])
             assigned_tgy[assigned_valid] = np.array(tg_y[target_rows])
+            assigned_tgdesi[assigned_valid] = \
+                np.array(tg_desitarget[target_rows])
+            assigned_tgbgs[assigned_valid] = \
+                np.array(tg_bgstarget[target_rows])
+            assigned_tgmws[assigned_valid] = \
+                np.array(tg_mwstarget[target_rows])
 
         fdata["TARGET_RA"] = assigned_tgra
         fdata["TARGET_DEC"] = assigned_tgdec
         fdata["DESIGN_X"] = assigned_tgx
         fdata["DESIGN_Y"] = assigned_tgy
+        fdata["DESI_TARGET"] = assigned_tgdesi
+        fdata["BGS_TARGET"] = assigned_tgbgs
+        fdata["MWS_TARGET"] = assigned_tgmws
 
         assigned_q, assigned_s = desimodel.focalplane.xy2qs(
             assigned_tgx, assigned_tgy)
@@ -378,6 +400,9 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         fdata["TARGETID"] = tgids
         fdata["TARGET_RA"] = tg_ra
         fdata["TARGET_DEC"] = tg_dec
+        fdata["DESI_TARGET"] = tg_desitarget
+        fdata["BGS_TARGET"] = tg_bgstarget
+        fdata["MWS_TARGET"] = tg_mwstarget
         fdata["FBATYPE"] = tg_type
         fdata["PRIORITY"] = tg_priority
         fdata["SUBPRIORITY"] = tg_subpriority
@@ -596,34 +621,61 @@ def read_assignment_fits_tile(params):
         targets_data = fd["FTARGETS"].read()
         avail_data = fd["FAVAIL"].read()
     else:
-        # We have old-style data.  Build new recarrays from the FIBERASSIGN
-        # and POTENTIAL_ASSIGNMENTS extensions.
+        # We have merged data.  Build new recarrays from the FIBERASSIGN,
+        # TARGETS, and POTENTIAL_ASSIGNMENTS extensions.
         header = fd["FIBERASSIGN"].read_header()
-        nfiber = fd["FIBERASSIGN"].get_nrows()
+        npos = fd["FIBERASSIGN"].get_nrows()
         fbassign = fd["FIBERASSIGN"].read()
+        netc = fd["SKY_MONITOR"].get_nrows()
+        fbsky = fd["SKY_MONITOR"].read()
+        nfiber = npos + netc
         assign_dtype = np.dtype([(x, y) for x, y in
                                 results_assign_columns.items()])
         fiber_data = np.zeros(nfiber, dtype=assign_dtype)
+
         for col in results_assign_columns.keys():
             if col == "DEVICE_TYPE":
-                fiber_data[col][:] = "POS"
+                fiber_data[col][0:npos] = "POS"
+                fiber_data[col][npos:] = "ETC"
+            elif col == "FIBER":
+                fiber_data[col][0:npos] = fbassign[col]
+                fiber_data[col][npos:] = 5000 + fbsky[col]
             else:
-                fiber_data[col] = fbassign[col]
+                fiber_data[col][0:npos] = fbassign[col]
+                if col in fbsky.dtype.names:
+                    fiber_data[col][npos:] = fbsky[col]
 
-        tgrows = np.where(fbassign["TARGETID"] >= 0)[0]
-        ntarget = np.sum([1 for x in tgrows])
-        targets_dtype = np.dtype([(x, y) for x, y in
-                                 results_targets_columns.items()])
+        print(fiber_data, flush=True)
+
+        full_targets_columns = [(x, y) for x, y in
+                                results_targets_columns.items()]
+        full_names = [x for x, y in results_targets_columns.items()]
+        fbtargets = fd["TARGETS"].read()
+        ntarget = fd["TARGETS"].get_nrows()
+        for fld in list(fbtargets.dtype.names):
+            subd = fbtargets.dtype[fld].subdtype
+            if fld not in full_names:
+                full_names.append(fld)
+                if subd is None:
+                    full_targets_columns.extend(
+                        [(fld, fbtargets.dtype[fld].str)])
+                else:
+                    full_targets_columns.extend([(fld, subd[0], subd[1])])
+
+        targets_dtype = np.dtype(full_targets_columns)
         targets_data = np.zeros(ntarget, dtype=targets_dtype)
-        for col in results_targets_columns.keys():
+        for col in full_names:
             if col == "FBATYPE":
-                # targets_data[col] = [desi_target_type(x) for x in
-                #                      fbassign["DESI_TARGET"][tgrows]]
-                targets_data[col] = \
-                    desi_target_type(fbassign["DESI_TARGET"][tgrows])
+                targets_data[col][:] = [desi_target_type(x) for x in
+                                        fbtargets["DESI_TARGET"][:]]
+            elif col == "TARGET_RA":
+                targets_data[col][:] = fbtargets["RA"][:]
+            elif col == "TARGET_DEC":
+                targets_data[col][:] = fbtargets["DEC"][:]
             else:
-                targets_data[col] = fbassign[col][tgrows]
+                targets_data[col][:] = fbtargets[col][:]
         del fbassign
+        del fbtargets
         if "POTENTIALTARGETID" in fd:
             log.warning("File {} is an old format with an incompatible "
                         "packing of the potential targets HDU."

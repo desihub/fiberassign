@@ -366,6 +366,9 @@ PYBIND11_MODULE(_internal, m) {
         .def_readwrite("id", &fba::Target::id)
         .def_readwrite("ra", &fba::Target::ra)
         .def_readwrite("dec", &fba::Target::dec)
+        .def_readwrite("desi_target", &fba::Target::desi_target)
+        .def_readwrite("bgs_target", &fba::Target::bgs_target)
+        .def_readwrite("mws_target", &fba::Target::mws_target)
         .def_readwrite("obs_remain", &fba::Target::obs_remain)
         .def_readwrite("priority", &fba::Target::priority)
         .def_readwrite("subpriority", &fba::Target::subpriority)
@@ -409,6 +412,9 @@ PYBIND11_MODULE(_internal, m) {
                 decs (array):  array of float64 target DEC coordinates.
                 obs_remain (array):  array of int32 number of remaining
                     observations.
+                desi_target (array):  array of int64 DESI_TARGET values.
+                bgs_target (array):  array of int64 BGS_TARGET values.
+                mws_target (array):  array of int64 MWS_TARGET values.
                 priority (array):  array of int32 values representing the target
                     class priority for each object.
                 subpriority (array):  array of float64 values in [0.0, 1.0]

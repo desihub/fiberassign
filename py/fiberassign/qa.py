@@ -18,6 +18,8 @@ from functools import partial
 
 import json
 
+from desitarget.targetmask import desi_mask
+
 from .utils import Logger, default_mp_proc
 
 from .targets import (Targets, append_target_table)
@@ -34,21 +36,41 @@ def qa_parse_table(tgdata):
     if "FBATYPE" not in tgdata.dtype.names:
         typecol = "DESI_TARGET"
     append_target_table(tgs, tgdata, typecol=typecol)
-    return tgs
+    tgprops = dict()
+    lrgmask = int(desi_mask["LRG"].mask)
+    elgmask = int(desi_mask["ELG"].mask)
+    qsomask = int(desi_mask["QSO"].mask)
+    badmask = int(desi_mask["BAD_SKY"].mask)
+    for row in range(len(tgdata)):
+        tgid = tgdata["TARGETID"][row]
+        dt = tgdata["DESI_TARGET"][row]
+        tgprops[tgid] = dict()
+        if dt & lrgmask:
+            tgprops[tgid]["type"] = "LRG"
+        elif dt & elgmask:
+            tgprops[tgid]["type"] = "ELG"
+        elif dt & qsomask:
+            tgprops[tgid]["type"] = "QSO"
+        elif dt & badmask:
+            tgprops[tgid]["type"] = "BAD"
+        else:
+            tgprops[tgid]["type"] = "NA"
+    return tgs, tgprops
 
 
-def qa_tile(hw, tile_id, tgs, tile_assign, tile_avail):
+def qa_tile(hw, tile_id, tgs, tgprops, tile_assign, tile_avail):
     props = dict()
     # tile_idx = tiles.order[tile_id]
     # props["tile_ra"] = tiles.ra[tile_idx]
     # props["tile_dec"] = tiles.dec[tile_idx]
     # props["tile_obscond"] = tiles.obscond[tile_idx]
-    fibers = np.array(hw.fiber_id)
+    fibers = np.array(hw.device_fibers("POS"))
     nassign = 0
     nscience = 0
     nstd = 0
     nsky = 0
     unassigned = list()
+    objtypes = dict()
     for fid in fibers:
         if fid not in tile_assign:
             unassigned.append(int(fid))
@@ -61,15 +83,22 @@ def qa_tile(hw, tile_id, tgs, tile_assign, tile_avail):
         tg = tgs.get(tgid)
         if tg.is_science():
             nscience += 1
+            ot = tgprops[tgid]["type"]
+            if ot in objtypes:
+                objtypes[ot] += 1
+            else:
+                objtypes[ot] = 1
         if tg.is_standard():
             nstd += 1
         if tg.is_sky():
             nsky += 1
-    props["unassigned"] = unassigned
     props["assign_total"] = nassign
     props["assign_science"] = nscience
     props["assign_std"] = nstd
     props["assign_sky"] = nsky
+    for ot, cnt in objtypes.items():
+        props["assign_obj_{}".format(ot)] = cnt
+    props["unassigned"] = unassigned
     return props
 
 
@@ -83,15 +112,18 @@ def qa_tile_file(hw, params):
         read_assignment_fits_tile((tile_id, tile_file))
 
     # Target properties
-    tgs = qa_parse_table(targets_data)
+    tgs, tgprops = qa_parse_table(targets_data)
+
+    # Only do QA on positioners.
+    pos_rows = np.where(fiber_data["DEVICE_TYPE"] == b"POS")[0]
 
     # Target assignment
-    tassign = {x["FIBER"]: x["TARGETID"] for x in fiber_data
+    tassign = {x["FIBER"]: x["TARGETID"] for x in fiber_data[pos_rows]
                if (x["FIBER"] >= 0)}
 
     tavail = avail_table_to_dict(avail_data)
 
-    qa_data = qa_tile(hw, tile_id, tgs, tassign, tavail)
+    qa_data = qa_tile(hw, tile_id, tgs, tgprops, tassign, tavail)
 
     return qa_data
 

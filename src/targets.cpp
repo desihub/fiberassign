@@ -36,6 +36,9 @@ fba::Target::Target() {
     id = -1;
     ra = 0.0;
     dec = 0.0;
+    desi_target = 0;
+    bgs_target = 0;
+    mws_target = 0;
     obs_remain = 0;
     priority = 0;
     subpriority = 0.0;
@@ -47,6 +50,9 @@ fba::Target::Target() {
 fba::Target::Target(int64_t tid,
                     double tra,
                     double tdec,
+                    int64_t tdesi_target,
+                    int64_t tbgs_target,
+                    int64_t tmws_target,
                     int32_t tobs_remain,
                     int32_t tpriority,
                     double tsubpriority,
@@ -55,6 +61,9 @@ fba::Target::Target(int64_t tid,
     id = tid;
     ra = tra;
     dec = tdec;
+    desi_target = tdesi_target;
+    bgs_target = tbgs_target;
+    mws_target = tmws_target;
     obs_remain = tobs_remain;
     priority = tpriority;
     subpriority = tsubpriority;
@@ -96,6 +105,9 @@ fba::Targets::Targets() {
 void fba::Targets::append(std::vector <int64_t> const & id,
                           std::vector <double> const & ra,
                           std::vector <double> const & dec,
+                          std::vector <int64_t> const & desi_target,
+                          std::vector <int64_t> const & bgs_target,
+                          std::vector <int64_t> const & mws_target,
                           std::vector <int32_t> const & obs_remain,
                           std::vector <int32_t> const & priority,
                           std::vector <double> const & subpriority,
@@ -156,7 +168,8 @@ void fba::Targets::append(std::vector <int64_t> const & id,
                 logger.warning(logmsg.str().c_str());
             }
         } else {
-            data[id[t]] = Target(id[t], ra[t], dec[t], obs_remain[t],
+            data[id[t]] = Target(id[t], ra[t], dec[t], desi_target[t],
+                                 bgs_target[t], mws_target[t], obs_remain[t],
                                  priority[t], subpriority[t], obscond[t],
                                  type[t]);
         }
@@ -389,6 +402,7 @@ fba::TargetsAvailable::TargetsAvailable(Targets::pshr objs, Tiles::pshr tiles,
                 for (auto const & wt : result_weight) {
                     if (logger.extra_debug()) {
                         logmsg.str("");
+                        logmsg << std::setprecision(2) << std::fixed;
                         logmsg << "targets avail:  tile " << tid
                             << ", fiber " << fiber_id[j]
                             << " append ID "

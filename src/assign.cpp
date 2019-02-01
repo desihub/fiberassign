@@ -401,7 +401,8 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
                     logmsg << "assign unused " << tgstr << ": tile " << tile_id
                         << ", petal " << p << " fiber " << fid
                         << " available target " << tgid
-                        << ", subpriority " << tg.subpriority;
+                        << ", priority " << tg.priority << ", subpriority "
+                        << tg.subpriority;
                     logger.debug_tfg(tile_id, fid, tgid,
                                      logmsg.str().c_str());
                 }

@@ -11,10 +11,6 @@ import subprocess
 
 import argparse
 
-from desitarget.targetmask import desi_mask
-
-from fiberassign.utils import GlobalTimers, Logger
-
 import fiberassign
 
 parser = argparse.ArgumentParser()
@@ -62,25 +58,25 @@ parser.add_argument("--nskypetal",
 parser.add_argument("--overwrite", action="store_true",
                     help="overwrite pre-existing output files")
 
-parser.add_argument("--version",help="Print code version and exit",
+parser.add_argument("--version", help="Print code version and exit",
                     action='version', version=fiberassign.__version__)
 
 args = parser.parse_args()
 log = Logger.get()
 
-#------
-#- fba_run
+# ------
+# - fba_run
 
-#- Required inputs
+# Required inputs
 cmd = "fba_run"
 cmd += " --targets {} {} {}".format(args.mtl, args.sky, args.stdstar)
 
-#- Options that have non-None defaults to propagate
+# Options that have non-None defaults to propagate
 cmd += " --dir {}".format(args.outdir)
 cmd += " --standards_per_petal {}".format(args.nstarpetal)
 cmd += " --sky_per_petal {}".format(args.nskypetal)
 
-#- Completely optional; only propagate if specified
+# Completely optional; only propagate if specified
 if args.fibstatusfile is not None:
     cmd += " --status {}".format(args.fibstatusfile)
 
@@ -110,8 +106,8 @@ err = subprocess.call(cmd.split())
 if err:
     sys.exit(err)
 
-#------
-#- fba_merge_results
+# ------
+# - fba_merge_results
 
 cmd = "fba_merge_results"
 cmd += " --targets {} {} {}".format(args.mtl, args.sky, args.stdstar)
@@ -122,8 +118,3 @@ log.debug('RUNNING {}'.format(cmd))
 err = subprocess.call(cmd.split())
 if err:
     sys.exit(err)
-
-
-
-
-
