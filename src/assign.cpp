@@ -963,7 +963,11 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
                                     << ", subpriority " << ps.first
                                     << ", available fiber " << fid
                                     << " bumping science target " << curtg;
+                                // Log for target doing the bumping
                                 logger.debug_tfg(tile_id, fid, id,
+                                                 logmsg.str().c_str());
+                                // Also log for target getting bumped
+                                logger.debug_tfg(tile_id, fid, curtg,
                                                  logmsg.str().c_str());
                             }
                             // Attempt to re-assign this science target to
@@ -1004,7 +1008,11 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
                                         << " bumped target " << curtg
                                         << " reassigned to " << best_tile
                                         << "," << best_fiber;
+                                    // Log for target doing the bumping
                                     logger.debug_tfg(tile_id, fid, id,
+                                                     logmsg.str().c_str());
+                                    // Also log for target getting bumped
+                                    logger.debug_tfg(tile_id, fid, curtg,
                                                      logmsg.str().c_str());
                                 }
                             }
@@ -1352,6 +1360,13 @@ bool fba::Assignment::ok_to_assign (fba::Hardware const * hw, int32_t tile,
         collide = hw->collide(tcenter, tpos, ncenter, npos);
         // Remove these lines if switching back to threading.
         if (collide) {
+            if (extra_log) {
+                logmsg.str("");
+                logmsg << "ok_to_assign: tile " << tile << ", fiber "
+                    << fiber << ", target " << target
+                    << " would collide with target " << nbt;
+                logger.debug_tfg(tile, fiber, target, logmsg.str().c_str());
+            }
             return false;
         }
     }
