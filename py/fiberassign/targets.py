@@ -146,33 +146,33 @@ def append_target_table(tgs, tgdata, typeforce=None, typecol=None,
         if typeforce not in validtypes:
             raise RuntimeError("Cannot force objects to be an invalid type")
     # Create buffers for column data
-    nrows = len(tgdata["TARGETID"])
-    d_obscond = np.empty(nrows, dtype=np.int32)
-    d_targetid = np.empty(nrows, dtype=np.int64)
-    d_ra = np.empty(nrows, dtype=np.float64)
-    d_dec = np.empty(nrows, dtype=np.float64)
+    nrows = len(tgdata["TARGETID"][:])
+    d_obscond = np.zeros(nrows, dtype=np.int32)
+    d_targetid = np.zeros(nrows, dtype=np.int64)
+    d_ra = np.zeros(nrows, dtype=np.float64)
+    d_dec = np.zeros(nrows, dtype=np.float64)
     d_desitarget = np.zeros(nrows, dtype=np.int64)
     d_bgstarget = np.zeros(nrows, dtype=np.int64)
     d_mwstarget = np.zeros(nrows, dtype=np.int64)
-    d_type = np.empty(nrows, dtype=np.uint8)
-    d_nobs = np.empty(nrows, dtype=np.int32)
-    d_prior = np.empty(nrows, dtype=np.int32)
-    d_subprior = np.empty(nrows, dtype=np.float64)
-    d_targetid[:] = tgdata["TARGETID"]
+    d_type = np.zeros(nrows, dtype=np.uint8)
+    d_nobs = np.zeros(nrows, dtype=np.int32)
+    d_prior = np.zeros(nrows, dtype=np.int32)
+    d_subprior = np.zeros(nrows, dtype=np.float64)
+    d_targetid[:] = tgdata["TARGETID"][:]
     if "TARGET_RA" in tgdata.dtype.names:
-        d_ra[:] = tgdata["TARGET_RA"]
+        d_ra[:] = tgdata["TARGET_RA"][:]
     else:
-        d_ra[:] = tgdata["RA"]
+        d_ra[:] = tgdata["RA"][:]
     if "TARGET_DEC" in tgdata.dtype.names:
-        d_dec[:] = tgdata["TARGET_DEC"]
+        d_dec[:] = tgdata["TARGET_DEC"][:]
     else:
-        d_dec[:] = tgdata["DEC"]
+        d_dec[:] = tgdata["DEC"][:]
     if "DESI_TARGET" in tgdata.dtype.names:
-        d_desitarget[:] = tgdata["DESI_TARGET"]
+        d_desitarget[:] = tgdata["DESI_TARGET"][:]
     if "BGS_TARGET" in tgdata.dtype.names:
-        d_bgstarget[:] = tgdata["BGS_TARGET"]
+        d_bgstarget[:] = tgdata["BGS_TARGET"][:]
     if "MWS_TARGET" in tgdata.dtype.names:
-        d_mwstarget[:] = tgdata["MWS_TARGET"]
+        d_mwstarget[:] = tgdata["MWS_TARGET"][:]
     if typeforce is not None:
         d_type[:] = typeforce
     else:
@@ -180,34 +180,34 @@ def append_target_table(tgs, tgdata, typeforce=None, typecol=None,
             # This table must already have FBATYPE
             if "FBATYPE" not in tgdata.dtype.names:
                 raise RuntimeError("FBATYPE column not found- specify typecol")
-            d_type[:] = tgdata["FBATYPE"]
+            d_type[:] = tgdata["FBATYPE"][:]
         else:
             d_type[:] = desi_target_type(
                 tgdata[typecol], sciencemask=sciencemask, stdmask=stdmask,
                 skymask=skymask, safemask=safemask, excludemask=excludemask)
 
     if "OBSCONDITIONS" in tgdata.dtype.fields:
-        d_obscond[:] = tgdata["OBSCONDITIONS"]
+        d_obscond[:] = tgdata["OBSCONDITIONS"][:]
     else:
         # Set obs conditions mask to be all bits
         d_obscond[:] = np.invert(np.zeros(nrows, dtype=np.int32))
 
     if "NUMOBS_MORE" in tgdata.dtype.fields:
-        d_nobs[:] = tgdata["NUMOBS_MORE"]
+        d_nobs[:] = tgdata["NUMOBS_MORE"][:]
     elif "NUMOBS_INIT" in tgdata.dtype.fields:
-        d_nobs[:] = tgdata["NUMOBS_INIT"]
+        d_nobs[:] = tgdata["NUMOBS_INIT"][:]
     else:
         d_nobs[:] = np.zeros(nrows, dtype=np.int32)
 
     if "PRIORITY" in tgdata.dtype.fields:
-        d_prior[:] = tgdata["PRIORITY"]
+        d_prior[:] = tgdata["PRIORITY"][:]
     elif "PRIORITY_INIT" in tgdata.dtype.fields:
-        d_prior[:] = tgdata["PRIORITY_INIT"]
+        d_prior[:] = tgdata["PRIORITY_INIT"][:]
     else:
         d_prior[:] = np.zeros(nrows, dtype=np.int32)
 
     if "SUBPRIORITY" in tgdata.dtype.fields:
-        d_subprior[:] = tgdata["SUBPRIORITY"]
+        d_subprior[:] = tgdata["SUBPRIORITY"][:]
     else:
         d_subprior[:] = np.zeros(nrows, dtype=np.float64)
 
@@ -215,6 +215,7 @@ def append_target_table(tgs, tgdata, typeforce=None, typecol=None,
     # warning if there are duplicate target IDs.
     tgs.append(d_targetid, d_ra, d_dec, d_desitarget, d_bgstarget,
                d_mwstarget, d_nobs, d_prior, d_subprior, d_obscond, d_type)
+
     return
 
 

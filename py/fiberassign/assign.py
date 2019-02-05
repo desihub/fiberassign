@@ -649,7 +649,16 @@ def read_assignment_fits_tile(params):
                                 results_targets_columns.items()]
         full_names = [x for x, y in results_targets_columns.items()]
         fbtargets = fd["TARGETS"].read()
-        ntarget = fd["TARGETS"].get_nrows()
+        nrawtarget = fd["TARGETS"].get_nrows()
+
+        # For some legacy files, the sky targets assigned to ETC fibers are
+        # not listed in the TARGETS HDU.  We check that here.
+        copy_etc = False
+        ntarget = nrawtarget
+        if fbsky["TARGETID"][0] not in fbtargets["TARGETID"]:
+            ntarget += netc
+            copy_etc = True
+
         for fld in list(fbtargets.dtype.names):
             subd = fbtargets.dtype[fld].subdtype
             if fld not in full_names:
@@ -664,14 +673,22 @@ def read_assignment_fits_tile(params):
         targets_data = np.zeros(ntarget, dtype=targets_dtype)
         for col in full_names:
             if col == "FBATYPE":
-                targets_data[col][:] = [desi_target_type(x) for x in
-                                        fbtargets["DESI_TARGET"][:]]
+                targets_data[col][:nrawtarget] = [
+                    desi_target_type(x) for x in fbtargets["DESI_TARGET"][:]]
             elif col == "TARGET_RA":
-                targets_data[col][:] = fbtargets["RA"][:]
+                targets_data[col][:nrawtarget] = fbtargets["RA"][:]
             elif col == "TARGET_DEC":
-                targets_data[col][:] = fbtargets["DEC"][:]
+                targets_data[col][:nrawtarget] = fbtargets["DEC"][:]
             else:
-                targets_data[col][:] = fbtargets[col][:]
+                targets_data[col][:nrawtarget] = fbtargets[col][:]
+        if copy_etc:
+            for col in full_names:
+                if col == "FBATYPE":
+                    targets_data[col][nrawtarget:] = [
+                        TARGET_TYPE_SKY for x in range(netc)]
+                elif col in fbsky.dtype.names:
+                    targets_data[col][nrawtarget:] = fbsky[col][:]
+
         del fbassign
         del fbtargets
         if "POTENTIALTARGETID" in fd:

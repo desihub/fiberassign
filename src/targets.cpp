@@ -141,6 +141,10 @@ void fba::Targets::append(std::vector <int64_t> const & id,
                 tg.type |= type[t];
                 // bitwise or the obs cond
                 tg.obscond |= obscond[t];
+                // bitwise or the target masks
+                tg.desi_target |= desi_target[t];
+                tg.bgs_target |= bgs_target[t];
+                tg.mws_target |= mws_target[t];
                 // choose the larger of the obs remaining
                 if (obs_remain[t] > tg.obs_remain) {
                     tg.obs_remain = obs_remain[t];
