@@ -1146,7 +1146,8 @@ void fba::Assignment::reassign_science_target(int32_t tstart, int32_t tstop,
             continue;
         }
 
-        if ((done.at(av_tile).count(av_fiber) > 0)
+        if ((done.count(av_tile) > 0)
+            && (done.at(av_tile).count(av_fiber) > 0)
             && done.at(av_tile).at(av_fiber)) {
             // Already considered or swapped this available tile/fiber.
             if (extra_log) {
