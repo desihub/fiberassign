@@ -150,7 +150,6 @@ def plot_tile_targets_props(hw, tile_ra, tile_dec, tgs, avail_tgid=None):
     color = list()
     for idx, tgid in enumerate(avail_tgid):
         tg = tgs.get(tgid)
-        # print("  DBG:  ",idx," tgid ",tgid," = ",tg, flush=True)
         ra[idx] = tg.ra
         dec[idx] = tg.dec
         color.append(plot_target_type_color(tg.type))
