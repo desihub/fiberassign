@@ -32,13 +32,15 @@ class Assignment : public std::enable_shared_from_this <Assignment> {
 
         void assign_unused(uint8_t tgtype, int32_t max_per_petal = -1,
                            std::string const & pos_type = std::string("POS"),
-                           int32_t start_tile = -1, int32_t stop_tile = -1);
+                           int32_t start_tile = -1, int32_t stop_tile = -1,
+                           int32_t max_standards_petal = -1);
 
         void assign_force(uint8_t tgtype, int32_t required_per_petal = 0,
                           int32_t start_tile = -1, int32_t stop_tile = -1);
 
         void redistribute_science(int32_t start_tile = -1,
-                                  int32_t stop_tile = -1);
+                                  int32_t stop_tile = -1,
+                                  int32_t max_standards_petal = -1);
 
         Hardware::pshr hardware() const;
 
@@ -97,6 +99,7 @@ class Assignment : public std::enable_shared_from_this <Assignment> {
         void reassign_science_target(int32_t tstart, int32_t tstop,
             int32_t tile, int32_t fiber, int64_t target, bool balance_petals,
             std::map <int32_t, std::map <int32_t, bool> > const & done,
+            int32_t max_standards_petal,
             int32_t & best_tile, int32_t & best_fiber) const;
 
         // The number of assigned fibers per tile and spectrograph (petal)

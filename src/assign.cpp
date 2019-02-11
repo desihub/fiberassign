@@ -170,7 +170,8 @@ void fba::Assignment::parse_tile_range(fba::Tiles::pshr tiles,
 
 void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
                                     std::string const & pos_type,
-                                    int32_t start_tile, int32_t stop_tile) {
+                                    int32_t start_tile, int32_t stop_tile,
+                                    int32_t max_standards_petal) {
     fba::Timer tm;
     tm.start();
 
@@ -198,6 +199,11 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
     if (max_per_petal < 0) {
         // A negative value indicates that there is no limit.
         max_per_petal = 2147483647;
+    }
+
+    if (max_standards_petal < 0) {
+        // A negative value indicates that there is no limit.
+        max_standards_petal = 2147483647;
     }
 
     // Get the hardware configuration
@@ -267,6 +273,13 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
         for (auto const & fid : fiber_id) {
             if (tfavail.count(fid) == 0) {
                 // No targets available for this fiber
+                if (extra_log) {
+                    logmsg.str("");
+                    logmsg << "assign unused " << tgstr << ": tile " << tile_id
+                        << " fiber " << fid
+                        << ": no available targets";
+                    logger.debug_tfg(tile_id, fid, -1, logmsg.str().c_str());
+                }
                 continue;
             }
             // Targets available for this fiber.  These are already
@@ -275,6 +288,13 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
 
             if (avail.size() == 0) {
                 // No targets available for this fiber.
+                if (extra_log) {
+                    logmsg.str("");
+                    logmsg << "assign unused " << tgstr << ": tile " << tile_id
+                        << " fiber " << fid
+                        << ": no available targets";
+                    logger.debug_tfg(tile_id, fid, -1, logmsg.str().c_str());
+                }
                 continue;
             }
 
@@ -287,11 +307,30 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
 
                 if ( ! tg.is_type(tgtype)) {
                     // This is not the correct target type.
+                    if (extra_log) {
+                        logmsg.str("");
+                        logmsg << "assign unused " << tgstr << ": tile "
+                            << tile_id << " fiber " << fid
+                            << " : available target "
+                            << tgid << " is not type " << (int)tgtype
+                            << " (skipping)";
+                        logger.debug_tfg(tile_id, fid, tgid,
+                                         logmsg.str().c_str());
+                    }
                     continue;
                 }
 
                 if ((tgtype == TARGET_TYPE_SCIENCE) && (tg.obs_remain <= 0)) {
                     // Done observing science observations for this target
+                    if (extra_log) {
+                        logmsg.str("");
+                        logmsg << "assign unused " << tgstr << ": tile "
+                            << tile_id << " fiber " << fid
+                            << " : available target "
+                            << tgid << " has no remaining obs (skipping)";
+                        logger.debug_tfg(tile_id, fid, tgid,
+                                         logmsg.str().c_str());
+                    }
                     continue;
                 }
 
@@ -396,6 +435,26 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
                     }
                     continue;
                 }
+                if (tg.is_standard() &&
+                    (nassign_petal[TARGET_TYPE_STANDARD][tile_id][p] >=
+                         max_standards_petal)) {
+                    // This is a dual science and standard target, and we
+                    // already have sufficient standards on this petal.  Skip
+                    // it.
+                    if (extra_log) {
+                        logmsg.str("");
+                        logmsg << "assign unused " << tgstr << ": tile " << tile_id
+                            << ", petal " << p << " fiber " << fid
+                            << " available target " << tgid
+                            << " is also a standard.  "
+                            << "Skipping since petal count is "
+                            << nassign_petal[TARGET_TYPE_STANDARD][tile_id][p]
+                            << " (>= " << max_standards_petal << ")";
+                        logger.debug_tfg(tile_id, fid, tgid,
+                                         logmsg.str().c_str());
+                    }
+                    continue;
+                }
                 if (extra_log) {
                     logmsg.str("");
                     logmsg << "assign unused " << tgstr << ": tile " << tile_id
@@ -460,7 +519,8 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
 
 
 void fba::Assignment::redistribute_science(int32_t start_tile,
-                                           int32_t stop_tile) {
+                                           int32_t stop_tile,
+                                           int32_t max_standards_petal) {
     fba::Timer tm;
     tm.start();
 
@@ -506,8 +566,9 @@ void fba::Assignment::redistribute_science(int32_t start_tile,
         int32_t tile_id = tiles->id[t];
 
         if (nassign_tile[TARGET_TYPE_SCIENCE][tile_id] == 0) {
-            // Skip tiles that are fully unassigned, since this implies that the
-            // first pass of the assignment had no available targets to use.
+            // Skip tiles that are fully unassigned, since this implies that
+            // the first pass of the assignment had no available targets to
+            // use.
             continue;
         }
 
@@ -563,7 +624,8 @@ void fba::Assignment::redistribute_science(int32_t start_tile,
             int32_t best_fiber;
 
             reassign_science_target(tstart, tstop, tile_id, fid, tgid, true,
-                                    done, best_tile, best_fiber);
+                                    done, max_standards_petal, best_tile,
+                                    best_fiber);
 
             // Mark this current tile / fiber as done
             done[tile_id][fid] = true;
@@ -976,8 +1038,8 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
                             int32_t best_fiber;
                             reassign_science_target(tstart, tstop, tile_id,
                                                     fid, curtg, false,
-                                                    done, best_tile,
-                                                    best_fiber);
+                                                    done, required_per_petal,
+                                                    best_tile, best_fiber);
 
                             // Assign object.
                             unassign_tilefiber(hw_.get(), tgs_.get(),
@@ -1086,6 +1148,7 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
 void fba::Assignment::reassign_science_target(int32_t tstart, int32_t tstop,
     int32_t tile, int32_t fiber, int64_t target, bool balance_petals,
     std::map <int32_t, std::map <int32_t, bool> > const & done,
+    int32_t max_standards_petal,
     int32_t & best_tile, int32_t & best_fiber) const {
 
     fba::Logger & logger = fba::Logger::get();
@@ -1093,6 +1156,10 @@ void fba::Assignment::reassign_science_target(int32_t tstart, int32_t tstop,
     bool extra_log = logger.extra_debug();
 
     fba::Tiles::pshr tiles = tgsavail_->tiles();
+
+    // Get the target object
+    auto const & tgsdata = tgs_->data;
+    auto & tg = tgsdata.at(target);
 
     // Get the number of unused fibers on this current petal.
     int32_t petal = hw_->fiber_petal.at(fiber);
@@ -1201,6 +1268,30 @@ void fba::Assignment::reassign_science_target(int32_t tstart, int32_t tstop,
                     << " at index " << av_tile_indx
                     << " is prior to tile start (" << tstart << ")";
                 logger.debug_tfg(tile, fiber, target, logmsg.str().c_str());
+            }
+            continue;
+        }
+
+        if (tg.is_standard() &&
+            (nassign_petal.at(TARGET_TYPE_STANDARD).at(av_tile).at(av_petal)
+                >= max_standards_petal)) {
+            // This is a dual science and standard target, and we
+            // already have sufficient standards on this available petal.
+            // Skip it.
+            if (extra_log) {
+                logmsg.str("");
+                logmsg << "reassign: tile " << tile << ", fiber "
+                    << fiber << ", science/standard target " << target
+                    << " available tile " << av_tile << " fiber " << av_fiber
+                    << " petal " << av_petal << " already has "
+                    << nassign_petal.at(TARGET_TYPE_STANDARD)
+                        .at(av_tile).at(av_petal)
+                    << " standards (>= " << max_standards_petal
+                    << ").  Skipping.";
+                logger.debug_tfg(tile, fiber, target,
+                                 logmsg.str().c_str());
+                logger.debug_tfg(av_tile, av_fiber, target,
+                                 logmsg.str().c_str());
             }
             continue;
         }
@@ -1502,6 +1593,7 @@ void fba::Assignment::assign_tilefiber(fba::Hardware const * hw,
 
     fba::Logger & logger = fba::Logger::get();
     std::ostringstream logmsg;
+    bool extra_log = logger.extra_debug();
 
     if (target < 0) {
         logmsg.str("");
@@ -1552,6 +1644,13 @@ void fba::Assignment::assign_tilefiber(fba::Hardware const * hw,
         throw std::runtime_error(logmsg.str().c_str());
     }
 
+    if (extra_log) {
+        logmsg.str("");
+        logmsg << "assign_tilefiber: tile " << tile << " fiber "
+            << fiber << " --> target " << target;
+        logger.debug_tfg(tile, fiber, target, logmsg.str().c_str());
+    }
+
     ftarg[fiber] = target;
     target_fiber[target][tile] = fiber;
 
@@ -1578,6 +1677,7 @@ void fba::Assignment::unassign_tilefiber(fba::Hardware const * hw,
 
     fba::Logger & logger = fba::Logger::get();
     std::ostringstream logmsg;
+    bool extra_log = logger.extra_debug();
 
     if (fiber_target.count(tile) == 0) {
         logmsg.str("");
@@ -1631,6 +1731,13 @@ void fba::Assignment::unassign_tilefiber(fba::Hardware const * hw,
         }
     }
     tgobj.obs_remain++;
+
+    if (extra_log) {
+        logmsg.str("");
+        logmsg << "unassign_tilefiber: tile " << tile << " fiber "
+            << fiber << " release target " << target;
+        logger.debug_tfg(tile, fiber, target, logmsg.str().c_str());
+    }
 
     target_fiber[target].erase(tile);
     ftarg.erase(fiber);

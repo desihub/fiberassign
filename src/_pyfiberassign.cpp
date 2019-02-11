@@ -565,15 +565,18 @@ PYBIND11_MODULE(_internal, m) {
         .def("tile_fiber_target", &fba::Assignment::tile_fiber_target,
             py::return_value_policy::reference_internal)
         .def("assign_unused", &fba::Assignment::assign_unused,
-             py::arg("tgtype")=TARGET_TYPE_SCIENCE, py::arg("max_per_petal")=-1,
+             py::arg("tgtype")=TARGET_TYPE_SCIENCE,
+             py::arg("max_per_petal")=-1,
              py::arg("pos_type")=std::string("POS"),
-             py::arg("start_tile")=-1, py::arg("stop_tile")=-1)
+             py::arg("start_tile")=-1, py::arg("stop_tile")=-1,
+             py::arg("max_standards_petal")=-1)
         .def("assign_force", &fba::Assignment::assign_force,
              py::arg("tgtype")=TARGET_TYPE_SCIENCE,
              py::arg("required_per_petal")=0,
              py::arg("start_tile")=-1, py::arg("stop_tile")=-1)
         .def("redistribute_science", &fba::Assignment::redistribute_science,
-             py::arg("start_tile")=-1, py::arg("stop_tile")=-1);
+             py::arg("start_tile")=-1, py::arg("stop_tile")=-1,
+             py::arg("max_standards_petal")=-1);
 
 
 }
