@@ -162,12 +162,10 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
                              results_targets_columns.items()])
     avail_dtype = np.dtype([(x, y) for x, y in
                             results_avail_columns.items()])
-    tm.stop()
-    tm.report("  data pointers for tile {}".format(tile_id))
-    tm.clear()
-    tm.start()
-
-    log.debug("Write:  indexing tile {}".format(tile_id))
+    # tm.stop()
+    # tm.report("  data pointers for tile {}".format(tile_id))
+    # tm.clear()
+    # tm.start()
 
     fibers = np.array(hw.fiber_id)
     nfiber = len(fibers)
@@ -177,8 +175,8 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
     tgids_avail = np.unique(np.concatenate([np.array(avail[x], dtype=np.int64)
                                             for x in avail.keys()]))
 
-    tm.stop()
-    tm.report("  available targets tile {}".format(tile_id))
+    # tm.stop()
+    # tm.report("  available targets tile {}".format(tile_id))
 
     if len(tgids_avail) > 0:
         # We have some available targets.
@@ -197,10 +195,10 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         tmp_file = tile_file + ".tmp"
         fd = fitsio.FITS(tmp_file, "rw")
 
-        tm.stop()
-        tm.report("  opening file for tile {}".format(tile_id))
-        tm.clear()
-        tm.start()
+        # tm.stop()
+        # tm.report("  opening file for tile {}".format(tile_id))
+        # tm.clear()
+        # tm.start()
 
         # Unpack all our target properties from C++ objects into numpy arrays
 
@@ -253,10 +251,10 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
             tg_x[indx] = fxy[0]
             tg_y[indx] = fxy[1]
 
-        tm.stop()
-        tm.report("  extract target props for {}".format(tile_id))
-        tm.clear()
-        tm.start()
+        # tm.stop()
+        # tm.report("  extract target props for {}".format(tile_id))
+        # tm.clear()
+        # tm.start()
 
         # Write a header-only HDU 0 with some basic keywords
         header = dict()
@@ -377,10 +375,10 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
                     for x in fibers]
         fdata["FIBERSTATUS"] = fstatus
 
-        tm.stop()
-        tm.report("  copy and compute assign data tile {}".format(tile_id))
-        tm.clear()
-        tm.start()
+        # tm.stop()
+        # tm.report("  copy and compute assign data tile {}".format(tile_id))
+        # tm.clear()
+        # tm.start()
 
         log.debug("Write:  writing assignment data for tile {}"
                   .format(tile_id))
@@ -388,10 +386,10 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         fd.write(fdata, header=header, extname="FASSIGN")
         del fdata
 
-        tm.stop()
-        tm.report("  write assign data tile {}".format(tile_id))
-        tm.clear()
-        tm.start()
+        # tm.stop()
+        # tm.report("  write assign data tile {}".format(tile_id))
+        # tm.clear()
+        # tm.start()
 
         log.debug("Write:  writing target data for tile {}"
                   .format(tile_id))
@@ -409,18 +407,18 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         fdata["OBSCONDITIONS"] = tg_obscond
         fdata["NUMOBS_MORE"] = tg_obsrem
 
-        tm.stop()
-        tm.report("  copy targets data tile {}".format(tile_id))
-        tm.clear()
-        tm.start()
+        # tm.stop()
+        # tm.report("  copy targets data tile {}".format(tile_id))
+        # tm.clear()
+        # tm.start()
 
         fd.write(fdata, header=header, extname="FTARGETS")
         del fdata
 
-        tm.stop()
-        tm.report("  write targets data tile {}".format(tile_id))
-        tm.clear()
-        tm.start()
+        # tm.stop()
+        # tm.report("  write targets data tile {}".format(tile_id))
+        # tm.clear()
+        # tm.start()
 
         log.debug("Write:  writing avail data for tile {}"
                   .format(tile_id))
@@ -432,10 +430,10 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
                 fdata[off] = (fid, tg)
                 off += 1
 
-        tm.stop()
-        tm.report("  copy avail data tile {}".format(tile_id))
-        tm.clear()
-        tm.start()
+        # tm.stop()
+        # tm.report("  copy avail data tile {}".format(tile_id))
+        # tm.clear()
+        # tm.start()
 
         fd.write(fdata, header=header, extname="FAVAIL")
         del fdata
@@ -451,8 +449,8 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         fd.close()
         os.rename(tmp_file, tile_file)
 
-        tm.stop()
-        tm.report("  write avail data tile {}".format(tile_id))
+        # tm.stop()
+        # tm.report("  write avail data tile {}".format(tile_id))
     return
 
 
@@ -812,10 +810,10 @@ def merge_results_tile(out_dtype, copy_fba, params):
     inhead, fiber_data, targets_data, avail_data, gfa_targets = \
         read_assignment_fits_tile((tile_id, infile))
 
-    tm.stop()
-    tm.report("  read input data {}".format(tile_id))
-    tm.clear()
-    tm.start()
+    # tm.stop()
+    # tm.report("  read input data {}".format(tile_id))
+    # tm.clear()
+    # tm.start()
 
     # Get the list of all targets we are considering for this tile.  This
     # will be either just the assigned targets or all available targets
@@ -829,10 +827,10 @@ def merge_results_tile(out_dtype, copy_fba, params):
     tile_targets_dtype = np.dtype(out_dtype.fields)
     tile_targets = np.empty(len(tile_tgids), dtype=tile_targets_dtype)
 
-    tm.stop()
-    tm.report("  index input targets {}".format(tile_id))
-    tm.clear()
-    tm.start()
+    # tm.stop()
+    # tm.report("  index input targets {}".format(tile_id))
+    # tm.clear()
+    # tm.start()
 
     # Loop over input target files and copy data.  Note: these are guaranteed
     # to be sorted by TARGETID, since that is done during staging to shared
@@ -861,10 +859,10 @@ def merge_results_tile(out_dtype, copy_fba, params):
                 tfcolsin.append(c)
                 tfcolsout.append(nm)
 
-        tm.stop()
-        tm.report("  indexing {} for {}".format(tf, tile_id))
-        tm.clear()
-        tm.start()
+        # tm.stop()
+        # tm.report("  indexing {} for {}".format(tf, tile_id))
+        # tm.clear()
+        # tm.start()
 
         if len(outrows) > 0:
             for irw, orw in zip(inrows, outrows):
@@ -875,10 +873,10 @@ def merge_results_tile(out_dtype, copy_fba, params):
         del outrows
         del tgview
 
-        tm.stop()
-        tm.report("  copy targets from {} for {}".format(tf, tile_id))
-        tm.clear()
-        tm.start()
+        # tm.stop()
+        # tm.report("  copy targets from {} for {}".format(tf, tile_id))
+        # tm.clear()
+        # tm.start()
 
     # Now we have a reduced set of target data including only the targets
     # relevant for this tile, and with data merged from all the files.
@@ -905,10 +903,10 @@ def merge_results_tile(out_dtype, copy_fba, params):
     target_rows = np.array([tile_tgindx[x] for x in
                             fiber_data["TARGETID"][fassign_valid]])
 
-    tm.stop()
-    tm.report("  fiber / target index mapping {}".format(tile_id))
-    tm.clear()
-    tm.start()
+    # tm.stop()
+    # tm.report("  fiber / target index mapping {}".format(tile_id))
+    # tm.clear()
+    # tm.start()
 
     # Copy original data and also determine which of our required columns
     # will come from external catalogs
@@ -927,10 +925,10 @@ def merge_results_tile(out_dtype, copy_fba, params):
                 # This required column is coming from external catalogs
                 external_cols.append(field)
 
-    tm.stop()
-    tm.report("  copy raw data to output {}".format(tile_id))
-    tm.clear()
-    tm.start()
+    # tm.stop()
+    # tm.report("  copy raw data to output {}".format(tile_id))
+    # tm.clear()
+    # tm.start()
 
     # Now copy external target properties for the remaining columns.
     if (len(target_rows) > 0):
@@ -957,10 +955,10 @@ def merge_results_tile(out_dtype, copy_fba, params):
             else:
                 outdata[c][fassign_valid] = tile_targets[c][target_rows]
 
-    tm.stop()
-    tm.report("  copy external data to output {}".format(tile_id))
-    tm.clear()
-    tm.start()
+    # tm.stop()
+    # tm.report("  copy external data to output {}".format(tile_id))
+    # tm.clear()
+    # tm.start()
 
     # Create the file
     if os.path.isfile(outfile):
@@ -1029,10 +1027,10 @@ def merge_results_tile(out_dtype, copy_fba, params):
     # Close the file
     fd.close()
 
-    tm.stop()
-    tm.report("  write data to file {}".format(tile_id))
-    tm.clear()
-    tm.start()
+    # tm.stop()
+    # tm.report("  write data to file {}".format(tile_id))
+    # tm.clear()
+    # tm.start()
 
     # Try to encourage python to free some memory...
     del fd
