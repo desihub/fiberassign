@@ -13,6 +13,8 @@ import argparse
 
 import fiberassign
 
+from fiberassign.utils import GlobalTimers, Logger
+
 parser = argparse.ArgumentParser()
 
 parser.add_argument("--mtl",
