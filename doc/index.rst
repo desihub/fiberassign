@@ -12,9 +12,11 @@ Contents
     install.rst
     usage.rst
     examples.rst
+    internals.rst
     utils.rst
     changes.rst
-    api.rst
+
+#    api.rst
 
 
 Indices and tables

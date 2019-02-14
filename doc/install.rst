@@ -52,16 +52,16 @@ requires some additional DESI packages in order to function.  Currently these
 include desimodel and desitarget.  If you already have these packages installed
 for other purposes (for example you are developing these packages), then you
 can skip this section.  Here we will be installing the required DESI packages
-into our python stack using pip.
+into our python stack using pip::
 
-  %> pip install git+https://github.com/desihub/desiutil.git@master#egg=desiutil
-  %> pip install git+https://github.com/desihub/desimodel.git@master#egg=desimodel
-  %> pip install git+https://github.com/desihub/desitarget.git@master#egg=desitarget
+    %> pip install git+https://github.com/desihub/desiutil.git@master#egg=desiutil
+    %> pip install git+https://github.com/desihub/desimodel.git@master#egg=desimodel
+    %> pip install git+https://github.com/desihub/desitarget.git@master#egg=desitarget
 
-We also need to install the desimodel data:
+We also need to install the desimodel data::
 
-  %> export DESIMODEL=${HOME}/software/desi
-  %> svn export https://desi.lbl.gov/svn/code/desimodel/trunk/data \
+    %> export DESIMODEL=${HOME}/software/desi
+    %> svn export https://desi.lbl.gov/svn/code/desimodel/trunk/data \
      ${DESIMODEL}/data
 
 You will need to ensure that $DESIMODEL is set in your environment before

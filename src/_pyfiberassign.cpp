@@ -224,11 +224,17 @@ PYBIND11_MODULE(_internal, m) {
 
         Args:
             fiber (array):  array of fiber indices (int32).
+
             petal (array):  array of start times (int64) for each entry.
+
             spectro (array):  array of stop times (int64) for each entry.
+
             x (array):  array of fiber X coordinate centers.
+
             y (array):  array of fiber Y coordinate centers.
+
             z (array):  array of fiber Z coordinate centers.
+
             status (array):  array of integers containing the fiber status.
 
         )")

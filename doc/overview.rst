@@ -1,49 +1,59 @@
 .. _overview:
 
 Overview
-========================
+==============
 
-The purpose of this software is to determine the best configuration of fiber
-positioners for each exposure.  The fiberassign code uses information about
-the DESI instrument and applies that to lists of available targets with
-pre-assigned prioritization.
+At DESI's focal plane there are robotically controlled positioners
+capable of placing optical fibers on desired locations.
+`fiberassign` implements the algoritms that decide which positioners
+should be assigned to observe which objects in a series of telescope
+pointings.
 
-Target Priorities
------------------------
+Constraints
+-------------------
 
-Every science target is assigned an integer priority value prior to fiber assignment.  This integer value is the same for objects of the same classification ("QSO", "LRG", "ELG", etc).  Sky targets effectively have a priority of zero.  Calibration standards may also be assigned a priority value.  If a calibration target is **also** a science target (which often means it is listed in multiple input target files), then this object is given the larger of its priority values.  Each object is also assigned a "subpriority" value, which is a double precision number.  When two objects have the same integer priority value, the subpriority is used to indicate which object has a higher overall priority.  Sky targets are also given a random subpriority value.
+The focal plane has 5000 robotically controlled positioners with
+a patrol radius of 6 mm and a positioning precision close to a few microns.
+The positioners are arrayed in 10 petals shaped like pie slices.
+With about 10000 pointings (also called tiles) during the life of the survey, the system can
+reach about 50 million targets.
+The instrumented area of the focal plane is 7.5 square degrees.
+The anticipated density of targets is 25000 objets per squared degree.
 
-Algorithms
----------------
+Algorithm
+--------------------
 
-The main command-line script ("fba_run") basically loads hardware information,
-footprint / tile information, and lists of targets.  After some initialization
-steps, it makes use of three primary methods of the fiberassign::Assignment
-class.  The algorithms of these functions are described below.  See the documentation for the individual methods for the mechanics of using them.
+For each positioner in every tile choices must be made among the
+potential targets.
+Priorities are set in accordance with the scientific value of each
+target class.
+For the main (dark) survey program these classes include QSOs, LRGs, and
+ELGs; for the secondary (bright) survey program these clases include
+BGS (Bright Galaxies) and MWS (Milky Way Stars).
+In addition, for both programs, fibers must be assigned to measure the
+sky background (“sky fibers”) and calibration on standard stars.
 
-Assigning Targets to Unused Fibers
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The fiber assignment code needs a variety of inputs. The inputs
+describe the hardware (i.e. locations of the positioners in the focal
+plane), the observational strategy (a list of tiles), the targets
+available for observation and calibration, together with their
+relative observational priorities.
 
-When assigning a particular class of target ("science", "standard", or "sky")
-to unused fibers, the same technique (and code) is used.
+The outputs are a series of files describing the assignments.
+There are individual files for each tile.
+Each file contains the information about the target assigned to each
+fiber, the list of of potential targets available to each fiber and
+the list of targets for Guide/Focus/Alignment cameras.
 
+History
+--------
 
+The first version of `fiberassign` was written by Martin White.
+Later under the supervision of Bob Cahn it was expanded by Lile Wang,
+Arthur Stril, Cyrille Doux, Aldo Riello, Louis Garrigue and Lucas
+Pinol.  The most recent implementation was done by Ted Kisner.
+Current development and maintenance is done by Stephen Bailey, Ted
+Kisner and Jaime E. Forero-Romero.
 
-Redistributing Science Targets
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-Forced Assignment of Standards and Sky
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-When calling this method, our goal is to displace science targets with either standards or sky targets in order to meet some required number per petal.  For each petal, we rank the available objects of interest (standards or sky) by total priority (priority + subpriority).  We also identify all science target priority values across the whole fiber assignment run and sort these from lowest to highest.
-
-For each petal, we do the following pseudocode::
-
-    for each science target priority "P" (lowest to highest)
-        for each object (standard or sky) in total priority from high to low
-            if object is reachable by fibers on targets with priority "P"
-                remove target and place fiber on object
-                re-assign target to unused fiber on future tile if possible
-                if enough objects on this petal
-                    break
+A full list of contributors can be seen on the github repository:
+https://github.com/desihub/fiberassign/graphs/contributors
