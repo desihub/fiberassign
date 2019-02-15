@@ -5,7 +5,7 @@ Overview
 
 At DESI's focal plane there are robotically controlled positioners
 capable of placing optical fibers on desired locations.
-`fiberassign` implements the algoritms that decide which positioners
+`fiberassign` implements the algorithms that decide which positioners
 should be assigned to observe which objects in a series of telescope
 pointings.
 

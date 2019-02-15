@@ -2,9 +2,6 @@
 Welcome to fiberassign's documentation!
 =========================================
 
-Contents
---------
-
 .. toctree::
     :maxdepth: 1
 

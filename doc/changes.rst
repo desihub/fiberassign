@@ -3,10 +3,59 @@
 fiberassign change log
 ======================
 
-0.9.1 (unreleased)
-------------------
+1.0.0 (planned)
+---------------
+
+* First tag of refactor/rewrite after merge of tsk_refactor.
+
+0.11.2 (unreleased)
+-------------------
 
 * No changes yet.
+
+0.11.1 (2019-01-25)
+-------------------
+
+* Bug fix when using non-standard tiling (PR `#158`_).
+
+.. _`#158`: https://github.com/desihub/fiberassign/pull/158
+
+0.11.0 (2018-12-16)
+-------------------
+
+* Format updates to be closer to ICS fiberassign data model (PR `#157`_).
+* Set `OBJTYPE='BAD'` and `DESI_TARGET=desi_mask.NO_TARGET` for broken, stuck,
+  and unassigned fibers (PR `#154`_).
+* Fix POTENTIAL target assignments HDU (broken in 0.10.2) (PR `#156`_).
+
+.. _`#154`: https://github.com/desihub/fiberassign/pull/154
+.. _`#156`: https://github.com/desihub/fiberassign/pull/156
+.. _`#157`: https://github.com/desihub/fiberassign/pull/157
+
+0.10.2 (2018-11-07)
+-------------------
+
+* Sort output by fiberid (PR `#147`_).
+* Simplify required options (PR `#149`_).
+* Add `--version` option (PR `#150`_).
+
+.. _`#147`: https://github.com/desihub/fiberassign/pull/147
+.. _`#149`: https://github.com/desihub/fiberassign/pull/149
+.. _`#150`: https://github.com/desihub/fiberassign/pull/150
+
+0.10.0 (2018-09-26)
+-------------------
+
+* Support both STD_FSTAR and STD bit names (PR `#139`_).
+* Add more columns to output (PR `#141`_).
+* Additional changes to try to match the data model (PR `#144`_).
+* Fix collision calculation (PR `#146`_).
+
+.. _`#139`: https://github.com/desihub/fiberassign/pull/139
+.. _`#141`: https://github.com/desihub/fiberassign/pull/141
+.. _`#144`: https://github.com/desihub/fiberassign/pull/144
+.. _`#146`: https://github.com/desihub/fiberassign/pull/146
+
 
 0.9.0 (2018-07-18)
 ------------------

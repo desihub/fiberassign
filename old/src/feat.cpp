@@ -16,6 +16,7 @@
 #include "misc.h"
 #include "collision.h"
 #include "feat.h"
+#include "version.h"
 
 
 void Usage (char * ExecName) {
@@ -29,7 +30,12 @@ void Usage (char * ExecName) {
     std::cout << " --fibstatusfile <fiberstatus_filename> ";
     std::cout << " --outdir <outputdirectory> ";
     std::cout << " --starmask <starbit_mask]";
+    std::cout << " --nstarpetal <number of standard stars per petal>";
+    std::cout << " --nskypetal <numer of sky fibers per petal>";
     std::cout << " [--rundate <YYYY-MM-DD>]" << std::endl;
+    std::cout << std::endl;
+    std::cout << " Or to print version to STDOUT: ";
+    std::cout << " --version" << std::endl;
     exit(0);
 }
 
@@ -119,10 +125,21 @@ void Feat::parseCommandLine (int argc, char * * argv) {
             i++;
             StarMask = atol(argv[i]);
             i++;
+        } else if (!strcmp(argv[i], "--nstarpetal") ) {
+            i++;
+            MaxSS = atoi(argv[i]);
+            i++;
+        } else if (!strcmp(argv[i], "--nskypetal") ) {
+            i++;
+            MaxSF = atoi(argv[i]);
+            i++;
         } else if (!strcmp(argv[i], "--help") ) {
             Usage(argv[0]);
         } else if (!strcmp(argv[i], "-h") ) {
             Usage(argv[0]);
+        } else if (!strcmp(argv[i], "--version") ) {
+            std::cout << version() << std::endl;
+            exit(0);
         } else {
             fprintf (stderr, "\nUnrecognized option: %s\n\n", argv[i]);
             Usage(argv[0]);
