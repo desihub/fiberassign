@@ -28,7 +28,12 @@ fiberpos.sort('FIBER')
 fiber_locations = sorted(zip(fiberpos['FIBER'], fiberpos['LOCATION']))
 
 sky_mask = desi_mask.SKY
-std_mask = (desi_mask.STD_FSTAR | desi_mask.STD_BRIGHT | desi_mask.STD_WD)
+std_mask = 0
+for name in ['STD', 'STD_FSTAR', 'STD_WD',
+             'STD_FAINT', 'STD_FAINT_BEST',
+             'STD_BRIGHT', 'STD_BRIGHT_BEST']:
+    if name in desi_mask.names():
+        std_mask |= desi_mask[name]
 
 #- TODO: take hardcoded from src/global.h into config file
 stuck_mask = 2**1
@@ -42,8 +47,13 @@ for filename in args.tilefiles:
     fa = Table.read(filename, 'FIBERASSIGN')
     fa.sort('FIBER')
     assigned.append(fa)
-    tmp = Table.read(filename, 'POTENTIAL')['POTENTIALTARGETID']
-    covered.append(np.unique(tmp))
+    try:
+        potential = Table.read(filename, 'POTENTIAL_ASSIGNMENTS')
+    except KeyError:
+        potential = Table.read(filename, 'POTENTIAL')
+
+    covered.append(np.unique(potential['TARGETID']))
+
     errors = list()
 
     if len(np.unique(fa['FIBER'])) != 5000:
@@ -52,8 +62,21 @@ for filename in args.tilefiles:
     if len(np.unique(fa['LOCATION'])) != 5000:
         errors.append('Repeated location numbers')
 
-    is_stuck = ((fa['FIBERMASK'] & stuck_mask) != 0)
-    is_broken = ((fa['FIBERMASK'] & broken_mask) != 0)
+    #- There should be a faster way to do this
+    for fiber, targetid in zip(fa['FIBER'], fa['TARGETID']):
+        if targetid<0:
+            continue
+        ii = (potential['FIBER'] == fiber)
+        if targetid not in potential['TARGETID'][ii]:
+            errors.append('Assigned targets not in covered targets list')
+            break
+
+    num_no_desitarget = np.count_nonzero(fa['DESI_TARGET'] == 0)
+    if num_no_desitarget > 0:
+        errors.append('{} fibers with DESI_TARGET=0'.format(num_no_desitarget))
+
+    is_stuck = ((fa['FIBERSTATUS'] & stuck_mask) != 0)
+    is_broken = ((fa['FIBERSTATUS'] & broken_mask) != 0)
     is_unassigned = (fa['TARGETID'] < 0)
     n_good_unassigned = np.count_nonzero(is_unassigned & ~(is_stuck | is_broken))
     if n_good_unassigned > 0:
@@ -68,8 +91,8 @@ for filename in args.tilefiles:
         errors.append('fiber:location map incorrect')
 
     ii = fa['TARGETID'] >= 0
-    dx = (fa['XFOCAL_DESIGN'][ii] - fiberpos['X'][ii])
-    dy = (fa['YFOCAL_DESIGN'][ii] - fiberpos['Y'][ii])
+    dx = (fa['DESIGN_X'][ii] - fiberpos['X'][ii])
+    dy = (fa['DESIGN_Y'][ii] - fiberpos['Y'][ii])
     r = np.sqrt(dx**2 + dy**2)
     if np.max(r) > 6:
         errors.append('Fibers assigned to more than 6mm from positioner center')
