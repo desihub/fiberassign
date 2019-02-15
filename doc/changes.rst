@@ -6,12 +6,9 @@ fiberassign change log
 1.0.0 (planned)
 ---------------
 
-* First tag of refactor/rewrite after merge of tsk_refactor.
+* First tag of refactor/rewrite after merge (PR `#153`_).
 
-0.11.2 (unreleased)
--------------------
-
-* No changes yet.
+.. _`#153`: https://github.com/desihub/fiberassign/pull/153
 
 0.11.1 (2019-01-25)
 -------------------
