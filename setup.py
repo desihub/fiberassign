@@ -14,11 +14,39 @@ import shutil
 from distutils.command.sdist import sdist as DistutilsSdist
 from setuptools import setup, find_packages, Extension
 from setuptools.command.build_ext import build_ext
+from setuptools.command.egg_info import egg_info
 from distutils.command.clean import clean
 from distutils.errors import CompileError
 #
 # DESI support code.
 #
+# If this code is being run within the readthedocs environment, then we
+# need special steps.
+#
+# Longer story:  desimodel and desitarget are fiberassign build requirements
+# but these are not pip installable from a requirements file, due to the way
+# that pip handles recursive requirements files and the fact that desiutil is
+# required for obtaining even basic package info (egg_info).  Since this is
+# such a specialized case, we just check if this is running on readthedocs
+# and manually pip install things right here.
+#
+try:
+    import desiutil
+except ImportError:
+    if os.environ['READTHEDOCS'] == 'True':
+        import subprocess as sp
+        dutil = \
+            'git+https://github.com/desihub/desiutil.git@master#egg=desiutil'
+        dmodel = \
+            'git+https://github.com/desihub/desimodel.git@pip_require#egg=desimodel'
+        dtarget = \
+            'git+https://github.com/desihub/desitarget.git@master#egg=desitarget'
+        sp.check_call(['pip', 'install', dutil])
+        sp.check_call(['pip', 'install', dmodel])
+        sp.check_call(['pip', 'install', dtarget])
+    else:
+        raise
+
 from desiutil.setup import DesiTest, DesiVersion, get_version
 #
 # Begin setup
@@ -74,7 +102,6 @@ test_suite_name = \
     '{name}.test.{name}_test_suite.{name}_test_suite'.format(**setup_keywords)
 setup_keywords['test_suite'] = test_suite_name
 
-#
 # Autogenerate command-line scripts.
 #
 # setup_keywords['entry_points'] =
@@ -83,12 +110,9 @@ setup_keywords['test_suite'] = test_suite_name
 # Add internal data directories.
 #
 # setup_keywords['package_data'] = {'fiberassign': ['data/*',]}
-#
-
 
 # Add a custom clean command that removes in-tree files like the
 # compiled extension.
-
 
 class RealClean(clean):
     def run(self):
