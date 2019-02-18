@@ -38,7 +38,7 @@ except ImportError:
         dutil = \
             'git+https://github.com/desihub/desiutil.git@master#egg=desiutil'
         dmodel = \
-            'git+https://github.com/desihub/desimodel.git@pip_require#egg=desimodel'
+            'git+https://github.com/desihub/desimodel.git@master#egg=desimodel'
         dtarget = \
             'git+https://github.com/desihub/desitarget.git@master#egg=desitarget'
         sp.check_call(['pip', 'install', dutil])
