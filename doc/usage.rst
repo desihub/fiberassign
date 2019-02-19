@@ -10,8 +10,8 @@ Basic Tools
 ---------------------
 
 There are several command-line programs which can be used to drive the fiber
-assignment process.  The first is the `fba_run` script which takes one or more
-target files and other options:
+assignment process.  The first is the :ref:`script_fba_run` script which takes
+one or more target files and other options
 
 .. include:: _static/fba_run.inc
 
@@ -29,7 +29,7 @@ For now, this "raw" output format is slightly different than the one used
 historically, and does not contain all the information that was in the original
 target catalog.  This will be changed in the future.  For now, files with this
 extra info can be created by post-processing the output with the
-`fba_merge_results` script:
+:ref:`script_fba_merge_results` script:
 
 .. include:: _static/fba_merge_results.inc
 
@@ -41,9 +41,9 @@ extra info can be created by post-processing the output with the
        --out out_merged
 
 There are several built-in tools for doing quality assurance of the resulting
-assignment.  One of these is the `fba_run_qa` script.  This will compute the
-per-tile counts for the different target types and write these to JSON file (by
-default named "qa.json" in the output directory):
+assignment.  One of these is the :ref:`script_fba_run_qa` script.  This will
+compute the per-tile counts for the different target types and write these to
+JSON file (by default named "qa.json" in the output directory):
 
 .. include:: _static/fba_run_qa.inc
 
@@ -55,9 +55,9 @@ It is also frequently useful to plot the results of the assignment.  There are
 many customized plotting options possible using the low-level tools, but there
 is also a command-line script to create a PDF format plot of each tile.  By
 default, this script plots all petals of all tiles using a "simple"
-representation of each positioner (two lines).  Running in this way will
-require several minutes per tile, but multiple processes will be used to plot
-tiles in parallel:
+representation of each positioner (two lines).  Running
+:ref:`script_fba_plot_results` in this way will require several minutes per
+tile, but multiple processes will be used to plot tiles in parallel:
 
 .. include:: _static/fba_plot_results.inc
 
@@ -74,9 +74,11 @@ tile ID to use::
 
 .. image:: _static/plot_assign.png
 
+In the plot above, science targets are red, sky is blue, standards are orange, and dual science / standard targets are green.
+
 We can also make a crude visualization of the QA for the entire footprint using
-the `fba_plot_qa` script.  Note that when plotting only a few tiles the
-resulting plot is not as useful (but in that case you can get the numbers
+the :ref:`script_fba_plot_qa` script.  Note that when plotting only a few tiles
+the resulting plot is not as useful (but in that case you can get the numbers
 directly out of the JSON):
 
 .. include:: _static/fba_plot_qa.inc
@@ -194,7 +196,6 @@ provided:
   maps” are bisected to achieve a requisite number of sky locations
   per sq. deg. Sky locations are placed within the bisected grid as
   far from blobs that contain sources as is possible. Flux is measured
-  in an aperture at each sky location. The full datamodel can be found
-  `here <https://desidatamodel.readthedocs.io/en/latest/DESI_TARGET/skies.html>`_.
+  in an aperture at each sky location. This file follows the `mtl` datamodel.
 
 - ``fiberstatus.ecsv``:
