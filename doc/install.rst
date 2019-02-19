@@ -14,14 +14,19 @@ gcc wrapper.
 External Dependencies
 ------------------------
 
-In addition to the usual numpy / scipy software stack, the "fitsio" package
-is also required.  There are multiple ways of installing a working python3 stack on both Linux and OS X.  The solution you choose likely depends on what other things you are using Python for- not just fiberassign.  In these examples, we'll be creating a python stack in ${HOME}/software/desi, however
-if you already have a python stack for use with DESI tools, just skip this section.
+In addition to the usual numpy / scipy software stack, the "fitsio" package is
+also required.  There are multiple ways of installing a working python3 stack
+on both Linux and OS X.  The solution you choose likely depends on what other
+things you are using Python for- not just fiberassign.  In these examples,
+we'll be creating a python stack in ${HOME}/software/desi, however if you
+already have a python stack for use with DESI tools, just skip this section.
 
 Anaconda
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The officially supported DESI python environment is Anaconda.  After installing the main Anaconda distribution, the "conda" command should be available.  Create a new conda environment::
+The officially supported DESI python environment is Anaconda.  After installing
+the main Anaconda distribution, the "conda" command should be available.
+Create a new conda environment::
 
   %> conda create --copy -m -p ${HOME}/software/desi
   %> conda activate ~/software/desi
@@ -31,7 +36,9 @@ The officially supported DESI python environment is Anaconda.  After installing 
 Virtualenv and Pip
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Install Python3 and the virtualenv package with your OS package manager (Linux) or using macports / homebrew (OS X).  Next create a virtualenv and activate it::
+Install Python3 and the virtualenv package with your OS package manager (Linux)
+or using macports / homebrew (OS X).  Next create a virtualenv and activate
+it::
 
   %> virtualenv -p python3 ${HOME}/software/desi
   %> source ${HOME}/software/desi/bin/activate
@@ -42,17 +49,18 @@ Now use pip to install the dependencies we need::
   %> pip install --no-binary :all: fitsio
 
 
-
-
 DESI Affiliated Dependencies
 ---------------------------------
 
 Activate / load your python stack from the previous section.  Fiberassign
 requires some additional DESI packages in order to function.  Currently these
-include desimodel and desitarget.  If you already have these packages installed
-for other purposes (for example you are developing these packages), then you
-can skip this section.  Here we will be installing the required DESI packages
-into our python stack using pip::
+include desiutil, desimodel and desitarget.  If you already have these packages
+installed for other purposes (for example you are developing these packages),
+then you can skip this section.  If you intend to be regularly updating these
+DESI packages, then you should git clone them and install them into your conda
+environment or virtualenv.  Here we will be installing a snapshot of the
+required DESI packages into our python stack using pip.  You can always throw
+away your conda env / virtualenv and do this again as needed::
 
     %> pip install git+https://github.com/desihub/desiutil.git@master#egg=desiutil
     %> pip install git+https://github.com/desihub/desimodel.git@master#egg=desimodel

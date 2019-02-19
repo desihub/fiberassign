@@ -21,7 +21,6 @@ And the outputs were written by default to date-stamped output directory.  Then 
 
 I opened the resulting image (fiberassign_001148.svg) and zoomed into one petal.  I noticed that fiber 2233 was assigned to a standard:
 
-.. image:: _static/fiberassign_001148.svg.png
 
 
 Let's look at the details of how this fiber was assigned::

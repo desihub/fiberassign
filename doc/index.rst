@@ -13,8 +13,6 @@ Welcome to fiberassign's documentation!
     utils.rst
     changes.rst
 
-#    api.rst
-
 
 Indices and tables
 ------------------
