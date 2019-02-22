@@ -137,6 +137,9 @@ pygments_style = 'sphinx'
 # If true, keep warnings as "system message" paragraphs in the built documents.
 keep_warnings = True
 
+# Include TO-DO items
+todo_include_todos = True
+
 # Include functions that begin with an underscore, e.g. _private().
 napoleon_include_private_with_doc = True
 

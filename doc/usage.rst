@@ -3,50 +3,113 @@
 Usage
 ===============
 
-The fiberassign package has some main scripts as well as lower-level python tools that can be used in custom scripts.
+The fiberassign package has some main scripts as well as lower-level python
+tools that can be used in custom scripts.
 
 Basic Tools
 ---------------------
 
-There are several command-line programs which can be used to drive the fiber assignment process.  The first is the `fba_run` script which takes one or more target files and other options::
+There are several command-line programs which can be used to drive the fiber
+assignment process.  The first is the :ref:`script_fba_run` script which takes
+one or more target files and other options
 
-    %> fba_run --targets mtl.fits --targets standards.fits \
-       --targets sky.fits --targets other_targets.fits \
-       --outdir out_test
+.. include:: _static/fba_run.inc
 
-The names of the target files above are arbitrary and they can contain any targets.  The full list of targets is built up in memory from the contents of these files.  Running this command will produce an output directory of files (one per tile) containing the basic target information and assignment results.  For convenience, it is sometimes desired to copy extra columns of target information from the original input files into the output assignment files.  This can be done using a separate script::
+**EXAMPLE:**  One could run this with mostly default options::
 
-    %> fba_merge_results --targets mtl.fits \
-       --targets standards.fits \
-       --targets sky.fits --targets other_targets.fits \
-       --dir out_test
+    %> fba_run --targets mtl.fits standards.fits sky.fits other_targets.fits \
+       --write_all_targets \
+       --dir out_raw
 
-It is also frequently useful to plot the results of the assignment.  There are many customized plotting options possible using the low-level tools, but there
-is also a command-line script to create a vector graphics (SVG) format plot of each tile.  Running this will require several minutes per tile, but multiple processes will be used to plot tiles in parallel::
+The names of the target files above are arbitrary and they can contain any
+targets.  The full list of targets is built up in memory from the contents of
+these files.  Running this command will produce an output directory of files
+(one per tile) containing the basic target information and assignment results.
+For now, this "raw" output format is slightly different than the one used
+historically, and does not contain all the information that was in the original
+target catalog.  This will be changed in the future.  For now, files with this
+extra info can be created by post-processing the output with the
+:ref:`script_fba_merge_results` script:
 
-    %> fba_plot_results --dir out_test
+.. include:: _static/fba_merge_results.inc
 
-Some simple QA on the assignments can be run with::
+**EXAMPLE:**  Continuing our minimal example from above::
 
-    %> fba_run_qa --dir out_test
+    %> fba_merge_results \
+       --targets mtl.fits standards.fits sky.fits other_targets.fits \
+       --dir out_raw \
+       --out out_merged
 
-Which by default produces a JSON format named "qa.json" in the output directory.  To plot a simple sky representation of these results do::
+There are several built-in tools for doing quality assurance of the resulting
+assignment.  One of these is the :ref:`script_fba_run_qa` script.  This will
+compute the per-tile counts for the different target types and write these to
+JSON file (by default named "qa.json" in the output directory):
 
-    %> fba_plot_qa --qafile "out_test/qa.json"
+.. include:: _static/fba_run_qa.inc
 
-If you are only plotting a few tiles and want to see the tile IDs on the plot, use the "--labels" option.
+**EXAMPLE:**  One could run this on our example output with::
+
+    %> fba_run_qa --dir out_raw
+
+It is also frequently useful to plot the results of the assignment.  There are
+many customized plotting options possible using the low-level tools, but there
+is also a command-line script to create a PDF format plot of each tile.  By
+default, this script plots all petals of all tiles using a "simple"
+representation of each positioner (two lines).  Running
+:ref:`script_fba_plot_results` in this way will require several minutes per
+tile, but multiple processes will be used to plot tiles in parallel:
+
+.. include:: _static/fba_plot_results.inc
+
+**EXAMPLE:**  In our example, let's plot only one tile and use options to plot
+the full positioner geometry.  Notice how we made a text file with just one
+tile ID to use::
+
+    %> cat plot_tiles.txt
+    11108
+    %> fba_plot_results \
+       --tiles plot_tiles.txt \
+       --dir out_raw \
+       --real_shapes
+
+.. image:: _static/plot_assign.png
+
+In the plot above, science targets are red, sky is blue, standards are orange, and dual science / standard targets are green.
+
+We can also make a crude visualization of the QA for the entire footprint using
+the :ref:`script_fba_plot_qa` script.  Note that when plotting only a few tiles
+the resulting plot is not as useful (but in that case you can get the numbers
+directly out of the JSON):
+
+.. include:: _static/fba_plot_qa.inc
+
+**EXAMPLE:**  For our small test above we could do::
+
+    %> fba_plot_qa --qafile "out_raw/qa.json"
+
+If you are only plotting a few tiles and want to see the tile IDs on the plot,
+use the `--labels` option.
+
+.. todo::
+    Document the use of the `qa-fiberassign` tool, after verifying that
+    it still works.
 
 
 Interactive Debugging and Testing
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------------------------
 
-The fiberassign codebase respects the DESI_LOGLEVEL environment variable.  The default level if this is not set is "INFO".  Setting this environment variable to "DEBUG" will produce more detailed output.  There are other environment variables that can be set to dump even more details about the internal assignment process.  Examples::
+The fiberassign codebase respects the DESI_LOGLEVEL environment variable.  The
+default level if this is not set is "INFO".  Setting this environment variable
+to "DEBUG" will produce more detailed output.  There are other environment
+variables that can be set to dump even more details about the internal
+assignment process.  Examples::
 
     %> export DESI_DEBUG_TARGET=123456789
     %> export DESI_DEBUG_FIBER=4321
     %> export DESI_DEBUG_TILE=1111
 
-These options are combined with a logical OR and any combination of tile, fiber, or target specified will have all possible info logged.
+These options are combined with a logical OR and any combination of tile,
+fiber, or target specified will have all possible info logged.
 
 .. warning::
     Use of these "extra" debug variables will have a large impact on code
@@ -56,12 +119,16 @@ These options are combined with a logical OR and any combination of tile, fiber,
 Legacy Compatibility Wrappers
 ---------------------------------------
 
-In order to maintain backwards compatibility with the previous version of fiberassign, there is a replacement wrapper script called ``fiberassign`` which translates the command line options into arguments to pass to the newer scripts.
+In order to maintain backwards compatibility with the previous version of
+fiberassign, there is a replacement wrapper script called ``fiberassign`` which
+translates the command line options into arguments to pass to the newer
+scripts.
 
 Running ``fiberassign --help`` gives the full set of command line
 options::
 
-  usage: fiberassign [-h] --mtl MTL --sky SKY --stdstar STDSTAR --fibstatusfile FIBSTATUSFILE
+  usage: fiberassign [-h] --mtl MTL --sky SKY --stdstar STDSTAR
+                   --fibstatusfile FIBSTATUSFILE
                    [--footprint FOOTPRINT]
                    [--positioners POSITIONERS] [--surveytiles SURVEYTILES]
                    [--telra TELRA] [--teldec TELDEC] [--tileid TILEID]
@@ -129,7 +196,6 @@ provided:
   maps” are bisected to achieve a requisite number of sky locations
   per sq. deg. Sky locations are placed within the bisected grid as
   far from blobs that contain sources as is possible. Flux is measured
-  in an aperture at each sky location. The full datamodel can be found
-  `here <https://desidatamodel.readthedocs.io/en/latest/DESI_TARGET/skies.html>`_.
+  in an aperture at each sky location. This file follows the `mtl` datamodel.
 
 - ``fiberstatus.ecsv``:

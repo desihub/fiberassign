@@ -157,8 +157,10 @@ class TargetsAvailable : public std::enable_shared_from_this <TargetsAvailable> 
 
         typedef std::shared_ptr <TargetsAvailable> pshr;
 
-        TargetsAvailable(Targets::pshr objs, Tiles::pshr tiles,
-                         TargetTree::pshr tree);
+        TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
+                         Tiles::pshr tiles, TargetTree::pshr tree);
+
+        Hardware::pshr hardware() const;
 
         Tiles::pshr tiles() const;
 
@@ -167,6 +169,8 @@ class TargetsAvailable : public std::enable_shared_from_this <TargetsAvailable> 
         std::map <int32_t, std::map <int32_t, std::vector <int64_t> > > data;
 
     private :
+
+        Hardware::pshr hw_;
 
         Tiles::pshr tiles_;
 

@@ -8,29 +8,27 @@ It is useful to consider several concrete examples of running fiber assignment a
 Debugging Example
 ----------------------
 
-This example shows a recent debugging test done with a small dataset.  This was using several separate target files.  I ran them with::
+This example shows a recent debugging test done with a small dataset.  This was
+using several separate target files.  I ran them with::
 
     %> export DESI_LOGLEVEL=DEBUG
-    %> fba_run --targets mtl.fits --targets standards-dark.fits \
-        --targets sky.fits
+    %> fba_run --targets mtl.fits standards-dark.fits sky.fits
 
-And the outputs were written by default to date-stamped output directory.  Then I made some per-tile plots::
+And the outputs were written by default to date-stamped output directory.  Then
+I made some plots::
 
-    %> fba_plot_results --dir "out_fiberassign_2018-11-24T11:09:48" \
-       --tiles 1148
+    %> fba_plot_results \
+       --dir "out_fiberassign_2018-11-24T11:09:48"
 
-I opened the resulting image (fiberassign_001148.svg) and zoomed into one petal.  I noticed that fiber 2233 was assigned to a standard:
-
-.. image:: _static/fiberassign_001148.svg.png
-
-
-Let's look at the details of how this fiber was assigned::
+I opened one resulting image (fiberassign_001148.pdf) and zoomed into one
+petal.  I noticed that fiber 2233 was assigned to a standard.  Let's look at
+the details of how this fiber was assigned::
 
     %> export DESI_DEBUG_FIBER=2233
-    %> fba_run --targets mtl.fits --targets standards-dark.fits \
-        --targets sky.fits
+    %> fba_run --targets mtl.fits standards-dark.fits sky.fits
 
-The log showed that there were several targets available to this fiber on tile 1148::
+The log showed that there were several targets available to this fiber on tile
+1148::
 
     DEBUG: targets avail:  tile 1148, fiber 2233 append ID \
         288230398599630147 (type=1), total priority 3200.07
@@ -49,7 +47,11 @@ The log showed that there were several targets available to this fiber on tile 1
     DEBUG: targets avail:  tile 1148, fiber 2233 append ID \
         288230398599632236 (type=4), total priority 0.179244
 
-Looking at the target type (which are the 4 categories of target used internally in fiberassign, defined in targets.py / targets.h), we see that there are 2 sky targets, 5 science targets, and one target which is both a science target and a standard.  Later, during the assignment of unused fibers to science targets, we see::
+Looking at the target type (which are the 4 categories of target used
+internally in fiberassign, defined in targets.py / targets.h), we see that
+there are 2 sky targets, 5 science targets, and one target which is both a
+science target and a standard.  Later, during the assignment of unused fibers
+to science targets, we see::
 
     DEBUG: assign unused science: tile 1148, petal 4 fiber 2233 \
         available target 288230398599630147, subpriority 0.0692912
@@ -75,7 +77,8 @@ Looking at the target type (which are the 4 categories of target used internally
     DEBUG: assign unused science: tile 1148, petal 4 fiber 2233 \
         found best object 288230398599630147
 
-So it skipped over the two sky targets and selected a high-priority science target.  Later, during the redistribution step, we see::
+So it skipped over the two sky targets and selected a high-priority science
+target.  Later, during the redistribution step, we see::
 
     DEBUG: reassign: tile 1148, fiber 2233, target \
         288230398599630147 considering for swap...
@@ -96,7 +99,10 @@ So it skipped over the two sky targets and selected a high-priority science targ
     DEBUG: redist: tile 1148, fiber 2233, target \
         288230398599630147 keeping assignment
 
-So the science target initially assigned to this fiber had no other unassigned available tile / fibers for potential swapping.  Further in the assignment process, we see that a standard was found available to this fiber.  Here is the log snippet from this step::
+So the science target initially assigned to this fiber had no other unassigned
+available tile / fibers for potential swapping.  Further in the assignment
+process, we see that a standard was found available to this fiber.  Here is the
+log snippet from this step::
 
     DEBUG: assign force standard: tile 1148, petal 4, \
         fiber 2233, found object 288230398599631299 \
@@ -142,7 +148,11 @@ So the science target initially assigned to this fiber had no other unassigned a
     DEBUG: reassign: tile 1148, fiber 2233, target \
         288230398599630147 avail T/F 12689,2587 not OK to assign
 
-What happened here is that a standard was found to replace the low-priority science target assigned to fiber 2233.  The existing science target was tested for other available tile / fibers, but all but one of those fibers were already assigned, and that one remaining fiber would produce a collision.  During the forced assignment of sky fibers, this is what happens to this fiber::
+What happened here is that a standard was found to replace the low-priority
+science target assigned to fiber 2233.  The existing science target was tested
+for other available tile / fibers, but all but one of those fibers were already
+assigned, and that one remaining fiber would produce a collision.  During the
+forced assignment of sky fibers, this is what happens to this fiber::
 
     DEBUG: assign force sky: tile 1148, petal 4, fiber 2233, \
         found object 288230398599632448 with weight 0.293402
@@ -175,88 +185,99 @@ What happened here is that a standard was found to replace the low-priority scie
         object 288230398599632236, subpriority 0.179244, available \
         fiber 2233 at target 288230398599631299 is wrong class (1500)
 
-So for this fiber, the existing assignment was recognized as both a science target and a standard, and was therefore not considered for bumping to place a sky target.
+So for this fiber, the existing assignment was recognized as both a science
+target and a standard, and was therefore not considered for bumping to place a
+sky target.
 
 
 Small Reference Run
 --------------------------
 
-This example is run on cori.nersc.gov, using data files in the project space here::
+This example is run on cori.nersc.gov, using data files in the project space
+here::
 
     /project/projectdirs/desi/datachallenge/reference_runs/18.11/targets
 
-After building (and optionally installing) fiberassign you should get an interactive session on a compute node for up to 4 hours::
+After building (and optionally installing) fiberassign you should get an
+interactive session on a compute node for up to 4 hours::
 
     %> salloc -N 1 -C haswell -A desi --qos=interactive -t 04:00:0
 
-Once that job launches and you are on the compute node, set up some environment variables::
+Once that job launches and you are on the compute node, set up some environment
+variables::
 
     %> export OMP_NUM_THREADS=32
     %> export DESI_LOGLEVEL=DEBUG
     %> export \
        targetdir=/project/projectdirs/desi/datachallenge/reference_runs/18.11/targets
 
-Now run the fiber assignment using the default footprint tiling from desimodel::
+Now run the fiber assignment using the default footprint tiling from
+desimodel::
 
     %> time fba_run \
         --targets ${targetdir}/mtl.fits \
-        --targets ${targetdir}/standards-bright.fits \
-        --targets ${targetdir}/standards-dark.fits \
-        --targets ${targetdir}/sky.fits \
-        --outdir out_ref_18.11 | tee log_ref_18.11
+        ${targetdir}/standards-bright.fits \
+        ${targetdir}/standards-dark.fits \
+        ${targetdir}/sky.fits \
+        --dir out_ref_18.11 | tee log_ref_18.11
 
-Make a plot of all tiles (you can also plot only some tiles or petals- see options for fba_plot_results)::
+Make a plot of all tiles (you can also plot only some tiles or petals- see
+options for fba_plot_results)::
 
     %> time fba_plot_results --dir out_ref_18.11
 
-Merge all columns of the original target files into a new set of fiberassign outputs::
+Merge all columns of the original target files into a new set of fiberassign
+outputs::
 
     %> time fba_merge_results \
     --targets ${targetdir}/mtl.fits \
-    --targets ${targetdir}/standards-bright.fits \
-    --targets ${targetdir}/standards-dark.fits \
-    --targets ${targetdir}/sky.fits --dir out_ref_18.11
-
-.. note::
-    There is a bug in the creation of the output recarray dtype when merging results with target files with different sets of columns.  To be fixed.
-
+    ${targetdir}/standards-bright.fits \
+    ${targetdir}/standards-dark.fits \
+    ${targetdir}/sky.fits --dir out_ref_18.11
 
 
 Large Run
 -----------------
 
-This large DR7 example is run on cori.nersc.gov, using data files in the project space here::
+This large DR7 example is run on cori.nersc.gov, using data files in the
+project space here::
 
     /project/projectdirs/desi/target/fiberassign/dr7.1/0.10.3-dark
 
-After building (and optionally installing) fiberassign you should get an interactive session on a compute node for up to 4 hours::
+After building (and optionally installing) fiberassign you should get an
+interactive session on a compute node for up to 4 hours::
 
     %> salloc -N 1 -C haswell -A desi --qos=interactive -t 04:00:0
 
-Once that job launches and you are on the compute node, set up some environment variables::
+Once that job launches and you are on the compute node, set up some environment
+variables::
 
     %> export OMP_NUM_THREADS=32
     %> export DESI_LOGLEVEL=DEBUG
     %> export \
        targetdir=/project/projectdirs/desi/target/fiberassign/dr7.1/0.10.3-dark
 
-Now run the fiber assignment.  This will use about half of the RAM on a cori haswell compute node and take about about an hour- but have of that time is writing the output files (something to work on)::
+Now run the fiber assignment.  This will use about half of the RAM on a cori
+haswell compute node and take about an hour- but half of that time is
+writing the output files (something to work on)::
 
     %> time fba_run \
     --footprint ${targetdir}/input_tiles.fits \
     --targets ${targetdir}/mtl_large.fits \
-    --targets ${targetdir}/std_large.fits \
-    --targets ${targetdir}/sky_large.fits \
-    --outdir out_dr7.1_dark | tee log_dr7.1_dark
+    ${targetdir}/std_large.fits \
+    ${targetdir}/sky_large.fits \
+    --dir out_dr7.1_dark | tee log_dr7.1_dark
 
 To save time for this example, only plot one of the petals on each tile::
 
-    %> time fba_plot_results --dir out_dr7.1_dark --petal 4
+    %> time fba_plot_results \
+       --dir out_dr7.1_dark \
+       --petals 4
 
-Merge results (see note above)::
+Merge results::
 
     %> time fba_merge_results \
     --targets ${targetdir}/mtl_large.fits \
-    --targets ${targetdir}/std_large.fits \
-    --targets ${targetdir}/sky_large.fits \
+    ${targetdir}/std_large.fits \
+    ${targetdir}/sky_large.fits \
     --dir out_dr7.1_dark

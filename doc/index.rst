@@ -9,11 +9,8 @@ Welcome to fiberassign's documentation!
     install.rst
     usage.rst
     examples.rst
-    internals.rst
-    utils.rst
+    reference.rst
     changes.rst
-
-#    api.rst
 
 
 Indices and tables

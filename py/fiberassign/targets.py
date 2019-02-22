@@ -38,7 +38,8 @@ def str_to_target_type(input):
 
 
 def get_sciencemask():
-    """Returns default mask for which DESI_TARGET bits are science targets"""
+    """Returns default mask for which DESI_TARGET bits are science targets.
+    """
     sciencemask = 0
     sciencemask |= desi_mask["LRG"].mask
     sciencemask |= desi_mask["ELG"].mask
@@ -52,7 +53,8 @@ def get_sciencemask():
 
 
 def get_stdmask():
-    """Returns default mask for which DESI_TARGET bits are stdstar targets"""
+    """Returns default mask for which DESI_TARGET bits are stdstar targets.
+    """
     stdmask = 0
     stdmask |= desi_mask["STD_FAINT"].mask
     stdmask |= desi_mask["STD_WD"].mask
@@ -61,15 +63,15 @@ def get_stdmask():
 
 
 def get_skymask():
-    """Returns default mask for which DESI_TARGET bits are sky targets"""
+    """Returns default mask for which DESI_TARGET bits are sky targets.
+    """
     skymask = 0
     skymask |= desi_mask["SKY"].mask
     return skymask
 
 
 def get_safemask():
-    """
-    Returns default mask for which DESI_TARGET bits are backup/safe targets
+    """Returns default mask for which DESI_TARGET bits are backup/safe targets.
 
     Note: these are targets of last resort; they are safe locations where
     we won't saturate the detector, but aren't good for anything else.
@@ -80,8 +82,7 @@ def get_safemask():
 
 
 def get_excludemask():
-    """
-    Returns default DESI_TARGET mask for bits that should not be observed
+    """Returns default DESI_TARGET mask for bits that should not be observed.
     """
     excludemask = 0
     # Exclude BRIGHT_OBJECT and IN_BRIGHT_OBJECT, but not NEAR_BRIGHT_OBJECT
@@ -222,6 +223,36 @@ def append_target_table(tgs, tgdata, typeforce=None, typecol=None,
 def load_target_file(tgs, tfile, typeforce=None, typecol="DESI_TARGET",
                      sciencemask=None, stdmask=None, skymask=None,
                      safemask=None, excludemask=None, rowbuffer=100000):
+    """Append targets from a file.
+
+    Read the specified file and append targets to the input Targets object.
+    A subset of the columns in the file will be stored in each Target added
+    to the Targets object.  Each target is classified into one or more of the
+    4 types used internally in assignment (science, standard, sky, safe).
+
+    This classification is controlled by applying bitmasks to the specified
+    data column.  Alternatively, all targets in the file can be forced to one
+    type.
+
+    Args:
+        tgs (Targets): The targets object on which to append this data.
+        tfile (str): The path to the target catalog.
+        typeforce (int): If specified, it must equal one of the TARGET_TYPE_*
+            values.  All targets read from the file will be assigned this type.
+        typecol (str): Optional column to use for bitmask matching (default
+            is DESI_TARGET).
+        sciencemask (int): Bitmask for classifying targets as science.
+        stdmask (int): Bitmask for classifying targets as a standard.
+        skymask (int): Bitmask for classifying targets as sky.
+        safemask (int): Bitmask for classifying targets as a safe location.
+        excludemask (int): Bitmask for excluding targets.
+        rowbuffer (int): Optional number of rows to read at once when loading
+            very large files.
+
+    Returns:
+        None
+
+    """
     tm = Timer()
     tm.start()
 

@@ -3,6 +3,3 @@ scipy
 matplotlib
 astropy
 fitsio
-git+https://github.com/desihub/desiutil.git@master#egg=desiutil
-git+https://github.com/desihub/desimodel.git@master#egg=desimodel
-git+https://github.com/desihub/desitarget.git@master#egg=desitarget

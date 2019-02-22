@@ -44,6 +44,8 @@ class Assignment : public std::enable_shared_from_this <Assignment> {
 
         Targets::pshr targets() const;
 
+        Tiles::pshr tiles() const;
+
         TargetsAvailable::pshr targets_avail() const;
 
         FibersAvailable::pshr fibers_avail() const;
@@ -61,9 +63,8 @@ class Assignment : public std::enable_shared_from_this <Assignment> {
 
     private :
 
-        void parse_tile_range(Tiles::pshr tiles, int32_t start_tile,
-                              int32_t stop_tile, int32_t & tstart,
-                              int32_t & tstop);
+        void parse_tile_range(int32_t start_tile, int32_t stop_tile,
+                              int32_t & tstart, int32_t & tstop);
 
         bool ok_to_assign (Hardware const * hw, int32_t tile, int32_t fiber,
             int64_t target, std::map <int64_t,
@@ -110,6 +111,9 @@ class Assignment : public std::enable_shared_from_this <Assignment> {
 
         // shared handle to the target properties.
         Targets::pshr tgs_;
+
+        // shared handle to the tile properties.
+        Tiles::pshr tiles_;
 
         // shared handle to the available targets.
         TargetsAvailable::pshr tgsavail_;

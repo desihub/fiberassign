@@ -254,7 +254,8 @@ void fba::TargetTree::near(double ra_deg, double dec_deg, double radius_rad,
 }
 
 
-fba::TargetsAvailable::TargetsAvailable(Targets::pshr objs, Tiles::pshr tiles,
+fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
+                                        Tiles::pshr tiles,
                                         TargetTree::pshr tree) {
     Timer tm;
     tm.start();
@@ -266,24 +267,25 @@ fba::TargetsAvailable::TargetsAvailable(Targets::pshr objs, Tiles::pshr tiles,
     double deg2rad = M_PI / 180.0;
 
     tiles_ = tiles;
+    hw_ = hw;
+
     size_t ntile = tiles_->id.size();
-    auto hw = tiles_->hardware();
-    size_t nfiber = hw->nfiber;
+    size_t nfiber = hw_->nfiber;
 
     // Radius of the tile.
-    double tile_radius = hw->focalplane_radius_deg * deg2rad;
+    double tile_radius = hw_->focalplane_radius_deg * deg2rad;
 
     // Patrol radius in mm on focalplane.
-    double fiber_patrol_mm = hw->patrol_mm;
+    double fiber_patrol_mm = hw_->patrol_mm;
 
     std::vector <int32_t> fiber_id(nfiber);
     std::vector <double> fiber_center_x(nfiber);
     std::vector <double> fiber_center_y(nfiber);
 
     for (size_t j = 0; j < nfiber; ++j) {
-        fiber_id[j] = hw->fiber_id[j];
-        double cx = hw->fiber_pos_xy_mm[fiber_id[j]].first;
-        double cy = hw->fiber_pos_xy_mm[fiber_id[j]].second;
+        fiber_id[j] = hw_->fiber_id[j];
+        double cx = hw_->fiber_pos_xy_mm[fiber_id[j]].first;
+        double cy = hw_->fiber_pos_xy_mm[fiber_id[j]].second;
         fiber_center_x[j] = cx;
         fiber_center_y[j] = cy;
     }
@@ -294,7 +296,7 @@ fba::TargetsAvailable::TargetsAvailable(Targets::pshr objs, Tiles::pshr tiles,
     Targets * pobjs = objs.get();
     Tiles * ptiles = tiles.get();
     TargetTree * ptree = tree.get();
-    Hardware * phw = hw.get();
+    Hardware * phw = hw_.get();
 
     #pragma omp parallel default(none) shared(logger, pobjs, ptiles, ptree, phw, ntile, tile_radius, nfiber, fiber_id, fiber_center_x, fiber_center_y, fiber_patrol_mm)
     {
@@ -481,6 +483,9 @@ fba::TargetsAvailable::TargetsAvailable(Targets::pshr objs, Tiles::pshr tiles,
     tm.report("Computing targets available to all tile / fibers");
 }
 
+fba::Hardware::pshr fba::TargetsAvailable::hardware() const {
+    return hw_;
+}
 
 fba::Tiles::pshr fba::TargetsAvailable::tiles() const {
     return tiles_;

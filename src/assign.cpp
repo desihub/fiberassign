@@ -32,9 +32,9 @@ fba::Assignment::Assignment(fba::Targets::pshr tgs,
     tgsavail_ = tgsavail;
     favail_ = favail;
 
-    // Get the hardware configuration
-    fba::Tiles::pshr tiles = tgsavail_->tiles();
-    hw_ = tiles->hardware();
+    // Get the hardware and tile configuration
+    tiles_ = tgsavail_->tiles();
+    hw_ = tgsavail_->hardware();
 
     // Initialize assignment counts
 
@@ -46,12 +46,12 @@ fba::Assignment::Assignment(fba::Targets::pshr tgs,
 
     tile_target_xy.clear();
 
-    size_t ntile = tiles->id.size();
+    size_t ntile = tiles_->id.size();
     for (auto const & tp : tgtypes) {
         nassign_tile[tp].clear();
         nassign_petal[tp].clear();
         for (size_t t = 0; t < ntile; ++t) {
-            int32_t tile_id = tiles->id[t];
+            int32_t tile_id = tiles_->id[t];
             nassign_tile[tp][tile_id] = 0;
             nassign_petal[tp][tile_id].clear();
             for (int32_t p = 0; p < hw_->npetal; ++p) {
@@ -64,7 +64,7 @@ fba::Assignment::Assignment(fba::Targets::pshr tgs,
     fiber_target.clear();
     target_fiber.clear();
 
-    auto const * ptiles = tiles.get();
+    auto const * ptiles = tiles_.get();
     auto const * phw = hw_.get();
     auto const * ptgs = tgs_.get();
     auto const * ptgsavail = tgsavail_.get();
@@ -117,19 +117,18 @@ std::map <int32_t, int64_t> const & fba::Assignment::tile_fiber_target(int32_t t
 }
 
 
-void fba::Assignment::parse_tile_range(fba::Tiles::pshr tiles,
-                                       int32_t start_tile, int32_t stop_tile,
+void fba::Assignment::parse_tile_range(int32_t start_tile, int32_t stop_tile,
                                        int32_t & tstart, int32_t & tstop) {
     fba::Logger & logger = fba::Logger::get();
     std::ostringstream logmsg;
 
-    int32_t ntile = tiles->id.size();
+    int32_t ntile = tiles_->id.size();
 
     tstart = -1;
     tstop = -1;
     if (start_tile >= 0) {
         for (int32_t t = 0; t < ntile; ++t) {
-            if (tiles->id[t] == start_tile) {
+            if (tiles_->id[t] == start_tile) {
                 tstart = t;
             }
         }
@@ -141,13 +140,13 @@ void fba::Assignment::parse_tile_range(fba::Tiles::pshr tiles,
             logmsg.str("");
             logmsg << "requested start tile " << start_tile
                 << " was not found in tile list.  Starting at tile "
-                << tiles->id[tstart] << " instead";
+                << tiles_->id[tstart] << " instead";
             logger.warning(logmsg.str().c_str());
         }
     }
     if (stop_tile >= 0) {
         for (int32_t t = 0; t < ntile; ++t) {
-            if (tiles->id[t] == stop_tile) {
+            if (tiles_->id[t] == stop_tile) {
                 tstop = t;
             }
         }
@@ -159,7 +158,7 @@ void fba::Assignment::parse_tile_range(fba::Tiles::pshr tiles,
             logmsg.str("");
             logmsg << "requested stop tile " << stop_tile
                 << " was not found in tile list.  Stopping at tile "
-                << tiles->id[tstop] << " instead";
+                << tiles_->id[tstop] << " instead";
             logger.warning(logmsg.str().c_str());
         }
     }
@@ -200,14 +199,10 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
         max_per_petal = 2147483647;
     }
 
-    // Get the hardware configuration
-    fba::Tiles::pshr tiles = tgsavail_->tiles();
-    //int32_t npetal = hw_->npetal;
-
     // Determine our range of tiles
     int32_t tstart;
     int32_t tstop;
-    parse_tile_range(tiles, start_tile, stop_tile, tstart, tstop);
+    parse_tile_range(start_tile, stop_tile, tstart, tstop);
 
     logmsg.str("");
     logmsg << "assign unused " << tgstr << ":  working on tiles "
@@ -229,9 +224,9 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
     std::vector <int64_t> targets_avail;
 
     for (int32_t t = tstart; t <= tstop; ++t) {
-        int32_t tile_id = tiles->id[t];
-        double tile_ra = tiles->ra[t];
-        double tile_dec = tiles->dec[t];
+        int32_t tile_id = tiles_->id[t];
+        double tile_ra = tiles_->ra[t];
+        double tile_dec = tiles_->dec[t];
 
         logmsg.str("");
         logmsg << "assign unused " << tgstr << ": working on tile " << tile_id
@@ -475,16 +470,13 @@ void fba::Assignment::redistribute_science(int32_t start_tile,
     gtmname << "redistribute science: total";
     gtm.start(gtmname.str());
 
-    // Get the hardware configuration
-    fba::Tiles::pshr tiles = tgsavail_->tiles();
-
     // Select fiber IDs based on positioner type
     auto fiber_id = hw_->device_fibers("POS");
 
     // Determine our range of tiles
     int32_t tstart;
     int32_t tstop;
-    parse_tile_range(tiles, start_tile, stop_tile, tstart, tstop);
+    parse_tile_range(start_tile, stop_tile, tstart, tstop);
 
     logmsg.str("");
     logmsg << "redist:  working on tiles "
@@ -496,14 +488,14 @@ void fba::Assignment::redistribute_science(int32_t start_tile,
     // already been considered.
     std::map <int32_t, std::map <int32_t, bool> > done;
     for (int32_t t = tstart; t <= tstop; ++t) {
-        int32_t tile_id = tiles->id[t];
+        int32_t tile_id = tiles_->id[t];
         done[tile_id].clear();
     }
 
     std::vector <int64_t> targets_avail;
 
     for (int32_t t = tstart; t <= tstop; ++t) {
-        int32_t tile_id = tiles->id[t];
+        int32_t tile_id = tiles_->id[t];
 
         if (nassign_tile[TARGET_TYPE_SCIENCE][tile_id] == 0) {
             // Skip tiles that are fully unassigned, since this implies that the
@@ -690,15 +682,13 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
     gtmname << "force " << tgstr << ": total";
     gtm.start(gtmname.str());
 
-    // Get the hardware configuration
-    fba::Tiles::pshr tiles = tgsavail_->tiles();
     int32_t npetal = hw_->npetal;
     auto fiber_id = hw_->device_fibers("POS");
 
     // Determine our range of tiles
     int32_t tstart;
     int32_t tstop;
-    parse_tile_range(tiles, start_tile, stop_tile, tstart, tstop);
+    parse_tile_range(start_tile, stop_tile, tstart, tstop);
 
     logmsg.str("");
     logmsg << "assign force " << tgstr << ":  working on tiles "
@@ -712,7 +702,7 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
     // already been considered.
     std::map <int32_t, std::map <int32_t, bool> > done;
     for (int32_t t = tstart; t <= tstop; ++t) {
-        int32_t tile_id = tiles->id[t];
+        int32_t tile_id = tiles_->id[t];
         done[tile_id].clear();
     }
 
@@ -734,9 +724,9 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
     fiber_compare fcompare;
 
     for (int32_t t = tstart; t <= tstop; ++t) {
-        int32_t tile_id = tiles->id[t];
-        double tile_ra = tiles->ra[t];
-        double tile_dec = tiles->dec[t];
+        int32_t tile_id = tiles_->id[t];
+        double tile_ra = tiles_->ra[t];
+        double tile_dec = tiles_->dec[t];
 
         logmsg.str("");
         logmsg << "assign force " << tgstr << ": working on tile " << tile_id
@@ -1092,8 +1082,6 @@ void fba::Assignment::reassign_science_target(int32_t tstart, int32_t tstop,
     std::ostringstream logmsg;
     bool extra_log = logger.extra_debug();
 
-    fba::Tiles::pshr tiles = tgsavail_->tiles();
-
     // Get the number of unused fibers on this current petal.
     int32_t petal = hw_->fiber_petal.at(fiber);
     int32_t passign = nassign_petal.at(TARGET_TYPE_SCIENCE).at(tile).at(petal);
@@ -1188,7 +1176,7 @@ void fba::Assignment::reassign_science_target(int32_t tstart, int32_t tstop,
         }
 
         int32_t av_petal = hw_->fiber_petal.at(av_fiber);
-        int32_t av_tile_indx = tiles->order.at(av_tile);
+        int32_t av_tile_indx = tiles_->order.at(av_tile);
 
         if (av_tile_indx < tstart) {
             // The tile containing this alternate tile/fiber is before
@@ -1728,82 +1716,6 @@ void fba::Assignment::project_targets(fba::Hardware const * hw,
 }
 
 
-//
-// void fba::Assignment::improve_targets(int32_t first_tile_id) {
-//     // Get the hardware configuration
-//     fba::Tiles::pshr tiles = tgsavail_->tiles();
-//     size_t ntile = tiles->id.size();
-//     size_t nfiber = hw_->nfiber;
-//     size_t npetal = hw_->npetal;
-//
-//     // This container stores the position in focalplane
-//     // coordinates of the available targets for this tile.
-//     // We compute this once and then use it repeatedly for
-//     // the collision calculation.
-//     std::map <int64_t, std::pair <double, double> > target_xy;
-//
-//     for (size_t t = 0; t < ntile; ++t) {
-//         int32_t tile_id = tiles->id[t];
-//         double tile_ra = tiles->ra[t];
-//         double tile_dec = tiles->dec[t];
-//
-//         if (nassign_tile[tile_id] == 0) {
-//             // Skip tiles that are fully unassigned, since this implies that the
-//             // first pass of the assignment had no available targets to use.
-//             continue;
-//         }
-//
-//         project_targets(tile_id, tile_ra, tile_dec, target_xy);
-//
-//         for (size_t f = 0; f < nfiber; ++f) {
-//             if (fiber_target[tile_id][f] >= 0) {
-//                 // This tile / fiber combination is already assigned.
-//                 continue;
-//             }
-//
-//             // Attempt to assign the best available object that is not assigned.
-//             auto & avail = tgsavail_->data[tile_id][f];
-//             int64_t target = find_best(tile_id, f, target_xy, avail);
-//             if (target >= 0) {
-//                 assign_tilefiber(tile_id, f, target);
-//                 continue;
-//             }
-//
-//             // The available targets are already sorted by by subpriority (see
-//             // constructor of TargetsAvailable class).  Iterate over these in
-//             // order and see if we can move a target from an existing
-//             // tile/fiber assignment.  This will depend on whether that "other"
-//             // tile/fiber also has a good target available.
-//
-//             for (auto const & tgid : avail) {
-//                 // Reference to the Target object with this ID
-//                 auto & tg = tgs_->data[tgid];
-//
-//                 if (! (tg.type & TARGET_TYPE_SCIENCE)) {
-//                     // This is not an object for consideration.
-//                     continue;
-//                 }
-//
-//                 if (! ok_to_assign(tile_id, f, tgid, target_xy)) {
-//                     // There must be a collision or some other problem.
-//                     continue;
-//                 }
-//
-//                 // This available target could potentially be assigned to this
-//                 // tile/fiber.  Get the current full tile/fiber assignment for
-//                 // this target.
-//
-//
-//             }
-//
-//         }
-//     }
-//
-//     return;
-// }
-//
-//
-
 
 fba::Hardware::pshr fba::Assignment::hardware() const {
     return hw_;
@@ -1812,6 +1724,11 @@ fba::Hardware::pshr fba::Assignment::hardware() const {
 
 fba::Targets::pshr fba::Assignment::targets() const {
     return tgs_;
+}
+
+
+fba::Tiles::pshr fba::Assignment::tiles() const {
+    return tiles_;
 }
 
 
