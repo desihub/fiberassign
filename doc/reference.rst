@@ -108,9 +108,35 @@ For each petal, we do the following pseudocode::
 Utilities
 ---------------
 
-The fiberassign package includes a number of useful math functions.
+The fiberassign package includes a number of useful math and helper functions.
 
-Vectorized Collision Calculation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Geometric Shapes
+~~~~~~~~~~~~~~~~~~~~~~~~
 
-See fiberassign.Hardware.check_collisions_thetaphi ...
+The geometry of the positioners is represented internally as a shape consisting of line segments and circles.
+
+.. autoclass:: fiberassign.utils.Circle
+    :members:
+
+.. autoclass:: fiberassign.utils.Segments
+    :members:
+
+.. autoclass:: fiberassign.utils.Shape
+    :members:
+
+
+Logging
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: fiberassign.utils.Logger
+    :members:
+
+
+Timing
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: fiberassign.utils.Timer
+    :members:
+
+.. autoclass:: fiberassign.utils.GlobalTimers
+    :members:

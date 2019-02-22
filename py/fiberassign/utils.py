@@ -11,7 +11,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 
-from ._internal import (Logger, Timer, GlobalTimers)
+from ._internal import (Logger, Timer, GlobalTimers, Circle, Segments, Shape)
 
 # Multiprocessing environment setup
 

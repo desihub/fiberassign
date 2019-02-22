@@ -63,6 +63,10 @@ PYBIND11_MODULE(_internal, m) {
         )")
         .def("is_running", &fba::Timer::is_running, R"(
             Is the timer running?
+
+            Returns:
+                (bool): True if the timer is running, else False.
+
         )")
         .def("seconds",
             [](fba::Timer const & self) {
@@ -72,11 +76,21 @@ PYBIND11_MODULE(_internal, m) {
                     return self.seconds();
                 }
             }, R"(
-            Return the elapsed seconds (if stopped) else -1.
-            )"
-        )
-        .def("report", &fba::Timer::report, R"(
+            Return the elapsed seconds.
+
+            Returns:
+                (float): The elapsed seconds (if timer is stopped) else -1.
+
+        )")
+        .def("report", &fba::Timer::report, py::arg("msg"), R"(
             Report results of the timer.
+
+            Args:
+                msg (str): The message to print before the timer value.
+
+            Returns:
+                None
+
         )")
         .def("__repr__",
             [](fba::Timer const & self) {
@@ -107,14 +121,58 @@ PYBIND11_MODULE(_internal, m) {
         .def("get", [](){
             return std::unique_ptr<fba::GlobalTimers, py::nodelete>
                 (&fba::GlobalTimers::get());
-            }
-        )
-        .def("start", &fba::GlobalTimers::start)
-        .def("stop", &fba::GlobalTimers::stop)
-        .def("seconds", &fba::GlobalTimers::seconds)
-        .def("is_running", &fba::GlobalTimers::is_running)
-        .def("stop_all", &fba::GlobalTimers::stop_all)
-        .def("report", &fba::GlobalTimers::report);
+            }, R"(
+            Get the instance of global singleton class.
+        )")
+        .def("start", &fba::GlobalTimers::start, py::arg("name"), R"(
+            Start the specified timer.
+
+            If the named timer does not exist, it is first created before
+            being started.
+
+            Args:
+                name (str): The name of the global timer.
+
+            Returns:
+                None
+        )")
+        .def("stop", &fba::GlobalTimers::stop, py::arg("name"), R"(
+            Stop the specified timer.
+
+            The timer must already exist.
+
+            Args:
+                name (str): The name of the global timer.
+
+            Returns:
+                None
+        )")
+        .def("seconds", &fba::GlobalTimers::seconds, py::arg("name"), R"(
+            Get the elapsed time for a timer.
+
+            The timer must be stopped.
+
+            Args:
+                name (str): The name of the global timer.
+
+            Returns:
+                (float): The elapsed time in seconds.
+        )")
+        .def("is_running", &fba::GlobalTimers::is_running, py::arg("name"), R"(
+            Is the specified timer running?
+
+            Args:
+                name (str): The name of the global timer.
+
+            Returns:
+                (bool): True if the timer is running, else False.
+        )")
+        .def("stop_all", &fba::GlobalTimers::stop_all, R"(
+            Stop all global timers.
+        )")
+        .def("report", &fba::GlobalTimers::report, R"(
+            Report results of all global timers to STDOUT.
+        )");
 
 
     py::class_ <fba::Logger, std::unique_ptr<fba::Logger, py::nodelete> > (m,
@@ -126,38 +184,99 @@ PYBIND11_MODULE(_internal, m) {
         .def("get", [](){
             return std::unique_ptr<fba::Logger, py::nodelete>
                 (&fba::Logger::get());
-            }
-        )
-        .def("debug", &fba::Logger::debug, R"(
+            }, R"(
+            Get the instance of global singleton class.
+        )")
+        .def("debug", &fba::Logger::debug, py::arg("msg"), R"(
             Print a DEBUG level message.
+
+            Args:
+                msg (str): The message to print.
+
+            Returns:
+                None
+
         )")
-        .def("info", &fba::Logger::info, R"(
+        .def("info", &fba::Logger::info, py::arg("msg"), R"(
             Print an INFO level message.
+
+            Args:
+                msg (str): The message to print.
+
+            Returns:
+                None
+
         )")
-        .def("warning", &fba::Logger::warning, R"(
+        .def("warning", &fba::Logger::warning, py::arg("msg"), R"(
             Print a WARNING level message.
+
+            Args:
+                msg (str): The message to print.
+
+            Returns:
+                None
+
         )")
-        .def("error", &fba::Logger::error, R"(
+        .def("error", &fba::Logger::error, py::arg("msg"), R"(
             Print an ERROR level message.
+
+            Args:
+                msg (str): The message to print.
+
+            Returns:
+                None
+
         )")
-        .def("critical", &fba::Logger::critical, R"(
+        .def("critical", &fba::Logger::critical, py::arg("msg"), R"(
             Print a CRITICAL level message.
+
+            Args:
+                msg (str): The message to print.
+
+            Returns:
+                None
+
         )");
 
 
     py::class_ <fbg::circle, fbg::circle::pshr > (m, "Circle", R"(
         A Circle.
+
+        This class represents a circle with a center and radius.
+        This shape can be translated and rotated about an axis.
+
+        Args:
+            center (tuple): The (X, Y) center of the circle.
+            radius (float): The radius of the circle.
+
         )")
         .def(py::init <> ())
-        .def(py::init <fbg::dpair const &, double const &> ())
-        .def("transl", &fbg::circle::transl, R"(
+        .def(py::init <fbg::dpair const &, double const &> (),
+            py::arg("center"), py::arg("radius"))
+        .def("transl", &fbg::circle::transl, py::arg("offset"), R"(
             Translate the circle.
+
+            Args:
+                offset (tuple): The (X, Y) offset to add to the center.
+
         )")
-        .def("rotation", &fbg::circle::rotation, R"(
+        .def("rotation", &fbg::circle::rotation, py::arg("angle"),
+            py::arg("axis"), R"(
             Apply a rotation.
+
+            Rotate the circle center by an angle about the given point.
+
+            Args:
+                angle (float): The angle of rotation.
+                axis (tuple): The (X, Y) origin of the rotation.
+
         )")
-        .def_readonly("center", &fbg::circle::center)
-        .def_readonly("radius", &fbg::circle::radius)
+        .def_readonly("center", &fbg::circle::center, R"(
+            The center (X, Y) tuple of the circle.
+        )")
+        .def_readonly("radius", &fbg::circle::radius, R"(
+            The radius of the circle.
+        )")
         .def("__repr__",
             [](fbg::circle const & self) {
                 std::ostringstream o;
@@ -171,16 +290,37 @@ PYBIND11_MODULE(_internal, m) {
 
     py::class_ <fbg::segments, fbg::segments::pshr > (m, "Segments", R"(
         A collection of line segments.
+
+        This class represents a sequence of connected line segments.
+
+        Args:
+            points (list):  A list of (X, Y) tuples containing the points
+                describing the segments.
+
         )")
         .def(py::init <> ())
         .def(py::init <std::vector <fbg::dpair> const &> ())
-        .def("transl", &fbg::segments::transl, R"(
+        .def("transl", &fbg::segments::transl, py::arg("offset"), R"(
             Translate the segments.
+
+            Args:
+                offset (tuple): The (X, Y) offset to add to all points.
+
         )")
-        .def("rotation", &fbg::segments::rotation, R"(
+        .def("rotation", &fbg::segments::rotation, py::arg("angle"),
+            py::arg("axis"), R"(
             Apply a rotation.
+
+            Rotate all points by an angle about the given origin.
+
+            Args:
+                angle (float): The angle of rotation.
+                axis (tuple): The (X, Y) origin of the rotation.
+
         )")
-        .def_readonly("points", &fbg::segments::points)
+        .def_readonly("points", &fbg::segments::points, R"(
+            The list of points.
+        )")
         .def("__repr__",
             [](fbg::segments const & self) {
                 std::ostringstream o;
@@ -193,21 +333,57 @@ PYBIND11_MODULE(_internal, m) {
 
     py::class_ <fbg::shape, fbg::shape::pshr > (m, "Shape", R"(
         A shape made up of circles and segments.
+
+        A Shape contains a list Circle objects and a list of Segments objects
+        that can be rotated / translated together.  Each shape also has a
+        center point independent of the individual pieces.
+
+        Args:
+            center (tuple): The (X, Y) center of the shape.
+            circles (list): A list of Circle objects.
+            segments (list): A list of Segments objects.
+
         )")
         .def(py::init <> ())
         .def(py::init <fbg::dpair const &, fbg::circle_list const &,
-             fbg::segments_list const &> ())
-        .def("transl", &fbg::shape::transl, R"(
+             fbg::segments_list const &> (), py::arg("center"),
+             py::arg("circles"), py::arg("segments")
+        )
+        .def("transl", &fbg::shape::transl, py::arg("offset"), R"(
             Translate the shape.
+
+            This adds an offset to the center and to all constituent
+            circles and segments.
+
+            Args:
+                offset (tuple): The (X, Y) offset to add.
+
         )")
-        .def("rotation", &fbg::shape::rotation, R"(
-            Apply a rotation.
+        .def("rotation", &fbg::shape::rotation, py::arg("angle"), R"(
+            Apply a rotation about the center.
+
+            Rotate all circles and segments about the center of the shape.
+
+            Args:
+                angle (float): The angle of rotation.
+
         )")
-        .def("rotation_origin", &fbg::shape::rotation_origin, R"(
+        .def("rotation_origin", &fbg::shape::rotation_origin,
+            py::arg("angle"), R"(
             Apply a rotation about the origin.
+
+            Rotate the entire shape about the origin.
+
+            Args:
+                angle (float): The angle of rotation.
+
         )")
-        .def_readonly("circles", &fbg::shape::circle_data)
-        .def_readonly("segments", &fbg::shape::segments_data)
+        .def_readonly("circles", &fbg::shape::circle_data, R"(
+            The list of constituent circles.
+        )")
+        .def_readonly("segments", &fbg::shape::segments_data, R"(
+            The list of constituent segments.
+        )")
         .def("__repr__",
             [](fbg::shape const & self) {
                 std::ostringstream o;
@@ -224,17 +400,11 @@ PYBIND11_MODULE(_internal, m) {
 
         Args:
             fiber (array):  array of fiber indices (int32).
-
             petal (array):  array of start times (int64) for each entry.
-
             spectro (array):  array of stop times (int64) for each entry.
-
             x (array):  array of fiber X coordinate centers.
-
             y (array):  array of fiber Y coordinate centers.
-
             z (array):  array of fiber Z coordinate centers.
-
             status (array):  array of integers containing the fiber status.
 
         )")
@@ -254,56 +424,253 @@ PYBIND11_MODULE(_internal, m) {
             std::vector <double> const &,
             std::vector <double> const &,
             std::vector <int32_t> const & > ())
-        .def_readonly("nfiber", &fba::Hardware::nfiber)
-        .def_readonly("npetal", &fba::Hardware::npetal)
-        .def_readonly("nfiber_petal", &fba::Hardware::nfiber_petal)
+        .def_readonly("nfiber", &fba::Hardware::nfiber, R"(
+            The number of fibers (including POS and ETC devices).
+        )")
+        .def_readonly("npetal", &fba::Hardware::npetal, R"(
+            The number of petals.
+        )")
+        .def_readonly("nfiber_petal", &fba::Hardware::nfiber_petal, R"(
+            The number of fibers per petal.
+        )")
         .def_readonly("focalplane_radius_deg",
-                      &fba::Hardware::focalplane_radius_deg)
-        .def_readonly("fiber_id", &fba::Hardware::fiber_id)
-        .def_readonly("fiber_petal", &fba::Hardware::fiber_petal)
-        .def_readonly("petal_fibers", &fba::Hardware::petal_fibers)
-        .def_readonly("fiber_pos_xy_mm", &fba::Hardware::fiber_pos_xy_mm)
-        .def_readonly("fiber_pos_z_mm", &fba::Hardware::fiber_pos_z_mm)
-        .def_readonly("fiber_pos_q_deg", &fba::Hardware::fiber_pos_q_deg)
-        .def_readonly("fiber_pos_s_mm", &fba::Hardware::fiber_pos_s_mm)
-        .def_readonly("fiber_device", &fba::Hardware::fiber_device)
-        .def_readonly("fiber_device_type", &fba::Hardware::fiber_device_type)
-        .def_readonly("fiber_location", &fba::Hardware::fiber_location)
-        .def_readonly("fiber_spectro", &fba::Hardware::fiber_spectro)
-        .def_readonly("fiber_slit", &fba::Hardware::fiber_slit)
-        .def_readonly("fiber_slitblock", &fba::Hardware::fiber_slitblock)
-        .def_readonly("fiber_blockfiber", &fba::Hardware::fiber_blockfiber)
-        .def_readonly("patrol_mm", &fba::Hardware::patrol_mm)
-        .def_readonly("collide_mm", &fba::Hardware::collide_mm)
+                      &fba::Hardware::focalplane_radius_deg, R"(
+                          The focalplane radius in degrees.
+                      )")
+        .def_readonly("fiber_id", &fba::Hardware::fiber_id, R"(
+            Vector of fiber IDs.
+        )")
+        .def_readonly("fiber_petal", &fba::Hardware::fiber_petal, R"(
+            Dictionary of the petal for each fiber ID.
+        )")
+        .def_readonly("petal_fibers", &fba::Hardware::petal_fibers, R"(
+            Dictionary of the fiber IDs for each petal.
+        )")
+        .def_readonly("fiber_pos_xy_mm", &fba::Hardware::fiber_pos_xy_mm, R"(
+            Dictionary of (X, Y) position tuples for each fiber ID.
+        )")
+        .def_readonly("fiber_pos_z_mm", &fba::Hardware::fiber_pos_z_mm, R"(
+            Dictionary of Z values for each fiber ID.
+        )")
+        .def_readonly("fiber_pos_q_deg", &fba::Hardware::fiber_pos_q_deg, R"(
+            Dictionary of Q values for each fiber ID.
+        )")
+        .def_readonly("fiber_pos_s_mm", &fba::Hardware::fiber_pos_s_mm, R"(
+            Dictionary of S values for each fiber ID.
+        )")
+        .def_readonly("fiber_device", &fba::Hardware::fiber_device, R"(
+            Dictionary of device ID for each fiber ID
+        )")
+        .def_readonly("fiber_device_type",
+                      &fba::Hardware::fiber_device_type, R"(
+            Dictionary of device type (POS or ETC) for each fiber ID.
+        )")
+        .def_readonly("fiber_location", &fba::Hardware::fiber_location, R"(
+            Dictionary of location values for each fiber ID.
+        )")
+        .def_readonly("fiber_spectro", &fba::Hardware::fiber_spectro, R"(
+            Dictionary of spectrograph index for each fiber ID.
+        )")
+        .def_readonly("fiber_slit", &fba::Hardware::fiber_slit, R"(
+            Dictionary of slit values for each fiber ID.
+        )")
+        .def_readonly("fiber_slitblock", &fba::Hardware::fiber_slitblock, R"(
+            Dictionary of slitblock values for each fiber ID.
+        )")
+        .def_readonly("fiber_blockfiber", &fba::Hardware::fiber_blockfiber, R"(
+            Dictionary of blockfiber values for each fiber ID.
+        )")
+        .def_readonly("patrol_mm", &fba::Hardware::patrol_mm, R"(
+            Constant patrol radius, soon will be a dictionary...
+        )")
+        .def_readonly("collide_mm", &fba::Hardware::collide_mm, R"(
+            Distance at which positioners are guarteed to collide.
+        )")
         .def_readonly("collide_avg_mm", &fba::Hardware::collide_avg_mm)
-        .def_readonly("no_collide_mm", &fba::Hardware::no_collide_mm)
-        .def_readonly("neighbor_radius_mm", &fba::Hardware::neighbor_radius_mm)
-        .def_readonly("positioner_range", &fba::Hardware::positioner_range)
-        .def_readonly("state", &fba::Hardware::state)
-        .def_readonly("neighbors", &fba::Hardware::neighbors)
-        .def("device_fibers", &fba::Hardware::device_fibers)
-        .def("radec2xy", &fba::Hardware::radec2xy)
+        .def_readonly("no_collide_mm", &fba::Hardware::no_collide_mm, R"(
+            Distance at which positioners are guaranteed to NOT collide.
+        )")
+        .def_readonly("neighbor_radius_mm",
+                      &fba::Hardware::neighbor_radius_mm, R"(
+            Radius for considering fibers as neighbors.
+        )")
+        .def_readonly("positioner_range", &fba::Hardware::positioner_range, R"(
+            Constant positioner range, soon will be a dictionary...
+        )")
+        .def_readonly("state", &fba::Hardware::state, R"(
+            Dictionary of fiber state for each fiber ID.
+        )")
+        .def_readonly("neighbors", &fba::Hardware::neighbors, R"(
+            Dictionary of neighbor IDs for each fiber ID.
+        )")
+        .def("device_fibers", &fba::Hardware::device_fibers,
+            py::arg("type"), R"(
+            Dictionary of fiber IDs for each device type (POS or ETC).
+        )")
+        .def("radec2xy", &fba::Hardware::radec2xy, py::arg("tilera"),
+            py::arg("tiledec"), py::arg("ra"), py::arg("dec"), R"(
+            Project an RA/DEC value into X/Y coordinates.
+
+            For the tile pointed at (tilera, tiledec), project the (ra, dec)
+            value into X/Y mm.
+
+            Args:
+                tilera (float): Tile RA
+                tiledec (float): Tile DEC
+                ra (float): RA to project.
+                dec (float): DEC to project.
+
+            Returns:
+                (tuple): the (X, Y) projected location.
+
+        )")
         .def("radec2xy_multi", [](fba::Hardware & self, double tile_ra,
-            double tile_dec, std::vector <double> const & ra,
-            std::vector <double> const & dec, int threads) {
-            std::vector <std::pair <double, double> > xy;
-            self.radec2xy_multi(tile_ra, tile_dec, ra, dec, xy, threads);
-            return xy;
-        }, py::return_value_policy::take_ownership)
-        .def("xy2radec", &fba::Hardware::xy2radec)
+                double tile_dec, std::vector <double> const & ra,
+                std::vector <double> const & dec, int threads) {
+                std::vector <std::pair <double, double> > xy;
+                self.radec2xy_multi(tile_ra, tile_dec, ra, dec, xy, threads);
+                return xy;
+            }, py::return_value_policy::take_ownership, py::arg("tilera"),
+            py::arg("tiledec"), py::arg("ra"), py::arg("dec"),
+            py::arg("threads"), R"(
+            Project multiple RA/DEC values into X/Y coordinates.
+
+            For the tile pointed at (tilera, tiledec), project the (ra, dec)
+            values into X/Y mm.
+
+            Args:
+                tilera (float): Tile RA
+                tiledec (float): Tile DEC
+                ra (array): Array of RA values to project.
+                dec (float): Array of DEC values to project.
+                threads (int): If <= 0 use maximum threads,
+                    else use this number.
+
+            Returns:
+                (list): list of (X, Y) tuples with projected locations.
+
+        )")
+        .def("xy2radec", &fba::Hardware::xy2radec, py::arg("tilera"),
+            py::arg("tiledec"), py::arg("x"), py::arg("y"), R"(
+            Compute the RA/DEC value of the specified X/Y location.
+
+            For the tile pointed at (tilera, tiledec), compute the RA/DEC
+            pointing of the specified X/Y location in millimeters.
+
+            Args:
+                tilera (float): Tile RA
+                tiledec (float): Tile DEC
+                x (float): X position in mm.
+                y (float): Y position in mm.
+
+            Returns:
+                (tuple): the (RA, DEC) of the focalplane location.
+
+        )")
         .def("xy2radec_multi", [](fba::Hardware & self, double tile_ra,
-            double tile_dec, std::vector <double> const & x_mm,
-            std::vector <double> const & y_mm, int threads) {
-            std::vector <std::pair <double, double> > radec;
-            self.xy2radec_multi(tile_ra, tile_dec, x_mm, y_mm, radec, threads);
-            return radec;
-        }, py::return_value_policy::take_ownership)
-        .def("pos_angles", &fba::Hardware::pos_angles)
-        .def("collide", &fba::Hardware::collide)
-        .def("fiber_position", &fba::Hardware::fiber_position)
-        .def("check_collisions_xy", &fba::Hardware::check_collisions_xy)
+                double tile_dec, std::vector <double> const & x_mm,
+                std::vector <double> const & y_mm, int threads) {
+                std::vector <std::pair <double, double> > radec;
+                self.xy2radec_multi(tile_ra, tile_dec, x_mm, y_mm, radec,
+                                    threads);
+                return radec;
+            }, py::return_value_policy::take_ownership, py::arg("tilera"),
+            py::arg("tiledec"), py::arg("x"), py::arg("y"),
+            py::arg("threads"), R"(
+            Compute the RA/DEC values of the specified X/Y locations.
+
+            For the tile pointed at (tilera, tiledec), compute the RA/DEC
+            pointings of the specified X/Y locations in millimeters.
+
+            Args:
+                tilera (float): Tile RA
+                tiledec (float): Tile DEC
+                x (array): Array of X positions in mm.
+                y (array): Array of Y positions in mm.
+                threads (int): If <= 0 use maximum threads,
+                    else use this number.
+
+            Returns:
+                (list): list of (RA, DEC) tuples.
+
+        )")
+        .def("fiber_position", &fba::Hardware::fiber_position, py::arg("id"),
+            py::arg("xy"), R"(
+            Move a positioner to a given location.
+
+            This takes the specified fiber ID and computes the shapes of
+            the central body and fiber holder when the fiber is moved to
+            a given (X, Y) position.
+
+            Args:
+                id (int): Fiber ID.
+                xy (tuple): The (X, Y) tuple at which to place the fiber.
+
+            Returns:
+                (tuple): the 2 shapes (central body, fiber holder)
+                    representing the positioner.
+
+        )")
+        .def("fiber_position_multi", &fba::Hardware::fiber_position_multi,
+            py::arg("id"), py::arg("xy"), py::arg("threads"), R"(
+            Move positioners to given locations.
+
+            This takes the specified fiber IDs and computes the shapes of
+            the central body and fiber holder when each fiber is moved to
+            a given (X, Y) position.
+
+            Args:
+                id (list): List of (int) fiber IDs.
+                xy (list): List of (X, Y) tuples at which to place each fiber.
+                threads (int): If <= 0 use maximum threads,
+                    else use this number.
+
+            Returns:
+                (list): One tuple for each fiber ID, containing the 2 shapes
+                    (central body, fiber holder) representing the positioner.
+
+        )")
+        .def("check_collisions_xy", &fba::Hardware::check_collisions_xy,
+            py::arg("id"), py::arg("xy"), py::arg("threads"), R"(
+            Check for collisions.
+
+            This takes the specified fiber IDs and computes the shapes of
+            the central body and fiber holder when each fiber is moved to
+            a given (X, Y) position.  It then tests for collisions between
+            these shapes among the fiber IDs specified.
+
+            Args:
+                id (list): List of (int) fiber IDs.
+                xy (list): List of (X, Y) tuples at which to place each fiber.
+                threads (int): If <= 0 use maximum threads,
+                    else use this number.
+
+            Returns:
+                (list): A boolean value for each fiber ID, indicating whether
+                    it collided with another fiber.
+
+        )")
         .def("check_collisions_thetaphi",
-             &fba::Hardware::check_collisions_thetaphi)
+             &fba::Hardware::check_collisions_thetaphi, py::arg("id"), py::arg("theta"), py::arg("phi"), py::arg("threads"), R"(
+             Check for collisions.
+
+             This takes the specified fiber IDs and computes the shapes of
+             the central body and fiber holder when each fiber is moved to
+             a given (theta, phi) orientation.  It then tests for collisions
+             between these shapes among the fiber IDs specified.
+
+             Args:
+                 id (array): List of (int) fiber IDs.
+                 theta (array): Theta angle for each positioner.
+                 phi (array): Phi angle for each positioner.
+                 threads (int): If <= 0 use maximum threads,
+                     else use this number.
+
+             Returns:
+                 (list): A boolean value for each fiber ID, indicating whether
+                     it collided with another fiber.
+
+         )")
         .def(py::pickle(
             [](fba::Hardware const & p) { // __getstate__
                 int32_t nfiber = p.fiber_id.size();
@@ -369,21 +736,51 @@ PYBIND11_MODULE(_internal, m) {
         Class representing a single target.
         )")
         .def(py::init <> ())
-        .def_readwrite("id", &fba::Target::id)
-        .def_readwrite("ra", &fba::Target::ra)
-        .def_readwrite("dec", &fba::Target::dec)
-        .def_readwrite("desi_target", &fba::Target::desi_target)
-        .def_readwrite("bgs_target", &fba::Target::bgs_target)
-        .def_readwrite("mws_target", &fba::Target::mws_target)
-        .def_readwrite("obs_remain", &fba::Target::obs_remain)
-        .def_readwrite("priority", &fba::Target::priority)
-        .def_readwrite("subpriority", &fba::Target::subpriority)
-        .def_readwrite("obscond", &fba::Target::obscond)
-        .def_readwrite("type", &fba::Target::type)
-        .def("is_science", &fba::Target::is_science)
-        .def("is_standard", &fba::Target::is_standard)
-        .def("is_sky", &fba::Target::is_sky)
-        .def("is_safe", &fba::Target::is_safe)
+        .def_readwrite("id", &fba::Target::id, R"(
+            The target ID.
+        )")
+        .def_readwrite("ra", &fba::Target::ra, R"(
+            The target RA.
+        )")
+        .def_readwrite("dec", &fba::Target::dec, R"(
+            The target DEC.
+        )")
+        .def_readwrite("desi_target", &fba::Target::desi_target, R"(
+            The DESI_TARGET bitfield.
+        )")
+        .def_readwrite("bgs_target", &fba::Target::bgs_target, R"(
+            The BGS_TARGET bitfield.
+        )")
+        .def_readwrite("mws_target", &fba::Target::mws_target, R"(
+            The MWS_TARGET bitfield.
+        )")
+        .def_readwrite("obs_remain", &fba::Target::obs_remain, R"(
+            The remaining observations for this target.
+        )")
+        .def_readwrite("priority", &fba::Target::priority, R"(
+            The integer priority class for this target.
+        )")
+        .def_readwrite("subpriority", &fba::Target::subpriority, R"(
+            The float64 subpriority on the range [0,1).
+        )")
+        .def_readwrite("obscond", &fba::Target::obscond, R"(
+            The valid observing conditions allowed for this target.
+        )")
+        .def_readwrite("type", &fba::Target::type, R"(
+            The internal target type (science, standard, sky, safe).
+        )")
+        .def("is_science", &fba::Target::is_science, R"(
+            Returns True if this is a science target, else False.
+        )")
+        .def("is_standard", &fba::Target::is_standard, R"(
+            Returns True if this is a standard target, else False.
+        )")
+        .def("is_sky", &fba::Target::is_sky, R"(
+            Returns True if this is a sky target, else False.
+        )")
+        .def("is_safe", &fba::Target::is_safe, R"(
+            Returns True if this is a safe target, else False.
+        )")
         .def("__repr__",
             [](fba::Target const & tg) {
                 std::ostringstream o;
@@ -405,11 +802,14 @@ PYBIND11_MODULE(_internal, m) {
 
         The target data is stored internally as a dictionary of Target
         instances.  After construction this container is empty, and then one
-        uses the append method to add Targets.
+        uses the "append" method to add Targets.
 
         )")
         .def(py::init < > ())
-        .def("append", &fba::Targets::append, R"(
+        .def("append", &fba::Targets::append, py::arg("ids"), py::arg("ras"),
+            py::arg("decs"), py::arg("obs_remain"), py::arg("desi_target"),
+            py::arg("bgs_target"), py::arg("mws_target"), py::arg("priority"),
+            py::arg("subpriority"), py::arg("obscond"), py::arg("type"), R"(
             Append objects to the target list.
 
             Args:
@@ -432,25 +832,39 @@ PYBIND11_MODULE(_internal, m) {
 
         )")
         .def("ids", [](fba::Targets & self) {
-            auto ntarg = self.data.size();
-            // Create a numpy array to return
-            py::array_t < int64_t > ret;
-            ret.resize( {ntarg} );
-            py::buffer_info info = ret.request();
-            int64_t * raw = static_cast < int64_t * > (info.ptr);
-            // Copy the target IDs into the numpy buffer
-            size_t indx = 0;
-            for (auto const & it : self.data) {
-                raw[indx] = it.first;
-                indx++;
-            }
-            // Sort the result
-            std::sort(raw, &(raw[ntarg-1]));
-            return ret;
-        })
+                auto ntarg = self.data.size();
+                // Create a numpy array to return
+                py::array_t < int64_t > ret;
+                ret.resize( {ntarg} );
+                py::buffer_info info = ret.request();
+                int64_t * raw = static_cast < int64_t * > (info.ptr);
+                // Copy the target IDs into the numpy buffer
+                size_t indx = 0;
+                for (auto const & it : self.data) {
+                    raw[indx] = it.first;
+                    indx++;
+                }
+                // Sort the result
+                std::sort(raw, &(raw[ntarg-1]));
+                return ret;
+            }, R"(
+                Returns an array of all target IDs.
+        )")
         .def("get", [](fba::Targets & self, int64_t id) {
-            return self.data[id];
-        }, py::return_value_policy::reference_internal)
+                return self.data[id];
+            }, py::return_value_policy::reference_internal, py::arg("id"), R"(
+            Get the specified target.
+
+            Return a reference to the internal Target object with the
+            specified ID.
+
+            Args:
+                id (int): The target ID
+
+            Returns:
+                (Target): A target object.
+
+        )")
         .def("__repr__",
             [](fba::Targets const & tgs) {
                 std::ostringstream o;
@@ -461,11 +875,7 @@ PYBIND11_MODULE(_internal, m) {
 
 
     py::class_ <fba::Tiles, fba::Tiles::pshr > (m, "Tiles", R"(
-        Class representing a list of tiles.
-
-        The tile data is stored internally as a vector of Tile objects.
-        The constructor of this class takes vectors of tile properties
-        that are easy to obtain in python when reading the tile files.
+        Class representing a sequence of tiles.
 
         Args:
             hw (Hardware):  the hardware description.
