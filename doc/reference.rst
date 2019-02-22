@@ -27,6 +27,8 @@ The properties of the current pointings / tiles in use during assignment is stor
 
 .. autofunction:: fiberassign.tiles.load_tiles
 
+Once created, the tile properties can be accessed directly from the Tiles object:
+
 .. autoclass:: fiberassign.tiles.Tiles
     :members:
 
@@ -34,9 +36,19 @@ The properties of the current pointings / tiles in use during assignment is stor
 Target Catalogs
 ------------------------------
 
-Target catalogs are loaded one at a time and a subset of their data is appended to a global dictionary of target properties.  Targets in a catalog are assigned to one or more of the internal types (science, standard, sky, safe) based on the DESI_TARGET value and either default or custom bitmasks.
+Target catalogs are loaded one at a time and a subset of their data is appended
+to a global dictionary of target properties.  Targets in a catalog are assigned
+to one or more of the internal types (science, standard, sky, safe) based on
+the DESI_TARGET (or other column) value and either default or custom bitmasks.
 
-Every science target is assigned an integer priority value prior to fiber assignment.  This integer value is typically the same for objects of the same classification ("QSO", "LRG", "ELG", etc).  Sky targets effectively have a priority of zero.  Calibration standards may also be assigned a priority value.  If a calibration target is **also** a science target (which often means it is listed in multiple input target files), then this object is given the larger of its priority values.  Each object is also assigned a random "subpriority" value, which is a double precision number.  When two objects have the same integer priority value, the subpriority is used to indicate which object has a higher overall priority.  Sky targets are also given a random subpriority value.
+Every science target is assigned an integer priority value prior to fiber
+assignment.  This integer value is typically the same for objects of the same
+classification ("QSO", "LRG", "ELG", etc).  Sky targets effectively have a
+priority of zero.  Each object is also assigned a random "subpriority"
+value, which is a double precision number.  When two objects have the same
+integer priority value, the subpriority is used to indicate which object has a
+higher overall priority.  Sky targets are also given a random subpriority
+value.
 
 The target properties stored internally in fiberassign are found in the `Target` class for a single object:
 
@@ -68,15 +80,10 @@ We can also compute the inverse quantity:  the tile-fiber combinations that can 
     :members:
 
 
-
 Assignment
 ---------------
 
-The fiberassign.Assignment class is what drives the overall assignment process.  The algorithms of these functions are described below.  See the documentation for the individual methods for the mechanics of using them.
-
-.. autoclass:: fiberassign.assign.Assignment
-    :members:
-
+The Assignment class is what drives the overall assignment process.  The algorithms of these functions are described below.  See the documentation for the individual methods for the mechanics of using them.
 
 Assigning Targets to Unused Fibers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -84,10 +91,13 @@ Assigning Targets to Unused Fibers
 When assigning a particular class of target ("science", "standard", or "sky")
 to unused fibers, the same technique (and code) is used.
 
+.. todo:: Algorithm discussion here, once relevant github issues and their associated changes are done.
 
 
 Redistributing Science Targets
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. todo:: Algorithm discussion here once relevant github issues and their associated changes are done.
 
 
 Forced Assignment of Standards and Sky
@@ -104,6 +114,17 @@ For each petal, we do the following pseudocode::
                 re-assign target to unused fiber on future tile if possible
                 if enough objects on this petal
                     break
+
+.. note:: This algorithm may be changed slightly in the near future.  See open github tickets for latest developments.
+
+
+.. autoclass:: fiberassign.assign.Assignment
+    :members:
+
+
+Visualization and I/O
+----------------------------
+
 
 Utilities
 ---------------

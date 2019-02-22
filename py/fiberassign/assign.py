@@ -136,6 +136,9 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         params (tuple):  tuple containing the tile ID, RA, DEC,
             output path, and GFA targets
 
+    Returns:
+        None
+
     """
     tm = Timer()
     tm.start()
@@ -475,6 +478,10 @@ def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fiberassign_",
             properties of assigned targets.
         gfa_targets (list of numpy arrays): Include these as GFA_TARGETS HDUs
         overwrite (bool): overwrite pre-existing output files
+
+    Returns:
+        None
+
     """
     tm = Timer()
     tm.start()
@@ -520,6 +527,9 @@ def write_assignment_ascii(tiles, asgn, out_dir=".", out_prefix="fiberassign_",
         out_dir (str):  The output directory for writing per-tile files.
         out_prefix (str):  The output file name prefix.
         split_dir (bool):  Optionally split files by tile ID prefix.
+
+    Returns:
+        None
 
     """
     log = Logger.get()
