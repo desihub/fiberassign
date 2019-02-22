@@ -195,7 +195,7 @@ def main():
                     tileselect.append(int(line.split()[0]))
                 except ValueError:
                     pass
-    tiles = load_tiles(hw, tiles_file=args.footprint, select=tileselect)
+    tiles = load_tiles(tiles_file=args.footprint, select=tileselect)
 
     # Before doing significant calculations, check for pre-existing files
     if not args.overwrite:
@@ -230,7 +230,7 @@ def main():
     tree = TargetTree(tgs)
 
     # Compute the targets available to each fiber for each tile.
-    tgsavail = TargetsAvailable(tgs, tiles, tree)
+    tgsavail = TargetsAvailable(hw, tgs, tiles, tree)
 
     # Free the tree
     del tree

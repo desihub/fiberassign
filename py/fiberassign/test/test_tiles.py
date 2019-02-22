@@ -27,7 +27,7 @@ class TestTiles(unittest.TestCase):
         stiles = [1165, 18465, 16870]
         tfile = os.path.join(test_dir, "footprint.fits")
         sim_tiles(tfile)
-        tls = load_tiles(hw, tiles_file=tfile, select=stiles)
+        tls = load_tiles(tiles_file=tfile, select=stiles)
         print(tls)
         indx = 0
         for st in stiles:

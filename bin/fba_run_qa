@@ -93,7 +93,7 @@ def main():
                     tileselect.append(int(line.split()[0]))
                 except ValueError:
                     pass
-    tiles = load_tiles(hw, tiles_file=args.footprint, select=tileselect)
+    tiles = load_tiles(tiles_file=args.footprint, select=tileselect)
 
     qa_tiles(hw, tiles, result_dir=args.dir, result_prefix=args.prefix,
              result_split_dir=args.split, qa_out=outfile)

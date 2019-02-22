@@ -8,14 +8,11 @@
 namespace fba = fiberassign;
 
 
-fba::Tiles::Tiles(fba::Hardware::pshr hw, std::vector <int32_t> ids,
-    std::vector <double> ras, std::vector <double> decs,
-    std::vector <int32_t> obs) {
+fba::Tiles::Tiles(std::vector <int32_t> ids, std::vector <double> ras,
+                  std::vector <double> decs, std::vector <int32_t> obs) {
 
     fba::Logger & logger = fba::Logger::get();
     std::ostringstream logmsg;
-
-    hw_ = hw;
 
     id = ids;
     ra = ras;
@@ -31,9 +28,4 @@ fba::Tiles::Tiles(fba::Hardware::pshr hw, std::vector <int32_t> ids,
             logger.debug_tfg(id[i], -1, -1, logmsg.str().c_str());
         }
     }
-}
-
-
-fba::Hardware::pshr fba::Tiles::hardware() const {
-    return hw_;
 }

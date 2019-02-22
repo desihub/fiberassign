@@ -64,8 +64,8 @@ class TestAssign(unittest.TestCase):
         hw = load_hardware(status_file=fstatus)
         tfile = os.path.join(test_dir, "footprint.fits")
         sim_tiles(tfile)
-        tiles = load_tiles(hw, tiles_file=tfile)
-        tgsavail = TargetsAvailable(tgs, tiles, tree)
+        tiles = load_tiles(tiles_file=tfile)
+        tgsavail = TargetsAvailable(hw, tgs, tiles, tree)
 
         # Free the tree
         del tree
@@ -268,10 +268,10 @@ class TestAssign(unittest.TestCase):
         hw = load_hardware(status_file=fstatus)
         tfile = os.path.join(test_dir, "footprint.fits")
         sim_tiles(tfile)
-        tiles = load_tiles(hw, tiles_file=tfile)
+        tiles = load_tiles(tiles_file=tfile)
 
         # Compute the targets available to each fiber for each tile.
-        tgsavail = TargetsAvailable(tgs, tiles, tree)
+        tgsavail = TargetsAvailable(hw, tgs, tiles, tree)
 
         # Free the tree
         del tree

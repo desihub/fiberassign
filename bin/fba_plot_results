@@ -116,7 +116,7 @@ def main():
                     tileselect.append(int(line.split()[0]))
                 except ValueError:
                     pass
-    tiles = load_tiles(hw, tiles_file=args.footprint, select=tileselect)
+    tiles = load_tiles(tiles_file=args.footprint, select=tileselect)
 
     petals = None
     if args.petals is not None:

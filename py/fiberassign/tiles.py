@@ -16,7 +16,7 @@ import desimodel
 from ._internal import Tiles
 
 
-def load_tiles(hw, tiles_file=None, select=None):
+def load_tiles(tiles_file=None, select=None):
     # Read in the tile information
     if tiles_file is None:
         tiles_file = desimodel.io.findfile('footprint/desi-tiles.fits')
@@ -26,7 +26,7 @@ def load_tiles(hw, tiles_file=None, select=None):
     if select is not None:
         keeprows = np.where(np.isin(tiles_data["TILEID"], select))
 
-    tls = Tiles(hw, tiles_data["TILEID"][keeprows], tiles_data["RA"][keeprows],
+    tls = Tiles(tiles_data["TILEID"][keeprows], tiles_data["RA"][keeprows],
                 tiles_data["DEC"][keeprows],
                 tiles_data["OBSCONDITIONS"][keeprows])
 

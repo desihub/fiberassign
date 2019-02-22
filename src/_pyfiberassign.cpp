@@ -878,14 +878,13 @@ PYBIND11_MODULE(_internal, m) {
         Class representing a sequence of tiles.
 
         Args:
-            hw (Hardware):  the hardware description.
             ids (array):  array of int32 tile IDs.
             ras (array):  array of float64 tile RA coordinates.
             decs (array):  array of float64 tile DEC coordinates.
             obs (array):  array of int32 obsconditions bitfields.
 
         )")
-        .def(py::init < fba::Hardware::pshr, std::vector <int32_t> const &,
+        .def(py::init <std::vector <int32_t> const &,
             std::vector <double> const &, std::vector <double> const &,
             std::vector <int32_t> const & > ())
         .def_readonly("id", &fba::Tiles::id)
@@ -931,13 +930,14 @@ PYBIND11_MODULE(_internal, m) {
         of target IDs available to a given fiber for a given tile.
 
         Args:
-            objs (Targets):  the objects.
-            tiles (Tiles):  the tiles to consider.
-            tree (TargetTree):  the HTM tree of objects.
+            hw (Hardware):  The hardware model.
+            objs (Targets):  The Targets.
+            tiles (Tiles):  The tiles to consider.
+            tree (TargetTree):  The HTM tree of object positions.
 
         )")
-        .def(py::init < fba::Targets::pshr, fba::Tiles::pshr,
-            fba::TargetTree::pshr > ())
+        .def(py::init < fba::Hardware::pshr, fba::Targets::pshr,
+             fba::Tiles::pshr, fba::TargetTree::pshr > ())
         .def("tile_data", &fba::TargetsAvailable::tile_data,
             py::return_value_policy::reference_internal);
 
@@ -975,6 +975,7 @@ PYBIND11_MODULE(_internal, m) {
              fba::FibersAvailable::pshr > ())
         .def("targets", &fba::Assignment::targets)
         .def("hardware", &fba::Assignment::hardware)
+        .def("tiles", &fba::Assignment::tiles)
         .def("targets_avail", &fba::Assignment::targets_avail)
         .def("fibers_avail", &fba::Assignment::fibers_avail)
         .def("tiles_assigned", &fba::Assignment::tiles_assigned)

@@ -53,8 +53,8 @@ class TestTargets(unittest.TestCase):
         hw = load_hardware()
         tfile = os.path.join(test_dir, "footprint.fits")
         sim_tiles(tfile)
-        tiles = load_tiles(hw, tiles_file=tfile)
-        tgsavail = TargetsAvailable(tgs, tiles, tree)
+        tiles = load_tiles(tiles_file=tfile)
+        tgsavail = TargetsAvailable(hw, tgs, tiles, tree)
 
         # Free the tree
         del tree
