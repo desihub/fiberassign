@@ -3,10 +3,15 @@
 fiberassign change log
 ======================
 
-1.0.0 (planned)
----------------
+1.0.0 (2019-02-22)
+------------------
 
 * First tag of refactor/rewrite after merge (PR `#153`_).
+* New C++ extension wrapped with pybind11.
+* Python functions for I/O, visualization, QA.
+* New commandline scripts for running assignment, merging input catalogs
+  with output, making plots of outputs, etc.
+* Overhaul of documentation.
 
 .. _`#153`: https://github.com/desihub/fiberassign/pull/153
 
