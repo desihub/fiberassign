@@ -7,7 +7,7 @@ from fiberassign.run import parse_plot_qa, run_plot_qa
 
 
 def main():
-    args = parse_plot_qa
+    args = parse_plot_qa()
     run_plot_qa(args)
     return
 

@@ -343,9 +343,9 @@ def parse_qa(optlist=None):
 
     # Get run date
     if args.rundate is None:
-        args.rundate = datetime.datetime.now()
+        args.rundate = datetime.now()
     else:
-        args.rundate = datetime.datetime.fromisoformat(args.rundate)
+        args.rundate = datetime.fromisoformat(args.rundate)
 
     return args
 
@@ -433,9 +433,9 @@ def parse_plot(optlist=None):
 
     # Get run date
     if args.rundate is None:
-        args.rundate = datetime.datetime.now()
+        args.rundate = datetime.now()
     else:
-        args.rundate = datetime.datetime.fromisoformat(args.rundate)
+        args.rundate = datetime.fromisoformat(args.rundate)
 
     return args
 
@@ -593,7 +593,7 @@ def run_plot_init(args):
 
 def run_survey_full(args):
     gt = GlobalTimers.get()
-    gt.start("Total calculation run_survey_full")
+    gt.start("run_survey_full calculation")
 
     # Load data
     hw, tiles, tgs = run_survey_init(args)
@@ -642,8 +642,8 @@ def run_survey_full(args):
     # Assign sky monitor fibers
     asgn.assign_unused(TARGET_TYPE_SKY, -1, "ETC")
 
-    gt.stop("total calculation")
-    gt.start("total write output")
+    gt.stop("run_survey_full calculation")
+    gt.start("run_survey_full write output")
 
     # Make sure that output directory exists
     if not os.path.isdir(args.dir):
@@ -660,9 +660,7 @@ def run_survey_full(args):
                           all_targets=args.write_all_targets,
                           gfa_targets=gfa_targets, overwrite=args.overwrite)
 
-    gt.stop("total write output")
-
-    gt.stop("Total calculation run_survey_full")
+    gt.stop("run_survey_full write output")
 
     gt.report()
 
@@ -671,7 +669,7 @@ def run_survey_full(args):
 
 def run_survey_bytile(args):
     gt = GlobalTimers.get()
-    gt.start("Total calculation run_survey_bytile")
+    gt.start("run_survey_bytile calculation")
 
     # Load data
     hw, tiles, tgs = run_survey_init(args)
@@ -723,8 +721,8 @@ def run_survey_bytile(args):
         # Assign sky monitor fibers
         asgn.assign_unused(TARGET_TYPE_SKY, -1, "ETC", tile_id, tile_id)
 
-    gt.stop("total calculation")
-    gt.start("total write output")
+    gt.stop("run_survey_bytile calculation")
+    gt.start("run_survey_bytile write output")
 
     # Make sure that output directory exists
     if not os.path.isdir(args.dir):
@@ -741,9 +739,7 @@ def run_survey_bytile(args):
                           all_targets=args.write_all_targets,
                           gfa_targets=gfa_targets, overwrite=args.overwrite)
 
-    gt.stop("total write output")
-
-    gt.stop("Total calculation run_survey_bytile")
+    gt.stop("run_survey_bytile write output")
 
     gt.report()
 
