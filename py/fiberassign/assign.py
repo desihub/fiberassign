@@ -120,7 +120,7 @@ def result_path(tile_id, dir=".", prefix="fiberassign_",
     if create:
         os.makedirs(tiledir, exist_ok=True)
     path = os.path.join(tiledir,
-                        "{}{:05d}.{}".format(prefix, tile_id, ext))
+                        "{}{:06d}.{}".format(prefix, tile_id, ext))
     return path
 
 
