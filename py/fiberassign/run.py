@@ -77,6 +77,20 @@ def option_list(opts):
 
 
 def parse_survey(optlist=None):
+    """Parse survey options.
+
+    This parses either sys.argv or a list of strings passed in.  If passing
+    an option list, you can create that more easily using the
+    :func:`option_list` function.
+
+    Args:
+        optlist (list, optional): Optional list of arguments to parse instead
+            of using sys.argv.
+
+    Returns:
+        (namespace):  an ArgumentParser namespace.
+
+    """
     log = Logger.get()
     parser = argparse.ArgumentParser()
 
@@ -231,6 +245,20 @@ def parse_survey(optlist=None):
 
 
 def parse_merge(optlist=None):
+    """Parse merging options.
+
+    This parses either sys.argv or a list of strings passed in.  If passing
+    an option list, you can create that more easily using the
+    :func:`option_list` function.
+
+    Args:
+        optlist (list, optional): Optional list of arguments to parse instead
+            of using sys.argv.
+
+    Returns:
+        (namespace):  an ArgumentParser namespace.
+
+    """
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--targets", type=str, required=True, nargs="+",
@@ -283,6 +311,20 @@ def parse_merge(optlist=None):
 
 
 def parse_qa(optlist=None):
+    """Parse QA options.
+
+    This parses either sys.argv or a list of strings passed in.  If passing
+    an option list, you can create that more easily using the
+    :func:`option_list` function.
+
+    Args:
+        optlist (list, optional): Optional list of arguments to parse instead
+            of using sys.argv.
+
+    Returns:
+        (namespace):  an ArgumentParser namespace.
+
+    """
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--dir", type=str, required=True, default=None,
@@ -351,6 +393,20 @@ def parse_qa(optlist=None):
 
 
 def parse_plot(optlist=None):
+    """Parse plotting options.
+
+    This parses either sys.argv or a list of strings passed in.  If passing
+    an option list, you can create that more easily using the
+    :func:`option_list` function.
+
+    Args:
+        optlist (list, optional): Optional list of arguments to parse instead
+            of using sys.argv.
+
+    Returns:
+        (namespace):  an ArgumentParser namespace.
+
+    """
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--dir", type=str, required=True, default=None,
@@ -441,6 +497,20 @@ def parse_plot(optlist=None):
 
 
 def parse_plot_qa(optlist=None):
+    """Parse QA plotting options.
+
+    This parses either sys.argv or a list of strings passed in.  If passing
+    an option list, you can create that more easily using the
+    :func:`option_list` function.
+
+    Args:
+        optlist (list, optional): Optional list of arguments to parse instead
+            of using sys.argv.
+
+    Returns:
+        (namespace):  an ArgumentParser namespace.
+
+    """
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--qafile", type=str, required=True, default=None,
@@ -470,6 +540,17 @@ def parse_plot_qa(optlist=None):
 
 
 def run_survey_init(args):
+    """Initialize survey inputs.
+
+    This uses the previously parsed options to load the input files needed.
+
+    Args:
+        args (namespace): The parsed arguments.
+
+    Returns:
+        (tuple):  The (Hardware, Tiles, Targets) needed to run assignment.
+
+    """
     log = Logger.get()
     # Read hardware properties
     hw = load_hardware(fiberpos_file=args.positioners, rundate=args.rundate,
@@ -521,6 +602,17 @@ def run_survey_init(args):
 
 
 def run_merge_init(args, comm=None):
+    """Initialize merging inputs.
+
+    This uses the previously parsed options to load the input files needed.
+
+    Args:
+        args (namespace): The parsed arguments.
+
+    Returns:
+        (tuple):  The (Tiles, columns) needed to run the merging.
+
+    """
     log = Logger.get()
     # Check directory
     if (comm is None) or (comm.rank == 0):
@@ -546,6 +638,17 @@ def run_merge_init(args, comm=None):
 
 
 def run_qa_init(args):
+    """Initialize QA inputs.
+
+    This uses the previously parsed options to load the input files needed.
+
+    Args:
+        args (namespace): The parsed arguments.
+
+    Returns:
+        (tuple):  The (Hardware, Tiles) needed to run QA.
+
+    """
     # Read hardware properties
     hw = load_hardware(fiberpos_file=args.positioners, rundate=args.rundate,
                        status_file=args.status)
@@ -567,6 +670,17 @@ def run_qa_init(args):
 
 
 def run_plot_init(args):
+    """Initialize plotting inputs.
+
+    This uses the previously parsed options to load the input files needed.
+
+    Args:
+        args (namespace): The parsed arguments.
+
+    Returns:
+        (tuple):  The (Hardware, Tiles, petals) needed to run plotting.
+
+    """
     # Read hardware properties
     hw = load_hardware(fiberpos_file=args.positioners, rundate=args.rundate,
                        status_file=args.status)
@@ -592,6 +706,19 @@ def run_plot_init(args):
 
 
 def run_survey_full(args):
+    """Run fiber assignment over all tiles simultaneously.
+
+    This uses the previously parsed options to read input data and run through
+    the typical assignment sequence doing one step at a time over all tiles.
+    It then writes to the outputs to disk.
+
+    Args:
+        args (namespace): The parsed arguments.
+
+    Returns:
+        None
+
+    """
     gt = GlobalTimers.get()
     gt.start("run_survey_full calculation")
 
@@ -668,6 +795,19 @@ def run_survey_full(args):
 
 
 def run_survey_bytile(args):
+    """Run fiber assignment tile-by-tile.
+
+    This uses the previously parsed options to read input data and run through
+    the typical assignment sequence on a single tile before moving on to the
+    next.  It then writes to the outputs to disk.
+
+    Args:
+        args (namespace): The parsed arguments.
+
+    Returns:
+        None
+
+    """
     gt = GlobalTimers.get()
     gt.start("run_survey_bytile calculation")
 
@@ -747,6 +887,19 @@ def run_survey_bytile(args):
 
 
 def run_merge(args):
+    """Run output merging.
+
+    This uses the previously parsed options to read input data and perform
+    merging of the input catalogs.  This runs on one node and uses
+    multiprocessing.
+
+    Args:
+        args (namespace): The parsed arguments.
+
+    Returns:
+        None
+
+    """
     tiles, columns = run_merge_init(args)
     merge_results(args.targets, tiles, result_dir=args.dir,
                   result_prefix=args.prefix, result_split_dir=args.split,
@@ -757,6 +910,21 @@ def run_merge(args):
 
 
 def run_merge_mpi(args, comm):
+    """Run output merging.
+
+    This uses the previously parsed options to read input data and perform
+    merging of the input catalogs.  This is designed to be run with one MPI
+    process per node.  Each MPI process in the input communicator will then
+    use multiprocessing for further parallelism.
+
+    Args:
+        args (namespace): The parsed arguments.
+        comm (MPI.Comm):  The MPI communicator.
+
+    Returns:
+        None
+
+    """
     log = Logger.get()
     tiles, columns = run_merge_init(args, comm)
     ptiles = np.array_split(tiles, comm.size)[comm.rank]
@@ -770,6 +938,18 @@ def run_merge_mpi(args, comm):
 
 
 def run_qa(args):
+    """Run QA.
+
+    This uses the previously parsed options to read input data and run the
+    QA.
+
+    Args:
+        args (namespace): The parsed arguments.
+
+    Returns:
+        None
+
+    """
     hw, tiles = run_qa_init(args)
     qa_tiles(hw, tiles, result_dir=args.dir, result_prefix=args.prefix,
              result_split_dir=args.split, qa_out=args.out)
@@ -777,6 +957,18 @@ def run_qa(args):
 
 
 def run_plot(args):
+    """Run plotting of fiberassign outputs.
+
+    This uses the previously parsed options to read input data and make
+    per-tile plots of the fiber assignment.
+
+    Args:
+        args (namespace): The parsed arguments.
+
+    Returns:
+        None
+
+    """
     hw, tiles, petals = run_plot_init(args)
     plot_tiles(hw, tiles, result_dir=args.dir, result_prefix=args.prefix,
                result_split_dir=args.split, plot_dir=args.out,
@@ -786,6 +978,18 @@ def run_plot(args):
 
 
 def run_plot_qa(args):
+    """Run QA plotting.
+
+    This uses the previously parsed options to read input data and make a
+    plot of the QA results.
+
+    Args:
+        args (namespace): The parsed arguments.
+
+    Returns:
+        None
+
+    """
     qadata = None
     with open(args.qafile, "r") as f:
         qadata = json.load(f)

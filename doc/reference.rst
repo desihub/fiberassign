@@ -7,6 +7,119 @@ There are several key classes used by fiber assignment to load inputs, run the
 calculation, and write outputs.  There are also some utility functions which
 are useful on their own.
 
+
+High Level Interface
+-----------------------
+
+The operations performed by the command-line scripts described in
+:ref:`basictools` simply call functions from the high-level interface to parse
+arguments and run the different steps.  Here we will duplicate the examples in
+:ref:`basictools` but do these interactively from a python session rather than
+calling scripts from the command line.  Each of the command line operations is
+basically implemented by two functions:  one to parse the arguments and one to
+run the code.  When running interactively, you can use a small helper function
+to turn a dictionary of options into a list that can be passed to the parse
+functions:
+
+.. autofunction:: fiberassign.run.option_list
+
+For running the fiber assignment for a survey, we parse options with:
+
+.. autofunction:: fiberassign.run.parse_survey
+
+And then run the survey with one of two functions depending on how we are doing
+the assignment:
+
+.. autofunction:: fiberassign.run.run_survey_full
+
+.. autofunction:: fiberassign.run.run_survey_bytile
+
+**EXAMPLE:** Run the full assignment interactively::
+
+    from fiberassign.run import (option_list, parse_survey,
+                                 run_survey_full)
+    opts = {
+        "targets": ["mtl.fits", "standards.fits", other.fits"],
+        "write_all_targets": True,
+        "dir": "out_raw"
+    }
+    optlist = option_list(opts)
+    args = parse_survey(optlist)
+    run_survey_full(args)
+
+When merging results interactively, we can use the two functions:
+
+.. autofunction:: fiberassign.run.parse_merge
+
+.. autofunction:: fiberassign.run.run_merge
+
+**EXAMPLE:** Run the output merging interactively::
+
+    from fiberassign.run import (option_list, parse_merge,
+                                 run_merge)
+    opts = {
+        "targets": ["mtl.fits", "standards.fits", other.fits"],
+        "dir": "out_raw",
+        "out": "out_merged"
+    }
+    optlist = option_list(opts)
+    args = parse_merge(optlist)
+    run_merge(args)
+
+When running the QA interactively, we can use these functions:
+
+.. autofunction:: fiberassign.run.parse_qa
+
+.. autofunction:: fiberassign.run.run_qa
+
+**EXAMPLE:** Run the output merging interactively::
+
+    from fiberassign.run import (option_list, parse_qa,
+                                 run_qa)
+    opts = {
+        "dir": "out_raw"
+    }
+    optlist = option_list(opts)
+    args = parse_qa(optlist)
+    run_qa(args)
+
+When running the plotting interactively, these are the relevant functions:
+
+.. autofunction:: fiberassign.run.parse_plot
+
+.. autofunction:: fiberassign.run.run_plot
+
+**EXAMPLE:** Run the output merging interactively::
+
+    from fiberassign.run import (option_list, parse_plot,
+                                 run_plot)
+    opts = {
+        "dir": "out_raw",
+        "tiles": "plot_tiles.txt",
+        "real_shapes": True
+    }
+    optlist = option_list(opts)
+    args = parse_plot(optlist)
+    run_plot(args)
+
+And similarly when plotting the QA output:
+
+.. autofunction:: fiberassign.run.parse_plot_qa
+
+.. autofunction:: fiberassign.run.run_plot_qa
+
+**EXAMPLE:** Run the output merging interactively::
+
+    from fiberassign.run import (option_list, parse_plot_qa,
+                                 run_plot_qa)
+    opts = {
+        "qafile": "out_raw/qa.json"
+    }
+    optlist = option_list(opts)
+    args = parse_plot_qa(optlist)
+    run_plot_qa(args)
+
+
 Hardware Properties
 -----------------------
 
