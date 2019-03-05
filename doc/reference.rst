@@ -21,42 +21,44 @@ run the code.  When running interactively, you can use a small helper function
 to turn a dictionary of options into a list that can be passed to the parse
 functions:
 
-.. autofunction:: fiberassign.run.option_list
+.. autofunction:: fiberassign.utils.option_list
 
 For running the fiber assignment for a survey, we parse options with:
 
-.. autofunction:: fiberassign.run.parse_survey
+.. autofunction:: fiberassign.scripts.assign.parse_assign
 
 And then run the survey with one of two functions depending on how we are doing
 the assignment:
 
-.. autofunction:: fiberassign.run.run_survey_full
+.. autofunction:: fiberassign.scripts.assign.run_assign_full
 
-.. autofunction:: fiberassign.run.run_survey_bytile
+.. autofunction:: fiberassign.scripts.assign.run_assign_bytile
 
 **EXAMPLE:** Run the full assignment interactively::
 
-    from fiberassign.run import (option_list, parse_survey,
-                                 run_survey_full)
+    from fiberassign.utils import option_list
+    from fiberassign.scripts.assign import (parse_assign, run_assign_full)
+
     opts = {
         "targets": ["mtl.fits", "standards.fits", other.fits"],
         "write_all_targets": True,
         "dir": "out_raw"
     }
     optlist = option_list(opts)
-    args = parse_survey(optlist)
-    run_survey_full(args)
+    args = parse_assign(optlist)
+    run_assign_full(args)
 
 When merging results interactively, we can use the two functions:
 
-.. autofunction:: fiberassign.run.parse_merge
+.. autofunction:: fiberassign.scripts.merge.parse_merge
 
-.. autofunction:: fiberassign.run.run_merge
+.. autofunction:: fiberassign.scripts.merge.run_merge
 
 **EXAMPLE:** Run the output merging interactively::
 
-    from fiberassign.run import (option_list, parse_merge,
-                                 run_merge)
+    from fiberassign.utils import option_list
+    from fiberassign.scripts.merge import (parse_merge,
+                                           run_merge)
     opts = {
         "targets": ["mtl.fits", "standards.fits", other.fits"],
         "dir": "out_raw",
@@ -68,14 +70,15 @@ When merging results interactively, we can use the two functions:
 
 When running the QA interactively, we can use these functions:
 
-.. autofunction:: fiberassign.run.parse_qa
+.. autofunction:: fiberassign.scripts.qa.parse_qa
 
-.. autofunction:: fiberassign.run.run_qa
+.. autofunction:: fiberassign.scripts.qa.run_qa
 
 **EXAMPLE:** Run the output merging interactively::
 
-    from fiberassign.run import (option_list, parse_qa,
-                                 run_qa)
+    from fiberassign.utils import option_list
+    from fiberassign.scripts.qa import (parse_qa, run_qa)
+
     opts = {
         "dir": "out_raw"
     }
@@ -85,14 +88,15 @@ When running the QA interactively, we can use these functions:
 
 When running the plotting interactively, these are the relevant functions:
 
-.. autofunction:: fiberassign.run.parse_plot
+.. autofunction:: fiberassign.scripts.plot.parse_plot
 
-.. autofunction:: fiberassign.run.run_plot
+.. autofunction:: fiberassign.scripts.plot.run_plot
 
 **EXAMPLE:** Run the output merging interactively::
 
-    from fiberassign.run import (option_list, parse_plot,
-                                 run_plot)
+    from fiberassign.utils import option_list
+    from fiberassign.scripts.plot import (parse_plot, run_plot)
+
     opts = {
         "dir": "out_raw",
         "tiles": "plot_tiles.txt",
@@ -104,14 +108,15 @@ When running the plotting interactively, these are the relevant functions:
 
 And similarly when plotting the QA output:
 
-.. autofunction:: fiberassign.run.parse_plot_qa
+.. autofunction:: fiberassign.scripts.plot.parse_plot_qa
 
-.. autofunction:: fiberassign.run.run_plot_qa
+.. autofunction:: fiberassign.scripts.plot.run_plot_qa
 
 **EXAMPLE:** Run the output merging interactively::
 
-    from fiberassign.run import (option_list, parse_plot_qa,
-                                 run_plot_qa)
+    from fiberassign.utils import option_list
+    from fiberassign.scripts.qa_plot import (parse_plot_qa,
+                                             run_plot_qa)
     opts = {
         "qafile": "out_raw/qa.json"
     }

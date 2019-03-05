@@ -8,7 +8,7 @@ import sys
 
 import traceback
 
-from fiberassign.run import parse_merge, run_merge_mpi
+from fiberassign.scripts.merge import parse_merge, run_merge_mpi
 
 
 def main():

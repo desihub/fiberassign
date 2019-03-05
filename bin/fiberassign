@@ -5,15 +5,16 @@ Wrapper script for fba_run and fba_merge to provide script API compatibility
 with the legacy branch of fiberassign.
 """
 
-import sys
-
-import subprocess
-
 import argparse
 
 import fiberassign
 
-from fiberassign.utils import GlobalTimers, Logger
+from fiberassign.utils import Logger, option_list
+
+from fiberassign.scripts.run import (parse_survey, run_survey_full)
+
+from fiberassign.scripts.merge import (parse_merge, run_merge)
+
 
 parser = argparse.ArgumentParser()
 
@@ -69,54 +70,51 @@ log = Logger.get()
 # ------
 # - fba_run
 
-# Required inputs
-cmd = "fba_run"
-cmd += " --targets {} {} {}".format(args.mtl, args.sky, args.stdstar)
-
-# Options that have non-None defaults to propagate
-cmd += " --dir {}".format(args.outdir)
-cmd += " --standards_per_petal {}".format(args.nstarpetal)
-cmd += " --sky_per_petal {}".format(args.nskypetal)
+opts = {
+    "targets": [args.mtl, args.sky, args.stdstar],
+    "dir": args.outdir,
+    "standards_per_petal": args.nstarpetal,
+    "sky_per_petal": args.nskypetal
+}
 
 # Completely optional; only propagate if specified
 if args.fibstatusfile is not None:
-    cmd += " --status {}".format(args.fibstatusfile)
+    opts["status"] = args.fibstatusfile
 
 if args.footprint is not None:
-    cmd += " --footprint {}".format(args.footprint)
+    opts["footprint"] = args.footprint
 
 if args.positioners is not None:
-    cmd += " --positioners {}".format(args.positioners)
+    opts["positioners"] = args.positioners
 
 if args.surveytiles is not None:
-    cmd += " --tiles {}".format(args.surveytiles)
+    opts["tiles"] = args.surveytiles
 
 if args.starmask is not None:
-    cmd += " --stdmask {}".format(args.starmask)
+    opts["stdmask"] = args.starmask
 
 if args.rundate is not None:
-    cmd += " --rundate {}".format(args.rundate)
+    opts["rundate"] = args.rundate
 
 if args.gfafile is not None:
-    cmd += " --gfafile {}".format(args.gfafile)
+    opts["gfafile"] = args.gfafile
 
 if args.overwrite:
-    cmd += " --overwrite"
+    opts["overwrite"] = True
 
-log.debug('RUNNING {}'.format(cmd))
-err = subprocess.call(cmd.split())
-if err:
-    sys.exit(err)
+optlist = option_list(opts)
+survey_args = parse_survey(optlist)
+run_survey_full(survey_args)
 
 # ------
 # - fba_merge_results
 
-cmd = "fba_merge_results"
-cmd += " --targets {} {} {}".format(args.mtl, args.sky, args.stdstar)
-cmd += " --dir {}".format(args.outdir)
-cmd += " --out {}".format(args.outdir)
+opts = {
+    "targets": [args.mtl, args.sky, args.stdstar],
+    "dir": args.outdir,
+    "out": args.outdir
+}
 
-log.debug('RUNNING {}'.format(cmd))
-err = subprocess.call(cmd.split())
-if err:
-    sys.exit(err)
+optlist = option_list(opts)
+merge_args = parse_merge(optlist)
+run_merge(merge_args)

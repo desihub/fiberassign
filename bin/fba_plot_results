@@ -3,7 +3,7 @@
 Create fiber assignment plots.
 """
 
-from fiberassign.run import parse_plot, run_plot
+from fiberassign.scripts.plot import parse_plot, run_plot
 
 
 def main():

@@ -3,7 +3,7 @@
 Plot QA results.
 """
 
-from fiberassign.run import parse_plot_qa, run_plot_qa
+from fiberassign.scripts.qa_plot import parse_plot_qa, run_plot_qa
 
 
 def main():

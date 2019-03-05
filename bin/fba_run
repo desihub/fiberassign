@@ -3,7 +3,8 @@
 Main fiber assignment entry point
 """
 
-from fiberassign.run import (parse_survey, run_survey_full, run_survey_bytile)
+from fiberassign.scripts.run import (parse_survey, run_survey_full,
+                                     run_survey_bytile)
 
 
 def main():

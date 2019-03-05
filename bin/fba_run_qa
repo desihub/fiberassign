@@ -3,7 +3,7 @@
 Create fiber assignment QA results.
 """
 
-from fiberassign.run import parse_qa, run_qa
+from fiberassign.scripts.qa import parse_qa, run_qa
 
 
 def main():

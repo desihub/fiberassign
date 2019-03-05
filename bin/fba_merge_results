@@ -3,7 +3,7 @@
 Merge fiberassign results with input target files.
 """
 
-from fiberassign.run import parse_merge, run_merge
+from fiberassign.scripts.merge import parse_merge, run_merge
 
 
 def main():
