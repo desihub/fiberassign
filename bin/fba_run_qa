@@ -2,102 +2,13 @@
 """
 Create fiber assignment QA results.
 """
-import os
 
-import argparse
-
-import datetime
-
-from fiberassign.hardware import load_hardware
-
-from fiberassign.tiles import load_tiles
-
-from fiberassign.qa import qa_tiles
+from fiberassign.scripts.qa import parse_qa, run_qa
 
 
 def main():
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument("--dir", type=str, required=True, default=None,
-                        help="Directory containing fiberassign outputs.")
-
-    parser.add_argument("--prefix", type=str, required=False,
-                        default="fiberassign_",
-                        help="Prefix of each file (before the <tile>.fits).")
-
-    parser.add_argument("--split", required=False, default=False,
-                        action="store_true",
-                        help="Results are in tile prefix directories.")
-
-    parser.add_argument("--out", type=str, required=False, default=None,
-                        help="Output file for QA.  Default is a file in"
-                        " directory containing the fiberassign output.")
-
-    parser.add_argument("--footprint", type=str, required=False, default=None,
-                        help="Optional FITS file defining the footprint.  If"
-                        " not specified, the default footprint from desimodel"
-                        " is used.")
-
-    parser.add_argument("--tiles", type=str, required=False, default=None,
-                        help="Optional text file containing a subset of the"
-                        " tile IDs to use in the footprint, one ID per line."
-                        " Default uses all tiles in the footprint.")
-
-    parser.add_argument("--positioners", type=str, required=False,
-                        default=None,
-                        help="Optional FITS file describing the fiber "
-                        "positioner locations.  Default uses the file from "
-                        "desimodel.")
-
-    parser.add_argument("--status", type=str, required=False, default=None,
-                        help="Optional fiber status file in astropy ECSV "
-                        "format.  Default treats all fibers as good.")
-
-    parser.add_argument("--rundate", type=str, required=False, default=None,
-                        help="Optional date to simulate for this run of "
-                        "fiber assignment, used with the fiber status file "
-                        "to determine which fibers currently have problems.  "
-                        "Default uses the current date.  Format is "
-                        "YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss in UTC time.")
-
-    args = parser.parse_args()
-
-    # Check directory
-    if not os.path.isdir(args.dir):
-        raise RuntimeError("Results directory {} does not exist"
-                           .format(args.dir))
-
-    outfile = args.out
-    if outfile is None:
-        outfile = os.path.join(args.dir, "qa.json")
-
-    # Get run date
-    rundate = args.rundate
-    if rundate is None:
-        rundate = datetime.datetime.now()
-    else:
-        rundate = datetime.datetime.fromisoformat(args.rundate)
-
-    # Read hardware properties
-    hw = load_hardware(fiberpos_file=args.positioners, rundate=args.rundate,
-                       status_file=args.status)
-
-    # Read tiles we are using
-    tileselect = None
-    if args.tiles is not None:
-        tileselect = list()
-        with open(args.tiles, "r") as f:
-            for line in f:
-                # Try to convert the first column to an integer.
-                try:
-                    tileselect.append(int(line.split()[0]))
-                except ValueError:
-                    pass
-    tiles = load_tiles(tiles_file=args.footprint, select=tileselect)
-
-    qa_tiles(hw, tiles, result_dir=args.dir, result_prefix=args.prefix,
-             result_split_dir=args.split, qa_out=outfile)
-
+    args = parse_qa()
+    run_qa(args)
     return
 
 

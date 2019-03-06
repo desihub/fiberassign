@@ -6,6 +6,8 @@ Usage
 The fiberassign package has some main scripts as well as lower-level python
 tools that can be used in custom scripts.
 
+.. _basictools:
+
 Basic Tools
 ---------------------
 

@@ -2,44 +2,13 @@
 """
 Plot QA results.
 """
-import os
 
-import argparse
-
-import json
-
-from fiberassign.vis import plot_qa
+from fiberassign.scripts.qa_plot import parse_plot_qa, run_plot_qa
 
 
 def main():
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument("--qafile", type=str, required=True, default=None,
-                        help="Input QA file.")
-
-    parser.add_argument("--outroot", type=str, required=False, default=None,
-                        help="Output root file name.  Default uses input.")
-
-    parser.add_argument("--labels", required=False, default=False,
-                        action="store_true",
-                        help="Plot tile IDs at center of circles.")
-
-    args = parser.parse_args()
-
-    # Check directory
-    if not os.path.isfile(args.qafile):
-        raise RuntimeError("Input file {} does not exist".format(args.qafile))
-
-    outroot = args.outroot
-    if outroot is None:
-        outroot = os.path.splitext(args.qafile)[0]
-
-    qadata = None
-    with open(args.qafile, "r") as f:
-        qadata = json.load(f)
-
-    plot_qa(qadata, outroot, labels=args.labels)
-
+    args = parse_plot_qa()
+    run_plot_qa(args)
     return
 
 
