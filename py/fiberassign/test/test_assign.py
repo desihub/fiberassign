@@ -343,9 +343,20 @@ class TestAssign(unittest.TestCase):
         nstd = sim_targets(input_std, TARGET_TYPE_STANDARD, nscience)
         nsky = sim_targets(input_sky, TARGET_TYPE_SKY, (nscience + nstd))
 
+        fstatus = os.path.join(test_dir, "fiberstatus.ecsv")
+        sim_status(fstatus)
+
+        tfile = os.path.join(test_dir, "footprint.fits")
+        sim_tiles(tfile)
+
         opts = {
             "targets": [input_mtl, input_std, input_sky],
-            "dir": test_dir
+            "dir": test_dir,
+            "footprint": tfile,
+            "status": fstatus,
+            "standards_per_petal": 10,
+            "sky_per_petal": 40,
+            "overwrite": True
         }
         optlist = option_list(opts)
         args = parse_assign(optlist)

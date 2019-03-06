@@ -191,16 +191,9 @@ def parse_assign(optlist=None):
     log.info("excludemask {}".format(
         " ".join(desi_mask.names(args.excludemask))))
 
-    # Get run date
-    if args.rundate is None:
-        args.rundate = datetime.utcnow()
-    else:
-        args.rundate = datetime.strptime(args.rundate, "%Y-%m-%dT%H:%M:%S")
-
     # Set output directory
     if args.dir is None:
-        rdstr = args.rundate.isoformat("T", "seconds")
-        args.dir = "out_fiberassign_{}".format(rdstr)
+        args.dir = "out_fiberassign_{}".format(args.rundate)
 
     return args
 
