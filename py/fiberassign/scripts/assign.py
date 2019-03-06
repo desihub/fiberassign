@@ -314,13 +314,10 @@ def run_assign_full(args):
     asgn.assign_unused(TARGET_TYPE_STANDARD)
     asgn.assign_unused(TARGET_TYPE_SKY)
 
-    # NOTE:  This was removed since we are treating BAD_SKY as science targets
-    # with very low priority.
-    #
-    # # Assign safe location to unused fibers (no maximum).  There should
-    # # always be at least one safe location (i.e. "BAD_SKY") for each fiber.
-    # # So after this is run every fiber should be assigned to something.
-    # asgn.assign_unused(TARGET_TYPE_SAFE)
+    # Assign safe location to unused fibers (no maximum).  There should
+    # always be at least one safe location (i.e. "BAD_SKY") for each fiber.
+    # So after this is run every fiber should be assigned to something.
+    asgn.assign_unused(TARGET_TYPE_SAFE)
 
     # Assign sky monitor fibers
     asgn.assign_unused(TARGET_TYPE_SKY, -1, "ETC")
@@ -408,14 +405,11 @@ def run_assign_bytile(args):
         asgn.assign_unused(TARGET_TYPE_STANDARD, -1, "POS", tile_id, tile_id)
         asgn.assign_unused(TARGET_TYPE_SKY, -1, "POS", tile_id, tile_id)
 
-        # NOTE:  This was removed since we are treating BAD_SKY as science
-        # targets with very low priority.
-        #
-        # # Assign safe location to unused fibers (no maximum).  There should
-        # # always be at least one safe location (i.e. "BAD_SKY") for each
-        # # fiber.  So after this is run every fiber should be assigned to
-        # # something.
-        # asgn.assign_unused(TARGET_TYPE_SAFE)
+        # Assign safe location to unused fibers (no maximum).  There should
+        # always be at least one safe location (i.e. "BAD_SKY") for each
+        # fiber.  So after this is run every fiber should be assigned to
+        # something.
+        asgn.assign_unused(TARGET_TYPE_SAFE)
 
         # Assign sky monitor fibers
         asgn.assign_unused(TARGET_TYPE_SKY, -1, "ETC", tile_id, tile_id)

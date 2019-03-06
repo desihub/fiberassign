@@ -1430,12 +1430,12 @@ int64_t fba::Assignment::find_best(fba::Hardware const * hw,
                 }
             }
         } else {
-            // We are working with either standards or skies.  We base our
-            // comparison on both priority and subpriority.  Normal standards
-            // and skies will have priority == 0, so this reduces to a
-            // comparison on subpriority.  Objects that are both a standard
-            // and a science target will always "win", since their priority
-            // is non-zero.  Change this behavior here if desired.
+            // We are working with either standards, skies or safe.  We base
+            // our comparison on both priority and subpriority.  Normal
+            // standards and skies will have priority == 0, so this reduces
+            // to a comparison on subpriority.  Objects that are both a
+            // standard and a science target will always "win", since their
+            // priority is non-zero.  Change this behavior here if desired.
             double bestweight = static_cast <double> (best_priority)
                 + best_subpriority;
             double newweight = static_cast <double> (tg.priority)
