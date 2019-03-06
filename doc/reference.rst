@@ -108,9 +108,9 @@ When running the plotting interactively, these are the relevant functions:
 
 And similarly when plotting the QA output:
 
-.. autofunction:: fiberassign.scripts.plot.parse_plot_qa
+.. autofunction:: fiberassign.scripts.qa_plot.parse_plot_qa
 
-.. autofunction:: fiberassign.scripts.plot.run_plot_qa
+.. autofunction:: fiberassign.scripts.qa_plot.run_plot_qa
 
 **EXAMPLE:** Run the output merging interactively::
 

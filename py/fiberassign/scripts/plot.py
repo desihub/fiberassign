@@ -98,6 +98,11 @@ def parse_plot(optlist=None):
                         "Default uses the current date.  Format is "
                         "YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss in UTC time.")
 
+    parser.add_argument("--serial", required=False, default=False,
+                        action="store_true",
+                        help="Disable the use of multiprocessing.  Needed by "
+                        "some unit tests to avoid issues with matplotlib.")
+
     args = None
     if optlist is None:
         args = parser.parse_args()

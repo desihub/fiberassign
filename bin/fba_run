@@ -3,16 +3,16 @@
 Main fiber assignment entry point
 """
 
-from fiberassign.scripts.run import (parse_survey, run_survey_full,
-                                     run_survey_bytile)
+from fiberassign.scripts.assign import (parse_assign, run_assign_full,
+                                        run_assign_bytile)
 
 
 def main():
-    args = parse_survey()
+    args = parse_assign()
     if args.by_tile:
-        run_survey_bytile(args)
+        run_assign_bytile(args)
     else:
-        run_survey_full(args)
+        run_assign_full(args)
     return
 
 

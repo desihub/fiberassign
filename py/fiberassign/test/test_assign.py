@@ -13,6 +13,8 @@ import numpy as np
 
 import fitsio
 
+from fiberassign.utils import option_list
+
 from fiberassign.hardware import load_hardware
 
 from fiberassign.tiles import load_tiles
@@ -29,6 +31,15 @@ from fiberassign.assign import (Assignment, write_assignment_fits,
 from fiberassign.qa import qa_tiles
 
 from fiberassign.vis import plot_tiles, plot_qa
+
+from fiberassign.scripts.assign import parse_assign, run_assign_full
+
+from fiberassign.scripts.plot import parse_plot, run_plot
+
+from fiberassign.scripts.qa import parse_qa, run_qa
+
+from fiberassign.scripts.qa_plot import parse_plot_qa, run_plot_qa
+
 
 from .simulate import (test_subdir_create, sim_tiles, sim_targets, sim_status)
 
@@ -122,7 +133,7 @@ class TestAssign(unittest.TestCase):
             avail = tgsavail.tile_data(tid)
             # Check basic format
             infile = os.path.join(test_dir,
-                                  "basic_tile-{:05d}.fits".format(tid))
+                                  "basic_tile-{:06d}.fits".format(tid))
             inhead, fiber_data, targets_data, avail_data, gfa_targets = \
                 read_assignment_fits_tile((tid, infile))
             for fid, tgid, tgra, tgdec in zip(
@@ -138,7 +149,7 @@ class TestAssign(unittest.TestCase):
 
             # Check full format
             infile = os.path.join(test_dir,
-                                  "full_tile-{:05d}.fits".format(tid))
+                                  "full_tile-{:06d}.fits".format(tid))
             inhead, fiber_data, targets_data, avail_data, gfa_targets = \
                 read_assignment_fits_tile((tid, infile))
             for fid, tgid, tgra, tgdec in zip(
@@ -160,7 +171,7 @@ class TestAssign(unittest.TestCase):
             avail = tgsavail.tile_data(tid)
             # Check basic format
             infile = os.path.join(test_dir,
-                                  "basic_tile-{:05d}.fits".format(tid))
+                                  "basic_tile-{:06d}.fits".format(tid))
             fdata = fitsio.FITS(infile, "r")
             fassign = fdata["FIBERASSIGN"].read()
             ftargets = fdata["TARGETS"].read()
@@ -196,7 +207,7 @@ class TestAssign(unittest.TestCase):
 
             # Check full format
             infile = os.path.join(test_dir,
-                                  "full_tile-{:05d}.fits".format(tid))
+                                  "full_tile-{:06d}.fits".format(tid))
             fdata = fitsio.FITS(infile, "r")
             fassign = fdata["FIBERASSIGN"].read()
             ftargets = fdata["TARGETS"].read()
@@ -303,7 +314,7 @@ class TestAssign(unittest.TestCase):
         write_assignment_fits(tiles, asgn, out_dir=test_dir, all_targets=True)
 
         plot_tiles(hw, tiles, result_dir=test_dir, plot_dir=test_dir,
-                   petals=[0])
+                   petals=[0], serial=True)
 
         qa_tiles(hw, tiles, result_dir=test_dir)
 
@@ -318,5 +329,57 @@ class TestAssign(unittest.TestCase):
 
         plot_qa(qadata, os.path.join(test_dir, "qa"), outformat="pdf",
                 labels=True)
+
+        return
+
+    def test_cli(self):
+        test_dir = test_subdir_create("assign_test_cli")
+        np.random.seed(123456789)
+        input_mtl = os.path.join(test_dir, "mtl.fits")
+        input_std = os.path.join(test_dir, "standards.fits")
+        input_sky = os.path.join(test_dir, "sky.fits")
+
+        nscience = sim_targets(input_mtl, TARGET_TYPE_SCIENCE, 0)
+        nstd = sim_targets(input_std, TARGET_TYPE_STANDARD, nscience)
+        nsky = sim_targets(input_sky, TARGET_TYPE_SKY, (nscience + nstd))
+
+        opts = {
+            "targets": [input_mtl, input_std, input_sky],
+            "dir": test_dir
+        }
+        optlist = option_list(opts)
+        args = parse_assign(optlist)
+        run_assign_full(args)
+
+        opts = {
+            "dir": test_dir,
+            "petals": "0",
+            "serial": True
+        }
+        optlist = option_list(opts)
+        args = parse_plot(optlist)
+        run_plot(args)
+
+        opts = {
+            "dir": test_dir
+        }
+        optlist = option_list(opts)
+        args = parse_qa(optlist)
+        run_qa(args)
+
+        opts = {
+            "qafile": os.path.join(test_dir, "qa.json")
+        }
+        optlist = option_list(opts)
+        args = parse_plot_qa(optlist)
+        run_plot_qa(args)
+
+        with open(os.path.join(test_dir, "qa.json"), "r") as f:
+            qadata = json.load(f)
+
+        for tile, props in qadata.items():
+            self.assertEqual(4495, props["assign_science"])
+            self.assertEqual(100, props["assign_std"])
+            self.assertEqual(400, props["assign_sky"])
 
         return

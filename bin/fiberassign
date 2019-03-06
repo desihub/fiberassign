@@ -11,7 +11,7 @@ import fiberassign
 
 from fiberassign.utils import Logger, option_list
 
-from fiberassign.scripts.run import (parse_survey, run_survey_full)
+from fiberassign.scripts.assign import (parse_assign, run_assign_full)
 
 from fiberassign.scripts.merge import (parse_merge, run_merge)
 
@@ -103,8 +103,8 @@ if args.overwrite:
     opts["overwrite"] = True
 
 optlist = option_list(opts)
-survey_args = parse_survey(optlist)
-run_survey_full(survey_args)
+assign_args = parse_assign(optlist)
+run_assign_full(assign_args)
 
 # ------
 # - fba_merge_results
