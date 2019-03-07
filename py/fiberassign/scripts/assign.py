@@ -303,13 +303,16 @@ def run_assign_full(args):
 
     # Assign standards, up to some limit
     asgn.assign_unused(TARGET_TYPE_STANDARD, args.standards_per_petal)
-    asgn.assign_force(TARGET_TYPE_STANDARD, args.standards_per_petal)
 
     # Assign sky to unused fibers, up to some limit
     asgn.assign_unused(TARGET_TYPE_SKY, args.sky_per_petal)
+
+    # Force assignment if needed
+    asgn.assign_force(TARGET_TYPE_STANDARD, args.standards_per_petal)
     asgn.assign_force(TARGET_TYPE_SKY, args.sky_per_petal)
 
     # If there are any unassigned fibers, try to place them somewhere.
+    # Assigning science again is a no-op, but...
     asgn.assign_unused(TARGET_TYPE_SCIENCE)
     asgn.assign_unused(TARGET_TYPE_STANDARD)
     asgn.assign_unused(TARGET_TYPE_SKY)
@@ -393,15 +396,20 @@ def run_assign_bytile(args):
         # Assign standards, up to some limit
         asgn.assign_unused(TARGET_TYPE_STANDARD, args.standards_per_petal,
                            "POS", tile_id, tile_id)
-        asgn.assign_force(TARGET_TYPE_STANDARD, args.standards_per_petal,
-                          tile_id, tile_id)
 
         # Assign sky to unused fibers, up to some limit
         asgn.assign_unused(TARGET_TYPE_SKY, args.sky_per_petal, "POS",
                            tile_id, tile_id)
+
+        # Force assignment if needed
+        asgn.assign_force(TARGET_TYPE_STANDARD, args.standards_per_petal,
+                          tile_id, tile_id)
         asgn.assign_force(TARGET_TYPE_SKY, args.sky_per_petal,
                           tile_id, tile_id)
 
+        # If there are any unassigned fibers, try to place them somewhere.
+        # Assigning science again is a no-op, but...
+        asgn.assign_unused(TARGET_TYPE_SCIENCE, -1, "POS", tile_id, tile_id)
         asgn.assign_unused(TARGET_TYPE_STANDARD, -1, "POS", tile_id, tile_id)
         asgn.assign_unused(TARGET_TYPE_SKY, -1, "POS", tile_id, tile_id)
 
