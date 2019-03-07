@@ -44,8 +44,6 @@ def get_sciencemask():
     sciencemask |= desi_mask["LRG"].mask
     sciencemask |= desi_mask["ELG"].mask
     sciencemask |= desi_mask["QSO"].mask
-    # Note: BAD_SKY are treated as science targets with priority == 0
-    sciencemask |= desi_mask["BAD_SKY"].mask
     sciencemask |= desi_mask["BGS_ANY"].mask
     sciencemask |= desi_mask["MWS_ANY"].mask
     sciencemask |= desi_mask["SECONDARY_ANY"].mask
@@ -77,7 +75,7 @@ def get_safemask():
     we won't saturate the detector, but aren't good for anything else.
     """
     safemask = 0
-    safemask |= desi_mask.BAD_SKY
+    safemask |= desi_mask["BAD_SKY"].mask
     return safemask
 
 

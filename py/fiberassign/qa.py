@@ -69,6 +69,7 @@ def qa_tile(hw, tile_id, tgs, tgprops, tile_assign, tile_avail):
     nscience = 0
     nstd = 0
     nsky = 0
+    nsafe = 0
     unassigned = list()
     objtypes = dict()
     for fid in fibers:
@@ -92,10 +93,13 @@ def qa_tile(hw, tile_id, tgs, tgprops, tile_assign, tile_avail):
             nstd += 1
         if tg.is_sky():
             nsky += 1
+        if tg.is_safe():
+            nsafe += 1
     props["assign_total"] = nassign
     props["assign_science"] = nscience
     props["assign_std"] = nstd
     props["assign_sky"] = nsky
+    props["assign_safe"] = nsafe
     for ot, cnt in objtypes.items():
         props["assign_obj_{}".format(ot)] = cnt
     props["unassigned"] = unassigned

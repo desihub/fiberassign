@@ -32,14 +32,9 @@ from ._version import __version__
 
 from .utils import Logger, Timer, default_mp_proc
 
-from .tiles import load_tiles
+from .targets import (TARGET_TYPE_SKY, desi_target_type)
 
-from .targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
-                      TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE,
-                      TargetTree, TargetsAvailable, FibersAvailable,
-                      load_target_file, desi_target_type)
-
-from .hardware import (load_hardware, FIBER_STATE_STUCK, FIBER_STATE_BROKEN)
+from .hardware import (FIBER_STATE_STUCK, FIBER_STATE_BROKEN)
 
 from ._internal import Assignment
 
