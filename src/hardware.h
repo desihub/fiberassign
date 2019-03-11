@@ -24,6 +24,7 @@ namespace fiberassign {
 #define FIBER_STATE_OK 0
 #define FIBER_STATE_STUCK 1
 #define FIBER_STATE_BROKEN 2
+#define FIBER_STATE_SAFE 4
 
 
 class Hardware : public std::enable_shared_from_this <Hardware> {

@@ -324,6 +324,7 @@ def run_assign_full(args):
 
     # Assign sky monitor fibers
     asgn.assign_unused(TARGET_TYPE_SKY, -1, "ETC")
+    asgn.assign_unused(TARGET_TYPE_SAFE, -1, "ETC")
 
     gt.stop("run_assign_full calculation")
     gt.start("run_assign_full write output")
@@ -421,6 +422,7 @@ def run_assign_bytile(args):
 
         # Assign sky monitor fibers
         asgn.assign_unused(TARGET_TYPE_SKY, -1, "ETC", tile_id, tile_id)
+        asgn.assign_unused(TARGET_TYPE_SAFE, -1, "ETC", tile_id, tile_id)
 
     gt.stop("run_assign_bytile calculation")
     gt.start("run_assign_bytile write output")

@@ -43,6 +43,7 @@ PYBIND11_MODULE(_internal, m) {
     m.attr("FIBER_STATE_OK") = py::int_(FIBER_STATE_OK);
     m.attr("FIBER_STATE_STUCK") = py::int_(FIBER_STATE_STUCK);
     m.attr("FIBER_STATE_BROKEN") = py::int_(FIBER_STATE_BROKEN);
+    m.attr("FIBER_STATE_SAFE") = py::int_(FIBER_STATE_SAFE);
 
     py::class_ <fba::Timer, fba::Timer::pshr > (m, "Timer", R"(
         Simple timer class.
