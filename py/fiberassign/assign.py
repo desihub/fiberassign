@@ -32,7 +32,7 @@ from ._version import __version__
 
 from .utils import Logger, Timer, default_mp_proc
 
-from .targets import (TARGET_TYPE_SKY, desi_target_type)
+from .targets import (TARGET_TYPE_SKY, TARGET_TYPE_SAFE, desi_target_type)
 
 from .hardware import (FIBER_STATE_STUCK, FIBER_STATE_BROKEN)
 
@@ -371,6 +371,9 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
                     for x in fibers]
         fstatus |= [4 if (fstate[x] & FIBER_STATE_BROKEN) else 0
                     for x in fibers]
+        fstatus[assigned_valid] |= \
+            [8 if (tg_type[x] & TARGET_TYPE_SAFE) else 0
+             for x in target_rows]
         fdata["FIBERSTATUS"] = fstatus
 
         # tm.stop()
