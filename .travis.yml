@@ -89,9 +89,9 @@ python:
 env:
     global:
         # Binary packages to install with pip.
-        - PIP_BINARY="pyyaml scipy matplotlib numpy astropy sphinx healpy"
+        - PIP_BINARY="pyyaml scipy matplotlib numpy astropy sphinx"
         # Packages to build with pip
-        - PIP_SOURCE="fitsio"
+        - PIP_SOURCE="fitsio healpy"
         # DESI packages to install.
         - DESIUTIL_VERSION=master
         - DESIMODEL_VERSION=master
