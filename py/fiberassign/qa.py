@@ -22,7 +22,7 @@ from desitarget.targetmask import desi_mask
 
 from .utils import Logger, default_mp_proc
 
-from .targets import (Targets, append_target_table)
+from .targets import (Targets, append_target_table, default_target_masks)
 
 from .assign import (result_tiles, result_path, avail_table_to_dict,
                      read_assignment_fits_tile)
@@ -32,10 +32,16 @@ def qa_parse_table(tgdata):
     """Extract target info from a table.
     """
     tgs = Targets()
-    typecol = None
-    if "FBATYPE" not in tgdata.dtype.names:
-        typecol = "DESI_TARGET"
-    append_target_table(tgs, tgdata, typecol=typecol)
+    # FIXME:  The code below will parse an output fiberassign file which always
+    # has a "DESI_TARGET" column and assume that this data is a main survey
+    # file and try to extract bits for the different target types.  However,
+    # if the fiberassign run was done for SV or CMX, then the interpretation
+    # of these bits will be incorrect.  In those cases, the "science" totals
+    # should still be meaningful.
+    _, fcol, fsciencemask, fstdmask, fskymask, fsafemask, fexcludemask = \
+        default_target_masks(tgdata)
+    append_target_table(tgs, tgdata, None, fcol, fsciencemask,
+                        fstdmask, fskymask, fsafemask, fexcludemask)
     tgprops = dict()
     lrgmask = int(desi_mask["LRG"].mask)
     elgmask = int(desi_mask["ELG"].mask)

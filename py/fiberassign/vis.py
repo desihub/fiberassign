@@ -29,8 +29,9 @@ from .hardware import load_hardware
 
 from .tiles import load_tiles
 
-from .targets import (Targets, append_target_table, TARGET_TYPE_SCIENCE,
-                      TARGET_TYPE_SKY, TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE)
+from .targets import (Targets, default_target_masks, append_target_table,
+                      TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
+                      TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE)
 
 from .assign import (read_assignment_fits_tile, result_tiles, result_path,
                      avail_table_to_dict)
@@ -134,10 +135,14 @@ def plot_parse_table(tgdata):
     """Create a Targets object from a recarray.
     """
     tgs = Targets()
-    typecol = None
-    if "FBATYPE" not in tgdata.dtype.names:
-        typecol = "DESI_TARGET"
-    append_target_table(tgs, tgdata, typecol=typecol)
+    if "FBATYPE" in tgdata.dtype.names:
+        append_target_table(tgs, tgdata, None, "FBATYPE", None, None, None,
+                            None, None)
+    else:
+        _, fcol, fsciencemask, fstdmask, fskymask, fsafemask, fexcludemask = \
+            default_target_masks(tgdata)
+        append_target_table(tgs, tgdata, None, fcol, fsciencemask,
+                            fstdmask, fskymask, fsafemask, fexcludemask)
     return tgs
 
 

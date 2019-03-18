@@ -28,9 +28,7 @@ from fiberassign.targets import (str_to_target_type, TARGET_TYPE_SCIENCE,
                                  TARGET_TYPE_SKY, TARGET_TYPE_STANDARD,
                                  TARGET_TYPE_SAFE, Targets, TargetsAvailable,
                                  TargetTree, FibersAvailable,
-                                 load_target_file,
-                                 get_sciencemask, get_stdmask, get_skymask,
-                                 get_safemask, get_excludemask
+                                 load_target_file
                                  )
 
 from fiberassign.assign import (Assignment, write_assignment_fits,
@@ -128,31 +126,31 @@ def parse_assign(optlist=None):
                         action="store_true",
                         help="Overwrite any pre-existing output files")
 
-    parser.add_argument("--mask_column", required=False, default="DESI_TARGET",
-                        help="Default FITS column to use for applying target "
+    parser.add_argument("--mask_column", required=False, default=None,
+                        help="FITS column to use for applying target "
                              "masks")
 
     parser.add_argument("--sciencemask", required=False,
-                        default=get_sciencemask(),
+                        default=None,
                         help="Default DESI_TARGET mask to use for science "
                              "targets")
 
     parser.add_argument("--stdmask", required=False,
-                        default=get_stdmask(),
+                        default=None,
                         help="Default DESI_TARGET mask to use for stdstar "
                              "targets")
 
     parser.add_argument("--skymask", required=False,
-                        default=get_skymask(),
+                        default=None,
                         help="Default DESI_TARGET mask to use for sky targets")
 
     parser.add_argument("--safemask", required=False,
-                        default=get_safemask(),
+                        default=None,
                         help="Default DESI_TARGET mask to use for safe "
                         "backup targets")
 
     parser.add_argument("--excludemask", required=False,
-                        default=get_excludemask(),
+                        default=None,
                         help="Default DESI_TARGET mask to exclude from "
                         "any assignments")
 
@@ -168,28 +166,20 @@ def parse_assign(optlist=None):
         args = parser.parse_args(optlist)
 
     # Allow sciencemask, stdmask, etc. to be int or string
-    if isinstance(args.sciencemask, str):
+    if (args.sciencemask is not None) and isinstance(args.sciencemask, str):
         args.sciencemask = desi_mask.mask(args.sciencemask.replace(",", "|"))
 
-    if isinstance(args.stdmask, str):
+    if (args.stdmask is not None) and isinstance(args.stdmask, str):
         args.stdmask = desi_mask.mask(args.stdmask.replace(",", "|"))
 
-    if isinstance(args.skymask, str):
+    if (args.skymask is not None) and isinstance(args.skymask, str):
         args.skymask = desi_mask.mask(args.skymask.replace(",", "|"))
 
-    if isinstance(args.safemask, str):
+    if (args.safemask is not None) and isinstance(args.safemask, str):
         args.safemask = desi_mask.mask(args.safemask.replace(",", "|"))
 
-    if isinstance(args.excludemask, str):
+    if (args.excludemask is not None) and isinstance(args.excludemask, str):
         args.excludemask = desi_mask.mask(args.excludemask.replace(",", "|"))
-
-    log.info("sciencemask {}".format(
-        " ".join(desi_mask.names(args.sciencemask))))
-    log.info("stdmask     {}".format(" ".join(desi_mask.names(args.stdmask))))
-    log.info("skymask     {}".format(" ".join(desi_mask.names(args.skymask))))
-    log.info("safemask    {}".format(" ".join(desi_mask.names(args.safemask))))
-    log.info("excludemask {}".format(
-        " ".join(desi_mask.names(args.excludemask))))
 
     # Set output directory
     if args.dir is None:

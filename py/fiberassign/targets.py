@@ -15,6 +15,15 @@ import fitsio
 
 from desitarget.targetmask import desi_mask
 
+# FIXME:  If / when SV bit names diverge from main survey names, we
+# should import the SV bitmasks here.
+
+from desitarget.cmx.cmx_targetmask import cmx_mask
+
+from desitarget.sv1.sv1_targetmask import desi_mask as sv1_mask
+
+from desitarget.targets import main_cmx_or_sv
+
 from .utils import Logger, Timer
 
 from ._internal import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
@@ -37,8 +46,8 @@ def str_to_target_type(input):
     return None
 
 
-def get_sciencemask():
-    """Returns default mask for which DESI_TARGET bits are science targets.
+def default_main_sciencemask():
+    """Returns default mask of bits for science targets in main survey.
     """
     sciencemask = 0
     sciencemask |= desi_mask["LRG"].mask
@@ -50,8 +59,8 @@ def get_sciencemask():
     return sciencemask
 
 
-def get_stdmask():
-    """Returns default mask for which DESI_TARGET bits are stdstar targets.
+def default_main_stdmask():
+    """Returns default mask of bits for standards in main survey.
     """
     stdmask = 0
     stdmask |= desi_mask["STD_FAINT"].mask
@@ -60,16 +69,16 @@ def get_stdmask():
     return stdmask
 
 
-def get_skymask():
-    """Returns default mask for which DESI_TARGET bits are sky targets.
+def default_main_skymask():
+    """Returns default mask of bits for sky targets in main survey.
     """
     skymask = 0
     skymask |= desi_mask["SKY"].mask
     return skymask
 
 
-def get_safemask():
-    """Returns default mask for which DESI_TARGET bits are backup/safe targets.
+def default_main_safemask():
+    """Returns default mask of bits for 'safe' targets in main survey.
 
     Note: these are targets of last resort; they are safe locations where
     we won't saturate the detector, but aren't good for anything else.
@@ -79,8 +88,8 @@ def get_safemask():
     return safemask
 
 
-def get_excludemask():
-    """Returns default DESI_TARGET mask for bits that should not be observed.
+def default_main_excludemask():
+    """Returns default mask of bits for main survey targets to NOT observe.
     """
     excludemask = 0
     # Exclude BRIGHT_OBJECT and IN_BRIGHT_OBJECT, but not NEAR_BRIGHT_OBJECT
@@ -89,25 +98,118 @@ def get_excludemask():
     return excludemask
 
 
-def desi_target_type(desi_target, sciencemask=None, stdmask=None,
-                     skymask=None, safemask=None, excludemask=None):
-    """Determine fiber assign type from DESI_TARGET.
+def default_sv1_sciencemask():
+    """Returns default mask of bits for science targets in SV1 survey.
     """
-    if sciencemask is None:
-        sciencemask = get_sciencemask()
+    sciencemask = 0
+    sciencemask |= sv1_mask["LRG"].mask
+    sciencemask |= sv1_mask["ELG"].mask
+    sciencemask |= sv1_mask["QSO"].mask
+    sciencemask |= sv1_mask["BGS_ANY"].mask
+    sciencemask |= sv1_mask["MWS_ANY"].mask
+    sciencemask |= sv1_mask["SECONDARY_ANY"].mask
+    return sciencemask
 
-    if stdmask is None:
-        stdmask = get_stdmask()
 
-    if skymask is None:
-        skymask = get_skymask()
+def default_sv1_stdmask():
+    """Returns default mask of bits for standards in SV1 survey.
+    """
+    stdmask = 0
+    stdmask |= sv1_mask["STD_FAINT"].mask
+    stdmask |= sv1_mask["STD_WD"].mask
+    stdmask |= sv1_mask["STD_BRIGHT"].mask
+    return stdmask
 
-    if safemask is None:
-        safemask = get_safemask()
 
-    if excludemask is None:
-        excludemask = get_excludemask()
+def default_sv1_skymask():
+    """Returns default mask of bits for sky targets in SV1 survey.
+    """
+    skymask = 0
+    skymask |= sv1_mask["SKY"].mask
+    return skymask
 
+
+def default_sv1_safemask():
+    """Returns default mask of bits for 'safe' targets in SV1 survey.
+
+    Note: these are targets of last resort; they are safe locations where
+    we won't saturate the detector, but aren't good for anything else.
+    """
+    safemask = 0
+    safemask |= sv1_mask["BAD_SKY"].mask
+    return safemask
+
+
+def default_sv1_excludemask():
+    """Returns default mask of bits for SV1 survey targets to NOT observe.
+    """
+    excludemask = 0
+    # Exclude BRIGHT_OBJECT and IN_BRIGHT_OBJECT, but not NEAR_BRIGHT_OBJECT
+    excludemask |= sv1_mask.BRIGHT_OBJECT
+    excludemask |= sv1_mask.IN_BRIGHT_OBJECT
+    return excludemask
+
+
+def default_cmx_sciencemask():
+    """Returns default mask of bits for science targets in CMX survey.
+    """
+    # 2^63 - 1 (i.e. match all bits)
+    mask = 9223372036854775807
+    return mask
+
+
+def default_cmx_stdmask():
+    """Returns default mask of bits for standards in CMX survey.
+    """
+    # Nothing in a CMX file should be treated as a standard.
+    return 0
+
+
+def default_cmx_skymask():
+    """Returns default mask of bits for sky targets in CMX survey.
+    """
+    # Nothing in a CMX file should be treated as a sky.
+    return 0
+
+
+def default_cmx_safemask():
+    """Returns default mask of bits for 'safe' targets in CMX survey.
+
+    Note: these are targets of last resort; they are safe locations where
+    we won't saturate the detector, but aren't good for anything else.
+    """
+    # Nothing in a CMX file should be treated as a safe target.
+    return 0
+
+
+def default_cmx_excludemask():
+    """Returns default mask of bits for CMX survey targets to NOT observe.
+    """
+    # Exclude nothing.
+    return 0
+
+
+def desi_target_type(desi_target, sciencemask, stdmask,
+                     skymask, safemask, excludemask):
+    """Determine fiber assign type from the data column.
+
+    Args:
+        desi_target (iterable):  Scalar or array-like integer values.
+        sciencemask (int):  Integer value to bitwise-and when checking for
+            science targets.
+        stdmask (int):  Integer value to bitwise-and when checking for
+            standards targets.
+        skymask (int):  Integer value to bitwise-and when checking for
+            sky targets.
+        safemask (int):  Integer value to bitwise-and when checking for
+            safe targets.
+        excludemask (int):  Integer value to bitwise-and when checking for
+            targets to exclude.
+
+    Returns:
+        (array):  The fiberassign target types.
+
+    """
     if np.isscalar(desi_target):
         ttype = 0
         if desi_target & sciencemask != 0:
@@ -132,9 +234,36 @@ def desi_target_type(desi_target, sciencemask=None, stdmask=None,
     return ttype
 
 
-def append_target_table(tgs, tgdata, typeforce=None, typecol=None,
-                        sciencemask=None, stdmask=None, skymask=None,
-                        safemask=None, excludemask=None):
+def append_target_table(tgs, tgdata, typeforce, typecol, sciencemask, stdmask,
+                        skymask, safemask, excludemask):
+    """Append a target recarray / table to a Targets object.
+
+    This function is used to take a slice of targets table (as read from a
+    file) and extract the columns containing properties which are stored
+    internally in a Targets object.  These targets and their properties are
+    added to the Targets object.
+
+    Args:
+        tgs (Targets): The targets object to modify.
+        tgdata (Table): The table or recarray containing the input data.
+        typeforce (int): If not None, all targets are considered to be this
+            type.
+        typecol (str): The name of the column to use for bitmask operations.
+        sciencemask (int):  Integer value to bitwise-and when checking for
+            science targets.
+        stdmask (int):  Integer value to bitwise-and when checking for
+            standards targets.
+        skymask (int):  Integer value to bitwise-and when checking for
+            sky targets.
+        safemask (int):  Integer value to bitwise-and when checking for
+            safe targets.
+        excludemask (int):  Integer value to bitwise-and when checking for
+            targets to exclude.
+
+    Returns:
+        None
+
+    """
     validtypes = [
         TARGET_TYPE_SCIENCE,
         TARGET_TYPE_SKY,
@@ -166,8 +295,8 @@ def append_target_table(tgs, tgdata, typeforce=None, typecol=None,
         d_dec[:] = tgdata["TARGET_DEC"][:]
     else:
         d_dec[:] = tgdata["DEC"][:]
-    if "DESI_TARGET" in tgdata.dtype.names:
-        d_desitarget[:] = tgdata["DESI_TARGET"][:]
+
+    d_desitarget[:] = tgdata[typecol][:]
     if "BGS_TARGET" in tgdata.dtype.names:
         d_bgstarget[:] = tgdata["BGS_TARGET"][:]
     if "MWS_TARGET" in tgdata.dtype.names:
@@ -175,15 +304,13 @@ def append_target_table(tgs, tgdata, typeforce=None, typecol=None,
     if typeforce is not None:
         d_type[:] = typeforce
     else:
-        if typecol is None:
-            # This table must already have FBATYPE
-            if "FBATYPE" not in tgdata.dtype.names:
-                raise RuntimeError("FBATYPE column not found- specify typecol")
+        if typecol == "FBATYPE":
+            # We are using the pre-established target categories.
             d_type[:] = tgdata["FBATYPE"][:]
         else:
             d_type[:] = desi_target_type(
-                tgdata[typecol], sciencemask=sciencemask, stdmask=stdmask,
-                skymask=skymask, safemask=safemask, excludemask=excludemask)
+                tgdata[typecol], sciencemask, stdmask, skymask, safemask,
+                excludemask)
 
     if "OBSCONDITIONS" in tgdata.dtype.fields:
         d_obscond[:] = tgdata["OBSCONDITIONS"][:]
@@ -214,13 +341,58 @@ def append_target_table(tgs, tgdata, typeforce=None, typecol=None,
     # warning if there are duplicate target IDs.
     tgs.append(d_targetid, d_ra, d_dec, d_desitarget, d_bgstarget,
                d_mwstarget, d_nobs, d_prior, d_subprior, d_obscond, d_type)
-
     return
 
 
-def load_target_file(tgs, tfile, typeforce=None, typecol="DESI_TARGET",
+def default_target_masks(data):
+    """Return the column name and default mask values for the data table.
+
+    This identifies the type of target data and returns the defaults for
+    the program type.
+
+    Args:
+        data (Table):  A Table or recarray.
+
+    Returns:
+        (tuple):  The survey, column name, science mask, standard mask,
+            sky mask, safe mask, and exclude mask for the data.
+
+    """
+    col = None
+    sciencemask = None
+    stdmask = None
+    skymask = None
+    safemask = None
+    excludemask = None
+    filecols, filemasks, filesurvey = main_cmx_or_sv(data)
+    if filesurvey == "main":
+        col = "DESI_TARGET"
+        sciencemask = default_main_sciencemask()
+        stdmask = default_main_stdmask()
+        skymask = default_main_skymask()
+        safemask = default_main_safemask()
+        excludemask = default_main_excludemask()
+    elif filesurvey == "cmx":
+        col = filecols[0]
+        sciencemask = default_cmx_sciencemask()
+        stdmask = default_cmx_stdmask()
+        skymask = default_cmx_skymask()
+        safemask = default_cmx_safemask()
+        excludemask = default_cmx_excludemask()
+    elif filesurvey == "sv1":
+        col = "SV1_DESI_TARGET"
+        sciencemask = default_sv1_sciencemask()
+        stdmask = default_sv1_stdmask()
+        skymask = default_sv1_skymask()
+        safemask = default_sv1_safemask()
+        excludemask = default_sv1_excludemask()
+    return (filesurvey, col, sciencemask, stdmask, skymask, safemask,
+            excludemask)
+
+
+def load_target_file(tgs, tfile, typeforce=None, typecol=None,
                      sciencemask=None, stdmask=None, skymask=None,
-                     safemask=None, excludemask=None, rowbuffer=100000):
+                     safemask=None, excludemask=None, rowbuffer=1000000):
     """Append targets from a file.
 
     Read the specified file and append targets to the input Targets object.
@@ -238,7 +410,7 @@ def load_target_file(tgs, tfile, typeforce=None, typecol="DESI_TARGET",
         typeforce (int): If specified, it must equal one of the TARGET_TYPE_*
             values.  All targets read from the file will be assigned this type.
         typecol (str): Optional column to use for bitmask matching (default
-            is DESI_TARGET).
+            uses the result of main_cmx_or_sv from desitarget).
         sciencemask (int): Bitmask for classifying targets as science.
         stdmask (int): Bitmask for classifying targets as a standard.
         skymask (int): Bitmask for classifying targets as sky.
@@ -271,12 +443,80 @@ def load_target_file(tgs, tfile, typeforce=None, typecol="DESI_TARGET",
         if offset + n > nrows:
             n = nrows - offset
         data = fits[1].read(rows=np.arange(offset, offset+n, dtype=np.int64))
+        if offset == 0:
+            # First read of this file- find its properties.
+            survey, fcol, fsciencemask, fstdmask, fskymask, fsafemask, \
+                fexcludemask = default_target_masks(data)
+
+            if fcol is None:
+                # File could not be identified.  In this case, the user must
+                # completely specify the bitmask and column to use.
+                if typeforce is None:
+                    if (typecol is None) or (sciencemask is None) \
+                            or (stdmask is None) or (skymask is None) \
+                            or (safemask is None) or (excludemask is None):
+                        msg = "Unknown survey type for file {}.  To use \
+                            this file, specify the column name and every \
+                            bitmask.".format(tfile)
+                        log.error(msg)
+                        raise RuntimeError(msg)
+            else:
+                if typecol is None:
+                    typecol = fcol
+                if sciencemask is None:
+                    sciencemask = fsciencemask
+                if stdmask is None:
+                    stdmask = fstdmask
+                if skymask is None:
+                    skymask = fskymask
+                if safemask is None:
+                    safemask = fsafemask
+                if excludemask is None:
+                    excludemask = fexcludemask
+
+            log.info("Target file {} using survey {}, column {}:".format(
+                tfile, survey, typecol))
+            if survey == "main":
+                log.info("  sciencemask {}".format(
+                    "|".join(desi_mask.names(sciencemask))))
+                log.info("  stdmask     {}".format(
+                    "|".join(desi_mask.names(stdmask))))
+                log.info("  skymask     {}".format(
+                    "|".join(desi_mask.names(skymask))))
+                log.info("  safemask    {}".format(
+                    "|".join(desi_mask.names(safemask))))
+                log.info("  excludemask {}".format(
+                    "|".join(desi_mask.names(excludemask))))
+            elif survey == "cmx":
+                log.info("  sciencemask {}".format(
+                    "|".join(cmx_mask.names(sciencemask))))
+                log.info("  stdmask     {}".format(
+                    "|".join(cmx_mask.names(stdmask))))
+                log.info("  skymask     {}".format(
+                    "|".join(cmx_mask.names(skymask))))
+                log.info("  safemask    {}".format(
+                    "|".join(cmx_mask.names(safemask))))
+                log.info("  excludemask {}".format(
+                    "|".join(cmx_mask.names(excludemask))))
+            elif survey == "sv1":
+                log.info("  sciencemask {}".format(
+                    "|".join(sv1_mask.names(sciencemask))))
+                log.info("  stdmask     {}".format(
+                    "|".join(sv1_mask.names(stdmask))))
+                log.info("  skymask     {}".format(
+                    "|".join(sv1_mask.names(skymask))))
+                log.info("  safemask    {}".format(
+                    "|".join(sv1_mask.names(safemask))))
+                log.info("  excludemask {}".format(
+                    "|".join(sv1_mask.names(excludemask))))
+            else:
+                raise RuntimeError(
+                    "unknown survey type, should never get here!")
+
         log.debug("Target file {} read rows {} - {}"
                   .format(tfile, offset, offset+n-1))
-        append_target_table(tgs, data, typeforce=typeforce, typecol=typecol,
-                            sciencemask=sciencemask, stdmask=stdmask,
-                            skymask=skymask, safemask=safemask,
-                            excludemask=excludemask)
+        append_target_table(tgs, data, typeforce, typecol, sciencemask,
+                            stdmask, skymask, safemask, excludemask)
         offset += n
 
     tm.stop()

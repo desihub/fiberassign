@@ -32,7 +32,8 @@ from ._version import __version__
 
 from .utils import Logger, Timer, default_mp_proc
 
-from .targets import (TARGET_TYPE_SKY, TARGET_TYPE_SAFE, desi_target_type)
+from .targets import (TARGET_TYPE_SKY, TARGET_TYPE_SAFE, desi_target_type,
+                      default_target_masks)
 
 from .hardware import (FIBER_STATE_STUCK, FIBER_STATE_BROKEN)
 
@@ -677,10 +678,15 @@ def read_assignment_fits_tile(params):
 
         targets_dtype = np.dtype(full_targets_columns)
         targets_data = np.zeros(ntarget, dtype=targets_dtype)
+        fsurvey, fcol, fsciencemask, fstdmask, fskymask, fsafemask, \
+            fexcludemask = default_target_masks(targets_data)
+
         for col in full_names:
             if col == "FBATYPE":
                 targets_data[col][:nrawtarget] = [
-                    desi_target_type(x) for x in fbtargets["DESI_TARGET"][:]]
+                    desi_target_type(x, fsciencemask, fstdmask, fskymask,
+                                     fsafemask, fexcludemask)
+                    for x in fbtargets[fcol][:]]
             elif col == "TARGET_RA":
                 targets_data[col][:nrawtarget] = fbtargets["RA"][:]
             elif col == "TARGET_DEC":
