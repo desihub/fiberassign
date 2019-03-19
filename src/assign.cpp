@@ -862,6 +862,12 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
                             continue;
                         }
                         auto & cur = tgsdata.at(fiber_target[tile_id].at(fid));
+                        if (! cur.is_science()) {
+                            // The currently assigned target is not a science
+                            // target.
+                            continue;
+                        }
+
                         if (cur.priority != tc) {
                             // Wrong target class
                             if (extra_log) {
@@ -869,7 +875,7 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
                                 logmsg << "assign force " << tgstr << ": tile "
                                     << tile_id << ", petal " << p
                                     << ", class " << tc << ", object " << id
-                                    << ", subpriority " << ps.first
+                                    << ", total priority " << ps.first
                                     << ", available fiber " << fid
                                     << " at target " << cur.id
                                     << " is wrong class (" << cur.priority
@@ -888,13 +894,13 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
                         // would change previous per-petal standards counts.
                         // So we just never do it.
 
-                        if (cur.is_science() && cur.is_standard()) {
+                        if (cur.is_standard()) {
                             if (extra_log) {
                                 logmsg.str("");
                                 logmsg << "assign force " << tgstr << ": tile "
                                     << tile_id << ", petal " << p
                                     << ", class " << tc << ", object " << id
-                                    << ", subpriority " << ps.first
+                                    << ", total priority " << ps.first
                                     << ", available fiber " << fid
                                     << " at science target " << cur.id
                                     << " is also a standard- skipping";
@@ -911,7 +917,7 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
                         logmsg << "assign force " << tgstr << ": tile "
                             << tile_id << ", petal " << p
                             << ", class " << tc << ", object " << id
-                            << ", subpriority " << ps.first
+                            << ", total priority " << ps.first
                             << " has " << can_replace.size()
                             << " potential targets to bump";
                         logger.debug_tfg(tile_id, -1, id,
@@ -931,7 +937,7 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
                                 logmsg << "assign force " << tgstr << ": tile "
                                     << tile_id << ", petal " << p
                                     << ", class " << tc << ", object " << id
-                                    << ", subpriority " << ps.first
+                                    << ", total priority " << ps.first
                                     << ", available fiber " << fid
                                     << " already bumped";
                                 logger.debug_tfg(tile_id, fid, id,
@@ -950,7 +956,7 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
                                 logmsg << "assign force " << tgstr << ": tile "
                                     << tile_id << ", petal " << p
                                     << ", class " << tc << ", object " << id
-                                    << ", subpriority " << ps.first
+                                    << ", total priority " << ps.first
                                     << ", available fiber " << fid
                                     << " bumping science target " << curtg;
                                 // Log for target doing the bumping
@@ -993,7 +999,7 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
                                         << ": tile " << tile_id
                                         << ", petal " << p
                                         << ", class " << tc << ", object " << id
-                                        << ", subpriority " << ps.first
+                                        << ", total priority " << ps.first
                                         << ", available fiber " << fid
                                         << " bumped target " << curtg
                                         << " reassigned to " << best_tile
@@ -1014,7 +1020,7 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
                                     << ": tile " << tile_id
                                     << ", petal " << p
                                     << ", class " << tc << ", object " << id
-                                    << ", subpriority " << ps.first
+                                    << ", total priority " << ps.first
                                     << ", available fiber " << fid
                                     << " not ok to assign";
                                 logger.debug_tfg(tile_id, fid, id,

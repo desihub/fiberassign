@@ -224,7 +224,7 @@ def desi_target_type(desi_target, sciencemask, stdmask,
             ttype = 0
     else:
         desi_target = np.asarray(desi_target)
-        ttype = np.zeros(len(desi_target), dtype=int)
+        ttype = np.zeros(len(desi_target), dtype=np.uint8)
         ttype[desi_target & sciencemask != 0] |= TARGET_TYPE_SCIENCE
         ttype[desi_target & stdmask != 0] |= TARGET_TYPE_STANDARD
         ttype[desi_target & skymask != 0] |= TARGET_TYPE_SKY
@@ -444,7 +444,44 @@ def load_target_file(tgs, tfile, typeforce=None, typecol=None,
             n = nrows - offset
         data = fits[1].read(rows=np.arange(offset, offset+n, dtype=np.int64))
         if offset == 0:
-            # First read of this file- find its properties.
+            # First read of this file- find its properties and verify the
+            # column types.
+            if "TARGETID" not in data.dtype.names:
+                msg = "file {} TARGETID column is required".format(tfile)
+                log.error(msg)
+                raise RuntimeError(msg)
+            if data.dtype["TARGETID"].char != "l":
+                msg = "file {} TARGETID column should be int64".format(tfile)
+                log.error(msg)
+                raise RuntimeError(msg)
+            if "PRIORITY" in data.dtype.names:
+                if data.dtype["PRIORITY"].char not in ["i", "l"]:
+                    msg = "file {} PRIORITY column should be an integer type"\
+                        .format(tfile)
+                    log.error(msg)
+                    raise RuntimeError(msg)
+            if "SUBPRIORITY" not in data.dtype.names:
+                msg = "file {} SUBPRIORITY column is required".format(tfile)
+                log.error(msg)
+                raise RuntimeError(msg)
+            if data.dtype["SUBPRIORITY"].char != "d":
+                msg = "file {} SUBPRIORITY column should be float64"\
+                    .format(tfile)
+                log.error(msg)
+                raise RuntimeError(msg)
+            if "NUMOBS_MORE" in data.dtype.names:
+                if data.dtype["NUMOBS_MORE"].char not in ["i", "l"]:
+                    msg = "file {} NUMOBS_MORE column should be an \
+                        integer type".format(tfile)
+                    log.error(msg)
+                    raise RuntimeError(msg)
+            if "OBSCONDITIONS" in data.dtype.names:
+                if data.dtype["OBSCONDITIONS"].char not in ["i", "l"]:
+                    msg = "file {} OBSCONDITIONS column should be an \
+                        integer type".format(tfile)
+                    log.error(msg)
+                    raise RuntimeError(msg)
+
             survey, fcol, fsciencemask, fstdmask, fskymask, fsafemask, \
                 fexcludemask = default_target_masks(data)
 
