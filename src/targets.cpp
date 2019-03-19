@@ -119,11 +119,6 @@ void fba::Targets::append(std::vector <int64_t> const & id,
         if (type[t] == 0) {
             // This target is not one of the recognized categories (science,
             // standard, sky, or safe).  Skip it.
-            logmsg.str("");
-            logmsg << "Target ID " << id[t]
-                << " has unknown type (bitfield = " << desi_target[t]
-                << "), skipping.";
-            logger.warning(logmsg.str().c_str());
             continue;
         }
         if (data.count(id[t]) > 0) {
