@@ -285,7 +285,7 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
                     continue;
                 }
 
-                if ((tgtype == TARGET_TYPE_SCIENCE) && (tg.obs_remain <= 0)) {
+                if ((tgtype == TARGET_TYPE_SCIENCE) && (tg.obsremain <= 0)) {
                     // Done observing science observations for this target
                     continue;
                 }
@@ -1399,7 +1399,7 @@ int64_t fba::Assignment::find_best(fba::Hardware const * hw,
         // This target
         auto const & tg = tgs->data.at(tgid);
 
-        if ((type == TARGET_TYPE_SCIENCE) && (tg.obs_remain <= 0)) {
+        if ((type == TARGET_TYPE_SCIENCE) && (tg.obsremain <= 0)) {
             // Skip science targets with no remaining observations.
             if (extra_log) {
                 logmsg.str("");
@@ -1428,9 +1428,9 @@ int64_t fba::Assignment::find_best(fba::Hardware const * hw,
             } else if (tg.priority == best_priority) {
                 // Same target class.  Use remaining obs and subpriority
                 // to choose.
-                if (tg.obs_remain > best_obsremain) {
+                if (tg.obsremain > best_obsremain) {
                     test_target = true;
-                } else if ( (tg.obs_remain == best_obsremain)
+                } else if ( (tg.obsremain == best_obsremain)
                             && (tg.subpriority > best_subpriority) ) {
                     test_target = true;
                 }
@@ -1458,7 +1458,7 @@ int64_t fba::Assignment::find_best(fba::Hardware const * hw,
                     << fiber << ", target " << tgid << ", type " << (int)tg.type
                     << " accept with priority = " << tg.priority
                     << ", subpriority = " << tg.subpriority
-                    << ", obs_remain = " << tg.obs_remain;
+                    << ", obsremain = " << tg.obsremain;
                 logger.debug_tfg(tile, fiber, tgid, logmsg.str().c_str());
             }
             if ((target_fiber.count(tgid) > 0) &&
@@ -1481,7 +1481,7 @@ int64_t fba::Assignment::find_best(fba::Hardware const * hw,
                 best_id = tgid;
                 best_priority = tg.priority;
                 best_subpriority = tg.subpriority;
-                best_obsremain = tg.obs_remain;
+                best_obsremain = tg.obsremain;
             }
         }
     }
@@ -1561,7 +1561,7 @@ void fba::Assignment::assign_tilefiber(fba::Hardware const * hw,
             nassign_petal.at(tt).at(tile).at(petal)++;
         }
     }
-    tgobj.obs_remain--;
+    tgobj.obsremain--;
 
     return;
 }
@@ -1624,7 +1624,7 @@ void fba::Assignment::unassign_tilefiber(fba::Hardware const * hw,
             nassign_petal.at(tt).at(tile).at(petal)--;
         }
     }
-    tgobj.obs_remain++;
+    tgobj.obsremain++;
 
     target_fiber[target].erase(tile);
     ftarg.erase(fiber);

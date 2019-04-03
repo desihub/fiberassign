@@ -66,9 +66,8 @@ results_assign_columns = OrderedDict([
     ("DEVICE_TYPE", "a3"),
     ("TARGET_RA", "f8"),
     ("TARGET_DEC", "f8"),
-    ("DESI_TARGET", "i8"),
-    ("BGS_TARGET", "i8"),
-    ("MWS_TARGET", "i8"),
+    ("FA_TARGET", "i8"),
+    ("FA_TYPE", "u1"),
     ("DESIGN_X", "f4"),
     ("DESIGN_Y", "f4"),
     ("DESIGN_Q", "f4"),
@@ -79,10 +78,8 @@ results_targets_columns = OrderedDict([
     ("TARGETID", "i8"),
     ("TARGET_RA", "f8"),
     ("TARGET_DEC", "f8"),
-    ("DESI_TARGET", "i8"),
-    ("BGS_TARGET", "i8"),
-    ("MWS_TARGET", "i8"),
-    ("FBATYPE", "u1"),
+    ("FA_TARGET", "i8"),
+    ("FA_TYPE", "u1"),
     ("PRIORITY", "i4"),
     ("SUBPRIORITY", "f8"),
     ("OBSCONDITIONS", "i4"),
@@ -214,9 +211,7 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
 
         tg_ra = np.empty(ntarget, dtype=np.float64)
         tg_dec = np.empty(ntarget, dtype=np.float64)
-        tg_desitarget = np.zeros(ntarget, dtype=np.int64)
-        tg_bgstarget = np.zeros(ntarget, dtype=np.int64)
-        tg_mwstarget = np.zeros(ntarget, dtype=np.int64)
+        tg_bits = np.zeros(ntarget, dtype=np.int64)
         tg_x = np.empty(ntarget, dtype=np.float64)
         tg_y = np.empty(ntarget, dtype=np.float64)
         tg_type = np.empty(ntarget, dtype=np.uint8)
@@ -229,13 +224,11 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
             tg_indx[tg] = indx
             props = tgs.get(tg)
             tg_obsrem[indx] = 0
-            if props.obs_remain > 0:
-                tg_obsrem[indx] = props.obs_remain
+            if props.obsremain > 0:
+                tg_obsrem[indx] = props.obsremain
             tg_ra[indx] = props.ra
             tg_dec[indx] = props.dec
-            tg_desitarget[indx] = props.desi_target
-            tg_bgstarget[indx] = props.bgs_target
-            tg_mwstarget[indx] = props.mws_target
+            tg_bits[indx] = props.bits
             tg_type[indx] = props.type
             tg_priority[indx] = props.priority
             tg_subpriority[indx] = props.subpriority
@@ -263,7 +256,8 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         header["REQRA"] = tile_ra
         header["REQDEC"] = tile_dec
         header["FIELDNUM"] = 0
-        header["FBAVER"] = __version__
+        header["FA_VER"] = __version__
+        header["FA_SURV"] = tgs.survey()
         fd.write(None, header=header, extname="PRIMARY")
 
         # FIXME:  write "-1" for unassigned targets.  Write all other fiber
@@ -292,9 +286,8 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         assigned_tgy = np.empty(nfiber, dtype=np.float64)
         assigned_tgra = np.empty(nfiber, dtype=np.float64)
         assigned_tgdec = np.empty(nfiber, dtype=np.float64)
-        assigned_tgdesi = np.zeros(nfiber, dtype=np.int64)
-        assigned_tgbgs = np.zeros(nfiber, dtype=np.int64)
-        assigned_tgmws = np.zeros(nfiber, dtype=np.int64)
+        assigned_tgbits = np.zeros(nfiber, dtype=np.int64)
+        assigned_tgtype = np.zeros(nfiber, dtype=np.uint8)
 
         if (len(assigned_invalid) > 0):
             # Fill our unassigned fiber X/Y coordinates with the central
@@ -323,20 +316,15 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
             assigned_tgdec[assigned_valid] = np.array(tg_dec[target_rows])
             assigned_tgx[assigned_valid] = np.array(tg_x[target_rows])
             assigned_tgy[assigned_valid] = np.array(tg_y[target_rows])
-            assigned_tgdesi[assigned_valid] = \
-                np.array(tg_desitarget[target_rows])
-            assigned_tgbgs[assigned_valid] = \
-                np.array(tg_bgstarget[target_rows])
-            assigned_tgmws[assigned_valid] = \
-                np.array(tg_mwstarget[target_rows])
+            assigned_tgtype[assigned_valid] = np.array(tg_type[target_rows])
+            assigned_tgbits[assigned_valid] = np.array(tg_bits[target_rows])
 
         fdata["TARGET_RA"] = assigned_tgra
         fdata["TARGET_DEC"] = assigned_tgdec
         fdata["DESIGN_X"] = assigned_tgx
         fdata["DESIGN_Y"] = assigned_tgy
-        fdata["DESI_TARGET"] = assigned_tgdesi
-        fdata["BGS_TARGET"] = assigned_tgbgs
-        fdata["MWS_TARGET"] = assigned_tgmws
+        fdata["FA_TARGET"] = assigned_tgbits
+        fdata["FA_TYPE"] = assigned_tgtype
 
         assigned_q, assigned_s = desimodel.focalplane.xy2qs(
             assigned_tgx, assigned_tgy)
@@ -400,10 +388,8 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         fdata["TARGETID"] = tgids
         fdata["TARGET_RA"] = tg_ra
         fdata["TARGET_DEC"] = tg_dec
-        fdata["DESI_TARGET"] = tg_desitarget
-        fdata["BGS_TARGET"] = tg_bgstarget
-        fdata["MWS_TARGET"] = tg_mwstarget
-        fdata["FBATYPE"] = tg_type
+        fdata["FA_TARGET"] = tg_bits
+        fdata["FA_TYPE"] = tg_type
         fdata["PRIORITY"] = tg_priority
         fdata["SUBPRIORITY"] = tg_subpriority
         fdata["OBSCONDITIONS"] = tg_obscond
@@ -560,7 +546,7 @@ def write_assignment_ascii(tiles, asgn, out_dir=".", out_prefix="fiberassign_",
                     tg = tgs.get(tgid)
                     f.write("{:d} {:d} {:.6f} {:.6f}\n"
                             .format(fid, tgid, tg.ra, tg.dec, tg.priority,
-                                    tg.subpriority, tg.obscond, tg.obs_remain,
+                                    tg.subpriority, tg.obscond, tg.obsremain,
                                     tg.type))
     return
 
@@ -677,16 +663,20 @@ def read_assignment_fits_tile(params):
                     full_targets_columns.extend([(fld, subd[0], subd[1])])
 
         targets_dtype = np.dtype(full_targets_columns)
+
         targets_data = np.zeros(ntarget, dtype=targets_dtype)
+
         fsurvey, fcol, fsciencemask, fstdmask, fskymask, fsafemask, \
-            fexcludemask = default_target_masks(targets_data)
+            fexcludemask = default_target_masks(fbtargets)
 
         for col in full_names:
-            if col == "FBATYPE":
+            if col == "FA_TYPE":
                 targets_data[col][:nrawtarget] = [
                     desi_target_type(x, fsciencemask, fstdmask, fskymask,
                                      fsafemask, fexcludemask)
                     for x in fbtargets[fcol][:]]
+            elif col == "FA_TARGET":
+                targets_data[col][:nrawtarget] = fbtargets[fcol]
             elif col == "TARGET_RA":
                 targets_data[col][:nrawtarget] = fbtargets["RA"][:]
             elif col == "TARGET_DEC":
@@ -695,9 +685,12 @@ def read_assignment_fits_tile(params):
                 targets_data[col][:nrawtarget] = fbtargets[col][:]
         if copy_etc:
             for col in full_names:
-                if col == "FBATYPE":
+                if col == "FA_TYPE":
                     targets_data[col][nrawtarget:] = [
                         TARGET_TYPE_SKY for x in range(netc)]
+                elif col == "FA_TARGET":
+                    targets_data[col][nrawtarget:] = [
+                        fskymask for x in range(netc)]
                 elif col in fbsky.dtype.names:
                     targets_data[col][nrawtarget:] = fbsky[col][:]
 
@@ -746,9 +739,8 @@ merged_fiberassign_req_columns = OrderedDict([
     ("LOCATION", "i4"),
     ("NUMTARGET", "i2"),
     ("TARGETID", "i8"),
-    ("DESI_TARGET", "i8"),
-    ("BGS_TARGET", "i8"),
-    ("MWS_TARGET", "i8"),
+    ("FA_TARGET", "i8"),
+    ("FA_TYPE", "u1"),
     ("TARGET_RA", "f8"),
     ("TARGET_DEC", "f8"),
     ("DESIGN_X", "f4"),
@@ -772,9 +764,8 @@ merged_skymon_columns = OrderedDict([
     ("LOCATION", "i4"),
     ("NUMTARGET", "i2"),
     ("TARGETID", "i8"),
-    ("DESI_TARGET", "i8"),
-    ("BGS_TARGET", "i8"),
-    ("MWS_TARGET", "i8"),
+    ("FA_TARGET", "i8"),
+    ("FA_TYPE", "u1"),
     ("TARGET_RA", "f8"),
     ("TARGET_DEC", "f8"),
     ("DESIGN_X", "f4"),
@@ -956,15 +947,25 @@ def merge_results_tile(out_dtype, copy_fba, params):
         #         outdata[realname][orw] = tile_targets[c][irw]
         for c in external_cols:
             if c == "OBJTYPE":
+                # FIXME:  This column is redundant to doing a simple bitwise
+                # operation on the target bit field, and it is specific to
+                # the main survey.  Personally I believe it should be
+                # removed completely.  -TK
                 objtype = np.zeros(len(fassign_valid), dtype="S3")
-                objtype[:] = "TGT"
-                is_sky = (tile_targets["DESI_TARGET"][target_rows]
-                          & desi_mask.SKY) != 0
-                objtype[is_sky] = "SKY"
-                badmask = desi_mask.mask("BAD_SKY|NO_TARGET|IN_BRIGHT_OBJECT")
-                is_bad = (tile_targets["DESI_TARGET"][target_rows]
-                          & badmask) != 0
-                objtype[is_bad] = "BAD"
+                if "DESI_TARGET" in out_dtype.names:
+                    # This is a main survey file.
+                    objtype[:] = "TGT"
+                    is_sky = (tile_targets["DESI_TARGET"][target_rows]
+                              & desi_mask.SKY) != 0
+                    objtype[is_sky] = "SKY"
+                    badmask = \
+                        desi_mask.mask("BAD_SKY|NO_TARGET|IN_BRIGHT_OBJECT")
+                    is_bad = (tile_targets["DESI_TARGET"][target_rows]
+                              & badmask) != 0
+                    objtype[is_bad] = "BAD"
+                else:
+                    # This is some other survey
+                    objtype = ["NA" for x in range(len(fassign_valid))]
                 outdata[c][fassign_valid] = objtype
             else:
                 outdata[c][fassign_valid] = tile_targets[c][target_rows]

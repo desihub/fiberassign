@@ -36,10 +36,8 @@ fba::Target::Target() {
     id = -1;
     ra = 0.0;
     dec = 0.0;
-    desi_target = 0;
-    bgs_target = 0;
-    mws_target = 0;
-    obs_remain = 0;
+    bits = 0;
+    obsremain = 0;
     priority = 0;
     subpriority = 0.0;
     obscond = 0;
@@ -50,10 +48,8 @@ fba::Target::Target() {
 fba::Target::Target(int64_t tid,
                     double tra,
                     double tdec,
-                    int64_t tdesi_target,
-                    int64_t tbgs_target,
-                    int64_t tmws_target,
-                    int32_t tobs_remain,
+                    int64_t tbits,
+                    int32_t tobsremain,
                     int32_t tpriority,
                     double tsubpriority,
                     int32_t tobscond,
@@ -61,10 +57,8 @@ fba::Target::Target(int64_t tid,
     id = tid;
     ra = tra;
     dec = tdec;
-    desi_target = tdesi_target;
-    bgs_target = tbgs_target;
-    mws_target = tmws_target;
-    obs_remain = tobs_remain;
+    bits = tbits;
+    obsremain = tobsremain;
     priority = tpriority;
     subpriority = tsubpriority;
     obscond = tobscond;
@@ -99,22 +93,34 @@ bool fba::Target::is_type(uint8_t t) const {
 
 fba::Targets::Targets() {
     science_classes.clear();
+    survey = "";
 }
 
 
-void fba::Targets::append(std::vector <int64_t> const & id,
+void fba::Targets::append(std::string const & tsurvey,
+                          std::vector <int64_t> const & id,
                           std::vector <double> const & ra,
                           std::vector <double> const & dec,
-                          std::vector <int64_t> const & desi_target,
-                          std::vector <int64_t> const & bgs_target,
-                          std::vector <int64_t> const & mws_target,
-                          std::vector <int32_t> const & obs_remain,
+                          std::vector <int64_t> const & targetbits,
+                          std::vector <int32_t> const & obsremain,
                           std::vector <int32_t> const & priority,
                           std::vector <double> const & subpriority,
                           std::vector <int32_t> const & obscond,
                           std::vector <uint8_t> const & type) {
     fba::Logger & logger = fba::Logger::get();
     std::ostringstream logmsg;
+
+    if (survey.compare("") == 0) {
+        survey = tsurvey;
+    } else if (survey.compare(tsurvey) != 0) {
+        logmsg.str("");
+        logmsg << "Targets object has survey type \"" << survey
+            << "\", cannot append data from survey type \""
+            << tsurvey << "\"";
+        logger.error(logmsg.str().c_str());
+        throw std::runtime_error(logmsg.str().c_str());
+    }
+
     for (size_t t = 0; t < id.size(); ++t) {
         if (type[t] == 0) {
             // This target is not one of the recognized categories (science,
@@ -122,60 +128,28 @@ void fba::Targets::append(std::vector <int64_t> const & id,
             continue;
         }
         if (data.count(id[t]) > 0) {
-            // This target already exists.  Check that its location and
-            // properties match *except* for its type.  The object might
-            // be specified twice with different bits for the type, so we
-            // OR these together.
-            auto & tg = data.at(id[t]);
-            bool dup = true;
-            if (::fabs((tg.ra - ra[t])/tg.ra)
-                > std::numeric_limits<float>::epsilon()) {
-                dup = false;
-            }
-            if (::fabs((tg.dec - dec[t])/tg.dec)
-                > std::numeric_limits<float>::epsilon()) {
-                dup = false;
-            }
-            if (dup) {
-                // bitwise or the type
-                tg.type |= type[t];
-                // bitwise or the obs cond
-                tg.obscond |= obscond[t];
-                // bitwise or the target masks
-                tg.desi_target |= desi_target[t];
-                tg.bgs_target |= bgs_target[t];
-                tg.mws_target |= mws_target[t];
-                // choose the larger of the obs remaining
-                if (obs_remain[t] > tg.obs_remain) {
-                    tg.obs_remain = obs_remain[t];
-                }
-                // choose the larger of the priority and subpriority
-                if (priority[t] > tg.priority) {
-                    tg.priority = priority[t];
-                }
-                if (subpriority[t] > tg.subpriority) {
-                    tg.subpriority = subpriority[t];
-                }
-            } else {
-                // this is a conflicting object
-                logmsg.str("");
-                logmsg << "Target ID " << id[t]
-                    << " already exists with properties: ("
-                    << tg.ra << "," << tg.dec << ") (" << tg.priority << "," << tg.subpriority << ") " << tg.obs_remain << ", " << tg.obscond << ", " << (int)(tg.type);
-                logger.warning(logmsg.str().c_str());
-                logmsg.str("");
-                logmsg << "  New target properties: ("
-                    << ra[t] << "," << dec[t] << ") (" << priority[t] << "," << subpriority[t] << ") " << obs_remain[t] << ", " << obscond[t];
-                logger.warning(logmsg.str().c_str());
-                logmsg.str("");
-                logmsg << "  Ignoring new target info";
-                logger.warning(logmsg.str().c_str());
-            }
+            // This target already exists.  This is an error.
+            logmsg.str("");
+            auto const & tg = data.at(id[t]);
+            logmsg << "Target ID " << id[t]
+                << " already exists with properties: ("
+                << tg.ra << "," << tg.dec << ") (" << tg.priority << ","
+                << tg.subpriority << ") " << tg.obsremain << ", "
+                << tg.obscond << ", " << (int)(tg.type);
+            logger.warning(logmsg.str().c_str());
+            logmsg.str("");
+            logmsg << "  New target properties: ("
+                << ra[t] << "," << dec[t] << ") (" << priority[t] << ","
+                << subpriority[t] << ") " << obsremain[t] << ", "
+                << obscond[t];
+            logger.warning(logmsg.str().c_str());
+            logmsg.str("");
+            logmsg << "  Ignoring new target info";
+            logger.warning(logmsg.str().c_str());
         } else {
-            data[id[t]] = Target(id[t], ra[t], dec[t], desi_target[t],
-                                 bgs_target[t], mws_target[t], obs_remain[t],
-                                 priority[t], subpriority[t], obscond[t],
-                                 type[t]);
+            data[id[t]] = Target(id[t], ra[t], dec[t], targetbits[t],
+                                 obsremain[t], priority[t], subpriority[t],
+                                 obscond[t], type[t]);
         }
         if ((priority[t] > 0) && ((type[t] & TARGET_TYPE_SCIENCE) != 0)) {
             // Only consider science targets in the list of target classes.
