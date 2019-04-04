@@ -91,7 +91,7 @@ env:
         # Binary packages to install with pip.
         - PIP_BINARY="pyyaml scipy matplotlib numpy astropy sphinx"
         # Packages to build with pip
-        - PIP_SOURCE="fitsio healpy"
+        - PIP_SOURCE="fitsio healpy=1.11"
         # DESI packages to install.
         - DESIUTIL_VERSION=master
         - DESIMODEL_VERSION=master
