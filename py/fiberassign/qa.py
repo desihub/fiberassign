@@ -63,7 +63,9 @@ def qa_parse_table(header, tgdata):
                 tgprops[tgid]["type"] = "NA"
     else:
         # Could define similar things for other surveys here...
-        pass
+        for row in range(len(tgdata)):
+            tgid = tgdata["TARGETID"][row]
+            tgprops[tgid] = {"type": "NA"}
     return tgs, tgprops
 
 

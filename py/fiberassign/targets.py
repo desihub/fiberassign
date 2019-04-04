@@ -153,23 +153,29 @@ def default_sv1_excludemask():
 def default_cmx_sciencemask():
     """Returns default mask of bits for science targets in CMX survey.
     """
-    # 2^63 - 1 (i.e. match all bits)
-    mask = 9223372036854775807
-    return mask
+    sciencemask = 0
+    sciencemask |= cmx_mask["STD_GAIA"].mask
+    sciencemask |= cmx_mask["SV0_STD_BRIGHT"].mask
+    sciencemask |= cmx_mask["STD_TEST"].mask
+    sciencemask |= cmx_mask["STD_CALSPEC"].mask
+    return sciencemask
 
 
 def default_cmx_stdmask():
     """Returns default mask of bits for standards in CMX survey.
     """
-    # Nothing in a CMX file should be treated as a standard.
-    return 0
+    # Nothing in a CMX file is currently treated as a "standard".  The
+    # objects are all things which should be assigned as science targets.
+    stdmask = 0
+    return stdmask
 
 
 def default_cmx_skymask():
     """Returns default mask of bits for sky targets in CMX survey.
     """
-    # Nothing in a CMX file should be treated as a sky.
-    return 0
+    skymask = 0
+    skymask |= cmx_mask["SKY"].mask
+    return skymask
 
 
 def default_cmx_safemask():
@@ -178,15 +184,16 @@ def default_cmx_safemask():
     Note: these are targets of last resort; they are safe locations where
     we won't saturate the detector, but aren't good for anything else.
     """
-    # Nothing in a CMX file should be treated as a safe target.
-    return 0
+    safemask = 0
+    safemask |= cmx_mask["BAD_SKY"].mask
+    return safemask
 
 
 def default_cmx_excludemask():
     """Returns default mask of bits for CMX survey targets to NOT observe.
     """
-    # Exclude nothing.
-    return 0
+    excludemask = 0
+    return excludemask
 
 
 def desi_target_type(desi_target, sciencemask, stdmask,
@@ -523,40 +530,40 @@ def load_target_table(tgs, tgdata, survey=None, typeforce=None, typecol=None,
     if excludemask is None:
         excludemask = fexcludemask
 
-    log.info("Target table using survey '{}', column {}:".format(
+    log.debug("Target table using survey '{}', column {}:".format(
         survey, typecol))
     if survey == "main":
-        log.info("  sciencemask {}".format(
+        log.debug("  sciencemask {}".format(
             "|".join(desi_mask.names(sciencemask))))
-        log.info("  stdmask     {}".format(
+        log.debug("  stdmask     {}".format(
             "|".join(desi_mask.names(stdmask))))
-        log.info("  skymask     {}".format(
+        log.debug("  skymask     {}".format(
             "|".join(desi_mask.names(skymask))))
-        log.info("  safemask    {}".format(
+        log.debug("  safemask    {}".format(
             "|".join(desi_mask.names(safemask))))
-        log.info("  excludemask {}".format(
+        log.debug("  excludemask {}".format(
             "|".join(desi_mask.names(excludemask))))
     elif survey == "cmx":
-        log.info("  sciencemask {}".format(
+        log.debug("  sciencemask {}".format(
             "|".join(cmx_mask.names(sciencemask))))
-        log.info("  stdmask     {}".format(
+        log.debug("  stdmask     {}".format(
             "|".join(cmx_mask.names(stdmask))))
-        log.info("  skymask     {}".format(
+        log.debug("  skymask     {}".format(
             "|".join(cmx_mask.names(skymask))))
-        log.info("  safemask    {}".format(
+        log.debug("  safemask    {}".format(
             "|".join(cmx_mask.names(safemask))))
-        log.info("  excludemask {}".format(
+        log.debug("  excludemask {}".format(
             "|".join(cmx_mask.names(excludemask))))
     elif survey == "sv1":
-        log.info("  sciencemask {}".format(
+        log.debug("  sciencemask {}".format(
             "|".join(sv1_mask.names(sciencemask))))
-        log.info("  stdmask     {}".format(
+        log.debug("  stdmask     {}".format(
             "|".join(sv1_mask.names(stdmask))))
-        log.info("  skymask     {}".format(
+        log.debug("  skymask     {}".format(
             "|".join(sv1_mask.names(skymask))))
-        log.info("  safemask    {}".format(
+        log.debug("  safemask    {}".format(
             "|".join(sv1_mask.names(safemask))))
-        log.info("  excludemask {}".format(
+        log.debug("  excludemask {}".format(
             "|".join(sv1_mask.names(excludemask))))
     else:
         raise RuntimeError("unknown survey type, should never get here!")
@@ -622,16 +629,15 @@ def load_target_file(tgs, tfile, typeforce=None, typecol=None,
         if offset + n > nrows:
             n = nrows - offset
         data = fits[1].read(rows=np.arange(offset, offset+n, dtype=np.int64))
-        if offset == 0:
-            log.debug("Target file {} read rows {} - {}"
-                      .format(tfile, offset, offset+n-1))
-            survey = load_target_table(tgs, data, survey=survey,
-                                       typeforce=typeforce,
-                                       typecol=typecol,
-                                       sciencemask=sciencemask,
-                                       stdmask=stdmask, skymask=skymask,
-                                       safemask=safemask,
-                                       excludemask=excludemask)
+        log.debug("Target file {} read rows {} - {}"
+                  .format(tfile, offset, offset+n-1))
+        load_target_table(tgs, data, survey=survey,
+                          typeforce=typeforce,
+                          typecol=typecol,
+                          sciencemask=sciencemask,
+                          stdmask=stdmask, skymask=skymask,
+                          safemask=safemask,
+                          excludemask=excludemask)
         offset += n
 
     tm.stop()

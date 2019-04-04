@@ -648,9 +648,10 @@ def read_assignment_fits_tile(params):
         # not listed in the TARGETS HDU.  We check that here.
         copy_etc = False
         ntarget = nrawtarget
-        if fbsky["TARGETID"][0] not in fbtargets["TARGETID"]:
-            ntarget += netc
-            copy_etc = True
+        for etctg in fbsky["TARGETID"]:
+            if (etctg >= 0) and (etctg not in fbtargets["TARGETID"]):
+                ntarget += netc
+                copy_etc = True
 
         for fld in list(fbtargets.dtype.names):
             subd = fbtargets.dtype[fld].subdtype

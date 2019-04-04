@@ -125,6 +125,11 @@ void fba::Targets::append(std::string const & tsurvey,
         if (type[t] == 0) {
             // This target is not one of the recognized categories (science,
             // standard, sky, or safe).  Skip it.
+            logmsg.str("");
+            logmsg << "Survey " << survey
+                << " target ID " << id[t]
+                << " type not identified- SKIPPING";
+            logger.debug(logmsg.str().c_str());
             continue;
         }
         if (data.count(id[t]) > 0) {
@@ -324,6 +329,15 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
                     cur.pos[0] = target_xy.first;
                     cur.pos[1] = target_xy.second;
                     nearby_tree_points.push_back(cur);
+                } else if (logger.extra_debug()) {
+                    logmsg.str("");
+                    logmsg << std::setprecision(2) << std::fixed;
+                    logmsg << "targets avail:  tile " << tid
+                        << ", skip TARGET ID " << obj.id
+                        << " with incompatible OBSCONDITIONS ("
+                        << obj.obscond << ") for tile (" << tobs << ")";
+                    logger.debug_tfg(tid, -1, obj.id,
+                                     logmsg.str().c_str());
                 }
             }
             KDtree <KdTreePoint> nearby_tree(nearby_tree_points, 2);
