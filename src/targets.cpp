@@ -141,16 +141,17 @@ void fba::Targets::append(std::string const & tsurvey,
                 << tg.ra << "," << tg.dec << ") (" << tg.priority << ","
                 << tg.subpriority << ") " << tg.obsremain << ", "
                 << tg.obscond << ", " << (int)(tg.type);
-            logger.warning(logmsg.str().c_str());
+            logger.error(logmsg.str().c_str());
             logmsg.str("");
             logmsg << "  New target properties: ("
                 << ra[t] << "," << dec[t] << ") (" << priority[t] << ","
                 << subpriority[t] << ") " << obsremain[t] << ", "
                 << obscond[t];
-            logger.warning(logmsg.str().c_str());
+            logger.error(logmsg.str().c_str());
             logmsg.str("");
-            logmsg << "  Ignoring new target info";
-            logger.warning(logmsg.str().c_str());
+            logmsg << "  Duplicate target IDs are not permitted.";
+            logger.error(logmsg.str().c_str());
+            throw std::runtime_error(logmsg.str().c_str());
         } else {
             data[id[t]] = Target(id[t], ra[t], dec[t], targetbits[t],
                                  obsremain[t], priority[t], subpriority[t],

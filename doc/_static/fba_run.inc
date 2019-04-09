@@ -22,6 +22,12 @@
                             followed by comma separated values that will be passed
                             to the arguments of the load_target_file() function.
                             See docs for details.
+      --sky SKY [SKY ...]   Input file with sky or 'bad sky' targets. This option
+                        exists in order to treat main-survey sky target files
+                        as valid for other survey types. If you are running a
+                        main survey assignment, you can just pass the sky file
+                        to the --targets list.
+
       --gfafile GFAFILE     Optional GFA targets FITS file
       --footprint FOOTPRINT
                             Optional FITS file defining the footprint. If not
