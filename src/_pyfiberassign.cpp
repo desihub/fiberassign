@@ -240,6 +240,39 @@ PYBIND11_MODULE(_internal, m) {
         )");
 
 
+    py::class_ <fba::Environment,
+        std::unique_ptr<fba::Environment, py::nodelete> > (
+            m, "Environment", R"(
+        Environment control.
+
+        This class allows setting the threading concurrency of the compiled
+        code.
+        )")
+        .def("get", [](){
+            return std::unique_ptr<fba::Environment, py::nodelete>
+                (&fba::Environment::get());
+            }, R"(
+            Get the instance of global singleton class.
+        )")
+        .def("max_threads", &fba::Environment::max_threads, R"(
+            Return the maximum threads supported by the runtime environment.
+        )")
+        .def("current_threads", &fba::Environment::current_threads, R"(
+            Return the current threading concurrency in use.
+        )")
+        .def("set_threads", &fba::Environment::set_threads,
+            py::arg("nthread"), R"(
+            Set the number of threads in use.
+
+            Args:
+                nthread (int): The number of threads to use.
+
+            Returns:
+                None
+
+        )");
+
+
     py::class_ <fbg::circle, fbg::circle::pshr > (m, "Circle", R"(
         A Circle.
 
