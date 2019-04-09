@@ -572,7 +572,7 @@ def load_target_table(tgs, tgdata, survey=None, typeforce=None, typecol=None,
     return
 
 
-def load_target_file(tgs, tfile, typeforce=None, typecol=None,
+def load_target_file(tgs, tfile, survey=None, typeforce=None, typecol=None,
                      sciencemask=None, stdmask=None, skymask=None,
                      safemask=None, excludemask=None, rowbuffer=1000000):
     """Append targets from a file.
@@ -589,6 +589,8 @@ def load_target_file(tgs, tfile, typeforce=None, typecol=None,
     Args:
         tgs (Targets): The targets object on which to append this data.
         tfile (str): The path to the target catalog.
+        survey (str):  The survey type.  If None, query from columns and
+            the FITS header.
         typeforce (int): If specified, it must equal one of the TARGET_TYPE_*
             values.  All targets read from the file will be assigned this type.
         typecol (str): Optional column to use for bitmask matching (default
@@ -619,9 +621,9 @@ def load_target_file(tgs, tfile, typeforce=None, typecol=None,
              .format(tfile, nrows, rowbuffer))
 
     header = fits[1].read_header()
-    survey = None
-    if "FA_SURV" in header:
-        survey = str(header["FA_SURV"]).rstrip()
+    if survey is None:
+        if "FA_SURV" in header:
+            survey = str(header["FA_SURV"]).rstrip()
 
     offset = 0
     n = rowbuffer

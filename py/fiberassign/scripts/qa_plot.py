@@ -13,7 +13,7 @@ import os
 import argparse
 import json
 
-from fiberassign.vis import plot_qa
+from ..vis import plot_qa
 
 
 def parse_plot_qa(optlist=None):
