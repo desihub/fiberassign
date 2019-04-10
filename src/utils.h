@@ -51,6 +51,28 @@ void myexception (std::exception const & e);
 
 void myexception (std::exception & e);
 
+// Simple environment control
+
+class Environment {
+
+    public :
+
+        // Singleton access
+        static Environment & get();
+
+        int max_threads();
+        void set_threads(int nthread);
+        int current_threads();
+
+    private :
+
+        // This class is a singleton- constructor is private.
+        Environment();
+
+        int max_threads_;
+        int cur_threads_;
+};
+
 
 // Simple class to help with timing parts of the code.
 

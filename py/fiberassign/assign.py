@@ -32,7 +32,8 @@ from ._version import __version__
 
 from .utils import Logger, Timer, default_mp_proc
 
-from .targets import (TARGET_TYPE_SKY, TARGET_TYPE_SAFE, desi_target_type)
+from .targets import (TARGET_TYPE_SKY, TARGET_TYPE_SAFE, desi_target_type,
+                      default_target_masks, default_survey_target_masks)
 
 from .hardware import (FIBER_STATE_STUCK, FIBER_STATE_BROKEN)
 
@@ -65,9 +66,8 @@ results_assign_columns = OrderedDict([
     ("DEVICE_TYPE", "a3"),
     ("TARGET_RA", "f8"),
     ("TARGET_DEC", "f8"),
-    ("DESI_TARGET", "i8"),
-    ("BGS_TARGET", "i8"),
-    ("MWS_TARGET", "i8"),
+    ("FA_TARGET", "i8"),
+    ("FA_TYPE", "u1"),
     ("DESIGN_X", "f4"),
     ("DESIGN_Y", "f4"),
     ("DESIGN_Q", "f4"),
@@ -78,10 +78,8 @@ results_targets_columns = OrderedDict([
     ("TARGETID", "i8"),
     ("TARGET_RA", "f8"),
     ("TARGET_DEC", "f8"),
-    ("DESI_TARGET", "i8"),
-    ("BGS_TARGET", "i8"),
-    ("MWS_TARGET", "i8"),
-    ("FBATYPE", "u1"),
+    ("FA_TARGET", "i8"),
+    ("FA_TYPE", "u1"),
     ("PRIORITY", "i4"),
     ("SUBPRIORITY", "f8"),
     ("OBSCONDITIONS", "i4"),
@@ -213,9 +211,7 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
 
         tg_ra = np.empty(ntarget, dtype=np.float64)
         tg_dec = np.empty(ntarget, dtype=np.float64)
-        tg_desitarget = np.zeros(ntarget, dtype=np.int64)
-        tg_bgstarget = np.zeros(ntarget, dtype=np.int64)
-        tg_mwstarget = np.zeros(ntarget, dtype=np.int64)
+        tg_bits = np.zeros(ntarget, dtype=np.int64)
         tg_x = np.empty(ntarget, dtype=np.float64)
         tg_y = np.empty(ntarget, dtype=np.float64)
         tg_type = np.empty(ntarget, dtype=np.uint8)
@@ -228,13 +224,11 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
             tg_indx[tg] = indx
             props = tgs.get(tg)
             tg_obsrem[indx] = 0
-            if props.obs_remain > 0:
-                tg_obsrem[indx] = props.obs_remain
+            if props.obsremain > 0:
+                tg_obsrem[indx] = props.obsremain
             tg_ra[indx] = props.ra
             tg_dec[indx] = props.dec
-            tg_desitarget[indx] = props.desi_target
-            tg_bgstarget[indx] = props.bgs_target
-            tg_mwstarget[indx] = props.mws_target
+            tg_bits[indx] = props.bits
             tg_type[indx] = props.type
             tg_priority[indx] = props.priority
             tg_subpriority[indx] = props.subpriority
@@ -262,7 +256,8 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         header["REQRA"] = tile_ra
         header["REQDEC"] = tile_dec
         header["FIELDNUM"] = 0
-        header["FBAVER"] = __version__
+        header["FA_VER"] = __version__
+        header["FA_SURV"] = tgs.survey()
         fd.write(None, header=header, extname="PRIMARY")
 
         # FIXME:  write "-1" for unassigned targets.  Write all other fiber
@@ -291,9 +286,8 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         assigned_tgy = np.empty(nfiber, dtype=np.float64)
         assigned_tgra = np.empty(nfiber, dtype=np.float64)
         assigned_tgdec = np.empty(nfiber, dtype=np.float64)
-        assigned_tgdesi = np.zeros(nfiber, dtype=np.int64)
-        assigned_tgbgs = np.zeros(nfiber, dtype=np.int64)
-        assigned_tgmws = np.zeros(nfiber, dtype=np.int64)
+        assigned_tgbits = np.zeros(nfiber, dtype=np.int64)
+        assigned_tgtype = np.zeros(nfiber, dtype=np.uint8)
 
         if (len(assigned_invalid) > 0):
             # Fill our unassigned fiber X/Y coordinates with the central
@@ -322,20 +316,15 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
             assigned_tgdec[assigned_valid] = np.array(tg_dec[target_rows])
             assigned_tgx[assigned_valid] = np.array(tg_x[target_rows])
             assigned_tgy[assigned_valid] = np.array(tg_y[target_rows])
-            assigned_tgdesi[assigned_valid] = \
-                np.array(tg_desitarget[target_rows])
-            assigned_tgbgs[assigned_valid] = \
-                np.array(tg_bgstarget[target_rows])
-            assigned_tgmws[assigned_valid] = \
-                np.array(tg_mwstarget[target_rows])
+            assigned_tgtype[assigned_valid] = np.array(tg_type[target_rows])
+            assigned_tgbits[assigned_valid] = np.array(tg_bits[target_rows])
 
         fdata["TARGET_RA"] = assigned_tgra
         fdata["TARGET_DEC"] = assigned_tgdec
         fdata["DESIGN_X"] = assigned_tgx
         fdata["DESIGN_Y"] = assigned_tgy
-        fdata["DESI_TARGET"] = assigned_tgdesi
-        fdata["BGS_TARGET"] = assigned_tgbgs
-        fdata["MWS_TARGET"] = assigned_tgmws
+        fdata["FA_TARGET"] = assigned_tgbits
+        fdata["FA_TYPE"] = assigned_tgtype
 
         assigned_q, assigned_s = desimodel.focalplane.xy2qs(
             assigned_tgx, assigned_tgy)
@@ -399,10 +388,8 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         fdata["TARGETID"] = tgids
         fdata["TARGET_RA"] = tg_ra
         fdata["TARGET_DEC"] = tg_dec
-        fdata["DESI_TARGET"] = tg_desitarget
-        fdata["BGS_TARGET"] = tg_bgstarget
-        fdata["MWS_TARGET"] = tg_mwstarget
-        fdata["FBATYPE"] = tg_type
+        fdata["FA_TARGET"] = tg_bits
+        fdata["FA_TYPE"] = tg_type
         fdata["PRIORITY"] = tg_priority
         fdata["SUBPRIORITY"] = tg_subpriority
         fdata["OBSCONDITIONS"] = tg_obscond
@@ -559,7 +546,7 @@ def write_assignment_ascii(tiles, asgn, out_dir=".", out_prefix="fiberassign_",
                     tg = tgs.get(tgid)
                     f.write("{:d} {:d} {:.6f} {:.6f}\n"
                             .format(fid, tgid, tg.ra, tg.dec, tg.priority,
-                                    tg.subpriority, tg.obscond, tg.obs_remain,
+                                    tg.subpriority, tg.obscond, tg.obsremain,
                                     tg.type))
     return
 
@@ -639,6 +626,10 @@ def read_assignment_fits_tile(params):
                                 results_assign_columns.items()])
         fiber_data = np.zeros(nfiber, dtype=assign_dtype)
 
+        survey = None
+        if "FA_SURV" in header:
+            survey = str(header["FA_SURV"]).rstrip()
+
         for col in results_assign_columns.keys():
             if col == "DEVICE_TYPE":
                 fiber_data[col][0:npos] = "POS"
@@ -661,9 +652,10 @@ def read_assignment_fits_tile(params):
         # not listed in the TARGETS HDU.  We check that here.
         copy_etc = False
         ntarget = nrawtarget
-        if fbsky["TARGETID"][0] not in fbtargets["TARGETID"]:
-            ntarget += netc
-            copy_etc = True
+        for etctg in fbsky["TARGETID"]:
+            if (etctg >= 0) and (etctg not in fbtargets["TARGETID"]):
+                ntarget += netc
+                copy_etc = True
 
         for fld in list(fbtargets.dtype.names):
             subd = fbtargets.dtype[fld].subdtype
@@ -676,11 +668,31 @@ def read_assignment_fits_tile(params):
                     full_targets_columns.extend([(fld, subd[0], subd[1])])
 
         targets_dtype = np.dtype(full_targets_columns)
+
         targets_data = np.zeros(ntarget, dtype=targets_dtype)
+
+        fsciencemask = None
+        fstdmask = None
+        fskymask = None
+        fexcludemask = None
+        fcol = None
+        if survey is not None:
+            fsciencemask, fstdmask, fskymask, fsafemask, fexcludemask = \
+                default_survey_target_masks(survey)
+            fcol = "FA_TARGET"
+        else:
+            fsurvey, fcol, fsciencemask, fstdmask, fskymask, fsafemask, \
+                fexcludemask = default_target_masks(fbtargets)
+            survey = fsurvey
+
         for col in full_names:
-            if col == "FBATYPE":
+            if col == "FA_TYPE":
                 targets_data[col][:nrawtarget] = [
-                    desi_target_type(x) for x in fbtargets["DESI_TARGET"][:]]
+                    desi_target_type(x, fsciencemask, fstdmask, fskymask,
+                                     fsafemask, fexcludemask)
+                    for x in fbtargets[fcol][:]]
+            elif col == "FA_TARGET":
+                targets_data[col][:nrawtarget] = fbtargets[fcol]
             elif col == "TARGET_RA":
                 targets_data[col][:nrawtarget] = fbtargets["RA"][:]
             elif col == "TARGET_DEC":
@@ -689,9 +701,12 @@ def read_assignment_fits_tile(params):
                 targets_data[col][:nrawtarget] = fbtargets[col][:]
         if copy_etc:
             for col in full_names:
-                if col == "FBATYPE":
+                if col == "FA_TYPE":
                     targets_data[col][nrawtarget:] = [
                         TARGET_TYPE_SKY for x in range(netc)]
+                elif col == "FA_TARGET":
+                    targets_data[col][nrawtarget:] = [
+                        fskymask for x in range(netc)]
                 elif col in fbsky.dtype.names:
                     targets_data[col][nrawtarget:] = fbsky[col][:]
 
@@ -716,15 +731,25 @@ def read_assignment_fits_tile(params):
 merge_results_tile_tgbuffers = None
 merge_results_tile_tgdtypes = None
 merge_results_tile_tgshapes = None
+merge_results_tile_skybuffers = None
+merge_results_tile_skydtypes = None
+merge_results_tile_skyshapes = None
 
 
-def merge_results_tile_initialize(bufs, dtypes, shapes):
+def merge_results_tile_initialize(tgbufs, tgdtypes, tgshapes, skybufs,
+                                  skydtypes, skyshapes):
     global merge_results_tile_tgbuffers
     global merge_results_tile_tgdtypes
     global merge_results_tile_tgshapes
-    merge_results_tile_tgbuffers = bufs
-    merge_results_tile_tgdtypes = dtypes
-    merge_results_tile_tgshapes = shapes
+    merge_results_tile_tgbuffers = tgbufs
+    merge_results_tile_tgdtypes = tgdtypes
+    merge_results_tile_tgshapes = tgshapes
+    global merge_results_tile_skybuffers
+    global merge_results_tile_skydtypes
+    global merge_results_tile_skyshapes
+    merge_results_tile_skybuffers = skybufs
+    merge_results_tile_skydtypes = skydtypes
+    merge_results_tile_skyshapes = skyshapes
     return
 
 
@@ -740,9 +765,8 @@ merged_fiberassign_req_columns = OrderedDict([
     ("LOCATION", "i4"),
     ("NUMTARGET", "i2"),
     ("TARGETID", "i8"),
-    ("DESI_TARGET", "i8"),
-    ("BGS_TARGET", "i8"),
-    ("MWS_TARGET", "i8"),
+    ("FA_TARGET", "i8"),
+    ("FA_TYPE", "u1"),
     ("TARGET_RA", "f8"),
     ("TARGET_DEC", "f8"),
     ("DESIGN_X", "f4"),
@@ -766,9 +790,8 @@ merged_skymon_columns = OrderedDict([
     ("LOCATION", "i4"),
     ("NUMTARGET", "i2"),
     ("TARGETID", "i8"),
-    ("DESI_TARGET", "i8"),
-    ("BGS_TARGET", "i8"),
-    ("MWS_TARGET", "i8"),
+    ("FA_TARGET", "i8"),
+    ("FA_TYPE", "u1"),
     ("TARGET_RA", "f8"),
     ("TARGET_DEC", "f8"),
     ("DESIGN_X", "f4"),
@@ -835,6 +858,12 @@ def merge_results_tile(out_dtype, copy_fba, params):
     tile_targets_dtype = np.dtype(out_dtype.fields)
     tile_targets = np.empty(len(tile_tgids), dtype=tile_targets_dtype)
 
+    # Copy original data
+
+    for field in tile_targets_dtype.names:
+        if field in results_targets_columns:
+            tile_targets[field] = targets_data[field]
+
     # tm.stop()
     # tm.report("  index input targets {}".format(tile_id))
     # tm.clear()
@@ -885,6 +914,39 @@ def merge_results_tile(out_dtype, copy_fba, params):
         # tm.report("  copy targets from {} for {}".format(tf, tile_id))
         # tm.clear()
         # tm.start()
+
+    skytargetfiles = list(merge_results_tile_skybuffers.keys())
+    for tf in skytargetfiles:
+        skyview = np.frombuffer(merge_results_tile_skybuffers[tf],
+                                dtype=merge_results_tile_skydtypes[tf])\
+                               .reshape(merge_results_tile_skyshapes[tf])
+        # Some columns may not exist in all target files (e.g. PRIORITY),
+        # So we select the valid columns for this file and only copy those.
+        # The ordering of the targets in the catalog is not guaranteed to be
+        # sorted, and the output table is sorted by fiber ID, not target.  So
+        # must build an explicit mapping from target catalog rows to output
+        # table rows.
+        skyids = skyview["TARGETID"]
+        inrows = np.where(np.isin(skyids, tile_tgids, assume_unique=True))[0]
+        outrows = np.where(np.isin(tile_tgids, skyids, assume_unique=True))[0]
+        tfcolsin = list()
+        tfcolsout = list()
+        for c in skyview.dtype.names:
+            nm = c
+            if c in merged_fiberassign_swap:
+                nm = merged_fiberassign_swap[c]
+            if nm in out_dtype.names:
+                tfcolsin.append(c)
+                tfcolsout.append(nm)
+
+        if len(outrows) > 0:
+            for irw, orw in zip(inrows, outrows):
+                for c, nm in zip(tfcolsin, tfcolsout):
+                    tile_targets[nm][orw] = skyview[c][irw]
+        del skyids
+        del inrows
+        del outrows
+        del skyview
 
     # Now we have a reduced set of target data including only the targets
     # relevant for this tile, and with data merged from all the files.
@@ -950,15 +1012,25 @@ def merge_results_tile(out_dtype, copy_fba, params):
         #         outdata[realname][orw] = tile_targets[c][irw]
         for c in external_cols:
             if c == "OBJTYPE":
+                # FIXME:  This column is redundant to doing a simple bitwise
+                # operation on the target bit field, and it is specific to
+                # the main survey.  Personally I believe it should be
+                # removed completely.  -TK
                 objtype = np.zeros(len(fassign_valid), dtype="S3")
-                objtype[:] = "TGT"
-                is_sky = (tile_targets["DESI_TARGET"][target_rows]
-                          & desi_mask.SKY) != 0
-                objtype[is_sky] = "SKY"
-                badmask = desi_mask.mask("BAD_SKY|NO_TARGET|IN_BRIGHT_OBJECT")
-                is_bad = (tile_targets["DESI_TARGET"][target_rows]
-                          & badmask) != 0
-                objtype[is_bad] = "BAD"
+                if "DESI_TARGET" in out_dtype.names:
+                    # This is a main survey file.
+                    objtype[:] = "TGT"
+                    is_sky = (tile_targets["DESI_TARGET"][target_rows]
+                              & desi_mask.SKY) != 0
+                    objtype[is_sky] = "SKY"
+                    badmask = \
+                        desi_mask.mask("BAD_SKY|NO_TARGET|IN_BRIGHT_OBJECT")
+                    is_bad = (tile_targets["DESI_TARGET"][target_rows]
+                              & badmask) != 0
+                    objtype[is_bad] = "BAD"
+                else:
+                    # This is some other survey
+                    objtype = ["NA" for x in range(len(fassign_valid))]
                 outdata[c][fassign_valid] = objtype
             else:
                 outdata[c][fassign_valid] = tile_targets[c][target_rows]
@@ -1049,7 +1121,7 @@ def merge_results_tile(out_dtype, copy_fba, params):
     return
 
 
-def merge_results(targetfiles, tiles, result_dir=".",
+def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
                   result_prefix="fiberassign_", result_split_dir=False,
                   out_dir=None, out_prefix="tile-", out_split_dir=False,
                   columns=None, copy_fba=True):
@@ -1061,6 +1133,8 @@ def merge_results(targetfiles, tiles, result_dir=".",
     Args:
         targetfiles (list):  List of pathnames containing the original input
             target files.  The rows of the file MUST be sorted by TARGETID.
+        skyfiles (list):  List of pathnames containing the original input
+            sky target files.
         tiles (list):  List of tile IDs to process.
         result_dir (str):  Top-level directory of fiberassign results.
         result_prefix (str):  Prefix of each per-tile file name.
@@ -1090,6 +1164,13 @@ def merge_results(targetfiles, tiles, result_dir=".",
     tgshape = dict()
     tghead = dict()
 
+    skydata = dict()
+    skydtype = dict()
+    skyshape = dict()
+    skyhead = dict()
+
+    survey = None
+
     for tf in targetfiles:
         tm = Timer()
         tm.start()
@@ -1105,6 +1186,9 @@ def merge_results(targetfiles, tiles, result_dir=".",
                                dtype=tgdtype[tf]).reshape(tgshape[tf])
         # Read data directly into shared buffer
         tgview[:] = fd[1].read()
+        if survey is None:
+            (survey, col, sciencemask, stdmask, skymask, safemask,
+             excludemask) = default_target_masks(tgview)
 
         # Sort rows by TARGETID if not already done
         tgviewids = tgview["TARGETID"]
@@ -1130,6 +1214,46 @@ def merge_results(targetfiles, tiles, result_dir=".",
                     dcols.extend([(colname, subd[0], subd[1])])
                 dcolnames.append(colname)
 
+    for tf in skyfiles:
+        tm = Timer()
+        tm.start()
+        fd = fitsio.FITS(tf)
+        skyhead[tf] = fd[1].read_header()
+        # Allocate a shared memory buffer for the target data
+        skylen = fd[1].get_nrows()
+        skyshape[tf] = (skylen,)
+        skydtype[tf], tempoff, tempisvararray = fd[1].get_rec_dtype()
+        skybytes = skylen * skydtype[tf].itemsize
+        skydata[tf] = RawArray("B", skybytes)
+        skyview = np.frombuffer(skydata[tf],
+                                dtype=skydtype[tf]).reshape(skyshape[tf])
+        # Read data directly into shared buffer
+        skyview[:] = fd[1].read()
+
+        # Sort rows by TARGETID if not already done
+        skyviewids = skyview["TARGETID"]
+        if not np.all(skyviewids[:-1] <= skyviewids[1:]):
+            skyview.sort(order="TARGETID", kind="heapsort")
+
+        tm.stop()
+        tm.report("Read {} into shared memory".format(tf))
+
+        # Add any missing columns to our output dtype record format.
+        tfcols = list(skyview.dtype.names)
+        if columns is not None:
+            tfcols = [x for x in tfcols if x in columns]
+        for col in tfcols:
+            subd = skyview.dtype[col].subdtype
+            colname = col
+            if col in merged_fiberassign_swap:
+                colname = merged_fiberassign_swap[col]
+            if colname not in dcolnames:
+                if subd is None:
+                    dcols.extend([(colname, skyview.dtype[col].str)])
+                else:
+                    dcols.extend([(colname, subd[0], subd[1])])
+                dcolnames.append(colname)
+
     out_dtype = np.dtype(dcols)
 
     # For each tile, find the target IDs used.  Construct the output recarray
@@ -1148,7 +1272,8 @@ def merge_results(targetfiles, tiles, result_dir=".",
 
     with mp.Pool(processes=default_mp_proc,
                  initializer=merge_results_tile_initialize,
-                 initargs=(tgdata, tgdtype, tgshape)) as pool:
+                 initargs=(tgdata, tgdtype, tgshape, skydata,
+                           skydtype, skyshape)) as pool:
         results = pool.map(merge_tile, tile_map_list)
 
     return

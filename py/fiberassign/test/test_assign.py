@@ -118,11 +118,11 @@ class TestAssign(unittest.TestCase):
         ]
         tile_ids = list(tiles.id)
 
-        merge_results(target_files, tile_ids, result_dir=test_dir,
+        merge_results(target_files, list(), tile_ids, result_dir=test_dir,
                       result_prefix="basic_", out_dir=test_dir,
                       out_prefix="basic_tile-", copy_fba=False)
 
-        merge_results(target_files, tile_ids, result_dir=test_dir,
+        merge_results(target_files, list(), tile_ids, result_dir=test_dir,
                       result_prefix="full_", out_dir=test_dir,
                       out_prefix="full_tile-", copy_fba=False)
 

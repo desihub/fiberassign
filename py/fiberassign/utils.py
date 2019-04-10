@@ -11,7 +11,8 @@ from __future__ import absolute_import, division, print_function
 
 import os
 
-from ._internal import (Logger, Timer, GlobalTimers, Circle, Segments, Shape)
+from ._internal import (Logger, Timer, GlobalTimers, Circle, Segments, Shape,
+                        Environment)
 
 # Multiprocessing environment setup
 
@@ -45,15 +46,16 @@ def option_list(opts):
     optlist = []
     for key, val in opts.items():
         keystr = "--{}".format(key)
-        if isinstance(val, bool):
-            if val:
-                optlist.append(keystr)
-        else:
-            optlist.append(keystr)
-            if isinstance(val, float):
-                optlist.append("{:.14e}".format(val))
-            elif isinstance(val, (list, tuple)):
-                optlist.extend(val)
+        if val is not None:
+            if isinstance(val, bool):
+                if val:
+                    optlist.append(keystr)
             else:
-                optlist.append("{}".format(val))
+                optlist.append(keystr)
+                if isinstance(val, float):
+                    optlist.append("{:.14e}".format(val))
+                elif isinstance(val, (list, tuple)):
+                    optlist.extend(val)
+                else:
+                    optlist.append("{}".format(val))
     return optlist

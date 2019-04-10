@@ -240,6 +240,39 @@ PYBIND11_MODULE(_internal, m) {
         )");
 
 
+    py::class_ <fba::Environment,
+        std::unique_ptr<fba::Environment, py::nodelete> > (
+            m, "Environment", R"(
+        Environment control.
+
+        This class allows setting the threading concurrency of the compiled
+        code.
+        )")
+        .def("get", [](){
+            return std::unique_ptr<fba::Environment, py::nodelete>
+                (&fba::Environment::get());
+            }, R"(
+            Get the instance of global singleton class.
+        )")
+        .def("max_threads", &fba::Environment::max_threads, R"(
+            Return the maximum threads supported by the runtime environment.
+        )")
+        .def("current_threads", &fba::Environment::current_threads, R"(
+            Return the current threading concurrency in use.
+        )")
+        .def("set_threads", &fba::Environment::set_threads,
+            py::arg("nthread"), R"(
+            Set the number of threads in use.
+
+            Args:
+                nthread (int): The number of threads to use.
+
+            Returns:
+                None
+
+        )");
+
+
     py::class_ <fbg::circle, fbg::circle::pshr > (m, "Circle", R"(
         A Circle.
 
@@ -755,37 +788,31 @@ PYBIND11_MODULE(_internal, m) {
         Class representing a single target.
         )")
         .def(py::init <> ())
-        .def_readwrite("id", &fba::Target::id, R"(
+        .def_readonly("id", &fba::Target::id, R"(
             The target ID.
         )")
-        .def_readwrite("ra", &fba::Target::ra, R"(
+        .def_readonly("ra", &fba::Target::ra, R"(
             The target RA.
         )")
-        .def_readwrite("dec", &fba::Target::dec, R"(
+        .def_readonly("dec", &fba::Target::dec, R"(
             The target DEC.
         )")
-        .def_readwrite("desi_target", &fba::Target::desi_target, R"(
-            The DESI_TARGET bitfield.
+        .def_readonly("bits", &fba::Target::bits, R"(
+            The target bitfield (e.g. DESI_TARGET, CMX_TARGET, etc).
         )")
-        .def_readwrite("bgs_target", &fba::Target::bgs_target, R"(
-            The BGS_TARGET bitfield.
-        )")
-        .def_readwrite("mws_target", &fba::Target::mws_target, R"(
-            The MWS_TARGET bitfield.
-        )")
-        .def_readwrite("obs_remain", &fba::Target::obs_remain, R"(
+        .def_readwrite("obsremain", &fba::Target::obsremain, R"(
             The remaining observations for this target.
         )")
-        .def_readwrite("priority", &fba::Target::priority, R"(
+        .def_readonly("priority", &fba::Target::priority, R"(
             The integer priority class for this target.
         )")
-        .def_readwrite("subpriority", &fba::Target::subpriority, R"(
+        .def_readonly("subpriority", &fba::Target::subpriority, R"(
             The float64 subpriority on the range [0,1).
         )")
-        .def_readwrite("obscond", &fba::Target::obscond, R"(
+        .def_readonly("obscond", &fba::Target::obscond, R"(
             The valid observing conditions allowed for this target.
         )")
-        .def_readwrite("type", &fba::Target::type, R"(
+        .def_readonly("type", &fba::Target::type, R"(
             The internal target type (science, standard, sky, safe).
         )")
         .def("is_science", &fba::Target::is_science, R"(
@@ -812,7 +839,7 @@ PYBIND11_MODULE(_internal, m) {
         );
 
     // Define a numpy dtype wrapper around our internal "Target" class.
-    PYBIND11_NUMPY_DTYPE(fba::Target, id, ra, dec, obs_remain, priority,
+    PYBIND11_NUMPY_DTYPE(fba::Target, id, ra, dec, bits, obsremain, priority,
                          subpriority, obscond, type);
 
 
@@ -825,29 +852,32 @@ PYBIND11_MODULE(_internal, m) {
 
         )")
         .def(py::init < > ())
-        .def("append", &fba::Targets::append, py::arg("ids"), py::arg("ras"),
-            py::arg("decs"), py::arg("obs_remain"), py::arg("desi_target"),
-            py::arg("bgs_target"), py::arg("mws_target"), py::arg("priority"),
-            py::arg("subpriority"), py::arg("obscond"), py::arg("type"), R"(
+        .def("append", &fba::Targets::append, py::arg("tsurvey"),
+            py::arg("ids"), py::arg("ras"), py::arg("decs"),
+            py::arg("targetbits"), py::arg("obsremain"),
+            py::arg("priority"), py::arg("subpriority"),
+            py::arg("obscond"), py::arg("type"), R"(
             Append objects to the target list.
 
             Args:
+                survey (str):  the survey type of the target data.
                 ids (array):  array of int64 target IDs.
                 ras (array):  array of float64 target RA coordinates.
                 decs (array):  array of float64 target DEC coordinates.
-                obs_remain (array):  array of int32 number of remaining
+                obsremain (array):  array of int32 number of remaining
                     observations.
-                desi_target (array):  array of int64 DESI_TARGET values.
-                bgs_target (array):  array of int64 BGS_TARGET values.
-                mws_target (array):  array of int64 MWS_TARGET values.
-                priority (array):  array of int32 values representing the target
-                    class priority for each object.
+                targetbits (array):  array of int64 bit values (DESI_TARGET,
+                    CMX_TARGET, etc).
+                priority (array):  array of int32 values representing the
+                    target class priority for each object.
                 subpriority (array):  array of float64 values in [0.0, 1.0]
                     representing the priority within the target class.
                 obscond (array):  array of int32 bitfields describing the
                     valid observing conditions for each target.
                 type (array):  array of uint8 bitfields holding the types of
                     of each target (science, standard, etc).
+                survey (list):  list of strings of the survey types for each
+                    target.
 
         )")
         .def("ids", [](fba::Targets & self) {
@@ -882,6 +912,15 @@ PYBIND11_MODULE(_internal, m) {
 
             Returns:
                 (Target): A target object.
+
+        )")
+        .def("survey", [](fba::Targets & self) {
+                return self.survey;
+            }, py::return_value_policy::copy, R"(
+            Get the survey for the Targets object.
+
+            Returns:
+                (str): The survey name.
 
         )")
         .def("__repr__",

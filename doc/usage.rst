@@ -118,6 +118,19 @@ fiber, or target specified will have all possible info logged.
     performance.  Do not use in large production runs.
 
 
+Data File Testing
+---------------------
+
+It is often useful to see if a given set of input target files are compatible
+with all of the commandline tools in fiberassign.  This usage pattern was so
+common that a high-level script was created:
+
+.. include:: _static/fba_fulltest.inc
+
+This runs the specified files through the assignment and merging, as well as
+running QA and plotting on both the raw outputs and the merged outputs.
+
+
 Legacy Compatibility Wrappers
 ---------------------------------------
 

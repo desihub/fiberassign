@@ -29,8 +29,9 @@ from .hardware import load_hardware
 
 from .tiles import load_tiles
 
-from .targets import (Targets, append_target_table, TARGET_TYPE_SCIENCE,
-                      TARGET_TYPE_SKY, TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE)
+from .targets import (Targets, load_target_table,
+                      TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
+                      TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE)
 
 from .assign import (read_assignment_fits_tile, result_tiles, result_path,
                      avail_table_to_dict)
@@ -128,17 +129,6 @@ def plot_positioner_simple(ax, patrol_rad, fiber, center, cb, fh, color="k",
             verticalalignment='center',
             bbox=None)
     return
-
-
-def plot_parse_table(tgdata):
-    """Create a Targets object from a recarray.
-    """
-    tgs = Targets()
-    typecol = None
-    if "FBATYPE" not in tgdata.dtype.names:
-        typecol = "DESI_TARGET"
-    append_target_table(tgs, tgdata, typecol=typecol)
-    return tgs
 
 
 def plot_tile_targets_props(hw, tile_ra, tile_dec, tgs, avail_tgid=None):
@@ -240,7 +230,13 @@ def plot_assignment_tile_file(fibers, real_shapes, params):
     ax.set_aspect("equal")
 
     # Target properties (x, y, color) for plotting
-    tgs = plot_parse_table(targets_data)
+    tgs = Targets()
+    if "FA_SURV" in header:
+        load_target_table(tgs, targets_data,
+                          survey=str(header["FA_SURV"]).rstrip(),
+                          typecol="FA_TYPE")
+    else:
+        load_target_table(tgs, targets_data)
 
     targetprops = plot_tile_targets_props(plot_assignment_tile_file_hw,
                                           tile_ra, tile_dec, tgs)

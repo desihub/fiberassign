@@ -9,6 +9,10 @@
 
 #include <algorithm>
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 namespace fba = fiberassign;
 
 namespace fbg = fiberassign::geom;
@@ -99,6 +103,45 @@ void fba::Timer::report(char const * message) {
     msg << std::fixed << message << ":  " << t << " seconds ("
         << calls_ << " calls)";
     logger.info(msg.str().c_str());
+    return;
+}
+
+
+fba::Environment::Environment() {
+    max_threads_ = 1;
+    #ifdef _OPENMP
+    max_threads_ = omp_get_max_threads();
+    #endif
+    cur_threads_ = max_threads_;
+}
+
+fba::Environment & fba::Environment::get() {
+    static fba::Environment instance;
+    return instance;
+}
+
+int fba::Environment::max_threads() {
+    return max_threads_;
+}
+
+int fba::Environment::current_threads() {
+    return cur_threads_;
+}
+
+void fba::Environment::set_threads(int nthread) {
+    if (nthread > max_threads_) {
+        auto & log = fba::Logger::get();
+        std::ostringstream o;
+        o << "Requested number of threads (" << nthread
+            << ") is greater than the maximum (" << max_threads_
+            << ") using " << max_threads_ << " instead";
+        log.warning(o.str().c_str());
+        nthread = max_threads_;
+    }
+    #ifdef _OPENMP
+    omp_set_num_threads(nthread);
+    #endif
+    cur_threads_ = nthread;
     return;
 }
 

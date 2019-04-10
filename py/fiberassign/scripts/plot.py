@@ -13,11 +13,11 @@ import os
 import argparse
 from datetime import datetime
 
-from fiberassign.hardware import load_hardware
+from ..hardware import load_hardware
 
-from fiberassign.tiles import load_tiles
+from ..tiles import load_tiles
 
-from fiberassign.vis import plot_tiles
+from ..vis import plot_tiles
 
 
 def parse_plot(optlist=None):

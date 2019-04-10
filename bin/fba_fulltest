@@ -1,0 +1,16 @@
+#!/usr/bin/env python
+"""
+Full test of fiberassign commandline tools on input files.
+"""
+
+from fiberassign.scripts.fulltest import (parse_fulltest, run_fulltest)
+
+
+def main():
+    args = parse_fulltest()
+    run_fulltest(args)
+    return
+
+
+if __name__ == "__main__":
+    main()

@@ -14,9 +14,9 @@ import argparse
 
 import numpy as np
 
-from fiberassign.utils import Logger
+from ..utils import Logger
 
-from fiberassign.assign import (merge_results, result_tiles)
+from ..assign import (merge_results, result_tiles)
 
 
 def parse_merge(optlist=None):
@@ -41,6 +41,13 @@ def parse_merge(optlist=None):
                         "argument can be specified multiple times (for "
                         "example if standards / skies / science targets are "
                         "in different files).")
+
+    parser.add_argument("--sky", type=str, required=False, nargs="+",
+                        help="Input file with sky or 'bad sky' targets.  "
+                        "This option exists in order to treat main-survey"
+                        " sky target files as valid for other survey types."
+                        "  If you are running a main survey assignment, you"
+                        " can just pass the sky file to the --targets list.")
 
     parser.add_argument("--dir", type=str, required=True, default=None,
                         help="Directory containing fiberassign results.")
@@ -81,6 +88,9 @@ def parse_merge(optlist=None):
         args = parser.parse_args()
     else:
         args = parser.parse_args(optlist)
+
+    if args.sky is None:
+        args.sky = list()
 
     return args
 
@@ -136,7 +146,7 @@ def run_merge(args):
 
     """
     tiles, columns = run_merge_init(args)
-    merge_results(args.targets, tiles, result_dir=args.dir,
+    merge_results(args.targets, args.sky, tiles, result_dir=args.dir,
                   result_prefix=args.prefix, result_split_dir=args.split,
                   out_dir=args.out, out_prefix=args.out_prefix,
                   out_split_dir=args.out_split, columns=columns,
@@ -165,7 +175,7 @@ def run_merge_mpi(args, comm):
     ptiles = np.array_split(tiles, comm.size)[comm.rank]
     if len(ptiles) > 0:
         log.info("proc {} doing {} tiles".format(comm.rank, len(ptiles)))
-        merge_results(args.targets, ptiles, result_dir=args.dir,
+        merge_results(args.targets, args.sky, ptiles, result_dir=args.dir,
                       result_prefix=args.prefix, out_dir=args.out,
                       out_prefix=args.out_prefix, columns=columns,
                       copy_fba=(not args.skip_raw))

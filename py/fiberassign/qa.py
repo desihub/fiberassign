@@ -22,39 +22,50 @@ from desitarget.targetmask import desi_mask
 
 from .utils import Logger, default_mp_proc
 
-from .targets import (Targets, append_target_table)
+from .targets import (Targets, load_target_table)
 
 from .assign import (result_tiles, result_path, avail_table_to_dict,
                      read_assignment_fits_tile)
 
 
-def qa_parse_table(tgdata):
+def qa_parse_table(header, tgdata):
     """Extract target info from a table.
     """
     tgs = Targets()
-    typecol = None
-    if "FBATYPE" not in tgdata.dtype.names:
-        typecol = "DESI_TARGET"
-    append_target_table(tgs, tgdata, typecol=typecol)
+    if "FA_SURV" in header:
+        load_target_table(tgs, tgdata,
+                          survey=str(header["FA_SURV"]).rstrip(),
+                          typecol="FA_TYPE")
+    else:
+        load_target_table(tgs, tgdata)
+    survey = tgs.survey()
+
     tgprops = dict()
-    lrgmask = int(desi_mask["LRG"].mask)
-    elgmask = int(desi_mask["ELG"].mask)
-    qsomask = int(desi_mask["QSO"].mask)
-    badmask = int(desi_mask["BAD_SKY"].mask)
-    for row in range(len(tgdata)):
-        tgid = tgdata["TARGETID"][row]
-        dt = tgdata["DESI_TARGET"][row]
-        tgprops[tgid] = dict()
-        if dt & lrgmask:
-            tgprops[tgid]["type"] = "LRG"
-        elif dt & elgmask:
-            tgprops[tgid]["type"] = "ELG"
-        elif dt & qsomask:
-            tgprops[tgid]["type"] = "QSO"
-        elif dt & badmask:
-            tgprops[tgid]["type"] = "BAD"
-        else:
-            tgprops[tgid]["type"] = "NA"
+    if survey == "main":
+        lrgmask = int(desi_mask["LRG"].mask)
+        elgmask = int(desi_mask["ELG"].mask)
+        qsomask = int(desi_mask["QSO"].mask)
+        badmask = int(desi_mask["BAD_SKY"].mask)
+        for row in range(len(tgdata)):
+            tgid = tgdata["TARGETID"][row]
+            tg = tgs.get(tgid)
+            dt = tg.bits
+            tgprops[tgid] = dict()
+            if dt & lrgmask:
+                tgprops[tgid]["type"] = "LRG"
+            elif dt & elgmask:
+                tgprops[tgid]["type"] = "ELG"
+            elif dt & qsomask:
+                tgprops[tgid]["type"] = "QSO"
+            elif dt & badmask:
+                tgprops[tgid]["type"] = "BAD"
+            else:
+                tgprops[tgid]["type"] = "NA"
+    else:
+        # Could define similar things for other surveys here...
+        for row in range(len(tgdata)):
+            tgid = tgdata["TARGETID"][row]
+            tgprops[tgid] = {"type": "NA"}
     return tgs, tgprops
 
 
@@ -116,7 +127,7 @@ def qa_tile_file(hw, params):
         read_assignment_fits_tile((tile_id, tile_file))
 
     # Target properties
-    tgs, tgprops = qa_parse_table(targets_data)
+    tgs, tgprops = qa_parse_table(header, targets_data)
 
     # Only do QA on positioners.
     pos_rows = np.where(fiber_data["DEVICE_TYPE"] == b"POS")[0]
