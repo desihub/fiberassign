@@ -22,22 +22,19 @@ import desimodel.io as dmio
 from .utils import Logger
 
 from ._internal import (Hardware, FIBER_STATE_OK, FIBER_STATE_STUCK,
-                        FIBER_STATE_BROKEN)
+                        FIBER_STATE_BROKEN, Circle, Segments, Shape)
 
 
-def load_hardware(fiberpos_file=None, gfa_file=None, rundate=None,
-                  status_file=None):
+def load_hardware(focalplane=None, gfa_file=None, rundate=None):
     """Create a hardware class representing properties of the telescope.
 
     Args:
-        fiberpos_file (str):  Optional path to the fiber positioner FITS file.
-            If not specified, desimodel is used to get the location of the
-            default file.
+        focalplane (tuple):  Override the focalplane model.  If not None, this
+            should be a tuple of the same data types returned by
+            desimodel.io.load_focalplane()
         gfa_file (str):  Optional path to the GFA file.
         rundate (str):  ISO 8601 format time stamp as a string in the
             format YYYY-MM-DDTHH:MM:SS.  If None, uses current time.
-        status_file (str):  Path to fiber status file.  If not specified, all
-            fibers are assumed good.
 
     Returns:
         (Hardware):  The hardware object.
@@ -45,7 +42,44 @@ def load_hardware(fiberpos_file=None, gfa_file=None, rundate=None,
     """
     log = Logger.get()
 
-    # Read the fiber positioner data
+    # The timestamp for this run.
+    runtime = None
+    if rundate is None:
+        runtime = datetime.utcnow()
+    else:
+        runtime = datetime.strptime(rundate, "%Y-%m-%dT%H:%M:%S")
+
+    # Get the focalplane information
+    fp = None
+    exclude = None
+    state = None
+    if focalplane is None:
+        fp, exclude, state = dmio.load_focalplane(runtime)
+    else:
+        fp, exclude, state = focalplane
+
+    # Convert the exclusion polygons into shapes.
+
+    for nm, shp in exclude.items():
+
+        for arm in ["theta", "phi"]:
+            cr = list()
+            for crc in shp[arm]["circles"]:
+                cr.append(Circle(crc[0], crc[1]))
+            sg = list()
+            for sgm in shp[arm]["segments"]:
+                sg.append(Segments(sgm))
+
+
+
+    # We are only going to keep rows for LOCATIONS that are assigned to an
+    # actual device.
+
+
+
+
+
+
     if fiberpos_file is None:
         fiberpos_file = dmio.findfile('focalplane/fiberpos-all.fits')
     log.info("Reading fiber positions from {}".format(fiberpos_file))
