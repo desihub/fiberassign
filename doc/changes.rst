@@ -3,10 +3,24 @@
 fiberassign change log
 ======================
 
-1.0.1 (unreleased)
+1.0.2 (unreleased)
 ------------------
 
-* Not yet released.
+* No changes yet.
+
+1.0.1 (2019-05-13)
+------------------
+
+* Support different default masks for each program (PR `#193`_).
+* Assign SAFE targets as backup if no SKY are available for sky monitor
+  (PR `#191`_).
+* Restored "safe" target type instead of just low priority science (PR `#189`_).
+* Reorganized high-level code into package instead of script (PR `#188`_).
+
+.. _`#188`: https://github.com/desihub/fiberassign/pull/188
+.. _`#189`: https://github.com/desihub/fiberassign/pull/189
+.. _`#191`: https://github.com/desihub/fiberassign/pull/191
+.. _`#193`: https://github.com/desihub/fiberassign/pull/193
 
 1.0.0 (2019-02-22)
 ------------------
