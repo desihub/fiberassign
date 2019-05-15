@@ -34,14 +34,14 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
         typedef std::shared_ptr <Hardware> pshr;
 
         Hardware(
-            std::vector <int32_t> const & fiber,
-            std::vector <int32_t> const & petal,
-            std::vector <int32_t> const & spectro,
             std::vector <int32_t> const & location,
-            std::vector <int32_t> const & slit,
+            std::vector <int32_t> const & petal,
+            std::vector <int32_t> const & device,
             std::vector <int32_t> const & slitblock,
             std::vector <int32_t> const & blockfiber,
-            std::vector <int32_t> const & device,
+            std::vector <int32_t> const & spectro,
+            std::vector <int32_t> const & fiber,
+            std::vector <int32_t> const & slit,
             std::vector <std::string> const & device_type,
             std::vector <double> const & x_mm,
             std::vector <double> const & y_mm,
@@ -83,86 +83,86 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
                      fbg::dpair center2,
                      fbg::dpair position2) const;
 
-        std::pair <fbg::shape, fbg::shape> fiber_position(
-            int32_t fiber_id, fbg::dpair const & xy) const;
+        std::pair <fbg::shape, fbg::shape> loc_position(
+            int32_t loc, fbg::dpair const & xy) const;
 
-        std::vector <std::pair <fbg::shape, fbg::shape> > fiber_position_multi(
-            std::vector <int32_t> const & fiber_id,
+        std::vector <std::pair <fbg::shape, fbg::shape> > loc_position_multi(
+            std::vector <int32_t> const & loc,
             std::vector <fbg::dpair> const & xy, int threads = 0) const;
 
         std::vector <bool> check_collisions_xy(
-            std::vector <int32_t> const & fiber_id,
+            std::vector <int32_t> const & loc,
             std::vector <fbg::dpair> const & xy, int threads = 0) const;
 
         std::vector <bool> check_collisions_thetaphi(
-            std::vector <int32_t> const & fiber_id,
+            std::vector <int32_t> const & loc,
             std::vector <double> const & theta,
             std::vector <double> const & phi, int threads = 0) const;
 
-        // Get the fiber IDs for a particular device type
-        std::vector <int32_t> device_fibers(std::string const & type) const;
+        // Get the Locations for a particular device type
+        std::vector <int32_t> device_locations(std::string const & type) const;
 
-        // The (constant) total number of fibers.
-        int32_t nfiber;
+        // The (constant) total number of locations.
+        int32_t nloc;
 
         // The number of petals (spectraographs)
         int32_t npetal;
 
-        // The number of fibers per petal.
+        // The number of fibers (device == "POS") per petal.
         int32_t nfiber_petal;
 
         // The full focalplane radius on the sky in degrees
         double focalplane_radius_deg;
 
-        // fiber IDs
-        std::vector <int32_t> fiber_id;
+        // Locations
+        std::vector <int32_t> locations;
 
-        // fiber ID to positioner centers in mm
-        std::map <int32_t, std::pair <double, double> > fiber_pos_xy_mm;
-        std::map <int32_t, double> fiber_pos_z_mm;
+        // Location to positioner centers in mm
+        std::map <int32_t, std::pair <double, double> > loc_pos_xy_mm;
+        std::map <int32_t, double> loc_pos_z_mm;
 
-        // fiber ID to petal
-        std::map <int32_t, int32_t> fiber_petal;
+        // Location to petal
+        std::map <int32_t, int32_t> loc_petal;
 
-        // petal to fiber IDs
-        std::map <int32_t, std::vector <int32_t> > petal_fibers;
+        // petal to locations
+        std::map <int32_t, std::vector <int32_t> > petal_locations;
 
-        // fiber ID to device
-        std::map <int32_t, int32_t> fiber_device;
-        std::map <int32_t, std::string> fiber_device_type;
+        // Location to device
+        std::map <int32_t, int32_t> loc_device;
+        std::map <int32_t, std::string> loc_device_type;
 
-        // fiber ID to location
-        std::map <int32_t, int32_t> fiber_location;
+        // Location to fiber ID
+        std::map <int32_t, int32_t> loc_fiber;
 
-        // fiber ID to spectrograph
-        std::map <int32_t, int32_t> fiber_spectro;
+        // Location to spectrograph
+        std::map <int32_t, int32_t> loc_spectro;
 
-        // fiber ID to positioner q/s
-        std::map <int32_t, double> fiber_pos_q_deg;
-        std::map <int32_t, double> fiber_pos_s_mm;
+        // Location to positioner q/s
+        std::map <int32_t, double> loc_pos_q_deg;
+        std::map <int32_t, double> loc_pos_s_mm;
 
-        // fiber ID to slit
-        std::map <int32_t, int32_t> fiber_slit;
+        // Location to slit
+        std::map <int32_t, int32_t> loc_slit;
 
-        // fiber ID to slitblock
-        std::map <int32_t, int32_t> fiber_slitblock;
+        // Location to slitblock
+        std::map <int32_t, int32_t> loc_slitblock;
 
-        // fiber ID to blockfiber
-        std::map <int32_t, int32_t> fiber_blockfiber;
+        // Location to blockfiber
+        std::map <int32_t, int32_t> loc_blockfiber;
 
         // patrol radius in mm
         double patrol_mm;
 
-        // The guaranteed collision distance for fibers in mm
+        // The guaranteed collision distance for positioners in mm
         double collide_mm;
 
-        // The average collision distance for fibers in mm
+        // The average collision distance for positioners in mm
         double collide_avg_mm;
 
-        // The guaranteed collision avoidance for fibers in mm
+        // The guaranteed collision avoidance for positioners in mm
         double no_collide_mm;
 
-        // The radius on the focalplane for considering which fibers are
+        // The radius on the focalplane for considering which locations are
         // neighbors.
         double neighbor_radius_mm;
 
@@ -176,7 +176,7 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
         // The current fiber state.
         std::map <int32_t, int32_t> state;
 
-        // The neighbors of each fiber positioner
+        // The neighbors of each device location.
         std::map <int32_t, std::vector <int32_t> > neighbors;
 
         // The geometric shape of the ferrule holder
@@ -201,99 +201,3 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
 
 }
 #endif
-
-
-//
-// // Can contain information on geometry of fiber one day (hardcoded for now) not
-// // used yet
-// class PosP {
-//     public:
-//         double r1, r2;
-//         PosP (double r1, double r2);
-// };
-//
-// // Rotation of A (angle t) aroud axis axis
-// void rot_pt (dpair & A, const dpair & ax, const dpair & angle);
-//
-// // Intersection between segments p1-q1 and p2-q2
-// bool intersect (const dpair & p1, const dpair & q1, const dpair & p2,
-//                 const dpair & q2);
-//
-// // List segments, or circles
-// class element {
-//     public:
-//         // True if segments, false if circle
-//         bool is_seg;
-//         // Segments
-//         Dplist segs;
-//         // Circle center
-//         dpair O;
-//         // Circle radius
-//         double rad;
-//         // For python plot
-//         char color;
-//         // For plotting
-//         double transparency;
-//         // For plotting
-//         double radplot;
-//         element ();
-//         // b : is_seg
-//         element (bool b);
-//         // Creates circle
-//         element (const dpair & O, const double & rad);
-//         // Creates segment list with only the segment AB
-//         element (const dpair & A, const dpair & B);
-//         // Point with color
-//         element (const dpair & A, char c, double transp, double rad0);
-//         // Add point to segments list
-//         void add (const double & a, const double & b);
-//         // Add point to segments list
-//         void add (const dpair & p);
-//         // Translation by t
-//         void transl (const dpair & t);
-//         // Rotation of the angle def by t (cos,sin) around axis axis
-//         void rotation (const dpair & t, const dpair & axis);
-//         void print () const;
-//         // Xmin, Xmax, Ymin, Ymax of the element
-//         void limits (Dlist & lims) const;
-// };
-//
-// class Elements : public std::vector <element> {};
-//
-// // Intersection between 2 elements
-// bool intersect (const element & e1, const element & e2);
-//
-// class polygon {
-//     public:
-//         // Segments and circles
-//         Elements elmts;
-//         dpair axis;
-//         void add (const element & el);
-//         // Add all elements of p
-//         void add (const polygon & p);
-//         // Translation
-//         void transl (const dpair & t);
-//         // Rotation aroud polygon's axis
-//         void rotation (const dpair & t);
-//         // Rotation around O
-//         void rotation_origin (const dpair & t);
-//         void print () const;
-//         // Change color of the polygon
-//         void set_color (char c);
-//         // Xmin, Xmax, Ymin, Ymax of the polygon
-//         Dlist limits () const;
-// };
-//
-// // fh = ferrule holder
-// polygon create_fh ();
-// // cb = central body
-// polygon create_cb ();
-// // Check collision
-// bool collision (const polygon & p1, const polygon & p2);
-// // cos sin theta and phi for a galaxy which is in A (ref to the origin)
-// Dlist angles (const dpair & A, const PosP & posp);
-// // G loc of galaxy, O origin. Repositions fh and cb in the good position
-// // according to O, G
-// void repos_cb_fh (polygon & cb, polygon & fh, const dpair & O, const dpair & G,
-//                   const PosP & posp);
-//

@@ -243,7 +243,7 @@ fba::Logger::Logger() {
     }
 
     // Check if we are further debugging the assignment process for specific
-    // tile, fiber, and target values.  If these environment variables are set,
+    // tile, loc, and target values.  If these environment variables are set,
     // override the log level and set it to debug.
 
     extra_ = false;
@@ -262,10 +262,10 @@ fba::Logger::Logger() {
         extra_ = true;
     }
 
-    debug_fiber_ = -1;
+    debug_loc_ = -1;
     val = ::getenv("DESI_DEBUG_FIBER");
     if (val != NULL) {
-        debug_fiber_ = ::atoi(val);
+        debug_loc_ = ::atoi(val);
         extra_ = true;
     }
 
@@ -292,7 +292,7 @@ fba::Logger & fba::Logger::get() {
 }
 
 
-void fba::Logger::debug_tfg(int32_t tile, int32_t fiber, int64_t target,
+void fba::Logger::debug_tfg(int32_t tile, int32_t loc, int64_t target,
     char const * msg) {
     if (level_ <= log_level::debug) {
         bool doprint = false;
@@ -302,7 +302,7 @@ void fba::Logger::debug_tfg(int32_t tile, int32_t fiber, int64_t target,
             if ((debug_tile_ >= 0) && (debug_tile_ == tile)) {
                 doprint = true;
             }
-            if ((debug_fiber_ >= 0) && (debug_fiber_ == fiber)) {
+            if ((debug_loc_ >= 0) && (debug_loc_ == loc)) {
                 doprint = true;
             }
             if ((debug_target_ >= 0) && (debug_target_ == target)) {

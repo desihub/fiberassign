@@ -75,7 +75,7 @@ def qa_tile(hw, tile_id, tgs, tgprops, tile_assign, tile_avail):
     # props["tile_ra"] = tiles.ra[tile_idx]
     # props["tile_dec"] = tiles.dec[tile_idx]
     # props["tile_obscond"] = tiles.obscond[tile_idx]
-    fibers = np.array(hw.device_fibers("POS"))
+    locs = np.array(hw.device_locations("POS"))
     nassign = 0
     nscience = 0
     nstd = 0
@@ -83,13 +83,13 @@ def qa_tile(hw, tile_id, tgs, tgprops, tile_assign, tile_avail):
     nsafe = 0
     unassigned = list()
     objtypes = dict()
-    for fid in fibers:
-        if fid not in tile_assign:
-            unassigned.append(int(fid))
+    for lid in locs:
+        if lid not in tile_assign:
+            unassigned.append(int(lid))
             continue
-        tgid = tile_assign[fid]
+        tgid = tile_assign[lid]
         if tgid < 0:
-            unassigned.append(int(fid))
+            unassigned.append(int(lid))
             continue
         nassign += 1
         tg = tgs.get(tgid)

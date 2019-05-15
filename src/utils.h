@@ -163,7 +163,7 @@ class Logger {
         // Singleton access
         static Logger & get();
 
-        void debug_tfg(int32_t tile, int32_t fiber, int64_t target,
+        void debug_tfg(int32_t tile, int32_t loc, int64_t target,
             char const * msg);
 
         void debug(char const * msg);
@@ -182,7 +182,7 @@ class Logger {
         log_level level_;
         std::string prefix_;
         int32_t debug_tile_;
-        int32_t debug_fiber_;
+        int32_t debug_loc_;
         int64_t debug_target_;
         bool debug_all_;
         bool extra_;

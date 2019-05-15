@@ -26,7 +26,7 @@ from ..gfa import get_gfa_targets
 from ..targets import (str_to_target_type, TARGET_TYPE_SCIENCE,
                        TARGET_TYPE_SKY, TARGET_TYPE_STANDARD,
                        TARGET_TYPE_SAFE, Targets, TargetsAvailable,
-                       TargetTree, FibersAvailable,
+                       TargetTree, LocationsAvailable,
                        load_target_file)
 
 from ..assign import (Assignment, write_assignment_fits,
@@ -309,7 +309,7 @@ def run_assign_full(args):
     del tree
 
     # Compute the fibers on all tiles available for each target and sky
-    favail = FibersAvailable(tgsavail)
+    favail = LocationsAvailable(tgsavail)
 
     # Create assignment object
     asgn = Assignment(tgs, tgsavail, favail)

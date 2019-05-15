@@ -22,7 +22,7 @@ from fiberassign.tiles import load_tiles
 from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                                  TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE,
                                  Targets, TargetsAvailable, TargetTree,
-                                 FibersAvailable, load_target_file)
+                                 LocationsAvailable, load_target_file)
 
 from fiberassign.assign import (Assignment, write_assignment_fits,
                                 write_assignment_ascii, merge_results,
@@ -82,7 +82,7 @@ class TestAssign(unittest.TestCase):
         del tree
 
         # Compute the fibers on all tiles available for each target
-        favail = FibersAvailable(tgsavail)
+        favail = LocationsAvailable(tgsavail)
 
         # First pass assignment
         asgn = Assignment(tgs, tgsavail, favail)
@@ -129,7 +129,7 @@ class TestAssign(unittest.TestCase):
         # Here we test reading with the standard reading function
 
         for tid in tile_ids:
-            tdata = asgn.tile_fiber_target(tid)
+            tdata = asgn.tile_location_target(tid)
             avail = tgsavail.tile_data(tid)
             # Check basic format
             infile = os.path.join(test_dir,
@@ -289,7 +289,7 @@ class TestAssign(unittest.TestCase):
         del tree
 
         # Compute the fibers on all tiles available for each target
-        favail = FibersAvailable(tgsavail)
+        favail = LocationsAvailable(tgsavail)
 
         # Create assignment object
         asgn = Assignment(tgs, tgsavail, favail)

@@ -1,4 +1,3 @@
-
 #include <string>
 #include <sstream>
 
@@ -433,21 +432,21 @@ PYBIND11_MODULE(_internal, m) {
         Class representing the hardware configuration of the telescope.
 
         Args:
-            fiber (array):  int32 array of fiber IDs.
-            petal (array):  int32 array of petal index.
-            spectro (array):  int32 array of spectrograph index.
             location (array):  int32 array of location.
-            slit (array):  int32 array of slit number.
+            petal (array):  int32 array of petal index.
+            device (array):  int32 array of device number.
             slitblock (array):  int32 array of slitblock.
             blockfiber (array):  int32 array of blockfiber.
-            device (array):  int32 array of device number.
+            spectro (array):  int32 array of spectrograph index.
+            fiber (array):  int32 array of fiber IDs.
+            slit (array):  int32 array of slit number.
             device_type (list):  List of strings of device types
                 (e.g. POS, ETC).
-            x (array):  array of fiber X coordinate centers in mm.
-            y (array):  array of fiber Y coordinate centers in mm.
-            z (array):  array of fiber Z coordinate centers in mm.
-            q (array):  array fiber Q coordinate centers in degrees.
-            s (array):  array fiber S coordinate centers in mm.
+            x (array):  location X coordinate centers in mm.
+            y (array):  location Y coordinate centers in mm.
+            z (array):  location Z coordinate centers in mm.
+            q (array):  location Q coordinate centers in degrees.
+            s (array):  location S coordinate centers in mm.
             status (array):  array of integers containing the fiber status.
 
         )")
@@ -466,68 +465,68 @@ PYBIND11_MODULE(_internal, m) {
             std::vector <double> const &,
             std::vector <double> const &,
             std::vector <double> const &,
-            std::vector <int32_t> const & > (), py::arg("fiber"),
-            py::arg("peta"), py::arg("spectro"), py::arg("location"),
-            py::arg("slit"), py::arg("slitblock"), py::arg("blockfiber"),
-            py::arg("device"), py::arg("device_type"), py::arg("x"),
+            std::vector <int32_t> const &> (), py::arg("location"),
+            py::arg("petal"), py::arg("device"), py::arg("slitblock"),
+            py::arg("blockfiber"), py::arg("spectro"), py::arg("fiber"),
+            py::arg("slit"), py::arg("device_type"), py::arg("x"),
             py::arg("y"), py::arg("z"), py::arg("q"), py::arg("s"),
             py::arg("status")
         )
-        .def_readonly("nfiber", &fba::Hardware::nfiber, R"(
-            The number of fibers (including POS and ETC devices).
+        .def_readonly("nloc", &fba::Hardware::nloc, R"(
+            The number of device locations.
         )")
         .def_readonly("npetal", &fba::Hardware::npetal, R"(
             The number of petals.
         )")
         .def_readonly("nfiber_petal", &fba::Hardware::nfiber_petal, R"(
-            The number of fibers per petal.
+            The number of science positioners (device type POS) per petal.
         )")
         .def_readonly("focalplane_radius_deg",
                       &fba::Hardware::focalplane_radius_deg, R"(
                           The focalplane radius in degrees.
                       )")
-        .def_readonly("fiber_id", &fba::Hardware::fiber_id, R"(
-            Vector of fiber IDs.
+        .def_readonly("locations", &fba::Hardware::locations, R"(
+            Vector of locations.
         )")
-        .def_readonly("fiber_petal", &fba::Hardware::fiber_petal, R"(
-            Dictionary of the petal for each fiber ID.
+        .def_readonly("loc_petal", &fba::Hardware::loc_petal, R"(
+            Dictionary of the petal for each location.
         )")
-        .def_readonly("petal_fibers", &fba::Hardware::petal_fibers, R"(
-            Dictionary of the fiber IDs for each petal.
+        .def_readonly("petal_locations", &fba::Hardware::petal_locations, R"(
+            Dictionary of the locations for each petal.
         )")
-        .def_readonly("fiber_pos_xy_mm", &fba::Hardware::fiber_pos_xy_mm, R"(
-            Dictionary of (X, Y) position tuples for each fiber ID.
+        .def_readonly("loc_pos_xy_mm", &fba::Hardware::loc_pos_xy_mm, R"(
+            Dictionary of central (X, Y) position tuples for each location.
         )")
-        .def_readonly("fiber_pos_z_mm", &fba::Hardware::fiber_pos_z_mm, R"(
-            Dictionary of Z values for each fiber ID.
+        .def_readonly("loc_pos_z_mm", &fba::Hardware::loc_pos_z_mm, R"(
+            Dictionary of central Z values for each location.
         )")
-        .def_readonly("fiber_pos_q_deg", &fba::Hardware::fiber_pos_q_deg, R"(
-            Dictionary of Q values for each fiber ID.
+        .def_readonly("loc_pos_q_deg", &fba::Hardware::loc_pos_q_deg, R"(
+            Dictionary of central Q values for each location.
         )")
-        .def_readonly("fiber_pos_s_mm", &fba::Hardware::fiber_pos_s_mm, R"(
-            Dictionary of S values for each fiber ID.
+        .def_readonly("loc_pos_s_mm", &fba::Hardware::loc_pos_s_mm, R"(
+            Dictionary of central S values for each location.
         )")
-        .def_readonly("fiber_device", &fba::Hardware::fiber_device, R"(
-            Dictionary of device ID for each fiber ID
+        .def_readonly("loc_device", &fba::Hardware::loc_device, R"(
+            Dictionary of device ID for each location
         )")
-        .def_readonly("fiber_device_type",
-                      &fba::Hardware::fiber_device_type, R"(
-            Dictionary of device type (POS or ETC) for each fiber ID.
+        .def_readonly("loc_device_type",
+                      &fba::Hardware::loc_device_type, R"(
+            Dictionary of device type (POS or ETC) for each location.
         )")
-        .def_readonly("fiber_location", &fba::Hardware::fiber_location, R"(
-            Dictionary of location values for each fiber ID.
+        .def_readonly("loc_fiber", &fba::Hardware::loc_fiber, R"(
+            Dictionary of fiber values for each location.
         )")
-        .def_readonly("fiber_spectro", &fba::Hardware::fiber_spectro, R"(
-            Dictionary of spectrograph index for each fiber ID.
+        .def_readonly("loc_spectro", &fba::Hardware::loc_spectro, R"(
+            Dictionary of spectrograph index for each location.
         )")
-        .def_readonly("fiber_slit", &fba::Hardware::fiber_slit, R"(
-            Dictionary of slit values for each fiber ID.
+        .def_readonly("loc_slit", &fba::Hardware::loc_slit, R"(
+            Dictionary of slit values for each location.
         )")
-        .def_readonly("fiber_slitblock", &fba::Hardware::fiber_slitblock, R"(
-            Dictionary of slitblock values for each fiber ID.
+        .def_readonly("loc_slitblock", &fba::Hardware::loc_slitblock, R"(
+            Dictionary of slitblock values for each location.
         )")
-        .def_readonly("fiber_blockfiber", &fba::Hardware::fiber_blockfiber, R"(
-            Dictionary of blockfiber values for each fiber ID.
+        .def_readonly("loc_blockfiber", &fba::Hardware::loc_blockfiber, R"(
+            Dictionary of blockfiber values for each location.
         )")
         .def_readonly("patrol_mm", &fba::Hardware::patrol_mm, R"(
             Constant patrol radius, soon will be a dictionary...
@@ -541,20 +540,20 @@ PYBIND11_MODULE(_internal, m) {
         )")
         .def_readonly("neighbor_radius_mm",
                       &fba::Hardware::neighbor_radius_mm, R"(
-            Radius for considering fibers as neighbors.
+            Radius for considering locations as neighbors.
         )")
         .def_readonly("positioner_range", &fba::Hardware::positioner_range, R"(
             Constant positioner range, soon will be a dictionary...
         )")
         .def_readonly("state", &fba::Hardware::state, R"(
-            Dictionary of fiber state for each fiber ID.
+            Dictionary of fiber state for each location.
         )")
         .def_readonly("neighbors", &fba::Hardware::neighbors, R"(
-            Dictionary of neighbor IDs for each fiber ID.
+            Dictionary of neighbor IDs for each location.
         )")
-        .def("device_fibers", &fba::Hardware::device_fibers,
+        .def("device_locations", &fba::Hardware::device_locations,
             py::arg("type"), R"(
-            Dictionary of fiber IDs for each device type (POS or ETC).
+            Dictionary of locations for each device type (POS or ETC).
         )")
         .def("radec2xy", &fba::Hardware::radec2xy, py::arg("tilera"),
             py::arg("tiledec"), py::arg("ra"), py::arg("dec"), R"(
@@ -643,11 +642,11 @@ PYBIND11_MODULE(_internal, m) {
                 (list): list of (RA, DEC) tuples.
 
         )")
-        .def("fiber_position", &fba::Hardware::fiber_position, py::arg("id"),
+        .def("loc_position", &fba::Hardware::loc_position, py::arg("id"),
             py::arg("xy"), R"(
             Move a positioner to a given location.
 
-            This takes the specified fiber ID and computes the shapes of
+            This takes the specified location and computes the shapes of
             the central body and fiber holder when the fiber is moved to
             a given (X, Y) position.  The returned tuple contains the
             (central body, fiber holder) as independent Shape objects.
@@ -660,106 +659,107 @@ PYBIND11_MODULE(_internal, m) {
                 (tuple): the shapes representing the positioner.
 
         )")
-        .def("fiber_position_multi", &fba::Hardware::fiber_position_multi,
+        .def("loc_position_multi", &fba::Hardware::loc_position_multi,
             py::arg("id"), py::arg("xy"), py::arg("threads"), R"(
             Move positioners to given locations.
 
-            This takes the specified fiber IDs and computes the shapes of
+            This takes the specified locations and computes the shapes of
             the central body and fiber holder when each fiber is moved to
             a given (X, Y) position.  The returned list of tuples contains
             the (central body, fiber holder) as 2 Shape objects for each
-            fiber ID.
+            location.
 
             Args:
-                id (list): List of (int) fiber IDs.
+                id (list): List of (int) locations.
                 xy (list): List of (X, Y) tuples at which to place each fiber.
                 threads (int): If <= 0 use maximum threads,
                     else use this number.
 
             Returns:
-                (list): One tuple for each fiber ID with positioner shapes.
+                (list): One tuple for each location with positioner shapes.
 
         )")
         .def("check_collisions_xy", &fba::Hardware::check_collisions_xy,
             py::arg("id"), py::arg("xy"), py::arg("threads"), R"(
             Check for collisions.
 
-            This takes the specified fiber IDs and computes the shapes of
+            This takes the specified locations and computes the shapes of
             the central body and fiber holder when each fiber is moved to
             a given (X, Y) position.  It then tests for collisions between
-            these shapes among the fiber IDs specified.  The returned list
+            these shapes among the locations specified.  The returned list
             of bools is True whenever the corresponding fiber had a collision
             and False otherwise.
 
             Args:
-                id (list): List of (int) fiber IDs.
+                id (list): List of (int) locations.
                 xy (list): List of (X, Y) tuples at which to place each fiber.
                 threads (int): If <= 0 use maximum threads,
                     else use this number.
 
             Returns:
-                (list): A boolean value for each fiber ID.
+                (list): A boolean value for each location.
 
         )")
         .def("check_collisions_thetaphi",
              &fba::Hardware::check_collisions_thetaphi, py::arg("id"), py::arg("theta"), py::arg("phi"), py::arg("threads"), R"(
              Check for collisions.
 
-             This takes the specified fiber IDs and computes the shapes of
+             This takes the specified locations and computes the shapes of
              the central body and fiber holder when each fiber is moved to
              a given (theta, phi) orientation.  It then tests for collisions
-             between these shapes among the fiber IDs specified.  The returned
+             between these shapes among the locations specified.  The returned
              list of bools is True whenever the corresponding fiber had a
              collision and False otherwise.
 
              Args:
-                 id (array): List of (int) fiber IDs.
+                 id (array): List of (int) locations.
                  theta (array): Theta angle for each positioner.
                  phi (array): Phi angle for each positioner.
                  threads (int): If <= 0 use maximum threads,
                      else use this number.
 
              Returns:
-                 (list): A boolean value for each fiber ID.
+                 (list): A boolean value for each location.
 
          )")
         .def(py::pickle(
             [](fba::Hardware const & p) { // __getstate__
-                int32_t nfiber = p.fiber_id.size();
-                std::vector <int32_t> fid(nfiber);
-                std::vector <int32_t> petal(nfiber);
-                std::vector <int32_t> spectro(nfiber);
-                std::vector <int32_t> location(nfiber);
-                std::vector <int32_t> slit(nfiber);
-                std::vector <int32_t> slitblock(nfiber);
-                std::vector <int32_t> blockfiber(nfiber);
-                std::vector <int32_t> device(nfiber);
-                std::vector <std::string> device_type(nfiber);
-                std::vector <double> x_mm(nfiber);
-                std::vector <double> y_mm(nfiber);
-                std::vector <double> z_mm(nfiber);
-                std::vector <double> q_deg(nfiber);
-                std::vector <double> s_mm(nfiber);
-                std::vector <int32_t> status(nfiber);
-                for (int32_t i = 0; i < nfiber; ++i) {
-                    fid[i] = p.fiber_id.at(i);
-                    petal[i] = p.fiber_petal.at(fid[i]);
-                    spectro[i] = p.fiber_spectro.at(fid[i]);
-                    location[i] = p.fiber_location.at(fid[i]);
-                    slit[i] = p.fiber_slit.at(fid[i]);
-                    slitblock[i] = p.fiber_slitblock.at(fid[i]);
-                    blockfiber[i] = p.fiber_blockfiber.at(fid[i]);
-                    device[i] = p.fiber_device.at(fid[i]);
-                    device_type[i] = p.fiber_device_type.at(fid[i]);
-                    x_mm[i] = p.fiber_pos_xy_mm.at(fid[i]).first;
-                    y_mm[i] = p.fiber_pos_xy_mm.at(fid[i]).second;
-                    z_mm[i] = p.fiber_pos_z_mm.at(fid[i]);
-                    q_deg[i] = p.fiber_pos_q_deg.at(fid[i]);
-                    s_mm[i] = p.fiber_pos_s_mm.at(fid[i]);
-                    status[i] = p.state.at(fid[i]);
+                int32_t nloc = p.locations.size();
+                std::vector <int32_t> lid(nloc);
+                std::vector <int32_t> petal(nloc);
+                std::vector <int32_t> spectro(nloc);
+                std::vector <int32_t> fiber(nloc);
+                std::vector <int32_t> slit(nloc);
+                std::vector <int32_t> slitblock(nloc);
+                std::vector <int32_t> blockfiber(nloc);
+                std::vector <int32_t> device(nloc);
+                std::vector <std::string> device_type(nloc);
+                std::vector <double> x_mm(nloc);
+                std::vector <double> y_mm(nloc);
+                std::vector <double> z_mm(nloc);
+                std::vector <double> q_deg(nloc);
+                std::vector <double> s_mm(nloc);
+                std::vector <int32_t> status(nloc);
+                for (int32_t i = 0; i < nloc; ++i) {
+                    lid[i] = p.locations.at(i);
+                    petal[i] = p.loc_petal.at(lid[i]);
+                    spectro[i] = p.loc_spectro.at(lid[i]);
+                    fiber[i] = p.loc_fiber.at(lid[i]);
+                    slit[i] = p.loc_slit.at(lid[i]);
+                    slitblock[i] = p.loc_slitblock.at(lid[i]);
+                    blockfiber[i] = p.loc_blockfiber.at(lid[i]);
+                    device[i] = p.loc_device.at(lid[i]);
+                    device_type[i] = p.loc_device_type.at(lid[i]);
+                    x_mm[i] = p.loc_pos_xy_mm.at(lid[i]).first;
+                    y_mm[i] = p.loc_pos_xy_mm.at(lid[i]).second;
+                    z_mm[i] = p.loc_pos_z_mm.at(lid[i]);
+                    q_deg[i] = p.loc_pos_q_deg.at(lid[i]);
+                    s_mm[i] = p.loc_pos_s_mm.at(lid[i]);
+                    status[i] = p.state.at(lid[i]);
                 }
-                return py::make_tuple(fid, petal, spectro, location, slit,
-                    slitblock, blockfiber, device, device_type, x_mm, y_mm, z_mm, q_deg,
+                return py::make_tuple(
+                    lid, petal, device, slitblock, blockfiber, spectro, fiber,
+                    slit, device_type, x_mm, y_mm, z_mm, q_deg,
                     s_mm, status);
             },
             [](py::tuple t) { // __setstate__
@@ -1011,10 +1011,10 @@ PYBIND11_MODULE(_internal, m) {
 
     py::class_ <fba::TargetsAvailable, fba::TargetsAvailable::pshr > (m,
         "TargetsAvailable", R"(
-        Class representing the objects reachable by each fiber of each tile.
+        Class representing the objects reachable by each location of each tile.
 
         This data structure makes it convenient and efficient to get the list
-        of target IDs available to a given fiber for a given tile.
+        of target IDs available to a given location for a given tile.
 
         Args:
             hw (Hardware):  The hardware model.
@@ -1038,64 +1038,67 @@ PYBIND11_MODULE(_internal, m) {
             Return the targets available for a given tile.
 
             This returns a copy of the internal C++ available targets for a
-            given tile ID.  The returned data is a dictionary with the fiber
-            ID as the key and the value is an array of target IDs available to
-            the fiber.
+            given tile ID.  The returned data is a dictionary with the
+            location as the key and the value is an array of target IDs
+            available to the location.
 
             Args:
                 tile (int): The tile ID.
 
             Returns:
-                (dict): Dictionary of available targets for each fiber ID.
+                (dict): Dictionary of available targets for each location.
 
         )");
 
 
-    py::class_ <fba::FibersAvailable, fba::FibersAvailable::pshr > (m,
-        "FibersAvailable", R"(
-        Class representing the tile/fibers reachable by each target.
+    py::class_ <fba::LocationsAvailable, fba::LocationsAvailable::pshr > (m,
+        "LocationsAvailable", R"(
+        Class representing the tile/location reachable by each target.
 
         This data structure makes it convenient and efficient to get the list
-        of tile / fiber pairs that can reach a given target.
+        of tile / location pairs that can reach a given target.
 
         Args:
-            tgsavail (TargetsAvailable):  the targets available to each fiber.
+            tgsavail (TargetsAvailable):  the targets available to each
+                location.
 
         )")
         .def(py::init < fba::TargetsAvailable::pshr > (), py::arg("tgsavail"))
-        .def("target_data", &fba::FibersAvailable::target_data,
+        .def("target_data", &fba::LocationsAvailable::target_data,
             py::arg("target"), R"(
-            Return the tile/fiber pairs that can reach a target.
+            Return the tile/loc pairs that can reach a target.
 
             This returns a copy of the internal C++ data.  The return value
-            is a list of tuples containing the (tile ID, fiber ID) pairs that
+            is a list of tuples containing the (tile ID, location) pairs that
             can reach the specified target ID.
 
             Args:
                 target (int): The target ID.
 
             Returns:
-                (list): List of (tile, fiber) tuples.
+                (list): List of (tile, loc) tuples.
 
         )");
 
 
     py::class_ <fba::Assignment, fba::Assignment::pshr > (m,
         "Assignment", R"(
-        Class representing the current assignment of all fibers.
+        Class representing the current assignment of all locations.
 
-        This data structure stores the current fiber assignment and
+        This data structure stores the current location assignment and
         provides methods for manipulating that assignment
 
         Args:
             tgs (Targets):  the targets.
-            tgsavail (TargetsAvailable):  the targets available to each fiber.
-            favail (FibersAvailable):  the fibers available to each target.
+            tgsavail (TargetsAvailable):  the targets available to each
+                location.
+            locavail (LocationsAvailable):  the locations available to each
+                target.
 
         )")
         .def(py::init < fba::Targets::pshr, fba::TargetsAvailable::pshr,
-             fba::FibersAvailable::pshr > (), py::arg("tgs"),
-             py::arg("tgsavail"), py::arg("favail")
+             fba::LocationsAvailable::pshr > (), py::arg("tgs"),
+             py::arg("tgsavail"), py::arg("locavail")
          )
         .def("targets", &fba::Assignment::targets, R"(
             Return a handle to the Targets object used.
@@ -1109,27 +1112,27 @@ PYBIND11_MODULE(_internal, m) {
         .def("targets_avail", &fba::Assignment::targets_avail, R"(
             Return a handle to the TargetsAvailable object used.
         )")
-        .def("fibers_avail", &fba::Assignment::fibers_avail, R"(
-            Return a handle to the FibersAvailable object used.
+        .def("locations_avail", &fba::Assignment::locations_avail, R"(
+            Return a handle to the LocationsAvailable object used.
         )")
         .def("tiles_assigned", &fba::Assignment::tiles_assigned, R"(
             Return an array of currently assigned tile IDs.
         )")
-        .def("tile_fiber_target", &fba::Assignment::tile_fiber_target,
+        .def("tile_location_target", &fba::Assignment::tile_location_target,
             py::return_value_policy::reference_internal, py::arg("tile"), R"(
             Return the assignment for a given tile.
 
             This returns a copy of the internal C++ target assignment for a
-            given tile ID.  The returned data is a dictionary with the fiber
-            ID as the key and the value is the assigned target ID.  **Only
-            assigned fibers are stored**.  Unassigned fiber IDs do not exist
-            in this dictionary.
+            given tile ID.  The returned data is a dictionary with the
+            location as the key and the value is the assigned target ID.
+            **Only assigned locations are stored**.  Unassigned locations do
+            not exist in this dictionary.
 
             Args:
                 tile (int): The tile ID.
 
             Returns:
-                (dict): Dictionary of assigned target for each fiber ID.
+                (dict): Dictionary of assigned target for each location.
 
         )")
         .def("assign_unused", &fba::Assignment::assign_unused,
@@ -1137,10 +1140,10 @@ PYBIND11_MODULE(_internal, m) {
              py::arg("max_per_petal")=-1,
              py::arg("pos_type")=std::string("POS"),
              py::arg("start_tile")=-1, py::arg("stop_tile")=-1, R"(
-            Assign targets to unused fibers.
+            Assign targets to unused locations.
 
             This will attempt to assign targets of the specified type to
-            unused fibers on devices of the specified type.
+            unused locations with devices of the specified type.
 
             Args:
                 tgtype (int): The target type to assign, which must be one
@@ -1162,7 +1165,7 @@ PYBIND11_MODULE(_internal, m) {
              py::arg("tgtype")=TARGET_TYPE_SCIENCE,
              py::arg("required_per_petal")=0,
              py::arg("start_tile")=-1, py::arg("stop_tile")=-1, R"(
-            Force assignment of targets to unused fibers.
+            Force assignment of targets to unused locations.
 
             This function will "bump" science targets (starting with lowest
             priority) in order to place the required number of targets of the
@@ -1187,7 +1190,7 @@ PYBIND11_MODULE(_internal, m) {
             Redistribute science targets to future tiles.
 
             This function attempts to load balance the science targets per
-            petal by moving science target to future available tile/fiber
+            petal by moving science target to future available tile/loc
             placements that lie on petals with fewer total science targets.
 
             Args:

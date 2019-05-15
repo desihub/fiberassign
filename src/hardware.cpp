@@ -16,14 +16,14 @@ namespace fba = fiberassign;
 namespace fbg = fiberassign::geom;
 
 
-fba::Hardware::Hardware(std::vector <int32_t> const & fiber,
+fba::Hardware::Hardware(std::vector <int32_t> const & location,
                         std::vector <int32_t> const & petal,
-                        std::vector <int32_t> const & spectro,
-                        std::vector <int32_t> const & location,
-                        std::vector <int32_t> const & slit,
+                        std::vector <int32_t> const & device,
                         std::vector <int32_t> const & slitblock,
                         std::vector <int32_t> const & blockfiber,
-                        std::vector <int32_t> const & device,
+                        std::vector <int32_t> const & spectro,
+                        std::vector <int32_t> const & fiber,
+                        std::vector <int32_t> const & slit,
                         std::vector <std::string> const & device_type,
                         std::vector <double> const & x_mm,
                         std::vector <double> const & y_mm,
@@ -31,7 +31,7 @@ fba::Hardware::Hardware(std::vector <int32_t> const & fiber,
                         std::vector <double> const & q_deg,
                         std::vector <double> const & s_mm,
                         std::vector <int32_t> const & status) {
-    nfiber = fiber.size();
+    nloc = location.size();
 
     int32_t maxpetal = 0;
     for (auto const & p : petal) {
@@ -41,49 +41,49 @@ fba::Hardware::Hardware(std::vector <int32_t> const & fiber,
     }
     npetal = static_cast <size_t> (maxpetal + 1);
 
-    fiber_pos_xy_mm.clear();
-    fiber_pos_z_mm.clear();
-    fiber_pos_q_deg.clear();
-    fiber_pos_s_mm.clear();
-    fiber_petal.clear();
-    fiber_spectro.clear();
-    fiber_device.clear();
-    fiber_device_type.clear();
-    fiber_location.clear();
-    fiber_slit.clear();
-    fiber_slitblock.clear();
-    fiber_blockfiber.clear();
-    fiber_id.resize(0);
+    loc_pos_xy_mm.clear();
+    loc_pos_z_mm.clear();
+    loc_pos_q_deg.clear();
+    loc_pos_s_mm.clear();
+    loc_petal.clear();
+    loc_spectro.clear();
+    loc_device.clear();
+    loc_device_type.clear();
+    loc_fiber.clear();
+    loc_slit.clear();
+    loc_slitblock.clear();
+    loc_blockfiber.clear();
+    locations.resize(0);
     state.clear();
 
-    petal_fibers.clear();
+    petal_locations.clear();
     for (int32_t i = 0; i < npetal; ++i) {
-        petal_fibers[i].resize(0);
+        petal_locations[i].resize(0);
     }
 
-    for (int32_t i = 0; i < nfiber; ++i) {
-        fiber_id.push_back(fiber[i]);
-        fiber_petal[fiber[i]] = petal[i];
-        fiber_spectro[fiber[i]] = spectro[i];
-        fiber_device[fiber[i]] = device[i];
-        fiber_device_type[fiber[i]] = device_type[i];
-        fiber_location[fiber[i]] = location[i];
-        fiber_slit[fiber[i]] = slit[i];
-        fiber_slitblock[fiber[i]] = slitblock[i];
-        fiber_blockfiber[fiber[i]] = blockfiber[i];
-        petal_fibers[petal[i]].push_back(fiber[i]);
-        fiber_pos_xy_mm[fiber[i]] = std::make_pair(x_mm[i], y_mm[i]);
-        fiber_pos_z_mm[fiber[i]] = z_mm[i];
-        fiber_pos_q_deg[fiber[i]] = q_deg[i];
-        fiber_pos_s_mm[fiber[i]] = s_mm[i];
-        state[fiber[i]] = status[i];
-        neighbors[fiber[i]].clear();
+    for (int32_t i = 0; i < nloc; ++i) {
+        locations.push_back(location[i]);
+        loc_petal[location[i]] = petal[i];
+        loc_spectro[location[i]] = spectro[i];
+        loc_device[location[i]] = device[i];
+        loc_device_type[location[i]] = device_type[i];
+        loc_fiber[location[i]] = fiber[i];
+        loc_slit[location[i]] = slit[i];
+        loc_slitblock[location[i]] = slitblock[i];
+        loc_blockfiber[location[i]] = blockfiber[i];
+        petal_locations[petal[i]].push_back(location[i]);
+        loc_pos_xy_mm[location[i]] = std::make_pair(x_mm[i], y_mm[i]);
+        loc_pos_z_mm[location[i]] = z_mm[i];
+        loc_pos_q_deg[location[i]] = q_deg[i];
+        loc_pos_s_mm[location[i]] = s_mm[i];
+        state[location[i]] = status[i];
+        neighbors[location[i]].clear();
     }
 
-    // Sort the fiber IDs
-    std::stable_sort(fiber_id.begin(), fiber_id.end());
+    // Sort the locations
+    std::stable_sort(locations.begin(), locations.end());
     for (int32_t i = 0; i < npetal; ++i) {
-        std::stable_sort(petal_fibers[i].begin(), petal_fibers[i].end());
+        std::stable_sort(petal_locations[i].begin(), petal_locations[i].end());
     }
 
     // hardcode for now...
@@ -111,13 +111,13 @@ fba::Hardware::Hardware(std::vector <int32_t> const & fiber,
     pos_theta_max = pos_theta_max_deg * M_PI / 180.0;
     pos_phi_max = pos_phi_max_deg * M_PI / 180.0;
 
-    // Compute neighboring fibers
-    for (int32_t x = 0; x < nfiber; ++x) {
-        int32_t xid = fiber_id[x];
-        for (int32_t y = x + 1; y < nfiber; ++y) {
-            int32_t yid = fiber_id[y];
-            double dist = fbg::dist(fiber_pos_xy_mm[xid],
-                                    fiber_pos_xy_mm[yid]);
+    // Compute neighboring locations
+    for (int32_t x = 0; x < nloc; ++x) {
+        int32_t xid = locations[x];
+        for (int32_t y = x + 1; y < nloc; ++y) {
+            int32_t yid = locations[y];
+            double dist = fbg::dist(loc_pos_xy_mm[xid],
+                                    loc_pos_xy_mm[yid]);
             if (dist <= neighbor_radius_mm) {
                 neighbors[xid].push_back(yid);
                 neighbors[yid].push_back(xid);
@@ -130,11 +130,11 @@ fba::Hardware::Hardware(std::vector <int32_t> const & fiber,
 }
 
 
-std::vector <int32_t> fba::Hardware::device_fibers(
+std::vector <int32_t> fba::Hardware::device_locations(
         std::string const & type) const {
     std::vector <int32_t> ret;
-    for (auto const & fid : fiber_id) {
-        if (type.compare(fiber_device_type.at(fid)) == 0) {
+    for (auto const & fid : locations) {
+        if (type.compare(loc_device_type.at(fid)) == 0) {
             ret.push_back(fid);
         }
     }
@@ -525,14 +525,14 @@ bool fba::Hardware::collide(fbg::dpair center1, fbg::dpair position1,
 }
 
 
-std::pair <fbg::shape, fbg::shape> fba::Hardware::fiber_position(
-    int32_t fiber_id, fbg::dpair const & xy) const {
+std::pair <fbg::shape, fbg::shape> fba::Hardware::loc_position(
+    int32_t loc, fbg::dpair const & xy) const {
 
     // Construct a positioner shape for a given fiber and location.
     fbg::shape fh(ferrule_holder);
     fbg::shape cb(central_body);
 
-    auto const & center = fiber_pos_xy_mm.at(fiber_id);
+    auto const & center = loc_pos_xy_mm.at(loc);
 
     reposition_fiber(cb, fh, center, xy, positioner_range);
     return std::make_pair(cb, fh);
@@ -540,11 +540,11 @@ std::pair <fbg::shape, fbg::shape> fba::Hardware::fiber_position(
 
 
 std::vector <std::pair <fbg::shape, fbg::shape> >
-    fba::Hardware::fiber_position_multi(
-        std::vector <int32_t> const & fiber_id,
+    fba::Hardware::loc_position_multi(
+        std::vector <int32_t> const & loc,
         std::vector <fbg::dpair> const & xy, int threads) const {
-    size_t nfiber = fiber_id.size();
-    std::vector <std::pair <fbg::shape, fbg::shape> > result(nfiber);
+    size_t nlc = loc.size();
+    std::vector <std::pair <fbg::shape, fbg::shape> > result(nlc);
 
     int max_threads = 1;
     #ifdef _OPENMP
@@ -560,13 +560,13 @@ std::vector <std::pair <fbg::shape, fbg::shape> >
         run_threads = max_threads;
     }
 
-    #pragma omp parallel for schedule(static) default(none) shared(nfiber, fiber_id, xy, result) num_threads(run_threads)
-    for (size_t f = 0; f < nfiber; ++f) {
-        int32_t fid = fiber_id[f];
+    #pragma omp parallel for schedule(static) default(none) shared(nlc, loc, xy, result) num_threads(run_threads)
+    for (size_t f = 0; f < nlc; ++f) {
+        int32_t fid = loc[f];
         // Construct a positioner shape for a given fiber and location.
         fbg::shape fh(ferrule_holder);
         fbg::shape cb(central_body);
-        auto const & center = fiber_pos_xy_mm.at(fid);
+        auto const & center = loc_pos_xy_mm.at(fid);
         reposition_fiber(cb, fh, center, xy[f], positioner_range);
         result[f] = std::make_pair(cb, fh);
     }
@@ -575,29 +575,29 @@ std::vector <std::pair <fbg::shape, fbg::shape> >
 
 
 std::vector <bool> fba::Hardware::check_collisions_xy(
-    std::vector <int32_t> const & fiber_id,
+    std::vector <int32_t> const & loc,
     std::vector <fbg::dpair> const & xy, int threads) const {
 
-    size_t nfiber = fiber_id.size();
+    size_t nlc = loc.size();
 
-    auto fpos = fiber_position_multi(fiber_id, xy);
+    auto fpos = loc_position_multi(loc, xy);
 
-    std::map <int32_t, int32_t> fiber_indx;
+    std::map <int32_t, int32_t> loc_indx;
 
-    // Build list of all fiber pairs to check for a collision
+    // Build list of all location pairs to check for a collision
     std::map <int32_t, std::vector <int32_t> > checklookup;
     size_t idx = 0;
-    for (auto const & fid : fiber_id) {
-        fiber_indx[fid] = idx;
-        for (auto const & nb : neighbors.at(fid)) {
+    for (auto const & lid : loc) {
+        loc_indx[lid] = idx;
+        for (auto const & nb : neighbors.at(lid)) {
             int32_t low;
             int32_t high;
-            if (fid < nb) {
-                low = fid;
+            if (lid < nb) {
+                low = lid;
                 high = nb;
             } else {
                 low = nb;
-                high = fid;
+                high = lid;
             }
             if (checklookup.count(low) == 0) {
                 checklookup[low].clear();
@@ -625,8 +625,8 @@ std::vector <bool> fba::Hardware::check_collisions_xy(
 
     size_t npairs = checkpairs.size();
 
-    std::vector <bool> result(nfiber);
-    result.assign(nfiber, false);
+    std::vector <bool> result(nlc);
+    result.assign(nlc, false);
 
     int max_threads = 1;
     #ifdef _OPENMP
@@ -642,15 +642,15 @@ std::vector <bool> fba::Hardware::check_collisions_xy(
         run_threads = max_threads;
     }
 
-    #pragma omp parallel for schedule(static) default(none) shared(npairs, checkpairs, fpos, result, fiber_indx) num_threads(run_threads)
+    #pragma omp parallel for schedule(static) default(none) shared(npairs, checkpairs, fpos, result, loc_indx) num_threads(run_threads)
     for (size_t p = 0; p < npairs; ++p) {
         int32_t flow = checkpairs[p].first;
         int32_t fhigh = checkpairs[p].second;
         bool hit = false;
-        auto const & cb1 = fpos[fiber_indx[flow]].first;
-        auto const & fh1 = fpos[fiber_indx[flow]].second;
-        auto const & cb2 = fpos[fiber_indx[fhigh]].first;
-        auto const & fh2 = fpos[fiber_indx[fhigh]].second;
+        auto const & cb1 = fpos[loc_indx[flow]].first;
+        auto const & fh1 = fpos[loc_indx[flow]].second;
+        auto const & cb2 = fpos[loc_indx[fhigh]].first;
+        auto const & fh2 = fpos[loc_indx[fhigh]].second;
         if (fbg::intersect(fh1, fh2)) {
             hit = true;
         }
@@ -673,28 +673,28 @@ std::vector <bool> fba::Hardware::check_collisions_xy(
 
 
 std::vector <bool> fba::Hardware::check_collisions_thetaphi(
-    std::vector <int32_t> const & fiber_id,
+    std::vector <int32_t> const & loc,
     std::vector <double> const & theta,
     std::vector <double> const & phi, int threads) const {
 
-    size_t nfiber = fiber_id.size();
+    size_t nlc = loc.size();
 
-    std::map <int32_t, int32_t> fiber_indx;
+    std::map <int32_t, int32_t> loc_indx;
 
-    // Build list of all fiber pairs to check for a collision
+    // Build list of all location pairs to check for a collision
     std::map <int32_t, std::vector <int32_t> > checklookup;
     size_t idx = 0;
-    for (auto const & fid : fiber_id) {
-        fiber_indx[fid] = idx;
-        for (auto const & nb : neighbors.at(fid)) {
+    for (auto const & lid : loc) {
+        loc_indx[lid] = idx;
+        for (auto const & nb : neighbors.at(lid)) {
             int32_t low;
             int32_t high;
-            if (fid < nb) {
-                low = fid;
+            if (lid < nb) {
+                low = lid;
                 high = nb;
             } else {
                 low = nb;
-                high = fid;
+                high = lid;
             }
             if (checklookup.count(low) == 0) {
                 checklookup[low].clear();
@@ -722,8 +722,8 @@ std::vector <bool> fba::Hardware::check_collisions_thetaphi(
 
     size_t npairs = checkpairs.size();
 
-    std::vector <bool> result(nfiber);
-    result.assign(nfiber, false);
+    std::vector <bool> result(nlc);
+    result.assign(nlc, false);
 
     int max_threads = 1;
     #ifdef _OPENMP
@@ -739,14 +739,14 @@ std::vector <bool> fba::Hardware::check_collisions_thetaphi(
         run_threads = max_threads;
     }
 
-    #pragma omp parallel for schedule(static) default(none) shared(npairs, checkpairs, result, fiber_indx, theta, phi) num_threads(run_threads)
+    #pragma omp parallel for schedule(static) default(none) shared(npairs, checkpairs, result, loc_indx, theta, phi) num_threads(run_threads)
     for (size_t p = 0; p < npairs; ++p) {
         int32_t flow = checkpairs[p].first;
         int32_t fhigh = checkpairs[p].second;
-        double thetalow = theta[fiber_indx[flow]];
-        double philow = phi[fiber_indx[flow]];
-        double thetahigh = theta[fiber_indx[fhigh]];
-        double phihigh = phi[fiber_indx[fhigh]];
+        double thetalow = theta[loc_indx[flow]];
+        double philow = phi[loc_indx[flow]];
+        double thetahigh = theta[loc_indx[fhigh]];
+        double phihigh = phi[loc_indx[fhigh]];
 
         fbg::shape fhlow(ferrule_holder);
         fbg::shape fhhigh(ferrule_holder);
@@ -764,8 +764,8 @@ std::vector <bool> fba::Hardware::check_collisions_thetaphi(
         cblow.rotation_origin(cossintheta);
         fhlow.rotation_origin(cossintheta);
         fhlow.rotation(cossinphi);
-        fhlow.transl(fiber_pos_xy_mm.at(flow));
-        cblow.transl(fiber_pos_xy_mm.at(flow));
+        fhlow.transl(loc_pos_xy_mm.at(flow));
+        cblow.transl(loc_pos_xy_mm.at(flow));
 
         costheta = ::cos(thetahigh);
         sintheta = ::sin(thetahigh);
@@ -776,8 +776,8 @@ std::vector <bool> fba::Hardware::check_collisions_thetaphi(
         cbhigh.rotation_origin(cossintheta);
         fhhigh.rotation_origin(cossintheta);
         fhhigh.rotation(cossinphi);
-        fhhigh.transl(fiber_pos_xy_mm.at(fhigh));
-        cbhigh.transl(fiber_pos_xy_mm.at(fhigh));
+        fhhigh.transl(loc_pos_xy_mm.at(fhigh));
+        cbhigh.transl(loc_pos_xy_mm.at(fhigh));
 
         bool hit = false;
         if (fbg::intersect(fhlow, fhhigh)) {

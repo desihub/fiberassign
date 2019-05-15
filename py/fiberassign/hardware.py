@@ -55,27 +55,17 @@ def load_hardware(fiberpos_file=None, gfa_file=None, rundate=None,
     etc_rows = np.where(fpdata["DEVICE_TYPE"].astype(str) == "ETC")[0]
     keep_rows = np.unique(np.concatenate((pos_rows, etc_rows)))
 
-    nfiber = len(keep_rows)
-    log.debug("  fiber position table keeping {} rows".format(nfiber))
+    nloc = len(keep_rows)
+    log.debug("  fiber position table keeping {} rows".format(nloc))
 
-    device_type = np.full(nfiber, "OOPSBUG", dtype="a8")
+    device_type = np.full(nloc, "OOPSBUG", dtype="a8")
     device_type[:] = fpdata["DEVICE_TYPE"][keep_rows]
 
-    # For non-science positioners, no fiber ID is assigned in the positioner
-    # file.  This is a pain, since all our quantities are indexed by fiber ID.
-    # Instead, we give every position a FIBER value which is unique and which
-    # is sorted by LOCATION.  We start these fake FIBER values at 5000.
-    fiber = np.copy(fpdata["FIBER"][keep_rows])
     location = np.copy(fpdata["LOCATION"][keep_rows])
-    missing_fiber = [x for x, y in enumerate(fiber) if y < 0]
-    if len(missing_fiber) > 0:
-        missing_locsorted = np.sort(location[missing_fiber])
-        locfiber = {y: x for x, y in enumerate(missing_locsorted)}
-        fiber[missing_fiber] = [(5000 + locfiber[x]) for x in
-                                location[missing_fiber]]
+    fiber = np.copy(fpdata["FIBER"][keep_rows])
 
     # Read the status file...
-    status = np.full(nfiber, FIBER_STATE_OK, dtype=np.int32)
+    status = np.full(nloc, FIBER_STATE_OK, dtype=np.int32)
 
     if status_file is not None:
         runtime = None
@@ -101,14 +91,14 @@ def load_hardware(fiberpos_file=None, gfa_file=None, rundate=None,
                 if stuck > 0:
                     status[locindx[loc]] |= FIBER_STATE_STUCK
 
-    hw = Hardware(fiber,
+    hw = Hardware(location,
                   fpdata["PETAL"][keep_rows],
-                  fpdata["SPECTRO"][keep_rows],
-                  location,
-                  fpdata["SLIT"][keep_rows],
+                  fpdata["DEVICE"][keep_rows],
                   fpdata["SLITBLOCK"][keep_rows],
                   fpdata["BLOCKFIBER"][keep_rows],
-                  fpdata["DEVICE"][keep_rows],
+                  fpdata["SPECTRO"][keep_rows],
+                  fiber,
+                  fpdata["SLIT"][keep_rows],
                   device_type,
                   fpdata["X"][keep_rows],
                   fpdata["Y"][keep_rows],

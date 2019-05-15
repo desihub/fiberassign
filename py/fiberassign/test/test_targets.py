@@ -21,7 +21,7 @@ from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                                  default_main_safemask,
                                  default_main_excludemask,
                                  Targets, TargetTree, TargetsAvailable,
-                                 FibersAvailable)
+                                 LocationsAvailable)
 
 from .simulate import (test_subdir_create, sim_tiles, sim_targets)
 
@@ -63,7 +63,7 @@ class TestTargets(unittest.TestCase):
         del tree
 
         # Compute the fibers on all tiles available for each target
-        favail = FibersAvailable(tgsavail)
+        favail = LocationsAvailable(tgsavail)
 
         return
 
