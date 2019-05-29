@@ -6,7 +6,8 @@ fiberassign change log
 1.0.2 (unreleased)
 ------------------
 
-* No changes yet.
+* Gracefully allow fiberassign --stdstar to have duplicates with --mtl
+* Expose fba_run --sciencemask, --stdmask, etc. to fiberassign too
 
 1.0.1 (2019-05-13)
 ------------------

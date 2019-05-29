@@ -5,7 +5,7 @@ Wrapper script for fba_run and fba_merge to provide script API compatibility
 with the legacy branch of fiberassign.
 """
 
-import argparse
+import argparse, os, sys, tempfile
 
 import fiberassign
 
@@ -43,8 +43,33 @@ parser.add_argument("--surveytiles",
 parser.add_argument("--outdir",
                     help="output directory (default = ./)", default="./")
 
+parser.add_argument("--sciencemask", required=False,
+                    default=None,
+                    help="Default DESI_TARGET mask to use for science "
+                         "targets")
+
+# DEPRECATED; use --stdmask instead
 parser.add_argument("--starmask",
-                    help="integer mask defining standard stars")
+                    help="DEPRECATED: use --stdmask instead")
+
+parser.add_argument("--stdmask", required=False,
+                    default=None,
+                    help="Default DESI_TARGET mask to use for stdstar "
+                         "targets")
+
+parser.add_argument("--skymask", required=False,
+                    default=None,
+                    help="Default DESI_TARGET mask to use for sky targets")
+
+parser.add_argument("--safemask", required=False,
+                    default=None,
+                    help="Default DESI_TARGET mask to use for safe "
+                    "backup targets")
+
+parser.add_argument("--excludemask", required=False,
+                    default=None,
+                    help="Default DESI_TARGET mask to exclude from "
+                    "any assignments")
 
 parser.add_argument("--rundate", help="run date [YYYY-MM-DD]")
 
@@ -67,54 +92,90 @@ parser.add_argument("--version", help="Print code version and exit",
 args = parser.parse_args()
 log = Logger.get()
 
+#- Check if standards are already in MTL
+tempdir = None
+if args.stdstar:
+    import fitsio
+    import numpy as np
+    science_targets = fitsio.read(args.mtl, 'MTL', columns=['TARGETID',])
+    stdstars, stdhdr = fitsio.read(args.stdstar, header=True)
+    ii = np.in1d(stdstars['TARGETID'], science_targets['TARGETID'])
+    if np.all(ii):
+        #- All standards are already in MTL; just drop this file
+        log.warning('All standards are already in MTL; ignoring {}'.format(
+            args.stdstar))
+        args.stdstar = None
+    else:
+        #- Keep only the standards that aren't in MTL
+        stdstars = stdstars[~ii]
+        log.info("Keeping {} standards that aren't already in MTL".format(
+            len(stdstars)))
+
+        tempdir = tempfile.mkdtemp()
+        args.stdstar = os.path.join(tempdir, 'standards.fits')
+        fitsio.write(args.stdstar, stdstars, header=stdhdr, extname='STD')
+
 # ------
 # - fba_run
 
-opts = {
-    "targets": [args.mtl, args.sky, args.stdstar],
-    "dir": args.outdir,
-    "standards_per_petal": args.nstarpetal,
-    "sky_per_petal": args.nskypetal
-}
-
-# Completely optional; only propagate if specified
-if args.fibstatusfile is not None:
-    opts["status"] = args.fibstatusfile
-
-if args.footprint is not None:
-    opts["footprint"] = args.footprint
-
-if args.positioners is not None:
-    opts["positioners"] = args.positioners
-
-if args.surveytiles is not None:
-    opts["tiles"] = args.surveytiles
+#- reformat fiberassign options into fba_run and fba_merge options,
+#- which changed some of the option names
 
 if args.starmask is not None:
-    opts["stdmask"] = args.starmask
+    log.warning('--starmask is deprecated; please use --stdmask instead')
+    if args.stdmask is None:
+        args.stdmask = args.starmask
 
-if args.rundate is not None:
-    opts["rundate"] = args.rundate
+#- mtl, sky, stdstar -> targets
+opts = args.__dict__.copy()
+opts['targets'] = [args.mtl, args.sky]
+if args.stdstar is not None:
+    opts["targets"].append(args.stdstar)
 
-if args.gfafile is not None:
-    opts["gfafile"] = args.gfafile
+#- other options that were renamed
+opts['dir'] = args.outdir
+opts['status'] = args.fibstatusfile
+opts['tiles'] = args.surveytiles
+opts['standards_per_petal'] = args.nstarpetal
+opts['sky_per_petal'] = args.nskypetal
 
-if args.overwrite:
-    opts["overwrite"] = True
+#- remove keys for options that were renamed
+for key in ['mtl', 'sky', 'stdstar', 'outdir', 'fibstatusfile', 'surveytiles',
+            'nstarpetal', 'nskypetal', 'starmask']:
+    if key in opts:
+        del opts[key]
 
 optlist = option_list(opts)
 assign_args = parse_assign(optlist)
+
 run_assign_full(assign_args)
 
 # ------
 # - fba_merge_results
 
-opts = {
-    "targets": [args.mtl, args.sky, args.stdstar],
-    "dir": args.outdir,
-    "out": args.outdir
-}
+#- mtl, sky, stdstar -> targets
+opts = args.__dict__.copy()
+opts['targets'] = [args.mtl, args.sky]
+if args.stdstar is not None:
+    opts["targets"].append(args.stdstar)
+
+#- other options that were renamed
+opts['dir'] = args.outdir
+opts['out'] = args.outdir
+
+#- remove keys for options that were renamed or not used by fba_merge_results
+for key in ['mtl', 'sky', 'stdstar', 'outdir', 'fibstatusfile', 'surveytiles',
+            'nstarpetal', 'nskypetal', 'starmask', 'footprint', 'overwrite']:
+    if key in opts:
+        del opts[key]
 
 optlist = option_list(opts)
 merge_args = parse_merge(optlist)
 run_merge(merge_args)
+
+#- Cleanup (CAREFUL! only cleanup if contents exactly match expectations)
+if tempdir and \
+   tempdir == os.path.dirname(args.stdstar) and \
+   os.listdir(tempdir) == [args.stdstar,]:
+        os.remove(stdstar)
+        os.removedirs(tempdir)
