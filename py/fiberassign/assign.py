@@ -954,8 +954,8 @@ def merge_results_tile(out_dtype, copy_fba, params):
 
     # Determine the rows of the assignment that are for science and sky
     # monitor positioners.
-    science_rows = np.where(fiber_data["DEVICE_TYPE"] == b"POS")[0]
-    sky_rows = np.where(fiber_data["DEVICE_TYPE"] == b"ETC")[0]
+    science_rows = np.where(fiber_data["DEVICE_TYPE"].astype(str) == "POS")[0]
+    sky_rows = np.where(fiber_data["DEVICE_TYPE"].astype(str) == "ETC")[0]
 
     # Construct output recarray
     outdata = np.zeros(len(fiber_data), dtype=out_dtype)
