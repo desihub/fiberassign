@@ -135,8 +135,8 @@ def plot_tile_targets_props(hw, tile_ra, tile_dec, tgs, avail_tgid=None):
     if avail_tgid is None:
         avail_tgid = tgs.ids()
     # print("  DBG:  avail_tgid len = ", len(avail_tgid), flush=True)
-    ra = np.empty(len(avail_tgid), dtype=np.float64)
-    dec = np.empty(len(avail_tgid), dtype=np.float64)
+    ra = np.full(len(avail_tgid), 9999.9, dtype=np.float64)
+    dec = np.full(len(avail_tgid), 9999.9, dtype=np.float64)
     color = list()
     for idx, tgid in enumerate(avail_tgid):
         tg = tgs.get(tgid)
@@ -153,8 +153,8 @@ def plot_tile_targets_props(hw, tile_ra, tile_dec, tgs, avail_tgid=None):
 
 def plot_available(ax, targetprops, selected, linewidth=0.1):
     mwidth = 5.0 * linewidth
-    xdata = np.empty(len(selected), dtype=np.float64)
-    ydata = np.empty(len(selected), dtype=np.float64)
+    xdata = np.full(len(selected), 9999.9, dtype=np.float64)
+    ydata = np.full(len(selected), 9999.9, dtype=np.float64)
     color = list()
     for idx, tgid in enumerate(selected):
         xdata[idx] = targetprops[tgid]["xy"][0]

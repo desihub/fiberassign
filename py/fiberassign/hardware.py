@@ -51,14 +51,14 @@ def load_hardware(fiberpos_file=None, gfa_file=None, rundate=None,
     log.info("Reading fiber positions from {}".format(fiberpos_file))
 
     fpdata = fitsio.read(fiberpos_file, ext=1)
-    pos_rows = np.where(fpdata["DEVICE_TYPE"] == b"POS")[0]
-    etc_rows = np.where(fpdata["DEVICE_TYPE"] == b"ETC")[0]
+    pos_rows = np.where(fpdata["DEVICE_TYPE"].astype(str) == "POS")[0]
+    etc_rows = np.where(fpdata["DEVICE_TYPE"].astype(str) == "ETC")[0]
     keep_rows = np.unique(np.concatenate((pos_rows, etc_rows)))
 
     nfiber = len(keep_rows)
     log.debug("  fiber position table keeping {} rows".format(nfiber))
 
-    device_type = np.empty(nfiber, dtype="a8")
+    device_type = np.full(nfiber, "OOPSBUG", dtype="a8")
     device_type[:] = fpdata["DEVICE_TYPE"][keep_rows]
 
     # For non-science positioners, no fiber ID is assigned in the positioner
@@ -75,8 +75,7 @@ def load_hardware(fiberpos_file=None, gfa_file=None, rundate=None,
                                 location[missing_fiber]]
 
     # Read the status file...
-    status = np.empty(nfiber, dtype=np.int32)
-    status[:] = FIBER_STATE_OK
+    status = np.full(nfiber, FIBER_STATE_OK, dtype=np.int32)
 
     if status_file is not None:
         runtime = None

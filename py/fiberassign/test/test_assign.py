@@ -136,6 +136,7 @@ class TestAssign(unittest.TestCase):
                                   "basic_tile-{:06d}.fits".format(tid))
             inhead, fiber_data, targets_data, avail_data, gfa_targets = \
                 read_assignment_fits_tile((tid, infile))
+
             for fid, tgid, tgra, tgdec in zip(
                     fiber_data["FIBER"],
                     fiber_data["TARGETID"],
@@ -394,3 +395,10 @@ class TestAssign(unittest.TestCase):
             self.assertEqual(400, props["assign_sky"])
 
         return
+
+def test_suite():
+    """Allows testing of only this module with the command::
+
+        python setup.py test -m <modulename>
+    """
+    return unittest.defaultTestLoader.loadTestsFromName(__name__)

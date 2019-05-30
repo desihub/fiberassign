@@ -130,7 +130,7 @@ def qa_tile_file(hw, params):
     tgs, tgprops = qa_parse_table(header, targets_data)
 
     # Only do QA on positioners.
-    pos_rows = np.where(fiber_data["DEVICE_TYPE"] == b"POS")[0]
+    pos_rows = np.where(fiber_data["DEVICE_TYPE"].astype(str) == "POS")[0]
 
     # Target assignment
     tassign = {x["FIBER"]: x["TARGETID"] for x in fiber_data[pos_rows]
