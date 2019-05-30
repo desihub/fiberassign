@@ -3,11 +3,22 @@
 fiberassign change log
 ======================
 
-1.0.2 (unreleased)
+1.0.3 (unreleased)
 ------------------
 
-* Gracefully allow fiberassign --stdstar to have duplicates with --mtl
-* Expose fba_run --sciencemask, --stdmask, etc. to fiberassign too
+* No changes yet.
+
+1.0.2 (2019-05-30)
+------------------
+
+* PR `#202`_:
+  
+  * Gracefully allow fiberassign --stdstar to have duplicates with --mtl
+  * Expose fba_run --sciencemask, --stdmask, etc. to fiberassign too
+  * support fitsio 1.0.x
+  * fix uninitialized variables bug
+
+.. _`#202`: https://github.com/desihub/fiberassign/pull/202
 
 1.0.1 (2019-05-13)
 ------------------
