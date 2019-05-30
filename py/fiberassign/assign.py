@@ -266,7 +266,7 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         log.debug("Write:  copying assignment data for tile {}"
                   .format(tile_id))
 
-        fdata = np.empty(nfiber, dtype=assign_dtype)
+        fdata = np.zeros(nfiber, dtype=assign_dtype)
         fdata["FIBER"] = fibers
 
         # For unassigned fibers, we give each fiber a unique negative
@@ -282,10 +282,10 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         assigned_invalid = np.where(assigned_tgids < 0)[0]
 
         # Buffers for X/Y/RA/DEC
-        assigned_tgx = np.empty(nfiber, dtype=np.float64)
-        assigned_tgy = np.empty(nfiber, dtype=np.float64)
-        assigned_tgra = np.empty(nfiber, dtype=np.float64)
-        assigned_tgdec = np.empty(nfiber, dtype=np.float64)
+        assigned_tgx = np.full(nfiber, 9999.9, dtype=np.float64)
+        assigned_tgy = np.full(nfiber, 9999.9, dtype=np.float64)
+        assigned_tgra = np.full(nfiber, 9999.9, dtype=np.float64)
+        assigned_tgdec = np.full(nfiber, 9999.9, dtype=np.float64)
         assigned_tgbits = np.zeros(nfiber, dtype=np.int64)
         assigned_tgtype = np.zeros(nfiber, dtype=np.uint8)
 
@@ -384,7 +384,7 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         log.debug("Write:  writing target data for tile {}"
                   .format(tile_id))
 
-        fdata = np.empty(ntarget, dtype=targets_dtype)
+        fdata = np.zeros(ntarget, dtype=targets_dtype)
         fdata["TARGETID"] = tgids
         fdata["TARGET_RA"] = tg_ra
         fdata["TARGET_DEC"] = tg_dec
@@ -411,7 +411,7 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         log.debug("Write:  writing avail data for tile {}"
                   .format(tile_id))
 
-        fdata = np.empty(navail, dtype=avail_dtype)
+        fdata = np.zeros(navail, dtype=avail_dtype)
         off = 0
         for fid in sorted(avail.keys()):
             for tg in avail[fid]:
@@ -856,7 +856,7 @@ def merge_results_tile(out_dtype, copy_fba, params):
     # Extract just these targets from the full set of catalogs
 
     tile_targets_dtype = np.dtype(out_dtype.fields)
-    tile_targets = np.empty(len(tile_tgids), dtype=tile_targets_dtype)
+    tile_targets = np.zeros(len(tile_tgids), dtype=tile_targets_dtype)
 
     # Copy original data
 

@@ -60,3 +60,10 @@ class TestHardware(unittest.TestCase):
         tm.stop()
         tm.report("check_collisions_thetaphi 100 configurations")
         return
+
+def test_suite():
+    """Allows testing of only this module with the command::
+
+        python setup.py test -m <modulename>
+    """
+    return unittest.defaultTestLoader.loadTestsFromName(__name__)
