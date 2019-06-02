@@ -36,6 +36,16 @@ fba::Assignment::Assignment(fba::Targets::pshr tgs,
     tiles_ = tgsavail_->tiles();
     hw_ = tgsavail_->hardware();
 
+    // This structure is only used in order to reproduce the previous
+    // erroneous behavior of looping in fiber ID order.
+    auto loc = hw_->locations;
+    auto loc_fiber = hw_->loc_fiber;
+    for (auto const & lid : loc) {
+        fiber_and_loc.push_back(std::make_pair(loc_fiber[lid], lid));
+    }
+    fba::fiber_loc_compare flcomp;
+    std::stable_sort(fiber_and_loc.begin(), fiber_and_loc.end(), flcomp);
+
     // Initialize assignment counts
 
     std::vector <uint8_t> tgtypes;
@@ -215,6 +225,24 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
 
     fba::weight_compare loc_comp;
 
+    // FIXME:  these structures define the mapping between locations and
+    // "fake" fiber IDs that go above 5000 and include the ETC devices. This
+    // is here to preserve the previous behavior and should be ripped out
+    // as part of https://github.com/desihub/fiberassign/issues/183
+
+    std::map <int32_t, int32_t> fid_to_lid;
+    std::map <int32_t, int32_t> lid_to_fid;
+    int32_t fake = 0;
+    for (auto const & lid : hw_->locations) {
+        int32_t fid = hw_->loc_fiber[lid];
+        if (fid < 0) {
+            fid = 5000 + fake;
+            fake++;
+        }
+        fid_to_lid[fid] = lid;
+        lid_to_fid[lid] = fid;
+    }
+
     // This container stores the position in focalplane
     // coordinates of the available targets on a tile.
     //std::map <int64_t, std::pair <double, double> > target_xy;
@@ -254,6 +282,7 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
         // on the maximum priority of each location's available targets of the
         // specified type.
         std::vector <weight_index> loc_priority;
+        std::vector <weight_index> f_priority;
 
         gtmname.str("");
         gtmname << "unused " << tgstr << ": location order";
@@ -293,13 +322,21 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
                 double totpriority = static_cast <double> (tg.priority)
                     + tg.subpriority;
 
-                loc_priority.push_back(std::make_pair(totpriority, lid));
+                f_priority.push_back(
+                    std::make_pair(totpriority, lid_to_fid.at(lid)));
+                //loc_priority.push_back(std::make_pair(totpriority, lid));
                 break;
             }
         }
 
-        std::stable_sort(loc_priority.begin(), loc_priority.end(),
+        std::stable_sort(f_priority.begin(), f_priority.end(),
                          loc_comp);
+        for (auto const & fpr : f_priority) {
+            loc_priority.push_back(
+                std::make_pair(fpr.first, fid_to_lid.at(fpr.second)));
+        }
+        // std::stable_sort(loc_priority.begin(), loc_priority.end(),
+        //                  loc_comp);
         gtm.stop(gtmname.str());
 
         gtmname.str("");
@@ -309,6 +346,7 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
         for (auto const & fpr : loc_priority) {
             // The location.
             int32_t lid = fpr.second;
+            int32_t fid = lid_to_fid.at(lid);
             // The petal
             int32_t p = hw_->loc_petal[lid];
 
@@ -317,7 +355,8 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
                 if (extra_log) {
                     logmsg.str("");
                     logmsg << "assign unused " << tgstr << ": tile " << tile_id
-                        << ", petal " << p << " location " << lid << " has "
+                        << ", petal " << p << " location " << lid
+                        << " (fiber " << fid << ")" << " has "
                         << nassign_petal[tgtype][tile_id][p]
                         << " (>= " << max_per_petal << ")";
                     logger.debug_tfg(tile_id, lid, -1, logmsg.str().c_str());
@@ -331,6 +370,7 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
                     logmsg.str("");
                     logmsg << "assign unused " << tgstr << ": tile " << tile_id
                         << ", petal " << p << " location " << lid
+                        << " (fiber " << fid << ")"
                         << " is already assigned";
                     logger.debug_tfg(tile_id, lid, -1, logmsg.str().c_str());
                 }
@@ -347,6 +387,7 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
                     logmsg.str("");
                     logmsg << "assign unused " << tgstr << ": tile " << tile_id
                         << ", petal " << p << " location " << lid
+                        << " (fiber " << fid << ")"
                         << " has no available targets";
                     logger.debug_tfg(tile_id, lid, -1, logmsg.str().c_str());
                 }
@@ -362,6 +403,7 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
                     logmsg.str("");
                     logmsg << "assign unused " << tgstr << ": tile " << tile_id
                         << ", petal " << p << " location " << lid
+                        << " (fiber " << fid << ")"
                         << " has no available targets";
                     logger.debug_tfg(tile_id, lid, -1, logmsg.str().c_str());
                 }
@@ -384,6 +426,7 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
                         logmsg.str("");
                         logmsg << "assign unused " << tgstr << ": tile " << tile_id
                             << ", petal " << p << " location " << lid
+                            << " (fiber " << fid << ")"
                             << " available target " << tgid
                             << " is wrong type (" << (int)tg.type << ")";
                         logger.debug_tfg(tile_id, lid, tgid,
@@ -395,6 +438,7 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
                     logmsg.str("");
                     logmsg << "assign unused " << tgstr << ": tile " << tile_id
                         << ", petal " << p << " location " << lid
+                        << " (fiber " << fid << ")"
                         << " available target " << tgid
                         << ", priority " << tg.priority << ", subpriority "
                         << tg.subpriority;
@@ -412,8 +456,10 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
                 if (target >= 0) {
                     if (extra_log) {
                         logmsg.str("");
-                        logmsg << "assign unused " << tgstr << ": tile " << tile_id
+                        logmsg << "assign unused " << tgstr << ": tile "
+                            << tile_id
                             << ", petal " << p << " location " << lid
+                            << " (fiber " << fid << ")"
                             << " found best object " << target;
                         logger.debug_tfg(tile_id, lid, target,
                                          logmsg.str().c_str());
@@ -426,6 +472,7 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
                     logmsg.str("");
                     logmsg << "assign unused " << tgstr << ": tile " << tile_id
                         << ", petal " << p << " location " << lid
+                        << " (fiber " << fid << ")"
                         << " no available targets of correct type";
                     logger.debug_tfg(tile_id, lid, -1,
                                      logmsg.str().c_str());
@@ -454,16 +501,6 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
 }
 
 
-typedef std::pair <int32_t, int32_t> fiber_loc;
-
-struct fiber_loc_compare {
-    bool operator() (fiber_loc const & lhs,
-                     fiber_loc const & rhs) const {
-        return lhs.first < rhs.first;
-    }
-};
-
-
 void fba::Assignment::redistribute_science(int32_t start_tile,
                                            int32_t stop_tile) {
     fba::Timer tm;
@@ -482,6 +519,7 @@ void fba::Assignment::redistribute_science(int32_t start_tile,
 
     // Select locations based on positioner type
     auto loc = hw_->device_locations("POS");
+    auto loc_fiber = hw_->loc_fiber;
 
     // Determine our range of tiles
     int32_t tstart;
@@ -503,17 +541,6 @@ void fba::Assignment::redistribute_science(int32_t start_tile,
     }
 
     std::vector <int64_t> targets_avail;
-
-    // This structure is only used in order to reproduce the previous
-    // erroneous behavior of looping in fiber ID order.
-    auto loc_fiber = hw_->loc_fiber;
-    std::vector <std::pair <int32_t, int32_t> > fiber_and_loc;
-    for (auto const & lid : loc) {
-        fiber_and_loc.push_back(std::make_pair(loc_fiber[lid], lid));
-    }
-
-    fiber_loc_compare flcomp;
-    std::stable_sort(fiber_and_loc.begin(), fiber_and_loc.end(), flcomp);
 
     for (int32_t t = tstart; t <= tstop; ++t) {
         int32_t tile_id = tiles_->id[t];
@@ -593,6 +620,7 @@ void fba::Assignment::redistribute_science(int32_t start_tile,
             done[tile_id][lid] = true;
 
             if ((best_tile != tile_id) || (best_loc != lid)) {
+                int32_t best_fid = loc_fiber[best_loc];
                 // We have a better possible assignment- change it.
                 if (extra_log) {
                     logmsg.str("");
@@ -600,7 +628,7 @@ void fba::Assignment::redistribute_science(int32_t start_tile,
                         << lid << " (fiber " << fid << ")"
                         << ", target " << tgid
                         << " swapping to T/F " << best_tile << ","
-                        << best_loc;
+                        << best_loc << " (fiber " << best_fid << ")";
                     logger.debug_tfg(tile_id, lid, tgid, logmsg.str().c_str());
                 }
                 unassign_tileloc(hw_.get(), tgs_.get(), tile_id, lid,
@@ -679,14 +707,20 @@ void fba::Assignment::redistribute_science(int32_t start_tile,
 }
 
 
-// Helper types for sorting targets by subpriority
+// Helper types for sorting targets by subpriority.  Note that in the case of
+// a "tie" (which should never happen and indicates a bug in the input files),
+// we sort by target / location value to at least ensure reproducibility.
 
 typedef std::pair <double, int64_t> weight_target;
 
 struct target_compare {
     bool operator() (weight_target const & lhs,
                      weight_target const & rhs) const {
-        return lhs.first > rhs.first;
+        if (lhs.first == rhs.first) {
+            return lhs.second < rhs.second;
+        } else {
+            return lhs.first > rhs.first;
+        }
     }
 };
 
@@ -695,7 +729,11 @@ typedef std::pair <double, int32_t> weight_loc;
 struct loc_compare {
     bool operator() (weight_loc const & lhs,
                      weight_loc const & rhs) const {
-        return lhs.first < rhs.first;
+        if (lhs.first == rhs.first) {
+            return lhs.second < rhs.second;
+        } else {
+            return lhs.first < rhs.first;
+        }
     }
 };
 
@@ -744,6 +782,22 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
 
     // The target classes
     auto const & tgclasses = tgs_->science_classes;
+
+    // FIXME:  these structures define the mapping between locations and
+    // fiber IDs that are used for printing log messages.
+
+    std::map <int32_t, int32_t> fid_to_lid;
+    std::map <int32_t, int32_t> lid_to_fid;
+    int32_t fake = 0;
+    for (auto const & lid : hw_->locations) {
+        int32_t fid = hw_->loc_fiber[lid];
+        if (fid < 0) {
+            fid = 5000 + fake;
+            fake++;
+        }
+        fid_to_lid[fid] = lid;
+        lid_to_fid[lid] = fid;
+    }
 
     // This is the specific list of available targets for a single
     // tile / loc, after selecting by target type, etc.
@@ -819,6 +873,7 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
             }
 
             for (auto const & lid : petal_locations) {
+                int32_t fid = lid_to_fid[lid];
                 if (tfavail.count(lid) == 0) {
                     // No targets available for this location
                     continue;
@@ -847,7 +902,8 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
                         logmsg.str("");
                         logmsg << "assign force " << tgstr << ": tile "
                             << tile_id << ", petal " << p << ", location "
-                            << lid << ", found object " << tgid
+                            << lid << " (fiber " << fid << ")"
+                            << ", found object " << tgid
                             << " with weight " << av_weight;
                         logger.debug_tfg(tile_id, lid, tgid,
                                          logmsg.str().c_str());
@@ -883,11 +939,12 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
                     can_replace.clear();
                     for (auto const & tf : locavail_->data[id]) {
                         int32_t lid = tf.second;
+                        int32_t fid = lid_to_fid.at(lid);
                         if (tf.first != tile_id) {
                             // Not this tile
                             continue;
                         }
-                        if (hw_->loc_petal[lid] != p) {
+                        if (hw_->loc_petal.at(lid) != p) {
                             // Not this petal
                             continue;
                         }
@@ -913,6 +970,7 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
                                     << ", class " << tc << ", object " << id
                                     << ", total priority " << ps.first
                                     << ", available loc " << lid
+                                    << " (fiber " << fid << ")"
                                     << " at target " << cur.id
                                     << " is wrong class (" << cur.priority
                                     << ")";
@@ -938,6 +996,7 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
                                     << ", class " << tc << ", object " << id
                                     << ", total priority " << ps.first
                                     << ", available loc " << lid
+                                    << " (fiber " << fid << ")"
                                     << " at science target " << cur.id
                                     << " is also a standard- skipping";
                                 logger.debug_tfg(tile_id, lid, id,
@@ -951,15 +1010,16 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
                                 << tile_id << ", petal " << p
                                 << ", class " << tc << ", object " << id
                                 << ", total priority " << ps.first
-                                << ", available fiber " << fid
+                                << ", available loc " << lid
+                                << " (fiber " << fid << ")"
                                 << " at target " << cur.id
                                 << " (subpriority " << cur.subpriority
                                 << ") could be bumped";
-                            logger.debug_tfg(tile_id, fid, id,
+                            logger.debug_tfg(tile_id, lid, id,
                                              logmsg.str().c_str());
                         }
                         can_replace.push_back(
-                            std::make_pair(cur.subpriority, lid));
+                            std::make_pair(cur.subpriority, fid));
                     }
 
                     std::stable_sort(can_replace.begin(), can_replace.end(),
@@ -982,7 +1042,8 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
                     }
 
                     for (auto const & av : can_replace) {
-                        int32_t lid = av.second;
+                        int32_t fid = av.second;
+                        int32_t lid = fid_to_lid.at(fid);
                         if ((done[tile_id].count(lid) > 0)
                             && done[tile_id].at(lid)) {
                             // Already considered this tile/loc
@@ -1012,6 +1073,7 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
                                     << ", class " << tc << ", object " << id
                                     << ", total priority " << ps.first
                                     << ", available loc " << lid
+                                    << " (fiber " << fid << ")"
                                     << " bumping science target " << curtg;
                                 // Log for target doing the bumping
                                 logger.debug_tfg(tile_id, lid, id,
@@ -1076,6 +1138,7 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
                                     << ", class " << tc << ", object " << id
                                     << ", total priority " << ps.first
                                     << ", available loc " << lid
+                                    << " (fiber " << fid << ")"
                                     << " not ok to assign";
                                 logger.debug_tfg(tile_id, lid, id,
                                                  logmsg.str().c_str());
@@ -1148,11 +1211,12 @@ void fba::Assignment::reassign_science_target(int32_t tstart, int32_t tstop,
 
     // Vector of available tile / loc pairs which have a loc that is a
     // science positioner.
+    auto loc_device_type = hw_->loc_device_type;
     auto const & availtfall = locavail_->data.at(target);
     std::vector < std::pair <int32_t, int32_t> > availtf;
     std::string pos_str("POS");
     for (auto const & av : availtfall) {
-        if (pos_str.compare(hw_->loc_device_type.at(av.second)) == 0) {
+        if (pos_str.compare(loc_device_type.at(av.second)) == 0) {
             availtf.push_back(av);
         }
     }
@@ -1613,13 +1677,13 @@ void fba::Assignment::assign_tileloc(fba::Hardware const * hw,
             nassign_petal.at(tt).at(tile).at(petal)++;
             if (extra_log) {
                 logmsg.str("");
-                logmsg << "assign_tilefiber: tile " << tile << ", fiber "
-                    << fiber << ", target " << target << ", type "
+                logmsg << "assign_tileloc: tile " << tile << ", loc "
+                    << loc << ", target " << target << ", type "
                     << (int)tt << " N_tile now = "
                     << nassign_tile.at(tt).at(tile)
                     << " N_petal now = "
                     << nassign_petal.at(tt).at(tile).at(petal);
-                logger.debug_tfg(tile, fiber, target, logmsg.str().c_str());
+                logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
             }
         }
     }
@@ -1687,13 +1751,13 @@ void fba::Assignment::unassign_tileloc(fba::Hardware const * hw,
             nassign_petal.at(tt).at(tile).at(petal)--;
             if (extra_log) {
                 logmsg.str("");
-                logmsg << "unassign_tilefiber: tile " << tile << ", fiber "
-                    << fiber << ", target " << target << ", type "
+                logmsg << "unassign_tileloc: tile " << tile << ", loc "
+                    << loc << ", target " << target << ", type "
                     << (int)tt << " N_tile now = "
                     << nassign_tile.at(tt).at(tile)
                     << " N_petal now = "
                     << nassign_petal.at(tt).at(tile).at(petal);
-                logger.debug_tfg(tile, fiber, target, logmsg.str().c_str());
+                logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
             }
         }
     }

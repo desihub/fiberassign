@@ -263,7 +263,7 @@ fba::Logger::Logger() {
     }
 
     debug_loc_ = -1;
-    val = ::getenv("DESI_DEBUG_FIBER");
+    val = ::getenv("DESI_DEBUG_LOCATION");
     if (val != NULL) {
         debug_loc_ = ::atoi(val);
         extra_ = true;

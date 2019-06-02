@@ -133,8 +133,8 @@ def qa_tile_file(hw, params):
     pos_rows = np.where(fiber_data["DEVICE_TYPE"].astype(str) == "POS")[0]
 
     # Target assignment
-    tassign = {x["FIBER"]: x["TARGETID"] for x in fiber_data[pos_rows]
-               if (x["FIBER"] >= 0)}
+    tassign = {x["LOCATION"]: x["TARGETID"] for x in fiber_data[pos_rows]
+               if (x["LOCATION"] >= 0)}
 
     tavail = avail_table_to_dict(avail_data)
 

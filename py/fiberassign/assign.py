@@ -334,12 +334,16 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         fdata["DESIGN_S"] = assigned_s
 
         fibers = dict(hw.loc_fiber)
+        etcloc = sorted([x for x, y in fibers.items() if y < 0])
+        fakefibers = {y: (5000 + x) for x, y in enumerate(etcloc)}
+        fullfibers = fibers
+        fullfibers.update(fakefibers)
         device = dict(hw.loc_device)
         petal = dict(hw.loc_petal)
         device_type = dict(hw.loc_device_type)
 
         fdata["FIBER"] = np.array(
-            [fibers[x] for x in locs]).astype(np.int32)
+            [fullfibers[x] for x in locs]).astype(np.int32)
         fdata["DEVICE_LOC"] = np.array(
             [device[x] for x in locs]).astype(np.int32)
         fdata["PETAL_LOC"] = np.array(

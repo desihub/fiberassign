@@ -121,6 +121,10 @@ class Assignment : public std::enable_shared_from_this <Assignment> {
         // shared handle to the available locations for targets.
         LocationsAvailable::pshr locavail_;
 
+        // FIXME: remove this once we no longer need to loop over things
+        // in fiber order.
+        std::vector <std::pair <int32_t, int32_t> > fiber_and_loc;
+
 };
 
 }

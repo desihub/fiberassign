@@ -386,7 +386,7 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
                         + obj.subpriority;
                     result.push_back(tnear);
                     result_weight.push_back(
-                    std::make_pair(totpriority, tindx));
+                        std::make_pair(totpriority, tindx));
                     tindx++;
                 }
 
@@ -503,12 +503,25 @@ fba::LocationsAvailable::LocationsAvailable(fba::TargetsAvailable::pshr tgsavail
 
     size_t ntile = tfkeys.size();
 
+    // This structure is only used in order to reproduce the previous
+    // behavior of looping in fiber ID order.
+    auto loc = tgsavail->hardware()->locations;
+    auto loc_to_fiber = tgsavail->hardware()->loc_fiber;
+    std::map <int32_t, int32_t> fiber_to_loc;
+    std::vector <fba::fiber_loc> fiber_and_loc;
+    for (auto const & lid : loc) {
+        fiber_to_loc[loc_to_fiber[lid]] = lid;
+        fiber_and_loc.push_back(std::make_pair(loc_to_fiber[lid], lid));
+    }
+    fba::fiber_loc_compare flcomp;
+    std::stable_sort(fiber_and_loc.begin(), fiber_and_loc.end(), flcomp);
+
     // shared_ptr reference counting is not threadsafe.  Here we extract
     // a copy of the "raw" pointers needed inside the parallel region.
 
     auto * ptgsavail = tgsavail.get();
 
-    #pragma omp parallel default(none) shared(logger, ptgsavail, ntile, tfkeys)
+    #pragma omp parallel default(none) shared(logger, ptgsavail, ntile, tfkeys, fiber_and_loc)
     {
         // Our thread-local data, to be reduced at the end.
         std::map < int64_t,
@@ -520,9 +533,18 @@ fba::LocationsAvailable::LocationsAvailable(fba::TargetsAvailable::pshr tgsavail
         #pragma omp for schedule(dynamic)
         for (size_t tindx = 0; tindx < ntile; ++tindx) {
             int32_t tid = tfkeys[tindx];
-            for (auto const & favail : avail.at(tid)) {
-                int32_t fbr = favail.first;
-                for (auto const & tg : favail.second) {
+            if (avail.count(tid) == 0) {
+                continue;
+            }
+            auto tavail = avail.at(tid);
+            for (auto const & flid : fiber_and_loc) {
+                auto fid = flid.first;
+                auto lid = flid.second;
+                if (tavail.count(lid) == 0) {
+                    continue;
+                }
+                auto lavail = tavail.at(lid);
+                for (auto const & tg : lavail) {
                     if (thread_data.count(tg) == 0) {
                         thread_data[tg].resize(0);
                     }
@@ -530,10 +552,11 @@ fba::LocationsAvailable::LocationsAvailable(fba::TargetsAvailable::pshr tgsavail
                         logmsg.str("");
                         logmsg << "target " << tg
                             << " has available tile / location "
-                            << tid << ", " << fbr;
-                        logger.debug_tfg(tid, fbr, tg, logmsg.str().c_str());
+                            << tid << ", " << lid
+                            << " (fiber " << fid << ")";
+                        logger.debug_tfg(tid, lid, tg, logmsg.str().c_str());
                     }
-                    thread_data[tg].push_back(std::make_pair(tid, fbr));
+                    thread_data[tg].push_back(std::make_pair(tid, lid));
                 }
             }
         }
@@ -554,8 +577,8 @@ fba::LocationsAvailable::LocationsAvailable(fba::TargetsAvailable::pshr tgsavail
         }
     }
 
-    // Sort the available tile / locations by tile order, since the
-    // original order will depend on thread concurrency.
+    // Sort the available tile / locations by tile order, since the original
+    // order will depend on thread concurrency.
 
     auto tls = tgsavail->tiles();
     auto torder = tls->order;
@@ -570,12 +593,14 @@ fba::LocationsAvailable::LocationsAvailable(fba::TargetsAvailable::pshr tgsavail
         auto & av = tgav.second;
         tdx.clear();
         for (auto const & tf : av) {
-            tdx.push_back(std::make_pair(torder[tf.first], tf.second));
+            tdx.push_back(std::make_pair(torder.at(tf.first),
+                          loc_to_fiber.at(tf.second)));
         }
         std::stable_sort(tdx.begin(), tdx.end(), tlcomp);
         av.clear();
         for (auto const & tf : tdx) {
-            av.push_back(std::make_pair(tids[tf.first], tf.second));
+            av.push_back(std::make_pair(tids[tf.first],
+                         fiber_to_loc.at(tf.second)));
         }
     }
 
