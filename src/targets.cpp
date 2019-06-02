@@ -566,6 +566,31 @@ fba::FibersAvailable::FibersAvailable(fba::TargetsAvailable::pshr tgsavail) {
         }
     }
 
+    // Sort the available tile / locations by tile order, since the
+    // original order will depend on thread concurrency.
+
+    auto tls = tgsavail->tiles();
+    auto torder = tls->order;
+    auto tids = tls->id;
+
+    fba::tile_loc_compare tlcomp;
+
+    std::vector < std::pair <int32_t, int32_t> > tdx;
+
+    for (auto & tgav : data) {
+        // int64_t tgid = tgav.first;
+        auto & av = tgav.second;
+        tdx.clear();
+        for (auto const & tf : av) {
+            tdx.push_back(std::make_pair(torder[tf.first], tf.second));
+        }
+        std::stable_sort(tdx.begin(), tdx.end(), tlcomp);
+        av.clear();
+        for (auto const & tf : tdx) {
+            av.push_back(std::make_pair(tids[tf.first], tf.second));
+        }
+    }
+
     tm.stop();
     tm.report("Computing tile / fibers available to all objects");
 }
