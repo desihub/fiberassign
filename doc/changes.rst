@@ -6,13 +6,16 @@ fiberassign change log
 1.0.3 (unreleased)
 ------------------
 
-* No changes yet.
+* Fix an issue with reproducibility of the ordering of available tile-fibers
+  for each target (PR `#203`_).
+
+.. _`#203`: https://github.com/desihub/fiberassign/pull/203
 
 1.0.2 (2019-05-30)
 ------------------
 
 * PR `#202`_:
-  
+
   * Gracefully allow fiberassign --stdstar to have duplicates with --mtl
   * Expose fba_run --sciencemask, --stdmask, etc. to fiberassign too
   * support fitsio 1.0.x
