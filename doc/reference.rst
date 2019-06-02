@@ -187,14 +187,14 @@ After loading all the data, we usually want to index these targets in a hierarch
 .. autoclass:: fiberassign.targets.TargetTree
     :members:
 
-Given a hardware model, our set of tiles, and this tree structure, we can now compute the target IDs available to every fiber on every tile.  This is done with the `TargetsAvailable` class:
+Given a hardware model, our set of tiles, and this tree structure, we can now compute the target IDs available to every device location on every tile.  This is done with the `TargetsAvailable` class:
 
 .. autoclass:: fiberassign.targets.TargetsAvailable
     :members:
 
-We can also compute the inverse quantity:  the tile-fiber combinations that can reach each target ID.  This is done with the `FibersAvailable` class:
+We can also compute the inverse quantity:  the tile-location combinations that can reach each target ID.  This is done with the `LocationsAvailable` class:
 
-.. autoclass:: fiberassign.targets.FibersAvailable
+.. autoclass:: fiberassign.targets.LocationsAvailable
     :members:
 
 
@@ -207,7 +207,7 @@ Assigning Targets to Unused Fibers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When assigning a particular class of target ("science", "standard", or "sky")
-to unused fibers, the same technique (and code) is used.
+to unused locations, the same technique (and code) is used.
 
 .. todo:: Algorithm discussion here, once relevant github issues and their associated changes are done.
 
@@ -227,9 +227,9 @@ For each petal, we do the following pseudocode::
 
     for each science target priority "P" (lowest to highest)
         for each object (standard or sky) in total priority from high to low
-            if object is reachable by fibers on targets with priority "P"
-                remove target and place fiber on object
-                re-assign target to unused fiber on future tile if possible
+            if object is reachable by devices on targets with priority "P"
+                remove target and place positioner on object
+                re-assign target to unused location on future tile if possible
                 if enough objects on this petal
                     break
 
