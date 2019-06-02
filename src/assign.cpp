@@ -909,9 +909,26 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
                             }
                             continue;
                         }
+                        if (extra_log) {
+                            logmsg.str("");
+                            logmsg << "assign force " << tgstr << ": tile "
+                                << tile_id << ", petal " << p
+                                << ", class " << tc << ", object " << id
+                                << ", total priority " << ps.first
+                                << ", available fiber " << fid
+                                << " at target " << cur.id
+                                << " (subpriority " << cur.subpriority
+                                << ") could be bumped";
+                            logger.debug_tfg(tile_id, fid, id,
+                                             logmsg.str().c_str());
+                        }
                         can_replace.push_back(
                             std::make_pair(cur.subpriority, fid));
                     }
+
+                    std::stable_sort(can_replace.begin(), can_replace.end(),
+                                     fcompare);
+
                     if (extra_log) {
                         logmsg.str("");
                         logmsg << "assign force " << tgstr << ": tile "
@@ -919,13 +936,14 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
                             << ", class " << tc << ", object " << id
                             << ", total priority " << ps.first
                             << " has " << can_replace.size()
-                            << " potential targets to bump";
+                            << " potential targets to bump: ";
+                        for (auto const & av : can_replace) {
+                            logmsg << "(" << av.first << ","
+                                << av.second << ") ";
+                        }
                         logger.debug_tfg(tile_id, -1, id,
                                          logmsg.str().c_str());
                     }
-
-                    std::stable_sort(can_replace.begin(), can_replace.end(),
-                                     fcompare);
 
                     for (auto const & av : can_replace) {
                         int32_t fid = av.second;
@@ -1495,6 +1513,7 @@ void fba::Assignment::assign_tilefiber(fba::Hardware const * hw,
     uint8_t type) {
 
     fba::Logger & logger = fba::Logger::get();
+    bool extra_log = logger.extra_debug();
     std::ostringstream logmsg;
 
     if (target < 0) {
@@ -1559,6 +1578,16 @@ void fba::Assignment::assign_tilefiber(fba::Hardware const * hw,
         if (tgobj.is_type(tt)) {
             nassign_tile.at(tt).at(tile)++;
             nassign_petal.at(tt).at(tile).at(petal)++;
+            if (extra_log) {
+                logmsg.str("");
+                logmsg << "assign_tilefiber: tile " << tile << ", fiber "
+                    << fiber << ", target " << target << ", type "
+                    << (int)tt << " N_tile now = "
+                    << nassign_tile.at(tt).at(tile)
+                    << " N_petal now = "
+                    << nassign_petal.at(tt).at(tile).at(petal);
+                logger.debug_tfg(tile, fiber, target, logmsg.str().c_str());
+            }
         }
     }
     tgobj.obsremain--;
@@ -1571,6 +1600,7 @@ void fba::Assignment::unassign_tilefiber(fba::Hardware const * hw,
     fba::Targets * tgs, int32_t tile, int32_t fiber, uint8_t type) {
 
     fba::Logger & logger = fba::Logger::get();
+    bool extra_log = logger.extra_debug();
     std::ostringstream logmsg;
 
     if (fiber_target.count(tile) == 0) {
@@ -1622,6 +1652,16 @@ void fba::Assignment::unassign_tilefiber(fba::Hardware const * hw,
         if (tgobj.is_type(tt)) {
             nassign_tile.at(tt).at(tile)--;
             nassign_petal.at(tt).at(tile).at(petal)--;
+            if (extra_log) {
+                logmsg.str("");
+                logmsg << "unassign_tilefiber: tile " << tile << ", fiber "
+                    << fiber << ", target " << target << ", type "
+                    << (int)tt << " N_tile now = "
+                    << nassign_tile.at(tt).at(tile)
+                    << " N_petal now = "
+                    << nassign_petal.at(tt).at(tile).at(petal);
+                logger.debug_tfg(tile, fiber, target, logmsg.str().c_str());
+            }
         }
     }
     tgobj.obsremain++;
