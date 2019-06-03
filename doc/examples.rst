@@ -21,171 +21,171 @@ I made some plots::
        --dir "out_fiberassign_2018-11-24T11:09:48"
 
 I opened one resulting image (fiberassign_001148.pdf) and zoomed into one
-petal.  I noticed that fiber 2233 was assigned to a standard.  Let's look at
-the details of how this fiber was assigned::
+petal.  I noticed that device location 2233 was assigned to a standard.  Let's
+look at the details of how this device was assigned::
 
-    %> export DESI_DEBUG_FIBER=2233
+    %> export DESI_DEBUG_LOCATION=2233
     %> fba_run --targets mtl.fits standards-dark.fits sky.fits
 
 The log showed that there were several targets available to this fiber on tile
 1148::
 
-    DEBUG: targets avail:  tile 1148, fiber 2233 append ID \
+    DEBUG: targets avail:  tile 1148, loc 2233 append ID \
         288230398599630147 (type=1), total priority 3200.07
-    DEBUG: targets avail:  tile 1148, fiber 2233 append ID \
+    DEBUG: targets avail:  tile 1148, loc 2233 append ID \
         288230398599629415 (type=1), total priority 3000.91
-    DEBUG: targets avail:  tile 1148, fiber 2233 append ID \
+    DEBUG: targets avail:  tile 1148, loc 2233 append ID \
         288230398599629372 (type=1), total priority 3000.24
-    DEBUG: targets avail:  tile 1148, fiber 2233 append ID \
+    DEBUG: targets avail:  tile 1148, loc 2233 append ID \
         288230398599627959 (type=1), total priority 2000.04
-    DEBUG: targets avail:  tile 1148, fiber 2233 append ID \
+    DEBUG: targets avail:  tile 1148, loc 2233 append ID \
         288230398599631299 (type=3), total priority 1500.79
-    DEBUG: targets avail:  tile 1148, fiber 2233 append ID \
+    DEBUG: targets avail:  tile 1148, loc 2233 append ID \
         288230398599631166 (type=1), total priority 1500.1
-    DEBUG: targets avail:  tile 1148, fiber 2233 append ID \
+    DEBUG: targets avail:  tile 1148, loc 2233 append ID \
         288230398599632448 (type=4), total priority 0.293402
-    DEBUG: targets avail:  tile 1148, fiber 2233 append ID \
+    DEBUG: targets avail:  tile 1148, loc 2233 append ID \
         288230398599632236 (type=4), total priority 0.179244
 
 Looking at the target type (which are the 4 categories of target used
 internally in fiberassign, defined in targets.py / targets.h), we see that
 there are 2 sky targets, 5 science targets, and one target which is both a
-science target and a standard.  Later, during the assignment of unused fibers
-to science targets, we see::
+science target and a standard.  Later, during the assignment of unused
+locations to science targets, we see::
 
-    DEBUG: assign unused science: tile 1148, petal 4 fiber 2233 \
+    DEBUG: assign unused science: tile 1148, petal 4 loc 2233 \
         available target 288230398599630147, subpriority 0.0692912
-    DEBUG: assign unused science: tile 1148, petal 4 fiber 2233 \
+    DEBUG: assign unused science: tile 1148, petal 4 loc 2233 \
         available target 288230398599629415, subpriority 0.914937
-    DEBUG: assign unused science: tile 1148, petal 4 fiber 2233 \
+    DEBUG: assign unused science: tile 1148, petal 4 loc 2233 \
         available target 288230398599629372, subpriority 0.241329
-    DEBUG: assign unused science: tile 1148, petal 4 fiber 2233 \
+    DEBUG: assign unused science: tile 1148, petal 4 loc 2233 \
         available target 288230398599627959, subpriority 0.0415658
-    DEBUG: assign unused science: tile 1148, petal 4 fiber 2233 \
+    DEBUG: assign unused science: tile 1148, petal 4 loc 2233 \
         available target 288230398599631299, subpriority 0.786657
-    DEBUG: assign unused science: tile 1148, petal 4 fiber 2233 \
+    DEBUG: assign unused science: tile 1148, petal 4 loc 2233 \
         available target 288230398599631166, subpriority 0.0962114
-    DEBUG: assign unused science: tile 1148, petal 4 fiber 2233 \
+    DEBUG: assign unused science: tile 1148, petal 4 loc 2233 \
         available target 288230398599632448 is wrong type (4)
-    DEBUG: assign unused science: tile 1148, petal 4 fiber 2233 \
+    DEBUG: assign unused science: tile 1148, petal 4 loc 2233 \
         available target 288230398599632236 is wrong type (4)
-    DEBUG: find_best: tile 1148, fiber 2233, target \
+    DEBUG: find_best: tile 1148, loc 2233, target \
         288230398599630147, type 1 accept with priority = 3200, \
         subpriority = 0.0692912, obs_remain = 2
-    DEBUG: find_best: tile 1148, fiber 2233, target \
+    DEBUG: find_best: tile 1148, loc 2233, target \
         288230398599630147, type 1 SELECTED
-    DEBUG: assign unused science: tile 1148, petal 4 fiber 2233 \
+    DEBUG: assign unused science: tile 1148, petal 4 loc 2233 \
         found best object 288230398599630147
 
 So it skipped over the two sky targets and selected a high-priority science
 target.  Later, during the redistribution step, we see::
 
-    DEBUG: reassign: tile 1148, fiber 2233, target \
+    DEBUG: reassign: tile 1148, loc 2233, target \
         288230398599630147 considering for swap...
-    DEBUG: reassign: tile 1148, fiber 2233, target \
+    DEBUG: reassign: tile 1148, loc 2233, target \
         288230398599630147 considering tile indices 0 to 16070
-    DEBUG: reassign: tile 1148, fiber 2233, target \
+    DEBUG: reassign: tile 1148, loc 2233, target \
         288230398599630147 avail T/F 1148,2233 already assigned
-    DEBUG: reassign: tile 1148, fiber 2233, target \
+    DEBUG: reassign: tile 1148, loc 2233, target \
         288230398599630147 avail T/F 6926,175 already assigned
-    DEBUG: reassign: tile 1148, fiber 2233, target \
+    DEBUG: reassign: tile 1148, loc 2233, target \
         288230398599630147 avail T/F 12688,968 already assigned
-    DEBUG: reassign: tile 1148, fiber 2233, target \
+    DEBUG: reassign: tile 1148, loc 2233, target \
         288230398599630147 avail T/F 12688,991 already assigned
-    DEBUG: reassign: tile 1148, fiber 2233, target \
+    DEBUG: reassign: tile 1148, loc 2233, target \
         288230398599630147 avail T/F 12689,2561 already assigned
-    DEBUG: reassign: tile 1148, fiber 2233, target \
+    DEBUG: reassign: tile 1148, loc 2233, target \
         288230398599630147 avail T/F 12689,2587 already assigned
-    DEBUG: redist: tile 1148, fiber 2233, target \
+    DEBUG: redist: tile 1148, loc 2233, target \
         288230398599630147 keeping assignment
 
-So the science target initially assigned to this fiber had no other unassigned
-available tile / fibers for potential swapping.  Further in the assignment
-process, we see that a standard was found available to this fiber.  Here is the
-log snippet from this step::
+So the science target initially assigned to this location had no other
+unassigned available tile / locations for potential swapping.  Further in the
+assignment process, we see that a standard was found available to this
+location.  Here is the log snippet from this step::
 
     DEBUG: assign force standard: tile 1148, petal 4, \
-        fiber 2233, found object 288230398599631299 \
+        loc 2233, found object 288230398599631299 \
         with weight 1500.79
     DEBUG: assign force standard: tile 1148, petal 4, \
         class 1500, object 288230398599631299, subpriority \
-        1500.79, available fiber 2233 at target \
+        1500.79, available loc 2233 at target \
         288230398599630147 is wrong class (3200)
     DEBUG: assign force standard: tile 1148, petal 4, \
         class 1600, object 288230398599631299, subpriority \
-        1500.79, available fiber 2233 at target \
+        1500.79, available loc 2233 at target \
         288230398599630147 is wrong class (3200)
     DEBUG: assign force standard: tile 1148, petal 4, \
         class 2000, object 288230398599631299, subpriority \
-        1500.79, available fiber 2233 at target \
+        1500.79, available loc 2233 at target \
         288230398599630147 is wrong class (3200)
     DEBUG: assign force standard: tile 1148, petal 4, \
         class 2100, object 288230398599631299, subpriority \
-        1500.79, available fiber 2233 at target \
+        1500.79, available loc 2233 at target \
         288230398599630147 is wrong class (3200)
     DEBUG: assign force standard: tile 1148, petal 4, \
         class 3000, object 288230398599631299, subpriority \
-        1500.79, available fiber 2233 at target \
+        1500.79, available loc 2233 at target \
         288230398599630147 is wrong class (3200)
     DEBUG: assign force standard: tile 1148, petal 4, \
         class 3200, object 288230398599631299, subpriority \
-        1500.79, available fiber 2233 bumping science \
+        1500.79, available loc 2233 bumping science \
         target 288230398599630147
-    DEBUG: reassign: tile 1148, fiber 2233, target \
+    DEBUG: reassign: tile 1148, loc 2233, target \
         288230398599630147 considering for swap...
-    DEBUG: reassign: tile 1148, fiber 2233, target \
+    DEBUG: reassign: tile 1148, loc 2233, target \
         288230398599630147 considering tile indices 0 to 16070
-    DEBUG: reassign: tile 1148, fiber 2233, target \
+    DEBUG: reassign: tile 1148, loc 2233, target \
         288230398599630147 avail T/F 1148,2233 already assigned
-    DEBUG: reassign: tile 1148, fiber 2233, target \
+    DEBUG: reassign: tile 1148, loc 2233, target \
         288230398599630147 avail T/F 6926,175 already assigned
-    DEBUG: reassign: tile 1148, fiber 2233, target \
+    DEBUG: reassign: tile 1148, loc 2233, target \
         288230398599630147 avail T/F 12688,968 already assigned
-    DEBUG: reassign: tile 1148, fiber 2233, target \
+    DEBUG: reassign: tile 1148, loc 2233, target \
         288230398599630147 avail T/F 12688,991 already assigned
-    DEBUG: reassign: tile 1148, fiber 2233, target \
+    DEBUG: reassign: tile 1148, loc 2233, target \
         288230398599630147 avail T/F 12689,2561 already assigned
-    DEBUG: reassign: tile 1148, fiber 2233, target \
+    DEBUG: reassign: tile 1148, loc 2233, target \
         288230398599630147 avail T/F 12689,2587 not OK to assign
 
 What happened here is that a standard was found to replace the low-priority
-science target assigned to fiber 2233.  The existing science target was tested
-for other available tile / fibers, but all but one of those fibers were already
-assigned, and that one remaining fiber would produce a collision.  During the
-forced assignment of sky fibers, this is what happens to this fiber::
+science target assigned to location 2233.  The existing science target was tested
+for other available tile / locations, but all but one of those locations were already
+assigned, and that one remaining device would produce a collision.  During the
+forced assignment of sky targets, this is what happens to this location::
 
-    DEBUG: assign force sky: tile 1148, petal 4, fiber 2233, \
+    DEBUG: assign force sky: tile 1148, petal 4, loc 2233, \
         found object 288230398599632448 with weight 0.293402
-    DEBUG: assign force sky: tile 1148, petal 4, fiber 2233, \
+    DEBUG: assign force sky: tile 1148, petal 4, loc 2233, \
         found object 288230398599632236 with weight 0.179244
     DEBUG: assign force sky: tile 1148, petal 4, class 1500, \
         object 288230398599632448, subpriority 0.293402, \
-        available fiber 2233 at science target \
+        available loc 2233 at science target \
         288230398599631299 is also a standard- skipping
     DEBUG: assign force sky: tile 1148, petal 4, class 1500, \
         object 288230398599632236, subpriority 0.179244, \
-        available fiber 2233 at science target \
+        available loc 2233 at science target \
         288230398599631299 is also a standard- skipping
     DEBUG: assign force sky: tile 1148, petal 4, class 1600, \
         object 288230398599632448, subpriority 0.293402, available \
-        fiber 2233 at target 288230398599631299 is wrong class (1500)
+        loc 2233 at target 288230398599631299 is wrong class (1500)
     DEBUG: assign force sky: tile 1148, petal 4, class 1600, \
         object 288230398599632236, subpriority 0.179244, available \
-        fiber 2233 at target 288230398599631299 is wrong class (1500)
+        loc 2233 at target 288230398599631299 is wrong class (1500)
     DEBUG: assign force sky: tile 1148, petal 4, class 2000, \
         object 288230398599632448, subpriority 0.293402, available \
-        fiber 2233 at target 288230398599631299 is wrong class (1500)
+        loc 2233 at target 288230398599631299 is wrong class (1500)
     DEBUG: assign force sky: tile 1148, petal 4, class 2000, \
         object 288230398599632236, subpriority 0.179244, available \
-        fiber 2233 at target 288230398599631299 is wrong class (1500)
+        loc 2233 at target 288230398599631299 is wrong class (1500)
     DEBUG: assign force sky: tile 1148, petal 4, class 2100, \
         object 288230398599632448, subpriority 0.293402, available \
-        fiber 2233 at target 288230398599631299 is wrong class (1500)
+        loc 2233 at target 288230398599631299 is wrong class (1500)
     DEBUG: assign force sky: tile 1148, petal 4, class 2100, \
         object 288230398599632236, subpriority 0.179244, available \
-        fiber 2233 at target 288230398599631299 is wrong class (1500)
+        loc 2233 at target 288230398599631299 is wrong class (1500)
 
-So for this fiber, the existing assignment was recognized as both a science
+So for this device, the existing assignment was recognized as both a science
 target and a standard, and was therefore not considered for bumping to place a
 sky target.
 
@@ -211,7 +211,7 @@ variables::
     %> export \
        targetdir=/project/projectdirs/desi/datachallenge/reference_runs/18.11/targets
 
-Now run the fiber assignment using the default footprint tiling from
+Now run the assignment using the default footprint tiling from
 desimodel::
 
     %> time fba_run \
@@ -257,7 +257,7 @@ variables::
     %> export \
        targetdir=/project/projectdirs/desi/target/fiberassign/dr7.1/0.10.3-dark
 
-Now run the fiber assignment.  This will use about half of the RAM on a cori
+Now run the assignment.  This will use about half of the RAM on a cori
 haswell compute node and take about an hour- but half of that time is
 writing the output files (something to work on)::
 

@@ -22,7 +22,7 @@ from fiberassign.tiles import load_tiles
 from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                                  TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE,
                                  Targets, TargetsAvailable, TargetTree,
-                                 FibersAvailable, load_target_file)
+                                 LocationsAvailable, load_target_file)
 
 from fiberassign.assign import (Assignment, write_assignment_fits,
                                 write_assignment_ascii, merge_results,
@@ -82,7 +82,7 @@ class TestAssign(unittest.TestCase):
         del tree
 
         # Compute the fibers on all tiles available for each target
-        favail = FibersAvailable(tgsavail)
+        favail = LocationsAvailable(tgsavail)
 
         # First pass assignment
         asgn = Assignment(tgs, tgsavail, favail)
@@ -129,7 +129,7 @@ class TestAssign(unittest.TestCase):
         # Here we test reading with the standard reading function
 
         for tid in tile_ids:
-            tdata = asgn.tile_fiber_target(tid)
+            tdata = asgn.tile_location_target(tid)
             avail = tgsavail.tile_data(tid)
             # Check basic format
             infile = os.path.join(test_dir,
@@ -137,13 +137,13 @@ class TestAssign(unittest.TestCase):
             inhead, fiber_data, targets_data, avail_data, gfa_targets = \
                 read_assignment_fits_tile((tid, infile))
 
-            for fid, tgid, tgra, tgdec in zip(
-                    fiber_data["FIBER"],
+            for lid, tgid, tgra, tgdec in zip(
+                    fiber_data["LOCATION"],
                     fiber_data["TARGETID"],
                     fiber_data["TARGET_RA"],
                     fiber_data["TARGET_DEC"]):
                 if tgid >= 0:
-                    self.assertEqual(tgid, tdata[fid])
+                    self.assertEqual(tgid, tdata[lid])
                     props = tgs.get(tgid)
                     self.assertEqual(tgra, props.ra)
                     self.assertEqual(tgdec, props.dec)
@@ -153,13 +153,13 @@ class TestAssign(unittest.TestCase):
                                   "full_tile-{:06d}.fits".format(tid))
             inhead, fiber_data, targets_data, avail_data, gfa_targets = \
                 read_assignment_fits_tile((tid, infile))
-            for fid, tgid, tgra, tgdec in zip(
-                    fiber_data["FIBER"],
+            for lid, tgid, tgra, tgdec in zip(
+                    fiber_data["LOCATION"],
                     fiber_data["TARGETID"],
                     fiber_data["TARGET_RA"],
                     fiber_data["TARGET_DEC"]):
                 if tgid >= 0:
-                    self.assertEqual(tgid, tdata[fid])
+                    self.assertEqual(tgid, tdata[lid])
                     props = tgs.get(tgid)
                     self.assertEqual(tgra, props.ra)
                     self.assertEqual(tgdec, props.dec)
@@ -168,7 +168,7 @@ class TestAssign(unittest.TestCase):
         # target data.
 
         for tid in tile_ids:
-            tdata = asgn.tile_fiber_target(tid)
+            tdata = asgn.tile_location_target(tid)
             avail = tgsavail.tile_data(tid)
             # Check basic format
             infile = os.path.join(test_dir,
@@ -176,8 +176,8 @@ class TestAssign(unittest.TestCase):
             fdata = fitsio.FITS(infile, "r")
             fassign = fdata["FIBERASSIGN"].read()
             ftargets = fdata["TARGETS"].read()
-            for fid, tgid, tgra, tgdec, tgsub, tgprior, tgobs in zip(
-                    fassign["FIBER"],
+            for lid, tgid, tgra, tgdec, tgsub, tgprior, tgobs in zip(
+                    fassign["LOCATION"],
                     fassign["TARGETID"],
                     fassign["TARGET_RA"],
                     fassign["TARGET_DEC"],
@@ -185,7 +185,7 @@ class TestAssign(unittest.TestCase):
                     fassign["PRIORITY"],
                     fassign["OBSCONDITIONS"]):
                 if tgid >= 0:
-                    self.assertEqual(tgid, tdata[fid])
+                    self.assertEqual(tgid, tdata[lid])
                     props = tgs.get(tgid)
                     self.assertEqual(tgra, props.ra)
                     self.assertEqual(tgdec, props.dec)
@@ -212,8 +212,8 @@ class TestAssign(unittest.TestCase):
             fdata = fitsio.FITS(infile, "r")
             fassign = fdata["FIBERASSIGN"].read()
             ftargets = fdata["TARGETS"].read()
-            for fid, tgid, tgra, tgdec, tgsub, tgprior, tgobs in zip(
-                    fassign["FIBER"],
+            for lid, tgid, tgra, tgdec, tgsub, tgprior, tgobs in zip(
+                    fassign["LOCATION"],
                     fassign["TARGETID"],
                     fassign["TARGET_RA"],
                     fassign["TARGET_DEC"],
@@ -221,7 +221,7 @@ class TestAssign(unittest.TestCase):
                     fassign["PRIORITY"],
                     fassign["OBSCONDITIONS"]):
                 if tgid >= 0:
-                    self.assertEqual(tgid, tdata[fid])
+                    self.assertEqual(tgid, tdata[lid])
                     props = tgs.get(tgid)
                     self.assertEqual(tgra, props.ra)
                     self.assertEqual(tgdec, props.dec)
@@ -289,7 +289,7 @@ class TestAssign(unittest.TestCase):
         del tree
 
         # Compute the fibers on all tiles available for each target
-        favail = FibersAvailable(tgsavail)
+        favail = LocationsAvailable(tgsavail)
 
         # Create assignment object
         asgn = Assignment(tgs, tgsavail, favail)

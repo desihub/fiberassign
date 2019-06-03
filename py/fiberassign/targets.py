@@ -29,7 +29,7 @@ from .utils import Logger, Timer
 from ._internal import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                         TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE,
                         Target, Targets, TargetTree, TargetsAvailable,
-                        FibersAvailable)
+                        LocationsAvailable)
 
 
 def str_to_target_type(input):

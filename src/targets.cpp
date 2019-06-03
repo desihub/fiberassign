@@ -250,24 +250,24 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
     hw_ = hw;
 
     size_t ntile = tiles_->id.size();
-    size_t nfiber = hw_->nfiber;
+    size_t nloc = hw_->nloc;
 
     // Radius of the tile.
     double tile_radius = hw_->focalplane_radius_deg * deg2rad;
 
     // Patrol radius in mm on focalplane.
-    double fiber_patrol_mm = hw_->patrol_mm;
+    double patrol_mm = hw_->patrol_mm;
 
-    std::vector <int32_t> fiber_id(nfiber);
-    std::vector <double> fiber_center_x(nfiber);
-    std::vector <double> fiber_center_y(nfiber);
+    std::vector <int32_t> loc(nloc);
+    std::vector <double> loc_center_x(nloc);
+    std::vector <double> loc_center_y(nloc);
 
-    for (size_t j = 0; j < nfiber; ++j) {
-        fiber_id[j] = hw_->fiber_id[j];
-        double cx = hw_->fiber_pos_xy_mm[fiber_id[j]].first;
-        double cy = hw_->fiber_pos_xy_mm[fiber_id[j]].second;
-        fiber_center_x[j] = cx;
-        fiber_center_y[j] = cy;
+    for (size_t j = 0; j < nloc; ++j) {
+        loc[j] = hw_->locations[j];
+        double cx = hw_->loc_pos_xy_mm[loc[j]].first;
+        double cy = hw_->loc_pos_xy_mm[loc[j]].second;
+        loc_center_x[j] = cx;
+        loc_center_y[j] = cy;
     }
 
     // shared_ptr reference counting is not threadsafe.  Here we extract
@@ -278,13 +278,13 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
     TargetTree * ptree = tree.get();
     Hardware * phw = hw_.get();
 
-    #pragma omp parallel default(none) shared(logger, pobjs, ptiles, ptree, phw, ntile, tile_radius, nfiber, fiber_id, fiber_center_x, fiber_center_y, fiber_patrol_mm)
+    #pragma omp parallel default(none) shared(logger, pobjs, ptiles, ptree, phw, ntile, tile_radius, nloc, loc, loc_center_x, loc_center_y, patrol_mm)
     {
         // We re-use these thread-local vectors to reduce the number
         // of times we are realloc'ing memory for every fiber.
         std::vector <int64_t> nearby;
         std::vector <KdTreePoint> nearby_tree_points;
-        std::vector <int64_t> nearby_fiber;
+        std::vector <int64_t> nearby_loc;
         std::vector <int64_t> result;
         std::vector <weight_index> result_weight;
         std::ostringstream logmsg;
@@ -343,42 +343,41 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
             }
             KDtree <KdTreePoint> nearby_tree(nearby_tree_points, 2);
 
-            size_t fibers_with_targets = 0;
+            size_t locs_with_targets = 0;
 
-            double fiber_pos[2];
+            double loc_pos[2];
 
-            for (size_t j = 0; j < nfiber; ++j) {
-                thread_data[tid][fiber_id[j]].resize(0);
-                fiber_pos[0] = fiber_center_x[j];
-                fiber_pos[1] = fiber_center_y[j];
-                auto fiber_xy = std::make_pair(fiber_center_x[j],
-                                               fiber_center_y[j]);
+            for (size_t j = 0; j < nloc; ++j) {
+                thread_data[tid][loc[j]].resize(0);
+                loc_pos[0] = loc_center_x[j];
+                loc_pos[1] = loc_center_y[j];
+                auto loc_xy = std::make_pair(loc_center_x[j],
+                                             loc_center_y[j]);
 
-                // Lookup targets near this fiber in focalplane
+                // Lookup targets near this location in focalplane
                 // coordinates.
-                nearby_fiber = nearby_tree.near(fiber_pos, 0.0,
-                                                fiber_patrol_mm);
+                nearby_loc = nearby_tree.near(loc_pos, 0.0, patrol_mm);
 
-                if (nearby_fiber.size() == 0) {
-                    // No targets for this fiber
+                if (nearby_loc.size() == 0) {
+                    // No targets for this location
                     continue;
                 }
 
                 // The kdtree gets us the targets that are close to our
                 // region of interest.  Now go through these targets and
-                // compute the precise distance from the fiber center.
+                // compute the precise distance from the loc center.
                 // We sort the available targets by priority now,
                 // to avoid doing it multiple times later.
                 result.clear();
                 result_weight.clear();
 
                 size_t tindx = 0;
-                for (auto const & tnear : nearby_fiber) {
+                for (auto const & tnear : nearby_loc) {
                     auto & obj = pobjs->data[tnear];
                     auto obj_xy = phw->radec2xy(tra, tdec, obj.ra,
                                                 obj.dec);
-                    double dist = geom::sq(fiber_xy, obj_xy);
-                    if (dist > geom::sq(fiber_patrol_mm)) {
+                    double dist = geom::sq(loc_xy, obj_xy);
+                    if (dist > geom::sq(patrol_mm)) {
                         // outside the patrol radius
                         continue;
                     }
@@ -387,7 +386,7 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
                         + obj.subpriority;
                     result.push_back(tnear);
                     result_weight.push_back(
-                    std::make_pair(totpriority, tindx));
+                        std::make_pair(totpriority, tindx));
                     tindx++;
                 }
 
@@ -399,21 +398,21 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
                         logmsg.str("");
                         logmsg << std::setprecision(2) << std::fixed;
                         logmsg << "targets avail:  tile " << tid
-                            << ", fiber " << fiber_id[j]
+                            << ", location " << loc[j]
                             << " append ID "
                             << result[wt.second] << " (type="
                             << (int)(pobjs->data[result[wt.second]].type) << ")"
                             << ", total priority " << wt.first;
-                        logger.debug_tfg(tid, fiber_id[j],
+                        logger.debug_tfg(tid, loc[j],
                                          result[wt.second],
                                          logmsg.str().c_str());
                     }
-                    thread_data[tid][fiber_id[j]].push_back(
+                    thread_data[tid][loc[j]].push_back(
                         result[wt.second]);
                 }
 
-                if (thread_data[tid][fiber_id[j]].size() > 0) {
-                    fibers_with_targets++;
+                if (thread_data[tid][loc[j]].size() > 0) {
+                    locs_with_targets++;
                 }
             }
         }
@@ -432,18 +431,13 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
 
                 auto const & fmap = it.second;
 
-                for (size_t f = 0; f < nfiber; ++f) {
-                    int32_t fid = fiber_id[f];
-                    if (fmap.count(fid) == 0) {
-                        // This fiber had no targets.
+                for (size_t f = 0; f < nloc; ++f) {
+                    int32_t lid = loc[f];
+                    if (fmap.count(lid) == 0) {
+                        // This location had no targets.
                         continue;
                     }
-                    // logmsg.str("");
-                    // logmsg << "tile " << ttile << ", fiber "
-                    //     << fid << " copying thread result to output";
-                    // logger.debug_tfg(ttile, fid, -1,
-                    //                  logmsg.str().c_str());
-                    data[ttile][fid] = fmap.at(fid);
+                    data[ttile][lid] = fmap.at(lid);
                 }
             }
             thread_data.clear();
@@ -456,9 +450,9 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
             continue;
         }
         size_t total_avail = 0;
-        for (size_t j = 0; j < nfiber; ++j) {
-            if (data.at(tid).count(fiber_id[j]) > 0) {
-                total_avail += data.at(tid).at(fiber_id[j]).size();
+        for (size_t j = 0; j < nloc; ++j) {
+            if (data.at(tid).count(loc[j]) > 0) {
+                total_avail += data.at(tid).at(loc[j]).size();
             }
         }
         std::ostringstream msg;
@@ -469,7 +463,7 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
     }
 
     tm.stop();
-    tm.report("Computing targets available to all tile / fibers");
+    tm.report("Computing targets available to all tile / locations");
 }
 
 fba::Hardware::pshr fba::TargetsAvailable::hardware() const {
@@ -490,7 +484,7 @@ std::map <int32_t, std::vector <int64_t> > fba::TargetsAvailable::tile_data(int3
 }
 
 
-fba::FibersAvailable::FibersAvailable(fba::TargetsAvailable::pshr tgsavail) {
+fba::LocationsAvailable::LocationsAvailable(fba::TargetsAvailable::pshr tgsavail) {
     fba::Timer tm;
     tm.start();
 
@@ -498,7 +492,7 @@ fba::FibersAvailable::FibersAvailable(fba::TargetsAvailable::pshr tgsavail) {
 
     data.clear();
 
-    //std::cout << "FibersAvailable:  tgsavail has " << avail.size() << " tiles" << std::endl;
+    //std::cout << "LocationsAvailable:  tgsavail has " << avail.size() << " tiles" << std::endl;
 
     // In order to play well with OpenMP for loops, construct a simple vector of
     // std::map keys for the available objects.
@@ -509,12 +503,25 @@ fba::FibersAvailable::FibersAvailable(fba::TargetsAvailable::pshr tgsavail) {
 
     size_t ntile = tfkeys.size();
 
+    // This structure is only used in order to reproduce the previous
+    // behavior of looping in fiber ID order.
+    auto loc = tgsavail->hardware()->locations;
+    auto loc_to_fiber = tgsavail->hardware()->loc_fiber;
+    std::map <int32_t, int32_t> fiber_to_loc;
+    std::vector <fba::fiber_loc> fiber_and_loc;
+    for (auto const & lid : loc) {
+        fiber_to_loc[loc_to_fiber[lid]] = lid;
+        fiber_and_loc.push_back(std::make_pair(loc_to_fiber[lid], lid));
+    }
+    fba::fiber_loc_compare flcomp;
+    std::stable_sort(fiber_and_loc.begin(), fiber_and_loc.end(), flcomp);
+
     // shared_ptr reference counting is not threadsafe.  Here we extract
     // a copy of the "raw" pointers needed inside the parallel region.
 
     auto * ptgsavail = tgsavail.get();
 
-    #pragma omp parallel default(none) shared(logger, ptgsavail, ntile, tfkeys)
+    #pragma omp parallel default(none) shared(logger, ptgsavail, ntile, tfkeys, fiber_and_loc)
     {
         // Our thread-local data, to be reduced at the end.
         std::map < int64_t,
@@ -526,20 +533,30 @@ fba::FibersAvailable::FibersAvailable(fba::TargetsAvailable::pshr tgsavail) {
         #pragma omp for schedule(dynamic)
         for (size_t tindx = 0; tindx < ntile; ++tindx) {
             int32_t tid = tfkeys[tindx];
-            for (auto const & favail : avail.at(tid)) {
-                int32_t fbr = favail.first;
-                for (auto const & tg : favail.second) {
+            if (avail.count(tid) == 0) {
+                continue;
+            }
+            auto tavail = avail.at(tid);
+            for (auto const & flid : fiber_and_loc) {
+                auto fid = flid.first;
+                auto lid = flid.second;
+                if (tavail.count(lid) == 0) {
+                    continue;
+                }
+                auto lavail = tavail.at(lid);
+                for (auto const & tg : lavail) {
                     if (thread_data.count(tg) == 0) {
                         thread_data[tg].resize(0);
                     }
                     if (logger.extra_debug()) {
                         logmsg.str("");
                         logmsg << "target " << tg
-                            << " has available tile/fiber "
-                            << tid << ", " << fbr;
-                        logger.debug_tfg(tid, fbr, tg, logmsg.str().c_str());
+                            << " has available tile / location "
+                            << tid << ", " << lid
+                            << " (fiber " << fid << ")";
+                        logger.debug_tfg(tid, lid, tg, logmsg.str().c_str());
                     }
-                    thread_data[tg].push_back(std::make_pair(tid, fbr));
+                    thread_data[tg].push_back(std::make_pair(tid, lid));
                 }
             }
         }
@@ -553,12 +570,6 @@ fba::FibersAvailable::FibersAvailable(fba::TargetsAvailable::pshr tgsavail) {
                     data[tg].resize(0);
                 }
                 for (auto const & ft : it.second) {
-                    // logmsg.str("");
-                    // logmsg << "target " << tg << " copy tile " << ft.first
-                    //     << ", fiber " << ft.second
-                    //     << " from thread-local memory";
-                    // logger.debug_tfg(ft.first, ft.second, tg,
-                    //                  logmsg.str().c_str());
                     data[tg].push_back(ft);
                 }
             }
@@ -566,8 +577,8 @@ fba::FibersAvailable::FibersAvailable(fba::TargetsAvailable::pshr tgsavail) {
         }
     }
 
-    // Sort the available tile / locations by tile order, since the
-    // original order will depend on thread concurrency.
+    // Sort the available tile / locations by tile order, since the original
+    // order will depend on thread concurrency.
 
     auto tls = tgsavail->tiles();
     auto torder = tls->order;
@@ -582,22 +593,24 @@ fba::FibersAvailable::FibersAvailable(fba::TargetsAvailable::pshr tgsavail) {
         auto & av = tgav.second;
         tdx.clear();
         for (auto const & tf : av) {
-            tdx.push_back(std::make_pair(torder[tf.first], tf.second));
+            tdx.push_back(std::make_pair(torder.at(tf.first),
+                          loc_to_fiber.at(tf.second)));
         }
         std::stable_sort(tdx.begin(), tdx.end(), tlcomp);
         av.clear();
         for (auto const & tf : tdx) {
-            av.push_back(std::make_pair(tids[tf.first], tf.second));
+            av.push_back(std::make_pair(tids[tf.first],
+                         fiber_to_loc.at(tf.second)));
         }
     }
 
     tm.stop();
-    tm.report("Computing tile / fibers available to all objects");
+    tm.report("Computing tile / locations available to all objects");
 }
 
 
 std::vector <std::pair <int32_t, int32_t> >
-    fba::FibersAvailable::target_data(int64_t target) const {
+    fba::LocationsAvailable::target_data(int64_t target) const {
     if (data.count(target) == 0) {
         return std::vector <std::pair <int32_t, int32_t> >();
     } else {

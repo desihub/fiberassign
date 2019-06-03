@@ -45,14 +45,14 @@ from ._internal import Assignment
 # internally to fiber assignment without duplicating information:
 #
 # FASSIGN
-# - Per-fiber information, including assignment.  Sorted by fiber ID.
+# - Per-location information, including assignment.  Sorted by location.
 #
 # FTARGETS
 # - All available targets and their properties relevant to assignment.  Sorted
 #   by target ID.
 #
 # FAVAIL
-# - Target IDs available to each fiber.  Sorted by fiber ID and then target ID.
+# - Target IDs available to each location.  Sorted by loc and then target ID.
 #
 
 results_assign_columns = OrderedDict([
@@ -87,6 +87,7 @@ results_targets_columns = OrderedDict([
 ])
 
 results_avail_columns = OrderedDict([
+    ("LOCATION", "i4"),
     ("FIBER", "i4"),
     ("TARGETID", "i8")
 ])
@@ -141,14 +142,14 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
     # Hardware properties
     hw = asgn.hardware()
 
-    # Targets available for all tile / fibers
+    # Targets available for all tile / locs
     tgsavail = asgn.targets_avail()
 
     # Target properties
     tgs = asgn.targets()
 
     # Data for this tile
-    tdata = asgn.tile_fiber_target(tile_id)
+    tdata = asgn.tile_location_target(tile_id)
     avail = tgsavail.tile_data(tile_id)
 
     # The recarray dtypes
@@ -163,8 +164,8 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
     # tm.clear()
     # tm.start()
 
-    fibers = np.array(hw.fiber_id)
-    nfiber = len(fibers)
+    locs = np.array(hw.locations)
+    nloc = len(locs)
 
     # Compute the total list of targets
     navail = np.sum([len(avail[x]) for x in avail.keys()])
@@ -266,34 +267,34 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         log.debug("Write:  copying assignment data for tile {}"
                   .format(tile_id))
 
-        fdata = np.zeros(nfiber, dtype=assign_dtype)
-        fdata["FIBER"] = fibers
+        fdata = np.zeros(nloc, dtype=assign_dtype)
+        fdata["LOCATION"] = locs
 
-        # For unassigned fibers, we give each fiber a unique negative
-        # number based on the tile and fiber.
-        unassign_offset = tile_id * nfiber
+        # For unassigned fibers, we give each location a unique negative
+        # number based on the tile and loc.
+        unassign_offset = tile_id * nloc
         assigned_tgids = np.array([tdata[x] if x in tdata.keys()
                                   else -(unassign_offset + x)
-                                  for x in fibers], dtype=np.int64)
+                                  for x in locs], dtype=np.int64)
         fdata["TARGETID"] = assigned_tgids
 
-        # Rows containing assigned fibers
+        # Rows containing assigned locations
         assigned_valid = np.where(assigned_tgids >= 0)[0]
         assigned_invalid = np.where(assigned_tgids < 0)[0]
 
         # Buffers for X/Y/RA/DEC
-        assigned_tgx = np.full(nfiber, 9999.9, dtype=np.float64)
-        assigned_tgy = np.full(nfiber, 9999.9, dtype=np.float64)
-        assigned_tgra = np.full(nfiber, 9999.9, dtype=np.float64)
-        assigned_tgdec = np.full(nfiber, 9999.9, dtype=np.float64)
-        assigned_tgbits = np.zeros(nfiber, dtype=np.int64)
-        assigned_tgtype = np.zeros(nfiber, dtype=np.uint8)
+        assigned_tgx = np.full(nloc, 9999.9, dtype=np.float64)
+        assigned_tgy = np.full(nloc, 9999.9, dtype=np.float64)
+        assigned_tgra = np.full(nloc, 9999.9, dtype=np.float64)
+        assigned_tgdec = np.full(nloc, 9999.9, dtype=np.float64)
+        assigned_tgbits = np.zeros(nloc, dtype=np.int64)
+        assigned_tgtype = np.zeros(nloc, dtype=np.uint8)
 
         if (len(assigned_invalid) > 0):
-            # Fill our unassigned fiber X/Y coordinates with the central
+            # Fill our unassigned location X/Y coordinates with the central
             # positioner locations.  Then convert these to RA/DEC.
-            empty_fibers = fibers[assigned_invalid]
-            fpos_xy_mm = dict(hw.fiber_pos_xy_mm)
+            empty_fibers = locs[assigned_invalid]
+            fpos_xy_mm = dict(hw.loc_pos_xy_mm)
             empty_x = np.array(
                 [fpos_xy_mm[f][0] for f in empty_fibers], dtype=np.float64)
             empty_y = np.array(
@@ -332,34 +333,38 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         fdata["DESIGN_Q"] = assigned_q
         fdata["DESIGN_S"] = assigned_s
 
-        location = dict(hw.fiber_location)
-        device = dict(hw.fiber_device)
-        petal = dict(hw.fiber_petal)
-        device_type = dict(hw.fiber_device_type)
+        fibers = dict(hw.loc_fiber)
+        etcloc = sorted([x for x, y in fibers.items() if y < 0])
+        fakefibers = {y: (5000 + x) for x, y in enumerate(etcloc)}
+        fullfibers = fibers
+        fullfibers.update(fakefibers)
+        device = dict(hw.loc_device)
+        petal = dict(hw.loc_petal)
+        device_type = dict(hw.loc_device_type)
 
-        fdata["LOCATION"] = np.array(
-            [location[x] for x in fibers]).astype(np.int32)
+        fdata["FIBER"] = np.array(
+            [fullfibers[x] for x in locs]).astype(np.int32)
         fdata["DEVICE_LOC"] = np.array(
-            [device[x] for x in fibers]).astype(np.int32)
+            [device[x] for x in locs]).astype(np.int32)
         fdata["PETAL_LOC"] = np.array(
-            [petal[x] for x in fibers]).astype(np.int16)
+            [petal[x] for x in locs]).astype(np.int16)
         fdata["DEVICE_TYPE"] = np.array(
-            [device_type[x] for x in fibers]).astype(np.dtype("a3"))
+            [device_type[x] for x in locs]).astype(np.dtype("a3"))
 
         # This hard-coded value copied from the original code...
-        lambda_ref = np.ones(nfiber, dtype=np.float32) * 5400.0
+        lambda_ref = np.ones(nloc, dtype=np.float32) * 5400.0
         fdata["LAMBDA_REF"] = lambda_ref
 
         # Fiber status
         fstate = dict(hw.state)
-        fstatus = np.zeros(nfiber, dtype=np.int32)
+        fstatus = np.zeros(nloc, dtype=np.int32)
         # Set unused bit
         fstatus |= [0 if x in tdata.keys() else 1 for x in fibers]
         # Set stuck / broken bits
         fstatus |= [2 if (fstate[x] & FIBER_STATE_STUCK) else 0
-                    for x in fibers]
+                    for x in locs]
         fstatus |= [4 if (fstate[x] & FIBER_STATE_BROKEN) else 0
-                    for x in fibers]
+                    for x in locs]
         fstatus[assigned_valid] |= \
             [8 if (tg_type[x] & TARGET_TYPE_SAFE) else 0
              for x in target_rows]
@@ -413,9 +418,9 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
 
         fdata = np.zeros(navail, dtype=avail_dtype)
         off = 0
-        for fid in sorted(avail.keys()):
-            for tg in avail[fid]:
-                fdata[off] = (fid, tg)
+        for lid in sorted(avail.keys()):
+            for tg in avail[lid]:
+                fdata[off] = (lid, fibers[lid], tg)
                 off += 1
 
         # tm.stop()
@@ -449,7 +454,7 @@ def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fiberassign_",
 
     For each tile, all available targets (not only the assigned targets) and
     their properties are written to the first HDU.  The second HDU contains
-    one row for every fiber and target available to that fiber.
+    one row for every location and target available to that location.
 
     Args:
         tiles (Tiles):  The Tiles object containing the properties of each
@@ -529,23 +534,23 @@ def write_assignment_ascii(tiles, asgn, out_dir=".", out_prefix="fiberassign_",
     tgs = asgn.targets()
 
     for t in tileids:
-        tdata = asgn.tile_fiber_target(t)
-        nfiber = len(tdata)
+        tdata = asgn.tile_location_target(t)
+        nloc = len(tdata)
         tfile = result_path(t, dir=out_dir, prefix=out_prefix,
                             create=True, split=split_dir)
-        if nfiber > 0:
+        if nloc > 0:
             log.debug("Writing tile {}".format(t))
             with open(tfile, "w") as f:
                 f.write("# TILE_RA = {}\n".format(tilera[tileorder[t]]))
                 f.write("# TILE_DEC = {}\n".format(tiledec[tileorder[t]]))
                 f.write("#\n")
-                f.write("# FIBER  TARGETID  RA  DEC  PRIORITY  "
+                f.write("# LOCATION  TARGETID  RA  DEC  PRIORITY  "
                         "SUBPRIORITY  OBSCONDITIONS  NUMOBS_MORE  FBATYPE\n")
-                for fid in sorted(tdata.keys()):
-                    tgid = tdata[fid]
+                for lid in sorted(tdata.keys()):
+                    tgid = tdata[lid]
                     tg = tgs.get(tgid)
                     f.write("{:d} {:d} {:.6f} {:.6f}\n"
-                            .format(fid, tgid, tg.ra, tg.dec, tg.priority,
+                            .format(lid, tgid, tg.ra, tg.dec, tg.priority,
                                     tg.subpriority, tg.obscond, tg.obsremain,
                                     tg.type))
     return
@@ -559,18 +564,18 @@ def avail_table_to_dict(avail_data):
             (for example).
 
     Returns:
-        (dict):  A dictionary of numpy arrays, one per fiber, containing the
-            available target IDs for the fiber.
+        (dict):  A dictionary of numpy arrays, one per location, containing the
+            available target IDs for the location.
 
     """
     avail_target = avail_data["TARGETID"]
-    avail_fiber = avail_data["FIBER"]
+    avail_loc = avail_data["LOCATION"]
     avail = dict()
-    for fid, tgid in zip(avail_fiber, avail_target):
-        if fid in avail:
-            avail[fid].append(tgid)
+    for lid, tgid in zip(avail_loc, avail_target):
+        if lid in avail:
+            avail[lid].append(tgid)
         else:
-            avail[fid] = list([tgid])
+            avail[lid] = list([tgid])
     avail = {f: np.array(av) for f, av in avail.items()}
     return avail
 
@@ -636,7 +641,7 @@ def read_assignment_fits_tile(params):
                 fiber_data[col][npos:] = "ETC"
             elif col == "FIBER":
                 fiber_data[col][0:npos] = fbassign[col]
-                fiber_data[col][npos:] = 5000 + fbsky[col]
+                fiber_data[col][npos:] = -1
             else:
                 fiber_data[col][0:npos] = fbassign[col]
                 if col in fbsky.dtype.names:
@@ -1091,11 +1096,11 @@ def merge_results_tile(out_dtype, copy_fba, params):
                                 in merged_potential_columns.items()])
     potential = np.zeros(len(avail_data), dtype=potential_dtype)
 
-    fiberloc = {x: y for x, y in
-                zip(fiber_data["FIBER"], fiber_data["LOCATION"])}
-    potential["FIBER"] = avail_data["FIBER"]
+    locfiber = {x: y for x, y in
+                zip(fiber_data["LOCATION"], fiber_data["FIBER"])}
+    potential["LOCATION"] = avail_data["LOCATION"]
     potential["TARGETID"] = avail_data["TARGETID"]
-    potential["LOCATION"] = [fiberloc[x] for x in avail_data["FIBER"]]
+    potential["FIBER"] = [locfiber[x] for x in avail_data["LOCATION"]]
     fd.write(potential, header=inhead, extname="POTENTIAL_ASSIGNMENTS")
 
     # Now copy the original HDUs

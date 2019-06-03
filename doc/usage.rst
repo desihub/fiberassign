@@ -107,14 +107,14 @@ variables that can be set to dump even more details about the internal
 assignment process.  Examples::
 
     %> export DESI_DEBUG_TARGET=123456789
-    %> export DESI_DEBUG_FIBER=4321
+    %> export DESI_DEBUG_LOCATION=4321
     %> export DESI_DEBUG_TILE=1111
 
 These options are combined with a logical OR and any combination of tile,
 fiber, or target specified will have all possible info logged.
 
 .. warning::
-    Use of these "extra" debug variables will have a large impact on code
+    Use of these "extra" debug variables will have a HUGE impact on code
     performance.  Do not use in large production runs.
 
 

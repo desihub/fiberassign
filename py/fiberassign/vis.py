@@ -167,9 +167,9 @@ def plot_available(ax, targetprops, selected, linewidth=0.1):
 
 def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
                     real_shapes=False):
-    center_mm = hw.fiber_pos_xy_mm
+    center_mm = hw.loc_pos_xy_mm
     patrol_rad = hw.patrol_mm
-    device_type = dict(hw.fiber_device_type)
+    device_type = dict(hw.loc_device_type)
     assigned = np.array(sorted(tile_assigned.keys()), dtype=np.int32)
     for fid in assigned:
         color = "gray"
@@ -183,12 +183,12 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
         if tgid >= 0:
             # This fiber is assigned.  Plot the positioner located at the
             # assigned target.
-            cb, fh = hw.fiber_position(fid, targetprops[tgid]["xy"])
+            cb, fh = hw.loc_position(fid, targetprops[tgid]["xy"])
             color = targetprops[tgid]["color"]
         else:
             # This fiber is unassigned.  Plot the positioner in its home
             # position.
-            cb, fh = hw.fiber_position(fid, center)
+            cb, fh = hw.loc_position(fid, center)
         if real_shapes:
             plot_positioner(ax, patrol_rad, fid, center, cb, fh,
                             color=color, linewidth=linewidth)
@@ -207,7 +207,7 @@ def plot_assignment_tile_file_initialize(hw):
     return
 
 
-def plot_assignment_tile_file(fibers, real_shapes, params):
+def plot_assignment_tile_file(locs, real_shapes, params):
     (tile_id, tile_ra, tile_dec, infile, outfile) = params
     log = Logger.get()
 
@@ -250,8 +250,8 @@ def plot_assignment_tile_file(fibers, real_shapes, params):
     # the tile.
 
     # Available targets for our selected fibers.
-    avtg_fibers = [f for f in fibers if f in tavail]
-    avtg_ids = np.unique([x for f in avtg_fibers for x in tavail[f]])
+    avtg_locs = [f for f in locs if f in tavail]
+    avtg_ids = np.unique([x for f in avtg_locs for x in tavail[f]])
 
     # Downselect to include only targets with properties in the file.
     avtg = avtg_ids[np.isin(avtg_ids, targets_data["TARGETID"],
@@ -260,13 +260,13 @@ def plot_assignment_tile_file(fibers, real_shapes, params):
     plot_available(ax, targetprops, avtg, linewidth=0.1)
 
     # Assigned targets for our selected fibers
-    tassign = {x["FIBER"]: x["TARGETID"] for x in fiber_data
-               if (x["FIBER"] in fibers)}
+    tassign = {x["LOCATION"]: x["TARGETID"] for x in fiber_data
+               if (x["LOCATION"] in locs)}
 
     log.debug("  tile {} plotting {} assigned fibers"
               .format(tile_id, len(tassign)))
 
-    fassign = {f: tassign[f] if f in tassign else -1 for f in fibers}
+    fassign = {f: tassign[f] if f in tassign else -1 for f in locs}
 
     plot_assignment(ax, plot_assignment_tile_file_hw, targetprops, fassign,
                     linewidth=0.1, real_shapes=real_shapes)
@@ -308,16 +308,16 @@ def plot_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign_",
 
     log.info("Found {} fiberassign tile files".format(len(foundtiles)))
 
-    fibers = None
+    locs = None
     if petals is None:
-        fibers = [x for x in hw.fiber_id]
+        locs = [x for x in hw.locations]
     else:
-        fibers = list()
+        locs = list()
         for p in petals:
-            fibers.extend([x for x in hw.petal_fibers[p]])
-    fibers = np.array(fibers)
+            locs.extend([x for x in hw.petal_locations[p]])
+    locs = np.array(locs)
 
-    plot_tile = partial(plot_assignment_tile_file, fibers, real_shapes)
+    plot_tile = partial(plot_assignment_tile_file, locs, real_shapes)
 
     avail_tiles = np.array(tiles.id)
     select_tiles = [x for x in foundtiles if x in avail_tiles]
@@ -349,26 +349,26 @@ def plot_assignment_tile(hw, tgs, tile_id, tile_ra, tile_dec, tile_assign,
                          tile_avail=None, petals=None, real_shapes=False,
                          outfile=None, figsize=8):
     # Get selected fibers
-    fibers = None
+    locs = None
     if petals is None:
-        fibers = [x for x in hw.fiber_id]
+        locs = [x for x in hw.locations]
     else:
-        fibers = list()
+        locs = list()
         for p in petals:
-            fibers.extend([x for x in hw.petal_fibers[p]])
-    fibers = np.array(fibers)
+            locs.extend([x for x in hw.petal_locations[p]])
+    locs = np.array(locs)
 
     # Available targets for our selected fibers.
-    avtg_fibers = None
+    avtg_locs = None
     avtg_ids = None
     if tile_avail is None:
         # Just plot assigned targets
-        avtg_fibers = [f for f in fibers if f in tile_assign]
-        avtg_ids = [tile_assign[f] for f in avtg_fibers]
+        avtg_locs = [f for f in locs if f in tile_assign]
+        avtg_ids = [tile_assign[f] for f in avtg_locs]
     else:
         # Plot all available targets
-        avtg_fibers = [f for f in fibers if f in tile_avail]
-        avtg_ids = np.unique([x for f in avtg_fibers for x in tile_avail[f]])
+        avtg_locs = [f for f in locs if f in tile_avail]
+        avtg_ids = np.unique([x for f in avtg_locs for x in tile_avail[f]])
 
     # Target properties
     targetprops = plot_tile_targets_props(hw, tile_ra, tile_dec, tgs,
@@ -381,9 +381,9 @@ def plot_assignment_tile(hw, tgs, tile_id, tile_ra, tile_dec, tile_assign,
     plot_available(ax, targetprops, avtg_ids, linewidth=0.1)
 
     # Assigned targets for our selected fibers
-    tassign = {x: tile_assign[x] for x in fibers if x in tile_assign}
+    tassign = {x: tile_assign[x] for x in locs if x in tile_assign}
 
-    fassign = {f: tassign[f] if f in tassign else -1 for f in fibers}
+    fassign = {f: tassign[f] if f in tassign else -1 for f in locs}
 
     plot_assignment(ax, hw, targetprops, fassign,
                     linewidth=0.1, real_shapes=real_shapes)

@@ -145,7 +145,7 @@ typedef struct {
     double pos[2];
 } KdTreePoint;
 
-// Class holding the object IDs available for each tile and fiber.
+// Class holding the object IDs available for each tile and location.
 
 class TargetsAvailable : public std::enable_shared_from_this <TargetsAvailable> {
 
@@ -173,15 +173,15 @@ class TargetsAvailable : public std::enable_shared_from_this <TargetsAvailable> 
 };
 
 
-// Class holding the tile / fibers available for each target ID.
+// Class holding the tile / locations available for each target ID.
 
-class FibersAvailable : public std::enable_shared_from_this <FibersAvailable> {
+class LocationsAvailable : public std::enable_shared_from_this <LocationsAvailable> {
 
     public :
 
-        typedef std::shared_ptr <FibersAvailable> pshr;
+        typedef std::shared_ptr <LocationsAvailable> pshr;
 
-        FibersAvailable(TargetsAvailable::pshr tgsavail);
+        LocationsAvailable(TargetsAvailable::pshr tgsavail);
 
         std::vector <std::pair <int32_t, int32_t> >
             target_data(int64_t target) const;
