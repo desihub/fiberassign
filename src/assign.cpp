@@ -38,7 +38,7 @@ fba::Assignment::Assignment(fba::Targets::pshr tgs,
 
     // This structure is only used in order to reproduce the previous
     // erroneous behavior of looping in fiber ID order.
-    auto loc = hw_->locations;
+    auto loc = hw_->device_locations("POS");
     auto loc_fiber = hw_->loc_fiber;
     for (auto const & lid : loc) {
         fiber_and_loc.push_back(std::make_pair(loc_fiber[lid], lid));
@@ -518,7 +518,7 @@ void fba::Assignment::redistribute_science(int32_t start_tile,
     gtm.start(gtmname.str());
 
     // Select locations based on positioner type
-    auto loc = hw_->device_locations("POS");
+    // auto loc = hw_->device_locations("POS");
     auto loc_fiber = hw_->loc_fiber;
 
     // Determine our range of tiles
@@ -620,7 +620,7 @@ void fba::Assignment::redistribute_science(int32_t start_tile,
             done[tile_id][lid] = true;
 
             if ((best_tile != tile_id) || (best_loc != lid)) {
-                int32_t best_fid = loc_fiber[best_loc];
+                int32_t best_fid = loc_fiber.at(best_loc);
                 // We have a better possible assignment- change it.
                 if (extra_log) {
                     logmsg.str("");
@@ -873,7 +873,7 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
             }
 
             for (auto const & lid : petal_locations) {
-                int32_t fid = lid_to_fid[lid];
+                int32_t fid = lid_to_fid.at(lid);
                 if (tfavail.count(lid) == 0) {
                     // No targets available for this location
                     continue;
@@ -1211,12 +1211,11 @@ void fba::Assignment::reassign_science_target(int32_t tstart, int32_t tstop,
 
     // Vector of available tile / loc pairs which have a loc that is a
     // science positioner.
-    auto loc_device_type = hw_->loc_device_type;
     auto const & availtfall = locavail_->data.at(target);
     std::vector < std::pair <int32_t, int32_t> > availtf;
     std::string pos_str("POS");
     for (auto const & av : availtfall) {
-        if (pos_str.compare(loc_device_type.at(av.second)) == 0) {
+        if (pos_str.compare(hw_->loc_device_type.at(av.second)) == 0) {
             availtf.push_back(av);
         }
     }

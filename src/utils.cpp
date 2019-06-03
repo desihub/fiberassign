@@ -277,6 +277,8 @@ fba::Logger::Logger() {
     }
 
     if (extra_) {
+        fprintf(stdout, "%s: Extra debug options enabled.  RUN TIME WILL INCREASE BY AN ORDER OF MAGNITUDE!\n", prefix_.c_str());
+        fflush(stdout);
         if (level_ > log_level::debug) {
             fprintf(stdout, "%s: environment contains extra debug options.  Forcing DESI_LOGLEVEL=DEBUG\n", prefix_.c_str());
             fflush(stdout);
