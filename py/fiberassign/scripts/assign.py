@@ -13,8 +13,6 @@ import os
 import sys
 import argparse
 
-from desitarget.targetmask import desi_mask
-
 from ..utils import GlobalTimers, Logger
 
 from ..hardware import load_hardware
@@ -173,26 +171,34 @@ def parse_assign(optlist=None):
     if args.sky is None:
         args.sky = list()
 
-    # FIXME:  The code below is only valid for the main survey.  However,
-    # determining the survey type from the first target file requires
-    # reading it, which is expensive.  Do we really need to support strings
-    # like this?
+    # If any of the masks are strings, determine the survey type from
+    # the first target file to know which bitmask to use
+    if isinstance(args.sciencemask, str) or \
+       isinstance(args.stdmask, str) or \
+       isinstance(args.skymask, str) or \
+       isinstance(args.safemask, str) or \
+       isinstance(args.excludemask, str):
+        import fitsio
+        from desitarget.targets import main_cmx_or_sv
+        data = fitsio.read(args.targets[0], 1, rows=[0,1])
+        filecols, filemasks, filesurvey = main_cmx_or_sv(data)
+        desi_mask = filemasks[0]
 
-    # Allow sciencemask, stdmask, etc. to be int or string
-    if (args.sciencemask is not None) and isinstance(args.sciencemask, str):
-        args.sciencemask = desi_mask.mask(args.sciencemask.replace(",", "|"))
+        # convert str bit names -> int bit mask
+        if isinstance(args.sciencemask, str):
+            args.sciencemask = desi_mask.mask(args.sciencemask.replace(",","|"))
 
-    if (args.stdmask is not None) and isinstance(args.stdmask, str):
-        args.stdmask = desi_mask.mask(args.stdmask.replace(",", "|"))
+        if isinstance(args.stdmask, str):
+            args.stdmask = desi_mask.mask(args.stdmask.replace(",", "|"))
 
-    if (args.skymask is not None) and isinstance(args.skymask, str):
-        args.skymask = desi_mask.mask(args.skymask.replace(",", "|"))
+        if isinstance(args.skymask, str):
+            args.skymask = desi_mask.mask(args.skymask.replace(",", "|"))
 
-    if (args.safemask is not None) and isinstance(args.safemask, str):
-        args.safemask = desi_mask.mask(args.safemask.replace(",", "|"))
+        if isinstance(args.safemask, str):
+            args.safemask = desi_mask.mask(args.safemask.replace(",", "|"))
 
-    if (args.excludemask is not None) and isinstance(args.excludemask, str):
-        args.excludemask = desi_mask.mask(args.excludemask.replace(",", "|"))
+        if isinstance(args.excludemask, str):
+            args.excludemask = desi_mask.mask(args.excludemask.replace(",","|"))
 
     # Set output directory
     if args.dir is None:
