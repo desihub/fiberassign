@@ -186,19 +186,34 @@ def parse_assign(optlist=None):
 
         # convert str bit names -> int bit mask
         if isinstance(args.sciencemask, str):
-            args.sciencemask = desi_mask.mask(args.sciencemask.replace(",","|"))
+            try:
+                args.sciencemask = int(args.sciencemask)
+            except ValueError:
+                args.sciencemask = desi_mask.mask(args.sciencemask.replace(",","|"))
 
         if isinstance(args.stdmask, str):
-            args.stdmask = desi_mask.mask(args.stdmask.replace(",", "|"))
+            try:
+                args.stdmask = int(args.stdmask)
+            except ValueError:
+                args.stdmask = desi_mask.mask(args.stdmask.replace(",", "|"))
 
         if isinstance(args.skymask, str):
-            args.skymask = desi_mask.mask(args.skymask.replace(",", "|"))
+            try:
+                args.skymask = int(args.skymask)
+            except ValueError:
+                args.skymask = desi_mask.mask(args.skymask.replace(",", "|"))
 
         if isinstance(args.safemask, str):
-            args.safemask = desi_mask.mask(args.safemask.replace(",", "|"))
+            try:
+                args.safemask = int(args.safemask)
+            except ValueError:
+                args.safemask = desi_mask.mask(args.safemask.replace(",", "|"))
 
         if isinstance(args.excludemask, str):
-            args.excludemask = desi_mask.mask(args.excludemask.replace(",","|"))
+            try:
+                args.excludemask = int(args.excludemask)
+            except ValueError:
+                args.excludemask = desi_mask.mask(args.excludemask.replace(",","|"))
 
     # Set output directory
     if args.dir is None:
@@ -256,6 +271,7 @@ def run_assign_init(args):
 
     # Append each input target file.  These target files must all be of the
     # same survey type, and will set the Targets object to be of that survey.
+
     for tgarg in args.targets:
         tgprops = tgarg.split(",")
         tgfile = tgprops[0]
