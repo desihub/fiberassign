@@ -40,6 +40,7 @@ PYBIND11_MODULE(_internal, m) {
     // Wrap the fiber states
 
     m.attr("FIBER_STATE_OK") = py::int_(FIBER_STATE_OK);
+    m.attr("FIBER_STATE_UNASSIGNED") = py::int_(FIBER_STATE_UNASSIGNED);
     m.attr("FIBER_STATE_STUCK") = py::int_(FIBER_STATE_STUCK);
     m.attr("FIBER_STATE_BROKEN") = py::int_(FIBER_STATE_BROKEN);
     m.attr("FIBER_STATE_SAFE") = py::int_(FIBER_STATE_SAFE);
@@ -310,6 +311,19 @@ PYBIND11_MODULE(_internal, m) {
         .def_readonly("radius", &fbg::circle::radius, R"(
             The radius of the circle.
         )")
+        .def(py::pickle(
+            [](fbg::circle const & p) { // __getstate__
+                fbg::dpair cent = p.center;
+                double rad = p.radius;
+                return py::make_tuple(cent, rad);
+            },
+            [](py::tuple t) { // __setstate__
+                return new fbg::circle(
+                    t[0].cast<fbg::dpair>(),
+                    t[1].cast<double>()
+                );
+            }
+        ))
         .def("__repr__",
             [](fbg::circle const & self) {
                 std::ostringstream o;
@@ -354,6 +368,17 @@ PYBIND11_MODULE(_internal, m) {
         .def_readonly("points", &fbg::segments::points, R"(
             The list of points.
         )")
+        .def(py::pickle(
+            [](fbg::segments const & p) { // __getstate__
+                std::vector <fbg::dpair> pts = p.points;
+                return py::make_tuple(pts);
+            },
+            [](py::tuple t) { // __setstate__
+                return new fbg::segments(
+                    t[0].cast<std::vector <fbg::dpair> >()
+                );
+            }
+        ))
         .def("__repr__",
             [](fbg::segments const & self) {
                 std::ostringstream o;
@@ -378,6 +403,8 @@ PYBIND11_MODULE(_internal, m) {
 
         )")
         .def(py::init <> ())
+        .def(py::init <fbg::shape const &> (), py::arg("other")
+        )
         .def(py::init <fbg::dpair const &, fbg::circle_list const &,
              fbg::segments_list const &> (), py::arg("center"),
              py::arg("circles"), py::arg("segments")
@@ -411,18 +438,51 @@ PYBIND11_MODULE(_internal, m) {
                 angle (float): The angle of rotation.
 
         )")
+        .def_readonly("axis", &fbg::shape::axis, R"(
+            The axis (center).
+        )")
         .def_readonly("circles", &fbg::shape::circle_data, R"(
             The list of constituent circles.
         )")
         .def_readonly("segments", &fbg::shape::segments_data, R"(
             The list of constituent segments.
         )")
+        .def(py::pickle(
+            [](fbg::shape const & p) { // __getstate__
+                fbg::dpair axis = p.axis;
+                fbg::circle_list cdata = p.circle_data;
+                fbg::segments_list sdata = p.segments_data;
+                return py::make_tuple(axis, cdata, sdata);
+            },
+            [](py::tuple t) { // __setstate__
+                return new fbg::shape(
+                    t[0].cast<fbg::dpair>(),
+                    t[1].cast<fbg::circle_list>(),
+                    t[2].cast<fbg::segments_list>()
+                );
+            }
+        ))
         .def("__repr__",
             [](fbg::shape const & self) {
                 std::ostringstream o;
-                o << "<fiberassign.Shape " << self.circle_data.size()
+                o << "<fiberassign.Shape at (" << self.axis.first
+                    << ", " << self.axis.second << ") has "
+                    << self.circle_data.size()
                     << " circles and " << self.segments_data.size()
-                    << " segment collections>";
+                    << " segment collections:" << std::endl;
+                for (auto const & c : self.circle_data) {
+                    o << "  circle: (" << c.center.first
+                    << ", " << c.center.second << ") rad = "
+                    << c.radius << std::endl;
+                }
+                for (auto const & s : self.segments_data) {
+                    o << "  segment points:" << std::endl;
+                    for (auto const & p : s.points) {
+                        o << "    (" << p.first << ", " << p.second
+                            << ")" << std::endl;
+                    }
+                }
+                o << ">";
                 return o.str();
             }
         );
@@ -437,17 +497,30 @@ PYBIND11_MODULE(_internal, m) {
             device (array):  int32 array of device number.
             slitblock (array):  int32 array of slitblock.
             blockfiber (array):  int32 array of blockfiber.
-            spectro (array):  int32 array of spectrograph index.
             fiber (array):  int32 array of fiber IDs.
-            slit (array):  int32 array of slit number.
             device_type (list):  List of strings of device types
                 (e.g. POS, ETC).
             x (array):  location X coordinate centers in mm.
             y (array):  location Y coordinate centers in mm.
-            z (array):  location Z coordinate centers in mm.
-            q (array):  location Q coordinate centers in degrees.
-            s (array):  location S coordinate centers in mm.
             status (array):  array of integers containing the fiber status.
+            theta_offset (array):  The theta angle zero-points in degrees for
+                each device.
+            theta_min (array):  The theta angle minimum value in degrees
+                relative to the offset.
+            theta_max (array):  The theta angle maximum value in degrees
+                relative to the offset.
+            theta_arm (array):  The theta arm lengths in mm.
+            phi_offset (array):  The phi angle zero-points in degrees for
+                each device.
+            phi_min (array):  The phi angle minimum value in degrees
+                relative to the offset.
+            phi_max (array):  The phi angle maximum value in degrees
+                relative to the offset.
+            phi_arm (array):  The phi arm lengths in mm.
+            excl_theta (list):  The Shape object for the exclusion polygon
+                of the theta arm of each device.
+            excl_phi (list):  The Shape object for the exclusion polygon
+                of the phi arm of each device.
 
         )")
         .def(py::init <
@@ -457,20 +530,28 @@ PYBIND11_MODULE(_internal, m) {
             std::vector <int32_t> const &,
             std::vector <int32_t> const &,
             std::vector <int32_t> const &,
-            std::vector <int32_t> const &,
-            std::vector <int32_t> const &,
             std::vector <std::string> const &,
             std::vector <double> const &,
             std::vector <double> const &,
+            std::vector <int32_t> const &,
             std::vector <double> const &,
             std::vector <double> const &,
             std::vector <double> const &,
-            std::vector <int32_t> const &> (), py::arg("location"),
+            std::vector <double> const &,
+            std::vector <double> const &,
+            std::vector <double> const &,
+            std::vector <double> const &,
+            std::vector <double> const &,
+            std::vector <fbg::shape> const &,
+            std::vector <fbg::shape> const &> (), py::arg("location"),
             py::arg("petal"), py::arg("device"), py::arg("slitblock"),
-            py::arg("blockfiber"), py::arg("spectro"), py::arg("fiber"),
-            py::arg("slit"), py::arg("device_type"), py::arg("x"),
-            py::arg("y"), py::arg("z"), py::arg("q"), py::arg("s"),
-            py::arg("status")
+            py::arg("blockfiber"), py::arg("fiber"), py::arg("device_type"),
+            py::arg("x"), py::arg("y"), py::arg("status"),
+            py::arg("theta_offset"), py::arg("theta_min"),
+            py::arg("theta_max"), py::arg("theta_arm"),
+            py::arg("phi_offset"), py::arg("phi_min"),
+            py::arg("phi_max"), py::arg("phi_arm"),
+            py::arg("excl_theta"), py::arg("excl_phi")
         )
         .def_readonly("nloc", &fba::Hardware::nloc, R"(
             The number of device locations.
@@ -497,15 +578,6 @@ PYBIND11_MODULE(_internal, m) {
         .def_readonly("loc_pos_xy_mm", &fba::Hardware::loc_pos_xy_mm, R"(
             Dictionary of central (X, Y) position tuples for each location.
         )")
-        .def_readonly("loc_pos_z_mm", &fba::Hardware::loc_pos_z_mm, R"(
-            Dictionary of central Z values for each location.
-        )")
-        .def_readonly("loc_pos_q_deg", &fba::Hardware::loc_pos_q_deg, R"(
-            Dictionary of central Q values for each location.
-        )")
-        .def_readonly("loc_pos_s_mm", &fba::Hardware::loc_pos_s_mm, R"(
-            Dictionary of central S values for each location.
-        )")
         .def_readonly("loc_device", &fba::Hardware::loc_device, R"(
             Dictionary of device ID for each location
         )")
@@ -516,34 +588,39 @@ PYBIND11_MODULE(_internal, m) {
         .def_readonly("loc_fiber", &fba::Hardware::loc_fiber, R"(
             Dictionary of fiber values for each location.
         )")
-        .def_readonly("loc_spectro", &fba::Hardware::loc_spectro, R"(
-            Dictionary of spectrograph index for each location.
-        )")
-        .def_readonly("loc_slit", &fba::Hardware::loc_slit, R"(
-            Dictionary of slit values for each location.
-        )")
         .def_readonly("loc_slitblock", &fba::Hardware::loc_slitblock, R"(
             Dictionary of slitblock values for each location.
         )")
         .def_readonly("loc_blockfiber", &fba::Hardware::loc_blockfiber, R"(
             Dictionary of blockfiber values for each location.
         )")
-        .def_readonly("patrol_mm", &fba::Hardware::patrol_mm, R"(
-            Constant patrol radius, soon will be a dictionary...
+        .def_readonly("loc_theta_arm", &fba::Hardware::loc_theta_arm, R"(
+            Dictionary of theta arm lengths for each location.
         )")
-        .def_readonly("collide_mm", &fba::Hardware::collide_mm, R"(
-            Distance at which positioners are guarteed to collide.
+        .def_readonly("loc_theta_offset", &fba::Hardware::loc_theta_offset, R"(
+            Dictionary of theta angle offsets for each location.
         )")
-        .def_readonly("collide_avg_mm", &fba::Hardware::collide_avg_mm)
-        .def_readonly("no_collide_mm", &fba::Hardware::no_collide_mm, R"(
-            Distance at which positioners are guaranteed to NOT collide.
+        .def_readonly("loc_theta_min", &fba::Hardware::loc_theta_min, R"(
+            Dictionary of theta min range from offset for each location.
+        )")
+        .def_readonly("loc_theta_max", &fba::Hardware::loc_theta_max, R"(
+            Dictionary of theta max range from offset for each location.
+        )")
+        .def_readonly("loc_phi_arm", &fba::Hardware::loc_phi_arm, R"(
+            Dictionary of phi arm lengths for each location.
+        )")
+        .def_readonly("loc_phi_offset", &fba::Hardware::loc_phi_offset, R"(
+            Dictionary of phi angle offsets for each location.
+        )")
+        .def_readonly("loc_phi_min", &fba::Hardware::loc_phi_min, R"(
+            Dictionary of phi min range from offset for each location.
+        )")
+        .def_readonly("loc_phi_max", &fba::Hardware::loc_phi_max, R"(
+            Dictionary of phi max range from offset for each location.
         )")
         .def_readonly("neighbor_radius_mm",
                       &fba::Hardware::neighbor_radius_mm, R"(
             Radius for considering locations as neighbors.
-        )")
-        .def_readonly("positioner_range", &fba::Hardware::positioner_range, R"(
-            Constant positioner range, soon will be a dictionary...
         )")
         .def_readonly("state", &fba::Hardware::state, R"(
             Dictionary of fiber state for each location.
@@ -642,25 +719,27 @@ PYBIND11_MODULE(_internal, m) {
                 (list): list of (RA, DEC) tuples.
 
         )")
-        .def("loc_position", &fba::Hardware::loc_position, py::arg("id"),
-            py::arg("xy"), R"(
+        .def("loc_position_xy", &fba::Hardware::loc_position_xy, py::arg("id"),
+            py::arg("xy"), py::arg("shptheta"), py::arg("shpphi"), R"(
             Move a positioner to a given location.
 
             This takes the specified location and computes the shapes of
             the central body and fiber holder when the fiber is moved to
             a given (X, Y) position.  The returned tuple contains the
-            (central body, fiber holder) as independent Shape objects.
+            (central body, fiber holder) as independent high objects.
 
             Args:
-                id (int): Fiber ID.
+                loc (int): Device location.
                 xy (tuple): The (X, Y) tuple at which to place the fiber.
+                shptheta (Shape):  The theta shape.
+                shpphi (Shape):  The phi shape.
 
             Returns:
                 (tuple): the shapes representing the positioner.
 
         )")
-        .def("loc_position_multi", &fba::Hardware::loc_position_multi,
-            py::arg("id"), py::arg("xy"), py::arg("threads"), R"(
+        .def("loc_position_xy_multi", &fba::Hardware::loc_position_xy_multi,
+            py::arg("loc"), py::arg("xy"), py::arg("threads"), R"(
             Move positioners to given locations.
 
             This takes the specified locations and computes the shapes of
@@ -670,7 +749,7 @@ PYBIND11_MODULE(_internal, m) {
             location.
 
             Args:
-                id (list): List of (int) locations.
+                loc (list): List of locations.
                 xy (list): List of (X, Y) tuples at which to place each fiber.
                 threads (int): If <= 0 use maximum threads,
                     else use this number.
@@ -680,7 +759,7 @@ PYBIND11_MODULE(_internal, m) {
 
         )")
         .def("check_collisions_xy", &fba::Hardware::check_collisions_xy,
-            py::arg("id"), py::arg("xy"), py::arg("threads"), R"(
+            py::arg("loc"), py::arg("xy"), py::arg("threads"), R"(
             Check for collisions.
 
             This takes the specified locations and computes the shapes of
@@ -691,7 +770,7 @@ PYBIND11_MODULE(_internal, m) {
             and False otherwise.
 
             Args:
-                id (list): List of (int) locations.
+                loc (list): List of locations.
                 xy (list): List of (X, Y) tuples at which to place each fiber.
                 threads (int): If <= 0 use maximum threads,
                     else use this number.
@@ -701,7 +780,7 @@ PYBIND11_MODULE(_internal, m) {
 
         )")
         .def("check_collisions_thetaphi",
-             &fba::Hardware::check_collisions_thetaphi, py::arg("id"), py::arg("theta"), py::arg("phi"), py::arg("threads"), R"(
+             &fba::Hardware::check_collisions_thetaphi, py::arg("loc"), py::arg("theta"), py::arg("phi"), py::arg("threads"), R"(
              Check for collisions.
 
              This takes the specified locations and computes the shapes of
@@ -712,7 +791,7 @@ PYBIND11_MODULE(_internal, m) {
              collision and False otherwise.
 
              Args:
-                 id (array): List of (int) locations.
+                 loc (array): List of locations.
                  theta (array): Theta angle for each positioner.
                  phi (array): Phi angle for each positioner.
                  threads (int): If <= 0 use maximum threads,
@@ -727,40 +806,51 @@ PYBIND11_MODULE(_internal, m) {
                 int32_t nloc = p.locations.size();
                 std::vector <int32_t> lid(nloc);
                 std::vector <int32_t> petal(nloc);
-                std::vector <int32_t> spectro(nloc);
-                std::vector <int32_t> fiber(nloc);
-                std::vector <int32_t> slit(nloc);
+                std::vector <int32_t> device(nloc);
                 std::vector <int32_t> slitblock(nloc);
                 std::vector <int32_t> blockfiber(nloc);
-                std::vector <int32_t> device(nloc);
+                std::vector <int32_t> fiber(nloc);
                 std::vector <std::string> device_type(nloc);
                 std::vector <double> x_mm(nloc);
                 std::vector <double> y_mm(nloc);
-                std::vector <double> z_mm(nloc);
-                std::vector <double> q_deg(nloc);
-                std::vector <double> s_mm(nloc);
                 std::vector <int32_t> status(nloc);
+                std::vector <double> theta_offset(nloc);
+                std::vector <double> theta_min(nloc);
+                std::vector <double> theta_max(nloc);
+                std::vector <double> theta_arm(nloc);
+                std::vector <double> phi_offset(nloc);
+                std::vector <double> phi_min(nloc);
+                std::vector <double> phi_max(nloc);
+                std::vector <double> phi_arm(nloc);
+                std::vector <fbg::shape> excl_theta(nloc);
+                std::vector <fbg::shape> excl_phi(nloc);
                 for (int32_t i = 0; i < nloc; ++i) {
                     lid[i] = p.locations.at(i);
                     petal[i] = p.loc_petal.at(lid[i]);
-                    spectro[i] = p.loc_spectro.at(lid[i]);
-                    fiber[i] = p.loc_fiber.at(lid[i]);
-                    slit[i] = p.loc_slit.at(lid[i]);
+                    device[i] = p.loc_device.at(lid[i]);
                     slitblock[i] = p.loc_slitblock.at(lid[i]);
                     blockfiber[i] = p.loc_blockfiber.at(lid[i]);
-                    device[i] = p.loc_device.at(lid[i]);
+                    fiber[i] = p.loc_fiber.at(lid[i]);
                     device_type[i] = p.loc_device_type.at(lid[i]);
                     x_mm[i] = p.loc_pos_xy_mm.at(lid[i]).first;
                     y_mm[i] = p.loc_pos_xy_mm.at(lid[i]).second;
-                    z_mm[i] = p.loc_pos_z_mm.at(lid[i]);
-                    q_deg[i] = p.loc_pos_q_deg.at(lid[i]);
-                    s_mm[i] = p.loc_pos_s_mm.at(lid[i]);
                     status[i] = p.state.at(lid[i]);
+                    theta_offset[i] = p.loc_theta_offset.at(lid[i]);
+                    theta_min[i] = p.loc_theta_min.at(lid[i]);
+                    theta_max[i] = p.loc_theta_max.at(lid[i]);
+                    theta_arm[i] = p.loc_theta_arm.at(lid[i]);
+                    phi_offset[i] = p.loc_phi_offset.at(lid[i]);
+                    phi_min[i] = p.loc_phi_min.at(lid[i]);
+                    phi_max[i] = p.loc_phi_max.at(lid[i]);
+                    phi_arm[i] = p.loc_phi_arm.at(lid[i]);
+                    excl_theta[i] = p.loc_theta_excl.at(lid[i]);
+                    excl_phi[i] = p.loc_phi_excl.at(lid[i]);
                 }
                 return py::make_tuple(
-                    lid, petal, device, slitblock, blockfiber, spectro, fiber,
-                    slit, device_type, x_mm, y_mm, z_mm, q_deg,
-                    s_mm, status);
+                    lid, petal, device, slitblock, blockfiber, fiber,
+                    device_type, x_mm, y_mm, status, theta_offset,
+                    theta_min, theta_max, theta_arm, phi_offset, phi_min,
+                    phi_max, phi_arm, excl_theta, excl_phi);
             },
             [](py::tuple t) { // __setstate__
                 return new fba::Hardware(
@@ -770,15 +860,20 @@ PYBIND11_MODULE(_internal, m) {
                     t[3].cast<std::vector<int32_t> >(),
                     t[4].cast<std::vector<int32_t> >(),
                     t[5].cast<std::vector<int32_t> >(),
-                    t[6].cast<std::vector<int32_t> >(),
-                    t[7].cast<std::vector<int32_t> >(),
-                    t[8].cast<std::vector<std::string> >(),
-                    t[9].cast<std::vector<double> >(),
+                    t[6].cast<std::vector<std::string> >(),
+                    t[7].cast<std::vector<double> >(),
+                    t[8].cast<std::vector<double> >(),
+                    t[9].cast<std::vector<int32_t> >(),
                     t[10].cast<std::vector<double> >(),
                     t[11].cast<std::vector<double> >(),
                     t[12].cast<std::vector<double> >(),
                     t[13].cast<std::vector<double> >(),
-                    t[14].cast<std::vector<int32_t> >()
+                    t[14].cast<std::vector<double> >(),
+                    t[15].cast<std::vector<double> >(),
+                    t[16].cast<std::vector<double> >(),
+                    t[17].cast<std::vector<double> >(),
+                    t[18].cast<std::vector<fbg::shape> >(),
+                    t[19].cast<std::vector<fbg::shape> >()
                 );
             }
         ));

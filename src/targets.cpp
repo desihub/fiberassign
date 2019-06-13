@@ -255,12 +255,10 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
     // Radius of the tile.
     double tile_radius = hw_->focalplane_radius_deg * deg2rad;
 
-    // Patrol radius in mm on focalplane.
-    double patrol_mm = hw_->patrol_mm;
-
     std::vector <int32_t> loc(nloc);
     std::vector <double> loc_center_x(nloc);
     std::vector <double> loc_center_y(nloc);
+    std::vector <double> loc_patrol(nloc);
 
     for (size_t j = 0; j < nloc; ++j) {
         loc[j] = hw_->locations[j];
@@ -268,6 +266,7 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
         double cy = hw_->loc_pos_xy_mm[loc[j]].second;
         loc_center_x[j] = cx;
         loc_center_y[j] = cy;
+        loc_patrol[j] = hw_->loc_theta_arm[loc[j]] + hw_->loc_phi_arm[loc[j]];
     }
 
     // shared_ptr reference counting is not threadsafe.  Here we extract
@@ -278,7 +277,7 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
     TargetTree * ptree = tree.get();
     Hardware * phw = hw_.get();
 
-    #pragma omp parallel default(none) shared(logger, pobjs, ptiles, ptree, phw, ntile, tile_radius, nloc, loc, loc_center_x, loc_center_y, patrol_mm)
+    #pragma omp parallel default(none) shared(logger, pobjs, ptiles, ptree, phw, ntile, tile_radius, nloc, loc, loc_center_x, loc_center_y, loc_patrol)
     {
         // We re-use these thread-local vectors to reduce the number
         // of times we are realloc'ing memory for every fiber.
@@ -356,7 +355,7 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
 
                 // Lookup targets near this location in focalplane
                 // coordinates.
-                nearby_loc = nearby_tree.near(loc_pos, 0.0, patrol_mm);
+                nearby_loc = nearby_tree.near(loc_pos, 0.0, loc_patrol[j]);
 
                 if (nearby_loc.size() == 0) {
                     // No targets for this location
@@ -377,7 +376,7 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
                     auto obj_xy = phw->radec2xy(tra, tdec, obj.ra,
                                                 obj.dec);
                     double dist = geom::sq(loc_xy, obj_xy);
-                    if (dist > geom::sq(patrol_mm)) {
+                    if (dist > geom::sq(loc_patrol[j])) {
                         // outside the patrol radius
                         continue;
                     }

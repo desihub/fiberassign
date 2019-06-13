@@ -293,8 +293,14 @@ class shape {
 
         shape();
 
+        shape(shape const & other);
+
         shape(dpair const & ax, circle_list const & circs,
               segments_list const & segs);
+
+        shape & operator=(const shape& other);
+
+        ~shape();
 
         // Translation
         void transl(dpair const & t);
@@ -304,6 +310,9 @@ class shape {
 
         // Rotation around origin
         void rotation_origin(dpair const & t);
+
+        // Rotation about another anchor point
+        void rotation_anchor(dpair const & t, dpair const & anchor);
 
         void print() const;
 

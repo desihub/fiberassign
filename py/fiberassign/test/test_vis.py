@@ -9,7 +9,7 @@ import numpy as np
 
 from fiberassign.hardware import load_hardware
 
-from fiberassign.vis import (plot_positioner, )
+from fiberassign.vis import (plot_positioner, Shape)
 
 from .simulate import test_subdir_create
 
@@ -27,13 +27,11 @@ class TestVis(unittest.TestCase):
     def test_plotpos(self):
         test_dir = test_subdir_create("vis_test_plotpos")
         hw = load_hardware()
-        patrol_mm = hw.patrol_mm
         locs = hw.locations
         center_mm = hw.loc_pos_xy_mm
+        theta_arm = hw.loc_theta_arm
+        phi_arm = hw.loc_phi_arm
 
-        # Plot data range in mm
-        width = 1.2 * (2.0 * patrol_mm)
-        height = 1.2 * (2.0 * patrol_mm)
         # Plot size in inches
         xfigsize = 8
         yfigsize = 8
@@ -45,35 +43,62 @@ class TestVis(unittest.TestCase):
 
         # Plot the first fiber in a variety of positions
         lid = locs[0]
+        patrol_mm = theta_arm[lid] + phi_arm[lid]
+
+        # Plot data range in mm
+        width = 1.2 * (2.0 * patrol_mm)
+        height = 1.2 * (2.0 * patrol_mm)
+
         nincr = 8
         configincr = 2.0 * np.pi / nincr
 
         center = center_mm[lid]
+
+        shptheta = Shape()
+        shpphi = Shape()
 
         for configindx, (configrad, col) in \
                 enumerate(zip([0.5*patrol_mm, patrol_mm], ["r", "b"])):
             fig = plt.figure(figsize=(xfigsize, yfigsize), dpi=figdpi)
             ax = fig.add_subplot(1, 1, 1)
             ax.set_aspect("equal")
-            cb, fh = hw.loc_position(lid, center_mm[lid])
-            plot_positioner(ax, patrol_mm, lid, center, cb, fh, color="k")
+            failed = hw.loc_position_xy(lid, center, shptheta, shpphi)
+            # if failed:
+            #     print("Failed to compute positioner {} at ({}, {})"
+            #           .format(lid, center[0], center[1]),
+            #           flush=True)
+            # else:
+            #     print("===== Test configrad = {}, color = {}, center".format(configrad, col))
+            #     print(shptheta)
+            #     print(shpphi, flush=True)
+            plot_positioner(ax, patrol_mm, lid, center, shptheta, shpphi,
+                            color="k")
             for inc in range(nincr):
                 ang = inc * configincr
-                xoff = configrad * np.cos(ang) + center_mm[lid][0]
-                yoff = configrad * np.sin(ang) + center_mm[lid][1]
-                cb, fh = hw.loc_position(lid, (xoff, yoff))
-                plot_positioner(ax, patrol_mm, lid, center, cb, fh, color=col)
+                xoff = configrad * np.cos(ang) + center[0]
+                yoff = configrad * np.sin(ang) + center[1]
+                failed = hw.loc_position_xy(lid, (xoff, yoff),
+                                            shptheta, shpphi)
+                # if failed:
+                #     print("Failed to compute positioner {} at ({}, {})"
+                #           .format(lid, xoff, yoff), flush=True)
+                # else:
+                #     print("----- Test configrad = {}, color = {},  ({}, {})".format(configrad, col, xoff, yoff))
+                #     print(shptheta)
+                #     print(shpphi, flush=True)
+                plot_positioner(ax, patrol_mm, lid, center, shptheta, shpphi,
+                                color=col)
                 xend = xoff
                 yend = yoff
-                ax.plot([center_mm[lid][0], xend], [center_mm[lid][1], yend],
+                ax.plot([center[0], xend], [center[1], yend],
                         color="k", linewidth="0.5")
                 ax.text(xend, yend, "{}".format(inc),
                         color='k', fontsize=fontpt,
                         horizontalalignment='center',
                         verticalalignment='center',
                         bbox=dict(fc='w', ec='none', pad=1, alpha=1.0))
-            pxcent = center_mm[lid][0]
-            pycent = center_mm[lid][1]
+            pxcent = center[0]
+            pycent = center[1]
             half_width = 0.5 * width
             half_height = 0.5 * height
             ax.set_xlabel("Millimeters", fontsize="large")

@@ -34,6 +34,8 @@ class TestTiles(unittest.TestCase):
             self.assertEqual(tls.order[st], indx)
             indx += 1
         return
+
+
 def test_suite():
     """Allows testing of only this module with the command::
 

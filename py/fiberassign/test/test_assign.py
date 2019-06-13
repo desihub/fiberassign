@@ -41,7 +41,8 @@ from fiberassign.scripts.qa import parse_qa, run_qa
 from fiberassign.scripts.qa_plot import parse_plot_qa, run_plot_qa
 
 
-from .simulate import (test_subdir_create, sim_tiles, sim_targets, sim_status)
+from .simulate import (test_subdir_create, sim_tiles, sim_targets,
+                       sim_focalplane)
 
 
 class TestAssign(unittest.TestCase):
@@ -70,9 +71,8 @@ class TestAssign(unittest.TestCase):
         tree = TargetTree(tgs, 0.01)
 
         # Compute the targets available to each fiber for each tile.
-        fstatus = os.path.join(test_dir, "fiberstatus.ecsv")
-        sim_status(fstatus)
-        hw = load_hardware(status_file=fstatus)
+        fp, exclude, state = sim_focalplane()
+        hw = load_hardware(focalplane=(fp, exclude, state))
         tfile = os.path.join(test_dir, "footprint.fits")
         sim_tiles(tfile)
         tiles = load_tiles(tiles_file=tfile)
@@ -275,9 +275,8 @@ class TestAssign(unittest.TestCase):
         tree = TargetTree(tgs, 0.01)
 
         # Read hardware properties
-        fstatus = os.path.join(test_dir, "fiberstatus.ecsv")
-        sim_status(fstatus)
-        hw = load_hardware(status_file=fstatus)
+        fp, exclude, state = sim_focalplane()
+        hw = load_hardware(focalplane=(fp, exclude, state))
         tfile = os.path.join(test_dir, "footprint.fits")
         sim_tiles(tfile)
         tiles = load_tiles(tiles_file=tfile)
@@ -315,7 +314,7 @@ class TestAssign(unittest.TestCase):
         write_assignment_fits(tiles, asgn, out_dir=test_dir, all_targets=True)
 
         plot_tiles(hw, tiles, result_dir=test_dir, plot_dir=test_dir,
-                   petals=[0], serial=True)
+                   real_shapes=True, petals=[0], serial=True)
 
         qa_tiles(hw, tiles, result_dir=test_dir)
 
@@ -344,9 +343,6 @@ class TestAssign(unittest.TestCase):
         nstd = sim_targets(input_std, TARGET_TYPE_STANDARD, nscience)
         nsky = sim_targets(input_sky, TARGET_TYPE_SKY, (nscience + nstd))
 
-        fstatus = os.path.join(test_dir, "fiberstatus.ecsv")
-        sim_status(fstatus)
-
         tfile = os.path.join(test_dir, "footprint.fits")
         sim_tiles(tfile)
 
@@ -354,7 +350,6 @@ class TestAssign(unittest.TestCase):
             "targets": [input_mtl, input_std, input_sky],
             "dir": test_dir,
             "footprint": tfile,
-            "status": fstatus,
             "standards_per_petal": 10,
             "sky_per_petal": 40,
             "overwrite": True

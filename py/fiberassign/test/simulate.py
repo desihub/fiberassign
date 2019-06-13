@@ -3,19 +3,20 @@ Simulation utilities for fiberassign tests.
 """
 import os
 import shutil
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import numpy as np
 
 import fitsio
 
-from astropy.table import Table
-
 from desitarget.targetmask import desi_mask
+
+import desimodel.io as dmio
 
 from fiberassign import __version__
 
-from fiberassign.hardware import load_hardware
+from fiberassign.hardware import (load_hardware, FIBER_STATE_STUCK,
+                                  FIBER_STATE_BROKEN)
 
 from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                                  TARGET_TYPE_STANDARD)
@@ -36,25 +37,27 @@ def test_subdir_create(name):
     return test_dir
 
 
-def sim_status(path):
-    start = datetime.utcnow() - timedelta(seconds=5.0)
-    stop = datetime.utcnow() + timedelta(seconds=1000.0)
-    sdtype = np.dtype([
-        ("LOCATION", "i4"),
-        ("BROKEN", "i4"),
-        ("STUCK", "i4"),
-        ("START_DATE", "a20"),
-        ("END_DATE", "a20")
-    ])
-    sdata = np.zeros(5, dtype=sdtype)
-    sdata["LOCATION"] = np.array([95, 62, 102, 82, 131])
-    sdata["BROKEN"] = np.array([1, 1, 0, 0, 0])
-    sdata["STUCK"] = np.array([0, 0, 1, 1, 1])
-    sdata["START_DATE"][:] = start.isoformat(timespec="seconds")
-    sdata["END_DATE"][:] = stop.isoformat(timespec="seconds")
-    tdata = Table(sdata)
-    tdata.write(path, format="ascii.ecsv")
-    return
+def sim_focalplane(runtime=None):
+    if runtime is None:
+        runtime = datetime.utcnow()
+
+    # First get the starting focalplane from desimodel
+    fp, exclude, state = dmio.load_focalplane(runtime)
+
+    # Now set some fibers to stuck / broken
+    mods = {
+        95: FIBER_STATE_BROKEN,
+        62: FIBER_STATE_BROKEN,
+        102: FIBER_STATE_STUCK,
+        82: FIBER_STATE_STUCK,
+        131: FIBER_STATE_STUCK
+    }
+
+    for row, loc in enumerate(state["LOCATION"]):
+        if loc in mods:
+            state["STATE"][row] = mods[loc]
+
+    return fp, exclude, state
 
 
 def sim_tiles(path):

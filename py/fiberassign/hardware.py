@@ -13,26 +13,22 @@ from datetime import datetime
 
 import numpy as np
 
-import fitsio
-
-from astropy.table import Table
-
 import desimodel.io as dmio
 
 from .utils import Logger
 
 from ._internal import (Hardware, FIBER_STATE_OK, FIBER_STATE_STUCK,
-                        FIBER_STATE_BROKEN, Circle, Segments, Shape)
+                        FIBER_STATE_BROKEN, FIBER_STATE_UNASSIGNED,
+                        Circle, Segments, Shape)
 
 
-def load_hardware(focalplane=None, gfa_file=None, rundate=None):
+def load_hardware(focalplane=None, rundate=None):
     """Create a hardware class representing properties of the telescope.
 
     Args:
         focalplane (tuple):  Override the focalplane model.  If not None, this
             should be a tuple of the same data types returned by
             desimodel.io.load_focalplane()
-        gfa_file (str):  Optional path to the GFA file.
         rundate (str):  ISO 8601 format time stamp as a string in the
             format YYYY-MM-DDTHH:MM:SS.  If None, uses current time.
 
@@ -58,10 +54,48 @@ def load_hardware(focalplane=None, gfa_file=None, rundate=None):
     else:
         fp, exclude, state = focalplane
 
+    # We are only going to keep rows for LOCATIONs that are assigned to a
+    # science or sky monitor positioner.
+
+    log.info("Loaded focalplane for time stamp {}".format(runtime))
+
+    pos_rows = np.where(fp["DEVICE_TYPE"].astype(str) == "POS")[0]
+    etc_rows = np.where(fp["DEVICE_TYPE"].astype(str) == "ETC")[0]
+    keep_rows = np.unique(np.concatenate((pos_rows, etc_rows)))
+
+    nloc = len(keep_rows)
+    log.debug(
+        "  focalplane table keeping {} rows for POS and ETC devices"
+        .format(nloc))
+
+    device_type = np.full(nloc, "OOPSBUG", dtype="a8")
+    device_type[:] = fp["DEVICE_TYPE"][keep_rows]
+
+    locations = np.copy(fp["LOCATION"][keep_rows])
+
+    # Map location to row in the table
+
+    loc_to_fp = dict()
+    for rw, loc in enumerate(fp["LOCATION"]):
+        loc_to_fp[loc] = rw
+
+    # FIXME:  Here we assume that the 32bit STATE column has the same bit
+    # definitions as what is used by fiberassign (defined in hardware.h):
+    # If this is not true, then re-map those values here inside the "state"
+    # table loaded above.
+
+    # Map location to row of the state table
+
+    loc_to_state = dict()
+    for rw, loc in enumerate(state["LOCATION"]):
+        loc_to_state[loc] = rw
+
     # Convert the exclusion polygons into shapes.
 
-    for nm, shp in exclude.items():
+    excl = dict()
 
+    for nm, shp in exclude.items():
+        excl[nm] = dict()
         for arm in ["theta", "phi"]:
             cr = list()
             for crc in shp[arm]["circles"]:
@@ -69,75 +103,38 @@ def load_hardware(focalplane=None, gfa_file=None, rundate=None):
             sg = list()
             for sgm in shp[arm]["segments"]:
                 sg.append(Segments(sgm))
+            fshp = Shape((0.0, 0.0), cr, sg)
+            excl[nm][arm] = fshp
 
+    # For each positioner, select the exclusion polynomials.
 
+    positioners = dict()
 
-    # We are only going to keep rows for LOCATIONS that are assigned to an
-    # actual device.
+    for loc in locations:
+        exclname = state["EXCLUSION"][loc_to_state[loc]]
+        positioners[loc] = dict()
+        positioners[loc]["theta"] = Shape(excl[exclname]["theta"])
+        positioners[loc]["phi"] = Shape(excl[exclname]["phi"])
 
-
-
-
-
-
-    if fiberpos_file is None:
-        fiberpos_file = dmio.findfile('focalplane/fiberpos-all.fits')
-    log.info("Reading fiber positions from {}".format(fiberpos_file))
-
-    fpdata = fitsio.read(fiberpos_file, ext=1)
-    pos_rows = np.where(fpdata["DEVICE_TYPE"].astype(str) == "POS")[0]
-    etc_rows = np.where(fpdata["DEVICE_TYPE"].astype(str) == "ETC")[0]
-    keep_rows = np.unique(np.concatenate((pos_rows, etc_rows)))
-
-    nloc = len(keep_rows)
-    log.debug("  fiber position table keeping {} rows".format(nloc))
-
-    device_type = np.full(nloc, "OOPSBUG", dtype="a8")
-    device_type[:] = fpdata["DEVICE_TYPE"][keep_rows]
-
-    location = np.copy(fpdata["LOCATION"][keep_rows])
-    fiber = np.copy(fpdata["FIBER"][keep_rows])
-
-    # Read the status file...
-    status = np.full(nloc, FIBER_STATE_OK, dtype=np.int32)
-
-    if status_file is not None:
-        runtime = None
-        if rundate is None:
-            runtime = datetime.utcnow()
-        else:
-            runtime = datetime.strptime(rundate, "%Y-%m-%dT%H:%M:%S")
-        locindx = {y: x for x, y in enumerate(location)}
-        statdata = Table.read(status_file, format="ascii.ecsv")
-        for row in statdata:
-            loc = row["LOCATION"]
-            broken = row["BROKEN"]
-            stuck = row["STUCK"]
-            start = datetime.strptime(row["START_DATE"],
-                                      "%Y-%m-%dT%H:%M:%S")
-            stop = datetime.strptime(row["END_DATE"],
-                                     "%Y-%m-%dT%H:%M:%S")
-            # Check if this row applies to our current run
-            if (runtime >= start) and (runtime < stop):
-                # yep...
-                if broken > 0:
-                    status[locindx[loc]] |= FIBER_STATE_BROKEN
-                if stuck > 0:
-                    status[locindx[loc]] |= FIBER_STATE_STUCK
-
-    hw = Hardware(location,
-                  fpdata["PETAL"][keep_rows],
-                  fpdata["DEVICE"][keep_rows],
-                  fpdata["SLITBLOCK"][keep_rows],
-                  fpdata["BLOCKFIBER"][keep_rows],
-                  fpdata["SPECTRO"][keep_rows],
-                  fiber,
-                  fpdata["SLIT"][keep_rows],
+    hw = Hardware(locations,
+                  fp["PETAL"][keep_rows],
+                  fp["DEVICE"][keep_rows],
+                  fp["SLITBLOCK"][keep_rows],
+                  fp["BLOCKFIBER"][keep_rows],
+                  fp["FIBER"][keep_rows],
                   device_type,
-                  fpdata["X"][keep_rows],
-                  fpdata["Y"][keep_rows],
-                  fpdata["Z"][keep_rows],
-                  fpdata["Q"][keep_rows],
-                  fpdata["S"][keep_rows],
-                  status)
+                  fp["OFFSET_X"][keep_rows],
+                  fp["OFFSET_Y"][keep_rows],
+                  np.array([state["STATE"][loc_to_state[x]]
+                           for x in locations]),
+                  np.array([fp["OFFSET_T"][loc_to_fp[x]] for x in locations]),
+                  np.array([fp["MIN_T"][loc_to_fp[x]] for x in locations]),
+                  np.array([fp["MAX_T"][loc_to_fp[x]] for x in locations]),
+                  np.array([fp["LENGTH_R1"][loc_to_fp[x]] for x in locations]),
+                  np.array([fp["OFFSET_P"][loc_to_fp[x]] for x in locations]),
+                  np.array([fp["MIN_P"][loc_to_fp[x]] for x in locations]),
+                  np.array([fp["MAX_P"][loc_to_fp[x]] for x in locations]),
+                  np.array([fp["LENGTH_R2"][loc_to_fp[x]] for x in locations]),
+                  [positioners[x]["theta"] for x in locations],
+                  [positioners[x]["phi"] for x in locations])
     return hw
