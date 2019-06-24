@@ -3,15 +3,24 @@
 fiberassign change log
 ======================
 
-1.0.3 (unreleased)
+1.0.4 (2019-06-24)
 ------------------
 
 * Fix an issue with reproducibility of the ordering of available tile-fibers
   for each target (PR `#203`_).
+* Switch to using device location (rather than fiber ID) as an indexing key
+  throughout the code (PR `#204`_).
+* Remove "short cut" when computing fiber collisions.  Always do the collision
+  check (PR `#206`_).
+* Restore sorting of output assignment in fiber ID order rather than device
+  location (PR `#208`_).
 
 .. _`#203`: https://github.com/desihub/fiberassign/pull/203
+.. _`#204`: https://github.com/desihub/fiberassign/pull/204
+.. _`#206`: https://github.com/desihub/fiberassign/pull/206
+.. _`#208`: https://github.com/desihub/fiberassign/pull/208
 
-1.0.2 (2019-05-30)
+1.0.3 (2019-05-30)
 ------------------
 
 * PR `#202`_:
