@@ -114,14 +114,24 @@ fba::Hardware::Hardware(std::vector <int32_t> const & location,
         std::stable_sort(petal_locations[i].begin(), petal_locations[i].end());
     }
 
-    // hardcode for now...
+    // Hard-coded parameters.  These could be moved to desimodel and passed
+    // into this constructor as arguments.
+
+    // The number of science positioners per petal.
     nfiber_petal = 500;
 
-    // hardcode these for now...
-
+    // The tile / focalplane radius in degrees, used for selecting targets
+    // that are available to a particular tile.
     focalplane_radius_deg = 1.65;
 
+    // The radius in mm on the focalplane for considering which positioners
+    // are "neighbors".
     neighbor_radius_mm = 14.05;
+
+    // The amount to reduce the total arm length when considering which
+    // targets are reachable by a positioner.  This was set to 200 microns
+    // long ago...
+    patrol_buffer_mm = 0.2;
 
     // Compute neighboring locations
     for (int32_t x = 0; x < nloc; ++x) {

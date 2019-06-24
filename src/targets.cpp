@@ -255,6 +255,9 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
     // Radius of the tile.
     double tile_radius = hw_->focalplane_radius_deg * deg2rad;
 
+    // patrol buffer
+    double patrol_buffer = hw_->patrol_buffer_mm;
+
     std::vector <int32_t> loc(nloc);
     std::vector <double> loc_center_x(nloc);
     std::vector <double> loc_center_y(nloc);
@@ -266,12 +269,8 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
         double cy = hw_->loc_pos_xy_mm[loc[j]].second;
         loc_center_x[j] = cx;
         loc_center_y[j] = cy;
-
-        // FIXME:  This line only exists to achieve consistency with the
-        // legacy results when using a focalplane model based on a fake
-        // fiberpos file.  Remove this after this version is tagged.
-        loc_patrol[j] = 5.8;
-        // loc_patrol[j] = hw_->loc_theta_arm[loc[j]] + hw_->loc_phi_arm[loc[j]];
+        loc_patrol[j] = hw_->loc_theta_arm[loc[j]] + hw_->loc_phi_arm[loc[j]]
+            - patrol_buffer;
     }
 
     // shared_ptr reference counting is not threadsafe.  Here we extract

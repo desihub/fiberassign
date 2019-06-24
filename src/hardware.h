@@ -140,11 +140,15 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
         // The number of petals
         int32_t npetal;
 
-        // The number of fibers (device == "POS") per petal.
+        // The number of science fibers (device == "POS") per petal.
         int32_t nfiber_petal;
 
         // The full focalplane radius on the sky in degrees
         double focalplane_radius_deg;
+
+        // The buffer region size to subtract from the total arm length
+        // when considering available targets.
+        double patrol_buffer_mm;
 
         // Locations
         std::vector <int32_t> locations;
