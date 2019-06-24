@@ -153,21 +153,15 @@ run_assign_full(assign_args)
 # ------
 # - fba_merge_results
 
-#- mtl, sky, stdstar -> targets
-opts = args.__dict__.copy()
+#- Setup options for merging
+opts = dict()
 opts['targets'] = [args.mtl, args.sky]
 if args.stdstar is not None:
     opts["targets"].append(args.stdstar)
 
-#- other options that were renamed
+opts['sky'] = args.sky
 opts['dir'] = args.outdir
 opts['out'] = args.outdir
-
-#- remove keys for options that were renamed or not used by fba_merge_results
-for key in ['mtl', 'sky', 'stdstar', 'outdir', 'fibstatusfile', 'surveytiles',
-            'nstarpetal', 'nskypetal', 'starmask', 'footprint', 'overwrite']:
-    if key in opts:
-        del opts[key]
 
 optlist = option_list(opts)
 merge_args = parse_merge(optlist)

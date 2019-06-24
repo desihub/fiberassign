@@ -378,6 +378,11 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         log.debug("Write:  writing assignment data for tile {}"
                   .format(tile_id))
 
+        # Downstream code still requires assignments sorted by fibers
+        log.info("Sorting by fiber number instead of location")
+        ii = np.argsort(fdata['FIBER'])
+        fdata = fdata[ii]
+
         fd.write(fdata, header=header, extname="FASSIGN")
         del fdata
 
