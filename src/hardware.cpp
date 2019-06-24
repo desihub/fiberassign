@@ -488,20 +488,6 @@ bool fba::Hardware::collide(fbg::dpair center1, fbg::dpair position1,
                             fbg::dpair center2, fbg::dpair position2) const {
     // Check for collisions if we move fibers at given central positions
     // (in mm) to the x/y positions specified.
-    double dist = fbg::dist(position1, position2);
-
-    if (dist < collide_mm) {
-        // Guaranteed to collide.
-        return true;
-    }
-
-    if (dist > no_collide_mm) {
-        // Guaranteed to NOT collide.
-        return false;
-    }
-
-    // We need to do a detailed calculation of the fiber holder and central
-    // body positions and test for intersection.
 
     fbg::shape fh1(ferrule_holder);
     fbg::shape fh2(ferrule_holder);

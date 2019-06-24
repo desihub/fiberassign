@@ -55,7 +55,10 @@ def default_main_sciencemask():
     sciencemask |= desi_mask["QSO"].mask
     sciencemask |= desi_mask["BGS_ANY"].mask
     sciencemask |= desi_mask["MWS_ANY"].mask
-    sciencemask |= desi_mask["SECONDARY_ANY"].mask
+    if "SCND_ANY" in desi_mask.names():
+        sciencemask |= desi_mask["SCND_ANY"].mask
+    else:
+        sciencemask |= desi_mask["SECONDARY_ANY"].mask
     return sciencemask
 
 
@@ -107,7 +110,10 @@ def default_sv1_sciencemask():
     sciencemask |= sv1_mask["QSO"].mask
     sciencemask |= sv1_mask["BGS_ANY"].mask
     sciencemask |= sv1_mask["MWS_ANY"].mask
-    sciencemask |= sv1_mask["SECONDARY_ANY"].mask
+    if "SCND_ANY" in sv1_mask.names():
+        sciencemask |= sv1_mask["SCND_ANY"].mask
+    else:
+        sciencemask |= sv1_mask["SECONDARY_ANY"].mask
     return sciencemask
 
 
