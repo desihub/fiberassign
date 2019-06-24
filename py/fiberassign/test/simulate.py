@@ -42,7 +42,7 @@ def sim_focalplane(runtime=None):
         runtime = datetime.utcnow()
 
     # First get the starting focalplane from desimodel
-    fp, exclude, state = dmio.load_focalplane(runtime)
+    fp, exclude, state, tmstr = dmio.load_focalplane(runtime)
 
     # Now set some fibers to stuck / broken
     mods = {

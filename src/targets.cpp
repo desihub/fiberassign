@@ -266,7 +266,12 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
         double cy = hw_->loc_pos_xy_mm[loc[j]].second;
         loc_center_x[j] = cx;
         loc_center_y[j] = cy;
-        loc_patrol[j] = hw_->loc_theta_arm[loc[j]] + hw_->loc_phi_arm[loc[j]];
+
+        // FIXME:  This line only exists to achieve consistency with the
+        // legacy results when using a focalplane model based on a fake
+        // fiberpos file.  Remove this after this version is tagged.
+        loc_patrol[j] = 5.8;
+        // loc_patrol[j] = hw_->loc_theta_arm[loc[j]] + hw_->loc_phi_arm[loc[j]];
     }
 
     // shared_ptr reference counting is not threadsafe.  Here we extract
@@ -376,8 +381,19 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
                     auto obj_xy = phw->radec2xy(tra, tdec, obj.ra,
                                                 obj.dec);
                     double dist = geom::sq(loc_xy, obj_xy);
-                    if (dist > geom::sq(loc_patrol[j])) {
+                    double pdist = geom::sq(loc_patrol[j]);
+                    if (dist > pdist) {
                         // outside the patrol radius
+                        if (logger.extra_debug()) {
+                            logmsg.str("");
+                            logmsg << std::setprecision(2) << std::fixed;
+                            logmsg << "targets avail:  tile " << tid
+                                << ", loc " << loc[j] << ", kdtree target "
+                                << obj.id << " outside patrol radius ("
+                                << dist << " > " << pdist << ")";
+                            logger.debug_tfg(tid, loc[j], obj.id,
+                                             logmsg.str().c_str());
+                        }
                         continue;
                     }
                     double totpriority =

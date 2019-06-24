@@ -49,8 +49,9 @@ def load_hardware(focalplane=None, rundate=None):
     fp = None
     exclude = None
     state = None
+    tmstr = None
     if focalplane is None:
-        fp, exclude, state = dmio.load_focalplane(runtime)
+        fp, exclude, state, tmstr = dmio.load_focalplane(runtime)
     else:
         fp, exclude, state = focalplane
 

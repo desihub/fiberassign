@@ -385,7 +385,7 @@ class TestAssign(unittest.TestCase):
             qadata = json.load(f)
 
         for tile, props in qadata.items():
-            self.assertEqual(4495, props["assign_science"])
+            self.assertEqual(4500, props["assign_science"])
             self.assertEqual(100, props["assign_std"])
             self.assertEqual(400, props["assign_sky"])
 
