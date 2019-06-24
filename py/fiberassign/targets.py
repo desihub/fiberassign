@@ -223,6 +223,12 @@ def desi_target_type(desi_target, sciencemask, stdmask,
         (array):  The fiberassign target types.
 
     """
+    # print('sciencemask {}'.format(sciencemask))
+    # print('stdmask     {}'.format(stdmask))
+    # print('skymask     {}'.format(skymask))
+    # print('safemask    {}'.format(safemask))
+    # print('excludemask {}'.format(excludemask))
+
     if np.isscalar(desi_target):
         ttype = 0
         if desi_target & sciencemask != 0:
