@@ -33,7 +33,7 @@ from distutils.errors import CompileError
 try:
     import desiutil
 except ImportError:
-    if os.environ['READTHEDOCS'] == 'True':
+    if os.getenv('READTHEDOCS') == 'True':
         import subprocess as sp
         dutil = \
             'git+https://github.com/desihub/desiutil.git@master#egg=desiutil'
