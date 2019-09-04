@@ -1034,7 +1034,7 @@ def merge_results_tile(out_dtype, copy_fba, params):
                               & desi_mask.SKY) != 0
                     objtype[is_sky] = "SKY"
                     badmask = \
-                        desi_mask.mask("BAD_SKY|NO_TARGET|IN_BRIGHT_OBJECT")
+                        desi_mask.mask("BAD_SKY|SUPP_SKY|NO_TARGET|IN_BRIGHT_OBJECT")
                     is_bad = (tile_targets["DESI_TARGET"][target_rows]
                               & badmask) != 0
                     objtype[is_bad] = "BAD"

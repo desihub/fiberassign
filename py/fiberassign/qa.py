@@ -45,7 +45,8 @@ def qa_parse_table(header, tgdata):
         lrgmask = int(desi_mask["LRG"].mask)
         elgmask = int(desi_mask["ELG"].mask)
         qsomask = int(desi_mask["QSO"].mask)
-        badmask = int(desi_mask["BAD_SKY"].mask)
+        badmask = [int(desi_mask["BAD_SKY"].mask),int(desi_mask["SUPP_SKY"].mask)]
+        
         for row in range(len(tgdata)):
             tgid = tgdata["TARGETID"][row]
             tg = tgs.get(tgid)
@@ -83,6 +84,8 @@ def qa_tile(hw, tile_id, tgs, tgprops, tile_assign, tile_avail):
     nsafe = 0
     unassigned = list()
     objtypes = dict()
+    
+    print(hw.device_locations('POS'))
     for lid in locs:
         if lid not in tile_assign:
             unassigned.append(int(lid))
