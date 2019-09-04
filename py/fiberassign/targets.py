@@ -164,6 +164,16 @@ def default_cmx_sciencemask():
     sciencemask |= cmx_mask["SV0_STD_BRIGHT"].mask
     sciencemask |= cmx_mask["STD_TEST"].mask
     sciencemask |= cmx_mask["STD_CALSPEC"].mask
+    
+    # SE: ADDED NEW CMX SCIENCE BITS From /desitarget/blob/0.32.0/py/desitarget/cmx/data/cmx_targetmask.yaml 
+    sciencemask |= cmx_mask["STD_FAINT"].mask
+    sciencemask |= cmx_mask["SV0_BGS"].mask
+    sciencemask |= cmx_mask["SV0_MWS"].mask
+    sciencemask |= cmx_mask["SV0_LRG"].mask
+    sciencemask |= cmx_mask["SV0_ELG"].mask
+    sciencemask |= cmx_mask["SV0_QSO"].mask
+    sciencemask |= cmx_mask["SV0_WD"].mask
+
     return sciencemask
 
 
@@ -173,6 +183,9 @@ def default_cmx_stdmask():
     # Nothing in a CMX file is currently treated as a "standard".  The
     # objects are all things which should be assigned as science targets.
     stdmask = 0
+    stdmask |= cmx_mask["STD_FAINT"].mask
+    stdmask |= cmx_mask["STD_BRIGHT"].mask
+
     return stdmask
 
 
