@@ -725,8 +725,7 @@ PYBIND11_MODULE(_internal, m) {
 
             This takes the specified location and computes the shapes of
             the central body and fiber holder when the fiber is moved to
-            a given (X, Y) position.  The returned tuple contains the
-            (central body, fiber holder) as independent high objects.
+            a given (X, Y) position.  The input shapes are modified in place.
 
             Args:
                 loc (int): Device location.
@@ -735,7 +734,7 @@ PYBIND11_MODULE(_internal, m) {
                 shpphi (Shape):  The phi shape.
 
             Returns:
-                (tuple): the shapes representing the positioner.
+                None
 
         )")
         .def("loc_position_xy_multi", &fba::Hardware::loc_position_xy_multi,
@@ -756,6 +755,26 @@ PYBIND11_MODULE(_internal, m) {
 
             Returns:
                 (list): One tuple for each location with positioner shapes.
+
+        )")
+        .def("loc_position_thetaphi", &fba::Hardware::loc_position_thetaphi,
+            py::arg("id"), py::arg("theta"), py::arg("phi"),
+            py::arg("shptheta"), py::arg("shpphi"), R"(
+            Move a positioner to a given set of theta / phi angles.
+
+            This takes the specified angles and computes the shapes of
+            the central body and fiber holder when the fiber is moved to
+            a the theta / phi orientation.  The input shapes are modified
+            in place.
+
+            Args:
+                loc (int): Device location.
+                xy (tuple): The (X, Y) tuple at which to place the fiber.
+                shptheta (Shape):  The theta shape.
+                shpphi (Shape):  The phi shape.
+
+            Returns:
+                None
 
         )")
         .def("check_collisions_xy", &fba::Hardware::check_collisions_xy,

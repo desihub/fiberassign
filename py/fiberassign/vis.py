@@ -113,12 +113,16 @@ def plot_positioner_simple(ax, patrol_rad, loc, center, shptheta, shpphi,
                         ec="none", alpha=0.1)
     ax.add_artist(patrol)
     # Plot the arm from the center to the body
+    print("center = {}".format(center))
+
     thetacent = shptheta.axis
+    print("thetacent = {}".format(thetacent))
 
     ax.plot([center[0], thetacent[0]], [center[1], thetacent[1]], color=color,
             linewidth=4*linewidth)
 
     tgloc = shpphi.axis
+    print("phi cent = {}".format(tgloc))
 
     ax.plot([thetacent[0], tgloc[0]], [thetacent[1], tgloc[1]], color=color,
             linewidth=linewidth)
@@ -170,9 +174,16 @@ def plot_available(ax, targetprops, selected, linewidth=0.1):
 
 def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
                     real_shapes=False):
+    log = Logger.get()
     center_mm = hw.loc_pos_xy_mm
     theta_arm = hw.loc_theta_arm
     phi_arm = hw.loc_phi_arm
+    theta_offset = hw.loc_theta_offset
+    theta_min = hw.loc_theta_min
+    theta_max = hw.loc_theta_max
+    phi_offset = hw.loc_phi_offset
+    phi_min = hw.loc_phi_min
+    phi_max = hw.loc_phi_max
     device_type = dict(hw.loc_device_type)
     assigned = np.array(sorted(tile_assigned.keys()), dtype=np.int32)
     for lid in assigned:
@@ -184,26 +195,41 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
         center = center_mm[lid]
         tgid = tile_assigned[lid]
         patrol_rad = theta_arm[lid] + phi_arm[lid]
-        if tgid >= 0:
+        failed = False
+        is_assigned = (tgid >= 0)
+        if is_assigned:
             # This fiber is assigned.  Plot the positioner located at the
             # assigned target.
             failed = hw.loc_position_xy(lid, targetprops[tgid]["xy"],
                                         shptheta, shpphi)
-            if not failed:
+            if failed:
+                msg = "Positioner at location {} cannot move to target {} at (x, y) = ({}, {}).  This should have been dected during assignment!".format(lid, tgid, targetprops[tgid]["xy"][0], targetprops[tgid]["xy"][1])
+                log.warning(msg)
+                is_assigned = False
+                failed = False
+            else:
                 color = targetprops[tgid]["color"]
-        else:
+        if not is_assigned:
             # This fiber is unassigned.  Plot the positioner in its home
-            # position.
-            failed = hw.loc_position_xy(lid, center,
-                                        shptheta, shpphi)
-        if real_shapes:
-            plot_positioner(
-                ax, patrol_rad, lid, center, shptheta, shpphi,
-                color=color, linewidth=linewidth)
-        else:
-            plot_positioner_simple(
-                ax, patrol_rad, lid, center, shptheta, shpphi,
-                color=color, linewidth=linewidth)
+            # position with theta at its minimum value and phi
+            # at 180 degrees.
+            theta = theta_offset[lid] + theta_min[lid]
+            phi = phi_offset[lid] + np.pi
+            failed = hw.loc_position_thetaphi(
+                lid, theta, phi, shptheta, shpphi
+            )
+            if failed:
+                msg = "Positioner at location {} cannot move to its home position.  This should never happen!".format(lid)
+                log.warning(msg)
+        if not failed:
+            if real_shapes:
+                plot_positioner(
+                    ax, patrol_rad, lid, center, shptheta, shpphi,
+                    color=color, linewidth=linewidth)
+            else:
+                plot_positioner_simple(
+                    ax, patrol_rad, lid, center, shptheta, shpphi,
+                    color=color, linewidth=linewidth)
     return
 
 

@@ -830,8 +830,8 @@ std::vector <bool> fba::Hardware::check_collisions_xy(
         if (hit) {
             #pragma omp critical
             {
-                result[flow] = true;
-                result[fhigh] = true;
+                result[loc_indx[flow]] = true;
+                result[loc_indx[fhigh]] = true;
             }
         }
     }
@@ -933,8 +933,8 @@ std::vector <bool> fba::Hardware::check_collisions_thetaphi(
         if (hit) {
             #pragma omp critical
             {
-                result[flow] = true;
-                result[fhigh] = true;
+                result[loc_indx[flow]] = true;
+                result[loc_indx[fhigh]] = true;
             }
         }
     }
