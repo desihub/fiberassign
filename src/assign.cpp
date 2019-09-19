@@ -1409,16 +1409,17 @@ bool fba::Assignment::ok_to_assign (fba::Hardware const * hw, int32_t tile,
         return false;
     }
 
-    if (loc_target.count(tile) == 0) {
-        // This is the first assignment on the tile, so definitely ok
-        // to assign!
+    // Can this positioner actually reach the target location?
+    fbg::dpair tpos = target_xy.at(target);
+    if (hw->position_xy_bad(loc, tpos)) {
         if (extra_log) {
             logmsg.str("");
-            logmsg << "ok_to_assign: tile " << tile
-                << " first assignment (definitely OK)";
+            logmsg << "ok_to_assign: tile " << tile << ", loc "
+                << loc << ", target " << target << " cannot reach X/Y = "
+                << tpos.first << ", " << tpos.second;
             logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
         }
-        return true;
+        return false;
     }
 
     // Const reference to the assignment for this tile.
@@ -1453,9 +1454,6 @@ bool fba::Assignment::ok_to_assign (fba::Hardware const * hw, int32_t tile,
     // Would assigning this target produce a collision?  If a loc is not
     // yet assigned, we assume that it is positioned at its central location
     // and so will not collide with anything.
-
-    // Center position and target location for this location.
-    fbg::dpair tpos = target_xy.at(target);
 
     size_t nnb = nbs.size();
 

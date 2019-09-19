@@ -376,41 +376,39 @@ void fba::Hardware::xy2radec_multi(
 }
 
 
+bool _check_angle_range(
+        double & ang, double ang_zero,
+        double ang_min, double ang_max) {
+    double twopi = 2.0 * M_PI;
+    double abs_min = ang_zero + ang_min;
+    double abs_max = ang_zero + ang_max;
+    if (ang < abs_min) {
+        ang += twopi;
+    }
+    if (ang > abs_max) {
+        ang -= twopi;
+    }
+    if ((ang < abs_min) || (ang > abs_max)) {
+        // Out of range
+        return true;
+    } else {
+        return false;
+    }
+}
+
+
 bool fba::Hardware::move_positioner_thetaphi(
         fbg::shape & shptheta, fbg::shape & shpphi,
         fbg::dpair const & center, double theta, double phi,
         double theta_arm, double phi_arm, double theta_zero, double phi_zero,
         double theta_min, double phi_min, double theta_max, double phi_max
         ) const {
-    double twopi = 2.0 * M_PI;
-
-    // Check that this phi angle is valid
-    double phi_abs_min = phi_zero + phi_min;
-    double phi_abs_max = phi_zero + phi_max;
-    if (phi < phi_abs_min) {
-        phi += twopi;
-    }
-    if (phi > phi_abs_max) {
-        phi -= twopi;
-    }
-    // std::cout << "move_positioner_thetaphi: phi = " << phi << " amin = " << phi_abs_min << " amax = " << phi_abs_max << std::endl;
-    if ((phi < phi_abs_min) || (phi > phi_abs_max)) {
-        // Out of range
-        return true;
-    }
-
-    // Check that this theta angle is valid
-    double theta_abs_min = theta_zero + theta_min;
-    double theta_abs_max = theta_zero + theta_max;
-    if (theta < theta_abs_min) {
-        theta += twopi;
-    }
-    if (theta > theta_abs_max) {
-        theta -= twopi;
-    }
-    // std::cout << "move_positioner_thetaphi: theta = " << theta << " amin = " << theta_abs_min << " amax = " << theta_abs_max << std::endl;
-    if ((theta < theta_abs_min) || (theta > theta_abs_max)) {
-        // Out of range
+    // Check that requested angles are in range.
+    bool bad_phi = _check_angle_range(phi, phi_zero, phi_min, phi_max);
+    bool bad_theta = _check_angle_range(
+        theta, theta_zero, theta_min, theta_max
+    );
+    if (bad_phi || bad_theta) {
         return true;
     }
 
@@ -455,8 +453,8 @@ bool fba::Hardware::move_positioner_thetaphi(
 }
 
 
-bool fba::Hardware::move_positioner_xy(
-        fbg::shape & shptheta, fbg::shape & shpphi,
+bool fba::Hardware::xy_to_thetaphi(
+        double & theta, double & phi,
         fbg::dpair const & center, fbg::dpair const & position,
         double theta_arm, double phi_arm, double theta_zero, double phi_zero,
         double theta_min, double phi_min, double theta_max, double phi_max
@@ -470,10 +468,8 @@ bool fba::Hardware::move_positioner_xy(
     double sq_total_arm = fbg::sq(theta_arm + phi_arm);
     double sq_diff_arm = fbg::sq(theta_arm - phi_arm);
 
-    // std::cout << "move_positioner_xy: sqtot = " << sq_total_arm << " sqoffset = " << sq_offset << std::endl;
-
-    double phi;
-    double theta;
+    phi = M_PI;
+    theta = 0.0;
 
     if (fabs(sq_offset - sq_total_arm) <=
         std::numeric_limits<float>::epsilon()) {
@@ -492,13 +488,13 @@ bool fba::Hardware::move_positioner_xy(
 
         if (sq_total_arm < sq_offset) {
             // Physically impossible to get there for any choice of angles
-            // std::cout << "move_positioner_xy: sqoffset - sqtot = " << sq_offset - sq_total_arm << std::endl;
+            // std::cout << "xy_to_thetaphi: sqoffset - sqtot = " << sq_offset - sq_total_arm << std::endl;
             return true;
         }
 
         if (sq_offset < sq_diff_arm) {
             // Physically impossible to get there for any choice of angles
-            // std::cout << "move_positioner_xy: sqdiff - sqoffset = " << sq_diff_arm - sq_offset << std::endl;
+            // std::cout << "xy_to_thetaphi: sqdiff - sqoffset = " << sq_diff_arm - sq_offset << std::endl;
             return true;
         }
 
@@ -506,12 +502,12 @@ bool fba::Hardware::move_positioner_xy(
         double opening = ::acos((sq_theta_arm + sq_phi_arm - sq_offset)
                                 / (2.0 * theta_arm * phi_arm));
 
-        // std::cout << "move_positioner_xy: opening = " << opening << std::endl;
+        // std::cout << "xy_to_thetaphi: opening = " << opening << std::endl;
 
         // The PHI angle is just the supplement of this.
         phi = M_PI - opening;
 
-        // std::cout << "move_positioner_xy: phi = " << phi << std::endl;
+        // std::cout << "xy_to_thetaphi: phi = " << phi << std::endl;
 
         // Compute the theta angle.
         // Use law of cosines to compute angle from theta arm to the line from
@@ -520,16 +516,65 @@ bool fba::Hardware::move_positioner_xy(
         double txy = ::acos((sq_theta_arm + sq_offset - sq_phi_arm)
                             / (2 * theta_arm * nrm_offset));
 
-        // std::cout << "move_positioner_xy: txy = " << txy << std::endl;
+        // std::cout << "xy_to_thetaphi: txy = " << txy << std::endl;
 
         theta = ::atan2(offset.second, offset.first) - txy;
     }
 
-    // std::cout << "move_positioner_xy: theta = " << theta << std::endl;
+    // Check that angles are in range
+    bool bad_phi = _check_angle_range(phi, phi_zero, phi_min, phi_max);
+    bool bad_theta = _check_angle_range(
+        theta, theta_zero, theta_min, theta_max
+    );
+    if (bad_phi || bad_theta) {
+        return true;
+    }
 
-    return move_positioner_thetaphi(shptheta, shpphi, center, theta, phi,
-                                    theta_arm, phi_arm, theta_zero, phi_zero,
-                                    theta_min, phi_min, theta_max, phi_max);
+    return false;
+}
+
+
+bool fba::Hardware::move_positioner_xy(
+        fbg::shape & shptheta, fbg::shape & shpphi,
+        fbg::dpair const & center, fbg::dpair const & position,
+        double theta_arm, double phi_arm, double theta_zero, double phi_zero,
+        double theta_min, double phi_min, double theta_max, double phi_max
+        ) const {
+
+    double phi;
+    double theta;
+    bool fail = xy_to_thetaphi(
+        theta, phi, center, position, theta_arm, phi_arm, theta_zero,
+        phi_zero, theta_min, phi_min, theta_max, phi_max
+    );
+    if (fail) {
+        return true;
+    }
+    return move_positioner_thetaphi(
+        shptheta, shpphi, center, theta, phi,
+        theta_arm, phi_arm, theta_zero, phi_zero,
+        theta_min, phi_min, theta_max, phi_max
+    );
+}
+
+
+bool fba::Hardware::position_xy_bad(int32_t loc, fbg::dpair const & xy) const {
+    double phi;
+    double theta;
+    bool fail = xy_to_thetaphi(
+        theta, phi,
+        loc_pos_xy_mm.at(loc),
+        xy,
+        loc_theta_arm.at(loc),
+        loc_phi_arm.at(loc),
+        loc_theta_offset.at(loc),
+        loc_phi_offset.at(loc),
+        loc_theta_min.at(loc),
+        loc_phi_min.at(loc),
+        loc_theta_max.at(loc),
+        loc_phi_max.at(loc)
+    );
+    return fail;
 }
 
 
@@ -556,7 +601,8 @@ bool fba::Hardware::loc_position_xy(
         loc_theta_min.at(loc),
         loc_phi_min.at(loc),
         loc_theta_max.at(loc),
-        loc_phi_max.at(loc));
+        loc_phi_max.at(loc)
+    );
 
     return failed;
 }

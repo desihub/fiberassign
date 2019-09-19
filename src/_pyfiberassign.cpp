@@ -719,6 +719,54 @@ PYBIND11_MODULE(_internal, m) {
                 (list): list of (RA, DEC) tuples.
 
         )")
+        .def("xy_to_thetaphi", [](
+                fba::Hardware & self,
+                std::pair <double, double> const & center,
+                std::pair <double, double> const & xy,
+                double theta_arm,
+                double phi_arm,
+                double theta_zero,
+                double phi_zero,
+                double theta_min,
+                double phi_min,
+                double theta_max,
+                double phi_max
+            ) {
+                double theta;
+                double phi;
+                bool failed = self.xy_to_thetaphi(
+                    theta, phi, center, xy, theta_arm, phi_arm, theta_zero,
+                    phi_zero, theta_min, phi_min, theta_max, phi_max
+                );
+                if (failed) {
+                    return py::make_tuple(py::none(), py::none());
+                } else {
+                    return py::make_tuple(theta, phi);
+                }
+            }, py::return_value_policy::take_ownership, py::arg("center"),
+            py::arg("xy"), py::arg("theta_arm"), py::arg("phi_arm"),
+            py::arg("theta_zero"), py::arg("phi_zero"),
+            py::arg("theta_min"), py::arg("phi_min"),
+            py::arg("theta_max"), py::arg("phi_max"), R"(
+            Compute the theta / phi arm angles when moved to an x / y point.
+
+            Args:
+                center (tuple): The (X, Y) tuple of the device center.
+                xy (tuple): The (X, Y) tuple at which to place the fiber.
+                theta_arm (float): The length of the theta arm.
+                phi_arm (float): The length of the phi arm.
+                theta_zero (float): The theta offset.
+                phi_zero (float): The phi offset.
+                theta_min (float): The theta min relative to the offset.
+                phi_min (float): The phi min relative to the offset.
+                theta_max (float): The theta max relative to the offset.
+                phi_max (float): The phi max relative to the offset.
+
+            Returns:
+                (tuple): The theta / phi angles or (None, None) if the
+                    x/y location is not reachable.
+
+        )")
         .def("loc_position_xy", &fba::Hardware::loc_position_xy, py::arg("id"),
             py::arg("xy"), py::arg("shptheta"), py::arg("shpphi"), R"(
             Move a positioner to a given location.
@@ -758,7 +806,7 @@ PYBIND11_MODULE(_internal, m) {
 
         )")
         .def("loc_position_thetaphi", &fba::Hardware::loc_position_thetaphi,
-            py::arg("id"), py::arg("theta"), py::arg("phi"),
+            py::arg("loc"), py::arg("theta"), py::arg("phi"),
             py::arg("shptheta"), py::arg("shpphi"), R"(
             Move a positioner to a given set of theta / phi angles.
 
@@ -769,7 +817,8 @@ PYBIND11_MODULE(_internal, m) {
 
             Args:
                 loc (int): Device location.
-                xy (tuple): The (X, Y) tuple at which to place the fiber.
+                theta (float): The theta angle.
+                phi (float): The phi angle.
                 shptheta (Shape):  The theta shape.
                 shpphi (Shape):  The phi shape.
 

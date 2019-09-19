@@ -63,17 +63,17 @@ class TestVis(unittest.TestCase):
 
         linewidth = 0.1
 
-        phipos = [np.pi/2.0]
-        phicol = ["r"]
-        # phipos = [np.pi/2.0, np.pi]
-        # phicol = ["r", "b"]
+        # phipos = [np.pi/2.0]
+        # phicol = ["r"]
+        phipos = [0.0, np.pi/2.0]
+        phicol = ["r", "b"]
 
         for configindx, (angphi, col) in enumerate(zip(phipos, phicol)):
             shptheta = Shape()
             shpphi = Shape()
 
             theta = theta_offset[lid] + theta_min[lid]
-            phi = phi_offset[lid] + angphi
+            phi = phi_offset[lid] + phi_min[lid] + angphi
 
             failed = hw.loc_position_thetaphi(
                 lid, theta, phi, shptheta, shpphi
@@ -86,48 +86,46 @@ class TestVis(unittest.TestCase):
             else:
                 if simple:
                     plot_positioner_simple(
-                        ax, patrol_mm, lid, center, shptheta, shpphi,
-                        color="black", linewidth=linewidth
+                        ax, patrol_mm, lid, center, theta, theta_arm[lid], phi,
+                        phi_arm[lid], color="black", linewidth=linewidth
                     )
                 else:
                     plot_positioner(
                         ax, patrol_mm, lid, center, shptheta, shpphi,
                         color="black", linewidth=linewidth
                     )
-            # for inc in range(nincr):
-            #     ang = inc * configincr
-            #     effrad = 0.5 * patrol_mm * np.sin(angphi)
-            #     xoff = effrad * np.cos(ang) + center[0]
-            #     yoff = effrad * np.sin(ang) + center[1]
-            #     theta = theta_offset[lid] + theta_min[lid] + ang
-            #     failed = hw.loc_position_thetaphi(
-            #         lid, theta, phi, shptheta, shpphi
-            #     )
-            #     if failed:
-            #         print(
-            #             "Failed to move positioner {} to theta = {}, phi = {}"
-            #             .format(lid, theta, phi)
-            #         )
-            #     else:
-            #         if simple:
-            #             plot_positioner_simple(
-            #                 ax, patrol_mm, lid, center, shptheta, shpphi,
-            #                 color=col, linewidth=linewidth
-            #             )
-            #         else:
-            #             plot_positioner(
-            #                 ax, patrol_mm, lid, center, shptheta, shpphi,
-            #                 color=col, linewidth=linewidth
-            #             )
-            #         xend = xoff
-            #         yend = yoff
-            #         ax.plot([center[0], xend], [center[1], yend],
-            #                 color="k", linewidth="0.5")
-            #         ax.text(xend, yend, "{}".format(inc),
-            #                 color='k', fontsize=fontpt,
-            #                 horizontalalignment='center',
-            #                 verticalalignment='center',
-            #                 bbox=dict(fc='w', ec='none', pad=1, alpha=1.0))
+            for inc in range(1, nincr):
+                ang = inc * configincr
+                effrad = 0.5 * patrol_mm * np.sin(angphi)
+                theta = theta_offset[lid] + theta_min[lid] + ang
+                xoff = effrad * np.cos(theta) + center[0]
+                yoff = effrad * np.sin(theta) + center[1]
+                failed = hw.loc_position_thetaphi(
+                    lid, theta, phi, shptheta, shpphi
+                )
+                if failed:
+                    print(
+                        "Failed to move positioner {} to theta = {}, phi = {}"
+                        .format(lid, theta, phi)
+                    )
+                else:
+                    if simple:
+                        plot_positioner_simple(
+                            ax, patrol_mm, lid, center, theta, theta_arm[lid],
+                            phi, phi_arm[lid], color=col, linewidth=linewidth
+                        )
+                    else:
+                        plot_positioner(
+                            ax, patrol_mm, lid, center, shptheta, shpphi,
+                            color=col, linewidth=linewidth
+                        )
+                    xend = xoff
+                    yend = yoff
+                    ax.text(xend, yend, "{}".format(inc),
+                            color='k', fontsize=fontpt,
+                            horizontalalignment='center',
+                            verticalalignment='center',
+                            bbox=dict(fc='w', ec='none', pad=1, alpha=1.0))
         pxcent = center[0]
         pycent = center[1]
         half_width = 0.5 * width
@@ -145,13 +143,13 @@ class TestVis(unittest.TestCase):
         time = datetime.utcnow().isoformat(timespec="seconds")
         suffix = "{}_simple".format(time)
         self._load_and_plotpos(time, test_dir, suffix, simple=True)
-        # suffix = "{}".format(time)
-        # self._load_and_plotpos(time, test_dir, suffix, simple=False)
+        suffix = "{}".format(time)
+        self._load_and_plotpos(time, test_dir, suffix, simple=False)
         time = "2012-12-12T00:00:00"
         suffix = "{}_simple".format(time)
         self._load_and_plotpos(time, test_dir, suffix, simple=True)
-        # suffix = "{}".format(time)
-        # self._load_and_plotpos(time, test_dir, suffix, simple=False)
+        suffix = "{}".format(time)
+        self._load_and_plotpos(time, test_dir, suffix, simple=False)
         return
 
 
@@ -197,8 +195,8 @@ class TestVis(unittest.TestCase):
             else:
                 if simple:
                     plot_positioner_simple(
-                        ax, patrol_rad, lid, center, shptheta, shpphi,
-                        color=color, linewidth=linewidth
+                        ax, patrol_rad, lid, center, theta, theta_arm[lid],
+                        phi, phi_arm[lid], color=color, linewidth=linewidth
                     )
                 else:
                     plot_positioner(
@@ -212,19 +210,19 @@ class TestVis(unittest.TestCase):
         plt.savefig(outfile, dpi=300, format="pdf")
         plt.close()
 
-    # def test_plotfp(self):
-    #     test_dir = test_subdir_create("vis_test_plotfp")
-    #     time = datetime.utcnow().isoformat(timespec="seconds")
-    #     suffix = "{}_simple".format(time)
-    #     self._load_and_plotfp(time, test_dir, suffix, simple=True)
-    #     # suffix = "{}".format(time)
-    #     # self._load_and_plotfp(time, test_dir, suffix, simple=False)
-    #     time = "2012-12-12T00:00:00"
-    #     suffix = "{}_simple".format(time)
-    #     self._load_and_plotfp(time, test_dir, suffix, simple=True)
-    #     # suffix = "{}".format(time)
-    #     # self._load_and_plotfp(time, test_dir, suffix, simple=False)
-    #     return
+    def test_plotfp(self):
+        test_dir = test_subdir_create("vis_test_plotfp")
+        time = datetime.utcnow().isoformat(timespec="seconds")
+        suffix = "{}_simple".format(time)
+        self._load_and_plotfp(time, test_dir, suffix, simple=True)
+        suffix = "{}".format(time)
+        self._load_and_plotfp(time, test_dir, suffix, simple=False)
+        time = "2012-12-12T00:00:00"
+        suffix = "{}_simple".format(time)
+        self._load_and_plotfp(time, test_dir, suffix, simple=True)
+        suffix = "{}".format(time)
+        self._load_and_plotfp(time, test_dir, suffix, simple=False)
+        return
 
 
 def test_suite():

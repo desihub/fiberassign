@@ -114,7 +114,7 @@ def sim_targets(path, tgtype, tgoffset, density=5000.0):
     fdata["RA"] = np.random.uniform(low=ramin, high=ramax, size=ntarget)
     fdata["DEC"] = np.random.uniform(low=decmin, high=decmax, size=ntarget)
     fdata["OBSCONDITIONS"] = np.ones(ntarget, dtype=np.int32)
-    fdata["NUMOBS_MORE"] = np.ones(ntarget, dtype=np.int32)
+    fdata["NUMOBS_MORE"] = 5 * np.ones(ntarget, dtype=np.int32)
     fdata["SUBPRIORITY"] = np.random.uniform(low=0.0, high=1.0, size=ntarget)
 
     sky_mask = desi_mask["SKY"].mask
