@@ -22,8 +22,7 @@ from desitarget.sv1.sv1_targetmask import desi_mask as sv1_mask
 
 from desitarget.targets import main_cmx_or_sv
 
-from fiberassign.targets import default_sv1_sciencemask, default_sv1_stdmask, default_sv1_skymask, default_sv1_safemask, default_sv1_excludemask, default_cmx_sciencemask, default_cmx_stdmask, default_cmx_skymask, default_cmx_safemask, default_cmx_excludemask
-
+from fiberassign.targets import default_survey_target_masks
 
 from fiberassign.targets import (TARGET_TYPE_SKY, TARGET_TYPE_SAFE, desi_target_type,
                       default_target_masks, default_survey_target_masks)
@@ -43,11 +42,11 @@ fiber_locations = sorted(zip(fiberpos['FIBER'], fiberpos['LOCATION']))
 
 sky_mask = desi_mask.SKY
 std_mask = 0
-for name in ['STD', 'STD_FSTAR', 'STD_WD',
-             'STD_FAINT', 'STD_FAINT_BEST',
-             'STD_BRIGHT', 'STD_BRIGHT_BEST']:
-    if name in desi_mask.names():
-        std_mask |= desi_mask[name]
+#for name in ['STD', 'STD_FSTAR', 'STD_WD',
+#             'STD_FAINT', 'STD_FAINT_BEST',
+#             'STD_BRIGHT', 'STD_BRIGHT_BEST']:
+#    if name in desi_mask.names():
+#        std_mask |= desi_mask[name]
 
 #- TODO: take hardcoded from src/global.h into config file
 stuck_mask = 2**1
@@ -82,22 +81,10 @@ for filename in args.tilefiles:
     stdmask = None
     skymask = None
     excludemask = None
-    col = None
+    col=None
     if survey is not None:
-            if survey == "main":
-                sciencemask, stdmask, skymask, safemask, excludemask = \
-                 default_main_sciencemask(),default_main_stdmask(),default_main_skymask(),default_main_safemask(),default_main_excludemask()
-                 
-                 #sciencemask, stdmask, skymask, safemask, excludemask = \
-                 #     default_survey_target_masks(survey)
-            if survey == "cmx":
-                sciencemask, stdmask, skymask, safemask, excludemask = \
-                 default_cmx_sciencemask(),default_cmx_stdmask(),default_cmx_skymask(),default_cmx_safemask(),default_cmx_excludemask()
-               
-            if survey == "sv1":
-                sciencemask, stdmask, skymask, safemask, excludemask = \
-                 default_sv1_sciencemask(),default_sv1_stdmask(),default_sv1_skymask(),default_sv1_safemask(),default_sv1_excludemask()
-
+            
+            sciencemask, stdmask, skymask, safemask, excludemask = default_survey_target_masks(survey)
   
     else:
             fsurvey, col, sciencemask, stdmask, skymask, safemask, \
