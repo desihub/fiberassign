@@ -40,8 +40,8 @@ fiberpos = Table(desimodel.io.load_fiberpos())
 fiberpos.sort('FIBER')
 fiber_locations = sorted(zip(fiberpos['FIBER'], fiberpos['LOCATION']))
 
-sky_mask = desi_mask.SKY
-std_mask = 0
+#sky_mask = desi_mask.SKY
+#std_mask = 0
 #for name in ['STD', 'STD_FSTAR', 'STD_WD',
 #             'STD_FAINT', 'STD_FAINT_BEST',
 #             'STD_BRIGHT', 'STD_BRIGHT_BEST']:
@@ -162,20 +162,17 @@ for filename in args.tilefiles:
 
     nsky_total = 0
     nstdstar_total = 0
+    
     for petal in range(10):
         ii = (fa['FIBER'] // 500) == petal
-        if survey == "main":
-             nstd = np.count_nonzero(fa['DESI_TARGET'][ii] & std_mask)
-             nsky = np.count_nonzero(fa['DESI_TARGET'][ii] & sky_mask)
-        elif survey == "sv1":
-             nstd = np.count_nonzero(fa['SV1_DESI_TARGET'][ii] & std_mask)
-             nsky = np.count_nonzero(fa['SV1_DESI_TARGET'][ii] & sky_mask)
-        elif survey == "cmx":
-             nstd = np.count_nonzero(fa['CMX_TARGET'][ii] & std_mask)
-             nsky = np.count_nonzero(fa['CMX_TARGET'][ii] & sky_mask)
+        
+        nstd = np.count_nonzero(fa['FA_TARGET'][ii] & stdmask)
+        nsky = np.count_nonzero(fa['FA_TARGET'][ii] & skymask)
+       
 
         nsky_total += nsky
         nstdstar_total += nstd
+        
         if nstd < 10:
             errors.append('Petal {} has {}/10 stdstars'.format(petal, nstd))
         if nsky < 40:
