@@ -82,20 +82,10 @@ def parse_assign(optlist=None):
                         " tile IDs to use in the footprint, one ID per line."
                         " Default uses all tiles in the footprint.")
 
-    parser.add_argument("--positioners", type=str, required=False,
-                        default=None,
-                        help="Optional FITS file describing the fiber "
-                        "positioner locations.  Default uses the file from "
-                        "desimodel.")
-
-    parser.add_argument("--status", type=str, required=False, default=None,
-                        help="Optional fiber status file in astropy ECSV "
-                        "format.  Default treats all fibers as good.")
-
     parser.add_argument("--rundate", type=str, required=False, default=None,
                         help="Optional date to simulate for this run of "
-                        "fiber assignment, used with the fiber status file "
-                        "to determine which fibers currently have problems.  "
+                        "fiber assignment, used to load the correct "
+                        "focalplane properties and state from desimodel.  "
                         "Default uses the current date.  Format is "
                         "YYYY-MM-DDTHH:mm:ss in UTC time.")
 
@@ -239,8 +229,7 @@ def run_assign_init(args):
     """
     log = Logger.get()
     # Read hardware properties
-    hw = load_hardware(fiberpos_file=args.positioners, rundate=args.rundate,
-                       status_file=args.status)
+    hw = load_hardware(rundate=args.rundate)
 
     # Read tiles we are using
     tileselect = None

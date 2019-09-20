@@ -62,22 +62,12 @@ def parse_qa(optlist=None):
                         " tile IDs to use in the footprint, one ID per line."
                         " Default uses all tiles in the footprint.")
 
-    parser.add_argument("--positioners", type=str, required=False,
-                        default=None,
-                        help="Optional FITS file describing the fiber "
-                        "positioner locations.  Default uses the file from "
-                        "desimodel.")
-
-    parser.add_argument("--status", type=str, required=False, default=None,
-                        help="Optional fiber status file in astropy ECSV "
-                        "format.  Default treats all fibers as good.")
-
     parser.add_argument("--rundate", type=str, required=False, default=None,
                         help="Optional date to simulate for this run of "
-                        "fiber assignment, used with the fiber status file "
-                        "to determine which fibers currently have problems.  "
+                        "fiber assignment, used to load the correct "
+                        "focalplane properties and state from desimodel.  "
                         "Default uses the current date.  Format is "
-                        "YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss in UTC time.")
+                        "YYYY-MM-DDTHH:mm:ss in UTC time.")
 
     args = None
     if optlist is None:
@@ -92,12 +82,6 @@ def parse_qa(optlist=None):
 
     if args.out is None:
         args.out = os.path.join(args.dir, "qa.json")
-
-    # Get run date
-    if args.rundate is None:
-        args.rundate = datetime.now()
-    else:
-        args.rundate = datetime.fromisoformat(args.rundate)
 
     return args
 
@@ -115,8 +99,7 @@ def run_qa_init(args):
 
     """
     # Read hardware properties
-    hw = load_hardware(fiberpos_file=args.positioners, rundate=args.rundate,
-                       status_file=args.status)
+    hw = load_hardware(rundate=args.rundate)
 
     # Read tiles we are using
     tileselect = None
