@@ -245,45 +245,45 @@ objlist=[]
 
 if survey == "main":
           
-       objlist = ['ELG', 'LRG', 'QSO', 'MWS_ANY', 'BGS_ANY']
-       for objtype in objlist:
-               ii = (targets['DESI_TARGET'] & desi_mask.mask(objtype)) != 0
-               ntot = np.count_nonzero(ii)
-               if ntot == 0:
-                       print('  {:8s}  no targets'.format(objtype))
-               else:
-                       nx = np.count_nonzero(np.in1d(targets['TARGETID'][ii],
+    objlist = ['ELG', 'LRG', 'QSO', 'MWS_ANY', 'BGS_ANY']
+    for objtype in objlist:
+        ii = (targets['DESI_TARGET'] & desi_mask.mask(objtype)) != 0
+        ntot = np.count_nonzero(ii)
+        if ntot == 0:
+            print('  {:8s}  no targets'.format(objtype))
+        else:
+            nx = np.count_nonzero(np.in1d(targets['TARGETID'][ii],
                                       assigned['TARGETID']))
-                       print('  {:8s} {:5.1f}%  ({}/{})'.format(objtype,100*nx/ntot,nx,ntot))
+            print('  {:8s} {:5.1f}%  ({}/{})'.format(objtype,100*nx/ntot,nx,ntot))
 
 elif survey == "cmx":
 
-           objlist = ['SV0_ELG', 'SV0_LRG', 'SV0_QSO', 'SV0_MWS', 'SV0_BGS']
-           for objtype in objlist:
+    objlist = ['SV0_ELG', 'SV0_LRG', 'SV0_QSO', 'SV0_MWS', 'SV0_BGS']
+    for objtype in objlist:
             
-               ii = (targets['CMX_TARGET'] & cmx_mask.mask(objtype)) != 0
-               ntot = np.count_nonzero(ii)
-               if ntot == 0:
-                       print('  {:8s}  no targets'.format(objtype))
-               else:
-                       nx = np.count_nonzero(np.in1d(targets['TARGETID'][ii],
-                                      assigned['TARGETID']))
-                       print('  {:8s} {:5.1f}%  ({}/{})'.format(objtype,100*nx/ntot,nx,ntot))
+        ii = (targets['CMX_TARGET'] & cmx_mask.mask(objtype)) != 0
+        ntot = np.count_nonzero(ii)
+        if ntot == 0:
+            print('  {:8s}  no targets'.format(objtype))
+        else:
+            nx = np.count_nonzero(np.in1d(targets['TARGETID'][ii],
+                    assigned['TARGETID']))
+            print('  {:8s} {:5.1f}%  ({}/{})'.format(objtype,100*nx/ntot,nx,ntot))
 
 
 elif survey == "sv1":
 
-           objlist = ['ELG', 'LRG', 'QSO', 'MWS_ANY', 'BGS_ANY']
-           for objtype in objlist:
+    objlist = ['ELG', 'LRG', 'QSO', 'MWS_ANY', 'BGS_ANY']
+    for objtype in objlist:
 
-               ii = (targets['SV1_DESI_TARGET'] & sv1_mask.mask(objtype)) != 0
-               ntot = np.count_nonzero(ii)
-               if ntot == 0:
-                       print('  {:8s}  no targets'.format(objtype))
-               else:
-                       nx = np.count_nonzero(np.in1d(targets['TARGETID'][ii],
+        ii = (targets['SV1_DESI_TARGET'] & sv1_mask.mask(objtype)) != 0
+        ntot = np.count_nonzero(ii)
+        if ntot == 0:
+            print('  {:8s}  no targets'.format(objtype))
+        else:
+            nx = np.count_nonzero(np.in1d(targets['TARGETID'][ii],
                                       assigned['TARGETID']))
-                       print('  {:8s} {:5.1f}%  ({}/{})'.format(objtype,100*nx/ntot,nx,ntot))
+            print('  {:8s} {:5.1f}%  ({}/{})'.format(objtype,100*nx/ntot,nx,ntot))
 
 
 print('\n---------------------------------------------------------------')
@@ -327,106 +327,106 @@ objlist=[]
 
 if survey == "main":
 
-       objlist = ['ELG', 'LRG', 'QSO', 'MWS_ANY', 'BGS_ANY']
-       for objtype in objlist:
-               print('{:8s}'.format(objtype), end='')
-               ii = (targets['DESI_TARGET'] & desi_mask.mask(objtype)) != 0
+    objlist = ['ELG', 'LRG', 'QSO', 'MWS_ANY', 'BGS_ANY']
+    for objtype in objlist:
+        print('{:8s}'.format(objtype), end='')
+        ii = (targets['DESI_TARGET'] & desi_mask.mask(objtype)) != 0
 
-               tx = targets['TARGETID'][ii]
-               if len(tx) == 0:
-                  print('no targets')
-                  continue
+        tx = targets['TARGETID'][ii]
+        if len(tx) == 0:
+            print('no targets')
+            continue
 
-               #- nt: coverage counts for just those targets
-               jj = np.in1d(covered, tx)
-               ntx = Counter(covered[jj])
-               #- Count how many targets are covered n times for this objtype
-               ntx_keys = np.asarray(list(ntx.keys()))
-               ntx_values = np.asarray(list(ntx.values()))
+            #- nt: coverage counts for just those targets
+            jj = np.in1d(covered, tx)
+            ntx = Counter(covered[jj])
+            #- Count how many targets are covered n times for this objtype
+            ntx_keys = np.asarray(list(ntx.keys()))
+            ntx_values = np.asarray(list(ntx.values()))
 
-               for n in range(1,10):
-                  #- Targets covered n or less times
-                  kk = (ntx_values == n)
-                  if np.count_nonzero(kk) > 0:
-                      ncovered = len(np.unique(ntx_keys[kk]))
-                      nassigned = np.count_nonzero(np.in1d(unique_assigned_targetids,
+            for n in range(1,10):
+            #- Targets covered n or less times
+                kk = (ntx_values == n)
+                if np.count_nonzero(kk) > 0:
+                    ncovered = len(np.unique(ntx_keys[kk]))
+                    nassigned = np.count_nonzero(np.in1d(unique_assigned_targetids,
                                                  ntx_keys[kk]))
-                      pobs = 100.0 * nassigned / ncovered
-                      print('{:6.1f}'.format(pobs), end='')
-                  else:
-                      print('   ---', end='')
+                    pobs = 100.0 * nassigned / ncovered
+                    print('{:6.1f}'.format(pobs), end='')
+                else:
+                    print('   ---', end='')
 
-               print()
+                print()
                
                
 elif survey == "cmx":
 
-           objlist = ['SV0_ELG', 'SV0_LRG', 'SV0_QSO', 'SV0_MWS', 'SV0_BGS']
-           for objtype in objlist:
-               print('{:8s}'.format(objtype), end='')
+    objlist = ['SV0_ELG', 'SV0_LRG', 'SV0_QSO', 'SV0_MWS', 'SV0_BGS']
+    for objtype in objlist:
+        print('{:8s}'.format(objtype), end='')
 
-               ii = (targets['CMX_TARGET'] & cmx_mask.mask(objtype)) != 0
-               tx = targets['TARGETID'][ii]
-               if len(tx) == 0:
-                  print('no targets')
-                  continue
+        ii = (targets['CMX_TARGET'] & cmx_mask.mask(objtype)) != 0
+        tx = targets['TARGETID'][ii]
+        if len(tx) == 0:
+            print('no targets')
+            continue
 
-               #- nt: coverage counts for just those targets
-               jj = np.in1d(covered, tx)
-               ntx = Counter(covered[jj])
-               #- Count how many targets are covered n times for this objtype
-               ntx_keys = np.asarray(list(ntx.keys()))
-               ntx_values = np.asarray(list(ntx.values()))
+            #- nt: coverage counts for just those targets
+            jj = np.in1d(covered, tx)
+            ntx = Counter(covered[jj])
+            #- Count how many targets are covered n times for this objtype
+            ntx_keys = np.asarray(list(ntx.keys()))
+            ntx_values = np.asarray(list(ntx.values()))
 
-               for n in range(1,10):
-                  #- Targets covered n or less times
-                  kk = (ntx_values == n)
-                  if np.count_nonzero(kk) > 0:
-                      ncovered = len(np.unique(ntx_keys[kk]))
-                      nassigned = np.count_nonzero(np.in1d(unique_assigned_targetids,
+            for n in range(1,10):
+                #- Targets covered n or less times
+                kk = (ntx_values == n)
+                if np.count_nonzero(kk) > 0:
+                    ncovered = len(np.unique(ntx_keys[kk]))
+                    nassigned = np.count_nonzero(np.in1d(unique_assigned_targetids,
                                                  ntx_keys[kk]))
-                      pobs = 100.0 * nassigned / ncovered
-                      print('{:6.1f}'.format(pobs), end='')
-                  else:
-                      print('   ---', end='')
+                    pobs = 100.0 * nassigned / ncovered
+                    print('{:6.1f}'.format(pobs), end='')
+                else:
+                    print('   ---', end='')
 
-               print()
+                print()
 
               
 
 
 elif survey == "sv1":
 
-           objlist = ['ELG', 'LRG', 'QSO', 'MWS_ANY', 'BGS_ANY']
-           for objtype in objlist:
-               print('{:8s}'.format(objtype), end='')
+    objlist = ['ELG', 'LRG', 'QSO', 'MWS_ANY', 'BGS_ANY']
+    for objtype in objlist:
+        print('{:8s}'.format(objtype), end='')
 
-               ii = (targets['SV1_DESI_TARGET'] & sv1_mask.mask(objtype)) != 0
-               tx = targets['TARGETID'][ii]
-               if len(tx) == 0:
-                  print('no targets')
-                  continue
+        ii = (targets['SV1_DESI_TARGET'] & sv1_mask.mask(objtype)) != 0
+        tx = targets['TARGETID'][ii]
+        if len(tx) == 0:
+            print('no targets')
+            continue
 
-               #- nt: coverage counts for just those targets
-               jj = np.in1d(covered, tx)
-               ntx = Counter(covered[jj])
-               #- Count how many targets are covered n times for this objtype
-               ntx_keys = np.asarray(list(ntx.keys()))
-               ntx_values = np.asarray(list(ntx.values()))
+            #- nt: coverage counts for just those targets
+            jj = np.in1d(covered, tx)
+            ntx = Counter(covered[jj])
+            #- Count how many targets are covered n times for this objtype
+            ntx_keys = np.asarray(list(ntx.keys()))
+            ntx_values = np.asarray(list(ntx.values()))
 
-               for n in range(1,10):
-                  #- Targets covered n or less times
-                  kk = (ntx_values == n)
-                  if np.count_nonzero(kk) > 0:
-                      ncovered = len(np.unique(ntx_keys[kk]))
-                      nassigned = np.count_nonzero(np.in1d(unique_assigned_targetids,
+            for n in range(1,10):
+            #- Targets covered n or less times
+                kk = (ntx_values == n)
+                if np.count_nonzero(kk) > 0:
+                    ncovered = len(np.unique(ntx_keys[kk]))
+                    nassigned = np.count_nonzero(np.in1d(unique_assigned_targetids,
                                                  ntx_keys[kk]))
-                      pobs = 100.0 * nassigned / ncovered
-                      print('{:6.1f}'.format(pobs), end='')
-                  else:
-                      print('   ---', end='')
+                    pobs = 100.0 * nassigned / ncovered
+                    print('{:6.1f}'.format(pobs), end='')
+                else:
+                    print('   ---', end='')
 
-               print()
+                print()
 
 
 

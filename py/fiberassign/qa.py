@@ -94,20 +94,20 @@ def qa_tile_with_gfa(hw, tile_id, tgs, tgprops, tile_assign, tile_avail, tile_gf
    
     for cam in petals_wgfa:
         if (len(tile_gfa[cam])>0):
-              gfas_per_tile[cam] = len(tile_gfa[cam])
-              brightest_gfas[cam] = np.min(tile_gfa[cam])
-              faintest_gfas[cam] = np.max(tile_gfa[cam])
-              gfas_upto_18th[cam] = sum(np.asarray(tile_gfa[cam])<18)
-              gfas_upto_19th[cam] = sum(np.asarray(tile_gfa[cam])<19)
-              gfas_upto_20th[cam] = sum(np.asarray(tile_gfa[cam])<20)
+            gfas_per_tile[cam] = len(tile_gfa[cam])
+            brightest_gfas[cam] = np.min(tile_gfa[cam])
+            faintest_gfas[cam] = np.max(tile_gfa[cam])
+            gfas_upto_18th[cam] = sum(np.asarray(tile_gfa[cam])<18)
+            gfas_upto_19th[cam] = sum(np.asarray(tile_gfa[cam])<19)
+            gfas_upto_20th[cam] = sum(np.asarray(tile_gfa[cam])<20)
 
         else:
-              gfas_per_tile[cam] = [0]
-              brightest_gfas[cam] = ['NaN']
-              faintest_gfas[cam] = ['NaN']
-              gfas_upto_18th[cam] = [0]
-              gfas_upto_19th[cam] = [0]
-              gfas_upto_20th[cam] = [0] 
+            gfas_per_tile[cam] = [0]
+            brightest_gfas[cam] = ['NaN']
+            faintest_gfas[cam] = ['NaN']
+            gfas_upto_18th[cam] = [0]
+            gfas_upto_19th[cam] = [0]
+            gfas_upto_20th[cam] = [0] 
                
     for lid in locs:
         if lid not in tile_assign:
