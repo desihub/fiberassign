@@ -380,11 +380,6 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         log.debug("Write:  writing assignment data for tile {}"
                   .format(tile_id))
 
-        # Downstream code still requires assignments sorted by fibers
-        log.info("Sorting by fiber number instead of location")
-        ii = np.argsort(fdata['FIBER'])
-        fdata = fdata[ii]
-
         fd.write(fdata, header=header, extname="FASSIGN")
         del fdata
 
@@ -586,6 +581,30 @@ def avail_table_to_dict(avail_data):
     avail = {f: np.array(av) for f, av in avail.items()}
     return avail
 
+def gfa_table_to_dict(gfa_data):
+    """Convert a recarray of gfa targets into a dictionary.
+
+    Args:
+        gfa_data (array):  The available targets read from a FITS HDU
+            (for example).
+
+    Returns:
+        (dict):  A dictionary of numpy arrays, one per location, containing the
+            available gfa target IDs for the location.
+
+    """
+    gfa_target = gfa_data["TARGETID"]
+    gfa_loc = gfa_data["GFA_LOC"]
+    gfa_gmag = gfa_data["GAIA_PHOT_G_MEAN_MAG"]
+    gfa = dict()
+    for lid, tgid, mag in zip(gfa_loc, gfa_target,gfa_gmag):
+        print(zip(gfa_loc, gfa_target,gfa_gmag))
+        if lid in gfa:
+            gfa[lid].append(mag)
+        else:
+            gfa[lid] = list([mag])
+    gfa = {f: np.array(av) for f, av in gfa.items()}
+    return gfa
 
 def read_assignment_fits_tile(params):
     """Read in results.

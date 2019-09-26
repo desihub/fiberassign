@@ -12,9 +12,22 @@ from collections import Counter
 import numpy as np
 from astropy.table import Table, vstack
 from astropy.io import fits
-
+import fitsio
 from desitarget.targetmask import desi_mask
 import desimodel.io
+
+from desitarget.cmx.cmx_targetmask import cmx_mask
+
+from desitarget.sv1.sv1_targetmask import desi_mask as sv1_mask
+
+from desitarget.targets import main_cmx_or_sv
+
+from fiberassign.targets import default_survey_target_masks
+
+from fiberassign.targets import (TARGET_TYPE_SKY, TARGET_TYPE_SAFE, desi_target_type,
+                      default_target_masks, default_survey_target_masks)
+
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--targets", type=str,  help="input data")
@@ -27,13 +40,13 @@ fiberpos = Table(desimodel.io.load_fiberpos())
 fiberpos.sort('FIBER')
 fiber_locations = sorted(zip(fiberpos['FIBER'], fiberpos['LOCATION']))
 
-sky_mask = desi_mask.SKY
-std_mask = 0
-for name in ['STD', 'STD_FSTAR', 'STD_WD',
-             'STD_FAINT', 'STD_FAINT_BEST',
-             'STD_BRIGHT', 'STD_BRIGHT_BEST']:
-    if name in desi_mask.names():
-        std_mask |= desi_mask[name]
+#sky_mask = desi_mask.SKY
+#std_mask = 0
+#for name in ['STD', 'STD_FSTAR', 'STD_WD',
+#             'STD_FAINT', 'STD_FAINT_BEST',
+#             'STD_BRIGHT', 'STD_BRIGHT_BEST']:
+#    if name in desi_mask.names():
+#        std_mask |= desi_mask[name]
 
 #- TODO: take hardcoded from src/global.h into config file
 stuck_mask = 2**1
@@ -44,6 +57,42 @@ assigned = list()
 covered = list()
 n5k = np.arange(5000, dtype=int)
 for filename in args.tilefiles:
+
+   #SE tile-*.fits is being read via Table, but the header needs
+   #    to be extracted via fitsio for getting the "survey" string; in assign.py style: 
+    
+    fd = fitsio.FITS(filename, "r")
+    fbtargets = fd["TARGETS"].read()
+
+    header = None
+    if "FASSIGN" in fd:
+        
+        header = fd["FASSIGN"].read_header()
+    else:
+        header = fd["FIBERASSIGN"].read_header()
+    
+
+    survey = None
+    if "FA_SURV" in header:
+            survey = str(header["FA_SURV"]).rstrip()
+
+    
+    sciencemask = None
+    stdmask = None
+    skymask = None
+    excludemask = None
+    col=None
+    if survey is not None:
+            
+            sciencemask, stdmask, skymask, safemask, excludemask = default_survey_target_masks(survey)
+  
+    else:
+            fsurvey, col, sciencemask, stdmask, skymask, safemask, \
+                excludemask = default_target_masks(fbtargets)
+            survey = fsurvey
+
+
+
     fa = Table.read(filename, 'FIBERASSIGN')
     fa.sort('FIBER')
     assigned.append(fa)
@@ -71,7 +120,21 @@ for filename in args.tilefiles:
             errors.append('Assigned targets not in covered targets list')
             break
 
-    num_no_desitarget = np.count_nonzero(fa['DESI_TARGET'] == 0)
+
+    if survey == "main":
+
+          num_no_desitarget = np.count_nonzero(fa['DESI_TARGET'] == 0)
+
+    elif survey == "cmx":
+
+          num_no_desitarget = np.count_nonzero(fa['CMX_TARGET'] == 0)
+
+    elif survey == "sv1":
+
+          num_no_desitarget = np.count_nonzero(fa['SV1_DESI_TARGET'] == 0)
+
+
+    
     if num_no_desitarget > 0:
         errors.append('{} fibers with DESI_TARGET=0'.format(num_no_desitarget))
 
@@ -99,12 +162,17 @@ for filename in args.tilefiles:
 
     nsky_total = 0
     nstdstar_total = 0
+    
     for petal in range(10):
         ii = (fa['FIBER'] // 500) == petal
-        nstd = np.count_nonzero(fa['DESI_TARGET'][ii] & std_mask)
-        nsky = np.count_nonzero(fa['DESI_TARGET'][ii] & sky_mask)
+        
+        nstd = np.count_nonzero(fa['FA_TARGET'][ii] & stdmask)
+        nsky = np.count_nonzero(fa['FA_TARGET'][ii] & skymask)
+       
+
         nsky_total += nsky
         nstdstar_total += nstd
+        
         if nstd < 10:
             errors.append('Petal {} has {}/10 stdstars'.format(petal, nstd))
         if nsky < 40:
@@ -173,15 +241,50 @@ if not np.all( np.in1d(covered, targets['TARGETID']) ):
 
 #-----
 print('Fiber assignment efficiency')
-for objtype in ['ELG', 'LRG', 'QSO', 'MWS_ANY', 'BGS_ANY']:
-    ii = (targets['DESI_TARGET'] & desi_mask.mask(objtype)) != 0
-    ntot = np.count_nonzero(ii)
-    if ntot == 0:
-        print('  {:8s}  no targets'.format(objtype))
-    else:
-        nx = np.count_nonzero(np.in1d(targets['TARGETID'][ii],
+objlist=[]
+
+if survey == "main":
+          
+    objlist = ['ELG', 'LRG', 'QSO', 'MWS_ANY', 'BGS_ANY']
+    for objtype in objlist:
+        ii = (targets['DESI_TARGET'] & desi_mask.mask(objtype)) != 0
+        ntot = np.count_nonzero(ii)
+        if ntot == 0:
+            print('  {:8s}  no targets'.format(objtype))
+        else:
+            nx = np.count_nonzero(np.in1d(targets['TARGETID'][ii],
                                       assigned['TARGETID']))
-        print('  {:8s} {:5.1f}%  ({}/{})'.format(objtype,100*nx/ntot,nx,ntot))
+            print('  {:8s} {:5.1f}%  ({}/{})'.format(objtype,100*nx/ntot,nx,ntot))
+
+elif survey == "cmx":
+
+    objlist = ['SV0_ELG', 'SV0_LRG', 'SV0_QSO', 'SV0_MWS', 'SV0_BGS']
+    for objtype in objlist:
+            
+        ii = (targets['CMX_TARGET'] & cmx_mask.mask(objtype)) != 0
+        ntot = np.count_nonzero(ii)
+        if ntot == 0:
+            print('  {:8s}  no targets'.format(objtype))
+        else:
+            nx = np.count_nonzero(np.in1d(targets['TARGETID'][ii],
+                    assigned['TARGETID']))
+            print('  {:8s} {:5.1f}%  ({}/{})'.format(objtype,100*nx/ntot,nx,ntot))
+
+
+elif survey == "sv1":
+
+    objlist = ['ELG', 'LRG', 'QSO', 'MWS_ANY', 'BGS_ANY']
+    for objtype in objlist:
+
+        ii = (targets['SV1_DESI_TARGET'] & sv1_mask.mask(objtype)) != 0
+        ntot = np.count_nonzero(ii)
+        if ntot == 0:
+            print('  {:8s}  no targets'.format(objtype))
+        else:
+            nx = np.count_nonzero(np.in1d(targets['TARGETID'][ii],
+                                      assigned['TARGETID']))
+            print('  {:8s} {:5.1f}%  ({}/{})'.format(objtype,100*nx/ntot,nx,ntot))
+
 
 print('\n---------------------------------------------------------------')
 print("WORK IN PROGRESS")
@@ -219,32 +322,112 @@ print()
 print()
 print('Assignment probability if covered exactly N times')
 print('            1     2     3     4     5     6     7     8     9')
-for objtype in ['ELG', 'LRG', 'QSO', 'MWS_ANY', 'BGS_ANY']:
-    print('{:8s}'.format(objtype), end='')
-    #- tx: targetids for targets of this objtype
-    ii = (targets['DESI_TARGET'] & desi_mask.mask(objtype)) != 0
-    tx = targets['TARGETID'][ii]
-    if len(tx) == 0:
-        print('no targets')
-        continue
 
-    #- nt: coverage counts for just those targets
-    jj = np.in1d(covered, tx)
-    ntx = Counter(covered[jj])
-    #- Count how many targets are covered n times for this objtype
-    ntx_keys = np.asarray(list(ntx.keys()))
-    ntx_values = np.asarray(list(ntx.values()))
+objlist=[]
 
-    for n in range(1,10):
-        #- Targets covered n or less times
-        kk = (ntx_values == n)
-        if np.count_nonzero(kk) > 0:
-            ncovered = len(np.unique(ntx_keys[kk]))
-            nassigned = np.count_nonzero(np.in1d(unique_assigned_targetids,
+if survey == "main":
+
+    objlist = ['ELG', 'LRG', 'QSO', 'MWS_ANY', 'BGS_ANY']
+    for objtype in objlist:
+        print('{:8s}'.format(objtype), end='')
+        ii = (targets['DESI_TARGET'] & desi_mask.mask(objtype)) != 0
+
+        tx = targets['TARGETID'][ii]
+        if len(tx) == 0:
+            print('no targets')
+            continue
+
+            #- nt: coverage counts for just those targets
+            jj = np.in1d(covered, tx)
+            ntx = Counter(covered[jj])
+            #- Count how many targets are covered n times for this objtype
+            ntx_keys = np.asarray(list(ntx.keys()))
+            ntx_values = np.asarray(list(ntx.values()))
+
+            for n in range(1,10):
+            #- Targets covered n or less times
+                kk = (ntx_values == n)
+                if np.count_nonzero(kk) > 0:
+                    ncovered = len(np.unique(ntx_keys[kk]))
+                    nassigned = np.count_nonzero(np.in1d(unique_assigned_targetids,
                                                  ntx_keys[kk]))
-            pobs = 100.0 * nassigned / ncovered
-            print('{:6.1f}'.format(pobs), end='')
-        else:
-            print('   ---', end='')
+                    pobs = 100.0 * nassigned / ncovered
+                    print('{:6.1f}'.format(pobs), end='')
+                else:
+                    print('   ---', end='')
 
-    print()
+                print()
+               
+               
+elif survey == "cmx":
+
+    objlist = ['SV0_ELG', 'SV0_LRG', 'SV0_QSO', 'SV0_MWS', 'SV0_BGS']
+    for objtype in objlist:
+        print('{:8s}'.format(objtype), end='')
+
+        ii = (targets['CMX_TARGET'] & cmx_mask.mask(objtype)) != 0
+        tx = targets['TARGETID'][ii]
+        if len(tx) == 0:
+            print('no targets')
+            continue
+
+            #- nt: coverage counts for just those targets
+            jj = np.in1d(covered, tx)
+            ntx = Counter(covered[jj])
+            #- Count how many targets are covered n times for this objtype
+            ntx_keys = np.asarray(list(ntx.keys()))
+            ntx_values = np.asarray(list(ntx.values()))
+
+            for n in range(1,10):
+                #- Targets covered n or less times
+                kk = (ntx_values == n)
+                if np.count_nonzero(kk) > 0:
+                    ncovered = len(np.unique(ntx_keys[kk]))
+                    nassigned = np.count_nonzero(np.in1d(unique_assigned_targetids,
+                                                 ntx_keys[kk]))
+                    pobs = 100.0 * nassigned / ncovered
+                    print('{:6.1f}'.format(pobs), end='')
+                else:
+                    print('   ---', end='')
+
+                print()
+
+              
+
+
+elif survey == "sv1":
+
+    objlist = ['ELG', 'LRG', 'QSO', 'MWS_ANY', 'BGS_ANY']
+    for objtype in objlist:
+        print('{:8s}'.format(objtype), end='')
+
+        ii = (targets['SV1_DESI_TARGET'] & sv1_mask.mask(objtype)) != 0
+        tx = targets['TARGETID'][ii]
+        if len(tx) == 0:
+            print('no targets')
+            continue
+
+            #- nt: coverage counts for just those targets
+            jj = np.in1d(covered, tx)
+            ntx = Counter(covered[jj])
+            #- Count how many targets are covered n times for this objtype
+            ntx_keys = np.asarray(list(ntx.keys()))
+            ntx_values = np.asarray(list(ntx.values()))
+
+            for n in range(1,10):
+            #- Targets covered n or less times
+                kk = (ntx_values == n)
+                if np.count_nonzero(kk) > 0:
+                    ncovered = len(np.unique(ntx_keys[kk]))
+                    nassigned = np.count_nonzero(np.in1d(unique_assigned_targetids,
+                                                 ntx_keys[kk]))
+                    pobs = 100.0 * nassigned / ncovered
+                    print('{:6.1f}'.format(pobs), end='')
+                else:
+                    print('   ---', end='')
+
+                print()
+
+
+
+

@@ -24,7 +24,7 @@ from .utils import Logger, default_mp_proc
 
 from .targets import (Targets, load_target_table)
 
-from .assign import (result_tiles, result_path, avail_table_to_dict,
+from .assign import (result_tiles, result_path, avail_table_to_dict, gfa_table_to_dict,
                      read_assignment_fits_tile)
 
 
@@ -46,7 +46,6 @@ def qa_parse_table(header, tgdata):
         elgmask = int(desi_mask["ELG"].mask)
         qsomask = int(desi_mask["QSO"].mask)
         badmask = int(desi_mask["BAD_SKY"].mask)
-        
         for row in range(len(tgdata)):
             tgid = tgdata["TARGETID"][row]
             tg = tgs.get(tgid)
@@ -68,6 +67,93 @@ def qa_parse_table(header, tgdata):
             tgid = tgdata["TARGETID"][row]
             tgprops[tgid] = {"type": "NA"}
     return tgs, tgprops
+
+
+def qa_tile_with_gfa(hw, tile_id, tgs, tgprops, tile_assign, tile_avail, tile_gfa):
+    props = dict()
+    
+    locs = np.array(hw.device_locations("POS"))
+    nassign = 0
+    nscience = 0
+    nstd = 0
+    nsky = 0
+    nsafe = 0
+    unassigned = list()
+    objtypes = dict()
+       
+    # SE to add GFA info to props
+    petals = list(range(10))
+    petals_wgfa = list(tile_gfa.keys())
+    petals_wogfa = list(set(petals)-set(petals_wgfa))  
+    gfas_per_tile = [nsafe]*10
+    brightest_gfas = [nsafe]*10
+    faintest_gfas = [nsafe]*10
+    gfas_upto_18th = [nsafe]*10
+    gfas_upto_19th = [nsafe]*10  
+    gfas_upto_20th = [nsafe]*10  
+   
+    for cam in petals_wgfa:
+        if (len(tile_gfa[cam])>0):
+            gfas_per_tile[cam] = len(tile_gfa[cam])
+            brightest_gfas[cam] = np.min(tile_gfa[cam])
+            faintest_gfas[cam] = np.max(tile_gfa[cam])
+            gfas_upto_18th[cam] = sum(np.asarray(tile_gfa[cam])<18)
+            gfas_upto_19th[cam] = sum(np.asarray(tile_gfa[cam])<19)
+            gfas_upto_20th[cam] = sum(np.asarray(tile_gfa[cam])<20)
+
+        else:
+            gfas_per_tile[cam] = [0]
+            brightest_gfas[cam] = ['NaN']
+            faintest_gfas[cam] = ['NaN']
+            gfas_upto_18th[cam] = [0]
+            gfas_upto_19th[cam] = [0]
+            gfas_upto_20th[cam] = [0] 
+               
+    for lid in locs:
+        if lid not in tile_assign:
+            unassigned.append(int(lid))
+            continue
+        tgid = tile_assign[lid]
+        if tgid < 0:
+            unassigned.append(int(lid))
+            continue
+        nassign += 1
+        tg = tgs.get(tgid)
+        if tg.is_science():
+            nscience += 1
+            ot = tgprops[tgid]["type"]
+            if ot in objtypes:
+                objtypes[ot] += 1
+            else:
+                objtypes[ot] = 1
+        if tg.is_standard():
+            nstd += 1
+        if tg.is_sky():
+            nsky += 1
+        if tg.is_safe():
+            nsafe += 1
+    props["assign_total"] = nassign
+    props["assign_science"] = nscience
+    props["assign_std"] = nstd
+    props["assign_sky"] = nsky
+    props["assign_safe"] = nsafe
+    # SE: added this key for the number of GFA stars per camera: list of 10 integers per tile
+    props["gfa_stars_percam"] = gfas_per_tile
+    # SE: added this key for the list of 10 magnitudes of the brightest GFA stars available per camera  
+    props["brightest_gfa_star_percam"] = [np.round(b*(nsafe+1)/(nsafe+1),2) for b in list(brightest_gfas)] 
+    # SE: Number of gfa stars <18 per camera 
+    props["gfa_stars_brighter_than_18th"] = [int(b*(nsafe+1)/(nsafe+1)) for b in list(gfas_upto_18th)]
+    props["gfa_stars_brighter_than_19th"] = [int(b*(nsafe+1)/(nsafe+1)) for b in list(gfas_upto_19th)]
+    props["gfa_stars_brighter_than_20th"] = [int(b*(nsafe+1)/(nsafe+1)) for b in list(gfas_upto_20th)]
+
+    # SE: added this key for the list of 10 magnitudes of the faintest GFA stars available per camera  
+    props["faintest_gfa_star_percam"] = [np.round(b*(nsafe+1)/(nsafe+1),2) for b in list(faintest_gfas)]
+        
+    for ot, cnt in objtypes.items():
+        props["assign_obj_{}".format(ot)] = cnt
+    props["unassigned"] = unassigned
+    return props
+
 
 
 def qa_tile(hw, tile_id, tgs, tgprops, tile_assign, tile_avail):
@@ -119,6 +205,7 @@ def qa_tile(hw, tile_id, tgs, tgprops, tile_assign, tile_avail):
     return props
 
 
+
 def qa_tile_file(hw, params):
     (tile_id, tile_file) = params
     log = Logger.get()
@@ -127,7 +214,7 @@ def qa_tile_file(hw, params):
 
     header, fiber_data, targets_data, avail_data, gfa_data = \
         read_assignment_fits_tile((tile_id, tile_file))
-
+       
     # Target properties
     tgs, tgprops = qa_parse_table(header, targets_data)
 
@@ -139,11 +226,14 @@ def qa_tile_file(hw, params):
                if (x["LOCATION"] >= 0)}
 
     tavail = avail_table_to_dict(avail_data)
+    if gfa_data is not None:  
+        tgfa = gfa_table_to_dict(gfa_data)
 
-    qa_data = qa_tile(hw, tile_id, tgs, tgprops, tassign, tavail)
+        qa_data = qa_tile_with_gfa(hw, tile_id, tgs, tgprops, tassign, tavail, tgfa)
+    else:
+        qa_data = qa_tile(hw, tile_id, tgs, tgprops, tassign, tavail)
 
     return qa_data
-
 
 def qa_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign_",
              result_split_dir=False, qa_out=None):
@@ -187,7 +277,7 @@ def qa_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign_",
     qa_full = dict()
     for tid, props in zip(foundtiles, qa_result):
         tidx = tiles.order[tid]
-        props["tile_ra"] = float(tiles.ra[tidx])
+        props["tile_ra"] = np.round(float(tiles.ra[tidx]),2)
         props["tile_dec"] = float(tiles.dec[tidx])
         props["tile_obscond"] = int(tiles.obscond[tidx])
         qa_full[tid] = props
