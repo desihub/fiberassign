@@ -23,6 +23,8 @@ from functools import partial
 
 import fitsio
 
+from ._internal import Shape
+
 from .utils import Logger, default_mp_proc
 
 from .hardware import load_hardware
@@ -53,7 +55,7 @@ def plot_target_type_color(tgtype):
     return color
 
 
-def plot_positioner(ax, patrol_rad, fiber, center, cb, fh, color="k",
+def plot_positioner(ax, patrol_rad, loc, center, shptheta, shpphi, color="k",
                     linewidth=0.2):
     """Plot one fiber positioner.
     """
@@ -61,10 +63,11 @@ def plot_positioner(ax, patrol_rad, fiber, center, cb, fh, color="k",
                         ec="none", alpha=0.1)
     ax.add_artist(patrol)
     # Plot the arm from the center to the body
-    cbcent = cb.circles[0].center
+    thetacent = shptheta.axis
     armwidth = 0.25
-    armlen = np.sqrt((cbcent[1] - center[1])**2 + (cbcent[0] - center[0])**2)
-    armang = np.arctan2(cbcent[1] - center[1], cbcent[0] - center[0])
+    armlen = np.sqrt((thetacent[1] - center[1])**2
+                     + (thetacent[0] - center[0])**2)
+    armang = np.arctan2(thetacent[1] - center[1], thetacent[0] - center[0])
     sinarm = np.sin(armang)
     cosarm = np.cos(armang)
     arm_xoff = center[0] + (0.5*armwidth) * sinarm
@@ -74,7 +77,7 @@ def plot_positioner(ax, patrol_rad, fiber, center, cb, fh, color="k",
                         angle=armang_deg, color=color, linewidth=2*linewidth,
                         fill=False)
     ax.add_artist(arm)
-    for piece in [cb, fh]:
+    for piece in [shptheta, shpphi]:
         for circle in piece.circles:
             xcent, ycent = circle.center
             rad = circle.radius
@@ -89,7 +92,7 @@ def plot_positioner(ax, patrol_rad, fiber, center, cb, fh, color="k",
     fontpt = int(0.25 * fontpix)
     xtxt = center[0] - 2 * armwidth * cosarm
     ytxt = center[1] - 2 * armwidth * sinarm
-    ax.text(xtxt, ytxt, "{}".format(fiber),
+    ax.text(xtxt, ytxt, "{}".format(loc),
             color='k', fontsize=fontpt,
             horizontalalignment='center',
             verticalalignment='center',
@@ -98,8 +101,8 @@ def plot_positioner(ax, patrol_rad, fiber, center, cb, fh, color="k",
     return
 
 
-def plot_positioner_simple(ax, patrol_rad, fiber, center, cb, fh, color="k",
-                           linewidth=0.2):
+def plot_positioner_simple(ax, patrol_rad, loc, center, theta_ang, theta_arm,
+                           phi_ang, phi_arm, color="k", linewidth=0.2):
     """Plot one fiber positioner.
 
     This uses a simpler representation of the positioner geometry, in order to
@@ -109,21 +112,25 @@ def plot_positioner_simple(ax, patrol_rad, fiber, center, cb, fh, color="k",
     patrol = plt.Circle((center[0], center[1]), radius=patrol_rad, fc=color,
                         ec="none", alpha=0.1)
     ax.add_artist(patrol)
-    # Plot the arm from the center to the body
-    cbcent = cb.circles[0].center
 
-    ax.plot([center[0], cbcent[0]], [center[1], cbcent[1]], color=color,
-            linewidth=4*linewidth)
+    # Plot the arm from the center to the phi body
+    theta_x = theta_arm * np.cos(theta_ang) + center[0]
+    theta_y = theta_arm * np.sin(theta_ang) + center[1]
 
-    tgloc = fh.circles[0].center
+    ax.plot([center[0], theta_x], [center[1], theta_y], color=color,
+            linewidth=5*linewidth)
 
-    ax.plot([cbcent[0], tgloc[0]], [cbcent[1], tgloc[1]], color=color,
+    # Plot the phi arm.
+    phi_x = phi_arm * np.cos(phi_ang + theta_ang) + theta_x
+    phi_y = phi_arm * np.sin(phi_ang + theta_ang) + theta_y
+
+    ax.plot([theta_x, phi_x], [theta_y, phi_y], color=color,
             linewidth=linewidth)
 
     fontpt = 0.125
     xtxt = center[0]
     ytxt = center[1] + 0.5
-    ax.text(xtxt, ytxt, "{}".format(fiber),
+    ax.text(xtxt, ytxt, "{}".format(loc),
             color='k', fontsize=fontpt,
             horizontalalignment='center',
             verticalalignment='center',
@@ -167,34 +174,73 @@ def plot_available(ax, targetprops, selected, linewidth=0.1):
 
 def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
                     real_shapes=False):
+    log = Logger.get()
     center_mm = hw.loc_pos_xy_mm
-    patrol_rad = hw.patrol_mm
+    theta_arm = hw.loc_theta_arm
+    phi_arm = hw.loc_phi_arm
+    theta_offset = hw.loc_theta_offset
+    theta_min = hw.loc_theta_min
+    theta_max = hw.loc_theta_max
+    phi_offset = hw.loc_phi_offset
+    phi_min = hw.loc_phi_min
+    phi_max = hw.loc_phi_max
     device_type = dict(hw.loc_device_type)
     assigned = np.array(sorted(tile_assigned.keys()), dtype=np.int32)
-    for fid in assigned:
+    for lid in assigned:
         color = "gray"
-        if (device_type[fid] != "POS") and (device_type[fid] != "ETC"):
+        if (device_type[lid] != "POS") and (device_type[lid] != "ETC"):
             continue
-        cb = None
-        fh = None
-        center = center_mm[fid]
-        tgid = tile_assigned[fid]
-
-        if tgid >= 0:
+        shptheta = Shape()
+        shpphi = Shape()
+        theta = None
+        phi = None
+        center = center_mm[lid]
+        tgid = tile_assigned[lid]
+        patrol_rad = theta_arm[lid] + phi_arm[lid]
+        failed = False
+        is_assigned = (tgid >= 0)
+        if is_assigned:
             # This fiber is assigned.  Plot the positioner located at the
             # assigned target.
-            cb, fh = hw.loc_position(fid, targetprops[tgid]["xy"])
-            color = targetprops[tgid]["color"]
-        else:
+            failed = hw.loc_position_xy(lid, targetprops[tgid]["xy"],
+                                        shptheta, shpphi)
+            if failed:
+                msg = "Positioner at location {} cannot move to target {} at (x, y) = ({}, {}).  This should have been dected during assignment!".format(lid, tgid, targetprops[tgid]["xy"][0], targetprops[tgid]["xy"][1])
+                log.warning(msg)
+                is_assigned = False
+                failed = False
+            else:
+                color = targetprops[tgid]["color"]
+                theta, phi = hw.xy_to_thetaphi(
+                    center, targetprops[tgid]["xy"],
+                    theta_arm[lid], phi_arm[lid],
+                    theta_offset[lid], phi_offset[lid],
+                    theta_min[lid], phi_min[lid],
+                    theta_max[lid], phi_max[lid],
+                )
+        if not is_assigned:
             # This fiber is unassigned.  Plot the positioner in its home
-            # position.
-            cb, fh = hw.loc_position(fid, center)
-        if real_shapes:
-            plot_positioner(ax, patrol_rad, fid, center, cb, fh,
-                            color=color, linewidth=linewidth)
-        else:
-            plot_positioner_simple(ax, patrol_rad, fid, center, cb, fh,
-                                   color=color, linewidth=linewidth)
+            # position with theta at its minimum value and phi
+            # at 180 degrees.
+            theta = theta_offset[lid] + theta_min[lid]
+            phi = phi_offset[lid] + np.pi
+            failed = hw.loc_position_thetaphi(
+                lid, theta, phi, shptheta, shpphi
+            )
+            if failed:
+                msg = "Positioner at location {} cannot move to its home position.  This should never happen!".format(lid)
+                log.warning(msg)
+        if not failed:
+            if real_shapes:
+                plot_positioner(
+                    ax, patrol_rad, lid, center, shptheta, shpphi,
+                    color=color, linewidth=linewidth
+                )
+            else:
+                plot_positioner_simple(
+                    ax, patrol_rad, lid, center, theta, theta_arm[lid], phi,
+                    phi_arm[lid], color=color, linewidth=linewidth
+                )
     return
 
 

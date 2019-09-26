@@ -3,8 +3,19 @@
 fiberassign change log
 ======================
 
-1.1.0 (Unreleased)
---------------------
+1.1.1 (unreleased)
+------------------
+
+* No changes yet.
+
+1.1.0 (2019-09-25)
+------------------
+
+* Dynamic focalplane model (PR `#207`_).
+* Add new bits to the cmx sciencemask and std mask (PR `#213`_).
+
+.. _`#213`: https://github.com/desihub/fiberassign/pull/213
+.. _`#207`: https://github.com/desihub/fiberassign/pull/207
 
 
 1.0.4 (2019-06-24)

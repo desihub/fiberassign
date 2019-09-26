@@ -559,6 +559,29 @@ fbg::shape::shape(fbg::dpair const & ax, fbg::circle_list const & circs,
 }
 
 
+fbg::shape::shape(fbg::shape const & other) {
+    axis = other.axis;
+    circle_data = other.circle_data;
+    segments_data = other.segments_data;
+}
+
+
+fbg::shape::~shape() {
+    circle_data.clear();
+    segments_data.clear();
+}
+
+
+fbg::shape & fbg::shape::operator=(fbg::shape const & other) {
+    if (this != &other) {
+        axis = other.axis;
+        circle_data = other.circle_data;
+        segments_data = other.segments_data;
+    }
+    return * this;
+}
+
+
 void fbg::shape::transl(fbg::dpair const & t) {
     for (auto & e : circle_data) {
         e.transl(t);
@@ -592,6 +615,19 @@ void fbg::shape::rotation_origin(fbg::dpair const & t) {
         e.rotation(t, origin);
     }
     fbg::rot_pt(axis, origin, t);
+    return;
+}
+
+
+void fbg::shape::rotation_anchor(fbg::dpair const & t,
+                                 fbg::dpair const & anchor) {
+    for (auto & e : circle_data) {
+        e.rotation(t, anchor);
+    }
+    for (auto & e : segments_data) {
+        e.rotation(t, anchor);
+    }
+    fbg::rot_pt(axis, anchor, t);
     return;
 }
 

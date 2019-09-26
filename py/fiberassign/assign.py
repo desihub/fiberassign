@@ -35,7 +35,8 @@ from .utils import Logger, Timer, default_mp_proc
 from .targets import (TARGET_TYPE_SKY, TARGET_TYPE_SAFE, desi_target_type,
                       default_target_masks, default_survey_target_masks)
 
-from .hardware import (FIBER_STATE_STUCK, FIBER_STATE_BROKEN)
+from .hardware import (FIBER_STATE_UNASSIGNED, FIBER_STATE_STUCK,
+                       FIBER_STATE_BROKEN)
 
 from ._internal import Assignment
 
@@ -359,7 +360,8 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         fstate = dict(hw.state)
         fstatus = np.zeros(nloc, dtype=np.int32)
         # Set unused bit
-        fstatus |= [0 if x in tdata.keys() else 1 for x in fibers]
+        fstatus |= [0 if x in tdata.keys() else FIBER_STATE_UNASSIGNED
+                    for x in locs]
         # Set stuck / broken bits
         fstatus |= [2 if (fstate[x] & FIBER_STATE_STUCK) else 0
                     for x in locs]

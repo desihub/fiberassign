@@ -21,17 +21,25 @@ fba::Hardware::Hardware(std::vector <int32_t> const & location,
                         std::vector <int32_t> const & device,
                         std::vector <int32_t> const & slitblock,
                         std::vector <int32_t> const & blockfiber,
-                        std::vector <int32_t> const & spectro,
                         std::vector <int32_t> const & fiber,
-                        std::vector <int32_t> const & slit,
                         std::vector <std::string> const & device_type,
                         std::vector <double> const & x_mm,
                         std::vector <double> const & y_mm,
-                        std::vector <double> const & z_mm,
-                        std::vector <double> const & q_deg,
-                        std::vector <double> const & s_mm,
-                        std::vector <int32_t> const & status) {
+                        std::vector <int32_t> const & status,
+                        std::vector <double> const & theta_offset,
+                        std::vector <double> const & theta_min,
+                        std::vector <double> const & theta_max,
+                        std::vector <double> const & theta_arm,
+                        std::vector <double> const & phi_offset,
+                        std::vector <double> const & phi_min,
+                        std::vector <double> const & phi_max,
+                        std::vector <double> const & phi_arm,
+                        std::vector <fbg::shape> const & excl_theta,
+                        std::vector <fbg::shape> const & excl_phi) {
     nloc = location.size();
+
+    fba::Logger & logger = fba::Logger::get();
+    std::ostringstream logmsg;
 
     int32_t maxpetal = 0;
     for (auto const & p : petal) {
@@ -42,43 +50,63 @@ fba::Hardware::Hardware(std::vector <int32_t> const & location,
     npetal = static_cast <size_t> (maxpetal + 1);
 
     loc_pos_xy_mm.clear();
-    loc_pos_z_mm.clear();
-    loc_pos_q_deg.clear();
-    loc_pos_s_mm.clear();
     loc_petal.clear();
-    loc_spectro.clear();
     loc_device.clear();
     loc_device_type.clear();
     loc_fiber.clear();
-    loc_slit.clear();
     loc_slitblock.clear();
     loc_blockfiber.clear();
     locations.resize(0);
     state.clear();
+    loc_theta_offset.clear();
+    loc_theta_min.clear();
+    loc_theta_max.clear();
+    loc_theta_arm.clear();
+    loc_phi_offset.clear();
+    loc_phi_min.clear();
+    loc_phi_max.clear();
+    loc_phi_arm.clear();
+    loc_theta_excl.clear();
+    loc_phi_excl.clear();
 
     petal_locations.clear();
     for (int32_t i = 0; i < npetal; ++i) {
         petal_locations[i].resize(0);
     }
 
+    int32_t stcount = 0;
+
     for (int32_t i = 0; i < nloc; ++i) {
         locations.push_back(location[i]);
         loc_petal[location[i]] = petal[i];
-        loc_spectro[location[i]] = spectro[i];
         loc_device[location[i]] = device[i];
         loc_device_type[location[i]] = device_type[i];
         loc_fiber[location[i]] = fiber[i];
-        loc_slit[location[i]] = slit[i];
         loc_slitblock[location[i]] = slitblock[i];
         loc_blockfiber[location[i]] = blockfiber[i];
         petal_locations[petal[i]].push_back(location[i]);
         loc_pos_xy_mm[location[i]] = std::make_pair(x_mm[i], y_mm[i]);
-        loc_pos_z_mm[location[i]] = z_mm[i];
-        loc_pos_q_deg[location[i]] = q_deg[i];
-        loc_pos_s_mm[location[i]] = s_mm[i];
         state[location[i]] = status[i];
+        if (status[i] != FIBER_STATE_OK) {
+            stcount++;
+        }
         neighbors[location[i]].clear();
+        loc_theta_offset[location[i]] = theta_offset[i] * M_PI / 180.0;
+        loc_theta_min[location[i]] = theta_min[i] * M_PI / 180.0;
+        loc_theta_max[location[i]] = theta_max[i] * M_PI / 180.0;
+        loc_theta_arm[location[i]] = theta_arm[i];
+        loc_phi_offset[location[i]] = phi_offset[i] * M_PI / 180.0;
+        loc_phi_min[location[i]] = phi_min[i] * M_PI / 180.0;
+        loc_phi_max[location[i]] = phi_max[i] * M_PI / 180.0;
+        loc_phi_arm[location[i]] = phi_arm[i];
+        loc_theta_excl[location[i]] = excl_theta[i];
+        loc_phi_excl[location[i]] = excl_phi[i];
     }
+
+    logmsg.str("");
+    logmsg << "Focalplane has " << stcount
+        << " fibers that are stuck / broken";
+    logger.info(logmsg.str().c_str());
 
     // Sort the locations
     std::stable_sort(locations.begin(), locations.end());
@@ -86,30 +114,24 @@ fba::Hardware::Hardware(std::vector <int32_t> const & location,
         std::stable_sort(petal_locations[i].begin(), petal_locations[i].end());
     }
 
-    // hardcode for now...
+    // Hard-coded parameters.  These could be moved to desimodel and passed
+    // into this constructor as arguments.
+
+    // The number of science positioners per petal.
     nfiber_petal = 500;
 
-    // hardcode these for now...
-
+    // The tile / focalplane radius in degrees, used for selecting targets
+    // that are available to a particular tile.
     focalplane_radius_deg = 1.65;
 
-    patrol_mm = 5.8;
-
-    collide_mm = 1.98;
-
-    collide_avg_mm = 3.2;
-
-    no_collide_mm = 7.0;
-
+    // The radius in mm on the focalplane for considering which positioners
+    // are "neighbors".
     neighbor_radius_mm = 14.05;
 
-    // FIXME:  this hardcoded number is taken from the original code.  Should
-    // be verified...
-    positioner_range = std::make_pair(3.0, 3.0);
-    pos_theta_max_deg = 380.0;
-    pos_phi_max_deg = 200.0;
-    pos_theta_max = pos_theta_max_deg * M_PI / 180.0;
-    pos_phi_max = pos_phi_max_deg * M_PI / 180.0;
+    // The amount to reduce the total arm length when considering which
+    // targets are reachable by a positioner.  This was set to 200 microns
+    // long ago...
+    patrol_buffer_mm = 0.2;
 
     // Compute neighboring locations
     for (int32_t x = 0; x < nloc; ++x) {
@@ -124,9 +146,6 @@ fba::Hardware::Hardware(std::vector <int32_t> const & location,
             }
         }
     }
-
-    ferrule_holder = create_ferrule_holder();
-    central_body = create_central_body();
 }
 
 
@@ -357,153 +376,157 @@ void fba::Hardware::xy2radec_multi(
 }
 
 
-fbg::shape fba::Hardware::create_ferrule_holder() const {
-    // Head disk
-    fbg::circle head(std::make_pair(0.0, 0.0), 0.967);
-
-    // Upper segment
-    std::vector <fbg::dpair> points;
-    points.push_back(std::make_pair(-3.0, 0.990));
-    points.push_back(std::make_pair(0, 0.990));
-    fbg::segments upper(points);
-
-    // Lower segment
-    points.clear();
-    points.push_back(std::make_pair(-2.944, -1.339));
-    points.push_back(std::make_pair(-2.944, -2.015));
-    points.push_back(std::make_pair(-1.981, -1.757));
-    points.push_back(std::make_pair(-1.844, -0.990));
-    points.push_back(std::make_pair(0.0, -0.990));
-    fbg::segments lower(points);
-
-    // Construct the total shape
-    fbg::circle_list circs;
-    circs.push_back(head);
-    fbg::segments_list segs;
-    segs.push_back(upper);
-    segs.push_back(lower);
-    fbg::shape fh(std::make_pair(-3.0, 0.0), circs, segs);
-
-    // Translate to proper location
-    fh.transl(std::make_pair(6.0, 0.0));
-
-    return fh;
-}
-
-
-fbg::shape fba::Hardware::create_central_body() const {
-    // Disk
-    fbg::circle disk(std::make_pair(3.0, 0.0), 2.095);
-
-    // Segments
-    std::vector <fbg::dpair> points;
-    points.push_back(std::make_pair(5.095, -0.474));
-    points.push_back(std::make_pair(4.358, -2.5));
-    points.push_back(std::make_pair(2.771, -2.5));
-    points.push_back(std::make_pair(1.759, -2.792));
-    points.push_back(std::make_pair(0.905, -0.356));
-    fbg::segments seg(points);
-
-    // Total shape
-    fbg::circle_list circs;
-    circs.push_back(disk);
-    fbg::segments_list segs;
-    segs.push_back(seg);
-    fbg::shape cb(std::make_pair(3.0, 0.0), circs, segs);
-
-    return cb;
-}
-
-
-std::array <double, 4> fba::Hardware::pos_angles(
-        fbg::dpair const & A, fbg::dpair const & posp) const {
-    fba::Logger & logger = fba::Logger::get();
-    std::array <double, 4> ang;
-    double na = fbg::norm(A);
-    double phi = 2.0 * ::acos(na / (2.0 * posp.first) );
-    if ((phi < 0.0) || (phi > pos_phi_max)) {
-        std::ostringstream o;
-        o << "cannot move positioner to phi angle " << (phi * 180.0 / M_PI);
-        logger.error(o.str().c_str());
+bool _check_angle_range(
+        double & ang, double ang_zero,
+        double ang_min, double ang_max) {
+    double twopi = 2.0 * M_PI;
+    double abs_min = ang_zero + ang_min;
+    double abs_max = ang_zero + ang_max;
+    if (ang < abs_min) {
+        ang += twopi;
     }
-    // NOTE:  This was how theta was calculated in the original code.  The
-    // reduction of theta range does not seem to make sense...
-    // double theta = ::atan2(A.second, A.first) - (0.5 * phi)
-    //     + (A.first < 0.0 ? M_PI : 0.0);
-    double theta = ::atan2(A.second, A.first) - (0.5 * phi);
-    // NOTE: theta range is currently 0-380 degrees, and atan2 return value
-    // is in range +- 2PI.  So should not need a range check here...
-    ang[0] = ::cos(theta);
-    ang[1] = ::sin(theta);
-    ang[2] = ::cos(phi);
-    ang[3] = ::sin(phi);
-    return ang;
+    if (ang > abs_max) {
+        ang -= twopi;
+    }
+    if ((ang < abs_min) || (ang > abs_max)) {
+        // Out of range
+        return true;
+    } else {
+        return false;
+    }
 }
 
 
-void fba::Hardware::reposition_fiber(fbg::shape & cb, fbg::shape & fh,
-                                     fbg::dpair const & center,
-                                     fbg::dpair const & position,
-                                     fbg::dpair const & posp) const {
-    fba::Logger & logger = fba::Logger::get();
-    // repositions positioner (central body, ferule holder)
+bool fba::Hardware::move_positioner_thetaphi(
+        fbg::shape & shptheta, fbg::shape & shpphi,
+        fbg::dpair const & center, double theta, double phi,
+        double theta_arm, double phi_arm, double theta_zero, double phi_zero,
+        double theta_min, double phi_min, double theta_max, double phi_max
+        ) const {
+    // Check that requested angles are in range.
+    bool bad_phi = _check_angle_range(phi, phi_zero, phi_min, phi_max);
+    bool bad_theta = _check_angle_range(
+        theta, theta_zero, theta_min, theta_max
+    );
+    if (bad_phi || bad_theta) {
+        return true;
+    }
+
+    double ctheta = ::cos(theta);
+    double stheta = ::sin(theta);
+    double cphi = ::cos(phi);
+    double sphi = ::sin(phi);
+    auto cstheta = std::make_pair(ctheta, stheta);
+    auto csphi = std::make_pair(cphi, sphi);
+
+    // Move the phi polygon into the fully extended position along the X axis.
+    shpphi.transl(std::make_pair(theta_arm, 0.0));
+
+    // std::cout << "move_positioner_thetaphi:  after transl:" << std::endl;
+    // shptheta.print();
+    // shpphi.print();
+
+    // Rotate fully extended positioner an angle of theta about the center.
+    shptheta.rotation_origin(cstheta);
+    shpphi.rotation_origin(cstheta);
+
+    // std::cout << "move_positioner_thetaphi:  after rot origin:" << std::endl;
+    // shptheta.print();
+    // shpphi.print();
+
+    // Rotate just the phi arm an angle phi about the theta arm center.
+    shpphi.rotation(csphi);
+
+    // std::cout << "move_positioner_thetaphi:  after phi rot of " << csphi.first << ", " << csphi.second << ":" << std::endl;
+    // shptheta.print();
+    // shpphi.print();
+
+    // Translate the whole positioner to the center.
+    shpphi.transl(center);
+    shptheta.transl(center);
+
+    // std::cout << "move_positioner_thetaphi:  after center transl:" << std::endl;
+    // shptheta.print();
+    // shpphi.print();
+
+    return false;
+}
+
+
+bool fba::Hardware::xy_to_thetaphi(
+        double & theta, double & phi,
+        fbg::dpair const & center, fbg::dpair const & position,
+        double theta_arm, double phi_arm, double theta_zero, double phi_zero,
+        double theta_min, double phi_min, double theta_max, double phi_max
+        ) const {
     fbg::dpair offset = std::make_pair(position.first - center.first,
                                        position.second - center.second);
-    if (fbg::sq(posp.first + posp.second) < fbg::sq(offset)) {
-        std::ostringstream o;
-        o << "cannot move fiber at (" << center.first << ", "
-            << center.second << ") to position (" << position.first
-            << ", " << position.second << ")";
-        logger.error(o.str().c_str());
+
+    double sq_theta_arm = theta_arm * theta_arm;
+    double sq_phi_arm = phi_arm * phi_arm;
+    double sq_offset = fbg::sq(offset);
+    double sq_total_arm = fbg::sq(theta_arm + phi_arm);
+    double sq_diff_arm = fbg::sq(theta_arm - phi_arm);
+
+    phi = M_PI;
+    theta = 0.0;
+
+    if (fabs(sq_offset - sq_total_arm) <=
+        std::numeric_limits<float>::epsilon()) {
+        // We are at the maximum arm extension.  Force phi angle to zero
+        // and compute theta.
+        phi = 0.0;
+        theta = ::atan2(offset.second, offset.first);
+    } else if (fabs(sq_diff_arm - sq_offset) <=
+        std::numeric_limits<float>::epsilon()) {
+        // We are at the limit of the arm folded inwards.  Force phi angle
+        // to PI and compute theta.
+        phi = M_PI;
+        theta = ::atan2(offset.second, offset.first);
+    } else {
+        // We are on neither limit.
+
+        if (sq_total_arm < sq_offset) {
+            // Physically impossible to get there for any choice of angles
+            // std::cout << "xy_to_thetaphi: sqoffset - sqtot = " << sq_offset - sq_total_arm << std::endl;
+            return true;
+        }
+
+        if (sq_offset < sq_diff_arm) {
+            // Physically impossible to get there for any choice of angles
+            // std::cout << "xy_to_thetaphi: sqdiff - sqoffset = " << sq_diff_arm - sq_offset << std::endl;
+            return true;
+        }
+
+        // Use law of cosines to compute "opening" angle at the "elbow".
+        double opening = ::acos((sq_theta_arm + sq_phi_arm - sq_offset)
+                                / (2.0 * theta_arm * phi_arm));
+
+        // std::cout << "xy_to_thetaphi: opening = " << opening << std::endl;
+
+        // The PHI angle is just the supplement of this.
+        phi = M_PI - opening;
+
+        // std::cout << "xy_to_thetaphi: phi = " << phi << std::endl;
+
+        // Compute the theta angle.
+        // Use law of cosines to compute angle from theta arm to the line from
+        // the origin to the X/Y position.
+        double nrm_offset = ::sqrt(sq_offset);
+        double txy = ::acos((sq_theta_arm + sq_offset - sq_phi_arm)
+                            / (2 * theta_arm * nrm_offset));
+
+        // std::cout << "xy_to_thetaphi: txy = " << txy << std::endl;
+
+        theta = ::atan2(offset.second, offset.first) - txy;
     }
 
-    std::array <double, 4> ang = pos_angles(offset, posp);
-    fbg::dpair theta = std::make_pair(ang[0], ang[1]);
-    if (std::isnan(theta.first) || std::isnan(theta.second)) {
-        std::ostringstream o;
-        o << "Moving fiber at (" << center.first << ", "
-            << center.second << ") to position (" << position.first
-            << ", " << position.second << "): theta angle is NaN";
-        logger.error(o.str().c_str());
-    }
-    fbg::dpair phi = std::make_pair(ang[2], ang[3]);
-    if (std::isnan(phi.first) || std::isnan(phi.second)) {
-        std::ostringstream o;
-        o << "Moving fiber at (" << center.first << ", "
-            << center.second << ") to position (" << position.first
-            << ", " << position.second << "): phi angle is NaN";
-        logger.error(o.str().c_str());
-    }
-
-    cb.rotation_origin(theta);
-    fh.rotation_origin(theta);
-    fh.rotation(phi);
-    fh.transl(center);
-    cb.transl(center);
-    return;
-}
-
-
-bool fba::Hardware::collide(fbg::dpair center1, fbg::dpair position1,
-                            fbg::dpair center2, fbg::dpair position2) const {
-    // Check for collisions if we move fibers at given central positions
-    // (in mm) to the x/y positions specified.
-
-    fbg::shape fh1(ferrule_holder);
-    fbg::shape fh2(ferrule_holder);
-    fbg::shape cb1(central_body);
-    fbg::shape cb2(central_body);
-
-    reposition_fiber(cb1, fh1, center1, position1, positioner_range);
-    reposition_fiber(cb2, fh2, center2, position2, positioner_range);
-
-    if (fbg::intersect(fh1, fh2)) {
-        return true;
-    }
-    if (fbg::intersect(cb1, fh2)) {
-        return true;
-    }
-    if (fbg::intersect(cb2, fh1)) {
+    // Check that angles are in range
+    bool bad_phi = _check_angle_range(phi, phi_zero, phi_min, phi_max);
+    bool bad_theta = _check_angle_range(
+        theta, theta_zero, theta_min, theta_max
+    );
+    if (bad_phi || bad_theta) {
         return true;
     }
 
@@ -511,26 +534,195 @@ bool fba::Hardware::collide(fbg::dpair center1, fbg::dpair position1,
 }
 
 
-std::pair <fbg::shape, fbg::shape> fba::Hardware::loc_position(
-    int32_t loc, fbg::dpair const & xy) const {
+bool fba::Hardware::move_positioner_xy(
+        fbg::shape & shptheta, fbg::shape & shpphi,
+        fbg::dpair const & center, fbg::dpair const & position,
+        double theta_arm, double phi_arm, double theta_zero, double phi_zero,
+        double theta_min, double phi_min, double theta_max, double phi_max
+        ) const {
 
-    // Construct a positioner shape for a given fiber and location.
-    fbg::shape fh(ferrule_holder);
-    fbg::shape cb(central_body);
-
-    auto const & center = loc_pos_xy_mm.at(loc);
-
-    reposition_fiber(cb, fh, center, xy, positioner_range);
-    return std::make_pair(cb, fh);
+    double phi;
+    double theta;
+    bool fail = xy_to_thetaphi(
+        theta, phi, center, position, theta_arm, phi_arm, theta_zero,
+        phi_zero, theta_min, phi_min, theta_max, phi_max
+    );
+    if (fail) {
+        return true;
+    }
+    return move_positioner_thetaphi(
+        shptheta, shpphi, center, theta, phi,
+        theta_arm, phi_arm, theta_zero, phi_zero,
+        theta_min, phi_min, theta_max, phi_max
+    );
 }
 
 
-std::vector <std::pair <fbg::shape, fbg::shape> >
-    fba::Hardware::loc_position_multi(
+bool fba::Hardware::position_xy_bad(int32_t loc, fbg::dpair const & xy) const {
+    double phi;
+    double theta;
+    bool fail = xy_to_thetaphi(
+        theta, phi,
+        loc_pos_xy_mm.at(loc),
+        xy,
+        loc_theta_arm.at(loc),
+        loc_phi_arm.at(loc),
+        loc_theta_offset.at(loc),
+        loc_phi_offset.at(loc),
+        loc_theta_min.at(loc),
+        loc_phi_min.at(loc),
+        loc_theta_max.at(loc),
+        loc_phi_max.at(loc)
+    );
+    return fail;
+}
+
+
+bool fba::Hardware::loc_position_xy(
+    int32_t loc, fbg::dpair const & xy, fbg::shape & shptheta,
+    fbg::shape & shpphi) const {
+
+    // Start from exclusion polygon for this location.
+    shptheta = loc_theta_excl.at(loc);
+    shpphi = loc_phi_excl.at(loc);
+
+    // std::cout << "loc_position_xy start" << std::endl;
+    // shptheta.print();
+    // shpphi.print();
+
+    bool failed = move_positioner_xy(
+        shptheta, shpphi,
+        loc_pos_xy_mm.at(loc),
+        xy,
+        loc_theta_arm.at(loc),
+        loc_phi_arm.at(loc),
+        loc_theta_offset.at(loc),
+        loc_phi_offset.at(loc),
+        loc_theta_min.at(loc),
+        loc_phi_min.at(loc),
+        loc_theta_max.at(loc),
+        loc_phi_max.at(loc)
+    );
+
+    return failed;
+}
+
+
+bool fba::Hardware::loc_position_thetaphi(
+    int32_t loc, double theta, double phi, fbg::shape & shptheta,
+    fbg::shape & shpphi) const {
+
+    // Start from exclusion polygon for this location.
+    shptheta = loc_theta_excl.at(loc);
+    shpphi = loc_phi_excl.at(loc);
+
+    bool failed = move_positioner_thetaphi(
+        shptheta, shpphi,
+        loc_pos_xy_mm.at(loc),
+        theta, phi,
+        loc_theta_arm.at(loc),
+        loc_phi_arm.at(loc),
+        loc_theta_offset.at(loc),
+        loc_phi_offset.at(loc),
+        loc_theta_min.at(loc),
+        loc_phi_min.at(loc),
+        loc_theta_max.at(loc),
+        loc_phi_max.at(loc));
+
+    return failed;
+}
+
+
+bool fba::Hardware::collide_xy(int32_t loc1, fbg::dpair const & xy1,
+                               int32_t loc2, fbg::dpair const & xy2) const {
+
+    fbg::shape shptheta1(loc_theta_excl.at(loc1));
+    fbg::shape shpphi1(loc_phi_excl.at(loc1));
+    bool failed1 = loc_position_xy(loc1, xy1, shptheta1, shpphi1);
+    if (failed1) {
+        // A positioner movement failure means that the angles needed to reach
+        // the X/Y position are out of range.  While not strictly a collision,
+        // it still means that we can't accept this positioner configuration.
+        return true;
+    }
+
+    fbg::shape shptheta2(loc_theta_excl.at(loc2));
+    fbg::shape shpphi2(loc_phi_excl.at(loc2));
+    bool failed2 = loc_position_xy(loc2, xy2, shptheta2, shpphi2);
+    if (failed2) {
+        // A positioner movement failure means that the angles needed to reach
+        // the X/Y position are out of range.  While not strictly a collision,
+        // it still means that we can't accept this positioner configuration.
+        return true;
+    }
+
+    // We were able to move positioners into place.  Now check for
+    // intersections.
+
+    if (fbg::intersect(shpphi1, shpphi2)) {
+        return true;
+    }
+    if (fbg::intersect(shptheta1, shpphi2)) {
+        return true;
+    }
+    if (fbg::intersect(shptheta2, shpphi1)) {
+        return true;
+    }
+
+    return false;
+}
+
+
+bool fba::Hardware::collide_thetaphi(
+        int32_t loc1, double theta1, double phi1,
+        int32_t loc2, double theta2, double phi2) const {
+
+    fbg::shape shptheta1(loc_theta_excl.at(loc1));
+    fbg::shape shpphi1(loc_phi_excl.at(loc1));
+    bool failed1 = loc_position_thetaphi(loc1, theta1, phi1, shptheta1,
+                                         shpphi1);
+    if (failed1) {
+        // A positioner movement failure means that the angles needed to reach
+        // the X/Y position are out of range.  While not strictly a collision,
+        // it still means that we can't accept this positioner configuration.
+        return true;
+    }
+
+    fbg::shape shptheta2(loc_theta_excl.at(loc2));
+    fbg::shape shpphi2(loc_phi_excl.at(loc2));
+    bool failed2 = loc_position_thetaphi(loc2, theta2, phi2, shptheta2,
+                                         shpphi2);
+    if (failed2) {
+        // A positioner movement failure means that the angles needed to reach
+        // the X/Y position are out of range.  While not strictly a collision,
+        // it still means that we can't accept this positioner configuration.
+        return true;
+    }
+
+    // We were able to move positioners into place.  Now check for
+    // intersections.
+
+    if (fbg::intersect(shpphi1, shpphi2)) {
+        return true;
+    }
+    if (fbg::intersect(shptheta1, shpphi2)) {
+        return true;
+    }
+    if (fbg::intersect(shptheta2, shpphi1)) {
+        return true;
+    }
+
+    return false;
+}
+
+
+std::vector <std::pair <bool, std::pair <fbg::shape, fbg::shape> > >
+    fba::Hardware::loc_position_xy_multi(
         std::vector <int32_t> const & loc,
         std::vector <fbg::dpair> const & xy, int threads) const {
     size_t nlc = loc.size();
-    std::vector <std::pair <fbg::shape, fbg::shape> > result(nlc);
+    std::vector <std::pair <bool, std::pair <fbg::shape, fbg::shape> > >
+        result(nlc);
 
     int max_threads = 1;
     #ifdef _OPENMP
@@ -548,13 +740,44 @@ std::vector <std::pair <fbg::shape, fbg::shape> >
 
     #pragma omp parallel for schedule(static) default(none) shared(nlc, loc, xy, result) num_threads(run_threads)
     for (size_t f = 0; f < nlc; ++f) {
-        int32_t fid = loc[f];
-        // Construct a positioner shape for a given fiber and location.
-        fbg::shape fh(ferrule_holder);
-        fbg::shape cb(central_body);
-        auto const & center = loc_pos_xy_mm.at(fid);
-        reposition_fiber(cb, fh, center, xy[f], positioner_range);
-        result[f] = std::make_pair(cb, fh);
+        fbg::shape & shptheta = result[f].second.first;
+        fbg::shape & shpphi = result[f].second.second;
+        result[f].first = loc_position_xy(loc[f], xy[f], shptheta, shpphi);
+    }
+    return result;
+}
+
+
+std::vector <std::pair <bool, std::pair <fbg::shape, fbg::shape> > >
+    fba::Hardware::loc_position_thetaphi_multi(
+        std::vector <int32_t> const & loc,
+        std::vector <double> const & theta,
+        std::vector <double> const & phi,
+        int threads) const {
+    size_t nlc = loc.size();
+    std::vector <std::pair <bool, std::pair <fbg::shape, fbg::shape> > >
+        result(nlc);
+
+    int max_threads = 1;
+    #ifdef _OPENMP
+    max_threads = omp_get_num_threads();
+    #endif
+    int run_threads = 1;
+    if (threads > 0) {
+        run_threads = threads;
+    } else {
+        run_threads = max_threads;
+    }
+    if (run_threads > max_threads) {
+        run_threads = max_threads;
+    }
+
+    #pragma omp parallel for schedule(static) default(none) shared(nlc, loc, theta, phi, result) num_threads(run_threads)
+    for (size_t f = 0; f < nlc; ++f) {
+        fbg::shape & shptheta = result[f].second.first;
+        fbg::shape & shpphi = result[f].second.second;
+        result[f].first = loc_position_thetaphi(loc[f], theta[f], phi[f],
+                                                shptheta, shpphi);
     }
     return result;
 }
@@ -566,7 +789,7 @@ std::vector <bool> fba::Hardware::check_collisions_xy(
 
     size_t nlc = loc.size();
 
-    auto fpos = loc_position_multi(loc, xy);
+    auto fpos = loc_position_xy_multi(loc, xy, threads);
 
     std::map <int32_t, int32_t> loc_indx;
 
@@ -632,25 +855,29 @@ std::vector <bool> fba::Hardware::check_collisions_xy(
     for (size_t p = 0; p < npairs; ++p) {
         int32_t flow = checkpairs[p].first;
         int32_t fhigh = checkpairs[p].second;
+
+        bool failed1 = fpos[loc_indx.at(flow)].first;
+        fbg::shape const & shptheta1 = fpos[loc_indx.at(flow)].second.first;
+        fbg::shape const &shpphi1 = fpos[loc_indx.at(flow)].second.second;
+        bool failed2 = fpos[loc_indx.at(fhigh)].first;
+        fbg::shape const & shptheta2 = fpos[loc_indx.at(fhigh)].second.first;
+        fbg::shape const & shpphi2 = fpos[loc_indx.at(fhigh)].second.second;
+
         bool hit = false;
-        auto const & cb1 = fpos[loc_indx[flow]].first;
-        auto const & fh1 = fpos[loc_indx[flow]].second;
-        auto const & cb2 = fpos[loc_indx[fhigh]].first;
-        auto const & fh2 = fpos[loc_indx[fhigh]].second;
-        if (fbg::intersect(fh1, fh2)) {
+        if (failed1 || failed2) {
             hit = true;
-        }
-        if (fbg::intersect(cb1, fh2)) {
+        } else if (fbg::intersect(shpphi1, shpphi2)) {
             hit = true;
-        }
-        if (fbg::intersect(cb2, fh1)) {
+        } else if (fbg::intersect(shptheta1, shpphi2)) {
+            hit = true;
+        } else if (fbg::intersect(shptheta2, shpphi1)) {
             hit = true;
         }
         if (hit) {
             #pragma omp critical
             {
-                result[flow] = true;
-                result[fhigh] = true;
+                result[loc_indx[flow]] = true;
+                result[loc_indx[fhigh]] = true;
             }
         }
     }
@@ -664,6 +891,8 @@ std::vector <bool> fba::Hardware::check_collisions_thetaphi(
     std::vector <double> const & phi, int threads) const {
 
     size_t nlc = loc.size();
+
+    auto fpos = loc_position_thetaphi_multi(loc, theta, phi, threads);
 
     std::map <int32_t, int32_t> loc_indx;
 
@@ -725,61 +954,33 @@ std::vector <bool> fba::Hardware::check_collisions_thetaphi(
         run_threads = max_threads;
     }
 
-    #pragma omp parallel for schedule(static) default(none) shared(npairs, checkpairs, result, loc_indx, theta, phi) num_threads(run_threads)
+    #pragma omp parallel for schedule(static) default(none) shared(npairs, checkpairs, fpos, result, loc_indx, theta, phi) num_threads(run_threads)
     for (size_t p = 0; p < npairs; ++p) {
         int32_t flow = checkpairs[p].first;
         int32_t fhigh = checkpairs[p].second;
-        double thetalow = theta[loc_indx[flow]];
-        double philow = phi[loc_indx[flow]];
-        double thetahigh = theta[loc_indx[fhigh]];
-        double phihigh = phi[loc_indx[fhigh]];
 
-        fbg::shape fhlow(ferrule_holder);
-        fbg::shape fhhigh(ferrule_holder);
-        fbg::shape cblow(central_body);
-        fbg::shape cbhigh(central_body);
-
-        double costheta = ::cos(thetalow);
-        double sintheta = ::sin(thetalow);
-        double cosphi = ::cos(philow);
-        double sinphi = ::sin(philow);
-        std::pair <double, double> cossintheta = std::make_pair(costheta,
-                                                                sintheta);
-        std::pair <double, double> cossinphi = std::make_pair(cosphi,
-                                                              sinphi);
-        cblow.rotation_origin(cossintheta);
-        fhlow.rotation_origin(cossintheta);
-        fhlow.rotation(cossinphi);
-        fhlow.transl(loc_pos_xy_mm.at(flow));
-        cblow.transl(loc_pos_xy_mm.at(flow));
-
-        costheta = ::cos(thetahigh);
-        sintheta = ::sin(thetahigh);
-        cosphi = ::cos(phihigh);
-        sinphi = ::sin(phihigh);
-        cossintheta = std::make_pair(costheta, sintheta);
-        cossinphi = std::make_pair(cosphi, sinphi);
-        cbhigh.rotation_origin(cossintheta);
-        fhhigh.rotation_origin(cossintheta);
-        fhhigh.rotation(cossinphi);
-        fhhigh.transl(loc_pos_xy_mm.at(fhigh));
-        cbhigh.transl(loc_pos_xy_mm.at(fhigh));
+        bool failed1 = fpos[loc_indx.at(flow)].first;
+        fbg::shape const & shptheta1 = fpos[loc_indx.at(flow)].second.first;
+        fbg::shape const & shpphi1 = fpos[loc_indx.at(flow)].second.second;
+        bool failed2 = fpos[loc_indx.at(fhigh)].first;
+        fbg::shape const & shptheta2 = fpos[loc_indx.at(fhigh)].second.first;
+        fbg::shape const & shpphi2 = fpos[loc_indx.at(fhigh)].second.second;
 
         bool hit = false;
-        if (fbg::intersect(fhlow, fhhigh)) {
+        if (failed1 || failed2) {
             hit = true;
-        }
-        if (fbg::intersect(cblow, fhhigh)) {
+        } else if (fbg::intersect(shpphi1, shpphi2)) {
             hit = true;
-        }
-        if (fbg::intersect(cblow, fhhigh)) {
+        } else if (fbg::intersect(shptheta1, shpphi2)) {
+            hit = true;
+        } else if (fbg::intersect(shptheta2, shpphi1)) {
             hit = true;
         }
         if (hit) {
             #pragma omp critical
             {
-                result[flow] = true;
-                result[fhigh] = true;
+                result[loc_indx[flow]] = true;
+                result[loc_indx[fhigh]] = true;
             }
         }
     }

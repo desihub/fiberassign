@@ -22,9 +22,10 @@ namespace fiberassign {
 // indicate the reason.
 
 #define FIBER_STATE_OK 0
-#define FIBER_STATE_STUCK 1
-#define FIBER_STATE_BROKEN 2
-#define FIBER_STATE_SAFE 4
+#define FIBER_STATE_UNASSIGNED 1
+#define FIBER_STATE_STUCK 2
+#define FIBER_STATE_BROKEN 4
+#define FIBER_STATE_SAFE 8
 
 
 class Hardware : public std::enable_shared_from_this <Hardware> {
@@ -39,16 +40,21 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
             std::vector <int32_t> const & device,
             std::vector <int32_t> const & slitblock,
             std::vector <int32_t> const & blockfiber,
-            std::vector <int32_t> const & spectro,
             std::vector <int32_t> const & fiber,
-            std::vector <int32_t> const & slit,
             std::vector <std::string> const & device_type,
             std::vector <double> const & x_mm,
             std::vector <double> const & y_mm,
-            std::vector <double> const & z_mm,
-            std::vector <double> const & q_deg,
-            std::vector <double> const & s_mm,
-            std::vector <int32_t> const & status
+            std::vector <int32_t> const & status,
+            std::vector <double> const & theta_offset,
+            std::vector <double> const & theta_min,
+            std::vector <double> const & theta_max,
+            std::vector <double> const & theta_arm,
+            std::vector <double> const & phi_offset,
+            std::vector <double> const & phi_min,
+            std::vector <double> const & phi_max,
+            std::vector <double> const & phi_arm,
+            std::vector <fbg::shape> const & excl_theta,
+            std::vector <fbg::shape> const & excl_phi
         );
 
         double radial_ang2dist (double const & theta_rad) const;
@@ -75,29 +81,64 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
                             std::vector <std::pair <double, double> >
                                 & radec, int threads = 0) const;
 
-        std::array <double, 4> pos_angles(fbg::dpair const & A,
-            fbg::dpair const & posp) const;
+        bool move_positioner_thetaphi(
+            fbg::shape & shptheta, fbg::shape & shpphi,
+            fbg::dpair const & center, double theta, double phi,
+            double theta_arm, double phi_arm, double theta_zero,
+            double phi_zero, double theta_min, double phi_min,
+            double theta_max, double phi_max) const;
 
-        bool collide(fbg::dpair center1,
-                     fbg::dpair position1,
-                     fbg::dpair center2,
-                     fbg::dpair position2) const;
+        bool xy_to_thetaphi(
+                double & theta, double & phi,
+                fbg::dpair const & center, fbg::dpair const & position,
+                double theta_arm, double phi_arm, double theta_zero,
+                double phi_zero, double theta_min, double phi_min,
+                double theta_max, double phi_max) const;
 
-        std::pair <fbg::shape, fbg::shape> loc_position(
-            int32_t loc, fbg::dpair const & xy) const;
+        bool position_xy_bad(int32_t loc, fbg::dpair const & xy) const;
 
-        std::vector <std::pair <fbg::shape, fbg::shape> > loc_position_multi(
+        bool move_positioner_xy(
+            fbg::shape & shptheta, fbg::shape & shpphi,
+            fbg::dpair const & center, fbg::dpair const & position,
+            double theta_arm, double phi_arm, double theta_zero,
+            double phi_zero, double theta_min, double phi_min,
+            double theta_max, double phi_max) const;
+
+        bool loc_position_xy(
+            int32_t loc, fbg::dpair const & xy, fbg::shape & shptheta,
+            fbg::shape & shpphi) const;
+
+        bool loc_position_thetaphi(
+            int32_t loc, double theta, double phi, fbg::shape & shptheta,
+            fbg::shape & shpphi) const;
+
+        bool collide_xy(int32_t loc1, fbg::dpair const & xy1,
+                        int32_t loc2, fbg::dpair const & xy2) const;
+
+        bool collide_thetaphi(
+            int32_t loc1, double theta1, double phi1,
+            int32_t loc2, double theta2, double phi2) const;
+
+        std::vector <std::pair <bool, std::pair <fbg::shape, fbg::shape> > >
+        loc_position_xy_multi(
             std::vector <int32_t> const & loc,
-            std::vector <fbg::dpair> const & xy, int threads = 0) const;
+            std::vector <fbg::dpair> const & xy, int threads) const;
+
+        std::vector <std::pair <bool, std::pair <fbg::shape, fbg::shape> > >
+        loc_position_thetaphi_multi(
+            std::vector <int32_t> const & loc,
+            std::vector <double> const & theta,
+            std::vector <double> const & phi,
+            int threads) const;
 
         std::vector <bool> check_collisions_xy(
             std::vector <int32_t> const & loc,
-            std::vector <fbg::dpair> const & xy, int threads = 0) const;
+            std::vector <fbg::dpair> const & xy, int threads) const;
 
         std::vector <bool> check_collisions_thetaphi(
             std::vector <int32_t> const & loc,
             std::vector <double> const & theta,
-            std::vector <double> const & phi, int threads = 0) const;
+            std::vector <double> const & phi, int threads) const;
 
         // Get the Locations for a particular device type
         std::vector <int32_t> device_locations(std::string const & type) const;
@@ -105,21 +146,24 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
         // The (constant) total number of locations.
         int32_t nloc;
 
-        // The number of petals (spectraographs)
+        // The number of petals
         int32_t npetal;
 
-        // The number of fibers (device == "POS") per petal.
+        // The number of science fibers (device == "POS") per petal.
         int32_t nfiber_petal;
 
         // The full focalplane radius on the sky in degrees
         double focalplane_radius_deg;
+
+        // The buffer region size to subtract from the total arm length
+        // when considering available targets.
+        double patrol_buffer_mm;
 
         // Locations
         std::vector <int32_t> locations;
 
         // Location to positioner centers in mm
         std::map <int32_t, std::pair <double, double> > loc_pos_xy_mm;
-        std::map <int32_t, double> loc_pos_z_mm;
 
         // Location to petal
         std::map <int32_t, int32_t> loc_petal;
@@ -134,44 +178,15 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
         // Location to fiber ID
         std::map <int32_t, int32_t> loc_fiber;
 
-        // Location to spectrograph
-        std::map <int32_t, int32_t> loc_spectro;
-
-        // Location to positioner q/s
-        std::map <int32_t, double> loc_pos_q_deg;
-        std::map <int32_t, double> loc_pos_s_mm;
-
-        // Location to slit
-        std::map <int32_t, int32_t> loc_slit;
-
         // Location to slitblock
         std::map <int32_t, int32_t> loc_slitblock;
 
         // Location to blockfiber
         std::map <int32_t, int32_t> loc_blockfiber;
 
-        // patrol radius in mm
-        double patrol_mm;
-
-        // The guaranteed collision distance for positioners in mm
-        double collide_mm;
-
-        // The average collision distance for positioners in mm
-        double collide_avg_mm;
-
-        // The guaranteed collision avoidance for positioners in mm
-        double no_collide_mm;
-
         // The radius on the focalplane for considering which locations are
         // neighbors.
         double neighbor_radius_mm;
-
-        // The range of the positioner.
-        fbg::dpair positioner_range;
-        double pos_theta_max;
-        double pos_phi_max;
-        double pos_theta_max_deg;
-        double pos_phi_max_deg;
 
         // The current fiber state.
         std::map <int32_t, int32_t> state;
@@ -179,23 +194,37 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
         // The neighbors of each device location.
         std::map <int32_t, std::vector <int32_t> > neighbors;
 
-        // The geometric shape of the ferrule holder
-        fbg::shape ferrule_holder;
+        // The positioner information:
 
-        // The geometric shape of the central body
-        fbg::shape central_body;
+        // The theta zero-points and range for each location.
+        std::map <int32_t, double> loc_theta_offset;
+        std::map <int32_t, double> loc_theta_min;
+        std::map <int32_t, double> loc_theta_max;
+        std::map <int32_t, double> loc_theta_arm;
+
+        // The phi zero-points and range for each location.
+        std::map <int32_t, double> loc_phi_offset;
+        std::map <int32_t, double> loc_phi_min;
+        std::map <int32_t, double> loc_phi_max;
+        std::map <int32_t, double> loc_phi_arm;
+
+        // The theta arm exclusion polygon for each location, in the default
+        // (theta = 0.0) position
+        std::map <int32_t, fbg::shape> loc_theta_excl;
+
+        // The phi arm exclusion polygon for each location, in the default
+        // (phi = 0.0) position
+        std::map <int32_t, fbg::shape> loc_phi_excl;
 
     private :
 
-        fbg::shape create_ferrule_holder() const;
-
-        fbg::shape create_central_body() const;
-
-        void reposition_fiber(fbg::shape & cb,
-                              fbg::shape & fh,
-                              fbg::dpair const & center,
-                              fbg::dpair const & position,
-                              fbg::dpair const & posp) const;
+        bool move_positioner(fbg::shape & shptheta, fbg::shape & shpphi,
+                             fbg::dpair const & center,
+                             fbg::dpair const & position,
+                             double theta_arm, double phi_arm,
+                             double theta_zero, double phi_zero,
+                             double theta_min, double phi_min,
+                             double theta_max, double phi_max) const;
 
 };
 
