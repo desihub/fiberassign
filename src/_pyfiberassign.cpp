@@ -633,7 +633,8 @@ PYBIND11_MODULE(_internal, m) {
             Dictionary of locations for each device type (POS or ETC).
         )")
         .def("radec2xy", &fba::Hardware::radec2xy, py::arg("tilera"),
-            py::arg("tiledec"), py::arg("ra"), py::arg("dec"), R"(
+            py::arg("tiledec"), py::arg("tiletheta"), py::arg("ra"),
+            py::arg("dec"), R"(
             Project an RA/DEC value into X/Y coordinates.
 
             For the tile pointed at (tilera, tiledec), project the (ra, dec)
@@ -642,6 +643,7 @@ PYBIND11_MODULE(_internal, m) {
             Args:
                 tilera (float): Tile RA
                 tiledec (float): Tile DEC
+                tiletheta (float): The field rotation of the tile.
                 ra (float): RA to project.
                 dec (float): DEC to project.
 
@@ -650,14 +652,17 @@ PYBIND11_MODULE(_internal, m) {
 
         )")
         .def("radec2xy_multi", [](fba::Hardware & self, double tile_ra,
-                double tile_dec, std::vector <double> const & ra,
+                double tile_dec, double tile_theta,
+                std::vector <double> const & ra,
                 std::vector <double> const & dec, int threads) {
                 std::vector <std::pair <double, double> > xy;
-                self.radec2xy_multi(tile_ra, tile_dec, ra, dec, xy, threads);
+                self.radec2xy_multi(
+                    tile_ra, tile_dec, tile_theta, ra, dec, xy, threads
+                );
                 return xy;
             }, py::return_value_policy::take_ownership, py::arg("tilera"),
-            py::arg("tiledec"), py::arg("ra"), py::arg("dec"),
-            py::arg("threads"), R"(
+            py::arg("tiledec"), py::arg("tiletheta"), py::arg("ra"),
+            py::arg("dec"), py::arg("threads"), R"(
             Project multiple RA/DEC values into X/Y coordinates.
 
             For the tile pointed at (tilera, tiledec), project the (ra, dec)
@@ -666,6 +671,7 @@ PYBIND11_MODULE(_internal, m) {
             Args:
                 tilera (float): Tile RA
                 tiledec (float): Tile DEC
+                tiletheta (float): The field rotation of the tile.
                 ra (array): Array of RA values to project.
                 dec (float): Array of DEC values to project.
                 threads (int): If <= 0 use maximum threads,
@@ -676,7 +682,8 @@ PYBIND11_MODULE(_internal, m) {
 
         )")
         .def("xy2radec", &fba::Hardware::xy2radec, py::arg("tilera"),
-            py::arg("tiledec"), py::arg("x"), py::arg("y"), R"(
+            py::arg("tiledec"), py::arg("tiletheta"), py::arg("x"),
+            py::arg("y"), R"(
             Compute the RA/DEC value of the specified X/Y location.
 
             For the tile pointed at (tilera, tiledec), compute the RA/DEC
@@ -685,6 +692,7 @@ PYBIND11_MODULE(_internal, m) {
             Args:
                 tilera (float): Tile RA
                 tiledec (float): Tile DEC
+                tiletheta (float): The field rotation of the tile.
                 x (float): X position in mm.
                 y (float): Y position in mm.
 
@@ -693,15 +701,17 @@ PYBIND11_MODULE(_internal, m) {
 
         )")
         .def("xy2radec_multi", [](fba::Hardware & self, double tile_ra,
-                double tile_dec, std::vector <double> const & x_mm,
+                double tile_dec, double tile_theta,
+                std::vector <double> const & x_mm,
                 std::vector <double> const & y_mm, int threads) {
                 std::vector <std::pair <double, double> > radec;
-                self.xy2radec_multi(tile_ra, tile_dec, x_mm, y_mm, radec,
-                                    threads);
+                self.xy2radec_multi(
+                    tile_ra, tile_dec, tile_theta, x_mm, y_mm, radec, threads
+                );
                 return radec;
             }, py::return_value_policy::take_ownership, py::arg("tilera"),
-            py::arg("tiledec"), py::arg("x"), py::arg("y"),
-            py::arg("threads"), R"(
+            py::arg("tiledec"), py::arg("tiletheta"), py::arg("x"),
+            py::arg("y"), py::arg("threads"), R"(
             Compute the RA/DEC values of the specified X/Y locations.
 
             For the tile pointed at (tilera, tiledec), compute the RA/DEC
@@ -710,6 +720,7 @@ PYBIND11_MODULE(_internal, m) {
             Args:
                 tilera (float): Tile RA
                 tiledec (float): Tile DEC
+                tiletheta (float): The field rotation of the tile.
                 x (array): Array of X positions in mm.
                 y (array): Array of Y positions in mm.
                 threads (int): If <= 0 use maximum threads,
@@ -1106,12 +1117,32 @@ PYBIND11_MODULE(_internal, m) {
             ras (array):  array of float64 tile RA coordinates.
             decs (array):  array of float64 tile DEC coordinates.
             obs (array):  array of int32 obsconditions bitfields.
+            timeobs (list):  List of iso format datetime strings.
+            thetaobs (array):  Array of field rotation angles.
+            hourangobs (array):  Array of hour angles.
 
         )")
-        .def(py::init <std::vector <int32_t> const &,
-            std::vector <double> const &, std::vector <double> const &,
-            std::vector <int32_t> const & > (), py::arg("ids"),
-            py::arg("ras"), py::arg("decs"), py::arg("obs"))
+        .def(
+            py::init(
+                [](
+                    std::vector <int32_t> const & ids,
+                    std::vector <double> const & ras,
+                    std::vector <double> const & decs,
+                    std::vector <int32_t> const & obs,
+                    py::list timeobs,
+                    std::vector <double> const & thetaobs,
+                    std::vector <double> const & hourangobs
+                ) {
+                    std::vector <std::string> tobs;
+                    for (auto ts : timeobs) {
+                        tobs.push_back(ts.cast <std::string> ());
+                    }
+                    return new fba::Tiles(
+                        ids, ras, decs, obs, tobs, thetaobs, hourangobs
+                    );
+                }
+            )
+        )
         .def_readonly("id", &fba::Tiles::id, R"(
             The array of tile IDs.
         )")
@@ -1122,7 +1153,16 @@ PYBIND11_MODULE(_internal, m) {
             The array of tile DEC values.
         )")
         .def_readonly("obscond", &fba::Tiles::obscond, R"(
-            The array tile observing conditions values.
+            The array of tile observing conditions values.
+        )")
+        .def_readonly("obstime", &fba::Tiles::obstime, R"(
+            The array of tile observation times.
+        )")
+        .def_readonly("obstheta", &fba::Tiles::obstheta, R"(
+            The array of tile field rotation values.
+        )")
+        .def_readonly("obshourang", &fba::Tiles::obshourang, R"(
+            The array of tile observation hour angles.
         )")
         .def_readonly("order", &fba::Tiles::order, R"(
             Dictionary of tile index for each tile ID.

@@ -138,7 +138,8 @@ def plot_positioner_simple(ax, patrol_rad, loc, center, theta_ang, theta_arm,
     return
 
 
-def plot_tile_targets_props(hw, tile_ra, tile_dec, tgs, avail_tgid=None):
+def plot_tile_targets_props(hw, tile_ra, tile_dec, tile_theta, tgs,
+                            avail_tgid=None):
     if avail_tgid is None:
         avail_tgid = tgs.ids()
     # print("  DBG:  avail_tgid len = ", len(avail_tgid), flush=True)
@@ -152,7 +153,7 @@ def plot_tile_targets_props(hw, tile_ra, tile_dec, tgs, avail_tgid=None):
         color.append(plot_target_type_color(tg.type))
     # We disable threading here, since it does not interact well with
     # multiprocessing.
-    tgxy = hw.radec2xy_multi(tile_ra, tile_dec, ra, dec, 1)
+    tgxy = hw.radec2xy_multi(tile_ra, tile_dec, tile_theta, ra, dec, 1)
     props = {tgid: {"xy": xy, "color": cl} for tgid, xy, cl
              in zip(avail_tgid, tgxy, color)}
     return props
@@ -254,7 +255,7 @@ def plot_assignment_tile_file_initialize(hw):
 
 
 def plot_assignment_tile_file(locs, real_shapes, params):
-    (tile_id, tile_ra, tile_dec, infile, outfile) = params
+    (tile_id, tile_ra, tile_dec, tile_theta, infile, outfile) = params
     log = Logger.get()
 
     if os.path.isfile(outfile):
@@ -268,8 +269,9 @@ def plot_assignment_tile_file(locs, real_shapes, params):
 
     tavail = avail_table_to_dict(avail_data)
 
-    log.debug("  tile {} at RA/DEC {} / {}".format(tile_id, tile_ra,
-                                                   tile_dec))
+    log.debug("  tile {} at RA/DEC {} / {} with rotation {}".format(
+        tile_id, tile_ra, tile_dec, tile_theta)
+    )
 
     fig = plt.figure(figsize=(12, 12))
     ax = fig.add_subplot(1, 1, 1)
@@ -285,7 +287,7 @@ def plot_assignment_tile_file(locs, real_shapes, params):
         load_target_table(tgs, targets_data)
 
     targetprops = plot_tile_targets_props(plot_assignment_tile_file_hw,
-                                          tile_ra, tile_dec, tgs)
+                                          tile_ra, tile_dec, tile_theta, tgs)
 
     log.debug("  tile {} has {} targets with properties"
               .format(tile_id, len(targets_data)))
@@ -333,7 +335,7 @@ def plot_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign_",
 
     Args:
         hw (Hardware):  the hardware description.
-        tiles (list):  List of tile IDs to process.
+        tiles (Tiles):  a Tiles object.
         result_dir (str):  Top-level directory of fiberassign results.
         result_prefix (str):  Prefix of each per-tile file name.
         result_split_dir (bool):  Results are in split tile directories.
@@ -365,10 +367,17 @@ def plot_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign_",
 
     plot_tile = partial(plot_assignment_tile_file, locs, real_shapes)
 
-    avail_tiles = np.array(tiles.id)
+    tiles_id = tiles.id
+    tiles_order = tiles.order
+    tiles_ra = tiles.ra
+    tiles_dec = tiles.dec
+    tiles_theta = tiles.obstheta
+
+    avail_tiles = np.array(tiles_id)
     select_tiles = [x for x in foundtiles if x in avail_tiles]
 
-    tile_map_list = [(x, tiles.ra[tiles.order[x]], tiles.dec[tiles.order[x]],
+    tile_map_list = [(x, tiles_ra[tiles_order[x]], tiles_dec[tiles_order[x]],
+                      tiles_theta[tiles_order[x]],
                       result_path(x, dir=result_dir, prefix=result_prefix,
                                   split=result_split_dir),
                       result_path(x, dir=plot_dir, prefix=plot_prefix,
@@ -391,9 +400,9 @@ def plot_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign_",
     return
 
 
-def plot_assignment_tile(hw, tgs, tile_id, tile_ra, tile_dec, tile_assign,
-                         tile_avail=None, petals=None, real_shapes=False,
-                         outfile=None, figsize=8):
+def plot_assignment_tile(hw, tgs, tile_id, tile_ra, tile_dec, tile_theta,
+                         tile_assign, tile_avail=None, petals=None,
+                         real_shapes=False, outfile=None, figsize=8):
     # Get selected fibers
     locs = None
     if petals is None:
@@ -417,8 +426,8 @@ def plot_assignment_tile(hw, tgs, tile_id, tile_ra, tile_dec, tile_assign,
         avtg_ids = np.unique([x for f in avtg_locs for x in tile_avail[f]])
 
     # Target properties
-    targetprops = plot_tile_targets_props(hw, tile_ra, tile_dec, tgs,
-                                          avail_tgid=avtg_ids)
+    targetprops = plot_tile_targets_props(hw, tile_ra, tile_dec, tile_theta,
+                                          tgs, avail_tgid=avtg_ids)
 
     fig = plt.figure(figsize=(figsize, figsize))
     ax = fig.add_subplot(1, 1, 1)
