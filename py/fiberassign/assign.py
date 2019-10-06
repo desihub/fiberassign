@@ -1080,8 +1080,10 @@ def merge_results_tile(out_dtype, copy_fba, params):
     fd.write(None, header=inhead, extname="PRIMARY")
 
     # Write the main FIBERASSIGN HDU- only the data for science positioners
+    # Enforce sorting by FIBER
     log.info("Writing new data {}".format(outfile))
-    fd.write(outdata[science_rows], header=inhead, extname="FIBERASSIGN")
+    ii = np.argsort(outdata['FIBER'][science_rows])
+    fd.write(outdata[science_rows][ii], header=inhead, extname="FIBERASSIGN")
 
     # Now write out the sky monitor fibers.  We extract the rows and columns
     # from the already-computed recarray.
