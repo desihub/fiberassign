@@ -245,9 +245,8 @@ fiberassign::geom::dpair fba::Hardware::radec2xy(
 
     double radius_mm = radial_ang2dist(radius_rad);
 
-    // The field rotation is a left-handed one, so we must
-    // negate it.
-    double rotated = q_rad - tiletheta_rad;
+    // Apply field rotation
+    double rotated = q_rad + tiletheta_rad;
 
     double x_focalplane = radius_mm * ::cos(rotated);
     double y_focalplane = radius_mm * ::sin(rotated);
@@ -307,9 +306,8 @@ fiberassign::geom::dpair fba::Hardware::xy2radec(
     // q is the angle the position makes with the +x-axis of focal plane
     double rotated = ::atan2(y_mm, x_mm);
 
-    // The field rotation is a left-handed one, so we must
-    // negate it.
-    double q_rad = rotated + tiletheta_rad;
+    // Remove field rotation
+    double q_rad = rotated - tiletheta_rad;
 
     // The focal plane is oriented with +yfocal = +dec but +xfocal = -RA
     // Rotate clockwise around z by r_rad

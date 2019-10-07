@@ -56,7 +56,8 @@ def sim_focalplane(runtime=None, fakepos=False):
         p_min = 185.0 - phys_p
         p_max = 185.0
         for row in range(npos):
-            fp["OFFSET_T"][row] = -170.0
+            petalrot_deg = (float(7 + fp["PETAL"][row]) * 36.0) % 360.0
+            fp["OFFSET_T"][row] = -170.0 + petalrot_deg
             fp["OFFSET_P"][row] = -5.0
             fp["MIN_T"][row] = t_min
             fp["MAX_T"][row] = t_max

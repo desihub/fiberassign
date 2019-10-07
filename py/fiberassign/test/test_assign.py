@@ -392,124 +392,124 @@ class TestAssign(unittest.TestCase):
     #         self.assertEqual(400, props["assign_sky"])
     #     return
 
-    # def test_fieldrot(self):
-    #     test_dir = test_subdir_create("assign_test_fieldrot")
-    #     np.random.seed(123456789)
-    #     input_mtl = os.path.join(test_dir, "mtl.fits")
-    #     input_std = os.path.join(test_dir, "standards.fits")
-    #     input_sky = os.path.join(test_dir, "sky.fits")
-    #     nscience = sim_targets(input_mtl, TARGET_TYPE_SCIENCE, 0)
-    #     nstd = sim_targets(input_std, TARGET_TYPE_STANDARD, nscience)
-    #     nsky = sim_targets(input_sky, TARGET_TYPE_SKY, (nscience + nstd))
-    #
-    #     tgs = Targets()
-    #     load_target_file(tgs, input_mtl)
-    #     load_target_file(tgs, input_std)
-    #     load_target_file(tgs, input_sky)
-    #
-    #     # Create a hierarchical triangle mesh lookup of the targets positions
-    #     tree = TargetTree(tgs, 0.01)
-    #
-    #     # Simulate the tiles
-    #     tfile = os.path.join(test_dir, "footprint.fits")
-    #     sim_tiles(tfile)
-    #     tiles_orig = load_tiles(tiles_file=tfile)
-    #
-    #     # Manually override the field rotation
-    #     tiles_rot = load_tiles(tiles_file=tfile, obstheta=36.0)
-    #
-    #     # Simulate a fake focalplane
-    #     fp, exclude, state = sim_focalplane(fakepos=True)
-    #
-    #     # Load the focalplane
-    #     hw = load_hardware(focalplane=(fp, exclude, state))
-    #
-    #     gt = GlobalTimers.get()
-    #
-    #     # petal mapping
-    #     rotator = petal_rotation(1, reverse=True)
-    #
-    #     for tiles, odir in [(tiles_orig, "theta_00"), (tiles_rot, "theta_36")]:
-    #         gt.start("{} calculation".format(odir))
-    #         # Compute the targets available to each fiber for each tile.
-    #         tgsavail = TargetsAvailable(hw, tgs, tiles, tree)
-    #
-    #         # Compute the fibers on all tiles available for each target
-    #         favail = LocationsAvailable(tgsavail)
-    #
-    #         # Create assignment object
-    #         asgn = Assignment(tgs, tgsavail, favail)
-    #
-    #         # First-pass assignment of science targets
-    #         asgn.assign_unused(TARGET_TYPE_SCIENCE)
-    #
-    #         # Redistribute science targets
-    #         asgn.redistribute_science()
-    #
-    #         # Assign standards, 10 per petal
-    #         asgn.assign_unused(TARGET_TYPE_STANDARD, 10)
-    #         asgn.assign_force(TARGET_TYPE_STANDARD, 10)
-    #
-    #         # Assign sky to unused fibers, up to 40 per petal
-    #         asgn.assign_unused(TARGET_TYPE_SKY, 40)
-    #         asgn.assign_force(TARGET_TYPE_SKY, 40)
-    #
-    #         # If there are any unassigned fibers, try to place them somewhere.
-    #         asgn.assign_unused(TARGET_TYPE_SCIENCE)
-    #         asgn.assign_unused(TARGET_TYPE_SKY)
-    #
-    #         gt.stop("{} calculation".format(odir))
-    #
-    #         out = os.path.join(test_dir, odir)
-    #
-    #         write_assignment_fits(tiles, asgn, out_dir=out, all_targets=True)
-    #
-    #         ppet = 6
-    #         if odir == "theta_36":
-    #             ppet = rotator[6]
-    #         plot_tiles(hw, tiles, result_dir=out, plot_dir=out,
-    #                    real_shapes=True, petals=[ppet], serial=True)
-    #
-    #     # Free the tree
-    #     del tree
-    #
-    #     # For each tile, compare the assignment output and verify that they
-    #     # agree with a one-petal rotation.
-    #
-    #     # for tl in tiles.id:
-    #     #     orig_path = os.path.join(
-    #     #         test_dir, "theta_00", "fiberassign_{:06d}.fits".format(tl)
-    #     #     )
-    #     #     orig_header, orig_data, _, _, _ = \
-    #     #         read_assignment_fits_tile((tl, orig_path))
-    #     #     rot_path = os.path.join(
-    #     #         test_dir, "theta_36", "fiberassign_{:06d}.fits".format(tl)
-    #     #     )
-    #     #     rot_header, rot_data, _, _, _ = \
-    #     #         read_assignment_fits_tile((tl, rot_path))
-    #     #     comppath = os.path.join(
-    #     #         test_dir, "comp_00-36_{:06d}.txt".format(tl)
-    #     #     )
-    #     #     with open(comppath, "w") as fc:
-    #     #         for dev, petal, tg in zip(
-    #     #                 orig_data["DEVICE_LOC"], orig_data["PETAL_LOC"],
-    #     #                 orig_data["TARGETID"]
-    #     #         ):
-    #     #             for newdev, newpetal, newtg in zip(
-    #     #                     rot_data["DEVICE_LOC"], rot_data["PETAL_LOC"],
-    #     #                     rot_data["TARGETID"]
-    #     #             ):
-    #     #                 rpet = rotator[newpetal]
-    #     #                 if (newdev == dev) and (rpet == petal):
-    #     #                     fc.write(
-    #     #                         "{}, {} = {} : {}, {} = {}\n"
-    #     #                         .format(petal, dev, tg, rpet, newdev, newtg)
-    #     #                     )
-    #     #                     # self.assertEqual(newtg, tg)
-    #
-    #     gt.report()
-    #
-    #     return
+    def test_fieldrot(self):
+        test_dir = test_subdir_create("assign_test_fieldrot")
+        np.random.seed(123456789)
+        input_mtl = os.path.join(test_dir, "mtl.fits")
+        input_std = os.path.join(test_dir, "standards.fits")
+        input_sky = os.path.join(test_dir, "sky.fits")
+        nscience = sim_targets(input_mtl, TARGET_TYPE_SCIENCE, 0)
+        nstd = sim_targets(input_std, TARGET_TYPE_STANDARD, nscience)
+        nsky = sim_targets(input_sky, TARGET_TYPE_SKY, (nscience + nstd))
+
+        tgs = Targets()
+        load_target_file(tgs, input_mtl)
+        load_target_file(tgs, input_std)
+        load_target_file(tgs, input_sky)
+
+        # Create a hierarchical triangle mesh lookup of the targets positions
+        tree = TargetTree(tgs, 0.01)
+
+        # Simulate the tiles
+        tfile = os.path.join(test_dir, "footprint.fits")
+        sim_tiles(tfile)
+        tiles_orig = load_tiles(tiles_file=tfile)
+
+        # Manually override the field rotation
+        tiles_rot = load_tiles(tiles_file=tfile, obstheta=36.0)
+
+        # Simulate a fake focalplane
+        fp, exclude, state = sim_focalplane(fakepos=True)
+
+        # Load the focalplane
+        hw = load_hardware(focalplane=(fp, exclude, state))
+
+        gt = GlobalTimers.get()
+
+        # petal mapping
+        rotator = petal_rotation(1, reverse=False)
+
+        for tiles, odir in [(tiles_orig, "theta_00"), (tiles_rot, "theta_36")]:
+            gt.start("{} calculation".format(odir))
+            # Compute the targets available to each fiber for each tile.
+            tgsavail = TargetsAvailable(hw, tgs, tiles, tree)
+
+            # Compute the fibers on all tiles available for each target
+            favail = LocationsAvailable(tgsavail)
+
+            # Create assignment object
+            asgn = Assignment(tgs, tgsavail, favail)
+
+            # First-pass assignment of science targets
+            asgn.assign_unused(TARGET_TYPE_SCIENCE)
+
+            # Redistribute science targets
+            asgn.redistribute_science()
+
+            # Assign standards, 10 per petal
+            asgn.assign_unused(TARGET_TYPE_STANDARD, 10)
+            asgn.assign_force(TARGET_TYPE_STANDARD, 10)
+
+            # Assign sky to unused fibers, up to 40 per petal
+            asgn.assign_unused(TARGET_TYPE_SKY, 40)
+            asgn.assign_force(TARGET_TYPE_SKY, 40)
+
+            # If there are any unassigned fibers, try to place them somewhere.
+            asgn.assign_unused(TARGET_TYPE_SCIENCE)
+            asgn.assign_unused(TARGET_TYPE_SKY)
+
+            gt.stop("{} calculation".format(odir))
+
+            out = os.path.join(test_dir, odir)
+
+            write_assignment_fits(tiles, asgn, out_dir=out, all_targets=True)
+
+            ppet = 6
+            if odir == "theta_36":
+                ppet = rotator[6]
+            plot_tiles(hw, tiles, result_dir=out, plot_dir=out,
+                       real_shapes=True, petals=[ppet], serial=True)
+
+        # Free the tree
+        del tree
+
+        # For each tile, compare the assignment output and verify that they
+        # agree with a one-petal rotation.
+
+        for tl in tiles.id:
+            orig_path = os.path.join(
+                test_dir, "theta_00", "fiberassign_{:06d}.fits".format(tl)
+            )
+            orig_header, orig_data, _, _, _ = \
+                read_assignment_fits_tile((tl, orig_path))
+            rot_path = os.path.join(
+                test_dir, "theta_36", "fiberassign_{:06d}.fits".format(tl)
+            )
+            rot_header, rot_data, _, _, _ = \
+                read_assignment_fits_tile((tl, rot_path))
+            comppath = os.path.join(
+                test_dir, "comp_00-36_{:06d}.txt".format(tl)
+            )
+            with open(comppath, "w") as fc:
+                for dev, petal, tg in zip(
+                        orig_data["DEVICE_LOC"], orig_data["PETAL_LOC"],
+                        orig_data["TARGETID"]
+                ):
+                    for newdev, newpetal, newtg in zip(
+                            rot_data["DEVICE_LOC"], rot_data["PETAL_LOC"],
+                            rot_data["TARGETID"]
+                    ):
+                        rpet = rotator[newpetal]
+                        if (newdev == dev) and (rpet == petal):
+                            fc.write(
+                                "{}, {} = {} : {}, {} = {}\n"
+                                .format(petal, dev, tg, rpet, newdev, newtg)
+                            )
+                            # self.assertEqual(newtg, tg)
+
+        gt.report()
+
+        return
 
 
 def test_suite():

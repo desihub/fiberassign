@@ -225,23 +225,23 @@ class TestVis(unittest.TestCase):
     #     self._load_and_plotfp(hw, test_dir, suffix, simple=False)
     #     return
 
-    def test_plot_fakefp(self):
-        test_dir = test_subdir_create("vis_test_fakefp")
-        time = datetime.utcnow().isoformat(timespec="seconds")
-
-        # Simulate a fake focalplane
-        fp, exclude, state = sim_focalplane(fakepos=True)
-
-        # Load the focalplane
-        hw = load_hardware(focalplane=(fp, exclude, state))
-
-        suffix = "{}".format(time)
-        self._load_and_plotfp(hw, test_dir, suffix, simple=False)
-
-        time = "2012-12-12T00:00:00"
-        suffix = "{}".format(time)
-        self._load_and_plotfp(hw, test_dir, suffix, simple=False)
-        return
+    # def test_plot_fakefp(self):
+    #     test_dir = test_subdir_create("vis_test_fakefp")
+    #     time = datetime.utcnow().isoformat(timespec="seconds")
+    #
+    #     # Simulate a fake focalplane
+    #     fp, exclude, state = sim_focalplane(fakepos=True)
+    #
+    #     # Load the focalplane
+    #     hw = load_hardware(focalplane=(fp, exclude, state))
+    #
+    #     suffix = "{}".format(time)
+    #     self._load_and_plotfp(hw, test_dir, suffix, simple=False)
+    #
+    #     time = "2012-12-12T00:00:00"
+    #     suffix = "{}".format(time)
+    #     self._load_and_plotfp(hw, test_dir, suffix, simple=False)
+    #     return
 
 
 def test_suite():
