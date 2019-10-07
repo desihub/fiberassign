@@ -138,19 +138,19 @@ class TestVis(unittest.TestCase):
         plt.savefig(outfile, dpi=300, format="pdf")
         plt.close()
 
-    # def test_plotpos(self):
-    #     test_dir = test_subdir_create("vis_test_plotpos")
-    #     time = datetime.utcnow().isoformat(timespec="seconds")
-    #     suffix = "{}_simple".format(time)
-    #     self._load_and_plotpos(time, test_dir, suffix, simple=True)
-    #     suffix = "{}".format(time)
-    #     self._load_and_plotpos(time, test_dir, suffix, simple=False)
-    #     time = "2012-12-12T00:00:00"
-    #     suffix = "{}_simple".format(time)
-    #     self._load_and_plotpos(time, test_dir, suffix, simple=True)
-    #     suffix = "{}".format(time)
-    #     self._load_and_plotpos(time, test_dir, suffix, simple=False)
-    #     return
+    def test_plotpos(self):
+        test_dir = test_subdir_create("vis_test_plotpos")
+        time = datetime.utcnow().isoformat(timespec="seconds")
+        suffix = "{}_simple".format(time)
+        self._load_and_plotpos(time, test_dir, suffix, simple=True)
+        suffix = "{}".format(time)
+        self._load_and_plotpos(time, test_dir, suffix, simple=False)
+        time = "2012-12-12T00:00:00"
+        suffix = "{}_simple".format(time)
+        self._load_and_plotpos(time, test_dir, suffix, simple=True)
+        suffix = "{}".format(time)
+        self._load_and_plotpos(time, test_dir, suffix, simple=False)
+        return
 
 
     def _load_and_plotfp(self, hw, dir, suffix, simple=False):
@@ -224,7 +224,7 @@ class TestVis(unittest.TestCase):
     #     suffix = "{}".format(time)
     #     self._load_and_plotfp(hw, test_dir, suffix, simple=False)
     #     return
-
+    #
     # def test_plot_fakefp(self):
     #     test_dir = test_subdir_create("vis_test_fakefp")
     #     time = datetime.utcnow().isoformat(timespec="seconds")
