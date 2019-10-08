@@ -6,7 +6,9 @@ fiberassign change log
 1.1.1 (unreleased)
 ------------------
 
-* No changes yet.
+* fiberassign support for CMX targets + MAIN skies (PR `#224`_).
+
+.. _`#224`: https://github.com/desihub/fiberassign/pull/224
 
 1.1.0 (2019-09-25)
 ------------------
