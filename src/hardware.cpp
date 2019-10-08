@@ -198,8 +198,8 @@ double fba::Hardware::radial_dist2ang (double const & dist_mm) const {
 
 
 fiberassign::geom::dpair fba::Hardware::radec2xy(
-    double const & tilera, double const & tiledec, double const & ra,
-    double const & dec) const {
+    double const & tilera, double const & tiledec, double const & tiletheta,
+    double const & ra, double const & dec) const {
 
     double deg_to_rad = M_PI / 180.0;
 
@@ -210,6 +210,7 @@ fiberassign::geom::dpair fba::Hardware::radec2xy(
     //double dec_rad = dec * deg_to_rad;
     double tilera_rad = tilera * deg_to_rad;
     double tiledec_rad = tiledec * deg_to_rad;
+    double tiletheta_rad = tiletheta * deg_to_rad;
 
     double sin_inc_rad = ::sin(inc_rad);
     double x0 = sin_inc_rad * ::cos(ra_rad);
@@ -243,17 +244,19 @@ fiberassign::geom::dpair fba::Hardware::radec2xy(
     double q_rad = ::atan2(z, -y);
 
     double radius_mm = radial_ang2dist(radius_rad);
-    //std::cerr << "RADEC2XY:  radius_mm = " << radius_mm << std::endl;
 
-    double x_focalplane = radius_mm * ::cos(q_rad);
-    double y_focalplane = radius_mm * ::sin(q_rad);
+    // Apply field rotation
+    double rotated = q_rad + tiletheta_rad;
+
+    double x_focalplane = radius_mm * ::cos(rotated);
+    double y_focalplane = radius_mm * ::sin(rotated);
 
     return std::make_pair(x_focalplane, y_focalplane);
 }
 
 
 void fba::Hardware::radec2xy_multi(
-    double const & tilera, double const & tiledec,
+    double const & tilera, double const & tiledec, double const & tiletheta,
     std::vector <double> const & ra,
     std::vector <double> const & dec,
     std::vector <std::pair <double, double> > & xy, int threads) const {
@@ -275,9 +278,9 @@ void fba::Hardware::radec2xy_multi(
         run_threads = max_threads;
     }
 
-    #pragma omp parallel for schedule(static) default(none) shared(ntg, tilera, tiledec, xy, ra, dec) num_threads(run_threads)
+    #pragma omp parallel for schedule(static) default(none) shared(ntg, tilera, tiledec, tiletheta, xy, ra, dec) num_threads(run_threads)
     for (size_t t = 0; t < ntg; ++t) {
-        xy[t] = radec2xy(tilera, tiledec, ra[t], dec[t]);
+        xy[t] = radec2xy(tilera, tiledec, tiletheta, ra[t], dec[t]);
     }
 
     return;
@@ -286,6 +289,7 @@ void fba::Hardware::radec2xy_multi(
 
 fiberassign::geom::dpair fba::Hardware::xy2radec(
         double const & tilera, double const & tiledec,
+        double const & tiletheta,
         double const & x_mm, double const & y_mm) const {
 
     double deg_to_rad = M_PI / 180.0;
@@ -293,14 +297,17 @@ fiberassign::geom::dpair fba::Hardware::xy2radec(
 
     double tilera_rad = tilera * deg_to_rad;
     double tiledec_rad = tiledec * deg_to_rad;
+    double tiletheta_rad = tiletheta * deg_to_rad;
 
     // radial distance on the focal plane
     double radius_mm = ::sqrt(x_mm * x_mm + y_mm * y_mm);
     double radius_rad = radial_dist2ang(radius_mm);
 
     // q is the angle the position makes with the +x-axis of focal plane
-    double q_rad = ::atan2(y_mm, x_mm);
-    //double q_deg = q_rad * 180.0 / M_PI;
+    double rotated = ::atan2(y_mm, x_mm);
+
+    // Remove field rotation
+    double q_rad = rotated - tiletheta_rad;
 
     // The focal plane is oriented with +yfocal = +dec but +xfocal = -RA
     // Rotate clockwise around z by r_rad
@@ -348,6 +355,7 @@ fiberassign::geom::dpair fba::Hardware::xy2radec(
 
 void fba::Hardware::xy2radec_multi(
         double const & tilera, double const & tiledec,
+        double const & tiletheta,
         std::vector <double> const & x_mm, std::vector <double> const & y_mm,
         std::vector <std::pair <double, double> > & radec, int threads) const {
     size_t npos = x_mm.size();
@@ -367,9 +375,9 @@ void fba::Hardware::xy2radec_multi(
         run_threads = max_threads;
     }
 
-    #pragma omp parallel for schedule(static) default(none) shared(npos, tilera, tiledec, x_mm, y_mm, radec) num_threads(run_threads)
+    #pragma omp parallel for schedule(static) default(none) shared(npos, tilera, tiledec, tiletheta, x_mm, y_mm, radec) num_threads(run_threads)
     for (size_t i = 0; i < npos; ++i) {
-        radec[i] = xy2radec(tilera, tiledec, x_mm[i], y_mm[i]);
+        radec[i] = xy2radec(tilera, tiledec, tiletheta, x_mm[i], y_mm[i]);
     }
 
     return;

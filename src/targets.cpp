@@ -296,6 +296,7 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
         int32_t tid;
         double tra;
         double tdec;
+        double ttheta;
         int32_t tobs;
         std::pair <double, double> target_xy;
         weight_compare result_comp;
@@ -310,6 +311,7 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
             tra = ptiles->ra[i];
             tdec = ptiles->dec[i];
             tobs = ptiles->obscond[i];
+            ttheta = ptiles->obstheta[i];
             thread_data[tid].clear();
 
             // Get all targets in range of this tile
@@ -328,7 +330,9 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
                 auto const & obj = pobjs->data[tnear];
                 if ((obj.obscond & tobs) != 0) {
                     // Only use targets with correct obs conditions
-                    target_xy = phw->radec2xy(tra, tdec, obj.ra, obj.dec);
+                    target_xy = phw->radec2xy(
+                        tra, tdec, ttheta, obj.ra, obj.dec
+                    );
                     cur.id = obj.id;
                     cur.pos[0] = target_xy.first;
                     cur.pos[1] = target_xy.second;
@@ -377,8 +381,9 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
                 size_t tindx = 0;
                 for (auto const & tnear : nearby_loc) {
                     auto & obj = pobjs->data[tnear];
-                    auto obj_xy = phw->radec2xy(tra, tdec, obj.ra,
-                                                obj.dec);
+                    auto obj_xy = phw->radec2xy(
+                        tra, tdec, ttheta, obj.ra, obj.dec
+                    );
                     double dist = geom::sq(loc_xy, obj_xy);
                     double pdist = geom::sq(loc_patrol[j]);
                     if (dist > pdist) {

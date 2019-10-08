@@ -9,7 +9,10 @@ namespace fba = fiberassign;
 
 
 fba::Tiles::Tiles(std::vector <int32_t> ids, std::vector <double> ras,
-                  std::vector <double> decs, std::vector <int32_t> obs) {
+                  std::vector <double> decs, std::vector <int32_t> obs,
+                  std::vector <std::string> timeobs,
+                  std::vector <double> thetaobs,
+                  std::vector <double> hourangobs) {
 
     fba::Logger & logger = fba::Logger::get();
     std::ostringstream logmsg;
@@ -18,6 +21,9 @@ fba::Tiles::Tiles(std::vector <int32_t> ids, std::vector <double> ras,
     ra = ras;
     dec = decs;
     obscond = obs;
+    obstime = timeobs;
+    obstheta = thetaobs;
+    obshourang = hourangobs;
 
     // Construct the mapping of tile ID to position in the given sequence
     for (size_t i = 0; i < id.size(); ++i) {

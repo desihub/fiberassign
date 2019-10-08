@@ -62,20 +62,24 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
         double radial_dist2ang (double const & dist_mm) const;
 
         fbg::dpair radec2xy(double const & tilera,
-                                          double const & tiledec,
-                                          double const & ra,
-                                          double const & dec) const;
+                            double const & tiledec,
+                            double const & tiletheta,
+                            double const & ra,
+                            double const & dec) const;
 
         void radec2xy_multi(double const & tilera, double const & tiledec,
+                            double const & tiletheta,
                             std::vector <double> const & ra,
                             std::vector <double> const & dec,
                             std::vector <std::pair <double, double> >
                                 & xy, int threads = 0) const;
 
         fbg::dpair xy2radec(double const & tilera, double const & tiledec,
+                            double const & tiletheta,
                             double const & x_mm, double const & y_mm) const;
 
         void xy2radec_multi(double const & tilera, double const & tiledec,
+                            double const & tiletheta,
                             std::vector <double> const & x_mm,
                             std::vector <double> const & y_mm,
                             std::vector <std::pair <double, double> >

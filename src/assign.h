@@ -91,7 +91,7 @@ class Assignment : public std::enable_shared_from_this <Assignment> {
                              Targets const * tgs,
                              TargetsAvailable const * tgsavail,
                              int32_t tile_id, double tile_ra,
-                             double tile_dec,
+                             double tile_dec, double tile_theta,
                              std::map <int64_t, std::pair <double, double> >
                                 & target_xy) const;
 

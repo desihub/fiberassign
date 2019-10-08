@@ -37,30 +37,52 @@ def test_subdir_create(name):
     return test_dir
 
 
-def sim_focalplane(runtime=None):
+def sim_focalplane(runtime=None, fakepos=False):
     if runtime is None:
         runtime = datetime.utcnow()
 
     # First get the starting focalplane from desimodel
     fp, exclude, state, tmstr = dmio.load_focalplane(runtime)
 
-    # Now set some fibers to stuck / broken
-    mods = {
-        95: FIBER_STATE_BROKEN,
-        62: FIBER_STATE_BROKEN,
-        102: FIBER_STATE_STUCK,
-        82: FIBER_STATE_STUCK,
-        131: FIBER_STATE_STUCK
-    }
+    npos = len(fp)
 
-    for row, loc in enumerate(state["LOCATION"]):
-        if loc in mods:
-            state["STATE"][row] = mods[loc]
+    # Are we replacing the arms and theta lengths with the nominal values?
+    # This is useful in the field rotation test.
+    if fakepos:
+        phys_t = 380.0
+        phys_p = 200.0
+        t_min = -0.5 * phys_t
+        t_max = 0.5 * phys_t
+        p_min = 185.0 - phys_p
+        p_max = 185.0
+        for row in range(npos):
+            petalrot_deg = (float(7 + fp["PETAL"][row]) * 36.0) % 360.0
+            fp["OFFSET_T"][row] = -170.0 + petalrot_deg
+            fp["OFFSET_P"][row] = -5.0
+            fp["MIN_T"][row] = t_min
+            fp["MAX_T"][row] = t_max
+            fp["MIN_P"][row] = p_min
+            fp["MAX_P"][row] = p_max
+            fp["LENGTH_R1"][row] = 3.0
+            fp["LENGTH_R2"][row] = 3.0
+            state["STATE"][row] = 0
+    else:
+        # Now set some fibers to stuck / broken
+        mods = {
+            95: FIBER_STATE_BROKEN,
+            62: FIBER_STATE_BROKEN,
+            102: FIBER_STATE_STUCK,
+            82: FIBER_STATE_STUCK,
+            131: FIBER_STATE_STUCK
+        }
+        for row, loc in enumerate(state["LOCATION"]):
+            if loc in mods:
+                state["STATE"][row] = mods[loc]
 
     return fp, exclude, state
 
 
-def sim_tiles(path):
+def sim_tiles(path, selectfile=None):
     tile_dtype = np.dtype([
         ("TILEID", "i4"),
         ("RA", "f8"),
@@ -69,15 +91,16 @@ def sim_tiles(path):
         ("PROGRAM", "S6"),
         ("OBSCONDITIONS", "i4")
     ])
-    ntile = 7
+    # ntile = 7
+    ntile = 5
     fdata = np.zeros(ntile, dtype=tile_dtype)
     fdata[0] = (11108, 150.87, 31.23, 1, "DARK", 1)
     fdata[1] = (1165, 150.69, 33.86, 1, "DARK", 1)
     fdata[2] = (18465, 150.47, 33.20, 1, "DARK", 1)
     fdata[3] = (6927, 151.78, 33.84, 1, "DARK", 1)
     fdata[4] = (24227, 151.56, 33.18, 2, "DARK", 1)
-    fdata[5] = (16870, 151.96, 31.21, 1, "DARK", 1)
-    fdata[6] = (28408, 150.73, 30.52, 2, "DARK", 1)
+    # fdata[5] = (16870, 151.96, 31.21, 1, "DARK", 1)
+    # fdata[6] = (28408, 150.73, 30.52, 2, "DARK", 1)
 
     if os.path.isfile(path):
         os.remove(path)
@@ -86,6 +109,18 @@ def sim_tiles(path):
     header = dict()
     header["FBAVER"] = __version__
     fd.write(fdata, header=header)
+
+    if selectfile is not None:
+        if os.path.isfile(selectfile):
+            os.remove(selectfile)
+        tindx = 0
+        select = list()
+        for td in fdata:
+            if tindx % 2 == 0:
+                select.append(td[0])
+        with open(selectfile, "w") as f:
+            for t in select:
+                f.write("{}\n".format(t))
     return
 
 
@@ -160,3 +195,20 @@ def sim_targets(path, tgtype, tgoffset, density=5000.0):
     header["FBAVER"] = __version__
     fd.write(fdata, header=header)
     return ntarget
+
+
+def petal_rotation(npos, reverse=False):
+    """Return a dictionary that implements the petal rotation.
+    """
+    rot_petal = dict()
+    for p in range(10):
+        if reverse:
+            newp = p - npos
+            if newp < 0:
+                newp += 10
+        else:
+            newp = p + npos
+            if newp > 9:
+                newp -= 10
+        rot_petal[p] = newp
+    return rot_petal

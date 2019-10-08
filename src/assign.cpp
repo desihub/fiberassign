@@ -88,9 +88,10 @@ fba::Assignment::Assignment(fba::Targets::pshr tgs,
         int32_t tile_id = ptiles->id[t];
         double tile_ra = ptiles->ra[t];
         double tile_dec = ptiles->dec[t];
+        double tile_theta = ptiles->obstheta[t];
         std::map <int64_t, std::pair <double, double> > local_xy;
         project_targets(phw, ptgs, ptgsavail, tile_id, tile_ra, tile_dec,
-                        local_xy);
+                        tile_theta, local_xy);
         #pragma omp critical
         {
             logmsg.str("");
@@ -1802,7 +1803,7 @@ void fba::Assignment::targets_to_project(
 
 void fba::Assignment::project_targets(fba::Hardware const * hw,
         fba::Targets const * tgs, fba::TargetsAvailable const * tgsavail,
-        int32_t tile_id, double tile_ra, double tile_dec,
+        int32_t tile_id, double tile_ra, double tile_dec, double tile_theta,
         std::map <int64_t, std::pair <double, double> > & target_xy) const {
     // This function computes the projection of all available targets
     // into focalplane coordinates for one tile.  We do this once and then
@@ -1842,7 +1843,7 @@ void fba::Assignment::project_targets(fba::Hardware const * hw,
     // Now thread over the targets to compute
 
     std::vector <std::pair <double, double> > xy;
-    hw->radec2xy_multi(tile_ra, tile_dec, tgra, tgdec, xy);
+    hw->radec2xy_multi(tile_ra, tile_dec, tile_theta, tgra, tgdec, xy);
 
     for (size_t t = 0; t < tgids.size(); ++t) {
         target_xy[tgids[t]] = xy[t];

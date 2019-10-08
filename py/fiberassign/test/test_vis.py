@@ -13,7 +13,7 @@ from fiberassign.hardware import load_hardware
 
 from fiberassign.vis import (plot_positioner, plot_positioner_simple, Shape)
 
-from .simulate import test_subdir_create
+from .simulate import test_subdir_create, sim_focalplane
 
 import matplotlib.pyplot as plt
 
@@ -153,8 +153,7 @@ class TestVis(unittest.TestCase):
         return
 
 
-    def _load_and_plotfp(self, time, dir, suffix, simple=False):
-        hw = load_hardware(rundate=time)
+    def _load_and_plotfp(self, hw, dir, suffix, simple=False):
         locs = hw.locations
         center_mm = hw.loc_pos_xy_mm
         theta_arm = hw.loc_theta_arm
@@ -210,19 +209,39 @@ class TestVis(unittest.TestCase):
         plt.savefig(outfile, dpi=300, format="pdf")
         plt.close()
 
-    def test_plotfp(self):
-        test_dir = test_subdir_create("vis_test_plotfp")
-        time = datetime.utcnow().isoformat(timespec="seconds")
-        suffix = "{}_simple".format(time)
-        self._load_and_plotfp(time, test_dir, suffix, simple=True)
-        suffix = "{}".format(time)
-        self._load_and_plotfp(time, test_dir, suffix, simple=False)
-        time = "2012-12-12T00:00:00"
-        suffix = "{}_simple".format(time)
-        self._load_and_plotfp(time, test_dir, suffix, simple=True)
-        suffix = "{}".format(time)
-        self._load_and_plotfp(time, test_dir, suffix, simple=False)
-        return
+    # def test_plotfp(self):
+    #     test_dir = test_subdir_create("vis_test_plotfp")
+    #     time = datetime.utcnow().isoformat(timespec="seconds")
+    #     hw = load_hardware(rundate=time)
+    #     suffix = "{}_simple".format(time)
+    #     self._load_and_plotfp(hw, test_dir, suffix, simple=True)
+    #     suffix = "{}".format(time)
+    #     self._load_and_plotfp(hw, test_dir, suffix, simple=False)
+    #     time = "2012-12-12T00:00:00"
+    #     hw = load_hardware(rundate=time)
+    #     suffix = "{}_simple".format(time)
+    #     self._load_and_plotfp(hw, test_dir, suffix, simple=True)
+    #     suffix = "{}".format(time)
+    #     self._load_and_plotfp(hw, test_dir, suffix, simple=False)
+    #     return
+    #
+    # def test_plot_fakefp(self):
+    #     test_dir = test_subdir_create("vis_test_fakefp")
+    #     time = datetime.utcnow().isoformat(timespec="seconds")
+    #
+    #     # Simulate a fake focalplane
+    #     fp, exclude, state = sim_focalplane(fakepos=True)
+    #
+    #     # Load the focalplane
+    #     hw = load_hardware(focalplane=(fp, exclude, state))
+    #
+    #     suffix = "{}".format(time)
+    #     self._load_and_plotfp(hw, test_dir, suffix, simple=False)
+    #
+    #     time = "2012-12-12T00:00:00"
+    #     suffix = "{}".format(time)
+    #     self._load_and_plotfp(hw, test_dir, suffix, simple=False)
+    #     return
 
 
 def test_suite():

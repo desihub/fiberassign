@@ -128,7 +128,7 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         fulltarget (bool):  if True, dump the target information for all
             available targets, not just the ones that are assigned.
         overwrite (bool): overwrite output files or not
-        params (tuple):  tuple containing the tile ID, RA, DEC,
+        params (tuple):  tuple containing the tile ID, RA, DEC, rotation,
             output path, and GFA targets
 
     Returns:
@@ -137,7 +137,8 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
     """
     tm = Timer()
     tm.start()
-    tile_id, tile_ra, tile_dec, tile_file, gfa_targets = params
+    tile_id, tile_ra, tile_dec, tile_obstheta, tile_obstime, tile_obsha, \
+        tile_file, gfa_targets = params
     log = Logger.get()
 
     # Hardware properties
@@ -240,7 +241,9 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         # targets, not just the assigned ones.  This allows us to write out
         # the focalplane coordinates of all available targets as computed by
         # the code at the time it was run.
-        xy = hw.radec2xy_multi(tile_ra, tile_dec, tg_ra, tg_dec, 0)
+        xy = hw.radec2xy_multi(
+            tile_ra, tile_dec, tile_obstheta, tg_ra, tg_dec, 0
+        )
         for indx, fxy in enumerate(xy):
             tg_x[indx] = fxy[0]
             tg_y[indx] = fxy[1]
@@ -255,6 +258,10 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         header["TILEID"] = tile_id
         header["TILERA"] = tile_ra
         header["TILEDEC"] = tile_dec
+        header["FIELDROT"] = tile_obstheta
+        header["FA_DATE"] = tile_obstime
+        header["FA_HA"] = tile_obsha
+
         header["REQRA"] = tile_ra
         header["REQDEC"] = tile_dec
         header["FIELDNUM"] = 0
@@ -300,7 +307,9 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
                 [fpos_xy_mm[f][0] for f in empty_fibers], dtype=np.float64)
             empty_y = np.array(
                 [fpos_xy_mm[f][1] for f in empty_fibers], dtype=np.float64)
-            radec = hw.xy2radec_multi(tile_ra, tile_dec, empty_x, empty_y, 0)
+            radec = hw.xy2radec_multi(
+                tile_ra, tile_dec, tile_obstheta, empty_x, empty_y, 0
+            )
             assigned_tgx[assigned_invalid] = empty_x
             assigned_tgy[assigned_invalid] = empty_y
             assigned_tgra[assigned_invalid] = [x for x, y in radec]
@@ -483,6 +492,9 @@ def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fiberassign_",
     tileorder = tiles.order
     tilera = tiles.ra
     tiledec = tiles.dec
+    tiletheta = tiles.obstheta
+    tiletime = tiles.obstime
+    tileha = tiles.obshourang
 
     write_tile = partial(write_assignment_fits_tile,
                          asgn, all_targets, overwrite)
@@ -490,12 +502,18 @@ def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fiberassign_",
     for i, tid in enumerate(tileids):
         tra = tilera[tileorder[tid]]
         tdec = tiledec[tileorder[tid]]
+        ttheta = tiletheta[tileorder[tid]]
+        ttime = tiletime[tileorder[tid]]
+        tha = tileha[tileorder[tid]]
+
         outfile = result_path(tid, dir=out_dir, prefix=out_prefix,
                               create=True, split=split_dir)
         if gfa_targets is None:
-            params = (tid, tra, tdec, outfile, None)
+            params = (tid, tra, tdec, ttheta, ttime, tha, outfile, None)
         else:
-            params = (tid, tra, tdec, outfile, gfa_targets[i])
+            params = (
+                tid, tra, tdec, ttheta, ttime, tha, outfile, gfa_targets[i]
+            )
 
         write_tile(params)
 
