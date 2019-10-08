@@ -128,7 +128,7 @@ if args.starmask is not None:
 
 #- mtl, sky, stdstar -> targets
 opts = args.__dict__.copy()
-opts['targets'] = [args.mtl, args.sky]
+opts['targets'] = [args.mtl,]
 if args.stdstar is not None:
     opts["targets"].append(args.stdstar)
 
@@ -140,7 +140,7 @@ opts['standards_per_petal'] = args.nstarpetal
 opts['sky_per_petal'] = args.nskypetal
 
 #- remove keys for options that were renamed
-for key in ['mtl', 'sky', 'stdstar', 'outdir', 'fibstatusfile', 'surveytiles',
+for key in ['mtl', 'stdstar', 'outdir', 'fibstatusfile', 'surveytiles',
             'nstarpetal', 'nskypetal', 'starmask']:
     if key in opts:
         del opts[key]
