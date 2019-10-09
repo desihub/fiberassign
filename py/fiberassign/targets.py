@@ -173,6 +173,27 @@ def default_cmx_sciencemask():
     sciencemask |= cmx_mask["SV0_ELG"].mask
     sciencemask |= cmx_mask["SV0_QSO"].mask
     sciencemask |= cmx_mask["SV0_WD"].mask
+    
+    #SE: ADDED NEW FIRST_LIGHT SCEINCE TARGERTS FROM https://github.com/desihub/desitarget/blob/master/py/desitarget/cmx/data/cmx_targetmask.yaml#L19-L39
+    
+    sciencemask |= cmx_mask["BACKUP_BRIGHT"].mask
+    sciencemask |= cmx_mask["BACKUP_FAINT"].mask
+    sciencemask |= cmx_mask["M31_STD_BRIGHT"].mask
+    sciencemask |= cmx_mask["M31_H2PN"].mask
+    sciencemask |= cmx_mask["M31_GC"].mask
+    sciencemask |= cmx_mask["M31_VAR"].mask
+    sciencemask |= cmx_mask["M31_QSO"].mask
+    sciencemask |= cmx_mask["M31_BSPL"].mask
+    sciencemask |= cmx_mask["M31_M31cen"].mask
+    sciencemask |= cmx_mask["M31_M31out"].mask
+    sciencemask |= cmx_mask["ORI_STD_BRIGHT"].mask
+    sciencemask |= cmx_mask["ORI_QSO"].mask
+    sciencemask |= cmx_mask["ORI_ORI"].mask
+    sciencemask |= cmx_mask["ROS_STD_BRIGHT"].mask
+    sciencemask |= cmx_mask["ROS_QSO"].mask
+    sciencemask |= cmx_mask["ROS_ROSM17"].mask
+    sciencemask |= cmx_mask["ROS_ROS1"].mask
+    sciencemask |= cmx_mask["ROS_ROS2"].mask
 
     return sciencemask
 
