@@ -16,7 +16,23 @@ from ._internal import Tiles
 from .utils import Logger, Timer
 
 
-def get_gfa_targets(tiles, gfafile):
+def isolated(ra, dec, mindist=5.0):
+    '''
+    Returns bool array for whether targets are isolated
+    Args:
+        ra: array, RA in degrees
+        dec: array, dec in degrees
+        mindist: minimum separation distance in arcsec
+    '''
+    import astropy.units as u
+    from astropy.coordinates import SkyCoord
+    cx = SkyCoord(ra*u.deg, dec*u.deg)
+    index, separation, dist3d = cx.match_to_catalog_sky(cx, nthneighbor=2)
+    return separation.to(u.arcsec) > mindist*u.arcsec
+
+
+def get_gfa_targets(tiles, gfafile,faintlim=99):
+     
     """Returns a list of tables of GFA targets on each tile
 
     Args:
@@ -48,7 +64,7 @@ def get_gfa_targets(tiles, gfafile):
 
     # Load potential GFA targets and GFA locations
     targets = fitsio.read(gfafile)
-    gfa = desimodel.focalplane.gfa.GFALocations()
+    gfa = desimodel.focalplane.gfa.GFALocations(scale=2)
 
     # Pre-filter what GFA targets cover what tiles with some buffer.
     # find_points_in_tiles returns a list of lists;
@@ -69,7 +85,7 @@ def get_gfa_targets(tiles, gfafile):
         tmp = gfa.targets_on_gfa(telra, teldec,
                                  targets[gfa_tile_indices[tileid]])
         t = Table(tmp)
-
+        
         # Rename some columns for downstream clarity and consistency
         for oldname, newname in [
                 ("TYPE", "MORPHTYPE"),
@@ -82,13 +98,33 @@ def get_gfa_targets(tiles, gfafile):
 
         # Select which targets are good for ETC / GUIDE / FOCUS
         # 0 == good
-        flag = np.ones(len(t), dtype="i2")
-        ii = (t["MORPHTYPE"] == "PSF") | (t["MORPHTYPE"] == "PSF ")
-        if np.count_nonzero(ii) == 0:
+
+        flag = np.zeros(len(t), dtype="i2")
+
+        #- Not PSF-like
+        isPSF = (t["MORPHTYPE"] == "PSF ") | (t["MORPHTYPE"] == "GPSF") | (t["MORPHTYPE"] == "PSF")
+        flag[~isPSF] |= 2**0
+
+        #- Not Isolated
+        if len(tmp) > 1:
+            notIsolated = ~isolated(tmp['RA'], tmp['DEC'])
+            flag[notIsolated] |= 2**1
+
+        #- Questionable astrometry / proper motion
+        tych = (0 < t['REF_ID']) 
+        tych &= ( t['REF_ID'] < 1e10)
+        flag[tych] |= 2**2
+
+        #- Too faint
+        faint = t['GAIA_PHOT_G_MEAN_MAG'] > faintlim
+        flag[faint] |= 2**3
+
+        
+        if len(flag)-np.count_nonzero(flag) == 0:
             log.error("ERROR: no good GFA targets for "
                       "ETC/GUIDE/FOCUS on tile {}".format(tileid))
 
-        flag[ii] = 0
+        
         t["ETC_FLAG"] = flag
         t["GUIDE_FLAG"] = flag
         t["FOCUS_FLAG"] = flag
