@@ -71,8 +71,6 @@ results_assign_columns = OrderedDict([
     ("FA_TYPE", "u1"),
     ("DESIGN_X", "f4"),
     ("DESIGN_Y", "f4"),
-    ("DESIGN_Q", "f4"),
-    ("DESIGN_S", "f4"),
 ])
 
 results_targets_columns = OrderedDict([
@@ -336,12 +334,6 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         fdata["DESIGN_Y"] = assigned_tgy
         fdata["FA_TARGET"] = assigned_tgbits
         fdata["FA_TYPE"] = assigned_tgtype
-
-        assigned_q, assigned_s = desimodel.focalplane.xy2qs(
-            assigned_tgx, assigned_tgy)
-
-        fdata["DESIGN_Q"] = assigned_q
-        fdata["DESIGN_S"] = assigned_s
 
         fibers = dict(hw.loc_fiber)
         etcloc = sorted([x for x, y in fibers.items() if y < 0])
@@ -822,8 +814,6 @@ merged_fiberassign_req_columns = OrderedDict([
     ("DESIGN_Y", "f4"),
     ("BRICKNAME", "a8"),
     ("FIBERSTATUS", "i4"),
-    ("DESIGN_Q", "f4"),
-    ("DESIGN_S", "f4"),
     ("LAMBDA_REF", "f4"),
     ("OBJTYPE", "a3"),
     ("PETAL_LOC", "i2"),
@@ -847,8 +837,6 @@ merged_skymon_columns = OrderedDict([
     ("DESIGN_Y", "f4"),
     ("BRICKNAME", "a8"),
     ("FIBERSTATUS", "i4"),
-    ("DESIGN_Q", "f4"),
-    ("DESIGN_S", "f4"),
     ("PETAL_LOC", "i2"),
     ("DEVICE_LOC", "i4"),
     ("PRIORITY", "i4"),
