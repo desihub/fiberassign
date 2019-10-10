@@ -57,40 +57,31 @@ def load_tiles(tiles_file=None, select=None, obstime=None, obstheta=None):
         'ignore', message=
         r'ERFA function \"[a-z0-9_]+\" yielded [0-9]+ of \"dubious year')
 
-    obsdate = None
     if obstime is not None:
-        # We are overriding the observation date for all tiles.
-        dtobs = None
-        if re.match(".*:.*", obstime) is not None:
-            dtobs = datetime.strptime(obstime, "%Y-%m-%dT%H:%M:%S")
-        else:
-            dtobs = datetime.strptime(obstime, "%Y-%m-%d")
-        obsdate = [dtobs for x in range(len(keeprows))]
+        # obstime is given, use that for all tiles
+        obsdate = astropy.time.Time(obstime)
+        obsmjd = [obsdate.mjd,] * len(keeprows)
+        obsdatestr = [obsdate.isot, ] * len(keeprows)
     elif "OBSDATE" in tiles_data.names:
         # We have the obsdate for every tile in the file.
-        obsdate = [
-            datetime.strptime(x, "%Y-%m-%dT%H:%M:%S")
-            for x in tiles_data["OBSDATE"][keeprows]
-        ]
+        obsdate = [astropy.time.Time(x) for x in tiles_data["OBSDATE"][keeprows]]
+        obsmjd = [x.mjd for x in obsdate]
+        obsdatestr = [x.isot for x in obsdate]
     else:
-        # We have no information.  Use the middle of the survey.
-        obsdate = [
-            datetime.strptime("2022-07-01", "%Y-%m-%d")
-            for x in range(len(keeprows))
-        ]
-
-    obsdatestr = [x.isoformat() for x in obsdate]
+        # default to middle of the survey
+        obsdate = astropy.time.Time('2022-07-01')
+        obsmjd = [obsdate.mjd,] * len(keeprows)
+        obsdatestr = [obsdate.isot, ] * len(keeprows)
 
     # Eventually, call a function from desimodel to query the field
     # rotation and hour angle for every tile time.
 
     if obstheta is None:
         theta_obs = list()
-        for tra, tdec, ttime in zip(
+        for tra, tdec, mjd in zip(
                 tiles_data["RA"][keeprows],
                 tiles_data["DEC"][keeprows],
-                obsdate):
-            mjd = astropy.time.Time(ttime).mjd
+                obsmjd):
             th = field_rotation_angle(tra, tdec, mjd)
             theta_obs.append(th)
         theta_obs = np.array(theta_obs)

@@ -12,6 +12,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import sys
 import argparse
+import re
 
 from ..utils import GlobalTimers, Logger
 
@@ -88,6 +89,14 @@ def parse_assign(optlist=None):
                         "focalplane properties and state from desimodel.  "
                         "Default uses the current date.  Format is "
                         "YYYY-MM-DDTHH:mm:ss in UTC time.")
+
+    parser.add_argument("--obsdate", type=str, required=False, default="2022-07-01",
+                        help="Plan field rotations for this date (YEARMMDD, "
+                        "or ISO 8601 YEAR-MM-DD with or without time).")
+
+    parser.add_argument("--fieldrot", type=float, required=False, default=None,
+                        help="Override obsdate and use this field rotation "
+                        "for all tiles (degrees counter clockwise in CS5)")
 
     parser.add_argument("--dir", type=str, required=False, default=None,
                         help="Output directory.")
@@ -205,6 +214,14 @@ def parse_assign(optlist=None):
             except ValueError:
                 args.excludemask = desi_mask.mask(args.excludemask.replace(",","|"))
 
+    # convert YEARMMDD to YEAR-MM-DD to be ISO 8601 compatible
+    if re.match('\d{8}', args.obsdate):
+        year = args.obsdate[0:4]
+        mm = args.obsdate[4:6]
+        dd = args.obsdate[6:8]
+        #- Note: ISO8601 does not require time portion
+        args.obsdate = '{}-{}-{}'.format(year, mm, dd)
+
     # Set output directory
     if args.dir is None:
         if args.rundate is None:
@@ -242,7 +259,8 @@ def run_assign_init(args):
                     tileselect.append(int(line.split()[0]))
                 except ValueError:
                     pass
-    tiles = load_tiles(tiles_file=args.footprint, select=tileselect)
+    tiles = load_tiles(tiles_file=args.footprint, select=tileselect,
+        obstime=args.obsdate, obstheta=args.fieldrot)
 
     # Before doing significant calculations, check for pre-existing files
     if not args.overwrite:
