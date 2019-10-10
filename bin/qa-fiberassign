@@ -74,7 +74,8 @@ for filename in args.tilefiles:
 
     survey = None
     if "FA_SURV" in header:
-            survey = str(header["FA_SURV"]).rstrip()
+        
+        survey = str(header["FA_SURV"]).rstrip()
 
     
     sciencemask = None
@@ -84,16 +85,17 @@ for filename in args.tilefiles:
     col=None
     if survey is not None:
             
-            sciencemask, stdmask, skymask, safemask, excludemask = default_survey_target_masks(survey)
+        sciencemask, stdmask, skymask, safemask, excludemask = default_survey_target_masks(survey)
   
     else:
-            fsurvey, col, sciencemask, stdmask, skymask, safemask, \
+        fsurvey, col, sciencemask, stdmask, skymask, safemask, \
                 excludemask = default_target_masks(fbtargets)
-            survey = fsurvey
+        survey = fsurvey
 
 
 
-    fa = Table.read(filename, 'FIBERASSIGN')
+
+    fa = Table.read(filename, 'FIBERASSIGN')    
     fa.sort('FIBER')
     assigned.append(fa)
     try:
@@ -123,20 +125,22 @@ for filename in args.tilefiles:
 
     if survey == "main":
 
-          num_no_desitarget = np.count_nonzero(fa['DESI_TARGET'] == 0)
+        num_no_desitarget = np.count_nonzero(fa['DESI_TARGET'] == 0)
+        bitmask = 'DESI_TARGET'
 
     elif survey == "cmx":
-
-          num_no_desitarget = np.count_nonzero(fa['CMX_TARGET'] == 0)
+          
+        num_no_desitarget = np.count_nonzero(fa['CMX_TARGET'] == 0)
+        bitmask = 'CMX_TARGET'
 
     elif survey == "sv1":
 
-          num_no_desitarget = np.count_nonzero(fa['SV1_DESI_TARGET'] == 0)
-
+        num_no_desitarget = np.count_nonzero(fa['SV1_DESI_TARGET'] == 0)
+        bitmask = 'SV1_DESI_TARGET'
 
     
     if num_no_desitarget > 0:
-        errors.append('{} fibers with DESI_TARGET=0'.format(num_no_desitarget))
+        errors.append('{} fibers with {}=0'.format(num_no_desitarget,bitmask))
 
     is_stuck = ((fa['FIBERSTATUS'] & stuck_mask) != 0)
     is_broken = ((fa['FIBERSTATUS'] & broken_mask) != 0)
@@ -149,7 +153,8 @@ for filename in args.tilefiles:
     if len(tx) != len(np.unique(tx)):
         errors.append('{} repeated TARGETID'.format(
             len(tx) - len(np.unique(tx))))
-
+    
+    # SE: per PR#240 LOCATION = 1000*PETAL_LOC + DEVICE_LOC 
     if sorted(zip(fa['FIBER'], fa['LOCATION'])) != fiber_locations:
         errors.append('fiber:location map incorrect')
 
@@ -322,6 +327,7 @@ print()
 print()
 print('Assignment probability if covered exactly N times')
 print('            1     2     3     4     5     6     7     8     9')
+print('        ', end='')
 
 objlist=[]
 
