@@ -3,12 +3,13 @@
 fiberassign change log
 ======================
 
-1.1.1 (unreleased)
+1.2.0 (unreleased)
 ------------------
 
 * fiberassign support for CMX targets + MAIN skies (PR `#224`_).
 * Added cmx_science bits for first light targets (PR `#225`_).
 * Use per-tile field rotations from desimodel.focalplane.fieldrot (PR `#226`_).
+* Format updates to match ICS and some cleanup.
 
 .. _`#224`: https://github.com/desihub/fiberassign/pull/224
 .. _`#225`: https://github.com/desihub/fiberassign/pull/225

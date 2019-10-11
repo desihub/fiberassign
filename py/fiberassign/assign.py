@@ -69,10 +69,8 @@ results_assign_columns = OrderedDict([
     ("TARGET_DEC", "f8"),
     ("FA_TARGET", "i8"),
     ("FA_TYPE", "u1"),
-    ("DESIGN_X", "f4"),
-    ("DESIGN_Y", "f4"),
-    ("DESIGN_Q", "f4"),
-    ("DESIGN_S", "f4"),
+    ("FIBERASSIGN_X", "f4"),
+    ("FIBERASSIGN_Y", "f4"),
 ])
 
 results_targets_columns = OrderedDict([
@@ -332,16 +330,10 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
 
         fdata["TARGET_RA"] = assigned_tgra
         fdata["TARGET_DEC"] = assigned_tgdec
-        fdata["DESIGN_X"] = assigned_tgx
-        fdata["DESIGN_Y"] = assigned_tgy
+        fdata["FIBERASSIGN_X"] = assigned_tgx
+        fdata["FIBERASSIGN_Y"] = assigned_tgy
         fdata["FA_TARGET"] = assigned_tgbits
         fdata["FA_TYPE"] = assigned_tgtype
-
-        assigned_q, assigned_s = desimodel.focalplane.xy2qs(
-            assigned_tgx, assigned_tgy)
-
-        fdata["DESIGN_Q"] = assigned_q
-        fdata["DESIGN_S"] = assigned_s
 
         fibers = dict(hw.loc_fiber)
         etcloc = sorted([x for x, y in fibers.items() if y < 0])
@@ -806,32 +798,40 @@ merged_fiberassign_swap = {
     "RA": "TARGET_RA",
     "DEC": "TARGET_DEC",
     "RA_IVAR": "TARGET_RA_IVAR",
-    "DEC_IVAR": "TARGET_DEC_IVAR"
+    "DEC_IVAR": "TARGET_DEC_IVAR",
+    "APFLUX_G": "FIBERFLUX_G",
+    "APFLUX_R": "FIBERFLUX_R",
+    "APFLUX_Z": "FIBERFLUX_Z",
+    "APFLUX_IVAR_G": "FIBERFLUX_IVAR_G",
+    "APFLUX_IVAR_R": "FIBERFLUX_IVAR_R",
+    "APFLUX_IVAR_Z": "FIBERFLUX_IVAR_Z",
 }
 
 merged_fiberassign_req_columns = OrderedDict([
-    ("FIBER", "i4"),
-    ("LOCATION", "i4"),
-    ("NUMTARGET", "i2"),
     ("TARGETID", "i8"),
-    ("FA_TARGET", "i8"),
-    ("FA_TYPE", "u1"),
-    ("TARGET_RA", "f8"),
-    ("TARGET_DEC", "f8"),
-    ("DESIGN_X", "f4"),
-    ("DESIGN_Y", "f4"),
-    ("BRICKNAME", "a8"),
-    ("FIBERSTATUS", "i4"),
-    ("DESIGN_Q", "f4"),
-    ("DESIGN_S", "f4"),
-    ("LAMBDA_REF", "f4"),
-    ("OBJTYPE", "a3"),
     ("PETAL_LOC", "i2"),
     ("DEVICE_LOC", "i4"),
+    ("LOCATION", "i4"),
+    ("FIBER", "i4"),
+    ("FIBERSTATUS", "i4"),
+    ("TARGET_RA", "f8"),
+    ("TARGET_DEC", "f8"),
+    ("PMRA", "f4"),
+    ("PMDEC", "f4"),
+    ("PMRA_IVAR", "f4"),
+    ("PMDEC_IVAR", "f4"),
+    ("REF_EPOCH", "f4"),
+    ("LAMBDA_REF", "f4"),
+    ("FA_TARGET", "i8"),
+    ("FA_TYPE", "u1"),
+    ("OBJTYPE", "a3"),
+    ("FIBERASSIGN_X", "f4"),
+    ("FIBERASSIGN_Y", "f4"),
+    ("NUMTARGET", "i2"),
     ("PRIORITY", "i4"),
     ("SUBPRIORITY", "f8"),
     ("OBSCONDITIONS", "i4"),
-    ("NUMOBS_MORE", "i4")
+    ("NUMOBS_MORE", "i4"),
 ])
 
 merged_skymon_columns = OrderedDict([
@@ -839,19 +839,26 @@ merged_skymon_columns = OrderedDict([
     ("LOCATION", "i4"),
     ("NUMTARGET", "i2"),
     ("TARGETID", "i8"),
+    ("BRICKID", "i4"),
+    ("BRICK_OBJID", "i4"),
     ("FA_TARGET", "i8"),
     ("FA_TYPE", "u1"),
     ("TARGET_RA", "f8"),
     ("TARGET_DEC", "f8"),
-    ("DESIGN_X", "f4"),
-    ("DESIGN_Y", "f4"),
+    ("FIBERASSIGN_X", "f4"),
+    ("FIBERASSIGN_Y", "f4"),
     ("BRICKNAME", "a8"),
     ("FIBERSTATUS", "i4"),
-    ("DESIGN_Q", "f4"),
-    ("DESIGN_S", "f4"),
     ("PETAL_LOC", "i2"),
     ("DEVICE_LOC", "i4"),
     ("PRIORITY", "i4"),
+    ("SUBPRIORITY", "f8"),
+    ("FIBERFLUX_G", "f4"),
+    ("FIBERFLUX_R", "f4"),
+    ("FIBERFLUX_Z", "f4"),
+    ("FIBERFLUX_IVAR_G", "f4"),
+    ("FIBERFLUX_IVAR_R", "f4"),
+    ("FIBERFLUX_IVAR_Z", "f4"),
 ])
 
 merged_potential_columns = OrderedDict([
@@ -1084,6 +1091,12 @@ def merge_results_tile(out_dtype, copy_fba, params):
             else:
                 outdata[c][fassign_valid] = tile_targets[c][target_rows]
 
+    # Special check for REF_EPOCH which isn't in MTL yet
+    ismoving = (outdata['PMRA'] != 0) | (outdata['PMDEC'] != 0)
+    if np.all(outdata['REF_EPOCH'] == 0.0) and np.any(ismoving):
+        log.error('REF_EPOCH not set, using 2015.5')
+        outdata['REF_EPOCH'][ismoving] = 2015.5
+
     # tm.stop()
     # tm.report("  copy external data to output {}".format(tile_id))
     # tm.clear()
@@ -1120,7 +1133,7 @@ def merge_results_tile(out_dtype, copy_fba, params):
 
     # Copy GFA data if it exists
     if gfa_targets is not None:
-        fd.write(gfa_targets, extname="GFA_TARGETS")
+        fd.write(gfa_targets, header=inhead, extname="GFA_TARGETS")
 
     # Write the per-tile catalog information also.  Sadly, this HDU is
     # expected to have the original column names.  We swap them back, which
