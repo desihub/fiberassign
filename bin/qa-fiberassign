@@ -159,8 +159,8 @@ for filename in args.tilefiles:
         errors.append('fiber:location map incorrect')
 
     ii = fa['TARGETID'] >= 0
-    dx = (fa['DESIGN_X'][ii] - fiberpos['X'][ii])
-    dy = (fa['DESIGN_Y'][ii] - fiberpos['Y'][ii])
+    dx = (fa['FIBERASSIGN_X'][ii] - fiberpos['X'][ii])
+    dy = (fa['FIBERASSIGN_X'][ii] - fiberpos['Y'][ii])
     r = np.sqrt(dx**2 + dy**2)
     if np.max(r) > 6:
         errors.append('Fibers assigned to more than 6mm from positioner center')
