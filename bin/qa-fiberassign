@@ -36,7 +36,8 @@ parser.add_argument("tilefiles", type=str, nargs='+', help="fiber assign tile fi
 
 args = parser.parse_args()
 
-fiberpos = Table(desimodel.io.load_fiberpos())
+fibermap = desimodel.io.load_focalplane()
+fiberpos = fibermap[0] 
 fiberpos.sort('FIBER')
 fiber_locations = sorted(zip(fiberpos['FIBER'], fiberpos['LOCATION']))
 
@@ -123,24 +124,44 @@ for filename in args.tilefiles:
             break
 
 
+    nsky_total = 0
+    nstdstar_total = 0
+
+    for petal in range(10):
+        ii = (fa['FIBER'] // 500) == petal
+
+        nstd = np.count_nonzero(fa['FA_TARGET'][ii] & stdmask)
+        nsky = np.count_nonzero(fa['FA_TARGET'][ii] & skymask)
+
+
+        nsky_total += nsky
+        nstdstar_total += nstd
+
+        if nstd < 10:
+            errors.append('Petal {} has {}/10 stdstars'.format(petal, nstd))
+        if nsky < 40:
+            errors.append('Petal {} has {}/40 sky'.format(petal, nsky))
+
+
     if survey == "main":
 
         num_no_desitarget = np.count_nonzero(fa['DESI_TARGET'] == 0)
         bitmask = 'DESI_TARGET'
 
     elif survey == "cmx":
-          
+                
         num_no_desitarget = np.count_nonzero(fa['CMX_TARGET'] == 0)
         bitmask = 'CMX_TARGET'
 
-    elif survey == "sv1":
 
+    elif survey == "sv1":
+        
         num_no_desitarget = np.count_nonzero(fa['SV1_DESI_TARGET'] == 0)
         bitmask = 'SV1_DESI_TARGET'
 
-    
-    if num_no_desitarget > 0:
-        errors.append('{} fibers with {}=0'.format(num_no_desitarget,bitmask))
+    ### SE no error should be raised if only assigned SKY fibers have CMX/SV/DESI_TARGET == 0 
+    if num_no_desitarget > nsky_total:
+        errors.append('{} non-SKY fibers with {}=0'.format(num_no_desitarget,bitmask))
 
     is_stuck = ((fa['FIBERSTATUS'] & stuck_mask) != 0)
     is_broken = ((fa['FIBERSTATUS'] & broken_mask) != 0)
@@ -154,41 +175,38 @@ for filename in args.tilefiles:
         errors.append('{} repeated TARGETID'.format(
             len(tx) - len(np.unique(tx))))
     
-    # SE: per PR#240 LOCATION = 1000*PETAL_LOC + DEVICE_LOC 
-    if sorted(zip(fa['FIBER'], fa['LOCATION'])) != fiber_locations:
+    ### SE: Only match the FIBER,LOCATION tuples for fiberIDs <5000 until ETC fibers get actual FIBERID number \
+    ###     not -1;  though the next 6 lines do deal with matching locations aside from associated FIBERIDs
+
+    #fiber_locations = sorted(zip(fiberpos[fiberpos['FIBER']<5000]['FIBER'], fiberpos[fiberpos['FIBER']<5000]['LOCATION']))
+    #if sorted(zip(fa[fa['FIBER']<5000]['FIBER'], fa[fa['FIBER']<5000]['LOCATION'])) != fiber_locations:
+    #    errors.append('fiber:location map incorrect')
+
+    ### New focalplane layout does not have the same size as fa columns: 5020 vs 5000
+    maploc = list(fiberpos['LOCATION'])
+    faloc = set(list(fa['LOCATION']))
+    ind = np.asarray([i in faloc for i in maploc])
+    matched_fiberpos = fiberpos[ind]
+    
+    if len(matched_fiberpos) != len(faloc):   
         errors.append('fiber:location map incorrect')
 
+     
     ii = fa['TARGETID'] >= 0
+    fiberpos = matched_fiberpos
     if 'DESIGN_X' in fa.colnames:
         #- old name
         dx = (fa['DESIGN_X'][ii] - fiberpos['X'][ii])
         dy = (fa['DESIGN_Y'][ii] - fiberpos['Y'][ii])
     else:
         #- new name
-        dx = (fa['FIBERASSIGN_X'][ii] - fiberpos['X'][ii])
-        dy = (fa['FIBERASSIGN_Y'][ii] - fiberpos['Y'][ii])
+        dx = (fa['FIBERASSIGN_X'][ii] - fiberpos['OFFSET_X'][ii])
+        dy = (fa['FIBERASSIGN_Y'][ii] - fiberpos['OFFSET_Y'][ii])
 
     r = np.sqrt(dx**2 + dy**2)
     if np.max(r) > 6:
         errors.append('Fibers assigned to more than 6mm from positioner center')
 
-    nsky_total = 0
-    nstdstar_total = 0
-    
-    for petal in range(10):
-        ii = (fa['FIBER'] // 500) == petal
-        
-        nstd = np.count_nonzero(fa['FA_TARGET'][ii] & stdmask)
-        nsky = np.count_nonzero(fa['FA_TARGET'][ii] & skymask)
-       
-
-        nsky_total += nsky
-        nstdstar_total += nstd
-        
-        if nstd < 10:
-            errors.append('Petal {} has {}/10 stdstars'.format(petal, nstd))
-        if nsky < 40:
-            errors.append('Petal {} has {}/40 sky'.format(petal, nsky))
 
     #- Print any errors
     if len(errors) == 0:
@@ -224,6 +242,7 @@ covered = np.concatenate(covered)
 targets = Table.read(args.targets)
 #- TODO: count and remove sky targets
 
+### SE: Is the check below necessary? fiberassign crashes if there is duplicate TARGETID so there would not be any fiberassign outputs for which we would run the qa-fiberassign 
 if len(targets) != len(np.unique(targets['TARGETID'])):
     print('ERROR: target catalog has repeated TARGETIDs')
 
@@ -334,7 +353,6 @@ print()
 print()
 print('Assignment probability if covered exactly N times')
 print('            1     2     3     4     5     6     7     8     9')
-print('        ', end='')
 
 objlist=[]
 
@@ -349,27 +367,27 @@ if survey == "main":
         if len(tx) == 0:
             print('no targets')
             continue
+        
+        #- nt: coverage counts for just those targets
+        jj = np.in1d(covered, tx)
+        ntx = Counter(covered[jj])
+        #- Count how many targets are covered n times for this objtype
+        ntx_keys = np.asarray(list(ntx.keys()))
+        ntx_values = np.asarray(list(ntx.values()))
 
-            #- nt: coverage counts for just those targets
-            jj = np.in1d(covered, tx)
-            ntx = Counter(covered[jj])
-            #- Count how many targets are covered n times for this objtype
-            ntx_keys = np.asarray(list(ntx.keys()))
-            ntx_values = np.asarray(list(ntx.values()))
-
-            for n in range(1,10):
+        for n in range(1,10):
             #- Targets covered n or less times
-                kk = (ntx_values == n)
-                if np.count_nonzero(kk) > 0:
-                    ncovered = len(np.unique(ntx_keys[kk]))
-                    nassigned = np.count_nonzero(np.in1d(unique_assigned_targetids,
+            kk = (ntx_values == n)
+            if np.count_nonzero(kk) > 0:
+                ncovered = len(np.unique(ntx_keys[kk]))
+                nassigned = np.count_nonzero(np.in1d(unique_assigned_targetids,
                                                  ntx_keys[kk]))
-                    pobs = 100.0 * nassigned / ncovered
-                    print('{:6.1f}'.format(pobs), end='')
-                else:
+                pobs = 100.0 * nassigned / ncovered
+                print('{:6.1f}'.format(pobs), end='')
+            else:
                     print('   ---', end='')
 
-                print()
+        print()
                
                
 elif survey == "cmx":
@@ -384,33 +402,33 @@ elif survey == "cmx":
             print('no targets')
             continue
 
-            #- nt: coverage counts for just those targets
-            jj = np.in1d(covered, tx)
-            ntx = Counter(covered[jj])
-            #- Count how many targets are covered n times for this objtype
-            ntx_keys = np.asarray(list(ntx.keys()))
-            ntx_values = np.asarray(list(ntx.values()))
-
-            for n in range(1,10):
-                #- Targets covered n or less times
-                kk = (ntx_values == n)
-                if np.count_nonzero(kk) > 0:
-                    ncovered = len(np.unique(ntx_keys[kk]))
-                    nassigned = np.count_nonzero(np.in1d(unique_assigned_targetids,
+        
+        #- nt: coverage counts for just those targets
+        jj = np.in1d(covered, tx)
+        ntx = Counter(covered[jj])
+        #- Count how many targets are covered n times for this objtype
+        ntx_keys = np.asarray(list(ntx.keys()))
+        ntx_values = np.asarray(list(ntx.values()))
+        for n in range(1,10):
+            #- Targets covered n or less times
+            kk = (ntx_values == n)
+            if np.count_nonzero(kk) > 0:
+                ncovered = len(np.unique(ntx_keys[kk]))
+                nassigned = np.count_nonzero(np.in1d(unique_assigned_targetids,
                                                  ntx_keys[kk]))
-                    pobs = 100.0 * nassigned / ncovered
-                    print('{:6.1f}'.format(pobs), end='')
-                else:
-                    print('   ---', end='')
+                pobs = 100.0 * nassigned / ncovered
+                print('{:6.1f}'.format(pobs), end='')
+            else:
+                print('   ---', end='')
 
-                print()
+        print()
 
               
 
 
 elif survey == "sv1":
 
-    objlist = ['ELG', 'LRG', 'QSO', 'MWS_ANY', 'BGS_ANY']
+    objlist = ['ELG', 'LRG', 'QSO', 'MWS_ANY', 'BGS_ANY', 'SCND_ANY']
     for objtype in objlist:
         print('{:8s}'.format(objtype), end='')
 
@@ -419,27 +437,27 @@ elif survey == "sv1":
         if len(tx) == 0:
             print('no targets')
             continue
+        
+        #- nt: coverage counts for just those targets
+        jj = np.in1d(covered, tx)
+        ntx = Counter(covered[jj])
+        #- Count how many targets are covered n times for this objtype
+        ntx_keys = np.asarray(list(ntx.keys()))
+        ntx_values = np.asarray(list(ntx.values()))
 
-            #- nt: coverage counts for just those targets
-            jj = np.in1d(covered, tx)
-            ntx = Counter(covered[jj])
-            #- Count how many targets are covered n times for this objtype
-            ntx_keys = np.asarray(list(ntx.keys()))
-            ntx_values = np.asarray(list(ntx.values()))
-
-            for n in range(1,10):
+        for n in range(1,10):
             #- Targets covered n or less times
-                kk = (ntx_values == n)
-                if np.count_nonzero(kk) > 0:
-                    ncovered = len(np.unique(ntx_keys[kk]))
-                    nassigned = np.count_nonzero(np.in1d(unique_assigned_targetids,
+            kk = (ntx_values == n)
+            if np.count_nonzero(kk) > 0:
+                ncovered = len(np.unique(ntx_keys[kk]))
+                nassigned = np.count_nonzero(np.in1d(unique_assigned_targetids,
                                                  ntx_keys[kk]))
-                    pobs = 100.0 * nassigned / ncovered
-                    print('{:6.1f}'.format(pobs), end='')
-                else:
-                    print('   ---', end='')
+                pobs = 100.0 * nassigned / ncovered
+                print('{:6.1f}'.format(pobs), end='')
+            else:
+                print('   ---', end='')
 
-                print()
+        print()
 
 
 

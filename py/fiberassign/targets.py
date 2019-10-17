@@ -189,11 +189,20 @@ def default_cmx_sciencemask():
     sciencemask |= cmx_mask["ORI_STD_BRIGHT"].mask
     sciencemask |= cmx_mask["ORI_QSO"].mask
     sciencemask |= cmx_mask["ORI_ORI"].mask
+    sciencemask |= cmx_mask["ORI_HA"].mask
     sciencemask |= cmx_mask["ROS_STD_BRIGHT"].mask
     sciencemask |= cmx_mask["ROS_QSO"].mask
     sciencemask |= cmx_mask["ROS_ROSM17"].mask
     sciencemask |= cmx_mask["ROS_ROS1"].mask
+    sciencemask |= cmx_mask["ROS_HA"].mask
     sciencemask |= cmx_mask["ROS_ROS2"].mask
+    sciencemask |= cmx_mask["M33_STD_BRIGHT"].mask
+    sciencemask |= cmx_mask["M33_H2PN"].mask
+    sciencemask |= cmx_mask["M33_GC"].mask
+    sciencemask |= cmx_mask["M33_QSO"].mask
+    sciencemask |= cmx_mask["M33_M33cen"].mask
+    sciencemask |= cmx_mask["M33_M33out"].mask
+
 
     return sciencemask
 
