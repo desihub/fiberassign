@@ -3,17 +3,32 @@
 fiberassign change log
 ======================
 
-1.2.0 (unreleased)
+1.2.1 (unreleased)
 ------------------
 
+* No changes yet.
+
+1.2.0 (2019-10-17)
+------------------
+
+* QA updates (PR `#216`_, `#230`_).
+* Implement field rotation (PR `#219`_).
+* Enforce sorting by fiber on output (PR `#223`_).
 * fiberassign support for CMX targets + MAIN skies (PR `#224`_).
 * Added cmx_science bits for first light targets (PR `#225`_).
 * Use per-tile field rotations from desimodel.focalplane.fieldrot (PR `#226`_).
-* Format updates to match ICS and some cleanup.
+* Add GFA target quality cuts (PR `#227`_).
+* Format updates to match ICS and some cleanup (PR `#228`_).
 
+.. _`#216`: https://github.com/desihub/fiberassign/pull/216
+.. _`#219`: https://github.com/desihub/fiberassign/pull/219
+.. _`#223`: https://github.com/desihub/fiberassign/pull/223
 .. _`#224`: https://github.com/desihub/fiberassign/pull/224
 .. _`#225`: https://github.com/desihub/fiberassign/pull/225
 .. _`#226`: https://github.com/desihub/fiberassign/pull/226
+.. _`#227`: https://github.com/desihub/fiberassign/pull/227
+.. _`#228`: https://github.com/desihub/fiberassign/pull/228
+.. _`#230`: https://github.com/desihub/fiberassign/pull/230
 
 1.1.0 (2019-09-25)
 ------------------
