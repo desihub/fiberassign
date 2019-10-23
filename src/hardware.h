@@ -54,7 +54,9 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
             std::vector <double> const & phi_max,
             std::vector <double> const & phi_arm,
             std::vector <fbg::shape> const & excl_theta,
-            std::vector <fbg::shape> const & excl_phi
+            std::vector <fbg::shape> const & excl_phi,
+            std::vector <fbg::shape> const & excl_gfa,
+            std::vector <fbg::shape> const & excl_petal
         );
 
         double radial_ang2dist (double const & theta_rad) const;
@@ -198,6 +200,14 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
         // The neighbors of each device location.
         std::map <int32_t, std::vector <int32_t> > neighbors;
 
+        // Whether the location should be considered for petal
+        // boundary collisions
+        std::map <int32_t, bool> petal_edge;
+
+        // Whether the location should be considered for GFA
+        // boundary collisions
+        std::map <int32_t, bool> gfa_edge;
+
         // The positioner information:
 
         // The theta zero-points and range for each location.
@@ -219,6 +229,12 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
         // The phi arm exclusion polygon for each location, in the default
         // (phi = 0.0) position
         std::map <int32_t, fbg::shape> loc_phi_excl;
+
+        // The GFA exclusion polygon for each location
+        std::map <int32_t, fbg::shape> loc_gfa_excl;
+
+        // The Petal exclusion polygon for each location
+        std::map <int32_t, fbg::shape> loc_petal_excl;
 
     private :
 

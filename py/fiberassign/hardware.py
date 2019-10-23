@@ -97,15 +97,15 @@ def load_hardware(focalplane=None, rundate=None):
 
     for nm, shp in exclude.items():
         excl[nm] = dict()
-        for arm in ["theta", "phi"]:
+        for obj in ["theta", "phi", "gfa", "petal"]:
             cr = list()
-            for crc in shp[arm]["circles"]:
+            for crc in shp[obj]["circles"]:
                 cr.append(Circle(crc[0], crc[1]))
             sg = list()
-            for sgm in shp[arm]["segments"]:
+            for sgm in shp[obj]["segments"]:
                 sg.append(Segments(sgm))
             fshp = Shape((0.0, 0.0), cr, sg)
-            excl[nm][arm] = fshp
+            excl[nm][obj] = fshp
 
     # For each positioner, select the exclusion polynomials.
 
@@ -116,6 +116,8 @@ def load_hardware(focalplane=None, rundate=None):
         positioners[loc] = dict()
         positioners[loc]["theta"] = Shape(excl[exclname]["theta"])
         positioners[loc]["phi"] = Shape(excl[exclname]["phi"])
+        positioners[loc]["gfa"] = Shape(excl[exclname]["gfa"])
+        positioners[loc]["petal"] = Shape(excl[exclname]["petal"])
 
     hw = Hardware(locations,
                   fp["PETAL"][keep_rows],

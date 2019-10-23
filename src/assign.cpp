@@ -1452,9 +1452,7 @@ bool fba::Assignment::ok_to_assign (fba::Hardware const * hw, int32_t tile,
         }
     }
 
-    // Would assigning this target produce a collision?  If a loc is not
-    // yet assigned, we assume that it is positioned at its central location
-    // and so will not collide with anything.
+    // Would assigning this target produce a collision?
 
     size_t nnb = nbs.size();
 
@@ -1485,6 +1483,12 @@ bool fba::Assignment::ok_to_assign (fba::Hardware const * hw, int32_t tile,
     // if (collide) {
     //     return false;
     // }
+
+    // Is this location on the edge of a GFA or petal?  If so, check
+    // for collisions with those exclusion zones.
+
+
+
 
     // All good!
     return true;

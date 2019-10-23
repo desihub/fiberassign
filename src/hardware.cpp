@@ -35,7 +35,9 @@ fba::Hardware::Hardware(std::vector <int32_t> const & location,
                         std::vector <double> const & phi_max,
                         std::vector <double> const & phi_arm,
                         std::vector <fbg::shape> const & excl_theta,
-                        std::vector <fbg::shape> const & excl_phi) {
+                        std::vector <fbg::shape> const & excl_phi,
+                        std::vector <fbg::shape> const & excl_gfa,
+                        std::vector <fbg::shape> const & excl_petal) {
     nloc = location.size();
 
     fba::Logger & logger = fba::Logger::get();
@@ -68,6 +70,8 @@ fba::Hardware::Hardware(std::vector <int32_t> const & location,
     loc_phi_arm.clear();
     loc_theta_excl.clear();
     loc_phi_excl.clear();
+    petal_edge.clear();
+    gfa_edge.clear();
 
     petal_locations.clear();
     for (int32_t i = 0; i < npetal; ++i) {
@@ -91,6 +95,8 @@ fba::Hardware::Hardware(std::vector <int32_t> const & location,
             stcount++;
         }
         neighbors[location[i]].clear();
+        petal_edge[location[i]] = false;
+        gfa_edge[location[i]] = false;
         loc_theta_offset[location[i]] = theta_offset[i] * M_PI / 180.0;
         loc_theta_min[location[i]] = theta_min[i] * M_PI / 180.0;
         loc_theta_max[location[i]] = theta_max[i] * M_PI / 180.0;
@@ -101,6 +107,8 @@ fba::Hardware::Hardware(std::vector <int32_t> const & location,
         loc_phi_arm[location[i]] = phi_arm[i];
         loc_theta_excl[location[i]] = excl_theta[i];
         loc_phi_excl[location[i]] = excl_phi[i];
+        loc_gfa_excl[location[i]] = excl_gfa[i];
+        loc_petal_excl[location[i]] = excl_petal[i];
     }
 
     logmsg.str("");
@@ -146,6 +154,16 @@ fba::Hardware::Hardware(std::vector <int32_t> const & location,
             }
         }
     }
+
+    // For each location, we rotate the petal and GFA exclusion polygons
+    // to the correct petal.
+
+    // The locations on each petal are fixed by DESI-0530.  Here we
+    // hard-code which device locations are on the petal boundary and
+    // which device locations are on the GFA boundary.
+
+
+
 }
 
 
