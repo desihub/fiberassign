@@ -97,7 +97,7 @@ def load_hardware(focalplane=None, rundate=None):
 
     for nm, shp in exclude.items():
         excl[nm] = dict()
-        for obj in ["theta", "phi", "gfa", "petal"]:
+        for obj in shp.keys():
             cr = list()
             for crc in shp[obj]["circles"]:
                 cr.append(Circle(crc[0], crc[1]))
@@ -116,8 +116,14 @@ def load_hardware(focalplane=None, rundate=None):
         positioners[loc] = dict()
         positioners[loc]["theta"] = Shape(excl[exclname]["theta"])
         positioners[loc]["phi"] = Shape(excl[exclname]["phi"])
-        positioners[loc]["gfa"] = Shape(excl[exclname]["gfa"])
-        positioners[loc]["petal"] = Shape(excl[exclname]["petal"])
+        if "gfa" in excl[exclname]:
+            positioners[loc]["gfa"] = Shape(excl[exclname]["gfa"])
+        else:
+            positioners[loc]["gfa"] = Shape()
+        if "petal" in excl[exclname]:
+            positioners[loc]["petal"] = Shape(excl[exclname]["petal"])
+        else:
+            positioners[loc]["petal"] = Shape()
 
     hw = Hardware(locations,
                   fp["PETAL"][keep_rows],
@@ -139,5 +145,7 @@ def load_hardware(focalplane=None, rundate=None):
                   np.array([fp["MAX_P"][loc_to_fp[x]] for x in locations]),
                   np.array([fp["LENGTH_R2"][loc_to_fp[x]] for x in locations]),
                   [positioners[x]["theta"] for x in locations],
-                  [positioners[x]["phi"] for x in locations])
+                  [positioners[x]["phi"] for x in locations],
+                  [positioners[x]["gfa"] for x in locations],
+                  [positioners[x]["petal"] for x in locations])
     return hw

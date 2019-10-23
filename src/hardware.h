@@ -121,6 +121,8 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
         bool collide_xy(int32_t loc1, fbg::dpair const & xy1,
                         int32_t loc2, fbg::dpair const & xy2) const;
 
+        bool collide_xy_edges(int32_t loc, fbg::dpair const & xy) const;
+
         bool collide_thetaphi(
             int32_t loc1, double theta1, double phi1,
             int32_t loc2, double theta2, double phi2) const;

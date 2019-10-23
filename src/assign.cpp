@@ -1484,11 +1484,19 @@ bool fba::Assignment::ok_to_assign (fba::Hardware const * hw, int32_t tile,
     //     return false;
     // }
 
-    // Is this location on the edge of a GFA or petal?  If so, check
-    // for collisions with those exclusion zones.
+    // Would this assignment hit a GFA or petal edge?
 
-
-
+    collide = hw->collide_xy_edges(loc, tpos);
+    if (collide) {
+        if (extra_log) {
+            logmsg.str("");
+            logmsg << "ok_to_assign: tile " << tile << ", loc "
+                << loc << ", target " << target
+                << " would collide with GFA or Petal Boundary ";
+            logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
+        }
+        return false;
+    }
 
     // All good!
     return true;

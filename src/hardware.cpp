@@ -156,13 +156,16 @@ fba::Hardware::Hardware(std::vector <int32_t> const & location,
     }
 
     // For each location, we rotate the petal and GFA exclusion polygons
-    // to the correct petal.
+    // to the correct petal location.
 
-    // The locations on each petal are fixed by DESI-0530.  Here we
-    // hard-code which device locations are on the petal boundary and
-    // which device locations are on the GFA boundary.
-
-
+    for (auto const & lid : locations) {
+        int32_t pt = loc_petal[lid];
+        double petalrot_deg = fmod((double)(7 + pt) * 36.0, 360.0);
+        double petalrot_rad = petalrot_deg * M_PI / 180.0;
+        auto csang = std::make_pair(cos(petalrot_rad), sin(petalrot_rad));
+        loc_gfa_excl.at(lid).rotation_origin(csang);
+        loc_petal_excl.at(lid).rotation_origin(csang);
+    }
 
 }
 
@@ -692,6 +695,40 @@ bool fba::Hardware::collide_xy(int32_t loc1, fbg::dpair const & xy1,
         return true;
     }
     if (fbg::intersect(shptheta2, shpphi1)) {
+        return true;
+    }
+
+    return false;
+}
+
+
+bool fba::Hardware::collide_xy_edges(
+        int32_t loc, fbg::dpair const & xy
+    ) const {
+
+    fbg::shape shptheta(loc_theta_excl.at(loc));
+    fbg::shape shpphi(loc_phi_excl.at(loc));
+    bool failed = loc_position_xy(loc, xy, shptheta, shpphi);
+    if (failed) {
+        // A positioner movement failure means that the angles needed to reach
+        // the X/Y position are out of range.  While not strictly a collision,
+        // it still means that we can't accept this positioner configuration.
+        return true;
+    }
+
+    // We were able to move positioner into place.  Now check for
+    // intersections with the GFA and petal boundaries.
+
+    fbg::shape shpgfa(loc_gfa_excl.at(loc));
+    fbg::shape shppetal(loc_petal_excl.at(loc));
+
+    // The central body (theta arm) should never hit the GFA or petal edge,
+    // so we only need to check the phi arm.
+
+    if (fbg::intersect(shpphi, shpgfa)) {
+        return true;
+    }
+    if (fbg::intersect(shpphi, shppetal)) {
         return true;
     }
 
