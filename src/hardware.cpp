@@ -35,7 +35,9 @@ fba::Hardware::Hardware(std::vector <int32_t> const & location,
                         std::vector <double> const & phi_max,
                         std::vector <double> const & phi_arm,
                         std::vector <fbg::shape> const & excl_theta,
-                        std::vector <fbg::shape> const & excl_phi) {
+                        std::vector <fbg::shape> const & excl_phi,
+                        std::vector <fbg::shape> const & excl_gfa,
+                        std::vector <fbg::shape> const & excl_petal) {
     nloc = location.size();
 
     fba::Logger & logger = fba::Logger::get();
@@ -68,6 +70,8 @@ fba::Hardware::Hardware(std::vector <int32_t> const & location,
     loc_phi_arm.clear();
     loc_theta_excl.clear();
     loc_phi_excl.clear();
+    petal_edge.clear();
+    gfa_edge.clear();
 
     petal_locations.clear();
     for (int32_t i = 0; i < npetal; ++i) {
@@ -91,6 +95,8 @@ fba::Hardware::Hardware(std::vector <int32_t> const & location,
             stcount++;
         }
         neighbors[location[i]].clear();
+        petal_edge[location[i]] = false;
+        gfa_edge[location[i]] = false;
         loc_theta_offset[location[i]] = theta_offset[i] * M_PI / 180.0;
         loc_theta_min[location[i]] = theta_min[i] * M_PI / 180.0;
         loc_theta_max[location[i]] = theta_max[i] * M_PI / 180.0;
@@ -101,6 +107,8 @@ fba::Hardware::Hardware(std::vector <int32_t> const & location,
         loc_phi_arm[location[i]] = phi_arm[i];
         loc_theta_excl[location[i]] = excl_theta[i];
         loc_phi_excl[location[i]] = excl_phi[i];
+        loc_gfa_excl[location[i]] = excl_gfa[i];
+        loc_petal_excl[location[i]] = excl_petal[i];
     }
 
     logmsg.str("");
@@ -146,6 +154,19 @@ fba::Hardware::Hardware(std::vector <int32_t> const & location,
             }
         }
     }
+
+    // For each location, we rotate the petal and GFA exclusion polygons
+    // to the correct petal location.
+
+    for (auto const & lid : locations) {
+        int32_t pt = loc_petal[lid];
+        double petalrot_deg = fmod((double)(7 + pt) * 36.0, 360.0);
+        double petalrot_rad = petalrot_deg * M_PI / 180.0;
+        auto csang = std::make_pair(cos(petalrot_rad), sin(petalrot_rad));
+        loc_gfa_excl.at(lid).rotation_origin(csang);
+        loc_petal_excl.at(lid).rotation_origin(csang);
+    }
+
 }
 
 
@@ -674,6 +695,40 @@ bool fba::Hardware::collide_xy(int32_t loc1, fbg::dpair const & xy1,
         return true;
     }
     if (fbg::intersect(shptheta2, shpphi1)) {
+        return true;
+    }
+
+    return false;
+}
+
+
+bool fba::Hardware::collide_xy_edges(
+        int32_t loc, fbg::dpair const & xy
+    ) const {
+
+    fbg::shape shptheta(loc_theta_excl.at(loc));
+    fbg::shape shpphi(loc_phi_excl.at(loc));
+    bool failed = loc_position_xy(loc, xy, shptheta, shpphi);
+    if (failed) {
+        // A positioner movement failure means that the angles needed to reach
+        // the X/Y position are out of range.  While not strictly a collision,
+        // it still means that we can't accept this positioner configuration.
+        return true;
+    }
+
+    // We were able to move positioner into place.  Now check for
+    // intersections with the GFA and petal boundaries.
+
+    fbg::shape shpgfa(loc_gfa_excl.at(loc));
+    fbg::shape shppetal(loc_petal_excl.at(loc));
+
+    // The central body (theta arm) should never hit the GFA or petal edge,
+    // so we only need to check the phi arm.
+
+    if (fbg::intersect(shpphi, shpgfa)) {
+        return true;
+    }
+    if (fbg::intersect(shpphi, shppetal)) {
         return true;
     }
 

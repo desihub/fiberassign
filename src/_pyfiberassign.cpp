@@ -521,6 +521,10 @@ PYBIND11_MODULE(_internal, m) {
                 of the theta arm of each device.
             excl_phi (list):  The Shape object for the exclusion polygon
                 of the phi arm of each device.
+            excl_gfa (list):  The Shape object for the exclusion polygon
+                of the GFA for each device.
+            excl_petal (list):  The Shape object for the exclusion polygon
+                of the petal edge for each device.
 
         )")
         .def(py::init <
@@ -543,6 +547,8 @@ PYBIND11_MODULE(_internal, m) {
             std::vector <double> const &,
             std::vector <double> const &,
             std::vector <fbg::shape> const &,
+            std::vector <fbg::shape> const &,
+            std::vector <fbg::shape> const &,
             std::vector <fbg::shape> const &> (), py::arg("location"),
             py::arg("petal"), py::arg("device"), py::arg("slitblock"),
             py::arg("blockfiber"), py::arg("fiber"), py::arg("device_type"),
@@ -551,7 +557,8 @@ PYBIND11_MODULE(_internal, m) {
             py::arg("theta_max"), py::arg("theta_arm"),
             py::arg("phi_offset"), py::arg("phi_min"),
             py::arg("phi_max"), py::arg("phi_arm"),
-            py::arg("excl_theta"), py::arg("excl_phi")
+            py::arg("excl_theta"), py::arg("excl_phi"),
+            py::arg("excl_gfa"), py::arg("excl_petal")
         )
         .def_readonly("nloc", &fba::Hardware::nloc, R"(
             The number of device locations.
@@ -617,6 +624,18 @@ PYBIND11_MODULE(_internal, m) {
         )")
         .def_readonly("loc_phi_max", &fba::Hardware::loc_phi_max, R"(
             Dictionary of phi max range from offset for each location.
+        )")
+        .def_readonly("loc_theta_excl", &fba::Hardware::loc_theta_excl, R"(
+            Dictionary of theta exclusion shapes for each location.
+        )")
+        .def_readonly("loc_phi_excl", &fba::Hardware::loc_phi_excl, R"(
+            Dictionary of phi exclusion shapes for each location.
+        )")
+        .def_readonly("loc_gfa_excl", &fba::Hardware::loc_gfa_excl, R"(
+            Dictionary of GFA exclusion shapes for each location.
+        )")
+        .def_readonly("loc_petal_excl", &fba::Hardware::loc_petal_excl, R"(
+            Dictionary of petal exclusion shapes for each location.
         )")
         .def_readonly("neighbor_radius_mm",
                       &fba::Hardware::neighbor_radius_mm, R"(
@@ -903,6 +922,8 @@ PYBIND11_MODULE(_internal, m) {
                 std::vector <double> phi_arm(nloc);
                 std::vector <fbg::shape> excl_theta(nloc);
                 std::vector <fbg::shape> excl_phi(nloc);
+                std::vector <fbg::shape> excl_gfa(nloc);
+                std::vector <fbg::shape> excl_petal(nloc);
                 for (int32_t i = 0; i < nloc; ++i) {
                     lid[i] = p.locations.at(i);
                     petal[i] = p.loc_petal.at(lid[i]);
@@ -924,12 +945,15 @@ PYBIND11_MODULE(_internal, m) {
                     phi_arm[i] = p.loc_phi_arm.at(lid[i]);
                     excl_theta[i] = p.loc_theta_excl.at(lid[i]);
                     excl_phi[i] = p.loc_phi_excl.at(lid[i]);
+                    excl_gfa[i] = p.loc_gfa_excl.at(lid[i]);
+                    excl_petal[i] = p.loc_petal_excl.at(lid[i]);
                 }
                 return py::make_tuple(
                     lid, petal, device, slitblock, blockfiber, fiber,
                     device_type, x_mm, y_mm, status, theta_offset,
                     theta_min, theta_max, theta_arm, phi_offset, phi_min,
-                    phi_max, phi_arm, excl_theta, excl_phi);
+                    phi_max, phi_arm, excl_theta, excl_phi, excl_gfa,
+                    excl_petal);
             },
             [](py::tuple t) { // __setstate__
                 return new fba::Hardware(
@@ -952,7 +976,9 @@ PYBIND11_MODULE(_internal, m) {
                     t[16].cast<std::vector<double> >(),
                     t[17].cast<std::vector<double> >(),
                     t[18].cast<std::vector<fbg::shape> >(),
-                    t[19].cast<std::vector<fbg::shape> >()
+                    t[19].cast<std::vector<fbg::shape> >(),
+                    t[20].cast<std::vector<fbg::shape> >(),
+                    t[21].cast<std::vector<fbg::shape> >()
                 );
             }
         ));

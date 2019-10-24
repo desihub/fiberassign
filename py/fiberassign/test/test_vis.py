@@ -164,6 +164,7 @@ class TestVis(unittest.TestCase):
         phi_offset = hw.loc_phi_offset
         phi_min = hw.loc_phi_min
         phi_max = hw.loc_phi_max
+        loc_petal = hw.loc_petal
 
         fig = plt.figure(figsize=(12, 12))
         ax = fig.add_subplot(1, 1, 1)
@@ -172,7 +173,11 @@ class TestVis(unittest.TestCase):
         linewidth = 0.1
         color = "black"
 
+        plot_petals = [7]
+
         for lid in locs:
+            if loc_petal[lid] not in plot_petals:
+                continue
             shptheta = Shape()
             shpphi = Shape()
             center = center_mm[lid]
@@ -209,39 +214,42 @@ class TestVis(unittest.TestCase):
         plt.savefig(outfile, dpi=300, format="pdf")
         plt.close()
 
-    # def test_plotfp(self):
-    #     test_dir = test_subdir_create("vis_test_plotfp")
-    #     time = datetime.utcnow().isoformat(timespec="seconds")
-    #     hw = load_hardware(rundate=time)
-    #     suffix = "{}_simple".format(time)
-    #     self._load_and_plotfp(hw, test_dir, suffix, simple=True)
-    #     suffix = "{}".format(time)
-    #     self._load_and_plotfp(hw, test_dir, suffix, simple=False)
-    #     time = "2012-12-12T00:00:00"
-    #     hw = load_hardware(rundate=time)
-    #     suffix = "{}_simple".format(time)
-    #     self._load_and_plotfp(hw, test_dir, suffix, simple=True)
-    #     suffix = "{}".format(time)
-    #     self._load_and_plotfp(hw, test_dir, suffix, simple=False)
-    #     return
-    #
-    # def test_plot_fakefp(self):
-    #     test_dir = test_subdir_create("vis_test_fakefp")
-    #     time = datetime.utcnow().isoformat(timespec="seconds")
-    #
-    #     # Simulate a fake focalplane
-    #     fp, exclude, state = sim_focalplane(fakepos=True)
-    #
-    #     # Load the focalplane
-    #     hw = load_hardware(focalplane=(fp, exclude, state))
-    #
-    #     suffix = "{}".format(time)
-    #     self._load_and_plotfp(hw, test_dir, suffix, simple=False)
-    #
-    #     time = "2012-12-12T00:00:00"
-    #     suffix = "{}".format(time)
-    #     self._load_and_plotfp(hw, test_dir, suffix, simple=False)
-    #     return
+    def test_plotfp(self):
+        test_dir = test_subdir_create("vis_test_plotfp")
+        try:
+            time = datetime.utcnow().isoformat(timespec="seconds")
+        except TypeError:
+            time = datetime.utcnow().isoformat()
+        hw = load_hardware(rundate=time)
+        suffix = "{}_simple".format(time)
+        self._load_and_plotfp(hw, test_dir, suffix, simple=True)
+        suffix = "{}".format(time)
+        self._load_and_plotfp(hw, test_dir, suffix, simple=False)
+        # time = "2012-12-12T00:00:00"
+        # hw = load_hardware(rundate=time)
+        # suffix = "{}_simple".format(time)
+        # self._load_and_plotfp(hw, test_dir, suffix, simple=True)
+        # suffix = "{}".format(time)
+        # self._load_and_plotfp(hw, test_dir, suffix, simple=False)
+        return
+
+    def test_plot_fakefp(self):
+        test_dir = test_subdir_create("vis_test_fakefp")
+        time = datetime.utcnow().isoformat(timespec="seconds")
+
+        # Simulate a fake focalplane
+        fp, exclude, state = sim_focalplane(fakepos=True)
+
+        # Load the focalplane
+        hw = load_hardware(focalplane=(fp, exclude, state))
+
+        suffix = "{}".format(time)
+        self._load_and_plotfp(hw, test_dir, suffix, simple=False)
+
+        time = "2012-12-12T00:00:00"
+        suffix = "{}".format(time)
+        self._load_and_plotfp(hw, test_dir, suffix, simple=False)
+        return
 
 
 def test_suite():

@@ -187,6 +187,20 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
     phi_max = hw.loc_phi_max
     device_type = dict(hw.loc_device_type)
     assigned = np.array(sorted(tile_assigned.keys()), dtype=np.int32)
+
+    # Plot GFA / Petal edges if relevant
+    if len(assigned) > 0:
+        gfa_excl = hw.loc_gfa_excl[assigned[0]]
+        petal_excl = hw.loc_petal_excl[assigned[0]]
+        for segs in gfa_excl.segments:
+            xpts = np.array([p[0] for p in segs.points])
+            ypts = np.array([p[1] for p in segs.points])
+            ax.plot(xpts, ypts, linewidth=0.2*linewidth, color="gray")
+        for segs in petal_excl.segments:
+            xpts = np.array([p[0] for p in segs.points])
+            ypts = np.array([p[1] for p in segs.points])
+            ax.plot(xpts, ypts, linewidth=0.2*linewidth, color="gray")
+
     for lid in assigned:
         color = "gray"
         if (device_type[lid] != "POS") and (device_type[lid] != "ETC"):
