@@ -5,6 +5,8 @@ import os
 import shutil
 from datetime import datetime
 
+from collections import OrderedDict
+
 import numpy as np
 
 import fitsio
@@ -129,16 +131,28 @@ def sim_targets(path, tgtype, tgoffset, density=5000.0):
     ramax = 154.0
     decmin = 28.0
     decmax = 37.0
-    target_dtype = np.dtype([
+    target_cols = OrderedDict([
         ("TARGETID", "i8"),
         ("RA", "f8"),
         ("DEC", "f8"),
         ("DESI_TARGET", "i8"),
+        ("BRICKID", "i4"),
+        ("BRICK_OBJID", "i4"),
+        ("BRICKNAME", "a8"),
         ("PRIORITY", "i4"),
         ("SUBPRIORITY", "f8"),
         ("OBSCONDITIONS", "i4"),
-        ("NUMOBS_MORE", "i4")
+        ("NUMOBS_MORE", "i4"),
+        ("FIBERFLUX_G", "f4"),
+        ("FIBERFLUX_R", "f4"),
+        ("FIBERFLUX_Z", "f4"),
+        ("FIBERFLUX_IVAR_G", "f4"),
+        ("FIBERFLUX_IVAR_R", "f4"),
+        ("FIBERFLUX_IVAR_Z", "f4")
     ])
+
+    target_dtype = np.dtype([(x, y) for x, y in target_cols.items()])
+
     ndim = np.sqrt(density)
     nra = int(ndim * (ramax - ramin))
     ndec = int(ndim * (decmax - decmin))
