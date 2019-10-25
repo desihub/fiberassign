@@ -317,7 +317,7 @@ class TestAssign(unittest.TestCase):
         write_assignment_fits(tiles, asgn, out_dir=test_dir, all_targets=True)
 
         plot_tiles(hw, tiles, result_dir=test_dir, plot_dir=test_dir,
-                   real_shapes=True, petals=[6], serial=True)
+                   real_shapes=True, petals=[4, 6], serial=True)
 
         qa_tiles(hw, tiles, result_dir=test_dir)
 
