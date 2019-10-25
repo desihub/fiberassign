@@ -185,21 +185,31 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
     phi_offset = hw.loc_phi_offset
     phi_min = hw.loc_phi_min
     phi_max = hw.loc_phi_max
+    loc_petal = dict(hw.loc_petal)
     device_type = dict(hw.loc_device_type)
     assigned = np.array(sorted(tile_assigned.keys()), dtype=np.int32)
 
-    # Plot GFA / Petal edges if relevant
+    # Plot GFA / Petal edges.  Only plot one shape per petal, although
+    # the code formally allows unique petal / GFA boundaries per device.
+
     if len(assigned) > 0:
-        gfa_excl = hw.loc_gfa_excl[assigned[0]]
-        petal_excl = hw.loc_petal_excl[assigned[0]]
-        for segs in gfa_excl.segments:
-            xpts = np.array([p[0] for p in segs.points])
-            ypts = np.array([p[1] for p in segs.points])
-            ax.plot(xpts, ypts, linewidth=0.2*linewidth, color="gray")
-        for segs in petal_excl.segments:
-            xpts = np.array([p[0] for p in segs.points])
-            ypts = np.array([p[1] for p in segs.points])
-            ax.plot(xpts, ypts, linewidth=0.2*linewidth, color="gray")
+        edge_gfa = dict()
+        edge_petal = dict()
+        for loc in assigned:
+            pt = loc_petal[loc]
+            if pt not in edge_gfa:
+                edge_gfa[pt] = hw.loc_gfa_excl[loc]
+                edge_petal[pt] = hw.loc_petal_excl[loc]
+        for pt, shp in edge_gfa.items():
+            for segs in shp.segments:
+                xpts = np.array([p[0] for p in segs.points])
+                ypts = np.array([p[1] for p in segs.points])
+                ax.plot(xpts, ypts, linewidth=0.2*linewidth, color="gray")
+        for pt, shp in edge_petal.items():
+            for segs in shp.segments:
+                xpts = np.array([p[0] for p in segs.points])
+                ypts = np.array([p[1] for p in segs.points])
+                ax.plot(xpts, ypts, linewidth=0.2*linewidth, color="gray")
 
     for lid in assigned:
         color = "gray"
