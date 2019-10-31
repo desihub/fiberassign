@@ -3,10 +3,14 @@
 fiberassign change log
 ======================
 
-1.2.1 (unreleased)
+1.2.1 (2019-10-31)
 ------------------
 
-* No changes yet.
+* Implement GFA and petal boundary exclusion zones (PR `#233`_).
+* Plot GFA and petal keepouts for all petals, not just petal zero (PR `#234`_).
+
+.. _`#233`: https://github.com/desihub/fiberassign/pull/233
+.. _`#234`: https://github.com/desihub/fiberassign/pull/234
 
 1.2.0 (2019-10-17)
 ------------------
