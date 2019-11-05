@@ -235,7 +235,7 @@ def qa_tile_file(hw, params):
 
     return qa_data
 
-def qa_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign_",
+def qa_tiles(hw, tiles, result_dir=".", result_prefix="fba-",
              result_split_dir=False, qa_out=None):
     """Run QA on a set of tiles.
 

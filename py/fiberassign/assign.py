@@ -92,7 +92,7 @@ results_avail_columns = OrderedDict([
 ])
 
 
-def result_tiles(dir=".", prefix="fiberassign_"):
+def result_tiles(dir=".", prefix="fba-"):
     # Find all the per-tile files and get the tile IDs
     tiles = list()
     for root, dirs, files in os.walk(dir):
@@ -104,7 +104,7 @@ def result_tiles(dir=".", prefix="fiberassign_"):
     return tiles
 
 
-def result_path(tile_id, dir=".", prefix="fiberassign_",
+def result_path(tile_id, dir=".", prefix="fba-",
                 ext="fits", create=False, split=False):
     tiledir = dir
     if split:
@@ -450,7 +450,7 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
     return
 
 
-def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fiberassign_",
+def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fba-",
                           split_dir=False, all_targets=False,
                           gfa_targets=None, overwrite=False):
     """Write out assignment results in FITS format.
@@ -515,7 +515,7 @@ def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fiberassign_",
     return
 
 
-def write_assignment_ascii(tiles, asgn, out_dir=".", out_prefix="fiberassign_",
+def write_assignment_ascii(tiles, asgn, out_dir=".", out_prefix="fba-",
                            split_dir=False):
     """Write out assignment results in ASCII format.
 
@@ -1186,8 +1186,8 @@ def merge_results_tile(out_dtype, copy_fba, params):
 
 
 def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
-                  result_prefix="fiberassign_", result_split_dir=False,
-                  out_dir=None, out_prefix="tile-", out_split_dir=False,
+                  result_prefix="fba-", result_split_dir=False,
+                  out_dir=None, out_prefix="fiberassign-", out_split_dir=False,
                   columns=None, copy_fba=True):
     """Merge target files and assignment output.
 

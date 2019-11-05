@@ -53,7 +53,7 @@ def parse_merge(optlist=None):
                         help="Directory containing fiberassign results.")
 
     parser.add_argument("--prefix", type=str, required=False,
-                        default="fiberassign_",
+                        default="fba-",
                         help="Prefix of each file (before the <tile>.fits).")
 
     parser.add_argument("--split", required=False, default=False,
@@ -65,7 +65,7 @@ def parse_merge(optlist=None):
                         " is the directory containing the fiberassign output.")
 
     parser.add_argument("--out_prefix", type=str, required=False,
-                        default="tile-",
+                        default="fiberassign-",
                         help="Prefix of each output file.")
 
     parser.add_argument("--out_split", required=False, default=False,

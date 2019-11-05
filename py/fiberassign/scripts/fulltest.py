@@ -173,7 +173,7 @@ def run_fulltest(args):
     opts = dict()
     opts["footprint"] = args.footprint
     opts["dir"] = rawout
-    opts["prefix"] = "fiberassign_"
+    opts["prefix"] = "fba-"
 
     options = option_list(opts)
     parsed = parse_qa(options)
@@ -196,7 +196,7 @@ def run_fulltest(args):
     opts = dict()
     opts["footprint"] = args.footprint
     opts["dir"] = rawout
-    opts["prefix"] = "fiberassign_"
+    opts["prefix"] = "fba-"
     opts["out"] = rawplot
     opts["petals"] = args.plotpetals
 
