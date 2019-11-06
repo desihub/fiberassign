@@ -102,7 +102,7 @@ def parse_assign(optlist=None):
                         help="Output directory.")
 
     parser.add_argument("--prefix", type=str, required=False,
-                        default="fiberassign_",
+                        default="fba-",
                         help="Prefix of each file (before the <tile>.fits).")
 
     parser.add_argument("--split", required=False, default=False,
