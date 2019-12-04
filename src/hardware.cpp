@@ -16,7 +16,8 @@ namespace fba = fiberassign;
 namespace fbg = fiberassign::geom;
 
 
-fba::Hardware::Hardware(std::vector <int32_t> const & location,
+fba::Hardware::Hardware(std::string const & timestr,
+                        std::vector <int32_t> const & location,
                         std::vector <int32_t> const & petal,
                         std::vector <int32_t> const & device,
                         std::vector <int32_t> const & slitblock,
@@ -42,6 +43,8 @@ fba::Hardware::Hardware(std::vector <int32_t> const & location,
 
     fba::Logger & logger = fba::Logger::get();
     std::ostringstream logmsg;
+
+    timestr_ = timestr;
 
     int32_t maxpetal = 0;
     for (auto const & p : petal) {
@@ -167,6 +170,11 @@ fba::Hardware::Hardware(std::vector <int32_t> const & location,
         loc_petal_excl.at(lid).rotation_origin(csang);
     }
 
+}
+
+
+std::string fba::Hardware::time() const {
+    return timestr_;
 }
 
 

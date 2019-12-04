@@ -492,6 +492,7 @@ PYBIND11_MODULE(_internal, m) {
         Class representing the hardware configuration of the telescope.
 
         Args:
+            timestr (str):  ISO 8601 format time string in UTC.
             location (array):  int32 array of location.
             petal (array):  int32 array of petal index.
             device (array):  int32 array of device number.
@@ -528,6 +529,7 @@ PYBIND11_MODULE(_internal, m) {
 
         )")
         .def(py::init <
+            std::string const &,
             std::vector <int32_t> const &,
             std::vector <int32_t> const &,
             std::vector <int32_t> const &,
@@ -549,7 +551,8 @@ PYBIND11_MODULE(_internal, m) {
             std::vector <fbg::shape> const &,
             std::vector <fbg::shape> const &,
             std::vector <fbg::shape> const &,
-            std::vector <fbg::shape> const &> (), py::arg("location"),
+            std::vector <fbg::shape> const &> (), py::arg("timestr"),
+            py::arg("location"),
             py::arg("petal"), py::arg("device"), py::arg("slitblock"),
             py::arg("blockfiber"), py::arg("fiber"), py::arg("device_type"),
             py::arg("x"), py::arg("y"), py::arg("status"),
@@ -650,6 +653,13 @@ PYBIND11_MODULE(_internal, m) {
         .def("device_locations", &fba::Hardware::device_locations,
             py::arg("type"), R"(
             Dictionary of locations for each device type (POS or ETC).
+        )")
+        .def("time", &fba::Hardware::time, R"(
+            Return the time used when loading the focalplane model.
+
+            Returns:
+                (str): the focalplane model time.
+
         )")
         .def("radec2xy", &fba::Hardware::radec2xy, py::arg("tilera"),
             py::arg("tiledec"), py::arg("tiletheta"), py::arg("ra"),
@@ -902,6 +912,7 @@ PYBIND11_MODULE(_internal, m) {
         .def(py::pickle(
             [](fba::Hardware const & p) { // __getstate__
                 int32_t nloc = p.locations.size();
+                std::string timestr = p.time();
                 std::vector <int32_t> lid(nloc);
                 std::vector <int32_t> petal(nloc);
                 std::vector <int32_t> device(nloc);
@@ -949,6 +960,7 @@ PYBIND11_MODULE(_internal, m) {
                     excl_petal[i] = p.loc_petal_excl.at(lid[i]);
                 }
                 return py::make_tuple(
+                    timestr,
                     lid, petal, device, slitblock, blockfiber, fiber,
                     device_type, x_mm, y_mm, status, theta_offset,
                     theta_min, theta_max, theta_arm, phi_offset, phi_min,
@@ -957,17 +969,17 @@ PYBIND11_MODULE(_internal, m) {
             },
             [](py::tuple t) { // __setstate__
                 return new fba::Hardware(
-                    t[0].cast<std::vector<int32_t> >(),
+                    t[0].cast<std::string>(),
                     t[1].cast<std::vector<int32_t> >(),
                     t[2].cast<std::vector<int32_t> >(),
                     t[3].cast<std::vector<int32_t> >(),
                     t[4].cast<std::vector<int32_t> >(),
                     t[5].cast<std::vector<int32_t> >(),
-                    t[6].cast<std::vector<std::string> >(),
-                    t[7].cast<std::vector<double> >(),
+                    t[6].cast<std::vector<int32_t> >(),
+                    t[7].cast<std::vector<std::string> >(),
                     t[8].cast<std::vector<double> >(),
-                    t[9].cast<std::vector<int32_t> >(),
-                    t[10].cast<std::vector<double> >(),
+                    t[9].cast<std::vector<double> >(),
+                    t[10].cast<std::vector<int32_t> >(),
                     t[11].cast<std::vector<double> >(),
                     t[12].cast<std::vector<double> >(),
                     t[13].cast<std::vector<double> >(),
@@ -975,10 +987,11 @@ PYBIND11_MODULE(_internal, m) {
                     t[15].cast<std::vector<double> >(),
                     t[16].cast<std::vector<double> >(),
                     t[17].cast<std::vector<double> >(),
-                    t[18].cast<std::vector<fbg::shape> >(),
+                    t[18].cast<std::vector<double> >(),
                     t[19].cast<std::vector<fbg::shape> >(),
                     t[20].cast<std::vector<fbg::shape> >(),
-                    t[21].cast<std::vector<fbg::shape> >()
+                    t[21].cast<std::vector<fbg::shape> >(),
+                    t[22].cast<std::vector<fbg::shape> >()
                 );
             }
         ));

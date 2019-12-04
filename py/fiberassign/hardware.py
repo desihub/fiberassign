@@ -49,7 +49,7 @@ def load_hardware(focalplane=None, rundate=None):
     fp = None
     exclude = None
     state = None
-    tmstr = None
+    tmstr = "UNKNOWN"
     if focalplane is None:
         fp, exclude, state, tmstr = dmio.load_focalplane(runtime)
     else:
@@ -125,7 +125,7 @@ def load_hardware(focalplane=None, rundate=None):
         else:
             positioners[loc]["petal"] = Shape()
 
-    hw = Hardware(locations,
+    hw = Hardware(tmstr, locations,
                   fp["PETAL"][keep_rows],
                   fp["DEVICE"][keep_rows],
                   fp["SLITBLOCK"][keep_rows],

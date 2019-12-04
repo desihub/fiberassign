@@ -24,6 +24,8 @@ from collections import OrderedDict
 
 import fitsio
 
+from desiutil.depend import add_dependencies
+
 import desimodel.focalplane
 
 from desitarget.targetmask import desi_mask
@@ -257,14 +259,27 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         header["TILERA"] = tile_ra
         header["TILEDEC"] = tile_dec
         header["FIELDROT"] = tile_obstheta
-        header["FA_DATE"] = tile_obstime
+        header["FA_PLAN"] = tile_obstime
         header["FA_HA"] = tile_obsha
+        header["FA_RUN"] = hw.time()
 
         header["REQRA"] = tile_ra
         header["REQDEC"] = tile_dec
         header["FIELDNUM"] = 0
         header["FA_VER"] = __version__
         header["FA_SURV"] = tgs.survey()
+        add_dependencies(
+            header,
+            module_names=[
+                "numpy",
+                "matplotlib",
+                "astropy",
+                "fitsio",
+                "desiutil",
+                "desimodel",
+                "desitarget"
+            ]
+        )
         fd.write(None, header=header, extname="PRIMARY")
 
         # FIXME:  write "-1" for unassigned targets.  Write all other fiber
