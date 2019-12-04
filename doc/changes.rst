@@ -7,8 +7,10 @@ fiberassign change log
 ------------------
 
 * Change output filenames to fba-*.fits and fiberassign-*.fits (PR `#235`_).
+* Propagate run date/teim and depencency versions to outputs (PR `#240`_).
 
 .. _`#235`: https://github.com/desihub/fiberassign/pull/235
+.. _`#240`: https://github.com/desihub/fiberassign/pull/240
 
 1.2.1 (2019-10-31)
 ------------------
