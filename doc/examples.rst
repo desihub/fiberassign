@@ -209,31 +209,27 @@ variables::
     %> export OMP_NUM_THREADS=32
     %> export DESI_LOGLEVEL=DEBUG
     %> export \
-       targetdir=/project/projectdirs/desi/datachallenge/reference_runs/18.11/targets
+       targetdir=/project/projectdirs/desi/datachallenge/reference_runs/19.10/targets
 
 Now run the assignment using the default footprint tiling from
 desimodel::
 
     %> time fba_run \
-        --targets ${targetdir}/mtl.fits \
-        ${targetdir}/standards-bright.fits \
-        ${targetdir}/standards-dark.fits \
+        --targets ${targetdir}/mtl-dark.fits \
         ${targetdir}/sky.fits \
-        --dir out_ref_18.11 | tee log_ref_18.11
+        --dir out_ref_19.10 | tee log_ref_19.10
 
 Make a plot of all tiles (you can also plot only some tiles or petals- see
 options for fba_plot_results)::
 
-    %> time fba_plot_results --dir out_ref_18.11
+    %> time fba_plot_results --dir out_ref_19.10
 
 Merge all columns of the original target files into a new set of fiberassign
 outputs::
 
     %> time fba_merge_results \
-    --targets ${targetdir}/mtl.fits \
-    ${targetdir}/standards-bright.fits \
-    ${targetdir}/standards-dark.fits \
-    ${targetdir}/sky.fits --dir out_ref_18.11
+    --targets ${targetdir}/mtl-dark.fits \
+    ${targetdir}/sky.fits --dir out_ref_19.10
 
 
 Large Run
