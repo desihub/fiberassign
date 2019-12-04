@@ -196,7 +196,7 @@ Small Reference Run
 This example is run on cori.nersc.gov, using data files in the project space
 here::
 
-    /project/projectdirs/desi/datachallenge/reference_runs/18.11/targets
+    /project/projectdirs/desi/datachallenge/reference_runs/19.10/targets
 
 After building (and optionally installing) fiberassign you should get an
 interactive session on a compute node for up to 4 hours::
