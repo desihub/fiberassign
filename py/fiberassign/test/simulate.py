@@ -94,13 +94,13 @@ def sim_tiles(path, selectfile=None):
         ("OBSCONDITIONS", "i4")
     ])
     # ntile = 7
-    ntile = 5
+    ntile = 2
     fdata = np.zeros(ntile, dtype=tile_dtype)
     fdata[0] = (11108, 150.87, 31.23, 1, "DARK", 1)
     fdata[1] = (1165, 150.69, 33.86, 1, "DARK", 1)
-    fdata[2] = (18465, 150.47, 33.20, 1, "DARK", 1)
-    fdata[3] = (6927, 151.78, 33.84, 1, "DARK", 1)
-    fdata[4] = (24227, 151.56, 33.18, 2, "DARK", 1)
+    # fdata[2] = (18465, 150.47, 33.20, 1, "DARK", 1)
+    # fdata[3] = (6927, 151.78, 33.84, 1, "DARK", 1)
+    # fdata[4] = (24227, 151.56, 33.18, 2, "DARK", 1)
     # fdata[5] = (16870, 151.96, 31.21, 1, "DARK", 1)
     # fdata[6] = (28408, 150.73, 30.52, 2, "DARK", 1)
 

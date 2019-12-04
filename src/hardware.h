@@ -35,6 +35,7 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
         typedef std::shared_ptr <Hardware> pshr;
 
         Hardware(
+            std::string const & timestr,
             std::vector <int32_t> const & location,
             std::vector <int32_t> const & petal,
             std::vector <int32_t> const & device,
@@ -58,6 +59,8 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
             std::vector <fbg::shape> const & excl_gfa,
             std::vector <fbg::shape> const & excl_petal
         );
+
+        std::string time() const;
 
         double radial_ang2dist (double const & theta_rad) const;
 
@@ -239,6 +242,8 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
         std::map <int32_t, fbg::shape> loc_petal_excl;
 
     private :
+
+        std::string timestr_;
 
         bool move_positioner(fbg::shape & shptheta, fbg::shape & shpphi,
                              fbg::dpair const & center,
