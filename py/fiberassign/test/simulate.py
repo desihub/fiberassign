@@ -21,7 +21,8 @@ from fiberassign.hardware import (load_hardware, FIBER_STATE_STUCK,
                                   FIBER_STATE_BROKEN)
 
 from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
-                                 TARGET_TYPE_STANDARD)
+                                 TARGET_TYPE_SUPPSKY,
+                                 TARGET_TYPE_SUPPSKY, TARGET_TYPE_STANDARD)
 
 
 def sim_data_dir():
@@ -167,6 +168,7 @@ def sim_targets(path, tgtype, tgoffset, density=5000.0):
     fdata["SUBPRIORITY"] = np.random.uniform(low=0.0, high=1.0, size=ntarget)
 
     sky_mask = desi_mask["SKY"].mask
+    suppsky_mask = desi_mask["SUPP_SKY"].mask
     std_mask = desi_mask["STD_BRIGHT"].mask
     # We could be fancier and set the DESI_TARGET bits for science targets
     # to exactly match the priority class.  For now we just set a single
@@ -180,6 +182,9 @@ def sim_targets(path, tgtype, tgoffset, density=5000.0):
     elif tgtype == TARGET_TYPE_STANDARD:
         fdata["PRIORITY"] = 1500 * np.ones(ntarget, dtype=np.int32)
         fdata["DESI_TARGET"] |= std_mask
+    elif tgtype == TARGET_TYPE_SUPPSKY:
+        fdata["PRIORITY"] = np.zeros(ntarget, dtype=np.int32)
+        fdata["DESI_TARGET"] |= suppsky_mask
     else:
         fdata["DESI_TARGET"] |= sci_mask
         # These are the fractions of each target type:

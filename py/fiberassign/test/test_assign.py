@@ -24,6 +24,7 @@ from fiberassign.hardware import load_hardware
 from fiberassign.tiles import load_tiles, Tiles
 
 from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
+                                 TARGET_TYPE_SUPPSKY,
                                  TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE,
                                  Targets, TargetsAvailable, TargetTree,
                                  LocationsAvailable, load_target_file)
@@ -52,6 +53,10 @@ from .simulate import (test_subdir_create, sim_tiles, sim_targets,
 class TestAssign(unittest.TestCase):
 
     def setUp(self):
+        self.density_science = 5000
+        self.density_standards = 5000
+        self.density_sky = 10
+        self.density_suppsky = 5000
         pass
 
     def tearDown(self):
@@ -62,14 +67,41 @@ class TestAssign(unittest.TestCase):
         input_mtl = os.path.join(test_dir, "mtl.fits")
         input_std = os.path.join(test_dir, "standards.fits")
         input_sky = os.path.join(test_dir, "sky.fits")
-        nscience = sim_targets(input_mtl, TARGET_TYPE_SCIENCE, 0)
-        nstd = sim_targets(input_std, TARGET_TYPE_STANDARD, nscience)
-        nsky = sim_targets(input_sky, TARGET_TYPE_SKY, (nscience + nstd))
+        input_suppsky = os.path.join(test_dir, "suppsky.fits")
+        tgoff = 0
+        nscience = sim_targets(
+            input_mtl,
+            TARGET_TYPE_SCIENCE,
+            tgoff,
+            density=self.density_science
+        )
+        tgoff += nscience
+        nstd = sim_targets(
+            input_std,
+            TARGET_TYPE_STANDARD,
+            tgoff,
+            density=self.density_standards
+        )
+        tgoff += nstd
+        nsky = sim_targets(
+            input_sky,
+            TARGET_TYPE_SKY,
+            tgoff,
+            density=self.density_sky
+        )
+        tgoff += nsky
+        nsuppsky = sim_targets(
+            input_suppsky,
+            TARGET_TYPE_SUPPSKY,
+            tgoff,
+            density=self.density_suppsky
+        )
 
         tgs = Targets()
         load_target_file(tgs, input_mtl)
         load_target_file(tgs, input_std)
         load_target_file(tgs, input_sky)
+        load_target_file(tgs, input_suppsky)
 
         # Create a hierarchical triangle mesh lookup of the targets positions
         tree = TargetTree(tgs, 0.01)
@@ -103,16 +135,19 @@ class TestAssign(unittest.TestCase):
         write_assignment_fits(tiles, asgn, out_dir=test_dir,
                               out_prefix="full_", all_targets=True)
 
+        plotpetals = [0]
+        # plotpetals = None
+
         plot_tiles(hw, tiles, result_dir=test_dir,
                    result_prefix="basic_", plot_dir=test_dir,
                    plot_prefix="basic_",
-                   result_split_dir=False, petals=[0],
+                   result_split_dir=False, petals=plotpetals,
                    serial=True)
 
         plot_tiles(hw, tiles, result_dir=test_dir,
                    result_prefix="full_", plot_dir=test_dir,
                    plot_prefix="full_",
-                   result_split_dir=False, petals=[0],
+                   result_split_dir=False, petals=plotpetals,
                    serial=True)
 
         target_files = [
@@ -249,13 +284,13 @@ class TestAssign(unittest.TestCase):
         plot_tiles(hw, tiles, result_dir=test_dir,
                    result_prefix="basic_tile-", plot_dir=test_dir,
                    plot_prefix="basic_tile-",
-                   result_split_dir=False, petals=[0],
+                   result_split_dir=False, petals=plotpetals,
                    serial=True)
 
         plot_tiles(hw, tiles, result_dir=test_dir,
                    result_prefix="full_tile-", plot_dir=test_dir,
                    plot_prefix="full_tile-",
-                   result_split_dir=False, petals=[0],
+                   result_split_dir=False, petals=plotpetals,
                    serial=True)
         return
 
@@ -265,14 +300,41 @@ class TestAssign(unittest.TestCase):
         input_mtl = os.path.join(test_dir, "mtl.fits")
         input_std = os.path.join(test_dir, "standards.fits")
         input_sky = os.path.join(test_dir, "sky.fits")
-        nscience = sim_targets(input_mtl, TARGET_TYPE_SCIENCE, 0)
-        nstd = sim_targets(input_std, TARGET_TYPE_STANDARD, nscience)
-        nsky = sim_targets(input_sky, TARGET_TYPE_SKY, (nscience + nstd))
+        input_suppsky = os.path.join(test_dir, "suppsky.fits")
+        tgoff = 0
+        nscience = sim_targets(
+            input_mtl,
+            TARGET_TYPE_SCIENCE,
+            tgoff,
+            density=self.density_science
+        )
+        tgoff += nscience
+        nstd = sim_targets(
+            input_std,
+            TARGET_TYPE_STANDARD,
+            tgoff,
+            density=self.density_standards
+        )
+        tgoff += nstd
+        nsky = sim_targets(
+            input_sky,
+            TARGET_TYPE_SKY,
+            tgoff,
+            density=self.density_sky
+        )
+        tgoff += nsky
+        nsuppsky = sim_targets(
+            input_suppsky,
+            TARGET_TYPE_SUPPSKY,
+            tgoff,
+            density=self.density_suppsky
+        )
 
         tgs = Targets()
         load_target_file(tgs, input_mtl)
         load_target_file(tgs, input_std)
         load_target_file(tgs, input_sky)
+        load_target_file(tgs, input_suppsky)
 
         # Create a hierarchical triangle mesh lookup of the targets positions
         tree = TargetTree(tgs, 0.01)
@@ -310,14 +372,21 @@ class TestAssign(unittest.TestCase):
         asgn.assign_unused(TARGET_TYPE_SKY, 40)
         asgn.assign_force(TARGET_TYPE_SKY, 40)
 
+        # Use supplemental sky to meet our requirements
+        asgn.assign_unused(TARGET_TYPE_SUPPSKY, 40)
+        asgn.assign_force(TARGET_TYPE_SUPPSKY, 40)
+
         # If there are any unassigned fibers, try to place them somewhere.
         asgn.assign_unused(TARGET_TYPE_SCIENCE)
         asgn.assign_unused(TARGET_TYPE_SKY)
+        asgn.assign_unused(TARGET_TYPE_SUPPSKY)
 
         write_assignment_fits(tiles, asgn, out_dir=test_dir, all_targets=True)
 
+        # plotpetals = [0]
+        plotpetals = None
         plot_tiles(hw, tiles, result_dir=test_dir, plot_dir=test_dir,
-                   real_shapes=True, petals=[4, 6], serial=True)
+                   real_shapes=True, petals=plotpetals, serial=True)
 
         qa_tiles(hw, tiles, result_dir=test_dir)
 
@@ -328,7 +397,9 @@ class TestAssign(unittest.TestCase):
         for tile, props in qadata.items():
             self.assertEqual(4495, props["assign_science"])
             self.assertEqual(100, props["assign_std"])
-            self.assertEqual(400, props["assign_sky"])
+            self.assertEqual(400, (
+                props["assign_sky"] + props["assign_suppsky"]
+            ))
 
         plot_qa(qadata, os.path.join(test_dir, "qa"), outformat="pdf",
                 labels=True)
@@ -340,16 +411,41 @@ class TestAssign(unittest.TestCase):
         input_mtl = os.path.join(test_dir, "mtl.fits")
         input_std = os.path.join(test_dir, "standards.fits")
         input_sky = os.path.join(test_dir, "sky.fits")
-
-        nscience = sim_targets(input_mtl, TARGET_TYPE_SCIENCE, 0)
-        nstd = sim_targets(input_std, TARGET_TYPE_STANDARD, nscience)
-        nsky = sim_targets(input_sky, TARGET_TYPE_SKY, (nscience + nstd))
+        input_suppsky = os.path.join(test_dir, "suppsky.fits")
+        tgoff = 0
+        nscience = sim_targets(
+            input_mtl,
+            TARGET_TYPE_SCIENCE,
+            tgoff,
+            density=self.density_science
+        )
+        tgoff += nscience
+        nstd = sim_targets(
+            input_std,
+            TARGET_TYPE_STANDARD,
+            tgoff,
+            density=self.density_standards
+        )
+        tgoff += nstd
+        nsky = sim_targets(
+            input_sky,
+            TARGET_TYPE_SKY,
+            tgoff,
+            density=self.density_sky
+        )
+        tgoff += nsky
+        nsuppsky = sim_targets(
+            input_suppsky,
+            TARGET_TYPE_SUPPSKY,
+            tgoff,
+            density=self.density_suppsky
+        )
 
         tfile = os.path.join(test_dir, "footprint.fits")
         sim_tiles(tfile)
 
         opts = {
-            "targets": [input_mtl, input_std, input_sky],
+            "targets": [input_mtl, input_std, input_sky, input_suppsky],
             "dir": test_dir,
             "footprint": tfile,
             "standards_per_petal": 10,
@@ -360,9 +456,11 @@ class TestAssign(unittest.TestCase):
         args = parse_assign(optlist)
         run_assign_full(args)
 
+        # plotpetals = "0"
+        plotpetals = "0,1,2,3,4,5,6,7,8,9"
         opts = {
             "dir": test_dir,
-            "petals": "0",
+            "petals": plotpetals,
             "serial": True
         }
         optlist = option_list(opts)
@@ -389,7 +487,9 @@ class TestAssign(unittest.TestCase):
         for tile, props in qadata.items():
             self.assertEqual(4500, props["assign_science"])
             self.assertEqual(100, props["assign_std"])
-            self.assertEqual(400, props["assign_sky"])
+            self.assertEqual(400, (
+                props["assign_sky"] + props["assign_suppsky"]
+            ))
         return
 
     def test_fieldrot(self):
@@ -398,9 +498,35 @@ class TestAssign(unittest.TestCase):
         input_mtl = os.path.join(test_dir, "mtl.fits")
         input_std = os.path.join(test_dir, "standards.fits")
         input_sky = os.path.join(test_dir, "sky.fits")
-        nscience = sim_targets(input_mtl, TARGET_TYPE_SCIENCE, 0)
-        nstd = sim_targets(input_std, TARGET_TYPE_STANDARD, nscience)
-        nsky = sim_targets(input_sky, TARGET_TYPE_SKY, (nscience + nstd))
+        input_suppsky = os.path.join(test_dir, "suppsky.fits")
+        tgoff = 0
+        nscience = sim_targets(
+            input_mtl,
+            TARGET_TYPE_SCIENCE,
+            tgoff,
+            density=self.density_science
+        )
+        tgoff += nscience
+        nstd = sim_targets(
+            input_std,
+            TARGET_TYPE_STANDARD,
+            tgoff,
+            density=self.density_standards
+        )
+        tgoff += nstd
+        nsky = sim_targets(
+            input_sky,
+            TARGET_TYPE_SKY,
+            tgoff,
+            density=self.density_sky
+        )
+        tgoff += nsky
+        nsuppsky = sim_targets(
+            input_suppsky,
+            TARGET_TYPE_SUPPSKY,
+            tgoff,
+            density=self.density_suppsky
+        )
 
         # Simulate the tiles
         tfile = os.path.join(test_dir, "footprint.fits")
@@ -420,6 +546,7 @@ class TestAssign(unittest.TestCase):
             load_target_file(tgs, input_mtl)
             load_target_file(tgs, input_std)
             load_target_file(tgs, input_sky)
+            load_target_file(tgs, input_suppsky)
 
             # Create a hierarchical triangle mesh lookup of the targets
             # positions
