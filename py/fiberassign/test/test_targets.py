@@ -18,6 +18,7 @@ from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                                  TARGET_TYPE_STANDARD, load_target_file,
                                  desi_target_type, default_main_sciencemask,
                                  default_main_skymask, default_main_stdmask,
+                                 default_main_suppskymask,
                                  default_main_safemask,
                                  default_main_excludemask,
                                  Targets, TargetTree, TargetsAvailable,
@@ -86,8 +87,8 @@ class TestTargets(unittest.TestCase):
             ])
         result = desi_target_type(
             desi_target, default_main_sciencemask(), default_main_stdmask(),
-            default_main_skymask(), default_main_safemask(),
-            default_main_excludemask())
+            default_main_skymask(), default_main_suppskymask(),
+            default_main_safemask(), default_main_excludemask())
         self.assertTrue(np.all(result == fbatype))
 
         # Scalar inputs
@@ -95,26 +96,28 @@ class TestTargets(unittest.TestCase):
             result = desi_target_type(
                 desi_target[i],
                 default_main_sciencemask(), default_main_stdmask(),
-                default_main_skymask(), default_main_safemask(),
-                default_main_excludemask())
+                default_main_skymask(), default_main_suppskymask(),
+                default_main_safemask(), default_main_excludemask())
             self.assertEqual(result, fbatype[i])
 
         # Does excludemask work?
         mask = desi_mask["ELG"].mask
         result = desi_target_type(
             mask, default_main_sciencemask(), default_main_stdmask(),
-            default_main_skymask(), default_main_safemask(),
-            default_main_excludemask())
+            default_main_skymask(), default_main_suppskymask(),
+            default_main_safemask(), default_main_excludemask())
         self.assertEqual(result, TARGET_TYPE_SCIENCE)
 
         result = desi_target_type(
             mask, default_main_sciencemask(), default_main_stdmask(),
-            default_main_skymask(), default_main_safemask(), mask)
+            default_main_skymask(), default_main_suppskymask(),
+            default_main_safemask(), mask)
         self.assertEqual(result, 0)
 
         result = desi_target_type(
             [mask, mask], default_main_sciencemask(), default_main_stdmask(),
-            default_main_skymask(), default_main_safemask(), mask)
+            default_main_skymask(), default_main_suppskymask(),
+            default_main_safemask(), mask)
         self.assertTrue(not np.any(result))
 
 

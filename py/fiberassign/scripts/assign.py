@@ -23,7 +23,8 @@ from ..tiles import load_tiles
 from ..gfa import get_gfa_targets
 
 from ..targets import (str_to_target_type, TARGET_TYPE_SCIENCE,
-                       TARGET_TYPE_SKY, TARGET_TYPE_STANDARD,
+                       TARGET_TYPE_SKY, TARGET_TYPE_SUPPSKY,
+                       TARGET_TYPE_STANDARD,
                        TARGET_TYPE_SAFE, Targets, TargetsAvailable,
                        TargetTree, LocationsAvailable,
                        load_target_file)
@@ -355,15 +356,20 @@ def run_assign_full(args):
     # Assign sky to unused fibers, up to some limit
     asgn.assign_unused(TARGET_TYPE_SKY, args.sky_per_petal)
 
+    # Assign suppsky to unused fibers, up to some limit
+    asgn.assign_unused(TARGET_TYPE_SUPPSKY, args.sky_per_petal)
+
     # Force assignment if needed
     asgn.assign_force(TARGET_TYPE_STANDARD, args.standards_per_petal)
     asgn.assign_force(TARGET_TYPE_SKY, args.sky_per_petal)
+    asgn.assign_force(TARGET_TYPE_SUPPSKY, args.sky_per_petal)
 
     # If there are any unassigned fibers, try to place them somewhere.
     # Assigning science again is a no-op, but...
     asgn.assign_unused(TARGET_TYPE_SCIENCE)
     asgn.assign_unused(TARGET_TYPE_STANDARD)
     asgn.assign_unused(TARGET_TYPE_SKY)
+    asgn.assign_unused(TARGET_TYPE_SUPPSKY)
 
     # Assign safe location to unused fibers (no maximum).  There should
     # always be at least one safe location (i.e. "BAD_SKY") for each fiber.
@@ -372,6 +378,7 @@ def run_assign_full(args):
 
     # Assign sky monitor fibers
     asgn.assign_unused(TARGET_TYPE_SKY, -1, "ETC")
+    asgn.assign_unused(TARGET_TYPE_SUPPSKY, -1, "ETC")
     asgn.assign_unused(TARGET_TYPE_SAFE, -1, "ETC")
 
     gt.stop("run_assign_full calculation")
@@ -450,10 +457,16 @@ def run_assign_bytile(args):
         asgn.assign_unused(TARGET_TYPE_SKY, args.sky_per_petal, "POS",
                            tile_id, tile_id)
 
+        # Assign suppsky to unused fibers, up to some limit
+        asgn.assign_unused(TARGET_TYPE_SUPPSKY, args.sky_per_petal, "POS",
+                           tile_id, tile_id)
+
         # Force assignment if needed
         asgn.assign_force(TARGET_TYPE_STANDARD, args.standards_per_petal,
                           tile_id, tile_id)
         asgn.assign_force(TARGET_TYPE_SKY, args.sky_per_petal,
+                          tile_id, tile_id)
+        asgn.assign_force(TARGET_TYPE_SUPPSKY, args.sky_per_petal,
                           tile_id, tile_id)
 
         # If there are any unassigned fibers, try to place them somewhere.
@@ -461,6 +474,7 @@ def run_assign_bytile(args):
         asgn.assign_unused(TARGET_TYPE_SCIENCE, -1, "POS", tile_id, tile_id)
         asgn.assign_unused(TARGET_TYPE_STANDARD, -1, "POS", tile_id, tile_id)
         asgn.assign_unused(TARGET_TYPE_SKY, -1, "POS", tile_id, tile_id)
+        asgn.assign_unused(TARGET_TYPE_SUPPSKY, -1, "POS", tile_id, tile_id)
 
         # Assign safe location to unused fibers (no maximum).  There should
         # always be at least one safe location (i.e. "BAD_SKY") for each
@@ -470,6 +484,7 @@ def run_assign_bytile(args):
 
         # Assign sky monitor fibers
         asgn.assign_unused(TARGET_TYPE_SKY, -1, "ETC", tile_id, tile_id)
+        asgn.assign_unused(TARGET_TYPE_SUPPSKY, -1, "ETC", tile_id, tile_id)
         asgn.assign_unused(TARGET_TYPE_SAFE, -1, "ETC", tile_id, tile_id)
 
     gt.stop("run_assign_bytile calculation")

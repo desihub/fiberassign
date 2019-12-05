@@ -29,6 +29,7 @@ namespace fiberassign {
 #define TARGET_TYPE_STANDARD 2
 #define TARGET_TYPE_SKY 4
 #define TARGET_TYPE_SAFE 8
+#define TARGET_TYPE_SUPPSKY 16
 
 std::string target_string(uint8_t type);
 
@@ -69,6 +70,7 @@ class Target {
         bool is_science() const;
         bool is_standard() const;
         bool is_sky() const;
+        bool is_suppsky() const;
         bool is_safe() const;
         bool is_type(uint8_t t) const;
 

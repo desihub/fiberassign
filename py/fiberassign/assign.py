@@ -34,7 +34,8 @@ from ._version import __version__
 
 from .utils import Logger, Timer, default_mp_proc
 
-from .targets import (TARGET_TYPE_SKY, TARGET_TYPE_SAFE, desi_target_type,
+from .targets import (TARGET_TYPE_SKY, TARGET_TYPE_SUPPSKY,
+                      TARGET_TYPE_SAFE, desi_target_type,
                       default_target_masks, default_survey_target_masks)
 
 from .hardware import (FIBER_STATE_UNASSIGNED, FIBER_STATE_STUCK,
@@ -730,14 +731,16 @@ def read_assignment_fits_tile(params):
         fsciencemask = None
         fstdmask = None
         fskymask = None
+        fsuppskymask = None
         fexcludemask = None
         fcol = None
         if survey is not None:
-            fsciencemask, fstdmask, fskymask, fsafemask, fexcludemask = \
-                default_survey_target_masks(survey)
+            fsciencemask, fstdmask, fskymask, fsuppskymask, fsafemask, \
+                fexcludemask = default_survey_target_masks(survey)
             fcol = "FA_TARGET"
         else:
-            fsurvey, fcol, fsciencemask, fstdmask, fskymask, fsafemask, \
+            fsurvey, fcol, fsciencemask, fstdmask, fskymask, \
+                fsuppskymask, fsafemask, \
                 fexcludemask = default_target_masks(fbtargets)
             survey = fsurvey
 
@@ -745,7 +748,7 @@ def read_assignment_fits_tile(params):
             if col == "FA_TYPE":
                 targets_data[col][:nrawtarget] = [
                     desi_target_type(x, fsciencemask, fstdmask, fskymask,
-                                     fsafemask, fexcludemask)
+                                     fsuppskymask, fsafemask, fexcludemask)
                     for x in fbtargets[fcol][:]]
             elif col == "FA_TARGET":
                 targets_data[col][:nrawtarget] = fbtargets[fcol]
@@ -1266,8 +1269,8 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
         # Read data directly into shared buffer
         tgview[:] = fd[1].read()
         if survey is None:
-            (survey, col, sciencemask, stdmask, skymask, safemask,
-             excludemask) = default_target_masks(tgview)
+            (survey, col, sciencemask, stdmask, skymask, suppskymask,
+             safemask, excludemask) = default_target_masks(tgview)
 
         # Sort rows by TARGETID if not already done
         tgviewids = tgview["TARGETID"]
