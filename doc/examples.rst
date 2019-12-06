@@ -231,6 +231,97 @@ outputs::
     --targets ${targetdir}/mtl-dark.fits \
     ${targetdir}/sky.fits --dir out_ref_19.10
 
+Debugging example based on small reference run
+---------------------------------------------
+
+ Examining the output from the above, in tile 001149, in petal 6 (at about 10 o'clock, near the periphery of the petal, close to the GFA), we find that location 6525 has a green positioner, meaning that this is both a science target and a standards target.  How did this assignment come about?  We can learn this by running again, but with:
+
+  %>export DESI_DEBUG_LOCATION=6525
+
+  %>time fba_run     --targets ${targetdir}/mtl-dark.fits\
+  ${targetdir}/sky.fits --dir out_debug2 |tee log_debug
+
+ Then we can examine log_debug for the simultaneous occurrence of 1149 and 6525::
+
+   DEBUG: targets avail:  tile 1149, location 6525 append ID 288230398385719030 (type=1), total priority 3000.42
+   DEBUG: targets avail:  tile 1149, location 6525 append ID 288230398385719269 (type=1), total priority 3000.37
+   DEBUG: targets avail:  tile 1149, location 6525 append ID 288230398385719156 (type=1), total priority 3000.29
+   DEBUG: targets avail:  tile 1149, location 6525 append ID 288230398385719119 (type=1), total priority 3000.12
+   DEBUG: targets avail:  tile 1149, location 6525 append ID 288230398385719090 (type=1), total priority 3000.02
+   DEBUG: targets avail:  tile 1149, location 6525 append ID 288230398385721102 (type=3), total priority 1500.58
+   DEBUG: targets avail:  tile 1149, location 6525 append ID 288230398385720982 (type=1), total priority 1400.95
+   DEBUG: targets avail:  tile 1149, location 6525 append ID 288230398385720952 (type=1), total priority 1400.32
+
+The eventual choice has ID  288230398385721102, but this was not the initial assignment for tile 1149, location 6525 since it didn't have the highest priority.::
+
+  DEBUG: target 288230398385719030 has available tile / location 1149, 6525 (fiber 3006)
+  DEBUG: target 288230398385719269 has available tile / location 1149, 6525 (fiber 3006)
+  DEBUG: target 288230398385719156 has available tile / location 1149, 6525 (fiber 3006)
+  DEBUG: target 288230398385719119 has available tile / location 1149, 6525 (fiber 3006)
+  DEBUG: target 288230398385719090 has available tile / location 1149, 6525 (fiber 3006)
+  DEBUG: target 288230398385721102 has available tile / location 1149, 6525 (fiber 3006)
+  DEBUG: target 288230398385720982 has available tile / location 1149, 6525 (fiber 3006)
+  DEBUG: target 288230398385720952 has available tile / location 1149, 6525 (fiber 3006)
+  DEBUG: assign unused science: tile 1149, petal 6 location 6525 (fiber 3006) available target 288230398385719030, priority 3000, subpriority 0.415054
+  DEBUG: assign unused science: tile 1149, petal 6 location 6525 (fiber 3006) available target 288230398385719269, priority 3000, subpriority 0.370536
+  DEBUG: assign unused science: tile 1149, petal 6 location 6525 (fiber 3006) available target 288230398385719156, priority 3000, subpriority 0.294639
+  DEBUG: assign unused science: tile 1149, petal 6 location 6525 (fiber 3006) available target 288230398385719119, priority 3000, subpriority 0.121289
+  DEBUG: assign unused science: tile 1149, petal 6 location 6525 (fiber 3006) available target 288230398385719090, priority 3000, subpriority 0.0176536
+  DEBUG: assign unused science: tile 1149, petal 6 location 6525 (fiber 3006) available target 288230398385721102, priority 1500, subpriority 0.583245
+  DEBUG: assign unused science: tile 1149, petal 6 location 6525 (fiber 3006) available target 288230398385720982, priority 1400, subpriority 0.951584DEBUG: assign unused science: tile 1149, petal 6 location 6525 (fiber 3006) available target 288230398385720952, priority 1400, subpriority 0.317493
+  DEBUG: find_best: tile 1149, loc 6525, target 288230398385719030 science target with no remaining obs
+  DEBUG: find_best: tile 1149, loc 6525, target 288230398385719269, type 1 accept with priority = 3000, subpriority = 0.370536, obsremain = 1
+  DEBUG: find_best: tile 1149, loc 6525, target 288230398385719269, type 1 SELECTED
+  DEBUG: assign unused science: tile 1149, petal 6 location 6525 (fiber 3006) found best object 288230398385719269
+  DEBUG: assign_tileloc: tile 1149, loc 6525, target 288230398385719269, type 1 N_tile now = 4045 N_petal now = 456
+
+Target 288230398385719269 is selected::
+
+  DEBUG: reassign: tile 1149, location 6525, target 288230398385719269 considering for swap...
+  DEBUG: reassign: tile 1149, location 6525, target 288230398385719269 considering tile indices 0 to 16070
+  DEBUG: reassign: tile 1149, loc 6525, target 288230398385719269 avail T/F 1148,443 already considered or swapped
+  DEBUG: reassign: tile 1149, loc 6525, target 288230398385719269 avail T/F 1149,6525 already assigned
+  DEBUG: reassign: tile 1149, loc 6525, target 288230398385719269 avail T/F 6911,5272 already assigned
+  DEBUG: reassign: tile 1149, loc 6525, target 288230398385719269 avail T/F 12673,4365 already assigned
+  DEBUG: reassign: tile 1149, loc 6525, target 288230398385719269 avail T/F 18451,9252 already considered or swapped
+  DEBUG: reassign: tile 1149, loc 6525, target 288230398385719269 avail T/F 24213,1165 already assigned
+  DEBUG: redist: tile 1149, location 6525 (fiber 3006), target 288230398385719269 keeping assignment
+  DEBUG: reassign: tile 5330, loc 6525, target 288230398276670339 avail T/F 1149,421 already considered or swapped
+  DEBUG: reassign: tile 5330, loc 6525, target 288230398276670339 avail T/F 1149,398 already considered or swapped
+  DEBUG: reassign: tile 11108, loc 6525, target 288230398377331091 avail T/F 1149,3222 already considered or swapped
+  DEBUG: reassign: tile 16870, loc 6525, target 288230398381528045 avail T/F 1149,5051 already considered or swapped
+  DEBUG: reassign: tile 16870, loc 6525, target 288230398381528045 avail T/F 1149,5059 already considered or swapped
+  DEBUG: reassign: tile 28408, loc 6525, target 288230398377330190 avail T/F 1149,2219 already considered or swapped
+  DEBUG: reassign: tile 34170, loc 6525, target 288230398381523339 avail T/F 1149,1003 already considered or swapped
+  DEBUG: reassign: tile 39932, loc 6525, target 288230398289252223 avail T/F 1149,8141 already considered or swapped
+  DEBUG: assign unused standard: tile 1149, petal 6 location 6525 (fiber 3006) is already assigned
+  DEBUG: assign force standard: tile 1149, petal 6, location 6525 (fiber 3006), found object 288230398385721102 with weight 1500.58
+  DEBUG: assign force standard: tile 1149, petal 6, class 1400, object 288230398385721102, total priority 1500.58, available loc 6525 (fiber 3006) at target 288230398385719269 is wrong class (3000)
+  DEBUG: assign force standard: tile 1149, petal 6, class 1500, object 288230398385721102, total priority 1500.58, available loc 6525 (fiber 3006) at target 288230398385719269 is wrong class (3000)
+  DEBUG: assign force standard: tile 1149, petal 6, class 1600, object 288230398385721102, total priority 1500.58, available loc 6525 (fiber 3006) at target 288230398385719269 is wrong class (3000)
+  DEBUG: assign force standard: tile 1149, petal 6, class 2000, object 288230398385721102, total priority 1500.58, available loc 6525 (fiber 3006) at target 288230398385719269 is wrong class (3000)
+  DEBUG: assign force standard: tile 1149, petal 6, class 2998, object 288230398385721102, total priority 1500.58, available loc 6525 (fiber 3006) at target 288230398385719269 is wrong class (3000)
+  DEBUG: assign force standard: tile 1149, petal 6, class 3000, object 288230398385721102, total priority 1500.58, available l
+  DEBUG: assign force standard: tile 1149, petal 6, class 3000, object 288230398385721102, total priority 1500.58, available loc 6525 (fiber 3006) at target 288230398385719269 (subpriority 0.370536) could be bumped
+  DEBUG: assign force standard: tile 1149, petal 6, class 3000, object 288230398385721102, total priority 1500.58, available loc 6525 (fiber 3006) bumping science target 288230398385719269
+  DEBUG: assign force standard: tile 1149, petal 6, class 3000, object 288230398385721102, total priority 1500.58, available loc 6525 (fiber 3006) bumping science target 288230398385719269
+  DEBUG: reassign: tile 1149, location 6525, target 288230398385719269 considering for swap...
+  DEBUG: reassign: tile 1149, location 6525, target 288230398385719269 considering tile indices 0 to 16070
+  DEBUG: reassign: tile 1149, loc 6525, target 288230398385719269 avail T/F 1148,443 already assigned
+  DEBUG: reassign: tile 1149, loc 6525, target 288230398385719269 avail T/F 1149,6525 already assigned
+  DEBUG: reassign: tile 1149, loc 6525, target 288230398385719269 avail T/F 6911,5272 already assigned
+  DEBUG: reassign: tile 1149, loc 6525, target 288230398385719269 avail T/F 12673,4365 already assigned
+  DEBUG: reassign: tile 1149, loc 6525, target 288230398385719269 avail T/F 18451,9252 already assigned
+  DEBUG: reassign: tile 1149, loc 6525, target 288230398385719269 avail T/F 24213,1165 already assigned
+  DEBUG: unassign_tileloc: tile 1149, loc 6525, target 288230398385719269, type 1 N_tile now = 3966 N_petal now = 433
+  DEBUG: assign_tileloc: tile 1149, loc 6525, target 288230398385721102, type 1 N_tile now = 3967 N_petal now = 434
+  DEBUG: assign_tileloc: tile 1149, loc 6525, target 288230398385721102, type 2 N_tile now = 71 N_petal now = 10
+  DEBUG: assign unused science: tile 1149, petal 6 location 6525 (fiber 3006) is already assigned
+  DEBUG: assign unused standard: tile 1149, petal 6 location 6525 (fiber 3006) is already assigned
+
+Finally, in search of a standard, target  288230398385719269 is unassigned and 288230398385721102 is used in its place.
+
+
 
 Large Run
 -----------------
