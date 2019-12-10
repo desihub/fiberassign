@@ -164,7 +164,7 @@ def default_cmx_sciencemask():
     sciencemask |= cmx_mask["SV0_STD_BRIGHT"].mask
     sciencemask |= cmx_mask["STD_TEST"].mask
     sciencemask |= cmx_mask["STD_CALSPEC"].mask
-    
+    sciencemask |= cmx_mask["STD_DITHER"].mask
     # SE: ADDED NEW CMX SCIENCE BITS From /desitarget/blob/0.32.0/py/desitarget/cmx/data/cmx_targetmask.yaml 
     sciencemask |= cmx_mask["STD_FAINT"].mask
     sciencemask |= cmx_mask["SV0_BGS"].mask
