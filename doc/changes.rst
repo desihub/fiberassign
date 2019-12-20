@@ -3,14 +3,16 @@
 fiberassign change log
 ======================
 
-1.3.0 (unreleased)
+1.3.0 (2019-12-20)
 ------------------
 
 * Change output filenames to fba-*.fits and fiberassign-*.fits (PR `#235`_).
 * Propagate run date/teim and depencency versions to outputs (PR `#240`_).
+* Update documentation to more recent data releases (PR `#242`_).
 
 .. _`#235`: https://github.com/desihub/fiberassign/pull/235
 .. _`#240`: https://github.com/desihub/fiberassign/pull/240
+.. _`#242`: https://github.com/desihub/fiberassign/pull/242
 
 1.2.1 (2019-10-31)
 ------------------
