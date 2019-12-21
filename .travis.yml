@@ -1,107 +1,123 @@
-# We set the language to python, since we are focused on a recent python
-# version and want to use the build matrix for testing different compiler
-# versions.
+# All jobs use the python language.  This brings in the travis python environments
+# which are available for several python versions.  The python version for each job is
+# specified in the build matrix below.
 language: python
 
-# We use APT/brew to get as many packages as possible.  Then we pip install the
-# rest of our dependencies.
+# Manually specify every entry in the job matrix.  For older compiler versions, we
+# only test with the oldest supported python version.  For the latest available
+# compiler version, we test with several python versions.
 
-matrix:
+jobs:
   include:
     # GCC 4.9 - this is the oldest version that has good C++11 support
     - os: linux
-      dist: trusty
-      sudo: false
+      dist: xenial
+      python: 3.6
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
           packages:
             - build-essential
-            - git
-            - pkg-config
-            - locales
-            - libgl1-mesa-glx
-            - xvfb
-            - libcfitsio3-dev
             - gcc-4.9
             - g++-4.9
       env:
-        - MATRIX_EVAL="export CC=$(which gcc-4.9) && export CXX=$(which g++-4.9)"
+        - COMPILERS="export CC=$(which gcc-4.9) && export CXX=$(which g++-4.9)"
+        - PIP_BINARY="pyyaml scipy matplotlib==2.1.2 numpy astropy==2 sphinx"
     # GCC 5 - default version for ubuntu 16.04 LTS
     - os: linux
-      dist: trusty
-      sudo: false
+      dist: xenial
+      python: 3.6
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
           packages:
             - build-essential
-            - git
-            - pkg-config
-            - locales
-            - libgl1-mesa-glx
-            - xvfb
-            - libcfitsio3-dev
             - gcc-5
             - g++-5
       env:
-        - MATRIX_EVAL="export CC=$(which gcc-5) && export CXX=$(which g++-5)"
+        - COMPILERS="export CC=$(which gcc-5) && export CXX=$(which g++-5)"
+        - PIP_BINARY="pyyaml scipy matplotlib==2.1.2 numpy astropy==2 sphinx"
     # GCC 7 - default version for ubuntu 18.04 LTS
     - os: linux
-      dist: trusty
-      sudo: false
+      dist: xenial
+      python: 3.6
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
           packages:
             - build-essential
-            - git
-            - pkg-config
-            - locales
-            - libgl1-mesa-glx
-            - xvfb
-            - libcfitsio3-dev
             - gcc-7
             - g++-7
       env:
-        - MATRIX_EVAL="export CC=$(which gcc-7) && export CXX=$(which g++-7)"
-    - os: osx
-      osx_image: xcode9.4
-      language: generic
+        - COMPILERS="export CC=$(which gcc-7) && export CXX=$(which g++-7)"
+        - PIP_BINARY="pyyaml scipy matplotlib==2.1.2 numpy astropy==2 sphinx"
+    # GCC 9 - default version for ubuntu 19.10
+    # Python 3.6
+    - os: linux
+      dist: xenial
+      python: 3.6
       addons:
-        homebrew:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
           packages:
-            - git
-            - cfitsio
-            - python3
+            - build-essential
+            - gcc-9
+            - g++-9
       env:
-        - MATRIX_EVAL="export CC=$(which clang) && export CXX=$(which clang++)"
+        - COMPILERS="export CC=$(which gcc-9) && export CXX=$(which g++-9)"
+        - PIP_BINARY="pyyaml scipy matplotlib==2.1.2 numpy astropy==2 sphinx"
+    # # Linux Latest everything:  gcc, python, pip packages
+    # - os: linux
+    #   dist: xenial
+    #   python: 3.7
+    #   addons:
+    #     apt:
+    #       sources:
+    #         - ubuntu-toolchain-r-test
+    #       packages:
+    #         - build-essential
+    #         - gcc-9
+    #         - g++-9
+    #   env:
+    #     - COMPILERS="export CC=$(which gcc-9) && export CXX=$(which g++-9)"
+    #     - PIP_BINARY="pyyaml scipy matplotlib numpy astropy==3 sphinx"
+    # # OS X is a special case.  We set language to generic and then use homebrew
+    # # to install python3 and any other dependencies.  We can only easily use the
+    # # latest versions of all packages here.
+    # - os: osx
+    #   osx_image: xcode9.4
+    #   language: generic
+    #   addons:
+    #     homebrew:
+    #       packages:
+    #         - git
+    #         - python3
+    #   env:
+    #     - COMPILERS="export CC=$(which clang) && export CXX=$(which clang++)"
+    #     - PIP_BINARY="pyyaml scipy matplotlib numpy astropy==3 sphinx"
 
-# The python versions to test.
-python:
-    - 3.6
 
-# The fixed versions of python dependencies used for all python / compiler
-# versions.
+# The rest of this file is common to all jobs and uses per-job environment variables
+# set in the matrix above.
+
 env:
-    global:
-        # Binary packages to install with pip.
-        - PIP_BINARY="pyyaml scipy matplotlib numpy astropy sphinx"
-        # Packages to build with pip
-        - PIP_SOURCE="fitsio healpy==1.11"
-        # DESI packages to install.
-        - DESIUTIL_VERSION=master
-        - DESIMODEL_VERSION=master
-        - DESIMODEL_DATA=trunk
-        - DESITARGET_VERSION=master
-        - DESIHUB_PIP="desiutil=${DESIUTIL_VERSION} desimodel=${DESIMODEL_VERSION} desitarget=${DESITARGET_VERSION}"
+  global:
+    # Packages to build from source with pip
+    - PIP_SOURCE="fitsio healpy"
+    # DESI packages to install.
+    - DESIUTIL_VERSION=master
+    - DESIMODEL_VERSION=master
+    - DESIMODEL_DATA=trunk
+    - DESITARGET_VERSION=master
+    - DESIHUB_PIP="desiutil=${DESIUTIL_VERSION} desimodel=${DESIMODEL_VERSION} desitarget=${DESITARGET_VERSION}"
 
 before_install:
     # Set the C and C++ compilers
-    - eval "${MATRIX_EVAL}"
+    - eval "${COMPILERS}"
     - echo "  CC = ${CC} $(${CC} -dumpversion)"
     - echo "  CXX = ${CXX} $(${CXX} -dumpversion)"
     # Install binary python dependencies.
@@ -116,12 +132,12 @@ before_install:
     - mkdir -p ${DESIMODEL}
     - svn export https://desi.lbl.gov/svn/code/desimodel/${DESIMODEL_DATA}/data ${DESIMODEL}/data
 
-# Install fiberassign
+# Install this package
 
 install:
-    - python3 setup.py install
+  - python3 setup.py install
 
-# Run tests
+# Run tests for this package
 
 script:
-    - python3 setup.py test
+  - python3 setup.py test
