@@ -56,6 +56,7 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
             std::vector <double> const & phi_arm,
             std::vector <double> const & ps_radius,
             std::vector <double> const & ps_theta,
+            std::vector <double> const & arclen,
             std::vector <fbg::shape> const & excl_theta,
             std::vector <fbg::shape> const & excl_phi,
             std::vector <fbg::shape> const & excl_gfa,
@@ -157,6 +158,9 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
         std::vector <double> platescale_radius_mm() const;
         std::vector <double> platescale_theta_deg() const;
 
+        // Get the radial arc length S(R)
+        std::vector <double> radial_arclen() const;
+
         // Get the Locations for a particular device type
         std::vector <int32_t> device_locations(std::string const & type) const;
 
@@ -254,8 +258,8 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
         std::vector <double> ps_radius_;
         std::vector <double> ps_theta_;
         size_t ps_size_;
-        std::vector <double> ps_coeff_t2r_;
-        std::vector <double> ps_coeff_r2t_;
+
+        std::vector <double> arclen_;
 
         bool move_positioner(fbg::shape & shptheta, fbg::shape & shpphi,
                              fbg::dpair const & center,

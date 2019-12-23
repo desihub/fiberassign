@@ -62,11 +62,14 @@ def load_hardware(focalplane=None, rundate=None):
 
     # We are going to do a quadratic interpolation to the platescale on a fine grid,
     # and then use that for *linear* interpolation inside the compiled code.  The
-    # default platescale data is on a one mm grid spacing.
+    # default platescale data is on a one mm grid spacing.  We also do the same
+    # interpolation of the arclength S(R).
 
     fine_radius = np.linspace(0.0, 420.0, num=8400, dtype=np.float64)
     fn = interp1d(platescale["radius"], platescale["theta"], kind="quadratic")
     fine_theta = fn(fine_radius).astype(np.float64)
+    fn = interp1d(platescale["radius"], platescale["arclength"], kind="quadratic")
+    fine_arc = fn(fine_radius).astype(np.float64)
 
     # We are only going to keep rows for LOCATIONs that are assigned to a
     # science or sky monitor positioner.
@@ -159,6 +162,7 @@ def load_hardware(focalplane=None, rundate=None):
                   np.array([fp["LENGTH_R2"][loc_to_fp[x]] for x in locations]),
                   fine_radius,
                   fine_theta,
+                  fine_arc,
                   [positioners[x]["theta"] for x in locations],
                   [positioners[x]["phi"] for x in locations],
                   [positioners[x]["gfa"] for x in locations],

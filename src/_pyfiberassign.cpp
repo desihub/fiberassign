@@ -521,6 +521,7 @@ PYBIND11_MODULE(_internal, m) {
             phi_arm (array):  The phi arm lengths in mm.
             ps_radius (array):  The platescale radius vector in mm.
             ps_theta (array):  The platescale theta vector in degrees.
+            arclen (array):  The radial arc length S(R) in mm.
             excl_theta (list):  The Shape object for the exclusion polygon
                 of the theta arm of each device.
             excl_phi (list):  The Shape object for the exclusion polygon
@@ -553,6 +554,7 @@ PYBIND11_MODULE(_internal, m) {
             std::vector <double> const &,
             std::vector <double> const &,
             std::vector <double> const &,
+            std::vector <double> const &,
             std::vector <fbg::shape> const &,
             std::vector <fbg::shape> const &,
             std::vector <fbg::shape> const &,
@@ -565,7 +567,7 @@ PYBIND11_MODULE(_internal, m) {
             py::arg("theta_max"), py::arg("theta_arm"),
             py::arg("phi_offset"), py::arg("phi_min"),
             py::arg("phi_max"), py::arg("phi_arm"),
-            py::arg("ps_radius"), py::arg("ps_theta"),
+            py::arg("ps_radius"), py::arg("ps_theta"), py::arg("arclen"),
             py::arg("excl_theta"), py::arg("excl_phi"),
             py::arg("excl_gfa"), py::arg("excl_petal")
         )
@@ -948,6 +950,7 @@ PYBIND11_MODULE(_internal, m) {
                 int32_t nloc = p.locations.size();
                 auto ps_radius = p.platescale_radius_mm();
                 auto ps_theta = p.platescale_theta_deg();
+                auto arclen = p.radial_arclen();
                 std::string timestr = p.time();
                 std::vector <int32_t> lid(nloc);
                 std::vector <int32_t> petal(nloc);
@@ -1000,7 +1003,8 @@ PYBIND11_MODULE(_internal, m) {
                     lid, petal, device, slitblock, blockfiber, fiber,
                     device_type, x_mm, y_mm, status, theta_offset,
                     theta_min, theta_max, theta_arm, phi_offset, phi_min,
-                    phi_max, phi_arm, ps_radius, ps_theta, excl_theta, excl_phi,
+                    phi_max, phi_arm, ps_radius, ps_theta, arclen,
+                    excl_theta, excl_phi,
                     excl_gfa, excl_petal);
             },
             [](py::tuple t) { // __setstate__
@@ -1026,10 +1030,11 @@ PYBIND11_MODULE(_internal, m) {
                     t[18].cast<std::vector<double> >(),
                     t[19].cast<std::vector<double> >(),
                     t[20].cast<std::vector<double> >(),
-                    t[21].cast<std::vector<fbg::shape> >(),
+                    t[21].cast<std::vector<double> >(),
                     t[22].cast<std::vector<fbg::shape> >(),
                     t[23].cast<std::vector<fbg::shape> >(),
-                    t[24].cast<std::vector<fbg::shape> >()
+                    t[24].cast<std::vector<fbg::shape> >(),
+                    t[25].cast<std::vector<fbg::shape> >()
                 );
             }
         ));

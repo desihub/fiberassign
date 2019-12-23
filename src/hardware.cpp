@@ -37,6 +37,7 @@ fba::Hardware::Hardware(std::string const & timestr,
                         std::vector <double> const & phi_arm,
                         std::vector <double> const & ps_radius,
                         std::vector <double> const & ps_theta,
+                        std::vector <double> const & arclen,
                         std::vector <fbg::shape> const & excl_theta,
                         std::vector <fbg::shape> const & excl_phi,
                         std::vector <fbg::shape> const & excl_gfa,
@@ -51,6 +52,7 @@ fba::Hardware::Hardware(std::string const & timestr,
     ps_radius_ = ps_radius;
     ps_theta_ = ps_theta;
     ps_size_ = ps_radius.size();
+    arclen_ = arclen;
 
     int32_t maxpetal = 0;
     for (auto const & p : petal) {
@@ -175,20 +177,6 @@ fba::Hardware::Hardware(std::string const & timestr,
         loc_gfa_excl.at(lid).rotation_origin(csang);
         loc_petal_excl.at(lid).rotation_origin(csang);
     }
-
-    // Pre-compute quantities to speed up platescale interpolation.
-
-    // ps_coeff_r2t_.resize(ps_size_ * ps_size_);
-    // ps_coeff_r2t_.reserve(ps_size_ * ps_size_);
-    // ps_coeff_t2r_.resize(ps_size_ * ps_size_);
-    // ps_coeff_t2r_.reserve(ps_size_ * ps_size_);
-    //
-    // for (size_t i = 0; i < ps_size_; ++i) {
-    //     for (size_t j = 0; j < ps_size_; ++j) {
-    //         ps_coeff_t2r_[i * ps_size_ + j] = 1.0 / (ps_theta_[i] - ps_theta_[j]);
-    //         ps_coeff_r2t_[i * ps_size_ + j] = 1.0 / (ps_radius_[i] - ps_radius_[j]);
-    //     }
-    // }
 }
 
 
@@ -204,6 +192,11 @@ std::vector <double> fba::Hardware::platescale_radius_mm() const {
 
 std::vector <double> fba::Hardware::platescale_theta_deg() const {
     return ps_theta_;
+}
+
+
+std::vector <double> fba::Hardware::radial_arclen() const {
+    return arclen_;
 }
 
 
