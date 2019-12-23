@@ -55,6 +55,9 @@ def load_hardware(focalplane=None, rundate=None):
     else:
         fp, exclude, state = focalplane
 
+    # Get the plate scale
+    platescale = dmio.load_platescale()
+
     # We are only going to keep rows for LOCATIONs that are assigned to a
     # science or sky monitor positioner.
 
@@ -144,6 +147,8 @@ def load_hardware(focalplane=None, rundate=None):
                   np.array([fp["MIN_P"][loc_to_fp[x]] for x in locations]),
                   np.array([fp["MAX_P"][loc_to_fp[x]] for x in locations]),
                   np.array([fp["LENGTH_R2"][loc_to_fp[x]] for x in locations]),
+                  platescale["radius"],
+                  platescale["theta"],
                   [positioners[x]["theta"] for x in locations],
                   [positioners[x]["phi"] for x in locations],
                   [positioners[x]["gfa"] for x in locations],

@@ -54,6 +54,8 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
             std::vector <double> const & phi_min,
             std::vector <double> const & phi_max,
             std::vector <double> const & phi_arm,
+            std::vector <double> const & ps_radius,
+            std::vector <double> const & ps_theta,
             std::vector <fbg::shape> const & excl_theta,
             std::vector <fbg::shape> const & excl_phi,
             std::vector <fbg::shape> const & excl_gfa,
@@ -244,6 +246,9 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
     private :
 
         std::string timestr_;
+
+        std::vector <double> ps_radius_;
+        std::vector <double> ps_theta_;
 
         bool move_positioner(fbg::shape & shptheta, fbg::shape & shpphi,
                              fbg::dpair const & center,

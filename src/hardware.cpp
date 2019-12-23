@@ -35,6 +35,8 @@ fba::Hardware::Hardware(std::string const & timestr,
                         std::vector <double> const & phi_min,
                         std::vector <double> const & phi_max,
                         std::vector <double> const & phi_arm,
+                        std::vector <double> const & ps_radius,
+                        std::vector <double> const & ps_theta,
                         std::vector <fbg::shape> const & excl_theta,
                         std::vector <fbg::shape> const & excl_phi,
                         std::vector <fbg::shape> const & excl_gfa,
@@ -45,6 +47,9 @@ fba::Hardware::Hardware(std::string const & timestr,
     std::ostringstream logmsg;
 
     timestr_ = timestr;
+
+    ps_radius_ = ps_radius;
+    ps_theta_ = ps_theta;
 
     int32_t maxpetal = 0;
     for (auto const & p : petal) {

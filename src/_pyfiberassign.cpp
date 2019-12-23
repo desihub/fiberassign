@@ -519,6 +519,8 @@ PYBIND11_MODULE(_internal, m) {
             phi_max (array):  The phi angle maximum value in degrees
                 relative to the offset.
             phi_arm (array):  The phi arm lengths in mm.
+            ps_radius (array):  The platescale radius vector in mm.
+            ps_theta (array):  The platescale theta vector in degrees.
             excl_theta (list):  The Shape object for the exclusion polygon
                 of the theta arm of each device.
             excl_phi (list):  The Shape object for the exclusion polygon
@@ -549,6 +551,8 @@ PYBIND11_MODULE(_internal, m) {
             std::vector <double> const &,
             std::vector <double> const &,
             std::vector <double> const &,
+            std::vector <double> const &,
+            std::vector <double> const &,
             std::vector <fbg::shape> const &,
             std::vector <fbg::shape> const &,
             std::vector <fbg::shape> const &,
@@ -561,6 +565,7 @@ PYBIND11_MODULE(_internal, m) {
             py::arg("theta_max"), py::arg("theta_arm"),
             py::arg("phi_offset"), py::arg("phi_min"),
             py::arg("phi_max"), py::arg("phi_arm"),
+            py::arg("ps_radius"), py::arg("ps_theta"),
             py::arg("excl_theta"), py::arg("excl_phi"),
             py::arg("excl_gfa"), py::arg("excl_petal")
         )
