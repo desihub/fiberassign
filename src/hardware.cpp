@@ -50,6 +50,7 @@ fba::Hardware::Hardware(std::string const & timestr,
 
     ps_radius_ = ps_radius;
     ps_theta_ = ps_theta;
+    ps_size_ = ps_radius.size();
 
     int32_t maxpetal = 0;
     for (auto const & p : petal) {
@@ -175,6 +176,19 @@ fba::Hardware::Hardware(std::string const & timestr,
         loc_petal_excl.at(lid).rotation_origin(csang);
     }
 
+    // Pre-compute quantities to speed up platescale interpolation.
+
+    ps_coeff_r2t_.resize(ps_size_ * ps_size_);
+    ps_coeff_r2t_.reserve(ps_size_ * ps_size_);
+    ps_coeff_t2r_.resize(ps_size_ * ps_size_);
+    ps_coeff_t2r_.reserve(ps_size_ * ps_size_);
+
+    for (size_t i = 0; i < ps_size_; ++i) {
+        for (size_t j = 0; j < ps_size_; ++j) {
+            ps_coeff_t2r_[i * ps_size_ + j] = 1.0 / (ps_theta_[i] - ps_theta_[j]);
+            ps_coeff_r2t_[i * ps_size_ + j] = 1.0 / (ps_radius_[i] - ps_radius_[j]);
+        }
+    }
 }
 
 
@@ -196,37 +210,42 @@ std::vector <int32_t> fba::Hardware::device_locations(
 
 
 // Returns the radial distance on the focalplane (mm) given the angle,
-// theta (radians).  This is simply a fit to the data provided.
+// theta (radians).  This does a quadratic interpolation to the platescale
+// data.
 double fba::Hardware::radial_ang2dist (double const & theta_rad) const {
-    const double p[4] = {8.297e5, -1750., 1.394e4, 0.0};
+    // platescale data is in degrees
+    double theta_deg = theta_rad * 180.0 / M_PI;
     double dist_mm = 0.0;
-    for (size_t i = 0; i < 4; ++i) {
-        dist_mm = theta_rad * dist_mm + p[i];
+    for (size_t i = 0; i < ps_size_; ++i) {
+        double term = ps_radius_[i];
+        for (size_t j = 0; j < ps_size_; ++j) {
+            if (j != i) {
+                term *= (theta_deg - ps_theta_[j])
+                    * ps_coeff_t2r_[i * ps_size_ + j];
+            }
+        }
+        dist_mm += term;
     }
     return dist_mm;
 }
 
 
-// Returns the radial angle (theta) on the focalplane given the distance (mm)
+// Returns the radial angle (theta) on the focalplane given the distance (mm).
+// This does a quadratic interpolation to the platescale data.
 double fba::Hardware::radial_dist2ang (double const & dist_mm) const {
-    double delta_theta = 1e-4;
-    double inv_delta = 1.0 / delta_theta;
-
-    // starting guess
-    double theta_rad = 0.01;
-
-    double distcur;
-    double distdelta;
-    double correction;
-    double error = 1.0;
-
-    while (::abs(error) > 1e-7) {
-        distcur = radial_ang2dist(theta_rad);
-        distdelta = radial_ang2dist(theta_rad + delta_theta);
-        error = distcur - dist_mm;
-        correction = error / (inv_delta * (distdelta - distcur));
-        theta_rad -= correction;
+    // platescale data is in degrees
+    double theta_deg = 0.0;
+    for (size_t i = 0; i < ps_size_; ++i) {
+        double term = ps_theta_[i];
+        for (size_t j = 0; j < ps_size_; ++j) {
+            if (j != i) {
+                term *= (dist_mm - ps_radius_[j])
+                    * ps_coeff_r2t_[i * ps_size_ + j];
+            }
+        }
+        theta_deg += term;
     }
+    double theta_rad = theta_deg * M_PI / 180.0;
     return theta_rad;
 }
 

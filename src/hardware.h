@@ -249,6 +249,9 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
 
         std::vector <double> ps_radius_;
         std::vector <double> ps_theta_;
+        size_t ps_size_;
+        std::vector <double> ps_coeff_t2r_;
+        std::vector <double> ps_coeff_r2t_;
 
         bool move_positioner(fbg::shape & shptheta, fbg::shape & shpphi,
                              fbg::dpair const & center,
