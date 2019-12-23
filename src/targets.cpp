@@ -281,7 +281,7 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
     TargetTree * ptree = tree.get();
     Hardware * phw = hw_.get();
 
-    #pragma omp parallel default(none) shared(logger, pobjs, ptiles, ptree, phw, ntile, tile_radius, nloc, loc, loc_center_x, loc_center_y, loc_patrol)
+    #pragma omp parallel default(shared)
     {
         // We re-use these thread-local vectors to reduce the number
         // of times we are realloc'ing memory for every fiber.
