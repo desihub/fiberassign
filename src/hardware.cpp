@@ -178,22 +178,32 @@ fba::Hardware::Hardware(std::string const & timestr,
 
     // Pre-compute quantities to speed up platescale interpolation.
 
-    ps_coeff_r2t_.resize(ps_size_ * ps_size_);
-    ps_coeff_r2t_.reserve(ps_size_ * ps_size_);
-    ps_coeff_t2r_.resize(ps_size_ * ps_size_);
-    ps_coeff_t2r_.reserve(ps_size_ * ps_size_);
-
-    for (size_t i = 0; i < ps_size_; ++i) {
-        for (size_t j = 0; j < ps_size_; ++j) {
-            ps_coeff_t2r_[i * ps_size_ + j] = 1.0 / (ps_theta_[i] - ps_theta_[j]);
-            ps_coeff_r2t_[i * ps_size_ + j] = 1.0 / (ps_radius_[i] - ps_radius_[j]);
-        }
-    }
+    // ps_coeff_r2t_.resize(ps_size_ * ps_size_);
+    // ps_coeff_r2t_.reserve(ps_size_ * ps_size_);
+    // ps_coeff_t2r_.resize(ps_size_ * ps_size_);
+    // ps_coeff_t2r_.reserve(ps_size_ * ps_size_);
+    //
+    // for (size_t i = 0; i < ps_size_; ++i) {
+    //     for (size_t j = 0; j < ps_size_; ++j) {
+    //         ps_coeff_t2r_[i * ps_size_ + j] = 1.0 / (ps_theta_[i] - ps_theta_[j]);
+    //         ps_coeff_r2t_[i * ps_size_ + j] = 1.0 / (ps_radius_[i] - ps_radius_[j]);
+    //     }
+    // }
 }
 
 
 std::string fba::Hardware::time() const {
     return timestr_;
+}
+
+
+std::vector <double> fba::Hardware::platescale_radius_mm() const {
+    return ps_radius_;
+}
+
+
+std::vector <double> fba::Hardware::platescale_theta_deg() const {
+    return ps_theta_;
 }
 
 
@@ -208,6 +218,34 @@ std::vector <int32_t> fba::Hardware::device_locations(
     return ret;
 }
 
+// Small helper function to seek to the correct elements for linear interpolation.
+void helper_vec_seek(
+    std::vector <double> const & data,
+    double const & val,
+    size_t & ilow,
+    size_t & ihigh
+) {
+    std::vector <double>::const_iterator bound =
+        std::lower_bound(data.begin(), data.end(), val);
+    if (bound - data.end() == 0) {
+        // We are extrapolating off the end
+        ilow = data.size() - 2;
+        ihigh = data.size() - 1;
+    } else if (bound - data.begin() == 0) {
+        // Extrapolating at the beginning
+        ilow = 0;
+        ihigh = 1;
+    } else {
+        // Somewhere in the middle
+        ilow = bound - data.begin();
+        if (data[ilow] > val) {
+            ilow--;
+        }
+        ihigh = ilow + 1;
+    }
+    return;
+}
+
 
 // Returns the radial distance on the focalplane (mm) given the angle,
 // theta (radians).  This does a quadratic interpolation to the platescale
@@ -215,17 +253,16 @@ std::vector <int32_t> fba::Hardware::device_locations(
 double fba::Hardware::radial_ang2dist (double const & theta_rad) const {
     // platescale data is in degrees
     double theta_deg = theta_rad * 180.0 / M_PI;
-    double dist_mm = 0.0;
-    for (size_t i = 0; i < ps_size_; ++i) {
-        double term = ps_radius_[i];
-        for (size_t j = 0; j < ps_size_; ++j) {
-            if (j != i) {
-                term *= (theta_deg - ps_theta_[j])
-                    * ps_coeff_t2r_[i * ps_size_ + j];
-            }
-        }
-        dist_mm += term;
-    }
+
+    // Seek to correct entry
+    size_t ilow;
+    size_t ihigh;
+    helper_vec_seek(ps_theta_, theta_deg, ilow, ihigh);
+
+    // Interpolate
+    double xfrac = (theta_deg - ps_theta_[ilow]) / (ps_theta_[ihigh] - ps_theta_[ilow]);
+    double dist_mm = ps_radius_[ilow] + xfrac * (ps_radius_[ihigh] - ps_radius_[ilow]);
+
     return dist_mm;
 }
 
@@ -233,19 +270,19 @@ double fba::Hardware::radial_ang2dist (double const & theta_rad) const {
 // Returns the radial angle (theta) on the focalplane given the distance (mm).
 // This does a quadratic interpolation to the platescale data.
 double fba::Hardware::radial_dist2ang (double const & dist_mm) const {
+    // Seek to correct entry
+    size_t ilow;
+    size_t ihigh;
+    helper_vec_seek(ps_radius_, dist_mm, ilow, ihigh);
+
+    // Interpolate
+    double xfrac = (dist_mm - ps_radius_[ilow]) /
+        (ps_radius_[ihigh] - ps_radius_[ilow]);
+    double theta_deg = ps_theta_[ilow] + xfrac * (ps_theta_[ihigh] - ps_theta_[ilow]);
+
     // platescale data is in degrees
-    double theta_deg = 0.0;
-    for (size_t i = 0; i < ps_size_; ++i) {
-        double term = ps_theta_[i];
-        for (size_t j = 0; j < ps_size_; ++j) {
-            if (j != i) {
-                term *= (dist_mm - ps_radius_[j])
-                    * ps_coeff_r2t_[i * ps_size_ + j];
-            }
-        }
-        theta_deg += term;
-    }
     double theta_rad = theta_deg * M_PI / 180.0;
+
     return theta_rad;
 }
 

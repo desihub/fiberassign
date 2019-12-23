@@ -667,6 +667,34 @@ PYBIND11_MODULE(_internal, m) {
                 (str): the focalplane model time.
 
         )")
+        .def("radial_ang2dist", &fba::Hardware::radial_ang2dist,
+            py::arg("theta_rad"), R"(
+            Covert the angle from the origin to distance in mm.
+
+            This uses the radial platescale to convert the angle to mm in the
+            tangent plane (CS5) coordinates.
+
+            Args:
+                theta_rad (float): Theta angle in radians.
+
+            Returns:
+                (float): the distance in mm.
+
+        )")
+        .def("radial_dist2ang", &fba::Hardware::radial_dist2ang,
+            py::arg("dist_mm"), R"(
+            Covert the distance from the origin in mm to an angle.
+
+            This uses the radial platescale to convert the distance in mm from the
+            CS5 origin into an angle in radians.
+
+            Args:
+                dist_mm (float): The distance in mm.
+
+            Returns:
+                (float): the angle in radians.
+
+        )")
         .def("radec2xy", &fba::Hardware::radec2xy, py::arg("tilera"),
             py::arg("tiledec"), py::arg("tiletheta"), py::arg("ra"),
             py::arg("dec"), R"(
@@ -918,6 +946,8 @@ PYBIND11_MODULE(_internal, m) {
         .def(py::pickle(
             [](fba::Hardware const & p) { // __getstate__
                 int32_t nloc = p.locations.size();
+                auto ps_radius = p.platescale_radius_mm();
+                auto ps_theta = p.platescale_theta_deg();
                 std::string timestr = p.time();
                 std::vector <int32_t> lid(nloc);
                 std::vector <int32_t> petal(nloc);
@@ -970,8 +1000,8 @@ PYBIND11_MODULE(_internal, m) {
                     lid, petal, device, slitblock, blockfiber, fiber,
                     device_type, x_mm, y_mm, status, theta_offset,
                     theta_min, theta_max, theta_arm, phi_offset, phi_min,
-                    phi_max, phi_arm, excl_theta, excl_phi, excl_gfa,
-                    excl_petal);
+                    phi_max, phi_arm, ps_radius, ps_theta, excl_theta, excl_phi,
+                    excl_gfa, excl_petal);
             },
             [](py::tuple t) { // __setstate__
                 return new fba::Hardware(
@@ -994,10 +1024,12 @@ PYBIND11_MODULE(_internal, m) {
                     t[16].cast<std::vector<double> >(),
                     t[17].cast<std::vector<double> >(),
                     t[18].cast<std::vector<double> >(),
-                    t[19].cast<std::vector<fbg::shape> >(),
-                    t[20].cast<std::vector<fbg::shape> >(),
+                    t[19].cast<std::vector<double> >(),
+                    t[20].cast<std::vector<double> >(),
                     t[21].cast<std::vector<fbg::shape> >(),
-                    t[22].cast<std::vector<fbg::shape> >()
+                    t[22].cast<std::vector<fbg::shape> >(),
+                    t[23].cast<std::vector<fbg::shape> >(),
+                    t[24].cast<std::vector<fbg::shape> >()
                 );
             }
         ));

@@ -153,6 +153,10 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
             std::vector <double> const & theta,
             std::vector <double> const & phi, int threads) const;
 
+        // Get the platescale data
+        std::vector <double> platescale_radius_mm() const;
+        std::vector <double> platescale_theta_deg() const;
+
         // Get the Locations for a particular device type
         std::vector <int32_t> device_locations(std::string const & type) const;
 
