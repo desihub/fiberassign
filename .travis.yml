@@ -140,4 +140,4 @@ install:
 # Run tests for this package
 
 script:
-  - python3 setup.py test
+  - python3 -c 'import fiberassign.test; fiberassign.test.runtests()'
