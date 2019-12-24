@@ -35,6 +35,7 @@ PYBIND11_MODULE(_internal, m) {
     m.attr("TARGET_TYPE_SCIENCE") = py::int_(TARGET_TYPE_SCIENCE);
     m.attr("TARGET_TYPE_STANDARD") = py::int_(TARGET_TYPE_STANDARD);
     m.attr("TARGET_TYPE_SKY") = py::int_(TARGET_TYPE_SKY);
+    m.attr("TARGET_TYPE_SUPPSKY") = py::int_(TARGET_TYPE_SUPPSKY);
     m.attr("TARGET_TYPE_SAFE") = py::int_(TARGET_TYPE_SAFE);
 
     // Wrap the fiber states
@@ -1036,6 +1037,9 @@ PYBIND11_MODULE(_internal, m) {
         )")
         .def("is_sky", &fba::Target::is_sky, R"(
             Returns True if this is a sky target, else False.
+        )")
+        .def("is_suppsky", &fba::Target::is_suppsky, R"(
+            Returns True if this is a suppsky target, else False.
         )")
         .def("is_safe", &fba::Target::is_safe, R"(
             Returns True if this is a safe target, else False.

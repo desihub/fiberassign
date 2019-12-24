@@ -33,6 +33,7 @@ from .tiles import load_tiles
 
 from .targets import (Targets, load_target_table,
                       TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
+                      TARGET_TYPE_SUPPSKY,
                       TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE)
 
 from .assign import (read_assignment_fits_tile, result_tiles, result_path,
@@ -46,6 +47,8 @@ def plot_target_type_color(tgtype):
         color = "black"
     elif (tp & TARGET_TYPE_SKY) != 0:
         color = "blue"
+    elif (tp & TARGET_TYPE_SUPPSKY) != 0:
+        color = "cyan"
     elif (tp & TARGET_TYPE_STANDARD) != 0:
         color = "gold"
         if (tp & TARGET_TYPE_SCIENCE) != 0:
@@ -506,9 +509,9 @@ def plot_qa(data, outroot, outformat="pdf", labels=False):
     fig = plt.figure(figsize=(12, 10))
 
     plot_param = [
-        ("Total Fibers Assigned Per Tile", "assign_total", 5000, 5),
-        ("Standards Assigned Per Tile", "assign_std", 100, 2),
-        ("Sky Assigned Per Tile", "assign_sky", 400, 2),
+        ("Total Fibers Assigned Per Tile", ["assign_total"], 5000, 5),
+        ("Standards Assigned Per Tile", ["assign_std"], 100, 2),
+        ("Sky Assigned Per Tile", ["assign_sky", "assign_suppsky"], 400, 2),
     ]
 
     pindx = 1
@@ -530,7 +533,8 @@ def plot_qa(data, outroot, outformat="pdf", labels=False):
                 ymax = ycent
             if ycent < ymin:
                 ymin = ycent
-            color = plot_qa_tile_color(desired, props[key], incr)
+            keytot = np.sum([props[x] for x in key])
+            color = plot_qa_tile_color(desired, keytot, incr)
             circ = plt.Circle((xcent, ycent), radius=tile_radius, fc="none",
                               ec=color, linewidth=linewidth)
             ax.add_artist(circ)

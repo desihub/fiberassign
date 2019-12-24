@@ -71,27 +71,28 @@ def qa_parse_table(header, tgdata):
 
 def qa_tile_with_gfa(hw, tile_id, tgs, tgprops, tile_assign, tile_avail, tile_gfa):
     props = dict()
-    
+
     locs = np.array(hw.device_locations("POS"))
     nassign = 0
     nscience = 0
     nstd = 0
     nsky = 0
+    nsuppsky = 0
     nsafe = 0
     unassigned = list()
     objtypes = dict()
-       
+
     # SE to add GFA info to props
     petals = list(range(10))
     petals_wgfa = list(tile_gfa.keys())
-    petals_wogfa = list(set(petals)-set(petals_wgfa))  
+    petals_wogfa = list(set(petals)-set(petals_wgfa))
     gfas_per_tile = [nsafe]*10
     brightest_gfas = [nsafe]*10
     faintest_gfas = [nsafe]*10
     gfas_upto_18th = [nsafe]*10
-    gfas_upto_19th = [nsafe]*10  
-    gfas_upto_20th = [nsafe]*10  
-   
+    gfas_upto_19th = [nsafe]*10
+    gfas_upto_20th = [nsafe]*10
+
     for cam in petals_wgfa:
         if (len(tile_gfa[cam])>0):
             gfas_per_tile[cam] = len(tile_gfa[cam])
@@ -107,8 +108,8 @@ def qa_tile_with_gfa(hw, tile_id, tgs, tgprops, tile_assign, tile_avail, tile_gf
             faintest_gfas[cam] = ['NaN']
             gfas_upto_18th[cam] = [0]
             gfas_upto_19th[cam] = [0]
-            gfas_upto_20th[cam] = [0] 
-               
+            gfas_upto_20th[cam] = [0]
+
     for lid in locs:
         if lid not in tile_assign:
             unassigned.append(int(lid))
@@ -130,25 +131,28 @@ def qa_tile_with_gfa(hw, tile_id, tgs, tgprops, tile_assign, tile_avail, tile_gf
             nstd += 1
         if tg.is_sky():
             nsky += 1
+        if tg.is_suppsky():
+            nsuppsky += 1
         if tg.is_safe():
             nsafe += 1
     props["assign_total"] = nassign
     props["assign_science"] = nscience
     props["assign_std"] = nstd
     props["assign_sky"] = nsky
+    props["assign_suppsky"] = nsuppsky
     props["assign_safe"] = nsafe
     # SE: added this key for the number of GFA stars per camera: list of 10 integers per tile
     props["gfa_stars_percam"] = gfas_per_tile
-    # SE: added this key for the list of 10 magnitudes of the brightest GFA stars available per camera  
-    props["brightest_gfa_star_percam"] = [np.round(b*(nsafe+1)/(nsafe+1),2) for b in list(brightest_gfas)] 
-    # SE: Number of gfa stars <18 per camera 
+    # SE: added this key for the list of 10 magnitudes of the brightest GFA stars available per camera
+    props["brightest_gfa_star_percam"] = [np.round(b*(nsafe+1)/(nsafe+1),2) for b in list(brightest_gfas)]
+    # SE: Number of gfa stars <18 per camera
     props["gfa_stars_brighter_than_18th"] = [int(b*(nsafe+1)/(nsafe+1)) for b in list(gfas_upto_18th)]
     props["gfa_stars_brighter_than_19th"] = [int(b*(nsafe+1)/(nsafe+1)) for b in list(gfas_upto_19th)]
     props["gfa_stars_brighter_than_20th"] = [int(b*(nsafe+1)/(nsafe+1)) for b in list(gfas_upto_20th)]
 
-    # SE: added this key for the list of 10 magnitudes of the faintest GFA stars available per camera  
+    # SE: added this key for the list of 10 magnitudes of the faintest GFA stars available per camera
     props["faintest_gfa_star_percam"] = [np.round(b*(nsafe+1)/(nsafe+1),2) for b in list(faintest_gfas)]
-        
+
     for ot, cnt in objtypes.items():
         props["assign_obj_{}".format(ot)] = cnt
     props["unassigned"] = unassigned
@@ -167,10 +171,11 @@ def qa_tile(hw, tile_id, tgs, tgprops, tile_assign, tile_avail):
     nscience = 0
     nstd = 0
     nsky = 0
+    nsuppsky = 0
     nsafe = 0
     unassigned = list()
     objtypes = dict()
-    
+
     for lid in locs:
         if lid not in tile_assign:
             unassigned.append(int(lid))
@@ -192,12 +197,15 @@ def qa_tile(hw, tile_id, tgs, tgprops, tile_assign, tile_avail):
             nstd += 1
         if tg.is_sky():
             nsky += 1
+        if tg.is_suppsky():
+            nsuppsky += 1
         if tg.is_safe():
             nsafe += 1
     props["assign_total"] = nassign
     props["assign_science"] = nscience
     props["assign_std"] = nstd
     props["assign_sky"] = nsky
+    props["assign_suppsky"] = nsuppsky
     props["assign_safe"] = nsafe
     for ot, cnt in objtypes.items():
         props["assign_obj_{}".format(ot)] = cnt
@@ -214,7 +222,7 @@ def qa_tile_file(hw, params):
 
     header, fiber_data, targets_data, avail_data, gfa_data = \
         read_assignment_fits_tile((tile_id, tile_file))
-       
+
     # Target properties
     tgs, tgprops = qa_parse_table(header, targets_data)
 
@@ -226,7 +234,7 @@ def qa_tile_file(hw, params):
                if (x["LOCATION"] >= 0)}
 
     tavail = avail_table_to_dict(avail_data)
-    if gfa_data is not None:  
+    if gfa_data is not None:
         tgfa = gfa_table_to_dict(gfa_data)
 
         qa_data = qa_tile_with_gfa(hw, tile_id, tgs, tgprops, tassign, tavail, tgfa)

@@ -52,6 +52,7 @@ fba::Assignment::Assignment(fba::Targets::pshr tgs,
     tgtypes.push_back(TARGET_TYPE_SCIENCE);
     tgtypes.push_back(TARGET_TYPE_STANDARD);
     tgtypes.push_back(TARGET_TYPE_SKY);
+    tgtypes.push_back(TARGET_TYPE_SUPPSKY);
     tgtypes.push_back(TARGET_TYPE_SAFE);
 
     tile_target_xy.clear();
@@ -351,14 +352,23 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
             // The petal
             int32_t p = hw_->loc_petal[lid];
 
-            if (nassign_petal[tgtype][tile_id][p] >= max_per_petal) {
+            // Special handling of supplemental sky targets.  When
+            // enforcing per-petal limits on assignment counts of SUPP_SKY,
+            // we want to include the current assignment counts of regular
+            // SKY targets as well.
+            int32_t cur_petal = nassign_petal[tgtype][tile_id][p];
+            if (tgtype == TARGET_TYPE_SUPPSKY) {
+                cur_petal += nassign_petal[TARGET_TYPE_SKY][tile_id][p];
+            }
+
+            if (cur_petal >= max_per_petal) {
                 // Already have enough objects on this petal
                 if (extra_log) {
                     logmsg.str("");
                     logmsg << "assign unused " << tgstr << ": tile " << tile_id
                         << ", petal " << p << " location " << lid
                         << " (fiber " << fid << ")" << " has "
-                        << nassign_petal[tgtype][tile_id][p]
+                        << cur_petal
                         << " (>= " << max_per_petal << ")";
                     logger.debug_tfg(tile_id, lid, -1, logmsg.str().c_str());
                 }
@@ -841,15 +851,23 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
         auto const & target_xy = tile_target_xy.at(tile_id);
 
         for (int32_t p = 0; p < npetal; ++p) {
+            // Special handling of supplemental sky targets.  When
+            // enforcing per-petal limits on assignment counts of SUPP_SKY,
+            // we want to include the current assignment counts of regular
+            // SKY targets as well.
+            int32_t cur_petal = nassign_petal[tgtype][tile_id][p];
+            if (tgtype == TARGET_TYPE_SUPPSKY) {
+                cur_petal += nassign_petal[TARGET_TYPE_SKY][tile_id][p];
+            }
             if (extra_log) {
                 logmsg.str("");
                 logmsg << "assign force " << tgstr << ": tile " << tile_id
                     << ", petal " << p << " has "
-                    << nassign_petal[tgtype][tile_id][p]
+                    << cur_petal
                     << " (require " << required_per_petal << ")";
                 logger.debug_tfg(tile_id, -1, -1, logmsg.str().c_str());
             }
-            if (nassign_petal[tgtype][tile_id][p] >= required_per_petal) {
+            if (cur_petal >= required_per_petal) {
                 // Already have enough objects on this petal
                 continue;
             }
@@ -1147,34 +1165,43 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
                         }
                     }
 
+                    cur_petal = nassign_petal[tgtype][tile_id][p];
+                    if (tgtype == TARGET_TYPE_SUPPSKY) {
+                        cur_petal += nassign_petal[TARGET_TYPE_SKY][tile_id][p];
+                    }
                     if (extra_log) {
                         logmsg.str("");
                         logmsg << "assign force " << tgstr
                             << ": tile " << tile_id
                             << ", petal " << p << " now has "
-                            << nassign_petal[tgtype][tile_id][p]
+                            <<cur_petal
                             << " (require " << required_per_petal << ")";
                         logger.debug_tfg(tile_id, -1, -1, logmsg.str().c_str());
                     }
-                    if (nassign_petal[tgtype][tile_id][p]
-                        >= required_per_petal) {
+                    if (cur_petal >= required_per_petal) {
                         // Have enough objects on this petal
                         break;
                     }
                 }
-                if (nassign_petal[tgtype][tile_id][p]
-                    >= required_per_petal) {
+                cur_petal = nassign_petal[tgtype][tile_id][p];
+                if (tgtype == TARGET_TYPE_SUPPSKY) {
+                    cur_petal += nassign_petal[TARGET_TYPE_SKY][tile_id][p];
+                }
+                if (cur_petal >= required_per_petal) {
                     // Have enough objects on this petal
                     break;
                 }
             }
 
-            if (nassign_petal[tgtype][tile_id][p]
-                < required_per_petal) {
+            cur_petal = nassign_petal[tgtype][tile_id][p];
+            if (tgtype == TARGET_TYPE_SUPPSKY) {
+                cur_petal += nassign_petal[TARGET_TYPE_SKY][tile_id][p];
+            }
+            if (cur_petal < required_per_petal) {
                 logmsg.str("");
                 logmsg << "assign force " << tgstr << ": tile " << tile_id
                     << ", petal " << p << " could only assign "
-                    << nassign_petal[tgtype][tile_id][p]
+                    << cur_petal
                     << " (require " << required_per_petal
                     << ").  Insufficient number of objects or too many collisions";
                 logger.warning(logmsg.str().c_str());
@@ -1676,7 +1703,7 @@ void fba::Assignment::assign_tileloc(fba::Hardware const * hw,
     // to update the counts for valid types of this object.
     static const std::vector <uint8_t> target_types = {
         TARGET_TYPE_SCIENCE, TARGET_TYPE_STANDARD,
-        TARGET_TYPE_SKY, TARGET_TYPE_SAFE};
+        TARGET_TYPE_SKY, TARGET_TYPE_SUPPSKY, TARGET_TYPE_SAFE};
     for (auto const & tt : target_types) {
         if (tgobj.is_type(tt)) {
             nassign_tile.at(tt).at(tile)++;
@@ -1750,7 +1777,7 @@ void fba::Assignment::unassign_tileloc(fba::Hardware const * hw,
     // to update the counts for valid types of this object.
     static const std::vector <uint8_t> target_types = {
         TARGET_TYPE_SCIENCE, TARGET_TYPE_STANDARD,
-        TARGET_TYPE_SKY, TARGET_TYPE_SAFE};
+        TARGET_TYPE_SKY, TARGET_TYPE_SUPPSKY, TARGET_TYPE_SAFE};
     for (auto const & tt : target_types) {
         if (tgobj.is_type(tt)) {
             nassign_tile.at(tt).at(tile)--;

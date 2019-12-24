@@ -24,6 +24,8 @@ std::string fba::target_string(uint8_t type) {
         ret = "standard";
     } else if (type == TARGET_TYPE_SAFE) {
         ret = "safe";
+    } else if (type == TARGET_TYPE_SUPPSKY) {
+        ret = "suppsky";
     } else {
         ret = "NA";
         throw std::runtime_error("Unknown target type");
@@ -81,6 +83,11 @@ bool fba::Target::is_sky() const {
 }
 
 
+bool fba::Target::is_suppsky() const {
+    return ((type & TARGET_TYPE_SUPPSKY) != 0);
+}
+
+
 bool fba::Target::is_safe() const {
     return ((type & TARGET_TYPE_SAFE) != 0);
 }
@@ -124,7 +131,7 @@ void fba::Targets::append(std::string const & tsurvey,
     for (size_t t = 0; t < id.size(); ++t) {
         if (type[t] == 0) {
             // This target is not one of the recognized categories (science,
-            // standard, sky, or safe).  Skip it.
+            // standard, sky, suppsky, or safe).  Skip it.
             logmsg.str("");
             logmsg << "Survey " << survey
                 << " target ID " << id[t]
