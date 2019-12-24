@@ -240,10 +240,10 @@ void helper_vec_seek(
 }
 
 
-// Returns the radial distance on the focalplane (mm) given the angle,
-// theta (radians).  This does a quadratic interpolation to the platescale
+// Returns the radial distance in CS5 on the focalplane (mm) given the angle,
+// theta (radians).  This does a linear interpolation to the platescale
 // data.
-double fba::Hardware::radial_ang2dist (double const & theta_rad) const {
+double fba::Hardware::radial_ang2dist_CS5 (double const & theta_rad) const {
     // platescale data is in degrees
     double theta_deg = theta_rad * 180.0 / M_PI;
 
@@ -260,9 +260,9 @@ double fba::Hardware::radial_ang2dist (double const & theta_rad) const {
 }
 
 
-// Returns the radial angle (theta) on the focalplane given the distance (mm).
-// This does a quadratic interpolation to the platescale data.
-double fba::Hardware::radial_dist2ang (double const & dist_mm) const {
+// Returns the radial angle (theta) on the focalplane given the distance (mm) in CS5.
+// This does a linear interpolation to the platescale data.
+double fba::Hardware::radial_dist2ang_CS5 (double const & dist_mm) const {
     // Seek to correct entry
     size_t ilow;
     size_t ihigh;
@@ -280,9 +280,48 @@ double fba::Hardware::radial_dist2ang (double const & dist_mm) const {
 }
 
 
+// Returns the radial arc length S(R) on the focal surface (mm) given the angle,
+// theta (radians).  This does a linear interpolation to the model.
+double fba::Hardware::radial_ang2dist_curved (double const & theta_rad) const {
+    // platescale data is in degrees
+    double theta_deg = theta_rad * 180.0 / M_PI;
+
+    // Seek to correct entry
+    size_t ilow;
+    size_t ihigh;
+    helper_vec_seek(ps_theta_, theta_deg, ilow, ihigh);
+
+    // Interpolate
+    double xfrac = (theta_deg - ps_theta_[ilow]) / (ps_theta_[ihigh] - ps_theta_[ilow]);
+    double arc_mm = arclen_[ilow] + xfrac * (arclen_[ihigh] - arclen_[ilow]);
+
+    return arc_mm;
+}
+
+
+// Returns the radial angle (theta) on the focal surface given the arc length (mm).
+// This does a linear interpolation to the model.
+double fba::Hardware::radial_dist2ang_curved (double const & arc_mm) const {
+    // Seek to correct entry
+    size_t ilow;
+    size_t ihigh;
+    helper_vec_seek(ps_radius_, arc_mm, ilow, ihigh);
+
+    // Interpolate
+    double xfrac = (arc_mm - arclen_[ilow]) /
+        (arclen_[ihigh] - arclen_[ilow]);
+    double theta_deg = ps_theta_[ilow] + xfrac * (ps_theta_[ihigh] - ps_theta_[ilow]);
+
+    // platescale data is in degrees
+    double theta_rad = theta_deg * M_PI / 180.0;
+
+    return theta_rad;
+}
+
+
 fiberassign::geom::dpair fba::Hardware::radec2xy(
     double const & tilera, double const & tiledec, double const & tiletheta,
-    double const & ra, double const & dec) const {
+    double const & ra, double const & dec, bool use_CS5) const {
 
     double deg_to_rad = M_PI / 180.0;
 
@@ -326,7 +365,12 @@ fiberassign::geom::dpair fba::Hardware::radec2xy(
 
     double q_rad = ::atan2(z, -y);
 
-    double radius_mm = radial_ang2dist(radius_rad);
+    double radius_mm;
+    if (use_CS5) {
+        radius_mm = radial_ang2dist_CS5(radius_rad);
+    } else {
+        radius_mm = radial_ang2dist_curved(radius_rad);
+    }
 
     // Apply field rotation
     double rotated = q_rad + tiletheta_rad;
@@ -342,7 +386,8 @@ void fba::Hardware::radec2xy_multi(
     double const & tilera, double const & tiledec, double const & tiletheta,
     std::vector <double> const & ra,
     std::vector <double> const & dec,
-    std::vector <std::pair <double, double> > & xy, int threads) const {
+    std::vector <std::pair <double, double> > & xy, bool use_CS5,
+    int threads) const {
 
     size_t ntg = ra.size();
     xy.resize(ntg);
@@ -361,9 +406,9 @@ void fba::Hardware::radec2xy_multi(
         run_threads = max_threads;
     }
 
-    #pragma omp parallel for schedule(static) default(none) shared(ntg, tilera, tiledec, tiletheta, xy, ra, dec) num_threads(run_threads)
+    #pragma omp parallel for schedule(static) default(none) shared(ntg, tilera, tiledec, tiletheta, xy, ra, dec, use_CS5) num_threads(run_threads)
     for (size_t t = 0; t < ntg; ++t) {
-        xy[t] = radec2xy(tilera, tiledec, tiletheta, ra[t], dec[t]);
+        xy[t] = radec2xy(tilera, tiledec, tiletheta, ra[t], dec[t], use_CS5);
     }
 
     return;
@@ -373,7 +418,7 @@ void fba::Hardware::radec2xy_multi(
 fiberassign::geom::dpair fba::Hardware::xy2radec(
         double const & tilera, double const & tiledec,
         double const & tiletheta,
-        double const & x_mm, double const & y_mm) const {
+        double const & x_mm, double const & y_mm, bool use_CS5) const {
 
     double deg_to_rad = M_PI / 180.0;
     double rad_to_deg = 180.0 / M_PI;
@@ -384,7 +429,13 @@ fiberassign::geom::dpair fba::Hardware::xy2radec(
 
     // radial distance on the focal plane
     double radius_mm = ::sqrt(x_mm * x_mm + y_mm * y_mm);
-    double radius_rad = radial_dist2ang(radius_mm);
+
+    double radius_rad;
+    if (use_CS5) {
+        radius_rad = radial_dist2ang_CS5(radius_mm);
+    } else {
+        radius_rad = radial_dist2ang_curved(radius_mm);
+    }
 
     // q is the angle the position makes with the +x-axis of focal plane
     double rotated = ::atan2(y_mm, x_mm);
@@ -440,7 +491,8 @@ void fba::Hardware::xy2radec_multi(
         double const & tilera, double const & tiledec,
         double const & tiletheta,
         std::vector <double> const & x_mm, std::vector <double> const & y_mm,
-        std::vector <std::pair <double, double> > & radec, int threads) const {
+        std::vector <std::pair <double, double> > & radec,
+        bool use_CS5, int threads) const {
     size_t npos = x_mm.size();
     radec.resize(npos);
 
@@ -458,9 +510,9 @@ void fba::Hardware::xy2radec_multi(
         run_threads = max_threads;
     }
 
-    #pragma omp parallel for schedule(static) default(none) shared(npos, tilera, tiledec, tiletheta, x_mm, y_mm, radec) num_threads(run_threads)
+    #pragma omp parallel for schedule(static) default(none) shared(npos, tilera, tiledec, tiletheta, x_mm, y_mm, radec, use_CS5) num_threads(run_threads)
     for (size_t i = 0; i < npos; ++i) {
-        radec[i] = xy2radec(tilera, tiledec, tiletheta, x_mm[i], y_mm[i]);
+        radec[i] = xy2radec(tilera, tiledec, tiletheta, x_mm[i], y_mm[i], use_CS5);
     }
 
     return;

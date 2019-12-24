@@ -156,7 +156,7 @@ def plot_tile_targets_props(hw, tile_ra, tile_dec, tile_theta, tgs,
         color.append(plot_target_type_color(tg.type))
     # We disable threading here, since it does not interact well with
     # multiprocessing.
-    tgxy = hw.radec2xy_multi(tile_ra, tile_dec, tile_theta, ra, dec, 1)
+    tgxy = hw.radec2xy_multi(tile_ra, tile_dec, tile_theta, ra, dec, False, 1)
     props = {tgid: {"xy": xy, "color": cl} for tgid, xy, cl
              in zip(avail_tgid, tgxy, color)}
     return props
@@ -346,8 +346,8 @@ def plot_assignment_tile_file(locs, real_shapes, params):
     plot_assignment(ax, plot_assignment_tile_file_hw, targetprops, fassign,
                     linewidth=0.1, real_shapes=real_shapes)
 
-    ax.set_xlabel("Millimeters", fontsize="large")
-    ax.set_ylabel("Millimeters", fontsize="large")
+    ax.set_xlabel("Curved Focal Surface Millimeters", fontsize="large")
+    ax.set_ylabel("Curved Focal Surface Millimeters", fontsize="large")
     plt.savefig(outfile, dpi=300, format="pdf")
     plt.close()
     return
@@ -470,8 +470,8 @@ def plot_assignment_tile(hw, tgs, tile_id, tile_ra, tile_dec, tile_theta,
     plot_assignment(ax, hw, targetprops, fassign,
                     linewidth=0.1, real_shapes=real_shapes)
 
-    ax.set_xlabel("Millimeters", fontsize="large")
-    ax.set_ylabel("Millimeters", fontsize="large")
+    ax.set_xlabel("Curved Focal Surface Millimeters", fontsize="large")
+    ax.set_ylabel("Curved Focal Surface Millimeters", fontsize="large")
     if outfile is None:
         plt.show()
     else:

@@ -669,9 +669,9 @@ PYBIND11_MODULE(_internal, m) {
                 (str): the focalplane model time.
 
         )")
-        .def("radial_ang2dist", &fba::Hardware::radial_ang2dist,
+        .def("radial_ang2dist_CS5", &fba::Hardware::radial_ang2dist_CS5,
             py::arg("theta_rad"), R"(
-            Covert the angle from the origin to distance in mm.
+            Covert the angle from the origin to CS5 distance in mm.
 
             This uses the radial platescale to convert the angle to mm in the
             tangent plane (CS5) coordinates.
@@ -683,9 +683,9 @@ PYBIND11_MODULE(_internal, m) {
                 (float): the distance in mm.
 
         )")
-        .def("radial_dist2ang", &fba::Hardware::radial_dist2ang,
+        .def("radial_dist2ang_CS5", &fba::Hardware::radial_dist2ang_CS5,
             py::arg("dist_mm"), R"(
-            Covert the distance from the origin in mm to an angle.
+            Covert the CS5 distance from the origin in mm to an angle.
 
             This uses the radial platescale to convert the distance in mm from the
             CS5 origin into an angle in radians.
@@ -697,9 +697,37 @@ PYBIND11_MODULE(_internal, m) {
                 (float): the angle in radians.
 
         )")
+        .def("radial_ang2dist_curved", &fba::Hardware::radial_ang2dist_curved,
+            py::arg("theta_rad"), R"(
+            Covert the angle from the origin to curved focal surface distance in mm.
+
+            This uses the model S(R) arc length to convert the angle to mm in the
+            curved focal surface.
+
+            Args:
+                theta_rad (float): Theta angle in radians.
+
+            Returns:
+                (float): the arc length distance in mm.
+
+        )")
+        .def("radial_dist2ang_curved", &fba::Hardware::radial_dist2ang_curved,
+            py::arg("arc_mm"), R"(
+            Covert the curved focal surface distance from the origin in mm to an angle.
+
+            This uses the model S(R) arc length to convert distance in mm from the
+            origin into an angle in radians.
+
+            Args:
+                arc_mm (float): The arc length distance in mm.
+
+            Returns:
+                (float): the angle in radians.
+
+        )")
         .def("radec2xy", &fba::Hardware::radec2xy, py::arg("tilera"),
             py::arg("tiledec"), py::arg("tiletheta"), py::arg("ra"),
-            py::arg("dec"), R"(
+            py::arg("dec"), py::arg("use_CS5"), R"(
             Project an RA/DEC value into X/Y coordinates.
 
             For the tile pointed at (tilera, tiledec), project the (ra, dec)
@@ -711,6 +739,7 @@ PYBIND11_MODULE(_internal, m) {
                 tiletheta (float): The field rotation of the tile.
                 ra (float): RA to project.
                 dec (float): DEC to project.
+                use_CS5 (bool):  If True, use CS5 coordinates, else curved.
 
             Returns:
                 (tuple): the (X, Y) projected location.
@@ -719,15 +748,15 @@ PYBIND11_MODULE(_internal, m) {
         .def("radec2xy_multi", [](fba::Hardware & self, double tile_ra,
                 double tile_dec, double tile_theta,
                 std::vector <double> const & ra,
-                std::vector <double> const & dec, int threads) {
+                std::vector <double> const & dec, bool use_CS5, int threads) {
                 std::vector <std::pair <double, double> > xy;
                 self.radec2xy_multi(
-                    tile_ra, tile_dec, tile_theta, ra, dec, xy, threads
+                    tile_ra, tile_dec, tile_theta, ra, dec, xy, use_CS5, threads
                 );
                 return xy;
             }, py::return_value_policy::take_ownership, py::arg("tilera"),
             py::arg("tiledec"), py::arg("tiletheta"), py::arg("ra"),
-            py::arg("dec"), py::arg("threads"), R"(
+            py::arg("dec"), py::arg("use_CS5"), py::arg("threads"), R"(
             Project multiple RA/DEC values into X/Y coordinates.
 
             For the tile pointed at (tilera, tiledec), project the (ra, dec)
@@ -739,6 +768,7 @@ PYBIND11_MODULE(_internal, m) {
                 tiletheta (float): The field rotation of the tile.
                 ra (array): Array of RA values to project.
                 dec (float): Array of DEC values to project.
+                use_CS5 (bool):  If True, use CS5 coordinates, else curved.
                 threads (int): If <= 0 use maximum threads,
                     else use this number.
 
@@ -748,7 +778,7 @@ PYBIND11_MODULE(_internal, m) {
         )")
         .def("xy2radec", &fba::Hardware::xy2radec, py::arg("tilera"),
             py::arg("tiledec"), py::arg("tiletheta"), py::arg("x"),
-            py::arg("y"), R"(
+            py::arg("y"), py::arg("use_CS5"), R"(
             Compute the RA/DEC value of the specified X/Y location.
 
             For the tile pointed at (tilera, tiledec), compute the RA/DEC
@@ -760,6 +790,7 @@ PYBIND11_MODULE(_internal, m) {
                 tiletheta (float): The field rotation of the tile.
                 x (float): X position in mm.
                 y (float): Y position in mm.
+                use_CS5 (bool):  If True, use CS5 coordinates, else curved.
 
             Returns:
                 (tuple): the (RA, DEC) of the focalplane location.
@@ -768,15 +799,16 @@ PYBIND11_MODULE(_internal, m) {
         .def("xy2radec_multi", [](fba::Hardware & self, double tile_ra,
                 double tile_dec, double tile_theta,
                 std::vector <double> const & x_mm,
-                std::vector <double> const & y_mm, int threads) {
+                std::vector <double> const & y_mm, bool use_CS5, int threads) {
                 std::vector <std::pair <double, double> > radec;
                 self.xy2radec_multi(
-                    tile_ra, tile_dec, tile_theta, x_mm, y_mm, radec, threads
+                    tile_ra, tile_dec, tile_theta, x_mm, y_mm, radec,
+                    use_CS5, threads
                 );
                 return radec;
             }, py::return_value_policy::take_ownership, py::arg("tilera"),
             py::arg("tiledec"), py::arg("tiletheta"), py::arg("x"),
-            py::arg("y"), py::arg("threads"), R"(
+            py::arg("y"), py::arg("use_CS5"), py::arg("threads"), R"(
             Compute the RA/DEC values of the specified X/Y locations.
 
             For the tile pointed at (tilera, tiledec), compute the RA/DEC
@@ -788,6 +820,7 @@ PYBIND11_MODULE(_internal, m) {
                 tiletheta (float): The field rotation of the tile.
                 x (array): Array of X positions in mm.
                 y (array): Array of Y positions in mm.
+                use_CS5 (bool):  If True, use CS5 coordinates, else curved.
                 threads (int): If <= 0 use maximum threads,
                     else use this number.
 
@@ -826,6 +859,9 @@ PYBIND11_MODULE(_internal, m) {
             py::arg("theta_max"), py::arg("phi_max"), R"(
             Compute the theta / phi arm angles when moved to an x / y point.
 
+            Note that all X/Y calculations involving positioners are performed
+            in the curved focal surface (NOT CS5).
+
             Args:
                 center (tuple): The (X, Y) tuple of the device center.
                 xy (tuple): The (X, Y) tuple at which to place the fiber.
@@ -849,7 +885,8 @@ PYBIND11_MODULE(_internal, m) {
 
             This takes the specified location and computes the shapes of
             the central body and fiber holder when the fiber is moved to
-            a given (X, Y) position.  The input shapes are modified in place.
+            a given (X, Y) position in the curved focal surface.  The input shapes
+            are modified in place.
 
             Args:
                 loc (int): Device location.
@@ -867,9 +904,9 @@ PYBIND11_MODULE(_internal, m) {
 
             This takes the specified locations and computes the shapes of
             the central body and fiber holder when each fiber is moved to
-            a given (X, Y) position.  The returned list of tuples contains
-            the (central body, fiber holder) as 2 Shape objects for each
-            location.
+            a given (X, Y) position in the curved focal surface.  The returned
+            list of tuples contains the (central body, fiber holder) as 2 Shape
+            objects for each location.
 
             Args:
                 loc (list): List of locations.
@@ -906,12 +943,12 @@ PYBIND11_MODULE(_internal, m) {
             py::arg("loc"), py::arg("xy"), py::arg("threads"), R"(
             Check for collisions.
 
-            This takes the specified locations and computes the shapes of
-            the central body and fiber holder when each fiber is moved to
-            a given (X, Y) position.  It then tests for collisions between
-            these shapes among the locations specified.  The returned list
-            of bools is True whenever the corresponding fiber had a collision
-            and False otherwise.
+            This takes the specified locations in the curved focal surface
+            and computes the shapes of the central body and fiber holder
+            when each fiber is moved to a given (X, Y) position.  It then
+            tests for collisions between these shapes among the locations
+            specified.  The returned list of bools is True whenever the
+            corresponding fiber had a collision and False otherwise.
 
             Args:
                 loc (list): List of locations.

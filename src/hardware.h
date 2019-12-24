@@ -65,33 +65,39 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
 
         std::string time() const;
 
-        double radial_ang2dist (double const & theta_rad) const;
+        double radial_ang2dist_CS5 (double const & theta_rad) const;
 
-        double radial_dist2ang (double const & dist_mm) const;
+        double radial_dist2ang_CS5 (double const & dist_mm) const;
+
+        double radial_ang2dist_curved (double const & theta_rad) const;
+
+        double radial_dist2ang_curved (double const & arc_mm) const;
 
         fbg::dpair radec2xy(double const & tilera,
                             double const & tiledec,
                             double const & tiletheta,
                             double const & ra,
-                            double const & dec) const;
+                            double const & dec,
+                            bool use_CS5) const;
 
         void radec2xy_multi(double const & tilera, double const & tiledec,
                             double const & tiletheta,
                             std::vector <double> const & ra,
                             std::vector <double> const & dec,
                             std::vector <std::pair <double, double> >
-                                & xy, int threads = 0) const;
+                                & xy, bool use_CS5, int threads = 0) const;
 
         fbg::dpair xy2radec(double const & tilera, double const & tiledec,
                             double const & tiletheta,
-                            double const & x_mm, double const & y_mm) const;
+                            double const & x_mm, double const & y_mm,
+                            bool use_CS5) const;
 
         void xy2radec_multi(double const & tilera, double const & tiledec,
                             double const & tiletheta,
                             std::vector <double> const & x_mm,
                             std::vector <double> const & y_mm,
                             std::vector <std::pair <double, double> >
-                                & radec, int threads = 0) const;
+                                & radec, bool use_CS5, int threads = 0) const;
 
         bool move_positioner_thetaphi(
             fbg::shape & shptheta, fbg::shape & shpphi,
