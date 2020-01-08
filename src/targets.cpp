@@ -272,8 +272,8 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
 
     for (size_t j = 0; j < nloc; ++j) {
         loc[j] = hw_->locations[j];
-        double cx = hw_->loc_pos_xy_mm[loc[j]].first;
-        double cy = hw_->loc_pos_xy_mm[loc[j]].second;
+        double cx = hw_->loc_pos_curved_mm[loc[j]].first;
+        double cy = hw_->loc_pos_curved_mm[loc[j]].second;
         loc_center_x[j] = cx;
         loc_center_y[j] = cy;
         loc_patrol[j] = hw_->loc_theta_arm[loc[j]] + hw_->loc_phi_arm[loc[j]]

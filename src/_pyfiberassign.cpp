@@ -593,8 +593,12 @@ PYBIND11_MODULE(_internal, m) {
         .def_readonly("petal_locations", &fba::Hardware::petal_locations, R"(
             Dictionary of the locations for each petal.
         )")
-        .def_readonly("loc_pos_xy_mm", &fba::Hardware::loc_pos_xy_mm, R"(
-            Dictionary of central (X, Y) position tuples for each location.
+        .def_readonly("loc_pos_cs5_mm", &fba::Hardware::loc_pos_cs5_mm, R"(
+            Dictionary of central (X, Y) position tuples for each location in CS5.
+        )")
+        .def_readonly("loc_pos_curved_mm", &fba::Hardware::loc_pos_curved_mm, R"(
+            Dictionary of central position tuples for each location in curved
+            focal surface coordinates.
         )")
         .def_readonly("loc_device", &fba::Hardware::loc_device, R"(
             Dictionary of device ID for each location
@@ -1019,8 +1023,8 @@ PYBIND11_MODULE(_internal, m) {
                     blockfiber[i] = p.loc_blockfiber.at(lid[i]);
                     fiber[i] = p.loc_fiber.at(lid[i]);
                     device_type[i] = p.loc_device_type.at(lid[i]);
-                    x_mm[i] = p.loc_pos_xy_mm.at(lid[i]).first;
-                    y_mm[i] = p.loc_pos_xy_mm.at(lid[i]).second;
+                    x_mm[i] = p.loc_pos_cs5_mm.at(lid[i]).first;
+                    y_mm[i] = p.loc_pos_cs5_mm.at(lid[i]).second;
                     status[i] = p.state.at(lid[i]);
                     theta_offset[i] = p.loc_theta_offset.at(lid[i]);
                     theta_min[i] = p.loc_theta_min.at(lid[i]);

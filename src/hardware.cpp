@@ -62,7 +62,8 @@ fba::Hardware::Hardware(std::string const & timestr,
     }
     npetal = static_cast <size_t> (maxpetal + 1);
 
-    loc_pos_xy_mm.clear();
+    loc_pos_cs5_mm.clear();
+    loc_pos_curved_mm.clear();
     loc_petal.clear();
     loc_device.clear();
     loc_device_type.clear();
@@ -100,7 +101,7 @@ fba::Hardware::Hardware(std::string const & timestr,
         loc_slitblock[location[i]] = slitblock[i];
         loc_blockfiber[location[i]] = blockfiber[i];
         petal_locations[petal[i]].push_back(location[i]);
-        loc_pos_xy_mm[location[i]] = std::make_pair(x_mm[i], y_mm[i]);
+        loc_pos_cs5_mm[location[i]] = std::make_pair(x_mm[i], y_mm[i]);
         state[location[i]] = status[i];
         if (status[i] != FIBER_STATE_OK) {
             stcount++;
@@ -152,13 +153,27 @@ fba::Hardware::Hardware(std::string const & timestr,
     // long ago...
     patrol_buffer_mm = 0.2;
 
+    // Compute the positioner locations in the curved focal surface.
+    for (int32_t i = 0; i < nloc; ++i) {
+        int32_t lid = locations[i];
+        double xcs5 = loc_pos_cs5_mm.at(lid).first;
+        double ycs5 = loc_pos_cs5_mm.at(lid).second;
+        double rot = ::atan2(ycs5, xcs5);
+        double cs5_mm = ::sqrt(xcs5 * xcs5 + ycs5 * ycs5);
+        double theta_rad = radial_dist2ang_CS5(cs5_mm);
+        double curve_mm = radial_ang2dist_curved(theta_rad);
+        double xcurve = curve_mm * ::cos(rot);
+        double ycurve = curve_mm * ::sin(rot);
+        loc_pos_curved_mm[lid] = std::make_pair(xcurve, ycurve);
+    }
+
     // Compute neighboring locations
     for (int32_t x = 0; x < nloc; ++x) {
         int32_t xid = locations[x];
         for (int32_t y = x + 1; y < nloc; ++y) {
             int32_t yid = locations[y];
-            double dist = fbg::dist(loc_pos_xy_mm[xid],
-                                    loc_pos_xy_mm[yid]);
+            double dist = fbg::dist(loc_pos_curved_mm[xid],
+                                    loc_pos_curved_mm[yid]);
             if (dist <= neighbor_radius_mm) {
                 neighbors[xid].push_back(yid);
                 neighbors[yid].push_back(xid);
@@ -706,7 +721,7 @@ bool fba::Hardware::position_xy_bad(int32_t loc, fbg::dpair const & xy) const {
     double theta;
     bool fail = xy_to_thetaphi(
         theta, phi,
-        loc_pos_xy_mm.at(loc),
+        loc_pos_curved_mm.at(loc),
         xy,
         loc_theta_arm.at(loc),
         loc_phi_arm.at(loc),
@@ -735,7 +750,7 @@ bool fba::Hardware::loc_position_xy(
 
     bool failed = move_positioner_xy(
         shptheta, shpphi,
-        loc_pos_xy_mm.at(loc),
+        loc_pos_curved_mm.at(loc),
         xy,
         loc_theta_arm.at(loc),
         loc_phi_arm.at(loc),
@@ -761,7 +776,7 @@ bool fba::Hardware::loc_position_thetaphi(
 
     bool failed = move_positioner_thetaphi(
         shptheta, shpphi,
-        loc_pos_xy_mm.at(loc),
+        loc_pos_curved_mm.at(loc),
         theta, phi,
         loc_theta_arm.at(loc),
         loc_phi_arm.at(loc),

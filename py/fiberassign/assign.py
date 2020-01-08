@@ -320,7 +320,7 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
             # positioner locations.  Then convert these to RA/DEC.
             # NOTE:  Positioner locations are in curved focal surface coordinates.
             empty_fibers = locs[assigned_invalid]
-            fpos_xy_mm = dict(hw.loc_pos_xy_mm)
+            fpos_xy_mm = dict(hw.loc_pos_curved_mm)
             empty_x = np.array(
                 [fpos_xy_mm[f][0] for f in empty_fibers], dtype=np.float64)
             empty_y = np.array(

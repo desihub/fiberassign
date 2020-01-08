@@ -189,8 +189,10 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
         // Locations
         std::vector <int32_t> locations;
 
-        // Location to positioner centers in mm
-        std::map <int32_t, std::pair <double, double> > loc_pos_xy_mm;
+        // Location to positioner centers in mm.  For the CS5 case these are X / Y
+        // offsets in the tangent plane projection.
+        std::map <int32_t, std::pair <double, double> > loc_pos_cs5_mm;
+        std::map <int32_t, std::pair <double, double> > loc_pos_curved_mm;
 
         // Location to petal
         std::map <int32_t, int32_t> loc_petal;
