@@ -29,7 +29,7 @@ class TestVis(unittest.TestCase):
     def _load_and_plotpos(self, time, dir, suffix, simple=False):
         hw = load_hardware(rundate=time)
         locs = hw.locations
-        center_mm = hw.loc_pos_xy_mm
+        center_mm = hw.loc_pos_curved_mm
         theta_arm = hw.loc_theta_arm
         phi_arm = hw.loc_phi_arm
         theta_offset = hw.loc_theta_offset
@@ -155,7 +155,7 @@ class TestVis(unittest.TestCase):
 
     def _load_and_plotfp(self, hw, dir, suffix, simple=False):
         locs = hw.locations
-        center_mm = hw.loc_pos_xy_mm
+        center_mm = hw.loc_pos_curved_mm
         theta_arm = hw.loc_theta_arm
         phi_arm = hw.loc_phi_arm
         theta_offset = hw.loc_theta_offset

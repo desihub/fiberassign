@@ -22,11 +22,18 @@ class TestHardware(unittest.TestCase):
     def test_read(self):
         hw = load_hardware()
         print(hw)
+        locs = hw.locations
+        cs5 = hw.loc_pos_cs5_mm
+        curved = hw.loc_pos_curved_mm
+        # for p in locs:
+        #     print("{}: curved = [{}, {}] cs5 = [{}, {}]".format(
+        #         p, curved[p][0], curved[p][1], cs5[p][0], cs5[p][1]
+        #     ))
         return
 
     def test_collision_xy(self):
         hw = load_hardware()
-        center_mm = hw.loc_pos_xy_mm
+        center_mm = hw.loc_pos_curved_mm
         locs = hw.locations
         nrot = 100
         rotrad = 0.5
