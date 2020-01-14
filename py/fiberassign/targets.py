@@ -21,7 +21,6 @@ from desitarget.targetmask import desi_mask
 from desitarget.cmx.cmx_targetmask import cmx_mask
 
 from desitarget.sv1.sv1_targetmask import desi_mask as sv1_mask
-from desitarget.sv1.sv1_targetmask import scnd_mask as sv1_scnd_mask
 
 from desitarget.targets import main_cmx_or_sv
 
