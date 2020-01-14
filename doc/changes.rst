@@ -6,7 +6,9 @@ fiberassign change log
 1.3.1 (unreleased)
 ------------------
 
-* No changes yet.
+* Fix issue with creation of SV1 science target mask (PR `#248`_).
+
+.. _`#248`: https://github.com/desihub/fiberassign/pull/248
 
 1.3.0 (2019-12-20)
 ------------------
