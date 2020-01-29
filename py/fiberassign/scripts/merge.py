@@ -78,9 +78,9 @@ def parse_merge(optlist=None):
                         "assignment files.  This should be a comma-separated "
                         "list.")
 
-    parser.add_argument("--skip_raw", required=False, default=False,
+    parser.add_argument("--copy_raw", required=False, default=False,
                         action="store_true",
-                        help="Do not copy the raw fiberassign HDUs to the "
+                        help="If true, copy the raw fiberassign HDUs to the "
                              "merged output.")
 
     args = None
@@ -150,7 +150,7 @@ def run_merge(args):
                   result_prefix=args.prefix, result_split_dir=args.split,
                   out_dir=args.out, out_prefix=args.out_prefix,
                   out_split_dir=args.out_split, columns=columns,
-                  copy_fba=(not args.skip_raw))
+                  copy_fba=args.copy_raw)
     return
 
 
@@ -178,5 +178,5 @@ def run_merge_mpi(args, comm):
         merge_results(args.targets, args.sky, ptiles, result_dir=args.dir,
                       result_prefix=args.prefix, out_dir=args.out,
                       out_prefix=args.out_prefix, columns=columns,
-                      copy_fba=(not args.skip_raw))
+                      copy_fba=args.copy_raw)
     return

@@ -610,6 +610,11 @@ def load_target_table(tgs, tgdata, survey=None, typeforce=None, typecol=None,
             msg = "NUMOBS_MORE column should be an integer type"
             log.error(msg)
             raise RuntimeError(msg)
+    if "NUMOBS_INIT" in tgdata.dtype.names:
+        if tgdata.dtype["NUMOBS_INIT"].char not in ["i", "l"]:
+            msg = "NUMOBS_INIT column should be an integer type"
+            log.error(msg)
+            raise RuntimeError(msg)
     if "OBSCONDITIONS" not in tgdata.dtype.names:
         msg = "OBSCONDITIONS column is required"
         log.error(msg)

@@ -85,7 +85,6 @@ results_targets_columns = OrderedDict([
     ("PRIORITY", "i4"),
     ("SUBPRIORITY", "f8"),
     ("OBSCONDITIONS", "i4"),
-    ("NUMOBS_MORE", "i4")
 ])
 
 results_avail_columns = OrderedDict([
@@ -222,14 +221,10 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         tg_priority = np.empty(ntarget, dtype=np.int32)
         tg_subpriority = np.empty(ntarget, dtype=np.float64)
         tg_obscond = np.empty(ntarget, dtype=np.int32)
-        tg_obsrem = np.empty(ntarget, dtype=np.int32)
         tg_indx = dict()
         for indx, tg in enumerate(tgids):
             tg_indx[tg] = indx
             props = tgs.get(tg)
-            tg_obsrem[indx] = 0
-            if props.obsremain > 0:
-                tg_obsrem[indx] = props.obsremain
             tg_ra[indx] = props.ra
             tg_dec[indx] = props.dec
             tg_bits[indx] = props.bits
@@ -425,7 +420,6 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         fdata["PRIORITY"] = tg_priority
         fdata["SUBPRIORITY"] = tg_subpriority
         fdata["OBSCONDITIONS"] = tg_obscond
-        fdata["NUMOBS_MORE"] = tg_obsrem
 
         # tm.stop()
         # tm.report("  copy targets data tile {}".format(tile_id))
@@ -581,14 +575,13 @@ def write_assignment_ascii(tiles, asgn, out_dir=".", out_prefix="fba-",
                 f.write("# TILE_DEC = {}\n".format(tiledec[tileorder[t]]))
                 f.write("#\n")
                 f.write("# LOCATION  TARGETID  RA  DEC  PRIORITY  "
-                        "SUBPRIORITY  OBSCONDITIONS  NUMOBS_MORE  FBATYPE\n")
+                        "SUBPRIORITY  OBSCONDITIONS  FBATYPE\n")
                 for lid in sorted(tdata.keys()):
                     tgid = tdata[lid]
                     tg = tgs.get(tgid)
                     f.write("{:d} {:d} {:.6f} {:.6f}\n"
                             .format(lid, tgid, tg.ra, tg.dec, tg.priority,
-                                    tg.subpriority, tg.obscond, tg.obsremain,
-                                    tg.type))
+                                    tg.subpriority, tg.obscond, tg.type))
     return
 
 
@@ -857,7 +850,6 @@ merged_fiberassign_req_columns = OrderedDict([
     ("PRIORITY", "i4"),
     ("SUBPRIORITY", "f8"),
     ("OBSCONDITIONS", "i4"),
-    ("NUMOBS_MORE", "i4"),
 ])
 
 merged_skymon_columns = OrderedDict([
