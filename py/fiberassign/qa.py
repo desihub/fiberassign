@@ -58,6 +58,7 @@ from .assign import (
 def qa_parse_table(header, tgdata):
     """Extract target info from a table.
     """
+    log = Logger.get()
     tgs = Targets()
     if "FA_SURV" in header:
         load_target_table(
@@ -105,6 +106,9 @@ def qa_parse_table(header, tgdata):
         obscol = "NUMOBS_MORE"
     elif "NUMOBS_INIT" in tgdata.dtype.names:
         obscol = "NUMOBS_INIT"
+    if obscol is None:
+        msg = "Running QA on non-merged data- target QA will be pointless."
+        log.warning(msg)
 
     for row in range(len(tgdata)):
         tgid = tgdata["TARGETID"][row]

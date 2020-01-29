@@ -665,13 +665,7 @@ def read_assignment_fits_tile(params):
     fiber_data = None
     targets_data = None
     avail_data = None
-    if "FASSIGN" in fd:
-        # We have a new-style file
-        header = fd["FASSIGN"].read_header()
-        fiber_data = fd["FASSIGN"].read()
-        targets_data = fd["FTARGETS"].read()
-        avail_data = fd["FAVAIL"].read()
-    else:
+    if "FIBERASSIGN" in fd:
         # We have merged data.  Build new recarrays from the FIBERASSIGN,
         # TARGETS, and POTENTIAL_ASSIGNMENTS extensions.
         header = fd["FIBERASSIGN"].read_header()
@@ -779,6 +773,18 @@ def read_assignment_fits_tile(params):
             avail_data = fd["POTENTIALTARGETID"].read()
         else:
             avail_data = fd["POTENTIAL_ASSIGNMENTS"].read()
+    elif "FASSIGN" in fd:
+        # We have raw outputs
+        header = fd["FASSIGN"].read_header()
+        fiber_data = fd["FASSIGN"].read()
+        targets_data = fd["FTARGETS"].read()
+        avail_data = fd["FAVAIL"].read()
+    else:
+        msg = "file {} does not contain FIBERASSIGN or FASSIGN HDUs".format(
+            tile_file
+        )
+        log.error(msg)
+        raise RuntimeError(msg)
 
     if "GFA_TARGETS" in fd:
         gfa_targets = fd["GFA_TARGETS"].read()
