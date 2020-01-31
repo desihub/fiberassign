@@ -456,6 +456,7 @@ def qa_targets(
 
     qadata = dict()
     qatargets = dict()
+    qaavail = dict()
 
     # We must process the tiles in sequence, so do not use multiprocessing.
 
@@ -472,16 +473,22 @@ def qa_targets(
         # Only do QA on positioners.
         pos_rows = np.where(fiber_data["DEVICE_TYPE"].astype(str) == "POS")[0]
 
-        # Target assignment
-        tassign = {
-            x["LOCATION"]: x["TARGETID"]
-            for x in fiber_data[pos_rows]
+        # Assigned Targets
+        tassign = set([
+            x["TARGETID"] for x in fiber_data[pos_rows]
             if (x["LOCATION"] >= 0)
-        }
+        ])
 
-        for lid, tgid in tassign.items():
+        # Unique set of targets available for this tile
+        tavail = np.unique(avail_data["TARGETID"])
+
+        for tgid in tavail:
             if tgid < 0:
                 continue
+            if tgid not in tgprops:
+                msg = "Available target not in target props.  "\
+                    "Rerun fba_run with the --write_all_targets option."
+                raise RuntimeError()
             cls = str(tgprops[tgid]["class"])
             typ = str(tgprops[tgid]["type"])
             obi = int(tgprops[tgid]["obsinit"])
@@ -490,34 +497,54 @@ def qa_targets(
                 # first occurrence of this class (science, sky, etc)
                 qadata[cls] = dict()
                 qatargets[cls] = dict()
+                qaavail[cls] = dict()
             if typ not in qadata[cls]:
                 # first occurrence of this type (elg, qso, lrg, etc)
                 qadata[cls][typ] = dict()
                 qatargets[cls][typ] = dict()
+                qaavail[cls][typ] = dict()
             if obi not in qadata[cls][typ]:
                 # first occurrence of this NUMOBS_INIT
                 qadata[cls][typ][obi] = dict()
                 qatargets[cls][typ][obi] = dict()
-            if tid not in qadata[cls][typ][obi]:
-                # first tile for this NUMOBS_INIT
-                qadata[cls][typ][obi][itid] = int(0)
-            if tgid not in qatargets[cls][typ][obi]:
+                qaavail[cls][typ][obi] = dict()
+            if tgid not in qaavail[cls][typ][obi]:
                 # first occurrence of this target
-                qatargets[cls][typ][obi][tgid] = int(0)
-            qadata[cls][typ][obi][itid] += int(1)
-            qatargets[cls][typ][obi][tgid] += int(1)
+                qaavail[cls][typ][obi][tgid] = int(0)
+            qaavail[cls][typ][obi][tgid] += int(1)
+            if tgid in tassign:
+                if tgid not in qatargets[cls][typ][obi]:
+                    # first occurrence of this target
+                    qatargets[cls][typ][obi][tgid] = int(0)
+                qatargets[cls][typ][obi][tgid] += int(1)
+                if tid not in qadata[cls][typ][obi]:
+                    # first tile for this NUMOBS_INIT
+                    qadata[cls][typ][obi][itid] = int(0)
+                qadata[cls][typ][obi][itid] += int(1)
 
     with open(qa_out, "w") as f:
         json.dump(qadata, f, indent=4, sort_keys=True)
 
     tcols = OrderedDict([
         ("TARGETID", "i8"),
+        ("NUMOBS_AVAIL", "i4"),
         ("NUMOBS_DONE", "i4"),
     ])
     tdtype = np.dtype([(x, y) for x, y in tcols.items()])
-    for tcls, clsprops in qatargets.items():
+    for tcls, clsprops in qaavail.items():
+        aclsprops = None
+        if tcls in qatargets:
+            aclsprops = qatargets[tcls]
         for ttyp, typprops in clsprops.items():
+            atypprops = None
+            if aclsprops is not None:
+                if ttyp in aclsprops:
+                    atypprops = aclsprops[ttyp]
             for tobi, obitgs in typprops.items():
+                aobitgs = None
+                if atypprops is not None:
+                    if tobi in atypprops:
+                        aobitgs = atypprops[tobi]
                 fobi = tobi
                 if fobi < 0:
                     fobi = "NA"
@@ -531,7 +558,11 @@ def qa_targets(
                 tdata = np.zeros(len(obitgs), dtype=tdtype)
                 for row, (tgid, hits) in enumerate(obitgs.items()):
                     tdata[row]["TARGETID"] = tgid
-                    tdata[row]["NUMOBS_DONE"] = hits
+                    tdata[row]["NUMOBS_AVAIL"] = hits
+                    tdata[row]["NUMOBS_DONE"] = 0
+                    if aobitgs is not None and tgid in aobitgs:
+                        tdata[row]["NUMOBS_DONE"] = aobitgs[tgid]
+
                 fd = fitsio.FITS(tout, "rw")
                 fd.write(None, header=None, extname="PRIMARY")
                 fd.write(tdata, header=None, extname="COUNTS")
