@@ -118,26 +118,26 @@ def qa_parse_table(header, tgdata):
         tg = tgs.get(tgid)
         dt = tg.bits
         tgprops[tgid] = dict()
-        if dt & sciencemask:
-            tgprops[tgid]["class"] = "science"
-            if dt & stdmask:
-                tgprops[tgid]["class"] = "science-standard"
-            if dt & lrgmask:
-                tgprops[tgid]["type"] = "LRG"
-            elif dt & elgmask:
-                tgprops[tgid]["type"] = "ELG"
-            elif dt & qsomask:
-                tgprops[tgid]["type"] = "QSO"
-            else:
-                tgprops[tgid]["type"] = "NA"
-        elif dt & stdmask:
+        if dt & stdmask:
             tgprops[tgid]["class"] = "standard"
+            if dt & sciencemask:
+                tgprops[tgid]["class"] = "science-standard"
             if dt & stdfaintmask:
                 tgprops[tgid]["type"] = "STD_FAINT"
             elif dt & stdwdmask:
                 tgprops[tgid]["type"] = "STD_WD"
             elif dt & stdbrtmask:
                 tgprops[tgid]["type"] = "STD_BRIGHT"
+            else:
+                tgprops[tgid]["type"] = "NA"
+        elif dt & sciencemask:
+            tgprops[tgid]["class"] = "science"
+            if dt & lrgmask:
+                tgprops[tgid]["type"] = "LRG"
+            elif dt & elgmask:
+                tgprops[tgid]["type"] = "ELG"
+            elif dt & qsomask:
+                tgprops[tgid]["type"] = "QSO"
             else:
                 tgprops[tgid]["type"] = "NA"
         elif dt & skymask:
@@ -474,7 +474,7 @@ def qa_targets(
         pos_rows = np.where(fiber_data["DEVICE_TYPE"].astype(str) == "POS")[0]
 
         # Assigned Targets
-        tassign = set([
+        tassign = np.unique([
             x["TARGETID"] for x in fiber_data[pos_rows]
             if (x["LOCATION"] >= 0)
         ])
