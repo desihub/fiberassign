@@ -6,7 +6,9 @@ fiberassign change log
 1.3.1 (unreleased)
 ------------------
 
-* No changes yet.
+* Change targets to correctly look up desi and secondary mask (PR `#250`_).
+
+.. _`#250`: https://github.com/desihub/fiberassign/pull/235
 
 1.3.0 (2019-12-20)
 ------------------
