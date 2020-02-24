@@ -242,8 +242,11 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         # targets, not just the assigned ones.  This allows us to write out
         # the focalplane coordinates of all available targets as computed by
         # the code at the time it was run.
+        #
+        # NOTE:  The output format is explicitly CS5 coordinates, even though
+        # we use curved focal surface internally.
         xy = hw.radec2xy_multi(
-            tile_ra, tile_dec, tile_obstheta, tg_ra, tg_dec, 0
+            tile_ra, tile_dec, tile_obstheta, tg_ra, tg_dec, True, 0
         )
         for indx, fxy in enumerate(xy):
             tg_x[indx] = fxy[0]
@@ -315,19 +318,24 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         if (len(assigned_invalid) > 0):
             # Fill our unassigned location X/Y coordinates with the central
             # positioner locations.  Then convert these to RA/DEC.
+            # NOTE:  Positioner locations are in curved focal surface coordinates.
             empty_fibers = locs[assigned_invalid]
-            fpos_xy_mm = dict(hw.loc_pos_xy_mm)
+            fpos_xy_mm = dict(hw.loc_pos_curved_mm)
             empty_x = np.array(
                 [fpos_xy_mm[f][0] for f in empty_fibers], dtype=np.float64)
             empty_y = np.array(
                 [fpos_xy_mm[f][1] for f in empty_fibers], dtype=np.float64)
             radec = hw.xy2radec_multi(
-                tile_ra, tile_dec, tile_obstheta, empty_x, empty_y, 0
+                tile_ra, tile_dec, tile_obstheta, empty_x, empty_y, False, 0
             )
-            assigned_tgx[assigned_invalid] = empty_x
-            assigned_tgy[assigned_invalid] = empty_y
             assigned_tgra[assigned_invalid] = [x for x, y in radec]
             assigned_tgdec[assigned_invalid] = [y for x, y in radec]
+            empty_xy = hw.radec2xy_multi(
+                tile_ra, tile_dec, tile_obstheta, assigned_tgra[assigned_invalid],
+                assigned_tgdec[assigned_invalid], True, 0
+            )
+            assigned_tgx[assigned_invalid] = [x for x, y in empty_xy]
+            assigned_tgy[assigned_invalid] = [y for x, y in empty_xy]
 
         if (len(assigned_valid) > 0):
             # The target IDs assigned to fibers (note- NOT sorted)

@@ -272,8 +272,8 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
 
     for (size_t j = 0; j < nloc; ++j) {
         loc[j] = hw_->locations[j];
-        double cx = hw_->loc_pos_xy_mm[loc[j]].first;
-        double cy = hw_->loc_pos_xy_mm[loc[j]].second;
+        double cx = hw_->loc_pos_curved_mm[loc[j]].first;
+        double cy = hw_->loc_pos_curved_mm[loc[j]].second;
         loc_center_x[j] = cx;
         loc_center_y[j] = cy;
         loc_patrol[j] = hw_->loc_theta_arm[loc[j]] + hw_->loc_phi_arm[loc[j]]
@@ -338,7 +338,7 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
                 if ((obj.obscond & tobs) != 0) {
                     // Only use targets with correct obs conditions
                     target_xy = phw->radec2xy(
-                        tra, tdec, ttheta, obj.ra, obj.dec
+                        tra, tdec, ttheta, obj.ra, obj.dec, false
                     );
                     cur.id = obj.id;
                     cur.pos[0] = target_xy.first;
@@ -389,7 +389,7 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
                 for (auto const & tnear : nearby_loc) {
                     auto & obj = pobjs->data[tnear];
                     auto obj_xy = phw->radec2xy(
-                        tra, tdec, ttheta, obj.ra, obj.dec
+                        tra, tdec, ttheta, obj.ra, obj.dec, false
                     );
                     double dist = geom::sq(loc_xy, obj_xy);
                     double pdist = geom::sq(loc_patrol[j]);

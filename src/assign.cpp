@@ -1879,10 +1879,12 @@ void fba::Assignment::project_targets(fba::Hardware const * hw,
 
     targets_to_project(tgs, tfavail, lids, tgids, tgra, tgdec);
 
-    // Now thread over the targets to compute
+    // Now thread over the targets to compute.  Note we are always working in the
+    // curved focal surface for assignment.
+    bool use_CS5 = false;
 
     std::vector <std::pair <double, double> > xy;
-    hw->radec2xy_multi(tile_ra, tile_dec, tile_theta, tgra, tgdec, xy);
+    hw->radec2xy_multi(tile_ra, tile_dec, tile_theta, tgra, tgdec, xy, use_CS5);
 
     for (size_t t = 0; t < tgids.size(); ++t) {
         target_xy[tgids[t]] = xy[t];

@@ -35,6 +35,9 @@ fba::Hardware::Hardware(std::string const & timestr,
                         std::vector <double> const & phi_min,
                         std::vector <double> const & phi_max,
                         std::vector <double> const & phi_arm,
+                        std::vector <double> const & ps_radius,
+                        std::vector <double> const & ps_theta,
+                        std::vector <double> const & arclen,
                         std::vector <fbg::shape> const & excl_theta,
                         std::vector <fbg::shape> const & excl_phi,
                         std::vector <fbg::shape> const & excl_gfa,
@@ -46,6 +49,11 @@ fba::Hardware::Hardware(std::string const & timestr,
 
     timestr_ = timestr;
 
+    ps_radius_ = ps_radius;
+    ps_theta_ = ps_theta;
+    ps_size_ = ps_radius.size();
+    arclen_ = arclen;
+
     int32_t maxpetal = 0;
     for (auto const & p : petal) {
         if (p > maxpetal) {
@@ -54,7 +62,8 @@ fba::Hardware::Hardware(std::string const & timestr,
     }
     npetal = static_cast <size_t> (maxpetal + 1);
 
-    loc_pos_xy_mm.clear();
+    loc_pos_cs5_mm.clear();
+    loc_pos_curved_mm.clear();
     loc_petal.clear();
     loc_device.clear();
     loc_device_type.clear();
@@ -92,7 +101,7 @@ fba::Hardware::Hardware(std::string const & timestr,
         loc_slitblock[location[i]] = slitblock[i];
         loc_blockfiber[location[i]] = blockfiber[i];
         petal_locations[petal[i]].push_back(location[i]);
-        loc_pos_xy_mm[location[i]] = std::make_pair(x_mm[i], y_mm[i]);
+        loc_pos_cs5_mm[location[i]] = std::make_pair(x_mm[i], y_mm[i]);
         state[location[i]] = status[i];
         if (status[i] != FIBER_STATE_OK) {
             stcount++;
@@ -144,13 +153,27 @@ fba::Hardware::Hardware(std::string const & timestr,
     // long ago...
     patrol_buffer_mm = 0.2;
 
+    // Compute the positioner locations in the curved focal surface.
+    for (int32_t i = 0; i < nloc; ++i) {
+        int32_t lid = locations[i];
+        double xcs5 = loc_pos_cs5_mm.at(lid).first;
+        double ycs5 = loc_pos_cs5_mm.at(lid).second;
+        double rot = ::atan2(ycs5, xcs5);
+        double cs5_mm = ::sqrt(xcs5 * xcs5 + ycs5 * ycs5);
+        double theta_rad = radial_dist2ang_CS5(cs5_mm);
+        double curve_mm = radial_ang2dist_curved(theta_rad);
+        double xcurve = curve_mm * ::cos(rot);
+        double ycurve = curve_mm * ::sin(rot);
+        loc_pos_curved_mm[lid] = std::make_pair(xcurve, ycurve);
+    }
+
     // Compute neighboring locations
     for (int32_t x = 0; x < nloc; ++x) {
         int32_t xid = locations[x];
         for (int32_t y = x + 1; y < nloc; ++y) {
             int32_t yid = locations[y];
-            double dist = fbg::dist(loc_pos_xy_mm[xid],
-                                    loc_pos_xy_mm[yid]);
+            double dist = fbg::dist(loc_pos_curved_mm[xid],
+                                    loc_pos_curved_mm[yid]);
             if (dist <= neighbor_radius_mm) {
                 neighbors[xid].push_back(yid);
                 neighbors[yid].push_back(xid);
@@ -169,12 +192,26 @@ fba::Hardware::Hardware(std::string const & timestr,
         loc_gfa_excl.at(lid).rotation_origin(csang);
         loc_petal_excl.at(lid).rotation_origin(csang);
     }
-
 }
 
 
 std::string fba::Hardware::time() const {
     return timestr_;
+}
+
+
+std::vector <double> fba::Hardware::platescale_radius_mm() const {
+    return ps_radius_;
+}
+
+
+std::vector <double> fba::Hardware::platescale_theta_deg() const {
+    return ps_theta_;
+}
+
+
+std::vector <double> fba::Hardware::radial_arclen() const {
+    return arclen_;
 }
 
 
@@ -189,46 +226,117 @@ std::vector <int32_t> fba::Hardware::device_locations(
     return ret;
 }
 
-
-// Returns the radial distance on the focalplane (mm) given the angle,
-// theta (radians).  This is simply a fit to the data provided.
-double fba::Hardware::radial_ang2dist (double const & theta_rad) const {
-    const double p[4] = {8.297e5, -1750., 1.394e4, 0.0};
-    double dist_mm = 0.0;
-    for (size_t i = 0; i < 4; ++i) {
-        dist_mm = theta_rad * dist_mm + p[i];
+// Small helper function to seek to the correct elements for linear interpolation.
+void helper_vec_seek(
+    std::vector <double> const & data,
+    double const & val,
+    size_t & ilow,
+    size_t & ihigh
+) {
+    std::vector <double>::const_iterator bound =
+        std::lower_bound(data.begin(), data.end(), val);
+    if (bound - data.end() == 0) {
+        // We are extrapolating off the end
+        ilow = data.size() - 2;
+        ihigh = data.size() - 1;
+    } else if (bound - data.begin() == 0) {
+        // Extrapolating at the beginning
+        ilow = 0;
+        ihigh = 1;
+    } else {
+        // Somewhere in the middle
+        ilow = bound - data.begin();
+        if (data[ilow] > val) {
+            ilow--;
+        }
+        ihigh = ilow + 1;
     }
+    return;
+}
+
+
+// Returns the radial distance in CS5 on the focalplane (mm) given the angle,
+// theta (radians).  This does a linear interpolation to the platescale
+// data.
+double fba::Hardware::radial_ang2dist_CS5 (double const & theta_rad) const {
+    // platescale data is in degrees
+    double theta_deg = theta_rad * 180.0 / M_PI;
+
+    // Seek to correct entry
+    size_t ilow;
+    size_t ihigh;
+    helper_vec_seek(ps_theta_, theta_deg, ilow, ihigh);
+
+    // Interpolate
+    double xfrac = (theta_deg - ps_theta_[ilow]) / (ps_theta_[ihigh] - ps_theta_[ilow]);
+    double dist_mm = ps_radius_[ilow] + xfrac * (ps_radius_[ihigh] - ps_radius_[ilow]);
+
     return dist_mm;
 }
 
 
-// Returns the radial angle (theta) on the focalplane given the distance (mm)
-double fba::Hardware::radial_dist2ang (double const & dist_mm) const {
-    double delta_theta = 1e-4;
-    double inv_delta = 1.0 / delta_theta;
+// Returns the radial angle (theta) on the focalplane given the distance (mm) in CS5.
+// This does a linear interpolation to the platescale data.
+double fba::Hardware::radial_dist2ang_CS5 (double const & dist_mm) const {
+    // Seek to correct entry
+    size_t ilow;
+    size_t ihigh;
+    helper_vec_seek(ps_radius_, dist_mm, ilow, ihigh);
 
-    // starting guess
-    double theta_rad = 0.01;
+    // Interpolate
+    double xfrac = (dist_mm - ps_radius_[ilow]) /
+        (ps_radius_[ihigh] - ps_radius_[ilow]);
+    double theta_deg = ps_theta_[ilow] + xfrac * (ps_theta_[ihigh] - ps_theta_[ilow]);
 
-    double distcur;
-    double distdelta;
-    double correction;
-    double error = 1.0;
+    // platescale data is in degrees
+    double theta_rad = theta_deg * M_PI / 180.0;
 
-    while (::abs(error) > 1e-7) {
-        distcur = radial_ang2dist(theta_rad);
-        distdelta = radial_ang2dist(theta_rad + delta_theta);
-        error = distcur - dist_mm;
-        correction = error / (inv_delta * (distdelta - distcur));
-        theta_rad -= correction;
-    }
+    return theta_rad;
+}
+
+
+// Returns the radial arc length S(R) on the focal surface (mm) given the angle,
+// theta (radians).  This does a linear interpolation to the model.
+double fba::Hardware::radial_ang2dist_curved (double const & theta_rad) const {
+    // platescale data is in degrees
+    double theta_deg = theta_rad * 180.0 / M_PI;
+
+    // Seek to correct entry
+    size_t ilow;
+    size_t ihigh;
+    helper_vec_seek(ps_theta_, theta_deg, ilow, ihigh);
+
+    // Interpolate
+    double xfrac = (theta_deg - ps_theta_[ilow]) / (ps_theta_[ihigh] - ps_theta_[ilow]);
+    double arc_mm = arclen_[ilow] + xfrac * (arclen_[ihigh] - arclen_[ilow]);
+
+    return arc_mm;
+}
+
+
+// Returns the radial angle (theta) on the focal surface given the arc length (mm).
+// This does a linear interpolation to the model.
+double fba::Hardware::radial_dist2ang_curved (double const & arc_mm) const {
+    // Seek to correct entry
+    size_t ilow;
+    size_t ihigh;
+    helper_vec_seek(ps_radius_, arc_mm, ilow, ihigh);
+
+    // Interpolate
+    double xfrac = (arc_mm - arclen_[ilow]) /
+        (arclen_[ihigh] - arclen_[ilow]);
+    double theta_deg = ps_theta_[ilow] + xfrac * (ps_theta_[ihigh] - ps_theta_[ilow]);
+
+    // platescale data is in degrees
+    double theta_rad = theta_deg * M_PI / 180.0;
+
     return theta_rad;
 }
 
 
 fiberassign::geom::dpair fba::Hardware::radec2xy(
     double const & tilera, double const & tiledec, double const & tiletheta,
-    double const & ra, double const & dec) const {
+    double const & ra, double const & dec, bool use_CS5) const {
 
     double deg_to_rad = M_PI / 180.0;
 
@@ -272,7 +380,12 @@ fiberassign::geom::dpair fba::Hardware::radec2xy(
 
     double q_rad = ::atan2(z, -y);
 
-    double radius_mm = radial_ang2dist(radius_rad);
+    double radius_mm;
+    if (use_CS5) {
+        radius_mm = radial_ang2dist_CS5(radius_rad);
+    } else {
+        radius_mm = radial_ang2dist_curved(radius_rad);
+    }
 
     // Apply field rotation
     double rotated = q_rad + tiletheta_rad;
@@ -288,7 +401,8 @@ void fba::Hardware::radec2xy_multi(
     double const & tilera, double const & tiledec, double const & tiletheta,
     std::vector <double> const & ra,
     std::vector <double> const & dec,
-    std::vector <std::pair <double, double> > & xy, int threads) const {
+    std::vector <std::pair <double, double> > & xy, bool use_CS5,
+    int threads) const {
 
     size_t ntg = ra.size();
     xy.resize(ntg);
@@ -307,9 +421,9 @@ void fba::Hardware::radec2xy_multi(
         run_threads = max_threads;
     }
 
-    #pragma omp parallel for schedule(static) default(none) shared(ntg, tilera, tiledec, tiletheta, xy, ra, dec) num_threads(run_threads)
+    #pragma omp parallel for schedule(static) default(none) shared(ntg, tilera, tiledec, tiletheta, xy, ra, dec, use_CS5) num_threads(run_threads)
     for (size_t t = 0; t < ntg; ++t) {
-        xy[t] = radec2xy(tilera, tiledec, tiletheta, ra[t], dec[t]);
+        xy[t] = radec2xy(tilera, tiledec, tiletheta, ra[t], dec[t], use_CS5);
     }
 
     return;
@@ -319,7 +433,7 @@ void fba::Hardware::radec2xy_multi(
 fiberassign::geom::dpair fba::Hardware::xy2radec(
         double const & tilera, double const & tiledec,
         double const & tiletheta,
-        double const & x_mm, double const & y_mm) const {
+        double const & x_mm, double const & y_mm, bool use_CS5) const {
 
     double deg_to_rad = M_PI / 180.0;
     double rad_to_deg = 180.0 / M_PI;
@@ -330,7 +444,13 @@ fiberassign::geom::dpair fba::Hardware::xy2radec(
 
     // radial distance on the focal plane
     double radius_mm = ::sqrt(x_mm * x_mm + y_mm * y_mm);
-    double radius_rad = radial_dist2ang(radius_mm);
+
+    double radius_rad;
+    if (use_CS5) {
+        radius_rad = radial_dist2ang_CS5(radius_mm);
+    } else {
+        radius_rad = radial_dist2ang_curved(radius_mm);
+    }
 
     // q is the angle the position makes with the +x-axis of focal plane
     double rotated = ::atan2(y_mm, x_mm);
@@ -386,7 +506,8 @@ void fba::Hardware::xy2radec_multi(
         double const & tilera, double const & tiledec,
         double const & tiletheta,
         std::vector <double> const & x_mm, std::vector <double> const & y_mm,
-        std::vector <std::pair <double, double> > & radec, int threads) const {
+        std::vector <std::pair <double, double> > & radec,
+        bool use_CS5, int threads) const {
     size_t npos = x_mm.size();
     radec.resize(npos);
 
@@ -404,9 +525,9 @@ void fba::Hardware::xy2radec_multi(
         run_threads = max_threads;
     }
 
-    #pragma omp parallel for schedule(static) default(none) shared(npos, tilera, tiledec, tiletheta, x_mm, y_mm, radec) num_threads(run_threads)
+    #pragma omp parallel for schedule(static) default(none) shared(npos, tilera, tiledec, tiletheta, x_mm, y_mm, radec, use_CS5) num_threads(run_threads)
     for (size_t i = 0; i < npos; ++i) {
-        radec[i] = xy2radec(tilera, tiledec, tiletheta, x_mm[i], y_mm[i]);
+        radec[i] = xy2radec(tilera, tiledec, tiletheta, x_mm[i], y_mm[i], use_CS5);
     }
 
     return;
@@ -600,7 +721,7 @@ bool fba::Hardware::position_xy_bad(int32_t loc, fbg::dpair const & xy) const {
     double theta;
     bool fail = xy_to_thetaphi(
         theta, phi,
-        loc_pos_xy_mm.at(loc),
+        loc_pos_curved_mm.at(loc),
         xy,
         loc_theta_arm.at(loc),
         loc_phi_arm.at(loc),
@@ -629,7 +750,7 @@ bool fba::Hardware::loc_position_xy(
 
     bool failed = move_positioner_xy(
         shptheta, shpphi,
-        loc_pos_xy_mm.at(loc),
+        loc_pos_curved_mm.at(loc),
         xy,
         loc_theta_arm.at(loc),
         loc_phi_arm.at(loc),
@@ -655,7 +776,7 @@ bool fba::Hardware::loc_position_thetaphi(
 
     bool failed = move_positioner_thetaphi(
         shptheta, shpphi,
-        loc_pos_xy_mm.at(loc),
+        loc_pos_curved_mm.at(loc),
         theta, phi,
         loc_theta_arm.at(loc),
         loc_phi_arm.at(loc),
