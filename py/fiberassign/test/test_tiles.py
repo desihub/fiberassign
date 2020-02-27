@@ -15,6 +15,7 @@ from .simulate import test_subdir_create, sim_tiles
 from astropy.table import Table
 from astropy.time import Time
 
+
 class TestTiles(unittest.TestCase):
 
     def setUp(self):

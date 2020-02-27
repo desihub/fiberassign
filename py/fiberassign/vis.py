@@ -93,6 +93,7 @@ def plot_positioner(ax, patrol_rad, loc, center, shptheta, shpphi, color="k",
             ax.plot(xpts, ypts, linewidth=linewidth, color=color)
     fontpix = armwidth * 2
     fontpt = int(0.25 * fontpix)
+    fontpt = 2.0
     xtxt = center[0] - 2 * armwidth * cosarm
     ytxt = center[1] - 2 * armwidth * sinarm
     ax.text(xtxt, ytxt, "{}".format(loc),
@@ -130,7 +131,7 @@ def plot_positioner_simple(ax, patrol_rad, loc, center, theta_ang, theta_arm,
     ax.plot([theta_x, phi_x], [theta_y, phi_y], color=color,
             linewidth=linewidth)
 
-    fontpt = 0.125
+    fontpt = 2.0
     xtxt = center[0]
     ytxt = center[1] + 0.5
     ax.text(xtxt, ytxt, "{}".format(loc),

@@ -19,58 +19,6 @@ namespace fiberassign {
 
 #include <_version.h>
 
-// Some helpful typedefs used when we want to access elements
-// of a vector in some order sorted by a weight (both ascending
-// and descending).
-
-typedef std::pair <double, size_t> weight_index;
-
-struct weight_compare {
-    // Define this method here so that it is inline.
-    bool operator() (weight_index const & lhs,
-                     weight_index const & rhs) const {
-        if (lhs.first == rhs.first) {
-            return lhs.second < rhs.second;
-        } else {
-            return lhs.first > rhs.first;
-        }
-    }
-};
-
-struct weight_rcompare {
-    // Define this method here so that it is inline.
-    bool operator() (weight_index const & lhs,
-                     weight_index const & rhs) const {
-        if (lhs.first == rhs.first) {
-            return lhs.second > rhs.second;
-        } else {
-            return lhs.first < rhs.first;
-        }
-    }
-};
-
-typedef std::pair <int32_t, int32_t> fiber_loc;
-
-struct fiber_loc_compare {
-    bool operator() (fiber_loc const & lhs,
-                     fiber_loc const & rhs) const {
-        return lhs.first < rhs.first;
-    }
-};
-
-typedef std::pair <int32_t, int32_t> tile_loc;
-
-struct tile_loc_compare {
-    bool operator() (tile_loc const & lhs,
-                     tile_loc const & rhs) const {
-        if (lhs.first == rhs.first) {
-            return lhs.second < rhs.second;
-        } else {
-            return lhs.first < rhs.first;
-        }
-    }
-};
-
 // These helpers are used by the header-only HTM tree and KD tree classes,
 // and we don't want to modify that code for now.
 

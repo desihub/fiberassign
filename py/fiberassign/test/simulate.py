@@ -137,10 +137,10 @@ def sim_tiles(path, selectfile=None):
 
 
 def sim_targets(path, tgtype, tgoffset, density=5000.0, science_frac=None):
-    ramin = 148.0
-    ramax = 152.0
-    decmin = 29.0
-    decmax = 33.0
+    ramin = 147.0
+    ramax = 153.0
+    decmin = 28.0
+    decmax = 34.0
     target_cols = OrderedDict([
         ("TARGETID", "i8"),
         ("RA", "f8"),

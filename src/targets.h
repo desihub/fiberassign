@@ -74,6 +74,8 @@ class Target {
         bool is_safe() const;
         bool is_type(uint8_t t) const;
 
+        double total_priority() const;
+
 };
 
 
@@ -190,6 +192,39 @@ class LocationsAvailable : public std::enable_shared_from_this <LocationsAvailab
 
         std::map < int64_t, std::vector < std::pair <int32_t, int32_t> > > data;
 
+};
+
+
+// Helper functions for sorting targets based on total priority.
+
+typedef std::pair <int64_t, double> target_weight;
+
+struct target_weight_compare {
+    // Define this method here so that it is inline.
+    bool operator() (target_weight const & lhs,
+                     target_weight const & rhs) const {
+        return lhs.second > rhs.second;
+    }
+};
+
+struct target_weight_rcompare {
+    // Define this method here so that it is inline.
+    bool operator() (target_weight const & lhs,
+                     target_weight const & rhs) const {
+        return lhs.second < rhs.second;
+    }
+};
+
+// Helper functions for sorting tile / location pairs
+
+typedef std::pair <int32_t, int32_t> tile_loc;
+
+struct tile_loc_compare {
+    // Define this method here so that it is inline.
+    bool operator() (tile_loc const & lhs,
+                     tile_loc const & rhs) const {
+        return lhs.second > rhs.second;
+    }
 };
 
 
