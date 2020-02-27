@@ -23,7 +23,6 @@ jobs:
             - g++-4.9
       env:
         - COMPILERS="export CC=$(which gcc-4.9) && export CXX=$(which g++-4.9)"
-        - PIP_BINARY="pyyaml scipy matplotlib==2.1.2 numpy astropy==2 sphinx"
     # GCC 5 - default version for ubuntu 16.04 LTS
     - os: linux
       dist: xenial
@@ -38,7 +37,6 @@ jobs:
             - g++-5
       env:
         - COMPILERS="export CC=$(which gcc-5) && export CXX=$(which g++-5)"
-        - PIP_BINARY="pyyaml scipy matplotlib==2.1.2 numpy astropy==2 sphinx"
     # GCC 7 - default version for ubuntu 18.04 LTS
     - os: linux
       dist: xenial
@@ -53,7 +51,6 @@ jobs:
             - g++-7
       env:
         - COMPILERS="export CC=$(which gcc-7) && export CXX=$(which g++-7)"
-        - PIP_BINARY="pyyaml scipy matplotlib==2.1.2 numpy astropy==2 sphinx"
     # GCC 9 - default version for ubuntu 19.10
     # Python 3.6
     - os: linux
@@ -69,7 +66,6 @@ jobs:
             - g++-9
       env:
         - COMPILERS="export CC=$(which gcc-9) && export CXX=$(which g++-9)"
-        - PIP_BINARY="pyyaml scipy matplotlib==2.1.2 numpy astropy==2 sphinx"
     # # Linux Latest everything:  gcc, python, pip packages
     # - os: linux
     #   dist: xenial
@@ -106,8 +102,10 @@ jobs:
 
 env:
   global:
+    # Binary packages to install with pip
+    - PIP_BINARY="pyyaml scipy matplotlib==2.1.2 numpy astropy==2 sphinx fitsio"
     # Packages to build from source with pip
-    - PIP_SOURCE="fitsio healpy"
+    - PIP_SOURCE="healpy"
     # DESI packages to install.
     - DESIUTIL_VERSION=master
     - DESIMODEL_VERSION=master
