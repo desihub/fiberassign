@@ -103,7 +103,7 @@ jobs:
 env:
   global:
     # Binary packages to install with pip
-    - PIP_BINARY="pyyaml scipy matplotlib==2.1.2 numpy astropy==2 sphinx fitsio"
+    - PIP_BINARY="pyyaml scipy matplotlib==2.1.2 numpy astropy==2 sphinx fitsio==1.0.5"
     # Packages to build from source with pip
     - PIP_SOURCE="healpy"
     # DESI packages to install.
