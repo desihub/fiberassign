@@ -263,6 +263,11 @@ def default_cmx_sciencemask():
     sciencemask |= cmx_mask["M33_QSO"].mask
     sciencemask |= cmx_mask["M33_M33cen"].mask
     sciencemask |= cmx_mask["M33_M33out"].mask
+    sciencemask |= cmx_mask["MINI_SV_LRG"].mask
+    sciencemask |= cmx_mask["MINI_SV_ELG"].mask
+    sciencemask |= cmx_mask["MINI_SV_QSO"].mask
+    sciencemask |= cmx_mask["MINI_SV_BGS_BRIGHT"].mask
+
 
     return sciencemask
 
