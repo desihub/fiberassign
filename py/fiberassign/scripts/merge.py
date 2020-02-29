@@ -83,6 +83,12 @@ def parse_merge(optlist=None):
                         help="Do not copy the raw fiberassign HDUs to the "
                              "merged output.")
 
+    parser.add_argument("--full_merge", required=False, default=False,
+                        action="store_true",
+                        help="copy the TARGETS, FASSIGN and FTARGETS "
+                             "HDUs to the merged output.")
+
+
     args = None
     if optlist is None:
         args = parser.parse_args()
@@ -96,6 +102,7 @@ def parse_merge(optlist=None):
 
 
 def run_merge_init(args, comm=None):
+    
     """Initialize merging inputs.
 
     This uses the previously parsed options to load the input files needed.
@@ -145,11 +152,12 @@ def run_merge(args):
         None
 
     """
+
     tiles, columns = run_merge_init(args)
     merge_results(args.targets, args.sky, tiles, result_dir=args.dir,
                   result_prefix=args.prefix, result_split_dir=args.split,
                   out_dir=args.out, out_prefix=args.out_prefix,
-                  out_split_dir=args.out_split, columns=columns,
+                  out_split_dir=args.out_split, columns=columns, full_merge=args.full_merge,
                   copy_fba=(not args.skip_raw))
     return
 
@@ -177,6 +185,7 @@ def run_merge_mpi(args, comm):
         log.info("proc {} doing {} tiles".format(comm.rank, len(ptiles)))
         merge_results(args.targets, args.sky, ptiles, result_dir=args.dir,
                       result_prefix=args.prefix, out_dir=args.out,
-                      out_prefix=args.out_prefix, columns=columns,
+                      out_prefix=args.out_prefix, columns=columns,full_merge=args.full_merge,
                       copy_fba=(not args.skip_raw))
     return
+

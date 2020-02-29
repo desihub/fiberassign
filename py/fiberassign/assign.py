@@ -431,6 +431,7 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         # tm.report("  copy targets data tile {}".format(tile_id))
         # tm.clear()
         # tm.start()
+        
 
         fd.write(fdata, header=header, extname="FTARGETS")
         del fdata
@@ -710,6 +711,7 @@ def read_assignment_fits_tile(params):
         full_targets_columns = [(x, y) for x, y in
                                 results_targets_columns.items()]
         full_names = [x for x, y in results_targets_columns.items()]
+
         fbtargets = fd["TARGETS"].read()
         nrawtarget = fd["TARGETS"].get_nrows()
 
@@ -894,7 +896,8 @@ merged_potential_columns = OrderedDict([
 ])
 
 
-def merge_results_tile(out_dtype, copy_fba, params):
+def merge_results_tile(out_dtype, copy_fba, full_merge, params):
+     
     """Merge results for one tile.
 
     This uses target catalog data which has been pre-staged to shared memory.
@@ -906,6 +909,8 @@ def merge_results_tile(out_dtype, copy_fba, params):
             HDU.  This is the union of columns chosen from the input catalogs.
         copy_fba (bool):  If True, copy the original raw fiberassign HDUs onto
             the end of the output file.
+        full_merge (bool): if True, copy 4th, 6th and 7th HDUs onto the end of
+            the output file.
         params (tuple):  The tile ID and input / output files.  Set by
             multiprocessing call.
     Returns:
@@ -922,7 +927,7 @@ def merge_results_tile(out_dtype, copy_fba, params):
 
     inhead, fiber_data, targets_data, avail_data, gfa_targets = \
         read_assignment_fits_tile((tile_id, infile))
-
+   
     # tm.stop()
     # tm.report("  read input data {}".format(tile_id))
     # tm.clear()
@@ -1173,7 +1178,10 @@ def merge_results_tile(out_dtype, copy_fba, params):
         else:
             newnames.append(nm)
     tile_targets.dtype.names = newnames
-    fd.write(tile_targets, header=inhead, extname="TARGETS")
+
+    if full_merge:
+
+        fd.write(tile_targets, header=inhead, extname="TARGETS")
     del tile_targets
 
     # Write the "POTENTIAL_ASSIGNMENTS" HDU
@@ -1189,10 +1197,14 @@ def merge_results_tile(out_dtype, copy_fba, params):
     fd.write(potential, header=inhead, extname="POTENTIAL_ASSIGNMENTS")
 
     # Now copy the original HDUs
-    if copy_fba:
+    if copy_fba and full_merge:
         fd.write(fiber_data, header=inhead, extname="FASSIGN")
         fd.write(targets_data, header=inhead, extname="FTARGETS")
         fd.write(avail_data, header=inhead, extname="FAVAIL")
+    
+    if copy_fba and not full_merge:
+        fd.write(avail_data, header=inhead, extname="FAVAIL")
+
 
     # Close the file
     fd.close()
@@ -1214,7 +1226,8 @@ def merge_results_tile(out_dtype, copy_fba, params):
 def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
                   result_prefix="fba-", result_split_dir=False,
                   out_dir=None, out_prefix="fiberassign-", out_split_dir=False,
-                  columns=None, copy_fba=True):
+                  columns=None, copy_fba=True, full_merge=False):
+    
     """Merge target files and assignment output.
 
     Full target data is stored in shared memory and then multiple processes
@@ -1236,7 +1249,7 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
             target files (default is all).
         copy_fba (bool):  If True, propagate the original raw HDUs at the end
             of each merged output file.
-
+        full_merge (bool): If True, write TARGETS, FASSIGN and FTARGETS HDUs.
     Returns:
         None.
 
@@ -1349,7 +1362,7 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
     # For each tile, find the target IDs used.  Construct the output recarray
     # and copy data into place.
 
-    merge_tile = partial(merge_results_tile, out_dtype, copy_fba)
+    merge_tile = partial(merge_results_tile, out_dtype, copy_fba, full_merge)
 
     if out_dir is None:
         out_dir = result_dir
