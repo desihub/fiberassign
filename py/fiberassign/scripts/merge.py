@@ -80,8 +80,8 @@ def parse_merge(optlist=None):
 
     parser.add_argument("--skip_raw", required=False, default=False,
                         action="store_true",
-                        help="Do not copy the raw fiberassign HDUs to the "
-                             "merged output.")
+                        help="If true, do not copy the raw fiberassign HDUs"
+                            "to the merged output.")
 
     args = None
     if optlist is None:

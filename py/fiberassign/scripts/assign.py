@@ -436,7 +436,7 @@ def run_assign_bytile(args):
     del tree
 
     # Compute the fibers on all tiles available for each target and sky
-    favail = FibersAvailable(tgsavail)
+    favail = LocationsAvailable(tgsavail)
 
     # Create assignment object
     asgn = Assignment(tgs, tgsavail, favail)
