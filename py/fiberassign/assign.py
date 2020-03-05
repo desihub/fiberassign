@@ -1126,6 +1126,18 @@ def merge_results_tile(out_dtype, copy_fba, params):
     # tm.clear()
     # tm.start()
 
+    cols_to_keep = list()
+    for c in outdata.dtype.names:
+        if len(outdata[c].shape) < 2: #Don't propagate 2D target columns into FIBERASSIGN HDU
+            cols_to_keep.append(c)
+    outdata = outdata[cols_to_keep]
+    
+    cols_to_keep = list()
+    for c in tile_targets.dtype.names:
+        if len(tile_targets[c].shape) < 2: #Don't propagate 2D target columns into TARGETS HDU
+            cols_to_keep.append(c)
+    tile_targets = tile_targets[cols_to_keep]
+    
     # Create the file
     if os.path.isfile(outfile):
         os.remove(outfile)
