@@ -7,8 +7,10 @@ fiberassign change log
 ------------------
 
 * Change targets to correctly look up desi and secondary mask (PR `#250`_).
-
+* Avoid propagation of 2D target columns into FIBERASSIGN and TARGETS HDU (PR `#255`_)
+  
 .. _`#250`: https://github.com/desihub/fiberassign/pull/235
+.. _`#255`: https://github.com/desihub/fiberassign/pull/255
 
 1.3.0 (2019-12-20)
 ------------------
