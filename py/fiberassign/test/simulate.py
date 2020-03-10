@@ -40,6 +40,19 @@ def test_subdir_create(name):
     return test_dir
 
 
+def sim_science_fractions():
+    """
+    Elements of the tuple are (priority, numobs, fraction, desitarget_type).
+    The fractions should add up to 1.0...
+    """
+    return [
+        (3000, 1, 0.200, "ELG"),
+        (3200, 1, 0.100, "LRG"),
+        (3400, 1, 0.500, "QSO"),
+        (3400, 3, 0.200, "QSO")
+    ]
+
+
 def sim_focalplane(runtime=None, fakepos=False):
     if runtime is None:
         runtime = datetime.utcnow()
@@ -95,15 +108,11 @@ def sim_tiles(path, selectfile=None):
         ("OBSCONDITIONS", "i4")
     ])
     # ntile = 7
-    ntile = 2
+    ntile = 3
     fdata = np.zeros(ntile, dtype=tile_dtype)
-    fdata[0] = (11108, 150.87, 31.23, 1, "DARK", 1)
-    fdata[1] = (1165, 150.69, 33.86, 1, "DARK", 1)
-    # fdata[2] = (18465, 150.47, 33.20, 1, "DARK", 1)
-    # fdata[3] = (6927, 151.78, 33.84, 1, "DARK", 1)
-    # fdata[4] = (24227, 151.56, 33.18, 2, "DARK", 1)
-    # fdata[5] = (16870, 151.96, 31.21, 1, "DARK", 1)
-    # fdata[6] = (28408, 150.73, 30.52, 2, "DARK", 1)
+    fdata[0] = (1234, 150.0, 31.0, 1, "DARK", 1)
+    fdata[1] = (1235, 150.2, 31.0, 1, "DARK", 1)
+    fdata[2] = (1236, 150.1, 31.2, 1, "DARK", 1)
 
     if os.path.isfile(path):
         os.remove(path)
@@ -127,11 +136,11 @@ def sim_tiles(path, selectfile=None):
     return
 
 
-def sim_targets(path, tgtype, tgoffset, density=5000.0):
+def sim_targets(path, tgtype, tgoffset, density=5000.0, science_frac=None):
     ramin = 148.0
-    ramax = 154.0
-    decmin = 28.0
-    decmax = 37.0
+    ramax = 152.0
+    decmin = 29.0
+    decmax = 33.0
     target_cols = OrderedDict([
         ("TARGETID", "i8"),
         ("RA", "f8"),
@@ -164,17 +173,11 @@ def sim_targets(path, tgtype, tgoffset, density=5000.0):
     fdata["RA"] = np.random.uniform(low=ramin, high=ramax, size=ntarget)
     fdata["DEC"] = np.random.uniform(low=decmin, high=decmax, size=ntarget)
     fdata["OBSCONDITIONS"] = np.ones(ntarget, dtype=np.int32)
-    fdata["NUMOBS_MORE"] = 5 * np.ones(ntarget, dtype=np.int32)
     fdata["SUBPRIORITY"] = np.random.uniform(low=0.0, high=1.0, size=ntarget)
 
     sky_mask = desi_mask["SKY"].mask
     suppsky_mask = desi_mask["SUPP_SKY"].mask
     std_mask = desi_mask["STD_BRIGHT"].mask
-    # We could be fancier and set the DESI_TARGET bits for science targets
-    # to exactly match the priority class.  For now we just set a single
-    # bit that will all the fiberassign code to determine which targets are
-    # science targets.
-    sci_mask = desi_mask["ELG"].mask
 
     if tgtype == TARGET_TYPE_SKY:
         fdata["PRIORITY"] = np.zeros(ntarget, dtype=np.int32)
@@ -186,25 +189,22 @@ def sim_targets(path, tgtype, tgoffset, density=5000.0):
         fdata["PRIORITY"] = np.zeros(ntarget, dtype=np.int32)
         fdata["DESI_TARGET"] |= suppsky_mask
     else:
-        fdata["DESI_TARGET"] |= sci_mask
         # These are the fractions of each target type:
-        dist = {
-            1600: 0.001,
-            2000: 0.160,
-            2100: 0.190,
-            2998: 0.001,
-            3000: 0.440,
-            3200: 0.090,
-            3400: 0.118
-        }
-        ndist = {x: int(y*ntarget) for x, y in dist.items()}
-        ntot = np.sum([y for x, y in ndist.items()])
+        dist = science_frac
+        if dist is None:
+            dist = sim_science_fractions()
+        ntot = 0
+        for priority, numobs, frac, tgbits in dist:
+            ntg = int(frac * ntarget)
+            fdata["PRIORITY"][ntot:ntot+ntg] = priority
+            fdata["NUMOBS_MORE"][ntot:ntot+ntg] = numobs
+            fdata["DESI_TARGET"][ntot:ntot+ntg] = desi_mask[tgbits].mask
+            ntot += ntg
         if ntot < ntarget:
-            ndist[3400] += ntarget - ntot
-        priority = np.concatenate([(x * np.ones(y, dtype=np.int32))
-                                   for x, y in ndist.items()])
-        np.random.shuffle(priority)
-        fdata["PRIORITY"] = priority
+            # Add extra targets of the final type to make up the difference
+            fdata["PRIORITY"][ntot:ntarget] = dist[-1][0]
+            fdata["NUMOBS_MORE"][ntot:ntarget] = dist[-1][1]
+            fdata["DESI_TARGET"][ntot:ntarget] = desi_mask[dist[-1][3]].mask
 
     if os.path.isfile(path):
         os.remove(path)

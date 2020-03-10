@@ -235,6 +235,7 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
             if failed:
                 msg = "Positioner at location {} cannot move to target {} at (x, y) = ({}, {}).  This should have been dected during assignment!".format(lid, tgid, targetprops[tgid]["xy"][0], targetprops[tgid]["xy"][1])
                 log.warning(msg)
+                raise RuntimeError(msg)
                 is_assigned = False
                 failed = False
             else:
@@ -353,9 +354,9 @@ def plot_assignment_tile_file(locs, real_shapes, params):
     return
 
 
-def plot_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign_",
+def plot_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign-",
                result_split_dir=False, plot_dir=".",
-               plot_prefix="fiberassign_",
+               plot_prefix="fiberassign-",
                plot_split_dir=False, petals=None, real_shapes=False,
                serial=False):
     """Plot assignment output.
