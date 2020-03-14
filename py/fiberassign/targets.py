@@ -251,6 +251,13 @@ def default_cmx_sciencemask():
     sciencemask |= cmx_mask["ORI_QSO"].mask
     sciencemask |= cmx_mask["ORI_ORI"].mask
     sciencemask |= cmx_mask["ORI_HA"].mask
+    # NEW bits for SV0- March 2020- desitarget 0.37.0
+    sciencemask |= cmx_mask["SV0_QSO_Z5"].mask
+    sciencemask |= cmx_mask["SV0_MWS_CLUSTER"].mask
+    sciencemask |= cmx_mask["SV0_MWS_CLUSTER_VERYBRIGHT"].mask
+
+
+
     sciencemask |= cmx_mask["ROS_STD_BRIGHT"].mask
     sciencemask |= cmx_mask["ROS_QSO"].mask
     sciencemask |= cmx_mask["ROS_ROSM17"].mask
