@@ -232,7 +232,7 @@ outputs::
     ${targetdir}/sky.fits --dir out_ref_19.10
 
 Debugging example based on small reference run
----------------------------------------------
+----------------------------------------------
 
  Examining the output from the above, in tile 001149, in petal 6 (at about 10 o'clock, near the periphery of the petal, close to the GFA), we find that location 6525 has a green positioner, meaning that this is both a science target and a standards target.  How did this assignment come about?  We can learn this by running again, but with:
 

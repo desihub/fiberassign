@@ -3,14 +3,27 @@
 fiberassign change log
 ======================
 
-1.3.1 (unreleased)
+1.3.2 (unreleased)
+------------------
+
+* No changes yet
+
+1.3.1 (2020-03-13)
 ------------------
 
 * Change targets to correctly look up desi and secondary mask (PR `#250`_).
+* Add minisv2 bits (PR `#252`_).
+* Extended QA (PR `#253`_).
 * Avoid propagation of 2D target columns into FIBERASSIGN and TARGETS HDU (PR `#255`_)
+* Increase target realism in unit tests (PR `#256`_)
+* New SV0 science target bits from desitarget/0.37.0 (PR `#257`_)
   
-.. _`#250`: https://github.com/desihub/fiberassign/pull/235
+.. _`#250`: https://github.com/desihub/fiberassign/pull/250
+.. _`#252`: https://github.com/desihub/fiberassign/pull/252
+.. _`#253`: https://github.com/desihub/fiberassign/pull/253
 .. _`#255`: https://github.com/desihub/fiberassign/pull/255
+.. _`#256`: https://github.com/desihub/fiberassign/pull/256
+.. _`#257`: https://github.com/desihub/fiberassign/pull/257
 
 1.3.0 (2019-12-20)
 ------------------
