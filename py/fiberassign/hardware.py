@@ -65,7 +65,12 @@ def load_hardware(focalplane=None, rundate=None):
     # default platescale data is on a one mm grid spacing.  We also do the same
     # interpolation of the arclength S(R).
 
-    fine_radius = np.linspace(0.0, 420.0, num=8400, dtype=np.float64)
+    fine_radius = np.linspace(
+        platescale["radius"][0],
+        platescale["radius"][-1],
+        num=10000,
+        dtype=np.float64
+    )
     fn = interp1d(platescale["radius"], platescale["theta"], kind="quadratic")
     fine_theta = fn(fine_radius).astype(np.float64)
     fn = interp1d(platescale["radius"], platescale["arclength"], kind="quadratic")
