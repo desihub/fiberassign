@@ -7,8 +7,10 @@ fiberassign change log
 ------------------
 
 * Change assignment algorithm to be based on target order (PR `#258`_).
+* Fix radial platescale interpolation to work with latest desimodel (PR `#259`_).
 
 .. _`#258`: https://github.com/desihub/fiberassign/pull/258
+.. _`#259`: https://github.com/desihub/fiberassign/pull/259
 
 1.3.1 (2020-03-13)
 ------------------
