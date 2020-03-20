@@ -3,10 +3,16 @@
 fiberassign change log
 ======================
 
-1.3.2 (unreleased)
+1.4.0 (unreleased)
 ------------------
 
-* Change assignment algorithm to be based on target order (PR `#258`_).
+* No changes yet.
+
+1.4.0 (2020-03-19)
+------------------
+
+* Change assignment algorithm to be based on target order instead of
+  fiber order (PR `#258`_).
 * Fix radial platescale interpolation to work with latest desimodel (PR `#259`_).
 
 .. _`#258`: https://github.com/desihub/fiberassign/pull/258
