@@ -55,7 +55,7 @@ class TestAssign(unittest.TestCase):
     def setUp(self):
         self.density_science = 5000
         self.density_standards = 5000
-        self.density_sky = 10
+        self.density_sky = 100
         self.density_suppsky = 5000
         pass
 
@@ -384,8 +384,9 @@ class TestAssign(unittest.TestCase):
         write_assignment_fits(tiles, asgn, out_dir=test_dir, all_targets=True)
 
         plotpetals = [0]
-        # plotpetals = None
+        #plotpetals = None
         plot_tiles(hw, tiles, result_dir=test_dir, plot_dir=test_dir,
+                   result_prefix="fba-",
                    real_shapes=True, petals=plotpetals, serial=True)
 
         qa_tiles(hw, tiles, result_dir=test_dir)
@@ -395,11 +396,11 @@ class TestAssign(unittest.TestCase):
             qadata = json.load(f)
 
         for tile, props in qadata.items():
-            self.assertTrue(props["assign_science"] > 4485)
+            self.assertTrue(props["assign_science"] >= 4485)
             self.assertEqual(100, props["assign_std"])
-            self.assertEqual(400, (
-                props["assign_sky"] + props["assign_suppsky"]
-            ))
+            self.assertTrue(
+                (props["assign_sky"] + props["assign_suppsky"]) >= 400
+            )
 
         plot_qa(qadata, os.path.join(test_dir, "qa"), outformat="pdf",
                 labels=True)
@@ -486,11 +487,11 @@ class TestAssign(unittest.TestCase):
             qadata = json.load(f)
 
         for tile, props in qadata.items():
-            self.assertTrue(props["assign_science"] > 4490)
+            self.assertTrue(props["assign_science"] >= 4490)
             self.assertEqual(100, props["assign_std"])
-            self.assertEqual(400, (
-                props["assign_sky"] + props["assign_suppsky"]
-            ))
+            self.assertTrue(
+                (props["assign_sky"] + props["assign_suppsky"]) >= 400
+            )
         return
 
     def test_fieldrot(self):

@@ -6,7 +6,11 @@ fiberassign change log
 1.3.2 (unreleased)
 ------------------
 
-* No changes yet
+* Change assignment algorithm to be based on target order (PR `#258`_).
+* Fix radial platescale interpolation to work with latest desimodel (PR `#259`_).
+
+.. _`#258`: https://github.com/desihub/fiberassign/pull/258
+.. _`#259`: https://github.com/desihub/fiberassign/pull/259
 
 1.3.1 (2020-03-13)
 ------------------
@@ -17,7 +21,7 @@ fiberassign change log
 * Avoid propagation of 2D target columns into FIBERASSIGN and TARGETS HDU (PR `#255`_)
 * Increase target realism in unit tests (PR `#256`_)
 * New SV0 science target bits from desitarget/0.37.0 (PR `#257`_)
-  
+
 .. _`#250`: https://github.com/desihub/fiberassign/pull/250
 .. _`#252`: https://github.com/desihub/fiberassign/pull/252
 .. _`#253`: https://github.com/desihub/fiberassign/pull/253

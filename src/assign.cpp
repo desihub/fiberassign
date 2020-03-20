@@ -36,16 +36,6 @@ fba::Assignment::Assignment(fba::Targets::pshr tgs,
     tiles_ = tgsavail_->tiles();
     hw_ = tgsavail_->hardware();
 
-    // This structure is only used in order to reproduce the previous
-    // erroneous behavior of looping in fiber ID order.
-    auto loc = hw_->device_locations("POS");
-    auto loc_fiber = hw_->loc_fiber;
-    for (auto const & lid : loc) {
-        fiber_and_loc.push_back(std::make_pair(loc_fiber[lid], lid));
-    }
-    fba::fiber_loc_compare flcomp;
-    std::stable_sort(fiber_and_loc.begin(), fiber_and_loc.end(), flcomp);
-
     // Initialize assignment counts
 
     std::vector <uint8_t> tgtypes;
@@ -129,53 +119,111 @@ std::map <int32_t, int64_t> const & fba::Assignment::tile_location_target(int32_
 }
 
 
-void fba::Assignment::parse_tile_range(int32_t start_tile, int32_t stop_tile,
-                                       int32_t & tstart, int32_t & tstop) {
-    fba::Logger & logger = fba::Logger::get();
-    std::ostringstream logmsg;
+void fba::Assignment::tile_available(
+    int32_t tile_id,
+    uint8_t tgtype,
+    std::vector <int32_t> const & locs,
+    std::map <int32_t, std::vector <target_weight> > & tile_target_avail,
+    std::map <int64_t, std::vector <location_weight> > & tile_loc_avail,
+    std::vector <target_weight> & tile_target_weights
+) const {
+    // Reset output objects
+    tile_target_avail.clear();
+    tile_loc_avail.clear();
+    tile_target_weights.clear();
 
-    int32_t ntile = tiles_->id.size();
+    // positioner center locations in curved coordinates
+    auto const & loc_pos = hw_->loc_pos_curved_mm;
 
-    tstart = -1;
-    tstop = -1;
-    if (start_tile >= 0) {
-        for (int32_t t = 0; t < ntile; ++t) {
-            if (tiles_->id[t] == start_tile) {
-                tstart = t;
+    auto const & tile_loctg = tgsavail_->data.at(tile_id);
+    for (auto const & loc : locs) {
+        for (auto const & tgid : tile_loctg.at(loc)) {
+            auto const & tg = tgs_->data.at(tgid);
+            if ( ! tg.is_type(tgtype)) {
+                // This is not the correct target type.
+                continue;
             }
-        }
-    }
-    if (tstart < 0) {
-        // was not found
-        tstart = 0;
-        if (start_tile >= 0) {
-            logmsg.str("");
-            logmsg << "requested start tile " << start_tile
-                << " was not found in tile list.  Starting at tile "
-                << tiles_->id[tstart] << " instead";
-            logger.warning(logmsg.str().c_str());
-        }
-    }
-    if (stop_tile >= 0) {
-        for (int32_t t = 0; t < ntile; ++t) {
-            if (tiles_->id[t] == stop_tile) {
-                tstop = t;
+            if ((tgtype == TARGET_TYPE_SCIENCE) && (tg.obsremain <= 0)) {
+                // Done observing science observations for this target
+                continue;
             }
+            // distance from target to positioner
+            double dist = fbg::dist(
+                loc_pos.at(loc),
+                tile_target_xy.at(tile_id).at(tgid)
+            );
+            double tot_priority = tg.total_priority();
+            tile_loc_avail[tgid].push_back(std::make_pair(loc, dist));
+            tile_target_avail[loc].push_back(
+                std::make_pair(tgid, tot_priority)
+            );
+            tile_target_weights.push_back(
+                std::make_pair(tgid, tot_priority)
+            );
         }
     }
-    if (tstop < 0) {
-        // was not found
-        tstop = ntile - 1;
-        if (stop_tile >= 0) {
-            logmsg.str("");
-            logmsg << "requested stop tile " << stop_tile
-                << " was not found in tile list.  Stopping at tile "
-                << tiles_->id[tstop] << " instead";
-            logger.warning(logmsg.str().c_str());
-        }
+
+    // Sort available locations for each target by distance from shortest to longest
+    location_distance_compare loc_dist_comp;
+    for (auto & tgloc : tile_loc_avail) {
+        std::stable_sort(tgloc.second.begin(), tgloc.second.end(), loc_dist_comp);
+    }
+
+    // Sort available targets for each location by total priority
+    target_weight_compare tg_comp;
+    for (auto & loctg : tile_target_avail) {
+        std::stable_sort(loctg.second.begin(), loctg.second.end(), tg_comp);
     }
 
     return;
+}
+
+
+int32_t fba::Assignment::petal_count(
+    uint8_t tgtype,
+    int32_t tile,
+    int32_t petal
+) const {
+    int32_t ret = nassign_petal.at(tgtype).at(tile).at(petal);
+    // If assigning SUPP_SKY targets, also include the "regular"
+    // sky count on this petal and vice-versa.
+    if (tgtype == TARGET_TYPE_SUPPSKY) {
+        ret += nassign_petal.at(TARGET_TYPE_SKY).at(tile).at(petal);
+    }
+    if (tgtype == TARGET_TYPE_SKY) {
+        ret += nassign_petal.at(TARGET_TYPE_SUPPSKY).at(tile).at(petal);
+    }
+    return ret;
+}
+
+
+bool fba::Assignment::petal_count_max(
+    uint8_t tgtype,
+    int32_t max_per_petal,
+    int32_t tile,
+    int32_t petal
+) const {
+    // fba::Logger & logger = fba::Logger::get();
+    // std::ostringstream logmsg;
+    // bool extra_log = logger.extra_debug();
+
+    // Check petal count limits
+    int32_t cur_petal = petal_count(tgtype, tile, petal);
+
+    if (cur_petal >= max_per_petal) {
+        // Already have enough objects on this petal
+        // if (extra_log) {
+        //     logmsg.str("");
+        //     logmsg << "petal_count_max: tile " << tile
+        //         << ", petal " << petal << " has " << cur_petal
+        //         << " targets of type " << (int)tgtype
+        //         << " (>= " << max_per_petal << ")";
+        //     logger.debug_tfg(tile, -1, -1, logmsg.str().c_str());
+        // }
+        return true;
+    } else {
+        return false;
+    }
 }
 
 
@@ -195,10 +243,11 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
     std::string tgstr = fba::target_string(tgtype);
 
     // Select locations based on positioner type
-    auto loc = hw_->device_locations(pos_type);
+    auto device_locs = hw_->device_locations(pos_type);
+
     logmsg.str("");
     logmsg << "assign unused " << tgstr << ":  considering "
-        << loc.size()
+        << device_locs.size()
         << " locations of positioner type \"" << pos_type << "\"";
     logger.info(logmsg.str().c_str());
 
@@ -214,7 +263,16 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
     // Determine our range of tiles
     int32_t tstart;
     int32_t tstop;
-    parse_tile_range(start_tile, stop_tile, tstart, tstop);
+    if (start_tile < 0) {
+        tstart = 0;
+    } else {
+        tstart = tiles_->order.at(start_tile);
+    }
+    if (stop_tile < 0) {
+        tstop = tiles_->id.size() - 1;
+    } else {
+        tstop = tiles_->order.at(stop_tile);
+    }
 
     logmsg.str("");
     logmsg << "assign unused " << tgstr << ":  working on tiles "
@@ -222,36 +280,10 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
         << stop_tile << " (index " << tstop << ")";
     logger.info(logmsg.str().c_str());
 
-    auto const & tavail = tgsavail_->data;
-    auto const & tgsdata = tgs_->data;
-
-    fba::weight_compare loc_comp;
-
-    // FIXME:  these structures define the mapping between locations and
-    // "fake" fiber IDs that go above 5000 and include the ETC devices. This
-    // is here to preserve the previous behavior and should be ripped out
-    // as part of https://github.com/desihub/fiberassign/issues/183
-
-    std::map <int32_t, int32_t> fid_to_lid;
-    std::map <int32_t, int32_t> lid_to_fid;
-    int32_t fake = 0;
-    for (auto const & lid : hw_->locations) {
-        int32_t fid = hw_->loc_fiber[lid];
-        if (fid < 0) {
-            fid = 5000 + fake;
-            fake++;
-        }
-        fid_to_lid[fid] = lid;
-        lid_to_fid[lid] = fid;
-    }
-
-    // This container stores the position in focalplane
-    // coordinates of the available targets on a tile.
-    //std::map <int64_t, std::pair <double, double> > target_xy;
-
-    // This is the specific list of available targets for a single
-    // tile / location, after selecting by target type, etc.
-    std::vector <int64_t> targets_avail;
+    // Per-tile target availability objects (reset for each tile)
+    std::map <int32_t, std::vector <target_weight> > tile_target_avail;
+    std::map <int64_t, std::vector <location_weight> > tile_loc_avail;
+    std::vector <target_weight> tile_target_weights;
 
     for (int32_t t = tstart; t <= tstop; ++t) {
         int32_t tile_id = tiles_->id[t];
@@ -263,8 +295,8 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
             << " at RA/DEC = " << tile_ra << " / " << tile_dec;
         logger.debug(logmsg.str().c_str());
 
-        if ((tavail.count(tile_id) == 0)
-            || (tavail.at(tile_id).size() == 0)) {
+        if ((tgsavail_->data.count(tile_id) == 0)
+            || (tgsavail_->data.at(tile_id).size() == 0)) {
             // No targets available for the whole tile.
             if (extra_log) {
                 logmsg.str("");
@@ -276,222 +308,117 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
             continue;
         }
 
-        // Available targets for this tile.
-        auto const & tfavail = tavail.at(tile_id);
+        gtmname.str("");
+        gtmname << "unused " << tgstr << ": local tile availability";
+        gtm.start(gtmname.str());
+
+        // Compute the locations which are currently unassigned.
+
+        std::vector <int32_t> loc_unassigned;
+        for (auto const & loc : device_locs) {
+            if ((loc_target[tile_id].count(loc) == 0) ||
+                (loc_target[tile_id].at(loc) < 0)) {
+                loc_unassigned.push_back(loc);
+            }
+        }
+
+        logmsg.str("");
+        logmsg << "assign unused " << tgstr << ": tile " << tile_id
+            << " considering " << loc_unassigned.size() << " unassigned locations";
+        logger.debug(logmsg.str().c_str());
+
+        // Available targets for this tile.  We copy this per-tile data so that
+        // we can manipulate it and avoid searching over locations that have already
+        // been assigned.
+
+        tile_available(
+            tile_id,
+            tgtype,
+            loc_unassigned,
+            tile_target_avail,
+            tile_loc_avail,
+            tile_target_weights
+        );
+
+        // Sort targets by total priority from highest to lowest.
+
+        target_weight_compare tg_compare;
+        std::stable_sort(
+            tile_target_weights.begin(),
+            tile_target_weights.end(),
+            tg_compare
+        );
+
+        logmsg.str("");
+        logmsg << "assign unused " << tgstr << ": tile " << tile_id << " has "
+            << tile_target_weights.size() << " available targets for these locs";
+        logger.debug(logmsg.str().c_str());
+
+        gtm.stop(gtmname.str());
+
+        // Reference to projected target X/Y locations for this tile.
         auto const & target_xy = tile_target_xy.at(tile_id);
 
-        // The order in which the locations should be assigned, based
-        // on the maximum priority of each location's available targets of the
-        // specified type.
-        std::vector <weight_index> loc_priority;
-        std::vector <weight_index> f_priority;
+        // Locations available to a single target, declared here and reused to avoid
+        // repeated memory allocation.
+        std::vector <int32_t> loc_avail;
 
-        gtmname.str("");
-        gtmname << "unused " << tgstr << ": location order";
-        gtm.start(gtmname.str());
+        // Assign targets in priority order to available positioners.
 
-        for (auto const & lid : loc) {
-            if (tfavail.count(lid) == 0) {
-                // No targets available for this location
-                continue;
+        int32_t nsuccess = 0;
+
+        for (auto const & tgwit : tile_target_weights) {
+            // This target ID
+            auto const & tgid = tgwit.first;
+            // This weight
+            auto const & tgweight = tgwit.second;
+
+            // Look at available locations.  These are already sorted from
+            // closest to furthest.
+            loc_avail.clear();
+            for (auto const & locwt : tile_loc_avail.at(tgid)) {
+                if ((loc_target[tile_id].count(locwt.first) > 0) &&
+                    (loc_target[tile_id].at(locwt.first) >= 0)) {
+                    // Already assigned
+                    continue;
+                }
+                loc_avail.push_back(locwt.first);
             }
-            // Targets available for this location.  These are already
-            // sorted by priority + subpriority.
-            auto const & avail = tfavail.at(lid);
 
-            if (avail.size() == 0) {
-                // No targets available for this location.
-                continue;
-            }
+            // For each available location from closest to furthest...
+            for (auto const & loc : loc_avail) {
+                // The petal of this location
+                int32_t p = hw_->loc_petal.at(loc);
 
-            // The list of available targets is already sorted by
-            // total priority.  Just grab the first target that is the
-            // correct type and has remaining observations.
-            for (auto const & tgid : avail) {
-                // Reference to the Target object with this ID
-                auto const & tg = tgsdata.at(tgid);
-
-                if ( ! tg.is_type(tgtype)) {
-                    // This is not the correct target type.
+                // Check petal count limits
+                if (petal_count_max(tgtype, max_per_petal, tile_id, p)) {
                     continue;
                 }
 
-                if ((tgtype == TARGET_TYPE_SCIENCE) && (tg.obsremain <= 0)) {
-                    // Done observing science observations for this target
-                    continue;
-                }
-
-                double totpriority = static_cast <double> (tg.priority)
-                    + tg.subpriority;
-
-                f_priority.push_back(
-                    std::make_pair(totpriority, lid_to_fid.at(lid)));
-                //loc_priority.push_back(std::make_pair(totpriority, lid));
-                break;
-            }
-        }
-
-        std::stable_sort(f_priority.begin(), f_priority.end(),
-                         loc_comp);
-        for (auto const & fpr : f_priority) {
-            loc_priority.push_back(
-                std::make_pair(fpr.first, fid_to_lid.at(fpr.second)));
-        }
-        // std::stable_sort(loc_priority.begin(), loc_priority.end(),
-        //                  loc_comp);
-        gtm.stop(gtmname.str());
-
-        gtmname.str("");
-        gtmname << "unused " << tgstr << ": assign locations";
-        gtm.start(gtmname.str());
-
-        for (auto const & fpr : loc_priority) {
-            // The location.
-            int32_t lid = fpr.second;
-            int32_t fid = lid_to_fid.at(lid);
-            // The petal
-            int32_t p = hw_->loc_petal[lid];
-
-            // Special handling of supplemental sky targets.  When
-            // enforcing per-petal limits on assignment counts of SUPP_SKY,
-            // we want to include the current assignment counts of regular
-            // SKY targets as well.
-            int32_t cur_petal = nassign_petal[tgtype][tile_id][p];
-            if (tgtype == TARGET_TYPE_SUPPSKY) {
-                cur_petal += nassign_petal[TARGET_TYPE_SKY][tile_id][p];
-            }
-
-            if (cur_petal >= max_per_petal) {
-                // Already have enough objects on this petal
-                if (extra_log) {
-                    logmsg.str("");
-                    logmsg << "assign unused " << tgstr << ": tile " << tile_id
-                        << ", petal " << p << " location " << lid
-                        << " (fiber " << fid << ")" << " has "
-                        << cur_petal
-                        << " (>= " << max_per_petal << ")";
-                    logger.debug_tfg(tile_id, lid, -1, logmsg.str().c_str());
-                }
-                continue;
-            }
-
-            if (loc_target[tile_id].count(lid) > 0) {
-                // Fiber is currently assigned, skip it.
-                if (extra_log) {
-                    logmsg.str("");
-                    logmsg << "assign unused " << tgstr << ": tile " << tile_id
-                        << ", petal " << p << " location " << lid
-                        << " (fiber " << fid << ")"
-                        << " is already assigned";
-                    logger.debug_tfg(tile_id, lid, -1, logmsg.str().c_str());
-                }
-                continue;
-            }
-
-            // Examine available targets for this location.  These are already
-            // sorted in priority / subpriority order.  Attempt to assign
-            // any standards we can.
-
-            if (tfavail.count(lid) == 0) {
-                // No targets available for this location
-                if (extra_log) {
-                    logmsg.str("");
-                    logmsg << "assign unused " << tgstr << ": tile " << tile_id
-                        << ", petal " << p << " location " << lid
-                        << " (fiber " << fid << ")"
-                        << " has no available targets";
-                    logger.debug_tfg(tile_id, lid, -1, logmsg.str().c_str());
-                }
-                continue;
-            }
-
-            // All targets available for this location.
-            auto const & avail = tfavail.at(lid);
-
-            if (avail.size() == 0) {
-                // No targets available for this location.
-                if (extra_log) {
-                    logmsg.str("");
-                    logmsg << "assign unused " << tgstr << ": tile " << tile_id
-                        << ", petal " << p << " location " << lid
-                        << " (fiber " << fid << ")"
-                        << " has no available targets";
-                    logger.debug_tfg(tile_id, lid, -1, logmsg.str().c_str());
-                }
-                continue;
-            }
-
-            // Find available targets of the desired type
-
-            targets_avail.clear();
-            for (auto const & tgid : avail) {
-                if (tgsdata.count(tgid) == 0) {
-                    std::cerr << "available target " << tgid << " does not exist in target list!" << std::endl;
-                    throw std::runtime_error("missing target");
-                }
-                // Reference to the Target object with this ID
-                auto const & tg = tgsdata.at(tgid);
-                if ( ! tg.is_type(tgtype)) {
-                    // This is not the desired type
+                // Can we assign this location to the target?
+                if (ok_to_assign(hw_.get(), tile_id, loc, tgid, target_xy)) {
+                    // Yes, assign it
+                    assign_tileloc(
+                        hw_.get(), tgs_.get(), tile_id, loc, tgid, tgtype
+                    );
+                    nsuccess++;
+                } else {
+                    // There must be a collision or some other problem.
                     if (extra_log) {
                         logmsg.str("");
-                        logmsg << "assign unused " << tgstr << ": tile " << tile_id
-                            << ", petal " << p << " location " << lid
-                            << " (fiber " << fid << ")"
-                            << " available target " << tgid
-                            << " is wrong type (" << (int)tg.type << ")";
-                        logger.debug_tfg(tile_id, lid, tgid,
-                                         logmsg.str().c_str());
+                        logmsg << "assign unused " << tgstr
+                            << ": target " << tgid << ", weight = " << tgweight
+                            << ": tile " << tile_id << ", loc " << loc
+                            << " NOT ok to assign";
+                        logger.debug_tfg(tile_id, loc, tgid, logmsg.str().c_str());
                     }
-                    continue;
-                }
-                if (extra_log) {
-                    logmsg.str("");
-                    logmsg << "assign unused " << tgstr << ": tile " << tile_id
-                        << ", petal " << p << " location " << lid
-                        << " (fiber " << fid << ")"
-                        << " available target " << tgid
-                        << ", priority " << tg.priority << ", subpriority "
-                        << tg.subpriority;
-                    logger.debug_tfg(tile_id, lid, tgid,
-                                     logmsg.str().c_str());
-                }
-                targets_avail.push_back(tgid);
-            }
-
-            // Assign the best object that is not already assigned.
-
-            if (targets_avail.size() > 0) {
-                int64_t target = find_best(hw_.get(), tgs_.get(), tile_id,
-                                           lid, tgtype, target_xy, targets_avail);
-                if (target >= 0) {
-                    if (extra_log) {
-                        logmsg.str("");
-                        logmsg << "assign unused " << tgstr << ": tile "
-                            << tile_id
-                            << ", petal " << p << " location " << lid
-                            << " (fiber " << fid << ")"
-                            << " found best object " << target;
-                        logger.debug_tfg(tile_id, lid, target,
-                                         logmsg.str().c_str());
-                    }
-                    assign_tileloc(hw_.get(), tgs_.get(), tile_id,
-                                     lid, target, tgtype);
-                }
-            } else {
-                if (extra_log) {
-                    logmsg.str("");
-                    logmsg << "assign unused " << tgstr << ": tile " << tile_id
-                        << ", petal " << p << " location " << lid
-                        << " (fiber " << fid << ")"
-                        << " no available targets of correct type";
-                    logger.debug_tfg(tile_id, lid, -1,
-                                     logmsg.str().c_str());
                 }
             }
         }
-
-        gtm.stop(gtmname.str());
+        logmsg.str("");
+        logmsg << "assign unused " << tgstr << ": tile " << tile_id
+            << " had " << nsuccess << " successful assignments";
+        logger.debug(logmsg.str().c_str());
     }
 
     gtmname.str("");
@@ -503,7 +430,7 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
         logmsg << "Assign " << tgstr << " targets to unused locations";
     } else {
         logmsg << "Assign up to " << max_per_petal << " " << tgstr
-            << " targets to unused locations";
+            << " targets per petal to unused locations";
     }
     tm.stop();
     tm.report(logmsg.str().c_str());
@@ -511,6 +438,17 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
     return;
 }
 
+
+// In the case where we have fewer or a comparable number of targets as tile / fibers
+// to assign, the early tiles will be dominated by the high priority targets and later
+// tiles will have the lower priority targets and may be sparsely populated.
+//
+// When bumping science targets to place sky and standards, this will result in some
+// science targets being bumped and left unassigned.  Instead, this function
+// pro-actively moves science targets to available future tile / fibers when the
+// future petal has fewer science assignments.  This will redistribute the science
+// targets more evenly so that placement of standards and sky will require less
+// bumping.
 
 void fba::Assignment::redistribute_science(int32_t start_tile,
                                            int32_t stop_tile) {
@@ -528,14 +466,22 @@ void fba::Assignment::redistribute_science(int32_t start_tile,
     gtmname << "redistribute science: total";
     gtm.start(gtmname.str());
 
-    // Select locations based on positioner type
-    // auto loc = hw_->device_locations("POS");
-    auto loc_fiber = hw_->loc_fiber;
+    // Select locations that are science positioners
+    auto device_locs = hw_->device_locations("POS");
 
     // Determine our range of tiles
     int32_t tstart;
     int32_t tstop;
-    parse_tile_range(start_tile, stop_tile, tstart, tstop);
+    if (start_tile < 0) {
+        tstart = 0;
+    } else {
+        tstart = tiles_->order.at(start_tile);
+    }
+    if (stop_tile < 0) {
+        tstop = tiles_->id.size() - 1;
+    } else {
+        tstop = tiles_->order.at(stop_tile);
+    }
 
     logmsg.str("");
     logmsg << "redist:  working on tiles "
@@ -543,165 +489,101 @@ void fba::Assignment::redistribute_science(int32_t start_tile,
         << stop_tile << " (index " << tstop << ")";
     logger.info(logmsg.str().c_str());
 
-    // This is going to be used to track whether a tile / loc combination has
-    // already been considered.
-    std::map <int32_t, std::map <int32_t, bool> > done;
     for (int32_t t = tstart; t <= tstop; ++t) {
         int32_t tile_id = tiles_->id[t];
-        done[tile_id].clear();
-    }
-
-    std::vector <int64_t> targets_avail;
-
-    for (int32_t t = tstart; t <= tstop; ++t) {
-        int32_t tile_id = tiles_->id[t];
-
-        if (nassign_tile[TARGET_TYPE_SCIENCE][tile_id] == 0) {
-            // Skip tiles that are fully unassigned, since this implies that the
-            // first pass of the assignment had no available targets to use.
-            continue;
-        }
+        double tile_ra = tiles_->ra[t];
+        double tile_dec = tiles_->dec[t];
 
         logmsg.str("");
         logmsg << "redist: working on tile " << tile_id
-            << " with " << nassign_tile[TARGET_TYPE_SCIENCE][tile_id]
-            << " science targets currently assigned";
+            << " at RA/DEC = " << tile_ra << " / " << tile_dec;
         logger.debug(logmsg.str().c_str());
 
-        auto const & tfavail = tgsavail_->data.at(tile_id);
-        auto const & target_xy = tile_target_xy.at(tile_id);
-
-        // FIXME:  This loop order should be changed to be based on target
-        // priority (see https://github.com/desihub/fiberassign/issues/179).
-        // Here we loop over FIBER ID rather than location to be consistent
-        // with the existing code prior to the fiber --> location swap
-        // throughout the code base.
-
-        for (auto const & flid : fiber_and_loc) {
-            auto fid = flid.first;
-            auto lid = flid.second;
-            if (loc_target[tile_id].count(lid) == 0) {
-                // This tile / location combination is unassigned.
-                if (extra_log) {
-                    logmsg.str("");
-                    logmsg << "redist: tile " << tile_id << ", location "
-                        << lid << " (fiber " << fid << ")"
-                        << " unassigned- skipping";
-                    logger.debug_tfg(tile_id, lid, -1, logmsg.str().c_str());
-                }
-                continue;
+        if (nassign_tile[TARGET_TYPE_SCIENCE][tile_id] == 0) {
+            // Skip tiles that are fully unassigned.
+            if (extra_log) {
+                logmsg.str("");
+                logmsg << "redist: tile " << tile_id
+                    << " at RA/DEC = " << tile_ra << ", " << tile_dec
+                    << ": no available targets";
+                logger.debug_tfg(tile_id, -1, -1, logmsg.str().c_str());
             }
+            continue;
+        }
 
-            if ((done[tile_id].count(lid) > 0) && done[tile_id].at(lid)) {
-                // Already considered or swapped this location.
-                if (extra_log) {
-                    logmsg.str("");
-                    logmsg << "redist: tile " << tile_id << ", location "
-                        << lid << " (fiber " << fid << ")"
-                        << " already considered- skipping";
-                    logger.debug_tfg(tile_id, lid, -1, logmsg.str().c_str());
+        // Compute the weighting of the assigned science targets.
+
+        std::vector <target_weight> science_targets;
+
+        for (auto const & loc : device_locs) {
+            if ((loc_target[tile_id].count(loc) > 0) &&
+                (loc_target[tile_id].at(loc) >= 0)) {
+                // We have something assigned here...
+                auto tgid = loc_target[tile_id].at(loc);
+                auto const & tg = tgs_->data.at(tgid);
+                if (tg.is_science() && (! tg.is_standard())) {
+                    // This is a science target and NOT a standard (we don't
+                    // try reassign dual targets)
+                    science_targets.push_back(
+                        std::make_pair(tgid, tg.total_priority())
+                    );
                 }
-                continue;
             }
+        }
 
-            // Get the current target.
-            int64_t tgid = loc_target[tile_id].at(lid);
-            auto const & tg = tgs_->data.at(tgid);
-            if ( ! tg.is_science()) {
-                // Only consider science targets.
+        // Sort the currently assigned science targets by inverse priority order.
+        target_weight_rcompare tg_inverse_comp;
+        std::stable_sort(
+            science_targets.begin(),
+            science_targets.end(),
+            tg_inverse_comp
+        );
+
+        for (auto const & tgwit : science_targets) {
+            // This current science target ID
+            auto const & tgid = tgwit.first;
+            // This weight
+            // auto const & tgweight = tgwit.second;
+
+            // Find the location where this is currently assigned
+            int32_t tgloc = target_loc.at(tgid).at(tile_id);
+
+            // Try to assign this science target to a future tile
+            int32_t new_tile;
+            int32_t new_loc;
+            reassign_science_target(
+                t + 1, tstop, tile_id, tgloc, tgid, false, new_tile, new_loc
+            );
+            if (new_tile != tile_id) {
+                // Some future tile has a better location.  Reassign.
+                unassign_tileloc(
+                    hw_.get(),
+                    tgs_.get(),
+                    tile_id,
+                    tgloc,
+                    TARGET_TYPE_SCIENCE
+                );
+                assign_tileloc(
+                    hw_.get(),
+                    tgs_.get(),
+                    new_tile,
+                    new_loc,
+                    tgid,
+                    TARGET_TYPE_SCIENCE
+                );
                 if (extra_log) {
                     logmsg.str("");
-                    logmsg << "redist: tile " << tile_id << ", location "
-                        << lid << " (fiber " << fid << ")"
-                        << ", target " << tgid
-                        << " not a science target- skipping";
-                    logger.debug_tfg(tile_id, lid, tgid, logmsg.str().c_str());
-                }
-                continue;
-            }
-
-            // Find any better assignment.
-            int32_t best_tile;
-            int32_t best_loc;
-
-            reassign_science_target(tstart, tstop, tile_id, lid, tgid, true,
-                                    done, best_tile, best_loc);
-
-            // Mark this current tile / loc as done
-            done[tile_id][lid] = true;
-
-            if ((best_tile != tile_id) || (best_loc != lid)) {
-                int32_t best_fid = loc_fiber.at(best_loc);
-                // We have a better possible assignment- change it.
-                if (extra_log) {
-                    logmsg.str("");
-                    logmsg << "redist: tile " << tile_id << ", location "
-                        << lid << " (fiber " << fid << ")"
-                        << ", target " << tgid
-                        << " swapping to T/F " << best_tile << ","
-                        << best_loc << " (fiber " << best_fid << ")";
-                    logger.debug_tfg(tile_id, lid, tgid, logmsg.str().c_str());
-                }
-                unassign_tileloc(hw_.get(), tgs_.get(), tile_id, lid,
-                                   TARGET_TYPE_SCIENCE);
-                assign_tileloc(hw_.get(), tgs_.get(), best_tile,
-                                 best_loc, tgid, TARGET_TYPE_SCIENCE);
-                // Mark the new assignment as done.
-                done[best_tile][best_loc] = true;
-
-                // All targets available for this location.
-                auto const & avail = tfavail.at(lid);
-
-                if (avail.size() > 0) {
-                    // Find available targets of the desired type
-                    targets_avail.clear();
-                    for (auto const & tgid : avail) {
-                        // Reference to the Target object with this ID
-                        auto const & tg = tgs_->data.at(tgid);
-                        if (tg.is_science()) {
-                            targets_avail.push_back(tgid);
-                        }
-                    }
-                    // Assign the best object that is not already assigned.
-                    if (targets_avail.size() > 0) {
-                        int64_t newtarget = find_best(hw_.get(), tgs_.get(),
-                                                      tile_id, lid,
-                                                      TARGET_TYPE_SCIENCE, target_xy,
-                                                      targets_avail);
-                        if (newtarget >= 0) {
-                            if (extra_log) {
-                                logmsg.str("");
-                                logmsg << "redist: tile " << tile_id
-                                    << " location " << lid
-                                    << " (fiber " << fid << ")"
-                                    << " reassigned to " << newtarget;
-                                logger.debug_tfg(tile_id, lid, newtarget,
-                                                 logmsg.str().c_str());
-                            }
-                            assign_tileloc(hw_.get(), tgs_.get(), tile_id,
-                                             lid, newtarget,
-                                             TARGET_TYPE_SCIENCE);
-                        } else {
-                            if (extra_log) {
-                                logmsg.str("");
-                                logmsg << "redist: tile " << tile_id
-                                    << " location " << lid
-                                    << " (fiber " << fid << ")"
-                                    << " no science targets available ";
-                                logger.debug_tfg(tile_id, lid, newtarget,
-                                                 logmsg.str().c_str());
-                            }
-                        }
-                    }
-                }
-            } else {
-                if (extra_log) {
-                    logmsg.str("");
-                    logmsg << "redist: tile " << tile_id << ", location "
-                        << lid << " (fiber " << fid << ")"
-                        << ", target " << tgid
-                        << " keeping assignment";
-                    logger.debug_tfg(tile_id, lid, tgid, logmsg.str().c_str());
+                    logmsg << "redist: tile " << tile_id
+                        << " loc " << tgloc
+                        << " moved science " << tgid
+                        << " to tile " << new_tile
+                        << ", loc " << new_loc;
+                    logger.debug_tfg(
+                        tile_id, tgloc, tgid, logmsg.str().c_str()
+                    );
+                    logger.debug_tfg(
+                        new_tile, new_loc, tgid, logmsg.str().c_str()
+                    );
                 }
             }
         }
@@ -716,37 +598,6 @@ void fba::Assignment::redistribute_science(int32_t start_tile,
 
     return;
 }
-
-
-// Helper types for sorting targets by subpriority.  Note that in the case of
-// a "tie" (which should never happen and indicates a bug in the input files),
-// we sort by target / location value to at least ensure reproducibility.
-
-typedef std::pair <double, int64_t> weight_target;
-
-struct target_compare {
-    bool operator() (weight_target const & lhs,
-                     weight_target const & rhs) const {
-        if (lhs.first == rhs.first) {
-            return lhs.second < rhs.second;
-        } else {
-            return lhs.first > rhs.first;
-        }
-    }
-};
-
-typedef std::pair <double, int32_t> weight_loc;
-
-struct loc_compare {
-    bool operator() (weight_loc const & lhs,
-                     weight_loc const & rhs) const {
-        if (lhs.first == rhs.first) {
-            return lhs.second < rhs.second;
-        } else {
-            return lhs.first < rhs.first;
-        }
-    }
-};
 
 
 void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
@@ -767,13 +618,22 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
     gtmname << "force " << tgstr << ": total";
     gtm.start(gtmname.str());
 
-    int32_t npetal = hw_->npetal;
-    auto loc = hw_->device_locations("POS");
+    // Select locations that are science positioners
+    auto device_locs = hw_->device_locations("POS");
 
     // Determine our range of tiles
     int32_t tstart;
     int32_t tstop;
-    parse_tile_range(start_tile, stop_tile, tstart, tstop);
+    if (start_tile < 0) {
+        tstart = 0;
+    } else {
+        tstart = tiles_->order.at(start_tile);
+    }
+    if (stop_tile < 0) {
+        tstop = tiles_->id.size() - 1;
+    } else {
+        tstop = tiles_->order.at(stop_tile);
+    }
 
     logmsg.str("");
     logmsg << "assign force " << tgstr << ":  working on tiles "
@@ -781,48 +641,10 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
         << stop_tile << " (index " << tstop << ")";
     logger.info(logmsg.str().c_str());
 
-    auto const & tgsdata = tgs_->data;
-
-    // This is going to be used to track whether a tile / loc combination has
-    // already been considered.
-    std::map <int32_t, std::map <int32_t, bool> > done;
-    for (int32_t t = tstart; t <= tstop; ++t) {
-        int32_t tile_id = tiles_->id[t];
-        done[tile_id].clear();
-    }
-
-    // The target classes
-    auto const & tgclasses = tgs_->science_classes;
-
-    // FIXME:  these structures define the mapping between locations and
-    // fiber IDs that are used for printing log messages.
-
-    std::map <int32_t, int32_t> fid_to_lid;
-    std::map <int32_t, int32_t> lid_to_fid;
-    int32_t fake = 0;
-    for (auto const & lid : hw_->locations) {
-        int32_t fid = hw_->loc_fiber[lid];
-        if (fid < 0) {
-            fid = 5000 + fake;
-            fake++;
-        }
-        fid_to_lid[fid] = lid;
-        lid_to_fid[lid] = fid;
-    }
-
-    // This is the specific list of available targets for a single
-    // tile / loc, after selecting by target type, etc.
-    std::vector <int64_t> targets_avail;
-
-    // vector of priority-weighted objects on one petal
-    std::vector <weight_target> petal_obj;
-
-    // The locs on one petal, of each priority class, that can reach
-    // each object.
-    std::vector <weight_loc> can_replace;
-
-    target_compare tcompare;
-    loc_compare fcompare;
+    // Per-tile target availability objects (reset for each tile)
+    std::map <int32_t, std::vector <target_weight> > tile_target_avail;
+    std::map <int64_t, std::vector <location_weight> > tile_loc_avail;
+    std::vector <target_weight> tile_target_weights;
 
     for (int32_t t = tstart; t <= tstop; ++t) {
         int32_t tile_id = tiles_->id[t];
@@ -846,362 +668,213 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
             continue;
         }
 
+        gtmname.str("");
+        gtmname << "force " << tgstr << ": local tile compute science assignment";
+        gtm.start(gtmname.str());
+
+        // Compute the locations which are currently assigned to science targets.
+        // Also compute the inverse-priority weighting of these assigned targets.
+
+        std::vector <target_weight> science_targets;
+        std::vector <int32_t> loc_science;
+
+        for (auto const & loc : device_locs) {
+            if ((loc_target[tile_id].count(loc) > 0) &&
+                (loc_target[tile_id].at(loc) >= 0)) {
+                // We have something assigned here...
+                auto tgid = loc_target[tile_id].at(loc);
+                auto const & tg = tgs_->data.at(tgid);
+                if (tg.is_science() && (! tg.is_standard())) {
+                    // This is a science target and NOT a standard (we don't
+                    // try to bump dual targets)
+                    loc_science.push_back(loc);
+                    science_targets.push_back(
+                        std::make_pair(tgid, tg.total_priority())
+                    );
+                }
+            }
+        }
+
+        // Sort the currently assigned science targets by inverse priority order
+        target_weight_rcompare tg_inverse_comp;
+        std::stable_sort(
+            science_targets.begin(),
+            science_targets.end(),
+            tg_inverse_comp
+        );
+
+        gtm.stop(gtmname.str());
+
+        gtmname.str("");
+        gtmname << "force " << tgstr << ": local tile availability";
+        gtm.start(gtmname.str());
+
         // Available targets for this tile.
-        auto const & tfavail = tgsavail_->data.at(tile_id);
+
+        tile_available(
+            tile_id,
+            tgtype,
+            loc_science,
+            tile_target_avail,
+            tile_loc_avail,
+            tile_target_weights
+        );
+
+        gtm.stop(gtmname.str());
+
+        logmsg.str("");
+        logmsg << "assign force " << tgstr << ": tile " << tile_id
+            << " has " << science_targets.size()
+            << " currently assigned science locations";
+        logger.debug(logmsg.str().c_str());
+
+        logmsg.str("");
+        logmsg << "assign force " << tgstr << ": tile " << tile_id
+            << " these locations have " << tile_target_weights.size()
+            << " available targets";
+        logger.debug(logmsg.str().c_str());
+
+        // Reference to projected target X/Y locations for this tile.
         auto const & target_xy = tile_target_xy.at(tile_id);
 
-        for (int32_t p = 0; p < npetal; ++p) {
-            // Special handling of supplemental sky targets.  When
-            // enforcing per-petal limits on assignment counts of SUPP_SKY,
-            // we want to include the current assignment counts of regular
-            // SKY targets as well.
-            int32_t cur_petal = nassign_petal[tgtype][tile_id][p];
-            if (tgtype == TARGET_TYPE_SUPPSKY) {
-                cur_petal += nassign_petal[TARGET_TYPE_SKY][tile_id][p];
-            }
-            if (extra_log) {
-                logmsg.str("");
-                logmsg << "assign force " << tgstr << ": tile " << tile_id
-                    << ", petal " << p << " has "
-                    << cur_petal
-                    << " (require " << required_per_petal << ")";
-                logger.debug_tfg(tile_id, -1, -1, logmsg.str().c_str());
-            }
-            if (cur_petal >= required_per_petal) {
-                // Already have enough objects on this petal
+        // Targets available to a single location, declared here to avoid
+        // repeated memory allocation.
+        std::vector <int64_t> tg_avail;
+
+        // The unique petals used for this tile
+        std::set <int32_t> unique_petal;
+
+        for (auto const & tgwit : science_targets) {
+            // This current science target ID
+            auto const & tgid = tgwit.first;
+            // This weight
+            auto const & tgweight = tgwit.second;
+
+            // Find the location where this is currently assigned
+            int32_t tgloc = target_loc.at(tgid).at(tile_id);
+
+            // The petal of this location
+            int32_t p = hw_->loc_petal.at(tgloc);
+            unique_petal.insert(p);
+
+            // Check petal count limits
+            if (petal_count_max(tgtype, required_per_petal, tile_id, p)) {
                 continue;
             }
 
-            // Targets of desired type on this petal.
-
-            gtmname.str("");
-            gtmname << "force " << tgstr << ": per petal possible objects";
-            gtm.start(gtmname.str());
-
-            // This object tracks the available standards/sky on this petal
-            // which can replace targets of the current target class.  These
-            // are sorted by total priority of the standard/sky.
-            petal_obj.clear();
-
-            // Get the locations for this petal which are science positioners.
-            std::vector <int32_t> petal_locations;
-            for (auto const & lid : loc) {
-                if (hw_->loc_petal.at(lid) == p) {
-                    petal_locations.push_back(lid);
-                }
+            if (tile_target_avail.count(tgloc) == 0) {
+                // There are no available targets of our requested type at this loc.
+                continue;
             }
 
-            for (auto const & lid : petal_locations) {
-                int32_t fid = lid_to_fid.at(lid);
-                if (tfavail.count(lid) == 0) {
-                    // No targets available for this location
-                    continue;
-                }
-
-                // Targets available for this location.
-                auto const & avail = tfavail.at(lid);
-
-                if (avail.size() == 0) {
-                    continue;
-                }
-
-                for (auto const & tgid : avail) {
-                    // Reference to the Target object with this ID
-                    auto & tg = tgsdata.at(tgid);
-                    if ((tg.type & tgtype) == 0) {
-                        // This is an object of the wrong type.
-                        continue;
-                    }
-
-                    double av_weight = static_cast <double> (tg.priority)
-                        + tg.subpriority;
-                    petal_obj.push_back(std::make_pair(av_weight, tgid));
-
-                    if (extra_log) {
-                        logmsg.str("");
-                        logmsg << "assign force " << tgstr << ": tile "
-                            << tile_id << ", petal " << p << ", location "
-                            << lid << " (fiber " << fid << ")"
-                            << ", found object " << tgid
-                            << " with weight " << av_weight;
-                        logger.debug_tfg(tile_id, lid, tgid,
-                                         logmsg.str().c_str());
-                    }
-                }
+            // Look at available targets for this location.  These are already sorted
+            // by total priority.
+            tg_avail.clear();
+            for (auto const & tgwt : tile_target_avail.at(tgloc)) {
+                tg_avail.push_back(tgwt.first);
             }
 
-            if (extra_log) {
-                logmsg.str("");
-                logmsg << "assign force " << tgstr << ": tile "
-                    << tile_id << ", petal " << p
-                    << " has " << petal_obj.size() << " available objects";
-                logger.debug_tfg(tile_id, -1, -1, logmsg.str().c_str());
-            }
-            std::stable_sort(petal_obj.begin(), petal_obj.end(), tcompare);
-
-            gtm.stop(gtmname.str());
-
-            // Go through all target priority classes in reverse order.
-
-            for (auto const & tc : tgclasses) {
-
-                // Go through new objects in priority order and try to bump
-                // science targets of the given class.
-                for (auto const & ps : petal_obj) {
-                    // target ID for this object
-                    int64_t id = ps.second;
-
-                    // Find all locations on this petal which can reach
-                    // this target and are occupied by a science target of
-                    // the correct target class.  Sort these by increasing
-                    // subpriority.
-                    can_replace.clear();
-                    for (auto const & tf : locavail_->data[id]) {
-                        int32_t lid = tf.second;
-                        int32_t fid = lid_to_fid.at(lid);
-                        if (tf.first != tile_id) {
-                            // Not this tile
-                            continue;
-                        }
-                        if (hw_->loc_petal.at(lid) != p) {
-                            // Not this petal
-                            continue;
-                        }
-                        // Is this loc currently assigned to a target of the
-                        // correct target class?
-                        if (loc_target[tile_id].count(lid) == 0) {
-                            // Fiber not assigned
-                            continue;
-                        }
-                        auto & cur = tgsdata.at(loc_target[tile_id].at(lid));
-                        if (! cur.is_science()) {
-                            // The currently assigned target is not a science
-                            // target.
-                            continue;
-                        }
-
-                        if (cur.priority != tc) {
-                            // Wrong target class
-                            if (extra_log) {
-                                logmsg.str("");
-                                logmsg << "assign force " << tgstr << ": tile "
-                                    << tile_id << ", petal " << p
-                                    << ", class " << tc << ", object " << id
-                                    << ", total priority " << ps.first
-                                    << ", available loc " << lid
-                                    << " (fiber " << fid << ")"
-                                    << " at target " << cur.id
-                                    << " is wrong class (" << cur.priority
-                                    << ")";
-                                logger.debug_tfg(tile_id, lid, id,
-                                                 logmsg.str().c_str());
-                            }
-                            continue;
-                        }
-
-                        // Special case:  if the target is both a science
-                        // target AND a standard, then we never bump it.  The
-                        // reason is the following:  if we are bumping science
-                        // for standards, then this is self defeating.  If we
-                        // are bumping science targets for sky, then this
-                        // would change previous per-petal standards counts.
-                        // So we just never do it.
-
-                        if (cur.is_standard()) {
-                            if (extra_log) {
-                                logmsg.str("");
-                                logmsg << "assign force " << tgstr << ": tile "
-                                    << tile_id << ", petal " << p
-                                    << ", class " << tc << ", object " << id
-                                    << ", total priority " << ps.first
-                                    << ", available loc " << lid
-                                    << " (fiber " << fid << ")"
-                                    << " at science target " << cur.id
-                                    << " is also a standard- skipping";
-                                logger.debug_tfg(tile_id, lid, id,
-                                                 logmsg.str().c_str());
-                            }
-                            continue;
-                        }
-                        if (extra_log) {
-                            logmsg.str("");
-                            logmsg << "assign force " << tgstr << ": tile "
-                                << tile_id << ", petal " << p
-                                << ", class " << tc << ", object " << id
-                                << ", total priority " << ps.first
-                                << ", available loc " << lid
-                                << " (fiber " << fid << ")"
-                                << " at target " << cur.id
-                                << " (subpriority " << cur.subpriority
-                                << ") could be bumped";
-                            logger.debug_tfg(tile_id, lid, id,
-                                             logmsg.str().c_str());
-                        }
-                        can_replace.push_back(
-                            std::make_pair(cur.subpriority, fid));
-                    }
-
-                    std::stable_sort(can_replace.begin(), can_replace.end(),
-                                     fcompare);
-
-                    if (extra_log) {
-                        logmsg.str("");
-                        logmsg << "assign force " << tgstr << ": tile "
-                            << tile_id << ", petal " << p
-                            << ", class " << tc << ", object " << id
-                            << ", total priority " << ps.first
-                            << " has " << can_replace.size()
-                            << " potential targets to bump: ";
-                        for (auto const & av : can_replace) {
-                            logmsg << "(" << av.first << ","
-                                << av.second << ") ";
-                        }
-                        logger.debug_tfg(tile_id, -1, id,
-                                         logmsg.str().c_str());
-                    }
-
-                    for (auto const & av : can_replace) {
-                        int32_t fid = av.second;
-                        int32_t lid = fid_to_lid.at(fid);
-                        if ((done[tile_id].count(lid) > 0)
-                            && done[tile_id].at(lid)) {
-                            // Already considered this tile/loc
-                            if (extra_log) {
-                                logmsg.str("");
-                                logmsg << "assign force " << tgstr << ": tile "
-                                    << tile_id << ", petal " << p
-                                    << ", class " << tc << ", object " << id
-                                    << ", total priority " << ps.first
-                                    << ", available loc " << lid
-                                    << " already bumped";
-                                logger.debug_tfg(tile_id, lid, id,
-                                                 logmsg.str().c_str());
-                            }
-                            continue;
-                        }
-
-                        int64_t curtg = loc_target[tile_id].at(lid);
-
-                        if (ok_to_assign(hw_.get(), tile_id, lid,
-                                         id, target_xy)) {
-                            // We can swap this location.
-                            if (extra_log) {
-                                logmsg.str("");
-                                logmsg << "assign force " << tgstr << ": tile "
-                                    << tile_id << ", petal " << p
-                                    << ", class " << tc << ", object " << id
-                                    << ", total priority " << ps.first
-                                    << ", available loc " << lid
-                                    << " (fiber " << fid << ")"
-                                    << " bumping science target " << curtg;
-                                // Log for target doing the bumping
-                                logger.debug_tfg(tile_id, lid, id,
-                                                 logmsg.str().c_str());
-                                // Also log for target getting bumped
-                                logger.debug_tfg(tile_id, lid, curtg,
-                                                 logmsg.str().c_str());
-                            }
-                            // Attempt to re-assign this science target to
-                            // a later tile / loc.
-                            int32_t best_tile;
-                            int32_t best_loc;
-                            reassign_science_target(tstart, tstop, tile_id,
-                                                    lid, curtg, false,
-                                                    done, best_tile,
-                                                    best_loc);
-
-                            // Assign object.
-                            unassign_tileloc(hw_.get(), tgs_.get(),
-                                               tile_id, lid,
-                                               TARGET_TYPE_SCIENCE);
-                            assign_tileloc(hw_.get(), tgs_.get(),
-                                             tile_id, lid, id, tgtype);
-
-                            // Mark current tile / loc as done
-                            done[tile_id][lid] = true;
-
-                            // Move science target to new location if possible
-                            if ((best_tile != tile_id)
-                                && (best_loc != lid)) {
-                                assign_tileloc(hw_.get(), tgs_.get(),
-                                                 best_tile, best_loc,
-                                                 curtg, TARGET_TYPE_SCIENCE);
-                                // Mark this new location as done
-                                done[best_tile][best_loc] = true;
-                                if (extra_log) {
-                                    logmsg.str("");
-                                    logmsg << "assign force " << tgstr
-                                        << ": tile " << tile_id
-                                        << ", petal " << p
-                                        << ", class " << tc << ", object " << id
-                                        << ", total priority " << ps.first
-                                        << ", available loc " << lid
-                                        << " bumped target " << curtg
-                                        << " reassigned to " << best_tile
-                                        << "," << best_loc;
-                                    // Log for target doing the bumping
-                                    logger.debug_tfg(tile_id, lid, id,
-                                                     logmsg.str().c_str());
-                                    // Also log for target getting bumped
-                                    logger.debug_tfg(tile_id, lid, curtg,
-                                                     logmsg.str().c_str());
-                                }
-                            }
-                            break;
-                        } else {
-                            if (extra_log) {
-                                logmsg.str("");
-                                logmsg << "assign force " << tgstr
-                                    << ": tile " << tile_id
-                                    << ", petal " << p
-                                    << ", class " << tc << ", object " << id
-                                    << ", total priority " << ps.first
-                                    << ", available loc " << lid
-                                    << " (fiber " << fid << ")"
-                                    << " not ok to assign";
-                                logger.debug_tfg(tile_id, lid, id,
-                                                 logmsg.str().c_str());
-                            }
-                        }
-                    }
-
-                    cur_petal = nassign_petal[tgtype][tile_id][p];
-                    if (tgtype == TARGET_TYPE_SUPPSKY) {
-                        cur_petal += nassign_petal[TARGET_TYPE_SKY][tile_id][p];
-                    }
+            // For each available target at this current location...
+            for (auto const & avtg : tg_avail) {
+                // Can we assign this target?
+                if (ok_to_assign(hw_.get(), tile_id, tgloc, avtg, target_xy)) {
+                    // Yes, try to assign the bumped science target to a future tile
+                    int32_t new_tile;
+                    int32_t new_loc;
+                    reassign_science_target(
+                        t + 1, tstop, tile_id, tgloc, tgid, true, new_tile, new_loc
+                    );
+                    // Now unassign science target.
+                    unassign_tileloc(
+                        hw_.get(),
+                        tgs_.get(),
+                        tile_id,
+                        tgloc,
+                        TARGET_TYPE_SCIENCE
+                    );
+                    // Assign the new target
+                    assign_tileloc(
+                        hw_.get(), tgs_.get(), tile_id, tgloc, avtg, tgtype
+                    );
                     if (extra_log) {
                         logmsg.str("");
                         logmsg << "assign force " << tgstr
                             << ": tile " << tile_id
-                            << ", petal " << p << " now has "
-                            <<cur_petal
-                            << " (require " << required_per_petal << ")";
-                        logger.debug_tfg(tile_id, -1, -1, logmsg.str().c_str());
+                            << " loc " << tgloc
+                            << " petal " << p
+                            << " bumped science " << tgid
+                            << " with weight " << tgweight
+                            << ", replaced with " << avtg;
+                        logger.debug_tfg(tile_id, tgloc, tgid, logmsg.str().c_str());
+                        logger.debug_tfg(tile_id, tgloc, avtg, logmsg.str().c_str());
                     }
-                    if (cur_petal >= required_per_petal) {
-                        // Have enough objects on this petal
-                        break;
+                    // If we were able, reassign the science target
+                    if (new_tile >= 0) {
+                        // We were able to find a spot
+                        assign_tileloc(
+                            hw_.get(),
+                            tgs_.get(),
+                            new_tile,
+                            new_loc,
+                            tgid,
+                            TARGET_TYPE_SCIENCE
+                        );
+                        if (extra_log) {
+                            logmsg.str("");
+                            logmsg << "assign force " << tgstr
+                                << ": tile " << tile_id
+                                << " loc " << tgloc
+                                << " petal " << p
+                                << " reassign bumped science " << tgid
+                                << " to tile " << new_tile
+                                << ", loc " << new_loc;
+                            logger.debug_tfg(
+                                tile_id, tgloc, tgid, logmsg.str().c_str()
+                            );
+                            logger.debug_tfg(
+                                new_tile, new_loc, tgid, logmsg.str().c_str()
+                            );
+                        }
+                    } else {
+                        if (extra_log) {
+                            logmsg.str("");
+                            logmsg << "assign force " << tgstr
+                                << ": tile " << tile_id
+                                << " loc " << tgloc
+                                << " petal " << p
+                                << " bumped science " << tgid
+                                << " cannot be reassigned.";
+                            logger.debug_tfg(
+                                tile_id, tgloc, tgid, logmsg.str().c_str()
+                            );
+                        }
                     }
-                }
-                cur_petal = nassign_petal[tgtype][tile_id][p];
-                if (tgtype == TARGET_TYPE_SUPPSKY) {
-                    cur_petal += nassign_petal[TARGET_TYPE_SKY][tile_id][p];
-                }
-                if (cur_petal >= required_per_petal) {
-                    // Have enough objects on this petal
                     break;
+                } else {
+                    // There must be a collision or some other problem.
+                    if (extra_log) {
+                        logmsg.str("");
+                        logmsg << "assign force " << tgstr
+                            << ": tile " << tile_id
+                            << " loc " << tgloc
+                            << " petal " << p
+                            << " cannot bump science " << tgid
+                            << " (weight " << tgweight << ")"
+                            << " with " << avtg << ": not ok to assign";
+                        logger.debug_tfg(tile_id, tgloc, tgid, logmsg.str().c_str());
+                        logger.debug_tfg(tile_id, tgloc, avtg, logmsg.str().c_str());
+                    }
                 }
             }
+        }
 
-            cur_petal = nassign_petal[tgtype][tile_id][p];
-            if (tgtype == TARGET_TYPE_SUPPSKY) {
-                cur_petal += nassign_petal[TARGET_TYPE_SKY][tile_id][p];
-            }
+        // Check final petal assignment counts
+        for (auto const & p : unique_petal) {
+            int32_t cur_petal = petal_count(tgtype, tile_id, p);
             if (cur_petal < required_per_petal) {
                 logmsg.str("");
                 logmsg << "assign force " << tgstr << ": tile " << tile_id
-                    << ", petal " << p << " could only assign "
-                    << cur_petal
+                    << ", petal " << p << " could only assign " << cur_petal
                     << " (require " << required_per_petal
                     << ").  Insufficient number of objects or too many collisions";
                 logger.warning(logmsg.str().c_str());
@@ -1215,7 +888,7 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
 
     logmsg.str("");
     logmsg << "Force assignment of " << required_per_petal << " "
-        << tgstr << " targets";
+        << tgstr << " targets per petal";
 
     tm.stop();
     tm.report(logmsg.str().c_str());
@@ -1225,40 +898,19 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
 
 
 void fba::Assignment::reassign_science_target(int32_t tstart, int32_t tstop,
-    int32_t tile, int32_t loc, int64_t target, bool balance_petals,
-    std::map <int32_t, std::map <int32_t, bool> > const & done,
-    int32_t & best_tile, int32_t & best_loc) const {
+    int32_t tile, int32_t loc, int64_t target, bool force,
+    int32_t & new_tile, int32_t & new_loc) const {
+
+    // The "force" option controls whether we want to reassign the science target to
+    // a new location even if that location is not as "good" as current assignment.
+    // This can happen if the target is being bumped.  If force==true and no new
+    // assignment is possible, negative values are returned for new_tile and new_loc.
 
     fba::Logger & logger = fba::Logger::get();
     std::ostringstream logmsg;
     bool extra_log = logger.extra_debug();
 
-    // Get the number of unused locations on this current petal.
-    int32_t petal = hw_->loc_petal.at(loc);
-    int32_t passign = nassign_petal.at(TARGET_TYPE_SCIENCE).at(tile).at(petal);
-
-    // Vector of available tile / loc pairs which have a loc that is a
-    // science positioner.
-    auto const & availtfall = locavail_->data.at(target);
-    std::vector < std::pair <int32_t, int32_t> > availtf;
-    std::string pos_str("POS");
-    for (auto const & av : availtfall) {
-        if (pos_str.compare(hw_->loc_device_type.at(av.second)) == 0) {
-            availtf.push_back(av);
-        }
-    }
-
-    best_tile = tile;
-    best_loc = loc;
-    int32_t best_passign = passign;
-
     if (extra_log) {
-        logmsg.str("");
-        logmsg << "reassign: tile " << tile << ", location "
-            << loc << ", target " << target
-            << " considering for swap...";
-        logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
-
         logmsg.str("");
         logmsg << "reassign: tile " << tile << ", location "
             << loc << ", target " << target << " considering tile indices "
@@ -1266,11 +918,22 @@ void fba::Assignment::reassign_science_target(int32_t tstart, int32_t tstop,
         logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
     }
 
-    for (auto const & av : availtf) {
-        // The available tile loc pair
-        int32_t av_tile = av.first;
-        int32_t av_loc = av.second;
+    // Get the number of unused locations on this current petal.
+    int32_t petal = hw_->loc_petal.at(loc);
+    int32_t passign = petal_count(TARGET_TYPE_SCIENCE, tile, petal);
 
+    // Vector of available tile / loc pairs which have a loc that is a
+    // science positioner.  The available tile / location pairs are already
+    // sorted by tile order.
+    std::vector < std::pair <int32_t, int32_t> > avail;
+
+    auto const & locavailtg = locavail_->data.at(target);
+    std::string pos_str("POS");
+
+    for (auto const & av : locavailtg) {
+        int32_t av_tile = av.first;
+        int32_t av_tile_indx = tiles_->order.at(av_tile);
+        int32_t av_loc = av.second;
         if (nassign_tile.at(TARGET_TYPE_SCIENCE).at(av_tile) == 0) {
             // This available tile / loc is on a tile with
             // nothing assigned.  Skip it.
@@ -1284,35 +947,18 @@ void fba::Assignment::reassign_science_target(int32_t tstart, int32_t tstop,
             }
             continue;
         }
-
-        if ((done.count(av_tile) > 0)
-            && (done.at(av_tile).count(av_loc) > 0)
-            && done.at(av_tile).at(av_loc)) {
-            // Already considered or swapped this available tile/loc.
-            if (extra_log) {
-                logmsg.str("");
-                logmsg << "reassign: tile " << tile << ", loc "
-                    << loc << ", target " << target
-                    << " avail T/F " << av_tile << "," << av_loc
-                    << " already considered or swapped";
-                logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
-            }
-            continue;
-        }
-
         if (loc_target.at(av_tile).count(av_loc) > 0) {
             // This available tile / loc is already assigned.
             if (extra_log) {
                 logmsg.str("");
                 logmsg << "reassign: tile " << tile << ", loc "
                     << loc << ", target " << target
-                    << " avail T/F " << av_tile << "," << av_loc
+                    << " avail tile/loc " << av_tile << "," << av_loc
                     << " already assigned";
                 logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
             }
             continue;
         }
-
         if (target_loc.at(target).count(av_tile) > 0) {
             // We have already assigned a location on this tile to this
             // target.
@@ -1325,24 +971,45 @@ void fba::Assignment::reassign_science_target(int32_t tstart, int32_t tstop,
             }
             continue;
         }
-
-        int32_t av_petal = hw_->loc_petal.at(av_loc);
-        int32_t av_tile_indx = tiles_->order.at(av_tile);
-
-        if (av_tile_indx < tstart) {
-            // The tile containing this alternate tile/loc is before
-            // the start of the tiles we are considering.
+        if (av_tile_indx <= tstart) {
+            // This available tile came before our current tile.
             if (extra_log) {
                 logmsg.str("");
                 logmsg << "reassign: tile " << tile << ", loc "
                     << loc << ", target " << target
                     << " available tile " << av_tile
                     << " at index " << av_tile_indx
-                    << " is prior to tile start (" << tstart << ")";
+                    << " is prior to tile start index (" << tstart << ")";
                 logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
             }
             continue;
         }
+        if (pos_str.compare(hw_->loc_device_type.at(av_loc)) == 0) {
+            // Available location is not a science positioner
+            if (extra_log) {
+                logmsg.str("");
+                logmsg << "reassign: tile " << tile << ", loc "
+                    << loc << ", target " << target
+                    << " available tile " << av_tile
+                    << " at index " << av_tile_indx
+                    << " is not a science positioner (POS)";
+                logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
+            }
+            continue;
+        }
+        avail.push_back(av);
+    }
+
+    new_tile = -1;
+    new_loc = -1;
+    int32_t best_passign = 500;
+
+    for (auto const & av : avail) {
+        // The available tile loc pair
+        int32_t av_tile = av.first;
+        int32_t av_loc = av.second;
+        int32_t av_petal = hw_->loc_petal.at(av_loc);
+        // int32_t av_tile_indx = tiles_->order.at(av_tile);
 
         // Projected target locations on the available tile.
         auto const & av_target_xy = tile_target_xy.at(av_tile);
@@ -1354,63 +1021,52 @@ void fba::Assignment::reassign_science_target(int32_t tstart, int32_t tstop,
                 logmsg.str("");
                 logmsg << "reassign: tile " << tile << ", loc "
                     << loc << ", target " << target
-                    << " avail T/F " << av_tile << "," << av_loc
+                    << " avail tile/loc " << av_tile << "," << av_loc
                     << " not OK to assign";
                 logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
             }
             continue;
         }
 
-        // Compare the number of assigned locations on the petal of this
-        // available tile/loc to the current best one.
+        // At this point we know we have a new tile / loc where we can place
+        // this target.  Get the number of assigned locations on the petal of this
+        // available tile/loc.
         int32_t av_passign =
             nassign_petal.at(TARGET_TYPE_SCIENCE).at(av_tile).at(av_petal);
 
-        // At this point we know we have a new tile / loc where we can place
-        // this target.  If we are balancing the number of targets per petal,
-        // check if this new tile / loc is a better placement.  If we are not
-        // balancing, then we just take this first available tile / loc and
-        // return.
-
-        if (balance_petals) {
-            // NOTE:  we really are using the number POS fibers per petal for
-            // this max- since we are not including ETC locations in this
-            // check.
-            if ((av_passign < hw_->nfiber_petal) &&
-            (av_passign < best_passign)) {
-                // There are some unassigned locs on this available petal,
-                // and the number of unassigned is greater than the original
-                // tile/loc.
-                if (extra_log) {
-                    logmsg.str("");
-                    logmsg << "reassign: tile " << tile << ", loc "
-                        << loc << ", target " << target
-                        << " avail T/F " << av_tile << "," << av_loc
-                        << " has fewer assigned locs in its petal ("
-                        << av_passign << " vs "
-                        << best_passign << "): new best";
-                    logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
-                }
-                best_tile = av_tile;
-                best_loc = av_loc;
-                best_passign = av_passign;
-            } else {
-                if (extra_log) {
-                    logmsg.str("");
-                    logmsg << "reassign: tile " << tile << ", loc "
-                        << loc << ", target " << target
-                        << " avail T/F " << av_tile << "," << av_loc
-                        << " has more assigned locs in its petal ("
-                        << av_passign << " vs "
-                        << best_passign << "): skipping";
-                    logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
-                }
+        if ((av_passign < hw_->nfiber_petal) && (av_passign < best_passign)) {
+            // There are some unassigned locs on this available petal,
+            // and the number of unassigned is greater than our current best
+            // tile/loc.
+            if (extra_log) {
+                logmsg.str("");
+                logmsg << "reassign: tile " << tile << ", loc "
+                    << loc << ", target " << target
+                    << " avail tile/loc " << av_tile << "," << av_loc
+                    << " new best alternate location for petal counts ("
+                    << av_passign << " < " << best_passign << ")";
+                logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
             }
+            new_tile = av_tile;
+            new_loc = av_loc;
+            best_passign = av_passign;
         } else {
-            best_tile = av_tile;
-            best_loc = av_loc;
-            break;
+            if (extra_log) {
+                logmsg.str("");
+                logmsg << "reassign: tile " << tile << ", loc "
+                    << loc << ", target " << target
+                    << " avail tile/loc " << av_tile << "," << av_loc
+                    << " skipping alternate loc with more petal counts ("
+                    << av_passign << " >= " << best_passign << ")";
+                logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
+            }
         }
+    }
+
+    // If not forcing assignment and we have nothing better, return the original.
+    if ((! force) && (passign <= best_passign)) {
+        new_tile = tile;
+        new_loc = loc;
     }
 
     return;
@@ -1527,120 +1183,6 @@ bool fba::Assignment::ok_to_assign (fba::Hardware const * hw, int32_t tile,
 
     // All good!
     return true;
-}
-
-
-int64_t fba::Assignment::find_best(fba::Hardware const * hw,
-    fba::Targets * tgs, int32_t tile, int32_t loc, uint8_t type,
-    std::map <int64_t, std::pair <double, double> > const & target_xy,
-    std::vector <int64_t> const & avail) const {
-
-    fba::Logger & logger = fba::Logger::get();
-    std::ostringstream logmsg;
-    bool extra_log = logger.extra_debug();
-
-    int64_t best_id = -1;
-    int32_t best_priority = -1;
-    double best_subpriority = 0.0;
-    int32_t best_obsremain = 0;
-
-    if (avail.size() == 0) {
-        // Nothing available
-        return -1;
-    }
-
-    for (auto const & tgid : avail) {
-        // This target
-        auto const & tg = tgs->data.at(tgid);
-
-        if ((type == TARGET_TYPE_SCIENCE) && (tg.obsremain <= 0)) {
-            // Skip science targets with no remaining observations.
-            if (extra_log) {
-                logmsg.str("");
-                logmsg << "find_best: tile " << tile << ", loc "
-                    << loc << ", target " << tgid
-                    << " science target with no remaining obs";
-                logger.debug_tfg(tile, loc, tgid, logmsg.str().c_str());
-            }
-            continue;
-        }
-
-        // Is this target worth testing for assignment?
-        bool test_target = false;
-
-        if (type == TARGET_TYPE_SCIENCE) {
-            // We are working with science targets.
-
-            // FIXME:  This is where we could change the behavior of the way
-            // that science targets are compared based on priority,
-            // subpriority, and observations remaining.  The behavior below
-            // replicates the selection of the original code.
-
-            if (tg.priority > best_priority) {
-                // Higher priority target class, always choose.
-                test_target = true;
-            } else if (tg.priority == best_priority) {
-                // Same target class.  Use remaining obs and subpriority
-                // to choose.
-                if (tg.obsremain > best_obsremain) {
-                    test_target = true;
-                } else if ( (tg.obsremain == best_obsremain)
-                            && (tg.subpriority > best_subpriority) ) {
-                    test_target = true;
-                }
-            }
-        } else {
-            // We are working with either standards, skies or safe.  We base
-            // our comparison on both priority and subpriority.  Normal
-            // standards and skies will have priority == 0, so this reduces
-            // to a comparison on subpriority.  Objects that are both a
-            // standard and a science target will always "win", since their
-            // priority is non-zero.  Change this behavior here if desired.
-            double bestweight = static_cast <double> (best_priority)
-                + best_subpriority;
-            double newweight = static_cast <double> (tg.priority)
-                + tg.subpriority;
-            if (newweight > bestweight) {
-                test_target = true;
-            }
-        }
-
-        if (test_target) {
-            if (extra_log) {
-                logmsg.str("");
-                logmsg << "find_best: tile " << tile << ", loc "
-                    << loc << ", target " << tgid << ", type " << (int)tg.type
-                    << " accept with priority = " << tg.priority
-                    << ", subpriority = " << tg.subpriority
-                    << ", obsremain = " << tg.obsremain;
-                logger.debug_tfg(tile, loc, tgid, logmsg.str().c_str());
-            }
-            if ((target_loc.count(tgid) > 0) &&
-                (target_loc.at(tgid).count(tile) > 0)) {
-                if (extra_log) {
-                    logmsg.str("");
-                    logmsg << "find_best: tile " << tile << ", loc "
-                        << loc << ", target " << tgid << ", type " << (int)tg.type
-                        << " already assigned on current tile";
-                    logger.debug_tfg(tile, loc, tgid, logmsg.str().c_str());
-                }
-            } else if (ok_to_assign(hw, tile, loc, tgid, target_xy)) {
-                if (extra_log) {
-                    logmsg.str("");
-                    logmsg << "find_best: tile " << tile << ", loc "
-                        << loc << ", target " << tgid << ", type "
-                        << (int)tg.type << " SELECTED";
-                    logger.debug_tfg(tile, loc, tgid, logmsg.str().c_str());
-                }
-                best_id = tgid;
-                best_priority = tg.priority;
-                best_subpriority = tg.subpriority;
-                best_obsremain = tg.obsremain;
-            }
-        }
-    }
-
-    return best_id;
 }
 
 
