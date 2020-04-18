@@ -47,9 +47,7 @@ def set_matplotlib_pdf_backend():
         return
     try:
         import matplotlib
-        warnings.simplefilter("ignore")
-        matplotlib.use("pdf")
-        warnings.simplefilter("default")
+        matplotlib.use("pdf", warn=False)
         import matplotlib.pyplot as plt
     except:
         warnings.warn(
