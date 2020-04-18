@@ -25,7 +25,7 @@ from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                                  Targets, TargetTree, TargetsAvailable,
                                  LocationsAvailable)
 
-from .simulate import (test_subdir_create, sim_tiles, sim_targets)
+from .simulate import (test_subdir_create, sim_tiles, sim_targets, test_assign_date)
 
 
 class TestTargets(unittest.TestCase):

@@ -10,6 +10,8 @@ from fiberassign.utils import Timer
 
 from fiberassign.hardware import load_hardware
 
+from .simulate import test_assign_date
+
 
 class TestHardware(unittest.TestCase):
 
@@ -20,7 +22,7 @@ class TestHardware(unittest.TestCase):
         pass
 
     def test_read(self):
-        hw = load_hardware()
+        hw = load_hardware(rundate=test_assign_date)
         print(hw)
         locs = hw.locations
         cs5 = hw.loc_pos_cs5_mm
@@ -32,7 +34,7 @@ class TestHardware(unittest.TestCase):
         return
 
     def test_collision_xy(self):
-        hw = load_hardware()
+        hw = load_hardware(rundate=test_assign_date)
         center_mm = hw.loc_pos_curved_mm
         locs = hw.locations
         nrot = 100
@@ -51,7 +53,7 @@ class TestHardware(unittest.TestCase):
         return
 
     def test_collision_thetaphi(self):
-        hw = load_hardware()
+        hw = load_hardware(rundate=test_assign_date)
         locs = hw.locations
         ntheta = 10
         nphi = 10

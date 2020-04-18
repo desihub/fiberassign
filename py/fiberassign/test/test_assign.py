@@ -47,7 +47,7 @@ from fiberassign.scripts.qa_plot import parse_plot_qa, run_plot_qa
 
 
 from .simulate import (test_subdir_create, sim_tiles, sim_targets,
-                       sim_focalplane, petal_rotation)
+                       sim_focalplane, petal_rotation, test_assign_date)
 
 
 class TestAssign(unittest.TestCase):
@@ -107,7 +107,7 @@ class TestAssign(unittest.TestCase):
         tree = TargetTree(tgs, 0.01)
 
         # Compute the targets available to each fiber for each tile.
-        fp, exclude, state = sim_focalplane()
+        fp, exclude, state = sim_focalplane(rundate=test_assign_date)
         hw = load_hardware(focalplane=(fp, exclude, state))
         tfile = os.path.join(test_dir, "footprint.fits")
         sim_tiles(tfile)
@@ -340,7 +340,7 @@ class TestAssign(unittest.TestCase):
         tree = TargetTree(tgs, 0.01)
 
         # Read hardware properties
-        fp, exclude, state = sim_focalplane()
+        fp, exclude, state = sim_focalplane(rundate=test_assign_date)
         hw = load_hardware(focalplane=(fp, exclude, state))
         tfile = os.path.join(test_dir, "footprint.fits")
         sim_tiles(tfile)
@@ -451,7 +451,8 @@ class TestAssign(unittest.TestCase):
             "footprint": tfile,
             "standards_per_petal": 10,
             "sky_per_petal": 40,
-            "overwrite": True
+            "overwrite": True,
+            "rundate": test_assign_date
         }
         optlist = option_list(opts)
         args = parse_assign(optlist)
@@ -463,7 +464,8 @@ class TestAssign(unittest.TestCase):
             "footprint": tfile,
             "dir": test_dir,
             "petals": plotpetals,
-            "serial": True
+            "serial": True,
+            "rundate": test_assign_date
         }
         optlist = option_list(opts)
         args = parse_plot(optlist)
@@ -560,7 +562,7 @@ class TestAssign(unittest.TestCase):
                 tile_ids = list(tiles.id)
 
             # Simulate a fake focalplane
-            fp, exclude, state = sim_focalplane(fakepos=True)
+            fp, exclude, state = sim_focalplane(rundate=test_assign_date, fakepos=True)
 
             # Load the focalplane
             hw = load_hardware(focalplane=(fp, exclude, state))

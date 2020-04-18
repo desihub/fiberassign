@@ -10,7 +10,11 @@ from fiberassign.hardware import load_hardware
 
 from fiberassign.tiles import load_tiles
 
-from .simulate import test_subdir_create, sim_tiles
+from .simulate import (
+    test_subdir_create,
+    sim_tiles,
+    test_assign_date
+)
 
 from astropy.table import Table
 from astropy.time import Time
