@@ -10,13 +10,9 @@ Visualization tools.
 from __future__ import absolute_import, division, print_function
 
 import os
+import warnings
 
 import numpy as np
-
-import matplotlib
-matplotlib.use("pdf")
-import matplotlib.pyplot as plt
-from matplotlib.patches import Patch
 
 import multiprocessing as mp
 from functools import partial
@@ -38,6 +34,28 @@ from .targets import (Targets, load_target_table,
 
 from .assign import (read_assignment_fits_tile, result_tiles, result_path,
                      avail_table_to_dict)
+
+plt = None
+
+def set_matplotlib_pdf_backend():
+    """Set the matplotlib backend to PDF.
+
+    This is necessary to render high resolution figures.
+    """
+    global plt
+    if plt is not None:
+        return
+    try:
+        import matplotlib
+        matplotlib.use("pdf", warn=False)
+        import matplotlib.pyplot as plt
+    except:
+        warnings.warn(
+            """Couldn't set the PDF matplotlib backend,
+positioner plots may be low resolution.
+Proceeding with the default matplotlib backend."""
+        )
+        import matplotlib.pyplot as plt
 
 
 def plot_target_type_color(tgtype):
@@ -62,6 +80,7 @@ def plot_positioner(ax, patrol_rad, loc, center, shptheta, shpphi, color="k",
                     linewidth=0.2):
     """Plot one fiber positioner.
     """
+    set_matplotlib_pdf_backend()
     patrol = plt.Circle((center[0], center[1]), radius=patrol_rad, fc=color,
                         ec="none", alpha=0.1)
     ax.add_artist(patrol)
@@ -113,6 +132,7 @@ def plot_positioner_simple(ax, patrol_rad, loc, center, theta_ang, theta_arm,
     speed up the plotting.
 
     """
+    set_matplotlib_pdf_backend()
     patrol = plt.Circle((center[0], center[1]), radius=patrol_rad, fc=color,
                         ec="none", alpha=0.1)
     ax.add_artist(patrol)
@@ -285,6 +305,7 @@ def plot_assignment_tile_file_initialize(hw):
 
 def plot_assignment_tile_file(locs, real_shapes, params):
     (tile_id, tile_ra, tile_dec, tile_theta, infile, outfile) = params
+    set_matplotlib_pdf_backend()
     log = Logger.get()
 
     if os.path.isfile(outfile):
@@ -432,6 +453,7 @@ def plot_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign-",
 def plot_assignment_tile(hw, tgs, tile_id, tile_ra, tile_dec, tile_theta,
                          tile_assign, tile_avail=None, petals=None,
                          real_shapes=False, outfile=None, figsize=8):
+    set_matplotlib_pdf_backend()
     # Get selected fibers
     locs = None
     if petals is None:
@@ -502,6 +524,10 @@ def plot_qa_tile_color(desired, value, incr):
 def plot_qa(data, outroot, outformat="pdf", labels=False):
     """Make plots of QA data.
     """
+    set_matplotlib_pdf_backend()
+    # Imported here, to ensure that the backend has been set.
+    from matplotlib.patches import Patch
+
     hw = load_hardware()
     tile_radius = hw.focalplane_radius_deg
 

@@ -1127,6 +1127,9 @@ PYBIND11_MODULE(_internal, m) {
         .def("is_safe", &fba::Target::is_safe, R"(
             Returns True if this is a safe target, else False.
         )")
+        .def("total_priority", &fba::Target::total_priority, R"(
+            Return the total priority based on PRIORITY, SUBPRIORITY, and obs remaining.
+        )")
         .def("__repr__",
             [](fba::Target const & tg) {
                 std::ostringstream o;
