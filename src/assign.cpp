@@ -1093,18 +1093,9 @@ bool fba::Assignment::ok_to_assign (fba::Hardware const * hw, int32_t tile,
         return false;
     }
 
-    // Can this positioner actually reach the target location?
-    fbg::dpair tpos = target_xy.at(target);
-    if (hw->position_xy_bad(loc, tpos)) {
-        if (extra_log) {
-            logmsg.str("");
-            logmsg << "ok_to_assign: tile " << tile << ", loc "
-                << loc << ", target " << target << " cannot reach X/Y = "
-                << tpos.first << ", " << tpos.second;
-            logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
-        }
-        return false;
-    }
+    // NOTE:  When building the TargetsAvailable instance, we already check that the
+    // positioner can physically reach every available target.  No need to check that
+    // here.
 
     // Const reference to the assignment for this tile.
     auto const & ftile = loc_target.at(tile);
@@ -1140,6 +1131,8 @@ bool fba::Assignment::ok_to_assign (fba::Hardware const * hw, int32_t tile,
     size_t nnb = nbs.size();
 
     bool collide = false;
+
+    fbg::dpair tpos = target_xy.at(target);
 
     // On average, the number of neighbors is 2-3.  Threading overhead seems
     // to negate the benefit here.

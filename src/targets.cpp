@@ -288,10 +288,8 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
 
     for (size_t j = 0; j < nloc; ++j) {
         loc[j] = hw_->locations[j];
-        double cx = hw_->loc_pos_curved_mm[loc[j]].first;
-        double cy = hw_->loc_pos_curved_mm[loc[j]].second;
-        loc_center_x[j] = cx;
-        loc_center_y[j] = cy;
+        loc_center_x[j] = hw_->loc_pos_curved_mm[loc[j]].first;
+        loc_center_y[j] = hw_->loc_pos_curved_mm[loc[j]].second;
         loc_patrol[j] = hw_->loc_theta_arm[loc[j]] + hw_->loc_phi_arm[loc[j]]
             - patrol_buffer;
     }
@@ -378,8 +376,6 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
                 thread_data[tid][loc[j]].resize(0);
                 loc_pos[0] = loc_center_x[j];
                 loc_pos[1] = loc_center_y[j];
-                auto loc_xy = std::make_pair(loc_center_x[j],
-                                             loc_center_y[j]);
 
                 // Lookup targets near this location in focalplane
                 // coordinates.
@@ -392,7 +388,7 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
 
                 // The kdtree gets us the targets that are close to our
                 // region of interest.  Now go through these targets and
-                // compute the precise distance from the loc center.
+                // check whether the positioner can move to each one.
                 // We DO NOT sort targets by priority, since the total priority will
                 // change as observations are made.  Instead, this sorting is done
                 // for each tile during assignment.
@@ -402,23 +398,20 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
                     auto obj_xy = phw->radec2xy(
                         tra, tdec, ttheta, obj.ra, obj.dec, false
                     );
-                    double dist = geom::sq(loc_xy, obj_xy);
-                    double pdist = geom::sq(loc_patrol[j]);
-                    if (dist > pdist) {
-                        // outside the patrol radius
+                    bool fail = phw->position_xy_bad(loc[j], obj_xy);
+                    if (fail) {
                         if (logger.extra_debug()) {
                             logmsg.str("");
                             logmsg << std::setprecision(2) << std::fixed;
                             logmsg << "targets avail:  tile " << tid
                                 << ", loc " << loc[j] << ", kdtree target "
-                                << obj.id << " outside patrol radius ("
-                                << dist << " > " << pdist << ")";
+                                << obj.id << " not physically reachable by positioner";
                             logger.debug_tfg(tid, loc[j], obj.id,
                                              logmsg.str().c_str());
                         }
-                        continue;
+                    } else {
+                        thread_data[tid][loc[j]].push_back(tnear);
                     }
-                    thread_data[tid][loc[j]].push_back(tnear);
                 }
 
                 if (thread_data[tid][loc[j]].size() > 0) {
