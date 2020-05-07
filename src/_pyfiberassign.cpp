@@ -656,6 +656,10 @@ PYBIND11_MODULE(_internal, m) {
                       &fba::Hardware::neighbor_radius_mm, R"(
             Radius for considering locations as neighbors.
         )")
+        .def_readonly("patrol_buffer_mm",
+                      &fba::Hardware::patrol_buffer_mm, R"(
+            Buffer to subtract from full patrol radius when considering targets.
+        )")
         .def_readonly("state", &fba::Hardware::state, R"(
             Dictionary of fiber state for each location.
         )")
