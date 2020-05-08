@@ -3,11 +3,19 @@
 fiberassign change log
 ======================
 
-1.4.0 (unreleased)
+1.4.1 (unreleased)
 ------------------
 
-* No changes yet.
+* Fix bug in the range checking of positioner theta / phi angles (PR `#267`_).
+* Move the checks for positioner reachability from the assignment code to the
+  TargetsAvailable class (PR `#264`_).
+* Use a specific rundate for unit tests, to ensure consistent focalplane
+  model (PR `#262`_).
 
+.. _`#267`: https://github.com/desihub/fiberassign/pull/267
+.. _`#264`: https://github.com/desihub/fiberassign/pull/264
+.. _`#262`: https://github.com/desihub/fiberassign/pull/262
+  
 1.4.0 (2020-03-19)
 ------------------
 

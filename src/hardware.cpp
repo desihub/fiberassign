@@ -534,24 +534,68 @@ void fba::Hardware::xy2radec_multi(
 }
 
 
-bool _check_angle_range(
-        double & ang, double ang_zero,
-        double ang_min, double ang_max) {
+double _angle_diff(double hi, double low) {
     double twopi = 2.0 * M_PI;
-    double abs_min = ang_zero + ang_min;
-    double abs_max = ang_zero + ang_max;
-    if (ang < abs_min) {
-        ang += twopi;
+    // range reduction to [-Pi, Pi)
+    if (hi >= M_PI) {
+        hi -= twopi;
     }
-    if (ang > abs_max) {
-        ang -= twopi;
+    if (hi < -M_PI) {
+        hi += twopi;
     }
-    if ((ang < abs_min) || (ang > abs_max)) {
-        // Out of range
-        return true;
+    if (low >= M_PI) {
+        low -= twopi;
+    }
+    if (low < -M_PI) {
+        low += twopi;
+    }
+    double diff = hi - low;
+    if (diff > 0.0) {
+        return diff;
     } else {
-        return false;
+        return (twopi + diff);
     }
+}
+
+
+bool _outside_theta_phi_range(
+    double const & theta, double const & phi,
+    double const & theta_zero, double const & theta_min, double const & theta_max,
+    double const & phi_zero, double const & phi_min, double const & phi_max
+) {
+    // The definitions of the theta / phi angles and ranges can be found in
+    // DESI-0899.
+
+    // Theta angle.  The theta offset loaded from desimodel is already in global
+    // focalplane coordinates (not petal-local).  The theta min / max values are
+    // relative to this offset (not the coordinate system).  Compute the angle
+    // difference rotating both directions from theta_zero and see if we can reach
+    // it at least one of those ways.  Note that theta_min is negative to indicate
+    // a clockwise rotation from theta_zero.
+    double diff_hi = _angle_diff(theta, theta_zero);
+    double diff_lo = _angle_diff(theta_zero, theta);
+    if (
+        ((diff_hi > theta_max) || (diff_hi < theta_min))
+        && ((-diff_lo > theta_max) || (-diff_lo < theta_min))
+    ) {
+        return true;
+    }
+
+    // Phi angle.  The phi offset (phi_zero) is relative to the coordinate system
+    // defined by the theta arm along the X axis.  The phi min / max values are
+    // relative to this offset (not the theta-arm coordinate system).  Note that
+    // a negative phi_min indicates a clockwise rotation from phi_zero.
+    diff_hi = _angle_diff(phi, phi_zero);
+    diff_lo = _angle_diff(phi_zero, phi);
+    if (
+        ((diff_hi > phi_max) || (diff_hi < phi_min))
+        && ((-diff_lo > phi_max) || (-diff_lo < phi_min))
+    ) {
+        return true;
+    }
+
+    // not outside range
+    return false;
 }
 
 
@@ -562,11 +606,11 @@ bool fba::Hardware::move_positioner_thetaphi(
         double theta_min, double phi_min, double theta_max, double phi_max
         ) const {
     // Check that requested angles are in range.
-    bool bad_phi = _check_angle_range(phi, phi_zero, phi_min, phi_max);
-    bool bad_theta = _check_angle_range(
-        theta, theta_zero, theta_min, theta_max
-    );
-    if (bad_phi || bad_theta) {
+    if (
+        _outside_theta_phi_range(
+            theta, phi, theta_zero, theta_min, theta_max, phi_zero, phi_min, phi_max
+        )
+    ) {
         return true;
     }
 
@@ -678,13 +722,12 @@ bool fba::Hardware::xy_to_thetaphi(
 
         theta = ::atan2(offset.second, offset.first) - txy;
     }
-
-    // Check that angles are in range
-    bool bad_phi = _check_angle_range(phi, phi_zero, phi_min, phi_max);
-    bool bad_theta = _check_angle_range(
-        theta, theta_zero, theta_min, theta_max
-    );
-    if (bad_phi || bad_theta) {
+    // Check that requested angles are in range.
+    if (
+        _outside_theta_phi_range(
+            theta, phi, theta_zero, theta_min, theta_max, phi_zero, phi_min, phi_max
+        )
+    ) {
         return true;
     }
 
