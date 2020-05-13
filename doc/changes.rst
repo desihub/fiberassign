@@ -11,10 +11,12 @@ fiberassign change log
   TargetsAvailable class (PR `#264`_).
 * Use a specific rundate for unit tests, to ensure consistent focalplane
   model (PR `#262`_).
+* Simplify handling of MWS secondary bits in creating sv1_sciencemask (PR `#268`_).
 
-.. _`#267`: https://github.com/desihub/fiberassign/pull/267
-.. _`#264`: https://github.com/desihub/fiberassign/pull/264
 .. _`#262`: https://github.com/desihub/fiberassign/pull/262
+.. _`#264`: https://github.com/desihub/fiberassign/pull/264
+.. _`#267`: https://github.com/desihub/fiberassign/pull/267
+.. _`#268`: https://github.com/desihub/fiberassign/pull/268
   
 1.4.0 (2020-03-19)
 ------------------
