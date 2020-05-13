@@ -125,51 +125,8 @@ def default_sv1_sciencemask():
 
     if "SCND_ANY" in desi_mask.names():
         sciencemask |= desi_mask["SCND_ANY"].mask
-        sciencemask |= sv1_scnd_mask['MWS_WD_SV']
-        sciencemask |= sv1_scnd_mask['MWS_SPECIAL_DRACO_SV']
-        sciencemask |= sv1_scnd_mask['MWS_SPECIAL_DDOGIANTS_SV']
-        sciencemask |= sv1_scnd_mask['MWS_SPECIAL_WDBINARY_SV']
-        sciencemask |= sv1_scnd_mask['MWS_SPECIAL_RRLYR_SV']
-        sciencemask |= sv1_scnd_mask['MWS_SPECIAL_HYADES_SV']
-        sciencemask |= sv1_scnd_mask['MWS_SPECIAL_GC_SV']
-        sciencemask |= sv1_scnd_mask['MWS_WD_SV_VERYBRIGHT']
-        sciencemask |= sv1_scnd_mask['MWS_SPECIAL_DDOGIANTS_VERYBRIGHT_SV']
-        sciencemask |= sv1_scnd_mask['MWS_SPECIAL_HYADES_VERYBRIGHT_SV']
-        sciencemask |= sv1_scnd_mask['MWS_SPECIAL_GC_VERYBRIGHT_SV']
-        sciencemask |= sv1_scnd_mask['MWS_CALIB_APOGEE']
-        sciencemask |= sv1_scnd_mask['MWS_CALIB_APOGEE_VERYBRIGHT']
-        sciencemask |= sv1_scnd_mask['MWS_CALIB_GAIAESO']
-        sciencemask |= sv1_scnd_mask['MWS_CALIB_GAIAESO_VERYBRIGHT']
-        sciencemask |= sv1_scnd_mask['MWS_CALIB_SEGUE']
-        sciencemask |= sv1_scnd_mask['MWS_CALIB_SEGUE_VERYBRIGHT']
-        sciencemask |= sv1_scnd_mask['MWS_CALIB_GALAH']
-        sciencemask |= sv1_scnd_mask['MWS_CALIB_GALAH_VERYBRIGHT']
-        sciencemask |= sv1_scnd_mask['MWS_CALIB_BOSS']
-        sciencemask |= sv1_scnd_mask['MWS_CALIB_BOSS_VERYBRIGHT']
-
     else:
         sciencemask |= desi_mask["SECONDARY_ANY"].mask
-        sciencemask |= sv1_scnd_mask['MWS_WD_SV']
-        sciencemask |= sv1_scnd_mask['MWS_SPECIAL_DRACO_SV']
-        sciencemask |= sv1_scnd_mask['MWS_SPECIAL_DDOGIANTS_SV']
-        sciencemask |= sv1_scnd_mask['MWS_SPECIAL_WDBINARY_SV']
-        sciencemask |= sv1_scnd_mask['MWS_SPECIAL_RRLYR_SV']
-        sciencemask |= sv1_scnd_mask['MWS_SPECIAL_HYADES_SV']
-        sciencemask |= sv1_scnd_mask['MWS_SPECIAL_GC_SV']
-        sciencemask |= sv1_scnd_mask['MWS_WD_SV_VERYBRIGHT']
-        sciencemask |= sv1_scnd_mask['MWS_SPECIAL_DDOGIANTS_VERYBRIGHT_SV']
-        sciencemask |= sv1_scnd_mask['MWS_SPECIAL_HYADES_VERYBRIGHT_SV']
-        sciencemask |= sv1_scnd_mask['MWS_SPECIAL_GC_VERYBRIGHT_SV']
-        sciencemask |= sv1_scnd_mask['MWS_CALIB_APOGEE']
-        sciencemask |= sv1_scnd_mask['MWS_CALIB_APOGEE_VERYBRIGHT']
-        sciencemask |= sv1_scnd_mask['MWS_CALIB_GAIAESO']
-        sciencemask |= sv1_scnd_mask['MWS_CALIB_GAIAESO_VERYBRIGHT']
-        sciencemask |= sv1_scnd_mask['MWS_CALIB_SEGUE']
-        sciencemask |= sv1_scnd_mask['MWS_CALIB_SEGUE_VERYBRIGHT']
-        sciencemask |= sv1_scnd_mask['MWS_CALIB_GALAH']
-        sciencemask |= sv1_scnd_mask['MWS_CALIB_GALAH_VERYBRIGHT']
-        sciencemask |= sv1_scnd_mask['MWS_CALIB_BOSS']
-        sciencemask |= sv1_scnd_mask['MWS_CALIB_BOSS_VERYBRIGHT']
 
     return sciencemask
 
