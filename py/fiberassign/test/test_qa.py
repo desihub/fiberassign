@@ -2,17 +2,12 @@
 Test fiberassign target operations.
 """
 import os
-
+import subprocess
 import re
-
 import shutil
-
 import unittest
-
 from datetime import datetime
-
 import json
-
 import glob
 
 import numpy as np
@@ -20,6 +15,8 @@ import numpy as np
 import fitsio
 
 import desimodel
+
+import fiberassign
 
 from fiberassign.utils import option_list, GlobalTimers
 
@@ -261,6 +258,16 @@ class TestQA(unittest.TestCase):
 
         self.assertGreaterEqual(frac,  99.0)
 
+        #- Test if qa-fiberassign script runs without crashing
+        bindir = os.path.join(os.path.dirname(fiberassign.__file__), '..', '..', 'bin')
+        script = os.path.join(os.path.abspath(bindir), 'qa-fiberassign')
+        if os.path.exists(script):
+            fafiles = glob.glob(f"{test_dir}/fiberassign-*.fits")
+            cmd = "{} --targets {}".format(script, " ".join(fafiles))
+            err = subprocess.call(cmd.split())
+            self.assertEqual(err, 0, f"FAILED ({err}): {cmd}")
+        else:
+            print(f"ERROR: didn't find {script}")
 
 
 def test_suite():
