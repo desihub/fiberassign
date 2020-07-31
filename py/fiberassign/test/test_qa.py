@@ -259,7 +259,7 @@ class TestQA(unittest.TestCase):
         with open(log_file, "w") as f:
             f.write(log_msg)
 
-        self.assertTrue(frac >= 99.0)
+        self.assertGreaterEqual(frac,  99.0)
 
 
 
