@@ -153,6 +153,9 @@ class TestHardware(unittest.TestCase):
         runtime = datetime.strptime(test_assign_date, "%Y-%m-%dT%H:%M:%S")
         fp, exclude, state, tmstr = dmio.load_focalplane(runtime)
 
+        # make a copy so that we aren't modifying the desimodel cache
+        fp = fp.copy()
+
         limit_radius = 2.0
         open_limit = 2.0 * np.arcsin(0.5 * limit_radius / 3.0)
         phi_limit_min = (np.pi - open_limit) * 180.0 / np.pi

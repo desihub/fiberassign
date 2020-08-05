@@ -345,8 +345,8 @@ def default_survey_target_masks(survey):
         survey (str): The survey name.
 
     Returns:
-        (tuple): The science mask, standard mask, sky mask, safe mask,
-            and exclude mask for the data.
+        (tuple): The science mask, standard mask, sky mask, suppsky mask,
+            safe mask, and exclude mask for the data.
 
     """
     sciencemask = None
@@ -390,7 +390,7 @@ def default_target_masks(data):
 
     Returns:
         (tuple):  The survey, column name, science mask, standard mask,
-            sky mask, safe mask, and exclude mask for the data.
+            sky mask, suppsky mask, safe mask, and exclude mask for the data.
 
     """
     col = None

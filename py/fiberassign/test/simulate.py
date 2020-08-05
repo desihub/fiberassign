@@ -64,6 +64,10 @@ def sim_focalplane(rundate=None, fakepos=False):
     # First get the starting focalplane from desimodel
     fp, exclude, state, tmstr = dmio.load_focalplane(runtime)
 
+    # Make a copy since desimodel is caching the original
+    fp = fp.copy()
+    state = state.copy()
+
     npos = len(fp)
 
     # Are we replacing the arms and theta lengths with the nominal values?
