@@ -3,20 +3,27 @@
 fiberassign change log
 ======================
 
-1.4.1 (unreleased)
+1.4.2 (unreleased)
 ------------------
 
+* No changes yet.
+
+1.4.1 (2020-08-04)
+------------------
+
+* Fix tests and qa-fiberassign (PR `#269`_).
+* Simplify handling of MWS secondary bits in creating sv1_sciencemask (PR `#268`_).
 * Fix bug in the range checking of positioner theta / phi angles (PR `#267`_).
 * Move the checks for positioner reachability from the assignment code to the
   TargetsAvailable class (PR `#264`_).
 * Use a specific rundate for unit tests, to ensure consistent focalplane
   model (PR `#262`_).
-* Simplify handling of MWS secondary bits in creating sv1_sciencemask (PR `#268`_).
 
 .. _`#262`: https://github.com/desihub/fiberassign/pull/262
 .. _`#264`: https://github.com/desihub/fiberassign/pull/264
 .. _`#267`: https://github.com/desihub/fiberassign/pull/267
 .. _`#268`: https://github.com/desihub/fiberassign/pull/268
+.. _`#269`: https://github.com/desihub/fiberassign/pull/269
   
 1.4.0 (2020-03-19)
 ------------------
