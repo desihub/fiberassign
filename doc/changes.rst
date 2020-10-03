@@ -3,10 +3,17 @@
 fiberassign change log
 ======================
 
-1.4.2 (unreleased)
+1.4.3 (unreleased)
 ------------------
 
 * No changes yet.
+
+1.4.2 (2020-10-02)
+------------------
+
+* Support C++11, not requiring C++14 (PR `#273`).
+
+.. _`#273`: https://github.com/desihub/fiberassign/pull/273
 
 1.4.1 (2020-08-04)
 ------------------
