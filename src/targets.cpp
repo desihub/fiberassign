@@ -229,7 +229,11 @@ fba::TargetTree::TargetTree(Targets::pshr objs, double min_tree_size) {
         treelist_.push_back(tp);
     }
 
-    tree_ = std::make_unique < htmTree <TreePoint> > (treelist_, mintreesz_);
+    tree_ = std::unique_ptr <htmTree <TreePoint> > (
+        new htmTree <TreePoint> (treelist_, mintreesz_)
+    );
+    // This is more convenient, but not introduced until C++14.
+    // tree_ = std::make_unique < htmTree <TreePoint> > (treelist_, mintreesz_);
     tree_->stats();
     tm.stop();
     tm.report("Building target tree");
