@@ -32,10 +32,10 @@ from desitarget.targetmask import desi_mask
 
 from ._version import __version__
 
-from .utils import Logger, Timer, default_mp_proc
+from .utils import Logger, Timer, default_mp_proc, GlobalTimers
 
-from .targets import (TARGET_TYPE_SKY, TARGET_TYPE_SUPPSKY,
-                      TARGET_TYPE_SAFE, desi_target_type,
+from .targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY, TARGET_TYPE_SUPPSKY,
+                      TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE, desi_target_type,
                       default_target_masks, default_survey_target_masks)
 
 from .hardware import (FIBER_STATE_UNASSIGNED, FIBER_STATE_STUCK,
@@ -1131,13 +1131,13 @@ def merge_results_tile(out_dtype, copy_fba, params):
         if len(outdata[c].shape) < 2: #Don't propagate 2D target columns into FIBERASSIGN HDU
             cols_to_keep.append(c)
     outdata = outdata[cols_to_keep]
-    
+
     cols_to_keep = list()
     for c in tile_targets.dtype.names:
         if len(tile_targets[c].shape) < 2: #Don't propagate 2D target columns into TARGETS HDU
             cols_to_keep.append(c)
     tile_targets = tile_targets[cols_to_keep]
-    
+
     # Create the file
     if os.path.isfile(outfile):
         os.remove(outfile)
@@ -1377,3 +1377,105 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
         results = pool.map(merge_tile, tile_map_list)
 
     return
+
+def run(
+    asgn,
+    std_per_petal=10,
+    sky_per_petal=40,
+    start_tile=-1,
+    stop_tile=-1,
+    redistribute=True
+):
+    """Run fiber assignment.
+
+    Given an already-constructed Assignment class instance, run the assignment in a
+    standard way.
+
+    This is designed to be the main "driver" function used by higher-level code or
+    commandline tools.  The purpose of this function is to ensure that all of those
+    tools are assigning targets in the same way.
+
+    Args:
+        asgn (Assignment):  The assignment class
+        std_per_petal (int):  The number of standards to assign per petal
+        sky_per_petal (int):  The number of sky to assign per petal
+        start_tile (int):  If specified, the first tile ID to assign.
+        stop_tile (int):  If specified, the last tile ID to assign.
+        redistribute (bool):  If True, attempt to shift science targets to unassigned
+            fibers on later tiles in order to balance the number per petal.
+
+    Returns:
+        None
+
+    """
+    gt = GlobalTimers.get()
+
+    # First-pass assignment of science targets
+    gt.start("Assign unused fibers to science targets")
+    asgn.assign_unused(TARGET_TYPE_SCIENCE, -1, "POS", start_tile, stop_tile)
+    gt.stop("Assign unused fibers to science targets")
+
+    # Redistribute science targets across available petals
+    if redistribute:
+        gt.start("Redistribute science targets")
+        asgn.redistribute_science(start_tile, stop_tile)
+        gt.stop("Redistribute science targets")
+
+    # Assign standards, up to some limit
+    gt.start("Assign unused fibers to standards")
+    asgn.assign_unused(
+        TARGET_TYPE_STANDARD, std_per_petal, "POS", start_tile, stop_tile
+    )
+    gt.stop("Assign unused fibers to standards")
+
+    # Assign sky to unused fibers, up to some limit
+    gt.start("Assign unused fibers to sky")
+    asgn.assign_unused(
+        TARGET_TYPE_SKY, sky_per_petal, "POS", start_tile, stop_tile
+    )
+    gt.stop("Assign unused fibers to sky")
+
+    # Assign suppsky to unused fibers, up to some limit
+    gt.start("Assign unused fibers to supp_sky")
+    asgn.assign_unused(
+        TARGET_TYPE_SUPPSKY, sky_per_petal, "POS", start_tile, stop_tile
+    )
+    gt.stop("Assign unused fibers to supp_sky")
+
+    # Force assignment if needed
+    gt.start("Force assignment of sufficient standards")
+    asgn.assign_force(
+        TARGET_TYPE_STANDARD, std_per_petal, start_tile, stop_tile
+    )
+    gt.stop("Force assignment of sufficient standards")
+
+    gt.start("Force assignment of sufficient sky")
+    asgn.assign_force(TARGET_TYPE_SKY, sky_per_petal, start_tile, stop_tile)
+    gt.stop("Force assignment of sufficient sky")
+
+    gt.start("Force assignment of sufficient supp_sky")
+    asgn.assign_force(TARGET_TYPE_SUPPSKY, sky_per_petal, start_tile, stop_tile)
+    gt.stop("Force assignment of sufficient supp_sky")
+
+    # If there are any unassigned fibers, try to place them somewhere.
+    # Assigning science again is a no-op, but...
+    gt.start("Assign remaining unassigned fibers")
+    asgn.assign_unused(TARGET_TYPE_SCIENCE, -1, "POS", start_tile, stop_tile)
+    asgn.assign_unused(TARGET_TYPE_STANDARD, -1, "POS", start_tile, stop_tile)
+    asgn.assign_unused(TARGET_TYPE_SKY, -1, "POS", start_tile, stop_tile)
+    asgn.assign_unused(TARGET_TYPE_SUPPSKY, -1, "POS", start_tile, stop_tile)
+
+    # Assign safe location to unused fibers (no maximum).  There should
+    # always be at least one safe location (i.e. "BAD_SKY") for each fiber.
+    # So after this is run every fiber should be assigned to something.
+    asgn.assign_unused(TARGET_TYPE_SAFE, -1, "POS", start_tile, stop_tile)
+    gt.stop("Assign remaining unassigned fibers")
+
+    # Assign sky monitor fibers
+    gt.start("Assign sky monitor fibers")
+    asgn.assign_unused(TARGET_TYPE_SKY, -1, "ETC", start_tile, stop_tile)
+    asgn.assign_unused(TARGET_TYPE_SUPPSKY, -1, "ETC", start_tile, stop_tile)
+    asgn.assign_unused(TARGET_TYPE_SAFE, -1, "ETC", start_tile, stop_tile)
+    gt.stop("Assign sky monitor fibers")
+
+    return asgn

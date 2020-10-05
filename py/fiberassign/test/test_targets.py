@@ -58,6 +58,13 @@ class TestTargets(unittest.TestCase):
         load_target_file(tgs, input_suppsky)
         print(tgs)
 
+        # Test access
+        ids = tgs.ids()
+        tt = tgs.get(ids[0])
+        tt.ra += 1.0e-5
+        tt.dec += 1.0e-5
+        tt.subpriority = 0.99
+
         # Create a hierarchical triangle mesh lookup of the targets positions
         tree = TargetTree(tgs, 0.01)
 

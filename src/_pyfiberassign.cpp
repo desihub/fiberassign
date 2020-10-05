@@ -1092,28 +1092,28 @@ PYBIND11_MODULE(_internal, m) {
         .def_readonly("id", &fba::Target::id, R"(
             The target ID.
         )")
-        .def_readonly("ra", &fba::Target::ra, R"(
+        .def_readwrite("ra", &fba::Target::ra, R"(
             The target RA.
         )")
-        .def_readonly("dec", &fba::Target::dec, R"(
+        .def_readwrite("dec", &fba::Target::dec, R"(
             The target DEC.
         )")
-        .def_readonly("bits", &fba::Target::bits, R"(
+        .def_readwrite("bits", &fba::Target::bits, R"(
             The target bitfield (e.g. DESI_TARGET, CMX_TARGET, etc).
         )")
         .def_readwrite("obsremain", &fba::Target::obsremain, R"(
             The remaining observations for this target.
         )")
-        .def_readonly("priority", &fba::Target::priority, R"(
+        .def_readwrite("priority", &fba::Target::priority, R"(
             The integer priority class for this target.
         )")
-        .def_readonly("subpriority", &fba::Target::subpriority, R"(
+        .def_readwrite("subpriority", &fba::Target::subpriority, R"(
             The float64 subpriority on the range [0,1).
         )")
-        .def_readonly("obscond", &fba::Target::obscond, R"(
+        .def_readwrite("obscond", &fba::Target::obscond, R"(
             The valid observing conditions allowed for this target.
         )")
-        .def_readonly("type", &fba::Target::type, R"(
+        .def_readwrite("type", &fba::Target::type, R"(
             The internal target type (science, standard, sky, safe).
         )")
         .def("is_science", &fba::Target::is_science, R"(
@@ -1279,22 +1279,22 @@ PYBIND11_MODULE(_internal, m) {
         .def_readonly("id", &fba::Tiles::id, R"(
             The array of tile IDs.
         )")
-        .def_readonly("ra", &fba::Tiles::ra, R"(
+        .def_readwrite("ra", &fba::Tiles::ra, R"(
             The array of tile RA values.
         )")
-        .def_readonly("dec", &fba::Tiles::dec, R"(
+        .def_readwrite("dec", &fba::Tiles::dec, R"(
             The array of tile DEC values.
         )")
-        .def_readonly("obscond", &fba::Tiles::obscond, R"(
+        .def_readwrite("obscond", &fba::Tiles::obscond, R"(
             The array of tile observing conditions values.
         )")
-        .def_readonly("obstime", &fba::Tiles::obstime, R"(
+        .def_readwrite("obstime", &fba::Tiles::obstime, R"(
             The array of tile observation times.
         )")
-        .def_readonly("obstheta", &fba::Tiles::obstheta, R"(
+        .def_readwrite("obstheta", &fba::Tiles::obstheta, R"(
             The array of tile field rotation values.
         )")
-        .def_readonly("obshourang", &fba::Tiles::obshourang, R"(
+        .def_readwrite("obshourang", &fba::Tiles::obshourang, R"(
             The array of tile observation hour angles.
         )")
         .def_readonly("order", &fba::Tiles::order, R"(

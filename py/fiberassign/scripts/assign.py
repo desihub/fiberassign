@@ -30,7 +30,7 @@ from ..targets import (str_to_target_type, TARGET_TYPE_SCIENCE,
                        load_target_file)
 
 from ..assign import (Assignment, write_assignment_fits,
-                      result_path)
+                      result_path, run)
 
 
 def parse_assign(optlist=None):
@@ -161,6 +161,10 @@ def parse_assign(optlist=None):
                         action="store_true",
                         help="Do assignment one tile at a time.  This disables"
                         " redistribution.")
+
+    parser.add_argument("--no_redistribute", required=False, default=False,
+                        action="store_true",
+                        help="Disable redistribution of science targets.")
 
     args = None
     if optlist is None:
@@ -330,56 +334,34 @@ def run_assign_full(args):
     hw, tiles, tgs = run_assign_init(args)
 
     # Create a hierarchical triangle mesh lookup of the targets positions
+    gt.start("Construct target tree")
     tree = TargetTree(tgs)
+    gt.stop("Construct target tree")
 
     # Compute the targets available to each fiber for each tile.
+    gt.start("Compute Targets Available")
     tgsavail = TargetsAvailable(hw, tgs, tiles, tree)
+    gt.stop("Compute Targets Available")
 
     # Free the tree
     del tree
 
     # Compute the fibers on all tiles available for each target and sky
+    gt.start("Compute Locations Available")
     favail = LocationsAvailable(tgsavail)
+    gt.stop("Compute Locations Available")
 
     # Create assignment object
+    gt.start("Construct Assignment")
     asgn = Assignment(tgs, tgsavail, favail)
+    gt.stop("Construct Assignment")
 
-    # First-pass assignment of science targets
-    asgn.assign_unused(TARGET_TYPE_SCIENCE)
-
-    # Redistribute science targets across available petals
-    asgn.redistribute_science()
-
-    # Assign standards, up to some limit
-    asgn.assign_unused(TARGET_TYPE_STANDARD, args.standards_per_petal)
-
-    # Assign sky to unused fibers, up to some limit
-    asgn.assign_unused(TARGET_TYPE_SKY, args.sky_per_petal)
-
-    # Assign suppsky to unused fibers, up to some limit
-    asgn.assign_unused(TARGET_TYPE_SUPPSKY, args.sky_per_petal)
-
-    # Force assignment if needed
-    asgn.assign_force(TARGET_TYPE_STANDARD, args.standards_per_petal)
-    asgn.assign_force(TARGET_TYPE_SKY, args.sky_per_petal)
-    asgn.assign_force(TARGET_TYPE_SUPPSKY, args.sky_per_petal)
-
-    # If there are any unassigned fibers, try to place them somewhere.
-    # Assigning science again is a no-op, but...
-    asgn.assign_unused(TARGET_TYPE_SCIENCE)
-    asgn.assign_unused(TARGET_TYPE_STANDARD)
-    asgn.assign_unused(TARGET_TYPE_SKY)
-    asgn.assign_unused(TARGET_TYPE_SUPPSKY)
-
-    # Assign safe location to unused fibers (no maximum).  There should
-    # always be at least one safe location (i.e. "BAD_SKY") for each fiber.
-    # So after this is run every fiber should be assigned to something.
-    asgn.assign_unused(TARGET_TYPE_SAFE)
-
-    # Assign sky monitor fibers
-    asgn.assign_unused(TARGET_TYPE_SKY, -1, "ETC")
-    asgn.assign_unused(TARGET_TYPE_SUPPSKY, -1, "ETC")
-    asgn.assign_unused(TARGET_TYPE_SAFE, -1, "ETC")
+    run(
+        asgn,
+        args.standards_per_petal,
+        args.sky_per_petal,
+        redistribute=(not args.no_redistribute)
+    )
 
     gt.stop("run_assign_full calculation")
     gt.start("run_assign_full write output")
@@ -427,65 +409,40 @@ def run_assign_bytile(args):
     hw, tiles, tgs = run_assign_init(args)
 
     # Create a hierarchical triangle mesh lookup of the targets positions
+    gt.start("Construct target tree")
     tree = TargetTree(tgs)
+    gt.stop("Construct target tree")
 
     # Compute the targets available to each fiber for each tile.
+    gt.start("Compute Targets Available")
     tgsavail = TargetsAvailable(hw, tgs, tiles, tree)
+    gt.stop("Compute Targets Available")
 
     # Free the tree
     del tree
 
     # Compute the fibers on all tiles available for each target and sky
+    gt.start("Compute Locations Available")
     favail = LocationsAvailable(tgsavail)
+    gt.stop("Compute Locations Available")
 
     # Create assignment object
+    gt.start("Construct Assignment")
     asgn = Assignment(tgs, tgsavail, favail)
+    gt.stop("Construct Assignment")
 
     # We are now going to loop over tiles and assign each one fully before
     # moving on to the next
 
     for tile_id in tiles.id:
-
-        # First-pass assignment of science targets
-        asgn.assign_unused(TARGET_TYPE_SCIENCE, -1, "POS", tile_id, tile_id)
-
-        # Assign standards, up to some limit
-        asgn.assign_unused(TARGET_TYPE_STANDARD, args.standards_per_petal,
-                           "POS", tile_id, tile_id)
-
-        # Assign sky to unused fibers, up to some limit
-        asgn.assign_unused(TARGET_TYPE_SKY, args.sky_per_petal, "POS",
-                           tile_id, tile_id)
-
-        # Assign suppsky to unused fibers, up to some limit
-        asgn.assign_unused(TARGET_TYPE_SUPPSKY, args.sky_per_petal, "POS",
-                           tile_id, tile_id)
-
-        # Force assignment if needed
-        asgn.assign_force(TARGET_TYPE_STANDARD, args.standards_per_petal,
-                          tile_id, tile_id)
-        asgn.assign_force(TARGET_TYPE_SKY, args.sky_per_petal,
-                          tile_id, tile_id)
-        asgn.assign_force(TARGET_TYPE_SUPPSKY, args.sky_per_petal,
-                          tile_id, tile_id)
-
-        # If there are any unassigned fibers, try to place them somewhere.
-        # Assigning science again is a no-op, but...
-        asgn.assign_unused(TARGET_TYPE_SCIENCE, -1, "POS", tile_id, tile_id)
-        asgn.assign_unused(TARGET_TYPE_STANDARD, -1, "POS", tile_id, tile_id)
-        asgn.assign_unused(TARGET_TYPE_SKY, -1, "POS", tile_id, tile_id)
-        asgn.assign_unused(TARGET_TYPE_SUPPSKY, -1, "POS", tile_id, tile_id)
-
-        # Assign safe location to unused fibers (no maximum).  There should
-        # always be at least one safe location (i.e. "BAD_SKY") for each
-        # fiber.  So after this is run every fiber should be assigned to
-        # something.
-        asgn.assign_unused(TARGET_TYPE_SAFE)
-
-        # Assign sky monitor fibers
-        asgn.assign_unused(TARGET_TYPE_SKY, -1, "ETC", tile_id, tile_id)
-        asgn.assign_unused(TARGET_TYPE_SUPPSKY, -1, "ETC", tile_id, tile_id)
-        asgn.assign_unused(TARGET_TYPE_SAFE, -1, "ETC", tile_id, tile_id)
+        run(
+            asgn,
+            args.standards_per_petal,
+            args.sky_per_petal,
+            start_tile=tile_id,
+            stop_tile=tile_id,
+            redistribute=(not args.no_redistribute)
+        )
 
     gt.stop("run_assign_bytile calculation")
     gt.start("run_assign_bytile write output")
