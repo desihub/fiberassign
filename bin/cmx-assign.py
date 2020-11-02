@@ -169,28 +169,6 @@ if (fdict['seed']!=-1):
 
 
 # AR directories
-
-hostname = os.getenv('HOSTNAME')
-if 'desi' in hostname:
-        path_to_targets = '/data/target/catalogs/'
-if 'cori' in hostname:
-        path_to_targets = '/global/cfs/projectdirs/desi/target/catalogs'
-
-print(path_to_targets)
-targindir= os.path.join(path_to_targets, args.dr, args.dtver, 'targets/cmx')
-skyindir = os.path.join(path_to_targets, args.dr, args.dtver, 'skies')
-gfaindir = os.path.join(path_to_targets, args.dr, args.dtver, 'gfas')
-
-try:
-        tmpdir   = os.getenv('CSCRATCH')+'/tmpdir/'
-except:
-        tmpdir   = '/tmp'
-tilefn   = os.path.join(os.getenv('DESIMODEL'),'data/footprint/desi-tiles.fits')
-
-start    = time()
-log.info('{:.1f}s\tstart'.format(time()-start))
-
-
 mydirs = {}
 if ((args.flavor in ['dithprec','dithlost']) & (tile_in_desi==0)):
 	mydirs['targ']= '/global/cfs/projectdirs/desi/target/catalogs/gaiadr2/'+args.dtver+'/targets/cmx/resolve/supp/'
