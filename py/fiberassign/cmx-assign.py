@@ -8,6 +8,7 @@ source /global/cfs/cdirs/desi/software/desi_environment.sh master
 import os
 import sys
 import numpy as np
+from glob                          import glob
 from astropy.io                    import fits
 from astropy.table                 import Table
 import fitsio
@@ -40,6 +41,10 @@ flavor : see DJS email Oct,15 2020:
 
 '''
 TBD : 
+	- validate the code for tiles outside desi footprint, for dithering
+	- add epoch as input (see Eddie email to desi-survey from Oct., 30, 2020)
+	- "starfaint" flavor: pick other targets than STD_FAINT,SV0_WD, which are not enough
+	- "science" flavor, dark: verify the elg-selection
 '''
 
 # AR to speed up development/debugging
@@ -54,60 +59,49 @@ doplot= True
 
 # AR reading arguments
 parser = ArgumentParser()
-parser.add_argument('--outdir',  help='output directory',type=str,default=None,metavar='OUTDIR')
-parser.add_argument('--tileid',  help='one tileid (e.g., 7160); takes precedence over tilera,tiledec if tileid in desi-tiles.fits',type=int,default=None,metavar='TILEID')
-parser.add_argument('--tilera',  help='tile centre ra  (required if tileid not in desi-tiles.fits)',type=float,default=None,metavar='TILERA')
-parser.add_argument('--tiledec', help='tile centre dec (required if tileid not in desi-tiles.fits)',type=float,default=None,metavar='TILEDEC')
-parser.add_argument('--flavor',  help='dithprec,dithlost,starfaint,science,focus',type=str,default=None,metavar='FLAVOR')
-parser.add_argument('--rundate', help='rundate for focalplane (default=2020-03-06T00:00:00)',type=str,default='2020-03-06T00:00:00',metavar='RUNDATE')
-parser.add_argument('--obsdate', help='plan field rotations for this date (e.g., 2020-11-01)',type=str,default=None,metavar='OBSDATE')
-parser.add_argument('--obscon',  help='dark or bright or "dark,bright"',type=str,default=None,metavar='OBSCON')
-parser.add_argument('--dr',      help='legacypipe dr (default=dr8)',type=str,default='dr8',metavar='DR')
-parser.add_argument('--dtver',   help='desitarget catalogue version (default=0.37.0)',type=str,default='0.37.0',metavar='DTVER')
-parser.add_argument('--seed',    help='numpy random seed for dithering (default=1234)',type=int,default=1234,metavar='SEED')
+parser.add_argument('--outdir',  help='output directory',type=str,default=None,required=True,metavar='OUTDIR')
+parser.add_argument('--tileid',  help='output tileid (e.g., 63142); if flavor=dithprec,dithlost, will also write outputs tileid for the 12,5 next tileids',type=int,default=None,required=True,metavar='TILEID')
+parser.add_argument('--intileid',help='input tileid from $DESIMODEL/data/footprint/desi-tiles.fits (e.g., 7160)',type=int,default=None,required=False,metavar='INTILEID')
+parser.add_argument('--tilera',  help='tile centre ra  (required if intileid not provided)',type=float,default=None,required=False,metavar='TILERA')
+parser.add_argument('--tiledec', help='tile centre dec (required if intileid not provided)',type=float,default=None,required=False,metavar='TILEDEC')
+parser.add_argument('--flavor',  help='dithprec,dithlost,starfaint,science,focus',type=str,default=None,required=True,metavar='FLAVOR')
+parser.add_argument('--rundate', help='rundate for focalplane (default=2020-03-06T00:00:00)',type=str,default='2020-03-06T00:00:00',required=False,metavar='RUNDATE')
+parser.add_argument('--obscon',  help='dark or bright or "dark,bright"',type=str,default=None,required=True,metavar='OBSCON')
+parser.add_argument('--dr',      help='legacypipe dr (default=dr8)',type=str,default='dr8',required=False,metavar='DR')
+parser.add_argument('--dtver',   help='desitarget catalogue version',type=str,default=None,required=True,metavar='DTVER')
+parser.add_argument('--seed',    help='numpy random seed for dithering (default=1234)',type=int,default=1234,required=False,metavar='SEED')
+parser.add_argument('--doclean', help='delete tileid-{tiles,sky,std,gfa,targ}.fits files (y/n)',type=str,default='n',required=False,metavar='DOCLEAN')
 #
 args     = parser.parse_args()
 log      = Logger.get()
 
-# AR directories/files
-
-hostname = os.getenv('HOSTNAME')
-if 'desi' in hostname:
-        path_to_targets = '/data/target/catalogs/'
-if 'cori' in hostname:
-        path_to_targets = '/global/cfs/projectdirs/desi/target/catalogs'
-
-print(path_to_targets)
-targindir= os.path.join(path_to_targets, args.dr, args.dtver, 'targets/cmx')
-skyindir = os.path.join(path_to_targets, args.dr, args.dtver, 'skies')
-gfaindir = os.path.join(path_to_targets, args.dr, args.dtver, 'gfas')
-print('as', targindir)
-
-try:
-        tmpdir   = os.getenv('CSCRATCH')+'/tmpdir/'
-except:
-        tmpdir   = '/tmp'
-tilefn   = os.path.join(os.getenv('DESIMODEL'),'data/footprint/desi-tiles.fits')
 
 start    = time()
 log.info('{:.1f}s\tstart'.format(time()-start))
 
-# AR safe
+# AR safe: outdir
 if (args.outdir[-1]!='/'):
 	args.outdir += '/'
 if (os.path.isdir(args.outdir)==False):
 	os.mkdir(args.outdir)
-d    = fits.open(tilefn)[1].data
-keep = (d['TILEID']==args.tileid)
-if (keep.sum()>0):
-	args.tilera = d['RA'][keep][0]
-	log.info('{:.1f}s\t{:.0f} in {} -> setting args.tilera={}'.format(time()-start,args.tileid,tilefn,d['RA'][keep][0]))
-	args.tiledec = d['DEC'][keep][0]
-	log.info('{:.1f}s\t{:.0f} in {} -> setting args.tiledec={}'.format(time()-start,args.tileid,tilefn,d['DEC'][keep][0]))
-else:
-	if ((args.tilera is None) | (args.tiledec is None)):
-		log.error('{:.1f}s\tuser-defined args.tileid -> (tilera,tiledec) are required; exiting'.format(time()-start))
+# AR safe: tilera, tiledec
+if ((args.tilera is None) | (args.tiledec is None)):
+	if (args.intileid is None):
+		log.error('{:.1f}s\teither (args.tilera,args.tiledec) or args.intileid should be provided; exiting'.format(time()-start))
 		sys.exit()
+	else:
+		fn   = os.getenv('DESIMODEL')+'/data/footprint/desi-tiles.fits'
+		d    = fits.open(fn)[1].data
+		keep = (d['TILEID']==args.intileid)
+		if (keep.sum()>0):
+			args.tilera = d['RA'][keep][0]
+			log.info('{:.1f}s\t{:.0f} in {} -> setting args.tilera ={}'.format(time()-start,args.intileid,fn,d['RA'][keep][0]))
+			args.tiledec = d['DEC'][keep][0]
+			log.info('{:.1f}s\t{:.0f} in {} -> setting args.tiledec={}'.format(time()-start,args.intileid,fn,d['DEC'][keep][0]))
+		else:
+			log.error('{:.1f}s\targs.intileid not in {}; exiting'.format(time()-start,fn))
+			sys.exit()
+# AR safe: flavor
 if (args.flavor not in ['dithprec','dithlost','starfaint','science','focus']):
 	log.error('args.flavor not in dithprec,dithlost,starfaint,science,focus; exiting')
 	sys.exit()
@@ -115,7 +109,7 @@ if (args.obscon not in ['dark','bright','dark,bright']):
 	log.error('args.obscon not in dark or bright or "dark,bright"; exiting')
 	sys.exit()
 
-root    = os.path.join(args.outdir, str(args.tileid).zfill(6))
+root    = '{}{:06d}'.format(args.outdir,args.tileid)
 
 
 # AR dictionary with settings proper to each flavor
@@ -131,15 +125,28 @@ fdict['bfrac']   = 0.0	# AR fraction of assigned stars  that are dithered within
 fdict['bwidth']  = 0.0	# AR box width [arcsec] of the dithering for the dithlost-in-space case
 
 
+
+# AR is tile in the desi footprint?
+# AR -> if not, special msk and targdir for dithering
+tile_in_desi = is_point_in_desi(dmio.load_tiles(),args.tilera,args.tiledec).astype(int)
+	
+
+
 # AR flavor settings
 if (args.flavor=='dithprec'):
-	fdict['msks']    = 'STD_DITHER'
+	if (tile_in_desi==0):
+		fdict['msks']= 'STD_DITHER_GAIA'
+	else:
+		fdict['msks']= 'STD_DITHER'
 	fdict['seed']    = args.seed
 	fdict['ndither'] = 12
 	fdict['gfrac']   = 1.0
 	fdict['gwidth']  = 0.7
 elif (args.flavor=='dithlost'):
-	fdict['msks']    = 'STD_DITHER'
+	if (tile_in_desi==0):
+		fdict['msks']= 'STD_DITHER_GAIA'
+	else:
+		fdict['msks']= 'STD_DITHER'
 	fdict['seed']    = args.seed
 	fdict['ndither'] = 5
 	fdict['gfrac']   = 0.5
@@ -159,24 +166,63 @@ elif (args.flavor=='focus'):
 if (fdict['seed']!=-1):
 	np.random.seed(fdict['seed'])
 
+
+
+# AR directories
+
+hostname = os.getenv('HOSTNAME')
+if 'desi' in hostname:
+        path_to_targets = '/data/target/catalogs/'
+if 'cori' in hostname:
+        path_to_targets = '/global/cfs/projectdirs/desi/target/catalogs'
+
+print(path_to_targets)
+targindir= os.path.join(path_to_targets, args.dr, args.dtver, 'targets/cmx')
+skyindir = os.path.join(path_to_targets, args.dr, args.dtver, 'skies')
+gfaindir = os.path.join(path_to_targets, args.dr, args.dtver, 'gfas')
+
+try:
+        tmpdir   = os.getenv('CSCRATCH')+'/tmpdir/'
+except:
+        tmpdir   = '/tmp'
+tilefn   = os.path.join(os.getenv('DESIMODEL'),'data/footprint/desi-tiles.fits')
+
+start    = time()
+log.info('{:.1f}s\tstart'.format(time()-start))
+
+
+mydirs = {}
+if ((args.flavor in ['dithprec','dithlost']) & (tile_in_desi==0)):
+	mydirs['targ']= '/global/cfs/projectdirs/desi/target/catalogs/gaiadr2/'+args.dtver+'/targets/cmx/resolve/supp/'
+else:
+	mydirs['targ']= '/global/cfs/projectdirs/desi/target/catalogs/'+args.dr+'/'+args.dtver+'/targets/cmx/resolve/no-obscon/'
+mydirs['sky']     = '/global/cfs/projectdirs/desi/target/catalogs/'+args.dr+'/'+args.dtver+'/skies/'
+mydirs['skysupp'] = '/global/cfs/cdirs/desi/target/catalogs/gaiadr2/'+args.dtver+'/skies-supp/'
+mydirs['gfa']     = '/global/cfs/projectdirs/desi/target/catalogs/'+args.dr+'/'+args.dtver+'/gfas/'
+for key in mydirs.keys():
+	log.info('{:.1f}s\tdirectory for {}: {}'.format(time()-start,key,mydirs[key]))
+
+
+
+# AR extra tileid if ndither>0; switching to np.array() in all cases
+tileids = np.array([args.tileid+i for i in range(1+fdict['ndither'])])
+log.info('{:.1f}s\twill process {} tiles with tileid={}'.format(time()-start,1+fdict['ndither'],','.join([str(tileid) for tileid in tileids])))
+# AR safe tileids
+prev_fns   = [fn.split('/')[-1] for fn in 
+					glob(os.getenv('DESI_TARGET')+'/fiberassign/tiles/trunk/???/fiberassign-??????.fits')]
+new_fns    = ['fiberassign-{:06d}.fits'.format(tid) for tid in tileids]
+if (np.in1d(new_fns,prev_fns).sum()>0):
+    log.error('{:.1f}s\tsome of {} files already exist; exiting'.format(time()-start,','.join(new_fns)))
+    sys.exit()
+
+
+
 # AR printing settings
 tmpstr  = ' , '.join([kwargs[0]+'='+str(kwargs[1]) for kwargs in args._get_kwargs()])
 log.info('{:.1f}s\targs: {}'.format(time()-start,tmpstr))
 tmpstr  = ' , '.join([key+'='+str(fdict[key]) for key in fdict.keys()])
 log.info('{:.1f}s\tfdict: {}'.format(time()-start,tmpstr))
 
-
-# AR saving settings
-fn = open(root+'-settings.asc','w')
-for kwargs in args._get_kwargs():
-	fn.write(kwargs[0]+'\t= '+str(kwargs[1])+'\n')
-fn.write('\n')
-for key in fdict.keys():
-	fn.write(key+'\t= '+str(fdict[key])+'\n')
-fn.write('\n')
-fn.write('python '+sys.argv[0]+' '+' '.join(['--'+kwargs[0]+' '+str(kwargs[1]) for kwargs in args._get_kwargs() if kwargs[1] is not None])+' > '+root+'.log 2>&1 \n')
-fn.write('\n')
-fn.close()
 
 
 # AR copied from make_mtl()
@@ -192,10 +238,12 @@ mtldatamodel = np.array([], dtype=[
     ])
 
 
+
 # AR extra-hdu for dithering
 extradatamodel = np.array([], dtype=[
 	('UNDITHER_RA','>f8'),('UNDITHER_DEC','>f8'),('TARGETID', '>i8')
 	])
+
 
 
 # AR obscon
@@ -203,6 +251,7 @@ if   (args.obscon=='dark,bright'): obscon = 'DARK|GRAY|BRIGHT'
 elif (args.obscon=='dark'):        obscon = 'DARK|GRAY'
 else:                              obscon = 'BRIGHT' # AR bright
 log.info('{:.1f}s\tsetting obscon = {}'.format(time()-start,obscon))
+
 
 
 # AR get matching index for two np arrays, those should be arrays with unique values, like id
@@ -244,53 +293,46 @@ def cmx_make_mtl(d,outfn):
 	return True
 
 
+
 # AR tiles
 if (dotile==True):
 	hdr = fitsio.FITSHDR()
-	d   = np.zeros(1, dtype=[
-			('TILEID','i4'),
-			('RA','f8'),('DEC','f8'),
-			('OBSCONDITIONS','i4'),
-			('IN_DESI','i2'),
-			('PROGRAM', 'S6')])
-	d['TILEID'] = [args.tileid]
-	d['OBSCONDITIONS'] = obsconditions.mask(obscon) # AR we force the obsconditions to args.obscon
-	tmptiles    = dmio.load_tiles()
-	if (args.tilera is not None):
-		d['RA'] = args.tilera
-		d['DEC']= args.tiledec
-		d['IN_DESI'] = is_point_in_desi(tmptiles,10.5,-2.).astype(int)
+	for tileid in tileids:
+		d   = np.zeros(1, dtype=[
+				('TILEID','i4'),
+				('RA','f8'),('DEC','f8'),
+				('OBSCONDITIONS','i4'),
+				('IN_DESI','i2'),
+				('PROGRAM', 'S6')])
+		d['TILEID']  = tileid
+		d['RA']      = args.tilera
+		d['DEC']     = args.tiledec
+		d['IN_DESI'] = is_point_in_desi(dmio.load_tiles(),args.tilera,args.tiledec).astype(int)
 		d['PROGRAM'] = 'CMX' # AR custom...
-	else:
-		i       = np.where(tmptiles['TILEID']==args.tileid)[0]
-		d['RA'] = tmptiles['RA'] [i]
-		d['DEC']= tmptiles['DEC'][i]
-		d['IN_DESI'] = tmptiles['IN_DESI'][i]
-	fitsio.write(root+'-tiles.fits',d,extname='TILES',header=hdr,clobber=True)  
-	log.info('{:.1f}s\t{}-tiles.fits written'.format(time()-start,root))
+		d['OBSCONDITIONS'] = obsconditions.mask(obscon) # AR we force the obsconditions to args.obscon
+		fitsio.write('{}{:06d}-tiles.fits'.format(args.outdir,tileid),d,extname='TILES',header=hdr,clobber=True)  
+		log.info('{:.1f}s\t{}{:06d}-tiles.fits written'.format(time()-start,args.outdir,tileid))
 
 
 
 # AR sky
 if (dosky==True):
-	tiles    = fits.open(root+'-tiles.fits')[1].data
-	d        = read_targets_in_tiles(skyindir,tiles=tiles)
-	dsupp    = read_targets_in_tiles(os.path.join(skyindir,'skies-supp'),tiles=tiles)
+	tiles    = fits.open('{}-tiles.fits'.format(root))[1].data
+	d        = read_targets_in_tiles(mydirs['sky'],    tiles=tiles)
+	dsupp    = read_targets_in_tiles(mydirs['skysupp'],tiles=tiles)
 	n,tmpfn  = write_targets(args.outdir,np.concatenate([d,dsupp]),
-					indir=skyindir,indir2=os.path.join(skyindir,'skies-supp'),survey='cmx')
-	#n,tmpfn  = write_targets(args.outdir,d,indir=skyindir,survey='cmx')
-	os.rename(tmpfn,root+'-sky.fits')
+					indir=mydirs['sky'],indir2=mydirs['skysupp'],survey='cmx')
+	os.rename(tmpfn,'{}-sky.fits'.format(root))
 	log.info('{:.1f}s\t{}-sky.fits written'.format(time()-start,root))
-	h  = fits.open(root+'-sky.fits')
 
 
 
 # AR gfa
 if (dogfa==True):
-	tiles    = fits.open(root+'-tiles.fits')[1].data
-	d        = read_targets_in_tiles(gfaindir,tiles=tiles)
-	n,tmpfn  = write_targets(args.outdir,d,indir=gfaindir,survey='cmx')
-	os.rename(tmpfn,root+'-gfa.fits')
+	tiles    = fits.open('{}-tiles.fits'.format(root))[1].data
+	d        = read_targets_in_tiles(mydirs['gfa'],tiles=tiles)
+	n,tmpfn  = write_targets(args.outdir,d,indir=mydirs['gfa'],survey='cmx')
+	os.rename(tmpfn,'{}-gfa.fits'.format(root))
 	log.info('{:.1f}s\t{}-gfa.fits written'.format(time()-start,root))
 
 
@@ -298,8 +340,8 @@ if (dogfa==True):
 # AR std (if flavor=science)
 if (dostd==True):
 	if (args.flavor=='science'):
-		tiles    = fits.open(root+'-tiles.fits')[1].data
-		d        = read_targets_in_tiles(targindir,tiles=tiles,header=False)
+		tiles    = fits.open('{}-tiles.fits'.format(root))[1].data
+		d        = read_targets_in_tiles(mydirs['targ'],tiles=tiles,header=False)
 		if   (obscon=='DARK|GRAY|BRIGHT'): std_msks = ['SV0_WD','STD_FAINT','STD_BRIGHT']
 		elif (obscon=='DARK|GRAY'):        std_msks = ['SV0_WD','STD_FAINT']
 		elif (obscon=='BRIGHT'):           std_msks = ['SV0_WD','STD_BRIGHT']
@@ -318,45 +360,44 @@ if (dostd==True):
 		d        = d[keep]
 		log.info('{:.1f}s\tkeeping {:.0f}/{:.0f} stds after having cut on {} and removed {}'.format(time()-start,keep.sum(),len(keep),std_msks,fdict['msks']))
 		# AR custom mtl
-		_ = cmx_make_mtl(d,root+'-std.fits')
+		_ = cmx_make_mtl(d,'{}-std.fits'.format(root))
 
 
 
 # AR (undithered) targets
 # AR ! not using make_mtl !
 if (dotarg==True):
-	tiles    = fits.open(root+'-tiles.fits')[1].data
-	d,hdr    = read_targets_in_tiles(targindir,tiles=tiles,header=True)
+	tiles    = fits.open('{}-tiles.fits'.format(root))[1].data
+	d,hdr    = read_targets_in_tiles(mydirs['targ'],tiles=tiles,header=True)
 	keep     = np.zeros(len(d),dtype=bool)
 	for msk in fdict['msks'].split(','):
 		keep |= ((d['CMX_TARGET'] & cmx_mask[msk])>0)
 		log.info('{:.1f}s\tkeeping {:.0f} {} targets'.format(time()-start,((d['CMX_TARGET'] & cmx_mask[msk])>0).sum(),msk))
 	d        = d[keep]
 	log.info('{:.1f}s\tkeeping {:.0f}/{:.0f} targets after having cut on {}'.format(time()-start,keep.sum(),len(keep),fdict['msks']))
-	# AR custom mtl
-	_ = cmx_make_mtl(d,root+'-targ.fits')
 	# AR DITHER : tweaking PRIORITY and NUMOBS_MORE + updating the header
 	if (args.flavor in ['dithprec','dithlost']):
-		h  = fits.open(root+'-targ.fits')
-		h[1].data['PRIORITY']    = 	1210-np.clip(h[1].data['GAIA_PHOT_G_MEAN_MAG']*10, 100, 210).astype('i4') 
-		h[1].data['NUMOBS_MORE'] = 1
-		h[1].header.add_comment('tweak : PRIORITY = 1210-np.clip(GAIA_PHOT_G_MEAN_MAG*10,100,210)')
-		h[1].header.add_comment('tweak : NUMOBS_MORE = 1')
-		h.writeto(root+'-targ.fits',overwrite=True)
-		log.info('{:.1f}s\tPRIORITY and NUMOBS_MORE tweaked for dithering'.format(time()-start))
-
+		d['PRIORITY_INIT'] = 1210-np.clip(d['GAIA_PHOT_RP_MEAN_MAG']*10, 100, 210).astype('i4') 
+		d['NUMOBS_INIT']   = 1
+		log.info('{:.1f}s\tPRIORITY_INIT and NUMOBS_INIT tweaked for dithering'.format(time()-start))
+	# AR custom mtl
+	_ = cmx_make_mtl(d,'{}-targ.fits'.format(root))
+	# AR DITHER: update header
+	if (args.flavor in ['dithprec','dithlost']):
+		fd  = fitsio.FITS('{}-targ.fits'.format(root),'rw')
+		fd['MTL'].write_key('COMMENT','tweak : PRIORITY_INIT = 1210-np.clip(GAIA_PHOT_RP_MEAN_MAG*10,100,210)')
+		fd['MTL'].write_key('COMMENT','tweak : NUMOBS_INIT = 1')
+		fd.close()
 
 
 # AR fiberassign
 if (dofa==True):
-	names = ['targ'] + ['targ-dithered-'+str(i).zfill(2) for i in range(fdict['ndither'])]
-	for name in names:
+	for tileid in tileids:
 		# AR first case:  undithered -> after  running fiberassign, we get the ras, decs, and the indexes to be dithered
 		# AR other cases: dithered-??-> before running fiberassign, we compute/apply the dithering offsets
-		troot = root+'-'+name
-		print(troot)
+		troot = '{}{:06d}'.format(args.outdir,tileid)
 		#
-		if ((args.flavor in ['dithprec','dithlost']) & (name!='targ')):
+		if ((args.flavor in ['dithprec','dithlost']) & (tileid!=tileids[0])):
 			#
 			raoffs,decoffs   = ras.copy(),decs.copy()
 			# AR Gaussian offset computation
@@ -378,46 +419,58 @@ if (dofa==True):
 				h[1].header[kwargs[0]] = kwargs[1]
 			for key in fdict.keys():
 				h[1].header[key] = str(fdict[key])
-			h.writeto(troot+'.fits',overwrite=True)
+			h.writeto(troot+'-targ.fits',overwrite=True)
 		# AR running fiberassign
 		if (args.flavor=='science'):
-			opts = ['--targets',   troot+'.fits',root+'-std.fits',]
+			opts = ['--targets',   troot+'-targ.fits',root+'-std.fits',]
 		else:
-			opts = ['--targets',   troot+'.fits',]
+			opts = ['--targets',   troot+'-targ.fits',]
 		opts+= [
 				'--rundate',   args.rundate,
-				'--obsdate',   args.obsdate,
 				'--overwrite',
 				'--write_all_targets',
-				'--footprint', root+'-tiles.fits',
-				'--dir',       args.outdir,
-				'--sky',       root+'-sky.fits',
+				'--footprint',     troot+'-tiles.fits',
+				'--dir',           args.outdir,
+				'--sky',           root+'-sky.fits',
 				'--sky_per_petal', fdict['nskypet'],
-				'--gfafile',   root+'-gfa.fits',
+				'--gfafile',       root+'-gfa.fits',
 				]
-		log.info('{:.1f}s\t{}: running raw fiber assignment (fba_run) with opts={}'.format(time()-start,troot,' ; '.join(opts)))
+		log.info('{:.1f}s\ttileid={:06d}: running raw fiber assignment (fba_run) with opts={}'.format(time()-start,tileid,' ; '.join(opts)))
 		ag = parse_assign(opts)
 		run_assign_full(ag)
 		# AR merging
 		opts = [
 				'--skip_raw',
-				'--dir',       args.outdir,
-				'--targets',   troot+'.fits',root+'-sky.fits',root+'-gfa.fits'
+				'--dir',           args.outdir,
+				'--targets',       troot+'-targ.fits',root+'-sky.fits',root+'-gfa.fits'
 				]
-		log.info('{:.1f}s\t{}: merging input target data (fba_merge_results)'.format(time()-start,troot))
+		log.info('{:.1f}s\ttileid={:06d}: merging input target data (fba_merge_results) with opts={}'.format(time()-start,tileid,' ; '.join(opts)))
 		ag = parse_merge(opts)
 		run_merge(ag)
-		# AR renaming
-		os.rename(args.outdir+'fba-'        +str(args.tileid).zfill(6)+'.fits',troot+'-fba.fits')
-		os.rename(args.outdir+'fiberassign-'+str(args.tileid).zfill(6)+'.fits',troot+'-fiberassign.fits')
+		# AR dither flavors: temporary moving fba-{tileid}.fits file, otherwise it confuses run_merge()
+		if (args.flavor in ['dithprec','dithlost']):
+			fn       = '{}fba-{:06d}.fits'.format(args.outdir,tileid)
+			os.rename(fn,fn.replace('.fits','-tmp.fits'))
+			log.info('{:.1f}s\trenaming {} to {}'.format(time()-start,fn,fn.replace('.fits','-tmp.fits')))
+		# AR propagating some settings into the PRIMARY header
+		fd  = fitsio.FITS('{}fiberassign-{:06d}.fits'.format(args.outdir,tileid), 'rw')
+		for key in np.sort(list(mydirs.keys())):
+			fd['PRIMARY'].write_key(key,mydirs[key])
+		for kwargs in args._get_kwargs():
+			if (kwargs[0].lower() in ['outdir','intileid','flavor','rundate','obscon','seed']):
+				if (kwargs[1] is not None): 
+					fd['PRIMARY'].write_key(kwargs[0],kwargs[1])
+		fd.close()
 		# AR adding an extra-hdu for the dithering
 		# AR ~copied from https://github.com/desihub/fiberassign/blob/52cb99424d8a1d4e5366e6a200636ab02cb71bb9/py/fiberassign/assign.py#L1141-L1208
-		if ((args.flavor in ['dithprec','dithlost']) & (name!='targ')):
-			tmpfn = troot+'-fiberassign-tmp.fits'
-			fdin  = fitsio.FITS(troot+'-fiberassign.fits', 'r')
+		if ((args.flavor in ['dithprec','dithlost']) & (tileid!=tileids[0])):
+			dithfn   = '{}fiberassign-{:06d}.fits'.format(args.outdir,tileid)
+			undithfn = '{}{:06d}-targ.fits'.format(args.outdir,tileids[0])
+			tmpfn    = dithfn.replace('.fits','-tmp.fits')
 			if os.path.isfile(tmpfn):
 				os.remove(tmpfn)
-			fd    = fitsio.FITS(tmpfn, 'rw')
+			fdin     = fitsio.FITS(dithfn,'r')
+			fd       = fitsio.FITS(tmpfn,'rw')
 			# AR copying troot+'-fiberassign.fits'
 			extnames = ['PRIMARY','FIBERASSIGN','SKY_MONITOR','GFA_TARGETS','TARGETS','POTENTIAL_ASSIGNMENTS']
 			for iext,extname in enumerate(extnames):
@@ -431,15 +484,15 @@ if (dofa==True):
 			# AR extra-hdu with UNDITHERED_RA, UNDITHERED_DEC
 			# AR reading *-fiberassign.fits, and updating TARGET_RA,TARGET_DEC
 			# AR with the undithered positions for TARGETID matched with root+'-targ.fits'
-			d                   = fits.open(troot+'-fiberassign.fits')[1].data
-			dundith             = fits.open(root+'-targ.fits')[1].data
+			d                   = fits.open(dithfn  )[1].data
+			dundith             = fits.open(undithfn)[1].data
 			ii,iiundith         = unq_searchsorted(d['TARGETID'],dundith['targetid'])
 			d['TARGET_RA'] [ii] = dundith['RA'] [iiundith]
 			d['TARGET_DEC'][ii] = dundith['DEC'][iiundith]
 			dextra  = Table()
 			for key in extradatamodel.dtype.names:
 				dextra[key] = np.empty(len(d), dtype=extradatamodel[key].dtype)
-			dextra['TARGETID']      = d['TARGETID']
+			dextra['TARGETID']    = d['TARGETID']
 			dextra['UNDITHER_RA'] = d['TARGET_RA']
 			dextra['UNDITHER_DEC']= d['TARGET_DEC']
 			hdr0 = fdin[0].read_header()
@@ -447,15 +500,15 @@ if (dofa==True):
 			for key in hdr0.keys():
 				if (key not in ['SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'COMMENT', 'EXTNAME']):
 					hdr[key] = hdr0[key]
-			hdr['UNDITHFN'] = root+'-targ.fits'
+			hdr['UNDITHFN'] = '{}fiberassign-{:06d}.fits'.format(args.outdir,tileids[0])
 			fd.write(dextra.as_array(), header=hdr, extname='EXTRA')
 			fd.close()
 			# AR renaming
-			os.rename(tmpfn,troot+'-fiberassign.fits')
-			log.info('{:.1f}s\t{}: additional EXTRA extension added'.format(time()-start,troot+'-fiberassign.fits'))
+			os.rename(tmpfn,dithfn)
+			log.info('{:.1f}s\t{}: additional EXTRA extension added'.format(time()-start,dithfn))
 		# AR identifiying assigned targets (=STD_DITHER) on the undithered tile
-		if ((args.flavor in ['dithprec','dithlost']) & (name=='targ')):
-			d     = fits.open(troot+'-fiberassign.fits')[1].data
+		if ((args.flavor in ['dithprec','dithlost']) & (tileid==tileids[0])):
+			d     = fits.open('{}fiberassign-{:06d}.fits'.format(args.outdir,tileid))[1].data
 			# AR removing sky fibres
 			tids  = d['TARGETID'][d['OBJTYPE']=='TGT']
 			log.info('{:.1f}s\t{}: {:.0f} {} assigned'.format(time()-start,troot,len(tids),fdict['msks']))
@@ -476,6 +529,14 @@ if (dofa==True):
 				linds   = np.random.choice(tmpinds,size=tmpn,replace=False).tolist()# AR targets to be offset within a box
 			else:
 				linds   = []
+	# AR dither flavors: re-naming fba-{tileid}.fits files
+	if (args.flavor in ['dithprec','dithlost']):
+		for tileid in tileids:
+			fn       = '{}fba-{:06d}.fits'.format(args.outdir,tileid)
+			os.rename(fn.replace('.fits','-tmp.fits'),fn)
+			log.info('{:.1f}s\trenaming {} to {}'.format(time()-start,fn.replace('.fits','-tmp.fits'),fn))
+
+
 
 
 if (doplot==True):
@@ -491,27 +552,43 @@ if (doplot==True):
 		cmap.set_under(mycol[0])
 		cmap.set_over (mycol[-1])
 		return cmap
+	
+	cm       = mycmap('jet_r',10,0,1)
+
+	def plot_hist(ax,x,xp,bins,xlabel):
+		# x : x-quantity for the assigned sample
+		# xp: x-quantity for the parent sample
+		cps,_,_= ax.hist(xp,bins=bins,histtype='step',alpha=0.3,lw=3,  color='k',density=False,label='parent')
+		cs,_,_,= ax.hist(x, bins=bins,histtype='step',alpha=1.0,lw=1.0,color='k',density=False,label='assigned')
+		ax.set_xlabel(xlabel)
+		ax.set_ylabel('counts')
+		ax.grid(True)
+		ax.legend(loc=2)
+		axr   = ax.twinx()
+		axr.plot(0.5*(bins[1:]+bins[:-1]),np.array(cs)/np.array(cps).astype(float),color='r',lw=0.5)
+		axr.yaxis.label.set_color('r')
+		axr.tick_params(axis='y',colors='r')
+		axr.set_ylabel('ratio',labelpad=-10)
+		axr.set_ylim(0,1)
+		return
 
 	# AR tile ra,dec
 	tiles    = fits.open(root+'-tiles.fits')[1].data
 	tra,tdec = tiles['RA'][0],tiles['DEC'][0]
 	tsky     = SkyCoord(ra=tra*units.deg,dec=tdec*units.deg,frame='icrs')
-	cm = mycmap('jet_r',10,0,1)
 
 	# AR control plots
 	# AR parent
 	dp     = fits.open(root+'-targ.fits')[1].data
 	skyp   = SkyCoord(ra=dp['RA']*units.deg,dec=dp['DEC']*units.deg,frame='icrs')
 	#
-	names  = ['targ'] + ['targ-dithered-'+str(i).zfill(2) for i in range(fdict['ndither'])]
-	for name in names:
-	#for name in names[:2]:
-		d      = fits.open(root+'-'+name+'-fiberassign.fits')[1].data
+	for tileid in tileids:
+		d      = fits.open('{}fiberassign-{:06d}.fits'.format(args.outdir,tileid))[1].data
 		mydict = {}
 		for key in ['SKY','BAD','TGT']:
 			mydict['N'+key] = (d['OBJTYPE']==key).sum()
 		keys   = [	'TARGETID','PETAL_LOC','CMX_TARGET','FLUX_G','FLUX_R','FLUX_Z',
-					'TARGET_RA','TARGET_DEC','GAIA_PHOT_G_MEAN_MAG']
+					'TARGET_RA','TARGET_DEC','GAIA_PHOT_RP_MEAN_MAG','PRIORITY']
 		# AR arrays following the parent ordering
 		d      = d[d['OBJTYPE']=='TGT']
 		iip,ii = unq_searchsorted(dp['TARGETID'],d['TARGETID'])
@@ -523,33 +600,45 @@ if (doplot==True):
 			mydict[key][iip] =  d[key][ii]
 		sky   = SkyCoord(ra=mydict['TARGET_RA']*units.deg,dec=mydict['TARGET_DEC']*units.deg,frame='icrs')
 		#
-		fig   = plt.figure(figsize=(20,15))
-		title = 'flavor={}   name={}   TILEID={:.0f} at RA,DEC={:.1f},{:.1f}   obscon={}\n'.format(args.flavor,name,args.tileid,tra,tdec,obscon)
+		fig   = plt.figure(figsize=(25,15))
+		title = 'flavor={}    TILEID={:06d} at RA,DEC={:.1f},{:.1f}   obscon={}\n'.format(args.flavor,tileid,tra,tdec,obscon)
 		title+= 'SKY={:.0f} , BAD={:.0f} , TGT={:.0f} ('.format(mydict['NSKY'],mydict['NBAD'],mydict['NTGT'])
 		title+= ' , '.join(['{}={:.0f}'.format(msk,((mydict['CMX_TARGET'] & cmx_mask[msk])>0).sum()) for msk in fdict['msks'].split(',')])
 		title+= ')'			
-		fig.text(0.5,0.9,title,ha='center',fontsize=10,transform=fig.transFigure)
-		gs    = gridspec.GridSpec(3,3,wspace=0.3,hspace=0.2)
+		fig.text(0.5,0.9,title,ha='center',fontsize=15,transform=fig.transFigure)
+		gs    = gridspec.GridSpec(3,4,wspace=0.3,hspace=0.2)
 
 		# AR grz-mags
 		for ip,key in enumerate(['FLUX_G','FLUX_R','FLUX_Z']):
 			ax   = plt.subplot(gs[0,ip])
 			keep = (dp[key]>0)
-			magp = 22.5-2.5*np.log10(dp[key][keep])
+			xp   = 22.5-2.5*np.log10(dp[key][keep])
 			bitp = dp['CMX_TARGET'][keep]
 			keep = (mydict[key]>0)
-			mag  = 22.5-2.5*np.log10(mydict[key][keep])
+			x    = 22.5-2.5*np.log10(mydict[key][keep])
 			bit  = mydict['CMX_TARGET'][keep]
-			bins = np.linspace(magp.min(),magp.max(),51)
-			ax.hist(magp,bins=bins,histtype='step',alpha=0.3,color='k',lw=3,  density=False,label='parent')
-			ax.hist(mag, bins=bins,histtype='step',alpha=1.0,color='k',lw=0.5,density=False,label='assigned')
-			ax.set_xlabel('22.5 - 2.5 * log10({})'.format(key))
-			ax.set_ylabel('counts')
+			bins = np.linspace(xp.min(),xp.max(),51)
+			plot_hist(ax,x,xp,bins,'22.5 - 2.5 * log10({})'.format(key))
 			_,ymax = ax.get_ylim()
 			ax.set_ylim(0.8,100*ymax)
-			ax.grid(True)
-			ax.legend(loc=2)
 			ax.set_yscale('log')
+
+		# AR grz-diagram 
+		ax   = plt.subplot(gs[0,3])
+		grp  = -2.5*np.log10(dp['FLUX_G']/dp['FLUX_R'])
+		rzp  = -2.5*np.log10(dp['FLUX_R']/dp['FLUX_Z'])
+		gr   = -2.5*np.log10(mydict['FLUX_G']/mydict['FLUX_R'])
+		rz   =  -2.5*np.log10(mydict['FLUX_R']/mydict['FLUX_Z'])
+		ax.scatter(rzp,grp,c='k',s=2,alpha=0.1,rasterized=True,label='parent')
+		ax.scatter(rz, gr, c='r',s=2,alpha=1.0,rasterized=True,label='assigned')
+		ax.set_xlabel('-2.5 * log10(FLUX_R / FLUX_Z)')
+		ax.set_ylabel('-2.5 * log10(FLUX_G / FLUX_R)')
+		ax.set_xlim(-0.5,2.5)
+		ax.set_ylim(-0.5,2.5)
+		ax.grid(True)
+		ax.legend(loc=4)
+
+
 
 		# AR position in tile
 		ax                 = plt.subplot(gs[1,0]) # AR will be over-written
@@ -574,7 +663,7 @@ if (doplot==True):
 		#
 		for ip,c,clab in zip(
 				[0,1,2],
-				[hbp.get_array()/carea,hb.get_array()/len(names)/carea,(hb.get_array()/hbp.get_array())/len(names)],
+				[hbp.get_array()/carea,hb.get_array()/len(tileids)/carea,(hb.get_array()/hbp.get_array())/len(tileids)],
 				[r'parent density [deg$^{-2}$]',r'assigned density [deg$^{-2}$]','parent fraction assigned']):
 			cmin = c[keep].mean()-3*c[keep].std()
 			cmin = np.max([0,cmin])
@@ -596,7 +685,7 @@ if (doplot==True):
 			cbar.set_label(clab)
 			cbar.mappable.set_clim(cmin,cmax)
 
-		# AR dithering / gaia mag
+		# AR dithering positions
 		if (args.flavor in ['dithprec','dithlost']):
 			xmax    = 5*fdict['gwidth']
 			if (fdict['bfrac']>0):
@@ -612,9 +701,11 @@ if (doplot==True):
 			axx     = ax.twinx()
 			axx.hist(dra, bins=100,histtype='stepfilled',alpha=0.3,color='k',density=True)
 			axx.set_ylim(0,5)
+			axx.axis('off')
 			axy     = ax.twiny()
 			axy.hist(ddec,bins=100,histtype='stepfilled',alpha=0.3,color='k',density=True,orientation='horizontal')
 			axy.set_xlim(0,5)
+			axy.axis('off')
 			ax.set_xlabel('$\Delta$RA = Angular offset in R.A. [arcsec]')
 			ax.set_ylabel('$\Delta$DEC = Angular offset in Dec. [arcsec]')
 			ax.set_xlim(-xmax,xmax)
@@ -638,39 +729,33 @@ if (doplot==True):
 				ax.axvline(-fdict['bwidth']/2.,ls='--',color='k')
 				ax.legend(loc=4)
 
-		# AR grz-diagram 
+		# AR rmag
 		ax   = plt.subplot(gs[2,1])
-		grp  = -2.5*np.log10(dp['FLUX_G']/dp['FLUX_R'])
-		rzp  = -2.5*np.log10(dp['FLUX_R']/dp['FLUX_Z'])
-		gr   = -2.5*np.log10(mydict['FLUX_G']/mydict['FLUX_R'])
-		rz   =  -2.5*np.log10(mydict['FLUX_R']/mydict['FLUX_Z'])
-		ax.scatter(rzp,grp,c='k',s=2,alpha=0.1,rasterized=True,label='parent')
-		ax.scatter(rz, gr, c='r',s=2,alpha=1.0,rasterized=True,label='assigned')
-		ax.set_xlabel('-2.5 * log10(FLUX_R / FLUX_Z)')
-		ax.set_ylabel('-2.5 * log10(FLUX_G / FLUX_R)')
-		ax.set_xlim(-0.5,2.5)
-		ax.set_ylim(-0.5,2.5)
-		ax.grid(True)
-		ax.legend(loc=4)
-		#
+		xp   = dp['GAIA_PHOT_RP_MEAN_MAG']
+		x    = mydict['GAIA_PHOT_RP_MEAN_MAG']
+		x    = x[np.isfinite(x)]
+		bins = np.linspace(xp.min(),xp.max(),51)
+		plot_hist(ax,x,xp,bins,'GAIA_PHOT_RP_MEAN_MAG')
 
-		# AR gmag
+		# AR priority
 		ax   = plt.subplot(gs[2,2])
-		magp = dp['GAIA_PHOT_G_MEAN_MAG']
-		mag  = mydict['GAIA_PHOT_G_MEAN_MAG']
-		mag  = mag[np.isfinite(mag)]
-		bins = np.linspace(magp.min(),magp.max(),51)
-		ax.hist(magp,bins=bins,histtype='step',alpha=0.3,lw=3,  color='k',density=False,label='parent')
-		ax.hist(mag, bins=bins,histtype='step',alpha=1.0,lw=1.0,color='k',density=False,label='assigned')
-		ax.set_xlabel('GAIA_PHOT_G_MEAN_MAG')
-		ax.set_ylabel('counts')
-		ax.grid(True)
-		ax.legend(loc=2)
-		#
-		plt.savefig(root+'-'+name+'.png',bbox_inches='tight')
+		xp   = dp['PRIORITY']
+		x    = mydict['PRIORITY']
+		bins = np.linspace(xp.min(),xp.max(),xp.max()-xp.min()+1)
+		plot_hist(ax,x,xp,bins,'PRIORITY')
+
+		#  AR saving plot
+		plt.savefig('{}fiberassign-{:06d}.png'.format(args.outdir,tileid),bbox_inches='tight')
 		plt.close()
 
 
-
+# AR do clean?
+if (args.doclean=='y'):
+	for tileid in tileids:
+		for ext in ['tiles','sky','gfa','std','targ']:
+			fn  = '{}{:06d}-{}.fits'.format(args.outdir,tileid,ext)
+			if (os.path.isfile(fn)):
+				log.info('{:.1f}s\tremoving {}'.format(time()-start,fn))
+				os.remove(fn)
 
 
