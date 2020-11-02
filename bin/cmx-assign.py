@@ -169,14 +169,20 @@ if (fdict['seed']!=-1):
 
 
 # AR directories
+hostname = os.getenv('HOSTNAME')
+if 'desi' in hostname:
+        path_to_targets = '/data/target/catalogs/'
+if 'cori' in hostname:
+        path_to_targets = '/global/cfs/projectdirs/desi/target/catalogs'
+
 mydirs = {}
 if ((args.flavor in ['dithprec','dithlost']) & (tile_in_desi==0)):
-	mydirs['targ']= '/global/cfs/projectdirs/desi/target/catalogs/gaiadr2/'+args.dtver+'/targets/cmx/resolve/supp/'
+	mydirs['targ']= os.path.join(path_to_targets, 'gaiadr2', args.dtver, 'targets/cmx/resolve/supp')
 else:
-	mydirs['targ']= '/global/cfs/projectdirs/desi/target/catalogs/'+args.dr+'/'+args.dtver+'/targets/cmx/resolve/no-obscon/'
-mydirs['sky']     = '/global/cfs/projectdirs/desi/target/catalogs/'+args.dr+'/'+args.dtver+'/skies/'
-mydirs['skysupp'] = '/global/cfs/cdirs/desi/target/catalogs/gaiadr2/'+args.dtver+'/skies-supp/'
-mydirs['gfa']     = '/global/cfs/projectdirs/desi/target/catalogs/'+args.dr+'/'+args.dtver+'/gfas/'
+	mydirs['targ']= os.path.join(path_to_targets, args.dr,args.dtver,'targets/cmx/resolve/no-obscon')
+mydirs['sky']     = os.path.join(path_to_targets, args.dr, args.dtver, 'skies')
+mydirs['skysupp'] = os.path.join(path_to_targets, 'gaiadr2', args.dtver, 'skies-supp')
+mydirs['gfa']     = os.path.join(path_to_targets, args.dr, args.dtver, 'gfas')
 for key in mydirs.keys():
 	log.info('{:.1f}s\tdirectory for {}: {}'.format(time()-start,key,mydirs[key]))
 
