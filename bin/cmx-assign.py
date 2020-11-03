@@ -29,6 +29,7 @@ import matplotlib
 from astropy                       import units
 from astropy.coordinates           import SkyCoord
 from argparse                      import ArgumentParser
+from collections                   import Counter
 
 '''
 flavor : see DJS email Oct,15 2020:
@@ -582,6 +583,7 @@ if (doplot==True):
             else:
                 mydict[key] = np.nan + np.zeros(len(dp))
             mydict[key][iip] =  d[key][ii]
+    
         sky   = SkyCoord(ra=mydict['TARGET_RA']*units.deg,dec=mydict['TARGET_DEC']*units.deg,frame='icrs')
         #
         fig   = plt.figure(figsize=(25,15))
@@ -591,6 +593,16 @@ if (doplot==True):
         title+= ')'            
         fig.text(0.5,0.9,title,ha='center',fontsize=15,transform=fig.transFigure)
         gs    = gridspec.GridSpec(3,4,wspace=0.3,hspace=0.2)
+        
+        # JEFR count the number of targets assigned per class
+        available_counts = Counter(mydict['CMX_TARGET'])
+        assigned_counts = Counter(d['CMX_TARGET'])
+
+        assigned_names = {}
+        for k in assigned_counts.keys():
+            if assigned_counts[k]>10:
+                assigned_names[' '.join(cmx_mask.names(k))] = assigned_counts[k]
+                
 
         # AR grz-mags
         for ip,key in enumerate(['FLUX_G','FLUX_R','FLUX_Z']):
@@ -728,6 +740,15 @@ if (doplot==True):
         bins = np.linspace(xp.min(),xp.max(),xp.max()-xp.min()+1)
         plot_hist(ax,x,xp,bins,'PRIORITY')
 
+        # JEFR counts of assigned targets per class
+        ax   = plt.subplot(gs[2,0])
+        names = np.array(list(assigned_names.keys()))
+        values = np.array(list(assigned_names.values()))
+        ii = np.argsort(values)
+        plt.barh(names[ii], values[ii], align='center', alpha=0.5)
+        for i, v in enumerate(values[ii]):
+            plt.text(v + 3, i -0.25, str(v))
+        
         #  AR saving plot
         plt.savefig('{}fiberassign-{:06d}.png'.format(args.outdir,tileid),bbox_inches='tight')
         plt.close()
