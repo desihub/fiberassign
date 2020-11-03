@@ -172,9 +172,11 @@ if (fdict['seed']!=-1):
 # AR directories
 hostname = os.getenv('HOSTNAME')
 if 'desi' in hostname:
-        path_to_targets = '/data/target/catalogs/'
+        path_to_targets = '/data/target/catalogs'
+        path_to_svn_tiles = '/data/tiles/SVN_tiles'
 if 'cori' in hostname:
         path_to_targets = '/global/cfs/projectdirs/desi/target/catalogs'
+        path_to_svn_tiles = os.path.join(os.getenv('DESI_TARGET'), 'fiberassign/tiles/trunk')
 
 mydirs = {}
 if ((args.flavor in ['dithprec','dithlost']) & (tile_in_desi==0)):
@@ -186,6 +188,7 @@ mydirs['skysupp'] = os.path.join(path_to_targets, 'gaiadr2', args.dtver, 'skies-
 mydirs['gfa']     = os.path.join(path_to_targets, args.dr, args.dtver, 'gfas')
 for key in mydirs.keys():
     log.info('{:.1f}s\tdirectory for {}: {}'.format(time()-start,key,mydirs[key]))
+log.info('{:.1f}s\tdirectory for svn tiles: {}'.format(time()-start, path_to_svn_tiles))
 
 
 
@@ -193,8 +196,9 @@ for key in mydirs.keys():
 tileids = np.array([args.tileid+i for i in range(1+fdict['ndither'])])
 log.info('{:.1f}s\twill process {} tiles with tileid={}'.format(time()-start,1+fdict['ndither'],','.join([str(tileid) for tileid in tileids])))
 # AR safe tileids
-prev_fns   = [fn.split('/')[-1] for fn in 
-                    glob(os.getenv('DESI_TARGET')+'/fiberassign/tiles/trunk/???/fiberassign-??????.fits')]
+prev_fns   = [fn.split('/')[-1] for fn in glob(os.path.join(path_to_svn_tiles, '???/fiberassign-??????.fits'))]
+
+
 new_fns    = ['fiberassign-{:06d}.fits'.format(tid) for tid in tileids]
 if (np.in1d(new_fns,prev_fns).sum()>0):
     log.error('{:.1f}s\tsome of {} files already exist; exiting'.format(time()-start,','.join(new_fns)))
