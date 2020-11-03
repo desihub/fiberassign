@@ -21,6 +21,7 @@ import desimodel.io as dmio
 from fiberassign.scripts.assign    import parse_assign,run_assign_bytile,run_assign_full
 from fiberassign.scripts.merge     import parse_merge,run_merge
 from fiberassign.utils             import Logger
+import fiberassign
 from time                          import time
 from datetime                      import datetime
 import matplotlib.pyplot as plt
@@ -273,7 +274,7 @@ def cmx_make_mtl(d,outfn):
     mtl['PRIORITY']    = mtl['PRIORITY_INIT']
     mtl['TARGET_STATE']= 'UNOBS'
     mtl['TIMESTAMP']   = datetime.utcnow().isoformat(timespec='seconds')
-    mtl['VERSION']     = '-1'            # AR : TBD : to be updated when pushed in desihub/fiberassign
+    mtl['VERSION']     = fiberassign.__version__            
     obsconmask = set_obsconditions(d)    # AR : TBD : do we want to set obsconmask to 1? (see Ted s email)
     mtl['OBSCONDITIONS'] = obsconmask
     n,tmpfn = write_mtl(args.outdir,mtl.as_array(),indir=args.outdir,survey='cmx',ecsv=False)
