@@ -297,7 +297,9 @@ if (dotile==True):
         d['TILEID']  = tileid
         d['RA']      = args.tilera
         d['DEC']     = args.tiledec
-        d['IN_DESI'] = is_point_in_desi(dmio.load_tiles(),args.tilera,args.tiledec).astype(int)
+        d['IN_DESI'] = 1  # AR forcing 1; otherwise the default onlydesi=True option in 
+                          # AR desimodel.io.load_tiles() discards tiles outside the desi footprint,
+                          # AR so return no tiles for the dithered tiles outside desi
         d['PROGRAM'] = 'CMX' # AR custom...
         d['OBSCONDITIONS'] = obsconditions.mask(obscon) # AR we force the obsconditions to args.obscon
         fitsio.write('{}{:06d}-tiles.fits'.format(args.outdir,tileid),d,extname='TILES',header=hdr,clobber=True)  
@@ -382,6 +384,16 @@ if (dotarg==True):
 
 # AR fiberassign
 if (dofa==True):
+    
+    # AR safe: delete possibly existing fba-{tileid}.fits and fiberassign-{tileid_}.fits
+    for tileid in tileids:
+        fba_file = os.path.join(args.outdir, 'fba-{:06d}.fits'.format(tileid))
+        fiberassign_file = os.path.join(args.outdir, 'fiberassign-{:06d}.fits'.format(tileid))
+        if os.path.isfile(fba_file):
+            os.remove(fba_file)
+        if os.path.isfile(fiberassign_file):
+            os.remove(fiberassign_file)
+            
     for tileid in tileids:
         # AR first case:  undithered -> after  running fiberassign, we get the ras, decs, and the indexes to be dithered
         # AR other cases: dithered-??-> before running fiberassign, we compute/apply the dithering offsets
@@ -612,17 +624,21 @@ if (doplot==True):
         # AR grz-mags
         for ip,key in enumerate(['FLUX_G','FLUX_R','FLUX_Z']):
             ax   = plt.subplot(gs[0,ip])
-            keep = (dp[key]>0)
-            xp   = 22.5-2.5*np.log10(dp[key][keep])
-            bitp = dp['CMX_TARGET'][keep]
-            keep = (mydict[key]>0)
-            x    = 22.5-2.5*np.log10(mydict[key][keep])
-            bit  = mydict['CMX_TARGET'][keep]
-            bins = np.linspace(xp.min(),xp.max(),51)
-            plot_hist(ax,x,xp,bins,'22.5 - 2.5 * log10({})'.format(key))
-            _,ymax = ax.get_ylim()
-            ax.set_ylim(0.8,100*ymax)
-            ax.set_yscale('log')
+            # AR handling outside desi cases
+            if (tile_in_desi==1):
+                keep = (dp[key]>0)
+                xp   = 22.5-2.5*np.log10(dp[key][keep])
+                bitp = dp['CMX_TARGET'][keep]
+                keep = (mydict[key]>0)
+                x    = 22.5-2.5*np.log10(mydict[key][keep])
+                bit  = mydict['CMX_TARGET'][keep]
+                bins = np.linspace(xp.min(),xp.max(),51)
+                plot_hist(ax,x,xp,bins,'22.5 - 2.5 * log10({})'.format(key))
+                _,ymax = ax.get_ylim()
+                ax.set_ylim(0.8,100*ymax)
+                ax.set_yscale('log')
+            ax.set_xlabel('22.5 - 2.5*log1('+key+')')
+
 
         # AR grz-diagram 
         ax   = plt.subplot(gs[0,3])
