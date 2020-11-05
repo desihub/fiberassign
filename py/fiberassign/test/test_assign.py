@@ -31,7 +31,7 @@ from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
 
 from fiberassign.assign import (Assignment, write_assignment_fits,
                                 write_assignment_ascii, merge_results,
-                                read_assignment_fits_tile)
+                                read_assignment_fits_tile, run)
 
 from fiberassign.qa import qa_tiles
 
@@ -358,28 +358,7 @@ class TestAssign(unittest.TestCase):
         # Create assignment object
         asgn = Assignment(tgs, tgsavail, favail)
 
-        # First-pass assignment of science targets
-        asgn.assign_unused(TARGET_TYPE_SCIENCE)
-
-        # Redistribute science targets
-        asgn.redistribute_science()
-
-        # Assign standards, 10 per petal
-        asgn.assign_unused(TARGET_TYPE_STANDARD, 10)
-        asgn.assign_force(TARGET_TYPE_STANDARD, 10)
-
-        # Assign sky to unused fibers, up to 40 per petal
-        asgn.assign_unused(TARGET_TYPE_SKY, 40)
-        asgn.assign_force(TARGET_TYPE_SKY, 40)
-
-        # Use supplemental sky to meet our requirements
-        asgn.assign_unused(TARGET_TYPE_SUPPSKY, 40)
-        asgn.assign_force(TARGET_TYPE_SUPPSKY, 40)
-
-        # If there are any unassigned fibers, try to place them somewhere.
-        asgn.assign_unused(TARGET_TYPE_SCIENCE)
-        asgn.assign_unused(TARGET_TYPE_SKY)
-        asgn.assign_unused(TARGET_TYPE_SUPPSKY)
+        run(asgn)
 
         write_assignment_fits(tiles, asgn, out_dir=test_dir, all_targets=True)
 
