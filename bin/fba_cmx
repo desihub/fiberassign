@@ -663,7 +663,7 @@ if (doplot==True):
         for ip,key in enumerate(['FLUX_G','FLUX_R','FLUX_Z']):
             ax   = plt.subplot(gs[0,ip])
             # AR handling outside desi cases
-            if (tile_in_desi==1):
+            if ((tile_in_desi==1) or (tile_in_imaging==1)):
                 keep = (dp[key]>0)
                 xp   = 22.5-2.5*np.log10(dp[key][keep])
                 bitp = dp['CMX_TARGET'][keep]
