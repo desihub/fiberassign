@@ -1,10 +1,5 @@
 #!/usr/bin/env python
 
-'''
-need to run before
-source /global/cfs/cdirs/desi/software/desi_environment.sh master
-'''
-
 import os
 import sys
 import numpy as np
@@ -131,12 +126,19 @@ fdict['bwidth']  = 0.0    # AR box width [arcsec] of the dithering for the dithl
 # AR is tile in the desi footprint?
 # AR -> if not, special msk and targdir for dithering
 tile_in_desi = is_point_in_desi(dmio.load_tiles(),args.tilera,args.tiledec).astype(int)
-    
+
+# JEFR checks whether there is imaging, default is 1. 
+# This should be changed to a more general check to include cases where 
+# the tile under consideration does not come from the DESI footprint.
+tile_in_imaging = 1
+if args.intileid is not None:
+    all_tiles = dmio.load_tiles(onlydesi=False)
+    tile_in_imaging = int(all_tiles[all_tiles['TILEID']==args.intileid]['IN_IMAGING'])
 
 
 # AR flavor settings
 if (args.flavor=='dithprec'):
-    if (tile_in_desi==0):
+    if ((tile_in_desi==0) | (tile_in_imaging==0)):
         fdict['msks']= 'STD_DITHER_GAIA'
     else:
         fdict['msks']= 'STD_DITHER'
@@ -145,7 +147,7 @@ if (args.flavor=='dithprec'):
     fdict['gfrac']   = 1.0
     fdict['gwidth']  = 0.7
 elif (args.flavor=='dithlost'):
-    if (tile_in_desi==0):
+    if ((tile_in_desi==0) | (tile_in_imaging==0)):
         fdict['msks']= 'STD_DITHER_GAIA'
     else:
         fdict['msks']= 'STD_DITHER'
@@ -180,7 +182,7 @@ if 'cori' in hostname:
         path_to_svn_tiles = os.path.join(os.getenv('DESI_TARGET'), 'fiberassign/tiles/trunk')
 
 mydirs = {}
-if ((args.flavor in ['dithprec','dithlost']) & (tile_in_desi==0)):
+if (((args.flavor in ['dithprec','dithlost']) & (tile_in_desi==0)) | (tile_in_imaging==0)):
     mydirs['targ']= os.path.join(path_to_targets, 'gaiadr2', args.dtver, 'targets/cmx/resolve/supp')
 else:
     mydirs['targ']= os.path.join(path_to_targets, args.dr,args.dtver,'targets/cmx/resolve/no-obscon')
@@ -278,8 +280,11 @@ def cmx_make_mtl(d,outfn):
     obsconmask = set_obsconditions(d)    # AR : TBD : do we want to set obsconmask to 1? (see Ted s email)
     mtl['OBSCONDITIONS'] = obsconmask
     n,tmpfn = write_mtl(args.outdir,mtl.as_array(),indir=args.outdir,survey='cmx',ecsv=False)
-    os.rename(tmpfn,outfn)
-    log.info('{:.1f}s\tmtl targets written to {} , moved to {}'.format(time()-start,tmpfn,outfn)) 
+    if n:
+        os.rename(tmpfn,outfn)
+        log.info('{:.1f}s\tmtl targets written to {} , moved to {}'.format(time()-start,tmpfn,outfn)) 
+    else:
+        log.info('{:.1f}s\tmtl targets NOT written to {} (0 targets to write)'.format(time()-start,tmpfn)) 
     return True
 
 
@@ -334,12 +339,23 @@ if (dostd==True):
     if (args.flavor=='science'):
         tiles    = fits.open('{}-tiles.fits'.format(root))[1].data
         d        = read_targets_in_tiles(mydirs['targ'],tiles=tiles,header=False)
-        if   (obscon=='DARK|GRAY|BRIGHT'): std_msks = ['SV0_WD','STD_FAINT','STD_BRIGHT']
-        elif (obscon=='DARK|GRAY'):        std_msks = ['SV0_WD','STD_FAINT']
-        elif (obscon=='BRIGHT'):           std_msks = ['SV0_WD','STD_BRIGHT']
-        else:
-            log.error('{:.1f}s\tobson not in DARK|GRAY|BRIGHT,DARK|GRAY,BRIGHT; exiting'.format(time()-start))
-            sys.exit()
+        if tile_in_imaging==1:
+            if   (obscon=='DARK|GRAY|BRIGHT'): std_msks = ['SV0_WD','STD_FAINT','STD_BRIGHT']
+            elif (obscon=='DARK|GRAY'):        std_msks = ['SV0_WD','STD_FAINT']
+            elif (obscon=='BRIGHT'):           std_msks = ['SV0_WD','STD_BRIGHT']
+    
+            else:
+                log.error('{:.1f}s\tobson not in DARK|GRAY|BRIGHT,DARK|GRAY,BRIGHT; exiting'.format(time()-start))
+                sys.exit()
+        else: # tile_in_imaging==0
+            if   (obscon=='DARK|GRAY|BRIGHT'): std_msks = ['BACKUP_BRIGHT', 'BACKUP_FAINT', 'STD_DITHER_GAIA']
+            elif (obscon=='DARK|GRAY'):        std_msks = ['BACKUP_FAINT', 'STD_DITHER_GAIA']
+            elif (obscon=='BRIGHT'):           std_msks = ['BACKUP_BRIGHT', 'STD_DITHER_GAIA']
+    
+            else:
+                log.error('{:.1f}s\tobson not in DARK|GRAY|BRIGHT,DARK|GRAY,BRIGHT; exiting'.format(time()-start))
+                sys.exit()
+            
         keep     = np.zeros(len(d),dtype=bool)
         for msk in std_msks:
             keep |= ((d['CMX_TARGET'] & cmx_mask[msk])>0)
@@ -424,7 +440,10 @@ if (dofa==True):
             h.writeto(troot+'-targ.fits',overwrite=True)
         # AR running fiberassign
         if (args.flavor=='science'):
-            opts = ['--targets',   troot+'-targ.fits',root+'-std.fits',]
+            if tile_in_imaging==1:
+                opts = ['--targets',   troot+'-targ.fits',root+'-std.fits',]
+            else:
+                opts = ['--targets' ,root+'-std.fits',]
         else:
             opts = ['--targets',   troot+'-targ.fits',]
         opts+= [
@@ -444,8 +463,16 @@ if (dofa==True):
         opts = [
                 '--skip_raw',
                 '--dir',           args.outdir,
-                '--targets',       troot+'-targ.fits',root+'-sky.fits',root+'-gfa.fits'
-                ]
+                '--targets', root+'-sky.fits', root+'-gfa.fits'
+                ] 
+        if (args.flavor=='science'):
+            if tile_in_imaging==1:
+                opts += [troot+'-targ.fits',root+'-std.fits',]
+            else:
+                opts += [root+'-std.fits',]
+        else:
+            opts += [troot+'-targ.fits',]
+  
         log.info('{:.1f}s\ttileid={:06d}: merging input target data (fba_merge_results) with opts={}'.format(time()-start,tileid,' ; '.join(opts)))
         ag = parse_merge(opts)
         run_merge(ag)
@@ -540,7 +567,6 @@ if (dofa==True):
 
 
 
-
 if (doplot==True):
 
     # AR https://lmfit.github.io/lmfit-py/builtin_models.html#lmfit.models.GaussianModel
@@ -581,7 +607,11 @@ if (doplot==True):
 
     # AR control plots
     # AR parent
-    dp     = fits.open(root+'-targ.fits')[1].data
+    if os.path.isfile(root+'-targ.fits'):
+        dp     = fits.open(root+'-targ.fits')[1].data
+    else:
+        dp     = fits.open(root+'-std.fits')[1].data
+
     skyp   = SkyCoord(ra=dp['RA']*units.deg,dec=dp['DEC']*units.deg,frame='icrs')
     #
     for tileid in tileids:
@@ -600,25 +630,33 @@ if (doplot==True):
             else:
                 mydict[key] = np.nan + np.zeros(len(dp))
             mydict[key][iip] =  d[key][ii]
+        
+        # JEFR counts of assigned targets per class
+        available_counts = Counter(mydict['CMX_TARGET'])
+        assigned_counts = Counter(d['CMX_TARGET'])
+        assigned_names = {}
+        std_masks = []
+        std_total = 0
+        for k in assigned_counts.keys():
+            mask_names = ' '.join(cmx_mask.names(k))
+            if 'STD' in mask_names:
+                std_masks.append(mask_names)
+                std_total += assigned_counts[k]
+            if assigned_counts[k]>20:# only take this class into account if it has more than 20 instances
+                assigned_names[mask_names] = assigned_counts[k]
+            
     
         sky   = SkyCoord(ra=mydict['TARGET_RA']*units.deg,dec=mydict['TARGET_DEC']*units.deg,frame='icrs')
         #
         fig   = plt.figure(figsize=(25,15))
         title = 'flavor={}    TILEID={:06d} at RA,DEC={:.1f},{:.1f}   obscon={}\n'.format(args.flavor,tileid,tra,tdec,obscon)
-        title+= 'SKY={:.0f} , BAD={:.0f} , TGT={:.0f} ('.format(mydict['NSKY'],mydict['NBAD'],mydict['NTGT'])
+        title+= 'SKY={:.0f} , BAD={:.0f} , TGT={:.0f} , STD={:.0f} ('.format(mydict['NSKY'],mydict['NBAD'],mydict['NTGT'], std_total)
         title+= ' , '.join(['{}={:.0f}'.format(msk,((mydict['CMX_TARGET'] & cmx_mask[msk])>0).sum()) for msk in fdict['msks'].split(',')])
         title+= ')'            
         fig.text(0.5,0.9,title,ha='center',fontsize=15,transform=fig.transFigure)
-        gs    = gridspec.GridSpec(3,4,wspace=0.3,hspace=0.2)
+        gs    = gridspec.GridSpec(4,4,wspace=0.3,hspace=0.2)
         
-        # JEFR count the number of targets assigned per class
-        available_counts = Counter(mydict['CMX_TARGET'])
-        assigned_counts = Counter(d['CMX_TARGET'])
 
-        assigned_names = {}
-        for k in assigned_counts.keys():
-            if assigned_counts[k]>10:
-                assigned_names[' '.join(cmx_mask.names(k))] = assigned_counts[k]
                 
 
         # AR grz-mags
@@ -761,8 +799,10 @@ if (doplot==True):
         bins = np.linspace(xp.min(),xp.max(),xp.max()-xp.min()+1)
         plot_hist(ax,x,xp,bins,'PRIORITY')
 
-        # JEFR counts of assigned targets per class
-        ax   = plt.subplot(gs[2,0])
+
+        
+        # JEFR count assigned targets per class
+        ax   = plt.subplot(gs[3,0])
         names = np.array(list(assigned_names.keys()))
         values = np.array(list(assigned_names.values()))
         ii = np.argsort(values)
