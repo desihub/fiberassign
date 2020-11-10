@@ -75,12 +75,7 @@ log      = Logger.get()
 
 start    = time()
 log.info('{:.1f}s\tstart'.format(time()-start))
-
-# AR safe: outdir
-if (args.outdir[-1]!='/'):
-    args.outdir += '/'
-if (os.path.isdir(args.outdir)==False):
-    os.mkdir(args.outdir)
+    
 # AR safe: tilera, tiledec
 if ((args.tilera is None) | (args.tiledec is None)):
     if (args.intileid is None):
@@ -106,6 +101,22 @@ if (args.obscon not in ['dark','bright','dark,bright']):
     log.error('args.obscon not in dark or bright or "dark,bright"; exiting')
     sys.exit()
 
+
+# AR is tile in the desi footprint?
+# AR -> if not, special msk and targdir for dithering
+tile_in_desi = is_point_in_desi(dmio.load_tiles(),args.tilera,args.tiledec).astype(int)
+
+if (not tile_in_desi) and (args.flavor=='science'):
+    log.error('requested tile is not in DESI and requested flavor==science; exiting')
+    sys.exit()
+    
+
+# AR safe: outdir
+if (args.outdir[-1]!='/'):
+    args.outdir += '/'
+if (os.path.isdir(args.outdir)==False):
+    os.mkdir(args.outdir)
+    
 root    = '{}{:06d}'.format(args.outdir,args.tileid)
 
 
@@ -122,14 +133,6 @@ fdict['bfrac']   = 0.0    # AR fraction of assigned stars  that are dithered wit
 fdict['bwidth']  = 0.0    # AR box width [arcsec] of the dithering for the dithlost-in-space case
 
 
-
-# AR is tile in the desi footprint?
-# AR -> if not, special msk and targdir for dithering
-tile_in_desi = is_point_in_desi(dmio.load_tiles(),args.tilera,args.tiledec).astype(int)
-
-if (not tile_in_desi) and (args.flavor=='science'):
-    log.error('requested tile is not in DESI and requested flavor==science; exiting')
-    sys.exit()
     
 # AR flavor settings
 if (args.flavor=='dithprec'):
