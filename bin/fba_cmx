@@ -312,7 +312,15 @@ if (dosky==True):
     tiles    = fits.open('{}-tiles.fits'.format(root))[1].data
     d        = read_targets_in_tiles(mydirs['sky'],    tiles=tiles)
     dsupp    = read_targets_in_tiles(mydirs['skysupp'],tiles=tiles)
-    n,tmpfn  = write_targets(args.outdir,np.concatenate([d,dsupp]),
+    # JEFR we have to check for duplicates before merging
+    
+    dmerged = np.concatenate([d,dsupp])
+    if len(dmerged['TARGETID']) != len(set(dmerged['TARGETID'])):
+        log.info('Duplicated TARGETID in sky')
+        _, ii_unique = np.unique(dmerged['TARGETID'],return_index=True)
+        dmerged = dmerged[ii_unique]
+        
+    n,tmpfn  = write_targets(args.outdir, dmerged,
                     indir=mydirs['sky'],indir2=mydirs['skysupp'],survey='cmx')
     os.rename(tmpfn,'{}-sky.fits'.format(root))
     log.info('{:.1f}s\t{}-sky.fits written'.format(time()-start,root))
