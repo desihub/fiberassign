@@ -6,7 +6,9 @@ fiberassign change log
 1.4.3 (unreleased)
 ------------------
 
-* No changes yet.
+* Added fba script for commissioning  (PR `#277`).
+
+.. _`#273`: https://github.com/desihub/fiberassign/pull/277
 
 1.4.2 (2020-10-02)
 ------------------
