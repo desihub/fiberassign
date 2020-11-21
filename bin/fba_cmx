@@ -258,6 +258,8 @@ def main():
 
     # AR dictionary with settings proper to each flavor
     fdict = {}
+    # AR allowing all observing conditions for the cmx tiles, whatever the flavor
+    fdict["obscon"] = "DARK|GRAY|BRIGHT"
     # AR minimum number of sky fibres per petal
     fdict["nskypet"] = "40"  # AR default
     # AR (no) dithering initialisation
@@ -276,7 +278,6 @@ def main():
 
     # AR flavor settings
     if args.flavor == "dithprec":
-        fdict["obscon"] = "DARK|GRAY|BRIGHT"
         if tile_in_desi == 0:
             fdict["msks"] = "STD_DITHER_GAIA"
         else:
@@ -286,7 +287,6 @@ def main():
         fdict["gfrac"] = 1.0
         fdict["gwidth"] = 0.7
     elif args.flavor == "dithlost":
-        fdict["obscon"] = "DARK|GRAY|BRIGHT"
         if tile_in_desi == 0:
             fdict["msks"] = "STD_DITHER_GAIA"
         else:
@@ -298,15 +298,12 @@ def main():
         fdict["bfrac"] = 0.5
         fdict["bwidth"] = 10.0
     elif args.flavor == "starfaint":
-        fdict["obscon"] = "DARK|GRAY|BRIGHT"
         fdict["msks"] = "STD_FAINT,SV0_WD"
         fdict["nskypet"] = "100"
     elif args.flavor == "scidark":
-        fdict["obscon"] = "DARK|GRAY"
         # fdict['msks'] = 'SV0_WD,MINI_SV_LRG,MINI_SV_ELG,MINI_SV_QSO'
         fdict["msks"] = "SV0_WD,SV0_LRG,SV0_ELG,SV0_QSO"
     elif args.flavor == "scibright":
-        fdict["obscon"] = "DARK|GRAY|BRIGHT"
         # fdict['msks'] = 'SV0_WD,MINI_SV_BGS_BRIGHT,SV0_MWS_FAINT'
         fdict["msks"] = "SV0_WD,SV0_BGS,SV0_MWS_FAINT"
     elif args.flavor == "focus":
