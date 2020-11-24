@@ -1271,7 +1271,7 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
 
     survey = None
     
-    some_dt = np.dtype([('BRICKID', '>i4'), ('BRICKNAME', 'S8'), ('BRICK_OBJID', '>i4'), 
+    some_dt = np.dtype([('BRICKNAME', 'S8'), ('BRICKID', '>i4') , ('BRICK_OBJID', '>i4'), 
                         ('MORPHTYPE', 'S4'), 
                         ('RA', '>f8'), ('DEC', '>f8'), 
                         ('EBV', '>f4'), 
@@ -1310,7 +1310,7 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
         tgview = np.frombuffer(tgdata[tf],
                                dtype=tgdtype[tf]).reshape(tgshape[tf])
         # Read data directly into shared buffer
-        tgview[:] = fd[1].read(columns=some_columns)
+        tgview[:] = fd[1].read(columns=some_columns)[some_columns]
         if survey is None:
             (survey, col, sciencemask, stdmask, skymask, suppskymask,
              safemask, excludemask) = default_target_masks(tgview)
