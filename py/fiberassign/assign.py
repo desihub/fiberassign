@@ -818,6 +818,58 @@ def merge_results_tile_initialize(tgbufs, tgdtypes, tgshapes, skybufs,
     merge_results_tile_skyshapes = skyshapes
     return
 
+# minimal set of columns to read from the target file
+minimal_target_columns = OrderedDict([
+    ('BRICKNAME', 'S8'), 
+    ('BRICKID', '>i4') , 
+    ('BRICK_OBJID', '>i4'),                    
+    ('MORPHTYPE', 'S4'), 
+    ('RA', '>f8'), 
+    ('DEC', '>f8'), 
+    ('EBV', '>f4'), 
+    ('FLUX_G', '>f4'), 
+    ('FLUX_R', '>f4'), 
+    ('FLUX_Z', '>f4'), 
+    ('FLUX_IVAR_G', '>f4'), 
+    ('FLUX_IVAR_R', '>f4'), 
+    ('FLUX_IVAR_Z', '>f4'),
+    ('FLUX_W1', '>f4'), 
+    ('FLUX_W2', '>f4'),
+    ('FIBERFLUX_G', '>f4'), 
+    ('FIBERFLUX_R', '>f4'), 
+    ('FIBERFLUX_Z', '>f4'), 
+    ('FIBERTOTFLUX_G', '>f4'), 
+    ('FIBERTOTFLUX_R', '>f4'), 
+    ('FIBERTOTFLUX_Z', '>f4'), 
+    ('REF_EPOCH', '>f4'), 
+    ('MASKBITS', '>i2'), 
+    ('FRACDEV', '>f4'), 
+    ('SHAPEDEV_R', '>f4'), 
+    ('SHAPEDEV_E1', '>f4'), 
+    ('SHAPEDEV_E2', '>f4'), 
+    ('SHAPEEXP_R', '>f4'), 
+    ('SHAPEEXP_E1', '>f4'), 
+    ('SHAPEEXP_E2', '>f4'), 
+    ('REF_ID', '>i8'), 
+    ('REF_CAT', 'S2'), 
+    ('GAIA_PHOT_G_MEAN_MAG', '>f4'),  
+    ('GAIA_PHOT_BP_MEAN_MAG', '>f4'),  
+    ('GAIA_PHOT_RP_MEAN_MAG', '>f4'), 
+    ('PARALLAX', '>f4'),  
+    ('PMRA', '>f4'), 
+    ('PMDEC', '>f4'), 
+    ('PHOTSYS', 'S1'), 
+    ('TARGETID', '>i8'), 
+    ('DESI_TARGET', '>i8'), 
+    ('BGS_TARGET', '>i8'), 
+    ('MWS_TARGET', '>i8'),
+    ('CMX_TARGET', '>i8'), 
+    ('SV0_TARGET', '>i8'), 
+    ('SUBPRIORITY', '>f8'), 
+    ('OBSCONDITIONS', '>i8'), 
+    ('PRIORITY_INIT', '>i8'), 
+    ('NUMOBS_INIT', '>i8')   
+])
 
 merged_fiberassign_swap = {
     "RA": "TARGET_RA",
@@ -1270,7 +1322,11 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
     skyhead = dict()
 
     survey = None
-
+    
+#    minimal_target_columns to read
+    minimal_dcolnames  = [x for x in minimal_target_columns.keys()]
+    minimal_dcols = [(x, y) for x, y in minimal_target_columns.items()]
+ 
     for tf in targetfiles:
         tm = Timer()
         tm.start()
@@ -1279,13 +1335,26 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
         # Allocate a shared memory buffer for the target data
         tglen = fd[1].get_nrows()
         tgshape[tf] = (tglen,)
-        tgdtype[tf], tempoff, tempisvararray = fd[1].get_rec_dtype()
+        #tgdtype[tf], tempoff, tempisvararray = fd[1].get_rec_dtype()
+        
+        #select what subset of the 'minimal_dcolnames' are present in the data.
+        file_tgdtype, tempoff, tempisvararray = fd[1].get_rec_dtype()
+        file_dcolnames  = [x for x in file_tgdtype.names]
+        dcols_to_read = []
+        for i in range(len(minimal_dcolnames)):
+            if minimal_dcolnames[i] in file_dcolnames:
+                dcols_to_read.append(minimal_dcols[i])
+        some_dt = np.dtype(dcols_to_read)
+        some_columns = list(some_dt.fields.keys())
+        
+        #print(file_tgdtype)
+        tgdtype[tf] = some_dt
         tgbytes = tglen * tgdtype[tf].itemsize
         tgdata[tf] = RawArray("B", tgbytes)
         tgview = np.frombuffer(tgdata[tf],
                                dtype=tgdtype[tf]).reshape(tgshape[tf])
         # Read data directly into shared buffer
-        tgview[:] = fd[1].read()
+        tgview[:] = fd[1].read(columns=some_columns)[some_columns]
         if survey is None:
             (survey, col, sciencemask, stdmask, skymask, suppskymask,
              safemask, excludemask) = default_target_masks(tgview)
