@@ -6,14 +6,16 @@ fiberassign change log
 1.4.3 (unreleased)
 ------------------
 
-* Added fba script for commissioning  (PR `#277`).
+* Reduces the number of target columns propagated into the fiberassign file (PR `#279`_)
+* Added fba script for commissioning  (PR `#277`_).
 
 .. _`#277`: https://github.com/desihub/fiberassign/pull/277
+.. _`#279`: https://github.com/desihub/fiberassign/pull/279
 
 1.4.2 (2020-10-02)
 ------------------
 
-* Support C++11, not requiring C++14 (PR `#273`).
+* Support C++11, not requiring C++14 (PR `#273`_).
 
 .. _`#273`: https://github.com/desihub/fiberassign/pull/273
 
