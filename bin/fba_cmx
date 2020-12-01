@@ -811,6 +811,7 @@ def main():
                     )
                 )
 
+                
     if dozip:# gzip all fiberassign files
         files_to_zip = glob(os.path.join(args.outdir, "fiberassign-*.fits"))
         for file_to_zip in files_to_zip:
