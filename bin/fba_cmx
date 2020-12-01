@@ -292,7 +292,7 @@ def main():
         else:
             fdict["msks"] = "STD_DITHER"
         fdict["seed"] = args.seed
-        fdict["ndither"] = 5
+        fdict["ndither"] = 1
         fdict["gfrac"] = 0.5
         fdict["gwidth"] = 2.0
         fdict["bfrac"] = 0.5
@@ -811,6 +811,14 @@ def main():
                     )
                 )
 
+                
+    if dozip:# gzip all fiberassign files
+        files_to_zip = glob(os.path.join(args.outdir, "fiberassign-*.fits"))
+        for file_to_zip in files_to_zip:
+            print(file_to_zip, files_to_zip)
+            log.info("gzipping file {}".format(file_to_zip))
+            os.system("gzip -f {}".format(file_to_zip))
+
     if doplot:
 
         cm = mycmap("jet_r", 10, 0, 1)
@@ -832,9 +840,14 @@ def main():
         )
         #
         for tileid in tileids:
-            d = fits.open("{}fiberassign-{:06d}.fits".format(args.outdir, tileid))[
-                1
-            ].data
+            try:
+                d = fits.open("{}fiberassign-{:06d}.fits".format(args.outdir, tileid))[
+                    1
+                ].data
+            except:
+                d = fits.open("{}fiberassign-{:06d}.fits.gz".format(args.outdir, tileid))[
+                    1
+                ].data
             mydict = {}
             for key in ["SKY", "BAD", "TGT"]:
                 mydict["N" + key] = (d["OBJTYPE"] == key).sum()
@@ -1185,6 +1198,7 @@ if __name__ == "__main__":
     dogfa = True
     dotarg = True
     dofa = True
+    dozip = True
     doplot = True
 
     # AR reading arguments
