@@ -292,7 +292,7 @@ def main():
         else:
             fdict["msks"] = "STD_DITHER"
         fdict["seed"] = args.seed
-        fdict["ndither"] = 5
+        fdict["ndither"] = 1
         fdict["gfrac"] = 0.5
         fdict["gwidth"] = 2.0
         fdict["bfrac"] = 0.5
