@@ -23,7 +23,8 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 import matplotlib
 from astropy import units
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import SkyCoord, Distance
+from astropy.time import Time
 from argparse import ArgumentParser
 from collections import Counter
 from desiutil.redirect import stdouterr_redirected
@@ -133,7 +134,7 @@ def unq_searchsorted(A, B):
 
 # AR https://lmfit.github.io/lmfit-py/builtin_models.html#lmfit.models.GaussianModel
 def gaussian(x, amp, cen, wid):
-    return amp / (wid * np.sqrt(2 * np.pi)) * np.exp(-((x - cen) ** 2) / wid)
+    return amp / (wid * np.sqrt(2 * np.pi)) * np.exp(-0.5 * ((x - cen) / wid) ** 2)
 
 
 def mycmap(name, n, cmin, cmax):
@@ -446,8 +447,49 @@ def main():
     if dogfa:
         tiles = fits.open("{}-tiles.fits".format(root))[1].data
         d = read_targets_in_tiles(mydirs["gfa"], tiles=tiles)
+        # AR clipping Gaia PARALLAX to >0 (setting distance at ~1Mpc)
+        parallax = d["PARALLAX"].copy()
+        parallax[~(d["PARALLAX"] > 0)] = 1e-3
+        # targets passing the AEN criterion
+        # https://github.com/desihub/desitarget/blob/801f1a1ac9041080f8062b84aec3634b1a9c1763/py/desitarget/gfa.py#L71-L77
+        g = d["GAIA_PHOT_G_MEAN_MAG"]
+        aen = d["GAIA_ASTROMETRIC_EXCESS_NOISE"]
+        keep = np.logical_or(
+            (g <= 19.0) * (aen < 10.0 ** 0.5),
+            (g >= 19.0) * (aen < 10.0 ** (0.5 + 0.2 * (g - 19.0))),
+        )
+        # AR adding PM to Time.now() to targets passing the AEN criterion
+        c = SkyCoord(
+            ra=d["RA"] * units.degree,
+            dec=d["DEC"] * units.degree,
+            pm_ra_cosdec=d["PMRA"] * units.mas / units.yr,
+            pm_dec=d["PMDEC"] * units.mas / units.yr,
+            frame="icrs",
+            obstime=Time(d["REF_EPOCH"], format="jyear"),
+            distance=Distance(parallax=parallax * units.mas),
+        )
+        nowc = c.apply_space_motion(new_obstime=Time.now())
+        d["RA"][keep] = nowc.ra.value[keep]
+        d["DEC"][keep] = nowc.dec.value[keep]
+        log.info(
+            "{:.1f}s\tGFA targets: updating RA,DEC with PM for {:.0f} targets passing AEN".format(
+                time() - start, keep.sum()
+            )
+        )
+        # AR updating REF_EPOCH for *all* objects (for PlateMaker)
+        d["REF_EPOCH"] = Time.now().jyear
+        log.info(
+            "{:.1f}s\tGFA targets: updating REF_EPOCH to {} for all targets".format(
+                time() - start, d["REF_EPOCH"][0]
+            )
+        )
         n, tmpfn = write_targets(args.outdir, d, indir=mydirs["gfa"], survey="cmx")
         os.rename(tmpfn, "{}-gfa.fits".format(root))
+        # AR update header
+        fd = fitsio.FITS("{}-gfa.fits".format(root), "rw")
+        fd["TARGETS"].write_key("COMMENT", "RA,DEC updated with PM for AEN objects")
+        fd["TARGETS"].write_key("COMMENT", "REF_EPOCH updated for all objects")
+        fd.close()
         log.info("{:.1f}s\t{}-gfa.fits written".format(time() - start, root))
 
     # AR std (if flavor=scidark,scibright)
@@ -682,6 +724,11 @@ def main():
                 ]:
                     if kwargs[1] is not None:
                         fd["PRIMARY"].write_key(kwargs[0], kwargs[1])
+            # AR adding a ISDITH keyword
+            if (args.flavor in ["dithprec", "dithlost"]) & (tileid != tileids[0]):
+                fd["PRIMARY"].write_key("ISDITH", 1)
+            else:
+                fd["PRIMARY"].write_key("ISDITH", 0)
             fd["PRIMARY"].write_key("obscon", fdict["obscon"])
             fd.close()
             # AR adding an extra-hdu for the dithering
@@ -811,8 +858,7 @@ def main():
                     )
                 )
 
-                
-    if dozip:# gzip all fiberassign files
+    if dozip:  # gzip all fiberassign files
         files_to_zip = glob(os.path.join(args.outdir, "fiberassign-*.fits"))
         for file_to_zip in files_to_zip:
             print(file_to_zip, files_to_zip)
@@ -845,9 +891,9 @@ def main():
                     1
                 ].data
             except:
-                d = fits.open("{}fiberassign-{:06d}.fits.gz".format(args.outdir, tileid))[
-                    1
-                ].data
+                d = fits.open(
+                    "{}fiberassign-{:06d}.fits.gz".format(args.outdir, tileid)
+                )[1].data
             mydict = {}
             for key in ["SKY", "BAD", "TGT"]:
                 mydict["N" + key] = (d["OBJTYPE"] == key).sum()
