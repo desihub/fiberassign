@@ -450,15 +450,7 @@ def main():
         # AR clipping Gaia PARALLAX to >0 (setting distance at ~1Mpc)
         parallax = d["PARALLAX"].copy()
         parallax[~(d["PARALLAX"] > 0)] = 1e-3
-        # targets passing the AEN criterion
-        # https://github.com/desihub/desitarget/blob/801f1a1ac9041080f8062b84aec3634b1a9c1763/py/desitarget/gfa.py#L71-L77
-        g = d["GAIA_PHOT_G_MEAN_MAG"]
-        aen = d["GAIA_ASTROMETRIC_EXCESS_NOISE"]
-        keep = np.logical_or(
-            (g <= 19.0) * (aen < 10.0 ** 0.5),
-            (g >= 19.0) * (aen < 10.0 ** (0.5 + 0.2 * (g - 19.0))),
-        )
-        # AR adding PM to Time.now() to targets passing the AEN criterion
+        # AR computing positions at Time.now() using Gaia PMRA, PMDEC
         c = SkyCoord(
             ra=d["RA"] * units.degree,
             dec=d["DEC"] * units.degree,
@@ -469,6 +461,15 @@ def main():
             distance=Distance(parallax=parallax * units.mas),
         )
         nowc = c.apply_space_motion(new_obstime=Time.now())
+        # targets passing the AEN criterion                                                                                                                                  
+        # https://github.com/desihub/desitarget/blob/801f1a1ac9041080f8062b84aec3634b1a9c1763/py/desitarget/gfa.py#L71-L77
+        g = d["GAIA_PHOT_G_MEAN_MAG"]
+        aen = d["GAIA_ASTROMETRIC_EXCESS_NOISE"]
+        keep = np.logical_or(
+            (g <= 19.0) * (aen < 10.0 ** 0.5),
+            (g >= 19.0) * (aen < 10.0 ** (0.5 + 0.2 * (g - 19.0))),
+        )
+        # AR updating positions to Time.now() for targets passing the AEN criterion
         d["RA"][keep] = nowc.ra.value[keep]
         d["DEC"][keep] = nowc.dec.value[keep]
         log.info(
