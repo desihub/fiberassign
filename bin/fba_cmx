@@ -447,9 +447,9 @@ def main():
     if dogfa:
         tiles = fits.open("{}-tiles.fits".format(root))[1].data
         d = read_targets_in_tiles(mydirs["gfa"], tiles=tiles)
-        # AR clipping Gaia PARALLAX to >0 (setting distance at ~1Mpc)
+        # AR clipping Gaia PARALLAX to >1e-3 (setting distance at <1Mpc)
         parallax = d["PARALLAX"].copy()
-        parallax[~(d["PARALLAX"] > 0)] = 1e-3
+        parallax[(~np.isfinite(d["PARALLAX"])) | (d["PARALLAX"] < 1e-3)] = 1e-3
         # AR computing positions at Time.now() using Gaia PMRA, PMDEC
         c = SkyCoord(
             ra=d["RA"] * units.degree,
@@ -461,7 +461,7 @@ def main():
             distance=Distance(parallax=parallax * units.mas),
         )
         nowc = c.apply_space_motion(new_obstime=Time.now())
-        # targets passing the AEN criterion                                                                                                                                  
+        # targets passing the AEN criterion
         # https://github.com/desihub/desitarget/blob/801f1a1ac9041080f8062b84aec3634b1a9c1763/py/desitarget/gfa.py#L71-L77
         g = d["GAIA_PHOT_G_MEAN_MAG"]
         aen = d["GAIA_ASTROMETRIC_EXCESS_NOISE"]
