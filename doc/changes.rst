@@ -3,14 +3,29 @@
 fiberassign change log
 ======================
 
-1.4.3 (unreleased)
+2.0.1 (unreleased)
 ------------------
 
-* Reduces the number of target columns propagated into the fiberassign file (PR `#279`_)
-* Added fba script for commissioning  (PR `#277`_).
+* No changes yet.
+
+2.0.0 (2020-12-11)
+------------------
+
+NOTE: New major version number due to fiberassign format changes.
+
+* Added fba_cmx script for commissioning
+  (PR `#277`_, `#280`_, `#281`_, `#283`_, `#286`_).
+* Reduces the number of target columns propagated into the fiberassign
+  file (PR `#279`_)
+* Add SUPP_SKY targets to OBJTYPE=SKY (PR `#282`_).
 
 .. _`#277`: https://github.com/desihub/fiberassign/pull/277
 .. _`#279`: https://github.com/desihub/fiberassign/pull/279
+.. _`#280`: https://github.com/desihub/fiberassign/pull/280
+.. _`#281`: https://github.com/desihub/fiberassign/pull/281
+.. _`#282`: https://github.com/desihub/fiberassign/pull/282
+.. _`#283`: https://github.com/desihub/fiberassign/pull/283
+.. _`#286`: https://github.com/desihub/fiberassign/pull/286
 
 1.4.2 (2020-10-02)
 ------------------

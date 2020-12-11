@@ -234,14 +234,14 @@ outputs::
 Debugging example based on small reference run
 ----------------------------------------------
 
- Examining the output from the above, in tile 001149, in petal 6 (at about 10 o'clock, near the periphery of the petal, close to the GFA), we find that location 6525 has a green positioner, meaning that this is both a science target and a standards target.  How did this assignment come about?  We can learn this by running again, but with:
+ Examining the output from the above, in tile 001149, in petal 6 (at about 10 o'clock, near the periphery of the petal, close to the GFA), we find that location 6525 has a green positioner, meaning that this is both a science target and a standards target.  How did this assignment come about?  We can learn this by running again, but with::
 
   %>export DESI_DEBUG_LOCATION=6525
 
   %>time fba_run     --targets ${targetdir}/mtl-dark.fits\
   ${targetdir}/sky.fits --dir out_debug2 |tee log_debug
 
- Then we can examine log_debug for the simultaneous occurrence of 1149 and 6525::
+Then we can examine log_debug for the simultaneous occurrence of 1149 and 6525::
 
    DEBUG: targets avail:  tile 1149, location 6525 append ID 288230398385719030 (type=1), total priority 3000.42
    DEBUG: targets avail:  tile 1149, location 6525 append ID 288230398385719269 (type=1), total priority 3000.37
