@@ -866,7 +866,7 @@ def main():
                 os.remove("{}.gz".format(fn))
                 log.info("{:.1f}s\t deleting existing {}.gz".format(
                     time() - start, fn))
-            os.system("gzip "+fn)
+            os.system("gzip {}".format(fn))
             log.info(
                 "{:.1f}s\t gzipping {}".format(
                     time() - start, fn)
