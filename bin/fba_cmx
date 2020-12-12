@@ -860,11 +860,17 @@ def main():
                 )
 
     if dozip:  # gzip all fiberassign files
-        files_to_zip = glob(os.path.join(args.outdir, "fiberassign-*.fits"))
-        for file_to_zip in files_to_zip:
-            print(file_to_zip, files_to_zip)
-            log.info("gzipping file {}".format(file_to_zip))
-            os.system("gzip -f {}".format(file_to_zip))
+        fns = [os.path.join(args.outdir, "fiberassign-{:06d}.fits".format(tileid)) for tileid in tileids]
+        for fn in fns:
+            if os.path.isfile("{}.gz".format(fn)):
+                os.remove("{}.gz".format(fn))
+                log.info("{:.1f}s\t deleting existing {}.gz".format(
+                    time() - start, fn))
+            os.system("gzip {}".format(fn))
+            log.info(
+                "{:.1f}s\t gzipping {}".format(
+                    time() - start, fn)
+               )
 
     if doplot:
 
