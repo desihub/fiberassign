@@ -424,8 +424,8 @@ def main():
     # AR sky
     if dosky:
         tiles = fits.open("{}-tiles.fits".format(root))[1].data
-        d = read_targets_in_tiles(mydirs["sky"], tiles=tiles)
-        dsupp = read_targets_in_tiles(mydirs["skysupp"], tiles=tiles)
+        d = read_targets_in_tiles(mydirs["sky"], tiles=tiles, quick=True)
+        dsupp = read_targets_in_tiles(mydirs["skysupp"], tiles=tiles, quick=True)
         # JEFR we have to check for duplicates before merging
         dmerged = np.concatenate([d, dsupp])
         if len(dmerged["TARGETID"]) != len(set(dmerged["TARGETID"])):
@@ -446,7 +446,7 @@ def main():
     # AR gfa
     if dogfa:
         tiles = fits.open("{}-tiles.fits".format(root))[1].data
-        d = read_targets_in_tiles(mydirs["gfa"], tiles=tiles)
+        d = read_targets_in_tiles(mydirs["gfa"], tiles=tiles, quick=True)
         # AR clipping Gaia PARALLAX to >1e-3 (setting distance at <1Mpc)
         parallax = d["PARALLAX"].copy()
         parallax[(~np.isfinite(d["PARALLAX"])) | (d["PARALLAX"] < 1e-3)] = 1e-3
@@ -497,7 +497,7 @@ def main():
     if dostd:
         if args.faflavor in ["scidark", "scibright"]:
             tiles = fits.open("{}-tiles.fits".format(root))[1].data
-            d = read_targets_in_tiles(mydirs["targ"], tiles=tiles, header=False)
+            d = read_targets_in_tiles(mydirs["targ"], tiles=tiles, quick=True)
             if fdict["obscon"] == "DARK|GRAY|BRIGHT":
                 std_msks = ["SV0_WD", "STD_FAINT", "STD_BRIGHT"]
             elif fdict["obscon"] == "DARK|GRAY":
@@ -540,7 +540,7 @@ def main():
     # AR ! not using make_mtl !
     if dotarg:
         tiles = fits.open("{}-tiles.fits".format(root))[1].data
-        d, hdr = read_targets_in_tiles(mydirs["targ"], tiles=tiles, header=True)
+        d, hdr = read_targets_in_tiles(mydirs["targ"], tiles=tiles, quick=True, header=True)
         keep = np.zeros(len(d), dtype=bool)
         for msk in fdict["msks"].split(","):
             keep |= (d["CMX_TARGET"] & cmx_mask[msk]) > 0
