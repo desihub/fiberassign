@@ -739,6 +739,62 @@ def main():
                             time() - start, prio, msk
                         )
                     )
+        # AR tweaking SUBPRIORITY for BGS, to get the correct subsampling
+        # AR adapted from https://github.com/desi-bgs/feasiBGS/blob/e913210bb91618d7be3d4a8911a6183ed505c2b4/run/sv/dr9sv.py#L153-L246
+        # AR note: the BGS_LOWQ sample has some overlap with BGS_BRIGHT and BGS_FAINT
+        # AR       but we decided it is ok
+        if args.faflavor in ["cmxbgsmws", "bgsmws"]:
+            log.info(
+                    "{:.1f}s\tmodifying PRIORITY and SUBPRIORITY for BGS targets".format(
+                    time() - start,
+                )
+            )
+            # AR tweaking PRIORITY and NUMOBS_MORE
+            keep = np.where(ref_msks == "BGS_ANY")[0][0]
+            msk, prio = ref_msks[i], ref_prios[i]
+            tmp = (d["SV1_DESI_TARGET"] & desi_mask[msk]) > 0
+            d["PRIORITY_INIT"][tmp] = prio
+            d["NUMOBS_INIT"][tmp] = 1
+            log.info(
+                    "{:.1f}s\tPRIORITY_INIT={:.0f} and NUMOBS_INIT=1 for {}".format(
+                        time() - start, prio, msk
+                    )
+                )
+            # AR desired assigned density
+            # AR ! hard-coded !
+            goaldens = {"BGS_BRIGHT":540., "BGS_FAINT":300., "BGS_FAINT_EXT":150., "BGS_FIBMAG":150., "BGS_LOWQ":60.}
+            msks = list(goaldens.keys())
+            log.info(
+                    "{:.1f}s\tBGS desired assigned densities: {}".format(
+                    time() - start, ", ".join(["{}={}".format(msk,goaldens[msk]) for msk in msks])
+                )
+            )
+            # AR actual target density, using pixweight
+            pixfn = os.path.join(
+                path_to_targets, args.dr, args.dtver, "pixweight/sv1/resolve/bright/sv1pixweight-bright.fits"
+            )
+            pixd = fits.open(pixfn)[1].data
+            keep = (pixd["FRACAREA_8194"]>0) # AR relevant area for BGS selection
+            initdens = {msk:float("{:.0f}".format(pixd[msk][keep].mean())) for msk in msks}
+            log.info(
+                "{:.1f}s\tBGS initial target densities: {}".format(
+                    time() - start, ", ".join(["{}={}".format(msk,initdens[msk]) for msk in msks])
+                )
+            )
+            # AR desired assigned fraction
+            frac = {msk:float("{:.3f}".format(goaldens[msk]/initdens[msk])) for msk in msks}
+            fracmin = np.min([frac[msk] for msk in msks])
+            # AR lower SUBPRIORITY value, with setting the lowest frac class to 0
+            subplow = {msk:float("{:.3f}".format(1.-fracmin/frac[msk])) for msk in msks}
+            # AR modifying SUBPRIORITY with rescaling, hence no call to np.random.uniform()
+            for msk in msks:
+                keep = (d["SV1_BGS_TARGET"] & bgs_mask[msk]) > 0
+                d["SUBPRIORITY"][keep] = subplow[msk] + (1.-subplow[msk]) * d["SUBPRIORITY"][keep]
+            log.info(
+                "{:.1f}s\tBGS rescaling SUBPRIORITY within [subplow,1] with: {}".format(
+                    time() - start, ", ".join(["{}={}".format(msk,subplow[msk]) for msk in msks])
+                )
+            )
 
         # AR update values (RA, DEC, REF_EPOCH) using proper motion
         d = update_nowradec(d, new_obstime)
@@ -1387,9 +1443,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--dr",
-        help="legacypipe dr (default=dr8)",
+        help="legacypipe dr (default=dr9)",
         type=str,
-        default="dr8",
+        default="dr9",
         required=False,
         metavar="DR",
     )
@@ -1430,4 +1486,5 @@ if __name__ == "__main__":
 
     with stdouterr_redirected(to=logfn):
         main()
+    #main()
 
