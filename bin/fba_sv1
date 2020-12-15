@@ -751,7 +751,7 @@ def main():
             )
             # AR tweaking PRIORITY and NUMOBS_MORE for BGS_ANY, STD_WD
             ii = np.where((ref_msks == "BGS_ANY") | (ref_msks == "STD_WD"))[0]
-            for msk, prio in zip(ref_msks[ii], ref_prios[i]]):
+            for msk, prio in zip(ref_msks[ii], ref_prios[ii]):
                 tmp = (d["SV1_DESI_TARGET"] & desi_mask[msk]) > 0
                 d["PRIORITY_INIT"][tmp] = prio
                 d["NUMOBS_INIT"][tmp] = 1
