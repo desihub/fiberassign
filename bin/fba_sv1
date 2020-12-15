@@ -78,24 +78,78 @@ def get_isaen(g, aen):
     )
 
 
-# AR get the updated ra,dec with proper motion
-def get_nowradec(ra, dec, pmra, pmdec, parallax, ref_epoch, new_obstime):
+# AR courtesy of DL : from astrometry.net's util/starutil_numpy.py
+def datetomjd(d):
+    d0 = datetime(1858, 11, 17, 0, 0, 0)
+    dt = d - d0
+    return dt.days + (dt.seconds + dt.microseconds / 1e6) / 86400.0
+
+
+# AR courtesy of DL : adapted from legacypipe.survey
+def mjd_to_year(mjd):
+    # mjd_to_year(57205.875) -> 2015.5
+    daysperyear = 365.25  # Julian years, by definition
+    J2000 = datetime(2000, 1, 1, 12, 0, 0, 0, tzinfo=None)
+    mjd2k = datetomjd(J2000)
+    return (mjd - mjd2k) / daysperyear + 2000.0
+
+
+# AR courtesy of DL : from legacypipe.survey
+# AR originally named "radec_at_mjd()", renamed to get_nowradec
+def get_nowradec(ra, dec, pmra, pmdec, parallax, ref_year, new_obstime):
+    # AR new_obstime = Time.now()
+    """
+    Units:
+    - matches Gaia DR1/DR2
+    - pmra,pmdec are in mas/yr.
+      pmra is in angular speed (ie, has a cos(dec) factor)
+    - parallax is in mas.
+    Returns: RA,Dec
+    """
+    mjd = new_obstime.mjd
     # AR new_obstime = Time.now()
     # AR clipping Gaia PARALLAX to >1e-3 (setting distance at <1Mpc)
     parallax_clip = parallax.copy()
     parallax_clip[(~np.isfinite(parallax)) | (parallax < 1e-3)] = 1e-3
-    # AR computing positions at Time.now() using Gaia PMRA, PMDEC
-    c = SkyCoord(
-        ra=ra * units.degree,
-        dec=dec * units.degree,
-        pm_ra_cosdec=pmra * units.mas / units.yr,
-        pm_dec=pmdec * units.mas / units.yr,
-        frame="icrs",
-        obstime=Time(ref_epoch, format="jyear"),
-        distance=Distance(parallax=parallax_clip * units.mas),
-    )
-    nowc = c.apply_space_motion(new_obstime=new_obstime)
-    return nowc.ra.value, nowc.dec.value
+    equinox = 53084.28  # mjd of the spring equinox in 2004
+    daysperyear = 365.25  # Julian years, by definition
+    axistilt = 23.44  # degrees
+    arcsecperrad = 3600.0 * 180.0 / np.pi
+
+    def xyztoradec(xyz):
+        assert len(xyz.shape) == 2
+        ra = np.arctan2(xyz[:, 1], xyz[:, 0])  # AR added "np." in front of arctan2...
+        ra += 2 * np.pi * (ra < 0)
+        norm = np.sqrt(np.sum(xyz ** 2, axis=1))
+        dec = np.arcsin(xyz[:, 2] / norm)
+        return np.rad2deg(ra), np.rad2deg(dec)
+
+    def radectoxyz(ra_deg, dec_deg):  # AR changed inputs from ra,dec to ra_deg,dec_deg
+        ra = np.deg2rad(ra_deg)
+        dec = np.deg2rad(dec_deg)
+        cosd = np.cos(dec)
+        return np.vstack((cosd * np.cos(ra), cosd * np.sin(ra), np.sin(dec))).T
+
+    dt = mjd_to_year(mjd) - ref_year
+    cosdec = np.cos(np.deg2rad(dec))
+    dec = dec + dt * pmdec / (3600.0 * 1000.0)
+    ra = ra + (dt * pmra / (3600.0 * 1000.0)) / cosdec
+    parallax = np.atleast_1d(parallax)
+    I = np.flatnonzero(parallax)
+    if len(I):
+        suntheta = 2.0 * np.pi * np.fmod((mjd - equinox) / daysperyear, 1.0)
+        # Finite differences on the unit sphere -- xyztoradec handles
+        # points that are not exactly on the surface of the sphere.
+        axis = np.deg2rad(axistilt)
+        scale = parallax[I] / 1000.0 / arcsecperrad
+        xyz = radectoxyz(ra[I], dec[I])
+        xyz[:, 0] += scale * np.cos(suntheta)
+        xyz[:, 1] += scale * np.sin(suntheta) * np.cos(axis)
+        xyz[:, 2] += scale * np.sin(suntheta) * np.sin(axis)
+        r, d = xyztoradec(xyz)
+        ra[I] = r
+        dec[I] = d
+    return ra, dec
 
 
 # AR update values (RA, DEC, REF_EPOCH) using proper motion
