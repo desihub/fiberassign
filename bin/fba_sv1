@@ -78,23 +78,7 @@ def get_isaen(g, aen):
     )
 
 
-# AR courtesy of DL : from astrometry.net's util/starutil_numpy.py
-def datetomjd(d):
-    d0 = datetime(1858, 11, 17, 0, 0, 0)
-    dt = d - d0
-    return dt.days + (dt.seconds + dt.microseconds / 1e6) / 86400.0
-
-
-# AR courtesy of DL : adapted from legacypipe.survey
-def mjd_to_year(mjd):
-    # mjd_to_year(57205.875) -> 2015.5
-    daysperyear = 365.25  # Julian years, by definition
-    J2000 = datetime(2000, 1, 1, 12, 0, 0, 0, tzinfo=None)
-    mjd2k = datetomjd(J2000)
-    return (mjd - mjd2k) / daysperyear + 2000.0
-
-
-# AR courtesy of DL : from legacypipe.survey
+# AR courtesy of DL : adapter from legacypipe.survey
 # AR originally named "radec_at_mjd()", renamed to get_nowradec
 def get_nowradec(ra, dec, pmra, pmdec, parallax, ref_year, new_obstime):
     # AR new_obstime = Time.now()
@@ -106,13 +90,7 @@ def get_nowradec(ra, dec, pmra, pmdec, parallax, ref_year, new_obstime):
     - parallax is in mas.
     Returns: RA,Dec
     """
-    mjd = new_obstime.mjd
-    # AR new_obstime = Time.now()
-    # AR clipping Gaia PARALLAX to >1e-3 (setting distance at <1Mpc)
-    parallax_clip = parallax.copy()
-    parallax_clip[(~np.isfinite(parallax)) | (parallax < 1e-3)] = 1e-3
     equinox = 53084.28  # mjd of the spring equinox in 2004
-    daysperyear = 365.25  # Julian years, by definition
     axistilt = 23.44  # degrees
     arcsecperrad = 3600.0 * 180.0 / np.pi
 
@@ -130,14 +108,14 @@ def get_nowradec(ra, dec, pmra, pmdec, parallax, ref_year, new_obstime):
         cosd = np.cos(dec)
         return np.vstack((cosd * np.cos(ra), cosd * np.sin(ra), np.sin(dec))).T
 
-    dt = mjd_to_year(mjd) - ref_year
+    dt = new_obstime.jyear - ref_year
     cosdec = np.cos(np.deg2rad(dec))
     dec = dec + dt * pmdec / (3600.0 * 1000.0)
     ra = ra + (dt * pmra / (3600.0 * 1000.0)) / cosdec
     parallax = np.atleast_1d(parallax)
     I = np.flatnonzero(parallax)
     if len(I):
-        suntheta = 2.0 * np.pi * np.fmod((mjd - equinox) / daysperyear, 1.0)
+        suntheta = 2.0 * np.pi * np.fmod(new_obstime.jyear - Time(equinox, format='mjd').jyear, 1.0)
         # Finite differences on the unit sphere -- xyztoradec handles
         # points that are not exactly on the surface of the sphere.
         axis = np.deg2rad(axistilt)
