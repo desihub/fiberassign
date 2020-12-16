@@ -17,7 +17,7 @@ from desimodel.footprint import is_point_in_desi
 from desimodel.focalplane.geometry import get_tile_radius_deg
 import desimodel.io as dmio
 from fiberassign.scripts.assign import parse_assign, run_assign_bytile, run_assign_full
-from fiberassign.scripts.merge import parse_merge, run_merge
+from fiberassign.assign import merge_results
 from fiberassign.utils import Logger
 import fiberassign
 from time import time
@@ -735,8 +735,8 @@ def main():
                     d["PRIORITY_INIT"][tmp] = prio
                     d["NUMOBS_INIT"][tmp] = 1
                     log.info(
-                        "{:.1f}s\tPRIORITY_INIT={:.0f} and NUMOBS_INIT=1 for {}".format(
-                            time() - start, prio, msk
+                        "{:.1f}s\tPRIORITY_INIT={:.0f} and NUMOBS_INIT=1 for {:.0f} {}".format(
+                            time() - start, prio, tmp.sum(), msk
                         )
                     )
         # AR tweaking SUBPRIORITY for BGS, to get the correct subsampling
@@ -749,17 +749,17 @@ def main():
                     time() - start,
                 )
             )
-            # AR tweaking PRIORITY and NUMOBS_MORE
-            i = np.where(ref_msks == "BGS_ANY")[0][0]
-            msk, prio = ref_msks[i], ref_prios[i]
-            tmp = (d["SV1_DESI_TARGET"] & desi_mask[msk]) > 0
-            d["PRIORITY_INIT"][tmp] = prio
-            d["NUMOBS_INIT"][tmp] = 1
-            log.info(
-                "{:.1f}s\tPRIORITY_INIT={:.0f} and NUMOBS_INIT=1 for {}".format(
-                    time() - start, prio, msk
+            # AR tweaking PRIORITY and NUMOBS_MORE for BGS_ANY, STD_WD
+            ii = np.where((ref_msks == "BGS_ANY") | (ref_msks == "STD_WD"))[0]
+            for msk, prio in zip(ref_msks[ii], ref_prios[ii]):
+                tmp = (d["SV1_DESI_TARGET"] & desi_mask[msk]) > 0
+                d["PRIORITY_INIT"][tmp] = prio
+                d["NUMOBS_INIT"][tmp] = 1
+                log.info(
+                    "{:.1f}s\tPRIORITY_INIT={:.0f} and NUMOBS_INIT=1 for {:.0f} {}".format(
+                        time() - start, prio, tmp.sum(), msk
+                    )
                 )
-            )
             # AR desired assigned density
             # AR ! hard-coded !
             goaldens = {
@@ -880,26 +880,30 @@ def main():
             )
             ag = parse_assign(opts)
             run_assign_full(ag)
-            # AR merging
-            opts = [
-                "--skip_raw",
-                "--dir",
-                args.outdir,
-                "--sky",
-                root + "-sky.fits",
-                "--targets",
-                root + "-gfa.fits",
-                troot + "-targ.fits",
-                root + "-std.fits",
-            ]
 
+            # AR merging
+            # AR not using run_merge(), because it looks for all fba-TILEID.fits file
+            # AR in the out directory...
+            ag = {}
+            ag["tiles"] = [tileid]
+            ag["columns"] = None
+            ag["targets"] = [root + "-gfa.fits", troot + "-targ.fits", root + "-std.fits",]
+            ag["sky"] = [root + "-sky.fits",]
+            ag["result_dir"] = args.outdir
+            ag["copy_fba"] = False
+            tmparr = []
+            for key in list(ag.keys()):
+                tmparr += ["{} = {}".format(key,ag[key])]
             log.info(
-                "{:.1f}s\ttileid={:06d}: merging input target data (fba_merge_results) with opts={}".format(
-                    time() - start, tileid, " ; ".join(opts)
+                "{:.1f}s\ttileid={:06d}: merging input target data (merge_results) with argument={}".format(
+                    time() - start, tileid, " ; ".join(tmparr)
                 )
             )
-            ag = parse_merge(opts)
-            run_merge(ag)
+            merge_results(ag["targets"], ag["sky"], ag["tiles"],
+                            result_dir=ag["result_dir"],
+                            columns=ag["columns"],
+                            copy_fba=ag["copy_fba"])
+
             # AR propagating some settings into the PRIMARY header
             fd = fitsio.FITS(
                 "{}fiberassign-{:06d}.fits".format(args.outdir, tileid), "rw"
@@ -1128,9 +1132,10 @@ def main():
             tmpstr = 'wget -q -O {}tmp-{}.jpeg "http://legacysurvey.org/viewer-dev/jpeg-cutout/?ra={:.5f}&dec={:.5f}&pixscale={:.0f}&size={:.0f}"'.format(
                 args.outdir, tileid, tra, tdec, pixscale, size
             )
-            os.system(tmpstr)
-            img = mpimg.imread("{}tmp-{}.jpeg".format(args.outdir, tileid))
-            os.remove("{}tmp-{}.jpeg".format(args.outdir, tileid))
+            #os.system(tmpstr)
+            #img = mpimg.imread("{}tmp-{}.jpeg".format(args.outdir, tileid))
+            #os.remove("{}tmp-{}.jpeg".format(args.outdir, tileid))
+            img = np.zeros((size,size,3))
 
             # AR SKY, BAD, STD, TGT
             for iy, x, y, txt, alpha in zip(
