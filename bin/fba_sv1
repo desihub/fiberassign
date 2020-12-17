@@ -379,8 +379,8 @@ def main():
     start = time()
     log.info("{:.1f}s\tstart".format(time() - start))
 
-    # AR time today, to update the positions using proper motions
-    new_obstime = Time.now()
+    # AR time used to update the positions using proper motions
+    new_obstime = Time(args.pmtime, format="isot")
 
     # AR safe: tilera, tiledec
     if (args.tilera is None) | (args.tiledec is None):
@@ -1651,6 +1651,14 @@ if __name__ == "__main__":
         metavar="DTVER",
     )
     parser.add_argument(
+        "--pmtime",
+        help="yyyy-mm-ddThh-mm-ss, time use to compute new coordinates after applying proper motion since REF_EPOCH (default=midnight of Time.now())",
+        type=str,
+        default=Time(Time.now().isot[:10] + "T00:00:00", format="isot").isot,
+        required=False,
+        metavar="PMTIME",
+    )
+    parser.add_argument(
         "--doclean",
         help="delete tileid-{tiles,sky,std,gfa,targ}.fits files (y/n)",
         type=str,
@@ -1679,4 +1687,4 @@ if __name__ == "__main__":
 
     with stdouterr_redirected(to=logfn):
         main()
-    #main()
+    # main()
