@@ -1727,6 +1727,6 @@ if __name__ == "__main__":
     if os.path.isfile(logfn):
         os.remove(logfn)
 
-    #with stdouterr_redirected(to=logfn):
-    #    main()
-    main()
+    with stdouterr_redirected(to=logfn):
+        main()
+    #main()
