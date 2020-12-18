@@ -887,6 +887,7 @@ merged_fiberassign_swap = {
     "APFLUX_IVAR_Z": "FIBERFLUX_IVAR_Z",
 }
 
+# AR commenting out NUMTARGET ([desi-survey 1032])
 merged_fiberassign_req_columns = OrderedDict([
     ("TARGETID", "i8"),
     ("PETAL_LOC", "i2"),
@@ -905,16 +906,17 @@ merged_fiberassign_req_columns = OrderedDict([
     ("OBJTYPE", "a3"),
     ("FIBERASSIGN_X", "f4"),
     ("FIBERASSIGN_Y", "f4"),
-    ("NUMTARGET", "i2"),
+    #("NUMTARGET", "i2"),
     ("PRIORITY", "i4"),
     ("SUBPRIORITY", "f8"),
     ("OBSCONDITIONS", "i4"),
 ])
 
+# AR commenting out NUMTARGET ([desi-survey 1032])
 merged_skymon_columns = OrderedDict([
     ("FIBER", "i4"),
     ("LOCATION", "i4"),
-    ("NUMTARGET", "i2"),
+    #("NUMTARGET", "i2"),
     ("TARGETID", "i8"),
     ("BRICKID", "i4"),
     ("BRICK_OBJID", "i4"),
