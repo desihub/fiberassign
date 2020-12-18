@@ -58,6 +58,7 @@ from ._internal import Assignment
 # FAVAIL
 # - Target IDs available to each location.  Sorted by loc and then target ID.
 #
+# AR these columns are for the fba-TILEID.fits files
 
 results_assign_columns = OrderedDict([
     ("FIBER", "i4"),
@@ -816,13 +817,14 @@ def merge_results_tile_initialize(tgbufs, tgdtypes, tgshapes, skybufs,
     merge_results_tile_skybuffers = skybufs
     merge_results_tile_skydtypes = skydtypes
     merge_results_tile_skyshapes = skyshapes
-    return
 
 # minimal set of columns to read from the target file
+# AR we also propagate any *_TARGET existing column
 minimal_target_columns = OrderedDict([
-#    ('BRICKNAME', 'S8'), 
-#    ('BRICKID', '>i4') , 
-#    ('BRICK_OBJID', '>i4'),                    
+    ('RELEASE', '>i2'),
+    ('BRICKNAME', 'S8'), 
+    ('BRICKID', '>i4') , 
+    ('BRICK_OBJID', '>i4'),                    
     ('MORPHTYPE', 'S4'), 
     ('RA', '>f8'), 
     ('DEC', '>f8'), 
@@ -830,11 +832,11 @@ minimal_target_columns = OrderedDict([
     ('FLUX_G', '>f4'), 
     ('FLUX_R', '>f4'), 
     ('FLUX_Z', '>f4'), 
+    ('FLUX_W1', '>f4'), # AR for QA plots
+    ('FLUX_W2', '>f4'), # AR for QA plots
     ('FLUX_IVAR_G', '>f4'), 
     ('FLUX_IVAR_R', '>f4'), 
     ('FLUX_IVAR_Z', '>f4'),
-    ('FLUX_W1', '>f4'), 
-    ('FLUX_W2', '>f4'),
     ('FIBERFLUX_G', '>f4'), 
     ('FIBERFLUX_R', '>f4'), 
     ('FIBERFLUX_Z', '>f4'), 
@@ -842,18 +844,11 @@ minimal_target_columns = OrderedDict([
     ('FIBERTOTFLUX_R', '>f4'), 
     ('FIBERTOTFLUX_Z', '>f4'), 
     ('REF_EPOCH', '>f4'), 
-    ('MASKBITS', '>i2'), 
-    ('FRACDEV', '>f4'), 
+    #('MASKBITS', '>i2'), 
     ('SERSIC', '>f4'), 
     ('SHAPE_R', '>f4'), 
     ('SHAPE_E1', '>f4'), 
     ('SHAPE_E2', '>f4'), 
-    ('SHAPEDEV_R', '>f4'), 
-    ('SHAPEDEV_E1', '>f4'), 
-    ('SHAPEDEV_E2', '>f4'), 
-    ('SHAPEEXP_R', '>f4'), 
-    ('SHAPEEXP_E1', '>f4'), 
-    ('SHAPEEXP_E2', '>f4'), 
     ('REF_ID', '>i8'), 
     ('REF_CAT', 'S2'), 
     ('GAIA_PHOT_G_MEAN_MAG', '>f4'),  
@@ -902,8 +897,6 @@ merged_fiberassign_req_columns = OrderedDict([
     ("TARGET_DEC", "f8"),
     ("PMRA", "f4"),
     ("PMDEC", "f4"),
-#    ("PMRA_IVAR", "f4"),
-#    ("PMDEC_IVAR", "f4"),
     ("REF_EPOCH", "f4"),
     ("LAMBDA_REF", "f4"),
     ("FA_TARGET", "i8"),
@@ -939,9 +932,24 @@ merged_skymon_columns = OrderedDict([
     ("FIBERFLUX_G", "f4"),
     ("FIBERFLUX_R", "f4"),
     ("FIBERFLUX_Z", "f4"),
-    ("FIBERFLUX_IVAR_G", "f4"),
-    ("FIBERFLUX_IVAR_R", "f4"),
-    ("FIBERFLUX_IVAR_Z", "f4"),
+    #("FIBERFLUX_IVAR_G", "f4"),
+    #("FIBERFLUX_IVAR_R", "f4"),
+    #("FIBERFLUX_IVAR_Z", "f4"),
+])
+
+# AR TARGETS extension columns
+# AR should be a subsample of merged_fiberassign_req_columns
+# AR modulo the name swapping (merged_fiberassign_swap)
+# AR we also propagate any *_TARGET existing column
+merged_targets_columns = OrderedDict([
+    ("TARGETID", "i8"),
+    ("RA", "f8"),
+    ("DEC", "f8"),
+    ("FA_TARGET", "i8"),
+    ("FA_TYPE", "u1"),
+    ("PRIORITY", "i4"),
+    ("SUBPRIORITY", "f8"),
+    ("OBSCONDITIONS", "i4"),
 ])
 
 merged_potential_columns = OrderedDict([
@@ -1156,7 +1164,11 @@ def merge_results_tile(out_dtype, copy_fba, params):
                 # the main survey.  Personally I believe it should be
                 # removed completely.  -TK
                 objtype = np.zeros(len(fassign_valid), dtype="S3")
-                if "DESI_TARGET" in out_dtype.names:
+                # AR relaxing the condition on the presence of any
+                # AR *_TARGET, excluding FA_TARGET
+                # AR hence accepting CMX_.., SV1_..., SV2_...
+                #if "DESI_TARGET" in out_dtype.names: # AR commented out
+                if "_TARGET" in [name[-7:] for name in out_dtype.names if name!="FA_TARGET"]:
                     # This is a main survey file.
                     objtype[:] = "TGT"
                     is_sky = (tile_targets["DESI_TARGET"][target_rows]
@@ -1195,7 +1207,7 @@ def merge_results_tile(out_dtype, copy_fba, params):
 
     cols_to_keep = list()
     for c in tile_targets.dtype.names:
-        if len(tile_targets[c].shape) < 2: #Don't propagate 2D target columns into TARGETS HDU
+        if len(tile_targets[c].shape) < 2: #Don't propagate 2D target columns into FIBERASSIGN HDU
             cols_to_keep.append(c)
     tile_targets = tile_targets[cols_to_keep]
 
@@ -1244,6 +1256,9 @@ def merge_results_tile(out_dtype, copy_fba, params):
         else:
             newnames.append(nm)
     tile_targets.dtype.names = newnames
+    # AR hard-cutting on merged_targets_columns + *_TARGET columns
+    tile_targets = tile_targets[list(merged_targets_columns.keys())]
+    
     fd.write(tile_targets, header=inhead, extname="TARGETS")
     del tile_targets
 
@@ -1331,8 +1346,20 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
     skyhead = dict()
 
     survey = None
+
+    # AR adding any possible *_TARGET column
+    # AR future-proofing for SV2, SV3, or other
+    # https://github.com/desihub/fiberassign/issues/296
+    for tf in targetfiles + skyfiles:
+        fd = fitsio.FITS(tf, "r")
+        minimal_target_columns.update(
+            OrderedDict([
+                (key,fd[1].get_rec_dtype()[0][key].str)
+                for key in fd[1].get_colnames()
+                if key[-7:]=="_TARGET" and key!="FA_TARGET"]))
+        fd.close()
     
-#    minimal_target_columns to read
+    # minimal_target_columns to read
     minimal_dcolnames  = [x for x in minimal_target_columns.keys()]
     minimal_dcols = [(x, y) for x, y in minimal_target_columns.items()]
  
@@ -1364,9 +1391,9 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
                                dtype=tgdtype[tf]).reshape(tgshape[tf])
         # Read data directly into shared buffer
         tgview[:] = fd[1].read(columns=some_columns)[some_columns]
-        if survey is None:
-            (survey, col, sciencemask, stdmask, skymask, suppskymask,
-             safemask, excludemask) = default_target_masks(tgview)
+        #if survey is None: # AR commented out, not used apparently
+        #    (survey, col, sciencemask, stdmask, skymask, suppskymask, # AR commented out, not used apparently
+        #     safemask, excludemask) = default_target_masks(tgview) # AR commented out, not used apparently
 
         # Sort rows by TARGETID if not already done
         tgviewids = tgview["TARGETID"]
@@ -1400,13 +1427,34 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
         # Allocate a shared memory buffer for the target data
         skylen = fd[1].get_nrows()
         skyshape[tf] = (skylen,)
-        skydtype[tf], tempoff, tempisvararray = fd[1].get_rec_dtype()
+
+        # AR adding here the minimal set of columns to be read
+        # AR just copying what is done for the targets,
+        # AR with replacing "tg" by "sky"
+        #select what subset of the 'minimal_dcolnames' are present in the data.
+        file_skydtype, tempoff, tempisvararray = fd[1].get_rec_dtype()
+        file_dcolnames  = [x for x in file_skydtype.names]
+        dcols_to_read = []
+        for i in range(len(minimal_dcolnames)):
+            if minimal_dcolnames[i] in file_dcolnames:
+                dcols_to_read.append(minimal_dcols[i])
+        some_dt = np.dtype(dcols_to_read)
+        some_columns = list(some_dt.fields.keys())
+        
+        #print(file_skydtype)
+        skydtype[tf] = some_dt
         skybytes = skylen * skydtype[tf].itemsize
         skydata[tf] = RawArray("B", skybytes)
+
+        #skydtype[tf], tempoff, tempisvararray = fd[1].get_rec_dtype() # AR commented out
+        #skybytes = skylen * skydtype[tf].itemsize # AR commented out
+        #skydata[tf] = RawArray("B", skybytes) # AR commented out
         skyview = np.frombuffer(skydata[tf],
                                 dtype=skydtype[tf]).reshape(skyshape[tf])
         # Read data directly into shared buffer
-        skyview[:] = fd[1].read()
+        #skyview[:] = fd[1].read() # AR commented out
+        skyview[:] = fd[1].read(columns=some_columns)[some_columns]
+
 
         # Sort rows by TARGETID if not already done
         skyviewids = skyview["TARGETID"]
@@ -1433,6 +1481,12 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
                 dcolnames.append(colname)
 
     out_dtype = np.dtype(dcols)
+
+    # AR adding any *_TARGET columns to the TARGETS columns
+    merged_targets_columns.update(
+            OrderedDict([
+                (name,out_dtype[name]) for name in out_dtype.names
+                if name[-7:]=="_TARGET"]))
 
     # For each tile, find the target IDs used.  Construct the output recarray
     # and copy data into place.
