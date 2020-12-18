@@ -817,6 +817,7 @@ def merge_results_tile_initialize(tgbufs, tgdtypes, tgshapes, skybufs,
     merge_results_tile_skybuffers = skybufs
     merge_results_tile_skydtypes = skydtypes
     merge_results_tile_skyshapes = skyshapes
+    return
 
 # minimal set of columns to read from the target file
 # AR we also propagate any *_TARGET existing column
@@ -1207,7 +1208,7 @@ def merge_results_tile(out_dtype, copy_fba, params):
 
     cols_to_keep = list()
     for c in tile_targets.dtype.names:
-        if len(tile_targets[c].shape) < 2: #Don't propagate 2D target columns into FIBERASSIGN HDU
+        if len(tile_targets[c].shape) < 2: #Don't propagate 2D target columns into TARGETS HDU
             cols_to_keep.append(c)
     tile_targets = tile_targets[cols_to_keep]
 
