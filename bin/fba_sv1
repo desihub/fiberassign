@@ -10,7 +10,6 @@ from astropy.table import Table
 import fitsio
 from desitarget.io import read_targets_in_tiles, write_targets, write_mtl
 from desitarget.sv1.sv1_targetmask import desi_mask, bgs_mask
-from desitarget.sv1.sv1_targetmask import bgs_mask
 from desitarget.cmx.cmx_targetmask import cmx_mask
 from desitarget.targetmask import obsconditions
 from desitarget.targets import set_obsconditions
@@ -32,6 +31,22 @@ from astropy.time import Time
 from argparse import ArgumentParser
 from desiutil.redirect import stdouterr_redirected
 import matplotlib.image as mpimg
+
+
+# AR authorized args.faflavor
+faflavors_all = [
+        "cmxm33",
+        "sv1elg",
+        "sv1elgqso",
+        "sv1lrgqso",
+        "sv1bgsmws",
+        "elg",
+        "lrgqso",
+        "bgsmws",
+        "1percdark",
+        "1percbright",
+    ]
+
 
 # AR copied from make_mtl()
 mtldatamodel = np.array(
@@ -381,6 +396,11 @@ def main():
 
     # AR time used to update the positions using proper motions
     new_obstime = Time(args.pmtime, format="isot")
+    log.info(
+        "{:.1f}s\tsetting new_obstime={}, i.e. MJD={} to update coordinates with proper motion".format(
+        time() - start, new_obstime.isot, new_obstime.mjd
+        )
+    )
 
     # AR safe: tilera, tiledec
     if (args.tilera is None) | (args.tiledec is None):
@@ -416,21 +436,10 @@ def main():
                 )
                 sys.exit()
     # AR safe: flavor
-    if args.faflavor not in [
-        "cmxm33",
-        "cmxelg",
-        "cmxelgqso",
-        "cmxlrgqso",
-        "cmxbgsmws",
-        "elg",
-        "lrgqso",
-        "bgsmws",
-        "1percdark",
-        "1percbright",
-    ]:
+    if args.faflavor not in faflavors_all:
         log.error(
-            "{:.1f}s\targs.faflavor not in cmxelg,cmxelgqso,cmxlrgqso,cmxbgsmws,elg,lrgqso,bgs,1percdark,1percbright; exiting".format(
-                time() - start
+            "{:.1f}s\targs.faflavor not in {}; exiting".format(
+                time() - start, ", ".join(faflavors_all)
             )
         )
         sys.exit()
@@ -468,28 +477,28 @@ def main():
         fdict["stdmsks"] = "SV0_WD,STD_BRIGHT"
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
-    elif args.faflavor == "cmxelg":
+    elif args.faflavor == "sv1elg":
         fdict["survey"] = "sv1"
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
         fdict["msks"] = "STD_WD,ELG,BGS_FAINT"
         fdict["stdmsks"] = "STD_WD,STD_FAINT"
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
-    elif args.faflavor == "cmxlrgqso":
+    elif args.faflavor == "sv1lrgqso":
         fdict["survey"] = "sv1"
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
         fdict["msks"] = "STD_WD,LRG,QSO,ELG,BGS_FAINT"
         fdict["stdmsks"] = "STD_WD,STD_FAINT"
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
-    elif args.faflavor == "cmxelgqso":
+    elif args.faflavor == "sv1elgqso":
         fdict["survey"] = "sv1"
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
         fdict["msks"] = "STD_WD,QSO,ELG,BGS_FAINT"
         fdict["stdmsks"] = "STD_WD,STD_FAINT"
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
-    elif args.faflavor == "cmxbgsmws":
+    elif args.faflavor == "sv1bgsmws":
         fdict["survey"] = "sv1"
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
         fdict["msks"] = "STD_WD,BGS_ANY,MWS_ANY"
@@ -563,9 +572,9 @@ def main():
 
     mydirs = {}
     if args.faflavor in [
-        "cmxlrgqso",
-        "cmxelg",
-        "cmxelgqso",
+        "sv1lrgqso",
+        "sv1elg",
+        "sv1elgqso",
         "lrgqso",
         "elg",
         "1percdark",
@@ -573,7 +582,7 @@ def main():
         mydirs["targ"] = os.path.join(
             path_to_targets, args.dr, args.dtver, "targets/sv1/resolve/dark/"
         )
-    elif args.faflavor in ["cmxbgsmws", "bgsmws", "1percbright"]:
+    elif args.faflavor in ["sv1bgsmws", "bgsmws", "1percbright"]:
         mydirs["targ"] = os.path.join(
             path_to_targets, args.dr, args.dtver, "targets/sv1/resolve/bright/"
         )
@@ -583,7 +592,7 @@ def main():
         )
     else:
         log.error(
-            "{:.1f}s\targs.faflavor not in cmxm33,cmxelg,cmxelgqso,cmxlrgqso,cmxbgsmws,elg,lrgqso,bgs,1percdark,1percbright; exiting".format(
+            "{:.1f}s\targs.faflavor not in cmxm33,sv1elg,sv1elgqso,sv1lrgqso,sv1bgsmws,elg,lrgqso,bgs,1percdark,1percbright; exiting".format(
                 time() - start
             )
         )
@@ -600,7 +609,46 @@ def main():
         "{:.1f}s\tdirectory for svn tiles: {}".format(time() - start, path_to_svn_tiles)
     )
 
-    # AR switching to np.array() in all cases
+    # AR tweaking PRIORITY and NUMOBS_MORE for:
+    # AR - cmxm33
+    # AR - sv1lrgqso, sv1elg, lrgqso,elg
+    # AR - sv1bgsmws,bgsmws
+    # AR starting by the lowest priorities, then by increasing priorities:
+    # AR bgs_faint -> elg -> lrg -> qso -> wd
+    ref_msks, ref_prios, ref_nums = [], [], []
+    if args.faflavor in ["cmxm33"]:
+        ref_msks = np.array(
+            [
+                "SV0_ELG",
+                "SV0_LRG",
+                "SV0_QSO",
+                "M33_M33out",
+                "M33_M33cen",
+                "M33_QSO",
+                "M33_GC",
+                "M33_H2P2",
+                "SV0_WD",
+            ]
+        )
+        ref_prios = np.array(
+            [3000, 3200, 3400, 4001, 4002, 4005, 4006, 4007, 10000]
+        )
+        ref_nums = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1])
+    elif args.faflavor in ["sv1elg", "sv1elgqso", "sv1lrgqso", "elg", "lrgqso"]:
+        ref_msks = np.array(["BGS_ANY", "BGS_FAINT", "ELG", "LRG", "QSO", "STD_WD"])
+        ref_prios = np.array([2000, 2000, 3000, 3200, 3400, 10000])
+        ref_nums = np.array([1, 1, 1, 1, 1, 1])
+    elif args.faflavor in ["sv1bgsmws", "bgsmws"]:
+        ref_msks = np.array(["BGS_ANY", "STD_WD"])
+        ref_prios = np.array([2000, 10000])
+        ref_nums = np.array([1, 1])
+    # AR safe, ordering by increasing priorities
+    ii = ref_msks.argsort()
+    ref_msks = ref_msks[ii]
+    ref_prios = ref_prios[ii]
+    ref_nums = ref_nums[ii]
+
+    # AR switching to np.array() for tileids
     tileids = np.array([args.tileid])
     log.info(
         "{:.1f}s\twill process {:.0f} tile(s) with tileid={}".format(
@@ -765,7 +813,8 @@ def main():
     # AR ! not using make_mtl !
     if dotarg:
         tiles = fits.open("{}-tiles.fits".format(root))[1].data
-        # M33
+        # AR reading available targets
+        # AR M33
         if args.faflavor == "cmxm33":
             log.info(
                 "{:.1f}s\tcmxm33 also reading target from {}".format(
@@ -799,6 +848,7 @@ def main():
                 mydirs["targ"], tiles=tiles, quick=True, header=True
             )
 
+        # AR cutting on requested targets
         keep = np.zeros(len(d), dtype=bool)
         for msk in fdict["msks"].split(","):
             if msk in ["BGS_FAINT"]:
@@ -819,43 +869,7 @@ def main():
                 time() - start, keep.sum(), len(keep), fdict["msks"]
             )
         )
-        # AR tweaking PRIORITY and NUMOBS_MORE for:
-        # AR - cmxm33
-        # AR - cmxlrgqso, cmxelg, lrgqso,elg
-        # AR - cmxbgsmws,bgsmws
-        # AR starting by the lowest priorities, then by increasing priorities:
-        # AR bgs_faint -> elg -> lrg -> qso -> wd
-        ref_msks, ref_prios, ref_nums = [], [], []
-        if args.faflavor in ["cmxm33"]:
-            ref_msks = np.array(
-                [
-                    "SV0_ELG",
-                    "SV0_LRG",
-                    "SV0_QSO",
-                    "M33_M33out",
-                    "M33_M33cen",
-                    "M33_QSO",
-                    "M33_GC",
-                    "M33_H2P2",
-                    "SV0_WD",
-                ]
-            )
-            ref_prios = np.array(
-                [3000, 3200, 3400, 4001, 4002, 4005, 4006, 4007, 10000]
-            )
-            ref_nums = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1])
-        elif args.faflavor in ["cmxelg", "cmxelqso", "cmxlrgqso", "elg", "lrgqso"]:
-            ref_msks = np.array(["BGS_ANY", "BGS_FAINT", "ELG", "LRG", "QSO", "STD_WD"])
-            ref_prios = np.array([2000, 2000, 3000, 3200, 3400, 10000])
-            ref_nums = np.array([1, 1, 1, 1, 1, 1])
-        elif args.faflavor in ["cmxbgsmws", "bgsmws"]:
-            ref_msks = np.array(["BGS_ANY", "STD_WD"])
-            ref_prios = np.array([2000, 10000])
-            ref_nums = np.array([1, 1])
-        # AR safe, ordering by increasing priorities
-        ii = ref_msks.argsort()
-        ref_msks = ref_msks[ii]
-        ref_prios = ref_prios[ii]
+        # AR tweaking PRIORITY and NUMOBS_MORE
         if len(ref_msks) > 0:
             for msk, prio, num in zip(ref_msks, ref_prios, ref_nums):
                 if msk in fdict["msks"].split(","):
@@ -874,7 +888,7 @@ def main():
         # AR adapted from https://github.com/desi-bgs/feasiBGS/blob/e913210bb91618d7be3d4a8911a6183ed505c2b4/run/sv/dr9sv.py#L153-L246
         # AR note: the BGS_LOWQ sample has some overlap with BGS_BRIGHT and BGS_FAINT
         # AR       but we decided it is ok
-        if args.faflavor in ["cmxbgsmws", "bgsmws"]:
+        if args.faflavor in ["sv1bgsmws", "bgsmws"]:
             log.info(
                 "{:.1f}s\tmodifying SUBPRIORITY for BGS targets".format(
                     time() - start,
@@ -912,6 +926,16 @@ def main():
                 "{:.1f}s\tBGS initial target densities: {}".format(
                     time() - start,
                     ", ".join(["{}={}".format(msk, initdens[msk]) for msk in msks]),
+                )
+            )
+            ntarg = {
+                msk: float("{:.3f}".format(((d["SV1_BGS_TARGET"] & bgs_mask[msk]) > 0).sum()))
+                for msk in msks
+            }
+            log.info(
+                "{:.1f}s\tBGS available targets in the tile: {}".format(
+                    time() - start,
+                    ", ".join(["{}={}".format(msk, ntarg[msk]) for msk in msks]),
                 )
             )
             # AR desired assigned fraction
@@ -954,14 +978,9 @@ def main():
                 if msk in fdict["msks"].split(","):
                     fd["MTL"].write_key(
                         "COMMENT",
-                        "tweak : PRIORITY_INIT = {:.0f} for {}".format(prio, msk),
-                    )
-                    fd["MTL"].write_key(
-                        "COMMENT",
-                        "tweak : NUMOBS_INIT = {:.0f} for {}".format(num, msk),
+                        "tweak : PRIORITY_INIT={:.0f} and NUMOBS_INIT={:.0f} for {}".format(prio, num, msk),
                     )
             fd.close()
-
     # AR fiberassign
     if dofa:
 
@@ -1053,11 +1072,34 @@ def main():
                     "intileid",
                     "faflavor",
                     "rundate",
-                    "seed",
+                    "pmtime",
                 ]:
                     if kwargs[1] is not None:
                         fd["PRIMARY"].write_key(kwargs[0], kwargs[1])
+            fd["PRIMARY"].write_key("sctarg", fdict["msks"])
             fd["PRIMARY"].write_key("obscon", fdict["obscon"])
+            if len(ref_msks) > 0:
+                for msk, prio, num in zip(ref_msks, ref_prios, ref_nums):
+                    if msk in fdict["msks"].split(","):
+                        fd["PRIMARY"].write_key(
+                            "COMMENT",
+                            "PRIORITY_INIT={:.0f} and NUMOBS_INIT={:.0f} for {}".format(prio, num, msk),
+                        )
+            if args.faflavor in ["sv1bgsmws", "bgsmws"]:
+                msks = list(goaldens.keys())
+                for msk in msks:
+                    fd["PRIMARY"].write_key(
+                        "COMMENT",
+                        "rescaling SUBPRIORITY in [{},1] for {}".format(subplow[msk], msk),
+                    )
+                bitval = fd["FIBERASSIGN"].read_column("SV1_BGS_TARGET")
+                log.info(
+                    "{:.1f}s\tBGS assigned targets: {}".format(
+                        time() - start,
+                        ", ".join(["{}={}".format(msk, ((bitval & bgs_mask[msk]) > 0).sum()) for msk in msks]),
+                    )
+                )
+
             fd.close()
 
     if dozip:  # gzip all fiberassign files
@@ -1620,7 +1662,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--faflavor",
-        help="cmxm33,cmxelg,cmelgqso,cmxlrgqso,cmxbgsmws,elg,lrgqso,bgsmws,1percdark,1percbright",
+        help=", ".join(faflavors_all),
         type=str,
         default=None,
         required=True,
@@ -1652,7 +1694,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--pmtime",
-        help="yyyy-mm-ddThh-mm-ss, time use to compute new coordinates after applying proper motion since REF_EPOCH (default=midnight of Time.now())",
+        help="yyyy-mm-ddThh:mm:ss, time use to compute new coordinates after applying proper motion since REF_EPOCH (default=midnight of Time.now())",
         type=str,
         default=Time(Time.now().isot[:10] + "T00:00:00", format="isot").isot,
         required=False,
@@ -1687,4 +1729,4 @@ if __name__ == "__main__":
 
     with stdouterr_redirected(to=logfn):
         main()
-    # main()
+    #main()
