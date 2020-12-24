@@ -663,7 +663,7 @@ if args.wiki == "y":
         tmparr = ["{:06}".format(d["TILEID"][i])]
         tmparr += [d["FIELD"][i]]
         tmparr += [d["TARGETS"][i]]
-        tmparr += ["{:.2f}".format(d[target][i]) for target in targets]
+        tmparr += ["{}".format(d[target][i]) for target in targets]
         f.write("||{} ||\n".format(" ||".join(tmparr)))
     f.write("\n")
     f.write("\n")
