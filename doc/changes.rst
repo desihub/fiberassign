@@ -3,10 +3,34 @@
 fiberassign change log
 ======================
 
-2.0.1 (unreleased)
+2.1.1 (unreleased)
 ------------------
 
 * No changes yet.
+
+2.1.0 (unreleased)
+------------------
+
+Major script and format updates for SV1 in December 2020.
+
+* Add `SV1_*_TARGET` columns (PR `#287`_).
+* fba_cmx gzip output (PR `#288`_).
+* Add fba_sv1 script (PR `#289`_, `#291`_, `#293`_, `#294`_, `#299`_).
+* Use read_targets_in_tiles quick=True option (PR `#290`_).
+* Option for specifying proper motion epoch --pmtime (PR `#295`_).
+* Update default fiberassign columns (PR `#297`_, `#298`_).
+
+.. _`#287`: https://github.com/desihub/fiberassign/pull/287
+.. _`#288`: https://github.com/desihub/fiberassign/pull/288
+.. _`#289`: https://github.com/desihub/fiberassign/pull/289
+.. _`#290`: https://github.com/desihub/fiberassign/pull/290
+.. _`#291`: https://github.com/desihub/fiberassign/pull/291
+.. _`#293`: https://github.com/desihub/fiberassign/pull/293
+.. _`#294`: https://github.com/desihub/fiberassign/pull/294
+.. _`#295`: https://github.com/desihub/fiberassign/pull/295
+.. _`#297`: https://github.com/desihub/fiberassign/pull/297
+.. _`#298`: https://github.com/desihub/fiberassign/pull/298
+.. _`#299`: https://github.com/desihub/fiberassign/pull/299
 
 2.0.0 (2020-12-11)
 ------------------
