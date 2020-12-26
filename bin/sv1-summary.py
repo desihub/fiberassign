@@ -27,7 +27,7 @@ from argparse import ArgumentParser
 # AR reading arguments
 parser = ArgumentParser()
 parser.add_argument(
-    "--outdir", help="output directory", type=str, default=None, metavar="OUTDIR"
+    "--outdir", help="output directory", type=str, default=None, required=True, metavar="OUTDIR"
 )
 parser.add_argument(
     "--tiles",
@@ -52,6 +52,9 @@ parser.add_argument(
 parser.add_argument(
     "--depth", help="do r_depth png? (y/n)", type=str, default="y", metavar="DEPTH"
 )
+parser.add_argument(
+    "--update", help="start from existing args.outroot+'sv1-exposures.fits' (y/n)", type=str, default="y", metavar="UPDATE"
+)
 args = parser.parse_args()
 for kwargs in args._get_kwargs():
     print(kwargs)
@@ -59,8 +62,9 @@ for kwargs in args._get_kwargs():
 
 # AR : all exposure depths routines are copied from DK, with minor modifications
 
-# AR sv1 first night (for exposures search)
-firstnight = "20201214"
+# AR safe
+if args.outdir[-1] != "/":
+    args.outdir += "/"
 
 # AR folders / files
 sv1dir = "/global/cfs/cdirs/desi/users/raichoor/fiberassign-sv1/"
@@ -84,6 +88,21 @@ for flavshort in ["QSO+LRG", "ELG", "BGS+MWS"]:
     outfns["depth"][flavshort] = os.path.join(
         args.outdir, "sv1-depth-{}.png".format(flavshort.lower().replace("+", ""))
     )
+
+# AR sv1 first night (for exposures search)
+# AR if args.update="y":
+# AR - assumes args.outdir+"sv1-exposures.fits" exists
+# AR - recompute the last night of args.outdir+"sv1-exposures.fits", plus following nights
+if args.update == "y":
+    if not os.path.isfile(outfns["exposures"]):
+        print("{} is missing; exiting".format(outfns["exposures"]))
+        sys.exit()
+    else:
+        d = fits.open(outfns["exposures"])[1].data
+        firstnight = d["NIGHT"].max().astype(str)
+else:
+    firstnight = "20201214"
+print("firstnight = {}".format(firstnight))
 
 # AR for the exposure and the wiki cases
 targets = ["TGT", "SKY", "STD", "WD", "LRG", "ELG", "QSO", "BGS", "MWS"]
@@ -571,6 +590,16 @@ if args.exposures == "y":
                         for band in ["B", "R", "Z"]:
                             exposures["{}_DEPTH".format(band)] += [-99]
 
+    # AR if update=y, pre-append the results from previous nights
+    if args.update == "y":
+        d = fits.open(outfns["exposures"])[1].data
+        keep = (d["NIGHT"] < int(firstnight))
+        d = d[keep]
+        for key in hdrkeys + ownkeys:
+            exposures[key] = d[key].tolist() + exposures[key]
+        for key in gfakeys:
+            for suffix in ["_MIN", "_MED", "_MAX"]:
+                exposures["{}{}".format(key, suffix)] = d["{}{}".format(key, suffix)].tolist() + exposures["{}{}".format(key, suffix)]
     # AR building/writing fits
     cols = []
     for key in hdrkeys + ownkeys:
@@ -848,7 +877,13 @@ if args.depth == "y":
     d = fits.open(outfns["exposures"])[1].data
     xlim = (0, 30)
     xs = 0.5 + np.arange(xlim[0], xlim[1])
-    cols = ["r", "g", "b"]
+    # AR color-coding by night
+    ref_cols = ["r", "g", "b"]
+    nights = np.unique(d["NIGHT"])
+    cols = np.zeros(len(d),dtype=object)
+    for i in range(len(nights)):
+        keep = (d["NIGHT"] == nights[i])
+        cols[keep] = ref_cols[i % len(ref_cols)]
     key = "R_DEPTH"
     for flavshort, ymax in zip(["QSO+LRG", "ELG", "BGS+MWS"], [2000, 2000, 1000]):
         keep = d["TARGETS"] == flavshort
@@ -887,9 +922,9 @@ if args.depth == "y":
                     ha="center",
                     va="center",
                     fontsize=7,
-                    color=cols[x % len(cols)],
+                    color=cols[j],
                 )
-                ax.scatter(0.5 + x, d[key][j], c=cols[x % len(cols)], marker="o", s=5)
+                ax.scatter(0.5 + x, d[key][j], c=cols[j], marker="o", s=5)
                 ax.plot(
                     [x, x + 1], d["EXPTIME"][j] + np.zeros(2), c="k", ls="--", lw=0.5
                 )
@@ -903,8 +938,8 @@ if args.depth == "y":
                 ax.axvline(x, c="k", lw=0.1)
             if i == 0:
                 ax.set_title(
-                    "SV1 {} ({} tiles between {} and {})".format(
-                        flavshort, len(tileids), nightmin, nightmax
+                    "SV1 {} ({} exposures from {} tiles between {} and {})".format(
+                        flavshort, keep.sum(), len(tileids), nightmin, nightmax
                     )
                 )
             if i == len(tileids) - 1:
@@ -918,3 +953,4 @@ if args.depth == "y":
                 ax.yaxis.set_major_locator(MultipleLocator(500))
         plt.savefig(outfns["depth"][flavshort], bbox_inches="tight")
         plt.close()
+
