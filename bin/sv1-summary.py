@@ -27,7 +27,12 @@ from argparse import ArgumentParser
 # AR reading arguments
 parser = ArgumentParser()
 parser.add_argument(
-    "--outdir", help="output directory", type=str, default=None, required=True, metavar="OUTDIR"
+    "--outdir",
+    help="output directory",
+    type=str,
+    default=None,
+    required=True,
+    metavar="OUTDIR",
 )
 parser.add_argument(
     "--tiles",
@@ -53,7 +58,11 @@ parser.add_argument(
     "--depth", help="do r_depth png? (y/n)", type=str, default="y", metavar="DEPTH"
 )
 parser.add_argument(
-    "--update", help="start from existing args.outroot+'sv1-exposures.fits' (y/n)", type=str, default="y", metavar="UPDATE"
+    "--update",
+    help="start from existing args.outroot+'sv1-exposures.fits' (y/n)",
+    type=str,
+    default="y",
+    metavar="UPDATE",
 )
 args = parser.parse_args()
 for kwargs in args._get_kwargs():
@@ -593,13 +602,16 @@ if args.exposures == "y":
     # AR if update=y, pre-append the results from previous nights
     if args.update == "y":
         d = fits.open(outfns["exposures"])[1].data
-        keep = (d["NIGHT"] < int(firstnight))
+        keep = d["NIGHT"] < int(firstnight)
         d = d[keep]
         for key in hdrkeys + ownkeys:
             exposures[key] = d[key].tolist() + exposures[key]
         for key in gfakeys:
             for suffix in ["_MIN", "_MED", "_MAX"]:
-                exposures["{}{}".format(key, suffix)] = d["{}{}".format(key, suffix)].tolist() + exposures["{}{}".format(key, suffix)]
+                exposures["{}{}".format(key, suffix)] = (
+                    d["{}{}".format(key, suffix)].tolist()
+                    + exposures["{}{}".format(key, suffix)]
+                )
     # AR building/writing fits
     cols = []
     for key in hdrkeys + ownkeys:
@@ -627,7 +639,7 @@ if args.exposures == "y":
 if args.wiki == "y":
     f = open(outfns["wiki"], "w")
 
-    # AR tile design
+    # AR tile design (fiberassign, log, QA plot, viewer, split per tracer)
     d = fits.open(outfns["exposures"])[1].data
     _, ii = np.unique(d["TILEID"], return_index=True)
     ii = ii[d["TILEID"][ii].argsort()]
@@ -644,10 +656,8 @@ if args.wiki == "y":
         "QA plot",
         "Log",
         "Viewer",
-    ]
+    ] + targets
     f.write("||= **{}** =||\n".format(" =||=".join(fields)))
-    _, ii = np.unique(d["TILEID"], return_index=True)
-    ii = ii[np.argsort(d["TILEID"][ii])]
     for i in range(len(d)):
         tmparr = ["{:06}".format(d["TILEID"][i])]
         tmparr += [d["FIELD"][i]]
@@ -670,28 +680,10 @@ if args.wiki == "y":
             )
         ]
         tmparr += [
-            "[https://www.legacysurvey.org/viewer-dev/?ra={}&dec={}&layer=ls-dr9&zoom=9 Viewer]".format(
+            "[https://www.legacysurvey.org/viewer-dev/?ra={:.3f}&dec={:.3f}&layer=ls-dr9&zoom=9 Viewer]".format(
                 d["TILERA"][i], d["TILEDEC"][i]
             )
         ]
-        f.write("||{} ||\n".format(" ||".join(tmparr)))
-    f.write("\n")
-    f.write("\n")
-    f.write("\n")
-
-    # AR number of targets
-    d = fits.open(outfns["exposures"])[1].data
-    _, ii = np.unique(d["TILEID"], return_index=True)
-    ii = ii[d["TILEID"][ii].argsort()]
-    d = d[ii]
-    f.write("=================== NB OF TARGETS  ===============\n")
-    f.write("\n")
-    fields = ["TILEID", "Name", "Targets"] + targets
-    f.write("||= **{}** =||\n".format(" =||=".join(fields)))
-    for i in range(len(d)):
-        tmparr = ["{:06}".format(d["TILEID"][i])]
-        tmparr += [d["FIELD"][i]]
-        tmparr += [d["TARGETS"][i]]
         tmparr += ["{}".format(d[target][i]) for target in targets]
         f.write("||{} ||\n".format(" ||".join(tmparr)))
     f.write("\n")
@@ -880,9 +872,9 @@ if args.depth == "y":
     # AR color-coding by night
     ref_cols = ["r", "g", "b"]
     nights = np.unique(d["NIGHT"])
-    cols = np.zeros(len(d),dtype=object)
+    cols = np.zeros(len(d), dtype=object)
     for i in range(len(nights)):
-        keep = (d["NIGHT"] == nights[i])
+        keep = d["NIGHT"] == nights[i]
         cols[keep] = ref_cols[i % len(ref_cols)]
     key = "R_DEPTH"
     for flavshort, ymax in zip(["QSO+LRG", "ELG", "BGS+MWS"], [2000, 2000, 1000]):
@@ -953,4 +945,3 @@ if args.depth == "y":
                 ax.yaxis.set_major_locator(MultipleLocator(500))
         plt.savefig(outfns["depth"][flavshort], bbox_inches="tight")
         plt.close()
-
