@@ -52,10 +52,11 @@ parser.add_argument(
     "--wiki", help="do wiki tables? (y/n)", type=str, default="y", metavar="WIKI"
 )
 parser.add_argument(
-    "--skymap", help="do skymap png? (y/n)", type=str, default="y", metavar="SKYMAP"
-)
-parser.add_argument(
-    "--depth", help="do r_depth png? (y/n)", type=str, default="y", metavar="DEPTH"
+    "--plot",
+    help="do plots (skymap, observing conditions, r_depth)? (y/n)",
+    type=str,
+    default="y",
+    metavar="PLOT",
 )
 parser.add_argument(
     "--update",
@@ -92,6 +93,7 @@ outfns["tiles"] = os.path.join(args.outdir, "sv1-tiles.fits")
 outfns["exposures"] = os.path.join(args.outdir, "sv1-exposures.fits")
 outfns["wiki"] = os.path.join(args.outdir, "sv1-tables.wiki")
 outfns["skymap"] = os.path.join(args.outdir, "sv1-skymap.png")
+outfns["obscond"] = os.path.join(args.outdir, "sv1-obscond.png")
 outfns["depth"] = {}
 for flavshort in ["QSO+LRG", "ELG", "BGS+MWS"]:
     outfns["depth"][flavshort] = os.path.join(
@@ -773,8 +775,10 @@ if args.wiki == "y":
     f.close()
 
 
-# AR sky map
-if args.skymap == "y":
+# AR plots
+if args.plot == "y":
+
+    # AR sky map
     # dr9
     h = fits.open(pixwfn)
     nside, nest = h[1].header["HPXNSIDE"], h[1].header["HPXNEST"]
@@ -796,10 +800,16 @@ if args.skymap == "y":
         "psfdepth_w2",
     ]:
         if key == "stardens":
-            hpdict[key] = np.log10(h[1].data[key])
+            hpdict[key] = -99 + 0.0 * h[1].data[key]
+            keep = h[1].data[key] > 0
+            hpdict[key][keep] = np.log10(h[1].data[key][keep])
             hpdict[key + "lab"] = "log10(stardens)"
         elif (key[:8] == "galdepth") | (key[:8] == "psfdepth"):
-            hpdict[key] = 22.5 - 2.5 * np.log10(5.0 / np.sqrt(h[1].data[key]))
+            hpdict[key] = -99 + 0.0 * h[1].data[key]
+            keep = h[1].data[key] > 0
+            hpdict[key][keep] = 22.5 - 2.5 * np.log10(
+                5.0 / np.sqrt(h[1].data[key][keep])
+            )
             hpdict[key + "lab"] = r"5$\sigma$ " + key
         else:
             hpdict[key] = h[1].data[key]
@@ -814,7 +824,6 @@ if args.skymap == "y":
         (hpdict["fracarea"] > 0) & (hpdict["dec"] > 32.375) & (c.galactic.b.value > 0)
     )
     hpdict["south"] = (hpdict["fracarea"] > 0) & (~hpdict["north"])
-
     # plotting skymap
     projection = "mollweide"
     org = 120  # centre ra for mollweide plots
@@ -853,7 +862,7 @@ if args.skymap == "y":
                 va="center",
             )
             y -= dy
-
+    # AR
     for faflavors, col in zip(ref_faflavors, ref_cols):
         faflavors = np.unique(
             [faflavor.replace("cmx", "").replace("sv1", "") for faflavor in faflavors]
@@ -863,9 +872,79 @@ if args.skymap == "y":
     plt.savefig(outfns["skymap"], bbox_inches="tight")
     plt.close()
 
+    # AR observing conditions
+    d = fits.open(outfns["exposures"])[1].data
+    keys = [
+        "AIRMASS",
+        "MOON_SEP_DEG",
+        "TRANSPARENCY",
+        "FWHM_ASEC",
+        "SKY_MAG_AB",
+        "FIBER_FRACFLUX",
+        "R_DEPTH / EXPTIME",
+    ]
+    mlocs = [0.25, 25, 0.25, 0.50, 1.0, 0.20, 0.5]
+    xlim = (
+        np.floor(d["MJDOBS"].min() - 1).astype(int),
+        np.ceil(d["MJDOBS"].max()).astype(int) + 1,
+    )
+    cols = np.zeros(len(d), dtype=object)
+    for fkey in list(flavdict.keys()):
+        cols[d["TARGETS"] == fkey] = flavdict[fkey]["COLOR"]
+    fig = plt.figure(figsize=(25, 1 * len(keys)))
+    gs = gridspec.GridSpec(len(keys), 1, hspace=0.1)
+    for i in range(len(keys)):
+        ax = plt.subplot(gs[i])
+        if keys[i] == "R_DEPTH / EXPTIME":
+            y = d["R_DEPTH"] / d["EXPTIME"]
+        else:
+            y = d["{}_MED".format(keys[i])]
+        ax.scatter(d["MJDOBS"], y, c=cols, marker="o", s=5)
+        ax.grid(True)
+        ax.set_axisbelow(True)
+        ax.set_xlim(xlim)
+        ax.yaxis.set_major_locator(MultipleLocator(mlocs[i]))
+        ax.text(
+            0.01,
+            0.80,
+            keys[i],
+            color="k",
+            fontweight="bold",
+            ha="left",
+            transform=ax.transAxes,
+        )
+        for x in range(xlim[0], xlim[1]):
+            ax.axvline(x, c="k", lw=0.1)
+        if i == 0:
+            ax.set_title(
+                "SV1 observing conditions from {} to {} based on GFAs".format(
+                    d["NIGHT"].min(), d["NIGHT"].max()
+                )
+            )
+            _, jj = np.unique(d["NIGHT"], return_index=True)
+            for j in jj:
+                ax.text(
+                    np.floor(d["MJDOBS"][j]) + 0.5,
+                    0.9 * ax.get_ylim()[1],
+                    d["NIGHT"][j],
+                    color="k",
+                    ha="center",
+                )
+            for fkey in list(flavdict.keys()):
+                ax.scatter(
+                    None, None, c=flavdict[fkey]["COLOR"], marker="o", s=5, label=fkey
+                )
+            ax.legend(loc=4)
+        if i == len(keys) - 1:
+            ax.set_xlabel("MJD-OBS")
+            ax.set_xticks(np.linspace(xlim[0], xlim[1], xlim[1] - xlim[0] + 1))
+            ax.ticklabel_format(useOffset=False, style="plain")
+        else:
+            ax.set_xticks([])
+    plt.savefig(outfns["obscond"], bbox_inches="tight")
+    plt.close()
 
-# AR r_depth plot
-if args.depth == "y":
+    # AR r_depth
     d = fits.open(outfns["exposures"])[1].data
     xlim = (0, 30)
     xs = 0.5 + np.arange(xlim[0], xlim[1])
