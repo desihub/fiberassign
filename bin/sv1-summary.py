@@ -22,6 +22,7 @@ import scipy.ndimage
 from astropy.table import Table
 from matplotlib import gridspec
 from matplotlib.ticker import MultipleLocator
+import textwrap
 from argparse import ArgumentParser
 
 # AR reading arguments
@@ -57,6 +58,13 @@ parser.add_argument(
     type=str,
     default="y",
     metavar="PLOT",
+)
+parser.add_argument(
+    "--html",
+    help="create html pages, one per tile (y/n)",
+    type=str,
+    default="y",
+    metavar="HTML",
 )
 parser.add_argument(
     "--update",
@@ -99,6 +107,9 @@ for flavshort in ["QSO+LRG", "ELG", "BGS+MWS"]:
     outfns["depth"][flavshort] = os.path.join(
         args.outdir, "sv1-depth-{}.png".format(flavshort.lower().replace("+", ""))
     )
+outfns["html"] = os.path.join(args.outdir, "sv1-per-tile")
+if (args.html == "y") & (os.path.isdir(outfns["html"]) == False):
+    os.mkdir(outfns["html"])
 
 # AR sv1 first night (for exposures search)
 # AR if args.update="y":
@@ -379,6 +390,43 @@ def get_radec_mw(ra, dec, org):
     ra = -ra  # reverse the scale: East to the left
     return np.radians(ra), np.radians(dec)
 
+# AR/ADM from desitarget/QA.py
+def _javastring():
+    """Return a string that embeds a date in a webpage
+    """
+
+    js = textwrap.dedent("""
+    <SCRIPT LANGUAGE="JavaScript">
+    var months = new Array(13);
+    months[1] = "January";
+    months[2] = "February";
+    months[3] = "March";
+    months[4] = "April";
+    months[5] = "May";
+    months[6] = "June";
+    months[7] = "July";
+    months[8] = "August";
+    months[9] = "September";
+    months[10] = "October";
+    months[11] = "November";
+    months[12] = "December";
+    var dateObj = new Date(document.lastModified)
+    var lmonth = months[dateObj.getMonth() + 1]
+    var date = dateObj.getDate()
+    var fyear = dateObj.getYear()
+    if (fyear < 2000)
+    fyear = fyear + 1900
+    if (date == 1 || date == 21 || date == 31)
+    document.write(" " + lmonth + " " + date + "st, " + fyear)
+    else if (date == 2 || date == 22)
+    document.write(" " + lmonth + " " + date + "nd, " + fyear)
+    else if (date == 3 || date == 23)
+    document.write(" " + lmonth + " " + date + "rd, " + fyear)
+    else
+    document.write(" " + lmonth + " " + date + "th, " + fyear)
+    </SCRIPT>
+    """)
+    return js
 
 # AR per-tile information
 tiles = {}
@@ -1024,3 +1072,221 @@ if args.plot == "y":
                 ax.yaxis.set_major_locator(MultipleLocator(500))
         plt.savefig(outfns["depth"][flavshort], bbox_inches="tight")
         plt.close()
+
+
+# AR html pages
+if args.html == "y":
+    d = fits.open(outfns["exposures"])[1].data
+    tileids,ii = np.unique(d["TILEID"],return_index=True)
+    bkgcol = "#f0f0f5" # "#e6fff2"
+
+    # ADM set up the html file and write preamble to it.
+    htmlfile = os.path.join(outfns["html"], 'index.html')
+
+    # ADM grab the magic string that writes the last-updated date to a webpage.
+    js = _javastring()
+
+    # ADM html preamble.
+    htmlmain = open(htmlfile, 'w')
+    htmlmain.write('<html><body>\n')
+    htmlmain.write('<h1>SV1 Tiles</h1>\n')
+
+    # AR tile design (fiberassign, log, QA plot, viewer, split per tracer)
+    fields = [
+            "TILEID",
+            "Name",
+            "Targets",
+            "RA",
+            "Dec",
+            "Fits",
+            "QA plot",
+            "Log",
+            "Viewer",
+        ] + targets
+    htmlmain.write('<h2>Tiles overview (click on the TILEID to access its html page)</hi2>\n')
+    htmlmain.write("<table>")
+    htmlmain.write("<style>")
+    htmlmain.write("th, td {border:1px solid black}")
+    htmlmain.write("tr:nth-child(even) {background-color: "+bkgcol+";}")
+    htmlmain.write("</style>")
+    htmlmain.write("<tr>")
+    htmlmain.write(" ".join(["<th> {} </th>".format(x) for x in fields])+"\n\n")
+    htmlmain.write("</tr>")
+    for i in ii:
+        tileid = d["TILEID"][i]
+        fafits = "https://desi.lbl.gov/svn/data/tiles/trunk/{}/fiberassign-{:06}.fits.gz".format(str(d["TILEID"][i]).zfill(6)[:3], d["TILEID"][i])
+        fields = [
+                "TILEID",
+                "Name",
+                "Targets",
+                "RA",
+                "Dec",
+                "Fits",
+                "QA plot",
+                "Log",
+                "Viewer",
+            ] + targets
+        tmparr = ["<A HREF='{:06}.html'>{:06}</A>".format(tileid, tileid)]
+        tmparr += [d["FIELD"][i]]
+        tmparr += [d["TARGETS"][i]]
+        tmparr += ["{:.3f}".format(d["TILERA"][i])]
+        tmparr += ["{:.3f}".format(d["TILEDEC"][i])]
+        tmparr += [
+            "<A HREF='{}' target='external'> fiberassign-{:06}.fits.gz </A>".format(
+                fafits, d["TILEID"][i]
+            )
+        ]
+        tmparr += [
+            "<A HREF='{}' target='external'> fiberassign-{:06}.png".format(
+                fafits.replace(".fits.gz",".png"), d["TILEID"][i]
+            )
+        ]
+        tmparr += [
+            "<A HREF='{}' target='external'> {:06}.log".format(
+                os.path.join("/".join(fafits.split("/")[:-1]), "{:06}.log".format(tileid)), d["TILEID"][i]
+            )
+        ]
+        tmparr += [
+            "<A HREF='https://www.legacysurvey.org/viewer-dev/?ra={:.3f}&dec={:.3f}&layer=ls-dr9&zoom=9' target='external'> Viewer".format(
+                d["TILERA"][i], d["TILEDEC"][i]
+            )
+        ]
+        tmparr += ["{}".format(d[target][i]) for target in targets]
+        htmlmain.write("<tr>")
+        htmlmain.write(" ".join(["<td> {} </td>".format(x) for x in tmparr]))
+        htmlmain.write("</tr>"+"\n")
+    htmlmain.write("</table>")
+
+    # AR Observing conditions
+    tmppng = outfns["obscond"].replace(args.outdir, "../")
+    htmlmain.write('<h2>Observing conditions</hi2>\n')
+    htmlmain.write("<td align=center><A HREF='{}'><img SRC='{}' width=100% height=auto></A></td>\n"                                              
+               .format(tmppng, tmppng))
+    htmlmain.write('</tr>\n')
+
+    
+    # ADM for each tileid, make a separate page.
+    for i in ii:
+        tileid = d["TILEID"][i]
+
+        # ADM call each page by the target class name, out it in the requested directory.
+        htmlfile = os.path.join(outfns["html"], '{:06}.html'.format(tileid))
+        html = open(htmlfile, 'w')
+
+        # ADM html preamble.
+        html.write('<html><body>\n')
+        html.write('<h1>Tile {:06}</h1>\n'.format(tileid))
+
+        # AR Tile design
+        fafits = "https://desi.lbl.gov/svn/data/tiles/trunk/{}/fiberassign-{:06}.fits.gz".format(str(d["TILEID"][i]).zfill(6)[:3], d["TILEID"][i])
+        targets = ["TGT", "SKY", "STD", "WD", "LRG", "ELG", "QSO", "BGS", "MWS"]
+        fields = [
+                "TILEID",
+                "Name",
+                "Targets",
+                "RA",
+                "Dec",
+                "Fits",
+                "QA plot",
+                "Log",
+                "Viewer",
+            ] + targets
+        html.write('<h2>Tile design</hi2>\n')
+        html.write("<table>")
+        html.write("<style>")
+        html.write("th, td {border:1px solid black}")
+        html.write("tr:nth-child(even) {background-color: "+bkgcol+";}")
+        html.write("</style>")
+        html.write("<tr>")
+        html.write(" ".join(["<th> {} </th>".format(x) for x in fields])+"\n\n")
+        html.write("</tr>")
+        tmparr = ["{:06}".format(d["TILEID"][i])]
+        tmparr += [d["FIELD"][i]]
+        tmparr += [d["TARGETS"][i]]
+        tmparr += ["{:.3f}".format(d["TILERA"][i])]
+        tmparr += ["{:.3f}".format(d["TILEDEC"][i])]
+        tmparr += [
+            "<A HREF='{}' target='external'> fiberassign-{:06}.fits.gz </A>".format(
+                fafits, d["TILEID"][i]
+            )
+        ]
+        tmparr += [
+            "<A HREF='{}' target='external'> fiberassign-{:06}.png".format(
+                fafits.replace(".fits.gz",".png"), d["TILEID"][i]
+            )
+        ]
+        tmparr += [
+            "<A HREF='{}' target='external'> {:06}.log".format(
+                os.path.join("/".join(fafits.split("/")[:-1]), "{:06}.log".format(tileid)), d["TILEID"][i]
+            )
+        ]
+        tmparr += [
+            "<A HREF='https://www.legacysurvey.org/viewer-dev/?ra={:.3f}&dec={:.3f}&layer=ls-dr9&zoom=9' target='external'> Viewer".format(
+                d["TILERA"][i], d["TILEDEC"][i]
+            )
+        ]
+        tmparr += ["{}".format(d[target][i]) for target in targets]
+        html.write(" ".join(["<td> {} </td>".format(x) for x in tmparr]))
+        html.write("</tr>")
+        html.write("</table>")
+
+        # AR Exposure properties
+        jj = np.where(d["TILEID"] == tileid)[0]
+        jj = jj[d["EXPID"][jj].argsort()]
+        di = d[jj]
+        html.write("<h2>Per-exposure properties ({} exposures over {} nights)</hi2>".format(len(di), len(np.unique(di["NIGHT"]))))
+        # ADM write out a list of the target categories.
+        keys = [
+                "AIRMASS",
+                "MOON_SEP_DEG",
+                "TRANSPARENCY",
+                "FWHM_ASEC",
+                "SKY_MAG_AB",
+                "FIBER_FRACFLUX",
+            ]
+        fields = (
+            ["TILEID", "NIGHT", "EXPID", "EXPTIME", "EBV"]
+            + keys
+            + ["B_DEPTH", "R_DEPTH", "Z_DEPTH"]
+            )
+        html.write("<table>")
+        html.write("<tr>")
+        html.write(" ".join(["<th> {} </th>".format(x) for x in fields])+"\n\n")
+        html.write("</tr>")
+        for j in range(len(di)):
+            html.write("<tr>")
+            tmparr = ["{:06}".format(tileid)]
+            tmparr += ["{}".format(di["NIGHT"][j])]
+            tmparr += ["{}".format(di["EXPID"][j])]
+            tmparr += ["{:.0f}".format(di["EXPTIME"][j])]
+            tmparr += ["{:.2f}".format(di["EBV"][j])]
+            tmparr += ["{:.2f}".format(di[key + "_MED"][j]) for key in keys]
+            tmparr += [
+                "{:.0f}s".format(di[band + "_DEPTH"][j]) for band in ["B", "R", "Z"]
+            ]
+            html.write(" ".join(["<td> {} </td>".format(x) for x in tmparr]))
+            html.write("</tr>")
+        html.write("</table>")
+
+        # AR QA plot
+        html.write('<h2>Fiber Assign QA plot</hi2>\n')
+        html.write("<td align=center><A HREF='{}'><img SRC='{}' width=100% height=auto></A></td>\n"                                              
+                   .format(fafits.replace(".fits.gz",".png"), fafits.replace(".fits.gz",".png")))
+        html.write('</tr>\n')
+
+        # ADM html postamble.                                                                                                                                                                      
+        html.write('<b><i>Last updated {}</b></i>\n'.format(js))
+        html.write('</html></body>\n')
+        html.close()
+
+    # ADM html postamble for main page.
+    htmlmain.write('<b><i>Last updated {}</b></i>\n'.format(js))
+    htmlmain.write('</html></body>\n')
+    htmlmain.close()
+
+    # ADM make sure all of the relevant directories and plots can be read by a web-browser.
+    cmd = 'chmod 644 {}/*'.format(outfns["html"])
+    ok = os.system(cmd)
+    cmd = 'chmod 775 {}'.format(outfns["html"])
+    ok = os.system(cmd)
+
