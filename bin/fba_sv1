@@ -35,17 +35,17 @@ import matplotlib.image as mpimg
 
 # AR authorized args.faflavor
 faflavors_all = [
-        "cmxm33",
-        "sv1elg",
-        "sv1elgqso",
-        "sv1lrgqso",
-        "sv1bgsmws",
-        "elg",
-        "lrgqso",
-        "bgsmws",
-        "1percdark",
-        "1percbright",
-    ]
+    "cmxm33",
+    "sv1elg",
+    "sv1elgqso",
+    "sv1lrgqso",
+    "sv1bgsmws",
+    "elg",
+    "lrgqso",
+    "bgsmws",
+    "1percdark",
+    "1percbright",
+]
 
 
 # AR copied from make_mtl()
@@ -279,9 +279,7 @@ def plot_cutout(
 ):
     # AR setting transparency as a function of density /deg2
     if (x is not None) & (alpha is None):
-        tmpdens = np.array(
-            [0, 100, 500, 1000, 5000, 7500, 10000],
-        )
+        tmpdens = np.array([0, 100, 500, 1000, 5000, 7500, 10000],)
         tmpalph = np.array([1, 0.8, 0.5, 0.2, 0.1, 0.05, 0.025])
         alpha = tmpalph[
             np.where(tmpdens > len(x) / (np.pi * get_tile_radius_deg() ** 2))[0][0]
@@ -312,12 +310,7 @@ def plot_cutout(
                 rdlim,
             )
             ax.plot(
-                xx,
-                yy,
-                c="r",
-                lw=0.25,
-                alpha=1.0,
-                zorder=1,
+                xx, yy, c="r", lw=0.25, alpha=1.0, zorder=1,
             )
             anglab = ang + 0.1 * np.pi
             xx, yy = deg2pix(
@@ -327,12 +320,7 @@ def plot_cutout(
                 rdlim,
             )
             ax.text(
-                xx,
-                yy,
-                "{:.0f}".format(p),
-                color="r",
-                va="center",
-                ha="center",
+                xx, yy, "{:.0f}".format(p), color="r", va="center", ha="center",
             )
 
     ax.axis("off")
@@ -398,7 +386,7 @@ def main():
     new_obstime = Time(args.pmtime, format="isot")
     log.info(
         "{:.1f}s\tsetting new_obstime={}, i.e. MJD={} to update coordinates with proper motion".format(
-        time() - start, new_obstime.isot, new_obstime.mjd
+            time() - start, new_obstime.isot, new_obstime.mjd
         )
     )
 
@@ -630,9 +618,7 @@ def main():
                 "SV0_WD",
             ]
         )
-        ref_prios = np.array(
-            [3000, 3200, 3400, 4001, 4002, 4005, 4006, 4007, 10000]
-        )
+        ref_prios = np.array([3000, 3200, 3400, 4001, 4002, 4005, 4006, 4007, 10000])
         ref_nums = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1])
     elif args.faflavor in ["sv1elg", "sv1elgqso", "sv1lrgqso", "elg", "lrgqso"]:
         ref_msks = np.array(["BGS_ANY", "BGS_FAINT", "ELG", "LRG", "QSO", "STD_WD"])
@@ -652,9 +638,7 @@ def main():
     tileids = np.array([args.tileid])
     log.info(
         "{:.1f}s\twill process {:.0f} tile(s) with tileid={}".format(
-            time() - start,
-            len(tileids),
-            ",".join([str(tileid) for tileid in tileids]),
+            time() - start, len(tileids), ",".join([str(tileid) for tileid in tileids]),
         )
     )
     # AR safe tileids
@@ -858,9 +842,7 @@ def main():
             keep |= keep_msk
             log.info(
                 "{:.1f}s\tkeeping {:.0f} {} targets".format(
-                    time() - start,
-                    keep_msk.sum(),
-                    msk,
+                    time() - start, keep_msk.sum(), msk,
                 )
             )
         d = d[keep]
@@ -869,6 +851,30 @@ def main():
                 time() - start, keep.sum(), len(keep), fdict["msks"]
             )
         )
+
+        # AR removing targets from other tiles?
+        if args.noreobs is not None:
+            tids = []
+            for fn in args.noreobs.split(","):
+                tmpd = fits.open(fn)["FIBERASSIGN"].data
+                keep = np.zeros(len(tmpd), dtype=bool)
+                for msk in fdict["msks"].split(","):
+                    if msk in ["BGS_FAINT"]:
+                        keep_msk = (tmpd["SV1_BGS_TARGET"] & bgs_mask[msk]) > 0
+                    else:
+                        keep_msk = (
+                            tmpd[keytarg_prefix + "_TARGET"] & targ_mask[msk]
+                        ) > 0
+                    keep |= keep_msk
+                tids += tmpd["TARGETID"][keep].tolist()
+            keep = ~np.in1d(d["TARGETID"], tids)  # AR ok to have duplicates in tids
+            d = d[keep]
+            log.info(
+                "{:.1f}s\tkeeping {:.0f}/{:.0f} targets after having removed assigned targets from {}".format(
+                    time() - start, keep.sum(), len(keep), args.noreobs
+                )
+            )
+
         # AR tweaking PRIORITY and NUMOBS_MORE
         if len(ref_msks) > 0:
             for msk, prio, num in zip(ref_msks, ref_prios, ref_nums):
@@ -890,9 +896,7 @@ def main():
         # AR       but we decided it is ok
         if args.faflavor in ["sv1bgsmws", "bgsmws"]:
             log.info(
-                "{:.1f}s\tmodifying SUBPRIORITY for BGS targets".format(
-                    time() - start,
-                )
+                "{:.1f}s\tmodifying SUBPRIORITY for BGS targets".format(time() - start,)
             )
             # AR desired assigned density
             # AR ! hard-coded !
@@ -929,7 +933,9 @@ def main():
                 )
             )
             ntarg = {
-                msk: float("{:.3f}".format(((d["SV1_BGS_TARGET"] & bgs_mask[msk]) > 0).sum()))
+                msk: float(
+                    "{:.3f}".format(((d["SV1_BGS_TARGET"] & bgs_mask[msk]) > 0).sum())
+                )
                 for msk in msks
             }
             log.info(
@@ -978,7 +984,9 @@ def main():
                 if msk in fdict["msks"].split(","):
                     fd["MTL"].write_key(
                         "COMMENT",
-                        "tweak : PRIORITY_INIT={:.0f} and NUMOBS_INIT={:.0f} for {}".format(prio, num, msk),
+                        "tweak : PRIORITY_INIT={:.0f} and NUMOBS_INIT={:.0f} for {}".format(
+                            prio, num, msk
+                        ),
                     )
             fd.close()
     # AR fiberassign
@@ -1083,20 +1091,31 @@ def main():
                     if msk in fdict["msks"].split(","):
                         fd["PRIMARY"].write_key(
                             "COMMENT",
-                            "PRIORITY_INIT={:.0f} and NUMOBS_INIT={:.0f} for {}".format(prio, num, msk),
+                            "PRIORITY_INIT={:.0f} and NUMOBS_INIT={:.0f} for {}".format(
+                                prio, num, msk
+                            ),
                         )
             if args.faflavor in ["sv1bgsmws", "bgsmws"]:
                 msks = list(goaldens.keys())
                 for msk in msks:
                     fd["PRIMARY"].write_key(
                         "COMMENT",
-                        "rescaling SUBPRIORITY in [{},1] for {}".format(subplow[msk], msk),
+                        "rescaling SUBPRIORITY in [{},1] for {}".format(
+                            subplow[msk], msk
+                        ),
                     )
                 bitval = fd["FIBERASSIGN"].read_column("SV1_BGS_TARGET")
                 log.info(
                     "{:.1f}s\tBGS assigned targets: {}".format(
                         time() - start,
-                        ", ".join(["{}={}".format(msk, ((bitval & bgs_mask[msk]) > 0).sum()) for msk in msks]),
+                        ", ".join(
+                            [
+                                "{}={}".format(
+                                    msk, ((bitval & bgs_mask[msk]) > 0).sum()
+                                )
+                                for msk in msks
+                            ]
+                        ),
                     )
                 )
 
@@ -1471,16 +1490,12 @@ def main():
                             np.clip(((tmpc / tmpcp) - famin) / (famax - famin), 0, 1)
                         )
                         # AR transparency = f(nb of parent obj)
-                        tmpmin, tmpmax = 1, 1.2 * tmpcp.sum() / float(
-                            len(hbp.get_array())
+                        tmpmin, tmpmax = (
+                            1,
+                            1.2 * tmpcp.sum() / float(len(hbp.get_array())),
                         )
                         c[:, 3] = np.clip((tmpcp - tmpmin) / (tmpmax - tmpmin), 0, 1)
-                        SC = ax.scatter(
-                            tmpx,
-                            tmpy,
-                            c=c,
-                            s=10,
-                        )
+                        SC = ax.scatter(tmpx, tmpy, c=c, s=10,)
                         SC.cmap = cm
                         ax.set_xlabel(
                             "{} - {}".format(xbands[0].lower(), xbands[1].lower())
@@ -1552,14 +1567,7 @@ def main():
                 txt = r"mean = {:.2f}".format(fafrac)
                 ax = plt.subplot(gs[ix, 5])
                 SC = ax.scatter(
-                    tmpx,
-                    tmpy,
-                    c=c,
-                    s=3,
-                    vmin=famin,
-                    vmax=famax,
-                    alpha=0.5,
-                    cmap=cm,
+                    tmpx, tmpy, c=c, s=3, vmin=famin, vmax=famax, alpha=0.5, cmap=cm,
                 )
                 ax.set_xlabel(r"$\Delta$RA [deg.]")
                 ax.set_ylabel(r"$\Delta$DEC [deg.]")
@@ -1701,6 +1709,14 @@ if __name__ == "__main__":
         metavar="PMTIME",
     )
     parser.add_argument(
+        "--noreobs",
+        help="comma-separated, full path to existing fiberassign-TILEID.fits.gz files, which assigned science targets we remove before doing fiber assignment",
+        type=str,
+        default=None,
+        required=False,
+        metavar="NOREOBS",
+    )
+    parser.add_argument(
         "--doclean",
         help="delete tileid-{tiles,sky,std,gfa,targ}.fits files (y/n)",
         type=str,
@@ -1729,4 +1745,4 @@ if __name__ == "__main__":
 
     with stdouterr_redirected(to=logfn):
         main()
-    #main()
+    # main()
