@@ -838,6 +838,8 @@ minimal_target_columns = OrderedDict([
     ('FLUX_IVAR_G', '>f4'), 
     ('FLUX_IVAR_R', '>f4'), 
     ('FLUX_IVAR_Z', '>f4'),
+    ('FLUX_IVAR_W1', '>f4'), # https://github.com/desihub/fiberassign/issues/300
+    ('FLUX_IVAR_W2', '>f4'), # https://github.com/desihub/fiberassign/issues/300
     ('FIBERFLUX_G', '>f4'), 
     ('FIBERFLUX_R', '>f4'), 
     ('FIBERFLUX_Z', '>f4'), 
