@@ -581,11 +581,11 @@ def main():
 
     # AR directories (already checked for desi or cori only)
     hostname = os.getenv("HOSTNAME")
+    desiroot = os.getenv("DESI_ROOT") # AR NERSC: '/global/cfs/cdirs/desi' ; KPNO: '/data/datasystems'
+    path_to_targets = os.path.join(os.getenv("DESI_TARGET"), "catalogs")
     if "desi" in hostname:
-        path_to_targets = "/data/target/catalogs"
         path_to_svn_tiles = "/data/tiles/SVN_tiles"
     if "cori" in hostname:
-        path_to_targets = os.path.join(os.getenv("DESI_TARGET"), "catalogs")
         path_to_svn_tiles = os.path.join(
             os.getenv("DESI_TARGET"), "fiberassign/tiles/trunk"
         )
@@ -1104,8 +1104,10 @@ def main():
             fd = fitsio.FITS(
                 "{}fiberassign-{:06d}.fits".format(args.outdir, tileid), "rw"
             )
+            # AR folders, with replacing $DESI_ROOT by DESIROOT
+            fd["PRIMARY"].write_key("DESIROOT", desiroot)
             for key in np.sort(list(mydirs.keys())):
-                fd["PRIMARY"].write_key(key, mydirs[key])
+                fd["PRIMARY"].write_key(key, mydirs[key].replace(desiroot, "DESIROOT"))
             for kwargs in args._get_kwargs():
                 if kwargs[0].lower() in [
                     "outdir",
