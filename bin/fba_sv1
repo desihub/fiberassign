@@ -612,8 +612,8 @@ def main():
         )
     else:
         log.error(
-            "{:.1f}s\targs.faflavor not in cmxm33,sv1elg,sv1elgqso,sv1lrgqso,sv1bgsmws,elg,lrgqso,bgs,1percdark,1percbright; exiting".format(
-                time() - start
+            "{:.1f}s\targs.faflavor not in {}; exiting".format(
+                time() - start, ", ".join(faflavors_all)
             )
         )
     mydirs["sky"] = os.path.join(path_to_targets, args.dr, args.dtver, "skies")
@@ -629,42 +629,43 @@ def main():
         "{:.1f}s\tdirectory for svn tiles: {}".format(time() - start, path_to_svn_tiles)
     )
 
-    # AR tweaking PRIORITY and NUMOBS_MORE for:
+    # AR if args.priority == custom -> tweaking PRIORITY and NUMOBS_MORE for:
     # AR - cmxm33
     # AR - sv1lrgqso, sv1elg, lrgqso,elg
     # AR - sv1bgsmws,bgsmws
     # AR starting by the lowest priorities, then by increasing priorities:
     # AR bgs_faint -> elg -> lrg -> qso -> wd
     ref_msks, ref_prios, ref_nums = [], [], []
-    if args.faflavor in ["cmxm33"]:
-        ref_msks = np.array(
-            [
-                "SV0_ELG",
-                "SV0_LRG",
-                "SV0_QSO",
-                "M33_M33out",
-                "M33_M33cen",
-                "M33_QSO",
-                "M33_GC",
-                "M33_H2P2",
-                "SV0_WD",
-            ]
-        )
-        ref_prios = np.array([3000, 3200, 3400, 4001, 4002, 4005, 4006, 4007, 10000])
-        ref_nums = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1])
-    elif args.faflavor in ["sv1elg", "sv1elgqso", "sv1lrgqso", "elg", "lrgqso"]:
-        ref_msks = np.array(["BGS_ANY", "BGS_FAINT", "ELG", "LRG", "QSO", "STD_WD"])
-        ref_prios = np.array([2000, 2000, 3000, 3200, 3400, 10000])
-        ref_nums = np.array([1, 1, 1, 1, 1, 1])
-    elif args.faflavor in ["sv1bgsmws", "bgsmws"]:
-        ref_msks = np.array(["BGS_ANY", "STD_WD"])
-        ref_prios = np.array([2000, 10000])
-        ref_nums = np.array([1, 1])
-    # AR safe, ordering by increasing priorities
-    ii = ref_msks.argsort()
-    ref_msks = ref_msks[ii]
-    ref_prios = ref_prios[ii]
-    ref_nums = ref_nums[ii]
+    if args.priority == "custom":
+        if args.faflavor in ["cmxm33"]:
+            ref_msks = np.array(
+                [
+                    "SV0_ELG",
+                    "SV0_LRG",
+                    "SV0_QSO",
+                    "M33_M33out",
+                    "M33_M33cen",
+                    "M33_QSO",
+                    "M33_GC",
+                    "M33_H2P2",
+                    "SV0_WD",
+                ]
+            )
+            ref_prios = np.array([3000, 3200, 3400, 4001, 4002, 4005, 4006, 4007, 10000])
+            ref_nums = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1])
+        elif args.faflavor in ["sv1elg", "sv1elgqso", "sv1lrgqso", "elg", "lrgqso"]:
+            ref_msks = np.array(["BGS_ANY", "BGS_FAINT", "ELG", "LRG", "QSO", "STD_WD"])
+            ref_prios = np.array([2000, 2000, 3000, 3200, 3400, 10000])
+            ref_nums = np.array([1, 1, 1, 1, 1, 1])
+        elif args.faflavor in ["sv1bgsmws", "bgsmws"]:
+            ref_msks = np.array(["BGS_ANY", "STD_WD"])
+            ref_prios = np.array([2000, 10000])
+            ref_nums = np.array([1, 1])
+        # AR safe, ordering by increasing priorities
+        ii = ref_msks.argsort()
+        ref_msks = ref_msks[ii]
+        ref_prios = ref_prios[ii]
+        ref_nums = ref_nums[ii]
 
     # AR switching to np.array() for tileids
     tileids = np.array([args.tileid])
@@ -1708,6 +1709,7 @@ if __name__ == "__main__":
         type=str,
         default=None,
         required=True,
+        choices=faflavors_all,
         metavar="FAFLAVOR",
     )
     parser.add_argument(
@@ -1733,6 +1735,15 @@ if __name__ == "__main__":
         default=None,
         required=True,
         metavar="DTVER",
+    )
+    parser.add_argument(
+        "--priority",
+        help="default or custom",
+        type=str,
+        default=None,
+        required=True,
+        choices=["default", "custom"],
+        metavar="PRIORITY",
     )
     parser.add_argument(
         "--pmtime",
