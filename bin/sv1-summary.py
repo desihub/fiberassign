@@ -405,8 +405,9 @@ def determine_tile_depth2(
 
 
 # AR r-band sky mag / arcsec2 from sky-....fits files
-def get_sky_rmag_ab(night, expid, exptime, ftype):
+def get_sky_rmag_ab(night, expid, exptime, ftype, redux="daily"):
     # AR ftype = "data" or "model"
+    # AR redux = "daily" or "blanc"
     # AR if ftype = "data" : read the sky fibers from frame*fits + apply flat-field
     # AR if ftype = "model": read the sky model from sky*.fits for the first fiber of each petal (see DJS email from 29Dec2020)
     # AR those are in electron / angstrom
@@ -414,21 +415,27 @@ def get_sky_rmag_ab(night, expid, exptime, ftype):
     if ftype not in ["data", "model"]:
         sys.exit("ftype should be 'data' or 'model'")
     sky = np.zeros(len(fullwave))
+    reduxdir = dailydir.replace("daily", redux)
+    # AR see AK email [desi-data 5218]
+    if redux == "blanc":
+        specs = ["0", "1", "3", "4", "5", "7", "8", "9"]
+    else:
+        specs = np.arange(10, dtype=int).astype(str)
     for camera in ["b", "r"]:
         norm_cam = np.zeros(len(fullwave[cslice[camera]]))
         sky_cam = np.zeros(len(fullwave[cslice[camera]]))
-        for spec in np.arange(10, dtype=int).astype(str):
+        for spec in specs:
             # AR data
             if ftype == "data":
                 frfn = os.path.join(
-                    dailydir,
+                    reduxdir,
                     "exposures",
                     "{}".format(night),
                     expid,
                     "frame-{}{}-{}.fits".format(camera, spec, expid),
                 )
                 flfn = os.path.join(
-                    dailydir,
+                    reduxdir,
                     "calibnight",
                     "{}".format(night),
                     "fiberflatnight-{}{}-{}.fits".format(camera, spec, night),
@@ -449,7 +456,7 @@ def get_sky_rmag_ab(night, expid, exptime, ftype):
             # AR model
             if ftype == "model":
                 fn = os.path.join(
-                    dailydir,
+                    reduxdir,
                     "exposures",
                     "{}".format(night),
                     expid,
@@ -592,7 +599,7 @@ def write_html_tiledesign(html, tiles, ii, nexps, style, h2title, main=True):
     )
     if main:
         html.write(
-            "<p style='{}'>Click on the TILEID to access its html page.</p>".format(
+            "<p style='{}'>Click on the TILEID to access its detailed SV1 html page.</p>".format(
                 style
             )
         )
@@ -877,8 +884,9 @@ if args.exposures == "y":
         "FIELD",
         "TARGETS",
         "EBV",
-        #"SPECDATA_SKY_RMAG_AB",
+        # "SPECDATA_SKY_RMAG_AB",
         "SPECMODEL_SKY_RMAG_AB",
+        "BLANC_SPECMODEL_SKY_RMAG_AB",
         "NGFA",
         "B_DEPTH",
         "R_DEPTH",
@@ -958,15 +966,19 @@ if args.exposures == "y":
                     for target in targets:
                         exposures[target] += [tiles[target][it]]
                     # AR SKY_RMAG_AB from integrating the sky fibers over the decam r-band
-                    #exposures["SPECDATA_SKY_RMAG_AB"] += [
+                    # exposures["SPECDATA_SKY_RMAG_AB"] += [
                     #    get_sky_rmag_ab(
                     #        night, expids[i], exposures["EXPTIME"][-1], "data"
                     #    )
-                    #]
-                    # AR SKY_RMAG_AB from integrating the sky model over the decam r-band
+                    # ]
+                    # AR SKY_RMAG_AB from integrating the sky model over the decam r-band - daily
                     exposures["SPECMODEL_SKY_RMAG_AB"] += [
                         get_sky_rmag_ab(
-                            night, expids[i], exposures["EXPTIME"][-1], "model"
+                            night,
+                            expids[i],
+                            exposures["EXPTIME"][-1],
+                            "model",
+                            redux="daily",
                         )
                     ]
                     # AR GFA information
@@ -1477,6 +1489,7 @@ if args.html == "y":
     # AR page menu
     htmlmain.write("<nav>\n")
     htmlmain.write("\t<ul>\n")
+    htmlmain.write("\t\t<li><a href='#fitsfiles' >Fits files</a></li>\n")
     htmlmain.write("\t\t<li><a href='#skymap' >Tiles sky map</a></li>\n")
     htmlmain.write(
         "\t\t<li><a href='#tile-nexp-design' >Tiles: NEXP and design</a></li>\n"
@@ -1502,6 +1515,29 @@ if args.html == "y":
     htmlmain.write("\t</ul>\n")
     htmlmain.write("</nav>\n")
     htmlmain.write("\n")
+
+    # AR Fits files
+    htmlmain.write("<h2><a id='fitsfiles' href='#fitsfiles' > Fits files</a>\n")
+    htmlmain.write(
+        "<a href='#top' style='position: absolute; right: 0;'>Top of the page</a></h2>\n"
+    )
+    htmlmain.write(
+        "<p style='font-size:1vw'><a href='../sv1-exposures.fits' target='external'> sv1-exposures.fits </a> : main file with all exposures. Column content: {} ;  + GFA quantities (MIN, MEAN, MED, MAX for each quantity): {}.</p>\n".format(
+            ", ".join([key for key in d.dtype.names if key[:4] != "GFA_"]),
+            ", ".join(
+                [
+                    key.replace("GFA_", "").replace("_MIN", "")
+                    for key in d.dtype.names
+                    if key[:4] == "GFA_" and key[-3:] == "MIN"
+                ]
+            ),
+        )
+    )
+    htmlmain.write(
+        "<p style='font-size:1vw'><a href='../sv1-tiles.fits' target='external'> sv1-tiles.fits </a> : minimal file with the following tile informations: {}.</p>\n".format(
+            ", ".join(fits.open(outfns["tiles"])[1].columns.names)
+        )
+    )
 
     # AR Sky map
     htmlmain.write("<h2><a id='skymap' href='#skymap' > Tiles: sky map</a>\n")
@@ -1629,7 +1665,7 @@ if args.html == "y":
         )
         html.write(
             "<h2><a id='fa-qa-plot' href='#fa-qa-plot' > Tile {}: Fiber Assign QA plot</a>\n".format(
-                tileid
+                tiles["TILEID"][i]
             )
         )
         html.write(
