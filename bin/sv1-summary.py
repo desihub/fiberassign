@@ -165,6 +165,7 @@ std_sv1_msks = ["STD_WD", "STD_BRIGHT", "STD_FAINT"]
 flavdict = {
     "QSO+LRG": {"FAFLAVORS": ["cmxlrgqso", "sv1lrgqso"], "COLOR": "r"},
     "ELG": {"FAFLAVORS": ["cmxelg", "sv1elg"], "COLOR": "b"},
+    "QSO+ELG": {"FAFLAVORS": ["sv1elgqso"], "COLOR": "c"},
     "BGS+MWS": {"FAFLAVORS": ["cmxbgsmws", "sv1bgsmws"], "COLOR": "g"},
     "M33+Dark": {"FAFLAVORS": ["cmxm33"], "COLOR": "magenta"},
 }
@@ -182,36 +183,60 @@ fielddict = {
     "NGC2419": [80618],
     "UMajor": [80619, 80620, 80621],
     "LeoMinor": [80622, 80623],
-    # BGS+MWS 20210101
+    # BGS+MWS 20210101 , Dark 20210105
     "Dust cloud": [80624],
-    "Far north": [80650, 80655],
-    "Far south": [80630, 80638],
+    "Far north": [80650, 80655, 80693, 80694],
+    "Far south": [80630, 80638, 80671, 80701, 80672, 80702],
     "GAMA G02": [80633, 80635],
-    "GAMA G12": [80661, 80662, 80663],
+    "GAMA G12": [80661, 80662, 80663, 80705, 80706],
     "G.Plane b=+15": [80642],
-    "G.Plane b=+16": [80641],
-    "G.Plane b=+18": [80644],
-    "G.Plane b=-24": [80640],
+    "G.Plane b=+16": [80641, 80675, 80676],
+    "G.Plane b=+18": [80644, 80683, 80684],
+    "G.Plane b=-24": [80640, 80673, 80674],
     "G.Plane b=-27": [80639],
     "HSC": [80632, 80634],
-    "HSC/S82": [80625, 80637],
+    "HSC/S82": [80625, 80637, 80669, 80670],
     "MWS south edge of NGC": [80647],
     "MWS GD1_LOW_2 blk": [80648],
     "MWS MONOC._LOW blk": [80645],
     "MWS Sag. stream blk hp": [80628, 80629],
     "MWS TRIAND_STR._1 blk": [80626],
     "MWS TRIAND_STR._2 blk": [80627],
-    "Moon avoidance": [80631, 80636],
-    "Sag stream": [80665, 80666],
+    "Moon avoidance": [80631, 80636, 80667, 80668],
+    "Sag. stream": [80665, 80666, 80709, 80710],
     "MWS GD1-C-1 blk": [80658],
     "MWS North G.Pole blk": [80664],
     "MWS ORPHAN-A-1 blk": [80657],
-    "Overlap": [80646, 80649, 80651, 80654, 80659],
+    "Overlap": [
+        80646,
+        80649,
+        80651,
+        80654,
+        80659,
+        80689,
+        80691,
+        80697,
+        80699,
+        80703,
+        80690,
+        80692,
+        80698,
+        80700,
+        80704,
+    ],
     "Overlap and b=+23": [80643],
     "MWS GD-B-1 str. blk hp": [80652],
     "MWS GD-B-2 str. blk hp": [80653],
     "MWS GD-B-3 str. blk hp": [80656],
     "MWS GD-C-2 str. blk hp": [80660],
+    "Beehive cluster": [80687, 80688],
+    "Gal. extinction": [80695, 80696],
+    "Monoc. stream": [80685, 80686],
+    "N. Gal. Pole": [80707, 80708],
+    "2-pass g-depth": [80679, 80680],
+    "2-pass r-depth + G.Plane b=+17": [80677, 80678],
+    "DEEP2 EGS": [80711, 80712],
+    "Overlap+Monoc. stream": [80681, 80682],
 }
 
 
@@ -613,10 +638,13 @@ def write_html_tiledesign(html, tiles, ii, nexps, style, h2title, main=True):
     html.write("th, td {border:1px solid black; font-size: 0.95em}\n")
     html.write("tr:nth-child(even) {background-color: " + bkgcol + ";}\n")
     html.write("</style>\n")
-    html.write("<tr>\n")
-    html.write(" ".join(["<th> {} </th>".format(x) for x in fields]) + "\n")
-    html.write("</tr>\n")
+    count = 0
     for i, nexp in zip(ii, nexps):
+        if count % 20 == 0:
+            html.write("<tr>\n")
+            html.write(" ".join(["<th> {} </th>".format(x) for x in fields]) + "\n")
+            html.write("</tr>\n")
+        count += 1
         fafits = "https://desi.lbl.gov/svn/data/tiles/trunk/{}/fiberassign-{:06}.fits.gz".format(
             str(tiles["TILEID"][i]).zfill(6)[:3], tiles["TILEID"][i]
         )
@@ -707,10 +735,14 @@ def write_html_perexp(html, d, style, h2title):
         + ["B_DEPTH", "R_DEPTH", "Z_DEPTH"]
     )
     html.write("<table>\n")
-    html.write("<tr>\n")
-    html.write(" ".join(["<th> {} </th>".format(x) for x in fields]) + "\n")
-    html.write("</tr>\n")
-    for i in range(len(d)):
+    night = ""
+    for i in range(len(d))[::-1]:
+        night_prev = night
+        night = d["NIGHT"][i]
+        if night != night_prev:
+            html.write("<tr>\n")
+            html.write(" ".join(["<th> {} </th>".format(x) for x in fields]) + "\n")
+            html.write("</tr>\n")
         html.write("<tr>")
         tmparr = [
             "<a href='{}' target='external'> {}".format(
@@ -815,13 +847,6 @@ tiles["radec"] = np.array(
         for ra, dec in zip(tiles["TILERA"], tiles["TILEDEC"])
     ]
 )
-ref_faflavors = [
-    ["cmxm33"],
-    ["cmxlrgqso", "sv1lrgqso"],
-    ["cmxelg", "sv1elg"],
-    ["sv1bgsmws"],
-]
-ref_cols = ["magenta", "r", "b", "g"]
 # AR extra infos
 for key in list(flavdict.keys()):
     keep = np.in1d(tiles["FAFLAVOR"], flavdict[key]["FAFLAVORS"])
@@ -1275,11 +1300,8 @@ if args.plot == "y":
             )
             y -= dy
     # AR
-    for faflavors, col in zip(ref_faflavors, ref_cols):
-        faflavors = np.unique(
-            [faflavor.replace("cmx", "").replace("sv1", "") for faflavor in faflavors]
-        )
-        ax.scatter(100, 100, marker="X", s=50, c=col, label=",".join(faflavors))
+    for key in list(flavdict.keys()):
+        ax.scatter(100, 100, marker="X", s=50, c=flavdict[key]["COLOR"], label=key)
     ax.legend(loc=2)
     plt.savefig(outfns["skymap"], bbox_inches="tight")
     plt.close()
@@ -1393,74 +1415,83 @@ if args.plot == "y":
         keep = d["NIGHT"] == nights[i]
         cols[keep] = ref_cols[i % len(ref_cols)]
     key = "R_DEPTH"
-    for flavshort, ymax in zip(["QSO+LRG", "ELG", "BGS+MWS"], [2000, 2000, 1000]):
+    for flavshort, ymax in zip(
+        ["QSO+LRG", "QSO+ELG", "ELG", "BGS+MWS"], [2000, 2000, 2000, 1000]
+    ):
         keep = d["TARGETS"] == flavshort
-        tileids = np.unique(d["TILEID"][keep])
-        nightmin, nightmax = d["NIGHT"][keep].min(), d["NIGHT"][keep].max()
-        fig = plt.figure(figsize=(25, 1 * len(tileids)))
-        gs = gridspec.GridSpec(len(tileids), 1, hspace=0)
-        for i in range(len(tileids)):
-            ax = plt.subplot(gs[i])
-            ax.text(
-                0.98,
-                0.80,
-                tileids[i],
-                color="k",
-                fontweight="bold",
-                ha="right",
-                transform=ax.transAxes,
-            )
-            ax.text(
-                0.98,
-                0.55,
-                d["FIELD"][d["TILEID"] == tileids[i]][0],
-                color="k",
-                fontweight="bold",
-                ha="right",
-                transform=ax.transAxes,
-            )
-            jj = np.where(d["TILEID"] == tileids[i])[0]
-            ax.plot(xs[: len(jj)], d[key][jj], color="k", lw=1)
-            x = 0
-            for j in jj:
+        if keep.sum() > 0:
+            tileids = np.unique(d["TILEID"][keep])
+            nightmin, nightmax = d["NIGHT"][keep].min(), d["NIGHT"][keep].max()
+            fig = plt.figure(figsize=(25, 1 * len(tileids)))
+            gs = gridspec.GridSpec(len(tileids), 1, hspace=0)
+            for i in range(len(tileids)):
+                ax = plt.subplot(gs[i])
                 ax.text(
-                    0.5 + x,
-                    0.75 * ymax,
-                    "{}\n{}\n{:.0f}s".format(d["NIGHT"][j], d["EXPID"][j], d[key][j]),
-                    ha="center",
-                    va="center",
-                    fontsize=7,
-                    color=cols[j],
+                    0.98,
+                    0.80,
+                    tileids[i],
+                    color="k",
+                    fontweight="bold",
+                    ha="right",
+                    transform=ax.transAxes,
                 )
-                ax.scatter(0.5 + x, d[key][j], c=cols[j], marker="o", s=5)
-                ax.plot(
-                    [x, x + 1], d["EXPTIME"][j] + np.zeros(2), c="k", ls="--", lw=0.5
+                ax.text(
+                    0.98,
+                    0.55,
+                    d["FIELD"][d["TILEID"] == tileids[i]][0],
+                    color="k",
+                    fontweight="bold",
+                    ha="right",
+                    transform=ax.transAxes,
                 )
-                x += 1
-            ax.grid(True)
-            ax.set_axisbelow(True)
-            ax.set_xlim(0, 30)
-            if i == int(len(tileids) / 2):
-                ax.set_ylabel("{} [s]".format(key))
-            for x in range(xlim[0], xlim[1]):
-                ax.axvline(x, c="k", lw=0.1)
-            if i == 0:
-                ax.set_title(
-                    "SV1 {} ({} exposures from {} tiles between {} and {})".format(
-                        flavshort, keep.sum(), len(tileids), nightmin, nightmax
+                jj = np.where(d["TILEID"] == tileids[i])[0]
+                ax.plot(xs[: len(jj)], d[key][jj], color="k", lw=1)
+                x = 0
+                for j in jj:
+                    ax.text(
+                        0.5 + x,
+                        0.75 * ymax,
+                        "{}\n{}\n{:.0f}s".format(
+                            d["NIGHT"][j], d["EXPID"][j], d[key][j]
+                        ),
+                        ha="center",
+                        va="center",
+                        fontsize=7,
+                        color=cols[j],
                     )
-                )
-            if i == len(tileids) - 1:
-                ax.set_xlabel("Exposure #")
-            else:
-                ax.set_xticks([])
-            ax.set_ylim(0.01, ymax - 0.01)
-            if flavshort == "BGS+MWS":
-                ax.yaxis.set_major_locator(MultipleLocator(250))
-            else:
-                ax.yaxis.set_major_locator(MultipleLocator(500))
-        plt.savefig(outfns["depth"][flavshort], bbox_inches="tight")
-        plt.close()
+                    ax.scatter(0.5 + x, d[key][j], c=cols[j], marker="o", s=5)
+                    ax.plot(
+                        [x, x + 1],
+                        d["EXPTIME"][j] + np.zeros(2),
+                        c="k",
+                        ls="--",
+                        lw=0.5,
+                    )
+                    x += 1
+                ax.grid(True)
+                ax.set_axisbelow(True)
+                ax.set_xlim(0, 30)
+                if i == int(len(tileids) / 2):
+                    ax.set_ylabel("{} [s]".format(key))
+                for x in range(xlim[0], xlim[1]):
+                    ax.axvline(x, c="k", lw=0.1)
+                if i == 0:
+                    ax.set_title(
+                        "SV1 {} ({} exposures from {} tiles between {} and {})".format(
+                            flavshort, keep.sum(), len(tileids), nightmin, nightmax
+                        )
+                    )
+                if i == len(tileids) - 1:
+                    ax.set_xlabel("Exposure #")
+                else:
+                    ax.set_xticks([])
+                ax.set_ylim(0.01, ymax - 0.01)
+                if flavshort == "BGS+MWS":
+                    ax.yaxis.set_major_locator(MultipleLocator(250))
+                else:
+                    ax.yaxis.set_major_locator(MultipleLocator(500))
+            plt.savefig(outfns["depth"][flavshort], bbox_inches="tight")
+            plt.close()
 
 
 # AR html pages
@@ -1506,7 +1537,7 @@ if args.html == "y":
                     month, month
                 )
             )
-    for flavshort in ["QSO+LRG", "ELG", "BGS+MWS"]:
+    for flavshort in ["QSO+LRG", "ELG", "BGS+MWS", "QSO+ELG"]:
         htmlmain.write(
             "\t\t<li><a href='#depths-{}' > Per-tile exposure depths: {}</a></li>\n".format(
                 flavshort, flavshort
