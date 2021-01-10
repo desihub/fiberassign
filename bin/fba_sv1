@@ -9,8 +9,8 @@ from astropy.io import fits
 from astropy.table import Table
 import fitsio
 from desitarget.io import read_targets_in_tiles, write_targets, write_mtl
-from desitarget.sv1.sv1_targetmask import desi_mask, bgs_mask
-from desitarget.cmx.cmx_targetmask import cmx_mask
+from desitarget.cmx import cmx_targetmask
+from desitarget.sv1 import sv1_targetmask
 from desitarget.targetmask import obsconditions
 from desitarget.targets import set_obsconditions
 from desimodel.footprint import is_point_in_desi
@@ -36,6 +36,7 @@ import matplotlib.image as mpimg
 # AR authorized args.faflavor
 faflavors_all = [
     "cmxm33",
+    "sv1m31",
     "sv1elg",
     "sv1elgqso",
     "sv1lrgqso",
@@ -85,6 +86,183 @@ extradatamodel = np.array(
 )
 
 
+# AR masks
+# AR close to desitarget.targets.main_cmx_or_sv,
+# AR but using a dictionary, more adapted to this code
+yaml_masks = {
+    "CMX_TARGET": cmx_targetmask.cmx_mask,
+    "SV1_DESI_TARGET": sv1_targetmask.desi_mask,
+    "SV1_BGS_TARGET": sv1_targetmask.bgs_mask,
+    "SV1_MWS_TARGET": sv1_targetmask.mws_mask,
+    "SV1_SCND_TARGET": sv1_targetmask.scnd_mask,
+}
+
+
+# AR select targets using yaml bits
+# AR msksdict = fdict["msks"] or fdict["stdmsks"]
+def sel_targs(d, msksdict, log=None):
+    keep = np.zeros(len(d), dtype=bool)
+    # AR : key = CMX_TARGET, SV1_DESI_TARGET, SV1_BGS_TARGET, SV1_MWS_TARGET, SV1_SCND_TARGET
+    for key in list(msksdict.keys()):
+        if key in d.dtype.names:
+            for msk in msksdict[key].split(","):
+                keep_msk = (d[key] & yaml_masks[key][msk]) > 0
+                keep |= keep_msk
+                if log is not None:
+                    log.info(
+                        "{:.1f}s\tkeeping {:.0f} {} {} targets".format(
+                            time() - start, keep_msk.sum(), key, msk,
+                        )
+                    )
+    return keep
+
+
+# AR targets from other tiles?
+# AR msksdict = fdict["msks"]
+def sel_noreobs(d, msksdict, fns, ra_key="RA", dec_key="DEC", log=None, m31cen="n"):
+    tids = []
+    for fn in fns:
+        tmpd = fits.open(fn)["FIBERASSIGN"].data
+        keepd = sel_targs(tmpd, msksdict)
+        tids += tmpd["TARGETID"][keepd].tolist()
+    keep = ~np.in1d(d["TARGETID"], tids)  # AR ok to have duplicates in tids
+    if log is not None:
+        log.info(
+            "{:.1f}s\tkeeping {:.0f}/{:.0f} targets after having removed assigned targets from {}".format(
+                time() - start, keep.sum(), len(keep), ",".join(fns)
+            )
+        )
+    # AR M31cen case: retain outskirt targets to have deep observations for those
+    # AR              so we remove those from tids
+    # AR https://desi.lbl.gov/trac/wiki/DESIFirstLight/M31#DefinetheellipsecontainingM31:
+    if m31cen == "y":
+        ra0, dec0, a_e, b_e, pa = 10.683, 41.269, 1.8, 0.5, 45.0 * np.pi / 180.0
+        dra, ddec = d[ra_key] - ra0, d[dec_key] - dec0
+        eta = dra * np.cos(pa) + ddec * np.sin(
+            pa
+        )  # rotate the coordinate system to line up with the ellipse major axis
+        xi = -dra * np.sin(pa) + ddec * np.cos(pa)
+        xp = (
+            (a_e * b_e) / np.sqrt((a_e * xi) ** 2 + (b_e * eta) ** 2) * eta
+        )  # this is the point of intersection on the ellipse of a line to given source from the
+        yp = (
+            (a_e * b_e) / np.sqrt((a_e * xi) ** 2 + (b_e * eta) ** 2) * xi
+        )  # center of the ellipse
+        is_outskirt = (np.abs(eta) > np.abs(xp)) | (np.abs(xi) > np.abs(yp))
+        keep[is_outskirt] = True
+        if log is not None:
+            log.info(
+                "{:.1f}s\tM31cen : forcing to keep {:.0f} targets which are in the M31 outskirt".format(
+                    time() - start, is_outskirt.sum()
+                )
+            )
+    return keep
+
+
+# AR tweaking PRIORITY and NUMOBS_MORE
+# AR msksdict = fdict["msks"]
+def apply_custom_prionum(d, msksdict, ref_msks, ref_prios, ref_nums, log=None):
+    for msk, prio, num in zip(ref_msks, ref_prios, ref_nums):
+        for key in list(msksdict.keys()):
+            if (key in d.dtype.names) & (msk in msksdict[key].split(",")):
+                tmp = (d[key] & yaml_masks[key][msk]) > 0
+                d["PRIORITY_INIT"][tmp] = prio
+                d["NUMOBS_INIT"][tmp] = num
+                if log is not None:
+                    log.info(
+                        "{:.1f}s\tPRIORITY_INIT={:.0f} and NUMOBS_INIT={:.0f} for {:.0f} {}".format(
+                            time() - start, prio, num, tmp.sum(), msk
+                        )
+                    )
+    return d
+
+
+# AR update header
+def update_hdr_custom_prionum(fn, extn, msksdict, ref_msks, ref_prios, ref_nums):
+    fd = fitsio.FITS(fn, "rw")
+    for msk, prio, num in zip(ref_msks, ref_prios, ref_nums):
+        for key in list(msksdict.keys()):
+            if msk in msksdict[key].split(","):
+                fd[extn].write_key(
+                    "COMMENT",
+                    "PRIORITY_INIT={:.0f} and NUMOBS_INIT={:.0f} for {}".format(
+                        prio, num, msk
+                    ),
+                )
+    fd.close()
+    return True
+
+
+# AR tweaking SUBPRIORITY for BGS, to get the correct subsampling
+# AR adapted from https://github.com/desi-bgs/feasiBGS/blob/e913210bb91618d7be3d4a8911a6183ed505c2b4/run/sv/dr9sv.py#L153-L246
+# AR note: the BGS_LOWQ sample has some overlap with BGS_BRIGHT and BGS_FAINT
+# AR       but we decided it is ok
+def apply_bgs_subprio(d, pixfn, log):
+    log.info("{:.1f}s\tmodifying SUBPRIORITY for BGS targets".format(time() - start,))
+    # AR desired assigned density
+    # AR ! hard-coded !
+    bgs_goaldens = {
+        "BGS_BRIGHT": 540.0,
+        "BGS_FAINT": 300.0,
+        "BGS_FAINT_EXT": 150.0,
+        "BGS_FIBMAG": 150.0,
+        "BGS_LOWQ": 60.0,
+    }
+    msks = list(bgs_goaldens.keys())
+    log.info(
+        "{:.1f}s\tBGS desired assigned densities: {}".format(
+            time() - start,
+            ", ".join(["{}={}".format(msk, bgs_goaldens[msk]) for msk in msks]),
+        )
+    )
+    # AR actual target density, using pixweight
+    pixd = fits.open(pixfn)[1].data
+    keep = pixd["FRACAREA_8194"] > 0  # AR relevant area for BGS selection
+    initdens = {msk: float("{:.0f}".format(pixd[msk][keep].mean())) for msk in msks}
+    log.info(
+        "{:.1f}s\tBGS initial target densities: {}".format(
+            time() - start,
+            ", ".join(["{}={}".format(msk, initdens[msk]) for msk in msks]),
+        )
+    )
+    ntarg = {
+        msk: float(
+            "{:.3f}".format(
+                ((d["SV1_BGS_TARGET"] & yaml_masks["SV1_BGS_TARGET"][msk]) > 0).sum()
+            )
+        )
+        for msk in msks
+    }
+    log.info(
+        "{:.1f}s\tBGS available targets in the tile: {}".format(
+            time() - start,
+            ", ".join(["{}={}".format(msk, ntarg[msk]) for msk in msks]),
+        )
+    )
+    # AR desired assigned fraction
+    frac = {
+        msk: float("{:.3f}".format(bgs_goaldens[msk] / initdens[msk])) for msk in msks
+    }
+    fracmin = np.min([frac[msk] for msk in msks])
+    # AR lower SUBPRIORITY value, with setting the lowest frac class to 0
+    bgs_subplow = {
+        msk: float("{:.3f}".format(1.0 - fracmin / frac[msk])) for msk in msks
+    }
+    # AR modifying SUBPRIORITY with rescaling, hence no call to np.random.uniform()
+    for msk in msks:
+        keep = (d["SV1_BGS_TARGET"] & yaml_masks["SV1_BGS_TARGET"][msk]) > 0
+        d["SUBPRIORITY"][keep] = (
+            bgs_subplow[msk] + (1.0 - bgs_subplow[msk]) * d["SUBPRIORITY"][keep]
+        )
+    log.info(
+        "{:.1f}s\tBGS rescaling SUBPRIORITY within [bgs_subplow,1] with: {}".format(
+            time() - start,
+            ", ".join(["{}={}".format(msk, bgs_subplow[msk]) for msk in msks]),
+        )
+    )
+    return d, bgs_goaldens, bgs_subplow
+
+
 # AR Gaia AEN criterion
 # copied from https://github.com/desihub/desitarget/blob/801f1a1ac9041080f8062b84aec3634b1a9c1763/py/desitarget/gfa.py#L71-L77
 def get_isaen(g, aen):
@@ -96,8 +274,9 @@ def get_isaen(g, aen):
 
 # AR courtesy of DL : adapted from legacypipe.survey
 # AR originally named "radec_at_mjd()", renamed to get_nowradec
-def get_nowradec(ra, dec, pmra, pmdec, parallax, ref_year, new_obstime):
+def get_nowradec(ra, dec, pmra, pmdec, parallax, ref_year, new_obstime, scnd=False):
     # AR new_obstime = Time.now()
+    # AR scnd=True -> parallax is set to 0, i.e. not used
     """
     Units:
     - matches Gaia DR1/DR2
@@ -129,9 +308,16 @@ def get_nowradec(ra, dec, pmra, pmdec, parallax, ref_year, new_obstime):
     dec = dec + dt * pmdec / (3600.0 * 1000.0)
     ra = ra + (dt * pmra / (3600.0 * 1000.0)) / cosdec
     parallax = np.atleast_1d(parallax)
+    # AR discards parallax for scnd=True
+    if scnd == True:
+        parallax *= 0.0
     I = np.flatnonzero(parallax)
     if len(I):
-        suntheta = 2.0 * np.pi * np.fmod(new_obstime.jyear - Time(equinox, format='mjd').jyear, 1.0)
+        suntheta = (
+            2.0
+            * np.pi
+            * np.fmod(new_obstime.jyear - Time(equinox, format="mjd").jyear, 1.0)
+        )
         # Finite differences on the unit sphere -- xyztoradec handles
         # points that are not exactly on the surface of the sphere.
         axis = np.deg2rad(axistilt)
@@ -147,7 +333,9 @@ def get_nowradec(ra, dec, pmra, pmdec, parallax, ref_year, new_obstime):
 
 
 # AR update values (RA, DEC, REF_EPOCH) using proper motion
-# AR RA, DEC : updated for REF_EPOCH>0 + AEN only
+# AR RA, DEC:
+# AR - scnd=False: updated for REF_EPOCH>0 + AEN only
+# AR - scnd=True: updated for REF_EPOCH>0 + finite(PMRA,PMDEC) ; forces PARALLAX=0
 # AR REF_EPOCH : updated for *all* objects
 def update_nowradec(
     d,
@@ -160,6 +348,7 @@ def update_nowradec(
     ref_epoch_key="REF_EPOCH",
     gaiag_key="GAIA_PHOT_G_MEAN_MAG",
     gaiaaen_key="GAIA_ASTROMETRIC_EXCESS_NOISE",
+    scnd=False,
 ):
     # AR computing positions at new_obstime using Gaia PMRA, PMDEC
     nowra, nowdec = get_nowradec(
@@ -170,9 +359,18 @@ def update_nowradec(
         d[parallax_key],
         d[ref_epoch_key],
         new_obstime,
+        scnd=scnd,
     )
-    # AR targets with REF_EPOCH>0 and passing the AEN criterion
-    keep = (d["REF_EPOCH"] > 0) & (get_isaen(d[gaiag_key], d[gaiaaen_key]))
+    if scnd == True:
+        # AR secondary: REF_EPOCH>0, finite(PMRA,PMDEC)
+        keep = keep = (
+            (d["REF_EPOCH"] > 0)
+            & (np.isfinite(d[pmra_key]))
+            & (np.isfinite(d[pmdec_key]))
+        )
+    else:
+        # AR targets with REF_EPOCH>0 and passing the AEN criterion
+        keep = (d["REF_EPOCH"] > 0) & (get_isaen(d[gaiag_key], d[gaiaaen_key]))
     # AR storing changes to report extrema in the log
     dra = nowra - d[ra_key]
     ddec = nowdec - d[dec_key]
@@ -205,7 +403,7 @@ def update_nowradec(
 # AR for commissioning, Adam says we should not use make_mtl, assign mtl columns by hand [email Oct, 17 2020]
 # AR by default, we propagate {PRIORITY,NUMOBS}_INIT to {PRIORITY,NUMOBS_MORE}
 # AR mtl (reproducing steps of make_mtl())
-def custom_make_mtl(d, outfn, survey):
+def custom_make_mtl(d, outfn, survey, scnd=False):
     # d     : output of read_targets_in_tiles()
     # outfn : written fits file
     # survey: cmx or sv1
@@ -227,7 +425,7 @@ def custom_make_mtl(d, outfn, survey):
     mtl["TIMESTAMP"] = datetime.utcnow().isoformat(timespec="seconds")
     mtl["VERSION"] = fiberassign.__version__
     obsconmask = set_obsconditions(
-        d
+        d, scnd=scnd
     )  # AR : TBD : do we want to set obsconmask to 1? (see Ted s email)
     mtl["OBSCONDITIONS"] = obsconmask
     n, tmpfn = write_mtl(
@@ -311,7 +509,7 @@ def plot_cutout(
 ):
     # AR setting transparency as a function of density /deg2
     if (x is not None) & (alpha is None):
-        tmpdens = np.array([0, 100, 500, 1000, 5000, 7500, 10000],)
+        tmpdens = np.array([0, 100, 500, 1000, 5000, 7500, 1e10],)
         tmpalph = np.array([1, 0.8, 0.5, 0.2, 0.1, 0.05, 0.025])
         alpha = tmpalph[
             np.where(tmpdens > len(x) / (np.pi * get_tile_radius_deg() ** 2))[0][0]
@@ -455,14 +653,6 @@ def main():
                     )
                 )
                 sys.exit()
-    # AR safe: flavor
-    if args.faflavor not in faflavors_all:
-        log.error(
-            "{:.1f}s\targs.faflavor not in {}; exiting".format(
-                time() - start, ", ".join(faflavors_all)
-            )
-        )
-        sys.exit()
     # AR safe: hostname
     if ("desi" not in os.getenv("HOSTNAME")) & ("cori" not in os.getenv("HOSTNAME")):
         log.error(
@@ -487,101 +677,111 @@ def main():
         sys.exit()
 
     # AR dictionary with settings proper to each flavor
+    # AR dtobscon : for the desitarget path folder (
+    # AR obscon : for the tile observing conditions
     fdict = {}
     if args.faflavor == "cmxm33":  # AR ! using CMX_TARGET !
         fdict["survey"] = "cmx"
+        fdict["dtobscon"] = "no-obscon"
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
-        fdict[
-            "msks"
-        ] = "SV0_WD,M33_H2PN,M33_GC,M33_QSO,M33_M33cen,M33_M33out,SV0_QSO,SV0_LRG,SV0_ELG"
-        fdict["stdmsks"] = "SV0_WD,STD_BRIGHT"
+        fdict["msks"] = {
+            "CMX_TARGET": "SV0_WD,M33_H2PN,M33_GC,M33_QSO,M33_M33cen,M33_M33out,SV0_QSO,SV0_LRG,SV0_ELG"
+        }
+        fdict["stdmsks"] = {"CMX_TARGET": "SV0_WD,STD_BRIGHT"}
+        fdict["nskypet"] = "80"
+        fdict["nstdpet"] = "40"
+    elif args.faflavor == "sv1m31":
+        fdict["survey"] = "sv1"
+        fdict["dtobscon"] = "dark"
+        fdict["obscon"] = "DARK|GRAY|BRIGHT"
+        fdict["msks"] = {"SV1_SCND_TARGET": "M31_KNOWN,M31_QSO,M31_STAR"}
+        fdict["stdmsks"] = {"SV1_MWS_TARGET": "GAIA_STD_WD,GAIA_STD_FAINT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
     elif args.faflavor == "sv1elg":
         fdict["survey"] = "sv1"
+        fdict["dtobscon"] = "dark"
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
-        fdict["msks"] = "STD_WD,ELG,BGS_FAINT"
-        fdict["stdmsks"] = "STD_WD,STD_FAINT"
+        fdict["msks"] = {"SV1_DESI_TARGET": "STD_WD,ELG", "SV1_BGS_TARGET": "BGS_FAINT"}
+        fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
     elif args.faflavor == "sv1lrgqso":
         fdict["survey"] = "sv1"
+        fdict["dtobscon"] = "dark"
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
-        fdict["msks"] = "STD_WD,LRG,QSO,ELG,BGS_FAINT"
-        fdict["stdmsks"] = "STD_WD,STD_FAINT"
+        fdict["msks"] = {
+            "SV1_DESI_TARGET": "STD_WD,LRG,QSO,ELG",
+            "SV1_BGS_TARGET": "BGS_FAINT",
+        }
+        fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
     elif args.faflavor == "sv1elgqso":
+        fdict["dtobscon"] = "dark"
         fdict["survey"] = "sv1"
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
-        fdict["msks"] = "STD_WD,QSO,ELG"
-        fdict["stdmsks"] = "STD_WD,STD_FAINT"
+        fdict["msks"] = {"SV1_DESI_TARGET": "STD_WD,QSO,ELG"}
+        fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
     elif args.faflavor == "sv1bgsmws":
+        fdict["dtobscon"] = "bright"
         fdict["survey"] = "sv1"
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
-        fdict["msks"] = "STD_WD,BGS_ANY,MWS_ANY"
-        fdict["stdmsks"] = "STD_WD,STD_BRIGHT"
+        fdict["msks"] = {"SV1_DESI_TARGET": "STD_WD,BGS_ANY,MWS_ANY"}
+        fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_BRIGHT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
     elif args.faflavor == "elg":
         fdict["survey"] = "sv1"
+        fdict["dtobscon"] = "dark"
         fdict["obscon"] = "DARK|GRAY"
-        fdict["msks"] = "STD_WD,ELG"
-        fdict["stdmsks"] = "STD_WD,STD_FAINT"
+        fdict["msks"] = {"SV1_DESI_TARGET": "STD_WD,ELG"}
+        fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "20"
     elif args.faflavor == "lrgqso":
         fdict["survey"] = "sv1"
+        fdict["dtobscon"] = "dark"
         fdict["obscon"] = "DARK"
-        fdict["msks"] = "STD_WD,LRG,QSO"
-        fdict["stdmsks"] = "STD_WD,STD_FAINT"
+        fdict["msks"] = {"SV1_DESI_TARGET": "STD_WD,LRG,QSO"}
+        fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "20"
     elif args.faflavor == "bgsmws":
         fdict["survey"] = "sv1"
+        fdict["dtobscon"] = "bright"
         fdict["obscon"] = "BRIGHT"
-        fdict["msks"] = "STD_WD,BGS_ANY,MWS_ANY"
-        fdict["stdmsks"] = "STD_WD,STD_BRIGHT"
+        fdict["msks"] = {"SV1_DESI_TARGET": "STD_WD,BGS_ANY,MWS_ANY"}
+        fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_BRIGHT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "20"
     elif args.faflavor == "1percdark":
         fdict["survey"] = "sv1"
+        fdict["dtobscon"] = "dark"
         fdict["obscon"] = "DARK|GRAY"
-        fdict["msks"] = "STD_WD,LRG,ELG,QSO"
-        fdict["stdmsks"] = "STD_WD,STD_FAINT"
+        fdict["msks"] = {"SV1_DESI_TARGET": "STD_WD,LRG,ELG,QSO"}
+        fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
         fdict["nskypet"] = "40"
         fdict["nstdpet"] = "10"
     elif args.faflavor == "1percbright":
         fdict["survey"] = "sv1"
+        fdict["dtobscon"] = "bright"
         fdict["obscon"] = "BRIGHT"
-        fdict["msks"] = "STD_WD,BGS_ANY,MWS_ANY"
-        fdict["stdmsks"] = "STD_WD,STD_BRIGHT"
+        fdict["msks"] = {"SV1_DESI_TARGET": "STD_WD,BGS_ANY,MWS_ANY"}
+        fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_BRIGHT"}
         fdict["nskypet"] = "40"
         fdict["nstdpet"] = "10"
     else:
         log.error("{:.1f}s\twrong args.faflavor".format(time() - start))
         sys.exit()
 
-    # AR CMX_TARGET or SV1_DESI_TARGET
-    if fdict["survey"] == "cmx":
-        keytarg_prefix = "CMX"
-        targ_mask = cmx_mask
-    elif fdict["survey"] == "sv1":
-        keytarg_prefix = "SV1_DESI"
-        targ_mask = desi_mask
-    else:
-        log.error(
-            "{:.1f}s\twrong fdict['survey'], should be cmx or sv1".format(
-                time() - start
-            )
-        )
-        sys.exit()
-
     # AR directories (already checked for desi or cori only)
     hostname = os.getenv("HOSTNAME")
-    desiroot = os.getenv("DESI_ROOT") # AR NERSC: '/global/cfs/cdirs/desi' ; KPNO: '/data/datasystems'
+    desiroot = os.getenv(
+        "DESI_ROOT"
+    )  # AR NERSC: '/global/cfs/cdirs/desi' ; KPNO: '/data/datasystems'
     path_to_targets = os.path.join(os.getenv("DESI_TARGET"), "catalogs")
     if "desi" in hostname:
         path_to_svn_tiles = "/data/tiles/SVN_tiles"
@@ -591,37 +791,41 @@ def main():
         )
 
     mydirs = {}
-    if args.faflavor in [
-        "sv1lrgqso",
-        "sv1elg",
-        "sv1elgqso",
-        "lrgqso",
-        "elg",
-        "1percdark",
-    ]:
+    if args.faflavor == "sv1m31":
         mydirs["targ"] = os.path.join(
-            path_to_targets, args.dr, args.dtver, "targets/sv1/resolve/dark/"
-        )
-    elif args.faflavor in ["sv1bgsmws", "bgsmws", "1percbright"]:
-        mydirs["targ"] = os.path.join(
-            path_to_targets, args.dr, args.dtver, "targets/sv1/resolve/bright/"
-        )
-    elif args.faflavor in ["cmxm33"]:
-        mydirs["targ"] = os.path.join(
-            path_to_targets, args.dr, args.dtver, "targets/cmx/resolve/no-obscon/"
+            path_to_targets,
+            "gaiadr2",
+            args.dtver,
+            "targets",
+            fdict["survey"],
+            "resolve",
+            "supp",
         )
     else:
-        log.error(
-            "{:.1f}s\targs.faflavor not in {}; exiting".format(
-                time() - start, ", ".join(faflavors_all)
-            )
+        mydirs["targ"] = os.path.join(
+            path_to_targets,
+            args.dr,
+            args.dtver,
+            "targets",
+            fdict["survey"],
+            "resolve",
+            fdict["dtobscon"],
         )
+    mydirs["scnd"] = os.path.join(
+        path_to_targets,
+        args.dr,
+        args.dtver,
+        "targets",
+        fdict["survey"],
+        "secondary",
+        fdict["dtobscon"],
+    )
     mydirs["sky"] = os.path.join(path_to_targets, args.dr, args.dtver, "skies")
     mydirs["skysupp"] = os.path.join(
         path_to_targets, "gaiadr2", args.dtver, "skies-supp"
     )
     mydirs["gfa"] = os.path.join(path_to_targets, args.dr, args.dtver, "gfas")
-    for key in mydirs.keys():
+    for key in list(mydirs.keys()):
         log.info(
             "{:.1f}s\tdirectory for {}: {}".format(time() - start, key, mydirs[key])
         )
@@ -631,10 +835,11 @@ def main():
 
     # AR if args.priority == custom -> tweaking PRIORITY and NUMOBS_MORE for:
     # AR - cmxm33
-    # AR - sv1lrgqso, sv1elg, lrgqso,elg
+    # AR - sv1m31
+    # AR - sv1elg, sv1elgqso, sv1lrgqso, lrgqso, elg
     # AR - sv1bgsmws,bgsmws
     # AR starting by the lowest priorities, then by increasing priorities:
-    # AR bgs_faint -> elg -> lrg -> qso -> wd
+    # AR e.g., bgs_faint -> elg -> lrg -> qso -> wd
     ref_msks, ref_prios, ref_nums = [], [], []
     if args.priority == "custom":
         if args.faflavor in ["cmxm33"]:
@@ -651,7 +856,9 @@ def main():
                     "SV0_WD",
                 ]
             )
-            ref_prios = np.array([3000, 3200, 3400, 4001, 4002, 4005, 4006, 4007, 10000])
+            ref_prios = np.array(
+                [3000, 3200, 3400, 4001, 4002, 4005, 4006, 4007, 10000]
+            )
             ref_nums = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1])
         elif args.faflavor in ["sv1elg", "sv1elgqso", "sv1lrgqso", "elg", "lrgqso"]:
             ref_msks = np.array(["BGS_ANY", "BGS_FAINT", "ELG", "LRG", "QSO", "STD_WD"])
@@ -661,6 +868,12 @@ def main():
             ref_msks = np.array(["BGS_ANY", "STD_WD"])
             ref_prios = np.array([2000, 10000])
             ref_nums = np.array([1, 1])
+        elif args.faflavor in ["sv1m31"]:
+            ref_msks = np.array(
+                ["GAIA_STD_FAINT", "M31_STAR", "M31_KNOWN", "M31_QSO", "GAIA_STD_WD"]
+            )
+            ref_prios = np.array([2000, 6000, 7000, 8000, 10000])
+            ref_nums = np.array([1, 1, 1, 1, 1])
         # AR safe, ordering by increasing priorities
         ii = ref_msks.argsort()
         ref_msks = ref_msks[ii]
@@ -704,6 +917,11 @@ def main():
     if dotile:
         hdr = fitsio.FITSHDR()
         for tileid in tileids:
+            log.info(
+                "{:.1f}s\tstart generating {}{:06d}-tiles.fits".format(
+                    time() - start, args.outdir, tileid
+                )
+            )
             d = np.zeros(
                 1,
                 dtype=[
@@ -742,23 +960,34 @@ def main():
 
     # AR sky
     if dosky:
+        log.info("{:.1f}s\tstart generating {}-sky.fits".format(time() - start, root))
+        # AR sky: read targets
         tiles = fits.open("{}-tiles.fits".format(root))[1].data
-        d = read_targets_in_tiles(mydirs["sky"], tiles=tiles, quick=True)
+        dsky = read_targets_in_tiles(mydirs["sky"], tiles=tiles, quick=True)
         dsupp = read_targets_in_tiles(mydirs["skysupp"], tiles=tiles, quick=True)
-        # JEFR we have to check for duplicates before merging
-        dmerged = np.concatenate([d, dsupp])
-        if len(dmerged["TARGETID"]) != len(set(dmerged["TARGETID"])):
-            log.info("Duplicated TARGETID in sky")
-            _, ii_unique = np.unique(dmerged["TARGETID"], return_index=True)
-            dmerged = dmerged[ii_unique]
-
+        # AR sky: merge + remove duplicates
+        d = np.concatenate([dsky, dsupp])
+        _, ii = np.unique(d["TARGETID"], return_index=True)
+        if len(ii) != len(d):
+            d = d[ii]
+            log.info(
+                "{:.1f}s\t{} duplicated TARGETID: dsky={}, dsupp={}, common={}".format(
+                    time() - start, len(dsky), len(dsupp), len(d)
+                )
+            )
+        log.info(
+            "{:.1f}s\tkeeping {} targets to {}-sky.fits".format(
+                time() - start, len(d), root
+            )
+        )
+        # AR sky: write fits
         if fdict["survey"] == "sv1":
             survey = "sv"
         else:
             survey = fdict["survey"]
         n, tmpfn = write_targets(
             args.outdir,
-            dmerged,
+            d,
             indir=mydirs["sky"],
             indir2=mydirs["skysupp"],
             survey=survey,
@@ -768,45 +997,42 @@ def main():
 
     # AR gfa
     if dogfa:
+        log.info("{:.1f}s\tstart generating {}-gfa.fits".format(time() - start, root))
+        # AR gfa: read targets
         tiles = fits.open("{}-tiles.fits".format(root))[1].data
         d = read_targets_in_tiles(mydirs["gfa"], tiles=tiles, quick=True)
-        # AR update values (RA, DEC, REF_EPOCH) using proper motion
+        log.info(
+            "{:.1f}s\tkeeping {} targets to {}-gfa.fits".format(
+                time() - start, len(d), root
+            )
+        )
+        # AR gfa: update RA, DEC, REF_EPOCH using proper motion
         d = update_nowradec(d, new_obstime)
         #
         if fdict["survey"] == "sv1":
             survey = "sv"
         else:
             survey = fdict["survey"]
+        # AR gfa: write fits
         n, tmpfn = write_targets(args.outdir, d, indir=mydirs["gfa"], survey=survey)
         os.rename(tmpfn, "{}-gfa.fits".format(root))
-        # AR update header
+        # AR gfa: update header
         fd = fitsio.FITS("{}-gfa.fits".format(root), "rw")
         fd["TARGETS"].write_key("COMMENT", "RA,DEC updated with PM for AEN objects")
         fd["TARGETS"].write_key("COMMENT", "REF_EPOCH updated for all objects")
         fd.close()
         log.info("{:.1f}s\t{}-gfa.fits written".format(time() - start, root))
 
-    # AR std (if flavor=scidark,scibright)
+    # AR std
+    # AR ! not using make_mtl !
     if dostd:
+        log.info("{:.1f}s\tstart generating {}-std.fits".format(time() - start, root))
+        # AR std: read targets
         tiles = fits.open("{}-tiles.fits".format(root))[1].data
         d = read_targets_in_tiles(mydirs["targ"], tiles=tiles, quick=True)
-        keep = np.zeros(len(d), dtype=bool)
-        for msk in fdict["stdmsks"].split(","):
-            keep |= (d[keytarg_prefix + "_TARGET"] & targ_mask[msk]) > 0
-            log.info(
-                "{:.1f}s\tkeeping {:.0f} {} stds".format(
-                    time() - start,
-                    ((d[keytarg_prefix + "_TARGET"] & targ_mask[msk]) > 0).sum(),
-                    msk,
-                )
-            )
-        # AR removing overlap with science targets
-        isscience = np.zeros(len(d), dtype=bool)
-        for msk in fdict["msks"].split(","):
-            if msk in ["BGS_FAINT"]:
-                isscience |= (d["SV1_BGS_TARGET"] & bgs_mask[msk]) > 0
-            else:
-                isscience |= (d[keytarg_prefix + "_TARGET"] & targ_mask[msk]) > 0
+        keep = sel_targs(d, fdict["stdmsks"], log=log)
+        # AR std: removing overlap with science targets
+        isscience = sel_targs(d, fdict["msks"])
         keep[isscience] = False
         d = d[keep]
         log.info(
@@ -814,24 +1040,28 @@ def main():
                 time() - start, keep.sum(), len(keep), fdict["stdmsks"], fdict["msks"]
             )
         )
-        # AR update values (RA, DEC, REF_EPOCH) using proper motion
-        if args.faflavor != "cmxm33":
-            d = update_nowradec(d, new_obstime)
-        # AR custom mtl
-        if args.faflavor == "cmxm33":
-            log.info(
-                "{:.1f}s\thacking desitarget.io.write_mtl() with forcing 'dr = np.array([dr[9000]])' because we are mixing two releases, gaia and legacysurvey".format(
-                    time() - start
+        if len(d) > 0:
+            # AR std: update RA, DEC, REF_EPOCH using proper motion
+            if args.faflavor != "cmxm33":
+                d = update_nowradec(d, new_obstime)
+            # AR custom mtl
+            if args.faflavor == "cmxm33":
+                log.info(
+                    "{:.1f}s\thacking desitarget.io.write_mtl() with forcing 'dr = np.array([dr[9000]])' because we are mixing two releases, gaia and legacysurvey".format(
+                        time() - start
+                    )
                 )
-            )
-        _ = custom_make_mtl(d, "{}-std.fits".format(root), fdict["survey"])
+            _ = custom_make_mtl(d, "{}-std.fits".format(root), fdict["survey"])
+        else:
+            log.info("{:.1f}s\tno targets for {}-std.fits".format(time() - start, root))
 
-    # AR targets
+    # AR targ
     # AR ! not using make_mtl !
     if dotarg:
+        log.info("{:.1f}s\tstart generating {}-targ.fits".format(time() - start, root))
         tiles = fits.open("{}-tiles.fits".format(root))[1].data
-        # AR reading available targets
-        # AR M33
+        # AR targ: reading targets
+        # AR targ: M33
         if args.faflavor == "cmxm33":
             log.info(
                 "{:.1f}s\tcmxm33 also reading target from {}".format(
@@ -844,9 +1074,7 @@ def main():
                     ),
                 )
             )
-            ddark, hdr = read_targets_in_tiles(
-                mydirs["targ"], tiles=tiles, quick=True, header=True
-            )
+            ddark = read_targets_in_tiles(mydirs["targ"], tiles=tiles, quick=True)
             dsupp = read_targets_in_tiles(
                 os.path.join(
                     path_to_targets, "gaiadr2", args.dtver, "targets/cmx/resolve/supp"
@@ -854,155 +1082,54 @@ def main():
                 tiles=tiles,
                 quick=True,
             )
-            # JEFR we have to check for duplicates before merging
+            # AR targ: M33 : merge + remove duplicates
             d = np.concatenate([ddark, dsupp])
-            if len(d["TARGETID"]) != len(set(d["TARGETID"])):
-                log.info("Duplicated TARGETID in sky")
-                _, ii_unique = np.unique(d["TARGETID"], return_index=True)
-                d = d[ii_unique]
-        else:
-            d, hdr = read_targets_in_tiles(
-                mydirs["targ"], tiles=tiles, quick=True, header=True
-            )
-
-        # AR cutting on requested targets
-        keep = np.zeros(len(d), dtype=bool)
-        for msk in fdict["msks"].split(","):
-            if msk in ["BGS_FAINT"]:
-                keep_msk = (d["SV1_BGS_TARGET"] & bgs_mask[msk]) > 0
-            else:
-                keep_msk = (d[keytarg_prefix + "_TARGET"] & targ_mask[msk]) > 0
-            keep |= keep_msk
-            log.info(
-                "{:.1f}s\tkeeping {:.0f} {} targets".format(
-                    time() - start, keep_msk.sum(), msk,
+            _, ii = np.unique(d["TARGETID"], return_index=True)
+            if len(ii) != len(d):
+                d = d[ii]
+                log.info(
+                    "{:.1f}s\t{} duplicated TARGETID: ddark={}, dsupp={}, common={}".format(
+                        time() - start, len(ddark), len(dsupp), len(d)
+                    )
                 )
-            )
+        else:
+            d = read_targets_in_tiles(mydirs["targ"], tiles=tiles, quick=True)
+        # AR targ: cutting on requested targets
+        keep = sel_targs(d, fdict["msks"], log=log)
         d = d[keep]
         log.info(
             "{:.1f}s\tkeeping {:.0f}/{:.0f} targets after having cut on {}".format(
                 time() - start, keep.sum(), len(keep), fdict["msks"]
             )
         )
-
-        # AR removing targets from other tiles?
+        # AR targ: removing targets from other tiles?
         if args.noreobs is not None:
-            tids = []
-            for fn in args.noreobs.split(","):
-                tmpd = fits.open(fn)["FIBERASSIGN"].data
-                keep = np.zeros(len(tmpd), dtype=bool)
-                for msk in fdict["msks"].split(","):
-                    if msk in ["BGS_FAINT"]:
-                        keep_msk = (tmpd["SV1_BGS_TARGET"] & bgs_mask[msk]) > 0
-                    else:
-                        keep_msk = (
-                            tmpd[keytarg_prefix + "_TARGET"] & targ_mask[msk]
-                        ) > 0
-                    keep |= keep_msk
-                tids += tmpd["TARGETID"][keep].tolist()
-            keep = ~np.in1d(d["TARGETID"], tids)  # AR ok to have duplicates in tids
-            d = d[keep]
-            log.info(
-                "{:.1f}s\tkeeping {:.0f}/{:.0f} targets after having removed assigned targets from {}".format(
-                    time() - start, keep.sum(), len(keep), args.noreobs
-                )
+            keep = sel_noreobs(
+                d, fdict["msks"], args.noreobs.split(","), log=log, m31cen=args.m31cen
             )
-
-        # AR tweaking PRIORITY and NUMOBS_MORE
+            d = d[keep]
+        # AR targ: tweaking PRIORITY and NUMOBS_MORE
         if len(ref_msks) > 0:
-            for msk, prio, num in zip(ref_msks, ref_prios, ref_nums):
-                if msk in fdict["msks"].split(","):
-                    if msk in ["BGS_FAINT"]:
-                        tmp = (d["SV1_BGS_TARGET"] & bgs_mask[msk]) > 0
-                    else:
-                        tmp = (d[keytarg_prefix + "_TARGET"] & targ_mask[msk]) > 0
-                    d["PRIORITY_INIT"][tmp] = prio
-                    d["NUMOBS_INIT"][tmp] = num
-                    log.info(
-                        "{:.1f}s\tPRIORITY_INIT={:.0f} and NUMOBS_INIT={:.0f} for {:.0f} {}".format(
-                            time() - start, prio, num, tmp.sum(), msk
-                        )
-                    )
+            d = apply_custom_prionum(
+                d, fdict["msks"], ref_msks, ref_prios, ref_nums, log=log
+            )
         # AR tweaking SUBPRIORITY for BGS, to get the correct subsampling
         # AR adapted from https://github.com/desi-bgs/feasiBGS/blob/e913210bb91618d7be3d4a8911a6183ed505c2b4/run/sv/dr9sv.py#L153-L246
         # AR note: the BGS_LOWQ sample has some overlap with BGS_BRIGHT and BGS_FAINT
         # AR       but we decided it is ok
         if args.faflavor in ["sv1bgsmws", "bgsmws"]:
-            log.info(
-                "{:.1f}s\tmodifying SUBPRIORITY for BGS targets".format(time() - start,)
-            )
-            # AR desired assigned density
-            # AR ! hard-coded !
-            goaldens = {
-                "BGS_BRIGHT": 540.0,
-                "BGS_FAINT": 300.0,
-                "BGS_FAINT_EXT": 150.0,
-                "BGS_FIBMAG": 150.0,
-                "BGS_LOWQ": 60.0,
-            }
-            msks = list(goaldens.keys())
-            log.info(
-                "{:.1f}s\tBGS desired assigned densities: {}".format(
-                    time() - start,
-                    ", ".join(["{}={}".format(msk, goaldens[msk]) for msk in msks]),
-                )
-            )
-            # AR actual target density, using pixweight
             pixfn = os.path.join(
                 path_to_targets,
                 args.dr,
                 args.dtver,
-                "pixweight/sv1/resolve/bright/sv1pixweight-bright.fits",
+                "pixweight/sv1/resolve",
+                fdict["dtobscon"],
+                "sv1pixweight-{}.fits".format(fdict["dtobscon"]),
             )
-            pixd = fits.open(pixfn)[1].data
-            keep = pixd["FRACAREA_8194"] > 0  # AR relevant area for BGS selection
-            initdens = {
-                msk: float("{:.0f}".format(pixd[msk][keep].mean())) for msk in msks
-            }
-            log.info(
-                "{:.1f}s\tBGS initial target densities: {}".format(
-                    time() - start,
-                    ", ".join(["{}={}".format(msk, initdens[msk]) for msk in msks]),
-                )
-            )
-            ntarg = {
-                msk: float(
-                    "{:.3f}".format(((d["SV1_BGS_TARGET"] & bgs_mask[msk]) > 0).sum())
-                )
-                for msk in msks
-            }
-            log.info(
-                "{:.1f}s\tBGS available targets in the tile: {}".format(
-                    time() - start,
-                    ", ".join(["{}={}".format(msk, ntarg[msk]) for msk in msks]),
-                )
-            )
-            # AR desired assigned fraction
-            frac = {
-                msk: float("{:.3f}".format(goaldens[msk] / initdens[msk]))
-                for msk in msks
-            }
-            fracmin = np.min([frac[msk] for msk in msks])
-            # AR lower SUBPRIORITY value, with setting the lowest frac class to 0
-            subplow = {
-                msk: float("{:.3f}".format(1.0 - fracmin / frac[msk])) for msk in msks
-            }
-            # AR modifying SUBPRIORITY with rescaling, hence no call to np.random.uniform()
-            for msk in msks:
-                keep = (d["SV1_BGS_TARGET"] & bgs_mask[msk]) > 0
-                d["SUBPRIORITY"][keep] = (
-                    subplow[msk] + (1.0 - subplow[msk]) * d["SUBPRIORITY"][keep]
-                )
-            log.info(
-                "{:.1f}s\tBGS rescaling SUBPRIORITY within [subplow,1] with: {}".format(
-                    time() - start,
-                    ", ".join(["{}={}".format(msk, subplow[msk]) for msk in msks]),
-                )
-            )
-
-        # AR update values (RA, DEC, REF_EPOCH) using proper motion
+            d, bgs_goaldens, bgs_subplow = apply_bgs_subprio(d, pixfn, log)
+        # AR targ: update RA, DEC, REF_EPOCH using proper motion
         d = update_nowradec(d, new_obstime)
-        # AR custom mtl
+        # AR targ: custom mtl
         if args.faflavor == "cmxm33":
             log.info(
                 "{:.1f}s\thacking desitarget.io.write_mtl() with forcing 'dr = np.array([dr[9000]])' because we are mixing two releases, gaia and legacysurvey".format(
@@ -1010,31 +1137,74 @@ def main():
                 )
             )
         _ = custom_make_mtl(d, "{}-targ.fits".format(root), fdict["survey"])
-        # AR update header
+        # AR targ: update header if custom PRIORITY
         if len(ref_msks) > 0:
-            fd = fitsio.FITS("{}-targ.fits".format(root), "rw")
-            for msk, prio, num in zip(ref_msks, ref_prios, ref_nums):
-                if msk in fdict["msks"].split(","):
-                    fd["MTL"].write_key(
-                        "COMMENT",
-                        "tweak : PRIORITY_INIT={:.0f} and NUMOBS_INIT={:.0f} for {}".format(
-                            prio, num, msk
-                        ),
-                    )
-            fd.close()
+            _ = update_hdr_custom_prionum(
+                "{}-targ.fits".format(root),
+                "MTL",
+                fdict["msks"],
+                ref_msks,
+                ref_prios,
+                ref_nums,
+            )
+
+    # AR secondary targets
+    if (doscnd) & ("SV1_SCND_TARGET" in list(fdict["msks"].keys())):
+        log.info("{:.1f}s\tstart generating {}-scnd.fits".format(time() - start, root))
+        tiles = fits.open("{}-tiles.fits".format(root))[1].data
+        # AR scnd: reading targets
+        fn = os.path.join(
+            mydirs["scnd"],
+            "{}targets-{}-secondary.fits".format(fdict["survey"], fdict["dtobscon"]),
+        )
+        d = read_targets_in_tiles(fn, tiles=tiles, quick=False)
+        # AR scnd: cutting on requested targets
+        keep = sel_targs(d, fdict["msks"], log=log)
+        d = d[keep]
+        log.info(
+            "{:.1f}s\tkeeping {:.0f}/{:.0f} secondary targets after having cut on {}".format(
+                time() - start, keep.sum(), len(keep), fdict["msks"]
+            )
+        )
+        # AR scnd: removing targets from other tiles?
+        if args.noreobs is not None:
+            keep = sel_noreobs(
+                d, fdict["msks"], args.noreobs.split(","), log=log, m31cen=args.m31cen
+            )
+            d = d[keep]
+        # AR scnd: tweaking PRIORITY and NUMOBS_MORE
+        if len(ref_msks) > 0:
+            d = apply_custom_prionum(
+                d, fdict["msks"], ref_msks, ref_prios, ref_nums, log=log
+            )
+        # AR scnd: update RA, DEC, REF_EPOCH using proper motion
+        d = update_nowradec(d, new_obstime, scnd=True)
+        # AR scnd: custom mtl
+        _ = custom_make_mtl(d, "{}-scnd.fits".format(root), fdict["survey"], scnd=True)
+        # AR scnd: update header if custom PRIORITY
+        if len(ref_msks) > 0:
+            _ = update_hdr_custom_prionum(
+                "{}-scnd.fits".format(root),
+                "MTL",
+                fdict["msks"],
+                ref_msks,
+                ref_prios,
+                ref_nums,
+            )
+
     # AR fiberassign
     if dofa:
-
+        log.info("{:.1f}s\tstart running fiber assignment".format(time() - start))
         # AR safe: delete possibly existing fba-{tileid}.fits and fiberassign-{tileid_}.fits
         for tileid in tileids:
-            fba_file = os.path.join(args.outdir, "fba-{:06d}.fits".format(tileid))
-            fiberassign_file = os.path.join(
+            fba_fn = os.path.join(args.outdir, "fba-{:06d}.fits".format(tileid))
+            fiberassign_fn = os.path.join(
                 args.outdir, "fiberassign-{:06d}.fits".format(tileid)
             )
-            if os.path.isfile(fba_file):
-                os.remove(fba_file)
-            if os.path.isfile(fiberassign_file):
-                os.remove(fiberassign_file)
+            if os.path.isfile(fba_fn):
+                os.remove(fba_fn)
+            if os.path.isfile(fiberassign_fn):
+                os.remove(fiberassign_fn)
 
         for tileid in tileids:
             troot = "{}{:06d}".format(args.outdir, tileid)
@@ -1042,7 +1212,16 @@ def main():
             opts = [
                 "--targets",
                 troot + "-targ.fits",
-                root + "-std.fits",
+            ]
+            if os.path.isfile(troot + "-std.fits"):
+                opts += [
+                    troot + "-std.fits",
+                ]
+            if "SV1_SCND_TARGET" in list(fdict["msks"].keys()):
+                opts += [
+                    troot + "-scnd.fits",
+                ]
+            opts += [
                 "--rundate",
                 args.rundate,
                 "--overwrite",
@@ -1052,13 +1231,13 @@ def main():
                 "--dir",
                 args.outdir,
                 "--sky",
-                root + "-sky.fits",
+                troot + "-sky.fits",
                 "--sky_per_petal",
                 fdict["nskypet"],
                 "--standards_per_petal",
                 fdict["nstdpet"],
                 "--gfafile",
-                root + "-gfa.fits",
+                troot + "-gfa.fits",
             ]
             log.info(
                 "{:.1f}s\ttileid={:06d}: running raw fiber assignment (fba_run) with opts={}".format(
@@ -1075,12 +1254,15 @@ def main():
             ag["tiles"] = [tileid]
             ag["columns"] = None
             ag["targets"] = [
-                root + "-gfa.fits",
+                troot + "-gfa.fits",
                 troot + "-targ.fits",
-                root + "-std.fits",
             ]
+            if os.path.isfile(troot + "-std.fits"):
+                ag["targets"] += [troot + "-std.fits"]
+            if "SV1_SCND_TARGET" in list(fdict["msks"].keys()):
+                ag["targets"] += [troot + "-scnd.fits"]
             ag["sky"] = [
-                root + "-sky.fits",
+                troot + "-sky.fits",
             ]
             ag["result_dir"] = args.outdir
             ag["copy_fba"] = False
@@ -1102,9 +1284,7 @@ def main():
             )
 
             # AR propagating some settings into the PRIMARY header
-            fd = fitsio.FITS(
-                "{}fiberassign-{:06d}.fits".format(args.outdir, tileid), "rw"
-            )
+            fd = fitsio.FITS(fiberassign_fn, "rw")
             # AR folders, with replacing $DESI_ROOT by DESIROOT
             fd["PRIMARY"].write_key("DESIROOT", desiroot)
             for key in np.sort(list(mydirs.keys())):
@@ -1119,24 +1299,35 @@ def main():
                 ]:
                     if kwargs[1] is not None:
                         fd["PRIMARY"].write_key(kwargs[0], kwargs[1])
-            fd["PRIMARY"].write_key("sctarg", fdict["msks"])
+            fd["PRIMARY"].write_key(
+                "sctarg",
+                ",".join([fdict["msks"][key] for key in list(fdict["msks"].keys())]),
+            )
+            fd["PRIMARY"].write_key(
+                "scstd",
+                ",".join(
+                    [fdict["stdmsks"][key] for key in list(fdict["stdmsks"].keys())]
+                ),
+            )
             fd["PRIMARY"].write_key("obscon", fdict["obscon"])
+            fd.close()
             if len(ref_msks) > 0:
-                for msk, prio, num in zip(ref_msks, ref_prios, ref_nums):
-                    if msk in fdict["msks"].split(","):
-                        fd["PRIMARY"].write_key(
-                            "COMMENT",
-                            "PRIORITY_INIT={:.0f} and NUMOBS_INIT={:.0f} for {}".format(
-                                prio, num, msk
-                            ),
-                        )
+                _ = update_hdr_custom_prionum(
+                    fiberassign_fn,
+                    "PRIMARY",
+                    fdict["msks"],
+                    ref_msks,
+                    ref_prios,
+                    ref_nums,
+                )
             if args.faflavor in ["sv1bgsmws", "bgsmws"]:
-                msks = list(goaldens.keys())
+                fd = fitsio.FITS(fiberassign_fn, "rw")
+                msks = list(bgs_goaldens.keys())
                 for msk in msks:
                     fd["PRIMARY"].write_key(
                         "COMMENT",
                         "rescaling SUBPRIORITY in [{},1] for {}".format(
-                            subplow[msk], msk
+                            bgs_subplow[msk], msk
                         ),
                     )
                 bitval = fd["FIBERASSIGN"].read_column("SV1_BGS_TARGET")
@@ -1146,17 +1337,20 @@ def main():
                         ", ".join(
                             [
                                 "{}={}".format(
-                                    msk, ((bitval & bgs_mask[msk]) > 0).sum()
+                                    msk,
+                                    (
+                                        (bitval & yaml_masks["SV1_BGS_TARGET"][msk]) > 0
+                                    ).sum(),
                                 )
                                 for msk in msks
                             ]
                         ),
                     )
                 )
+                fd.close()
 
-            fd.close()
-
-    if dozip:  # gzip all fiberassign files
+    # AR gzip all fiberassign files
+    if dozip:
         fns = [
             os.path.join(args.outdir, "fiberassign-{:06d}.fits".format(tileid))
             for tileid in tileids
@@ -1168,31 +1362,69 @@ def main():
             os.system("gzip " + fn)
             log.info("{:.1f}s\t gzipping {}".format(time() - start, fn))
 
+    # AR QA plots
     if doplot:
-
         cm = mycmap("jet_r", 10, 0, 1)
         rdlim = 2  # AR will use dra_lim = (rdlim,-rdlim) , ddec_lim = (-rdlim,rdlim)
         # AR tile ra,dec
-        tiles = fits.open(root + "-tiles.fits")[1].data
+        tiles = fits.open("{}-tiles.fits".format(root))[1].data
         tra, tdec = tiles["RA"][0], tiles["DEC"][0]
         tsky = SkyCoord(ra=tra * units.deg, dec=tdec * units.deg, frame="icrs")
         tarea = np.pi * get_tile_radius_deg() ** 2  # AR approx. tile area in degrees
 
         # AR control plots
+        # AR "parent" keys we use
+        dpkeys = [
+            "TARGETID",
+            "FLUX_G",
+            "FLUX_R",
+            "FLUX_Z",
+            "FLUX_W1",
+            "FLUX_W2",
+            "EBV",
+            "RA",
+            "DEC",
+        ] + list(fdict["msks"].keys())
+        # AR keys we use
+        keys = [
+            "TARGETID",
+            "PETAL_LOC",
+            "FLUX_G",
+            "FLUX_R",
+            "FLUX_Z",
+            "FLUX_W1",
+            "FLUX_W2",
+            "EBV",
+            "GAIA_PHOT_G_MEAN_MAG",
+            "TARGET_RA",
+            "TARGET_DEC",
+            "PRIORITY",
+        ] + list(fdict["msks"].keys())
+
         # AR parent
-        dp = fits.open(root + "-targ.fits")[1].data
+        fns = ["{}-targ.fits".format(root)]
+        for fn in ["{}-std.fits".format(root), "{}-scnd.fits".format(root)]:
+            if os.path.isfile(fn):
+                fns += [fn]
+        dp = {}
+        for key in dpkeys:
+            dp[key] = []
+        for fn in fns:
+            d = fits.open(fn)[1].data
+            for key in dpkeys:
+                if key in d.dtype.names:
+                    dp[key] += d[key].tolist()
+                else:
+                    dp[key] += [np.nan for i in d]
+        for key in dpkeys:
+            dp[key] = np.array(dp[key])
         drap, ddecp = get_tpos(tsky, dp["RA"], dp["DEC"])
 
         #
         for tileid in tileids:
-            try:
-                d = fits.open("{}fiberassign-{:06d}.fits".format(args.outdir, tileid))[
-                    1
-                ].data
-            except:
-                d = fits.open(
-                    "{}fiberassign-{:06d}.fits.gz".format(args.outdir, tileid)
-                )[1].data
+            d = fits.open("{}fiberassign-{:06d}.fits.gz".format(args.outdir, tileid))[
+                1
+            ].data
             mydict = {}
             for key in ["SKY", "BAD", "TGT"]:
                 mydict["N" + key] = (d["OBJTYPE"] == key).sum()
@@ -1210,52 +1442,49 @@ def main():
             petbad = d["PETAL_LOC"][keep]
             # AR STD
             keep = np.zeros(len(d), dtype=bool)
-            if keytarg_prefix == "CMX":
-                std_msks = ["STD_FAINT", "SV0_WD", "STD_BRIGHT"]
-            else:
-                std_msks = ["STD_FAINT", "STD_WD", "STD_BRIGHT"]
-            for msk in std_msks:
-                keep |= (d[keytarg_prefix + "_TARGET"] & targ_mask[msk]) > 0
+            std_msks = [
+                "STD_FAINT",
+                "SV0_WD",
+                "STD_WD",
+                "STD_BRIGHT",
+                "GAIA_STD_FAINT",
+                "GAIA_STD_WD",
+                "GAIA_STD_BRIGHT",
+            ]  # AR all possible STD...
+            for key in list(fdict["stdmsks"].keys()):
+                for msk in std_msks:
+                    if msk in yaml_masks[key].names():
+                        keep |= (d[key] & yaml_masks[key][msk]) > 0
             drastd, ddecstd = get_tpos(
                 tsky, d["TARGET_RA"][keep], d["TARGET_DEC"][keep]
             )
             petstd = d["PETAL_LOC"][keep]
             mydict["NSTD"] = keep.sum()
             # AR TGT
-            keys = [
-                "TARGETID",
-                "PETAL_LOC",
-                keytarg_prefix + "_TARGET",
-                "FLUX_G",
-                "FLUX_R",
-                "FLUX_Z",
-                "FLUX_W1",
-                "FLUX_W2",
-                "EBV",
-                "GAIA_PHOT_G_MEAN_MAG",
-                "TARGET_RA",
-                "TARGET_DEC",
-                "PRIORITY",
-            ]
-            if keytarg_prefix == "SV1_DESI":
-                keys += ["SV1_BGS_TARGET"]
             # AR arrays following the parent ordering
             d = d[d["OBJTYPE"] == "TGT"]
             iip, ii = unq_searchsorted(dp["TARGETID"], d["TARGETID"])
             for key in keys:
-                if key in [keytarg_prefix + "_TARGET", "SV1_BGS_TARGET"]:
-                    mydict[key] = np.zeros(len(dp), dtype=int)
+                if key in list(fdict["msks"].keys()):
+                    mydict[key] = np.zeros(len(dp["TARGETID"]), dtype=int)
                 else:
-                    mydict[key] = np.nan + np.zeros(len(dp))
+                    mydict[key] = np.nan + np.zeros(len(dp["TARGETID"]))
                 mydict[key][iip] = d[key][ii]
             dra, ddec = get_tpos(tsky, mydict["TARGET_RA"], mydict["TARGET_DEC"])
 
-            # AR tracers we individually check$
-            msks = [
-                msk
-                for msk in fdict["msks"].split(",")
-                if "STD" not in msk and "WD" not in msk
-            ]
+            # AR tracers we individually check
+            # AR remove here STD and WD from fdict["msks"]
+            # AR and we "flatten" to ease the looping
+            mskkeys, msks = [], []
+            for key in list(fdict["msks"]):
+                tmpmsks = [
+                    msk
+                    for msk in fdict["msks"][key].split(",")
+                    if "STD" not in msk and "WD" not in msk
+                ]
+                msks += tmpmsks
+                mskkeys += [key for msk in tmpmsks]
+            # AR start plotting
             fig = plt.figure(figsize=(25, 3 * (1 + len(msks))))
             gs = gridspec.GridSpec(1 + len(msks), 6, wspace=0.5, hspace=0.3)
 
@@ -1263,12 +1492,14 @@ def main():
             ax = plt.subplot(gs[0, 0])
             ax.axis("off")
             tracers = []
-            for msk in fdict["msks"].split(","):
-                if msk in ["BGS_FAINT"]:
-                    n = ((d["SV1_BGS_TARGET"] & bgs_mask[msk]) > 0).sum()
-                else:
-                    n = ((d[keytarg_prefix + "_TARGET"] & targ_mask[msk]) > 0).sum()
-                tracers += ["{}={:.0f}".format(msk, n)]
+            tmpmsks = []
+            for tmpdict in [fdict["stdmsks"], fdict["msks"]]:
+                for key in list(tmpdict.keys()):
+                    for msk in tmpdict[key].split(","):
+                        if msk not in tmpmsks:
+                            n = ((d[key] & yaml_masks[key][msk]) > 0).sum()
+                            tracers += ["{}={:.0f}".format(msk, n)]
+                            tmpmsks += [msk]
             x, y, dy, fs = 0.05, 0.95, -0.1, 10
             for t in [
                 "flavor={}".format(args.faflavor),
@@ -1371,14 +1602,19 @@ def main():
             # AR cutout
             pixscale = 10
             size = int(2 * rdlim * 3600.0 / pixscale)
-            # AR HACK using viewer-dev because viewer down now..
-            tmpstr = 'wget -q -O {}tmp-{}.jpeg "http://legacysurvey.org/viewer-dev/jpeg-cutout/?ra={:.5f}&dec={:.5f}&pixscale={:.0f}&size={:.0f}"'.format(
-                args.outdir, tileid, tra, tdec, pixscale, size
+            # AR using viewer-dev because dr9 not loaded yet in viewer
+            if args.faflavor == "sv1m31":
+                layer = "sdss"
+            else:
+                layer = "ls-dr9"
+            tmpstr = 'wget -q -O {}tmp-{}.jpeg "http://legacysurvey.org/viewer-dev/jpeg-cutout/?layer={}&ra={:.5f}&dec={:.5f}&pixscale={:.0f}&size={:.0f}"'.format(
+                args.outdir, tileid, layer, tra, tdec, pixscale, size
             )
-            # os.system(tmpstr)
-            # img = mpimg.imread("{}tmp-{}.jpeg".format(args.outdir, tileid))
-            # os.remove("{}tmp-{}.jpeg".format(args.outdir, tileid))
-            img = np.zeros((size, size, 3))
+            # print(tmpstr)
+            os.system(tmpstr)
+            img = mpimg.imread("{}tmp-{}.jpeg".format(args.outdir, tileid))
+            os.remove("{}tmp-{}.jpeg".format(args.outdir, tileid))
+            # img = np.zeros((size, size, 3))
 
             # AR SKY, BAD, STD, TGT
             for iy, x, y, txt, alpha in zip(
@@ -1395,14 +1631,15 @@ def main():
 
             # AR looping on tracers
             exts = {"G": 3.214, "R": 2.165, "Z": 1.211, "W1": 0.184, "W2": 0.113}
-            for ix, msk in zip(np.arange(1, 1 + len(msks), dtype=int), msks):
+            for ix, msk, mskkey in zip(
+                np.arange(1, 1 + len(msks), dtype=int), msks, mskkeys
+            ):
                 # AR selecting the relevant tracers
-                if msk in ["BGS_FAINT"]:
-                    mskpsel = (dp["SV1_BGS_TARGET"] & bgs_mask[msk]) > 0
-                    msksel = (mydict["SV1_BGS_TARGET"] & bgs_mask[msk]) > 0
+                if mskkey in list(dp.keys()):
+                    mskpsel = (dp[mskkey] & yaml_masks[mskkey][msk]) > 0
                 else:
-                    mskpsel = (dp[keytarg_prefix + "_TARGET"] & targ_mask[msk]) > 0
-                    msksel = (mydict[keytarg_prefix + "_TARGET"] & targ_mask[msk]) > 0
+                    mskpsel = np.zeros(len(dp["TARGETID"]), dtype=bool)
+                msksel = (mydict[mskkey] & yaml_masks[mskkey][msk]) > 0
                 fafrac = msksel.sum() / float(mskpsel.sum())
                 # famin = np.clip(fafrac-0.2,0,1)
                 # famax = np.clip(fafrac+0.2,0,1)
@@ -1418,12 +1655,12 @@ def main():
                     band, famin, famax = "G", 0.0, 0.5
                 if msk in ["QSO", "SV0_QSO"]:
                     band, famin, famax = "R", 0.0, 0.5
-                if "M33" in msk:
+                if "M33" in msk or "M31" in msk:
                     band, famin, famax = "G", 0.0, 0.5
-                ax = plt.subplot(gs[ix, 0])
                 # AR handling outside desi cases
-                if (tile_in_desi == 1) & (args.faflavor != "cmxm33"):
-                    print(msk, band)
+                # if (tile_in_desi == 1) & (args.faflavor != "cmxm33"):
+                if args.faflavor not in ["cmxm33", "sv1m31"]:
+                    ax = plt.subplot(gs[ix, 0])
                     keep = (dp["FLUX_" + band] > 0) & (mskpsel)
                     xp = (
                         22.5
@@ -1441,12 +1678,14 @@ def main():
                     _, ymax = ax.get_ylim()
                     ax.set_ylim(0.8, 100 * ymax)
                     ax.set_yscale("log")
-                ax.set_xlabel(
-                    "22.5 - 2.5*log10(FLUX_{}) - {:.3f} * EBV".format(band, exts[band])
-                )
+                    ax.set_xlabel(
+                        "22.5 - 2.5*log10(FLUX_{}) - {:.3f} * EBV".format(
+                            band, exts[band]
+                        )
+                    )
 
                 # AR color-color diagram
-                if "M33" not in msk:
+                if "M33" not in msk and "M31" not in msk:
                     gridsize = 25
                     for iy, xbands, ybands, xlim, ylim in zip(
                         [1, 2],
@@ -1632,7 +1871,7 @@ def main():
     # AR do clean?
     if args.doclean == "y":
         for tileid in tileids:
-            for ext in ["tiles", "sky", "gfa", "std", "targ"]:
+            for ext in ["tiles", "sky", "gfa", "std", "targ", "scnd"]:
                 fn = "{}{:06d}-{}.fits".format(args.outdir, tileid, ext)
                 if os.path.isfile(fn):
                     log.info("{:.1f}s\tremoving {}".format(time() - start, fn))
@@ -1642,7 +1881,8 @@ def main():
 if __name__ == "__main__":
 
     # AR to speed up development/debugging
-    dotile, dosky, dostd, dogfa, dotarg, dofa, dozip, doplot = (
+    dotile, dosky, dostd, dogfa, dotarg, doscnd, dofa, dozip, doplot = (
+        False,
         False,
         False,
         False,
@@ -1657,6 +1897,7 @@ if __name__ == "__main__":
     dostd = True
     dogfa = True
     dotarg = True
+    doscnd = True
     dofa = True
     dozip = True
     doplot = True
@@ -1762,8 +2003,17 @@ if __name__ == "__main__":
         metavar="NOREOBS",
     )
     parser.add_argument(
+        "--m31cen",
+        help="y/n, do not remove --noreobs targets in the M31 outskirts (default=n)",
+        type=str,
+        default="n",
+        required=False,
+        choices=["y", "n"],
+        metavar="M31CEN",
+    )
+    parser.add_argument(
         "--doclean",
-        help="delete tileid-{tiles,sky,std,gfa,targ}.fits files (y/n)",
+        help="delete tileid-{tiles,sky,std,gfa,targ,scnd}.fits files (y/n)",
         type=str,
         default="n",
         required=False,
