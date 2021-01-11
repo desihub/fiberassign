@@ -333,10 +333,11 @@ def get_nowradec(ra, dec, pmra, pmdec, parallax, ref_year, new_obstime, scnd=Fal
 
 
 # AR update values (RA, DEC, REF_EPOCH) using proper motion
+# AR PMRA, PMDEC: convert NaN to zeros
 # AR RA, DEC:
 # AR - scnd=False: updated for REF_EPOCH>0 + AEN only
 # AR - scnd=True: updated for REF_EPOCH>0 + finite(PMRA,PMDEC) ; forces PARALLAX=0
-# AR REF_EPOCH : updated for *all* objects
+# AR REF_EPOCH: updated for *all* objects
 def update_nowradec(
     d,
     new_obstime,
@@ -350,6 +351,16 @@ def update_nowradec(
     gaiaaen_key="GAIA_ASTROMETRIC_EXCESS_NOISE",
     scnd=False,
 ):
+    # AR PMRA, PMDEC: convert NaN to zeros
+    for key in [pmra_key, pmdec_key]:
+        keep = ~np.isfinite(d[key])
+        if keep.sum() > 0:
+            d[key][keep] = 0.
+            log.info(
+                "{:.1f}s\t{}: replacing NaN by 0 for {} targets".format(
+                    time() - start, key, keep.sum()
+                )
+            )
     # AR computing positions at new_obstime using Gaia PMRA, PMDEC
     nowra, nowdec = get_nowradec(
         d[ra_key],
@@ -362,12 +373,8 @@ def update_nowradec(
         scnd=scnd,
     )
     if scnd == True:
-        # AR secondary: REF_EPOCH>0, finite(PMRA,PMDEC)
-        keep = keep = (
-            (d["REF_EPOCH"] > 0)
-            & (np.isfinite(d[pmra_key]))
-            & (np.isfinite(d[pmdec_key]))
-        )
+        # AR secondary: REF_EPOCH>0
+        keep = d["REF_EPOCH"] > 0
     else:
         # AR targets with REF_EPOCH>0 and passing the AEN criterion
         keep = (d["REF_EPOCH"] > 0) & (get_isaen(d[gaiag_key], d[gaiaaen_key]))
@@ -1611,10 +1618,10 @@ def main():
                 args.outdir, tileid, layer, tra, tdec, pixscale, size
             )
             # print(tmpstr)
-            os.system(tmpstr)
-            img = mpimg.imread("{}tmp-{}.jpeg".format(args.outdir, tileid))
-            os.remove("{}tmp-{}.jpeg".format(args.outdir, tileid))
-            # img = np.zeros((size, size, 3))
+            #os.system(tmpstr)
+            #img = mpimg.imread("{}tmp-{}.jpeg".format(args.outdir, tileid))
+            #os.remove("{}tmp-{}.jpeg".format(args.outdir, tileid))
+            img = np.zeros((size, size, 3))
 
             # AR SKY, BAD, STD, TGT
             for iy, x, y, txt, alpha in zip(
