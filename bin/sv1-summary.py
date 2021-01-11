@@ -119,7 +119,7 @@ for month in months:
         args.outdir, "sv1-plots", "sv1-obscond-{}.png".format(month)
     )
 outfns["depth"] = {}
-for flavshort in ["QSO+LRG", "ELG", "BGS+MWS"]:
+for flavshort in ["QSO+LRG", "ELG", "BGS+MWS", "QSO+ELG"]:
     outfns["depth"][flavshort] = os.path.join(
         args.outdir,
         "sv1-plots",
@@ -168,6 +168,7 @@ flavdict = {
     "QSO+ELG": {"FAFLAVORS": ["sv1elgqso"], "COLOR": "c"},
     "BGS+MWS": {"FAFLAVORS": ["cmxbgsmws", "sv1bgsmws"], "COLOR": "g"},
     "M33+Dark": {"FAFLAVORS": ["cmxm33"], "COLOR": "magenta"},
+    "M31": {"FAFLAVORS": ["sv1m31"], "COLOR": "y"},
 }
 # AR field names - hand-written...
 fielddict = {
@@ -237,6 +238,7 @@ fielddict = {
     "2-pass r-depth + G.Plane b=+17": [80677, 80678],
     "DEEP2 EGS": [80711, 80712],
     "Overlap+Monoc. stream": [80681, 80682],
+    "M31cen": [80713, 80714],
 }
 
 
@@ -897,7 +899,10 @@ if args.exposures == "y":
     # AR see Aaron s email from 01Jan2021: using ext=2, which already contains
     # AR the median over CUBE_INDEX
     gfa = fits.open(gfafn)[2].data
-    keep = [program[:2] == "SV" for program in gfa["PROGRAM"]]
+    # AR 20210110 : need to adapt...
+    keep = np.array([program[:2] == "SV" for program in gfa["PROGRAM"]])
+    keep |= np.array([program[:3] == "sv1" for program in gfa["PROGRAM"]])
+    keep |= gfa["PROGRAM"] == "M31"
     gfa = gfa[keep]
     gfa_eci = np.array(
         ["{}-{}".format(e, c) for e, c in zip(gfa["EXPID"], gfa["CUBE_INDEX"])]
@@ -911,7 +916,7 @@ if args.exposures == "y":
         "EBV",
         # "SPECDATA_SKY_RMAG_AB",
         "SPECMODEL_SKY_RMAG_AB",
-        "BLANC_SPECMODEL_SKY_RMAG_AB",
+        #"BLANC_SPECMODEL_SKY_RMAG_AB",
         "NGFA",
         "B_DEPTH",
         "R_DEPTH",
@@ -1615,7 +1620,7 @@ if args.html == "y":
     htmlmain.write("\n")
 
     # AR Depths per flavshort
-    for flavshort in ["QSO+LRG", "ELG", "BGS+MWS"]:
+    for flavshort in ["QSO+LRG", "QSO+ELG", "ELG", "BGS+MWS"]:
         htmlmain.write(
             "<h2><a id='depths-{}' href='#depths-{}' > Per-tile exposure depths: {}\n".format(
                 flavshort, flavshort, flavshort
