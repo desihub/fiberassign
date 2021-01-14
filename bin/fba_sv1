@@ -661,7 +661,7 @@ def main():
                 )
                 sys.exit()
     # AR safe: DESI environment variables
-    for key in ["DESI_ROOT", "DESI_TARGET", "DESI_MODEL"]:
+    for key in ["DESI_ROOT", "DESI_TARGET", "DESIMODEL"]:
         if os.getenv(key) is None:
             log.error(
                 "{:.1f}s\tenvironment variable {} not defined; exiting".format(
