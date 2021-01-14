@@ -89,13 +89,13 @@ if args.outdir[-1] != "/":
     args.outdir += "/"
 
 # AR folders / files
-sv1dir = "/global/cfs/cdirs/desi/users/raichoor/fiberassign-sv1/"
-dailydir = "/global/cfs/cdirs/desi/spectro/redux/daily/"
-pixwfn = "/global/cfs/cdirs/desi/target/catalogs/dr9/0.47.0/pixweight/sv1/resolve/dark/sv1pixweight-dark.fits"
+sv1dir = os.getenv("DESI_ROOT")+"/users/raichoor/fiberassign-sv1/"
+dailydir = os.getenv("DESI_ROOT")+"/spectro/redux/daily/"
+pixwfn = os.getenv("DESI_TARGET")+"/catalogs/dr9/0.47.0/pixweight/sv1/resolve/dark/sv1pixweight-dark.fits"
 desfn = os.path.join(sv1dir, "misc", "des_footprint.txt")
 gfafn = np.sort(
     glob(
-        "/global/cfs/cdirs/desi/users/ameisner/GFA/conditions/offline_all_guide_ccds_SV1-thru_20??????.fits"
+        os.getenv("DESI_ROOT")+"/users/ameisner/GFA/conditions/offline_all_guide_ccds_SV1-thru_20??????.fits"
     )
 )[-1]
 
@@ -285,6 +285,12 @@ spec_thru = load_spec_thru()
 det_eso = load_spec(os.path.join(sv1dir, "misc", "dark_eso.fits"))
 det_desimodel = load_spec(os.path.join(sv1dir, "misc", "dark_desimodel.fits"))
 _sky_cache = {}
+
+
+# AR/ES ebv and airmass coefficient in depth_ebvair
+# AR/ES ebv coeffs : taking SDSS grz from Schlafly & Finkbeinger (2011)
+# AR/ES airmass coeffs : [decam-chatter 15497]
+depth_coeffs = {"EBV": {"B":3.303, "R":2.285, "Z":1.263}, "AIRMASS": {"B":0.195, "R":0.096, "Z":0.055}}
 
 
 # AR/DK exposure depths utilities
@@ -718,7 +724,12 @@ def write_html_perexp(html, d, style, h2title):
         )
     )
     html.write(
-        "<p style='{}'>BRZ_DEPTH: EXPTIME x (TRANSPARENCY x FIBER_FRACFLUX / (1.0 x 0.56))<sup>2</sup> x FIDSKY_DARK/EXPSKY (does not correct for EBV).</p>".format(
+        "<p style='{}'>R_DEPTH: EXPTIME x (TRANSPARENCY x FIBER_FRACFLUX / (1.0 x 0.56))^2 x FIDSKY_DARK/EXPSKY (does not correct for EBV, AIRMASS).</p>".format(
+            style
+        )
+    )
+    html.write(
+        "<p style='{}'>R_DEPTH_EBVAIR: R_DEPTH x 10^(-2 x 0.4 x 2.285 x EBV) x 10^(-2 x 0.4 x 0.096 x AIRMASS).</p>".format(
             style
         )
     )
@@ -734,7 +745,8 @@ def write_html_perexp(html, d, style, h2title):
     fields = (
         ["TILEID", "NIGHT", "EXPID", "NIGHTWATCH", "EXPTIME", "EBV"]
         + keys
-        + ["B_DEPTH", "R_DEPTH", "Z_DEPTH"]
+        #+ ["B_DEPTH", "R_DEPTH", "Z_DEPTH"]
+        + ["R_DEPTH", "R_DEPTH_EBVAIR"]
     )
     html.write("<table>\n")
     night = ""
@@ -796,7 +808,9 @@ def write_html_perexp(html, d, style, h2title):
         tmparr += ["{:.0f}".format(d["EXPTIME"][i])]
         tmparr += ["{:.2f}".format(d["EBV"][i])]
         tmparr += ["{:.2f}".format(d["GFA_" + key + "_MED"][i]) for key in keys]
-        tmparr += ["{:.0f}s".format(d[band + "_DEPTH"][i]) for band in ["B", "R", "Z"]]
+        #tmparr += ["{:.0f}s".format(d[band + "_DEPTH"][i]) for band in ["B", "R", "Z"]]
+        tmparr += ["{:.0f}s".format(d["R_DEPTH"][i])]   
+        tmparr += ["{:.0f}s".format(d["R_DEPTH_EBVAIR"][i])]
         html.write(" ".join(["<td> {} </td>".format(x) for x in tmparr]) + "\n")
         html.write("</tr>\n")
     html.write("</table>\n")
@@ -921,6 +935,9 @@ if args.exposures == "y":
         "B_DEPTH",
         "R_DEPTH",
         "Z_DEPTH",
+        "B_DEPTH_EBVAIR",
+        "R_DEPTH_EBVAIR",
+        "Z_DEPTH_EBVAIR",
     ] + targets
     gfakeys = [
         "AIRMASS",
@@ -1040,6 +1057,7 @@ if args.exposures == "y":
                                         gfafunc(x)
                                     ]
                         # AR/DK exposure depths (needs gfa information)
+                        # AR/DK adding also depth including ebv+airmass
                         depths_i = determine_tile_depth2(
                             exposures["NIGHT"][-1],
                             exposures["EXPID"][-1],
@@ -1050,13 +1068,22 @@ if args.exposures == "y":
                             exposures["{}_DEPTH".format(camera)] += [
                                 depths_i[camera.lower()]
                             ]
+                            ebv = exposures["EBV"][-1]
+                            fact_ebv = 10. ** (-2 * 0.4 * depth_coeffs["EBV"][camera] * ebv)
+                            airmass = exposures["GFA_AIRMASS_MEAN"][-1]
+                            fact_air = 10. ** (-2 * 0.4 * depth_coeffs["AIRMASS"][camera] * (airmass - 1.0))
+                            exposures["{}_DEPTH_EBVAIR".format(camera)] += [
+                                depths_i[camera.lower()] * fact_ebv * fact_air
+                            ]
                         # for camera in ["B", "R", "Z"]: exposures["{}_DEPTH".format(camera)] += [-99]
+                        # for camera in ["B", "R", "Z"]: exposures["{}_DEPTH_EBVAIR".format(camera)] += [-99]
                     else:
                         for key in gfakeys:
                             for gfalab in gfalabs:
                                 exposures["GFA_{}_{}".format(key, gfalab)] += [-99]
                         for band in ["B", "R", "Z"]:
                             exposures["{}_DEPTH".format(band)] += [-99]
+                            exposures["{}_DEPTH_EBVAIR".format(band)] += [-99]
 
     # AR if update=y, pre-append the results from previous nights
     if args.update == "y":
@@ -1322,8 +1349,9 @@ if args.plot == "y":
         "GFA_SKY_MAG_AB",
         "GFA_FIBER_FRACFLUX",
         "R_DEPTH / EXPTIME",
+        "R_DEPTH_EBVAIR / EXPTIME"
     ]
-    mlocs = [0.20, 25, 25, 0.20, 0.20, 0.50, 1.0, 0.20, 0.5]
+    mlocs = [0.20, 25, 25, 0.20, 0.20, 0.50, 1.0, 0.20, 0.5, 0.5]
     ylims = [
         (0, 1),
         (0, 180),
@@ -1334,6 +1362,7 @@ if args.plot == "y":
         (17, 22),
         (0, 1),
         (0, 2.5),
+        (0, 2.5)
     ]
     for month in months:
         d = fits.open(outfns["exposures"])[1].data
@@ -1353,6 +1382,8 @@ if args.plot == "y":
                 ax = plt.subplot(gs[i])
                 if keys[i] == "R_DEPTH / EXPTIME":
                     y = d["R_DEPTH"] / d["EXPTIME"]
+                elif keys[i] == "R_DEPTH_EBVAIR / EXPTIME":
+                    y = d["R_DEPTH_EBVAIR"] / d["EXPTIME"]
                 else:
                     y = d["{}_MED".format(keys[i])]
                 ylim = ylims[i]
