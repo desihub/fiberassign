@@ -660,14 +660,15 @@ def main():
                     )
                 )
                 sys.exit()
-    # AR safe: hostname
-    if ("desi" not in os.getenv("HOSTNAME")) & ("cori" not in os.getenv("HOSTNAME")):
-        log.error(
-            "{:.1f}s\tcode needs to be run either on NERSC/cori or KPNO/desi; exiting".format(
-                time() - start
+    # AR safe: DESI environment variables
+    for key in ["DESI_ROOT", "DESI_TARGET", "DESI_MODEL"]:
+        if os.getenv(key) is None:
+            log.error(
+                "{:.1f}s\tenvironment variable {} not defined; exiting".format(
+                    time() - start, key
+                )
             )
-        )
-        sys.exit()
+            sys.exit()
 
     # AR is tile in the desi footprint?
     # AR -> if not, special msk and targdir for dithering
@@ -785,15 +786,11 @@ def main():
         sys.exit()
 
     # AR directories (already checked for desi or cori only)
-    hostname = os.getenv("HOSTNAME")
-    desiroot = os.getenv(
-        "DESI_ROOT"
-    )  # AR NERSC: '/global/cfs/cdirs/desi' ; KPNO: '/data/datasystems'
+    # AR folder architecture is now the same at NERSC/KPNO (https://github.com/desihub/fiberassign/issues/302)
+    # AR DESI_ROOT : NERSC: '/global/cfs/cdirs/desi' ; KPNO: '/data/datasystems'
+    desiroot = os.getenv("DESI_ROOT") 
     path_to_targets = os.path.join(os.getenv("DESI_TARGET"), "catalogs")
-    if "desi" in hostname:
-        path_to_svn_tiles = "/data/tiles/SVN_tiles"
-    if "cori" in hostname:
-        path_to_svn_tiles = os.path.join(
+    path_to_svn_tiles = os.path.join(
             os.getenv("DESI_TARGET"), "fiberassign/tiles/trunk"
         )
 
