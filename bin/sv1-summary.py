@@ -973,6 +973,11 @@ if args.exposures == "y":
                 )
             ]
         )
+        # AR special dealing with 20210114, where positioners were frozen after the first
+        # AR exposure (72381); hence we reject all the subsequent ones
+        # AR https://desisurvey.slack.com/archives/C6C320XMK/p1610713799187700
+        if night == 20210114:
+            expids = np.array(["00072381"])
         # AR looping on all exposures
         for i in range(len(expids)):
             fns = glob(
