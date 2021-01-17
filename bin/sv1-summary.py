@@ -238,7 +238,7 @@ fielddict = {
     "2-pass r-depth + G.Plane b=+17": [80677, 80678],
     "DEEP2 EGS": [80711, 80712],
     "Overlap+Monoc. stream": [80681, 80682],
-    "M31cen": [80713, 80714],
+    "M31cen": [80713, 80714, 80715, 80716],
 }
 
 
@@ -912,10 +912,15 @@ if args.exposures == "y":
     # AR GFA file
     # AR see Aaron s email from 01Jan2021: using ext=2, which already contains
     # AR the median over CUBE_INDEX
-    gfa = fits.open(gfafn)[2].data
+    # AR now using ext=3, which computes the median on a "cleaner" sample
+    # AR cutting on CONTRAST and N_SOURCES_FOR_PSF
+    # AR see Aaron message https://desisurvey.slack.com/archives/C01HNN87Y7J/p1610865136043700?thread_ts=1610839476.023800&cid=C01HNN87Y7J
+    gfa = fits.open(gfafn)[3].data
+    # AR 20210109 : two exposures with "CMX LRG+QSO" instead of "SV1 LRG+QSO" (71594, 71595)
     # AR 20210110 : need to adapt...
     keep = np.array([program[:2] == "SV" for program in gfa["PROGRAM"]])
     keep |= np.array([program[:3] == "sv1" for program in gfa["PROGRAM"]])
+    keep |= np.in1d(gfa["EXPID"], [71594, 71595])
     keep |= gfa["PROGRAM"] == "M31"
     gfa = gfa[keep]
     gfa_eci = np.array(
