@@ -37,6 +37,12 @@ import matplotlib.image as mpimg
 faflavors_all = [
     "cmxm33",
     "sv1m31",
+    "sv1darkscnd",
+    "sv1darkssv",
+    "sv1brightssv",
+    "sv1elgscnd",
+    "sv1elgqsoscnd",
+    "sv1lrgqsoscnd",
     "sv1elg",
     "sv1elgqso",
     "sv1lrgqso",
@@ -436,7 +442,7 @@ def custom_make_mtl(d, outfn, survey, scnd=False):
     )  # AR : TBD : do we want to set obsconmask to 1? (see Ted s email)
     mtl["OBSCONDITIONS"] = obsconmask
     n, tmpfn = write_mtl(
-        args.outdir, mtl.as_array(), indir=args.outdir, survey=survey, ecsv=False
+        args.outdir, mtl.as_array(), indir=args.outdir, survey=survey, ecsv=False, mixed=True
     )
     if n:
         os.rename(tmpfn, outfn)
@@ -698,6 +704,68 @@ def main():
         fdict["stdmsks"] = {"CMX_TARGET": "SV0_WD,STD_BRIGHT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
+    elif args.faflavor == "sv1elgqsoscnd":
+        fdict["dtobscon"] = "dark"
+        fdict["survey"] = "sv1"
+        fdict["obscon"] = "DARK|GRAY|BRIGHT"
+        fdict["msks"] = {
+            "SV1_DESI_TARGET": "STD_WD,QSO,ELG,SCND_ANY",
+            "SV1_SCND_TARGET": ",".join(sv1_targetmask.scnd_mask.names())
+        }
+        fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
+        fdict["nskypet"] = "80"
+        fdict["nstdpet"] = "40"
+    elif args.faflavor == "sv1lrgqsoscnd":
+        fdict["survey"] = "sv1"
+        fdict["dtobscon"] = "dark"
+        fdict["obscon"] = "DARK|GRAY|BRIGHT"
+        fdict["msks"] = {
+            "SV1_DESI_TARGET": "STD_WD,LRG,QSO,ELG,SCND_ANY",
+            "SV1_SCND_TARGET": ",".join(sv1_targetmask.scnd_mask.names())
+        }
+        fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
+        fdict["nskypet"] = "80"
+        fdict["nstdpet"] = "40"
+    elif args.faflavor == "sv1elgscnd":
+        fdict["survey"] = "sv1"
+        fdict["dtobscon"] = "dark"
+        fdict["obscon"] = "DARK|GRAY|BRIGHT"
+        sv1_scnd_to_include = []
+        for m in sv1_targetmask.scnd_mask.names():
+            if "QSO" not in m:
+                sv1_scnd_to_include.append(m)
+        fdict["msks"] = {"SV1_DESI_TARGET": "STD_WD,ELG", 
+                         "SV1_SCND_TARGET": ",".join(sv1_scnd_to_include)}
+        fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
+        fdict["nskypet"] = "80"
+        fdict["nstdpet"] = "40"
+    elif args.faflavor == "sv1darkscnd":
+        fdict["survey"] = "sv1"
+        fdict["dtobscon"] = "dark"
+        fdict["obscon"] = "DARK|GRAY|BRIGHT"
+        fdict["msks"] = {
+            "SV1_SCND_TARGET": ",".join(sv1_targetmask.scnd_mask.names()),
+            "SV1_DESI_TARGET": "SCND_ANY"
+        }
+        fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
+        fdict["nskypet"] = "80"
+        fdict["nstdpet"] = "40"
+    elif args.faflavor == "sv1brightssv":
+        fdict["survey"] = "sv1"
+        fdict["dtobscon"] = "bright"
+        fdict["obscon"] = "DARK|GRAY|BRIGHT"
+        fdict["msks"] = {"SV1_SCND_TARGET": "MWS_CALIB,BACKUP_CALIB,MWS_MAIN_CLUSTER_SV,MWS_RRLYR"}
+        fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_BRIGHT"}
+        fdict["nskypet"] = "80"
+        fdict["nstdpet"] = "40"
+    elif args.faflavor == "sv1darkssv":
+        fdict["survey"] = "sv1"
+        fdict["dtobscon"] = "dark"
+        fdict["obscon"] = "DARK|GRAY|BRIGHT"
+        fdict["msks"] = {"SV1_SCND_TARGET": "MWS_CALIB,BACKUP_CALIB,MWS_MAIN_CLUSTER_SV,MWS_RRLYR"}
+        fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
+        fdict["nskypet"] = "80"
+        fdict["nstdpet"] = "40"
     elif args.faflavor == "sv1m31":
         fdict["survey"] = "sv1"
         fdict["dtobscon"] = "dark"
@@ -864,11 +932,11 @@ def main():
                 [3000, 3200, 3400, 4001, 4002, 4005, 4006, 4007, 10000]
             )
             ref_nums = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1])
-        elif args.faflavor in ["sv1elg", "sv1elgqso", "sv1lrgqso", "elg", "lrgqso"]:
+        elif args.faflavor in ["sv1elg", "sv1elgqso", "sv1lrgqso", "elg", "lrgqso", "sv1darkscnd", "sv1elgscnd", "sv1lrgqsoscnd", "sv1elgqsoscnd"]:
             ref_msks = np.array(["BGS_ANY", "BGS_FAINT", "ELG", "LRG", "QSO", "STD_WD"])
             ref_prios = np.array([2000, 2000, 3000, 3200, 3400, 10000])
             ref_nums = np.array([1, 1, 1, 1, 1, 1])
-        elif args.faflavor in ["sv1bgsmws", "bgsmws"]:
+        elif args.faflavor in ["sv1bgsmws", "bgsmws", "sv1darkssv", "sv1brightssv"]:
             ref_msks = np.array(["BGS_ANY", "STD_WD"])
             ref_prios = np.array([2000, 10000])
             ref_nums = np.array([1, 1])
@@ -1663,7 +1731,7 @@ def main():
                     band, famin, famax = "G", 0.0, 0.5
                 # AR handling outside desi cases
                 # if (tile_in_desi == 1) & (args.faflavor != "cmxm33"):
-                if args.faflavor not in ["cmxm33", "sv1m31"]:
+                if args.faflavor not in ["cmxm33", "sv1m31", "sv1darkscnd", "sv1darkssv", "sv1brightssv", "sv1elgscnd", "sv1lrgqsoscnd", "sv1elgqsoscnd"]:
                     ax = plt.subplot(gs[ix, 0])
                     keep = (dp["FLUX_" + band] > 0) & (mskpsel)
                     xp = (
@@ -2042,6 +2110,6 @@ if __name__ == "__main__":
     if os.path.isfile(logfn):
         os.remove(logfn)
 
-    with stdouterr_redirected(to=logfn):
-        main()
-    # main()
+    #with stdouterr_redirected(to=logfn):
+    #    main()
+    main()
