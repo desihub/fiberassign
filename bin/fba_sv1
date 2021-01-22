@@ -8,7 +8,7 @@ from glob import glob
 from astropy.io import fits
 from astropy.table import Table
 import fitsio
-from desitarget.io import read_targets_in_tiles, write_targets, write_mtl
+from desitarget.io import read_targets_in_tiles, write_targets, write_mtl,decode_targetid,releasedict
 from desitarget.cmx import cmx_targetmask
 from desitarget.sv1 import sv1_targetmask
 from desitarget.targetmask import obsconditions
@@ -36,7 +36,9 @@ import matplotlib.image as mpimg
 # AR authorized args.faflavor
 faflavors_all = [
     "cmxm33",
+    "cmxorion",
     "sv1m31",
+    "sv1praesepe",
     "sv1elg",
     "sv1elgqso",
     "sv1lrgqso",
@@ -47,6 +49,10 @@ faflavors_all = [
     "1percdark",
     "1percbright",
 ]
+
+
+# AR authorized args.dr
+dr_all = ["dr8", "dr9"]
 
 
 # AR copied from make_mtl()
@@ -96,6 +102,32 @@ yaml_masks = {
     "SV1_MWS_TARGET": sv1_targetmask.mws_mask,
     "SV1_SCND_TARGET": sv1_targetmask.scnd_mask,
 }
+
+
+# AR like read_targets_in_tiles(), but allows two folders
+# AR targdirs : list of directories (currently 1 or 2, but keep possibility to use more)
+def custom_read_targets_in_tiles(targdirs, tiles, log=None):
+    # AR reading
+    if log is not None:
+        log.info(
+            "{:.1f}s\treading input targets from {}".format(time() - start, targdirs)
+                )
+    ds = [read_targets_in_tiles(targdir, tiles=tiles, quick=True) for targdir in targdirs]
+    # AR merging
+    d = np.concatenate(ds)
+    # AR remove duplicates based on TARGETID (so duplicates not identified if in mixed surveys)
+    ii_m1 = np.where(d["TARGETID"] == -1)[0]
+    ii_nm1 = np.where(d["TARGETID"] != -1)[0]
+    _, ii = np.unique(d["TARGETID"][ii_nm1], return_index=True)
+    ii_nm1 = ii_nm1[ii]
+    if len(ii_m1) + len(ii_nm1) != len(d):
+        log.info(
+            "{:.1f}s\tremoving {}/{} duplicates".format(
+                time() - start, len(d) - len(ii_m1) - len(ii_nm1), len(d)
+            )
+        )
+        d = d[ii_m1.tolist() + ii_nm1.tolist()]
+    return d
 
 
 # AR select targets using yaml bits
@@ -435,8 +467,24 @@ def custom_make_mtl(d, outfn, survey, scnd=False):
         d, scnd=scnd
     )  # AR : TBD : do we want to set obsconmask to 1? (see Ted s email)
     mtl["OBSCONDITIONS"] = obsconmask
+    # AR sanity check for using the mixed=True option
+    all_release = np.array(list(releasedict.keys()))
+    if args.dr == "dr8":
+        dr_release = all_release[(all_release>=8000) & (all_release<9000)]
+    if args.dr == "dr9":
+        dr_release = all_release[(all_release>=9000) & (all_release<10000)]
+    _, _, release, _, _, _ = decode_targetid(d["TARGETID"])
+    release = np.unique(release)
+    if release.max() > dr_release.max():
+        log.error(
+            "{:.1f}s\t; targets have data RELEASE ({}) larger than the data release ({}); exiting".format(
+                time() - start, release, dr_release
+            )
+        )
+        sys.exit()
+    # AR writing
     n, tmpfn = write_mtl(
-        args.outdir, mtl.as_array(), indir=args.outdir, survey=survey, ecsv=False
+        args.outdir, mtl.as_array(), indir=args.outdir, survey=survey, ecsv=False, mixed=True
     )
     if n:
         os.rename(tmpfn, outfn)
@@ -698,12 +746,40 @@ def main():
         fdict["stdmsks"] = {"CMX_TARGET": "SV0_WD,STD_BRIGHT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
+    elif args.faflavor == "cmxorion":  # AR ! using CMX_TARGET !
+        fdict["survey"] = "cmx"
+        fdict["dtobscon"] = "no-obscon"
+        fdict["obscon"] = "BRIGHT"
+        fdict["msks"] = {
+            "CMX_TARGET": "SV0_WD,ORI_STD_BRIGHT,ORI_QSO,ORI_ORI,ORI_HA"
+        }
+        fdict["stdmsks"] = {"CMX_TARGET": "STD_DITHER_GAIA"} # only STD targets in this tile... no WD
+        fdict["nskypet"] = "80"
+        fdict["nstdpet"] = "40"
+    elif args.faflavor == "cmxrosette":  # AR ! using CMX_TARGET !
+        fdict["survey"] = "cmx"
+        fdict["dtobscon"] = "no-obscon"
+        fdict["obscon"] = "BRIGHT"
+        fdict["msks"] = {
+            "CMX_TARGET": "SV0_WD,ROS_STD_BRIGHT,ROS_QSO,ROS_ROSM17,ROS_ROS1,ROS_HA,ROS_ROS2"
+        }
+        fdict["stdmsks"] = {"CMX_TARGET": "STD_DITHER_GAIA"} # only STD targets in this tile... no WD
+        fdict["nskypet"] = "80"
+        fdict["nstdpet"] = "40"
     elif args.faflavor == "sv1m31":
         fdict["survey"] = "sv1"
         fdict["dtobscon"] = "dark"
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
         fdict["msks"] = {"SV1_SCND_TARGET": "M31_KNOWN,M31_QSO,M31_STAR"}
         fdict["stdmsks"] = {"SV1_MWS_TARGET": "GAIA_STD_WD,GAIA_STD_FAINT"}
+        fdict["nskypet"] = "80"
+        fdict["nstdpet"] = "40"
+    elif args.faflavor == "sv1praesepe":
+        fdict["survey"] = "sv1"
+        fdict["dtobscon"] = "bright"
+        fdict["obscon"] = "BRIGHT"
+        fdict["msks"] = {"SV1_MWS_TARGET": "MWS_WD,MWS_MAIN_BROAD,MWS_NEARBY", "SV1_SCND_TARGET": ",".join([key for key in yaml_masks["SV1_SCND_TARGET"].names() if key not in ["VETO", "LOW_Z"]])}
+        fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
     elif args.faflavor == "sv1elg":
@@ -795,8 +871,9 @@ def main():
         )
 
     mydirs = {}
-    if args.faflavor == "sv1m31":
-        mydirs["targ"] = os.path.join(
+    # AR targ directory (now a list)
+    if args.faflavor in ["sv1m31", "cmxorion", "cmxrosette"]:
+        mydirs["targ"] = [os.path.join(
             path_to_targets,
             "gaiadr2",
             args.dtver,
@@ -804,9 +881,9 @@ def main():
             fdict["survey"],
             "resolve",
             "supp",
-        )
+        )]
     else:
-        mydirs["targ"] = os.path.join(
+        mydirs["targ"] = [os.path.join(
             path_to_targets,
             args.dr,
             args.dtver,
@@ -814,7 +891,13 @@ def main():
             fdict["survey"],
             "resolve",
             fdict["dtobscon"],
-        )
+        )]
+    # AR additional directory for cmx33
+    if args.faflavor == "cmx33":
+        mydirs["targ"] += [os.path.join(
+                        path_to_targets, "gaiadr2", args.dtver, "targets/cmx/resolve/supp"
+                        )]
+    # AR secondary directory
     mydirs["scnd"] = os.path.join(
         path_to_targets,
         args.dr,
@@ -967,23 +1050,7 @@ def main():
         log.info("{:.1f}s\tstart generating {}-sky.fits".format(time() - start, root))
         # AR sky: read targets
         tiles = fits.open("{}-tiles.fits".format(root))[1].data
-        dsky = read_targets_in_tiles(mydirs["sky"], tiles=tiles, quick=True)
-        dsupp = read_targets_in_tiles(mydirs["skysupp"], tiles=tiles, quick=True)
-        # AR sky: merge + remove duplicates
-        d = np.concatenate([dsky, dsupp])
-        _, ii = np.unique(d["TARGETID"], return_index=True)
-        if len(ii) != len(d):
-            d = d[ii]
-            log.info(
-                "{:.1f}s\t{} duplicated TARGETID: dsky={}, dsupp={}, common={}".format(
-                    time() - start, len(dsky), len(dsupp), len(d)
-                )
-            )
-        log.info(
-            "{:.1f}s\tkeeping {} targets to {}-sky.fits".format(
-                time() - start, len(d), root
-            )
-        )
+        d = custom_read_targets_in_tiles([mydirs["sky"], mydirs["skysupp"]], tiles, log=log)
         # AR sky: write fits
         if fdict["survey"] == "sv1":
             survey = "sv"
@@ -1004,7 +1071,7 @@ def main():
         log.info("{:.1f}s\tstart generating {}-gfa.fits".format(time() - start, root))
         # AR gfa: read targets
         tiles = fits.open("{}-tiles.fits".format(root))[1].data
-        d = read_targets_in_tiles(mydirs["gfa"], tiles=tiles, quick=True)
+        d = custom_read_targets_in_tiles([mydirs["gfa"]], tiles, log=log) 
         log.info(
             "{:.1f}s\tkeeping {} targets to {}-gfa.fits".format(
                 time() - start, len(d), root
@@ -1031,9 +1098,10 @@ def main():
     # AR ! not using make_mtl !
     if dostd:
         log.info("{:.1f}s\tstart generating {}-std.fits".format(time() - start, root))
+        print(mydirs["targ"])
         # AR std: read targets
         tiles = fits.open("{}-tiles.fits".format(root))[1].data
-        d = read_targets_in_tiles(mydirs["targ"], tiles=tiles, quick=True)
+        d = custom_read_targets_in_tiles(mydirs["targ"], tiles, log=log) 
         keep = sel_targs(d, fdict["stdmsks"], log=log)
         # AR std: removing overlap with science targets
         isscience = sel_targs(d, fdict["msks"])
@@ -1064,40 +1132,7 @@ def main():
     if dotarg:
         log.info("{:.1f}s\tstart generating {}-targ.fits".format(time() - start, root))
         tiles = fits.open("{}-tiles.fits".format(root))[1].data
-        # AR targ: reading targets
-        # AR targ: M33
-        if args.faflavor == "cmxm33":
-            log.info(
-                "{:.1f}s\tcmxm33 also reading target from {}".format(
-                    time() - start,
-                    os.path.join(
-                        path_to_targets,
-                        "gaiadr2",
-                        args.dtver,
-                        "targets/cmx/resolve/supp",
-                    ),
-                )
-            )
-            ddark = read_targets_in_tiles(mydirs["targ"], tiles=tiles, quick=True)
-            dsupp = read_targets_in_tiles(
-                os.path.join(
-                    path_to_targets, "gaiadr2", args.dtver, "targets/cmx/resolve/supp"
-                ),
-                tiles=tiles,
-                quick=True,
-            )
-            # AR targ: M33 : merge + remove duplicates
-            d = np.concatenate([ddark, dsupp])
-            _, ii = np.unique(d["TARGETID"], return_index=True)
-            if len(ii) != len(d):
-                d = d[ii]
-                log.info(
-                    "{:.1f}s\t{} duplicated TARGETID: ddark={}, dsupp={}, common={}".format(
-                        time() - start, len(ddark), len(dsupp), len(d)
-                    )
-                )
-        else:
-            d = read_targets_in_tiles(mydirs["targ"], tiles=tiles, quick=True)
+        d = custom_read_targets_in_tiles(mydirs["targ"], tiles, log=log)
         # AR targ: cutting on requested targets
         keep = sel_targs(d, fdict["msks"], log=log)
         d = d[keep]
@@ -1163,11 +1198,12 @@ def main():
         )
         d = read_targets_in_tiles(fn, tiles=tiles, quick=False)
         # AR scnd: cutting on requested targets
-        keep = sel_targs(d, fdict["msks"], log=log)
+        # AR scnd: beforehand cutting the masks on SV1_SCND_TARGET
+        keep = sel_targs(d, {"SV1_SCND_TARGET":fdict["msks"]["SV1_SCND_TARGET"]}, log=log)
         d = d[keep]
         log.info(
             "{:.1f}s\tkeeping {:.0f}/{:.0f} secondary targets after having cut on {}".format(
-                time() - start, keep.sum(), len(keep), fdict["msks"]
+                time() - start, keep.sum(), len(keep), {"SV1_SCND_TARGET":fdict["msks"]["SV1_SCND_TARGET"]}
             )
         )
         # AR scnd: removing targets from other tiles?
@@ -1292,7 +1328,13 @@ def main():
             # AR folders, with replacing $DESI_ROOT by DESIROOT
             fd["PRIMARY"].write_key("DESIROOT", desiroot)
             for key in np.sort(list(mydirs.keys())):
-                fd["PRIMARY"].write_key(key, mydirs[key].replace(desiroot, "DESIROOT"))
+                if key == "targ":
+                    # AR header keywords: TARG, TARG2, TARG3, etc
+                    suffixs = [""] + np.arange(2,len(mydirs["targ"])+1).astype(str).tolist()
+                    for targdir,suffix in zip(mydirs["targ"], suffixs):
+                        fd["PRIMARY"].write_key("targ{}".format(suffix), targdir.replace(desiroot, "DESIROOT"))
+                else:
+                    fd["PRIMARY"].write_key(key, mydirs[key].replace(desiroot, "DESIROOT"))
             for kwargs in args._get_kwargs():
                 if kwargs[0].lower() in [
                     "outdir",
@@ -1410,6 +1452,7 @@ def main():
         for fn in ["{}-std.fits".format(root), "{}-scnd.fits".format(root)]:
             if os.path.isfile(fn):
                 fns += [fn]
+        print(fns)
         dp = {}
         for key in dpkeys:
             dp[key] = []
@@ -1419,7 +1462,10 @@ def main():
                 if key in d.dtype.names:
                     dp[key] += d[key].tolist()
                 else:
-                    dp[key] += [np.nan for i in d]
+                    if key in list(fdict["msks"].keys()):
+                        dp[key] += [0 for i in d]
+                    else:
+                        dp[key] += [np.nan for i in d]
         for key in dpkeys:
             dp[key] = np.array(dp[key])
         drap, ddecp = get_tpos(tsky, dp["RA"], dp["DEC"])
@@ -1659,11 +1705,11 @@ def main():
                     band, famin, famax = "G", 0.0, 0.5
                 if msk in ["QSO", "SV0_QSO"]:
                     band, famin, famax = "R", 0.0, 0.5
-                if "M33" in msk or "M31" in msk:
+                if "M33" in msk or "M31" in msk or "ORI_" or "MWS" in msk:
                     band, famin, famax = "G", 0.0, 0.5
                 # AR handling outside desi cases
                 # if (tile_in_desi == 1) & (args.faflavor != "cmxm33"):
-                if args.faflavor not in ["cmxm33", "sv1m31"]:
+                if args.faflavor not in ["cmxm33", "cmxorion", "cmxrosette", "sv1m31", "sv1praesepe"]:
                     ax = plt.subplot(gs[ix, 0])
                     keep = (dp["FLUX_" + band] > 0) & (mskpsel)
                     xp = (
@@ -1885,7 +1931,7 @@ def main():
 if __name__ == "__main__":
 
     # AR to speed up development/debugging
-    dotile, dosky, dostd, dogfa, dotarg, doscnd, dofa, dozip, doplot = (
+    dotile, dosky, dogfa, dostd, dotarg, doscnd, dofa, dozip, doplot = (
         False,
         False,
         False,
@@ -1898,8 +1944,8 @@ if __name__ == "__main__":
     )
     dotile = True
     dosky = True
-    dostd = True
     dogfa = True
+    dostd = True
     dotarg = True
     doscnd = True
     dofa = True
@@ -1959,18 +2005,19 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--rundate",
-        help="rundate for focalplane (default=2020-03-06T00:00:00)",
+        help="rundate for focalplane (default=2021-01-17T00:00:00)",
         type=str,
-        default="2020-03-06T00:00:00",
+        default="2021-01-17T00:00:00",
         required=False,
         metavar="RUNDATE",
     )
     parser.add_argument(
         "--dr",
-        help="legacypipe dr (default=dr9)",
+        help="legacypipe dr: {} (default=dr9)".format(", ".join(dr_all)),
         type=str,
         default="dr9",
         required=False,
+        choices=dr_all,
         metavar="DR",
     )
     parser.add_argument(
@@ -2044,4 +2091,4 @@ if __name__ == "__main__":
 
     with stdouterr_redirected(to=logfn):
         main()
-    # main()
+    #main()
