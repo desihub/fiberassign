@@ -816,7 +816,7 @@ def write_html_perexp(html, d, style, h2title):
 
 # AR per-tile information
 tiles = {}
-tiles["FN"] = np.sort(glob(os.path.join(surveydir, "fiberassign", "SV1", "202?????/fiberassign-??????.fits.gz"))
+tiles["FN"] = np.sort(glob(os.path.join(surveydir, "fiberassign", "SV1", "202?????/fiberassign-??????.fits.gz")))
 nt = len(tiles["FN"])
 # AR initialising
 for key in ["TILEID", "TILERA", "TILEDEC", "FAFLAVOR", "TARGETS", "COLOR", "FIELD"]:
