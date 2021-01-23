@@ -33,7 +33,7 @@ from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument(
     "--outdir",
-    help="output directory",
+    help="output directory (fiducial location: $DESI_ROOT/survey/observations/SV1/)",
     type=str,
     default=None,
     required=True,
@@ -52,9 +52,6 @@ parser.add_argument(
     type=str,
     default="y",
     metavar="EXPOSURES",
-)
-parser.add_argument(
-    "--wiki", help="do wiki tables? (y/n)", type=str, default="y", metavar="WIKI"
 )
 parser.add_argument(
     "--plot",
@@ -89,10 +86,10 @@ if args.outdir[-1] != "/":
     args.outdir += "/"
 
 # AR folders / files
-sv1dir = os.getenv("DESI_ROOT")+"/users/raichoor/fiberassign-sv1/"
+surveydir = os.getenv("DESI_ROOT")+"/survey/"
 dailydir = os.getenv("DESI_ROOT")+"/spectro/redux/daily/"
 pixwfn = os.getenv("DESI_TARGET")+"/catalogs/dr9/0.47.0/pixweight/sv1/resolve/dark/sv1pixweight-dark.fits"
-desfn = os.path.join(sv1dir, "misc", "des_footprint.txt")
+desfn = os.path.join(surveydir, "observations", "misc", "des_footprint.txt")
 gfafn = np.sort(
     glob(
         os.getenv("DESI_ROOT")+"/users/ameisner/GFA/conditions/offline_all_guide_ccds_SV1-thru_20??????.fits"
@@ -108,7 +105,6 @@ os.environ["DESI_LOGLEVEL"] = "warning"
 outfns = {}
 outfns["tiles"] = os.path.join(args.outdir, "sv1-tiles.fits")
 outfns["exposures"] = os.path.join(args.outdir, "sv1-exposures.fits")
-outfns["wiki"] = os.path.join(args.outdir, "sv1-tables.wiki")
 if os.path.isdir(os.path.join(args.outdir, "sv1-plots")) == False:
     os.mkdir(os.path.join(args.outdir, "sv1-plots"))
 outfns["skymap"] = os.path.join(args.outdir, "sv1-plots", "sv1-skymap.png")
@@ -125,7 +121,7 @@ for flavshort in ["QSO+LRG", "ELG", "BGS+MWS", "QSO+ELG"]:
         "sv1-plots",
         "sv1-depth-{}.png".format(flavshort.lower().replace("+", "")),
     )
-outfns["html"] = os.path.join(args.outdir, "sv1-per-tile")
+outfns["html"] = os.path.join(args.outdir, "sv1-html")
 if (args.html == "y") & (os.path.isdir(outfns["html"]) == False):
     os.mkdir(outfns["html"])
 
@@ -282,8 +278,8 @@ def load_spec(path):
 
 # AR/DK settings for exposure depths
 spec_thru = load_spec_thru()
-det_eso = load_spec(os.path.join(sv1dir, "misc", "dark_eso.fits"))
-det_desimodel = load_spec(os.path.join(sv1dir, "misc", "dark_desimodel.fits"))
+det_eso = load_spec(os.path.join(surveydir, "observations",  "misc", "dark_eso.fits"))
+det_desimodel = load_spec(os.path.join(surveydir, "observations", "misc", "dark_desimodel.fits"))
 _sky_cache = {}
 
 
@@ -820,7 +816,7 @@ def write_html_perexp(html, d, style, h2title):
 
 # AR per-tile information
 tiles = {}
-tiles["FN"] = np.sort(glob(sv1dir + "202?????/fiberassign-??????.fits.gz"))
+tiles["FN"] = np.sort(glob(os.path.join(surveydir, "fiberassign", "SV1", "202?????/fiberassign-??????.fits.gz"))
 nt = len(tiles["FN"])
 # AR initialising
 for key in ["TILEID", "TILERA", "TILEDEC", "FAFLAVOR", "TARGETS", "COLOR", "FIELD"]:
@@ -880,7 +876,7 @@ for key in list(tiles.keys()):
 if args.tiles == "y":
     # AR each tile appears only once
     fns = [
-        glob(os.path.join(sv1dir, "202?????", "{:06}-tiles.fits".format(tileid)))[0]
+        glob(os.path.join(surveydir, "fiberassign", "SV1", "202?????", "{:06}-tiles.fits".format(tileid)))[0]
         for tileid in tiles["TILEID"]
     ]
     h = fits.open(fns[0])
@@ -1114,144 +1110,6 @@ if args.exposures == "y":
         cols += [fits.Column(name=key, format=fmt, array=exposures[key])]
     h = fits.BinTableHDU.from_columns(fits.ColDefs(cols))
     h.writeto(outfns["exposures"], overwrite=True)
-
-
-# AR tables to be copied-pasted in the wiki
-if args.wiki == "y":
-    f = open(outfns["wiki"], "w")
-
-    # AR tile design (fiberassign, log, QA plot, viewer, split per tracer)
-    d = fits.open(outfns["exposures"])[1].data
-    _, ii = np.unique(d["TILEID"], return_index=True)
-    ii = ii[d["TILEID"][ii].argsort()]
-    d = d[ii]
-    f.write("=================== TILE DESIGN ==================\n")
-    f.write("\n")
-    fields = [
-        "TILEID",
-        "Name",
-        "Targets",
-        "RA",
-        "Dec",
-        "Fits",
-        "QA plot",
-        "Log",
-        "Viewer",
-    ] + targets
-    f.write("||= **{}** =||\n".format(" =||=".join(fields)))
-    for i in range(len(d)):
-        tmparr = ["{:06}".format(d["TILEID"][i])]
-        tmparr += [d["FIELD"][i]]
-        tmparr += [d["TARGETS"][i]]
-        tmparr += ["{:.3f}".format(d["TILERA"][i])]
-        tmparr += ["{:.3f}".format(d["TILEDEC"][i])]
-        tmparr += [
-            "[https://desi.lbl.gov/svn/data/tiles/trunk/{}/fiberassign-{:06}.fits.gz fiberassign-{:06}.fits.gz]".format(
-                str(d["TILEID"][i]).zfill(6)[:3], d["TILEID"][i], d["TILEID"][i]
-            )
-        ]
-        tmparr += [
-            "[https://desi.lbl.gov/svn/data/tiles/trunk/{}/fiberassign-{:06}.png fiberassign-{:06}.png]".format(
-                str(d["TILEID"][i]).zfill(6)[:3], d["TILEID"][i], d["TILEID"][i]
-            )
-        ]
-        tmparr += [
-            "[https://desi.lbl.gov/svn/data/tiles/trunk/{}/{:06}.log {:06}.log]".format(
-                str(d["TILEID"][i]).zfill(6)[:3], d["TILEID"][i], d["TILEID"][i]
-            )
-        ]
-        tmparr += [
-            "[https://www.legacysurvey.org/viewer-dev/?ra={:.3f}&dec={:.3f}&layer=ls-dr9&zoom=8 Viewer]".format(
-                d["TILERA"][i], d["TILEDEC"][i]
-            )
-        ]
-        tmparr += ["{}".format(d[target][i]) for target in targets]
-        f.write("||{} ||\n".format(" ||".join(tmparr)))
-    f.write("\n")
-    f.write("\n")
-    f.write("\n")
-
-    # AR observed exposures
-    d = fits.open(outfns["exposures"])[1].data
-    tileids = np.sort(np.unique(d["TILEID"]))
-    f.write("=================== NB OF EXPOSURES  =============\n")
-    f.write("\n")
-    fields = ["TILEID", "Name", "Targets"] + ["Total nb exp.", "Nb. exp. per night"]
-    f.write("||= **{}** =||\n".format(" =||=".join(fields)))
-    for tileid in tileids:
-        ii = d["TILEID"] == tileid
-        di = d[ii]
-        di = di[di["EXPID"].argsort()]
-        tmparr = ["{:06}".format(di["TILEID"][0])]
-        tmparr += [di["FIELD"][0]]
-        tmparr += [di["TARGETS"][0]]
-        # total nb exp
-        tmparr += ["{}".format(len(di))]
-        # 1st night
-        nights = np.unique(di["NIGHT"])
-        j = 0
-        jj = di["NIGHT"] == nights[j]
-        texps = di["EXPTIME"][jj].astype(int)
-        ts, cs = np.unique(texps, return_counts=True)
-        tmparr += [
-            "{}:{}".format(
-                nights[j], ",".join(["{}x{}s".format(c, t) for c, t in zip(cs, ts)])
-            )
-        ]
-        f.write("||{} ||\n".format(" ||".join(tmparr)))
-        # next nights, if any
-        if len(nights) > 1:
-            for j in range(1, len(nights)):
-                tmparr = ["" for k in range(len(fields) - 1)]
-                jj = di["NIGHT"] == nights[j]
-                texps = di["EXPTIME"][jj].astype(int)
-                ts, cs = np.unique(texps, return_counts=True)
-                tmparr += [
-                    "{}:{}".format(
-                        nights[j],
-                        ",".join(["{}x{}s".format(c, t) for c, t in zip(cs, ts)]),
-                    )
-                ]
-                f.write("||{} ||\n".format(" ||".join(tmparr)))
-    f.write("\n")
-    f.write("\n")
-    f.write("\n")
-
-    # AR observing conditions
-    d = fits.open(outfns["exposures"])[1].data
-    tileids = np.sort(np.unique(d["TILEID"]))
-    f.write("=================== OBSERVING CONDITIONS  =============\n")
-    f.write("\n")
-    keys = [
-        "AIRMASS",
-        "MOON_SEP_DEG",
-        "TRANSPARENCY",
-        "FWHM_ASEC",
-        "SKY_MAG_AB",
-        "FIBER_FRACFLUX",
-    ]
-    fields = (
-        ["TILEID", "NIGHT", "EXPID", "EXPTIME", "EBV"]
-        + keys
-        + ["B_DEPTH", "R_DEPTH", "Z_DEPTH"]
-    )
-    for tileid in tileids:
-        f.write("||= **{}** =||\n".format(" =||=".join(fields)))
-        ii = np.where(d["TILEID"] == tileid)[0]
-        ii = ii[d["EXPID"][ii].argsort()]
-        di = d[ii]
-        for j in range(len(di)):
-            tmparr = ["{:06}".format(tileid)]
-            tmparr += ["{}".format(di["NIGHT"][j])]
-            tmparr += ["{}".format(di["EXPID"][j])]
-            tmparr += ["{:.0f}".format(di["EXPTIME"][j])]
-            tmparr += ["{:.2f}".format(di["EBV"][j])]
-            tmparr += ["{:.2f}".format(di["GFA_" + key + "_MED"][j]) for key in keys]
-            tmparr += [
-                "{:.0f}s".format(di[band + "_DEPTH"][j]) for band in ["B", "R", "Z"]
-            ]
-            f.write("||{} ||\n".format(" ||".join(tmparr)))
-    f.close()
 
 
 # AR plots
