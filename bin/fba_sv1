@@ -40,7 +40,6 @@ faflavors_all = [
     "sv1darkscnd",
     "sv1darkssv",
     "sv1brightssv",
-    "sv1elgscnd",
     "sv1elgqsoscnd",
     "sv1lrgqsoscnd",
     "sv1elg",
@@ -754,7 +753,10 @@ def main():
         fdict["survey"] = "sv1"
         fdict["dtobscon"] = "bright"
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
-        fdict["msks"] = {"SV1_SCND_TARGET": "MWS_CALIB,BACKUP_CALIB,MWS_MAIN_CLUSTER_SV,MWS_RRLYR"}
+        fdict["msks"] = {
+            "SV1_DESI_TARGET": "MWS_ANY",
+            "SV1_SCND_TARGET": "MWS_CALIB,BACKUP_CALIB,MWS_MAIN_CLUSTER_SV,MWS_RRLYR,BHB"
+        }
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_BRIGHT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
@@ -762,7 +764,10 @@ def main():
         fdict["survey"] = "sv1"
         fdict["dtobscon"] = "dark"
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
-        fdict["msks"] = {"SV1_SCND_TARGET": "MWS_CALIB,BACKUP_CALIB,MWS_MAIN_CLUSTER_SV,MWS_RRLYR"}
+        fdict["msks"] = {
+            "SV1_DESI_TARGET": "MWS_ANY",
+            "SV1_SCND_TARGET": "MWS_CALIB,BACKUP_CALIB,MWS_MAIN_CLUSTER_SV,MWS_RRLYR,BHB"
+        }
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
