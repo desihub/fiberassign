@@ -38,6 +38,8 @@ faflavors_all = [
     "cmxm33",
     "cmxorion",
     "sv1m31",
+    "sv1orion",
+    "sv1rosette",
     "sv1praesepe",
     "sv1elg",
     "sv1elgqso",
@@ -102,6 +104,16 @@ yaml_masks = {
     "SV1_MWS_TARGET": sv1_targetmask.mws_mask,
     "SV1_SCND_TARGET": sv1_targetmask.scnd_mask,
 }
+# AR WD masks
+wd_msks = {
+            master_key: [key for key in yaml_masks[master_key].names() if "WD" in key]
+            for master_key in list(yaml_masks.keys())
+            }
+# AR STD masks
+std_msks = {
+            master_key: [key for key in yaml_masks[master_key].names() if "STD" in key and key not in wd_msks[master_key]]
+            for master_key in list(yaml_masks.keys())
+            }
 
 
 # AR like read_targets_in_tiles(), but allows two folders
@@ -557,7 +569,7 @@ def plot_cutout(
     alpha=None,
     txt=None,
     xtxt=0.5,
-    ytxt=0.93,
+    ytxt=0.98,
     vmin=None,
     vmax=None,
     cmap=mycmap("jet_r", 10, 0, 1),
@@ -613,10 +625,11 @@ def plot_cutout(
         xtxt,
         ytxt,
         txt,
-        color="w",
+        color="y",
         fontweight="bold",
         fontsize=10,
         ha="center",
+        va="top",
         transform=ax.transAxes,
     )
     return
@@ -657,7 +670,7 @@ def plot_hist(ax, x, xp, bins, msk):
     )
     axr.yaxis.label.set_color("r")
     axr.tick_params(axis="y", colors="r")
-    axr.set_ylabel("ratio", labelpad=-10)
+    axr.set_ylabel("ratio", labelpad=0)
     axr.set_ylim(0, 1)
     return
 
@@ -766,6 +779,15 @@ def main():
         fdict["stdmsks"] = {"CMX_TARGET": "STD_DITHER_GAIA"} # only STD targets in this tile... no WD
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
+    elif args.faflavor in ["sv1orion", "sv1rosette"]:
+        fdict["survey"] = "sv1"
+        fdict["dtobscon"] = "bright"
+        fdict["obscon"] = "BRIGHT"
+        fdict["msks"] = {
+            "SV1_MWS_TARGET": "GAIA_STD_WD,GAIA_STD_BRIGHT,BACKUP_FAINT,BACKUP_VERY_FAINT", "SV1_SCND_TARGET": ",".join([key for key in yaml_masks["SV1_SCND_TARGET"].names() if key not in ["VETO"]])}
+        fdict["stdmsks"] = {"SV1_MWS_TARGET": "GAIA_STD_WD,GAIA_STD_BRIGHT,GAIA_STD_FAINT"} 
+        fdict["nskypet"] = "80"
+        fdict["nstdpet"] = "40"
     elif args.faflavor == "sv1m31":
         fdict["survey"] = "sv1"
         fdict["dtobscon"] = "dark"
@@ -872,7 +894,7 @@ def main():
 
     mydirs = {}
     # AR targ directory (now a list)
-    if args.faflavor in ["sv1m31", "cmxorion", "cmxrosette"]:
+    if args.faflavor in ["sv1m31", "cmxorion", "cmxrosette", "sv1orion", "sv1rosette"]:
         mydirs["targ"] = [os.path.join(
             path_to_targets,
             "gaiadr2",
@@ -1428,6 +1450,7 @@ def main():
             "FLUX_W1",
             "FLUX_W2",
             "EBV",
+            "GAIA_PHOT_G_MEAN_MAG",
             "RA",
             "DEC",
         ] + list(fdict["msks"].keys())
@@ -1490,21 +1513,23 @@ def main():
                 tsky, d["TARGET_RA"][keep], d["TARGET_DEC"][keep]
             )
             petbad = d["PETAL_LOC"][keep]
+            # AR WD
+            keep = np.zeros(len(d), dtype=bool)
+            for key in np.unique(list(fdict["msks"].keys()) + list(fdict["stdmsks"].keys())):
+                for msk in wd_msks[key]:
+                    keep |= (d[key] & yaml_masks[key][msk]) > 0
+                    print(msk,((d[key] & yaml_masks[key][msk]) > 0).sum())
+            drawd, ddecwd = get_tpos(
+                tsky, d["TARGET_RA"][keep], d["TARGET_DEC"][keep]
+            )
+            petwd = d["PETAL_LOC"][keep]
+            mydict["NWD"] = keep.sum()
             # AR STD
             keep = np.zeros(len(d), dtype=bool)
-            std_msks = [
-                "STD_FAINT",
-                "SV0_WD",
-                "STD_WD",
-                "STD_BRIGHT",
-                "GAIA_STD_FAINT",
-                "GAIA_STD_WD",
-                "GAIA_STD_BRIGHT",
-            ]  # AR all possible STD...
-            for key in list(fdict["stdmsks"].keys()):
-                for msk in std_msks:
-                    if msk in yaml_masks[key].names():
-                        keep |= (d[key] & yaml_masks[key][msk]) > 0
+            for key in np.unique(list(fdict["msks"].keys()) + list(fdict["stdmsks"].keys())):
+                for msk in std_msks[key]:
+                    keep |= (d[key] & yaml_masks[key][msk]) > 0
+                    print(msk,((d[key] & yaml_masks[key][msk]) > 0).sum())
             drastd, ddecstd = get_tpos(
                 tsky, d["TARGET_RA"][keep], d["TARGET_DEC"][keep]
             )
@@ -1530,13 +1555,14 @@ def main():
                 tmpmsks = [
                     msk
                     for msk in fdict["msks"][key].split(",")
-                    if "STD" not in msk and "WD" not in msk
+                    if msk not in wd_msks[key] and
+                    msk not in std_msks[key]
                 ]
                 msks += tmpmsks
                 mskkeys += [key for msk in tmpmsks]
             # AR start plotting
-            fig = plt.figure(figsize=(25, 3 * (1 + len(msks))))
-            gs = gridspec.GridSpec(1 + len(msks), 6, wspace=0.5, hspace=0.3)
+            fig = plt.figure(figsize=(30, 3 * (1 + len(msks))))
+            gs = gridspec.GridSpec(1 + len(msks), 7, wspace=0.5, hspace=0.3)
 
             # AR overall infos
             ax = plt.subplot(gs[0, 0])
@@ -1564,14 +1590,15 @@ def main():
             # AR stats per petal
             ax = plt.subplot(gs[0, 1])
             ax.axis("off")
-            x0, x1, x2, x3, x4 = 0.05, 0.25, 0.45, 0.65, 0.85
+            x0, x1, x2, x3, x4, x5 = 0.05, 0.25, 0.45, 0.65, 0.85, 1.05
             y, dy = 0.95, -0.1
             fs = 10
             ax.text(x0, y, "PETAL", fontsize=fs, ha="center", transform=ax.transAxes)
             ax.text(x1, y, "NSKY", fontsize=fs, ha="center", transform=ax.transAxes)
             ax.text(x2, y, "NBAD", fontsize=fs, ha="center", transform=ax.transAxes)
-            ax.text(x3, y, "NSTD", fontsize=fs, ha="center", transform=ax.transAxes)
-            ax.text(x4, y, "NTGT", fontsize=fs, ha="center", transform=ax.transAxes)
+            ax.text(x3, y, "NWD", fontsize=fs, ha="center", transform=ax.transAxes)
+            ax.text(x4, y, "NSTD", fontsize=fs, ha="center", transform=ax.transAxes)
+            ax.text(x5, y, "NTGT", fontsize=fs, ha="center", transform=ax.transAxes)
             y += dy
             for p in range(10):
                 ax.text(
@@ -1601,13 +1628,21 @@ def main():
                 ax.text(
                     x3,
                     y,
-                    "{:.0f}".format((petstd == p).sum()),
+                    "{:.0f}".format((petwd == p).sum()),
                     fontsize=fs,
                     ha="center",
                     transform=ax.transAxes,
                 )
                 ax.text(
                     x4,
+                    y,
+                    "{:.0f}".format((petstd == p).sum()),
+                    fontsize=fs,
+                    ha="center",
+                    transform=ax.transAxes,
+                )
+                ax.text(
+                    x5,
                     y,
                     "{:.0f}".format((mydict["PETAL_LOC"] == p).sum()),
                     fontsize=fs,
@@ -1635,13 +1670,21 @@ def main():
             ax.text(
                 x3,
                 y,
+                "{:.0f}".format(len(petwd)),
+                fontsize=fs,
+                ha="center",                                                                                                                                                        
+                transform=ax.transAxes,
+            )
+            ax.text(
+                x4,
+                y,
                 "{:.0f}".format(len(petstd)),
                 fontsize=fs,
                 ha="center",
                 transform=ax.transAxes,
             )
             ax.text(
-                x4,
+                x5,
                 y,
                 "{:.0f}".format(np.isfinite(mydict["PETAL_LOC"]).sum()),
                 fontsize=fs,
@@ -1666,13 +1709,13 @@ def main():
             #os.remove("{}tmp-{}.jpeg".format(args.outdir, tileid))
             img = np.zeros((size, size, 3))
 
-            # AR SKY, BAD, STD, TGT
+            # AR SKY, BAD, WD, STD, TGT
             for iy, x, y, txt, alpha in zip(
-                [2, 3, 4, 5],
-                [drasky, drabad, drastd, dra],
-                [ddecsky, ddecbad, ddecstd, ddec],
-                ["SKY", "BAD", "STD", "TGT"],
-                [0.25, 1.0, 1.0, 0.025],
+                [2, 3, 4, 5, 6],
+                [drasky, drabad, drawd, drastd, dra],
+                [ddecsky, ddecbad, ddecwd, ddecstd, ddec],
+                ["SKY", "BAD", "WD", "STD", "TGT"],
+                [0.25, 1.0, 1.0, 1.0, 0.025],
             ):
                 ax = fig.add_subplot(gs[0, iy])
                 plot_cutout(
@@ -1681,20 +1724,24 @@ def main():
 
             # AR looping on tracers
             exts = {"G": 3.214, "R": 2.165, "Z": 1.211, "W1": 0.184, "W2": 0.113}
-            for ix, msk, mskkey in zip(
-                np.arange(1, 1 + len(msks), dtype=int), msks, mskkeys
-            ):
+            ix = 1
+            for msk, mskkey in zip(msks, mskkeys):
                 # AR selecting the relevant tracers
                 if mskkey in list(dp.keys()):
                     mskpsel = (dp[mskkey] & yaml_masks[mskkey][msk]) > 0
                 else:
                     mskpsel = np.zeros(len(dp["TARGETID"]), dtype=bool)
+                # AR if no parent target, just skip
+                if mskpsel.sum() == 0:
+                    continue
+                print(msk,mskpsel.sum())
                 msksel = (mydict[mskkey] & yaml_masks[mskkey][msk]) > 0
                 fafrac = msksel.sum() / float(mskpsel.sum())
                 # famin = np.clip(fafrac-0.2,0,1)
                 # famax = np.clip(fafrac+0.2,0,1)
                 famin, famax = 0, 1
                 # AR mag hist
+                band, famin, famax = "G", 0.0, 0.5
                 if msk in ["MWS_ANY"]:
                     band, famin, famax = "R", 0.0, 0.5
                 if msk in ["BGS_ANY"]:
@@ -1705,12 +1752,11 @@ def main():
                     band, famin, famax = "G", 0.0, 0.5
                 if msk in ["QSO", "SV0_QSO"]:
                     band, famin, famax = "R", 0.0, 0.5
-                if "M33" in msk or "M31" in msk or "ORI_" or "MWS" in msk:
-                    band, famin, famax = "G", 0.0, 0.5
-                # AR handling outside desi cases
-                # if (tile_in_desi == 1) & (args.faflavor != "cmxm33"):
-                if args.faflavor not in ["cmxm33", "cmxorion", "cmxrosette", "sv1m31", "sv1praesepe"]:
-                    ax = plt.subplot(gs[ix, 0])
+                # 
+                ax = plt.subplot(gs[ix, 1])
+                dohist = 0
+                if ((dp["FLUX_" + band] > 0) & (mskpsel)).sum() > 0:
+                    dohist = 1
                     keep = (dp["FLUX_" + band] > 0) & (mskpsel)
                     xp = (
                         22.5
@@ -1723,27 +1769,40 @@ def main():
                         - 2.5 * np.log10(mydict["FLUX_" + band][keep])
                         - exts[band] * mydict["EBV"][keep]
                     )
-                    bins = np.linspace(xp.min(), xp.max(), 26)
-                    plot_hist(ax, x, xp, bins, msk)
-                    _, ymax = ax.get_ylim()
-                    ax.set_ylim(0.8, 100 * ymax)
-                    ax.set_yscale("log")
                     ax.set_xlabel(
                         "22.5 - 2.5*log10(FLUX_{}) - {:.3f} * EBV".format(
                             band, exts[band]
                         )
                     )
+                elif ((np.isfinite(dp["GAIA_PHOT_G_MEAN_MAG"])) & (mskpsel)).sum() > 0:
+                    dohist = 1
+                    keep = (np.isfinite(dp["GAIA_PHOT_G_MEAN_MAG"])) & (mskpsel)
+                    xp = dp["GAIA_PHOT_G_MEAN_MAG"][keep]
+                    keep = (np.isfinite(mydict["GAIA_PHOT_G_MEAN_MAG"])) & (mskpsel)
+                    x = mydict["GAIA_PHOT_G_MEAN_MAG"][keep]
+                    ax.set_xlabel("GAIA_PHOT_G_MEAN_MAG")
+                if dohist == 1:
+                    bins = np.linspace(xp.min(), xp.max(), 26)
+                    plot_hist(ax, x, xp, bins, msk)
+                    _, ymax = ax.get_ylim()
+                    ax.set_ylim(0.8, 100 * ymax)
+                    ax.set_yscale("log")
 
                 # AR color-color diagram
                 if "M33" not in msk and "M31" not in msk:
                     gridsize = 25
                     for iy, xbands, ybands, xlim, ylim in zip(
-                        [1, 2],
+                        [2, 3],
                         [("R", "Z"), ("R", "Z")],
                         [("G", "R"), ("R", "W1")],
                         [(-0.5, 2.5), (-0.5, 2.5)],
                         [(-0.5, 2.5), (-2, 5)],
                     ):
+                        keep = np.zeros(len(dp["TARGETID"]),dtype=bool)
+                        for band in [xbands[0],xbands[1],ybands[0],ybands[1]]:
+                            keep &= (dp["FLUX_{}".format(band)] > 0)
+                        if keep.sum() == 0:
+                            continue
                         ax = plt.subplot(gs[ix, iy])
                         xp = (
                             -2.5
@@ -1835,13 +1894,13 @@ def main():
                         cbar.mappable.set_clim(famin, famax)
 
                 # AR position in tile
-                ax = plt.subplot(gs[ix, 3])  # AR will be over-written
+                ax = plt.subplot(gs[ix, 4])  # AR will be over-written
                 xlim, ylim, gridsize = (rdlim, -rdlim), (-rdlim, rdlim), 50
                 plot_area = (xlim[0] - xlim[1]) * (
                     ylim[1] - ylim[0]
                 )  # AR area of the plotting window in deg2
                 # AR parent
-                ax = plt.subplot(gs[ix, 3])
+                ax = plt.subplot(gs[ix, 4])
                 plot_cutout(
                     ax,
                     img,
@@ -1849,7 +1908,7 @@ def main():
                     drap[mskpsel],
                     ddecp[mskpsel],
                     pet=True,
-                    txt="{} parent : {:.0f}".format(msk, mskpsel.sum() / tarea)
+                    txt="{}\nparent : {:.0f}".format(msk, mskpsel.sum() / tarea)
                     + r" deg$^{-2}$",
                 )
                 hbp = ax.hexbin(
@@ -1862,7 +1921,7 @@ def main():
                     visible=False,
                 )
                 # AR assigned
-                ax = plt.subplot(gs[ix, 4])
+                ax = plt.subplot(gs[ix, 5])
                 plot_cutout(
                     ax,
                     img,
@@ -1870,7 +1929,7 @@ def main():
                     dra[msksel],
                     ddec[msksel],
                     pet=True,
-                    txt="{} assign : {:.0f}".format(msk, msksel.sum() / tarea)
+                    txt="{}\nassign : {:.0f}".format(msk, msksel.sum() / tarea)
                     + r" deg$^{-2}$",
                 )
                 hb = ax.hexbin(
@@ -1889,7 +1948,7 @@ def main():
                 keep = (hbp.get_array() > 0) & (c > 0)
                 tmpx, tmpy, c = tmpx[keep], tmpy[keep], c[keep]
                 txt = r"mean = {:.2f}".format(fafrac)
-                ax = plt.subplot(gs[ix, 5])
+                ax = plt.subplot(gs[ix, 6])
                 SC = ax.scatter(
                     tmpx, tmpy, c=c, s=3, vmin=famin, vmax=famax, alpha=0.5, cmap=cm,
                 )
@@ -1910,6 +1969,8 @@ def main():
                 cbar = plt.colorbar(SC)
                 cbar.set_label("{} fraction assigned".format(msk))
                 cbar.mappable.set_clim(famin, famax)
+                #
+                ix += 1
 
             #  AR saving plot
             plt.savefig(
