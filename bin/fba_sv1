@@ -8,6 +8,7 @@ from glob import glob
 from astropy.io import fits
 from astropy.table import Table
 import fitsio
+import desitarget
 from desitarget.io import (
     read_targets_in_tiles,
     write_targets,
@@ -19,13 +20,14 @@ from desitarget.cmx import cmx_targetmask
 from desitarget.sv1 import sv1_targetmask
 from desitarget.targetmask import obsconditions
 from desitarget.targets import set_obsconditions
+import desimodel
 from desimodel.footprint import is_point_in_desi
 from desimodel.focalplane.geometry import get_tile_radius_deg
 import desimodel.io as dmio
+import fiberassign
 from fiberassign.scripts.assign import parse_assign, run_assign_bytile, run_assign_full
 from fiberassign.assign import merge_results
 from fiberassign.utils import Logger
-import fiberassign
 from time import time
 from datetime import datetime
 import matplotlib.pyplot as plt
@@ -48,6 +50,7 @@ faflavors_all = [
     "sv1rosette",
     "sv1praesepe",
     "sv1umaii",
+    "sv1ssv",
     "sv1elg",
     "sv1elgqso",
     "sv1lrgqso",
@@ -698,6 +701,18 @@ def main():
     start = time()
     log.info("{:.1f}s\tstart".format(time() - start))
 
+    # AR desitarget, desimodel code version
+    log.info(
+        "{:.1f}s\trunning with desitarget code version: {}".format(
+            time() - start, desitarget.__version__
+        )
+    )
+    log.info(
+        "{:.1f}s\trunning with desimodel code version: {}".format(
+            time() - start, desimodel.__version__
+        )
+    )
+
     # AR time used to update the positions using proper motions
     new_obstime = Time(args.pmtime, format="isot")
     log.info(
@@ -821,8 +836,11 @@ def main():
     elif args.faflavor == "sv1umaii":
         fdict["survey"] = "sv1"
         fdict["dtobscon"] = "dark"
-        fdict["obscon"] = "DARK|GRAY|BRIGHT" 
-        fdict["msks"] = {"SV1_DESI_TARGET": "MWS_ANY", "SV1_SCND_TARGET": "MWS_CALIB,BACKUP_CALIB,MWS_MAIN_CLUSTER_SV,MWS_RRLYR,BHB"}
+        fdict["obscon"] = "DARK|GRAY|BRIGHT"
+        fdict["msks"] = {
+            "SV1_DESI_TARGET": "MWS_ANY",
+            "SV1_SCND_TARGET": "MWS_CALIB,BACKUP_CALIB,MWS_MAIN_CLUSTER_SV,MWS_RRLYR,BHB",
+        }
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
@@ -849,6 +867,18 @@ def main():
             ),
         }
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
+        fdict["nskypet"] = "80"
+        fdict["nstdpet"] = "40"
+    # AR sv1ssv : see [desi-survey 1305] and [desi-survey 1342]
+    elif args.faflavor == "sv1ssv":
+        fdict["survey"] = "sv1"
+        fdict["dtobscon"] = "bright"
+        fdict["obscon"] = "DARK|GRAY|BRIGHT"
+        fdict["msks"] = {
+            "SV1_MWS_TARGET": "MWS_WD,MWS_NEARBY,MWS_BHB,MWS_MAIN_BROAD,MWS_MAIN_FAINT,BACKUP_FAINT,BACKUP_VERY_FAINT",
+            "SV1_SCND_TARGET": "MWS_CALIB,BACKUP_CALIB,MWS_MAIN_CLUSTER_SV,MWS_RRLYR,WD_BINARIES_BRIGHT,WD_BINARIES_DARK",
+        }
+        fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_BRIGHT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
     elif args.faflavor == "sv1elg":
@@ -940,38 +970,28 @@ def main():
     )
 
     mydirs = {}
-    # AR targ directory (now a list)
-    if args.faflavor in ["sv1m31", "cmxorion", "cmxrosette", "sv1orion", "sv1rosette"]:
-        mydirs["targ"] = [
-            os.path.join(
-                path_to_targets,
-                "gaiadr2",
-                args.dtver,
-                "targets",
-                fdict["survey"],
-                "resolve",
-                "supp",
-            )
-        ]
-    else:
-        mydirs["targ"] = [
-            os.path.join(
-                path_to_targets,
-                args.dr,
-                args.dtver,
-                "targets",
-                fdict["survey"],
-                "resolve",
-                fdict["dtobscon"],
-            )
-        ]
-    # AR additional directory for cmx33
-    if args.faflavor == "cmx33":
-        mydirs["targ"] += [
-            os.path.join(
-                path_to_targets, "gaiadr2", args.dtver, "targets/cmx/resolve/supp"
-            )
-        ]
+    # AR targ directory (now a list, and always adding the gaia-only targets)
+    # AR backward compatible with cmx33
+    mydirs["targ"] = [
+        os.path.join(
+            path_to_targets,
+            args.dr,
+            args.dtver,
+            "targets",
+            fdict["survey"],
+            "resolve",
+            fdict["dtobscon"],
+        ),
+        os.path.join(
+            path_to_targets,
+            "gaiadr2",
+            args.dtver,
+            "targets",
+            fdict["survey"],
+            "resolve",
+            "supp",
+        ),
+    ]
     # AR secondary directory
     mydirs["scnd"] = os.path.join(
         path_to_targets,
@@ -1233,6 +1253,7 @@ def main():
         # AR adapted from https://github.com/desi-bgs/feasiBGS/blob/e913210bb91618d7be3d4a8911a6183ed505c2b4/run/sv/dr9sv.py#L153-L246
         # AR note: the BGS_LOWQ sample has some overlap with BGS_BRIGHT and BGS_FAINT
         # AR       but we decided it is ok
+        # AR starting 0.50.0: one pixweight per random file -> picking the first one
         if args.faflavor in ["sv1bgsmws", "bgsmws"]:
             pixfn = os.path.join(
                 path_to_targets,
@@ -1240,7 +1261,7 @@ def main():
                 args.dtver,
                 "pixweight/sv1/resolve",
                 fdict["dtobscon"],
-                "sv1pixweight-{}.fits".format(fdict["dtobscon"]),
+                "sv1pixweight-1-{}.fits".format(fdict["dtobscon"]),
             )
             d, bgs_goaldens, bgs_subplow = apply_bgs_subprio(d, pixfn, log)
         # AR targ: update RA, DEC, REF_EPOCH using proper motion
@@ -1542,7 +1563,6 @@ def main():
         for fn in ["{}-std.fits".format(root), "{}-scnd.fits".format(root)]:
             if os.path.isfile(fn):
                 fns += [fn]
-        print(fns)
         dp = {}
         for key in dpkeys:
             dp[key] = []
@@ -1669,10 +1689,15 @@ def main():
             ax.text(x5, y, "NTGT", fontsize=fs, ha="center", transform=ax.transAxes)
             y += dy
             for p in range(10):
+                if (petstd == p).sum() == 0:
+                    color = "r"
+                else:
+                    color = "k"
                 ax.text(
                     x0,
                     y,
                     "{:.0f}".format(p),
+                    color=color,
                     fontsize=fs,
                     ha="center",
                     transform=ax.transAxes,
@@ -1681,6 +1706,7 @@ def main():
                     x1,
                     y,
                     "{:.0f}".format((petsky == p).sum()),
+                    color=color,
                     fontsize=fs,
                     ha="center",
                     transform=ax.transAxes,
@@ -1689,6 +1715,7 @@ def main():
                     x2,
                     y,
                     "{:.0f}".format((petbad == p).sum()),
+                    color=color,
                     fontsize=fs,
                     ha="center",
                     transform=ax.transAxes,
@@ -1697,6 +1724,7 @@ def main():
                     x3,
                     y,
                     "{:.0f}".format((petwd == p).sum()),
+                    color=color,
                     fontsize=fs,
                     ha="center",
                     transform=ax.transAxes,
@@ -1705,6 +1733,7 @@ def main():
                     x4,
                     y,
                     "{:.0f}".format((petstd == p).sum()),
+                    color=color,
                     fontsize=fs,
                     ha="center",
                     transform=ax.transAxes,
@@ -1713,6 +1742,7 @@ def main():
                     x5,
                     y,
                     "{:.0f}".format((mydict["PETAL_LOC"] == p).sum()),
+                    color=color,
                     fontsize=fs,
                     ha="center",
                     transform=ax.transAxes,
@@ -1778,7 +1808,7 @@ def main():
                 os.system(tmpstr)
                 img = mpimg.imread("{}tmp-{}.jpeg".format(args.outdir, tileid))
                 os.remove("{}tmp-{}.jpeg".format(args.outdir, tileid))
-            #img = np.zeros((size, size, 3))
+            # img = np.zeros((size, size, 3))
 
             # AR SKY, BAD, WD, STD, TGT
             for iy, x, y, txt, alpha in zip(
@@ -1822,6 +1852,8 @@ def main():
                 if msk in ["ELG", "SV0_ELG"]:
                     band, famin, famax = "G", 0.0, 0.5
                 if msk in ["QSO", "SV0_QSO"]:
+                    band, famin, famax = "R", 0.0, 0.5
+                if args.faflavor in ["sv1ssv"]:
                     band, famin, famax = "R", 0.0, 0.5
                 #
                 ax = plt.subplot(gs[ix, 1])
@@ -1869,7 +1901,7 @@ def main():
                         [(-0.5, 2.5), (-0.5, 2.5)],
                         [(-0.5, 2.5), (-2, 5)],
                     ):
-                        keep = np.zeros(len(dp["TARGETID"]), dtype=bool)
+                        keep = np.ones(len(dp["TARGETID"]), dtype=bool)
                         for band in [xbands[0], xbands[1], ybands[0], ybands[1]]:
                             keep &= dp["FLUX_{}".format(band)] > 0
                         if keep.sum() == 0:
