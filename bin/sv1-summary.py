@@ -677,7 +677,7 @@ def write_html_tiledesign(html, tiles, ii, nexps, style, h2title, main=True):
     )
     html.write("<table>\n")
     html.write("<style>\n")
-    html.write("th, td {border:1px solid black; font-size: 0.95em}\n")
+    html.write("th, td {border:1px solid black; font-size: 0.90em}\n")
     html.write("tr:nth-child(even) {background-color: " + bkgcol + ";}\n")
     html.write("</style>\n")
     count = 0
@@ -1252,8 +1252,8 @@ if args.plot == "y":
     plt.close()
 
     # AR observing conditions : cumulative distributins
-    targetss = ["BGS+MWS", "QSO+LRG", "ELG", "QSO+ELG"]
-    cols = ["g", "r", "b", "c"]
+    #targetss = ["BGS+MWS", "QSO+LRG", "ELG", "QSO+ELG"]
+    #cols = ["g", "r", "b", "c"]
     d = fits.open(outfns["exposures"])[1].data
     d = d[d["HASGFA"]]
     keys = [
@@ -1274,11 +1274,12 @@ if args.plot == "y":
     for key, xmin, xmax in zip(keys, xmins, xmaxs):
         ax = plt.subplot(gs[ip])
         bins = np.linspace(xmin, xmax, 101)
-        for targets, col in zip(["ALL"] + targetss, ["k"] + cols):
-            if targets == "ALL":
+        #for targets, col in zip(["ALL"] + targetss, ["k"] + cols):
+        for targ, col in zip(["ALL","BGS+MWS", "QSO+LRG", "ELG", "QSO+ELG"], ["k", "g", "r", "b", "c"]):
+            if targ == "ALL":
                 keep = np.ones(len(d), dtype=bool)
             else:
-                keep = d["TARGETS"] == targets
+                keep = d["TARGETS"] == targ
             _ = ax.hist(
                 d[key][keep],
                 bins=bins,
@@ -1287,7 +1288,7 @@ if args.plot == "y":
                 histtype="step",
                 color=col,
                 alpha=0.8,
-                label="{} (median={:.2f})".format(targets, np.median(d[key][keep])),
+                label="{} (median={:.2f})".format(targ, np.median(d[key][keep])),
             )
         ax.set_xlabel(key)
         if ip % ny == 0:
@@ -1405,18 +1406,21 @@ if args.plot == "y":
         plt.close()
 
     # AR exptime, depth
-    targetss = ["BGS+MWS", "QSO+LRG", "ELG", "QSO+ELG"]
-    cols = ["g", "r", "b", "c"]
+    #targetss = ["BGS+MWS", "QSO+LRG", "ELG", "QSO+ELG"]
+    #cols = ["g", "r", "b", "c"]
     d = fits.open(outfns["exposures"])[1].data
     d = d[d["HASGFA"]]
     title = "SV1 observations from {} to {}".format(d["NIGHT"].min(), d["NIGHT"].max())
     keys = ["EXPTIME", "R_DEPTH_EBVAIR"]
+    xlabels = ["EXPTIME [s]", "R_DEPTH_EBVAIR [s]"]
+    ylabels = ["Cumulative number of tiles", None]
     fig = plt.figure(figsize=(10, 5))
     gs = gridspec.GridSpec(1, 2, wspace=0.25)
     ax = {"EXPTIME": plt.subplot(gs[0]), "R_DEPTH_EBVAIR": plt.subplot(gs[1])}
-    for targets, col in zip(targetss, cols):
+    #for targets, col in zip(targetss, cols):
+    for targ, col in zip(["BGS+MWS", "QSO+LRG", "ELG", "QSO+ELG"], ["g", "r", "b", "c"]):
         mydict = {}
-        mydict["TILEID"] = np.unique(d["TILEID"][d["TARGETS"] == targets])
+        mydict["TILEID"] = np.unique(d["TILEID"][d["TARGETS"] == targ])
         ntiles = len(mydict["TILEID"])
         for key in keys:
             mydict[key] = np.zeros(ntiles)
@@ -1431,21 +1435,16 @@ if args.plot == "y":
                 color=col,
                 alpha=0.3,
                 label="{} ({} tiles, median={:.0f}s)".format(
-                    targets, ntiles, np.median(mydict[key])
+                    targ, ntiles, np.median(mydict[key])
                 ),
             )
-
-    ax["EXPTIME"].set_title(title)
-    ax["EXPTIME"].set_xlabel("EXPTIME [s]")
-    ax["EXPTIME"].set_ylabel("Cumulative number of tiles")
-    ax["EXPTIME"].grid(True)
-    ax["EXPTIME"].set_axisbelow(True)
-    ax["EXPTIME"].legend()
-    ax["R_DEPTH_EBVAIR"].set_title(title)
-    ax["R_DEPTH_EBVAIR"].set_xlabel("R_DEPTH_EBVAIR [s]")
-    ax["R_DEPTH_EBVAIR"].grid(True)
-    ax["R_DEPTH_EBVAIR"].set_axisbelow(True)
-    ax["R_DEPTH_EBVAIR"].legend()
+    for key,xlabel,ylabel in zip(keys,xlabels,ylabels):
+        ax[key].set_title(title)
+        ax[key].set_xlabel(xlabel)
+        ax[key].set_ylabel(ylabel)
+        ax[key].grid(True)
+        ax[key].set_axisbelow(True)
+        ax[key].legend()
     plt.savefig(outfns["depth"]["cumul"], bbox_inches="tight")
     plt.close()
 
