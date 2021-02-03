@@ -86,15 +86,18 @@ if args.outdir[-1] != "/":
     args.outdir += "/"
 
 # AR folders / files
-surveydir = os.getenv("DESI_ROOT")+"/survey/"
-dailydir = os.getenv("DESI_ROOT")+"/spectro/redux/daily/"
-pixwfn = os.getenv("DESI_TARGET")+"/catalogs/dr9/0.47.0/pixweight/sv1/resolve/dark/sv1pixweight-dark.fits"
+surveydir = os.getenv("DESI_ROOT") + "/survey/"
+dailydir = os.getenv("DESI_ROOT") + "/spectro/redux/daily/"
+pixwfn = (
+    os.getenv("DESI_TARGET")
+    + "/catalogs/dr9/0.47.0/pixweight/sv1/resolve/dark/sv1pixweight-dark.fits"
+)
 desfn = os.path.join(surveydir, "observations", "misc", "des_footprint.txt")
+# AR Feb. 01, 2021: now using the *matched_coadd* file [desi-survey 1302]
 gfafn = np.sort(
-    glob(
-        os.getenv("DESI_ROOT")+"/users/ameisner/GFA/conditions/offline_all_guide_ccds_SV1-thru_20??????.fits"
-    )
+    glob(surveydir + "/GFA/offline_matched_coadd_ccds_SV1-thru_20??????.fits")
 )[-1]
+print("gfafn = {}".format(gfafn))
 
 
 # AR for the fiberflat routine
@@ -114,13 +117,19 @@ for month in months:
     outfns["obscond"][month] = os.path.join(
         args.outdir, "sv1-plots", "sv1-obscond-{}.png".format(month)
     )
+outfns["obscond"]["cumul"] = os.path.join(
+    args.outdir, "sv1-plots", "sv1-obscond-cumul.png"
+)
 outfns["depth"] = {}
-for flavshort in ["QSO+LRG", "ELG", "BGS+MWS", "QSO+ELG"]:
+for flavshort in ["QSO+LRG", "ELG", "BGS+MWS", "QSO+ELG", "test-PETAL_LOC_0", "SSV"]:
     outfns["depth"][flavshort] = os.path.join(
         args.outdir,
         "sv1-plots",
         "sv1-depth-{}.png".format(flavshort.lower().replace("+", "")),
     )
+outfns["depth"]["cumul"] = os.path.join(
+    args.outdir, "sv1-plots", "sv1-depth-cumul.png",
+)
 outfns["html"] = os.path.join(args.outdir, "sv1-html")
 if (args.html == "y") & (os.path.isdir(outfns["html"]) == False):
     os.mkdir(outfns["html"])
@@ -165,19 +174,24 @@ flavdict = {
     "BGS+MWS": {"FAFLAVORS": ["cmxbgsmws", "sv1bgsmws"], "COLOR": "g"},
     "M33+Dark": {"FAFLAVORS": ["cmxm33"], "COLOR": "magenta"},
     "M31": {"FAFLAVORS": ["sv1m31"], "COLOR": "y"},
+    "test-PETAL_LOC_0": {
+        "FAFLAVORS": ["sv1orion", "sv1rosette", "sv1praesepe", "sv1umaii"],
+        "COLOR": "0.5",
+    },
+    "SSV": {"FAFLAVORS": ["sv1ssv"], "COLOR": "orange"},
 }
 # AR field names - hand-written...
 fielddict = {
     "XMM-LSS": [80605, 80606],
     "Lynx": [80607, 80608, 80613],
-    "COSMOS": [80609, 80610],
+    "COSMOS": [80609, 80610, 80742],
     "Triangulum": [80611],
     "Eridanus": [80612],
-    "Sextans": [80614],
+    "Sextans": [80614, 80737],
     "Triangulum-CMX": [80615],
     "Pegasus1": [80616],
     "Pegasus2": [80617],
-    "NGC2419": [80618],
+    "NGC2419": [80618, 80721],
     "UMajor": [80619, 80620, 80621],
     "LeoMinor": [80622, 80623],
     # BGS+MWS 20210101 , Dark 20210105
@@ -185,6 +199,7 @@ fielddict = {
     "Far north": [80650, 80655, 80693, 80694],
     "Far south": [80630, 80638, 80671, 80701, 80672, 80702],
     "GAMA G02": [80633, 80635],
+    "GAMA G09": [80739, 80740, 80741],
     "GAMA G12": [80661, 80662, 80663, 80705, 80706],
     "G.Plane b=+15": [80642],
     "G.Plane b=+16": [80641, 80675, 80676],
@@ -235,6 +250,24 @@ fielddict = {
     "DEEP2 EGS": [80711, 80712],
     "Overlap+Monoc. stream": [80681, 80682],
     "M31cen": [80713, 80714, 80715, 80716],
+    "Orion": [80717],
+    "Rosette": [80718],
+    "Prasepe": [80719, 80723],
+    "UMAII": [80720, 80726],
+    "GD1_LOW_1": [80722],
+    "GD1_LOW_2": [80724],
+    "M67": [80725],
+    "GD1-B-1": [80727],
+    "ORPHAN-A-2": [80728],
+    "GD1-C-1": [80729],
+    "GD1-C-3": [80730],
+    "NGP": [80731],
+    "BOSS7456": [80732],
+    "M53+N5053": [80733],
+    "M5": [80734],
+    "M13": [80735],
+    "M92": [80736],
+    "Draco": [80738],
 }
 
 
@@ -278,15 +311,20 @@ def load_spec(path):
 
 # AR/DK settings for exposure depths
 spec_thru = load_spec_thru()
-det_eso = load_spec(os.path.join(surveydir, "observations",  "misc", "dark_eso.fits"))
-det_desimodel = load_spec(os.path.join(surveydir, "observations", "misc", "dark_desimodel.fits"))
+det_eso = load_spec(os.path.join(surveydir, "observations", "misc", "dark_eso.fits"))
+det_desimodel = load_spec(
+    os.path.join(surveydir, "observations", "misc", "dark_desimodel.fits")
+)
 _sky_cache = {}
 
 
 # AR/ES ebv and airmass coefficient in depth_ebvair
 # AR/ES ebv coeffs : taking SDSS grz from Schlafly & Finkbeinger (2011)
 # AR/ES airmass coeffs : [decam-chatter 15497]
-depth_coeffs = {"EBV": {"B":3.303, "R":2.285, "Z":1.263}, "AIRMASS": {"B":0.195, "R":0.096, "Z":0.055}}
+depth_coeffs = {
+    "EBV": {"B": 3.303, "R": 2.285, "Z": 1.263},
+    "AIRMASS": {"B": 0.195, "R": 0.096, "Z": 0.055},
+}
 
 
 # AR/DK exposure depths utilities
@@ -460,8 +498,8 @@ def get_sky_rmag_ab(night, expid, exptime, ftype, redux="daily"):
                     reduxdir,
                     "exposures",
                     "{}".format(night),
-                    expid,
-                    "frame-{}{}-{}.fits".format(camera, spec, expid),
+                    "{:08d}".format(expid),
+                    "frame-{}{}-{:08d}.fits".format(camera, spec, expid),
                 )
                 flfn = os.path.join(
                     reduxdir,
@@ -488,8 +526,8 @@ def get_sky_rmag_ab(night, expid, exptime, ftype, redux="daily"):
                     reduxdir,
                     "exposures",
                     "{}".format(night),
-                    expid,
-                    "sky-{}{}-{}.fits".format(camera, spec, expid),
+                    "{:08d}".format(expid),
+                    "sky-{}{}-{:08d}.fits".format(camera, spec, expid),
                 )
                 if not os.path.isfile(fn):
                     print("Skipping non-existent {}".format(fn))
@@ -507,7 +545,7 @@ def get_sky_rmag_ab(night, expid, exptime, ftype, redux="daily"):
                         norm_cam += np.ones(len(fullwave[cslice[camera]]))
                     else:
                         print(
-                            "{}-{}-{}{}: no spectra for {}".format(
+                            "{}-{:08d}-{}{}: no spectra for {}".format(
                                 night, expid, camera, spec, ftype
                             )
                         )
@@ -520,7 +558,7 @@ def get_sky_rmag_ab(night, expid, exptime, ftype, redux="daily"):
                 sky_cam[keep] / norm_cam[keep] / exptime / spec_thru[camera][keep]
             )
         else:
-            print("{}-{}-{}: no spectra for {}".format(night, expid, camera, ftype))
+            print("{}-{:08d}-{}: no spectra for {}".format(night, expid, camera, ftype))
     # AR sky model flux in erg / angstrom / s (using the photon energy in erg)
     e_phot_erg = (
         constants.h.to(units.erg * units.s)
@@ -739,9 +777,9 @@ def write_html_perexp(html, d, style, h2title):
         "FIBER_FRACFLUX",
     ]
     fields = (
-        ["TILEID", "NIGHT", "EXPID", "NIGHTWATCH", "EXPTIME", "EBV"]
+        ["TILEID", "TARGETS", "NIGHT", "EXPID", "NIGHTWATCH", "EXPTIME", "EBV"]
         + keys
-        #+ ["B_DEPTH", "R_DEPTH", "Z_DEPTH"]
+        # + ["B_DEPTH", "R_DEPTH", "Z_DEPTH"]
         + ["R_DEPTH", "R_DEPTH_EBVAIR"]
     )
     html.write("<table>\n")
@@ -766,6 +804,7 @@ def write_html_perexp(html, d, style, h2title):
                 d["TILEID"][i],
             )
         ]
+        tmparr += ["{}".format(d["TARGETS"][i])]
         tmparr += [
             "<a href='{}' target='external'> {}".format(
                 os.path.join(
@@ -803,9 +842,9 @@ def write_html_perexp(html, d, style, h2title):
         ]
         tmparr += ["{:.0f}".format(d["EXPTIME"][i])]
         tmparr += ["{:.2f}".format(d["EBV"][i])]
-        tmparr += ["{:.2f}".format(d["GFA_" + key + "_MED"][i]) for key in keys]
-        #tmparr += ["{:.0f}s".format(d[band + "_DEPTH"][i]) for band in ["B", "R", "Z"]]
-        tmparr += ["{:.0f}s".format(d["R_DEPTH"][i])]   
+        tmparr += ["{:.2f}".format(d["GFA_" + key][i]) for key in keys]
+        # tmparr += ["{:.0f}s".format(d[band + "_DEPTH"][i]) for band in ["B", "R", "Z"]]
+        tmparr += ["{:.0f}s".format(d["R_DEPTH"][i])]
         tmparr += ["{:.0f}s".format(d["R_DEPTH_EBVAIR"][i])]
         html.write(" ".join(["<td> {} </td>".format(x) for x in tmparr]) + "\n")
         html.write("</tr>\n")
@@ -816,7 +855,13 @@ def write_html_perexp(html, d, style, h2title):
 
 # AR per-tile information
 tiles = {}
-tiles["FN"] = np.sort(glob(os.path.join(surveydir, "fiberassign", "SV1", "202?????/fiberassign-??????.fits.gz")))
+tiles["FN"] = np.sort(
+    glob(
+        os.path.join(
+            surveydir, "fiberassign", "SV1", "202?????/fiberassign-??????.fits.gz"
+        )
+    )
+)
 nt = len(tiles["FN"])
 # AR initialising
 for key in ["TILEID", "TILERA", "TILEDEC", "FAFLAVOR", "TARGETS", "COLOR", "FIELD"]:
@@ -876,21 +921,35 @@ for key in list(tiles.keys()):
 if args.tiles == "y":
     # AR each tile appears only once
     fns = [
-        glob(os.path.join(surveydir, "fiberassign", "SV1", "202?????", "{:06}-tiles.fits".format(tileid)))[0]
+        glob(
+            os.path.join(
+                surveydir,
+                "fiberassign",
+                "SV1",
+                "202?????",
+                "{:06}-tiles.fits".format(tileid),
+            )
+        )[0]
         for tileid in tiles["TILEID"]
     ]
     h = fits.open(fns[0])
     keys, fmts = h[1].columns.names, h[1].columns.formats
+    ownkeys, ownfmts = ["FAFLAVOR", "TARGETS", "FIELD"], ["-", "-", "-"]
     t = {}
-    for key in keys:
+    for key in keys + ownkeys:
         t[key] = []
     for fn in fns:
         d = fits.open(fn)[1].data
         for key in keys:
             t[key] += [d[key]]
+        i = np.where(tiles["TILEID"] == d["TILEID"])[0][0]
+        for key in ownkeys:
+            t[key] += [tiles[key][i]]
     # AR building/writing fits
     cols = []
-    for key, fmt in zip(keys, fmts):
+    for key, fmt in zip(keys + ownkeys, fmts + ownfmts):
+        if key in ["FAFLAVOR", "TARGETS", "FIELD"]:
+            fmt = "{}A".format(np.max([len(x) for x in t[key]]))
         cols += [fits.Column(name=key, format=fmt, array=t[key])]
     h = fits.BinTableHDU.from_columns(fits.ColDefs(cols))
     h.writeto(outfns["tiles"], overwrite=True)
@@ -906,22 +965,10 @@ if args.exposures == "y":
         if int(fn.split("/")[-1]) >= int(firstnight)
     ]
     # AR GFA file
-    # AR see Aaron s email from 01Jan2021: using ext=2, which already contains
-    # AR the median over CUBE_INDEX
     # AR now using ext=3, which computes the median on a "cleaner" sample
-    # AR cutting on CONTRAST and N_SOURCES_FOR_PSF
-    # AR see Aaron message https://desisurvey.slack.com/archives/C01HNN87Y7J/p1610865136043700?thread_ts=1610839476.023800&cid=C01HNN87Y7J
+    # AR Feb., 1st ([desi-survey 1302]): using coadd_matched file + new columns
+    # AR no need to cut anymore
     gfa = fits.open(gfafn)[3].data
-    # AR 20210109 : two exposures with "CMX LRG+QSO" instead of "SV1 LRG+QSO" (71594, 71595)
-    # AR 20210110 : need to adapt...
-    keep = np.array([program[:2] == "SV" for program in gfa["PROGRAM"]])
-    keep |= np.array([program[:3] == "sv1" for program in gfa["PROGRAM"]])
-    keep |= np.in1d(gfa["EXPID"], [71594, 71595])
-    keep |= gfa["PROGRAM"] == "M31"
-    gfa = gfa[keep]
-    gfa_eci = np.array(
-        ["{}-{}".format(e, c) for e, c in zip(gfa["EXPID"], gfa["CUBE_INDEX"])]
-    )
     # AR quantities we store
     exposures = {}
     hdrkeys = ["NIGHT", "EXPID", "TILEID", "TILERA", "TILEDEC", "EXPTIME", "MJDOBS"]
@@ -931,8 +978,8 @@ if args.exposures == "y":
         "EBV",
         # "SPECDATA_SKY_RMAG_AB",
         "SPECMODEL_SKY_RMAG_AB",
-        #"BLANC_SPECMODEL_SKY_RMAG_AB",
-        "NGFA",
+        # "BLANC_SPECMODEL_SKY_RMAG_AB",
+        "HASGFA",
         "B_DEPTH",
         "R_DEPTH",
         "Z_DEPTH",
@@ -951,20 +998,21 @@ if args.exposures == "y":
         "FIBER_FRACFLUX",
         "FIBER_FRACFLUX_ELG",
         "TRANSPFRAC",
+        "MAXCONTRAST",
+        "MINCONTRAST",
+        "KTERM",
+        "RADPROF_FWHM_ASEC",
     ]
-    gfalabs = ["MIN", "MEAN", "MED", "MAX"]
-    gfafuncs = [np.nanmin, np.nanmean, np.nanmedian, np.nanmax]
-    allkeys = hdrkeys + ownkeys
-    for key in gfakeys:
-        allkeys += ["GFA_{}_{}".format(key, gfalab) for gfalab in gfalabs]
+    allkeys = hdrkeys + ownkeys + ["GFA_{}".format(key) for key in gfakeys]
     for key in allkeys:
         exposures[key] = []
     # AR looping on nights
     for night in nights:
+        # for night in [nights[0]]:
         # AR first listing all exposures
         expids = np.unique(
             [
-                fn.split("/")[-1]
+                int(fn.split("/")[-1])
                 for fn in np.sort(
                     glob(
                         os.path.join(
@@ -974,26 +1022,27 @@ if args.exposures == "y":
                 )
             ]
         )
+        print("{} : {} exposures".format(night, len(expids)))
         # AR special dealing with 20210114, where positioners were frozen after the first
         # AR exposure (72381); hence we reject all the subsequent ones
         # AR https://desisurvey.slack.com/archives/C6C320XMK/p1610713799187700
         if night == 20210114:
-            expids = np.array(["00072381"])
+            expids = np.array([72381])
         # AR looping on all exposures
-        for i in range(len(expids)):
+        for expid in expids:
             fns = glob(
                 os.path.join(
                     dailydir,
                     "exposures",
                     "{}".format(night),
-                    expids[i],
-                    "sframe-??-{}.fits".format(expids[i]),
+                    "{:08d}".format(expid),
+                    "sframe-??-{:08d}.fits".format(expid),
                 )
             )
             if len(fns) > 0:
                 hdr = fits.getheader(fns[0], 0)
                 if hdr["TILEID"] in tiles["TILEID"]:
-                    print(night, expids[i], hdr["TILEID"])
+                    # print(night, expids, hdr["TILEID"])
                     # AR header informations
                     for key in hdrkeys:
                         if key == "MJDOBS":
@@ -1005,13 +1054,12 @@ if args.exposures == "y":
                     exposures["FIELD"] += [tiles["FIELD"][it]]
                     # AR targets
                     exposures["TARGETS"] += [tiles["TARGETS"][it]]
-                    # AR ebv
+                    # AR ebv (excluding sky fibers where ebv=0)
+                    tmpd = fitsio.read(tiles["FN"][it], columns=["EBV", "OBJTYPE"])
                     exposures["EBV"] += [
                         float(
-                            "{:.2f}".format(
-                                np.median(
-                                    fitsio.read(tiles["FN"][it], columns=["EBV"])["EBV"]
-                                )
+                            "{:.3f}".format(
+                                np.median(tmpd["EBV"][tmpd["OBJTYPE"] == "TGT"])
                             )
                         )
                     ]
@@ -1021,75 +1069,70 @@ if args.exposures == "y":
                     # AR SKY_RMAG_AB from integrating the sky fibers over the decam r-band
                     # exposures["SPECDATA_SKY_RMAG_AB"] += [
                     #    get_sky_rmag_ab(
-                    #        night, expids[i], exposures["EXPTIME"][-1], "data"
+                    #        night, expid, exposures["EXPTIME"][-1], "data"
                     #    )
                     # ]
                     # AR SKY_RMAG_AB from integrating the sky model over the decam r-band - daily
                     exposures["SPECMODEL_SKY_RMAG_AB"] += [
                         get_sky_rmag_ab(
                             night,
-                            expids[i],
+                            expid,
                             exposures["EXPTIME"][-1],
                             "model",
                             redux="daily",
                         )
                     ]
+                    # exposures["SPECMODEL_SKY_RMAG_AB"] += [-99]
                     # AR GFA information
-                    keep = gfa["EXPID"] == hdr["EXPID"]
-                    exposures["NGFA"] += [keep.sum()]
-                    if keep.sum() > 0:
+                    ii = np.where(gfa["EXPID"] == hdr["EXPID"])[0]
+                    if len(ii) > 1:
+                        sys.exit("More than 1 GFA match: exiting")
+                    elif len(ii) == 0:
+                        exposures["HASGFA"] += [False]
                         for key in gfakeys:
-                            # AR already considering median per CUBE_INDEX
-                            # AR SKY_MAG_AB: converting to linear flux
-                            if key == "SKY_MAG_AB":
-                                x = 10.0 ** (-0.4 * (gfa["SKY_MAG_AB"][keep] - 22.5))
+                            exposures["GFA_{}".format(key)] += [-99]
+                        for band in ["B", "R", "Z"]:
+                            exposures["{}_DEPTH".format(band)] += [-99]
+                            exposures["{}_DEPTH_EBVAIR".format(band)] += [-99]
+                    else:
+                        exposures["HASGFA"] += [True]
+                        i = ii[0]
+                        for key in gfakeys:
                             # AR TRANSPARENCY x FIBER_FRACFLUX
-                            elif key == "TRANSPFRAC":
-                                x = (
-                                    gfa["TRANSPARENCY"][keep]
-                                    * gfa["FIBER_FRACFLUX"][keep]
-                                )
+                            if key == "TRANSPFRAC":
+                                exposures["GFA_{}".format(key)] += [
+                                    gfa["TRANSPARENCY"][i] * gfa["FIBER_FRACFLUX"][i]
+                                ]
                             else:
-                                x = gfa[key][keep]
-                            # AR taking the min/mean/median/max
-                            for gfalab, gfafunc in zip(gfalabs, gfafuncs):
-                                # AR going back to mag for SKY_MAG_AB, after having done the stats
-                                if key == "SKY_MAG_AB":
-                                    exposures["GFA_{}_{}".format(key, gfalab)] += [
-                                        22.5 - 2.5 * np.log10(gfafunc(x))
-                                    ]
-                                else:
-                                    exposures["GFA_{}_{}".format(key, gfalab)] += [
-                                        gfafunc(x)
-                                    ]
+                                exposures["GFA_{}".format(key)] += [gfa[key][i]]
                         # AR/DK exposure depths (needs gfa information)
                         # AR/DK adding also depth including ebv+airmass
                         depths_i = determine_tile_depth2(
                             exposures["NIGHT"][-1],
                             exposures["EXPID"][-1],
                             exposures["EXPTIME"][-1],
-                            exposures["GFA_TRANSPFRAC_MEAN"][-1],
+                            exposures["GFA_TRANSPFRAC"][-1],
                         )
                         for camera in ["B", "R", "Z"]:
                             exposures["{}_DEPTH".format(camera)] += [
                                 depths_i[camera.lower()]
                             ]
                             ebv = exposures["EBV"][-1]
-                            fact_ebv = 10. ** (-2 * 0.4 * depth_coeffs["EBV"][camera] * ebv)
-                            airmass = exposures["GFA_AIRMASS_MEAN"][-1]
-                            fact_air = 10. ** (-2 * 0.4 * depth_coeffs["AIRMASS"][camera] * (airmass - 1.0))
+                            fact_ebv = 10.0 ** (
+                                -2 * 0.4 * depth_coeffs["EBV"][camera] * ebv
+                            )
+                            airmass = exposures["GFA_AIRMASS"][-1]
+                            fact_air = 10.0 ** (
+                                -2
+                                * 0.4
+                                * depth_coeffs["AIRMASS"][camera]
+                                * (airmass - 1.0)
+                            )
                             exposures["{}_DEPTH_EBVAIR".format(camera)] += [
                                 depths_i[camera.lower()] * fact_ebv * fact_air
                             ]
                         # for camera in ["B", "R", "Z"]: exposures["{}_DEPTH".format(camera)] += [-99]
                         # for camera in ["B", "R", "Z"]: exposures["{}_DEPTH_EBVAIR".format(camera)] += [-99]
-                    else:
-                        for key in gfakeys:
-                            for gfalab in gfalabs:
-                                exposures["GFA_{}_{}".format(key, gfalab)] += [-99]
-                        for band in ["B", "R", "Z"]:
-                            exposures["{}_DEPTH".format(band)] += [-99]
-                            exposures["{}_DEPTH_EBVAIR".format(band)] += [-99]
 
     # AR if update=y, pre-append the results from previous nights
     if args.update == "y":
@@ -1105,6 +1148,8 @@ if args.exposures == "y":
             fmt = "K"
         elif key in ["FIELD", "TARGETS"]:
             fmt = "{}A".format(np.max([len(x) for x in exposures[key]]))
+        elif key in ["HASGFA"]:
+            fmt = "L"
         else:
             fmt = "E"
         cols += [fits.Column(name=key, format=fmt, array=exposures[key])]
@@ -1206,7 +1251,59 @@ if args.plot == "y":
     plt.savefig(outfns["skymap"], bbox_inches="tight")
     plt.close()
 
-    # AR observing conditions (one plot per month)
+    # AR observing conditions : cumulative distributins
+    targetss = ["BGS+MWS", "QSO+LRG", "ELG", "QSO+ELG"]
+    cols = ["g", "r", "b", "c"]
+    d = fits.open(outfns["exposures"])[1].data
+    d = d[d["HASGFA"]]
+    keys = [
+        "EBV",
+        "GFA_AIRMASS",
+        "GFA_TRANSPARENCY",
+        "GFA_FWHM_ASEC",
+        "GFA_SKY_MAG_AB",
+        "GFA_FIBER_FRACFLUX",
+        "GFA_FIBER_FRACFLUX_ELG",
+    ]
+    xmins = [0, 1.0, 0, 0.5, 17, 0, 0]
+    xmaxs = [0.2, 2.5, 1.05, 3.5, 22, 0.8, 0.8]
+    nx, ny = 2, 4
+    fig = plt.figure(figsize=(20, 10))
+    gs = gridspec.GridSpec(nx, ny, wspace=0.25, hspace=0.20)
+    ip = 0
+    for key, xmin, xmax in zip(keys, xmins, xmaxs):
+        ax = plt.subplot(gs[ip])
+        bins = np.linspace(xmin, xmax, 101)
+        for targets, col in zip(["ALL"] + targetss, ["k"] + cols):
+            if targets == "ALL":
+                keep = np.ones(len(d), dtype=bool)
+            else:
+                keep = d["TARGETS"] == targets
+            _ = ax.hist(
+                d[key][keep],
+                bins=bins,
+                cumulative=True,
+                density=True,
+                histtype="step",
+                color=col,
+                alpha=0.8,
+                label="{} (median={:.2f})".format(targets, np.median(d[key][keep])),
+            )
+        ax.set_xlabel(key)
+        if ip % ny == 0:
+            ax.set_ylabel("Cumulative fraction")
+        ax.grid(True)
+        ax.set_axisbelow(True)
+        if key in ["EBV", "GFA_AIRMASS", "GFA_FWHM_ASEC"]:
+            ax.legend(loc=4)
+        else:
+            ax.legend(loc=2)
+        ax.axhline(0.5, ls="--", c="k")
+        ip += 1
+    plt.savefig(outfns["obscond"]["cumul"], bbox_inches="tight")
+    plt.close()
+
+    # AR observing conditions = f(MJD) (one plot per month)
     keys = [
         "GFA_MOON_ILLUMINATION",
         "GFA_MOON_ZD_DEG",
@@ -1217,7 +1314,7 @@ if args.plot == "y":
         "GFA_SKY_MAG_AB",
         "GFA_FIBER_FRACFLUX",
         "R_DEPTH / EXPTIME",
-        "R_DEPTH_EBVAIR / EXPTIME"
+        "R_DEPTH_EBVAIR / EXPTIME",
     ]
     mlocs = [0.20, 25, 25, 0.20, 0.20, 0.50, 1.0, 0.20, 0.5, 0.5]
     ylims = [
@@ -1230,7 +1327,7 @@ if args.plot == "y":
         (17, 22),
         (0, 1),
         (0, 2.5),
-        (0, 2.5)
+        (0, 2.5),
     ]
     for month in months:
         d = fits.open(outfns["exposures"])[1].data
@@ -1253,7 +1350,7 @@ if args.plot == "y":
                 elif keys[i] == "R_DEPTH_EBVAIR / EXPTIME":
                     y = d["R_DEPTH_EBVAIR"] / d["EXPTIME"]
                 else:
-                    y = d["{}_MED".format(keys[i])]
+                    y = d["{}".format(keys[i])]
                 ylim = ylims[i]
                 y = np.clip(y, ylim[0], ylim[1])
                 ax.scatter(d["MJDOBS"], y, c=cols, marker="o", s=5)
@@ -1307,7 +1404,52 @@ if args.plot == "y":
             plt.savefig(outfns["obscond"][month], bbox_inches="tight")
         plt.close()
 
-    # AR r_depth
+    # AR exptime, depth
+    targetss = ["BGS+MWS", "QSO+LRG", "ELG", "QSO+ELG"]
+    cols = ["g", "r", "b", "c"]
+    d = fits.open(outfns["exposures"])[1].data
+    d = d[d["HASGFA"]]
+    title = "SV1 observations from {} to {}".format(d["NIGHT"].min(), d["NIGHT"].max())
+    keys = ["EXPTIME", "R_DEPTH_EBVAIR"]
+    fig = plt.figure(figsize=(10, 5))
+    gs = gridspec.GridSpec(1, 2, wspace=0.25)
+    ax = {"EXPTIME": plt.subplot(gs[0]), "R_DEPTH_EBVAIR": plt.subplot(gs[1])}
+    for targets, col in zip(targetss, cols):
+        mydict = {}
+        mydict["TILEID"] = np.unique(d["TILEID"][d["TARGETS"] == targets])
+        ntiles = len(mydict["TILEID"])
+        for key in keys:
+            mydict[key] = np.zeros(ntiles)
+        for i in range(ntiles):
+            keep = d["TILEID"] == mydict["TILEID"][i]
+            for key in keys:
+                mydict[key][i] = int(d[key][keep].sum())
+        for key in keys:
+            _ = ax[key].hist(
+                mydict[key],
+                cumulative=True,
+                color=col,
+                alpha=0.3,
+                label="{} ({} tiles, median={:.0f}s)".format(
+                    targets, ntiles, np.median(mydict[key])
+                ),
+            )
+
+    ax["EXPTIME"].set_title(title)
+    ax["EXPTIME"].set_xlabel("EXPTIME [s]")
+    ax["EXPTIME"].set_ylabel("Cumulative number of tiles")
+    ax["EXPTIME"].grid(True)
+    ax["EXPTIME"].set_axisbelow(True)
+    ax["EXPTIME"].legend()
+    ax["R_DEPTH_EBVAIR"].set_title(title)
+    ax["R_DEPTH_EBVAIR"].set_xlabel("R_DEPTH_EBVAIR [s]")
+    ax["R_DEPTH_EBVAIR"].grid(True)
+    ax["R_DEPTH_EBVAIR"].set_axisbelow(True)
+    ax["R_DEPTH_EBVAIR"].legend()
+    plt.savefig(outfns["depth"]["cumul"], bbox_inches="tight")
+    plt.close()
+
+    # AR r_depth_ebvair
     d = fits.open(outfns["exposures"])[1].data
     xlim = (0, 30)
     xs = 0.5 + np.arange(xlim[0], xlim[1])
@@ -1318,7 +1460,7 @@ if args.plot == "y":
     for i in range(len(nights)):
         keep = d["NIGHT"] == nights[i]
         cols[keep] = ref_cols[i % len(ref_cols)]
-    key = "R_DEPTH"
+    key = "R_DEPTH_EBVAIR"
     for flavshort, ymax in zip(
         ["QSO+LRG", "QSO+ELG", "ELG", "BGS+MWS"], [2000, 2000, 2000, 1000]
     ):
@@ -1427,12 +1569,18 @@ if args.html == "y":
     htmlmain.write("\t\t<li><a href='#fitsfiles' >Fits files</a></li>\n")
     htmlmain.write("\t\t<li><a href='#skymap' >Tiles sky map</a></li>\n")
     htmlmain.write(
+        "\t\t<li><a href='#depth-cumul' >Tiles cumulative exptime and depth</a></li>\n"
+    )
+    htmlmain.write(
         "\t\t<li><a href='#tile-nexp-design' >Tiles: NEXP and design</a></li>\n"
     )
     htmlmain.write(
         "\t\t<li><a href='#per-exposure-properties' > Per-exposure properties</a> ({} exposure(s) over {} night(s))</li>\n".format(
             len(d), len(np.unique(d["NIGHT"]))
         )
+    )
+    htmlmain.write(
+        "\t\t<li><a href='#obsconds-cumul' >Observing conditions: cumulative distributions</a></li>\n"
     )
     for month in months:
         if os.path.isfile(outfns["obscond"][month]):
@@ -1457,15 +1605,8 @@ if args.html == "y":
         "<a href='#top' style='position: absolute; right: 0;'>Top of the page</a></h2>\n"
     )
     htmlmain.write(
-        "<p style='font-size:1vw'><a href='../sv1-exposures.fits' target='external'> sv1-exposures.fits </a> : main file with all exposures. Column content: {} ;  + GFA quantities (MIN, MEAN, MED, MAX for each quantity): {}.</p>\n".format(
-            ", ".join([key for key in d.dtype.names if key[:4] != "GFA_"]),
-            ", ".join(
-                [
-                    key.replace("GFA_", "").replace("_MIN", "")
-                    for key in d.dtype.names
-                    if key[:4] == "GFA_" and key[-3:] == "MIN"
-                ]
-            ),
+        "<p style='font-size:1vw'><a href='../sv1-exposures.fits' target='external'> sv1-exposures.fits </a> : main file with all exposures. Column content: {}.</p>\n".format(
+            ", ".join(d.dtype.names),
         )
     )
     htmlmain.write(
@@ -1489,6 +1630,23 @@ if args.html == "y":
     htmlmain.write("</tr>\n")
     htmlmain.write("\n")
 
+    # AR Tiles: cumulative exptime and depth
+    htmlmain.write(
+        "<h2><a id='depth-cumul' href='#depth-cumul' > Tiles cumulative exptime and depth </a>\n"
+    )
+    htmlmain.write(
+        "<a href='#top' style='position: absolute; right: 0;'>Top of the page</a></h2>\n"
+    )
+    tmppng = outfns["depth"]["cumul"].replace(args.outdir, "../")
+    htmlmain.write("<tr>\n")
+    htmlmain.write(
+        "<td align=center><a href='{}'><img SRC='{}' width=80% height=auto></a></td>\n".format(
+            tmppng, tmppng
+        )
+    )
+    htmlmain.write("</tr>\n")
+    htmlmain.write("\n")
+
     # AR nexp + tile design
     _ = write_html_tiledesign(
         htmlmain, tiles, ii, nexps, style, "Tiles: NEXP and design", main=True
@@ -1496,6 +1654,23 @@ if args.html == "y":
 
     # AR Exposure properties
     _ = write_html_perexp(htmlmain, d, style, "Per-exposure properties")
+
+    # AR Observing conditions: cumulative distributions
+    htmlmain.write(
+        "<h2><a id='obsconds-cumul' href='#obsconds-cumul' > Observing conditions: cumulative distributions</a>\n"
+    )
+    htmlmain.write(
+        "<a href='#top' style='position: absolute; right: 0;'>Top of the page</a></h2>\n"
+    )
+    tmppng = outfns["obscond"]["cumul"].replace(args.outdir, "../")
+    htmlmain.write("<tr>\n")
+    htmlmain.write(
+        "<td align=center><a href='{}'><img SRC='{}' width=50% height=auto></a></td>\n".format(
+            tmppng, tmppng
+        )
+    )
+    htmlmain.write("</tr>\n")
+    htmlmain.write("\n")
 
     # AR Observing conditions
     for month in months:
