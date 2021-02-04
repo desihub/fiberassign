@@ -28,6 +28,8 @@ from astropy.time import Time
 from argparse import ArgumentParser
 from collections import Counter
 from desiutil.redirect import stdouterr_redirected
+import tempfile
+import shutil
 
 
 # AR copied from make_mtl()
@@ -71,7 +73,7 @@ extradatamodel = np.array(
 # AR for commissioning, Adam says we should not use make_mtl, assign mtl columns by hand [email Oct, 17 2020]
 # AR by default, we propagate {PRIORITY,NUMOBS}_INIT to {PRIORITY,NUMOBS_MORE}
 # AR mtl (reproducing steps of make_mtl())
-def cmx_make_mtl(d, outfn):
+def cmx_make_mtl(d, outfn, tmpoutdir):
     # d     : output of read_targets_in_tiles()
     # outfn : written fits file
     mtl = Table(d)
@@ -96,10 +98,10 @@ def cmx_make_mtl(d, outfn):
     )  # AR : TBD : do we want to set obsconmask to 1? (see Ted s email)
     mtl["OBSCONDITIONS"] = obsconmask
     n, tmpfn = write_mtl(
-        args.outdir, mtl.as_array(), indir=args.outdir, survey="cmx", ecsv=False
+        tmpoutdir, mtl.as_array(), indir=args.outdir, survey="cmx", ecsv=False
     )
     if n:
-        os.rename(tmpfn, outfn)
+        shutil.move(tmpfn, outfn)
         log.info(
             "{:.1f}s\tmtl targets written to {} , moved to {}".format(
                 time() - start, tmpfn, outfn
@@ -367,6 +369,8 @@ def main():
         )
     )
 
+    # tmp directory
+    tmpoutdir = tempfile.mkdtemp()
     
     # AR safe: tilera, tiledec
     if (args.tilera is None) | (args.tiledec is None):
@@ -616,13 +620,13 @@ def main():
             dmerged = dmerged[ii_unique]
 
         n, tmpfn = write_targets(
-            args.outdir,
+            tmpoutdir,
             dmerged,
             indir=mydirs["sky"],
             indir2=mydirs["skysupp"],
             survey="cmx",
         )
-        os.rename(tmpfn, "{}-sky.fits".format(root))
+        shutil.move(tmpfn, "{}-sky.fits".format(root))
         log.info("{:.1f}s\t{}-sky.fits written".format(time() - start, root))
 
     # AR gfa
@@ -640,8 +644,8 @@ def main():
         d = update_nowradec(d, new_obstime)
         #
         # AR gfa: write fits
-        n, tmpfn = write_targets(args.outdir, d, indir=mydirs["gfa"], survey="cmx")
-        os.rename(tmpfn, "{}-gfa.fits".format(root))
+        n, tmpfn = write_targets(tmpoutdir, d, indir=mydirs["gfa"], survey="cmx")
+        shutil.move(tmpfn, "{}-gfa.fits".format(root))
         # AR gfa: update header
         fd = fitsio.FITS("{}-gfa.fits".format(root), "rw")
         fd["TARGETS"].write_key("COMMENT", "RA,DEC updated with PM for AEN objects")
@@ -693,7 +697,7 @@ def main():
                 )
             )
             # AR custom mtl
-            _ = cmx_make_mtl(d, "{}-std.fits".format(root))
+            _ = cmx_make_mtl(d, "{}-std.fits".format(root), tmpoutdir)
 
     # AR (undithered) targets
     # AR ! not using make_mtl !
@@ -728,7 +732,7 @@ def main():
                 )
             )
         # AR custom mtl
-        _ = cmx_make_mtl(d, "{}-targ.fits".format(root))
+        _ = cmx_make_mtl(d, "{}-targ.fits".format(root), tmpoutdir)
         # AR DITHER: update header
         if args.faflavor in ["dithprec", "dithlost", "dithfocus"]:
             fd = fitsio.FITS("{}-targ.fits".format(root), "rw")
@@ -811,6 +815,7 @@ def main():
                     "--targets",
                     troot + "-targ.fits",
                 ]
+            
             opts += [
                 "--rundate",
                 args.rundate,
@@ -819,7 +824,7 @@ def main():
                 "--footprint",
                 troot + "-tiles.fits",
                 "--dir",
-                args.outdir,
+                tmpoutdir,
                 "--sky",
                 root + "-sky.fits",
                 "--sky_per_petal",
@@ -834,11 +839,13 @@ def main():
             )
             ag = parse_assign(opts)
             run_assign_full(ag)
+            
+            
             # AR merging
             opts = [
                 "--skip_raw",
                 "--dir",
-                args.outdir,
+                tmpoutdir,
                 "--sky",
                 root + "-sky.fits",
                 "--targets",
@@ -861,6 +868,15 @@ def main():
             )
             ag = parse_merge(opts)
             run_merge(ag)
+
+            
+            files = glob(os.path.join(tmpoutdir, "*.fits"))
+            for f in files:
+                fn = f.split('/')[-1]
+                newf = os.path.join(args.outdir, fn)
+                shutil.move(f, newf)
+            shutil.rmtree(tmpoutdir)
+            
             # AR dither flavors: temporary moving fba-{tileid}.fits file, otherwise it confuses run_merge()
             if args.faflavor in ["dithprec", "dithlost","dithfocus"]:
                 fn = "{}fba-{:06d}.fits".format(args.outdir, tileid)
@@ -1022,17 +1038,17 @@ def main():
                 )
 
     if dozip:  # gzip all fiberassign files
-        fns = [os.path.join(args.outdir, "fiberassign-{:06d}.fits".format(tileid)) for tileid in tileids]
+        fns = [
+            os.path.join(args.outdir, "fiberassign-{:06d}.fits".format(tileid))
+            for tileid in tileids
+        ]
         for fn in fns:
             if os.path.isfile("{}.gz".format(fn)):
                 os.remove("{}.gz".format(fn))
-                log.info("{:.1f}s\t deleting existing {}.gz".format(
-                    time() - start, fn))
-            os.system("gzip {}".format(fn))
-            log.info(
-                "{:.1f}s\t gzipping {}".format(
-                    time() - start, fn)
-               )
+                log.info("{:.1f}s\t deleting existing {}.gz".format(time() - start, fn))
+            os.system("gzip " + fn)
+            log.info("{:.1f}s\t gzipping {}".format(time() - start, fn))
+ 
 
     if doplot:
 
