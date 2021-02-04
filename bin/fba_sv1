@@ -881,11 +881,12 @@ def main():
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_BRIGHT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
+    # AR sv1elg: adding specific secondary programs at top-priority (WD_BINARIES_DARK,BHB,UDG,LOW_MASS_AGN,SPCV)
     elif args.faflavor == "sv1elg":
         fdict["survey"] = "sv1"
         fdict["dtobscon"] = "dark"
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
-        fdict["msks"] = {"SV1_DESI_TARGET": "STD_WD,ELG", "SV1_BGS_TARGET": "BGS_FAINT"}
+        fdict["msks"] = {"SV1_DESI_TARGET": "STD_WD,ELG", "SV1_BGS_TARGET": "BGS_FAINT", "SV1_SCND_TARGET": "WD_BINARIES_DARK,BHB,UDG,LOW_MASS_AGN,SPCV"}
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
@@ -1046,6 +1047,12 @@ def main():
             ref_msks = np.array(["BGS_ANY", "BGS_FAINT", "ELG", "LRG", "QSO", "STD_WD"])
             ref_prios = np.array([2000, 2000, 3000, 3200, 3400, 10000])
             ref_nums = np.array([1, 1, 1, 1, 1, 1])
+            # AR top-priority secondary programs on sv1elg tiles
+            # AR taking 5000 + default
+            if args.faflavor in ["sv1elg"]:
+                ref_msks = np.append(ref_msks, ["WD_BINARIES_DARK", "BHB", "UDG", "LOW_MASS_AGN", "SPCV"])
+                ref_prios = np.append(ref_prios, [6998, 6950, 6900, 6025, 6025])
+                ref_nums = np.append(ref_nums, [1, 1, 1, 1, 1])
         elif args.faflavor in ["sv1bgsmws", "bgsmws"]:
             ref_msks = np.array(["BGS_ANY", "STD_WD"])
             ref_prios = np.array([2000, 10000])
@@ -1057,7 +1064,7 @@ def main():
             ref_prios = np.array([2000, 6000, 7000, 8000, 10000])
             ref_nums = np.array([1, 1, 1, 1, 1])
         # AR safe, ordering by increasing priorities
-        ii = ref_msks.argsort()
+        ii = ref_prios.argsort()
         ref_msks = ref_msks[ii]
         ref_prios = ref_prios[ii]
         ref_nums = ref_nums[ii]
@@ -1073,19 +1080,28 @@ def main():
     # AR ! only checking for the official naming/storing convention !
     # AR ! will fail to detect duplicates tileids if files are organized differently !
     # AR ! may also fail if two similar tileids are requested in a given parallel call!
-    prev_fns = [
-        fn.split("/")[-1]
-        for fn in glob(os.path.join(path_to_svn_tiles, "???/fiberassign-??????.fits"))
-    ]
+    prev_tileids = np.unique([
+        fn.split("/")[-1][12:18]
+        for fn in glob(os.path.join(path_to_svn_tiles, "???/fiberassign-??????.fits*"))
+    ])
 
-    new_fns = ["fiberassign-{:06d}.fits".format(tid) for tid in tileids]
-    if np.in1d(new_fns, prev_fns).sum() > 0:
-        log.error(
-            "{:.1f}s\tsome of {} files already exist; exiting".format(
-                time() - start, ",".join(new_fns)
+    new_tileids = np.array(["{:06d}".format(tid) for tid in tileids])
+    keep = np.in1d(new_tileids, prev_tileids)
+    if keep.sum() > 0:
+        print(new_tileids[keep])
+        if args.forcetileid == "y":
+            log.warning(
+                "{:.1f}s\tsome of tileids already exist in svn ({}); proceeding as args.forcetileid == y".format(
+                    time() - start, ",".join(new_tileids[keep])
+                )
             )
-        )
-        sys.exit()
+        else:
+            log.error(
+                "{:.1f}s\tsome of tileids already exist in svn ({}); exiting".format(
+                    time() - start, ",".join(new_tileids[keep])
+                )
+            )
+            sys.exit()
 
     # AR printing settings
     tmpstr = " , ".join(
@@ -2133,6 +2149,15 @@ if __name__ == "__main__":
         default=None,
         required=True,
         metavar="TILEID",
+    )
+    parser.add_argument(
+        "--forcetileid",
+        help="y/n, if y, allows to generate tileids which already exist in svn (default=n)",
+        type=str,
+        default="n",
+        required=False,
+        choices=["y", "n"],
+        metavar="FORCETILEID",
     )
     parser.add_argument(
         "--intileid",
