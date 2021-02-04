@@ -28,6 +28,8 @@ from astropy.time import Time
 from argparse import ArgumentParser
 from collections import Counter
 from desiutil.redirect import stdouterr_redirected
+import tempfile
+import shutil
 
 
 # AR copied from make_mtl()
@@ -71,7 +73,7 @@ extradatamodel = np.array(
 # AR for commissioning, Adam says we should not use make_mtl, assign mtl columns by hand [email Oct, 17 2020]
 # AR by default, we propagate {PRIORITY,NUMOBS}_INIT to {PRIORITY,NUMOBS_MORE}
 # AR mtl (reproducing steps of make_mtl())
-def cmx_make_mtl(d, outfn):
+def cmx_make_mtl(d, outfn, tmpoutdir):
     # d     : output of read_targets_in_tiles()
     # outfn : written fits file
     mtl = Table(d)
@@ -96,10 +98,10 @@ def cmx_make_mtl(d, outfn):
     )  # AR : TBD : do we want to set obsconmask to 1? (see Ted s email)
     mtl["OBSCONDITIONS"] = obsconmask
     n, tmpfn = write_mtl(
-        args.outdir, mtl.as_array(), indir=args.outdir, survey="cmx", ecsv=False
+        tmpoutdir, mtl.as_array(), indir=args.outdir, survey="cmx", ecsv=False
     )
     if n:
-        os.rename(tmpfn, outfn)
+        shutil.move(tmpfn, outfn)
         log.info(
             "{:.1f}s\tmtl targets written to {} , moved to {}".format(
                 time() - start, tmpfn, outfn
@@ -187,10 +189,164 @@ def plot_hist(ax, x, xp, bins, xlabel):
     return
 
 
+# AR Gaia AEN criterion
+# copied from https://github.com/desihub/desitarget/blob/801f1a1ac9041080f8062b84aec3634b1a9c1763/py/desitarget/gfa.py#L71-L77
+def get_isaen(g, aen):
+    return np.logical_or(
+        (g <= 19.0) * (aen < 10.0 ** 0.5),
+        (g >= 19.0) * (aen < 10.0 ** (0.5 + 0.2 * (g - 19.0))),
+    )
+
+
+# AR courtesy of DL : adapted from legacypipe.survey
+# AR originally named "radec_at_mjd()", renamed to get_nowradec
+def get_nowradec(ra, dec, pmra, pmdec, parallax, ref_year, new_obstime, scnd=False):
+    # AR new_obstime = Time.now()
+    # AR scnd=True -> parallax is set to 0, i.e. not used
+    """
+    Units:
+    - matches Gaia DR1/DR2
+    - pmra,pmdec are in mas/yr.
+      pmra is in angular speed (ie, has a cos(dec) factor)
+    - parallax is in mas.
+    Returns: RA,Dec
+    """
+    equinox = 53084.28  # mjd of the spring equinox in 2004
+    axistilt = 23.44  # degrees
+    arcsecperrad = 3600.0 * 180.0 / np.pi
+
+    def xyztoradec(xyz):
+        assert len(xyz.shape) == 2
+        ra = np.arctan2(xyz[:, 1], xyz[:, 0])  # AR added "np." in front of arctan2...
+        ra += 2 * np.pi * (ra < 0)
+        norm = np.sqrt(np.sum(xyz ** 2, axis=1))
+        dec = np.arcsin(xyz[:, 2] / norm)
+        return np.rad2deg(ra), np.rad2deg(dec)
+
+    def radectoxyz(ra_deg, dec_deg):  # AR changed inputs from ra,dec to ra_deg,dec_deg
+        ra = np.deg2rad(ra_deg)
+        dec = np.deg2rad(dec_deg)
+        cosd = np.cos(dec)
+        return np.vstack((cosd * np.cos(ra), cosd * np.sin(ra), np.sin(dec))).T
+
+    dt = new_obstime.jyear - ref_year
+    cosdec = np.cos(np.deg2rad(dec))
+    dec = dec + dt * pmdec / (3600.0 * 1000.0)
+    ra = ra + (dt * pmra / (3600.0 * 1000.0)) / cosdec
+    parallax = np.atleast_1d(parallax)
+    # AR discards parallax for scnd=True
+    if scnd == True:
+        parallax *= 0.0
+    I = np.flatnonzero(parallax)
+    if len(I):
+        suntheta = (
+            2.0
+            * np.pi
+            * np.fmod(new_obstime.jyear - Time(equinox, format="mjd").jyear, 1.0)
+        )
+        # Finite differences on the unit sphere -- xyztoradec handles
+        # points that are not exactly on the surface of the sphere.
+        axis = np.deg2rad(axistilt)
+        scale = parallax[I] / 1000.0 / arcsecperrad
+        xyz = radectoxyz(ra[I], dec[I])
+        xyz[:, 0] += scale * np.cos(suntheta)
+        xyz[:, 1] += scale * np.sin(suntheta) * np.cos(axis)
+        xyz[:, 2] += scale * np.sin(suntheta) * np.sin(axis)
+        r, d = xyztoradec(xyz)
+        ra[I] = r
+        dec[I] = d
+    return ra, dec
+
+
+# AR update values (RA, DEC, REF_EPOCH) using proper motion
+# AR PMRA, PMDEC: convert NaN to zeros
+# AR RA, DEC:
+# AR - scnd=False: updated for REF_EPOCH>0 + AEN only
+# AR - scnd=True: updated for REF_EPOCH>0 + finite(PMRA,PMDEC) ; forces PARALLAX=0
+# AR REF_EPOCH: updated for *all* objects
+def update_nowradec(
+    d,
+    new_obstime,
+    ra_key="RA",
+    dec_key="DEC",
+    pmra_key="PMRA",
+    pmdec_key="PMDEC",
+    parallax_key="PARALLAX",
+    ref_epoch_key="REF_EPOCH",
+    gaiag_key="GAIA_PHOT_G_MEAN_MAG",
+    gaiaaen_key="GAIA_ASTROMETRIC_EXCESS_NOISE",
+    scnd=False,
+):
+    # AR PMRA, PMDEC: convert NaN to zeros
+    for key in [pmra_key, pmdec_key]:
+        keep = ~np.isfinite(d[key])
+        if keep.sum() > 0:
+            d[key][keep] = 0.0
+            log.info(
+                "{:.1f}s\t{}: replacing NaN by 0 for {} targets".format(
+                    time() - start, key, keep.sum()
+                )
+            )
+    # AR computing positions at new_obstime using Gaia PMRA, PMDEC
+    nowra, nowdec = get_nowradec(
+        d[ra_key],
+        d[dec_key],
+        d[pmra_key],
+        d[pmdec_key],
+        d[parallax_key],
+        d[ref_epoch_key],
+        new_obstime,
+        scnd=scnd,
+    )
+    if scnd == True:
+        # AR secondary: REF_EPOCH>0
+        keep = d["REF_EPOCH"] > 0
+    else:
+        # AR targets with REF_EPOCH>0 and passing the AEN criterion
+        keep = (d["REF_EPOCH"] > 0) & (get_isaen(d[gaiag_key], d[gaiaaen_key]))
+    # AR storing changes to report extrema in the log
+    dra = nowra - d[ra_key]
+    ddec = nowdec - d[dec_key]
+    # AR updating positions to new_obstime for targets passing the AEN criterion
+    d[ra_key][keep] = nowra[keep]
+    d[dec_key][keep] = nowdec[keep]
+    log.info(
+        "{:.1f}s\tupdating RA,DEC at {} with PM for {:.0f}/{:.0f} targets passing AEN; maximum changes: RA={:.1f},{:.1f} arcsec, DEC={:.1f},{:.1f} arcsec".format(
+            time() - start,
+            new_obstime.jyear,
+            keep.sum(),
+            len(keep),
+            3600.0 * dra.min(),
+            3600.0 * dra.max(),
+            3600 * ddec.min(),
+            3600.0 * ddec.max(),
+        )
+    )
+    # AR updating REF_EPOCH for *all* objects (for PlateMaker)
+    d[ref_epoch_key] = new_obstime.jyear
+    log.info(
+        "{:.1f}s\tupdating REF_EPOCH to {} for all {} targets".format(
+            time() - start, new_obstime.jyear, len(keep)
+        )
+    )
+    return d
+
+
 def main():
     #
     start = time()
     log.info("{:.1f}s\tstart".format(time() - start))
+
+    # AR time used to update the positions using proper motions
+    new_obstime = Time(args.pmtime, format="isot")
+    log.info(
+        "{:.1f}s\tsetting new_obstime={}, i.e. MJD={} to update coordinates with proper motion".format(
+            time() - start, new_obstime.isot, new_obstime.mjd
+        )
+    )
+
+    # tmp directory
+    tmpoutdir = tempfile.mkdtemp()
 
     # AR safe: tilera, tiledec
     if (args.tilera is None) | (args.tiledec is None):
@@ -232,7 +388,7 @@ def main():
         "starfaint",
         "scidark",
         "scibright",
-        "focus",
+        "dithfocus",
     ]:
         log.error(
             "args.faflavor not in dithprec,dithlost,starfaint,scidark,scibright,focus; exiting"
@@ -307,9 +463,15 @@ def main():
     elif args.faflavor == "scibright":
         # fdict['msks'] = 'SV0_WD,MINI_SV_BGS_BRIGHT,SV0_MWS_FAINT'
         fdict["msks"] = "SV0_WD,SV0_BGS,SV0_MWS_FAINT"
-    elif args.faflavor == "focus":
-        log.error("faflavor==focus not implemented yet; exiting")
-        sys.exit()
+    elif args.faflavor == "dithfocus":
+        if tile_in_desi == 0:
+            fdict["msks"] = "STD_DITHER_GAIA"
+        else:
+            fdict["msks"] = "STD_DITHER"
+        fdict["seed"] = args.seed
+        fdict["ndither"] = 12
+        fdict["gfrac"] = 1.0
+        fdict["gwidth"] = 2.0
     if fdict["seed"] != -1:
         np.random.seed(fdict["seed"])
 
@@ -325,7 +487,7 @@ def main():
         )
 
     mydirs = {}
-    if (args.faflavor in ["dithprec", "dithlost"]) & (tile_in_desi == 0):
+    if (args.faflavor in ["dithprec", "dithlost", "dithfocus"]) & (tile_in_desi == 0):
         mydirs["targ"] = os.path.join(
             path_to_targets, "gaiadr2", args.dtver, "targets/cmx/resolve/supp"
         )
@@ -383,6 +545,7 @@ def main():
 
     # AR tiles
     if dotile:
+        log.info("{:.1f}s\tstart generating tiles".format(time() - start))
         hdr = fitsio.FITSHDR()
         for tileid in tileids:
             d = np.zeros(
@@ -423,6 +586,7 @@ def main():
 
     # AR sky
     if dosky:
+        log.info("{:.1f}s\tstart generating {}-sky.fits".format(time() - start, root))
         tiles = fits.open("{}-tiles.fits".format(root))[1].data
         d = read_targets_in_tiles(mydirs["sky"], tiles=tiles, quick=True)
         dsupp = read_targets_in_tiles(mydirs["skysupp"], tiles=tiles, quick=True)
@@ -434,59 +598,33 @@ def main():
             dmerged = dmerged[ii_unique]
 
         n, tmpfn = write_targets(
-            args.outdir,
+            tmpoutdir,
             dmerged,
             indir=mydirs["sky"],
             indir2=mydirs["skysupp"],
             survey="cmx",
         )
-        os.rename(tmpfn, "{}-sky.fits".format(root))
+        shutil.move(tmpfn, "{}-sky.fits".format(root))
         log.info("{:.1f}s\t{}-sky.fits written".format(time() - start, root))
 
     # AR gfa
     if dogfa:
+        log.info("{:.1f}s\tstart generating {}-gfa.fits".format(time() - start, root))
+        # AR gfa: read targets
         tiles = fits.open("{}-tiles.fits".format(root))[1].data
-        d = read_targets_in_tiles(mydirs["gfa"], tiles=tiles, quick=True)
-        # AR clipping Gaia PARALLAX to >1e-3 (setting distance at <1Mpc)
-        parallax = d["PARALLAX"].copy()
-        parallax[(~np.isfinite(d["PARALLAX"])) | (d["PARALLAX"] < 1e-3)] = 1e-3
-        # AR computing positions at Time.now() using Gaia PMRA, PMDEC
-        c = SkyCoord(
-            ra=d["RA"] * units.degree,
-            dec=d["DEC"] * units.degree,
-            pm_ra_cosdec=d["PMRA"] * units.mas / units.yr,
-            pm_dec=d["PMDEC"] * units.mas / units.yr,
-            frame="icrs",
-            obstime=Time(d["REF_EPOCH"], format="jyear"),
-            distance=Distance(parallax=parallax * units.mas),
-        )
-        nowc = c.apply_space_motion(new_obstime=Time.now())
-        # targets passing the AEN criterion
-        # https://github.com/desihub/desitarget/blob/801f1a1ac9041080f8062b84aec3634b1a9c1763/py/desitarget/gfa.py#L71-L77
-        g = d["GAIA_PHOT_G_MEAN_MAG"]
-        aen = d["GAIA_ASTROMETRIC_EXCESS_NOISE"]
-        keep = np.logical_or(
-            (g <= 19.0) * (aen < 10.0 ** 0.5),
-            (g >= 19.0) * (aen < 10.0 ** (0.5 + 0.2 * (g - 19.0))),
-        )
-        # AR updating positions to Time.now() for targets passing the AEN criterion
-        d["RA"][keep] = nowc.ra.value[keep]
-        d["DEC"][keep] = nowc.dec.value[keep]
+        d = read_targets_in_tiles(mydirs["gfa"], tiles, quick=True)
         log.info(
-            "{:.1f}s\tGFA targets: updating RA,DEC with PM for {:.0f} targets passing AEN".format(
-                time() - start, keep.sum()
+            "{:.1f}s\tkeeping {} targets to {}-gfa.fits".format(
+                time() - start, len(d), root
             )
         )
-        # AR updating REF_EPOCH for *all* objects (for PlateMaker)
-        d["REF_EPOCH"] = Time.now().jyear
-        log.info(
-            "{:.1f}s\tGFA targets: updating REF_EPOCH to {} for all targets".format(
-                time() - start, d["REF_EPOCH"][0]
-            )
-        )
-        n, tmpfn = write_targets(args.outdir, d, indir=mydirs["gfa"], survey="cmx")
-        os.rename(tmpfn, "{}-gfa.fits".format(root))
-        # AR update header
+        # AR gfa: update RA, DEC, REF_EPOCH using proper motion
+        d = update_nowradec(d, new_obstime)
+        #
+        # AR gfa: write fits
+        n, tmpfn = write_targets(tmpoutdir, d, indir=mydirs["gfa"], survey="cmx")
+        shutil.move(tmpfn, "{}-gfa.fits".format(root))
+        # AR gfa: update header
         fd = fitsio.FITS("{}-gfa.fits".format(root), "rw")
         fd["TARGETS"].write_key("COMMENT", "RA,DEC updated with PM for AEN objects")
         fd["TARGETS"].write_key("COMMENT", "REF_EPOCH updated for all objects")
@@ -495,6 +633,7 @@ def main():
 
     # AR std (if flavor=scidark,scibright)
     if dostd:
+        log.info("{:.1f}s\tstart generating {}-std.fits".format(time() - start, root))
         if args.faflavor in ["scidark", "scibright"]:
             tiles = fits.open("{}-tiles.fits".format(root))[1].data
             d = read_targets_in_tiles(mydirs["targ"], tiles=tiles, quick=True)
@@ -528,19 +667,24 @@ def main():
                 isscience |= (d["CMX_TARGET"] & cmx_mask[msk]) > 0
             keep[isscience] = False
             d = d[keep]
+
+            d = update_nowradec(d, new_obstime)
             log.info(
                 "{:.1f}s\tkeeping {:.0f}/{:.0f} stds after having cut on {} and removed {}".format(
                     time() - start, keep.sum(), len(keep), std_msks, fdict["msks"]
                 )
             )
             # AR custom mtl
-            _ = cmx_make_mtl(d, "{}-std.fits".format(root))
+            _ = cmx_make_mtl(d, "{}-std.fits".format(root), tmpoutdir)
 
     # AR (undithered) targets
     # AR ! not using make_mtl !
     if dotarg:
+        log.info("{:.1f}s\tstart generating {}-targ.fits".format(time() - start, root))
         tiles = fits.open("{}-tiles.fits".format(root))[1].data
-        d, hdr = read_targets_in_tiles(mydirs["targ"], tiles=tiles, quick=True, header=True)
+        d, hdr = read_targets_in_tiles(
+            mydirs["targ"], tiles=tiles, quick=True, header=True
+        )
         keep = np.zeros(len(d), dtype=bool)
         for msk in fdict["msks"].split(","):
             keep |= (d["CMX_TARGET"] & cmx_mask[msk]) > 0
@@ -550,13 +694,15 @@ def main():
                 )
             )
         d = d[keep]
+        d = update_nowradec(d, new_obstime)
+
         log.info(
             "{:.1f}s\tkeeping {:.0f}/{:.0f} targets after having cut on {}".format(
                 time() - start, keep.sum(), len(keep), fdict["msks"]
             )
         )
         # AR DITHER : tweaking PRIORITY and NUMOBS_MORE + updating the header
-        if args.faflavor in ["dithprec", "dithlost"]:
+        if args.faflavor in ["dithprec", "dithlost", "dithfocus"]:
             d["PRIORITY_INIT"] = 1210 - np.clip(
                 d["GAIA_PHOT_RP_MEAN_MAG"] * 10, 100, 210
             ).astype("i4")
@@ -567,9 +713,9 @@ def main():
                 )
             )
         # AR custom mtl
-        _ = cmx_make_mtl(d, "{}-targ.fits".format(root))
+        _ = cmx_make_mtl(d, "{}-targ.fits".format(root), tmpoutdir)
         # AR DITHER: update header
-        if args.faflavor in ["dithprec", "dithlost"]:
+        if args.faflavor in ["dithprec", "dithlost", "dithfocus"]:
             fd = fitsio.FITS("{}-targ.fits".format(root), "rw")
             fd["MTL"].write_key(
                 "COMMENT",
@@ -580,7 +726,7 @@ def main():
 
     # AR fiberassign
     if dofa:
-
+        log.info("{:.1f}s\tstart fiberassign".format(time() - start))
         # AR safe: delete possibly existing fba-{tileid}.fits and fiberassign-{tileid_}.fits
         for tileid in tileids:
             fba_file = os.path.join(args.outdir, "fba-{:06d}.fits".format(tileid))
@@ -597,7 +743,9 @@ def main():
             # AR other cases: dithered-??-> before running fiberassign, we compute/apply the dithering offsets
             troot = "{}{:06d}".format(args.outdir, tileid)
             #
-            if (args.faflavor in ["dithprec", "dithlost"]) & (tileid != tileids[0]):
+            if (args.faflavor in ["dithprec", "dithlost", "dithfocus"]) & (
+                tileid != tileids[0]
+            ):
                 #
                 raoffs, decoffs = ras.copy(), decs.copy()
                 # AR Gaussian offset computation
@@ -650,6 +798,7 @@ def main():
                     "--targets",
                     troot + "-targ.fits",
                 ]
+
             opts += [
                 "--rundate",
                 args.rundate,
@@ -658,7 +807,7 @@ def main():
                 "--footprint",
                 troot + "-tiles.fits",
                 "--dir",
-                args.outdir,
+                tmpoutdir,
                 "--sky",
                 root + "-sky.fits",
                 "--sky_per_petal",
@@ -673,11 +822,12 @@ def main():
             )
             ag = parse_assign(opts)
             run_assign_full(ag)
+
             # AR merging
             opts = [
                 "--skip_raw",
                 "--dir",
-                args.outdir,
+                tmpoutdir,
                 "--sky",
                 root + "-sky.fits",
                 "--targets",
@@ -700,16 +850,14 @@ def main():
             )
             ag = parse_merge(opts)
             run_merge(ag)
-            # AR dither flavors: temporary moving fba-{tileid}.fits file, otherwise it confuses run_merge()
-            if args.faflavor in ["dithprec", "dithlost"]:
-                fn = "{}fba-{:06d}.fits".format(args.outdir, tileid)
-                os.rename(fn, fn.replace(".fits", "-tmp.fits"))
-                log.info(
-                    "{:.1f}s\trenaming {} to {}".format(
-                        time() - start, fn, fn.replace(".fits", "-tmp.fits")
-                    )
-                )
-            # AR propagating some settings into the PRIMARY header
+
+            files = glob(os.path.join(tmpoutdir, "*.fits"))
+            for f in files:
+                fn = f.split("/")[-1]
+                newf = os.path.join(args.outdir, fn)
+                shutil.move(f, newf)
+            shutil.rmtree(tmpoutdir)
+
             fd = fitsio.FITS(
                 "{}fiberassign-{:06d}.fits".format(args.outdir, tileid), "rw"
             )
@@ -721,12 +869,15 @@ def main():
                     "intileid",
                     "faflavor",
                     "rundate",
+                    "pmtime",
                     "seed",
                 ]:
                     if kwargs[1] is not None:
                         fd["PRIMARY"].write_key(kwargs[0], kwargs[1])
             # AR adding a ISDITH keyword
-            if (args.faflavor in ["dithprec", "dithlost"]) & (tileid != tileids[0]):
+            if (args.faflavor in ["dithprec", "dithlost", "dithfocus"]) & (
+                tileid != tileids[0]
+            ):
                 fd["PRIMARY"].write_key("ISDITH", 1)
             else:
                 fd["PRIMARY"].write_key("ISDITH", 0)
@@ -734,7 +885,9 @@ def main():
             fd.close()
             # AR adding an extra-hdu for the dithering
             # AR ~copied from https://github.com/desihub/fiberassign/blob/52cb99424d8a1d4e5366e6a200636ab02cb71bb9/py/fiberassign/assign.py#L1141-L1208
-            if (args.faflavor in ["dithprec", "dithlost"]) & (tileid != tileids[0]):
+            if (args.faflavor in ["dithprec", "dithlost", "dithfocus"]) & (
+                tileid != tileids[0]
+            ):
                 dithfn = "{}fiberassign-{:06d}.fits".format(args.outdir, tileid)
                 undithfn = "{}{:06d}-targ.fits".format(args.outdir, tileids[0])
                 tmpfn = dithfn.replace(".fits", "-tmp.fits")
@@ -810,7 +963,9 @@ def main():
                     )
                 )
             # AR identifiying assigned targets (=STD_DITHER) on the undithered tile
-            if (args.faflavor in ["dithprec", "dithlost"]) & (tileid == tileids[0]):
+            if (args.faflavor in ["dithprec", "dithlost", "dithfocus"]) & (
+                tileid == tileids[0]
+            ):
                 d = fits.open("{}fiberassign-{:06d}.fits".format(args.outdir, tileid))[
                     1
                 ].data
@@ -848,29 +1003,18 @@ def main():
                     ).tolist()  # AR targets to be offset within a box
                 else:
                     linds = []
-        # AR dither flavors: re-naming fba-{tileid}.fits files
-        if args.faflavor in ["dithprec", "dithlost"]:
-            for tileid in tileids:
-                fn = "{}fba-{:06d}.fits".format(args.outdir, tileid)
-                os.rename(fn.replace(".fits", "-tmp.fits"), fn)
-                log.info(
-                    "{:.1f}s\trenaming {} to {}".format(
-                        time() - start, fn.replace(".fits", "-tmp.fits"), fn
-                    )
-                )
 
     if dozip:  # gzip all fiberassign files
-        fns = [os.path.join(args.outdir, "fiberassign-{:06d}.fits".format(tileid)) for tileid in tileids]
+        fns = [
+            os.path.join(args.outdir, "fiberassign-{:06d}.fits".format(tileid))
+            for tileid in tileids
+        ]
         for fn in fns:
             if os.path.isfile("{}.gz".format(fn)):
                 os.remove("{}.gz".format(fn))
-                log.info("{:.1f}s\t deleting existing {}.gz".format(
-                    time() - start, fn))
-            os.system("gzip {}".format(fn))
-            log.info(
-                "{:.1f}s\t gzipping {}".format(
-                    time() - start, fn)
-               )
+                log.info("{:.1f}s\t deleting existing {}.gz".format(time() - start, fn))
+            os.system("gzip " + fn)
+            log.info("{:.1f}s\t gzipping {}".format(time() - start, fn))
 
     if doplot:
 
@@ -1096,7 +1240,7 @@ def main():
                 cbar.mappable.set_clim(cmin, cmax)
 
             # AR dithering positions
-            if args.faflavor in ["dithprec", "dithlost"]:
+            if args.faflavor in ["dithprec", "dithlost", "dithfocus"]:
                 xmax = 5 * fdict["gwidth"]
                 if fdict["bfrac"] > 0:
                     xmax = np.max([xmax, 1.5 * fdict["bwidth"] / 2.0])
@@ -1266,7 +1410,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--tileid",
-        help="output tileid (e.g., 63142); if faflavor=dithprec,dithlost, will also write outputs tileid for the 12,5 next tileids",
+        help="output tileid (e.g., 63142); if faflavor=dithprec,dithlost,dithfocus, will also write outputs tileid for the 12,5,12 next tileids",
         type=int,
         default=None,
         required=True,
@@ -1298,7 +1442,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--faflavor",
-        help="dithprec,dithlost,starfaint,scidark,scibright,focus",
+        help="dithprec,dithlost,starfaint,scidark,scibright,dithfocus",
         type=str,
         default=None,
         required=True,
@@ -1306,7 +1450,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--rundate",
-        help="rundate for focalplane (default=2020-03-06T00:00:00)",
+        help="rundate for focalplane (default=2021-01-19T00:00:00)",
         type=str,
         default="2020-03-06T00:00:00",
         required=False,
@@ -1343,6 +1487,15 @@ if __name__ == "__main__":
         default="n",
         required=False,
         metavar="DOCLEAN",
+    )
+
+    parser.add_argument(
+        "--pmtime",
+        help="yyyy-mm-ddThh:mm:ss, time use to compute new coordinates after applying proper motion since REF_EPOCH (default=midnight of Time.now())",
+        type=str,
+        default=Time(Time.now().isot[:10] + "T00:00:00", format="isot").isot,
+        required=False,
+        metavar="PMTIME",
     )
     #
     args = parser.parse_args()
