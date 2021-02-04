@@ -134,33 +134,6 @@ def unq_searchsorted(A, B):
     return np.argsort(A)[maskA], np.argsort(B)[maskB]
 
 
-# AR like read_targets_in_tiles(), but allows two folders
-# AR targdirs : list of directories (currently 1 or 2, but keep possibility to use more)
-def custom_read_targets_in_tiles(targdirs, tiles, log=None):
-    # AR reading
-    if log is not None:
-        log.info(
-            "{:.1f}s\treading input targets from {}".format(time() - start, targdirs)
-        )
-    ds = [
-        read_targets_in_tiles(targdir, tiles=tiles, quick=True) for targdir in targdirs
-    ]
-    # AR merging
-    d = np.concatenate(ds)
-    # AR remove duplicates based on TARGETID (so duplicates not identified if in mixed surveys)
-    ii_m1 = np.where(d["TARGETID"] == -1)[0]
-    ii_nm1 = np.where(d["TARGETID"] != -1)[0]
-    _, ii = np.unique(d["TARGETID"][ii_nm1], return_index=True)
-    ii_nm1 = ii_nm1[ii]
-    if len(ii_m1) + len(ii_nm1) != len(d):
-        log.info(
-            "{:.1f}s\tremoving {}/{} duplicates".format(
-                time() - start, len(d) - len(ii_m1) - len(ii_nm1), len(d)
-            )
-        )
-        d = d[ii_m1.tolist() + ii_nm1.tolist()]
-    return d
-
 # AR https://lmfit.github.io/lmfit-py/builtin_models.html#lmfit.models.GaussianModel
 def gaussian(x, amp, cen, wid):
     return amp / (wid * np.sqrt(2 * np.pi)) * np.exp(-0.5 * ((x - cen) / wid) ** 2)
@@ -215,6 +188,7 @@ def plot_hist(ax, x, xp, bins, xlabel):
     axr.set_ylim(0, 1)
     return
 
+
 # AR Gaia AEN criterion
 # copied from https://github.com/desihub/desitarget/blob/801f1a1ac9041080f8062b84aec3634b1a9c1763/py/desitarget/gfa.py#L71-L77
 def get_isaen(g, aen):
@@ -222,6 +196,7 @@ def get_isaen(g, aen):
         (g <= 19.0) * (aen < 10.0 ** 0.5),
         (g >= 19.0) * (aen < 10.0 ** (0.5 + 0.2 * (g - 19.0))),
     )
+
 
 # AR courtesy of DL : adapted from legacypipe.survey
 # AR originally named "radec_at_mjd()", renamed to get_nowradec
@@ -356,6 +331,7 @@ def update_nowradec(
     )
     return d
 
+
 def main():
     #
     start = time()
@@ -371,7 +347,7 @@ def main():
 
     # tmp directory
     tmpoutdir = tempfile.mkdtemp()
-    
+
     # AR safe: tilera, tiledec
     if (args.tilera is None) | (args.tiledec is None):
         if args.intileid is None:
@@ -495,7 +471,7 @@ def main():
         fdict["seed"] = args.seed
         fdict["ndither"] = 12
         fdict["gfrac"] = 1.0
-        fdict["gwidth"] = 2.0    
+        fdict["gwidth"] = 2.0
     if fdict["seed"] != -1:
         np.random.seed(fdict["seed"])
 
@@ -569,6 +545,7 @@ def main():
 
     # AR tiles
     if dotile:
+        log.info("{:.1f}s\tstart generating tiles".format(time() - start))
         hdr = fitsio.FITSHDR()
         for tileid in tileids:
             d = np.zeros(
@@ -609,6 +586,7 @@ def main():
 
     # AR sky
     if dosky:
+        log.info("{:.1f}s\tstart generating {}-sky.fits".format(time() - start, root))
         tiles = fits.open("{}-tiles.fits".format(root))[1].data
         d = read_targets_in_tiles(mydirs["sky"], tiles=tiles, quick=True)
         dsupp = read_targets_in_tiles(mydirs["skysupp"], tiles=tiles, quick=True)
@@ -634,7 +612,7 @@ def main():
         log.info("{:.1f}s\tstart generating {}-gfa.fits".format(time() - start, root))
         # AR gfa: read targets
         tiles = fits.open("{}-tiles.fits".format(root))[1].data
-        d = custom_read_targets_in_tiles([mydirs["gfa"]], tiles, log=log)
+        d = read_targets_in_tiles(mydirs["gfa"], tiles, quick=True)
         log.info(
             "{:.1f}s\tkeeping {} targets to {}-gfa.fits".format(
                 time() - start, len(d), root
@@ -652,10 +630,10 @@ def main():
         fd["TARGETS"].write_key("COMMENT", "REF_EPOCH updated for all objects")
         fd.close()
         log.info("{:.1f}s\t{}-gfa.fits written".format(time() - start, root))
-        
 
     # AR std (if flavor=scidark,scibright)
     if dostd:
+        log.info("{:.1f}s\tstart generating {}-std.fits".format(time() - start, root))
         if args.faflavor in ["scidark", "scibright"]:
             tiles = fits.open("{}-tiles.fits".format(root))[1].data
             d = read_targets_in_tiles(mydirs["targ"], tiles=tiles, quick=True)
@@ -689,7 +667,7 @@ def main():
                 isscience |= (d["CMX_TARGET"] & cmx_mask[msk]) > 0
             keep[isscience] = False
             d = d[keep]
-            
+
             d = update_nowradec(d, new_obstime)
             log.info(
                 "{:.1f}s\tkeeping {:.0f}/{:.0f} stds after having cut on {} and removed {}".format(
@@ -702,8 +680,11 @@ def main():
     # AR (undithered) targets
     # AR ! not using make_mtl !
     if dotarg:
+        log.info("{:.1f}s\tstart generating {}-targ.fits".format(time() - start, root))
         tiles = fits.open("{}-tiles.fits".format(root))[1].data
-        d, hdr = read_targets_in_tiles(mydirs["targ"], tiles=tiles, quick=True, header=True)
+        d, hdr = read_targets_in_tiles(
+            mydirs["targ"], tiles=tiles, quick=True, header=True
+        )
         keep = np.zeros(len(d), dtype=bool)
         for msk in fdict["msks"].split(","):
             keep |= (d["CMX_TARGET"] & cmx_mask[msk]) > 0
@@ -745,7 +726,7 @@ def main():
 
     # AR fiberassign
     if dofa:
-
+        log.info("{:.1f}s\tstart fiberassign".format(time() - start))
         # AR safe: delete possibly existing fba-{tileid}.fits and fiberassign-{tileid_}.fits
         for tileid in tileids:
             fba_file = os.path.join(args.outdir, "fba-{:06d}.fits".format(tileid))
@@ -762,7 +743,9 @@ def main():
             # AR other cases: dithered-??-> before running fiberassign, we compute/apply the dithering offsets
             troot = "{}{:06d}".format(args.outdir, tileid)
             #
-            if (args.faflavor in ["dithprec", "dithlost","dithfocus"]) & (tileid != tileids[0]):
+            if (args.faflavor in ["dithprec", "dithlost", "dithfocus"]) & (
+                tileid != tileids[0]
+            ):
                 #
                 raoffs, decoffs = ras.copy(), decs.copy()
                 # AR Gaussian offset computation
@@ -815,7 +798,7 @@ def main():
                     "--targets",
                     troot + "-targ.fits",
                 ]
-            
+
             opts += [
                 "--rundate",
                 args.rundate,
@@ -839,8 +822,7 @@ def main():
             )
             ag = parse_assign(opts)
             run_assign_full(ag)
-            
-            
+
             # AR merging
             opts = [
                 "--skip_raw",
@@ -869,24 +851,13 @@ def main():
             ag = parse_merge(opts)
             run_merge(ag)
 
-            
             files = glob(os.path.join(tmpoutdir, "*.fits"))
             for f in files:
-                fn = f.split('/')[-1]
+                fn = f.split("/")[-1]
                 newf = os.path.join(args.outdir, fn)
                 shutil.move(f, newf)
             shutil.rmtree(tmpoutdir)
-            
-            # AR dither flavors: temporary moving fba-{tileid}.fits file, otherwise it confuses run_merge()
-            if args.faflavor in ["dithprec", "dithlost","dithfocus"]:
-                fn = "{}fba-{:06d}.fits".format(args.outdir, tileid)
-                os.rename(fn, fn.replace(".fits", "-tmp.fits"))
-                log.info(
-                    "{:.1f}s\trenaming {} to {}".format(
-                        time() - start, fn, fn.replace(".fits", "-tmp.fits")
-                    )
-                )
-            # AR propagating some settings into the PRIMARY header
+
             fd = fitsio.FITS(
                 "{}fiberassign-{:06d}.fits".format(args.outdir, tileid), "rw"
             )
@@ -904,7 +875,9 @@ def main():
                     if kwargs[1] is not None:
                         fd["PRIMARY"].write_key(kwargs[0], kwargs[1])
             # AR adding a ISDITH keyword
-            if (args.faflavor in ["dithprec", "dithlost", "dithfocus"]) & (tileid != tileids[0]):
+            if (args.faflavor in ["dithprec", "dithlost", "dithfocus"]) & (
+                tileid != tileids[0]
+            ):
                 fd["PRIMARY"].write_key("ISDITH", 1)
             else:
                 fd["PRIMARY"].write_key("ISDITH", 0)
@@ -912,7 +885,9 @@ def main():
             fd.close()
             # AR adding an extra-hdu for the dithering
             # AR ~copied from https://github.com/desihub/fiberassign/blob/52cb99424d8a1d4e5366e6a200636ab02cb71bb9/py/fiberassign/assign.py#L1141-L1208
-            if (args.faflavor in ["dithprec", "dithlost","dithfocus"]) & (tileid != tileids[0]):
+            if (args.faflavor in ["dithprec", "dithlost", "dithfocus"]) & (
+                tileid != tileids[0]
+            ):
                 dithfn = "{}fiberassign-{:06d}.fits".format(args.outdir, tileid)
                 undithfn = "{}{:06d}-targ.fits".format(args.outdir, tileids[0])
                 tmpfn = dithfn.replace(".fits", "-tmp.fits")
@@ -988,7 +963,9 @@ def main():
                     )
                 )
             # AR identifiying assigned targets (=STD_DITHER) on the undithered tile
-            if (args.faflavor in ["dithprec", "dithlost", "dithfocus"]) & (tileid == tileids[0]):
+            if (args.faflavor in ["dithprec", "dithlost", "dithfocus"]) & (
+                tileid == tileids[0]
+            ):
                 d = fits.open("{}fiberassign-{:06d}.fits".format(args.outdir, tileid))[
                     1
                 ].data
@@ -1026,16 +1003,6 @@ def main():
                     ).tolist()  # AR targets to be offset within a box
                 else:
                     linds = []
-        # AR dither flavors: re-naming fba-{tileid}.fits files
-        if args.faflavor in ["dithprec", "dithlost", "dithfocus"]:
-            for tileid in tileids:
-                fn = "{}fba-{:06d}.fits".format(args.outdir, tileid)
-                os.rename(fn.replace(".fits", "-tmp.fits"), fn)
-                log.info(
-                    "{:.1f}s\trenaming {} to {}".format(
-                        time() - start, fn.replace(".fits", "-tmp.fits"), fn
-                    )
-                )
 
     if dozip:  # gzip all fiberassign files
         fns = [
@@ -1048,7 +1015,6 @@ def main():
                 log.info("{:.1f}s\t deleting existing {}.gz".format(time() - start, fn))
             os.system("gzip " + fn)
             log.info("{:.1f}s\t gzipping {}".format(time() - start, fn))
- 
 
     if doplot:
 
@@ -1274,7 +1240,7 @@ def main():
                 cbar.mappable.set_clim(cmin, cmax)
 
             # AR dithering positions
-            if args.faflavor in ["dithprec", "dithlost","dithfocus"]:
+            if args.faflavor in ["dithprec", "dithlost", "dithfocus"]:
                 xmax = 5 * fdict["gwidth"]
                 if fdict["bfrac"] > 0:
                     xmax = np.max([xmax, 1.5 * fdict["bwidth"] / 2.0])
@@ -1484,7 +1450,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--rundate",
-        help="rundate for focalplane (default=2020-03-06T00:00:00)",
+        help="rundate for focalplane (default=2021-01-19T00:00:00)",
         type=str,
         default="2020-03-06T00:00:00",
         required=False,
@@ -1522,8 +1488,7 @@ if __name__ == "__main__":
         required=False,
         metavar="DOCLEAN",
     )
-    
-    
+
     parser.add_argument(
         "--pmtime",
         help="yyyy-mm-ddThh:mm:ss, time use to compute new coordinates after applying proper motion since REF_EPOCH (default=midnight of Time.now())",
