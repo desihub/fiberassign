@@ -192,6 +192,15 @@ def main():
     start = time()
     log.info("{:.1f}s\tstart".format(time() - start))
 
+    # AR time used to update the positions using proper motions
+    new_obstime = Time(args.pmtime, format="isot")
+    log.info(
+        "{:.1f}s\tsetting new_obstime={}, i.e. MJD={} to update coordinates with proper motion".format(
+            time() - start, new_obstime.isot, new_obstime.mjd
+        )
+    )
+
+    
     # AR safe: tilera, tiledec
     if (args.tilera is None) | (args.tiledec is None):
         if args.intileid is None:
@@ -727,6 +736,7 @@ def main():
                     "intileid",
                     "faflavor",
                     "rundate",
+                    "pmtime",
                     "seed",
                 ]:
                     if kwargs[1] is not None:
@@ -1349,6 +1359,16 @@ if __name__ == "__main__":
         default="n",
         required=False,
         metavar="DOCLEAN",
+    )
+    
+    
+    parser.add_argument(
+        "--pmtime",
+        help="yyyy-mm-ddThh:mm:ss, time use to compute new coordinates after applying proper motion since REF_EPOCH (default=midnight of Time.now())",
+        type=str,
+        default=Time(Time.now().isot[:10] + "T00:00:00", format="isot").isot,
+        required=False,
+        metavar="PMTIME",
     )
     #
     args = parser.parse_args()
