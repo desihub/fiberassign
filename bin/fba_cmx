@@ -232,7 +232,7 @@ def main():
         "starfaint",
         "scidark",
         "scibright",
-        "focus",
+        "dithfocus",
     ]:
         log.error(
             "args.faflavor not in dithprec,dithlost,starfaint,scidark,scibright,focus; exiting"
@@ -307,9 +307,15 @@ def main():
     elif args.faflavor == "scibright":
         # fdict['msks'] = 'SV0_WD,MINI_SV_BGS_BRIGHT,SV0_MWS_FAINT'
         fdict["msks"] = "SV0_WD,SV0_BGS,SV0_MWS_FAINT"
-    elif args.faflavor == "focus":
-        log.error("faflavor==focus not implemented yet; exiting")
-        sys.exit()
+    elif args.faflavor == "dithfocus":
+        if tile_in_desi == 0:
+            fdict["msks"] = "STD_DITHER_GAIA"
+        else:
+            fdict["msks"] = "STD_DITHER"
+        fdict["seed"] = args.seed
+        fdict["ndither"] = 12
+        fdict["gfrac"] = 1.0
+        fdict["gwidth"] = 2.0    
     if fdict["seed"] != -1:
         np.random.seed(fdict["seed"])
 
@@ -325,7 +331,7 @@ def main():
         )
 
     mydirs = {}
-    if (args.faflavor in ["dithprec", "dithlost"]) & (tile_in_desi == 0):
+    if (args.faflavor in ["dithprec", "dithlost", "dithfocus"]) & (tile_in_desi == 0):
         mydirs["targ"] = os.path.join(
             path_to_targets, "gaiadr2", args.dtver, "targets/cmx/resolve/supp"
         )
@@ -556,7 +562,7 @@ def main():
             )
         )
         # AR DITHER : tweaking PRIORITY and NUMOBS_MORE + updating the header
-        if args.faflavor in ["dithprec", "dithlost"]:
+        if args.faflavor in ["dithprec", "dithlost", "dithfocus"]:
             d["PRIORITY_INIT"] = 1210 - np.clip(
                 d["GAIA_PHOT_RP_MEAN_MAG"] * 10, 100, 210
             ).astype("i4")
@@ -569,7 +575,7 @@ def main():
         # AR custom mtl
         _ = cmx_make_mtl(d, "{}-targ.fits".format(root))
         # AR DITHER: update header
-        if args.faflavor in ["dithprec", "dithlost"]:
+        if args.faflavor in ["dithprec", "dithlost", "dithfocus"]:
             fd = fitsio.FITS("{}-targ.fits".format(root), "rw")
             fd["MTL"].write_key(
                 "COMMENT",
@@ -597,7 +603,7 @@ def main():
             # AR other cases: dithered-??-> before running fiberassign, we compute/apply the dithering offsets
             troot = "{}{:06d}".format(args.outdir, tileid)
             #
-            if (args.faflavor in ["dithprec", "dithlost"]) & (tileid != tileids[0]):
+            if (args.faflavor in ["dithprec", "dithlost","dithfocus"]) & (tileid != tileids[0]):
                 #
                 raoffs, decoffs = ras.copy(), decs.copy()
                 # AR Gaussian offset computation
@@ -701,7 +707,7 @@ def main():
             ag = parse_merge(opts)
             run_merge(ag)
             # AR dither flavors: temporary moving fba-{tileid}.fits file, otherwise it confuses run_merge()
-            if args.faflavor in ["dithprec", "dithlost"]:
+            if args.faflavor in ["dithprec", "dithlost","dithfocus"]:
                 fn = "{}fba-{:06d}.fits".format(args.outdir, tileid)
                 os.rename(fn, fn.replace(".fits", "-tmp.fits"))
                 log.info(
@@ -726,7 +732,7 @@ def main():
                     if kwargs[1] is not None:
                         fd["PRIMARY"].write_key(kwargs[0], kwargs[1])
             # AR adding a ISDITH keyword
-            if (args.faflavor in ["dithprec", "dithlost"]) & (tileid != tileids[0]):
+            if (args.faflavor in ["dithprec", "dithlost", "dithfocus"]) & (tileid != tileids[0]):
                 fd["PRIMARY"].write_key("ISDITH", 1)
             else:
                 fd["PRIMARY"].write_key("ISDITH", 0)
@@ -734,7 +740,7 @@ def main():
             fd.close()
             # AR adding an extra-hdu for the dithering
             # AR ~copied from https://github.com/desihub/fiberassign/blob/52cb99424d8a1d4e5366e6a200636ab02cb71bb9/py/fiberassign/assign.py#L1141-L1208
-            if (args.faflavor in ["dithprec", "dithlost"]) & (tileid != tileids[0]):
+            if (args.faflavor in ["dithprec", "dithlost","dithfocus"]) & (tileid != tileids[0]):
                 dithfn = "{}fiberassign-{:06d}.fits".format(args.outdir, tileid)
                 undithfn = "{}{:06d}-targ.fits".format(args.outdir, tileids[0])
                 tmpfn = dithfn.replace(".fits", "-tmp.fits")
@@ -810,7 +816,7 @@ def main():
                     )
                 )
             # AR identifiying assigned targets (=STD_DITHER) on the undithered tile
-            if (args.faflavor in ["dithprec", "dithlost"]) & (tileid == tileids[0]):
+            if (args.faflavor in ["dithprec", "dithlost", "dithfocus"]) & (tileid == tileids[0]):
                 d = fits.open("{}fiberassign-{:06d}.fits".format(args.outdir, tileid))[
                     1
                 ].data
@@ -849,7 +855,7 @@ def main():
                 else:
                     linds = []
         # AR dither flavors: re-naming fba-{tileid}.fits files
-        if args.faflavor in ["dithprec", "dithlost"]:
+        if args.faflavor in ["dithprec", "dithlost", "dithfocus"]:
             for tileid in tileids:
                 fn = "{}fba-{:06d}.fits".format(args.outdir, tileid)
                 os.rename(fn.replace(".fits", "-tmp.fits"), fn)
@@ -1096,7 +1102,7 @@ def main():
                 cbar.mappable.set_clim(cmin, cmax)
 
             # AR dithering positions
-            if args.faflavor in ["dithprec", "dithlost"]:
+            if args.faflavor in ["dithprec", "dithlost","dithfocus"]:
                 xmax = 5 * fdict["gwidth"]
                 if fdict["bfrac"] > 0:
                     xmax = np.max([xmax, 1.5 * fdict["bwidth"] / 2.0])
@@ -1266,7 +1272,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--tileid",
-        help="output tileid (e.g., 63142); if faflavor=dithprec,dithlost, will also write outputs tileid for the 12,5 next tileids",
+        help="output tileid (e.g., 63142); if faflavor=dithprec,dithlost,dithfocus, will also write outputs tileid for the 12,5,12 next tileids",
         type=int,
         default=None,
         required=True,
@@ -1298,7 +1304,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--faflavor",
-        help="dithprec,dithlost,starfaint,scidark,scibright,focus",
+        help="dithprec,dithlost,starfaint,scidark,scibright,dithfocus",
         type=str,
         default=None,
         required=True,
