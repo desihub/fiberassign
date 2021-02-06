@@ -891,6 +891,7 @@ def main():
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
     # AR sv1lrgqso: adding specific secondary programs at top-priority (WD_BINARIES_DARK,BHB,UDG,LOW_MASS_AGN,SPCV)
+    # AR sv1lrgqso: adding WISE_VAR_QSO and QSO_RED (they are at the same priority as QSO)
     elif args.faflavor == "sv1lrgqso":
         fdict["survey"] = "sv1"
         fdict["dtobscon"] = "dark"
@@ -898,16 +899,18 @@ def main():
         fdict["msks"] = {
             "SV1_DESI_TARGET": "STD_WD,LRG,QSO,ELG",
             "SV1_BGS_TARGET": "BGS_FAINT",
-            "SV1_SCND_TARGET": "WD_BINARIES_DARK,BHB,UDG,LOW_MASS_AGN,SPCV"
+            "SV1_SCND_TARGET": "WISE_VAR_QSO,QSO_RED,WD_BINARIES_DARK,BHB,UDG,LOW_MASS_AGN,SPCV"
         }
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
+    # AR sv1elqso: adding WISE_VAR_QSO and QSO_RED (they are at the same priority as QSO)
+    # AR though maybe we won t use it anymore
     elif args.faflavor == "sv1elgqso":
         fdict["dtobscon"] = "dark"
         fdict["survey"] = "sv1"
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
-        fdict["msks"] = {"SV1_DESI_TARGET": "STD_WD,QSO,ELG"}
+        fdict["msks"] = {"SV1_DESI_TARGET": "STD_WD,QSO,ELG", "SV1_SCND_TARGET": "WISE_VAR_QSO,QSO_RED"}
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
