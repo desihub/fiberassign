@@ -86,6 +86,7 @@ if args.outdir[-1] != "/":
     args.outdir += "/"
 
 # AR folders / files
+rawdir = os.getenv("DESI_ROOT") + "/spectro/data/"
 surveydir = os.getenv("DESI_ROOT") + "/survey/"
 dailydir = os.getenv("DESI_ROOT") + "/spectro/redux/daily/"
 pixwfn = (
@@ -99,6 +100,12 @@ gfafn = np.sort(
 )[-1]
 print("gfafn = {}".format(gfafn))
 
+
+# AR listing all camera+petal, to check existing sky/sframe/cframe files in the reduction
+campet_names = []
+for camera in ["b", "r", "z"]:
+    campet_names += [camera + p for p in np.arange(10, dtype=int).astype(str)]
+campet_bits = np.arange(len(campet_names), dtype=int)
 
 # AR for the fiberflat routine
 os.environ["DESI_LOGLEVEL"] = "warning"
@@ -429,7 +436,7 @@ def get_sky(night, expid, specs=range(10), use_cache=True, fill_cache=True):
                 "sky-{}{}-{:08}.fits".format(camera, spec, expid),
             )
             if not os.path.isfile(skypath):
-                print(f"Skipping non-existent {camera}{spec}.")
+                print("\t\tSkipping non-existent {}.".format(skypath))
                 continue
             with fitsio.FITS(str(skypath)) as hdus:
                 exptime = hdus[0].read_header()["EXPTIME"]
@@ -545,7 +552,7 @@ def get_sky_rmag_ab(night, expid, exptime, ftype, redux="daily"):
                         norm_cam += np.ones(len(fullwave[cslice[camera]]))
                     else:
                         print(
-                            "{}-{:08d}-{}{}: no spectra for {}".format(
+                            "\t{} {:08d} {}{}: no spectra for {}".format(
                                 night, expid, camera, spec, ftype
                             )
                         )
@@ -723,8 +730,8 @@ def write_html_tiledesign(html, tiles, ii, nexps, style, h2title, main=True):
             )
         ]
         tmparr += [
-            "<a href='https://www.legacysurvey.org/viewer-dev/?ra={:.3f}&dec={:.3f}&layer=ls-dr9&zoom=8&tile={}' target='external'> Viewer".format(
-                tiles["TILERA"][i], tiles["TILEDEC"][i], tiles["TILEID"][i]
+            "<a href='https://www.legacysurvey.org/viewer-dev/?&layer=ls-dr9&zoom=8&tile={}' target='external'> Viewer".format(
+                tiles["TILEID"][i]
             )
         ]
         tmparr += ["{}".format(tiles[target][i]) for target in targets]
@@ -971,8 +978,10 @@ if args.exposures == "y":
     gfa = fits.open(gfafn)[3].data
     # AR quantities we store
     exposures = {}
-    hdrkeys = ["NIGHT", "EXPID", "TILEID", "TILERA", "TILEDEC", "EXPTIME", "MJDOBS"]
+    hdrkeys = ["TILEID", "TILERA", "TILEDEC", "EXPTIME", "MJDOBS"]
     ownkeys = [
+        "NIGHT",
+        "EXPID",
         "FIELD",
         "TARGETS",
         "EBV",
@@ -986,6 +995,12 @@ if args.exposures == "y":
         "B_DEPTH_EBVAIR",
         "R_DEPTH_EBVAIR",
         "Z_DEPTH_EBVAIR",
+        "BITPSFFN",
+        "BITFRAMEFN",
+        "BITSKYFN",
+        "BITSFRAMEFN",
+        "BITFLUXCALIBFN",
+        "BITCFRAMEFN",
     ] + targets
     gfakeys = [
         "AIRMASS",
@@ -1003,25 +1018,38 @@ if args.exposures == "y":
         "KTERM",
         "RADPROF_FWHM_ASEC",
     ]
-    allkeys = hdrkeys + ownkeys + ["GFA_{}".format(key) for key in gfakeys]
+    allkeys = ownkeys + hdrkeys + ["GFA_{}".format(key) for key in gfakeys]
     for key in allkeys:
         exposures[key] = []
     # AR looping on nights
     for night in nights:
-        # for night in [nights[0]]:
-        # AR first listing all exposures
-        expids = np.unique(
-            [
-                int(fn.split("/")[-1])
-                for fn in np.sort(
-                    glob(
-                        os.path.join(
-                            dailydir, "exposures", "{}".format(night), "????????"
-                        )
-                    )
-                )
-            ]
+        # AR Feb. 05, 2021 : changing the exposure listing approach
+        # AR                 hopefully more reliable...
+        nightrawdir = "{}/{}/".format(rawdir, night)
+        # AR planned
+        fns = np.sort(
+            glob(os.path.join(nightrawdir, "????????", "fiberassign-??????.fits*"))
         )
+        plan_expids = np.array([fn.split("/")[-2] for fn in fns])
+        plan_tileids = np.array(
+            [fn.split("/")[-1].replace("-", ".").split(".")[1] for fn in fns]
+        )
+        # AR taking unique because multiple files for some expids of 20201214
+        # AR because of the presence of some fiberassign-TILEID.fits.orig files
+        _, ii = np.unique(plan_expids, return_index=True)
+        plan_expids = plan_expids[ii]
+        plan_tileids = plan_tileids[ii]
+        # AR cutting on our science TILEIDs (e.g. removing dithering)
+        keep = np.in1d(plan_tileids.astype(int), tiles["TILEID"])
+        plan_expids, plan_tileids = plan_expids[keep], plan_tileids[keep]
+        # AR observed
+        fns = np.sort(
+            glob(os.path.join(nightrawdir, "????????", "desi-????????.fits.fz"))
+        )
+        obs_expids = np.array([fn.split("/")[-2] for fn in fns])
+        # AR keeping planned + observed
+        keep = np.in1d(plan_expids, obs_expids)
+        expids = plan_expids[keep].astype(int)
         print("{} : {} exposures".format(night, len(expids)))
         # AR special dealing with 20210114, where positioners were frozen after the first
         # AR exposure (72381); hence we reject all the subsequent ones
@@ -1030,109 +1058,121 @@ if args.exposures == "y":
             expids = np.array([72381])
         # AR looping on all exposures
         for expid in expids:
-            fns = glob(
-                os.path.join(
-                    dailydir,
-                    "exposures",
-                    "{}".format(night),
-                    "{:08d}".format(expid),
-                    "sframe-??-{:08d}.fits".format(expid),
-                )
+            # AR night, expid
+            exposures["NIGHT"] += [night]
+            exposures["EXPID"] += [expid]
+            # AR listing existing sky/sframe/cframe files
+            for ftype in ["psf", "frame", "sky", "sframe", "fluxcalib", "cframe"]:
+                value = 0
+                for campet_name, campet_bit in zip(campet_names, campet_bits):
+                    fn = os.path.join(
+                        dailydir,
+                        "exposures",
+                        "{}".format(night),
+                        "{:08d}".format(expid),
+                        "{}-{}-{:08d}.fits".format(ftype, campet_name, expid),
+                    )
+                    if os.path.isfile(fn):
+                        value += 2 ** campet_bit
+                exposures["BIT{}FN".format(ftype.upper())] += [value]
+            print(
+                "\t",
+                night,
+                expid,
+                exposures["BITSKYFN"][-1],
+                exposures["BITSFRAMEFN"][-1],
+                exposures["BITCFRAMEFN"][-1],
             )
-            if len(fns) > 0:
-                hdr = fits.getheader(fns[0], 0)
-                if hdr["TILEID"] in tiles["TILEID"]:
-                    # print(night, expids, hdr["TILEID"])
-                    # AR header informations
-                    for key in hdrkeys:
-                        if key == "MJDOBS":
-                            exposures[key] += [hdr["MJD-OBS"]]
-                        else:
-                            exposures[key] += [hdr[key]]
-                    # AR field
-                    it = np.where(tiles["TILEID"] == hdr["TILEID"])[0][0]
-                    exposures["FIELD"] += [tiles["FIELD"][it]]
-                    # AR targets
-                    exposures["TARGETS"] += [tiles["TARGETS"][it]]
-                    # AR ebv (excluding sky fibers where ebv=0)
-                    tmpd = fitsio.read(tiles["FN"][it], columns=["EBV", "OBJTYPE"])
-                    exposures["EBV"] += [
-                        float(
-                            "{:.3f}".format(
-                                np.median(tmpd["EBV"][tmpd["OBJTYPE"] == "TGT"])
-                            )
-                        )
-                    ]
-                    # AR number of targets per tracer
-                    for target in targets:
-                        exposures[target] += [tiles[target][it]]
-                    # AR SKY_RMAG_AB from integrating the sky fibers over the decam r-band
-                    # exposures["SPECDATA_SKY_RMAG_AB"] += [
-                    #    get_sky_rmag_ab(
-                    #        night, expid, exposures["EXPTIME"][-1], "data"
-                    #    )
-                    # ]
-                    # AR SKY_RMAG_AB from integrating the sky model over the decam r-band - daily
-                    exposures["SPECMODEL_SKY_RMAG_AB"] += [
-                        get_sky_rmag_ab(
-                            night,
-                            expid,
-                            exposures["EXPTIME"][-1],
-                            "model",
-                            redux="daily",
-                        )
-                    ]
-                    # exposures["SPECMODEL_SKY_RMAG_AB"] += [-99]
-                    # AR GFA information
-                    ii = np.where(gfa["EXPID"] == hdr["EXPID"])[0]
-                    if len(ii) > 1:
-                        sys.exit("More than 1 GFA match: exiting")
-                    elif len(ii) == 0:
-                        exposures["HASGFA"] += [False]
-                        for key in gfakeys:
-                            exposures["GFA_{}".format(key)] += [-99]
-                        for band in ["B", "R", "Z"]:
-                            exposures["{}_DEPTH".format(band)] += [-99]
-                            exposures["{}_DEPTH_EBVAIR".format(band)] += [-99]
+            # AR getting header from the ext=1 of the raw data
+            fn = os.path.join(
+                nightrawdir, "{:08d}".format(expid), "desi-{:08d}.fits.fz".format(expid)
+            )
+            hdr = fits.getheader(fn, 1)
+            # print(night, expids, hdr["TILEID"])
+            # AR header informations
+            for key in hdrkeys:
+                if key == "MJDOBS":
+                    exposures[key] += [hdr["MJD-OBS"]]
+                else:
+                    exposures[key] += [hdr[key]]
+            # AR field
+            it = np.where(tiles["TILEID"] == hdr["TILEID"])[0][0]
+            exposures["FIELD"] += [tiles["FIELD"][it]]
+            # AR targets
+            exposures["TARGETS"] += [tiles["TARGETS"][it]]
+            # AR ebv (excluding sky fibers where ebv=0)
+            tmpd = fitsio.read(tiles["FN"][it], columns=["EBV", "OBJTYPE"])
+            exposures["EBV"] += [
+                float("{:.3f}".format(np.median(tmpd["EBV"][tmpd["OBJTYPE"] == "TGT"])))
+            ]
+            # AR number of targets per tracer
+            for target in targets:
+                exposures[target] += [tiles[target][it]]
+            # AR SKY_RMAG_AB from integrating the sky fibers over the decam r-band
+            # exposures["SPECDATA_SKY_RMAG_AB"] += [
+            #    get_sky_rmag_ab(
+            #        night, expid, exposures["EXPTIME"][-1], "data"
+            #    )
+            # ]
+            # AR SKY_RMAG_AB from integrating the sky model over the decam r-band - daily
+            if exposures["BITSKYFN"][-1] != 0:
+                exposures["SPECMODEL_SKY_RMAG_AB"] += [
+                    get_sky_rmag_ab(
+                        night, expid, exposures["EXPTIME"][-1], "model", redux="daily",
+                    )
+                ]
+            else:
+                exposures["SPECMODEL_SKY_RMAG_AB"] += [-99]
+            # AR GFA information
+            ii = np.where(gfa["EXPID"] == hdr["EXPID"])[0]
+            if len(ii) > 1:
+                sys.exit("More than 1 GFA match: exiting")
+            elif len(ii) == 0:
+                exposures["HASGFA"] += [False]
+                for key in gfakeys:
+                    exposures["GFA_{}".format(key)] += [-99]
+                for band in ["B", "R", "Z"]:
+                    exposures["{}_DEPTH".format(band)] += [-99]
+                    exposures["{}_DEPTH_EBVAIR".format(band)] += [-99]
+            else:
+                exposures["HASGFA"] += [True]
+                i = ii[0]
+                for key in gfakeys:
+                    # AR TRANSPARENCY x FIBER_FRACFLUX
+                    if key == "TRANSPFRAC":
+                        exposures["GFA_{}".format(key)] += [
+                            gfa["TRANSPARENCY"][i] * gfa["FIBER_FRACFLUX"][i]
+                        ]
                     else:
-                        exposures["HASGFA"] += [True]
-                        i = ii[0]
-                        for key in gfakeys:
-                            # AR TRANSPARENCY x FIBER_FRACFLUX
-                            if key == "TRANSPFRAC":
-                                exposures["GFA_{}".format(key)] += [
-                                    gfa["TRANSPARENCY"][i] * gfa["FIBER_FRACFLUX"][i]
-                                ]
-                            else:
-                                exposures["GFA_{}".format(key)] += [gfa[key][i]]
-                        # AR/DK exposure depths (needs gfa information)
-                        # AR/DK adding also depth including ebv+airmass
-                        depths_i = determine_tile_depth2(
-                            exposures["NIGHT"][-1],
-                            exposures["EXPID"][-1],
-                            exposures["EXPTIME"][-1],
-                            exposures["GFA_TRANSPFRAC"][-1],
+                        exposures["GFA_{}".format(key)] += [gfa[key][i]]
+                # AR/DK exposure depths (needs gfa information)
+                # AR/DK adding also depth including ebv+airmass
+                if exposures["BITSKYFN"][-1] > 0:
+                    depths_i = determine_tile_depth2(
+                        exposures["NIGHT"][-1],
+                        exposures["EXPID"][-1],
+                        exposures["EXPTIME"][-1],
+                        exposures["GFA_TRANSPFRAC"][-1],
+                    )
+                    for camera in ["B", "R", "Z"]:
+                        exposures["{}_DEPTH".format(camera)] += [
+                            depths_i[camera.lower()]
+                        ]
+                        ebv = exposures["EBV"][-1]
+                        fact_ebv = 10.0 ** (
+                            -2 * 0.4 * depth_coeffs["EBV"][camera] * ebv
                         )
-                        for camera in ["B", "R", "Z"]:
-                            exposures["{}_DEPTH".format(camera)] += [
-                                depths_i[camera.lower()]
-                            ]
-                            ebv = exposures["EBV"][-1]
-                            fact_ebv = 10.0 ** (
-                                -2 * 0.4 * depth_coeffs["EBV"][camera] * ebv
-                            )
-                            airmass = exposures["GFA_AIRMASS"][-1]
-                            fact_air = 10.0 ** (
-                                -2
-                                * 0.4
-                                * depth_coeffs["AIRMASS"][camera]
-                                * (airmass - 1.0)
-                            )
-                            exposures["{}_DEPTH_EBVAIR".format(camera)] += [
-                                depths_i[camera.lower()] * fact_ebv * fact_air
-                            ]
-                        # for camera in ["B", "R", "Z"]: exposures["{}_DEPTH".format(camera)] += [-99]
-                        # for camera in ["B", "R", "Z"]: exposures["{}_DEPTH_EBVAIR".format(camera)] += [-99]
+                        airmass = exposures["GFA_AIRMASS"][-1]
+                        fact_air = 10.0 ** (
+                            -2 * 0.4 * depth_coeffs["AIRMASS"][camera] * (airmass - 1.0)
+                        )
+                        exposures["{}_DEPTH_EBVAIR".format(camera)] += [
+                            depths_i[camera.lower()] * fact_ebv * fact_air
+                        ]
+                else:
+                    for camera in ["B", "R", "Z"]:
+                        exposures["{}_DEPTH".format(camera)] += [-99]
+                        exposures["{}_DEPTH_EBVAIR".format(camera)] += [-99]
 
     # AR if update=y, pre-append the results from previous nights
     if args.update == "y":
@@ -1144,7 +1184,21 @@ if args.exposures == "y":
     # AR building/writing fits
     cols = []
     for key in allkeys:
-        if key in ["NIGHT", "EXPID", "TILEID", "NGFA"] + targets:
+        if (
+            key
+            in [
+                "NIGHT",
+                "EXPID",
+                "TILEID",
+                "BITPSFFN",
+                "BITFRAMEFN",
+                "BITSKYFN",
+                "BITSFRAMEFN",
+                "BITFLUXCALIBFN",
+                "BITCFRAMEFN",
+            ]
+            + targets
+        ):
             fmt = "K"
         elif key in ["FIELD", "TARGETS"]:
             fmt = "{}A".format(np.max([len(x) for x in exposures[key]]))
@@ -1252,8 +1306,8 @@ if args.plot == "y":
     plt.close()
 
     # AR observing conditions : cumulative distributins
-    #targetss = ["BGS+MWS", "QSO+LRG", "ELG", "QSO+ELG"]
-    #cols = ["g", "r", "b", "c"]
+    # targetss = ["BGS+MWS", "QSO+LRG", "ELG", "QSO+ELG"]
+    # cols = ["g", "r", "b", "c"]
     d = fits.open(outfns["exposures"])[1].data
     d = d[d["HASGFA"]]
     keys = [
@@ -1274,8 +1328,10 @@ if args.plot == "y":
     for key, xmin, xmax in zip(keys, xmins, xmaxs):
         ax = plt.subplot(gs[ip])
         bins = np.linspace(xmin, xmax, 101)
-        #for targets, col in zip(["ALL"] + targetss, ["k"] + cols):
-        for targ, col in zip(["ALL","BGS+MWS", "QSO+LRG", "ELG", "QSO+ELG"], ["k", "g", "r", "b", "c"]):
+        # for targets, col in zip(["ALL"] + targetss, ["k"] + cols):
+        for targ, col in zip(
+            ["ALL", "BGS+MWS", "QSO+LRG", "ELG", "QSO+ELG"], ["k", "g", "r", "b", "c"]
+        ):
             if targ == "ALL":
                 keep = np.ones(len(d), dtype=bool)
             else:
@@ -1406,19 +1462,24 @@ if args.plot == "y":
         plt.close()
 
     # AR exptime, depth
-    #targetss = ["BGS+MWS", "QSO+LRG", "ELG", "QSO+ELG"]
-    #cols = ["g", "r", "b", "c"]
+    # targetss = ["BGS+MWS", "QSO+LRG", "ELG", "QSO+ELG"]
+    # cols = ["g", "r", "b", "c"]
     d = fits.open(outfns["exposures"])[1].data
-    d = d[d["HASGFA"]]
-    title = "SV1 observations from {} to {}".format(d["NIGHT"].min(), d["NIGHT"].max())
+    keep = (d["HASGFA"]) & (d["R_DEPTH_EBVAIR"] > 0)
+    d = d[keep]
+    title = "SV1 observations from {} to {}\nhaving GFA and R_DEPTH_EBVAIR>0".format(
+        d["NIGHT"].min(), d["NIGHT"].max()
+    )
     keys = ["EXPTIME", "R_DEPTH_EBVAIR"]
     xlabels = ["EXPTIME [s]", "R_DEPTH_EBVAIR [s]"]
     ylabels = ["Cumulative number of tiles", None]
     fig = plt.figure(figsize=(10, 5))
     gs = gridspec.GridSpec(1, 2, wspace=0.25)
     ax = {"EXPTIME": plt.subplot(gs[0]), "R_DEPTH_EBVAIR": plt.subplot(gs[1])}
-    #for targets, col in zip(targetss, cols):
-    for targ, col in zip(["BGS+MWS", "QSO+LRG", "ELG", "QSO+ELG"], ["g", "r", "b", "c"]):
+    # for targets, col in zip(targetss, cols):
+    for targ, col in zip(
+        ["BGS+MWS", "QSO+LRG", "ELG", "QSO+ELG"], ["g", "r", "b", "c"]
+    ):
         mydict = {}
         mydict["TILEID"] = np.unique(d["TILEID"][d["TARGETS"] == targ])
         ntiles = len(mydict["TILEID"])
@@ -1438,7 +1499,7 @@ if args.plot == "y":
                     targ, ntiles, np.median(mydict[key])
                 ),
             )
-    for key,xlabel,ylabel in zip(keys,xlabels,ylabels):
+    for key, xlabel, ylabel in zip(keys, xlabels, ylabels):
         ax[key].set_title(title)
         ax[key].set_xlabel(xlabel)
         ax[key].set_ylabel(ylabel)
@@ -1450,8 +1511,6 @@ if args.plot == "y":
 
     # AR r_depth_ebvair
     d = fits.open(outfns["exposures"])[1].data
-    xlim = (0, 30)
-    xs = 0.5 + np.arange(xlim[0], xlim[1])
     # AR color-coding by night
     ref_cols = ["r", "g", "b"]
     nights = np.unique(d["NIGHT"])
@@ -1465,6 +1524,9 @@ if args.plot == "y":
     ):
         keep = d["TARGETS"] == flavshort
         if keep.sum() > 0:
+            _, ns = np.unique(d["TILEID"][keep], return_counts=True)
+            xlim = (0, ns.max() + 1)
+            xs = 0.5 + np.arange(xlim[0], xlim[1])
             tileids = np.unique(d["TILEID"][keep])
             nightmin, nightmax = d["NIGHT"][keep].min(), d["NIGHT"][keep].max()
             fig = plt.figure(figsize=(25, 1 * len(tileids)))
