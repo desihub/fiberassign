@@ -1614,8 +1614,6 @@ def main():
             dp[key] = []
         for fn in fns:
             d = fits.open(fn)[1].data
-            print(fn)
-            print(((d["SV1_SCND_TARGET"] & 2**22)>0).sum())
             for key in dpkeys:
                 if key in d.dtype.names:
                     dp[key] += d[key].tolist()
@@ -1624,7 +1622,6 @@ def main():
                         dp[key] += [0 for i in d]
                     else:
                         dp[key] += [np.nan for i in d]
-            print(((np.array(dp["SV1_SCND_TARGET"]) & 2**22)>0).sum())
         for key in dpkeys:
             dp[key] = np.array(dp[key])
         drap, ddecp = get_tpos(tsky, dp["RA"], dp["DEC"])
@@ -1904,8 +1901,6 @@ def main():
                     band, famin, famax = "R", 0.0, 0.5
                 if args.faflavor in ["sv1ssv"]:
                     band, famin, famax = "R", 0.0, 0.5
-                if args.faflavor in ["sv1unwise"]:
-                    band, famin, famax = "Z", 0.0, 0.5
                 #
                 ax = plt.subplot(gs[ix, 1])
                 dohist = 0
