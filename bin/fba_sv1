@@ -50,6 +50,7 @@ faflavors_all = [
     "sv1rosette",
     "sv1praesepe",
     "sv1umaii",
+    "sv1unwise",
     "sv1ssv",
     "sv1elg",
     "sv1elgqso",
@@ -588,13 +589,14 @@ def plot_cutout(
     pet=False,
     c="w",
     alpha=None,
-    txt=None,
-    xtxt=0.5,
-    ytxt=0.98,
+    txts=None,
+    xtxts=None,
+    ytxts=None,
     vmin=None,
     vmax=None,
     cmap=mycmap("jet_r", 10, 0, 1),
 ):
+    # AR txts, xtxts, ytxts : lists
     # AR setting transparency as a function of density /deg2
     if (x is not None) & (alpha is None):
         tmpdens = np.array([0, 100, 500, 1000, 5000, 7500, 1e10],)
@@ -642,25 +644,32 @@ def plot_cutout(
             )
 
     ax.axis("off")
-    ax.text(
-        xtxt,
-        ytxt,
-        txt,
-        color="y",
-        fontweight="bold",
-        fontsize=10,
-        ha="center",
-        va="top",
-        transform=ax.transAxes,
-    )
+    if txts is not None:
+        for txt, xtxt, ytxt in zip(txts, xtxts, ytxts):
+            ax.text(
+                xtxt,
+                ytxt,
+                txt,
+                color="y",
+                fontweight="bold",
+                fontsize=10,
+                ha="center",
+                va="top",
+                transform=ax.transAxes,
+            )
     return
 
 
-def plot_hist(ax, x, xp, bins, msk):
+def plot_hist(ax, x, xp, msk):
     # x : x-quantity for the assigned sample
     # xp: x-quantity for the parent sample
+    #
+    selp = np.isfinite(xp)
+    sel = np.isfinite(x)
+    bins = np.linspace(xp[selp].min(), xp[selp].max(), 26)
+    #
     cps, _, _ = ax.hist(
-        xp,
+        xp[selp],
         bins=bins,
         histtype="step",
         alpha=0.3,
@@ -670,7 +679,7 @@ def plot_hist(ax, x, xp, bins, msk):
         label="{} parent ({})".format(msk, len(xp)),
     )
     cs, _, _, = ax.hist(
-        x,
+        x[sel],
         bins=bins,
         histtype="step",
         alpha=1.0,
@@ -681,7 +690,7 @@ def plot_hist(ax, x, xp, bins, msk):
     )
     ax.set_ylabel("counts")
     ax.grid(True)
-    ax.legend(loc=2)
+    #ax.legend(loc=2)
     axr = ax.twinx()
     axr.plot(
         0.5 * (bins[1:] + bins[:-1]),
@@ -693,6 +702,21 @@ def plot_hist(ax, x, xp, bins, msk):
     axr.tick_params(axis="y", colors="r")
     axr.set_ylabel("ratio", labelpad=0)
     axr.set_ylim(0, 1)
+    txts = [msk, "assigned/parent = {}/{}".format(len(x), len(xp))]
+    xtxts = [0.5, 0.5]
+    ytxts = [0.98, 0.90]
+    for txt, xtxt, ytxt in zip(txts, xtxts, ytxts):
+        ax.text(
+            xtxt,
+            ytxt,
+            txt,
+            color="k",
+            fontweight="bold",
+            fontsize=10,
+            ha="center",
+            va="top",
+            transform=ax.transAxes,
+        )
     return
 
 
@@ -879,6 +903,15 @@ def main():
             "SV1_SCND_TARGET": "MWS_CALIB,BACKUP_CALIB,MWS_MAIN_CLUSTER_SV,MWS_RRLYR,WD_BINARIES_BRIGHT,WD_BINARIES_DARK",
         }
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_BRIGHT"}
+        fdict["nskypet"] = "80"
+        fdict["nstdpet"] = "40"
+    # AR dedicated UNWISE_BLUE, UNWISE_GREEN 
+    elif args.faflavor == "sv1unwise":
+        fdict["survey"] = "sv1"
+        fdict["dtobscon"] = "dark"
+        fdict["obscon"] = "DARK|GRAY|BRIGHT"
+        fdict["msks"] = {"SV1_SCND_TARGET": "UNWISE_BLUE,UNWISE_GREEN"}
+        fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
     # AR sv1elg: adding specific secondary programs at top-priority (WD_BINARIES_DARK,BHB,UDG,LOW_MASS_AGN,SPCV)
@@ -1070,6 +1103,11 @@ def main():
                 ref_msks = np.append(ref_msks, ["WD_BINARIES_DARK", "BHB", "UDG", "LOW_MASS_AGN", "SPCV"])
                 ref_prios = np.append(ref_prios, [6998, 6950, 6900, 6025, 6025])
                 ref_nums = np.append(ref_nums, [1, 1, 1, 1, 1])
+        # AR unwise: setting PRIORITY=4000 for all unwise targets
+        if args.faflavor in ["sv1unwise"]:
+            ref_msks = np.array(["UNWISE_BLUE", "UNWISE_GREEN", "STD_WD"])
+            ref_prios = np.array([4000, 4000, 10000])
+            ref_nums = np.array([1, 1, 1])
         # AR safe, ordering by increasing priorities
         ii = ref_prios.argsort()
         ref_msks = ref_msks[ii]
@@ -1843,7 +1881,7 @@ def main():
             ):
                 ax = fig.add_subplot(gs[0, iy])
                 plot_cutout(
-                    ax, img, rdlim, x, y, pet=True, alpha=alpha, txt=txt, xtxt=0.2
+                    ax, img, rdlim, x, y, pet=True, alpha=alpha, txts=[txt], xtxts=[0.2], ytxts=[0.98]
                 )
 
             # AR looping on tracers
@@ -1858,8 +1896,8 @@ def main():
                 # AR if no parent target, just skip
                 if mskpsel.sum() == 0:
                     continue
-                print(msk, mskpsel.sum())
                 msksel = (mydict[mskkey] & yaml_masks[mskkey][msk]) > 0
+                print("{} {}:\tassgn / parent = {} / {}".format(mskkey, msk, msksel.sum(), mskpsel.sum()))
                 fafrac = msksel.sum() / float(mskpsel.sum())
                 # famin = np.clip(fafrac-0.2,0,1)
                 # famax = np.clip(fafrac+0.2,0,1)
@@ -1878,38 +1916,37 @@ def main():
                     band, famin, famax = "R", 0.0, 0.5
                 if args.faflavor in ["sv1ssv"]:
                     band, famin, famax = "R", 0.0, 0.5
+                if args.faflavor in ["sv1unwise"]:
+                    band, famin, famax = "Z", 0.0, 0.5
                 #
                 ax = plt.subplot(gs[ix, 1])
                 dohist = 0
+                # AR if ls-dr9 flux is here, we plot that
                 if ((dp["FLUX_" + band] > 0) & (mskpsel)).sum() > 0:
                     dohist = 1
-                    keep = (dp["FLUX_" + band] > 0) & (mskpsel)
                     xp = (
                         22.5
-                        - 2.5 * np.log10(dp["FLUX_" + band][keep])
-                        - exts[band] * dp["EBV"][keep]
+                        - 2.5 * np.log10(dp["FLUX_" + band][mskpsel])
+                        - exts[band] * dp["EBV"][mskpsel]
                     )
-                    keep = (mydict["FLUX_" + band] > 0) & (msksel)
                     x = (
                         22.5
-                        - 2.5 * np.log10(mydict["FLUX_" + band][keep])
-                        - exts[band] * mydict["EBV"][keep]
+                        - 2.5 * np.log10(mydict["FLUX_" + band][msksel])
+                        - exts[band] * mydict["EBV"][msksel]
                     )
                     ax.set_xlabel(
                         "22.5 - 2.5*log10(FLUX_{}) - {:.3f} * EBV".format(
                             band, exts[band]
                         )
                     )
+                # AR if no ls-dr9 flux, we try gaia_g
                 elif ((np.isfinite(dp["GAIA_PHOT_G_MEAN_MAG"])) & (mskpsel)).sum() > 0:
                     dohist = 1
-                    keep = (np.isfinite(dp["GAIA_PHOT_G_MEAN_MAG"])) & (mskpsel)
-                    xp = dp["GAIA_PHOT_G_MEAN_MAG"][keep]
-                    keep = (np.isfinite(mydict["GAIA_PHOT_G_MEAN_MAG"])) & (mskpsel)
-                    x = mydict["GAIA_PHOT_G_MEAN_MAG"][keep]
+                    xp = dp["GAIA_PHOT_G_MEAN_MAG"][mskpsel]
+                    x = mydict["GAIA_PHOT_G_MEAN_MAG"][msksel]
                     ax.set_xlabel("GAIA_PHOT_G_MEAN_MAG")
                 if dohist == 1:
-                    bins = np.linspace(xp.min(), xp.max(), 26)
-                    plot_hist(ax, x, xp, bins, msk)
+                    plot_hist(ax, x, xp, msk)
                     _, ymax = ax.get_ylim()
                     ax.set_ylim(0.8, 100 * ymax)
                     ax.set_yscale("log")
@@ -2015,8 +2052,18 @@ def main():
                         ax.set_xlim(xlim)
                         ax.set_ylim(ylim)
                         ax.grid(True)
+                        ax.text(
+                            0.5,
+                            0.93,
+                            msk,
+                            color="k",
+                            fontweight="bold",
+                            fontsize=10,
+                            ha="center",
+                            transform=ax.transAxes,
+                        )
                         cbar = plt.colorbar(SC)
-                        cbar.set_label("{} fraction assigned".format(msk))
+                        cbar.set_label("fraction assigned")
                         cbar.mappable.set_clim(famin, famax)
 
                 # AR position in tile
@@ -2034,8 +2081,9 @@ def main():
                     drap[mskpsel],
                     ddecp[mskpsel],
                     pet=True,
-                    txt="{}\nparent : {:.0f}".format(msk, mskpsel.sum() / tarea)
-                    + r" deg$^{-2}$",
+                    txts=[msk, "parent : {:.0f}".format(mskpsel.sum() / tarea)+ r" deg$^{-2}$"],
+                    xtxts=[0.5, 0.5],
+                    ytxts=[0.98, 0.1]
                 )
                 hbp = ax.hexbin(
                     drap[mskpsel],
@@ -2055,8 +2103,9 @@ def main():
                     dra[msksel],
                     ddec[msksel],
                     pet=True,
-                    txt="{}\nassign : {:.0f}".format(msk, msksel.sum() / tarea)
-                    + r" deg$^{-2}$",
+                    txts=[msk, "assigned : {:.0f}".format(msksel.sum() / tarea)+ r" deg$^{-2}$"],
+                    xtxts=[0.5, 0.5],
+                    ytxts=[0.98, 0.1]
                 )
                 hb = ax.hexbin(
                     dra[msksel],
@@ -2073,7 +2122,9 @@ def main():
                 c = (hb.get_array() / hbp.get_array()) / len(tileids)
                 keep = (hbp.get_array() > 0) & (c > 0)
                 tmpx, tmpy, c = tmpx[keep], tmpy[keep], c[keep]
-                txt = r"mean = {:.2f}".format(fafrac)
+                txts = [msk, r"mean = {:.2f}".format(fafrac)]
+                xtxts = [0.5, 0.5]
+                ytxts = [0.93, 0.03]
                 ax = plt.subplot(gs[ix, 6])
                 SC = ax.scatter(
                     tmpx, tmpy, c=c, s=3, vmin=famin, vmax=famax, alpha=0.5, cmap=cm,
@@ -2083,17 +2134,19 @@ def main():
                 ax.set_xlim(xlim)
                 ax.set_ylim(ylim)
                 ax.grid(True)
-                ax.text(
-                    0.02,
-                    0.93,
-                    txt,
-                    color="k",
-                    fontweight="bold",
-                    fontsize=10,
-                    transform=ax.transAxes,
-                )
+                for txt, xtxt, ytxt in zip(txts, xtxts, ytxts):
+                    ax.text(
+                        xtxt,
+                        ytxt,
+                        txt,
+                        color="k",
+                        fontweight="bold",
+                        fontsize=10,
+                        ha="center",
+                        transform=ax.transAxes,
+                    )
                 cbar = plt.colorbar(SC)
-                cbar.set_label("{} fraction assigned".format(msk))
+                cbar.set_label("fraction assigned")
                 cbar.mappable.set_clim(famin, famax)
                 #
                 ix += 1
