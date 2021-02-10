@@ -217,8 +217,10 @@ class BuildExt(build_ext):
         for ext in self.extensions:
             ext.extra_compile_args.extend(opts)
             ext.extra_link_args.extend(linkopts)
-        build_ext.build_extensions(self)
 
+        # remove -Wstrict-prototypes flag
+        self.compiler.compiler_so.remove("-Wstrict-prototypes")        
+        build_ext.build_extensions(self)
 
 ext_modules = [
     Extension(
