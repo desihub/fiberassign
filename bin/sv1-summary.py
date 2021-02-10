@@ -9,8 +9,7 @@ from glob import glob
 import numpy as np
 import fitsio
 import astropy.io.fits as fits
-from astropy.time import Time
-from astropy.table import Table
+from astropy.table import Table, vstack
 from astropy import units, constants
 from astropy.coordinates import SkyCoord
 import healpy as hp
@@ -26,7 +25,15 @@ from speclite import filters
 import yaml
 from desispec.io import read_frame, fiberflat
 from desispec.fiberflat import apply_fiberflat
+from desisurvey.ephem import get_ephem
+from desisurvey.scripts.collect_etc import get_conditions
+import multiprocessing
+from desitarget.internal import sharedmem
 from argparse import ArgumentParser
+
+
+## AR nb of processors
+# nproc = multiprocessing.cpu_count() // 2
 
 
 # AR reading arguments
@@ -74,6 +81,13 @@ parser.add_argument(
     default="y",
     metavar="UPDATE",
 )
+parser.add_argument(
+    "--numproc",
+    help="number of concurrent processes to use (default=1)",
+    type=int,
+    default=1,
+    metavar="NUMPROC",
+)
 args = parser.parse_args()
 for kwargs in args._get_kwargs():
     print(kwargs)
@@ -88,24 +102,38 @@ if args.outdir[-1] != "/":
 # AR folders / files
 rawdir = os.getenv("DESI_ROOT") + "/spectro/data/"
 surveydir = os.getenv("DESI_ROOT") + "/survey/"
+nightoutdir = "{}/sv1-nights/".format(args.outdir)
+if not os.path.isdir(nightoutdir):
+    os.mkdir(nightoutdir)
 dailydir = os.getenv("DESI_ROOT") + "/spectro/redux/daily/"
 pixwfn = (
     os.getenv("DESI_TARGET")
     + "/catalogs/dr9/0.47.0/pixweight/sv1/resolve/dark/sv1pixweight-dark.fits"
 )
 desfn = os.path.join(surveydir, "observations", "misc", "des_footprint.txt")
+
+# AR gfa
 # AR Feb. 01, 2021: now using the *matched_coadd* file [desi-survey 1302]
-gfafn = np.sort(
-    glob(surveydir + "/GFA/offline_matched_coadd_ccds_SV1-thru_20??????.fits")
+# AR Feb. 09, 2021: also using the *acq* file to provide measurements
+# AR                for exposures not present in *matched_coadd*
+# AR                https://desisurvey.slack.com/archives/C01HNN87Y7J/p1612806269343500
+gfafn = {}
+gfafn["acq"] =  np.sort(
+    glob(surveydir + "/GFA/offline_acq_ccds_SV1-thru_20??????.fits")
+)[-1]
+gfafn["matched_coadd"] = np.sort(
+       glob(surveydir + "/GFA/offline_matched_coadd_ccds_SV1-thru_20??????.fits")
 )[-1]
 print("gfafn = {}".format(gfafn))
+gfa = {key:fits.open(gfafn[key])[3].data for key in list(gfafn.keys())} 
 
-
-# AR listing all camera+petal, to check existing sky/sframe/cframe files in the reduction
-campet_names = []
-for camera in ["b", "r", "z"]:
-    campet_names += [camera + p for p in np.arange(10, dtype=int).astype(str)]
-campet_bits = np.arange(len(campet_names), dtype=int)
+# AR ephemerides:
+# AR    $DESI_ROOT/survey/observations/misc/ephem_2019-01-01_2030-12-31.fits
+# AR    going to 2030 to safely cover end of survey
+# AR    run with dark_max_sun_altitude: -18 deg, bright_max_sun_altitude=-12 deg
+# AR    similar to Eddie s choices, likely used in NTS
+os.environ["DESISURVEY_OUTPUT"] = "{}/observations/misc/".format(surveydir)
+ephem = get_ephem()
 
 # AR for the fiberflat routine
 os.environ["DESI_LOGLEVEL"] = "warning"
@@ -142,18 +170,7 @@ if (args.html == "y") & (os.path.isdir(outfns["html"]) == False):
     os.mkdir(outfns["html"])
 
 # AR sv1 first night (for exposures search)
-# AR if args.update="y":
-# AR - assumes args.outdir+"sv1-exposures.fits" exists
-# AR - recompute the last night of args.outdir+"sv1-exposures.fits", plus following nights
-if args.update == "y":
-    if not os.path.isfile(outfns["exposures"]):
-        print("{} is missing; exiting".format(outfns["exposures"]))
-        sys.exit()
-    else:
-        d = fits.open(outfns["exposures"])[1].data
-        firstnight = d["NIGHT"].max().astype(str)
-else:
-    firstnight = "20201214"
+firstnight = "20201214"
 print("firstnight = {}".format(firstnight))
 
 # AR for the exposure and the wiki cases
@@ -478,8 +495,8 @@ def determine_tile_depth2(
     return depths
 
 
-# AR r-band sky mag / arcsec2 from sky-....fits files
-def get_sky_rmag_ab(night, expid, exptime, ftype, redux="daily"):
+# AR g-band, r-band sky mag / arcsec2 from sky-....fits files
+def get_sky_grmag_ab(night, expid, exptime, ftype, redux="daily"):
     # AR ftype = "data" or "model"
     # AR redux = "daily" or "blanc"
     # AR if ftype = "data" : read the sky fibers from frame*fits + apply flat-field
@@ -575,14 +592,37 @@ def get_sky_rmag_ab(night, expid, exptime, ftype, redux="daily"):
     sky *= e_phot_erg.value
     # AR sky model flux in erg / angstrom / s / cm**2 / arcsec**2
     sky /= telap_cm2 * fiber_area_arcsec2
-    # AR integrate over the DECam r-band
-    filts = filters.load_filters("decam2014-r")
-    # AR zero-padding spectrum so that it covers the DECam r-band range
-    sky_pad, fullwave_pad = filts.pad_spectrum(sky, fullwave, method="zero")
+    # AR integrate over the DECam g-band + r-band
+    # AR using the curves with no atmospheric extinction (email from DK from 09Feb2021)
+    filts = filters.load_filters("decamDR1noatm-g", "decamDR1noatm-r")
+    # AR zero-padding spectrum so that it covers the DECam g-band + r-band range
+    # AR looping through filters while waiting issue to be solved (https://github.com/desihub/speclite/issues/64)
+    sky_pad, fullwave_pad = sky.copy(), fullwave.copy()
+    for i in range(len(filts)):
+        sky_pad, fullwave_pad = filts[i].pad_spectrum(sky_pad, fullwave_pad, method="zero")
     return filts.get_ab_magnitudes(
         sky_pad * units.erg / (units.cm ** 2 * units.s * units.angstrom),
         fullwave_pad * units.angstrom,
-    ).as_array()[0][0]
+    ).as_array()[0]
+
+
+# AR get the corresonding night in ephem
+# AR copying https://github.com/desihub/desisurvey/blob/f83e098e0b31c0d496a6f240a6aa68131191ec76/py/desisurvey/scripts/collect_etc.py#L229-L258
+def get_nightind(mjd):
+    # taken in 2019 or later, with known MJD---removes some test exposures
+    okmjd = np.isfinite(mjd) & (mjd > 58484)
+    nights = ephem.table
+    indices = np.repeat(np.arange(len(nights)), 2)
+    startstop = np.concatenate([[night['brightdusk'], night['brightdawn']]
+                                for night in nights])
+    nightind = np.zeros(len(mjd), dtype='f8')
+    nightind[~okmjd] = -1
+    nightind[okmjd] = np.interp(mjd[okmjd], startstop, indices)
+    # a lot of exposures apparently taken during the day?
+    # We should mark these as belonging to the "day" program?
+    mday = nightind != nightind.astype('i4')
+    nightind = nightind.astype('i4')
+    return nightind
 
 
 # AR mollweide plot setting
@@ -758,7 +798,8 @@ def write_html_perexp(html, d, style, h2title):
             style
         )
     )
-    html.write("<p style='{}'>GFA fits file: {}</p>".format(style, gfafn))
+    html.write("<p style='{}'>GFA acq fits file: {}</p>".format(style, gfafn["acq"]))
+    html.write("<p style='{}'>GFA matched_coadd fits file: {}</p>".format(style, gfafn["matched_coadd"]))
     html.write(
         "<p style='{}'>FIBER_FRACFLUX: fraction of light in a fiber-sized aperture given the PSF shape, assuming that the PSF is perfectly aligned with the fiber (i.e. does not capture any astrometry/positioning errors).</p>".format(
             style
@@ -962,33 +1003,77 @@ if args.tiles == "y":
     h.writeto(outfns["tiles"], overwrite=True)
 
 
+# AR output file name for a night
+def get_night_outfn(nightoutdir, night):
+    return "{}/sv1-exposures-{}.fits".format(nightoutdir, night)
+
+# AR listing the expids for that night
+# AR Feb. 05, 2021 : changing the exposure listing approach
+# AR                 hopefully more reliable...
+def get_night_expids(night, rawdir, tiles):
+    nightrawdir = "{}/{}/".format(rawdir, night)
+    # AR planned
+    fns = np.sort(
+        glob(os.path.join(nightrawdir, "????????", "fiberassign-??????.fits*"))
+    )
+    plan_expids = np.array([fn.split("/")[-2] for fn in fns])
+    plan_tileids = np.array(
+        [fn.split("/")[-1].replace("-", ".").split(".")[1] for fn in fns]
+    )
+    # AR taking unique because multiple files for some expids of 20201214
+    # AR because of the presence of some fiberassign-TILEID.fits.orig files
+    _, ii = np.unique(plan_expids, return_index=True)
+    plan_expids = plan_expids[ii]
+    plan_tileids = plan_tileids[ii]
+    # AR cutting on our science TILEIDs (e.g. removing dithering)
+    keep = np.in1d(plan_tileids.astype(int), tiles["TILEID"])
+    plan_expids, plan_tileids = plan_expids[keep], plan_tileids[keep]
+    # AR observed
+    fns = np.sort(
+        glob(os.path.join(nightrawdir, "????????", "desi-????????.fits.fz"))
+    )
+    obs_expids = np.array([fn.split("/")[-2] for fn in fns])
+    # AR keeping planned + observed
+    keep = np.in1d(plan_expids, obs_expids)
+    expids = plan_expids[keep].astype(int)
+    # AR special dealing with 20210114, where positioners were frozen after the first
+    # AR exposure (72381); hence we reject all the subsequent ones
+    # AR https://desisurvey.slack.com/archives/C6C320XMK/p1610713799187700
+    if night == 20210114:
+        expids = np.array([72381])
+    print("{} : {} exposures".format(night, len(expids)))
+    return expids
+
+
+# AR processing exposures from a given night
 # AR per-exposure information (various from header, gfas + depths)
-if args.exposures == "y":
-    # AR listing existing nights and expids for the considered tiles
-    # AR based on the presence of the sframe-??-EXPID.fits files
-    nights = [
-        int(fn.split("/")[-1])
-        for fn in np.sort(glob(os.path.join(dailydir, "exposures", "202?????")))
-        if int(fn.split("/")[-1]) >= int(firstnight)
-    ]
-    # AR GFA file
-    # AR now using ext=3, which computes the median on a "cleaner" sample
-    # AR Feb., 1st ([desi-survey 1302]): using coadd_matched file + new columns
-    # AR no need to cut anymore
-    gfa = fits.open(gfafn)[3].data
+def process_night(night, nightoutdir, gfa, ephem, dailydir, rawdir, tiles):
+    # AR output file name (removing if already existing)
+    outfn = get_night_outfn(nightoutdir, night)
+    if os.path.isfile(outfn):
+        os.remove(outfn)
     # AR quantities we store
     exposures = {}
+    # AR listing all camera+petal, to check existing sky/sframe/cframe files in the reduction
+    campet_names = []
+    for camera in ["b", "r", "z"]:
+        campet_names += [camera + p for p in np.arange(10, dtype=int).astype(str)]
+    campet_bits = np.arange(len(campet_names), dtype=int)
+    # AR from exposure header
     hdrkeys = ["TILEID", "TILERA", "TILEDEC", "EXPTIME", "MJDOBS"]
+    # AR own keys
     ownkeys = [
         "NIGHT",
         "EXPID",
         "FIELD",
         "TARGETS",
+        "OBSCONDITIONS",
         "EBV",
         # "SPECDATA_SKY_RMAG_AB",
+        "SPECMODEL_SKY_GMAG_AB",
         "SPECMODEL_SKY_RMAG_AB",
         # "BLANC_SPECMODEL_SKY_RMAG_AB",
-        "HASGFA",
+        "GFA_ORIGIN",
         "B_DEPTH",
         "R_DEPTH",
         "Z_DEPTH",
@@ -1002,6 +1087,7 @@ if args.exposures == "y":
         "BITFLUXCALIBFN",
         "BITCFRAMEFN",
     ] + targets
+    # AR from GFA
     gfakeys = [
         "AIRMASS",
         "MOON_ILLUMINATION",
@@ -1018,44 +1104,16 @@ if args.exposures == "y":
         "KTERM",
         "RADPROF_FWHM_ASEC",
     ]
-    allkeys = ownkeys + hdrkeys + ["GFA_{}".format(key) for key in gfakeys]
+    # AR *1d-quantities* from ephem
+    ephkeys = [key.upper() for key in ephem.table.dtype.names if len(ephem.table[key].shape) == 1]
+    # AR all keys
+    allkeys = ownkeys + hdrkeys + ["GFA_{}".format(key) for key in gfakeys] + ["EPHEM_{}".format(key) for key in ephkeys]
     for key in allkeys:
         exposures[key] = []
-    # AR looping on nights
-    for night in nights:
-        # AR Feb. 05, 2021 : changing the exposure listing approach
-        # AR                 hopefully more reliable...
-        nightrawdir = "{}/{}/".format(rawdir, night)
-        # AR planned
-        fns = np.sort(
-            glob(os.path.join(nightrawdir, "????????", "fiberassign-??????.fits*"))
-        )
-        plan_expids = np.array([fn.split("/")[-2] for fn in fns])
-        plan_tileids = np.array(
-            [fn.split("/")[-1].replace("-", ".").split(".")[1] for fn in fns]
-        )
-        # AR taking unique because multiple files for some expids of 20201214
-        # AR because of the presence of some fiberassign-TILEID.fits.orig files
-        _, ii = np.unique(plan_expids, return_index=True)
-        plan_expids = plan_expids[ii]
-        plan_tileids = plan_tileids[ii]
-        # AR cutting on our science TILEIDs (e.g. removing dithering)
-        keep = np.in1d(plan_tileids.astype(int), tiles["TILEID"])
-        plan_expids, plan_tileids = plan_expids[keep], plan_tileids[keep]
-        # AR observed
-        fns = np.sort(
-            glob(os.path.join(nightrawdir, "????????", "desi-????????.fits.fz"))
-        )
-        obs_expids = np.array([fn.split("/")[-2] for fn in fns])
-        # AR keeping planned + observed
-        keep = np.in1d(plan_expids, obs_expids)
-        expids = plan_expids[keep].astype(int)
-        print("{} : {} exposures".format(night, len(expids)))
-        # AR special dealing with 20210114, where positioners were frozen after the first
-        # AR exposure (72381); hence we reject all the subsequent ones
-        # AR https://desisurvey.slack.com/archives/C6C320XMK/p1610713799187700
-        if night == 20210114:
-            expids = np.array([72381])
+    # AR listing the expids for that night
+    expids = get_night_expids(night, rawdir, tiles)
+    print("processing night={} ({} exposures)".format(night, len(expids)))
+    if len(expids) > 0:
         # AR looping on all exposures
         for expid in expids:
             # AR night, expid
@@ -1085,7 +1143,7 @@ if args.exposures == "y":
             )
             # AR getting header from the ext=1 of the raw data
             fn = os.path.join(
-                nightrawdir, "{:08d}".format(expid), "desi-{:08d}.fits.fz".format(expid)
+                rawdir, "{}".format(night), "{:08d}".format(expid), "desi-{:08d}.fits.fz".format(expid)
             )
             hdr = fits.getheader(fn, 1)
             # print(night, expids, hdr["TILEID"])
@@ -1116,35 +1174,43 @@ if args.exposures == "y":
             # ]
             # AR SKY_RMAG_AB from integrating the sky model over the decam r-band - daily
             if exposures["BITSKYFN"][-1] != 0:
-                exposures["SPECMODEL_SKY_RMAG_AB"] += [
-                    get_sky_rmag_ab(
-                        night, expid, exposures["EXPTIME"][-1], "model", redux="daily",
-                    )
-                ]
+                tmpgmag, tmprmag = get_sky_grmag_ab(
+                                    night, expid, exposures["EXPTIME"][-1], "model", redux="daily",
+                                    )
+                exposures["SPECMODEL_SKY_GMAG_AB"] += [tmpgmag]
+                exposures["SPECMODEL_SKY_RMAG_AB"] += [tmprmag]
             else:
+                exposures["SPECMODEL_SKY_GMAG_AB"] += [-99]
                 exposures["SPECMODEL_SKY_RMAG_AB"] += [-99]
             # AR GFA information
-            ii = np.where(gfa["EXPID"] == hdr["EXPID"])[0]
-            if len(ii) > 1:
-                sys.exit("More than 1 GFA match: exiting")
-            elif len(ii) == 0:
-                exposures["HASGFA"] += [False]
+            # AR    first trying matched_coadd
+            # AR    if not present, trying acq
+            # AR    else no gfa...
+            gfa_origin = "matched_coadd"
+            ii = np.where(gfa[gfa_origin]["EXPID"] == hdr["EXPID"])[0]
+            if len(ii) == 0:
+                gfa_origin = "acq"
+                ii = np.where(gfa[gfa_origin]["EXPID"] == hdr["EXPID"])[0]
+            if len(ii) == 0:
+                exposures["GFA_ORIGIN"] += ["-"]
                 for key in gfakeys:
                     exposures["GFA_{}".format(key)] += [-99]
                 for band in ["B", "R", "Z"]:
                     exposures["{}_DEPTH".format(band)] += [-99]
                     exposures["{}_DEPTH_EBVAIR".format(band)] += [-99]
+            elif len(ii) > 1:
+                sys.exit("More than 1 GFA match: exiting")
             else:
-                exposures["HASGFA"] += [True]
+                exposures["GFA_ORIGIN"] += [gfa_origin]
                 i = ii[0]
                 for key in gfakeys:
                     # AR TRANSPARENCY x FIBER_FRACFLUX
                     if key == "TRANSPFRAC":
                         exposures["GFA_{}".format(key)] += [
-                            gfa["TRANSPARENCY"][i] * gfa["FIBER_FRACFLUX"][i]
+                            gfa[gfa_origin]["TRANSPARENCY"][i] * gfa[gfa_origin]["FIBER_FRACFLUX"][i]
                         ]
                     else:
-                        exposures["GFA_{}".format(key)] += [gfa[key][i]]
+                        exposures["GFA_{}".format(key)] += [gfa[gfa_origin][key][i]]
                 # AR/DK exposure depths (needs gfa information)
                 # AR/DK adding also depth including ebv+airmass
                 if exposures["BITSKYFN"][-1] > 0:
@@ -1173,47 +1239,97 @@ if args.exposures == "y":
                     for camera in ["B", "R", "Z"]:
                         exposures["{}_DEPTH".format(camera)] += [-99]
                         exposures["{}_DEPTH_EBVAIR".format(camera)] += [-99]
-
-    # AR if update=y, pre-append the results from previous nights
-    if args.update == "y":
-        d = fits.open(outfns["exposures"])[1].data
-        keep = d["NIGHT"] < int(firstnight)
-        d = d[keep]
+        # AR ephem 1d-quantities
+        nightind = get_nightind(np.array(exposures["MJDOBS"]))
+        for key in ephkeys:
+            exposures["EPHEM_{}".format(key)] = ephem.table[key.lower().replace("lst","LST")][nightind]
+        # AR obsconditions (DARK=1, GRAY=2, BRIGHT=4, else==-1)
+        exposures["OBSCONDITIONS"] = get_conditions(np.array(exposures["MJDOBS"]))
+        # AR building/writing fits
+        cols = []
         for key in allkeys:
-            exposures[key] = d[key].tolist() + exposures[key]
-    # AR building/writing fits
-    cols = []
-    for key in allkeys:
-        if (
-            key
-            in [
-                "NIGHT",
-                "EXPID",
-                "TILEID",
-                "BITPSFFN",
-                "BITFRAMEFN",
-                "BITSKYFN",
-                "BITSFRAMEFN",
-                "BITFLUXCALIBFN",
-                "BITCFRAMEFN",
-            ]
-            + targets
-        ):
-            fmt = "K"
-        elif key in ["FIELD", "TARGETS"]:
-            fmt = "{}A".format(np.max([len(x) for x in exposures[key]]))
-        elif key in ["HASGFA"]:
-            fmt = "L"
+            if (
+                key
+                in [
+                    "NIGHT",
+                    "EXPID",
+                    "TILEID",
+                    "OBSCONDITIONS",
+                    "BITPSFFN",
+                    "BITFRAMEFN",
+                    "BITSKYFN",
+                    "BITSFRAMEFN",
+                    "BITFLUXCALIBFN",
+                    "BITCFRAMEFN",
+                ]
+                + targets
+            ):
+                fmt = "K"
+            elif key in ["FIELD", "TARGETS", "GFA_ORIGIN"]:
+                fmt = "{}A".format(np.max([len(x) for x in exposures[key]]))
+            elif key[6:] in ephkeys:
+                fmt = "D"
+            else:
+                fmt = "E"
+            cols += [fits.Column(name=key, format=fmt, array=exposures[key])]
+        h = fits.BinTableHDU.from_columns(fits.ColDefs(cols))
+        h.writeto(outfn, overwrite=True)
+    return "{}-{}".format(night, len(expids))
+
+
+
+# AR per exposure information
+if args.exposures == "y":
+    # AR listing existing nights
+    nights = np.array([
+        int(fn.split("/")[-1])
+        for fn in np.sort(glob(os.path.join(dailydir, "exposures", "202?????")))
+        if int(fn.split("/")[-1]) >= int(firstnight)
+    ])
+    #nights = [20201214]
+    print(nights)
+    # AR update only the ~latest nights?
+    # AR TODO: make some sanity check that all relevant nights
+    # AR TODO:     not processed has a fits file
+    if args.update == "y":
+        if not os.path.isfile(outfns["exposures"]):
+            print("{} is missing; exiting".format(outfns["exposures"]))
+            sys.exit()
         else:
-            fmt = "E"
-        cols += [fits.Column(name=key, format=fmt, array=exposures[key])]
-    h = fits.BinTableHDU.from_columns(fits.ColDefs(cols))
-    h.writeto(outfns["exposures"], overwrite=True)
+            d = fits.open(outfns["exposures"])[1].data
+            firstnight_to_process = d["NIGHT"].max().astype(str)
+        nights_to_process = nights[nights >= firstnight_to_process]
+    else:
+        nights_to_process = nights.copy()
+    # AR processing nights
+    # AR wrapper on process_night() given an night
+    def _process_night(night):
+        nightnexp = process_night(night, nightoutdir, gfa, ephem, dailydir, rawdir, tiles)
+        return nightnexp
+    # AR parallel processing?
+    if args.numproc > 1:
+        pool = sharedmem.MapReduce(np=args.numproc)
+        with pool:
+            nightnexps = pool.map(_process_night, nights_to_process)
+    else:
+        nightnexps = []
+        for night in nights_to_process:
+            nightnexps += [_process_night(night)]
+    print(nightnexps)
+    # AR merging all nights
+    # AR for now, just merging all existing night files
+    # AR TODO: make some sanity check to verify that no night is missing
+    fns = np.sort(glob("{}/sv1-exposures-202?????.fits".format(nightoutdir)))
+    hs = [Table.read(fn, format="fits") for fn in fns]
+    h = vstack(hs)
+    if os.path.isfile(outfns["exposures"]):
+        os.remove(outfns["exposures"])
+    h.write(outfns["exposures"], format="fits")
+
 
 
 # AR plots
 if args.plot == "y":
-
     # AR sky map
     # dr9
     h = fits.open(pixwfn)
@@ -1305,7 +1421,7 @@ if args.plot == "y":
     plt.savefig(outfns["skymap"], bbox_inches="tight")
     plt.close()
 
-    # AR observing conditions : cumulative distributins
+    # AR observing conditions : cumulative distributions
     # targetss = ["BGS+MWS", "QSO+LRG", "ELG", "QSO+ELG"]
     # cols = ["g", "r", "b", "c"]
     d = fits.open(outfns["exposures"])[1].data
@@ -1510,6 +1626,7 @@ if args.plot == "y":
     plt.close()
 
     # AR r_depth_ebvair
+    exptime_min = 50
     d = fits.open(outfns["exposures"])[1].data
     # AR color-coding by night
     ref_cols = ["r", "g", "b"]
@@ -1522,7 +1639,7 @@ if args.plot == "y":
     for flavshort, ymax in zip(
         ["QSO+LRG", "QSO+ELG", "ELG", "BGS+MWS"], [2000, 2000, 2000, 1000]
     ):
-        keep = d["TARGETS"] == flavshort
+        keep = (d["TARGETS"] == flavshort) & (d["EXPTIME"] >= exptime_min)
         if keep.sum() > 0:
             _, ns = np.unique(d["TILEID"][keep], return_counts=True)
             xlim = (0, ns.max() + 1)
@@ -1551,7 +1668,7 @@ if args.plot == "y":
                     ha="right",
                     transform=ax.transAxes,
                 )
-                jj = np.where(d["TILEID"] == tileids[i])[0]
+                jj = np.where((d["TILEID"] == tileids[i]) & (d["EXPTIME"] >= exptime_min))[0]
                 ax.plot(xs[: len(jj)], d[key][jj], color="k", lw=1)
                 x = 0
                 for j in jj:
@@ -1577,15 +1694,15 @@ if args.plot == "y":
                     x += 1
                 ax.grid(True)
                 ax.set_axisbelow(True)
-                ax.set_xlim(0, 30)
+                ax.set_xlim(xlim)
                 if i == int(len(tileids) / 2):
                     ax.set_ylabel("{} [s]".format(key))
                 for x in range(xlim[0], xlim[1]):
                     ax.axvline(x, c="k", lw=0.1)
                 if i == 0:
                     ax.set_title(
-                        "SV1 {} ({} exposures from {} tiles between {} and {})".format(
-                            flavshort, keep.sum(), len(tileids), nightmin, nightmax
+                        "SV1 {} ({} exposures from {} tiles between {} and {} with EXPTIME >= {}s)".format(
+                            flavshort, keep.sum(), len(tileids), nightmin, nightmax, exptime_min
                         )
                     )
                 if i == len(tileids) - 1:
