@@ -219,7 +219,9 @@ class BuildExt(build_ext):
             ext.extra_link_args.extend(linkopts)
 
         # remove -Wstrict-prototypes flag
-        self.compiler.compiler_so.remove("-Wstrict-prototypes")        
+        if '-Wstrict-prototypes' in self.compiler.compiler_so:
+            self.compiler.compiler_so.remove("-Wstrict-prototypes")
+
         build_ext.build_extensions(self)
 
 ext_modules = [
