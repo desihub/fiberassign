@@ -1144,6 +1144,10 @@ def main():
             ref_msks = np.array(["UNWISE_BLUE", "UNWISE_GREEN", "STD_WD"])
             ref_prios = np.array([4000, 4000, 10000])
             ref_nums = np.array([1, 1, 1])
+        if args.faflavor in ["sv1scndcosmos"]:
+            ref_msks = np.array(["ISM_CGM_QGP", "HSC_HIZ_SNE", "LBG_TOMOG"])
+            ref_prios = np.array([4100, 4050, 4000])
+            ref_nums = np.array([1, 1, 1])
  
         # AR safe, ordering by increasing priorities
         ii = ref_prios.argsort()
