@@ -1523,11 +1523,6 @@ def main():
                     "faflavor",
                     "rundate",
                     "pmtime",
-                    "dr",
-                    "dtver",
-                    "priority",
-                    "noreobs",
-                    "m31cen",
                 ]:
                     if kwargs[1] is not None:
                         fd["PRIMARY"].write_key(kwargs[0], kwargs[1])
