@@ -691,7 +691,7 @@ def plot_hist(ax, x, xp, msk):
     )
     ax.set_ylabel("counts")
     ax.grid(True)
-    #ax.legend(loc=2)
+    # ax.legend(loc=2)
     axr = ax.twinx()
     axr.plot(
         0.5 * (bins[1:] + bins[:-1]),
@@ -906,7 +906,7 @@ def main():
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_BRIGHT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
-    # AR dedicated UNWISE_BLUE, UNWISE_GREEN 
+    # AR dedicated UNWISE_BLUE, UNWISE_GREEN
     elif args.faflavor == "sv1unwise":
         fdict["survey"] = "sv1"
         fdict["dtobscon"] = "dark"
@@ -920,7 +920,11 @@ def main():
         fdict["survey"] = "sv1"
         fdict["dtobscon"] = "dark"
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
-        fdict["msks"] = {"SV1_DESI_TARGET": "STD_WD,ELG", "SV1_BGS_TARGET": "BGS_FAINT", "SV1_SCND_TARGET": "WD_BINARIES_DARK,BHB,UDG,LOW_MASS_AGN,SPCV"}
+        fdict["msks"] = {
+            "SV1_DESI_TARGET": "STD_WD,ELG",
+            "SV1_BGS_TARGET": "BGS_FAINT",
+            "SV1_SCND_TARGET": "WD_BINARIES_DARK,BHB,UDG,LOW_MASS_AGN,SPCV",
+        }
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
@@ -933,7 +937,7 @@ def main():
         fdict["msks"] = {
             "SV1_DESI_TARGET": "STD_WD,LRG,QSO,ELG",
             "SV1_BGS_TARGET": "BGS_FAINT",
-            "SV1_SCND_TARGET": "WISE_VAR_QSO,QSO_RED,WD_BINARIES_DARK,BHB,UDG,LOW_MASS_AGN,SPCV"
+            "SV1_SCND_TARGET": "WISE_VAR_QSO,QSO_RED,WD_BINARIES_DARK,BHB,UDG,LOW_MASS_AGN,SPCV",
         }
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
         fdict["nskypet"] = "80"
@@ -944,7 +948,10 @@ def main():
         fdict["dtobscon"] = "dark"
         fdict["survey"] = "sv1"
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
-        fdict["msks"] = {"SV1_DESI_TARGET": "STD_WD,QSO,ELG", "SV1_SCND_TARGET": "WISE_VAR_QSO,QSO_RED"}
+        fdict["msks"] = {
+            "SV1_DESI_TARGET": "STD_WD,QSO,ELG",
+            "SV1_SCND_TARGET": "WISE_VAR_QSO,QSO_RED",
+        }
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
@@ -956,12 +963,15 @@ def main():
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_BRIGHT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
-    # AR backup faint: [desi-survey 1521], 
+    # AR backup faint: [desi-survey 1521],
     elif args.faflavor == "sv1backup1":
         fdict["dtobscon"] = "dark"
         fdict["survey"] = "sv1"
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
-        fdict["msks"] = {"SV1_DESI_TARGET": "STD_WD", "SV1_MWS_TARGET": "MWS_MAIN_BROAD,BACKUP_FAINT"}
+        fdict["msks"] = {
+            "SV1_DESI_TARGET": "STD_WD",
+            "SV1_MWS_TARGET": "MWS_MAIN_BROAD,BACKUP_FAINT",
+        }
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_BRIGHT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "100"
@@ -1109,10 +1119,12 @@ def main():
             ref_nums = np.array([1, 1, 1, 1, 1])
         # AR top-priority secondary programs on sv1elg, sv1lrqso tiles
         # AR taking 5000 + default
-        if args.faflavor in ["sv1elg", "sv1lrgqso"]: 
-                ref_msks = np.append(ref_msks, ["WD_BINARIES_DARK", "BHB", "UDG", "LOW_MASS_AGN", "SPCV"])
-                ref_prios = np.append(ref_prios, [6998, 6950, 6900, 6025, 6025])
-                ref_nums = np.append(ref_nums, [1, 1, 1, 1, 1])
+        if args.faflavor in ["sv1elg", "sv1lrgqso"]:
+            ref_msks = np.append(
+                ref_msks, ["WD_BINARIES_DARK", "BHB", "UDG", "LOW_MASS_AGN", "SPCV"]
+            )
+            ref_prios = np.append(ref_prios, [6998, 6950, 6900, 6025, 6025])
+            ref_nums = np.append(ref_nums, [1, 1, 1, 1, 1])
         # AR unwise: setting PRIORITY=4000 for all unwise targets
         if args.faflavor in ["sv1unwise"]:
             ref_msks = np.array(["UNWISE_BLUE", "UNWISE_GREEN", "STD_WD"])
@@ -1135,10 +1147,14 @@ def main():
     # AR ! only checking for the official naming/storing convention !
     # AR ! will fail to detect duplicates tileids if files are organized differently !
     # AR ! may also fail if two similar tileids are requested in a given parallel call!
-    prev_tileids = np.unique([
-        fn.split("/")[-1][12:18]
-        for fn in glob(os.path.join(path_to_svn_tiles, "???/fiberassign-??????.fits*"))
-    ])
+    prev_tileids = np.unique(
+        [
+            fn.split("/")[-1][12:18]
+            for fn in glob(
+                os.path.join(path_to_svn_tiles, "???/fiberassign-??????.fits*")
+            )
+        ]
+    )
 
     new_tileids = np.array(["{:06d}".format(tid) for tid in tileids])
     keep = np.in1d(new_tileids, prev_tileids)
@@ -1516,6 +1532,10 @@ def main():
                     fd["PRIMARY"].write_key(
                         key, mydirs[key].replace(desiroot, "DESIROOT")
                     )
+            # AR storing some specific arguments
+            # AR plus a (long) FAARGS keyword with storing arguments to re-run the fiber assignment
+            # AR     we exclude from FAARGS outdir, forcetiled, and any None argument
+            tmparr = []
             for kwargs in args._get_kwargs():
                 if kwargs[0].lower() in [
                     "outdir",
@@ -1526,6 +1546,13 @@ def main():
                 ]:
                     if kwargs[1] is not None:
                         fd["PRIMARY"].write_key(kwargs[0], kwargs[1])
+                if (kwargs[0].lower() not in ["outdir", "forcetileid"]) & (
+                    kwargs[1] is not None
+                ):
+                    tmparr += ["--{} {}".format(kwargs[0], kwargs[1])]
+            fd["PRIMARY"].write_key(
+                "faargs", " ".join(tmparr),
+            )
             fd["PRIMARY"].write_key(
                 "sctarg",
                 ",".join([fdict["msks"][key] for key in list(fdict["msks"].keys())]),
@@ -1891,7 +1918,16 @@ def main():
             ):
                 ax = fig.add_subplot(gs[0, iy])
                 plot_cutout(
-                    ax, img, rdlim, x, y, pet=True, alpha=alpha, txts=[txt], xtxts=[0.2], ytxts=[0.98]
+                    ax,
+                    img,
+                    rdlim,
+                    x,
+                    y,
+                    pet=True,
+                    alpha=alpha,
+                    txts=[txt],
+                    xtxts=[0.2],
+                    ytxts=[0.98],
                 )
 
             # AR looping on tracers
@@ -1907,7 +1943,11 @@ def main():
                 if mskpsel.sum() == 0:
                     continue
                 msksel = (mydict[mskkey] & yaml_masks[mskkey][msk]) > 0
-                print("{} {}:\tassgn / parent = {} / {}".format(mskkey, msk, msksel.sum(), mskpsel.sum()))
+                print(
+                    "{} {}:\tassgn / parent = {} / {}".format(
+                        mskkey, msk, msksel.sum(), mskpsel.sum()
+                    )
+                )
                 fafrac = msksel.sum() / float(mskpsel.sum())
                 # famin = np.clip(fafrac-0.2,0,1)
                 # famax = np.clip(fafrac+0.2,0,1)
@@ -2091,9 +2131,13 @@ def main():
                     drap[mskpsel],
                     ddecp[mskpsel],
                     pet=True,
-                    txts=[msk, "parent : {:.0f}".format(mskpsel.sum() / tarea)+ r" deg$^{-2}$"],
+                    txts=[
+                        msk,
+                        "parent : {:.0f}".format(mskpsel.sum() / tarea)
+                        + r" deg$^{-2}$",
+                    ],
                     xtxts=[0.5, 0.5],
-                    ytxts=[0.98, 0.1]
+                    ytxts=[0.98, 0.1],
                 )
                 hbp = ax.hexbin(
                     drap[mskpsel],
@@ -2113,9 +2157,13 @@ def main():
                     dra[msksel],
                     ddec[msksel],
                     pet=True,
-                    txts=[msk, "assigned : {:.0f}".format(msksel.sum() / tarea)+ r" deg$^{-2}$"],
+                    txts=[
+                        msk,
+                        "assigned : {:.0f}".format(msksel.sum() / tarea)
+                        + r" deg$^{-2}$",
+                    ],
                     xtxts=[0.5, 0.5],
-                    ytxts=[0.98, 0.1]
+                    ytxts=[0.98, 0.1],
                 )
                 hb = ax.hexbin(
                     dra[msksel],
