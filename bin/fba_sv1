@@ -55,6 +55,7 @@ faflavors_all = [
     "sv1unwiseblue",
     "sv1scndcosmos",
     "sv1scndcfhtls",
+    "sv1unwise",
     "sv1ssv",
     "sv1elg",
     "sv1elgqso",
@@ -958,6 +959,7 @@ def main():
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
         fdict["nskypet"] = "40"
         fdict["nstdpet"] = "10"
+
     # AR sv1elg: adding specific secondary programs at top-priority (WD_BINARIES_DARK,BHB,UDG,LOW_MASS_AGN,SPCV)
     elif args.faflavor == "sv1elg":
         fdict["survey"] = "sv1"
@@ -1157,6 +1159,7 @@ def main():
             ref_prios = np.array([4100, 4050, 4000])
             ref_nums = np.array([1, 1, 1])
  
+
         # AR safe, ordering by increasing priorities
         ii = ref_prios.argsort()
         ref_msks = ref_msks[ii]
