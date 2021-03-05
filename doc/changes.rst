@@ -3,12 +3,27 @@
 fiberassign change log
 ======================
 
-2.1.1 (unreleased)
+2.1.2 (unreleased)
 ------------------
 
-* No changes yet.
+* No changes yet
 
-2.1.0 (unreleased)
+2.1.1 (2021-02-11)
+------------------
+
+* Added bin/sv1-summary.py (PR `#301`_, `#308`_).
+* Updates for secondary target support (PR `#303`_).
+* Orion Rosette Praesepe support (PR `#306`_).
+* Remove unnecessary (incorrect) -Wstrict-prototypes compile flag (PR `#309`_).
+
+.. _`#301`: https://github.com/desihub/fiberassign/pull/301
+.. _`#303`: https://github.com/desihub/fiberassign/pull/303
+.. _`#306`: https://github.com/desihub/fiberassign/pull/306
+.. _`#308`: https://github.com/desihub/fiberassign/pull/308
+.. _`#309`: https://github.com/desihub/fiberassign/pull/309
+
+
+2.1.0 (2020-12-23)
 ------------------
 
 Major script and format updates for SV1 in December 2020.
