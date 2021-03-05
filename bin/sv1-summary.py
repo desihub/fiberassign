@@ -32,12 +32,18 @@ import desisurvey
 from desisurvey.scripts.collect_etc import get_conditions
 import multiprocessing
 from desitarget.internal import sharedmem
+
 # AR https://github.com/desihub/desicmx/blob/master/analysis/gfa/DESI-Online-Database-Tutorial.ipynb
 try:
     import desietcimg
 except ImportError:
-    sys.exit("desietcimg not installed\nto install: {} -m pip install --user git+https://github.com/dkirkby/desietcimg\nexiting".format(sys.executable))
+    sys.exit(
+        "desietcimg not installed\nto install: {} -m pip install --user git+https://github.com/dkirkby/desietcimg\nexiting".format(
+            sys.executable
+        )
+    )
 from desietcimg.db import DB
+from desispec.io.fluxcalibration import read_average_flux_calibration
 from argparse import ArgumentParser
 
 
@@ -114,8 +120,10 @@ surveydir = os.path.join(os.getenv("DESI_ROOT"), "survey")
 nightoutdir = os.path.join(args.outdir, "sv1-nights")
 if not os.path.isdir(nightoutdir):
     os.mkdir(nightoutdir)
-ephemdir = os.path.join(surveydir, "observations", "misc", "ephem-bgd-jan2021") # jan2021: using dark_max_sun_altitude=-18, bright_max_sun_altitude=-12
-#ephemdir = os.path.join(surveydir, "observations", "misc", "ephem-bgd-master")
+ephemdir = os.path.join(
+    surveydir, "observations", "misc", "ephem-bgd-jan2021"
+)  # jan2021: using dark_max_sun_altitude=-18, bright_max_sun_altitude=-12
+# ephemdir = os.path.join(surveydir, "observations", "misc", "ephem-bgd-master")
 dailydir = os.path.join(os.getenv("DESI_ROOT"), "spectro", "redux", "daily")
 pixwfn = (
     os.getenv("DESI_TARGET")
@@ -123,14 +131,25 @@ pixwfn = (
 )
 desfn = os.path.join(surveydir, "observations", "misc", "des_footprint.txt")
 dbyamlfn = os.path.join(surveydir, "observations", "misc", "db.yaml")
+thrufn = {
+    camera: "{}/thru-fluxcalib/cascades-transpfrac-airmass-noseeing/fluxcalib-cascades-{}-0.58transpfrac0.78.fits".format(
+        os.getenv("CSCRATCH"), camera
+    )
+    for camera in ["b", "r", "z"]
+}
 
 # AR SKY MONITOR measurements
-# AR currently normalized to a dark sky of 21.07 mag / arcsec2 (email from DK Feb., 16th 2021)
-skymon_zp = 21.07
 db = DB(config_name=dbyamlfn)
-tmpout = db.query("select time_recorded,skycam0,skycam1,average from sky_skylevel", maxrows=1e10)
+tmpout = db.query(
+    "select time_recorded,skycam0,skycam1,average from sky_skylevel", maxrows=1e10
+)
 skymon = {}
-skymon["MJD"] = np.array([tmpout["time_recorded"][i].to_julian_date()-2400000.5 for i in range(len(tmpout))])
+skymon["MJD"] = np.array(
+    [
+        tmpout["time_recorded"][i].to_julian_date() - 2400000.5
+        for i in range(len(tmpout))
+    ]
+)
 for key in ["SKYCAM0", "SKYCAM1", "AVERAGE"]:
     skymon[key] = tmpout[key.lower()].values
 
@@ -140,14 +159,14 @@ for key in ["SKYCAM0", "SKYCAM1", "AVERAGE"]:
 # AR                for exposures not present in *matched_coadd*
 # AR                https://desisurvey.slack.com/archives/C01HNN87Y7J/p1612806269343500
 gfafn = {}
-gfafn["acq"] =  np.sort(
+gfafn["acq"] = np.sort(
     glob(surveydir + "/GFA/offline_acq_ccds_SV1-thru_20??????.fits")
 )[-1]
 gfafn["matched_coadd"] = np.sort(
-       glob(surveydir + "/GFA/offline_matched_coadd_ccds_SV1-thru_20??????.fits")
+    glob(surveydir + "/GFA/offline_matched_coadd_ccds_SV1-thru_20??????.fits")
 )[-1]
 print("gfafn = {}".format(gfafn))
-gfa = {key:fits.open(gfafn[key])[3].data for key in list(gfafn.keys())} 
+gfa = {key: fits.open(gfafn[key])[3].data for key in list(gfafn.keys())}
 
 # AR ephemerides:
 # AR using {ephemdir}/config.yaml to define bright/gray/dark
@@ -159,8 +178,10 @@ os.environ["DESISURVEY_OUTPUT"] = ephemdir
 # AR      and are used in get_obsconditions()
 START_DATE, STOP_DATE = datetime.date(2019, 1, 1), datetime.date(2025, 12, 31)
 start_iso, stop_iso = START_DATE.isoformat(), STOP_DATE.isoformat()
-ephem_config = desisurvey.config.Configuration(file_name=os.path.join(ephemdir, "config.yaml"))
-ephem_fn = ephem_config.get_path('ephem_{}_{}.fits'.format(start_iso, stop_iso))
+ephem_config = desisurvey.config.Configuration(
+    file_name=os.path.join(ephemdir, "config.yaml")
+)
+ephem_fn = ephem_config.get_path("ephem_{}_{}.fits".format(start_iso, stop_iso))
 desisurvey.utils.freeze_iers()
 # AR should not happen, unless new settings are entered
 if not os.path.isfile(ephem_fn):
@@ -183,6 +204,11 @@ if os.path.isdir(os.path.join(args.outdir, "sv1-plots")) == False:
     os.mkdir(os.path.join(args.outdir, "sv1-plots"))
 outfns["skymap"] = os.path.join(args.outdir, "sv1-plots", "sv1-skymap.png")
 outfns["onsky"] = os.path.join(args.outdir, "sv1-plots", "sv1-onsky.png")
+for flavshort in ["QSO+LRG", "ELG", "BGS+MWS", "QSO+ELG", "SSV"]:
+    fsh = flavshort.lower().replace("+", "")
+    outfns["efftime-{}".format(fsh)] = os.path.join(
+        args.outdir, "sv1-plots", "sv1-efftime-{}.png".format(fsh)
+    )
 months = ["202012", "202101", "202102", "202103", "202104"]  # AR for splitting plots
 outfns["obscond"] = {}
 for month in months:
@@ -240,6 +266,7 @@ flavdict = {
         "COLOR": "0.5",
     },
     "SSV": {"FAFLAVORS": ["sv1ssv"], "COLOR": "orange"},
+    "BACKUP": {"FAFLAVORS": ["sv1backup1"], "COLOR": "y"},
 }
 # AR field names - hand-written...
 fielddict = {
@@ -341,7 +368,7 @@ wstich = {"b": (wmin, 5780), "r": (5780, 7570), "z": (7570, 9824)}
 
 
 # AR DESI telescope geometric area (cm2) and fiber area (arcsec2)
-# AR for computing SKY_RMAG_AB
+# AR for converting the spectroscopic sky to correct units
 fn = os.path.join(os.getenv("DESIMODEL"), "data", "desi.yaml")
 f = open(fn, "r")
 desi = yaml.safe_load(f)
@@ -518,8 +545,9 @@ def get_sky(night, expid, specs=range(10), use_cache=True, fill_cache=True):
 
 # AR/DK exposure depths utilities
 # AR transpfrac = transparency * fiber_fracflux
+# AR 2021-03-05: updating ffracref=0.582, as GFA now provides measurement for fiber_diameter=1.52"
 def determine_tile_depth2(
-    night, expid, exptime, transpfrac, darkref=det_eso, ffracref=0.56, smoothing=125,
+    night, expid, exptime, transpfrac, darkref=det_eso, ffracref=0.582, smoothing=125,
 ):
     inc, det = get_sky(night, expid)
     depths = {}
@@ -535,6 +563,8 @@ def determine_tile_depth2(
 
 
 # AR grz-band sky mag / arcsec2 from sky-....fits files
+# AR now using work-in-progress throughput
+# AR still provides a better agreement with GFAs than previous method
 def get_sky_grzmag_ab(night, expid, exptime, ftype, redux="daily", fiber=0):
     # AR ftype = "data" or "model"
     # AR redux = "daily" or "blanc"
@@ -545,45 +575,32 @@ def get_sky_grzmag_ab(night, expid, exptime, ftype, redux="daily", fiber=0):
         sys.exit("ftype should be 'data' or 'model'")
     sky = np.zeros(len(fullwave))
     reduxdir = dailydir.replace("daily", redux)
-    #"""
-    # AR see AK email [desi-data 5218]
-    if redux == "blanc":
-        specs = ["0", "1", "3", "4", "5", "7", "8", "9"]
+    # AR looking for a petal with brz sky and ivar>0
+    spec, ncam = -1, 0
+    while (ncam < 3) & (spec < 9):
+        spec += 1
+        tmpfns = glob(
+            os.path.join(
+                reduxdir,
+                "exposures",
+                "{}".format(night),
+                "{:08d}".format(expid),
+                "sky-?{}-{:08d}.fits".format(spec, expid),
+            )
+        )
+        ncam = 0
+        for tmpfn in tmpfns:
+            if fits.open(tmpfn)["IVAR"].data.max() > 0:
+                ncam += 1
+    if ncam < 3:
+        print(
+            "Skipping {}-{:08d} : no petal with sky for the three cameras".format(
+                night, expid
+            )
+        )
+        return -99, -99, -99
     else:
-        specs = np.arange(10, dtype=int).astype(str)
-    for camera in ["b", "r", "z"]:
-        wave = fullwave[cslice[camera]]
-        norm_cam = np.zeros(len(wave))
-        sky_cam = np.zeros(len(wave))
-        for spec in specs:
-            # AR data
-            if ftype == "data":
-                frfn = os.path.join(
-                    reduxdir,
-                    "exposures",
-                    "{}".format(night),
-                    "{:08d}".format(expid),
-                    "frame-{}{}-{:08d}.fits".format(camera, spec, expid),
-                )
-                flfn = os.path.join(
-                    reduxdir,
-                    "calibnight",
-                    "{}".format(night),
-                    "fiberflatnight-{}{}-{}.fits".format(camera, spec, night),
-                )
-                if not os.path.isfile(frfn) or not os.path.isfile(flfn):
-                    print("Skipping non-existent {}, {}".format(frfn, flfn))
-                else:
-                    fr = read_frame(frfn, skip_resolution=True)
-                    fl = fiberflat.read_fiberflat(flfn)
-                    apply_fiberflat(fr, fl)
-                    # AR cutting on sky fibers with at least one valid pixel
-                    ii = (fr.fibermap["OBJTYPE"] == "SKY") & (fr.ivar.sum(axis=1) > 0)
-                    # AR frame*fits are in e- / angstrom ; adding the N sky fibers
-                    # sky_cam += fr.flux[ii, :].sum(axis=0)
-                    # nspec += ii.sum()
-                    sky_cam += (fr.flux[ii, :] * fr.ivar[ii, :]).sum(axis=0)
-                    norm_cam += fr.ivar[ii, :].sum(axis=0)
+        for camera in ["b", "r", "z"]:
             # AR model
             if ftype == "model":
                 fn = os.path.join(
@@ -593,35 +610,21 @@ def get_sky_grzmag_ab(night, expid, exptime, ftype, redux="daily", fiber=0):
                     "{:08d}".format(expid),
                     "sky-{}{}-{:08d}.fits".format(camera, spec, expid),
                 )
-                if not os.path.isfile(fn):
-                    print("Skipping non-existent {}".format(fn))
-                else:
-                    fd = fitsio.FITS(fn)
-                    assert np.allclose(
-                        fullwave[cslice[camera]], fd["WAVELENGTH"].read()
-                    )
-                    # AR kept range for that camera (non-overlapping between cameras)
-                    keep = (wave >= wstich[camera][0]) & (wave < wstich[camera][1])
-                    # AR sky*fits are in e- / angstrom
-                    # AR handling some cases where SKY=IVAR=0
-                    if fd["IVAR"][0, :][0][keep].max() > 0:
-                        sky_cam[keep] += fd["SKY"][0, :][0][keep]  # AR reading the first fiber only
-                        norm_cam[keep] += 1
-                    else:
-                        print(
-                            "\t{} {:08d} {}{}: no spectra for {}".format(
-                                night, expid, camera, spec, ftype
-                            )
-                        )
-                    fd.close()
-        # AR sky model flux in incident photon / angstrom / s
-        keep = norm_cam > 0
-        if keep.sum() > 0:
-            sky[cslice[camera]][keep] = (
-                sky_cam[keep] / norm_cam[keep] / exptime / spec_thru[camera][keep]
+                h = fits.open(fn)
+                acal = read_average_flux_calibration(thrufn[camera])
+                flux = np.interp(
+                    fullwave[cslice[camera]], h["WAVELENGTH"].data, h["SKY"].data[fiber]
+                )
+            sky[cslice[camera]] = flux / exptime / acal.throughput()
+            print(
+                fn.split("/")[-1],
+                night,
+                expid,
+                camera,
+                "%.2f" % acal.throughput().max(),
+                "%.1f" % flux.max(),
             )
-        else:
-            print("{}-{:08d}-{}: no spectra for {}".format(night, expid, camera, ftype))
+        #
     # AR sky model flux in erg / angstrom / s (using the photon energy in erg)
     e_phot_erg = (
         constants.h.to(units.erg * units.s)
@@ -633,17 +636,108 @@ def get_sky_grzmag_ab(night, expid, exptime, ftype, redux="daily", fiber=0):
     sky /= telap_cm2 * fiber_area_arcsec2
     # AR integrate over the DECam grz-bands
     # AR using the curves with no atmospheric extinction (email from DK from 09Feb2021)
-    filts = filters.load_filters("decamDR1noatm-g", "decamDR1noatm-r", "decamDR1noatm-z")
-    #filts = filters.load_filters("decam2014-g", "decam2014-r", "decam2014-z")
+    filts = filters.load_filters(
+        "decamDR1noatm-g", "decamDR1noatm-r", "decamDR1noatm-z"
+    )
+    # filts = filters.load_filters("decam2014-g", "decam2014-r", "decam2014-z")
     # AR zero-padding spectrum so that it covers the DECam grz passbands
     # AR looping through filters while waiting issue to be solved (https://github.com/desihub/speclite/issues/64)
     sky_pad, fullwave_pad = sky.copy(), fullwave.copy()
     for i in range(len(filts)):
-        sky_pad, fullwave_pad = filts[i].pad_spectrum(sky_pad, fullwave_pad, method="zero")
+        sky_pad, fullwave_pad = filts[i].pad_spectrum(
+            sky_pad, fullwave_pad, method="zero"
+        )
     return filts.get_ab_magnitudes(
         sky_pad * units.erg / (units.cm ** 2 * units.s * units.angstrom),
         fullwave_pad * units.angstrom,
     ).as_array()[0]
+
+
+# AR
+# AR https://desi.lbl.gov/trac/wiki/SurveyOps/SurveySpeed
+# AR 2021-03-05: GFA values are now computed for a fiber diameter of 1.52"
+def get_efftime_speed(
+    exptime,
+    sky,
+    ebv,
+    transparency,
+    airmass,
+    ffrac_psf,
+    ffrac_elg,
+    ffrac_bgs,
+    ffrac_psf_nom,
+    ffrac_elg_nom,
+    ffrac_bgs_nom,
+    kterm,
+    ebv_r_coeff=2.165,
+):
+    # AR : sky <- spectro. sky in nMgy / arcsec**2 (corrected by throughput)
+    # AR : transparency, airmass <- GFA
+    # AR : ffrac_psf <- GFA fiber_fracflux
+    # AR : ffrac_elg <- GFA fiber_fracflux_elg
+    # AR : ffrac_bgs <- GFA fiber_fracflux_bgs
+    # AR : ffrac_*_nom and kterm <- from GFA [ffrac_psf_nom~0.582, ffrac_elg_nom~0.424, ffrac_bgs_nom~0.195]
+    #
+    # AR nominal values
+    exptime_nom = 1000.0  # AR seconds
+    sky_nom = 3.73  # AR nMgy/arcsec**2
+    fflux_bright_nom = (
+        15.8  # AR nMgy/arcsec**2 (r=19.5 mag for de Vaucouleurs rhalf=1.5" BGS)
+    )
+    fflux_backup_nom = 27.5  # AR nMgy/arcsec**2 (r=18.9 mag star)
+    # AR airmass term
+    airfac = 10.0 ** (kterm * (airmass - 1.0) / 2.5)
+    # AR ebv term
+    ebvfac = 10.0 ** (ebv_r_coeff * ebv / 2.5)
+    # AR sky readnoise
+    sky_rdn = 0.932  # AR nMgy/arcsec**2
+    # AR "limit" fiber flux
+    fflux_bright = (
+        ffrac_bgs * transparency / airfac * fflux_bright_nom / fiber_area_arcsec2
+    )
+    fflux_backup = (
+        ffrac_psf * transparency / airfac * fflux_backup_nom / fiber_area_arcsec2
+    )
+    # AR effective sky
+    effsky_dark = (sky + sky_rdn * exptime_nom / exptime) / (1.0 + sky_rdn / sky_nom)
+    effsky_bright = (sky + sky_rdn * exptime_nom / exptime + fflux_bright) / (
+        1.0 + sky_rdn / sky_nom + fflux_bright / sky_nom
+    )
+    effsky_backup = (sky + sky_rdn * exptime_nom / exptime + fflux_backup) / (
+        1.0 + sky_rdn / sky_nom + fflux_backup / sky_nom
+    )
+    # AR effective exposure time
+    efftime_dark = (
+        exptime
+        * (ffrac_elg / ffrac_elg_nom * transparency / airfac) ** 2
+        * (sky_nom / effsky_dark)
+        / ebvfac ** 2
+    )
+    efftime_bright = (
+        exptime
+        * (ffrac_bgs / ffrac_bgs_nom * transparency / airfac) ** 2
+        * (sky_nom / effsky_bright)
+        / ebvfac ** 2
+    )
+    efftime_backup = (
+        exptime
+        * (ffrac_psf / ffrac_psf_nom * transparency / airfac) ** 2
+        * (sky_nom / effsky_backup)
+        / ebvfac ** 2
+    )
+    # AR survey speed
+    speed_dark = (ffrac_elg / ffrac_elg_nom * transparency) ** 2 * (sky_nom / sky)
+    speed_bright = (ffrac_bgs / ffrac_bgs_nom * transparency) ** 2 * (sky_nom / sky)
+    speed_backup = (ffrac_psf / ffrac_psf_nom * transparency) ** 2 * (sky_nom / sky)
+    # AR
+    return (
+        efftime_dark,
+        efftime_bright,
+        efftime_backup,
+        speed_dark,
+        speed_bright,
+        speed_backup,
+    )
 
 
 # AR get the corresonding night in ephem
@@ -653,15 +747,16 @@ def get_nightind(mjd):
     okmjd = np.isfinite(mjd) & (mjd > 58484)
     nights = ephem.table
     indices = np.repeat(np.arange(len(nights)), 2)
-    startstop = np.concatenate([[night['brightdusk'], night['brightdawn']]
-                                for night in nights])
-    nightind = np.zeros(len(mjd), dtype='f8')
+    startstop = np.concatenate(
+        [[night["brightdusk"], night["brightdawn"]] for night in nights]
+    )
+    nightind = np.zeros(len(mjd), dtype="f8")
     nightind[~okmjd] = -1
     nightind[okmjd] = np.interp(mjd[okmjd], startstop, indices)
     # a lot of exposures apparently taken during the day?
     # We should mark these as belonging to the "day" program?
-    mday = nightind != nightind.astype('i4')
-    nightind = nightind.astype('i4')
+    mday = nightind != nightind.astype("i4")
+    nightind = nightind.astype("i4")
     return nightind
 
 
@@ -839,7 +934,11 @@ def write_html_perexp(html, d, style, h2title):
         )
     )
     html.write("<p style='{}'>GFA acq fits file: {}</p>".format(style, gfafn["acq"]))
-    html.write("<p style='{}'>GFA matched_coadd fits file: {}</p>".format(style, gfafn["matched_coadd"]))
+    html.write(
+        "<p style='{}'>GFA matched_coadd fits file: {}</p>".format(
+            style, gfafn["matched_coadd"]
+        )
+    )
     html.write(
         "<p style='{}'>FIBER_FRACFLUX: fraction of light in a fiber-sized aperture given the PSF shape, assuming that the PSF is perfectly aligned with the fiber (i.e. does not capture any astrometry/positioning errors).</p>".format(
             style
@@ -952,21 +1051,29 @@ tiles["FN"] = np.sort(
 )
 nt = len(tiles["FN"])
 # AR initialising
-for key in ["TILEID", "TILERA", "TILEDEC", "FAFLAVOR", "TARGETS", "COLOR", "FIELD"]:
+for key in [
+    "TILEID",
+    "TILERA",
+    "TILEDEC",
+    "FAFLAVOR",
+    "TARGETS",
+    "COLOR",
+    "FIELD",
+    "RUNDATE",
+]:
     if key in ["TILEID"]:
-        dtype = int
-    elif key in ["FAFLAVOR", "TARGETS", "COLOR", "FIELD"]:
-        dtype = object
+        tiles[key] = np.zeros(nt, dtype=int)
+    elif key in ["FAFLAVOR", "TARGETS", "COLOR", "FIELD", "RUNDATE"]:
+        tiles[key] = np.array(["-" for x in range(nt)], dtype=object)
     else:
-        dtype = float
-    tiles[key] = np.zeros(nt, dtype=dtype)
+        tiles[key] = np.zeros(nt, dtype=float)
 for target in targets:
     tiles[target] = np.zeros(nt, dtype=int)
 # AR populating
 for i in range(nt):
     # AR general
     hdr = fits.getheader(tiles["FN"][i])
-    for key in ["TILEID", "TILERA", "TILEDEC", "FAFLAVOR"]:
+    for key in ["TILEID", "TILERA", "TILEDEC", "FAFLAVOR", "RUNDATE"]:
         tiles[key][i] = hdr[key]
     # AR number of targets per tracer
     d = fits.open(tiles["FN"][i])[1].data
@@ -1022,7 +1129,7 @@ if args.tiles == "y":
     ]
     h = fits.open(fns[0])
     keys, fmts = h[1].columns.names, h[1].columns.formats
-    ownkeys, ownfmts = ["FAFLAVOR", "TARGETS", "FIELD"], ["-", "-", "-"]
+    ownkeys, ownfmts = ["FAFLAVOR", "TARGETS", "FIELD", "RUNDATE"], ["-", "-", "-", "-"]
     t = {}
     for key in keys + ownkeys:
         t[key] = []
@@ -1036,7 +1143,7 @@ if args.tiles == "y":
     # AR building/writing fits
     cols = []
     for key, fmt in zip(keys + ownkeys, fmts + ownfmts):
-        if key in ["FAFLAVOR", "TARGETS", "FIELD"]:
+        if key in ["FAFLAVOR", "TARGETS", "FIELD", "RUNDATE"]:
             fmt = "{}A".format(np.max([len(x) for x in t[key]]))
         cols += [fits.Column(name=key, format=fmt, array=t[key])]
     h = fits.BinTableHDU.from_columns(fits.ColDefs(cols))
@@ -1046,6 +1153,7 @@ if args.tiles == "y":
 # AR output file name for a night
 def get_night_outfn(nightoutdir, night):
     return "{}/sv1-exposures-{}.fits".format(nightoutdir, night)
+
 
 # AR listing the expids for that night
 # AR Feb. 05, 2021 : changing the exposure listing approach
@@ -1069,9 +1177,7 @@ def get_night_expids(night, rawdir, tiles):
     keep = np.in1d(plan_tileids.astype(int), tiles["TILEID"])
     plan_expids, plan_tileids = plan_expids[keep], plan_tileids[keep]
     # AR observed
-    fns = np.sort(
-        glob(os.path.join(nightrawdir, "????????", "desi-????????.fits.fz"))
-    )
+    fns = np.sort(glob(os.path.join(nightrawdir, "????????", "desi-????????.fits.fz")))
     obs_expids = np.array([fn.split("/")[-2] for fn in fns])
     # AR keeping planned + observed
     keep = np.in1d(plan_expids, obs_expids)
@@ -1095,7 +1201,7 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, dailydir, rawdir, tile
     # AR listing the expids for that night
     expids = get_night_expids(night, rawdir, tiles)
     nexp = len(expids)
-    print("processing night={} ({} exposures)".format(night, nexp)) 
+    print("processing night={} ({} exposures)".format(night, nexp))
     if nexp > 0:
         # AR quantities we store
         # AR listing all camera+petal, to check existing sky/sframe/cframe files in the reduction
@@ -1114,13 +1220,9 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, dailydir, rawdir, tile
             "OBSCONDITIONS",
             "ARIZONA_TIMEOBS",
             "EBV",
-            # "SPECDATA_SKY_RMAG_AB",
-            "SPECMODEL_SKY_GMAG_AB",
-            "SPECMODEL_SKY_RMAG_AB",
-            "SPECMODEL_SKY_ZMAG_AB",
-            #"BLANC_SPECMODEL_SKY_GMAG_AB",
-            #"BLANC_SPECMODEL_SKY_RMAG_AB",
-            #"BLANC_SPECMODEL_SKY_ZMAG_AB",
+            "SPECMODEL_SKY_GFLUX",
+            "SPECMODEL_SKY_RFLUX",
+            "SPECMODEL_SKY_ZFLUX",
             "GFA_ORIGIN",
             "B_DEPTH",
             "R_DEPTH",
@@ -1128,15 +1230,31 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, dailydir, rawdir, tile
             "B_DEPTH_EBVAIR",
             "R_DEPTH_EBVAIR",
             "Z_DEPTH_EBVAIR",
+            "EFFTIME_DARK",
+            "EFFTIME_BRIGHT",
+            "EFFTIME_BACKUP",
+            "SPEED_DARK",
+            "SPEED_BRIGHT",
+            "SPEED_BACKUP",
             "DAILY_BITPSFFN",
             "DAILY_BITFRAMEFN",
             "DAILY_BITSKYFN",
             "DAILY_BITSFRAMEFN",
             "DAILY_BITFLUXCALIBFN",
             "DAILY_BITCFRAMEFN",
-        ] + targets
+        ]
+        # AR nb of assigned targets
+        targkeys = ["N_ASSGN_{}".format(target) for target in targets]
         # AR from SKY MONITOR
-        skymonkeys = ["NEXP", "SKYCAM0_MEAN", "SKYCAM0_MEAN_ERR", "SKYCAM1_MEAN", "SKYCAM1_MEAN_ERR", "AVERAGE_MEAN", "AVERAGE_MEAN_ERR"]
+        skymonkeys = [
+            "NEXP",
+            "SKYCAM0_MEAN",
+            "SKYCAM0_MEAN_ERR",
+            "SKYCAM1_MEAN",
+            "SKYCAM1_MEAN_ERR",
+            "AVERAGE_MEAN",
+            "AVERAGE_MEAN_ERR",
+        ]
         # AR from GFA
         gfakeys = [
             "AIRMASS",
@@ -1148,28 +1266,50 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, dailydir, rawdir, tile
             "SKY_MAG_AB",
             "FIBER_FRACFLUX",
             "FIBER_FRACFLUX_ELG",
+            "FIBER_FRACFLUX_BGS",
             "TRANSPFRAC",
             "MAXCONTRAST",
             "MINCONTRAST",
             "KTERM",
+            "FRACFLUX_NOMINAL_POINTSOURCE",
+            "FRACFLUX_NOMINAL_ELG",
+            "FRACFLUX_NOMINAL_BGS",
             "RADPROF_FWHM_ASEC",
             "FIBERFAC",
             "FIBERFAC_ELG",
         ]
         # AR *1d-quantities* from ephem
-        ephkeys = [key.upper() for key in ephem.table.dtype.names if len(ephem.table[key].shape) == 1]
+        ephkeys = [
+            key.upper()
+            for key in ephem.table.dtype.names
+            if len(ephem.table[key].shape) == 1
+        ]
         # AR all keys
         allkeys = ownkeys
         allkeys += hdrkeys
+        allkeys += targkeys
         allkeys += ["SKYMON_{}".format(key) for key in skymonkeys]
         allkeys += ["GFA_{}".format(key) for key in gfakeys]
         allkeys += ["EPHEM_{}".format(key) for key in ephkeys]
         allkeys = np.array(allkeys)
         # AR all formats
-        allfmts = np.array(["E" for key in allkeys],dtype=object)
-        sel = np.in1d(allkeys, ["OBSCONDITIONS", "SKYMON_NEXP"] + targets)
+        allfmts = np.array(["E" for key in allkeys], dtype=object)
+        sel = np.in1d(allkeys, ["OBSCONDITIONS", "SKYMON_NEXP"] + targkeys)
         allfmts[sel] = "I"
-        sel = np.in1d(allkeys, ["NIGHT", "EXPID", "TILEID","DAILY_BITPSFFN", "DAILY_BITFRAMEFN", "DAILY_BITSKYFN", "DAILY_BITSFRAMEFN", "DAILY_BITFLUXCALIBFN", "DAILY_BITCFRAMEFN"])
+        sel = np.in1d(
+            allkeys,
+            [
+                "NIGHT",
+                "EXPID",
+                "TILEID",
+                "DAILY_BITPSFFN",
+                "DAILY_BITFRAMEFN",
+                "DAILY_BITSKYFN",
+                "DAILY_BITSFRAMEFN",
+                "DAILY_BITFLUXCALIBFN",
+                "DAILY_BITCFRAMEFN",
+            ],
+        )
         allfmts[sel] = "K"
         i = np.where(allkeys == "FIELD")[0][0]
         allfmts[i] = "{}A".format(np.max([len(x) for x in tiles["FIELD"]]))
@@ -1178,28 +1318,65 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, dailydir, rawdir, tile
         i = np.where(allkeys == "GFA_ORIGIN")[0][0]
         allfmts[i] = "{}A".format(np.max([len(x) for x in list(gfa.keys())]))
         i = np.where(allkeys == "ARIZONA_TIMEOBS")[0][0]
-        allfmts[i] = "19A" # AR e.g. 2021-02-18T04:28:06
+        allfmts[i] = "19A"  # AR e.g. 2021-02-18T04:28:06
         sel = np.in1d(allkeys, ["EPHEM_{}".format(key) for key in ephkeys])
         allfmts[sel] = "D"
+        # AR all units
+        allunits = np.array(["" for key in allkeys], dtype=object)
+        sel = np.in1d(allkeys, ["OBSCONDITIONS"])
+        allunits[sel] = "1=DARK, 2=GRAY, 4=BRIGHT, -1=ELSE"
+        sel = np.in1d(
+            allkeys,
+            [
+                "EXPTIME",
+                "B_DEPTH",
+                "R_DEPTH",
+                "Z_DEPTH",
+                "B_DEPTH_EBVAIR",
+                "R_DEPTH_EBVAIR",
+                "Z_DEPTH_EBVAIR",
+                "EFFTIME_DARK",
+                "EFFTIME_BRIGHT",
+                "EFFTIME_BACKUP",
+            ],
+        )
+        allunits[sel] = "seconds"
+        sel = np.in1d(
+            allkeys,
+            ["SPECMODEL_SKY_GFLUX", "SPECMODEL_SKY_RFLUX", "SPECMODEL_SKY_ZFLUX"],
+        )
+        allunits[sel] = "nMgy / arcsec ** 2"
+        sel = np.in1d(
+            allkeys, ["SKYMON_{}".format(key) for key in skymonkeys if key != "NEXP"]
+        )
+        allunits[sel] = "flux units from the database"
+        sel = np.in1d(
+            allkeys, ["GFA_{}".format(key) for key in gfakeys if "FRAC" in key]
+        )
+        allunits[sel] = "for an 1.52 arcsecond diameter aperture size"
         # AR dictionary
         exposures = {}
-        for key,fmt in zip(allkeys,allfmts):
+        for key, fmt in zip(allkeys, allfmts):
             if key == "NIGHT":
                 exposures[key] = night + np.zeros(nexp, dtype=int)
             elif key == "EXPID":
                 exposures[key] = expids.copy()
             elif fmt[-1] == "A":
-                exposures[key] = np.array(["-" for i in range(nexp)], dtype="S{}".format(fmt[:-1]))
+                exposures[key] = np.array(
+                    ["-" for i in range(nexp)], dtype="S{}".format(fmt[:-1])
+                )
             elif fmt in ["L"]:
                 exposures[key] = np.zeros(nexp, dtype=bool)
             elif fmt in ["I", "J", "K"]:
-                exposures[key] =  -99 + np.zeros(nexp, dtype=int)
+                exposures[key] = -99 + np.zeros(nexp, dtype=int)
             elif fmt in ["E", "D"]:
                 exposures[key] = -99 + np.zeros(nexp, dtype=float)
             else:
-                sys.exit("(key,fmt)=({},{}) -> fmt not handled; exiting".format(key, fmt))
+                sys.exit(
+                    "(key,fmt)=({},{}) -> fmt not handled; exiting".format(key, fmt)
+                )
         # AR looping on all exposures
-        for iexp,expid in enumerate(expids):
+        for iexp, expid in enumerate(expids):
             # AR listing existing daily processed files
             for ftype in ["PSF", "FRAME", "SKY", "SFRAME", "FLUXCALIB", "CFRAME"]:
                 value = 0
@@ -1224,7 +1401,10 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, dailydir, rawdir, tile
             )
             # AR getting header from the ext=1 of the raw data
             fn = os.path.join(
-                rawdir, "{}".format(night), "{:08d}".format(expid), "desi-{:08d}.fits.fz".format(expid)
+                rawdir,
+                "{}".format(night),
+                "{:08d}".format(expid),
+                "desi-{:08d}.fits.fz".format(expid),
             )
             hdr = fits.getheader(fn, 1)
             # AR header informations
@@ -1232,42 +1412,63 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, dailydir, rawdir, tile
                 if key == "MJDOBS":
                     exposures[key][iexp] = hdr["MJD-OBS"]
                 else:
-                    exposures[key][iexp]= hdr[key]
+                    exposures[key][iexp] = hdr[key]
             # AR Arizona time of observation
-            time_utc = pytz.utc.localize(Time(hdr["MJD-OBS"],format="mjd").to_datetime())
-            exposures["ARIZONA_TIMEOBS"][iexp] = time_utc.astimezone(pytz.timezone("US/Arizona")).strftime("%Y-%m-%dT%H:%M:%S")
+            time_utc = pytz.utc.localize(
+                Time(hdr["MJD-OBS"], format="mjd").to_datetime()
+            )
+            exposures["ARIZONA_TIMEOBS"][iexp] = time_utc.astimezone(
+                pytz.timezone("US/Arizona")
+            ).strftime("%Y-%m-%dT%H:%M:%S")
             # AR field, targets
             it = np.where(tiles["TILEID"] == hdr["TILEID"])[0][0]
             exposures["FIELD"][iexp] = tiles["FIELD"][it]
             exposures["TARGETS"][iexp] = tiles["TARGETS"][it]
             # AR ebv (excluding sky fibers where ebv=0)
             tmpd = fitsio.read(tiles["FN"][it], columns=["EBV", "OBJTYPE"])
-            exposures["EBV"][iexp]= float("{:.3f}".format(np.median(tmpd["EBV"][tmpd["OBJTYPE"] == "TGT"])))
+            exposures["EBV"][iexp] = float(
+                "{:.3f}".format(np.median(tmpd["EBV"][tmpd["OBJTYPE"] == "TGT"]))
+            )
             # AR number of targets per tracer
-            for target in targets:
-                exposures[target][iexp] = tiles[target][it]
-            # AR SKY_RMAG_AB from integrating the sky model over the decam gzr-bands
-            #for redux,prefix in zip(["daily", "blanc"], ["", "BLANC_"]):
-            for redux,prefix in zip(["daily"], [""]):
+            for target, targkey in zip(targets, targkeys):
+                exposures[targkey][iexp] = tiles[target][it]
+            # AR SKY_{GRZ}MAG_AB from integrating the sky model over the decam gzr-bands
+            # AR we convert to linear flux units (nMgy/arcsec**2)
+            # for redux,prefix in zip(["daily", "blanc"], ["", "BLANC_"]):
+            for redux, prefix in zip(["daily"], [""]):
                 if exposures["DAILY_BITSKYFN"][iexp] != 0:
                     tmpgmag, tmprmag, tmpzmag = get_sky_grzmag_ab(
-                                        night, expid, exposures["EXPTIME"][iexp], "model", redux=redux,
-                                        )
-                    exposures["{}SPECMODEL_SKY_GMAG_AB".format(prefix)][iexp] = tmpgmag
-                    exposures["{}SPECMODEL_SKY_RMAG_AB".format(prefix)][iexp] = tmprmag
-                    exposures["{}SPECMODEL_SKY_ZMAG_AB".format(prefix)][iexp] = tmpzmag
+                        night, expid, exposures["EXPTIME"][iexp], "model", redux=redux,
+                    )
+                    exposures["{}SPECMODEL_SKY_GFLUX".format(prefix)][iexp] = 10.0 ** (
+                        (22.5 - tmpgmag) / 2.5
+                    )
+                    exposures["{}SPECMODEL_SKY_RFLUX".format(prefix)][iexp] = 10.0 ** (
+                        (22.5 - tmprmag) / 2.5
+                    )
+                    exposures["{}SPECMODEL_SKY_ZFLUX".format(prefix)][iexp] = 10.0 ** (
+                        (22.5 - tmpzmag) / 2.5
+                    )
             # AR SKY MONITOR measurement
-            # AR currently normalized to a dark sky of 21.07 mag / arcsec2 (email from DK Feb., 16th 2021)
+            # AR we keep those in "native" units (DJS email from 02Mar2021)
             keep = skymon["MJD"] >= exposures["MJDOBS"][iexp]
-            keep &= skymon["MJD"] <= exposures["MJDOBS"][iexp] + exposures["EXPTIME"][iexp]/3600./24.
+            keep &= (
+                skymon["MJD"]
+                <= exposures["MJDOBS"][iexp]
+                + exposures["EXPTIME"][iexp] / 3600.0 / 24.0
+            )
             keep &= np.isfinite(skymon["SKYCAM0"])
             keep &= np.isfinite(skymon["SKYCAM1"])
             keep &= np.isfinite(skymon["AVERAGE"])
             exposures["SKYMON_NEXP"][iexp] = keep.sum()
             for quant in ["SKYCAM0", "SKYCAM1", "AVERAGE"]:
                 if keep.sum() > 0:
-                    exposures["SKYMON_{}_MEAN".format(quant)][iexp] = skymon_zp - 2.5*np.log10(skymon[quant][keep].mean())
-                    exposures["SKYMON_{}_MEAN_ERR".format(quant)] [iexp]= 1.0857 * skymon[quant][keep].std() / skymon[quant][keep].mean() / np.sqrt(keep.sum())
+                    exposures["SKYMON_{}_MEAN".format(quant)][iexp] = skymon[quant][
+                        keep
+                    ].mean()
+                    exposures["SKYMON_{}_MEAN_ERR".format(quant)][iexp] = skymon[quant][
+                        keep
+                    ].std() / np.sqrt(keep.sum())
             # AR GFA information
             # AR    first trying matched_coadd
             # AR    if not present, trying acq
@@ -1285,11 +1486,18 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, dailydir, rawdir, tile
                 for key in gfakeys:
                     # AR TRANSPARENCY x FIBER_FRACFLUX
                     if key == "TRANSPFRAC":
-                        exposures["GFA_{}".format(key)][iexp] = gfa[gfa_origin]["TRANSPARENCY"][i] * gfa[gfa_origin]["FIBER_FRACFLUX"][i]
+                        exposures["GFA_{}".format(key)][iexp] = (
+                            gfa[gfa_origin]["TRANSPARENCY"][i]
+                            * gfa[gfa_origin]["FIBER_FRACFLUX"][i]
+                        )
                     else:
                         # AR FIBERFAC, FIBERFAC_ELG not in *acq*fits
-                        if (key not in ["FIBERFAC", "FIBERFAC_ELG"]) or (gfa_origin == "matched_coadd"):
-                            exposures["GFA_{}".format(key)][iexp] = gfa[gfa_origin][key][i]
+                        if (key not in ["FIBERFAC", "FIBERFAC_ELG"]) or (
+                            gfa_origin == "matched_coadd"
+                        ):
+                            exposures["GFA_{}".format(key)][iexp] = gfa[gfa_origin][
+                                key
+                            ][i]
                 # AR/DK exposure depths (needs gfa information)
                 # AR/DK adding also depth including ebv+airmass
                 if exposures["DAILY_BITSKYFN"][iexp] > 0:
@@ -1300,7 +1508,9 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, dailydir, rawdir, tile
                         exposures["GFA_TRANSPFRAC"][iexp],
                     )
                     for camera in ["B", "R", "Z"]:
-                        exposures["{}_DEPTH".format(camera)][iexp] = depths_i[camera.lower()]
+                        exposures["{}_DEPTH".format(camera)][iexp] = depths_i[
+                            camera.lower()
+                        ]
                         ebv = exposures["EBV"][iexp]
                         fact_ebv = 10.0 ** (
                             -2 * 0.4 * depth_coeffs["EBV"][camera] * ebv
@@ -1309,35 +1519,69 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, dailydir, rawdir, tile
                         fact_air = 10.0 ** (
                             -2 * 0.4 * depth_coeffs["AIRMASS"][camera] * (airmass - 1.0)
                         )
-                        exposures["{}_DEPTH_EBVAIR".format(camera)][iexp] = depths_i[camera.lower()] * fact_ebv * fact_air
+                        exposures["{}_DEPTH_EBVAIR".format(camera)][iexp] = (
+                            depths_i[camera.lower()] * fact_ebv * fact_air
+                        )
+                # AR/DJS effective exposure times
+                (
+                    efftime_dark,
+                    efftime_bright,
+                    efftime_backup,
+                    speed_dark,
+                    speed_bright,
+                    speed_backup,
+                ) = get_efftime_speed(
+                    exposures["EXPTIME"][iexp],
+                    # exposures["SKYMON_AVERAGE_MEAN"][iexp],
+                    exposures["SPECMODEL_SKY_RFLUX"][iexp],
+                    exposures["EBV"][iexp],
+                    exposures["GFA_TRANSPARENCY"][iexp],
+                    exposures["GFA_AIRMASS"][iexp],
+                    exposures["GFA_FIBER_FRACFLUX"][iexp],
+                    exposures["GFA_FIBER_FRACFLUX_ELG"][iexp],
+                    exposures["GFA_FIBER_FRACFLUX_BGS"][iexp],
+                    exposures["GFA_FRACFLUX_NOMINAL_POINTSOURCE"][iexp],
+                    exposures["GFA_FRACFLUX_NOMINAL_ELG"][iexp],
+                    exposures["GFA_FRACFLUX_NOMINAL_BGS"][iexp],
+                    exposures["GFA_KTERM"][iexp],
+                )
+                exposures["EFFTIME_DARK"][iexp] = efftime_dark
+                exposures["EFFTIME_BRIGHT"][iexp] = efftime_bright
+                exposures["EFFTIME_BACKUP"][iexp] = efftime_backup
+                exposures["SPEED_DARK"][iexp] = speed_dark
+                exposures["SPEED_BRIGHT"][iexp] = speed_bright
+                exposures["SPEED_BACKUP"][iexp] = speed_backup
         # AR mjd at the middle of the exposures
-        midexp_mjds = exposures["MJDOBS"] + exposures["EXPTIME"]/2./3600./24.
+        midexp_mjds = exposures["MJDOBS"] + exposures["EXPTIME"] / 2.0 / 3600.0 / 24.0
         # AR ephem 1d-quantities
         nightind = get_nightind(midexp_mjds)
         for key in ephkeys:
-            exposures["EPHEM_{}".format(key)] = ephem.table[key.lower().replace("lst","LST")][nightind]
+            exposures["EPHEM_{}".format(key)] = ephem.table[
+                key.lower().replace("lst", "LST")
+            ][nightind]
         # AR obsconditions (DARK=1, GRAY=2, BRIGHT=4, else==-1)
         exposures["OBSCONDITIONS"] = get_conditions(midexp_mjds)
         # AR building/writing fits
         cols = []
-        for key,fmt in zip(allkeys,allfmts):
-            cols += [fits.Column(name=key, format=fmt, array=exposures[key])]
+        for key, fmt, unit in zip(allkeys, allfmts, allunits):
+            cols += [fits.Column(name=key, format=fmt, unit=unit, array=exposures[key])]
         h = fits.BinTableHDU.from_columns(fits.ColDefs(cols))
         h.writeto(outfn, overwrite=True)
     return "{}-{}".format(night, len(expids))
 
 
-
 # AR per exposure information
 if args.exposures == "y":
     # AR listing existing nights
-    nights = np.array([
-        int(fn.split("/")[-1])
-        for fn in np.sort(glob(os.path.join(dailydir, "exposures", "202?????")))
-        if int(fn.split("/")[-1]) >= int(firstnight)
-    ])
-    #nights = [20201216]
-    #nights = nights[nights<20201231]
+    nights = np.array(
+        [
+            int(fn.split("/")[-1])
+            for fn in np.sort(glob(os.path.join(dailydir, "exposures", "202?????")))
+            if int(fn.split("/")[-1]) >= int(firstnight)
+        ]
+    )
+    # nights = [20210101]
+    # nights = nights[nights<20201231]
     print(nights)
     # AR update only the ~latest nights?
     # AR TODO: make some sanity check that all relevant nights
@@ -1355,8 +1599,11 @@ if args.exposures == "y":
     # AR processing nights
     # AR wrapper on process_night() given an night
     def _process_night(night):
-        nightnexp = process_night(night, nightoutdir, skymon, gfa, ephem, dailydir, rawdir, tiles)
+        nightnexp = process_night(
+            night, nightoutdir, skymon, gfa, ephem, dailydir, rawdir, tiles
+        )
         return nightnexp
+
     # AR parallel processing?
     if args.numproc > 1:
         pool = sharedmem.MapReduce(np=args.numproc)
@@ -1371,21 +1618,26 @@ if args.exposures == "y":
     # AR for now, just merging all existing night files
     # AR TODO: make some sanity check to verify that no night is missing
     fns = np.sort(glob("{}/sv1-exposures-202?????.fits".format(nightoutdir)))
-    hs = [Table.read(fn, format="fits") for fn in fns]
-    h = vstack(hs)
-    # AR storing skymon_zp + ephem infos
-    hdr = {}
-    hdr["SKYMONZP"] = skymon_zp
-    hdr["EPHEMFN"] = ephem_fn
-    hdr["DMAXSA"] = ephem_config.programs.DARK.max_sun_altitude().value
-    hdr["GMAXMI"] = ephem_config.programs.GRAY.max_moon_illumination()
-    hdr["GMAXMIAP"] = ephem_config.programs.GRAY.max_moon_illumination_altitude_product().value
-    hdr["BMAXSA"] = ephem_config.programs.BRIGHT.max_sun_altitude().value
+    hs = [fits.open(fn) for fn in fns]
+    ns = [h[1].data.shape[0] for h in hs]
+    hmerge = fits.BinTableHDU.from_columns(hs[0][1].columns, nrows=np.sum(ns))
+    start = 0
+    for h, n in zip(hs, ns):
+        for key in hmerge.columns.names:
+            hmerge.data[key][start : start + n] = h[1].data[key]
+        start += n
+    # AR storing thrufn + ephem infos
+    for camera in ["b", "r", "z"]:
+        hmerge.header["THRU{}".format(camera)] = thrufn[camera]
+    hmerge.header["EPHEMFN"] = ephem_fn
+    hmerge.header["DMAXSA"] = ephem_config.programs.DARK.max_sun_altitude().value
+    hmerge.header["GMAXMI"] = ephem_config.programs.GRAY.max_moon_illumination()
+    hmerge.header[
+        "GMAXMIAP"
+    ] = ephem_config.programs.GRAY.max_moon_illumination_altitude_product().value
+    hmerge.header["BMAXSA"] = ephem_config.programs.BRIGHT.max_sun_altitude().value
     # AR writing to fits
-    if os.path.isfile(outfns["exposures"]):
-        os.remove(outfns["exposures"])
-    fits.writeto(outfns["exposures"], h.as_array(), header=fits.Header(hdr), overwrite=True)
-
+    hmerge.writeto(outfns["exposures"], overwrite=True)
 
 
 # AR plots
@@ -1481,55 +1733,134 @@ if args.plot == "y":
     plt.savefig(outfns["skymap"], bbox_inches="tight")
     plt.close()
 
-    # AR on-sky exptime
+    # AR per-night on-sky exptime
+    # AR  and per-tile efftime_dark
     d = fits.open(outfns["exposures"])[1].data
     # AR remove CRAP...
     d = d[(d["EXPTIME"] > 100) & (d["OBSCONDITIONS"] != -1)]
-    nights,ii = np.unique(d["NIGHT"], return_index=True)
+    nights, ii = np.unique(d["NIGHT"], return_index=True)
     mjds = 0.5 + d["EPHEM_NOON"][ii]
     #
     names = ["DARK", "GRAY", "BRIGHT"]
     vals = [1, 2, 4]
     cols = ["k", "g", "y"]
+    #
+    # AR per night
+    #
     # AR getting stats
-    exptimes = np.zeros((len(nights),4))
-    depths = np.zeros((len(nights),4))
+    exptimes = np.zeros((len(nights), 4))
+    depths = np.zeros((len(nights), 4))
     for i in range(len(nights)):
         for j in range(3):
             keep = (d["NIGHT"] == nights[i]) & (d["OBSCONDITIONS"] == vals[j])
-            exptimes[i,j] = d["EXPTIME"][keep].sum() / 3600.
-            depths[i,j] = d["R_DEPTH_EBVAIR"][keep].sum() / 3600.
+            exptimes[i, j] = d["EXPTIME"][keep].sum() / 3600.0
+            depths[i, j] = d["R_DEPTH_EBVAIR"][keep].sum() / 3600.0
     # AR
-    fig, ax = plt.subplots(figsize=(20,5))
+    fig, ax = plt.subplots(figsize=(20, 5))
     for i in range(len(nights)):
         start = 0
         if i == 0:
-            labels = ["{}={:.0f} hrs".format(names[j], exptimes[:,j].sum()) for j in range(3)]
+            labels = [
+                "{}={:.0f} hrs".format(names[j], exptimes[:, j].sum()) for j in range(3)
+            ]
         else:
             labels = [None, None, None]
         for j in range(3):
-            tmpx = mjds[i] + np.array([-0.25,0.25,0.25,-0.25])
-            tmpy = start + np.array([0,0,exptimes[i,j],exptimes[i,j]])
+            tmpx = mjds[i] + np.array([-0.25, 0.25, 0.25, -0.25])
+            tmpy = start + np.array([0, 0, exptimes[i, j], exptimes[i, j]])
             ax.fill(tmpx, tmpy, fill=True, color=cols[j], alpha=0.5, label=labels[j])
-            start += exptimes[i,j]
+            start += exptimes[i, j]
             if j == 0:
-                ax.text(mjds[i],0,"{}".format(nights[i]),rotation=45,ha="right",va="top")
+                ax.text(
+                    mjds[i],
+                    0,
+                    "{}".format(nights[i]),
+                    rotation=45,
+                    ha="right",
+                    va="top",
+                )
     # AR
     ax.grid(True)
     ax.set_axisbelow(True)
-    ax.set_title("SV1 on-sky EXPTIME from {} to {} ({} exposures with EXPTIME>100 and OBSCONDITIONS!=-1)".format(
-                            d["NIGHT"].min(), d["NIGHT"].max(), len(d),
-                        )
-                )
+    ax.set_title(
+        "SV1 on-sky EXPTIME from {} to {} ({} exposures with EXPTIME>100 and OBSCONDITIONS!=-1)".format(
+            d["NIGHT"].min(), d["NIGHT"].max(), len(d),
+        )
+    )
     ax.set_xlabel("MJD-OBS")
     ax.set_ylabel("EXPTIME per NIGHT [hours]")
-    ax.set_ylim(-2,10)
+    ax.set_ylim(-2, 10)
     ax.xaxis.set_major_locator(MultipleLocator(5))
     ax.yaxis.set_major_locator(MultipleLocator(1))
     ax.legend(loc=2)
     plt.savefig(outfns["onsky"], bbox_inches="tight")
     plt.close()
-
+    #
+    # AR per tile
+    #
+    for targets in ["QSO+LRG", "ELG", "QSO+ELG"]:
+        tileids = np.unique(d["TILEID"][d["TARGETS"] == targets])
+        # AR getting stats
+        efftimes = np.zeros((len(tileids), 4))
+        for i in range(len(tileids)):
+            for j in range(3):
+                keep = (d["TILEID"] == tileids[i]) & (d["OBSCONDITIONS"] == vals[j])
+                efftimes[i, j] = d["EFFTIME_DARK"][keep].sum()
+        # AR
+        fig, ax = plt.subplots(figsize=(20, 5))
+        for i in range(len(tileids)):
+            start = 0
+            if i == 0:
+                labels = [
+                    "{}={:.0f} hrs cumulated".format(
+                        names[j], efftimes[:, j].sum() / 3600.0
+                    )
+                    for j in range(3)
+                ]
+            else:
+                labels = [None, None, None]
+            for j in range(3):
+                tmpx = i + np.array([-0.25, 0.25, 0.25, -0.25])
+                tmpy = start + np.array([0, 0, efftimes[i, j], efftimes[i, j]])
+                ax.fill(
+                    tmpx, tmpy, fill=True, color=cols[j], alpha=0.5, label=labels[j]
+                )
+                start += efftimes[i, j]
+                if j == 0:
+                    ax.text(
+                        i,
+                        -500,
+                        "{}".format(tileids[i]),
+                        rotation=45,
+                        ha="right",
+                        va="top",
+                    )
+        # AR
+        ax.axhline(4.0 * 1000.0, color="r", ls="--", label="SV goal 4x1000s nominal")
+        ax.grid(True)
+        ax.set_axisbelow(True)
+        ax.set_title(
+            "{} : EFFTIME_DARK from {} to {} ({} exposures with EXPTIME>100 and OBSCONDITIONS!=-1)".format(
+                targets,
+                d["NIGHT"].min(),
+                d["NIGHT"].max(),
+                (d["TARGETS"] == targets).sum(),
+            )
+        )
+        ax.set_xlabel("")
+        ax.set_ylabel("EFFTIME_DARK per TILEID [s]")
+        ax.set_ylim(-1 * 3600, 5 * 3600)
+        ax.xaxis.set_major_locator(MultipleLocator(1))
+        ax.yaxis.set_major_locator(MultipleLocator(1000))
+        ax.set_yticklabels(
+            ["{:.0f}".format(x) if x > 0 else "" for x in ax.get_yticks()]
+        )
+        ax.legend(loc=1)
+        plt.savefig(
+            outfns["efftime-{}".format(targets.lower().replace("+", ""))],
+            bbox_inches="tight",
+        )
+        plt.close()
 
     # AR observing conditions : cumulative distributions
     # targetss = ["BGS+MWS", "QSO+LRG", "ELG", "QSO+ELG"]
@@ -1687,26 +2018,32 @@ if args.plot == "y":
             plt.savefig(outfns["obscond"][month], bbox_inches="tight")
         plt.close()
 
-    # AR exptime, depth
+    # AR exptime, depth, efftime
     # targetss = ["BGS+MWS", "QSO+LRG", "ELG", "QSO+ELG"]
     # cols = ["g", "r", "b", "c"]
     d = fits.open(outfns["exposures"])[1].data
     d = d[(d["EXPTIME"] > 100) & (d["OBSCONDITIONS"] != -1) & (d["R_DEPTH_EBVAIR"] > 0)]
-    title = "SV1 observations from {} to {}\nhaving GFA and R_DEPTH_EBVAIR>0".format(
-        d["NIGHT"].min(), d["NIGHT"].max()
+    title = "SV1 observations from {} to {}\n({} exposures with EXPTIME>100 and OBSCONDITIONS!=-1 and R_DEPTH_EBVAIR>0)".format(
+        d["NIGHT"].min(), d["NIGHT"].max(), len(d),
     )
-    title  = "SV1 observations from {} to {}\n({} exposures with EXPTIME>100 and OBSCONDITIONS!=-1 and R_DEPTH_EBVAIR>0)".format(
-                            d["NIGHT"].min(), d["NIGHT"].max(), len(d),
-                        )
-    keys = ["EXPTIME", "R_DEPTH_EBVAIR"]
-    xlabels = ["EXPTIME [s]", "R_DEPTH_EBVAIR [s]"]
-    ylabels = ["Cumulative number of tiles", "Cumulative number of tiles"]
-    fig = plt.figure(figsize=(10, 5))
-    gs = gridspec.GridSpec(2, 1, hspace=0.3)
-    ax = {"EXPTIME": plt.subplot(gs[0]), "R_DEPTH_EBVAIR": plt.subplot(gs[1])}
+    keys = ["EXPTIME", "R_DEPTH_EBVAIR", "EFFTIME_DARK"]
+    xlabels = ["EXPTIME [s]", "R_DEPTH_EBVAIR [s]", "EFFTIME_DARK [s]"]
+    ylabels = [
+        "Cumulative number of tiles",
+        "Cumulative number of tiles",
+        "Cumulative number of tiles",
+    ]
+    xlim = (0, 25000)
+    fig = plt.figure(figsize=(10, 10))
+    gs = gridspec.GridSpec(3, 1, hspace=0.3)
+    ax = {
+        "EXPTIME": plt.subplot(gs[0]),
+        "R_DEPTH_EBVAIR": plt.subplot(gs[1]),
+        "EFFTIME_DARK": plt.subplot(gs[2]),
+    }
     # for targets, col in zip(targetss, cols):
     for targ, col in zip(
-        ["BGS+MWS", "QSO+LRG", "ELG", "QSO+ELG"], ["g", "r", "b", "c"]
+        ["BGS+MWS", "QSO+LRG", "ELG", "QSO+ELG"], ["orange", "r", "b", "g"]
     ):
         mydict = {}
         mydict["TILEID"] = np.unique(d["TILEID"][d["TARGETS"] == targ])
@@ -1718,8 +2055,14 @@ if args.plot == "y":
             for key in keys:
                 mydict[key][i] = int(d[key][keep].sum())
         for key in keys:
+            bins = np.linspace(
+                0, 1 + mydict[key].max(), int(mydict[key].max() / 100.0)
+            ).astype(
+                int
+            )  # 1 bin per 100 seconds...
             _ = ax[key].hist(
                 mydict[key],
+                bins=bins,
                 cumulative=True,
                 color=col,
                 alpha=0.3,
@@ -1732,8 +2075,9 @@ if args.plot == "y":
             ax[key].set_title(title)
         ax[key].set_xlabel(xlabel)
         ax[key].set_ylabel(ylabel)
-        ax[key].set_xlim(0,25000)
+        ax[key].set_xlim(0, 25000)
         ax[key].xaxis.set_major_locator(MultipleLocator(2000))
+        ax[key].yaxis.set_major_locator(MultipleLocator(5))
         ax[key].grid(True)
         ax[key].set_axisbelow(True)
         ax[key].legend()
@@ -1783,7 +2127,9 @@ if args.plot == "y":
                     ha="right",
                     transform=ax.transAxes,
                 )
-                jj = np.where((d["TILEID"] == tileids[i]) & (d["EXPTIME"] >= exptime_min))[0]
+                jj = np.where(
+                    (d["TILEID"] == tileids[i]) & (d["EXPTIME"] >= exptime_min)
+                )[0]
                 ax.plot(xs[: len(jj)], d[key][jj], color="k", lw=1)
                 x = 0
                 for j in jj:
@@ -1817,7 +2163,12 @@ if args.plot == "y":
                 if i == 0:
                     ax.set_title(
                         "SV1 {} ({} exposures from {} tiles between {} and {} with EXPTIME >= {}s)".format(
-                            flavshort, keep.sum(), len(tileids), nightmin, nightmax, exptime_min
+                            flavshort,
+                            keep.sum(),
+                            len(tileids),
+                            nightmin,
+                            nightmax,
+                            exptime_min,
                         )
                     )
                 if i == len(tileids) - 1:
@@ -1925,9 +2276,7 @@ if args.html == "y":
     htmlmain.write("\n")
 
     # AR Per-night on-sky EXPTIME
-    htmlmain.write(
-        "<h2><a id='onsky' href='#onsky' > Per-night on-sky EXPTIME </a>\n"
-    )
+    htmlmain.write("<h2><a id='onsky' href='#onsky' > Per-night on-sky EXPTIME </a>\n")
     htmlmain.write(
         "<a href='#top' style='position: absolute; right: 0;'>Top of the page</a></h2>\n"
     )
