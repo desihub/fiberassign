@@ -920,8 +920,8 @@ def main():
             "SV1_SCND_TARGET": "MWS_CLUS_GAL_DEEP,WD_BINARIES_DARK",
         }
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
-        fdict["nskypet"] = "40"
-        fdict["nstdpet"] = "10"
+        fdict["nskypet"] = "80"
+        fdict["nstdpet"] = "20"
     elif args.faflavor == "sv1scndcosmos":
         fdict["survey"] = "sv1"
         fdict["dtobscon"] = "dark"
@@ -931,8 +931,8 @@ def main():
             "SV1_SCND_TARGET": "LBG_TOMOG,ISM_CGM_QGP,HSC_HIZ_SNE"
         }
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
-        fdict["nskypet"] = "40"
-        fdict["nstdpet"] = "10"
+        fdict["nskypet"] = "80"
+        fdict["nstdpet"] = "20"
     elif args.faflavor == "sv1scndcfhtls":
         fdict["survey"] = "sv1"
         fdict["dtobscon"] = "dark"
@@ -942,24 +942,24 @@ def main():
             "SV1_SCND_TARGET": "LBG_TOMOG,HETDEX_HP,HETDEX_MAIN"
         }
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
-        fdict["nskypet"] = "20"
-        fdict["nstdpet"] = "10"
+        fdict["nskypet"] = "80"
+        fdict["nstdpet"] = "20"
     elif args.faflavor == "sv1unwisegreen":
         fdict["survey"] = "sv1"
         fdict["dtobscon"] = "dark"
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
         fdict["msks"] = {"SV1_SCND_TARGET": "UNWISE_GREEN"}
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
-        fdict["nskypet"] = "40"
-        fdict["nstdpet"] = "10"
+        fdict["nskypet"] = "80"
+        fdict["nstdpet"] = "20"
     elif args.faflavor == "sv1unwiseblue":
         fdict["survey"] = "sv1"
         fdict["dtobscon"] = "dark"
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
         fdict["msks"] = {"SV1_SCND_TARGET": "UNWISE_BLUE"}
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
-        fdict["nskypet"] = "40"
-        fdict["nstdpet"] = "10"
+        fdict["nskypet"] = "80"
+        fdict["nstdpet"] = "20"
 
     # AR sv1elg: adding specific secondary programs at top-priority (WD_BINARIES_DARK,BHB,UDG,LOW_MASS_AGN,SPCV)
     elif args.faflavor == "sv1elg":
@@ -985,8 +985,8 @@ def main():
             "SV1_SCND_TARGET":"WISE_VAR_QSO,QSO_RED,WD_BINARIES_DARK,BHB,UDG,LOW_MASS_AGN,SPCV,FIRST_MALS,FAINT_HPM,PV_DARK,LOW_Z,SPCV,DC3R2_GAMA,HPM_SOUM,SN_HOSTS,GAL_CLUS_BCG,GAL_CLUS_2ND,GAL_CLUS_SAT,STRONG_LENS"
         }
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
-        fdict["nskypet"] = "40"
-        fdict["nstdpet"] = "10"
+        fdict["nskypet"] = "80"
+        fdict["nstdpet"] = "20"
     # AR sv1elqso: adding WISE_VAR_QSO and QSO_RED (they are at the same priority as QSO)
     # AR though maybe we won t use it anymore
     elif args.faflavor == "sv1elgqso":
