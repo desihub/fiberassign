@@ -237,7 +237,7 @@ firstnight = "20201214"
 print("firstnight = {}".format(firstnight))
 
 # AR for the exposure and the wiki cases
-targets = ["TGT", "SKY", "STD", "WD", "LRG", "ELG", "QSO", "BGS", "MWS"]
+targnames = ["TGT", "SKY", "STD", "WD", "LRG", "ELG", "QSO", "BGS", "MWS"]
 cmx_msks = [
     "TGT",
     "SKY",
@@ -837,7 +837,7 @@ def write_html_tiledesign(html, tiles, ii, nexps, style, h2title, main=True):
         "Fiber Assign QA plot",
         "Fiber Assign Log",
         "Viewer",
-    ] + targets
+    ] + targnames
     html.write(
         "<h2><a id='tile-nexp-design' href='#tile-nexp-design' > {}</a>\n".format(
             h2title
@@ -909,7 +909,7 @@ def write_html_tiledesign(html, tiles, ii, nexps, style, h2title, main=True):
                 tiles["TILEID"][i]
             )
         ]
-        tmparr += ["{}".format(tiles[target][i]) for target in targets]
+        tmparr += ["{}".format(tiles[targname][i]) for targname in targnames]
         html.write("<tr>\n")
         html.write(" ".join(["<td> {} </td>".format(x) for x in tmparr]) + "\n")
         html.write("</tr>" + "\n")
@@ -940,18 +940,13 @@ def write_html_perexp(html, d, style, h2title):
         )
     )
     html.write(
-        "<p style='{}'>FIBER_FRACFLUX: fraction of light in a fiber-sized aperture given the PSF shape, assuming that the PSF is perfectly aligned with the fiber (i.e. does not capture any astrometry/positioning errors).</p>".format(
+        "<p style='{}'>FIBER_FRACFLUX: fraction of light in a 1.52 arcsec diameter fiber-sized aperture given the PSF shape, assuming that the PSF is perfectly aligned with the fiber (i.e. does not capture any astrometry/positioning errors).</p>".format(
             style
         )
     )
     html.write(
-        "<p style='{}'>R_DEPTH: EXPTIME x (TRANSPARENCY x FIBER_FRACFLUX / (1.0 x 0.56))^2 x FIDSKY_DARK/EXPSKY (does not correct for EBV, AIRMASS).</p>".format(
+        "<p style='{}'>EFFTIME_DARK, EFFTIME_BRIGHT: see https://desi.lbl.gov/trac/wiki/SurveyOps/SurveySpeed.</p>".format(
             style
-        )
-    )
-    html.write(
-        "<p style='{}'>R_DEPTH_EBVAIR: R_DEPTH x 10^(-2 x 0.4 x {} x EBV) x 10^(-2 x 0.4 x {} x AIRMASS).</p>".format(
-            style, depth_coeffs["EBV"]["R"], depth_coeffs["AIRMASS"]["R"]
         )
     )
     # ADM write out a list of the target categories.
@@ -966,8 +961,7 @@ def write_html_perexp(html, d, style, h2title):
     fields = (
         ["TILEID", "TARGETS", "NIGHT", "EXPID", "NIGHTWATCH", "EXPTIME", "EBV"]
         + keys
-        # + ["B_DEPTH", "R_DEPTH", "Z_DEPTH"]
-        + ["R_DEPTH", "R_DEPTH_EBVAIR"]
+        + ["EFFTIME_DARK", "EFFTIME_BRIGHT"]
     )
     html.write("<table>\n")
     night = ""
@@ -1067,8 +1061,8 @@ for key in [
         tiles[key] = np.array(["-" for x in range(nt)], dtype=object)
     else:
         tiles[key] = np.zeros(nt, dtype=float)
-for target in targets:
-    tiles[target] = np.zeros(nt, dtype=int)
+for targname in targnames:
+    tiles[targname] = np.zeros(nt, dtype=int)
 # AR populating
 for i in range(nt):
     # AR general
@@ -1081,16 +1075,16 @@ for i in range(nt):
         mask, key, msks, std_msks = cmx_mask, "cmx_target", cmx_msks, std_cmx_msks
     else:
         mask, key, msks, std_msks = desi_mask, "sv1_desi_target", sv1_msks, std_sv1_msks
-    for target, msk in zip(targets, msks):
-        if target in ["TGT", "SKY"]:
-            tiles[target][i] = (d["objtype"] == target).sum()
-        elif target == "STD":
+    for targname, msk in zip(targnames, msks):
+        if targname in ["TGT", "SKY"]:
+            tiles[targname][i] = (d["objtype"] == targname).sum()
+        elif targname == "STD":
             keep = np.zeros(len(d), dtype=bool)
             for std_msk in std_msks:
                 keep |= (d[key] & mask[std_msk]) > 0
-            tiles[target][i] = keep.sum()
+            tiles[targname][i] = keep.sum()
         else:
-            tiles[target][i] = ((d[key] & mask[msk]) > 0).sum()
+            tiles[targname][i] = ((d[key] & mask[msk]) > 0).sum()
 # AR rounding coordinates to get a unique ra,dec for close tiles
 prec = 1.0
 tiles["radec"] = np.array(
@@ -1244,7 +1238,7 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, dailydir, rawdir, tile
             "DAILY_BITCFRAMEFN",
         ]
         # AR nb of assigned targets
-        targkeys = ["N_ASSGN_{}".format(target) for target in targets]
+        targkeys = ["N_ASSGN_{}".format(targname) for targname in targnames]
         # AR from SKY MONITOR
         skymonkeys = [
             "NEXP",
@@ -1430,8 +1424,8 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, dailydir, rawdir, tile
                 "{:.3f}".format(np.median(tmpd["EBV"][tmpd["OBJTYPE"] == "TGT"]))
             )
             # AR number of targets per tracer
-            for target, targkey in zip(targets, targkeys):
-                exposures[targkey][iexp] = tiles[target][it]
+            for targname, targkey in zip(targnames, targkeys):
+                exposures[targkey][iexp] = tiles[targname][it]
             # AR SKY_{GRZ}MAG_AB from integrating the sky model over the decam gzr-bands
             # AR we convert to linear flux units (nMgy/arcsec**2)
             # for redux,prefix in zip(["daily", "blanc"], ["", "BLANC_"]):
@@ -1798,14 +1792,24 @@ if args.plot == "y":
     #
     # AR per tile
     #
-    for targets in ["QSO+LRG", "ELG", "QSO+ELG"]:
+    for targets in ["QSO+LRG", "ELG", "QSO+ELG", "BGS+MWS"]:
+        if targets == "BGS+MWS":
+            effkey = "EFFTIME_BRIGHT"
+            expnom = 150
+            ylim = (-0.25 * 3600, 1 * 3600)
+            ytxt = -100
+        else:
+            effkey = "EFFTIME_DARK"
+            expnom = 1000
+            ylim = (-1 * 3600, 5 * 3600)
+            ytxt = -500
         tileids = np.unique(d["TILEID"][d["TARGETS"] == targets])
         # AR getting stats
         efftimes = np.zeros((len(tileids), 4))
         for i in range(len(tileids)):
             for j in range(3):
                 keep = (d["TILEID"] == tileids[i]) & (d["OBSCONDITIONS"] == vals[j])
-                efftimes[i, j] = d["EFFTIME_DARK"][keep].sum()
+                efftimes[i, j] = d[effkey][keep].sum()
         # AR
         fig, ax = plt.subplots(figsize=(20, 5))
         for i in range(len(tileids)):
@@ -1829,27 +1833,33 @@ if args.plot == "y":
                 if j == 0:
                     ax.text(
                         i,
-                        -500,
+                        ytxt,
                         "{}".format(tileids[i]),
                         rotation=45,
                         ha="right",
                         va="top",
                     )
         # AR
-        ax.axhline(4.0 * 1000.0, color="r", ls="--", label="SV goal 4x1000s nominal")
+        ax.axhline(
+            4.0 * expnom,
+            color="r",
+            ls="--",
+            label="SV goal 4x{}s nominal".format(expnom),
+        )
         ax.grid(True)
         ax.set_axisbelow(True)
         ax.set_title(
-            "{} : EFFTIME_DARK from {} to {} ({} exposures with EXPTIME>100 and OBSCONDITIONS!=-1)".format(
+            "{} : {} from {} to {} ({} exposures with EXPTIME>100 and OBSCONDITIONS!=-1)".format(
                 targets,
+                effkey,
                 d["NIGHT"].min(),
                 d["NIGHT"].max(),
                 (d["TARGETS"] == targets).sum(),
             )
         )
         ax.set_xlabel("")
-        ax.set_ylabel("EFFTIME_DARK per TILEID [s]")
-        ax.set_ylim(-1 * 3600, 5 * 3600)
+        ax.set_ylabel("{} per TILEID [s]".format(effkey))
+        ax.set_ylim(ylim)
         ax.xaxis.set_major_locator(MultipleLocator(1))
         ax.yaxis.set_major_locator(MultipleLocator(1000))
         ax.set_yticklabels(
@@ -2022,24 +2032,22 @@ if args.plot == "y":
     # targetss = ["BGS+MWS", "QSO+LRG", "ELG", "QSO+ELG"]
     # cols = ["g", "r", "b", "c"]
     d = fits.open(outfns["exposures"])[1].data
-    d = d[(d["EXPTIME"] > 100) & (d["OBSCONDITIONS"] != -1) & (d["R_DEPTH_EBVAIR"] > 0)]
-    title = "SV1 observations from {} to {}\n({} exposures with EXPTIME>100 and OBSCONDITIONS!=-1 and R_DEPTH_EBVAIR>0)".format(
+    d = d[(d["EXPTIME"] > 100) & (d["OBSCONDITIONS"] != -1) & (d["EFFTIME_DARK"] > 0)]
+    title = "SV1 observations from {} to {}\n({} exposures with EXPTIME>100 and OBSCONDITIONS!=-1 and EFFTIME_DARK>0)".format(
         d["NIGHT"].min(), d["NIGHT"].max(), len(d),
     )
-    keys = ["EXPTIME", "R_DEPTH_EBVAIR", "EFFTIME_DARK"]
-    xlabels = ["EXPTIME [s]", "R_DEPTH_EBVAIR [s]", "EFFTIME_DARK [s]"]
+    keys = ["EXPTIME", "EFFTIME_DARK"]
+    xlabels = ["EXPTIME [s]", "EFFTIME_DARK [s]"]
     ylabels = [
-        "Cumulative number of tiles",
         "Cumulative number of tiles",
         "Cumulative number of tiles",
     ]
     xlim = (0, 25000)
-    fig = plt.figure(figsize=(10, 10))
-    gs = gridspec.GridSpec(3, 1, hspace=0.3)
+    fig = plt.figure(figsize=(10, 5))
+    gs = gridspec.GridSpec(2, 1, hspace=0.3)
     ax = {
         "EXPTIME": plt.subplot(gs[0]),
-        "R_DEPTH_EBVAIR": plt.subplot(gs[1]),
-        "EFFTIME_DARK": plt.subplot(gs[2]),
+        "EFFTIME_DARK": plt.subplot(gs[1]),
     }
     # for targets, col in zip(targetss, cols):
     for targ, col in zip(
@@ -2084,105 +2092,6 @@ if args.plot == "y":
     plt.savefig(outfns["depth"]["cumul"], bbox_inches="tight")
     plt.close()
 
-    # AR r_depth_ebvair
-    exptime_min = 50
-    d = fits.open(outfns["exposures"])[1].data
-    # AR color-coding by night
-    ref_cols = ["r", "g", "b"]
-    nights = np.unique(d["NIGHT"])
-    cols = np.zeros(len(d), dtype=object)
-    for i in range(len(nights)):
-        keep = d["NIGHT"] == nights[i]
-        cols[keep] = ref_cols[i % len(ref_cols)]
-    key = "R_DEPTH_EBVAIR"
-    for flavshort, ymax in zip(
-        ["QSO+LRG", "QSO+ELG", "ELG", "BGS+MWS"], [2000, 2000, 2000, 1000]
-    ):
-        keep = (d["TARGETS"] == flavshort) & (d["EXPTIME"] >= exptime_min)
-        if keep.sum() > 0:
-            _, ns = np.unique(d["TILEID"][keep], return_counts=True)
-            xlim = (0, ns.max() + 1)
-            xs = 0.5 + np.arange(xlim[0], xlim[1])
-            tileids = np.unique(d["TILEID"][keep])
-            nightmin, nightmax = d["NIGHT"][keep].min(), d["NIGHT"][keep].max()
-            fig = plt.figure(figsize=(25, 1 * len(tileids)))
-            gs = gridspec.GridSpec(len(tileids), 1, hspace=0)
-            for i in range(len(tileids)):
-                ax = plt.subplot(gs[i])
-                ax.text(
-                    0.98,
-                    0.80,
-                    tileids[i],
-                    color="k",
-                    fontweight="bold",
-                    ha="right",
-                    transform=ax.transAxes,
-                )
-                ax.text(
-                    0.98,
-                    0.55,
-                    d["FIELD"][d["TILEID"] == tileids[i]][0],
-                    color="k",
-                    fontweight="bold",
-                    ha="right",
-                    transform=ax.transAxes,
-                )
-                jj = np.where(
-                    (d["TILEID"] == tileids[i]) & (d["EXPTIME"] >= exptime_min)
-                )[0]
-                ax.plot(xs[: len(jj)], d[key][jj], color="k", lw=1)
-                x = 0
-                for j in jj:
-                    ax.text(
-                        0.5 + x,
-                        0.75 * ymax,
-                        "{}\n{}\n{:.0f}s".format(
-                            d["NIGHT"][j], d["EXPID"][j], d[key][j]
-                        ),
-                        ha="center",
-                        va="center",
-                        fontsize=7,
-                        color=cols[j],
-                    )
-                    ax.scatter(0.5 + x, d[key][j], c=cols[j], marker="o", s=5)
-                    ax.plot(
-                        [x, x + 1],
-                        d["EXPTIME"][j] + np.zeros(2),
-                        c="k",
-                        ls="--",
-                        lw=0.5,
-                    )
-                    x += 1
-                ax.grid(True)
-                ax.set_axisbelow(True)
-                ax.set_xlim(xlim)
-                if i == int(len(tileids) / 2):
-                    ax.set_ylabel("{} [s]".format(key))
-                for x in range(xlim[0], xlim[1]):
-                    ax.axvline(x, c="k", lw=0.1)
-                if i == 0:
-                    ax.set_title(
-                        "SV1 {} ({} exposures from {} tiles between {} and {} with EXPTIME >= {}s)".format(
-                            flavshort,
-                            keep.sum(),
-                            len(tileids),
-                            nightmin,
-                            nightmax,
-                            exptime_min,
-                        )
-                    )
-                if i == len(tileids) - 1:
-                    ax.set_xlabel("Exposure #")
-                else:
-                    ax.set_xticks([])
-                ax.set_ylim(0.01, ymax - 0.01)
-                if flavshort == "BGS+MWS":
-                    ax.yaxis.set_major_locator(MultipleLocator(250))
-                else:
-                    ax.yaxis.set_major_locator(MultipleLocator(500))
-            plt.savefig(outfns["depth"][flavshort], bbox_inches="tight")
-            plt.close()
-
 
 # AR html pages
 # initially copied from desitarget/QA.py from ADM!
@@ -2213,9 +2122,7 @@ if args.html == "y":
     htmlmain.write("\t\t<li><a href='#fitsfiles' >Fits files</a></li>\n")
     htmlmain.write("\t\t<li><a href='#skymap' >Tiles sky map</a></li>\n")
     htmlmain.write("\t\t<li><a href='#onsky' >Per-night on-sky EXPTIME</a></li>\n")
-    htmlmain.write(
-        "\t\t<li><a href='#depth-cumul' >Tiles cumulative exptime and depth</a></li>\n"
-    )
+    htmlmain.write("\t\t<li><a href='#depth' >Tiles: exptime and depth</a></li>\n")
     htmlmain.write(
         "\t\t<li><a href='#tile-nexp-design' >Tiles: NEXP and design</a></li>\n"
     )
@@ -2234,12 +2141,6 @@ if args.html == "y":
                     month, month
                 )
             )
-    for flavshort in ["QSO+LRG", "ELG", "BGS+MWS", "QSO+ELG"]:
-        htmlmain.write(
-            "\t\t<li><a href='#depths-{}' > Per-tile exposure depths: {}</a></li>\n".format(
-                flavshort, flavshort
-            )
-        )
     htmlmain.write("\t</ul>\n")
     htmlmain.write("</nav>\n")
     htmlmain.write("\n")
@@ -2290,22 +2191,24 @@ if args.html == "y":
     htmlmain.write("</tr>\n")
     htmlmain.write("\n")
 
-    # AR Tiles: cumulative exptime and depth
-    htmlmain.write(
-        "<h2><a id='depth-cumul' href='#depth-cumul' > Tiles cumulative exptime and depth </a>\n"
-    )
+    # AR Tiles: exptime and depth
+    htmlmain.write("<h2><a id='depth' href='#depth' > Tiles: exptime and depth </a>\n")
     htmlmain.write(
         "<a href='#top' style='position: absolute; right: 0;'>Top of the page</a></h2>\n"
     )
-    tmppng = outfns["depth"]["cumul"].replace(args.outdir, "../")
-    htmlmain.write("<tr>\n")
-    htmlmain.write(
-        "<td align=center><a href='{}'><img SRC='{}' width=80% height=auto></a></td>\n".format(
-            tmppng, tmppng
+    for png in [outfns["depth"]["cumul"]] + [
+        outfns["efftime-{}".format(fsh)]
+        for fsh in ["qsolrg", "qsoelg", "elg", "bgsmws"]
+    ]:
+        tmppng = png.replace(args.outdir, "../")
+        htmlmain.write("<tr>\n")
+        htmlmain.write(
+            "<td align=center><a href='{}'><img SRC='{}' width=80% height=auto></a></td>\n".format(
+                tmppng, tmppng
+            )
         )
-    )
-    htmlmain.write("</tr>\n")
-    htmlmain.write("\n")
+        htmlmain.write("</tr>\n")
+        htmlmain.write("\n")
 
     # AR nexp + tile design
     _ = write_html_tiledesign(
@@ -2351,26 +2254,6 @@ if args.html == "y":
                 )
             )
             htmlmain.write("</tr>\n")
-    htmlmain.write("\n")
-
-    # AR Depths per flavshort
-    for flavshort in ["QSO+LRG", "QSO+ELG", "ELG", "BGS+MWS"]:
-        htmlmain.write(
-            "<h2><a id='depths-{}' href='#depths-{}' > Per-tile exposure depths: {}\n".format(
-                flavshort, flavshort, flavshort
-            )
-        )
-        htmlmain.write(
-            "<a href='#top' style='position: absolute; right: 0;'>Top of the page</a></h2>\n"
-        )
-        tmppng = outfns["depth"][flavshort].replace(args.outdir, "../")
-        htmlmain.write("<tr>\n")
-        htmlmain.write(
-            "<td align=center><a href='{}'><img SRC='{}' width=100% height=auto></a></td>\n".format(
-                tmppng, tmppng
-            )
-        )
-        htmlmain.write("</tr>\n")
     htmlmain.write("\n")
 
     # ADM for each tileid, make a separate page.
