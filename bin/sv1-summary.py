@@ -1412,9 +1412,8 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, tiles):
                 exposures["SPECPROD_BITSFRAMEFN"][iexp],
                 exposures["SPECPROD_BITCFRAMEFN"][iexp],
             )
-            # AR TSNR2 values
-            # AR for each petal: summing the tsnr2 across cameras
-            # AR taking the median of the 500 x N_petals values
+            # AR TSNR2
+            # AR TSNR2: first reading all the values
             tsnr2 = {}
             for key in ["BGS", "LRG", "ELG", "QSO"]:
                 tsnr2[key] = {
@@ -1437,6 +1436,9 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, tiles):
                         tsnr2[key][campet_name] = d[
                             "TSNR2_{}_{}".format(key, campet_name[0].upper())
                         ]
+            # AR TSNR2: for each petal, for each fiber summing the 3 cameras,
+            # AR                        then taking the mean over the 500 fibers
+            # AR        then taking the mean over the 10 petals
             for key in ["BGS", "LRG", "ELG", "QSO"]:
                 tsnr2_allpetals = np.nan + np.zeros(10)
                 for i in range(10):
