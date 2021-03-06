@@ -124,7 +124,7 @@ pixwfn = (
 desfn = os.path.join(surveydir, "observations", "misc", "des_footprint.txt")
 dbyamlfn = os.path.join(surveydir, "observations", "misc", "db.yaml")
 thrufn = {
-    camera: "{}/thru-fluxcalib/cascades-transpfrac-airmass-noseeing/fluxcalib-cascades-{}-0.58transpfrac0.78.fits".format(
+    camera: "{}/thru-fluxcalib/v2/cascades-transpfrac-airmass-noseeing/fluxcalib-cascades-{}-0.58transpfrac0.78.fits".format(
         os.getenv("CSCRATCH"), camera
     )
     for camera in ["b", "r", "z"]
@@ -1541,8 +1541,9 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, tiles):
                             * gfa[gfa_origin]["FIBER_FRACFLUX"][i]
                         )
                     else:
-                        # AR FIBERFAC, FIBERFAC_ELG not in *acq*fits
-                        if (key not in ["FIBERFAC", "FIBERFAC_ELG"]) or (
+                        # AR FIBERFAC, FIBERFAC_ELG, FIBERFAC_BGS not in *acq*fits
+                        #if (key not in ["FIBERFAC", "FIBERFAC_ELG", "FIBERFAC_BGS"]) or (
+                        if (key not in ["FIBERFAC", "FIBERFAC_ELG", "FIBERFAC_BGS", "FRACFLUX_NOMINAL_BGS", "FIBER_FRACFLUX_BGS"]) or (
                             gfa_origin == "matched_coadd"
                         ):
                             exposures["GFA_{}".format(key)][iexp] = gfa[gfa_origin][
@@ -2005,10 +2006,9 @@ if args.plot == "y":
         "GFA_FWHM_ASEC",
         "GFA_SKY_MAG_AB",
         "GFA_FIBER_FRACFLUX",
-        "R_DEPTH / EXPTIME",
-        "R_DEPTH_EBVAIR / EXPTIME",
+        "EFFTIME_DARK / EXPTIME",
     ]
-    mlocs = [0.20, 25, 25, 0.20, 0.20, 0.50, 1.0, 0.20, 0.5, 0.5]
+    mlocs = [0.20, 25, 25, 0.20, 0.20, 0.50, 1.0, 0.20, 0.5]
     ylims = [
         (0, 1),
         (0, 180),
@@ -2018,7 +2018,6 @@ if args.plot == "y":
         (0, 3),
         (17, 22),
         (0, 1),
-        (0, 2.5),
         (0, 2.5),
     ]
     for month in months:
@@ -2037,10 +2036,8 @@ if args.plot == "y":
             gs = gridspec.GridSpec(len(keys), 1, hspace=0.1)
             for i in range(len(keys)):
                 ax = plt.subplot(gs[i])
-                if keys[i] == "R_DEPTH / EXPTIME":
-                    y = d["R_DEPTH"] / d["EXPTIME"]
-                elif keys[i] == "R_DEPTH_EBVAIR / EXPTIME":
-                    y = d["R_DEPTH_EBVAIR"] / d["EXPTIME"]
+                if keys[i] == "EFFTIME_DARK / EXPTIME":
+                    y = d["EFFTIME_DARK"] / d["EXPTIME"]
                 else:
                     y = d["{}".format(keys[i])]
                 ylim = ylims[i]
