@@ -59,49 +59,42 @@ parser.add_argument(
     type=str,
     default=None,
     required=True,
-    metavar="OUTDIR",
 )
 parser.add_argument(
     "--tiles",
     help="merge the TILEID-tiles.fits into one file? (y/n)",
     type=str,
     default="y",
-    metavar="TILES",
 )
 parser.add_argument(
-    "--exposures",
-    help="do fits with per-exposure stats? (y/n)",
-    type=str,
-    default="y",
-    metavar="EXPOSURES",
+    "--exposures", help="do fits with per-exposure stats? (y/n)", type=str, default="y",
 )
 parser.add_argument(
     "--plot",
     help="do plots (skymap, observing conditions, r_depth)? (y/n)",
     type=str,
     default="y",
-    metavar="PLOT",
 )
 parser.add_argument(
-    "--html",
-    help="create html pages, one per tile (y/n)",
-    type=str,
-    default="y",
-    metavar="HTML",
+    "--html", help="create html pages, one per tile (y/n)", type=str, default="y",
 )
 parser.add_argument(
     "--update",
     help="start from existing args.outroot+'sv1-exposures.fits' (y/n)",
     type=str,
     default="y",
-    metavar="UPDATE",
 )
 parser.add_argument(
     "--numproc",
     help="number of concurrent processes to use (default=1)",
     type=int,
     default=1,
-    metavar="NUMPROC",
+)
+parser.add_argument(
+    "--refspecprod",
+    help="specprod to use (falls back to daily if exposure not in specprod; (default=cascades)",
+    type=str,
+    default="cascades",
 )
 args = parser.parse_args()
 for kwargs in args._get_kwargs():
@@ -124,7 +117,6 @@ ephemdir = os.path.join(
     surveydir, "observations", "misc", "ephem-bgd-jan2021"
 )  # jan2021: using dark_max_sun_altitude=-18, bright_max_sun_altitude=-12
 # ephemdir = os.path.join(surveydir, "observations", "misc", "ephem-bgd-master")
-dailydir = os.path.join(os.getenv("DESI_ROOT"), "spectro", "redux", "daily")
 pixwfn = (
     os.getenv("DESI_TARGET")
     + "/catalogs/dr9/0.47.0/pixweight/sv1/resolve/dark/sv1pixweight-dark.fits"
@@ -233,8 +225,12 @@ if (args.html == "y") & (os.path.isdir(outfns["html"]) == False):
     os.mkdir(outfns["html"])
 
 # AR sv1 first night (for exposures search)
-firstnight = "20201214"
+# AR sv1 ref_specprod last night
+firstnight = 20201214
+if args.refspecprod == "cascades":
+    refspecprod_lastnight = 20210224
 print("firstnight = {}".format(firstnight))
+print("{}, lastnight={}".format(args.refspecprod, refspecprod_lastnight))
 
 # AR for the exposure and the wiki cases
 targnames = ["TGT", "SKY", "STD", "WD", "LRG", "ELG", "QSO", "BGS", "MWS"]
@@ -493,16 +489,14 @@ class CoAdd(Spectrum):
 
 # AR/DK exposure depths utilities
 # AR/DK Estimate the average sky for a single exposure in phot/sec detected in each camera and incident on M1
-def get_sky(night, expid, specs=range(10), use_cache=True, fill_cache=True):
+def get_sky(night, expid, specprod, specs=range(10)):
     """
     Estimate the sky spectrum for one exposure in units of phot/sec per wavelength bin.
     Returns a tuple (flux_inc, ivar_inc, flux_det, ivar_det) where "det" is detected phot/sec
     in each camera with flat-field corrections applied, and "inc" corrects for the average
     spectrograph throughput in each camera, then coadds over cameras.
     """
-    # print("running get_sky for {}-{}".format(night,expid))
-    if use_cache and (night, expid) in _sky_cache:
-        return _sky_cache[(night, expid)]
+    # AR specprod : cascades, daily
     incident = CoAdd("full")
     detected = {}
     # Loop over cameras.
@@ -512,7 +506,10 @@ def get_sky(night, expid, specs=range(10), use_cache=True, fill_cache=True):
         for spec in specs:
             # Read the flat-fielded (constant) sky model in this spectrograph.
             skypath = os.path.join(
-                dailydir,
+                os.getenv("DESI_ROOT"),
+                "spectro",
+                "redux",
+                specprod,
                 "exposures",
                 "{}".format(night),
                 "{:08}".format(expid),
@@ -538,8 +535,6 @@ def get_sky(night, expid, specs=range(10), use_cache=True, fill_cache=True):
         detected[camera] /= exptime
         # Correct for throughput and accumulate over cameras.
         incident += detected[camera] / spec_thru[camera]
-    if fill_cache:
-        _sky_cache[(night, expid)] = (incident, detected)
     return incident, detected
 
 
@@ -547,9 +542,16 @@ def get_sky(night, expid, specs=range(10), use_cache=True, fill_cache=True):
 # AR transpfrac = transparency * fiber_fracflux
 # AR 2021-03-05: updating ffracref=0.582, as GFA now provides measurement for fiber_diameter=1.52"
 def determine_tile_depth2(
-    night, expid, exptime, transpfrac, darkref=det_eso, ffracref=0.582, smoothing=125,
+    night,
+    expid,
+    specprod,
+    exptime,
+    transpfrac,
+    darkref=det_eso,
+    ffracref=0.582,
+    smoothing=125,
 ):
-    inc, det = get_sky(night, expid)
+    inc, det = get_sky(night, expid, specprod)
     depths = {}
     for camera in ["b", "r", "z"]:
         wave = det[camera].wave
@@ -565,23 +567,25 @@ def determine_tile_depth2(
 # AR grz-band sky mag / arcsec2 from sky-....fits files
 # AR now using work-in-progress throughput
 # AR still provides a better agreement with GFAs than previous method
-def get_sky_grzmag_ab(night, expid, exptime, ftype, redux="daily", fiber=0):
+def get_sky_grzmag_ab(night, expid, specprod, exptime, ftype, fiber=0):
     # AR ftype = "data" or "model"
-    # AR redux = "daily" or "blanc"
+    # AR specprod = cascades, daily
     # AR if ftype = "data" : read the sky fibers from frame*fits + apply flat-field
     # AR if ftype = "model": read the sky model from sky*.fits for the first fiber of each petal (see DJS email from 29Dec2020)
     # AR those are in electron / angstrom
     if ftype not in ["data", "model"]:
         sys.exit("ftype should be 'data' or 'model'")
     sky = np.zeros(len(fullwave))
-    reduxdir = dailydir.replace("daily", redux)
     # AR looking for a petal with brz sky and ivar>0
     spec, ncam = -1, 0
     while (ncam < 3) & (spec < 9):
         spec += 1
         tmpfns = glob(
             os.path.join(
-                reduxdir,
+                os.getenv("DESI_ROOT"),
+                "spectro",
+                "redux",
+                specprod,
                 "exposures",
                 "{}".format(night),
                 "{:08d}".format(expid),
@@ -604,7 +608,10 @@ def get_sky_grzmag_ab(night, expid, exptime, ftype, redux="daily", fiber=0):
             # AR model
             if ftype == "model":
                 fn = os.path.join(
-                    reduxdir,
+                    os.getenv("DESI_ROOT"),
+                    "spectro",
+                    "redux",
+                    specprod,
                     "exposures",
                     "{}".format(night),
                     "{:08d}".format(expid),
@@ -616,15 +623,6 @@ def get_sky_grzmag_ab(night, expid, exptime, ftype, redux="daily", fiber=0):
                     fullwave[cslice[camera]], h["WAVELENGTH"].data, h["SKY"].data[fiber]
                 )
             sky[cslice[camera]] = flux / exptime / acal.throughput()
-            print(
-                fn.split("/")[-1],
-                night,
-                expid,
-                camera,
-                "%.2f" % acal.throughput().max(),
-                "%.1f" % flux.max(),
-            )
-        #
     # AR sky model flux in erg / angstrom / s (using the photon energy in erg)
     e_phot_erg = (
         constants.h.to(units.erg * units.s)
@@ -968,6 +966,7 @@ def write_html_perexp(html, d, style, h2title):
     for i in range(len(d))[::-1]:
         night_prev = night
         night = d["NIGHT"][i]
+        specprod = d["SPECPROD"][i]
         if night != night_prev:
             html.write("<tr>\n")
             html.write(" ".join(["<th> {} </th>".format(x) for x in fields]) + "\n")
@@ -976,9 +975,9 @@ def write_html_perexp(html, d, style, h2title):
         tmparr = [
             "<a href='{}' target='external'> {}".format(
                 os.path.join(
-                    dailydir.replace(
-                        os.getenv("DESI_ROOT"), "https://data.desi.lbl.gov/desi"
-                    ),
+                    "https://data.desi.lbl.gov/desi" "spectro",
+                    "redux",
+                    specprod,
                     "tiles",
                     "{}".format(d["TILEID"][i]),
                 ),
@@ -989,9 +988,9 @@ def write_html_perexp(html, d, style, h2title):
         tmparr += [
             "<a href='{}' target='external'> {}".format(
                 os.path.join(
-                    dailydir.replace(
-                        os.getenv("DESI_ROOT"), "https://data.desi.lbl.gov/desi"
-                    ),
+                    "https://data.desi.lbl.gov/desi" "spectro",
+                    "redux",
+                    specprod,
                     "exposures",
                     "{}".format(d["NIGHT"][i]),
                 ),
@@ -1001,9 +1000,9 @@ def write_html_perexp(html, d, style, h2title):
         tmparr += [
             "<a href='{}' target='external'> {}".format(
                 os.path.join(
-                    dailydir.replace(
-                        os.getenv("DESI_ROOT"), "https://data.desi.lbl.gov/desi"
-                    ),
+                    "https://data.desi.lbl.gov/desi" "spectro",
+                    "redux",
+                    specprod,
                     "exposures",
                     "{}".format(d["NIGHT"][i]),
                     "{:08}".format(d["EXPID"][i]),
@@ -1187,11 +1186,17 @@ def get_night_expids(night, rawdir, tiles):
 
 # AR processing exposures from a given night
 # AR per-exposure information (various from header, skymon, gfas + depths)
-def process_night(night, nightoutdir, skymon, gfa, ephem, dailydir, rawdir, tiles):
+def process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, tiles):
     # AR output file name (removing if already existing)
     outfn = get_night_outfn(nightoutdir, night)
     if os.path.isfile(outfn):
         os.remove(outfn)
+    # AR using args.refspecprod for night <= refspecprod_lastnight
+    # AR       daily otherwise
+    if night <= refspecprod_lastnight:
+        specprod = args.refspecprod
+    else:
+        specprod = "daily"
     # AR listing the expids for that night
     expids = get_night_expids(night, rawdir, tiles)
     nexp = len(expids)
@@ -1230,12 +1235,13 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, dailydir, rawdir, tile
             "SPEED_DARK",
             "SPEED_BRIGHT",
             "SPEED_BACKUP",
-            "DAILY_BITPSFFN",
-            "DAILY_BITFRAMEFN",
-            "DAILY_BITSKYFN",
-            "DAILY_BITSFRAMEFN",
-            "DAILY_BITFLUXCALIBFN",
-            "DAILY_BITCFRAMEFN",
+            "SPECPROD",
+            "SPECPROD_BITPSFFN",
+            "SPECPROD_BITFRAMEFN",
+            "SPECPROD_BITSKYFN",
+            "SPECPROD_BITSFRAMEFN",
+            "SPECPROD_BITFLUXCALIBFN",
+            "SPECPROD_BITCFRAMEFN",
         ]
         # AR nb of assigned targets
         targkeys = ["N_ASSGN_{}".format(targname) for targname in targnames]
@@ -1278,8 +1284,13 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, dailydir, rawdir, tile
             for key in ephem.table.dtype.names
             if len(ephem.table[key].shape) == 1
         ]
+        # AR TSNR2
+        tsnr2keys = [
+            "TSNR2_{}".format(tracer) for tracer in ["BGS", "LRG", "ELG", "QSO"]
+        ]
         # AR all keys
         allkeys = ownkeys
+        allkeys += tsnr2keys
         allkeys += hdrkeys
         allkeys += targkeys
         allkeys += ["SKYMON_{}".format(key) for key in skymonkeys]
@@ -1296,12 +1307,12 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, dailydir, rawdir, tile
                 "NIGHT",
                 "EXPID",
                 "TILEID",
-                "DAILY_BITPSFFN",
-                "DAILY_BITFRAMEFN",
-                "DAILY_BITSKYFN",
-                "DAILY_BITSFRAMEFN",
-                "DAILY_BITFLUXCALIBFN",
-                "DAILY_BITCFRAMEFN",
+                "SPECPROD_BITPSFFN",
+                "SPECPROD_BITFRAMEFN",
+                "SPECPROD_BITSKYFN",
+                "SPECPROD_BITSFRAMEFN",
+                "SPECPROD_BITFLUXCALIBFN",
+                "SPECPROD_BITCFRAMEFN",
             ],
         )
         allfmts[sel] = "K"
@@ -1313,6 +1324,8 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, dailydir, rawdir, tile
         allfmts[i] = "{}A".format(np.max([len(x) for x in list(gfa.keys())]))
         i = np.where(allkeys == "ARIZONA_TIMEOBS")[0][0]
         allfmts[i] = "19A"  # AR e.g. 2021-02-18T04:28:06
+        i = np.where(allkeys == "SPECPROD")[0][0]
+        allfmts[i] = "{}A".format(np.max([len("daily"), len(args.refspecprod)]))
         sel = np.in1d(allkeys, ["EPHEM_{}".format(key) for key in ephkeys])
         allfmts[sel] = "D"
         # AR all units
@@ -1355,6 +1368,8 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, dailydir, rawdir, tile
                 exposures[key] = night + np.zeros(nexp, dtype=int)
             elif key == "EXPID":
                 exposures[key] = expids.copy()
+            elif key == "SPECPROD":
+                exposures[key] = np.array([specprod for i in range(nexp)])
             elif fmt[-1] == "A":
                 exposures[key] = np.array(
                     ["-" for i in range(nexp)], dtype="S{}".format(fmt[:-1])
@@ -1371,12 +1386,15 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, dailydir, rawdir, tile
                 )
         # AR looping on all exposures
         for iexp, expid in enumerate(expids):
-            # AR listing existing daily processed files
+            # AR listing existing specprod processed files
             for ftype in ["PSF", "FRAME", "SKY", "SFRAME", "FLUXCALIB", "CFRAME"]:
                 value = 0
                 for campet_name, campet_bit in zip(campet_names, campet_bits):
                     fn = os.path.join(
-                        dailydir,
+                        os.getenv("DESI_ROOT"),
+                        "spectro",
+                        "redux",
+                        specprod,
                         "exposures",
                         "{}".format(night),
                         "{:08d}".format(expid),
@@ -1384,15 +1402,53 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, dailydir, rawdir, tile
                     )
                     if os.path.isfile(fn):
                         value += 2 ** campet_bit
-                exposures["DAILY_BIT{}FN".format(ftype)][iexp] = value
+                exposures["SPECPROD_BIT{}FN".format(ftype)][iexp] = value
             print(
                 "\t",
                 night,
                 expid,
-                exposures["DAILY_BITSKYFN"][iexp],
-                exposures["DAILY_BITSFRAMEFN"][iexp],
-                exposures["DAILY_BITCFRAMEFN"][iexp],
+                specprod,
+                exposures["SPECPROD_BITSKYFN"][iexp],
+                exposures["SPECPROD_BITSFRAMEFN"][iexp],
+                exposures["SPECPROD_BITCFRAMEFN"][iexp],
             )
+            # AR TSNR2 values
+            # AR for each petal: summing the tsnr2 across cameras
+            # AR taking the median of the 500 x N_petals values
+            tsnr2 = {}
+            for key in ["BGS", "LRG", "ELG", "QSO"]:
+                tsnr2[key] = {
+                    campet_name: np.nan + np.zeros(500) for campet_name in campet_names
+                }
+            for campet_name, campet_bit in zip(campet_names, campet_bits):
+                if (exposures["SPECPROD_BITCFRAMEFN"][iexp] & 2 ** campet_bit) > 0:
+                    fn = os.path.join(
+                        os.getenv("DESI_ROOT"),
+                        "spectro",
+                        "redux",
+                        specprod,
+                        "exposures",
+                        "{}".format(night),
+                        "{:08d}".format(expid),
+                        "cframe-{}-{:08d}.fits".format(campet_name, expid),
+                    )
+                    d = fits.open(fn)["SCORES"].data
+                    for key in ["BGS", "LRG", "ELG", "QSO"]:
+                        tsnr2[key][campet_name] = d[
+                            "TSNR2_{}_{}".format(key, campet_name[0].upper())
+                        ]
+            for key in ["BGS", "LRG", "ELG", "QSO"]:
+                tsnr2_allpetals = np.nan + np.zeros(10)
+                for i in range(10):
+                    tsnr2_allpetals[i] = np.nanmean(
+                        tsnr2[key]["b{}".format(i)]
+                        + tsnr2[key]["r{}".format(i)]
+                        + tsnr2[key]["z{}".format(i)]
+                    )
+                if np.isfinite(tsnr2_allpetals).sum() > 0:
+                    exposures["TSNR2_{}".format(key)][iexp] = np.nanmean(
+                        tsnr2_allpetals
+                    )
             # AR getting header from the ext=1 of the raw data
             fn = os.path.join(
                 rawdir,
@@ -1428,21 +1484,19 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, dailydir, rawdir, tile
                 exposures[targkey][iexp] = tiles[targname][it]
             # AR SKY_{GRZ}MAG_AB from integrating the sky model over the decam gzr-bands
             # AR we convert to linear flux units (nMgy/arcsec**2)
-            # for redux,prefix in zip(["daily", "blanc"], ["", "BLANC_"]):
-            for redux, prefix in zip(["daily"], [""]):
-                if exposures["DAILY_BITSKYFN"][iexp] != 0:
-                    tmpgmag, tmprmag, tmpzmag = get_sky_grzmag_ab(
-                        night, expid, exposures["EXPTIME"][iexp], "model", redux=redux,
-                    )
-                    exposures["{}SPECMODEL_SKY_GFLUX".format(prefix)][iexp] = 10.0 ** (
-                        (22.5 - tmpgmag) / 2.5
-                    )
-                    exposures["{}SPECMODEL_SKY_RFLUX".format(prefix)][iexp] = 10.0 ** (
-                        (22.5 - tmprmag) / 2.5
-                    )
-                    exposures["{}SPECMODEL_SKY_ZFLUX".format(prefix)][iexp] = 10.0 ** (
-                        (22.5 - tmpzmag) / 2.5
-                    )
+            if exposures["SPECPROD_BITSKYFN"][iexp] != 0:
+                tmpgmag, tmprmag, tmpzmag = get_sky_grzmag_ab(
+                    night, expid, specprod, exposures["EXPTIME"][iexp], "model",
+                )
+                exposures["SPECMODEL_SKY_GFLUX"][iexp] = 10.0 ** (
+                    (22.5 - tmpgmag) / 2.5
+                )
+                exposures["SPECMODEL_SKY_RFLUX"][iexp] = 10.0 ** (
+                    (22.5 - tmprmag) / 2.5
+                )
+                exposures["SPECMODEL_SKY_ZFLUX"][iexp] = 10.0 ** (
+                    (22.5 - tmpzmag) / 2.5
+                )
             # AR SKY MONITOR measurement
             # AR we keep those in "native" units (DJS email from 02Mar2021)
             keep = skymon["MJD"] >= exposures["MJDOBS"][iexp]
@@ -1494,10 +1548,11 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, dailydir, rawdir, tile
                             ][i]
                 # AR/DK exposure depths (needs gfa information)
                 # AR/DK adding also depth including ebv+airmass
-                if exposures["DAILY_BITSKYFN"][iexp] > 0:
+                if exposures["SPECPROD_BITSKYFN"][iexp] > 0:
                     depths_i = determine_tile_depth2(
                         night,
                         expid,
+                        specprod,
                         exposures["EXPTIME"][iexp],
                         exposures["GFA_TRANSPFRAC"][iexp],
                     )
@@ -1567,11 +1622,24 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, dailydir, rawdir, tile
 # AR per exposure information
 if args.exposures == "y":
     # AR listing existing nights
+    # AR using daily for all nights
+    # AR as it should contain any existing exposures
     nights = np.array(
         [
             int(fn.split("/")[-1])
-            for fn in np.sort(glob(os.path.join(dailydir, "exposures", "202?????")))
-            if int(fn.split("/")[-1]) >= int(firstnight)
+            for fn in np.sort(
+                glob(
+                    os.path.join(
+                        os.getenv("DESI_ROOT"),
+                        "spectro",
+                        "redux",
+                        "daily",
+                        "exposures",
+                        "202?????",
+                    )
+                )
+            )
+            if int(fn.split("/")[-1]) >= firstnight
         ]
     )
     # nights = [20210101]
@@ -1593,9 +1661,7 @@ if args.exposures == "y":
     # AR processing nights
     # AR wrapper on process_night() given an night
     def _process_night(night):
-        nightnexp = process_night(
-            night, nightoutdir, skymon, gfa, ephem, dailydir, rawdir, tiles
-        )
+        nightnexp = process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, tiles)
         return nightnexp
 
     # AR parallel processing?
