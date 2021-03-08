@@ -52,7 +52,8 @@ faflavors_all = [
     "sv1praesepe",
     "sv1umaii",
     "sv1unwisegreen",
-    "sv1unwiseblue",
+    "sv1unwisebluebright",
+    "sv1unwisebluefaint",
     "sv1scndcosmos",
     "sv1scndcfhtls",
     "sv1unwise",
@@ -928,7 +929,7 @@ def main():
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
         fdict["msks"] = {
             "SV1_DESI_TARGET": "QSO",
-            "SV1_SCND_TARGET": "LBG_TOMOG,ISM_CGM_QGP,HSC_HIZ_SNE"
+            "SV1_SCND_TARGET": "DESILBG,LBG_TOMOG_COSMOS,ISM_CGM_QGP,HSC_HIZ_SNE"
         }
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
         fdict["nskypet"] = "80"
@@ -939,7 +940,7 @@ def main():
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
         fdict["msks"] = {
             "SV1_DESI_TARGET": "QSO",
-            "SV1_SCND_TARGET": "LBG_TOMOG,HETDEX_HP,HETDEX_MAIN"
+            "SV1_SCND_TARGET": "LBG_TOMOG_W3,HETDEX_HP,HETDEX_MAIN"
         }
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
         fdict["nskypet"] = "80"
@@ -948,15 +949,23 @@ def main():
         fdict["survey"] = "sv1"
         fdict["dtobscon"] = "dark"
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
-        fdict["msks"] = {"SV1_SCND_TARGET": "UNWISE_GREEN"}
+        fdict["msks"] = {"SV1_SCND_TARGET": "UNWISE_GREEN_II_3700,UNWISE_GREEN_II_3800,UNWISE_GREEN_II_3900,UNWISE_GREEN_II_4000"}
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "20"
-    elif args.faflavor == "sv1unwiseblue":
+    elif args.faflavor == "sv1unwisebluebright":
         fdict["survey"] = "sv1"
         fdict["dtobscon"] = "dark"
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
-        fdict["msks"] = {"SV1_SCND_TARGET": "UNWISE_BLUE"}
+        fdict["msks"] = {"SV1_SCND_TARGET": "UNWISE_BLUE_BRIGHT_II"}
+        fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
+        fdict["nskypet"] = "80"
+        fdict["nstdpet"] = "20"
+    elif args.faflavor == "sv1unwisebluefaint":
+        fdict["survey"] = "sv1"
+        fdict["dtobscon"] = "dark"
+        fdict["obscon"] = "DARK|GRAY|BRIGHT"
+        fdict["msks"] = {"SV1_SCND_TARGET": "UNWISE_BLUE_FAINT_II"}
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "20"
@@ -1177,9 +1186,13 @@ def main():
             ref_prios = np.array([4000, 4000, 10000])
             ref_nums = np.array([1, 1, 1])
         if args.faflavor in ["sv1scndcosmos"]:
-            ref_msks = np.array(["ISM_CGM_QGP", "HSC_HIZ_SNE", "LBG_TOMOG"])
-            ref_prios = np.array([4100, 4050, 4000])
-            ref_nums = np.array([1, 1, 1])
+            ref_msks = np.array(["ISM_CGM_QGP", "HSC_HIZ_SNE", "LBG_TOMOG_COSMOS", "DESILBG"])
+            ref_prios = np.array([4100, 4050, 4000, 4000])
+            ref_nums = np.array([1, 1, 1, 1])
+        if args.faflavor in ["sv1scndcfhtls"]:
+            ref_msks = np.array(["LBG_TOMOG_W3","HETDEX_HP","HETDEX_MAIN","QSO"])
+            ref_prios = np.array([4000, 4000, 4000, 3000])
+            ref_nums = np.array([1, 1, 1, 1])
  
 
         # AR safe, ordering by increasing priorities
@@ -2451,5 +2464,5 @@ if __name__ == "__main__":
         os.remove(logfn)
 
     #with stdouterr_redirected(to=logfn):
-        main()
+    #    main()
     main()
