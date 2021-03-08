@@ -1214,7 +1214,7 @@ def main():
             ref_scnd_order = np.array([False, False, False])
         if args.faflavor in ["sv1scndcosmos"]:
             ref_msks = np.array(["ISM_CGM_QGP", "HSC_HIZ_SNE", "LBG_TOMOG_COSMOS", "DESILBG"])
-            ref_prios = np.array([4100, 4050, 4000, 4000])
+            ref_prios = np.array([4100, 4050, 4002, 4000])
             ref_nums = np.array([1, 1, 1, 1])
             ref_scnd_order = np.array([False, False, True, True])
         if args.faflavor in ["sv1scndcfhtls"]:
