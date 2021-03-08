@@ -244,6 +244,26 @@ def apply_custom_prionum(d, msksdict, ref_msks, ref_prios, ref_nums, log=None):
                     )
     return d
 
+def apply_custom_subpriority(d, msksdict, ref_msks, ref_prios, ref_nums, ref_scnd_order, log=None):   
+    # update subpriority according to SCND_ORDER
+    for msk, prio, num, scnd_order in zip(ref_msks, ref_prios, ref_nums, ref_scnd_order):
+        for key in list(msksdict.keys()):
+            if (key in d.dtype.names) & (msk in msksdict[key].split(",")) & (scnd_order):
+                tmp = (d[key] & yaml_masks[key][msk]) > 0
+                
+                if np.max(d["SCND_ORDER"][tmp]) > np.min(d["SCND_ORDER"][tmp]):
+                    print(np.max(d["SCND_ORDER"][tmp]), np.min(d["SCND_ORDER"][tmp]))
+                    xx = d["SCND_ORDER"][tmp] - np.min(d["SCND_ORDER"][tmp])
+                    yy = 1.0 - xx/(np.max(d["SCND_ORDER"][tmp])- np.min(d["SCND_ORDER"][tmp]))
+                    d["SUBPRIORITY"][tmp] = yy
+                    if log is not None:
+                        log.info(
+                            "{:.1f}s\t SUBPRIORITY update for {}".format(
+                                time() - start, msk
+                            )
+                        )
+    return d
+
 
 # AR update header
 def update_hdr_custom_prionum(fn, extn, msksdict, ref_msks, ref_prios, ref_nums):
@@ -1162,16 +1182,21 @@ def main():
             ref_msks = np.array(["BGS_ANY", "BGS_FAINT", "ELG", "LRG", "QSO", "STD_WD"])
             ref_prios = np.array([2000, 2000, 3000, 3200, 3400, 10000])
             ref_nums = np.array([1, 1, 1, 1, 1, 1])
+            ref_scnd_order = np.array([False, False, False, False, False, False])
         elif args.faflavor in ["sv1bgsmws", "bgsmws"]:
             ref_msks = np.array(["BGS_ANY", "STD_WD"])
             ref_prios = np.array([2000, 10000])
             ref_nums = np.array([1, 1])
+            ref_scnd_order = np.array([False, False])
+
         elif args.faflavor in ["sv1m31"]:
             ref_msks = np.array(
                 ["GAIA_STD_FAINT", "M31_STAR", "M31_KNOWN", "M31_QSO", "GAIA_STD_WD"]
             )
             ref_prios = np.array([2000, 6000, 7000, 8000, 10000])
             ref_nums = np.array([1, 1, 1, 1, 1])
+            ref_scnd_order = np.array([False, False, False, False, False])
+
         # AR top-priority secondary programs on sv1elg, sv1lrqso tiles
         # AR taking 5000 + default
         if args.faflavor in ["sv1elg", "sv1lrgqso"]:
@@ -1180,19 +1205,24 @@ def main():
             )
             ref_prios = np.append(ref_prios, [6998, 6950, 6900, 6025, 6025])
             ref_nums = np.append(ref_nums, [1, 1, 1, 1, 1])
+            ref_scnd_order = np.array([False, False, False, False, False])
         # AR unwise: setting PRIORITY=4000 for all unwise targets
         if args.faflavor in ["sv1unwisegreen", "sv1unwiseblue"]:
             ref_msks = np.array(["UNWISE_BLUE", "UNWISE_GREEN", "STD_WD"])
             ref_prios = np.array([4000, 4000, 10000])
             ref_nums = np.array([1, 1, 1])
+            ref_scnd_order = np.array([False, False, False])
         if args.faflavor in ["sv1scndcosmos"]:
             ref_msks = np.array(["ISM_CGM_QGP", "HSC_HIZ_SNE", "LBG_TOMOG_COSMOS", "DESILBG"])
             ref_prios = np.array([4100, 4050, 4000, 4000])
             ref_nums = np.array([1, 1, 1, 1])
+            ref_scnd_order = np.array([False, False, True, True])
         if args.faflavor in ["sv1scndcfhtls"]:
-            ref_msks = np.array(["LBG_TOMOG_W3","HETDEX_HP","HETDEX_MAIN","QSO"])
-            ref_prios = np.array([4000, 4000, 4000, 3000])
+            ref_msks = np.array(["HETDEX_HP","HETDEX_MAIN","LBG_TOMOG_W3","QSO"])
+            ref_prios = np.array([4100, 4100, 3900, 3000])
             ref_nums = np.array([1, 1, 1, 1])
+            ref_scnd_order = np.array([False, False, False, False])
+
  
 
         # AR safe, ordering by increasing priorities
@@ -1200,6 +1230,7 @@ def main():
         ref_msks = ref_msks[ii]
         ref_prios = ref_prios[ii]
         ref_nums = ref_nums[ii]
+        ref_scnd_order = ref_scnd_order[ii]
 
     # AR switching to np.array() for tileids
     tileids = np.array([args.tileid])
@@ -1471,6 +1502,10 @@ def main():
         if len(ref_msks) > 0:
             d = apply_custom_prionum(
                 d, fdict["msks"], ref_msks, ref_prios, ref_nums, log=log
+            )
+            
+            d = apply_custom_subpriority(
+                d, fdict["msks"], ref_msks, ref_prios, ref_nums, ref_scnd_order, log=log
             )
         # AR scnd: update RA, DEC, REF_EPOCH using proper motion
         d = update_nowradec(d, new_obstime, scnd=True)
