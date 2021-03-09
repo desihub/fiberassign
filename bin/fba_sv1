@@ -1225,6 +1225,18 @@ def main():
             ref_nums = np.array([1, 1, 1, 1, 1, 1, 1])
             ref_scnd_order = np.array([False, False, False, False, False, False, False])
             
+        if args.faflavor in ["sv1unwisebluefaint"]:
+            ref_msks = np.array(["UNWISE_BLUE_FAINT_II"])
+            ref_prios = np.array([3700])
+            ref_nums = np.array([1])
+            ref_scnd_order = np.array([False])
+            
+        if args.faflavor in ["sv1unwisebluebright"]:
+            ref_msks = np.array(["UNWISE_BLUE_BRIGHT_II"])
+            ref_prios = np.array([3700])
+            ref_nums = np.array([1])
+            ref_scnd_order = np.array([False])
+            
         if args.faflavor in ["sv1scndcosmos"]:
             ref_msks = np.array(["ISM_CGM_QGP", "HSC_HIZ_SNE", "LBG_TOMOG_COSMOS", "DESILBG"])
             ref_prios = np.array([4100, 4050, 4002, 4000])
