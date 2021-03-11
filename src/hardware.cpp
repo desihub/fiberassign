@@ -30,10 +30,12 @@ fba::Hardware::Hardware(std::string const & timestr,
                         std::vector <double> const & theta_offset,
                         std::vector <double> const & theta_min,
                         std::vector <double> const & theta_max,
+                        std::vector <double> const & theta_pos,
                         std::vector <double> const & theta_arm,
                         std::vector <double> const & phi_offset,
                         std::vector <double> const & phi_min,
                         std::vector <double> const & phi_max,
+                        std::vector <double> const & phi_pos,
                         std::vector <double> const & phi_arm,
                         std::vector <double> const & ps_radius,
                         std::vector <double> const & ps_theta,
@@ -75,10 +77,12 @@ fba::Hardware::Hardware(std::string const & timestr,
     loc_theta_offset.clear();
     loc_theta_min.clear();
     loc_theta_max.clear();
+    loc_theta_pos.clear();
     loc_theta_arm.clear();
     loc_phi_offset.clear();
     loc_phi_min.clear();
     loc_phi_max.clear();
+    loc_phi_pos.clear();
     loc_phi_arm.clear();
     loc_theta_excl.clear();
     loc_phi_excl.clear();
@@ -103,7 +107,7 @@ fba::Hardware::Hardware(std::string const & timestr,
         petal_locations[petal[i]].push_back(location[i]);
         loc_pos_cs5_mm[location[i]] = std::make_pair(x_mm[i], y_mm[i]);
         state[location[i]] = status[i];
-        if (status[i] != FIBER_STATE_OK) {
+        if ((status[i] & FIBER_STATE_STUCK) || (status[i] & FIBER_STATE_BROKEN)) {
             stcount++;
         }
         neighbors[location[i]].clear();
@@ -112,10 +116,12 @@ fba::Hardware::Hardware(std::string const & timestr,
         loc_theta_offset[location[i]] = theta_offset[i] * M_PI / 180.0;
         loc_theta_min[location[i]] = theta_min[i] * M_PI / 180.0;
         loc_theta_max[location[i]] = theta_max[i] * M_PI / 180.0;
+        loc_theta_pos[location[i]] = theta_pos[i] * M_PI / 180.0;
         loc_theta_arm[location[i]] = theta_arm[i];
         loc_phi_offset[location[i]] = phi_offset[i] * M_PI / 180.0;
         loc_phi_min[location[i]] = phi_min[i] * M_PI / 180.0;
         loc_phi_max[location[i]] = phi_max[i] * M_PI / 180.0;
+        loc_phi_pos[location[i]] = phi_pos[i] * M_PI / 180.0;
         loc_phi_arm[location[i]] = phi_arm[i];
         loc_theta_excl[location[i]] = excl_theta[i];
         loc_phi_excl[location[i]] = excl_phi[i];
@@ -125,7 +131,7 @@ fba::Hardware::Hardware(std::string const & timestr,
 
     logmsg.str("");
     logmsg << "Focalplane has " << stcount
-        << " fibers that are stuck / broken";
+        << " fibers that are stuck or broken";
     logger.info(logmsg.str().c_str());
 
     // Sort the locations
@@ -762,6 +768,10 @@ bool fba::Hardware::move_positioner_xy(
 bool fba::Hardware::position_xy_bad(int32_t loc, fbg::dpair const & xy) const {
     double phi;
     double theta;
+    if ((state.at(loc) & FIBER_STATE_STUCK) || (state.at(loc) & FIBER_STATE_BROKEN)) {
+        // This positioner is stuck or has a broken fiber.  We cannot position it.
+        return true;
+    }
     bool fail = xy_to_thetaphi(
         theta, phi,
         loc_pos_curved_mm.at(loc),
@@ -782,6 +792,12 @@ bool fba::Hardware::position_xy_bad(int32_t loc, fbg::dpair const & xy) const {
 bool fba::Hardware::loc_position_xy(
     int32_t loc, fbg::dpair const & xy, fbg::shape & shptheta,
     fbg::shape & shpphi) const {
+
+    if ((state.at(loc) & FIBER_STATE_STUCK) || (state.at(loc) & FIBER_STATE_BROKEN)) {
+        // This positioner is stuck or has a broken fiber.  We cannot move it to a
+        // different X/Y location.
+        return true;
+    }
 
     // Start from exclusion polygon for this location.
     shptheta = loc_theta_excl.at(loc);
@@ -936,6 +952,39 @@ bool fba::Hardware::collide_thetaphi(
 
     // We were able to move positioners into place.  Now check for
     // intersections.
+
+    if (fbg::intersect(shpphi1, shpphi2)) {
+        return true;
+    }
+    if (fbg::intersect(shptheta1, shpphi2)) {
+        return true;
+    }
+    if (fbg::intersect(shptheta2, shpphi1)) {
+        return true;
+    }
+
+    return false;
+}
+
+
+bool fba::Hardware::collide_xy_thetaphi(
+        int32_t loc1, fbg::dpair const & xy1,
+        int32_t loc2, double theta2, double phi2) const {
+
+    fbg::shape shptheta1(loc_theta_excl.at(loc1));
+    fbg::shape shpphi1(loc_phi_excl.at(loc1));
+    bool failed1 = loc_position_xy(loc1, xy1, shptheta1, shpphi1);
+    if (failed1) {
+        return true;
+    }
+
+    fbg::shape shptheta2(loc_theta_excl.at(loc2));
+    fbg::shape shpphi2(loc_phi_excl.at(loc2));
+    bool failed2 = loc_position_thetaphi(loc2, theta2, phi2, shptheta2,
+                                         shpphi2);
+    if (failed2) {
+        return true;
+    }
 
     if (fbg::intersect(shpphi1, shpphi2)) {
         return true;

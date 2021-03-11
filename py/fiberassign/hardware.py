@@ -19,9 +19,16 @@ import desimodel.io as dmio
 
 from .utils import Logger
 
-from ._internal import (Hardware, FIBER_STATE_OK, FIBER_STATE_STUCK,
-                        FIBER_STATE_BROKEN, FIBER_STATE_UNASSIGNED,
-                        Circle, Segments, Shape)
+from ._internal import (
+    Hardware,
+    FIBER_STATE_OK,
+    FIBER_STATE_STUCK,
+    FIBER_STATE_BROKEN,
+    FIBER_STATE_UNASSIGNED,
+    Circle,
+    Segments,
+    Shape,
+)
 
 
 def load_hardware(focalplane=None, rundate=None):
@@ -66,10 +73,7 @@ def load_hardware(focalplane=None, rundate=None):
     # interpolation of the arclength S(R).
 
     fine_radius = np.linspace(
-        platescale["radius"][0],
-        platescale["radius"][-1],
-        num=10000,
-        dtype=np.float64
+        platescale["radius"][0], platescale["radius"][-1], num=10000, dtype=np.float64
     )
     fn = interp1d(platescale["radius"], platescale["theta"], kind="quadratic")
     fine_theta = fn(fine_radius).astype(np.float64)
@@ -86,9 +90,7 @@ def load_hardware(focalplane=None, rundate=None):
     keep_rows = np.unique(np.concatenate((pos_rows, etc_rows)))
 
     nloc = len(keep_rows)
-    log.debug(
-        "  focalplane table keeping {} rows for POS and ETC devices"
-        .format(nloc))
+    log.debug("  focalplane table keeping {} rows for POS and ETC devices".format(nloc))
 
     device_type = np.full(nloc, "OOPSBUG", dtype="a8")
     device_type[:] = fp["DEVICE_TYPE"][keep_rows]
@@ -146,30 +148,69 @@ def load_hardware(focalplane=None, rundate=None):
         else:
             positioners[loc]["petal"] = Shape()
 
-    hw = Hardware(tmstr, locations,
-                  fp["PETAL"][keep_rows],
-                  fp["DEVICE"][keep_rows],
-                  fp["SLITBLOCK"][keep_rows],
-                  fp["BLOCKFIBER"][keep_rows],
-                  fp["FIBER"][keep_rows],
-                  device_type,
-                  fp["OFFSET_X"][keep_rows],
-                  fp["OFFSET_Y"][keep_rows],
-                  np.array([state["STATE"][loc_to_state[x]]
-                           for x in locations]),
-                  np.array([fp["OFFSET_T"][loc_to_fp[x]] for x in locations]),
-                  np.array([fp["MIN_T"][loc_to_fp[x]] for x in locations]),
-                  np.array([fp["MAX_T"][loc_to_fp[x]] for x in locations]),
-                  np.array([fp["LENGTH_R1"][loc_to_fp[x]] for x in locations]),
-                  np.array([fp["OFFSET_P"][loc_to_fp[x]] for x in locations]),
-                  np.array([fp["MIN_P"][loc_to_fp[x]] for x in locations]),
-                  np.array([fp["MAX_P"][loc_to_fp[x]] for x in locations]),
-                  np.array([fp["LENGTH_R2"][loc_to_fp[x]] for x in locations]),
-                  fine_radius,
-                  fine_theta,
-                  fine_arc,
-                  [positioners[x]["theta"] for x in locations],
-                  [positioners[x]["phi"] for x in locations],
-                  [positioners[x]["gfa"] for x in locations],
-                  [positioners[x]["petal"] for x in locations])
+    hw = None
+    if "MIN_P" in state.colnames:
+        # This is a new-format focalplane model (after desimodel PR #143)
+        hw = Hardware(
+            tmstr,
+            locations,
+            fp["PETAL"][keep_rows],
+            fp["DEVICE"][keep_rows],
+            fp["SLITBLOCK"][keep_rows],
+            fp["BLOCKFIBER"][keep_rows],
+            fp["FIBER"][keep_rows],
+            device_type,
+            fp["OFFSET_X"][keep_rows],
+            fp["OFFSET_Y"][keep_rows],
+            np.array([state["STATE"][loc_to_state[x]] for x in locations]),
+            np.array([fp["OFFSET_T"][loc_to_fp[x]] for x in locations]),
+            np.array([state["MIN_T"][loc_to_state[x]] for x in locations]),
+            np.array([state["MAX_T"][loc_to_state[x]] for x in locations]),
+            np.array([state["POS_T"][loc_to_state[x]] for x in locations]),
+            np.array([fp["LENGTH_R1"][loc_to_fp[x]] for x in locations]),
+            np.array([fp["OFFSET_P"][loc_to_fp[x]] for x in locations]),
+            np.array([state["MIN_P"][loc_to_state[x]] for x in locations]),
+            np.array([state["MAX_P"][loc_to_state[x]] for x in locations]),
+            np.array([state["POS_P"][loc_to_state[x]] for x in locations]),
+            np.array([fp["LENGTH_R2"][loc_to_fp[x]] for x in locations]),
+            fine_radius,
+            fine_theta,
+            fine_arc,
+            [positioners[x]["theta"] for x in locations],
+            [positioners[x]["phi"] for x in locations],
+            [positioners[x]["gfa"] for x in locations],
+            [positioners[x]["petal"] for x in locations],
+        )
+    else:
+        # This is an old-format focalplane model (prior to desimodel PR #143)
+        hw = Hardware(
+            tmstr,
+            locations,
+            fp["PETAL"][keep_rows],
+            fp["DEVICE"][keep_rows],
+            fp["SLITBLOCK"][keep_rows],
+            fp["BLOCKFIBER"][keep_rows],
+            fp["FIBER"][keep_rows],
+            device_type,
+            fp["OFFSET_X"][keep_rows],
+            fp["OFFSET_Y"][keep_rows],
+            np.array([state["STATE"][loc_to_state[x]] for x in locations]),
+            np.array([fp["OFFSET_T"][loc_to_fp[x]] for x in locations]),
+            np.array([fp["MIN_T"][loc_to_fp[x]] for x in locations]),
+            np.array([fp["MAX_T"][loc_to_fp[x]] for x in locations]),
+            np.array([0.0 for x in locations]),
+            np.array([fp["LENGTH_R1"][loc_to_fp[x]] for x in locations]),
+            np.array([fp["OFFSET_P"][loc_to_fp[x]] for x in locations]),
+            np.array([fp["MIN_P"][loc_to_fp[x]] for x in locations]),
+            np.array([fp["MAX_P"][loc_to_fp[x]] for x in locations]),
+            np.array([0.0 for x in locations]),
+            np.array([fp["LENGTH_R2"][loc_to_fp[x]] for x in locations]),
+            fine_radius,
+            fine_theta,
+            fine_arc,
+            [positioners[x]["theta"] for x in locations],
+            [positioners[x]["phi"] for x in locations],
+            [positioners[x]["gfa"] for x in locations],
+            [positioners[x]["petal"] for x in locations],
+        )
     return hw
