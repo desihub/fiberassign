@@ -63,6 +63,7 @@ class TestAssign(unittest.TestCase):
         pass
 
     def test_io(self):
+        np.random.seed(123456789)
         test_dir = test_subdir_create("assign_test_io")
         input_mtl = os.path.join(test_dir, "mtl.fits")
         input_std = os.path.join(test_dir, "standards.fits")

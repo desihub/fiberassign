@@ -258,16 +258,30 @@ class TestQA(unittest.TestCase):
 
         self.assertGreaterEqual(frac,  99.0)
 
-        #- Test if qa-fiberassign script runs without crashing
-        bindir = os.path.join(os.path.dirname(fiberassign.__file__), '..', '..', 'bin')
-        script = os.path.join(os.path.abspath(bindir), 'qa-fiberassign')
-        if os.path.exists(script):
-            fafiles = glob.glob(f"{test_dir}/fiberassign-*.fits")
-            cmd = "{} --targets {}".format(script, " ".join(fafiles))
-            err = subprocess.call(cmd.split())
-            self.assertEqual(err, 0, f"FAILED ({err}): {cmd}")
-        else:
-            print(f"ERROR: didn't find {script}")
+        # FIXME:  These lines of code introduced fstring notation, which essentially
+        # requires python>=3.6 and is not used anywhere else in the code.  We could use
+        # fstring notation if we increase the python version requirement in setup.py.
+        # This mechanism for finding the qa-fiberassign script only works when running
+        # tests in place, and not when running installed tests with:
+        #
+        #  $> python -c 'import fiberassign.test; fiberassign.test.runtests()'
+        #
+        # The solution is to move qa-fiberassign into the fiberassign.scripts package
+        # so that it can be tested along with the other scripts (qa-fiberassign is
+        # a legacy script from before we refactored the package.)  Once that is done,
+        # Re-enable this test and call the entry point directly.
+        #
+        #
+        # #- Test if qa-fiberassign script runs without crashing
+        # bindir = os.path.join(os.path.dirname(fiberassign.__file__), '..', '..', 'bin')
+        # script = os.path.join(os.path.abspath(bindir), 'qa-fiberassign')
+        # if os.path.exists(script):
+        #     fafiles = glob.glob(f"{test_dir}/fiberassign-*.fits")
+        #     cmd = "{} --targets {}".format(script, " ".join(fafiles))
+        #     err = subprocess.call(cmd.split())
+        #     self.assertEqual(err, 0, f"FAILED ({err}): {cmd}")
+        # else:
+        #     print(f"ERROR: didn't find {script}")
 
 
 def test_suite():

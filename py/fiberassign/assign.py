@@ -1264,7 +1264,7 @@ def merge_results_tile(out_dtype, copy_fba, params):
             newnames.append(nm)
     tile_targets.dtype.names = newnames
     # AR hard-cutting on merged_targets_columns + *_TARGET columns
-    # tile_targets = tile_targets[list(merged_targets_columns.keys())]
+    tile_targets = tile_targets[list(merged_targets_columns.keys())]
 
     fd.write(tile_targets, header=inhead, extname="TARGETS")
     del tile_targets
