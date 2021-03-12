@@ -179,7 +179,7 @@ class TestQA(unittest.TestCase):
             ra = np.array(scidata["RA"][rows])
             dec = np.array(scidata["DEC"][rows])
             dtarget = np.array(scidata["DESI_TARGET"][rows])
-            init = np.array(scidata["NUMOBS_MORE"][rows])
+            init = np.array(scidata["NUMOBS_INIT"][rows])
 
             requested = obs * np.ones_like(avail)
 

@@ -1,0 +1,85 @@
+name:  Run Tests
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7, 3.8]
+    env:
+      DESIUTIL_VERSION: master
+      DESIMODEL_VERSION: master
+      DESIMODEL_DATA: trunk
+      DESIMODEL: ${{ github.workspace }}/desimodel
+      DESITARGET_VERSION: master
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.8.0
+        with:
+          access_token: ${{ github.token }}
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install External Dependencies
+        run: python3 -m pip install wheel pyyaml scipy matplotlib numpy astropy sphinx fitsio healpy
+      - name: Install desiutil
+        run: python3 -m pip install git+https://github.com/desihub/desiutil.git@${{ env.DESIUTIL_VERSION }}#egg=desiutil
+      - name: Install desimodel
+        run: python3 -m pip install git+https://github.com/desihub/desimodel.git@${{ env.DESIMODEL_VERSION }}#egg=desimodel
+      - name: Get desimodel data
+        run: |
+          mkdir -p ${{ env.DESIMODEL }}
+          svn export https://desi.lbl.gov/svn/code/desimodel/${{ env.DESIMODEL_DATA }}/data ${{ env.DESIMODEL }}/data
+      - name: Install desitarget
+        run: python3 -m pip install git+https://github.com/desihub/desitarget.git@${{ env.DESITARGET_VERSION }}#egg=desitarget
+      - name: Install Package
+        run: python3 -m pip install .
+      - name: Run Tests
+        run: python3 -c 'import fiberassign.test; fiberassign.test.runtests()'
+  macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        python-version: [3.7, 3.8]
+    env:
+      DESIUTIL_VERSION: master
+      DESIMODEL_VERSION: master
+      DESIMODEL_DATA: trunk
+      DESIMODEL: ${{ github.workspace }}/desimodel
+      DESITARGET_VERSION: master
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.8.0
+        with:
+          access_token: ${{ github.token }}
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install External Dependencies
+        run: python3 -m pip install wheel pyyaml scipy matplotlib numpy astropy sphinx fitsio healpy
+      - name: Install desiutil
+        run: python3 -m pip install git+https://github.com/desihub/desiutil.git@${{ env.DESIUTIL_VERSION }}#egg=desiutil
+      - name: Install desimodel
+        run: python3 -m pip install git+https://github.com/desihub/desimodel.git@${{ env.DESIMODEL_VERSION }}#egg=desimodel
+      - name: Get desimodel data
+        run: |
+          mkdir -p ${{ env.DESIMODEL }}
+          svn export https://desi.lbl.gov/svn/code/desimodel/${{ env.DESIMODEL_DATA }}/data ${{ env.DESIMODEL }}/data
+      - name: Install desitarget
+        run: python3 -m pip install git+https://github.com/desihub/desitarget.git@${{ env.DESITARGET_VERSION }}#egg=desitarget
+      - name: Install Package
+        run: python3 -m pip install .
+      - name: Run Tests
+        run: python3 -c 'import fiberassign.test; fiberassign.test.runtests()'

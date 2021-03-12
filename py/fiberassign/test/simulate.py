@@ -160,7 +160,7 @@ def sim_targets(path, tgtype, tgoffset, density=5000.0, science_frac=None):
         ("PRIORITY", "i4"),
         ("SUBPRIORITY", "f8"),
         ("OBSCONDITIONS", "i4"),
-        ("NUMOBS_MORE", "i4"),
+        ("NUMOBS_INIT", "i4"),
         ("FIBERFLUX_G", "f4"),
         ("FIBERFLUX_R", "f4"),
         ("FIBERFLUX_Z", "f4"),
@@ -205,13 +205,13 @@ def sim_targets(path, tgtype, tgoffset, density=5000.0, science_frac=None):
         for priority, numobs, frac, tgbits in dist:
             ntg = int(frac * ntarget)
             fdata["PRIORITY"][ntot:ntot+ntg] = priority
-            fdata["NUMOBS_MORE"][ntot:ntot+ntg] = numobs
+            fdata["NUMOBS_INIT"][ntot:ntot+ntg] = numobs
             fdata["DESI_TARGET"][ntot:ntot+ntg] = desi_mask[tgbits].mask
             ntot += ntg
         if ntot < ntarget:
             # Add extra targets of the final type to make up the difference
             fdata["PRIORITY"][ntot:ntarget] = dist[-1][0]
-            fdata["NUMOBS_MORE"][ntot:ntarget] = dist[-1][1]
+            fdata["NUMOBS_INIT"][ntot:ntarget] = dist[-1][1]
             fdata["DESI_TARGET"][ntot:ntarget] = desi_mask[dist[-1][3]].mask
 
     if os.path.isfile(path):

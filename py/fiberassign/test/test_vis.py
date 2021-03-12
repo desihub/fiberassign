@@ -71,7 +71,7 @@ class TestVis(unittest.TestCase):
 
         # phipos = [np.pi/2.0]
         # phicol = ["r"]
-        phipos = [0.0, np.pi/2.0]
+        phipos = [0.0, np.pi/6.0]
         phicol = ["r", "b"]
 
         for configindx, (angphi, col) in enumerate(zip(phipos, phicol)):
@@ -151,11 +151,11 @@ class TestVis(unittest.TestCase):
         self._load_and_plotpos(time, test_dir, suffix, simple=True)
         suffix = "{}".format(time)
         self._load_and_plotpos(time, test_dir, suffix, simple=False)
-        time = "2012-12-12T00:00:00"
-        suffix = "{}_simple".format(time)
-        self._load_and_plotpos(time, test_dir, suffix, simple=True)
-        suffix = "{}".format(time)
-        self._load_and_plotpos(time, test_dir, suffix, simple=False)
+        # time = "2012-12-12T00:00:00"
+        # suffix = "{}_simple".format(time)
+        # self._load_and_plotpos(time, test_dir, suffix, simple=True)
+        # suffix = "{}".format(time)
+        # self._load_and_plotpos(time, test_dir, suffix, simple=False)
         return
 
 
