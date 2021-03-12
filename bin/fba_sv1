@@ -52,9 +52,10 @@ faflavors_all = [
     "sv1praesepe",
     "sv1umaii",
     "sv1unwisegreen",
-    "sv1unwiseblue",
+    "sv1unwisebluebright",
+    "sv1unwisebluefaint",
     "sv1scndcosmos",
-    "sv1scndcfhtls",
+    "sv1scndhetdex",
     "sv1unwise",
     "sv1ssv",
     "sv1elg",
@@ -241,6 +242,26 @@ def apply_custom_prionum(d, msksdict, ref_msks, ref_prios, ref_nums, log=None):
                             time() - start, prio, num, tmp.sum(), msk
                         )
                     )
+    return d
+
+def apply_custom_subpriority(d, msksdict, ref_msks, ref_prios, ref_nums, ref_scnd_order, log=None):   
+    # update subpriority according to SCND_ORDER
+    for msk, prio, num, scnd_order in zip(ref_msks, ref_prios, ref_nums, ref_scnd_order):
+        for key in list(msksdict.keys()):
+            if (key in d.dtype.names) & (msk in msksdict[key].split(",")) & (scnd_order):
+                tmp = (d[key] & yaml_masks[key][msk]) > 0
+                
+                if np.max(d["SCND_ORDER"][tmp]) > np.min(d["SCND_ORDER"][tmp]):
+                    print(np.max(d["SCND_ORDER"][tmp]), np.min(d["SCND_ORDER"][tmp]))
+                    xx = d["SCND_ORDER"][tmp] - np.min(d["SCND_ORDER"][tmp])
+                    yy = 1.0 - xx/(np.max(d["SCND_ORDER"][tmp])- np.min(d["SCND_ORDER"][tmp]))
+                    d["SUBPRIORITY"][tmp] = yy
+                    if log is not None:
+                        log.info(
+                            "{:.1f}s\t SUBPRIORITY update for {}".format(
+                                time() - start, msk
+                            )
+                        )
     return d
 
 
@@ -928,18 +949,17 @@ def main():
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
         fdict["msks"] = {
             "SV1_DESI_TARGET": "QSO",
-            "SV1_SCND_TARGET": "LBG_TOMOG,ISM_CGM_QGP,HSC_HIZ_SNE"
+            "SV1_SCND_TARGET": "DESILBG,LBG_TOMOG_COSMOS,ISM_CGM_QGP,HSC_HIZ_SNE"
         }
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "20"
-    elif args.faflavor == "sv1scndcfhtls":
+    elif args.faflavor == "sv1scndhetdex":
         fdict["survey"] = "sv1"
         fdict["dtobscon"] = "dark"
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
         fdict["msks"] = {
-            "SV1_DESI_TARGET": "QSO",
-            "SV1_SCND_TARGET": "LBG_TOMOG,HETDEX_HP,HETDEX_MAIN"
+            "SV1_SCND_TARGET": "LBG_TOMOG_W3,HETDEX_HP,HETDEX_MAIN,LOW_MASS_AGN,LOW_Z"
         }
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
         fdict["nskypet"] = "80"
@@ -948,15 +968,23 @@ def main():
         fdict["survey"] = "sv1"
         fdict["dtobscon"] = "dark"
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
-        fdict["msks"] = {"SV1_SCND_TARGET": "UNWISE_GREEN"}
+        fdict["msks"] = {"SV1_SCND_TARGET": "UNWISE_GREEN_II_3700,UNWISE_GREEN_II_3800,UNWISE_GREEN_II_3900,UNWISE_GREEN_II_4000,UNWISE_BLUE_FAINT_II,LOW_MASS_AGN,LOW_Z"}
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "20"
-    elif args.faflavor == "sv1unwiseblue":
+    elif args.faflavor == "sv1unwisebluebright":
         fdict["survey"] = "sv1"
         fdict["dtobscon"] = "dark"
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
-        fdict["msks"] = {"SV1_SCND_TARGET": "UNWISE_BLUE"}
+        fdict["msks"] = {"SV1_SCND_TARGET": "UNWISE_BLUE_BRIGHT_II"}
+        fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
+        fdict["nskypet"] = "80"
+        fdict["nstdpet"] = "20"
+    elif args.faflavor == "sv1unwisebluefaint":
+        fdict["survey"] = "sv1"
+        fdict["dtobscon"] = "dark"
+        fdict["obscon"] = "DARK|GRAY|BRIGHT"
+        fdict["msks"] = {"SV1_SCND_TARGET": "UNWISE_BLUE_FAINT_II"}
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "20"
@@ -1099,6 +1127,18 @@ def main():
             "supp",
         ),
     ]
+    if args.faflavor in ["sv1unwisegreen", "sv1unwisebluefaint", "sv1unwisebluebright"]:
+        mydirs["targ"].append(
+            os.path.join(
+            path_to_targets,
+            args.dr,
+            args.dtver,
+            "targets",
+            fdict["survey"],
+            "resolve",
+            "bright"
+            )
+        )
     # AR secondary directory
     mydirs["scnd"] = os.path.join(
         path_to_targets,
@@ -1155,16 +1195,21 @@ def main():
             ref_msks = np.array(["BGS_ANY", "BGS_FAINT", "ELG", "LRG", "QSO", "STD_WD"])
             ref_prios = np.array([2000, 2000, 3000, 3200, 3400, 10000])
             ref_nums = np.array([1, 1, 1, 1, 1, 1])
+            ref_scnd_order = np.array([False, False, False, False, False, False])
         elif args.faflavor in ["sv1bgsmws", "bgsmws"]:
             ref_msks = np.array(["BGS_ANY", "STD_WD"])
             ref_prios = np.array([2000, 10000])
             ref_nums = np.array([1, 1])
+            ref_scnd_order = np.array([False, False])
+
         elif args.faflavor in ["sv1m31"]:
             ref_msks = np.array(
                 ["GAIA_STD_FAINT", "M31_STAR", "M31_KNOWN", "M31_QSO", "GAIA_STD_WD"]
             )
             ref_prios = np.array([2000, 6000, 7000, 8000, 10000])
             ref_nums = np.array([1, 1, 1, 1, 1])
+            ref_scnd_order = np.array([False, False, False, False, False])
+
         # AR top-priority secondary programs on sv1elg, sv1lrqso tiles
         # AR taking 5000 + default
         if args.faflavor in ["sv1elg", "sv1lrgqso"]:
@@ -1173,15 +1218,38 @@ def main():
             )
             ref_prios = np.append(ref_prios, [6998, 6950, 6900, 6025, 6025])
             ref_nums = np.append(ref_nums, [1, 1, 1, 1, 1])
+            ref_scnd_order = np.array([False, False, False, False, False])
         # AR unwise: setting PRIORITY=4000 for all unwise targets
-        if args.faflavor in ["sv1unwisegreen", "sv1unwiseblue"]:
-            ref_msks = np.array(["UNWISE_BLUE", "UNWISE_GREEN", "STD_WD"])
-            ref_prios = np.array([4000, 4000, 10000])
-            ref_nums = np.array([1, 1, 1])
+
+        if args.faflavor in ["sv1unwisegreen"]:
+            ref_msks = np.array(["UNWISE_GREEN_II_3700","UNWISE_GREEN_II_3800","UNWISE_GREEN_II_3900","UNWISE_GREEN_II_4000","UNWISE_BLUE_FAINT_II", "LOW_MASS_AGN","LOW_Z"])
+            ref_prios = np.array([3700, 3800, 3900, 4000, 3600, 3500, 3400])
+            ref_nums = np.array([1, 1, 1, 1, 1, 1, 1])
+            ref_scnd_order = np.array([False, False, False, False, False, False, False])
+            
+        if args.faflavor in ["sv1unwisebluefaint"]:
+            ref_msks = np.array(["UNWISE_BLUE_FAINT_II"])
+            ref_prios = np.array([3700])
+            ref_nums = np.array([1])
+            ref_scnd_order = np.array([False])
+            
+        if args.faflavor in ["sv1unwisebluebright"]:
+            ref_msks = np.array(["UNWISE_BLUE_BRIGHT_II"])
+            ref_prios = np.array([3700])
+            ref_nums = np.array([1])
+            ref_scnd_order = np.array([False])
+            
         if args.faflavor in ["sv1scndcosmos"]:
-            ref_msks = np.array(["ISM_CGM_QGP", "HSC_HIZ_SNE", "LBG_TOMOG"])
-            ref_prios = np.array([4100, 4050, 4000])
-            ref_nums = np.array([1, 1, 1])
+            ref_msks = np.array(["ISM_CGM_QGP", "HSC_HIZ_SNE", "LBG_TOMOG_COSMOS", "DESILBG"])
+            ref_prios = np.array([4100, 4050, 4002, 4000])
+            ref_nums = np.array([1, 1, 1, 1])
+            ref_scnd_order = np.array([False, False, True, True])
+        if args.faflavor in ["sv1scndhetdex"]:
+            ref_msks = np.array(["HETDEX_HP","HETDEX_MAIN","LBG_TOMOG_W3","LOW_MASS_AGN","LOW_Z"])
+            ref_prios = np.array([4200, 4100, 3900, 3000, 2900])
+            ref_nums = np.array([1, 1, 1, 1, 1])
+            ref_scnd_order = np.array([False, False, False, False, False])
+
  
 
         # AR safe, ordering by increasing priorities
@@ -1189,6 +1257,7 @@ def main():
         ref_msks = ref_msks[ii]
         ref_prios = ref_prios[ii]
         ref_nums = ref_nums[ii]
+        ref_scnd_order = ref_scnd_order[ii]
 
     # AR switching to np.array() for tileids
     tileids = np.array([args.tileid])
@@ -1460,6 +1529,10 @@ def main():
         if len(ref_msks) > 0:
             d = apply_custom_prionum(
                 d, fdict["msks"], ref_msks, ref_prios, ref_nums, log=log
+            )
+            
+            d = apply_custom_subpriority(
+                d, fdict["msks"], ref_msks, ref_prios, ref_nums, ref_scnd_order, log=log
             )
         # AR scnd: update RA, DEC, REF_EPOCH using proper motion
         d = update_nowradec(d, new_obstime, scnd=True)
