@@ -949,7 +949,7 @@ def main():
         fdict["obscon"] = "DARK|GRAY|BRIGHT"
         fdict["msks"] = {
             "SV1_DESI_TARGET": "QSO",
-            "SV1_SCND_TARGET": "DESILBG,LBG_TOMOG_COSMOS,ISM_CGM_QGP,HSC_HIZ_SNE"
+            "SV1_SCND_TARGET": "DESILBG_TMG_FINAL,DESILBG_BXU_FINAL,DESILBG_G_FINAL,ISM_CGM_QGP,HSC_HIZ_SNE"
         }
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
         fdict["nskypet"] = "80"
@@ -1127,6 +1127,17 @@ def main():
             "supp",
         ),
     ]
+    if args.faflavor in ["sv1scndcosmos"]:
+        mydirs["targ"] = [
+        os.path.join(
+            path_to_targets,
+            args.dr,
+            args.dtver,
+            "targets",
+            fdict["survey"],
+            "resolve",
+            fdict["dtobscon"],
+        )]
     if args.faflavor in ["sv1unwisegreen", "sv1unwisebluefaint", "sv1unwisebluebright"]:
         mydirs["targ"].append(
             os.path.join(
@@ -1240,10 +1251,10 @@ def main():
             ref_scnd_order = np.array([False])
             
         if args.faflavor in ["sv1scndcosmos"]:
-            ref_msks = np.array(["ISM_CGM_QGP", "HSC_HIZ_SNE", "LBG_TOMOG_COSMOS", "DESILBG"])
-            ref_prios = np.array([4100, 4050, 4002, 4000])
-            ref_nums = np.array([1, 1, 1, 1])
-            ref_scnd_order = np.array([False, False, True, True])
+            ref_msks = np.array(["ISM_CGM_QGP", "HSC_HIZ_SNE", "DESILBG_TMG_FINAL", "DESILBG_BXU_FINAL","DESILBG_G_FINAL","QSO"])
+            ref_prios = np.array([4100, 4000, 3900, 3800, 3700, 3600])
+            ref_nums = np.array([1, 1, 1, 1, 1, 1])
+            ref_scnd_order = np.array([False, False, True, True, False, False])
         if args.faflavor in ["sv1scndhetdex"]:
             ref_msks = np.array(["HETDEX_HP","HETDEX_MAIN","LBG_TOMOG_W3","LOW_MASS_AGN","LOW_Z"])
             ref_prios = np.array([4200, 4100, 3900, 3000, 2900])
