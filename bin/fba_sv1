@@ -61,6 +61,7 @@ faflavors_all = [
     "sv1elg",
     "sv1elgqso",
     "sv1lrgqso",
+    "sv1lrgqso2",
     "sv1bgsmws",
     "sv1backup1",
     "elg",
@@ -1017,6 +1018,21 @@ def main():
         fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
         fdict["nskypet"] = "80"
         fdict["nstdpet"] = "40"
+    # AR sv1lrgqso2:
+    # AR - QSO_RF_4PASS | QSO_RF_8PASS, LRG (no ELG)
+    # AR - same secondaries as sv1lrgqso
+    # AR [desi-survey 1703]
+    elif args.faflavor == "sv1lrgqso2":
+        fdict["survey"] = "sv1"
+        fdict["dtobscon"] = "dark"
+        fdict["obscon"] = "DARK|GRAY|BRIGHT"
+        fdict["msks"] = {
+            "SV1_DESI_TARGET": "STD_WD,LRG,QSO_RF_4PASS,QSO_RF_8PASS",
+             "SV1_SCND_TARGET": "WISE_VAR_QSO,QSO_RED,WD_BINARIES_DARK,BHB,UDG,LOW_MASS_AGN,SPCV",
+        }
+        fdict["stdmsks"] = {"SV1_DESI_TARGET": "STD_WD,STD_FAINT"}
+        fdict["nskypet"] = "80"
+        fdict["nstdpet"] = "40"
     # AR sv1elqso: adding WISE_VAR_QSO and QSO_RED (they are at the same priority as QSO)
     # AR though maybe we won t use it anymore
     elif args.faflavor == "sv1elgqso":
@@ -1181,6 +1197,7 @@ def main():
     # AR starting by the lowest priorities, then by increasing priorities:
     # AR e.g., bgs_faint -> elg -> lrg -> qso -> wd
     ref_msks, ref_prios, ref_nums = np.zeros(0), np.zeros(0), np.zeros(0)
+    ref_scnd_order = np.zeros(0, dtype=bool)
     if args.priority == "custom":
         if args.faflavor in ["cmxm33"]:
             ref_msks = np.array(
@@ -1221,15 +1238,15 @@ def main():
             ref_nums = np.array([1, 1, 1, 1, 1])
             ref_scnd_order = np.array([False, False, False, False, False])
 
-        # AR top-priority secondary programs on sv1elg, sv1lrqso tiles
+        # AR top-priority secondary programs on sv1elg, sv1lrqso, sv1lrgqso2 tiles
         # AR taking 5000 + default
-        if args.faflavor in ["sv1elg", "sv1lrgqso"]:
+        if args.faflavor in ["sv1elg", "sv1lrgqso", "sv1lrgqso2"]:
             ref_msks = np.append(
                 ref_msks, ["WD_BINARIES_DARK", "BHB", "UDG", "LOW_MASS_AGN", "SPCV"]
             )
             ref_prios = np.append(ref_prios, [6998, 6950, 6900, 6025, 6025])
             ref_nums = np.append(ref_nums, [1, 1, 1, 1, 1])
-            ref_scnd_order = np.array([False, False, False, False, False])
+            ref_scnd_order = np.append(ref_scnd_order, [False, False, False, False, False])
         # AR unwise: setting PRIORITY=4000 for all unwise targets
 
         if args.faflavor in ["sv1unwisegreen"]:
@@ -1546,19 +1563,21 @@ def main():
                 d, fdict["msks"], ref_msks, ref_prios, ref_nums, ref_scnd_order, log=log
             )
         # AR scnd: update RA, DEC, REF_EPOCH using proper motion
-        d = update_nowradec(d, new_obstime, scnd=True)
-        # AR scnd: custom mtl
-        _ = custom_make_mtl(d, "{}-scnd.fits".format(root), fdict["survey"], scnd=True)
-        # AR scnd: update header if custom PRIORITY
-        if len(ref_msks) > 0:
-            _ = update_hdr_custom_prionum(
-                "{}-scnd.fits".format(root),
-                "MTL",
-                fdict["msks"],
-                ref_msks,
-                ref_prios,
-                ref_nums,
-            )
+        # AR scnd: adding condition that some secondaries actually are selected
+        if len(d) > 0:
+            d = update_nowradec(d, new_obstime, scnd=True)
+            # AR scnd: custom mtl
+            _ = custom_make_mtl(d, "{}-scnd.fits".format(root), fdict["survey"], scnd=True)
+            # AR scnd: update header if custom PRIORITY
+            if len(ref_msks) > 0:
+                _ = update_hdr_custom_prionum(
+                    "{}-scnd.fits".format(root),
+                    "MTL",
+                    fdict["msks"],
+                    ref_msks,
+                    ref_prios,
+                    ref_nums,
+                )
 
     # AR fiberassign
     if dofa:
@@ -1585,7 +1604,9 @@ def main():
                 opts += [
                     troot + "-std.fits",
                 ]
-            if "SV1_SCND_TARGET" in list(fdict["msks"].keys()):
+            # AR adding condition that TILEID-scnd.fits exists
+            # AR ie that some secondaries are actually selected
+            if ("SV1_SCND_TARGET" in list(fdict["msks"].keys())) & (os.path.isfile(troot + "-scnd.fits")):
                 opts += [
                     troot + "-scnd.fits",
                 ]
@@ -1627,7 +1648,9 @@ def main():
             ]
             if os.path.isfile(troot + "-std.fits"):
                 ag["targets"] += [troot + "-std.fits"]
-            if "SV1_SCND_TARGET" in list(fdict["msks"].keys()):
+            # AR adding condition that TILEID-scnd.fits exists
+            # AR ie that some secondaries are actually selected
+            if ("SV1_SCND_TARGET" in list(fdict["msks"].keys())) & (os.path.isfile(troot + "-scnd.fits")):
                 ag["targets"] += [troot + "-scnd.fits"]
             ag["sky"] = [
                 troot + "-sky.fits",
@@ -2135,6 +2158,8 @@ def main():
                     xp = dp["GAIA_PHOT_G_MEAN_MAG"][mskpsel]
                     x = mydict["GAIA_PHOT_G_MEAN_MAG"][msksel]
                     ax.set_xlabel("GAIA_PHOT_G_MEAN_MAG")
+                if np.isfinite(xp).sum() == 0:
+                    dohist = 0
                 if dohist == 1:
                     plot_hist(ax, x, xp, msk)
                     _, ymax = ax.get_ylim()
