@@ -251,7 +251,7 @@ std_sv1_msks = ["STD_WD", "STD_BRIGHT", "STD_FAINT"]
 
 # AR short names for faflavor
 flavdict = {
-    "QSO+LRG": {"FAFLAVORS": ["cmxlrgqso", "sv1lrgqso"], "COLOR": "r"},
+    "QSO+LRG": {"FAFLAVORS": ["cmxlrgqso", "sv1lrgqso", "sv1lrgqso2"], "COLOR": "r"},
     "ELG": {"FAFLAVORS": ["cmxelg", "sv1elg"], "COLOR": "b"},
     "QSO+ELG": {"FAFLAVORS": ["sv1elgqso"], "COLOR": "c"},
     "BGS+MWS": {"FAFLAVORS": ["cmxbgsmws", "sv1bgsmws"], "COLOR": "g"},
@@ -262,13 +262,14 @@ flavdict = {
         "COLOR": "0.5",
     },
     "SSV": {"FAFLAVORS": ["sv1ssv"], "COLOR": "orange"},
+    "SCND": {"FAFLAVORS": ["sv1mwclusgaldeep", "sv1scndhetdex", "sv1unwisegreen", "sv1unwisebluebright", "sv1unwisebluefaint", "sv1scndcosmos", "sv1unwise"], "COLOR": "brown"},
     "BACKUP": {"FAFLAVORS": ["sv1backup1"], "COLOR": "y"},
 }
 # AR field names - hand-written...
 fielddict = {
     "XMM-LSS": [80605, 80606],
     "Lynx": [80607, 80608, 80613],
-    "COSMOS": [80609, 80610, 80742],
+    "COSMOS": [80609, 80610, 80742, 80871, 80872],
     "Triangulum": [80611],
     "Eridanus": [80612],
     "Sextans": [80614, 80737],
@@ -340,18 +341,21 @@ fielddict = {
     "UMAII": [80720, 80726],
     "GD1_LOW_1": [80722],
     "GD1_LOW_2": [80724],
-    "M67": [80725],
+    "M67": [80725, 80864],
     "GD1-B-1": [80727],
     "ORPHAN-A-2": [80728],
     "GD1-C-1": [80729],
     "GD1-C-3": [80730],
     "NGP": [80731],
     "BOSS7456": [80732],
-    "M53+N5053": [80733],
+    "M53+N5053": [80733, 80863],
     "M5": [80734],
     "M13": [80735],
     "M92": [80736],
-    "Draco": [80738],
+    "Draco": [80738, 80862],
+    "ELAIS_N1": [80865, 80866, 80867],
+    "CFHTLS_W3": [80868],
+    "HETDEX": [80869, 80870]
 }
 
 
@@ -975,7 +979,8 @@ def write_html_perexp(html, d, style, h2title):
         tmparr = [
             "<a href='{}' target='external'> {}".format(
                 os.path.join(
-                    "https://data.desi.lbl.gov/desi" "spectro",
+                    "https://data.desi.lbl.gov/desi",
+                    "spectro",
                     "redux",
                     specprod,
                     "tiles",
@@ -988,7 +993,8 @@ def write_html_perexp(html, d, style, h2title):
         tmparr += [
             "<a href='{}' target='external'> {}".format(
                 os.path.join(
-                    "https://data.desi.lbl.gov/desi" "spectro",
+                    "https://data.desi.lbl.gov/desi",
+                    "spectro",
                     "redux",
                     specprod,
                     "exposures",
@@ -1000,7 +1006,8 @@ def write_html_perexp(html, d, style, h2title):
         tmparr += [
             "<a href='{}' target='external'> {}".format(
                 os.path.join(
-                    "https://data.desi.lbl.gov/desi" "spectro",
+                    "https://data.desi.lbl.gov/desi",
+                    "spectro",
                     "redux",
                     specprod,
                     "exposures",
@@ -1053,8 +1060,9 @@ for key in [
     "COLOR",
     "FIELD",
     "RUNDATE",
+    "DESIGNDATE"
 ]:
-    if key in ["TILEID"]:
+    if key in ["TILEID", "DESIGNDATE"]:
         tiles[key] = np.zeros(nt, dtype=int)
     elif key in ["FAFLAVOR", "TARGETS", "COLOR", "FIELD", "RUNDATE"]:
         tiles[key] = np.array(["-" for x in range(nt)], dtype=object)
@@ -1064,6 +1072,8 @@ for targname in targnames:
     tiles[targname] = np.zeros(nt, dtype=int)
 # AR populating
 for i in range(nt):
+    # AR DESIGNDATE
+    tiles["DESIGNDATE"][i] = int(tiles["FN"][i].split("/")[-2])
     # AR general
     hdr = fits.getheader(tiles["FN"][i])
     for key in ["TILEID", "TILERA", "TILEDEC", "FAFLAVOR", "RUNDATE"]:
@@ -1122,7 +1132,7 @@ if args.tiles == "y":
     ]
     h = fits.open(fns[0])
     keys, fmts = h[1].columns.names, h[1].columns.formats
-    ownkeys, ownfmts = ["FAFLAVOR", "TARGETS", "FIELD", "RUNDATE"], ["-", "-", "-", "-"]
+    ownkeys, ownfmts = ["FAFLAVOR", "TARGETS", "FIELD", "RUNDATE", "DESIGNDATE"], ["-", "-", "-", "-", "K"]
     t = {}
     for key in keys + ownkeys:
         t[key] = []
@@ -1765,34 +1775,24 @@ if args.plot == "y":
     ra, dec = np.loadtxt(desfn, unpack=True)
     ramw, decmw = get_radec_mw(ra, dec, org)
     ax.plot(ramw, decmw, c="k", lw=0.5)
+    # AR observed exposures
+    d = fits.open(outfns["exposures"])[1].data
+    d = d[(d["EXPTIME"] > 100) & (d["OBSCONDITIONS"] != -1) ] # AR remove crap
     #
     ramw, decmw = get_radec_mw(tiles["TILERA"], tiles["TILEDEC"], org)
     for radec in np.unique(tiles["radec"]):
         ii = np.where(tiles["radec"] == radec)[0]
-        n = len(ii)
-        dy = 5
-        y = np.array([float(radec.split(",")[1]) + (n - 1) / 2.0 * dy])
         for i in ii:
-            ax.scatter(ramw[i], decmw[i], c=tiles["COLOR"][i], marker="X", s=50)
-            if tiles["TILEID"][i] in [80611, 80614, 80617]:
-                dx, ha = +3, "right"
+            # AR is observed?
+            if tiles["TILEID"][i] in d["TILEID"]:
+                marker, s, alpha = "o", 50, 0.5
             else:
-                dx, ha = -3, "left"
-            x = np.array([float(radec.split(",")[0]) + dx])
-            mwx, mwy = get_radec_mw(x, y, org)
-            ax.text(
-                mwx,
-                mwy,
-                "{}".format(tiles["TILEID"][i]),
-                color=tiles["COLOR"][i],
-                ha=ha,
-                va="center",
-            )
-            y -= dy
+                marker, s, alpha = "+", 20, 1
+            ax.scatter(ramw[i], decmw[i], c=tiles["COLOR"][i], marker=marker, s=s, alpha=alpha)
     # AR
     for key in list(flavdict.keys()):
-        ax.scatter(100, 100, marker="X", s=50, c=flavdict[key]["COLOR"], label=key)
-    ax.legend(loc=2)
+        ax.scatter(100, 100, marker="o", s=50, c=flavdict[key]["COLOR"], label=key)
+    ax.legend(loc=3, ncol=2)
     plt.savefig(outfns["skymap"], bbox_inches="tight")
     plt.close()
 
