@@ -157,127 +157,134 @@ class TestQA(unittest.TestCase):
             [input_mtl], list(), tile_ids, result_dir=test_dir, copy_fba=False
         )
 
-        qa_targets(
-            hw,
-            tiles,
-            result_dir=test_dir,
-            result_prefix="fiberassign-"
-        )
-
-        # Load the target catalog so that we have access to the target properties
-
-        fd = fitsio.FITS(input_mtl, "r")
-        scidata = np.array(np.sort(fd[1].read(), order="TARGETID"))
-        fd.close()
-        del fd
-
-        # How many possible positioner assignments did we have?
-        nassign = 5000 * len(tile_ids)
-
-        possible = dict()
-        achieved = dict()
-
-        namepat = re.compile(r".*/qa_target_count_(.*)_init-(.*)\.fits")
-        for qafile in glob.glob("{}/qa_target_count_*.fits".format(test_dir)):
-            namemat = namepat.match(qafile)
-            name = namemat.group(1)
-            obs = int(namemat.group(2))
-            if obs == 0:
-                continue
-            fd = fitsio.FITS(qafile, "r")
-            fdata = fd["COUNTS"].read()
-            # Sort by target ID so we can select easily
-            fdata = np.sort(fdata, order="TARGETID")
-            tgid = np.array(fdata["TARGETID"])
-            counts = np.array(fdata["NUMOBS_DONE"])
-            avail = np.array(fdata["NUMOBS_AVAIL"])
-            del fdata
-            fd.close()
-
-            # Select target properties.  BOTH TARGET LISTS MUST BE SORTED.
-            rows = np.where(np.isin(scidata["TARGETID"], tgid, assume_unique=True))[0]
-
-            ra = np.array(scidata["RA"][rows])
-            dec = np.array(scidata["DEC"][rows])
-            dtarget = np.array(scidata["DESI_TARGET"][rows])
-            init = np.array(scidata["NUMOBS_INIT"][rows])
-
-            requested = obs * np.ones_like(avail)
-
-            under = np.where(avail < requested)[0]
-            over = np.where(avail > requested)[0]
-
-            limavail = np.array(avail)
-            limavail[over] = obs
-
-            deficit = np.zeros(len(limavail), dtype=np.int)
-
-            deficit[:] = limavail - counts
-            deficit[avail == 0] = 0
-
-            possible[name] = np.sum(limavail)
-            achieved[name] = np.sum(counts)
-
-            log_msg += "{}-{}:\n".format(name, obs)
-
-            pindx = np.where(deficit > 0)[0]
-            poor_tgid = tgid[pindx]
-            poor_dtarget = dtarget[pindx]
-            log_msg += "  Deficit > 0: {}\n".format(len(poor_tgid))
-            poor_ra = ra[pindx]
-            poor_dec = dec[pindx]
-            poor_deficit = deficit[pindx]
-
-            # Plot Target availability
-            # Commented out by default, since in the case of high target density
-            # needed for maximizing assignments, there are far more targets than
-            # the number of available fiber placements.
-
-            # marksize = 4 * np.ones_like(deficit)
-            #
-            # fig = plt.figure(figsize=(12, 12))
-            # ax = fig.add_subplot(1, 1, 1)
-            # ax.scatter(ra, dec, s=2, c="black", marker="o")
-            # for pt, pr, pd, pdef in zip(poor_tgid, poor_ra, poor_dec, poor_deficit):
-            #     ploc = plt.Circle(
-            #         (pr, pd), radius=(0.05*pdef), fc="none", ec="red"
-            #     )
-            #     ax.add_artist(ploc)
-            # ax.set_xlabel("RA", fontsize="large")
-            # ax.set_ylabel("DEC", fontsize="large")
-            # ax.set_title(
-            #     "Target \"{}\": (min(avail, requested) - counts) > 0".format(
-            #         name, obs
-            #     )
-            # )
-            # #ax.legend(handles=lg, framealpha=1.0, loc="upper right")
-            # plt.savefig(os.path.join(test_dir, "{}-{}_deficit.pdf".format(name, obs)), dpi=300, format="pdf")
-
-        log_msg += \
-            "Assigned {} tiles for total of {} possible target observations\n".format(
-                len(tile_ids), nassign
-            )
-        ach = 0
-        for nm in possible.keys():
-            ach += achieved[nm]
-            log_msg += \
-                "  type {} had {} possible target obs and achieved {}\n".format(
-                    nm, possible[nm], achieved[nm]
-                )
-        frac = 100.0 * ach / nassign
-        log_msg += \
-            "  {} / {} = {:0.2f}% of fibers were assigned\n".format(
-                ach, nassign, frac
-            )
-        for nm in possible.keys():
-            log_msg += \
-                "  type {} had {:0.2f}% of achieved observations\n".format(
-                    nm, achieved[nm] / ach
-                )
-        with open(log_file, "w") as f:
-            f.write(log_msg)
-
-        self.assertGreaterEqual(frac,  99.0)
+        # FIXME:  In order to use the qa_targets function, we need to know the
+        # starting requested number of observations (NUMOBS_INIT).  Then we can use
+        # that value for each target and compare to the number actually assigned.
+        # However, the NUMOBS_INIT column was removed from the merged TARGET table.
+        # If we are ever able to reach consensus on restoring that column, then we
+        # can re-enable these tests below.
+        #
+        # qa_targets(
+        #     hw,
+        #     tiles,
+        #     result_dir=test_dir,
+        #     result_prefix="fiberassign-"
+        # )
+        #
+        # # Load the target catalog so that we have access to the target properties
+        #
+        # fd = fitsio.FITS(input_mtl, "r")
+        # scidata = np.array(np.sort(fd[1].read(), order="TARGETID"))
+        # fd.close()
+        # del fd
+        #
+        # # How many possible positioner assignments did we have?
+        # nassign = 5000 * len(tile_ids)
+        #
+        # possible = dict()
+        # achieved = dict()
+        #
+        # namepat = re.compile(r".*/qa_target_count_(.*)_init-(.*)\.fits")
+        # for qafile in glob.glob("{}/qa_target_count_*.fits".format(test_dir)):
+        #     namemat = namepat.match(qafile)
+        #     name = namemat.group(1)
+        #     obs = int(namemat.group(2))
+        #     if obs == 0:
+        #         continue
+        #     fd = fitsio.FITS(qafile, "r")
+        #     fdata = fd["COUNTS"].read()
+        #     # Sort by target ID so we can select easily
+        #     fdata = np.sort(fdata, order="TARGETID")
+        #     tgid = np.array(fdata["TARGETID"])
+        #     counts = np.array(fdata["NUMOBS_DONE"])
+        #     avail = np.array(fdata["NUMOBS_AVAIL"])
+        #     del fdata
+        #     fd.close()
+        #
+        #     # Select target properties.  BOTH TARGET LISTS MUST BE SORTED.
+        #     rows = np.where(np.isin(scidata["TARGETID"], tgid, assume_unique=True))[0]
+        #
+        #     ra = np.array(scidata["RA"][rows])
+        #     dec = np.array(scidata["DEC"][rows])
+        #     dtarget = np.array(scidata["DESI_TARGET"][rows])
+        #     init = np.array(scidata["NUMOBS_INIT"][rows])
+        #
+        #     requested = obs * np.ones_like(avail)
+        #
+        #     under = np.where(avail < requested)[0]
+        #     over = np.where(avail > requested)[0]
+        #
+        #     limavail = np.array(avail)
+        #     limavail[over] = obs
+        #
+        #     deficit = np.zeros(len(limavail), dtype=np.int)
+        #
+        #     deficit[:] = limavail - counts
+        #     deficit[avail == 0] = 0
+        #
+        #     possible[name] = np.sum(limavail)
+        #     achieved[name] = np.sum(counts)
+        #
+        #     log_msg += "{}-{}:\n".format(name, obs)
+        #
+        #     pindx = np.where(deficit > 0)[0]
+        #     poor_tgid = tgid[pindx]
+        #     poor_dtarget = dtarget[pindx]
+        #     log_msg += "  Deficit > 0: {}\n".format(len(poor_tgid))
+        #     poor_ra = ra[pindx]
+        #     poor_dec = dec[pindx]
+        #     poor_deficit = deficit[pindx]
+        #
+        #     # Plot Target availability
+        #     # Commented out by default, since in the case of high target density
+        #     # needed for maximizing assignments, there are far more targets than
+        #     # the number of available fiber placements.
+        #
+        #     # marksize = 4 * np.ones_like(deficit)
+        #     #
+        #     # fig = plt.figure(figsize=(12, 12))
+        #     # ax = fig.add_subplot(1, 1, 1)
+        #     # ax.scatter(ra, dec, s=2, c="black", marker="o")
+        #     # for pt, pr, pd, pdef in zip(poor_tgid, poor_ra, poor_dec, poor_deficit):
+        #     #     ploc = plt.Circle(
+        #     #         (pr, pd), radius=(0.05*pdef), fc="none", ec="red"
+        #     #     )
+        #     #     ax.add_artist(ploc)
+        #     # ax.set_xlabel("RA", fontsize="large")
+        #     # ax.set_ylabel("DEC", fontsize="large")
+        #     # ax.set_title(
+        #     #     "Target \"{}\": (min(avail, requested) - counts) > 0".format(
+        #     #         name, obs
+        #     #     )
+        #     # )
+        #     # #ax.legend(handles=lg, framealpha=1.0, loc="upper right")
+        #     # plt.savefig(os.path.join(test_dir, "{}-{}_deficit.pdf".format(name, obs)), dpi=300, format="pdf")
+        #
+        # log_msg += \
+        #     "Assigned {} tiles for total of {} possible target observations\n".format(
+        #         len(tile_ids), nassign
+        #     )
+        # ach = 0
+        # for nm in possible.keys():
+        #     ach += achieved[nm]
+        #     log_msg += \
+        #         "  type {} had {} possible target obs and achieved {}\n".format(
+        #             nm, possible[nm], achieved[nm]
+        #         )
+        # frac = 100.0 * ach / nassign
+        # log_msg += \
+        #     "  {} / {} = {:0.2f}% of fibers were assigned\n".format(
+        #         ach, nassign, frac
+        #     )
+        # for nm in possible.keys():
+        #     log_msg += \
+        #         "  type {} had {:0.2f}% of achieved observations\n".format(
+        #             nm, achieved[nm] / ach
+        #         )
+        # with open(log_file, "w") as f:
+        #     f.write(log_msg)
+        #
+        # self.assertGreaterEqual(frac,  99.0)
 
         # Test if qa-fiberassign script runs without crashing
         script = os.path.join(self.binDir, "qa-fiberassign")
