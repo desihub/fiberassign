@@ -56,7 +56,8 @@ from .assign import (
 
 
 def qa_parse_table(header, tgdata):
-    """Extract target info from a table."""
+    """Extract target info from a table.
+    """
     log = Logger.get()
     tgs = Targets()
     if "FA_SURV" in header:
@@ -403,12 +404,7 @@ def qa_tiles(
 
 
 def qa_targets(
-    hw,
-    tiles,
-    result_dir=".",
-    result_prefix="fiberassign-",
-    result_split_dir=False,
-    qa_out=None,
+    hw, tiles, result_dir=".", result_prefix="fiberassign-", result_split_dir=False, qa_out=None
 ):
     """Run target QA on a set of tiles.
 
@@ -468,13 +464,8 @@ def qa_targets(
         log.info("Processing tile {}".format(tid))
         itid = int(tid)
 
-        (
-            header,
-            fiber_data,
-            targets_data,
-            avail_data,
-            gfa_data,
-        ) = read_assignment_fits_tile((tid, tf))
+        header, fiber_data, targets_data, avail_data, gfa_data = \
+            read_assignment_fits_tile((tid, tf))
 
         # Target properties
         tgs, tgprops = qa_parse_table(header, targets_data)
@@ -483,9 +474,10 @@ def qa_targets(
         pos_rows = np.where(fiber_data["DEVICE_TYPE"].astype(str) == "POS")[0]
 
         # Assigned Targets
-        tassign = np.unique(
-            [x["TARGETID"] for x in fiber_data[pos_rows] if (x["LOCATION"] >= 0)]
-        )
+        tassign = np.unique([
+            x["TARGETID"] for x in fiber_data[pos_rows]
+            if (x["LOCATION"] >= 0)
+        ])
 
         # Unique set of targets available for this tile
         tavail = np.unique(avail_data["TARGETID"])
@@ -494,10 +486,8 @@ def qa_targets(
             if tgid < 0:
                 continue
             if tgid not in tgprops:
-                msg = (
-                    "Available target not in target props.  "
+                msg = "Available target not in target props.  "\
                     "Rerun fba_run with the --write_all_targets option."
-                )
                 raise RuntimeError()
             cls = str(tgprops[tgid]["class"])
             typ = str(tgprops[tgid]["type"])
@@ -535,13 +525,11 @@ def qa_targets(
     with open(qa_out, "w") as f:
         json.dump(qadata, f, indent=4, sort_keys=True)
 
-    tcols = OrderedDict(
-        [
-            ("TARGETID", "i8"),
-            ("NUMOBS_AVAIL", "i4"),
-            ("NUMOBS_DONE", "i4"),
-        ]
-    )
+    tcols = OrderedDict([
+        ("TARGETID", "i8"),
+        ("NUMOBS_AVAIL", "i4"),
+        ("NUMOBS_DONE", "i4"),
+    ])
     tdtype = np.dtype([(x, y) for x, y in tcols.items()])
     for tcls, clsprops in qaavail.items():
         aclsprops = None
@@ -561,8 +549,9 @@ def qa_targets(
                 if fobi < 0:
                     fobi = "NA"
                 tout = os.path.join(
-                    result_dir,
-                    "qa_target_count_{}-{}_init-{}.fits".format(tcls, ttyp, fobi),
+                    result_dir, "qa_target_count_{}-{}_init-{}.fits".format(
+                        tcls, ttyp, fobi
+                    )
                 )
                 if os.path.isfile(tout):
                     os.remove(tout)

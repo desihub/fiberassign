@@ -27,25 +27,15 @@ from .hardware import load_hardware, FIBER_STATE_STUCK, FIBER_STATE_BROKEN
 
 from .tiles import load_tiles
 
-from .targets import (
-    Targets,
-    load_target_table,
-    TARGET_TYPE_SCIENCE,
-    TARGET_TYPE_SKY,
-    TARGET_TYPE_SUPPSKY,
-    TARGET_TYPE_STANDARD,
-    TARGET_TYPE_SAFE,
-)
+from .targets import (Targets, load_target_table,
+                      TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
+                      TARGET_TYPE_SUPPSKY,
+                      TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE)
 
-from .assign import (
-    read_assignment_fits_tile,
-    result_tiles,
-    result_path,
-    avail_table_to_dict,
-)
+from .assign import (read_assignment_fits_tile, result_tiles, result_path,
+                     avail_table_to_dict)
 
 plt = None
-
 
 def set_matplotlib_pdf_backend():
     """Set the matplotlib backend to PDF.
@@ -57,7 +47,6 @@ def set_matplotlib_pdf_backend():
         return
     try:
         import matplotlib
-
         matplotlib.use("pdf", warn=False)
         import matplotlib.pyplot as plt
     except:
@@ -87,42 +76,35 @@ def plot_target_type_color(tgtype):
     return color
 
 
-def plot_positioner(
-    ax, patrol_rad, loc, center, shptheta, shpphi, color="k", linewidth=0.2
-):
-    """Plot one fiber positioner."""
+def plot_positioner(ax, patrol_rad, loc, center, shptheta, shpphi, color="k",
+                    linewidth=0.2):
+    """Plot one fiber positioner.
+    """
     set_matplotlib_pdf_backend()
-    patrol = plt.Circle(
-        (center[0], center[1]), radius=patrol_rad, fc=color, ec="none", alpha=0.1
-    )
+    patrol = plt.Circle((center[0], center[1]), radius=patrol_rad, fc=color,
+                        ec="none", alpha=0.1)
     ax.add_artist(patrol)
     # Plot the arm from the center to the body
     thetacent = shptheta.axis
     armwidth = 0.25
-    armlen = np.sqrt((thetacent[1] - center[1]) ** 2 + (thetacent[0] - center[0]) ** 2)
+    armlen = np.sqrt((thetacent[1] - center[1])**2
+                     + (thetacent[0] - center[0])**2)
     armang = np.arctan2(thetacent[1] - center[1], thetacent[0] - center[0])
     sinarm = np.sin(armang)
     cosarm = np.cos(armang)
-    arm_xoff = center[0] + (0.5 * armwidth) * sinarm
-    arm_yoff = center[1] - (0.5 * armwidth) * cosarm
+    arm_xoff = center[0] + (0.5*armwidth) * sinarm
+    arm_yoff = center[1] - (0.5*armwidth) * cosarm
     armang_deg = armang * 180.0 / np.pi
-    arm = plt.Rectangle(
-        (arm_xoff, arm_yoff),
-        armlen,
-        armwidth,
-        angle=armang_deg,
-        color=color,
-        linewidth=2 * linewidth,
-        fill=False,
-    )
+    arm = plt.Rectangle((arm_xoff, arm_yoff), armlen, armwidth,
+                        angle=armang_deg, color=color, linewidth=2*linewidth,
+                        fill=False)
     ax.add_artist(arm)
     for piece in [shptheta, shpphi]:
         for circle in piece.circles:
             xcent, ycent = circle.center
             rad = circle.radius
-            circ = plt.Circle(
-                (xcent, ycent), radius=rad, fc="none", ec=color, linewidth=linewidth
-            )
+            circ = plt.Circle((xcent, ycent), radius=rad, fc="none", ec=color,
+                              linewidth=linewidth)
             ax.add_artist(circ)
         for segs in piece.segments:
             xpts = np.array([p[0] for p in segs.points])
@@ -133,32 +115,17 @@ def plot_positioner(
     fontpt = 2.0
     xtxt = center[0] - 2 * armwidth * cosarm
     ytxt = center[1] - 2 * armwidth * sinarm
-    ax.text(
-        xtxt,
-        ytxt,
-        "{}".format(loc),
-        color="k",
-        fontsize=fontpt,
-        horizontalalignment="center",
-        verticalalignment="center",
-        bbox=None,
-    )
+    ax.text(xtxt, ytxt, "{}".format(loc),
+            color='k', fontsize=fontpt,
+            horizontalalignment='center',
+            verticalalignment='center',
+            bbox=None)
     #        bbox=dict(fc='w', ec='none', pad=1, alpha=1.0))
     return
 
 
-def plot_positioner_simple(
-    ax,
-    patrol_rad,
-    loc,
-    center,
-    theta_ang,
-    theta_arm,
-    phi_ang,
-    phi_arm,
-    color="k",
-    linewidth=0.2,
-):
+def plot_positioner_simple(ax, patrol_rad, loc, center, theta_ang, theta_arm,
+                           phi_ang, phi_arm, color="k", linewidth=0.2):
     """Plot one fiber positioner.
 
     This uses a simpler representation of the positioner geometry, in order to
@@ -166,42 +133,37 @@ def plot_positioner_simple(
 
     """
     set_matplotlib_pdf_backend()
-    patrol = plt.Circle(
-        (center[0], center[1]), radius=patrol_rad, fc=color, ec="none", alpha=0.1
-    )
+    patrol = plt.Circle((center[0], center[1]), radius=patrol_rad, fc=color,
+                        ec="none", alpha=0.1)
     ax.add_artist(patrol)
 
     # Plot the arm from the center to the phi body
     theta_x = theta_arm * np.cos(theta_ang) + center[0]
     theta_y = theta_arm * np.sin(theta_ang) + center[1]
 
-    ax.plot(
-        [center[0], theta_x], [center[1], theta_y], color=color, linewidth=5 * linewidth
-    )
+    ax.plot([center[0], theta_x], [center[1], theta_y], color=color,
+            linewidth=5*linewidth)
 
     # Plot the phi arm.
     phi_x = phi_arm * np.cos(phi_ang + theta_ang) + theta_x
     phi_y = phi_arm * np.sin(phi_ang + theta_ang) + theta_y
 
-    ax.plot([theta_x, phi_x], [theta_y, phi_y], color=color, linewidth=linewidth)
+    ax.plot([theta_x, phi_x], [theta_y, phi_y], color=color,
+            linewidth=linewidth)
 
     fontpt = 2.0
     xtxt = center[0]
     ytxt = center[1] + 0.5
-    ax.text(
-        xtxt,
-        ytxt,
-        "{}".format(loc),
-        color="k",
-        fontsize=fontpt,
-        horizontalalignment="center",
-        verticalalignment="center",
-        bbox=None,
-    )
+    ax.text(xtxt, ytxt, "{}".format(loc),
+            color='k', fontsize=fontpt,
+            horizontalalignment='center',
+            verticalalignment='center',
+            bbox=None)
     return
 
 
-def plot_tile_targets_props(hw, tile_ra, tile_dec, tile_theta, tgs, avail_tgid=None):
+def plot_tile_targets_props(hw, tile_ra, tile_dec, tile_theta, tgs,
+                            avail_tgid=None):
     if avail_tgid is None:
         avail_tgid = tgs.ids()
     ra = np.full(len(avail_tgid), 9999.9, dtype=np.float64)
@@ -216,9 +178,9 @@ def plot_tile_targets_props(hw, tile_ra, tile_dec, tile_theta, tgs, avail_tgid=N
     # multiprocessing.
 
     tgxy = hw.radec2xy_multi(tile_ra, tile_dec, tile_theta, ra, dec, False, 1)
-    props = {
-        tgid: {"xy": xy, "color": cl} for tgid, xy, cl in zip(avail_tgid, tgxy, color)
-    }
+    props = {tgid: {"xy": xy, "color": cl} for tgid, xy, cl
+             in zip(avail_tgid, tgxy, color)}
+
     return props
 
 
@@ -231,13 +193,13 @@ def plot_available(ax, targetprops, selected, linewidth=0.1):
         xdata[idx] = targetprops[tgid]["xy"][0]
         ydata[idx] = targetprops[tgid]["xy"][1]
         color.append(targetprops[tgid]["color"])
-    ax.scatter(xdata, ydata, color=color, marker=".", linewidth=linewidth, s=mwidth)
+    ax.scatter(xdata, ydata, color=color, marker=".",
+               linewidth=linewidth, s=mwidth)
     return
 
 
-def plot_assignment(
-    ax, hw, targetprops, tile_assigned, linewidth=0.1, real_shapes=False
-):
+def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
+                    real_shapes=False):
     log = Logger.get()
     center_mm = hw.loc_pos_curved_mm
     theta_arm = hw.loc_theta_arm
@@ -270,12 +232,12 @@ def plot_assignment(
             for segs in shp.segments:
                 xpts = np.array([p[0] for p in segs.points])
                 ypts = np.array([p[1] for p in segs.points])
-                ax.plot(xpts, ypts, linewidth=0.2 * linewidth, color="gray")
+                ax.plot(xpts, ypts, linewidth=0.2*linewidth, color="gray")
         for pt, shp in edge_petal.items():
             for segs in shp.segments:
                 xpts = np.array([p[0] for p in segs.points])
                 ypts = np.array([p[1] for p in segs.points])
-                ax.plot(xpts, ypts, linewidth=0.2 * linewidth, color="gray")
+                ax.plot(xpts, ypts, linewidth=0.2*linewidth, color="gray")
 
     for lid in assigned:
         color = "gray"
@@ -289,15 +251,14 @@ def plot_assignment(
         tgid = tile_assigned[lid]
         patrol_rad = theta_arm[lid] + phi_arm[lid]
         failed = False
-        is_assigned = tgid >= 0
+        is_assigned = (tgid >= 0)
         if is_assigned:
             # This fiber is assigned.  Plot the positioner located at the
             # assigned target.
-            failed = hw.loc_position_xy(lid, targetprops[tgid]["xy"], shptheta, shpphi)
+            failed = hw.loc_position_xy(lid, targetprops[tgid]["xy"],
+                                        shptheta, shpphi)
             if failed:
-                msg = "Positioner at location {} cannot move to target {} at (x, y) = ({}, {}).  This should have been dected during assignment!".format(
-                    lid, tgid, targetprops[tgid]["xy"][0], targetprops[tgid]["xy"][1]
-                )
+                msg = "Positioner at location {} cannot move to target {} at (x, y) = ({}, {}).  This should have been dected during assignment!".format(lid, tgid, targetprops[tgid]["xy"][0], targetprops[tgid]["xy"][1])
                 log.warning(msg)
                 raise RuntimeError(msg)
                 is_assigned = False
@@ -305,16 +266,11 @@ def plot_assignment(
             else:
                 color = targetprops[tgid]["color"]
                 theta, phi = hw.xy_to_thetaphi(
-                    center,
-                    targetprops[tgid]["xy"],
-                    theta_arm[lid],
-                    phi_arm[lid],
-                    theta_offset[lid],
-                    phi_offset[lid],
-                    theta_min[lid],
-                    phi_min[lid],
-                    theta_max[lid],
-                    phi_max[lid],
+                    center, targetprops[tgid]["xy"],
+                    theta_arm[lid], phi_arm[lid],
+                    theta_offset[lid], phi_offset[lid],
+                    theta_min[lid], phi_min[lid],
+                    theta_max[lid], phi_max[lid],
                 )
         if not is_assigned:
             # This fiber is unassigned.
@@ -334,34 +290,18 @@ def plot_assignment(
                 phi = phi_offset[lid] + np.pi
                 failed = hw.loc_position_thetaphi(lid, theta, phi, shptheta, shpphi)
             if failed:
-                msg = "Positioner at location {} cannot move to its home / fixed position.  This should never happen!".format(
-                    lid
-                )
+                msg = "Positioner at location {} cannot move to its home position.  This should never happen!".format(lid)
                 log.warning(msg)
         if not failed:
             if real_shapes:
                 plot_positioner(
-                    ax,
-                    patrol_rad,
-                    lid,
-                    center,
-                    shptheta,
-                    shpphi,
-                    color=color,
-                    linewidth=linewidth,
+                    ax, patrol_rad, lid, center, shptheta, shpphi,
+                    color=color, linewidth=linewidth
                 )
             else:
                 plot_positioner_simple(
-                    ax,
-                    patrol_rad,
-                    lid,
-                    center,
-                    theta,
-                    theta_arm[lid],
-                    phi,
-                    phi_arm[lid],
-                    color=color,
-                    linewidth=linewidth,
+                    ax, patrol_rad, lid, center, theta, theta_arm[lid], phi,
+                    phi_arm[lid], color=color, linewidth=linewidth
                 )
     return
 
@@ -386,16 +326,13 @@ def plot_assignment_tile_file(locs, real_shapes, params):
     else:
         log.info("Creating {}".format(outfile))
 
-    header, fiber_data, targets_data, avail_data, gfa_data = read_assignment_fits_tile(
-        (tile_id, infile)
-    )
+    header, fiber_data, targets_data, avail_data, gfa_data = \
+        read_assignment_fits_tile((tile_id, infile))
 
     tavail = avail_table_to_dict(avail_data)
 
-    log.debug(
-        "  tile {} at RA/DEC {} / {} with rotation {}".format(
-            tile_id, tile_ra, tile_dec, tile_theta
-        )
+    log.debug("  tile {} at RA/DEC {} / {} with rotation {}".format(
+        tile_id, tile_ra, tile_dec, tile_theta)
     )
 
     fig = plt.figure(figsize=(12, 12))
@@ -405,19 +342,17 @@ def plot_assignment_tile_file(locs, real_shapes, params):
     # Target properties (x, y, color) for plotting
     tgs = Targets()
     if "FA_SURV" in header:
-        load_target_table(
-            tgs, targets_data, survey=str(header["FA_SURV"]).rstrip(), typecol="FA_TYPE"
-        )
+        load_target_table(tgs, targets_data,
+                          survey=str(header["FA_SURV"]).rstrip(),
+                          typecol="FA_TYPE")
     else:
         load_target_table(tgs, targets_data)
 
-    targetprops = plot_tile_targets_props(
-        plot_assignment_tile_file_hw, tile_ra, tile_dec, tile_theta, tgs
-    )
+    targetprops = plot_tile_targets_props(plot_assignment_tile_file_hw,
+                                          tile_ra, tile_dec, tile_theta, tgs)
 
-    log.debug(
-        "  tile {} has {} targets with properties".format(tile_id, len(targets_data))
-    )
+    log.debug("  tile {} has {} targets with properties"
+              .format(tile_id, len(targets_data)))
 
     # When plotting available targets, we only consider those which have
     # RA/DEC information.  Depending on how the assignment was written out,
@@ -429,27 +364,22 @@ def plot_assignment_tile_file(locs, real_shapes, params):
     avtg_ids = np.unique([x for f in avtg_locs for x in tavail[f]])
 
     # Downselect to include only targets with properties in the file.
-    avtg = avtg_ids[np.isin(avtg_ids, targets_data["TARGETID"], assume_unique=True)]
+    avtg = avtg_ids[np.isin(avtg_ids, targets_data["TARGETID"],
+                            assume_unique=True)]
 
     plot_available(ax, targetprops, avtg, linewidth=0.1)
 
     # Assigned targets for our selected fibers
-    tassign = {
-        x["LOCATION"]: x["TARGETID"] for x in fiber_data if (x["LOCATION"] in locs)
-    }
+    tassign = {x["LOCATION"]: x["TARGETID"] for x in fiber_data
+               if (x["LOCATION"] in locs)}
 
-    log.debug("  tile {} plotting {} assigned fibers".format(tile_id, len(tassign)))
+    log.debug("  tile {} plotting {} assigned fibers"
+              .format(tile_id, len(tassign)))
 
     fassign = {f: tassign[f] if f in tassign else -1 for f in locs}
 
-    plot_assignment(
-        ax,
-        plot_assignment_tile_file_hw,
-        targetprops,
-        fassign,
-        linewidth=0.1,
-        real_shapes=real_shapes,
-    )
+    plot_assignment(ax, plot_assignment_tile_file_hw, targetprops, fassign,
+                    linewidth=0.1, real_shapes=real_shapes)
 
     ax.set_xlabel("Curved Focal Surface Millimeters", fontsize="large")
     ax.set_ylabel("Curved Focal Surface Millimeters", fontsize="large")
@@ -458,19 +388,11 @@ def plot_assignment_tile_file(locs, real_shapes, params):
     return
 
 
-def plot_tiles(
-    hw,
-    tiles,
-    result_dir=".",
-    result_prefix="fiberassign-",
-    result_split_dir=False,
-    plot_dir=".",
-    plot_prefix="fiberassign-",
-    plot_split_dir=False,
-    petals=None,
-    real_shapes=False,
-    serial=False,
-):
+def plot_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign-",
+               result_split_dir=False, plot_dir=".",
+               plot_prefix="fiberassign-",
+               plot_split_dir=False, petals=None, real_shapes=False,
+               serial=False):
     """Plot assignment output.
 
     Args:
@@ -516,26 +438,14 @@ def plot_tiles(
     avail_tiles = np.array(tiles_id)
     select_tiles = [x for x in foundtiles if x in avail_tiles]
 
-    tile_map_list = [
-        (
-            x,
-            tiles_ra[tiles_order[x]],
-            tiles_dec[tiles_order[x]],
-            tiles_theta[tiles_order[x]],
-            result_path(
-                x, dir=result_dir, prefix=result_prefix, split=result_split_dir
-            ),
-            result_path(
-                x,
-                dir=plot_dir,
-                prefix=plot_prefix,
-                ext="pdf",
-                create=True,
-                split=plot_split_dir,
-            ),
-        )
-        for x in select_tiles
-    ]
+    tile_map_list = [(x, tiles_ra[tiles_order[x]], tiles_dec[tiles_order[x]],
+                      tiles_theta[tiles_order[x]],
+                      result_path(x, dir=result_dir, prefix=result_prefix,
+                                  split=result_split_dir),
+                      result_path(x, dir=plot_dir, prefix=plot_prefix,
+                                  ext="pdf", create=True,
+                                  split=plot_split_dir))
+                     for x in select_tiles]
 
     log.info("Selecting {} fiberassign tile files".format(len(tile_map_list)))
 
@@ -544,30 +454,17 @@ def plot_tiles(
         for params in tile_map_list:
             plot_tile(params)
     else:
-        with mp.Pool(
-            processes=default_mp_proc,
-            initializer=plot_assignment_tile_file_initialize,
-            initargs=(hw,),
-        ) as pool:
+        with mp.Pool(processes=default_mp_proc,
+                     initializer=plot_assignment_tile_file_initialize,
+                     initargs=(hw,)) as pool:
             pool.map(plot_tile, tile_map_list)
 
     return
 
 
-def plot_assignment_tile(
-    hw,
-    tgs,
-    tile_id,
-    tile_ra,
-    tile_dec,
-    tile_theta,
-    tile_assign,
-    tile_avail=None,
-    petals=None,
-    real_shapes=False,
-    outfile=None,
-    figsize=8,
-):
+def plot_assignment_tile(hw, tgs, tile_id, tile_ra, tile_dec, tile_theta,
+                         tile_assign, tile_avail=None, petals=None,
+                         real_shapes=False, outfile=None, figsize=8):
     set_matplotlib_pdf_backend()
     # Get selected fibers
     locs = None
@@ -592,9 +489,8 @@ def plot_assignment_tile(
         avtg_ids = np.unique([x for f in avtg_locs for x in tile_avail[f]])
 
     # Target properties
-    targetprops = plot_tile_targets_props(
-        hw, tile_ra, tile_dec, tile_theta, tgs, avail_tgid=avtg_ids
-    )
+    targetprops = plot_tile_targets_props(hw, tile_ra, tile_dec, tile_theta,
+                                          tgs, avail_tgid=avtg_ids)
 
     fig = plt.figure(figsize=(figsize, figsize))
     ax = fig.add_subplot(1, 1, 1)
@@ -607,9 +503,8 @@ def plot_assignment_tile(
 
     fassign = {f: tassign[f] if f in tassign else -1 for f in locs}
 
-    plot_assignment(
-        ax, hw, targetprops, fassign, linewidth=0.1, real_shapes=real_shapes
-    )
+    plot_assignment(ax, hw, targetprops, fassign,
+                    linewidth=0.1, real_shapes=real_shapes)
 
     ax.set_xlabel("Curved Focal Surface Millimeters", fontsize="large")
     ax.set_ylabel("Curved Focal Surface Millimeters", fontsize="large")
@@ -639,7 +534,8 @@ def plot_qa_tile_color(desired, value, incr):
 
 
 def plot_qa(data, outroot, outformat="pdf", labels=False):
-    """Make plots of QA data."""
+    """Make plots of QA data.
+    """
     set_matplotlib_pdf_backend()
     # Imported here, to ensure that the backend has been set.
     from matplotlib.patches import Patch
@@ -679,25 +575,15 @@ def plot_qa(data, outroot, outformat="pdf", labels=False):
                 ymin = ycent
             keytot = np.sum([props[x] for x in key])
             color = plot_qa_tile_color(desired, keytot, incr)
-            circ = plt.Circle(
-                (xcent, ycent),
-                radius=tile_radius,
-                fc="none",
-                ec=color,
-                linewidth=linewidth,
-            )
+            circ = plt.Circle((xcent, ycent), radius=tile_radius, fc="none",
+                              ec=color, linewidth=linewidth)
             ax.add_artist(circ)
             if labels:
-                ax.text(
-                    xcent,
-                    ycent,
-                    "{}".format(tid),
-                    color=color,
-                    fontsize=fontpt,
-                    horizontalalignment="center",
-                    verticalalignment="center",
-                    bbox=None,
-                )
+                ax.text(xcent, ycent, "{}".format(tid),
+                        color=color, fontsize=fontpt,
+                        horizontalalignment='center',
+                        verticalalignment='center',
+                        bbox=None)
 
         margin = 1.1 * tile_radius
 
@@ -720,43 +606,29 @@ def plot_qa(data, outroot, outformat="pdf", labels=False):
         ax.set_ylabel("DEC (degrees)", fontsize="large")
         ax.set_title(title)
 
-        c_high = plot_qa_tile_color(desired, desired + 1, incr)
+        c_high = plot_qa_tile_color(desired, desired+1, incr)
         c_exact = plot_qa_tile_color(desired, desired, incr)
-        c_low_one = plot_qa_tile_color(desired, desired - incr, incr)
-        c_low_two = plot_qa_tile_color(desired, desired - 2 * incr, incr)
+        c_low_one = plot_qa_tile_color(desired, desired-incr, incr)
+        c_low_two = plot_qa_tile_color(desired, desired-2*incr, incr)
         c_low = plot_qa_tile_color(desired, 0, incr)
 
         c_low_two_val = desired - incr
         c_low_val = desired - 2 * incr
 
         legend_elements = [
-            Patch(
-                facecolor=c_high,
-                edgecolor="none",
-                label="> {} assigned".format(desired),
-            ),
-            Patch(
-                facecolor=c_exact,
-                edgecolor="none",
-                label="Exactly {} assigned".format(desired),
-            ),
-            Patch(
-                facecolor=c_low_one,
-                edgecolor="none",
-                label="< {} assigned".format(desired),
-            ),
-            Patch(
-                facecolor=c_low_two,
-                edgecolor="none",
-                label="< {} assigned".format(c_low_two_val),
-            ),
-            Patch(
-                facecolor=c_low,
-                edgecolor="none",
-                label="< {} assigned".format(c_low_val),
-            ),
+            Patch(facecolor=c_high, edgecolor="none",
+                  label="> {} assigned".format(desired)),
+            Patch(facecolor=c_exact, edgecolor="none",
+                  label="Exactly {} assigned".format(desired)),
+            Patch(facecolor=c_low_one, edgecolor="none",
+                  label="< {} assigned".format(desired)),
+            Patch(facecolor=c_low_two, edgecolor="none",
+                  label="< {} assigned".format(c_low_two_val)),
+            Patch(facecolor=c_low, edgecolor="none",
+                  label="< {} assigned".format(c_low_val)),
         ]
-        ax.legend(handles=legend_elements, loc="best", fontsize="x-small")
+        ax.legend(handles=legend_elements, loc="best",
+                  fontsize="x-small")
         pindx += 1
 
     outfile = "{}.{}".format(outroot, outformat)
