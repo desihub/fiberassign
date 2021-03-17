@@ -151,11 +151,11 @@ class TestVis(unittest.TestCase):
         self._load_and_plotpos(time, test_dir, suffix, simple=True)
         suffix = "{}".format(time)
         self._load_and_plotpos(time, test_dir, suffix, simple=False)
-        # time = "2012-12-12T00:00:00"
-        # suffix = "{}_simple".format(time)
-        # self._load_and_plotpos(time, test_dir, suffix, simple=True)
-        # suffix = "{}".format(time)
-        # self._load_and_plotpos(time, test_dir, suffix, simple=False)
+        time = "2012-12-12T00:00:00"
+        suffix = "{}_simple".format(time)
+        self._load_and_plotpos(time, test_dir, suffix, simple=True)
+        suffix = "{}".format(time)
+        self._load_and_plotpos(time, test_dir, suffix, simple=False)
         return
 
 

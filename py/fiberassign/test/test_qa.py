@@ -53,6 +53,37 @@ from .simulate import (test_subdir_create, sim_tiles, sim_targets,
 
 class TestQA(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(cls):
+        # Find the location of scripts.  First try the case where we are running
+        # tests from the top level of the source tree.
+        cls.topDir = os.path.dirname( # top-level
+            os.path.dirname( # build/
+                os.path.dirname( # lib.arch/
+                    os.path.dirname( # fiberassign/
+                        os.path.dirname(os.path.abspath(__file__)) # test/
+                        )
+                    )
+                )
+            )
+        cls.binDir = os.path.join(cls.topDir, "bin")
+        if not os.path.isdir(cls.binDir):
+            # We are running from some other directory from an installed package
+            cls.topDir = os.path.dirname( # top-level
+                os.path.dirname( # lib/
+                    os.path.dirname( # python3.x/
+                        os.path.dirname( # site-packages/
+                            os.path.dirname( # egg/
+                                os.path.dirname( # fiberassign/
+                                    os.path.dirname(os.path.abspath(__file__)) # test/
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+            cls.binDir = os.path.join(cls.topDir, "bin")
+
     def setUp(self):
         self.density_science = 5000
         self.density_standards = 5000
@@ -125,16 +156,6 @@ class TestQA(unittest.TestCase):
         merge_results(
             [input_mtl], list(), tile_ids, result_dir=test_dir, copy_fba=False
         )
-
-        # if "TRAVIS" not in os.environ:
-        #     plot_tiles(
-        #         hw,
-        #         tiles,
-        #         result_dir=test_dir,
-        #         plot_dir=test_dir,
-        #         real_shapes=True,
-        #         serial=True
-        #     )
 
         qa_targets(
             hw,
@@ -258,30 +279,15 @@ class TestQA(unittest.TestCase):
 
         self.assertGreaterEqual(frac,  99.0)
 
-        # FIXME:  These lines of code introduced fstring notation, which essentially
-        # requires python>=3.6 and is not used anywhere else in the code.  We could use
-        # fstring notation if we increase the python version requirement in setup.py.
-        # This mechanism for finding the qa-fiberassign script only works when running
-        # tests in place, and not when running installed tests with:
-        #
-        #  $> python -c 'import fiberassign.test; fiberassign.test.runtests()'
-        #
-        # The solution is to move qa-fiberassign into the fiberassign.scripts package
-        # so that it can be tested along with the other scripts (qa-fiberassign is
-        # a legacy script from before we refactored the package.)  Once that is done,
-        # Re-enable this test and call the entry point directly.
-        #
-        #
-        # #- Test if qa-fiberassign script runs without crashing
-        # bindir = os.path.join(os.path.dirname(fiberassign.__file__), '..', '..', 'bin')
-        # script = os.path.join(os.path.abspath(bindir), 'qa-fiberassign')
-        # if os.path.exists(script):
-        #     fafiles = glob.glob(f"{test_dir}/fiberassign-*.fits")
-        #     cmd = "{} --targets {}".format(script, " ".join(fafiles))
-        #     err = subprocess.call(cmd.split())
-        #     self.assertEqual(err, 0, f"FAILED ({err}): {cmd}")
-        # else:
-        #     print(f"ERROR: didn't find {script}")
+        # Test if qa-fiberassign script runs without crashing
+        script = os.path.join(self.binDir, "qa-fiberassign")
+        if os.path.exists(script):
+            fafiles = glob.glob(f"{test_dir}/fiberassign-*.fits")
+            cmd = "{} --targets {}".format(script, " ".join(fafiles))
+            err = subprocess.call(cmd.split())
+            self.assertEqual(err, 0, f"FAILED ({err}): {cmd}")
+        else:
+            print(f"ERROR: didn't find {script}")
 
 
 def test_suite():

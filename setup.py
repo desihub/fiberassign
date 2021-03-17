@@ -90,8 +90,16 @@ if os.path.isdir('bin'):
                                  if not os.path.basename(fname)
                                  .endswith('.rst')]
 setup_keywords['provides'] = [setup_keywords['name']]
-setup_keywords['requires'] = ['Python (>3.4.0)']
-# setup_keywords['install_requires'] = ['Python (>2.7.0)']
+setup_keywords['python_requires'] = '>=3.6.0'
+setup_keywords['setup_requires'] = (['wheel'], )
+setup_keywords['install_requires'] = [
+    'numpy',
+    'pyyaml',
+    'scipy',
+    'matplotlib',
+    'astropy',
+    'fitsio'
+]
 setup_keywords['zip_safe'] = False
 setup_keywords['use_2to3'] = False
 setup_keywords['packages'] = find_packages('py')

@@ -873,7 +873,7 @@ minimal_target_columns = OrderedDict([
     ('SUBPRIORITY', '>f8'),
     ('OBSCONDITIONS', '>i8'),
     ('PRIORITY_INIT', '>i8'),
-    ('NUMOBS_INIT', '>i4')
+    ('NUMOBS_INIT', '>i8')
 ])
 
 merged_fiberassign_swap = {
@@ -912,7 +912,7 @@ merged_fiberassign_req_columns = OrderedDict([
     ("PRIORITY", "i4"),
     ("SUBPRIORITY", "f8"),
     ("OBSCONDITIONS", "i4"),
-    ("NUMOBS_INIT", ">i4")
+    ("NUMOBS_INIT", ">i8")
 ])
 
 # AR commenting out NUMTARGET ([desi-survey 1032])
@@ -956,7 +956,7 @@ merged_targets_columns = OrderedDict([
     ("PRIORITY", "i4"),
     ("SUBPRIORITY", "f8"),
     ("OBSCONDITIONS", "i4"),
-    ('NUMOBS_INIT', '>i4')
+    ('NUMOBS_INIT', '>i8')
 ])
 
 merged_potential_columns = OrderedDict([
