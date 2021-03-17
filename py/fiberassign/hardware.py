@@ -22,9 +22,10 @@ from .utils import Logger
 from ._internal import (
     Hardware,
     FIBER_STATE_OK,
+    FIBER_STATE_UNASSIGNED,
     FIBER_STATE_STUCK,
     FIBER_STATE_BROKEN,
-    FIBER_STATE_UNASSIGNED,
+    FIBER_STATE_RESTRICT,
     Circle,
     Segments,
     Shape,

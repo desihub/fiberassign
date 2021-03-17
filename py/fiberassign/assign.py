@@ -312,15 +312,46 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         assigned_tgtype = np.zeros(nloc, dtype=np.uint8)
 
         if (len(assigned_invalid) > 0):
-            # Fill our unassigned location X/Y coordinates with the central
-            # positioner locations.  Then convert these to RA/DEC.
+            # Fill our unassigned location X/Y coordinates with either their fixed
+            # location (for positioners that are nonfunctional) or the central
+            # positioner locations (for working, but unassigned positioners).
+            # Then convert these to RA/DEC.
             # NOTE:  Positioner locations are in curved focal surface coordinates.
             empty_fibers = locs[assigned_invalid]
-            fpos_xy_mm = dict(hw.loc_pos_curved_mm)
+
+            pos_cent_xy_mm = dict(hw.loc_pos_curved_mm)
+            pos_theta = dict(hw.loc_theta_pos)
+            pos_phi = dict(hw.loc_phi_pos)
+
             empty_x = np.array(
-                [fpos_xy_mm[f][0] for f in empty_fibers], dtype=np.float64)
+                [pos_cent_xy_mm[f][0] for f in empty_fibers], dtype=np.float64)
             empty_y = np.array(
-                [fpos_xy_mm[f][1] for f in empty_fibers], dtype=np.float64)
+                [pos_cent_xy_mm[f][1] for f in empty_fibers], dtype=np.float64)
+
+            for iloc, loc in enumerate(empty_fibers):
+                if (
+                    (hw.state[loc] & FIBER_STATE_STUCK) or
+                    (hw.state[loc] & FIBER_STATE_BROKEN)
+                ):
+                    # This positioner is not moveable and therefore has a theta / phi
+                    # position in the hardware model.  Used this fixed fiber location
+                    # for X/Y rather than the positioner center.
+                    xy = hw.thetaphi_to_xy(
+                        pos_cent_xy_mm[loc],
+                        pos_theta[loc],
+                        pos_phi[loc],
+                        hw.loc_theta_arm[loc],
+                        hw.loc_phi_arm[loc],
+                        hw.loc_theta_offset[loc],
+                        hw.loc_phi_offset[loc],
+                        hw.loc_theta_min[loc],
+                        hw.loc_phi_min[loc],
+                        hw.loc_theta_max[loc],
+                        hw.loc_phi_max[loc]
+                    )
+                    empty_x[iloc] = xy[0]
+                    empty_y[iloc] = xy[1]
+
             radec = hw.xy2radec_multi(
                 tile_ra, tile_dec, tile_obstheta, empty_x, empty_y, False, 0
             )
