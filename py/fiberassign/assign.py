@@ -39,7 +39,7 @@ from .targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY, TARGET_TYPE_SUPPSKY,
                       default_target_masks, default_survey_target_masks)
 
 from .hardware import (FIBER_STATE_UNASSIGNED, FIBER_STATE_STUCK,
-                       FIBER_STATE_BROKEN)
+                       FIBER_STATE_BROKEN, FIBER_STATE_RESTRICT)
 
 from ._internal import Assignment
 
