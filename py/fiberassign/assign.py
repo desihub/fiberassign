@@ -823,57 +823,57 @@ def merge_results_tile_initialize(tgbufs, tgdtypes, tgshapes, skybufs,
 # AR we also propagate any *_TARGET existing column
 minimal_target_columns = OrderedDict([
     ('RELEASE', '>i2'),
-    ('BRICKNAME', 'S8'), 
-    ('BRICKID', '>i4') , 
-    ('BRICK_OBJID', '>i4'),                    
-    ('MORPHTYPE', 'S4'), 
-    ('RA', '>f8'), 
-    ('DEC', '>f8'), 
-    ('EBV', '>f4'), 
-    ('FLUX_G', '>f4'), 
-    ('FLUX_R', '>f4'), 
-    ('FLUX_Z', '>f4'), 
+    ('BRICKNAME', 'S8'),
+    ('BRICKID', '>i4') ,
+    ('BRICK_OBJID', '>i4'),
+    ('MORPHTYPE', 'S4'),
+    ('RA', '>f8'),
+    ('DEC', '>f8'),
+    ('EBV', '>f4'),
+    ('FLUX_G', '>f4'),
+    ('FLUX_R', '>f4'),
+    ('FLUX_Z', '>f4'),
     ('FLUX_W1', '>f4'), # AR for QA plots
     ('FLUX_W2', '>f4'), # AR for QA plots
-    ('FLUX_IVAR_G', '>f4'), 
-    ('FLUX_IVAR_R', '>f4'), 
+    ('FLUX_IVAR_G', '>f4'),
+    ('FLUX_IVAR_R', '>f4'),
     ('FLUX_IVAR_Z', '>f4'),
     ('FLUX_IVAR_W1', '>f4'), # https://github.com/desihub/fiberassign/issues/300
     ('FLUX_IVAR_W2', '>f4'), # https://github.com/desihub/fiberassign/issues/300
-    ('FIBERFLUX_G', '>f4'), 
-    ('FIBERFLUX_R', '>f4'), 
-    ('FIBERFLUX_Z', '>f4'), 
-    ('FIBERTOTFLUX_G', '>f4'), 
-    ('FIBERTOTFLUX_R', '>f4'), 
-    ('FIBERTOTFLUX_Z', '>f4'), 
-    ('REF_EPOCH', '>f4'), 
-    ('MASKBITS', '>i2'), 
-    ('SERSIC', '>f4'), 
-    ('SHAPE_R', '>f4'), 
-    ('SHAPE_E1', '>f4'), 
-    ('SHAPE_E2', '>f4'), 
-    ('REF_ID', '>i8'), 
-    ('REF_CAT', 'S2'), 
-    ('GAIA_PHOT_G_MEAN_MAG', '>f4'),  
-    ('GAIA_PHOT_BP_MEAN_MAG', '>f4'),  
-    ('GAIA_PHOT_RP_MEAN_MAG', '>f4'), 
-    ('PARALLAX', '>f4'),  
-    ('PMRA', '>f4'), 
-    ('PMDEC', '>f4'), 
-    ('PHOTSYS', 'S1'), 
-    ('TARGETID', '>i8'), 
-    #('DESI_TARGET', '>i8'), 
-    #('BGS_TARGET', '>i8'), 
+    ('FIBERFLUX_G', '>f4'),
+    ('FIBERFLUX_R', '>f4'),
+    ('FIBERFLUX_Z', '>f4'),
+    ('FIBERTOTFLUX_G', '>f4'),
+    ('FIBERTOTFLUX_R', '>f4'),
+    ('FIBERTOTFLUX_Z', '>f4'),
+    ('REF_EPOCH', '>f4'),
+    ('MASKBITS', '>i2'),
+    ('SERSIC', '>f4'),
+    ('SHAPE_R', '>f4'),
+    ('SHAPE_E1', '>f4'),
+    ('SHAPE_E2', '>f4'),
+    ('REF_ID', '>i8'),
+    ('REF_CAT', 'S2'),
+    ('GAIA_PHOT_G_MEAN_MAG', '>f4'),
+    ('GAIA_PHOT_BP_MEAN_MAG', '>f4'),
+    ('GAIA_PHOT_RP_MEAN_MAG', '>f4'),
+    ('PARALLAX', '>f4'),
+    ('PMRA', '>f4'),
+    ('PMDEC', '>f4'),
+    ('PHOTSYS', 'S1'),
+    ('TARGETID', '>i8'),
+    #('DESI_TARGET', '>i8'),
+    #('BGS_TARGET', '>i8'),
     #('MWS_TARGET', '>i8'),
-    #('CMX_TARGET', '>i8'), 
+    #('CMX_TARGET', '>i8'),
     #('SV1_DESI_TARGET', '>i8'),
     #('SV1_BGS_TARGET', '>i8'),
     #('SV1_MWS_TARGET', '>i8'),
-    #('SCND_TARGET', '>i8'), 
-    ('SUBPRIORITY', '>f8'), 
-    ('OBSCONDITIONS', '>i8'), 
-    ('PRIORITY_INIT', '>i8'), 
-    ('NUMOBS_INIT', '>i8')   
+    #('SCND_TARGET', '>i8'),
+    ('SUBPRIORITY', '>f8'),
+    ('OBSCONDITIONS', '>i8'),
+    ('PRIORITY_INIT', '>i8'),
+    ('NUMOBS_INIT', '>i8')
 ])
 
 merged_fiberassign_swap = {
@@ -912,6 +912,7 @@ merged_fiberassign_req_columns = OrderedDict([
     ("PRIORITY", "i4"),
     ("SUBPRIORITY", "f8"),
     ("OBSCONDITIONS", "i4"),
+    ("NUMOBS_INIT", ">i8")
 ])
 
 # AR commenting out NUMTARGET ([desi-survey 1032])
@@ -955,6 +956,7 @@ merged_targets_columns = OrderedDict([
     ("PRIORITY", "i4"),
     ("SUBPRIORITY", "f8"),
     ("OBSCONDITIONS", "i4"),
+    ('NUMOBS_INIT', '>i8')
 ])
 
 merged_potential_columns = OrderedDict([
@@ -1263,7 +1265,7 @@ def merge_results_tile(out_dtype, copy_fba, params):
     tile_targets.dtype.names = newnames
     # AR hard-cutting on merged_targets_columns + *_TARGET columns
     tile_targets = tile_targets[list(merged_targets_columns.keys())]
-    
+
     fd.write(tile_targets, header=inhead, extname="TARGETS")
     del tile_targets
 
@@ -1363,11 +1365,11 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
                 for key in fd[1].get_colnames()
                 if key[-7:]=="_TARGET" and key!="FA_TARGET"]))
         fd.close()
-    
+
     # minimal_target_columns to read
     minimal_dcolnames  = [x for x in minimal_target_columns.keys()]
     minimal_dcols = [(x, y) for x, y in minimal_target_columns.items()]
- 
+
     for tf in targetfiles:
         tm = Timer()
         tm.start()
@@ -1377,7 +1379,7 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
         tglen = fd[1].get_nrows()
         tgshape[tf] = (tglen,)
         #tgdtype[tf], tempoff, tempisvararray = fd[1].get_rec_dtype()
-        
+
         #select what subset of the 'minimal_dcolnames' are present in the data.
         file_tgdtype, tempoff, tempisvararray = fd[1].get_rec_dtype()
         file_dcolnames  = [x for x in file_tgdtype.names]
@@ -1387,7 +1389,7 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
                 dcols_to_read.append(minimal_dcols[i])
         some_dt = np.dtype(dcols_to_read)
         some_columns = list(some_dt.fields.keys())
-        
+
         #print(file_tgdtype)
         tgdtype[tf] = some_dt
         tgbytes = tglen * tgdtype[tf].itemsize
@@ -1445,7 +1447,7 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
                 dcols_to_read.append(minimal_dcols[i])
         some_dt = np.dtype(dcols_to_read)
         some_columns = list(some_dt.fields.keys())
-        
+
         #print(file_skydtype)
         skydtype[tf] = some_dt
         skybytes = skylen * skydtype[tf].itemsize

@@ -166,7 +166,6 @@ def plot_tile_targets_props(hw, tile_ra, tile_dec, tile_theta, tgs,
                             avail_tgid=None):
     if avail_tgid is None:
         avail_tgid = tgs.ids()
-    # print("  DBG:  avail_tgid len = ", len(avail_tgid), flush=True)
     ra = np.full(len(avail_tgid), 9999.9, dtype=np.float64)
     dec = np.full(len(avail_tgid), 9999.9, dtype=np.float64)
     color = list()
@@ -177,9 +176,11 @@ def plot_tile_targets_props(hw, tile_ra, tile_dec, tile_theta, tgs,
         color.append(plot_target_type_color(tg.type))
     # We disable threading here, since it does not interact well with
     # multiprocessing.
+
     tgxy = hw.radec2xy_multi(tile_ra, tile_dec, tile_theta, ra, dec, False, 1)
     props = {tgid: {"xy": xy, "color": cl} for tgid, xy, cl
              in zip(avail_tgid, tgxy, color)}
+
     return props
 
 

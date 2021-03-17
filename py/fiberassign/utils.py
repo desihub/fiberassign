@@ -10,6 +10,7 @@ Utility functions.
 from __future__ import absolute_import, division, print_function
 
 import os
+import sys
 
 from ._internal import (Logger, Timer, GlobalTimers, Circle, Segments, Shape,
                         Environment)
