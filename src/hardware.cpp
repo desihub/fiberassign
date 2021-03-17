@@ -741,6 +741,32 @@ bool fba::Hardware::xy_to_thetaphi(
 }
 
 
+bool fba::Hardware::thetaphi_to_xy(
+        fbg::dpair & position,
+        fbg::dpair const & center, double const & theta, double const & phi,
+        double theta_arm, double phi_arm, double theta_zero, double phi_zero,
+        double theta_min, double phi_min, double theta_max, double phi_max
+    ) const {
+
+    // Check that requested angles are in range.
+    if (
+        _outside_theta_phi_range(
+            theta, phi, theta_zero, theta_min, theta_max, phi_zero, phi_min, phi_max
+        )
+    ) {
+        return true;
+    }
+
+    double x_theta = center.first + theta_arm * ::cos(theta);
+    double y_theta = center.second + theta_arm * ::sin(theta);
+
+    position.first = x_theta + phi_arm * ::cos(theta + phi);
+    position.second = y_theta + phi_arm * ::sin(theta + phi);
+
+    return false;
+}
+
+
 bool fba::Hardware::move_positioner_xy(
         fbg::shape & shptheta, fbg::shape & shpphi,
         fbg::dpair const & center, fbg::dpair const & position,

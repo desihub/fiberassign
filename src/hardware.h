@@ -115,6 +115,12 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
                 double phi_zero, double theta_min, double phi_min,
                 double theta_max, double phi_max) const;
 
+        bool thetaphi_to_xy(
+            fbg::dpair & position,
+            fbg::dpair const & center, double const & theta, double const & phi,
+            double theta_arm, double phi_arm, double theta_zero, double phi_zero,
+            double theta_min, double phi_min, double theta_max, double phi_max) const;
+
         bool position_xy_bad(int32_t loc, fbg::dpair const & xy) const;
 
         bool move_positioner_xy(

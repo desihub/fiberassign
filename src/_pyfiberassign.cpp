@@ -899,6 +899,58 @@ PYBIND11_MODULE(_internal, m) {
                     x/y location is not reachable.
 
         )")
+        .def("thetaphi_to_xy", [](
+                fba::Hardware & self,
+                std::pair <double, double> const & center,
+                double theta,
+                double phi,
+                double theta_arm,
+                double phi_arm,
+                double theta_zero,
+                double phi_zero,
+                double theta_min,
+                double phi_min,
+                double theta_max,
+                double phi_max
+            ) {
+                std::pair <double, double> xy;
+                bool failed = self.thetaphi_to_xy(
+                    xy, center, theta, phi, theta_arm, phi_arm, theta_zero,
+                    phi_zero, theta_min, phi_min, theta_max, phi_max
+                );
+                if (failed) {
+                    return py::make_tuple(py::none(), py::none());
+                } else {
+                    return py::make_tuple(xy.first, xy.second);
+                }
+            }, py::return_value_policy::take_ownership, py::arg("center"),
+            py::arg("theta"), py::arg("phi"), py::arg("theta_arm"), py::arg("phi_arm"),
+            py::arg("theta_zero"), py::arg("phi_zero"),
+            py::arg("theta_min"), py::arg("phi_min"),
+            py::arg("theta_max"), py::arg("phi_max"), R"(
+            Compute the X / Y fiber location for positioner Theta / Phi angles.
+
+            Note that all X/Y calculations involving positioners are performed
+            in the curved focal surface (NOT CS5).
+
+            Args:
+                center (tuple): The (X, Y) tuple of the device center.
+                theta (float): The positioner theta angle.
+                phi (float): The positioner phi angle.
+                theta_arm (float): The length of the theta arm.
+                phi_arm (float): The length of the phi arm.
+                theta_zero (float): The theta offset.
+                phi_zero (float): The phi offset.
+                theta_min (float): The theta min relative to the offset.
+                phi_min (float): The phi min relative to the offset.
+                theta_max (float): The theta max relative to the offset.
+                phi_max (float): The phi max relative to the offset.
+
+            Returns:
+                (tuple): The X / Y location or (None, None) if the angles are
+                    not valid for this positioner.
+
+        )")
         .def("loc_position_xy", &fba::Hardware::loc_position_xy, py::arg("id"),
             py::arg("xy"), py::arg("shptheta"), py::arg("shpphi"), R"(
             Move a positioner to a given location.
