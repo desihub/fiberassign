@@ -28,27 +28,20 @@ from astropy.coordinates import SkyCoord, Distance
 from astropy.time import Time
 import matplotlib.image as mpimg
 import tempfile
+import shutil
 from desiutil.redirect import stdouterr_redirected
 from argparse import ArgumentParser
 
+# AR goal effective time
+# AR https://desi.lbl.gov/svn/data/surveyops/trunk/ops/config-sv2.yaml
+goaltimes_all = {
+    "sv2": {"DARK":"1000", "BRIGHT":"150", "BACKUP":"30"},
+}
 
-# AR authorized args.survey (will be updated with sv3, main)
-surveys_all = [
-    "sv2",
-]
-
-# AR authorized args.program
-programs_all = [
-    "DARK",
-    "BRIGHT",
-    "BACKUP",
-]
-
-# AR authorized args.dr
-drs_all = ["dr9"]
-
-# AR authorized args.gaiadr
-gaiadrs_all = ["gaidr2"]
+# AR surface brightness profile to be used for computing time -> efftime relation
+sbprofs_all = {
+    "sv2": {"DARK":"ELG", "BRIGHT":"BGS", "BACKUP":"PSF"},
+}
 
 # AR for qa plot
 tile_radius_deg = 1.628
@@ -58,11 +51,11 @@ tile_radius_deg = 1.628
 # AR and sanity check TARGETID if two folders
 # AR targdirs : list of directories (2 for sky, skysupp, 1 otherwise)
 # AR mtl, unique, quick inputs: True/False, as for read_targets_in_tiles()
-def custom_read_targets_in_tiles(targdirs, tiles, quick=True, mtl=False, unique=True, log=None):
+def custom_read_targets_in_tiles(targdirs, tiles, quick=True, mtl=False, unique=True, log=None, step=""):
     # AR reading
     if log is not None:
         log.info(
-            "{:.1f}s\treading input targets from {}".format(time() - start, targdirs)
+            "{:.1f}s\t{}\treading input targets from {}".format(time() - start, step, targdirs)
         )
     if len(targdirs) == 1:
         d = read_targets_in_tiles(targdirs[0], tiles=tiles, quick=quick, mtl=mtl, unique=unique)
@@ -79,8 +72,8 @@ def custom_read_targets_in_tiles(targdirs, tiles, quick=True, mtl=False, unique=
         ii_nm1 = ii_nm1[ii]
         if len(ii_m1) + len(ii_nm1) != len(d):
             log.info(
-                "{:.1f}s\tremoving {}/{} duplicates".format(
-                    time() - start, len(d) - len(ii_m1) - len(ii_nm1), len(d)
+                "{:.1f}s\t{}\tremoving {}/{} duplicates".format(
+                    time() - start, step, len(d) - len(ii_m1) - len(ii_nm1), len(d)
                 )
             )
             d = d[ii_m1.tolist() + ii_nm1.tolist()]
@@ -92,11 +85,11 @@ def custom_read_targets_in_tiles(targdirs, tiles, quick=True, mtl=False, unique=
 # AR - infn : filename output by write_targets()
 # AR - targdir : folder provided as write_targets() input
 # AR - outfn : desired renaming of infn
-def mv_write_targets_out(infn, targdir, outfn, log=None):
+def mv_write_targets_out(infn, targdir, outfn, log=None, step=""):
     # AR renaming
-    os.rename(infn, outfn)
+    _ = shutil.move(infn, outfn)
     if log is not None:
-        log.info("{:.1f}s\trenaming {} to {}".format(time() - start, infn, outfn))
+        log.info("{:.1f}s\t{}\trenaming {} to {}".format(time() - start, step, infn, outfn))
     # AR removing folders
     if targdir[-1] != "/":
         targdir = "{}/".format(targdir)
@@ -436,57 +429,61 @@ def plot_hist(ax, x, xp, msk):
 def main():
     #
     start = time()
-    log.info("{:.1f}s\tSTEP : start".format(time() - start))
+    log.info("{:.1f}s\tstart\tTIMESTAMP={}".format(time() - start, Time.now().isot))
 
+    log.info("")
+    log.info("")
+    log.info("{:.1f}s\tsettings\tTIMESTAMP={}".format(time() - start, Time.now().isot))
     # AR printing settings
     tmpstr = " , ".join(
         [kwargs[0] + "=" + str(kwargs[1]) for kwargs in args._get_kwargs()]
     )                                                                                                                                                                                  
-    log.info("{:.1f}s\targs: {}".format(time() - start, tmpstr))
+    log.info("{:.1f}s\tsettings\targs: {}".format(time() - start, tmpstr))
 
-    # AR fiberassign, desitarget, desimodel code version
-    log.info(                                                                                                                                                                       
-        "{:.1f}s\trunning with fiberassign code version: {}".format(
-            time() - start, fiberassign.__version__
+    # AR machine
+    log.info("{:.1f}s\tsettings\tHOSTNAME={}".format(time() - start, os.getenv("HOSTNAME")))
+    # AR fiberassign, desitarget, desimodel code version, path
+    for module,name in zip([fiberassign, desitarget, desimodel], ["fiberassign", "desitarget", "desimodel"]):
+        log.info(
+            "{:.1f}s\tsettings\trunning with {} code version: {}".format(
+                time() - start, name, module.__version__
+            )
         )
-    )
-    log.info(
-        "{:.1f}s\trunning with desitarget code version: {}".format(
-            time() - start, desitarget.__version__
+        log.info(
+            "{:.1f}s\tsettings\trunning with {} code path: {}".format(
+                time() - start, name, module.__path__
+            )
         )
-    )
-    log.info(
-        "{:.1f}s\trunning with desimodel code version: {}".format(
-            time() - start, desimodel.__version__
-        )
-    )
-
-    # AR time used to update the positions using proper motions
-    new_obstime = Time(args.pmtime, format="isot")
-    log.info(
-        "{:.1f}s\tsetting new_obstime={}, i.e. MJD={} to update coordinates with proper motion".format(
-            time() - start, new_obstime.isot, new_obstime.mjd
-        )
-    )
 
     # AR safe: DESI environment variables
     for key in ["DESI_ROOT", "DESI_TARGET", "DESIMODEL"]:
         if os.getenv(key) is None:
             log.error(
-                "{:.1f}s\tenvironment variable {} not defined; exiting".format(
+                "{:.1f}s\tsettings\tenvironment variable {} not defined; exiting".format(
                     time() - start, key
                 )
             )
             sys.exit()
+        else:
+            log.info("{:.1f}s\tsettings\t{}={}".format(time() - start, key, os.getenv(key)))
+
+
+    # AR time used to update the positions using proper motions
+    new_obstime = Time(args.pmtime, format="isot")
+    log.info(
+        "{:.1f}s\tsettings\tnew_obstime={}, i.e. MJD={} to update coordinates with proper motion".format(
+            time() - start, new_obstime.isot, new_obstime.mjd
+        )
+    )
 
     # AR (temporary) output files
     for key in list(myouts.keys()):
         log.info(
-            "{:.1f}s\t output file for {}: {}".format(time() - start, key, myouts[key])
+            "{:.1f}s\tsettings\toutput file for {}: {}".format(time() - start, key, myouts[key])
         )
     for key in list(mytmpouts.keys()):
         log.info(
-            "{:.1f}s\t temporary output file for {}: {}".format(time() - start, key, mytmpouts[key])
+            "{:.1f}s\tsettings\ttemporary output file for {}: {}".format(time() - start, key, mytmpouts[key])
         )
 
     # AR directories
@@ -568,10 +565,10 @@ def main():
     # AR log
     for key in list(mydirs.keys()):
         log.info(
-            "{:.1f}s\tdirectory for {}: {}".format(time() - start, key, mydirs[key])
+            "{:.1f}s\tsettings\tdirectory for {}: {}".format(time() - start, key, mydirs[key])
         )
     log.info(
-        "{:.1f}s\tdirectory for svn tiles: {}".format(time() - start, path_to_svn_tiles)
+        "{:.1f}s\tsettings\tdirectory for svn tiles: {}".format(time() - start, path_to_svn_tiles)
     )
 
 
@@ -579,7 +576,7 @@ def main():
     # AR obscon :   permissive value
     obscon = "DARK|GRAY|BRIGHT|BACKUP"
     log.info(
-        "{:.1f}s\tsetting tile obscon={}".format(time() - start, obscon)
+        "{:.1f}s\tsettings\ttile obscon={}".format(time() - start, obscon)
     )
 
 
@@ -597,18 +594,18 @@ def main():
     )
     if "{:06d}".format(args.tileid) in prev_tileids:
         log.warning(
-            "{:.1f}s\tTILEID={} already exists in svn".format(
+            "{:.1f}s\tsettings\tTILEID={} already exists in svn".format(
                 time() - start, ",".join("{:06d}".format(args.tileid))
                 )
             )
         if args.forcetileid == "y":
             log.warning(
-                "{:.1f}s\tproceeding as args.forcetileid == y".format(
+                "{:.1f}s\tsettings\tproceeding as args.forcetileid == y".format(
                     time() - start)
                 )
         else:
             log.error(
-                "{:.1f}s\texiting as args.forcetileid == n".format(
+                "{:.1f}s\tsettings\texiting as args.forcetileid == n".format(
                     time() - start)
                 )
             sys.exit()
@@ -630,6 +627,7 @@ def main():
         ]
     for msk in ["DESI", "BGS", "MWS", "SCND"]:
         prefa_keys += ["{}_{}_TARGET".format(args.survey.upper(), msk)]
+    log.info("{:.1f}s\tsettings\tprefa_keys = {}".format(time() - start, prefa_keys))
 
 
     # AR tiles
@@ -637,9 +635,9 @@ def main():
         hdr = fitsio.FITSHDR()
         log.info("")
         log.info("")
-        log.info("{:.1f}s\tSTEP : dotile".format(time() - start))
+        log.info("{:.1f}s\tdotile\tTIMESTAMP={}".format(time() - start, Time.now().isot))
         log.info(
-            "{:.1f}s\tstart generating {}".format(
+            "{:.1f}s\tdotile\tstart generating {}".format(
                 time() - start, mytmpouts["tiles"]
             )
         )
@@ -671,7 +669,7 @@ def main():
             clobber=True,
         )
         log.info(
-            "{:.1f}s\t{}-tiles.fits written".format(
+            "{:.1f}s\tdotile\t{}-tiles.fits written".format(
                 time() - start, mytmpouts["tiles"],
             )
         )
@@ -682,12 +680,12 @@ def main():
     if dosky:
         log.info("")
         log.info("")
-        log.info("{:.1f}s\tSTEP : dosky".format(time() - start))
-        log.info("{:.1f}s\tstart generating {}".format(time() - start, mytmpouts["sky"]))
+        log.info("{:.1f}s\tdosky\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+        log.info("{:.1f}s\tdosky\tstart generating {}".format(time() - start, mytmpouts["sky"]))
         # AR sky: read targets
         tiles = fits.open(mytmpouts["tiles"])[1].data
         d = custom_read_targets_in_tiles(
-            [mydirs["sky"], mydirs["skysupp"]], tiles, quick=True, mtl=False, log=log
+            [mydirs["sky"], mydirs["skysupp"]], tiles, quick=True, mtl=False, log=log, step="dosky"
         )
         n, tmpfn = write_targets(
             tmpoutdir,
@@ -697,7 +695,7 @@ def main():
             survey=args.survey,
         )
         _ = mv_write_targets_out(tmpfn, tmpoutdir, mytmpouts["sky"], log=log)
-        log.info("{:.1f}s\t{} written".format(time() - start, mytmpouts["sky"]))
+        log.info("{:.1f}s\tdosky\t{} written".format(time() - start, mytmpouts["sky"]))
 
 
 
@@ -705,18 +703,21 @@ def main():
     if dogfa:
         log.info("")
         log.info("")
-        log.info("{:.1f}s\tSTEP : dogfa".format(time() - start))
-        log.info("{:.1f}s\tstart generating {}".format(time() - start, mytmpouts["gfa"]))
+        log.info("{:.1f}s\tdogfa\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+        log.info("{:.1f}s\tdogfa\tstart generating {}".format(time() - start, mytmpouts["gfa"]))
         # AR gfa: read targets
         tiles = fits.open(mytmpouts["tiles"])[1].data
-        d = custom_read_targets_in_tiles([mydirs["gfa"]], tiles, quick=True, mtl=False, log=log)
+        d = custom_read_targets_in_tiles([mydirs["gfa"]], tiles, quick=True, mtl=False, log=log, step="dogfa")
         log.info(
-            "{:.1f}s\tkeeping {} targets to {}".format(
+            "{:.1f}s\tdogfa\tkeeping {} targets to {}".format(
                 time() - start, len(d), mytmpouts["gfa"]
             )
         )
         # AR gfa: update RA, DEC, REF_EPOCH using proper motion
-        d = update_nowradec(d, new_obstime)
+        if args.pmcorr == "y":
+            d = update_nowradec(d, new_obstime)
+        else:
+            log.info("{:.1f}s\tdogfa\t*not* applying proper-motion correction".format(time() - start))
         # AR gfa: write fits
         n, tmpfn = write_targets(tmpoutdir, d, indir=mydirs["gfa"], survey=args.survey)
         _ = mv_write_targets_out(tmpfn, tmpoutdir, mytmpouts["gfa"], log=log)
@@ -725,7 +726,7 @@ def main():
         fd["TARGETS"].write_key("COMMENT", "RA,DEC updated with PM for AEN objects")
         fd["TARGETS"].write_key("COMMENT", "REF_EPOCH updated for all objects")
         fd.close()
-        log.info("{:.1f}s\t{} written".format(time() - start, mytmpouts["gfa"]))
+        log.info("{:.1f}s\tdogfa\t{} written".format(time() - start, mytmpouts["gfa"]))
 
 
 
@@ -733,16 +734,19 @@ def main():
     if domtl:
         log.info("")
         log.info("")
-        log.info("{:.1f}s\tSTEP : domtl".format(time() - start))
-        log.info("{:.1f}s\tstart generating {}".format(time() - start, mytmpouts["targ"]))
+        log.info("{:.1f}s\tdomtl\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+        log.info("{:.1f}s\tdomtl\tstart generating {}".format(time() - start, mytmpouts["targ"]))
         tiles = fits.open(mytmpouts["tiles"])[1].data
         # AR mtl: read mtl
-        d = custom_read_targets_in_tiles([mydirs["mtl"]], tiles, quick=False, mtl=True, unique=True, log=log)
+        d = custom_read_targets_in_tiles([mydirs["mtl"]], tiles, quick=False, mtl=True, unique=True, log=log, step="domtl")
         # AR mtl: add requested columns not present in ledgers
         columns = [key for key in prefa_keys if key not in d.dtype.names]
         d = inflate_ledger(d, mydirs["targ"], columns=columns, header=False, strictcols=False)
         # AR mtl: update RA, DEC, REF_EPOCH using proper motion
-        d = update_nowradec(d, new_obstime)
+        if args.pmcorr == "y":
+            d = update_nowradec(d, new_obstime)
+        else:
+            log.info("{:.1f}s\tdomtl\t*not* applying proper-motion correction".format(time() - start))
         # AR mtl: write fits
         n, tmpfn = write_targets(tmpoutdir, d, indir=mydirs["mtl"], indir2=mydirs["targ"], survey=args.survey)
         _ = mv_write_targets_out(tmpfn, tmpoutdir, mytmpouts["targ"], log=log)
@@ -751,7 +755,7 @@ def main():
         fd["TARGETS"].write_key("COMMENT", "RA,DEC updated with PM for AEN objects")
         fd["TARGETS"].write_key("COMMENT", "REF_EPOCH updated for all objects")
         fd.close()
-        log.info("{:.1f}s\t{} written".format(time() - start, mytmpouts["targ"]))
+        log.info("{:.1f}s\tdomtl\t{} written".format(time() - start, mytmpouts["targ"]))
 
 
 
@@ -759,8 +763,8 @@ def main():
     if doscnd:
         log.info("")
         log.info("")
-        log.info("{:.1f}s\tSTEP : doscnd".format(time() - start))
-        log.warning("{:.1f}s\tdoscnd not implemented yet; exiting".format(time() - start))
+        log.info("{:.1f}s\tdoscnd\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+        log.warning("{:.1f}s\tdoscnd\tdoscnd not implemented yet; exiting".format(time() - start))
 
 
 
@@ -768,8 +772,8 @@ def main():
     if dofa:
         log.info("")
         log.info("")
-        log.info("{:.1f}s\tSTEP : dofa".format(time() - start))
-        log.info("{:.1f}s\tstart running fiber assignment".format(time() - start))
+        log.info("{:.1f}s\tdofa\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+        log.info("{:.1f}s\tdofa\tstart running fiber assignment".format(time() - start))
         # AR safe: delete possibly existing fba-{tileid}.fits and fiberassign-{tileid}.fits
         # AR     : if file exists but we are here in the code
         # AR       it means args.forcetileid="y"
@@ -806,7 +810,7 @@ def main():
             mytmpouts["gfa"],
         ]
         log.info(
-            "{:.1f}s\ttileid={:06d}: running raw fiber assignment (run_assign_full) with opts={}".format(
+            "{:.1f}s\tdofa\ttileid={:06d}: running raw fiber assignment (run_assign_full) with opts={}".format(
                 time() - start, args.tileid, " ; ".join(opts)
             )
         )
@@ -834,7 +838,7 @@ def main():
         for key in list(ag.keys()):
             tmparr += ["{} = {}".format(key, ag[key])]
         log.info(
-            "{:.1f}s\ttileid={:06d}: merging input target data (merge_results) with argument={}".format(
+            "{:.1f}s\tdofa\ttileid={:06d}: merging input target data (merge_results) with argument={}".format(
                 time() - start, args.tileid, " ; ".join(tmparr)
             )
         )
@@ -879,6 +883,7 @@ def main():
                 "survey",
                 "program",
                 "rundate",
+                "pmcorr",
                 "pmtime",
             ]:
                 if kwargs[1] is not None:
@@ -891,6 +896,15 @@ def main():
             "faargs", " ".join(tmparr),
         )
         fd["PRIMARY"].write_key("obscon", obscon)
+        # AR informations for NTS
+        # AR SBPROF from https://desi.lbl.gov/trac/wiki/SurveyOps/SurveySpeed#NominalFiberfracValues
+        # AR version 35
+        fd["PRIMARY"].write_key("goaltime", args.goaltime)
+        fd["PRIMARY"].write_key("goaltype", args.program)
+        ebv = fitsio.read(mytmpouts["targ"], columns=["EBV"])["EBV"]
+        fd["PRIMARY"].write_key("ebvfac", 10.**(2.165 * np.median(ebv) / 2.5))
+        fd["PRIMARY"].write_key("sbprof", args.sbprof)
+        fd["PRIMARY"].write_key("mintfrac", args.mintfrac)
         fd.close()
 
 
@@ -899,12 +913,12 @@ def main():
     if dozip:
         log.info("")
         log.info("")
-        log.info("{:.1f}s\tSTEP : dozip".format(time() - start))
+        log.info("{:.1f}s\tdozip\tTIMESTAMP={}".format(time() - start, Time.now().isot))
         if os.path.isfile("{}.gz".format(mytmpouts["fiberassign"])):
             os.remove("{}.gz".format(mytmpouts["fiberassign"]))
-            log.info("{:.1f}s\t deleting existing {}.gz".format(time() - start, mytmpouts["fiberassign"]))
+            log.info("{:.1f}s\tdozip\tdeleting existing {}.gz".format(time() - start, mytmpouts["fiberassign"]))
         os.system("gzip {}".format(mytmpouts["fiberassign"]))
-        log.info("{:.1f}s\t gzipping {}".format(time() - start, mytmpouts["fiberassign"]))
+        log.info("{:.1f}s\tdozip\tgzipping {}".format(time() - start, mytmpouts["fiberassign"]))
         # AR updating the path
         mytmpouts["fiberassign"] += ".gz"
         myouts["fiberassign"] += ".gz"
@@ -915,7 +929,7 @@ def main():
 
         log.info("")
         log.info("")
-        log.info("{:.1f}s\tSTEP : doplot".format(time() - start))
+        log.info("{:.1f}s\tdoplot\tTIMESTAMP={}".format(time() - start, Time.now().isot))
         # AR masks
         # AR close to desitarget.targets.main_cmx_or_sv,
         # AR but using a dictionary, more adapted to this code
@@ -933,15 +947,15 @@ def main():
         for mskkey in ["DESI_TARGET", "MWS_TARGET"]:
             wd_mskkeys += [mskkey for key in yaml_masks[mskkey].names() if "WD" in key]
             wd_msks += [key for key in yaml_masks[mskkey].names() if "WD" in key]
-        log.info("{:.1f}s\t wd_mskkeys = {}".format(time() - start, wd_mskkeys))
-        log.info("{:.1f}s\t wd_msks = {}".format(time() - start, wd_msks))
+        log.info("{:.1f}s\tdoplot\twd_mskkeys = {}".format(time() - start, wd_mskkeys))
+        log.info("{:.1f}s\tdoplot\twd_msks = {}".format(time() - start, wd_msks))
         # AR STD masks
         std_mskkeys, std_msks = [], []
         for mskkey in ["DESI_TARGET", "MWS_TARGET"]:
             std_mskkeys += [mskkey for key in yaml_masks[mskkey].names() if "STD" in key]
             std_msks += [key for key in yaml_masks[mskkey].names() if "STD" in key]
-        log.info("{:.1f}s\t std_mskkeys = {}".format(time() - start, std_mskkeys))
-        log.info("{:.1f}s\t std_msks = {}".format(time() - start, std_msks))
+        log.info("{:.1f}s\tdoplot\tstd_mskkeys = {}".format(time() - start, std_mskkeys))
+        log.info("{:.1f}s\tdoplot\tstd_msks = {}".format(time() - start, std_msks))
 
         # AR hard-setting the plotted tracers
         # AR TBD: handle secondaries
@@ -1513,55 +1527,51 @@ def main():
 
         #  AR saving plot
         plt.savefig(
-            myouts["png"],
+            mytmpouts["png"],
             bbox_inches="tight",
         )
         plt.close()
-
-    # AR move tmpoutdir -> args.outdir
-    if domove:
-        log.info("")
-        log.info("")
-        log.info("{:.1f}s\tSTEP : domove".format(time() - start))
-        # AR moving files to args.outdir
-        # AR doing that before that QA plot:
-        # AR in case the QA plot crashes for whatever reason
-        # AR the fiberassign-TILEID.fits.gz file is where it should be
-        for key in ["fiberassign", "log"]:
-            os.rename(mytmpouts[key], myouts[key])
-            log.info("{:.1f}s\t moving {} to {}".format(time() - start, mytmpouts[key], myouts[key]))
-        keys = ["tiles", "sky", "gfa", "targ", "fba"]
-        if os.path.isfile(mytmpouts["scnd"]):
-            keys += ["scnd"]
-        for key in keys:
-            if args.doclean == "n":
-                os.rename(mytmpouts[key], myouts[key])
-                log.info("{:.1f}s\t moving file {} to {}".format(time() - start, mytmpouts[key], myouts[key]))
-            else:
-                os.remove(mytmpouts[key])
-                log.info("{:.1f}s\t deleting file {}".format(time() - start, mytmpouts[key]))
-        # AR deleting folder if empty
-        if os.listdir(tmpoutdir) == []:
-            os.rmdir(tmpoutdir)
-            log.info("{:.1f}s\t deleting folder {}".format(time() - start, tmpoutdir))
-
 
     # AR do clean?
     if args.doclean == "y":
         log.info("")
         log.info("")
-        log.info("{:.1f}s\tSTEP : doclean".format(time() - start))
-        for key in ["tiles", "sky", "gfa", "targ", "scnd"]:
-            if os.path.isfile(myouts[key]):
-                os.remove(myouts[key])
-                log.info("{:.1f}s\tdeleting file {}".format(time() - start, myouts[key]))
+        log.info("{:.1f}s\tdoclean\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+        for key in ["tiles", "sky", "gfa", "targ", "scnd", "fba"]:
+            if os.path.isfile(mytmpouts[key]):
+                os.remove(mytmpouts[key])
+                log.info("{:.1f}s\tdoclean\tdeleting file {}".format(time() - start, mytmpouts[key]))
 
 
-    # AR and we re done
-    log.info("")
-    log.info("")
-    log.info("{:.1f}s\tSTEP : end".format(time() - start))
+    # AR move tmpoutdir -> args.outdir
+    if domove:
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\tdomove\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+        # AR optional files
+        if args.doclean == "n":
+            for key in ["tiles", "sky", "gfa", "targ", "scnd", "fba"]:
+                if os.path.isfile(mytmpouts[key]):
+                    _ = shutil.move(mytmpouts[key], myouts[key])
+                    log.info("{:.1f}s\tdomove\tmoving file {} to {}".format(time() - start, mytmpouts[key], myouts[key]))
+                else:
+                    log.info("{:.1f}s\tdomove\tno file {}".format(time() - start, mytmpouts[key]))
+        # AR svn-checked files
+        for key in ["fiberassign", "png"]:
+            _ = shutil.move(mytmpouts[key], myouts[key])
+            log.info("{:.1f}s\tdomove\tmoving {} to {}".format(time() - start, mytmpouts[key], myouts[key]))
+        key = "log"
+        log.info("{:.1f}s\tdomove\tmoving {} to {}".format(time() - start, mytmpouts[key], myouts[key]))
+        # AR and we re done
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\tend\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+        # AR moving the log at last
+        _ = shutil.move(mytmpouts[key], myouts[key])
 
+        # AR deleting folder if empty
+        if os.listdir(tmpoutdir) == []:
+            os.rmdir(tmpoutdir)
 
 
 if __name__ == "__main__":
@@ -1630,19 +1640,41 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--survey",
-        help=", ".join(surveys_all),
-        type=str,
-        default=None,                                                                                                                                                                  
-        required=True,
-        choices=surveys_all,
-    )
-    parser.add_argument(
-        "--program",
-        help=", ".join(programs_all),
+        help="survey",
         type=str,
         default=None,
         required=True,
-        choices=programs_all,
+        choices=["sv2"],
+    )
+    parser.add_argument(
+        "--program",
+        help="program",
+        type=str,
+        default=None,
+        required=True,
+        choices=["DARK", "BRIGHT", "BACKUP"],
+    )
+    parser.add_argument(
+        "--goaltime",
+        help="goal effective time (default for sv2: {})".format(", ".join(["{}={}".format(key, goaltimes_all["sv2"][key]) for key in ["DARK", "BRIGHT", "BACKUP"]])),
+        type=str,
+        default=None,
+        required=False,
+    )
+    parser.add_argument(
+        "--sbprof",
+        help="surface brightness profile to be used for computing time -> efftime relation (default for sv2: {})".format(", ".join(["{}={}".format(key, sbprofs_all["sv2"][key]) for key in ["DARK", "BRIGHT", "BACKUP"]])),
+        type=str,
+        default=None,
+        required=False,
+        choices={"ELG, BGS, PSF, FLT"}
+    )
+    parser.add_argument(
+        "--mintfrac",
+        help="minimum exposure time fraction needed for this tile to be considered done (default=0.9)",
+        type=str,
+        default="0.9",
+        required=False,
     )
     parser.add_argument(
         "--rundate",
@@ -1651,7 +1683,7 @@ if __name__ == "__main__":
         default="2019-09-16T00:00:00",
         required=False,
     )
-    parser.add_argument(                                                                                                                                                               
+    parser.add_argument(
         "--standards_per_petal",
         help="required number of standards per petal (default=10)",
         type=str,
@@ -1664,14 +1696,14 @@ if __name__ == "__main__":
         type=str,
         default="40",
         required=False,
-    )                                                                                                                                                                                  
+    )
     parser.add_argument(
         "--dr",
         help="legacypipe dr (default=dr9)",
         type=str,
         default="dr9",
         required=False,
-        choices=drs_all,
+        choices=["dr9"],
     )
     parser.add_argument(
         "--gaiadr",
@@ -1679,7 +1711,7 @@ if __name__ == "__main__":
         type=str,
         default="gaiadr2",
         required=False,
-        choices=gaiadrs_all,
+        choices=["gaiadr2"],
     )
     parser.add_argument(
         "--dtver",
@@ -1687,6 +1719,13 @@ if __name__ == "__main__":
         type=str,
         default=None,
         required=True,
+    )
+    parser.add_argument(
+        "--pmcorr",
+        help="apply proper-motion-correction before fiber assignment? (y/n) (default=n)",
+        type=str,
+        default="n",
+        required=False,
     )
     parser.add_argument(
         "--pmtime",
@@ -1713,8 +1752,17 @@ if __name__ == "__main__":
     if os.path.isdir(args.outdir) == False:
         os.mkdir(args.outdir)
 
+    # AR goaltime
+    if args.goaltime is None:
+        args.goaltime = goaltimes_all[args.survey][args.program]
+
+    # AR sbprof
+    if args.sbprof is None:
+        args.sbprof = sbprofs_all[args.survey][args.program]
+
     # AR create a temporary directory for generated files
     tmpoutdir = tempfile.mkdtemp()
+    
     if tmpoutdir[-1] != "/":
         tmpoutdir += "/"
 
@@ -1738,4 +1786,4 @@ if __name__ == "__main__":
         os.remove(mytmpouts["log"])
     with stdouterr_redirected(to=mytmpouts["log"]):
        main()
-    #main()
+    # main()
