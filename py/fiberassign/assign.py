@@ -872,7 +872,8 @@ minimal_target_columns = OrderedDict([
     #('SCND_TARGET', '>i8'),
     ('SUBPRIORITY', '>f8'),
     ('OBSCONDITIONS', '>i8'),
-    ('PRIORITY_INIT', '>i8')
+    ('PRIORITY_INIT', '>i8'),
+    ('NUMOBS_INIT', '>i8')
 ])
 
 merged_fiberassign_swap = {
