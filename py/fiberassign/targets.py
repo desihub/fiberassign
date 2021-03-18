@@ -471,6 +471,8 @@ def default_target_masks(data):
         col = filecols[0]
     elif filesurvey == "sv1":
         col = "SV1_DESI_TARGET"
+    elif filesurvey == "sv2":
+        col = "SV2_DESI_TARGET"
     sciencemask, stdmask, skymask, suppskymask, safemask, excludemask = \
         default_survey_target_masks(filesurvey)
     return (filesurvey, col, sciencemask, stdmask, skymask, suppskymask,
@@ -755,6 +757,20 @@ def load_target_table(tgs, tgdata, survey=None, typeforce=None, typecol=None,
             "|".join(sv1_mask.names(safemask))))
         log.debug("  excludemask {}".format(
             "|".join(sv1_mask.names(excludemask))))
+    # AR adding sv2...
+    elif survey == "sv2":
+        log.debug("  sciencemask {}".format(
+            "|".join(sv2_mask.names(sciencemask))))
+        log.debug("  stdmask     {}".format(
+            "|".join(sv2_mask.names(stdmask))))
+        log.debug("  skymask     {}".format(
+            "|".join(sv2_mask.names(skymask))))
+        log.debug("  suppskymask     {}".format(
+            "|".join(sv2_mask.names(suppskymask))))
+        log.debug("  safemask    {}".format(
+            "|".join(sv2_mask.names(safemask))))
+        log.debug("  excludemask {}".format(
+            "|".join(sv2_mask.names(excludemask))))
     else:
         raise RuntimeError("unknown survey type, should never get here!")
     append_target_table(tgs, tgdata, survey, typeforce, typecol, sciencemask,
