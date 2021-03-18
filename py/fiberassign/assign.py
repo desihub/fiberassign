@@ -313,20 +313,13 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
 
         if (len(assigned_invalid) > 0):
             # Fill our unassigned location X/Y coordinates with either their fixed
-            # location (for positioners that are nonfunctional) or the central
-            # positioner locations (for working, but unassigned positioners).
-            # Then convert these to RA/DEC.
+            # location (for positioners that are nonfunctional) or as "folded in"
+            # as possible.  Then convert these to RA/DEC.
             # NOTE:  Positioner locations are in curved focal surface coordinates.
             empty_fibers = locs[assigned_invalid]
 
-            pos_cent_xy_mm = dict(hw.loc_pos_curved_mm)
-            pos_theta = dict(hw.loc_theta_pos)
-            pos_phi = dict(hw.loc_phi_pos)
-
-            empty_x = np.array(
-                [pos_cent_xy_mm[f][0] for f in empty_fibers], dtype=np.float64)
-            empty_y = np.array(
-                [pos_cent_xy_mm[f][1] for f in empty_fibers], dtype=np.float64)
+            empty_x = np.zeros(len(empty_fibers), dtype=np.float64)
+            empty_y = np.zeros(len(empty_fibers), dtype=np.float64)
 
             for iloc, loc in enumerate(empty_fibers):
                 if (
@@ -334,12 +327,39 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
                     (hw.state[loc] & FIBER_STATE_BROKEN)
                 ):
                     # This positioner is not moveable and therefore has a theta / phi
-                    # position in the hardware model.  Used this fixed fiber location
-                    # for X/Y rather than the positioner center.
+                    # position in the hardware model.  Used this fixed fiber location.
+                    print("loc {}, state {} is stuck / broken, using {} / {}".format(
+                        loc, hw.state[loc], hw.loc_theta_pos[loc], hw.loc_phi_pos[loc],
+                    ), flush=True)
                     xy = hw.thetaphi_to_xy(
-                        pos_cent_xy_mm[loc],
-                        pos_theta[loc],
-                        pos_phi[loc],
+                        hw.loc_pos_curved_mm[loc],
+                        hw.loc_theta_pos[loc],
+                        hw.loc_phi_pos[loc],
+                        hw.loc_theta_arm[loc],
+                        hw.loc_phi_arm[loc],
+                        hw.loc_theta_offset[loc],
+                        hw.loc_phi_offset[loc],
+                        hw.loc_theta_min[loc],
+                        hw.loc_phi_min[loc],
+                        hw.loc_theta_max[loc],
+                        hw.loc_phi_max[loc]
+                    )
+                    empty_x[iloc] = xy[0]
+                    empty_y[iloc] = xy[1]
+                else:
+                    # This is an unassigned, working positioner.  Place it in a folded
+                    # state.
+                    thmin = hw.loc_theta_min[loc] + hw.loc_theta_offset[loc]
+                    phmax = hw.loc_phi_max[loc] + hw.loc_phi_offset[loc]
+                    if phmax > np.pi:
+                        phmax = np.pi
+                    print("loc {}, state {} is unassigned, using {} / {}".format(
+                        loc, hw.state[loc], thmin, phmax,
+                    ), flush=True)
+                    xy = hw.thetaphi_to_xy(
+                        hw.loc_pos_curved_mm[loc],
+                        thmin,
+                        phmax,
                         hw.loc_theta_arm[loc],
                         hw.loc_phi_arm[loc],
                         hw.loc_theta_offset[loc],

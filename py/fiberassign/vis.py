@@ -279,6 +279,9 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
                 # location.
                 theta = theta_pos[lid]
                 phi = phi_pos[lid]
+                print("loc {}, state {} is stuck / broken, using {} / {}".format(
+                    lid, state[lid], theta, phi
+                ), flush=True)
                 failed = hw.loc_position_thetaphi(
                     lid, theta_pos[lid], phi_pos[lid], shptheta, shpphi
                 )
@@ -287,10 +290,15 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
                 # position with theta at its minimum value and phi
                 # at 180 degrees.
                 theta = theta_offset[lid] + theta_min[lid]
-                phi = phi_offset[lid] + np.pi
+                phi = phi_offset[lid] + phi_max[lid]
+                if phi > np.pi:
+                    phi = np.pi
+                print("loc {}, state {} is unassigned, using {} / {}".format(
+                    lid, state[lid], theta, phi
+                ), flush=True)
                 failed = hw.loc_position_thetaphi(lid, theta, phi, shptheta, shpphi)
             if failed:
-                msg = "Positioner at location {} cannot move to its home position.  This should never happen!".format(lid)
+                msg = "Positioner at location {} cannot move to its stuck or home position.  This should never happen!".format(lid)
                 log.warning(msg)
         if not failed:
             if real_shapes:

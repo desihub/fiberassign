@@ -183,7 +183,22 @@ def load_hardware(focalplane=None, rundate=None):
             [positioners[x]["petal"] for x in locations],
         )
     else:
-        # This is an old-format focalplane model (prior to desimodel PR #143)
+        # This is an old-format focalplane model (prior to desimodel PR #143).  For
+        # stuck positioners, we want to specify a default POS_T / POS_P to use.
+        # These old models did not include any information about that, so we use the
+        # minimum Theta value and either the maximum Phi value or PI, whichever is
+        # smaller
+        fake_pos_p = np.zeros(len(locations), dtype=np.float64)
+        fake_pos_t = np.zeros(len(locations), dtype=np.float64)
+        for ilid, lid in enumerate(locations):
+            pt = fp["MIN_T"][loc_to_fp[lid]] + fp["OFFSET_T"][loc_to_fp[lid]]
+            pp = fp["MAX_P"][loc_to_fp[lid]] + fp["OFFSET_P"][loc_to_fp[lid]]
+            if pp > 180.0:
+                pp = 180.0
+            fake_pos_p[ilid] = pp
+            fake_pos_t[ilid] = pt
+            if lid == 62:
+                print("DBG Hardware fake_pos_t = {}, fake_pos_p = {}".format(pt, pp), flush=True)
         hw = Hardware(
             tmstr,
             locations,
@@ -199,12 +214,12 @@ def load_hardware(focalplane=None, rundate=None):
             np.array([fp["OFFSET_T"][loc_to_fp[x]] for x in locations]),
             np.array([fp["MIN_T"][loc_to_fp[x]] for x in locations]),
             np.array([fp["MAX_T"][loc_to_fp[x]] for x in locations]),
-            np.array([fp["MIN_T"][loc_to_fp[x]] for x in locations]),
+            fake_pos_t,
             np.array([fp["LENGTH_R1"][loc_to_fp[x]] for x in locations]),
             np.array([fp["OFFSET_P"][loc_to_fp[x]] for x in locations]),
             np.array([fp["MIN_P"][loc_to_fp[x]] for x in locations]),
             np.array([fp["MAX_P"][loc_to_fp[x]] for x in locations]),
-            np.array([fp["MAX_P"][loc_to_fp[x]] for x in locations]),
+            fake_pos_p,
             np.array([fp["LENGTH_R2"][loc_to_fp[x]] for x in locations]),
             fine_radius,
             fine_theta,
