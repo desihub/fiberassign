@@ -490,77 +490,40 @@ def main():
     # AR folder architecture is now the same at NERSC/KPNO (https://github.com/desihub/fiberassign/issues/302)
     # AR DESI_ROOT : NERSC: '/global/cfs/cdirs/desi' ; KPNO: '/data/datasystems'
     desiroot = os.getenv("DESI_ROOT")
-    path_to_targets = os.path.join(os.getenv("DESI_TARGET"), "catalogs")
     path_to_svn_tiles = os.path.join(
         os.getenv("DESI_TARGET"), "fiberassign/tiles/trunk"
     )
     # AR dictionary with directories
     # AR secondary not handled yet
     mydirs = {}
-    mydirs["sky"] = os.path.join(path_to_targets, args.dr, args.dtver, "skies")
+    mydirs["sky"] = os.path.join(os.getenv("DESI_TARGET"), "catalogs", args.dr, args.dtver, "skies")
     mydirs["skysupp"] = os.path.join(
-        path_to_targets, args.gaiadr, args.dtver, "skies-supp"
+        os.getenv("DESI_TARGET"), "catalogs", args.gaiadr, args.dtver, "skies-supp"
     )
-    mydirs["gfa"] = os.path.join(path_to_targets, args.dr, args.dtver, "gfas")
+    mydirs["gfa"] = os.path.join(os.getenv("DESI_TARGET"), "catalogs", args.dr, args.dtver, "gfas")
     mydirs["scnd"] = "-"
-    # AR MTL
-    if args.program == "DARK":
-        mydirs["targ"] = os.path.join(
-            path_to_targets,
-            args.dr,
-            args.dtver,
-            "targets",
-            args.survey,
-            "resolve",
-            "dark",
-        )
-        mydirs["mtl"] = os.path.join(
-            path_to_targets,
-            args.dr,
-            args.dtver,
-            "mtl",
-            args.survey,
-            "dark",
-        )
-    if args.program == "BRIGHT":
-        mydirs["targ"] = os.path.join(
-            path_to_targets,
-            args.dr,
-            args.dtver,
-            "targets",
-            args.survey,
-            "resolve",
-            "bright",
-        ),
-        mydirs["mtl"] = os.path.join(
-            path_to_targets,
-            args.dr,
-            args.dtver,
-            "mtl",
-            args.survey,
-            "bright",
-        )
     if args.program == "BACKUP":
-        mydirs["targ"] = os.path.join(
-            path_to_targets,
-            args.gaiadr,
+        dtcat = args.gaiadr
+    else:
+        dtcat = args.dr
+    mydirs["targ"] = os.path.join(
+            os.getenv("DESI_TARGET"),
+            "catalogs",
+            dtcat,
             args.dtver,
             "targets",
             args.survey,
             "resolve",
-            "backup",
-        )
-        mydirs["mtl"] = os.path.join(
-            path_to_targets,
-            args.gaiadr,
+            args.program.lower(),
+    )
+    mydirs["mtl"] = os.path.join(
+            os.getenv("DESI_TARGET"),
+            "mtl",
             args.dtver,
             "mtl",
             args.survey,
-        )
-    # HACK
-    mydirs["targ"] = "/global/cscratch1/sd/adamyers/dr9/0.52.0.dev4610/targets/sv2/resolve/dark/"
-    mydirs["mtl"] = "/global/cscratch1/sd/adamyers/eg/mtl/sv2/dark/"
-    # HACK
+            args.program.lower(),
+    )
 
     # AR log
     for key in list(mydirs.keys()):
