@@ -599,60 +599,7 @@ def main():
             )
             sys.exit()
 
-    # AR pre-fiberassign columns to be present in fiberassign-TILEID.fits.gz
-    # AR we ll add those not present in ledgers
-    prefa_keys = [
-        "TARGETID",
-        "RA",
-        "DEC",
-        "PMRA",
-        "PMDEC",
-        "REF_EPOCH",
-        "PRIORITY",
-        "SUBPRIORITY",
-        "OBSCONDITIONS",
-        "RELEASE",
-        "BRICKID",
-        "BRICK_OBJID",
-        "MORPHTYPE",
-        "FLUX_G",
-        "FLUX_R",
-        "FLUX_Z",
-        "FLUX_IVAR_G",
-        "FLUX_IVAR_R",
-        "FLUX_IVAR_Z",
-        "MASKBITS",
-        "REF_ID",
-        "REF_CAT",
-        "GAIA_PHOT_G_MEAN_MAG",
-        "GAIA_PHOT_BP_MEAN_MAG",
-        "GAIA_PHOT_RP_MEAN_MAG",
-        "PARALLAX",
-        "GAIA_ASTROMETRIC_EXCESS_NOISE",
-        "BRICKNAME",
-        "EBV",
-        "FLUX_W1",
-        "FLUX_W2",
-        "FLUX_IVAR_W1",
-        "FLUX_IVAR_W2",
-        "FIBERFLUX_G",
-        "FIBERFLUX_R",
-        "FIBERFLUX_Z",
-        "FIBERTOTFLUX_G",
-        "FIBERTOTFLUX_R",
-        "FIBERTOTFLUX_Z",
-        "SERSIC",
-        "SHAPE_R",
-        "SHAPE_E1",
-        "SHAPE_E2",
-        "PHOTSYS",
-        "PRIORITY_INIT",
-        "NUMOBS_INIT",
-    ]
-    for msk in ["DESI", "BGS", "MWS", "SCND"]:
-        prefa_keys += ["{}_{}_TARGET".format(args.survey.upper(), msk)]
-    log.info("{:.1f}s\tsettings\tprefa_keys = {}".format(time() - start, prefa_keys))
-
+    
     # AR tiles
     if dotile:
         hdr = fitsio.FITSHDR()
@@ -785,10 +732,9 @@ def main():
             log=log,
             step="domtl",
         )
-        # AR mtl: add requested columns not present in ledgers
-        columns = [key for key in prefa_keys if key not in d.dtype.names]
+        # AR mtl: add all desitarget columns
         d = inflate_ledger(
-            d, mydirs["targ"], columns=columns, header=False, strictcols=False
+            d, mydirs["targ"], columns=None, header=False, strictcols=False
         )
         # AR mtl: update RA, DEC, REF_EPOCH using proper motion
         if args.pmcorr == "y":
