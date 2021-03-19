@@ -947,23 +947,25 @@ def write_html_perexp(html, d, style, h2title):
         )
     )
     html.write(
-        "<p style='{}'>EFFTIME_DARK, EFFTIME_BRIGHT: see https://desi.lbl.gov/trac/wiki/SurveyOps/SurveySpeed.</p>".format(
+        "<p style='{}'>AIRMASS, MOON_SEP_DEG, TRANSPARENCY, FWHM_ASEC, FIBER_FRACFLUX: from GFA.</p>".format(
+            style
+        )
+    )
+    html.write(
+        "<p style='{}'>SPECTRO_SKY: spectroscopic sky, corrected for throughput, convolved with DECam r-band filter.</p>".format(
+            style
+        )
+    )
+    html.write(
+        "<p style='{}'>EFFTIME_DARK, SPEED_DARK: see https://desi.lbl.gov/trac/wiki/SurveyOps/SurveySpeed.</p>".format(
             style
         )
     )
     # ADM write out a list of the target categories.
-    keys = [
-        "AIRMASS",
-        "MOON_SEP_DEG",
-        "TRANSPARENCY",
-        "FWHM_ASEC",
-        "SKY_MAG_AB",
-        "FIBER_FRACFLUX",
-    ]
     fields = (
-        ["TILEID", "TARGETS", "NIGHT", "EXPID", "NIGHTWATCH", "EXPTIME", "EBV"]
-        + keys
-        + ["EFFTIME_DARK", "EFFTIME_BRIGHT"]
+        ["TILEID", "TARGETS", "NIGHT", "EXPID", "NIGHTWATCH", "EXPTIME", "EFFTIME_DARK", "SPEED_DARK"]
+        + ["EBV", "GFA_AIRMASS", "GFA_MOON_SEP_DEG", "GFA_TRANSPARENCY", "GFA_FWHM_ASEC", "GFA_FIBER_FRACFLUX"]
+        + ["SPECTRO_SKY"]
     )
     html.write("<table>\n")
     night = ""
@@ -971,68 +973,78 @@ def write_html_perexp(html, d, style, h2title):
         night_prev = night
         night = d["NIGHT"][i]
         specprod = d["SPECPROD"][i]
+        # AR night header
         if night != night_prev:
             html.write("<tr>\n")
-            html.write(" ".join(["<th> {} </th>".format(x) for x in fields]) + "\n")
+            html.write(" ".join(["<th> {} </th>".format(x.replace("GFA_", "")) for x in fields]) + "\n")
             html.write("</tr>\n")
         html.write("<tr>")
-        tmparr = [
-            "<a href='{}' target='external'> {}".format(
-                os.path.join(
+        # AR redux path
+        redux_path = os.path.join(
                     "https://data.desi.lbl.gov/desi",
                     "spectro",
                     "redux",
                     specprod,
-                    "tiles",
-                    "{}".format(d["TILEID"][i]),
-                ),
-                d["TILEID"][i],
-            )
-        ]
-        tmparr += ["{}".format(d["TARGETS"][i])]
-        tmparr += [
-            "<a href='{}' target='external'> {}".format(
-                os.path.join(
-                    "https://data.desi.lbl.gov/desi",
-                    "spectro",
-                    "redux",
-                    specprod,
-                    "exposures",
-                    "{}".format(d["NIGHT"][i]),
-                ),
-                d["NIGHT"][i],
-            )
-        ]
-        tmparr += [
-            "<a href='{}' target='external'> {}".format(
-                os.path.join(
-                    "https://data.desi.lbl.gov/desi",
-                    "spectro",
-                    "redux",
-                    specprod,
-                    "exposures",
-                    "{}".format(d["NIGHT"][i]),
-                    "{:08}".format(d["EXPID"][i]),
-                ),
-                d["EXPID"][i],
-            )
-        ]
-        tmparr += [
-            "<a href='{}' target='external'> {}".format(
-                os.path.join(
-                    "https://nightwatch.desi.lbl.gov/" "{}".format(d["NIGHT"][i]),
-                    "{:08}".format(d["EXPID"][i]),
-                    "qa-summary-{:08}.html".format(d["EXPID"][i]),
-                ),
-                "Nightwatch",
-            )
-        ]
-        tmparr += ["{:.0f}".format(d["EXPTIME"][i])]
-        tmparr += ["{:.2f}".format(d["EBV"][i])]
-        tmparr += ["{:.2f}".format(d["GFA_" + key][i]) for key in keys]
-        # tmparr += ["{:.0f}s".format(d[band + "_DEPTH"][i]) for band in ["B", "R", "Z"]]
-        tmparr += ["{:.0f}s".format(d["R_DEPTH"][i])]
-        tmparr += ["{:.0f}s".format(d["R_DEPTH_EBVAIR"][i])]
+        )
+        # AR building array
+        tmparr = []
+        for field in fields:
+            if field == "TILEID":
+                tmparr += [
+                    "<a href='{}' target='external'> {}".format(
+                    os.path.join(
+                        redux_path,
+                        specprod,
+                        "tiles",
+                        "{}".format(d["TILEID"][i]),
+                    ),
+                    d["TILEID"][i],
+                    )
+                ]
+            elif field == "NIGHT":
+                tmparr += [
+                    "<a href='{}' target='external'> {}".format(
+                        os.path.join(
+                            redux_path,
+                            "exposures",
+                            "{}".format(d["NIGHT"][i]),
+                        ),
+                        d["NIGHT"][i],
+                    )
+                ]
+            elif field == "EXPID":
+                tmparr += [
+                    "<a href='{}' target='external'> {}".format(
+                        os.path.join(
+                            redux_path,
+                            "exposures",
+                            "{}".format(d["NIGHT"][i]),
+                            "{:08}".format(d["EXPID"][i]),
+                        ),
+                        d["EXPID"][i],
+                    )
+                ]
+            elif field == "NIGHTWATCH":
+                tmparr += [
+                    "<a href='{}' target='external'> {}".format(
+                        os.path.join(
+                            "https://nightwatch.desi.lbl.gov/" "{}".format(d["NIGHT"][i]),
+                            "{:08}".format(d["EXPID"][i]),
+                            "qa-summary-{:08}.html".format(d["EXPID"][i]),
+                        ),
+                        "Nightwatch",
+                    )
+                ]
+            elif field == "SPECTRO_SKY":
+                tmparr += ["{:.1f}".format(22.5-2.5*np.log10(d["SPECMODEL_SKY_RFLUX"][i]))]
+            elif field in ["TARGETS"]:
+                tmparr += ["{}".format(d[field][i])]
+            elif field in ["SPEED_DARK"]:
+                tmparr += ["{:.1f}".format(d[field][i])]
+            elif field in ["EBV", "GFA_AIRMASS", "GFA_TRANSPARENCY", "GFA_FWHM_ASEC", "GFA_FIBER_FRACFLUX"]:
+                tmparr += ["{:.2f}".format(d[field][i])]
+            else:
+                tmparr += ["{:.0f}".format(d[field][i])]
         html.write(" ".join(["<td> {} </td>".format(x) for x in tmparr]) + "\n")
         html.write("</tr>\n")
     html.write("</table>\n")
@@ -1380,6 +1392,22 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, tiles):
                 exposures[key] = expids.copy()
             elif key == "SPECPROD":
                 exposures[key] = np.array([specprod for i in range(nexp)])
+            # AR setting depth/efftime/speed to zero by default
+            elif key in [
+                "B_DEPTH",
+                "R_DEPTH",
+                "Z_DEPTH",
+                "B_DEPTH_EBVAIR",
+                "R_DEPTH_EBVAIR",
+                "Z_DEPTH_EBVAIR",
+                "EFFTIME_DARK",
+                "EFFTIME_BRIGHT",
+                "EFFTIME_BACKUP",
+                "SPEED_DARK",
+                "SPEED_BRIGHT",
+                "SPEED_BACKUP",
+                ]:
+                exposures[key] = np.zeros(nexp, dtype=float)
             elif fmt[-1] == "A":
                 exposures[key] = np.array(
                     ["-" for i in range(nexp)], dtype="S{}".format(fmt[:-1])
