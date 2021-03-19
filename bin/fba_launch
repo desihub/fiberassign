@@ -35,7 +35,7 @@ from argparse import ArgumentParser
 # AR goal effective time
 # AR https://desi.lbl.gov/svn/data/surveyops/trunk/ops/config-sv2.yaml
 goaltimes_all = {
-    "sv2": {"DARK":"1000", "BRIGHT":"150", "BACKUP":"30"},
+    "sv2": {"DARK":1000., "BRIGHT":150., "BACKUP":30.},
 }
 
 # AR surface brightness profile to be used for computing time -> efftime relation
@@ -1657,7 +1657,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--goaltime",
         help="goal effective time (default for sv2: {})".format(", ".join(["{}={}".format(key, goaltimes_all["sv2"][key]) for key in ["DARK", "BRIGHT", "BACKUP"]])),
-        type=str,
+        type=float,
         default=None,
         required=False,
     )
@@ -1672,8 +1672,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--mintfrac",
         help="minimum exposure time fraction needed for this tile to be considered done (default=0.9)",
-        type=str,
-        default="0.9",
+        type=float,
+        default=0.9,
         required=False,
     )
     parser.add_argument(
