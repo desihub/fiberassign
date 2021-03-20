@@ -1004,6 +1004,7 @@ def main():
             "TARGETID",
             "FLUX_G",
             "FLUX_R",
+            "FIBERFLUX_R",
             "FLUX_Z",
             "FLUX_W1",
             "FLUX_W2",
@@ -1137,11 +1138,11 @@ def main():
         ax = plt.subplot(gs[0, 0])
         ax.axis("off")
         # AR infos : general
-        x, y, dy, fs = 0.05, 0.95, -0.1, 12
+        x, y, dy, fs = 0.05, 0.95, -0.1, 10
         for t in [
             "flavor={}".format(fits.getheader(mytmpouts["fiberassign"])["FAFLAVOR"]),
             "TILEID={:06d}".format(args.tileid),
-            "RA,DEC={:.1f},{:.1f}".format(args.tilera, args.tiledec),
+            "RA,DEC={:.3f},{:.3f}".format(args.tilera, args.tiledec),
             "obscon={}".format(obscon),
             "rundate={}".format(args.rundate),
             "",
@@ -1149,11 +1150,12 @@ def main():
             ax.text(x, y, t.expandtabs(), fontsize=fs, transform=ax.transAxes)
             y += dy
         # AR infos: wd/std + tracers
-        xs = [0.05, 0.3, 0.6, 0.9]
+        xs = [0.05, 0.65, 0.95, 1.20]
+        has = ["left", "right", "right", "right"]
         tracers = []
         for mskkey, msk in zip(wd_mskkeys + std_mskkeys, wd_msks + std_msks):
             n = ((assign[mskkey] & yaml_masks[mskkey][msk]) > 0).sum()
-            tracers += [[msk, "", "", "{}".format(n)]]
+            tracers += [[msk, "{}".format(n), "", ""]]
         tracers += [["", "", "", ""], ["MASK", "ASSGN", "PARENT", "FAFRAC"]]
         for msk, mskkey in zip(trmsks, trmskkeys):
             nparent = ((parent[mskkey] & yaml_masks[mskkey][msk]) > 0).sum()
@@ -1174,29 +1176,40 @@ def main():
                     y,
                     tracer[i].expandtabs(),
                     fontsize=fs,
+                    ha=has[i],
                     transform=ax.transAxes,
                 )
             y += dy
-        # AR infos: brightest assigned object
-        ax.text(0.05, y, "Min. assigned mag ", fontsize=fs, transform=ax.transAxes)
-        y += dy
-        for mag, lab in zip(
-            [assign["GAIA_PHOT_G_MEAN_MAG"], 22.5 - 2.5 * np.log10(assign["FLUX_R"])],
-            ["GAIA_PHOT_G_MEAN_MAG)", "min(LS-RMAG)"],
-        ):
-            magmin = mag[(np.isfinite(mag)) & (mag > 0)].min()
-            if magmin < 13:
-                color = "r"
-            else:
-                color = "k"
-            ax.text(
-                0.05,
-                y,
-                "{} = {:.1f}".format(lab, magmin),
-                fontsize=fs,
-                color=color,
-                transform=ax.transAxes,
-            )
+        # AR infos: brightest target and assigned object
+        # AR infos: taking a default 16, in case new programs are added
+        magthresh = 16.
+        if args.program == "DARK":
+            magthres = 16.
+        if args.program == "BRIGHT":
+            magthresh = 15.
+        if args.program == "BACKUP":
+            magthresh = 15.
+        for sample, d in zip(["parent", "assgn"], [parent, assign]):
+            ax.text(0.05, y, "Min. {} mag ".format(sample), fontsize=fs, transform=ax.transAxes)
+            y += dy
+            for mag, lab in zip(
+                [d["GAIA_PHOT_G_MEAN_MAG"], 22.5 - 2.5 * np.log10(d["FIBERFLUX_R"])],
+                ["GAIA_PHOT_G_MEAN_MAG)", "min(LS-R-FIBMAG)"],
+            ):
+                magmin = mag[(np.isfinite(mag)) & (mag > 0)].min()
+                if magmin < magthresh:
+                    color = "r"
+                else:
+                    color = "k"
+                ax.text(
+                    0.05,
+                    y,
+                    "{} = {:.1f}".format(lab, magmin),
+                    fontsize=fs,
+                    color=color,
+                    transform=ax.transAxes,
+                )
+                y += dy
             y += dy
 
         # AR stats per petal
@@ -1312,10 +1325,10 @@ def main():
             famin, famax = 0, 1
             # AR mag hist
             band, famin, famax = "G", 0.0, 0.5
-            if msk in ["MWS_ANY"]:
-                band, famin, famax = "R", 0.0, 0.5
-            if msk in ["BGS_ANY"]:
-                band, famin, famax = "R", 0.0, 0.5
+            if "MWS" in msk:
+                band, famin, famax = "R", 0.0, 0.2
+            if "BGS" in msk:
+                band, famin, famax = "R", 0.25, 0.45
             if "LRG" in msk:
                 band, famin, famax = "Z", 0.3, 0.5
             if "ELG" in msk:
@@ -1426,8 +1439,8 @@ def main():
                     visible=False,
                 )
                 # AR restricting to pixels with some parent data$
-                # keep = hbp.get_array() > 0
-                keep = np.ones(len(hbp.get_array()), dtype=bool)
+                keep = hbp.get_array() > 0
+                #keep = np.ones(len(hbp.get_array()), dtype=bool)
                 tmpx = hb.get_offsets()[keep, 0]
                 tmpy = hb.get_offsets()[keep, 1]
                 tmpc = hb.get_array()[keep]
@@ -1643,7 +1656,7 @@ def main():
 if __name__ == "__main__":
 
     # AR to speed up development/debugging
-    dotile, dosky, dogfa, dostd, domtl, doscnd, dofa, dozip, domove, doplot = (
+    dotile, dosky, dogfa, dostd, domtl, doscnd, dofa, dozip, doplot, domove = (
         False,
         False,
         False,
@@ -1663,8 +1676,8 @@ if __name__ == "__main__":
     # doscnd = True
     dofa = True
     dozip = True
-    domove = True
     doplot = True
+    domove = True
 
     # AR reading arguments
     parser = ArgumentParser()
