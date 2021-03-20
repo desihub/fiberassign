@@ -1612,35 +1612,35 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, tiles):
                         exposures["{}_DEPTH_EBVAIR".format(camera)][iexp] = (
                             depths_i[camera.lower()] * fact_ebv * fact_air
                         )
-                # AR/DJS effective exposure times
-                (
-                    efftime_dark,
-                    efftime_bright,
-                    efftime_backup,
-                    speed_dark,
-                    speed_bright,
-                    speed_backup,
-                ) = get_efftime_speed(
-                    exposures["EXPTIME"][iexp],
-                    # exposures["SKYMON_AVERAGE_MEAN"][iexp],
-                    exposures["SPECMODEL_SKY_RFLUX"][iexp],
-                    exposures["EBV"][iexp],
-                    exposures["GFA_TRANSPARENCY"][iexp],
-                    exposures["GFA_AIRMASS"][iexp],
-                    exposures["GFA_FIBER_FRACFLUX"][iexp],
-                    exposures["GFA_FIBER_FRACFLUX_ELG"][iexp],
-                    exposures["GFA_FIBER_FRACFLUX_BGS"][iexp],
-                    exposures["GFA_FRACFLUX_NOMINAL_POINTSOURCE"][iexp],
-                    exposures["GFA_FRACFLUX_NOMINAL_ELG"][iexp],
-                    exposures["GFA_FRACFLUX_NOMINAL_BGS"][iexp],
-                    exposures["GFA_KTERM"][iexp],
-                )
-                exposures["EFFTIME_DARK"][iexp] = efftime_dark
-                exposures["EFFTIME_BRIGHT"][iexp] = efftime_bright
-                exposures["EFFTIME_BACKUP"][iexp] = efftime_backup
-                exposures["SPEED_DARK"][iexp] = speed_dark
-                exposures["SPEED_BRIGHT"][iexp] = speed_bright
-                exposures["SPEED_BACKUP"][iexp] = speed_backup
+                    # AR/DJS effective exposure times
+                    (
+                        efftime_dark,
+                        efftime_bright,
+                        efftime_backup,
+                        speed_dark,
+                        speed_bright,
+                        speed_backup,
+                    ) = get_efftime_speed(
+                        exposures["EXPTIME"][iexp],
+                        # exposures["SKYMON_AVERAGE_MEAN"][iexp],
+                        exposures["SPECMODEL_SKY_RFLUX"][iexp],
+                        exposures["EBV"][iexp],
+                        exposures["GFA_TRANSPARENCY"][iexp],
+                        exposures["GFA_AIRMASS"][iexp],
+                        exposures["GFA_FIBER_FRACFLUX"][iexp],
+                        exposures["GFA_FIBER_FRACFLUX_ELG"][iexp],
+                        exposures["GFA_FIBER_FRACFLUX_BGS"][iexp],
+                        exposures["GFA_FRACFLUX_NOMINAL_POINTSOURCE"][iexp],
+                        exposures["GFA_FRACFLUX_NOMINAL_ELG"][iexp],
+                        exposures["GFA_FRACFLUX_NOMINAL_BGS"][iexp],
+                        exposures["GFA_KTERM"][iexp],
+                    )
+                    exposures["EFFTIME_DARK"][iexp] = efftime_dark
+                    exposures["EFFTIME_BRIGHT"][iexp] = efftime_bright
+                    exposures["EFFTIME_BACKUP"][iexp] = efftime_backup
+                    exposures["SPEED_DARK"][iexp] = speed_dark
+                    exposures["SPEED_BRIGHT"][iexp] = speed_bright
+                    exposures["SPEED_BACKUP"][iexp] = speed_backup
         # AR mjd at the middle of the exposures
         midexp_mjds = exposures["MJDOBS"] + exposures["EXPTIME"] / 2.0 / 3600.0 / 24.0
         # AR ephem 1d-quantities
