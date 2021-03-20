@@ -1083,7 +1083,10 @@ bool fba::Assignment::ok_to_assign (fba::Hardware const * hw, int32_t tile,
     bool extra_log = logger.extra_debug();
 
     // Is the location stuck or broken?
-    if (hw->state.at(loc) != FIBER_STATE_OK) {
+    if (
+        (hw->state.at(loc) & FIBER_STATE_STUCK) ||
+        (hw->state.at(loc) & FIBER_STATE_BROKEN)
+    ) {
         if (extra_log) {
             logmsg.str("");
             logmsg << "ok_to_assign: tile " << tile << ", loc "
@@ -1105,9 +1108,17 @@ bool fba::Assignment::ok_to_assign (fba::Hardware const * hw, int32_t tile,
 
     auto const & neighbors = hw->neighbors.at(loc);
 
-    // Check neighboring assignment.
+    // Check neighboring assignment.  If one of the neighboring positioners is stuck or
+    // broken, we keep it for consideration below when checking for collisions.
     for (auto const & nb : neighbors) {
-        if (ftile.count(nb) > 0) {
+        if (
+            (hw->state.at(nb) & FIBER_STATE_STUCK) ||
+            (hw->state.at(nb) & FIBER_STATE_BROKEN)
+        ) {
+            // Include this neighbor in the list to check
+            nbs.push_back(nb);
+            nbtarget.push_back(-1);
+        } else if (ftile.count(nb) > 0) {
             // This neighbor has some assignment.
             int64_t nbtg = ftile.at(nb);
             if (nbtg == target) {
@@ -1140,8 +1151,22 @@ bool fba::Assignment::ok_to_assign (fba::Hardware const * hw, int32_t tile,
     for (size_t b = 0; b < nnb; ++b) {
         int32_t const & nb = nbs[b];
         int64_t nbt = nbtarget[b];
-        auto npos = target_xy.at(nbt);
-        collide = hw->collide_xy(loc, tpos, nb, npos);
+        if (nbt < 0) {
+            // This neighbor is disabled.  Check for collisions with the neighbor
+            // in its fixed theta / phi location.
+            collide = hw->collide_xy_thetaphi(
+                loc,
+                tpos,
+                nb,
+                hw->loc_theta_pos.at(nb),
+                hw->loc_phi_pos.at(nb)
+            );
+        } else {
+            // Neighbor is working, check for collisions with the neighbor in
+            // its currently assigned position.
+            auto npos = target_xy.at(nbt);
+            collide = hw->collide_xy(loc, tpos, nb, npos);
+        }
         // Remove these lines if switching back to threading.
         if (collide) {
             if (extra_log) {

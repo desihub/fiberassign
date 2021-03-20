@@ -44,7 +44,7 @@ PYBIND11_MODULE(_internal, m) {
     m.attr("FIBER_STATE_UNASSIGNED") = py::int_(FIBER_STATE_UNASSIGNED);
     m.attr("FIBER_STATE_STUCK") = py::int_(FIBER_STATE_STUCK);
     m.attr("FIBER_STATE_BROKEN") = py::int_(FIBER_STATE_BROKEN);
-    m.attr("FIBER_STATE_SAFE") = py::int_(FIBER_STATE_SAFE);
+    m.attr("FIBER_STATE_RESTRICT") = py::int_(FIBER_STATE_RESTRICT);
 
     py::class_ <fba::Timer, fba::Timer::pshr > (m, "Timer", R"(
         Simple timer class.
@@ -511,6 +511,8 @@ PYBIND11_MODULE(_internal, m) {
                 relative to the offset.
             theta_max (array):  The theta angle maximum value in degrees
                 relative to the offset.
+            theta_pos (array):  The current fixed theta position.  Use to
+                specify the position for stuck / broken positioners.
             theta_arm (array):  The theta arm lengths in mm.
             phi_offset (array):  The phi angle zero-points in degrees for
                 each device.
@@ -518,6 +520,8 @@ PYBIND11_MODULE(_internal, m) {
                 relative to the offset.
             phi_max (array):  The phi angle maximum value in degrees
                 relative to the offset.
+            phi_pos (array):  The current fixed phi position.  Use to
+                specify the position for stuck / broken positioners.
             phi_arm (array):  The phi arm lengths in mm.
             ps_radius (array):  The platescale radius vector in mm.
             ps_theta (array):  The platescale theta vector in degrees.
@@ -555,6 +559,8 @@ PYBIND11_MODULE(_internal, m) {
             std::vector <double> const &,
             std::vector <double> const &,
             std::vector <double> const &,
+            std::vector <double> const &,
+            std::vector <double> const &,
             std::vector <fbg::shape> const &,
             std::vector <fbg::shape> const &,
             std::vector <fbg::shape> const &,
@@ -564,9 +570,9 @@ PYBIND11_MODULE(_internal, m) {
             py::arg("blockfiber"), py::arg("fiber"), py::arg("device_type"),
             py::arg("x"), py::arg("y"), py::arg("status"),
             py::arg("theta_offset"), py::arg("theta_min"),
-            py::arg("theta_max"), py::arg("theta_arm"),
+            py::arg("theta_max"), py::arg("theta_pos"), py::arg("theta_arm"),
             py::arg("phi_offset"), py::arg("phi_min"),
-            py::arg("phi_max"), py::arg("phi_arm"),
+            py::arg("phi_max"), py::arg("phi_pos"), py::arg("phi_arm"),
             py::arg("ps_radius"), py::arg("ps_theta"), py::arg("arclen"),
             py::arg("excl_theta"), py::arg("excl_phi"),
             py::arg("excl_gfa"), py::arg("excl_petal")
@@ -628,6 +634,9 @@ PYBIND11_MODULE(_internal, m) {
         .def_readonly("loc_theta_max", &fba::Hardware::loc_theta_max, R"(
             Dictionary of theta max range from offset for each location.
         )")
+        .def_readonly("loc_theta_pos", &fba::Hardware::loc_theta_pos, R"(
+            Dictionary of fixed theta positions for stuck / broken devices.
+        )")
         .def_readonly("loc_phi_arm", &fba::Hardware::loc_phi_arm, R"(
             Dictionary of phi arm lengths for each location.
         )")
@@ -639,6 +648,9 @@ PYBIND11_MODULE(_internal, m) {
         )")
         .def_readonly("loc_phi_max", &fba::Hardware::loc_phi_max, R"(
             Dictionary of phi max range from offset for each location.
+        )")
+        .def_readonly("loc_phi_pos", &fba::Hardware::loc_phi_pos, R"(
+            Dictionary of fixed phi positions for stuck / broken devices.
         )")
         .def_readonly("loc_theta_excl", &fba::Hardware::loc_theta_excl, R"(
             Dictionary of theta exclusion shapes for each location.
@@ -887,6 +899,58 @@ PYBIND11_MODULE(_internal, m) {
                     x/y location is not reachable.
 
         )")
+        .def("thetaphi_to_xy", [](
+                fba::Hardware & self,
+                std::pair <double, double> const & center,
+                double theta,
+                double phi,
+                double theta_arm,
+                double phi_arm,
+                double theta_zero,
+                double phi_zero,
+                double theta_min,
+                double phi_min,
+                double theta_max,
+                double phi_max
+            ) {
+                std::pair <double, double> xy;
+                bool failed = self.thetaphi_to_xy(
+                    xy, center, theta, phi, theta_arm, phi_arm, theta_zero,
+                    phi_zero, theta_min, phi_min, theta_max, phi_max
+                );
+                if (failed) {
+                    return py::make_tuple(py::none(), py::none());
+                } else {
+                    return py::make_tuple(xy.first, xy.second);
+                }
+            }, py::return_value_policy::take_ownership, py::arg("center"),
+            py::arg("theta"), py::arg("phi"), py::arg("theta_arm"), py::arg("phi_arm"),
+            py::arg("theta_zero"), py::arg("phi_zero"),
+            py::arg("theta_min"), py::arg("phi_min"),
+            py::arg("theta_max"), py::arg("phi_max"), R"(
+            Compute the X / Y fiber location for positioner Theta / Phi angles.
+
+            Note that all X/Y calculations involving positioners are performed
+            in the curved focal surface (NOT CS5).
+
+            Args:
+                center (tuple): The (X, Y) tuple of the device center.
+                theta (float): The positioner theta angle.
+                phi (float): The positioner phi angle.
+                theta_arm (float): The length of the theta arm.
+                phi_arm (float): The length of the phi arm.
+                theta_zero (float): The theta offset.
+                phi_zero (float): The phi offset.
+                theta_min (float): The theta min relative to the offset.
+                phi_min (float): The phi min relative to the offset.
+                theta_max (float): The theta max relative to the offset.
+                phi_max (float): The phi max relative to the offset.
+
+            Returns:
+                (tuple): The X / Y location or (None, None) if the angles are
+                    not valid for this positioner.
+
+        )")
         .def("loc_position_xy", &fba::Hardware::loc_position_xy, py::arg("id"),
             py::arg("xy"), py::arg("shptheta"), py::arg("shpphi"), R"(
             Move a positioner to a given location.
@@ -1010,10 +1074,12 @@ PYBIND11_MODULE(_internal, m) {
                 std::vector <double> theta_offset(nloc);
                 std::vector <double> theta_min(nloc);
                 std::vector <double> theta_max(nloc);
+                std::vector <double> theta_pos(nloc);
                 std::vector <double> theta_arm(nloc);
                 std::vector <double> phi_offset(nloc);
                 std::vector <double> phi_min(nloc);
                 std::vector <double> phi_max(nloc);
+                std::vector <double> phi_pos(nloc);
                 std::vector <double> phi_arm(nloc);
                 std::vector <fbg::shape> excl_theta(nloc);
                 std::vector <fbg::shape> excl_phi(nloc);
@@ -1033,10 +1099,12 @@ PYBIND11_MODULE(_internal, m) {
                     theta_offset[i] = p.loc_theta_offset.at(lid[i]);
                     theta_min[i] = p.loc_theta_min.at(lid[i]);
                     theta_max[i] = p.loc_theta_max.at(lid[i]);
+                    theta_pos[i] = p.loc_theta_pos.at(lid[i]);
                     theta_arm[i] = p.loc_theta_arm.at(lid[i]);
                     phi_offset[i] = p.loc_phi_offset.at(lid[i]);
                     phi_min[i] = p.loc_phi_min.at(lid[i]);
                     phi_max[i] = p.loc_phi_max.at(lid[i]);
+                    phi_pos[i] = p.loc_phi_pos.at(lid[i]);
                     phi_arm[i] = p.loc_phi_arm.at(lid[i]);
                     excl_theta[i] = p.loc_theta_excl.at(lid[i]);
                     excl_phi[i] = p.loc_phi_excl.at(lid[i]);
@@ -1047,8 +1115,8 @@ PYBIND11_MODULE(_internal, m) {
                     timestr,
                     lid, petal, device, slitblock, blockfiber, fiber,
                     device_type, x_mm, y_mm, status, theta_offset,
-                    theta_min, theta_max, theta_arm, phi_offset, phi_min,
-                    phi_max, phi_arm, ps_radius, ps_theta, arclen,
+                    theta_min, theta_max, theta_pos, theta_arm, phi_offset, phi_min,
+                    phi_max, phi_pos, phi_arm, ps_radius, ps_theta, arclen,
                     excl_theta, excl_phi,
                     excl_gfa, excl_petal);
             },
@@ -1076,10 +1144,12 @@ PYBIND11_MODULE(_internal, m) {
                     t[19].cast<std::vector<double> >(),
                     t[20].cast<std::vector<double> >(),
                     t[21].cast<std::vector<double> >(),
-                    t[22].cast<std::vector<fbg::shape> >(),
-                    t[23].cast<std::vector<fbg::shape> >(),
+                    t[22].cast<std::vector<double> >(),
+                    t[23].cast<std::vector<double> >(),
                     t[24].cast<std::vector<fbg::shape> >(),
-                    t[25].cast<std::vector<fbg::shape> >()
+                    t[25].cast<std::vector<fbg::shape> >(),
+                    t[26].cast<std::vector<fbg::shape> >(),
+                    t[27].cast<std::vector<fbg::shape> >()
                 );
             }
         ));

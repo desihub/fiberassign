@@ -25,7 +25,7 @@ namespace fiberassign {
 #define FIBER_STATE_UNASSIGNED 1
 #define FIBER_STATE_STUCK 2
 #define FIBER_STATE_BROKEN 4
-#define FIBER_STATE_SAFE 8
+#define FIBER_STATE_RESTRICT 8
 
 
 class Hardware : public std::enable_shared_from_this <Hardware> {
@@ -49,10 +49,12 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
             std::vector <double> const & theta_offset,
             std::vector <double> const & theta_min,
             std::vector <double> const & theta_max,
+            std::vector <double> const & theta_pos,
             std::vector <double> const & theta_arm,
             std::vector <double> const & phi_offset,
             std::vector <double> const & phi_min,
             std::vector <double> const & phi_max,
+            std::vector <double> const & phi_pos,
             std::vector <double> const & phi_arm,
             std::vector <double> const & ps_radius,
             std::vector <double> const & ps_theta,
@@ -113,6 +115,12 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
                 double phi_zero, double theta_min, double phi_min,
                 double theta_max, double phi_max) const;
 
+        bool thetaphi_to_xy(
+            fbg::dpair & position,
+            fbg::dpair const & center, double const & theta, double const & phi,
+            double theta_arm, double phi_arm, double theta_zero, double phi_zero,
+            double theta_min, double phi_min, double theta_max, double phi_max) const;
+
         bool position_xy_bad(int32_t loc, fbg::dpair const & xy) const;
 
         bool move_positioner_xy(
@@ -138,6 +146,9 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
         bool collide_thetaphi(
             int32_t loc1, double theta1, double phi1,
             int32_t loc2, double theta2, double phi2) const;
+
+        bool collide_xy_thetaphi(int32_t loc1, fbg::dpair const & xy1,
+                                 int32_t loc2, double theta2, double phi2) const;
 
         std::vector <std::pair <bool, std::pair <fbg::shape, fbg::shape> > >
         loc_position_xy_multi(
@@ -237,12 +248,14 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
         std::map <int32_t, double> loc_theta_offset;
         std::map <int32_t, double> loc_theta_min;
         std::map <int32_t, double> loc_theta_max;
+        std::map <int32_t, double> loc_theta_pos;
         std::map <int32_t, double> loc_theta_arm;
 
         // The phi zero-points and range for each location.
         std::map <int32_t, double> loc_phi_offset;
         std::map <int32_t, double> loc_phi_min;
         std::map <int32_t, double> loc_phi_max;
+        std::map <int32_t, double> loc_phi_pos;
         std::map <int32_t, double> loc_phi_arm;
 
         // The theta arm exclusion polygon for each location, in the default
