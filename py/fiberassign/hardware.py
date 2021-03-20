@@ -197,8 +197,6 @@ def load_hardware(focalplane=None, rundate=None):
                 pp = 180.0
             fake_pos_p[ilid] = pp
             fake_pos_t[ilid] = pt
-            if lid == 62:
-                print("DBG Hardware fake_pos_t = {}, fake_pos_p = {}".format(pt, pp), flush=True)
         hw = Hardware(
             tmstr,
             locations,
