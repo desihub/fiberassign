@@ -1500,16 +1500,19 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, tiles):
             # AR header informations
             for key in hdrkeys:
                 if key == "MJDOBS":
-                    exposures[key][iexp] = hdr["MJD-OBS"]
+                    # AR e.g. 20210104 70766...
+                    if hdr["MJD-OBS"] is not None:
+                        exposures[key][iexp] = hdr["MJD-OBS"]
                 else:
                     exposures[key][iexp] = hdr[key]
             # AR Arizona time of observation
-            time_utc = pytz.utc.localize(
-                Time(hdr["MJD-OBS"], format="mjd").to_datetime()
-            )
-            exposures["ARIZONA_TIMEOBS"][iexp] = time_utc.astimezone(
-                pytz.timezone("US/Arizona")
-            ).strftime("%Y-%m-%dT%H:%M:%S")
+            if exposures["MJDOBS"][iexp] != -99:
+                time_utc = pytz.utc.localize(
+                    Time(hdr["MJD-OBS"], format="mjd").to_datetime()
+                )
+                exposures["ARIZONA_TIMEOBS"][iexp] = time_utc.astimezone(
+                    pytz.timezone("US/Arizona")
+                ).strftime("%Y-%m-%dT%H:%M:%S")
             # AR field, targets
             it = np.where(tiles["TILEID"] == hdr["TILEID"])[0][0]
             exposures["FIELD"][iexp] = tiles["FIELD"][it]
@@ -1539,24 +1542,25 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, tiles):
                 )
             # AR SKY MONITOR measurement
             # AR we keep those in "native" units (DJS email from 02Mar2021)
-            keep = skymon["MJD"] >= exposures["MJDOBS"][iexp]
-            keep &= (
-                skymon["MJD"]
-                <= exposures["MJDOBS"][iexp]
-                + exposures["EXPTIME"][iexp] / 3600.0 / 24.0
-            )
-            keep &= np.isfinite(skymon["SKYCAM0"])
-            keep &= np.isfinite(skymon["SKYCAM1"])
-            keep &= np.isfinite(skymon["AVERAGE"])
-            exposures["SKYMON_NEXP"][iexp] = keep.sum()
-            for quant in ["SKYCAM0", "SKYCAM1", "AVERAGE"]:
-                if keep.sum() > 0:
-                    exposures["SKYMON_{}_MEAN".format(quant)][iexp] = skymon[quant][
-                        keep
-                    ].mean()
-                    exposures["SKYMON_{}_MEAN_ERR".format(quant)][iexp] = skymon[quant][
-                        keep
-                    ].std() / np.sqrt(keep.sum())
+            if exposures["MJDOBS"][iexp] != -99:
+                keep = skymon["MJD"] >= exposures["MJDOBS"][iexp]
+                keep &= (
+                    skymon["MJD"]
+                    <= exposures["MJDOBS"][iexp]
+                    + exposures["EXPTIME"][iexp] / 3600.0 / 24.0
+                )
+                keep &= np.isfinite(skymon["SKYCAM0"])
+                keep &= np.isfinite(skymon["SKYCAM1"])
+                keep &= np.isfinite(skymon["AVERAGE"])
+                exposures["SKYMON_NEXP"][iexp] = keep.sum()
+                for quant in ["SKYCAM0", "SKYCAM1", "AVERAGE"]:
+                    if keep.sum() > 0:
+                        exposures["SKYMON_{}_MEAN".format(quant)][iexp] = skymon[quant][
+                            keep
+                        ].mean()
+                        exposures["SKYMON_{}_MEAN_ERR".format(quant)][iexp] = skymon[quant][
+                            keep
+                        ].std() / np.sqrt(keep.sum())
             # AR GFA information
             # AR    first trying matched_coadd
             # AR    if not present, trying acq
@@ -1651,6 +1655,10 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, tiles):
             ][nightind]
         # AR obsconditions (DARK=1, GRAY=2, BRIGHT=4, else==-1)
         exposures["OBSCONDITIONS"] = get_conditions(midexp_mjds)
+        # AR ephem + obsconditions : setting back to -99 when MJDOBS is missing
+        keep = exposures["MJDOBS"] == -99
+        for key in ["EPHEM_{}".format(key) for key in ephkeys] + ["OBSCONDITIONS"]:
+            exposures[key][keep] = -99
         # AR building/writing fits
         cols = []
         for key, fmt, unit in zip(allkeys, allfmts, allunits):
@@ -1663,7 +1671,7 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, tiles):
 # AR per exposure information
 if args.exposures == "y":
     # AR listing existing nights
-    # AR using daily for all nights
+    # AR using rawdir for all nights
     # AR as it should contain any existing exposures
     nights = np.array(
         [
@@ -1671,11 +1679,7 @@ if args.exposures == "y":
             for fn in np.sort(
                 glob(
                     os.path.join(
-                        os.getenv("DESI_ROOT"),
-                        "spectro",
-                        "redux",
-                        "daily",
-                        "exposures",
+                        rawdir,
                         "202?????",
                     )
                 )
@@ -1683,7 +1687,7 @@ if args.exposures == "y":
             if int(fn.split("/")[-1]) >= firstnight
         ]
     )
-    # nights = [20210101]
+    #nights = [20210104]
     # nights = nights[nights<20201231]
     print(nights)
     # AR update only the ~latest nights?
