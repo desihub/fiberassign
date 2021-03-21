@@ -1832,7 +1832,7 @@ if args.plot == "y":
     # AR  and per-tile efftime_dark
     d = fits.open(outfns["exposures"])[1].data
     # AR remove CRAP...
-    d = d[(d["EXPTIME"] > 100) & (d["OBSCONDITIONS"] != -1)]
+    d = d[(d["EXPTIME"] > 100) & (d["OBSCONDITIONS"] != -1) & (d["MJDOBS"] != -99)]
     nights, ii = np.unique(d["NIGHT"], return_index=True)
     mjds = 0.5 + d["EPHEM_NOON"][ii]
     #
@@ -2054,6 +2054,7 @@ if args.plot == "y":
     ]
     for month in months:
         d = fits.open(outfns["exposures"])[1].data
+        d = d[d["MJDOBS"] != -99]
         keep = np.array(["{}".format(night // 100) for night in d["NIGHT"]]) == month
         if keep.sum() > 0:
             d = d[keep]
@@ -2129,7 +2130,7 @@ if args.plot == "y":
     # targetss = ["BGS+MWS", "QSO+LRG", "ELG", "QSO+ELG"]
     # cols = ["g", "r", "b", "c"]
     d = fits.open(outfns["exposures"])[1].data
-    d = d[(d["EXPTIME"] > 100) & (d["OBSCONDITIONS"] != -1) & (d["EFFTIME_DARK"] > 0)]
+    d = d[(d["EXPTIME"] > 100) & (d["OBSCONDITIONS"] != -1) & (d["EFFTIME_DARK"] > 0) & (d["MJDOBS"] != -99)]
     title = "SV1 observations from {} to {}\n({} exposures with EXPTIME>100 and OBSCONDITIONS!=-1 and EFFTIME_DARK>0)".format(
         d["NIGHT"].min(), d["NIGHT"].max(), len(d),
     )
