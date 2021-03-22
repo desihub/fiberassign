@@ -1,4 +1,4 @@
-#!/global/common/software/desi/cori/desiconda/20200801-1.4.0-spec/conda/bin/python
+#!/usr/bin/env python
 
 import os
 import sys
