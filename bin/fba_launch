@@ -1199,9 +1199,9 @@ def main():
                 magmin, color = "-", "k"
                 keep = (np.isfinite(mag)) & (mag > 0)
                 if keep.sum() > 0:
-                    magmin = "{:.1f}".format(mag[keep])
+                    magmin = mag[keep].min()
                     if magmin < magthresh:
-                        color = "r"
+                        magmin, color = "{:.1f}".format(magmin), "r"
                 ax.text(
                     0.05,
                     y,
