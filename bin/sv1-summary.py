@@ -197,7 +197,7 @@ if os.path.isdir(os.path.join(args.outdir, "sv1-plots")) == False:
     os.mkdir(os.path.join(args.outdir, "sv1-plots"))
 outfns["skymap"] = os.path.join(args.outdir, "sv1-plots", "sv1-skymap.png")
 outfns["onsky"] = os.path.join(args.outdir, "sv1-plots", "sv1-onsky.png")
-for flavshort in ["QSO+LRG", "ELG", "BGS+MWS", "QSO+ELG", "SSV"]:
+for flavshort in ["QSO+LRG", "ELG", "BGS+MWS", "QSO+ELG", "SSV", "SCND"]:
     fsh = flavshort.lower().replace("+", "")
     outfns["efftime-{}".format(fsh)] = os.path.join(
         args.outdir, "sv1-plots", "sv1-efftime-{}.png".format(fsh)
@@ -1914,7 +1914,7 @@ if args.plot == "y":
     #
     # AR per tile
     #
-    for targets in ["QSO+LRG", "ELG", "QSO+ELG", "BGS+MWS"]:
+    for targets in ["QSO+LRG", "ELG", "QSO+ELG", "BGS+MWS", "SSV", "SCND"]:
         if targets == "BGS+MWS":
             effkey = "EFFTIME_BRIGHT"
             expnom = 150
@@ -2317,7 +2317,7 @@ if args.html == "y":
     )
     for png in [outfns["depth"]["cumul"]] + [
         outfns["efftime-{}".format(fsh)]
-        for fsh in ["qsolrg", "qsoelg", "elg", "bgsmws"]
+        for fsh in ["qsolrg", "qsoelg", "elg", "bgsmws", "ssv", "scnd"]
     ]:
         tmppng = png.replace(args.outdir, "../")
         htmlmain.write("<tr>\n")
