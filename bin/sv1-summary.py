@@ -109,6 +109,7 @@ if args.outdir[-1] != "/":
 
 # AR folders / files
 rawdir = os.path.join(os.getenv("DESI_ROOT"), "spectro", "data")
+lostdir = os.path.join(os.getenv("DESI_ROOT"), "spectro", "staging", "lost+found")
 surveydir = os.path.join(os.getenv("DESI_ROOT"), "survey")
 nightoutdir = os.path.join(args.outdir, "sv1-nights")
 if not os.path.isdir(nightoutdir):
@@ -195,8 +196,10 @@ outfns["exposures"] = os.path.join(args.outdir, "sv1-exposures.fits")
 if os.path.isdir(os.path.join(args.outdir, "sv1-plots")) == False:
     os.mkdir(os.path.join(args.outdir, "sv1-plots"))
 outfns["skymap"] = os.path.join(args.outdir, "sv1-plots", "sv1-skymap.png")
-outfns["onsky"] = os.path.join(args.outdir, "sv1-plots", "sv1-onsky.png")
-for flavshort in ["QSO+LRG", "ELG", "BGS+MWS", "QSO+ELG", "SSV"]:
+outfns["onsky"] = {}
+outfns["onsky"]["exptime"] = os.path.join(args.outdir, "sv1-plots", "sv1-onsky-exptime.png")
+outfns["onsky"]["efftime_dark"] = os.path.join(args.outdir, "sv1-plots", "sv1-onsky-efftime_dark.png")
+for flavshort in ["QSO+LRG", "ELG", "BGS+MWS", "QSO+ELG", "SSV", "SCND"]:
     fsh = flavshort.lower().replace("+", "")
     outfns["efftime-{}".format(fsh)] = os.path.join(
         args.outdir, "sv1-plots", "sv1-efftime-{}.png".format(fsh)
@@ -898,10 +901,10 @@ def write_html_tiledesign(html, tiles, ii, nexps, style, h2title, main=True):
             )
         ]
         tmparr += [
-            "<a href='{}' target='external'> {:06}.log".format(
+            "<a href='{}' target='external'> fiberassign-{:06}.log".format(
                 os.path.join(
                     "/".join(fafits.split("/")[:-1]),
-                    "{:06}.log".format(tiles["TILEID"][i]),
+                    "fiberassign-{:06}.log".format(tiles["TILEID"][i]),
                 ),
                 tiles["TILEID"][i],
             )
@@ -947,23 +950,25 @@ def write_html_perexp(html, d, style, h2title):
         )
     )
     html.write(
-        "<p style='{}'>EFFTIME_DARK, EFFTIME_BRIGHT: see https://desi.lbl.gov/trac/wiki/SurveyOps/SurveySpeed.</p>".format(
+        "<p style='{}'>AIRMASS, MOON_SEP_DEG, TRANSPARENCY, FWHM_ASEC, FIBER_FRACFLUX: from GFA.</p>".format(
+            style
+        )
+    )
+    html.write(
+        "<p style='{}'>SPECTRO_SKY: spectroscopic sky, corrected for throughput, convolved with DECam r-band filter.</p>".format(
+            style
+        )
+    )
+    html.write(
+        "<p style='{}'>EFFTIME_DARK, SPEED_DARK: see https://desi.lbl.gov/trac/wiki/SurveyOps/SurveySpeed.</p>".format(
             style
         )
     )
     # ADM write out a list of the target categories.
-    keys = [
-        "AIRMASS",
-        "MOON_SEP_DEG",
-        "TRANSPARENCY",
-        "FWHM_ASEC",
-        "SKY_MAG_AB",
-        "FIBER_FRACFLUX",
-    ]
     fields = (
-        ["TILEID", "TARGETS", "NIGHT", "EXPID", "NIGHTWATCH", "EXPTIME", "EBV"]
-        + keys
-        + ["EFFTIME_DARK", "EFFTIME_BRIGHT"]
+        ["TILEID", "TARGETS", "NIGHT", "EXPID", "NIGHTWATCH", "EXPTIME", "EFFTIME_DARK", "SPEED_DARK"]
+        + ["EBV", "GFA_AIRMASS", "GFA_MOON_SEP_DEG", "GFA_TRANSPARENCY", "GFA_FWHM_ASEC", "GFA_FIBER_FRACFLUX"]
+        + ["SPECTRO_SKY"]
     )
     html.write("<table>\n")
     night = ""
@@ -971,68 +976,77 @@ def write_html_perexp(html, d, style, h2title):
         night_prev = night
         night = d["NIGHT"][i]
         specprod = d["SPECPROD"][i]
+        # AR night header
         if night != night_prev:
             html.write("<tr>\n")
-            html.write(" ".join(["<th> {} </th>".format(x) for x in fields]) + "\n")
+            html.write(" ".join(["<th> {} </th>".format(x.replace("GFA_", "")) for x in fields]) + "\n")
             html.write("</tr>\n")
         html.write("<tr>")
-        tmparr = [
-            "<a href='{}' target='external'> {}".format(
-                os.path.join(
+        # AR redux path
+        redux_path = os.path.join(
                     "https://data.desi.lbl.gov/desi",
                     "spectro",
                     "redux",
                     specprod,
-                    "tiles",
-                    "{}".format(d["TILEID"][i]),
-                ),
-                d["TILEID"][i],
-            )
-        ]
-        tmparr += ["{}".format(d["TARGETS"][i])]
-        tmparr += [
-            "<a href='{}' target='external'> {}".format(
-                os.path.join(
-                    "https://data.desi.lbl.gov/desi",
-                    "spectro",
-                    "redux",
-                    specprod,
-                    "exposures",
-                    "{}".format(d["NIGHT"][i]),
-                ),
-                d["NIGHT"][i],
-            )
-        ]
-        tmparr += [
-            "<a href='{}' target='external'> {}".format(
-                os.path.join(
-                    "https://data.desi.lbl.gov/desi",
-                    "spectro",
-                    "redux",
-                    specprod,
-                    "exposures",
-                    "{}".format(d["NIGHT"][i]),
-                    "{:08}".format(d["EXPID"][i]),
-                ),
-                d["EXPID"][i],
-            )
-        ]
-        tmparr += [
-            "<a href='{}' target='external'> {}".format(
-                os.path.join(
-                    "https://nightwatch.desi.lbl.gov/" "{}".format(d["NIGHT"][i]),
-                    "{:08}".format(d["EXPID"][i]),
-                    "qa-summary-{:08}.html".format(d["EXPID"][i]),
-                ),
-                "Nightwatch",
-            )
-        ]
-        tmparr += ["{:.0f}".format(d["EXPTIME"][i])]
-        tmparr += ["{:.2f}".format(d["EBV"][i])]
-        tmparr += ["{:.2f}".format(d["GFA_" + key][i]) for key in keys]
-        # tmparr += ["{:.0f}s".format(d[band + "_DEPTH"][i]) for band in ["B", "R", "Z"]]
-        tmparr += ["{:.0f}s".format(d["R_DEPTH"][i])]
-        tmparr += ["{:.0f}s".format(d["R_DEPTH_EBVAIR"][i])]
+        )
+        # AR building array
+        tmparr = []
+        for field in fields:
+            if field == "TILEID":
+                tmparr += [
+                    "<a href='{}' target='external'> {}".format(
+                    os.path.join(
+                        redux_path,
+                        "tiles",
+                        "{}".format(d["TILEID"][i]),
+                    ),
+                    d["TILEID"][i],
+                    )
+                ]
+            elif field == "NIGHT":
+                tmparr += [
+                    "<a href='{}' target='external'> {}".format(
+                        os.path.join(
+                            redux_path,
+                            "exposures",
+                            "{}".format(d["NIGHT"][i]),
+                        ),
+                        d["NIGHT"][i],
+                    )
+                ]
+            elif field == "EXPID":
+                tmparr += [
+                    "<a href='{}' target='external'> {}".format(
+                        os.path.join(
+                            redux_path,
+                            "exposures",
+                            "{}".format(d["NIGHT"][i]),
+                            "{:08}".format(d["EXPID"][i]),
+                        ),
+                        d["EXPID"][i],
+                    )
+                ]
+            elif field == "NIGHTWATCH":
+                tmparr += [
+                    "<a href='{}' target='external'> {}".format(
+                        os.path.join(
+                            "https://nightwatch.desi.lbl.gov/" "{}".format(d["NIGHT"][i]),
+                            "{:08}".format(d["EXPID"][i]),
+                            "qa-summary-{:08}.html".format(d["EXPID"][i]),
+                        ),
+                        "Nightwatch",
+                    )
+                ]
+            elif field == "SPECTRO_SKY":
+                tmparr += ["{:.1f}".format(22.5-2.5*np.log10(d["SPECMODEL_SKY_RFLUX"][i]))]
+            elif field in ["TARGETS"]:
+                tmparr += ["{}".format(d[field][i])]
+            elif field in ["SPEED_DARK"]:
+                tmparr += ["{:.1f}".format(d[field][i])]
+            elif field in ["EBV", "GFA_AIRMASS", "GFA_TRANSPARENCY", "GFA_FWHM_ASEC", "GFA_FIBER_FRACFLUX"]:
+                tmparr += ["{:.2f}".format(d[field][i])]
+            else:
+                tmparr += ["{:.0f}".format(d[field][i])]
         html.write(" ".join(["<td> {} </td>".format(x) for x in tmparr]) + "\n")
         html.write("</tr>\n")
     html.write("</table>\n")
@@ -1161,11 +1175,14 @@ def get_night_outfn(nightoutdir, night):
 # AR listing the expids for that night
 # AR Feb. 05, 2021 : changing the exposure listing approach
 # AR                 hopefully more reliable...
-def get_night_expids(night, rawdir, tiles):
+def get_night_expids(night, rawdir, lostdir, tiles):
     nightrawdir = "{}/{}/".format(rawdir, night)
+    nightlostdir = "{}/{}/".format(lostdir, night)
     # AR planned
+    rawfns = glob(os.path.join(nightrawdir, "????????", "fiberassign-??????.fits*"))
+    lostfns = glob(os.path.join(nightlostdir, "????????", "fiberassign-??????.fits*"))
     fns = np.sort(
-        glob(os.path.join(nightrawdir, "????????", "fiberassign-??????.fits*"))
+        rawfns + lostfns
     )
     plan_expids = np.array([fn.split("/")[-2] for fn in fns])
     plan_tileids = np.array(
@@ -1180,7 +1197,9 @@ def get_night_expids(night, rawdir, tiles):
     keep = np.in1d(plan_tileids.astype(int), tiles["TILEID"])
     plan_expids, plan_tileids = plan_expids[keep], plan_tileids[keep]
     # AR observed
-    fns = np.sort(glob(os.path.join(nightrawdir, "????????", "desi-????????.fits.fz")))
+    rawfns = glob(os.path.join(nightrawdir, "????????", "desi-????????.fits.fz"))
+    lostfns = glob(os.path.join(nightlostdir, "????????", "desi-????????.fits.fz"))
+    fns = np.sort(rawfns + lostfns)
     obs_expids = np.array([fn.split("/")[-2] for fn in fns])
     # AR keeping planned + observed
     keep = np.in1d(plan_expids, obs_expids)
@@ -1196,7 +1215,7 @@ def get_night_expids(night, rawdir, tiles):
 
 # AR processing exposures from a given night
 # AR per-exposure information (various from header, skymon, gfas + depths)
-def process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, tiles):
+def process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, lostdir, tiles):
     # AR output file name (removing if already existing)
     outfn = get_night_outfn(nightoutdir, night)
     if os.path.isfile(outfn):
@@ -1208,7 +1227,7 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, tiles):
     else:
         specprod = "daily"
     # AR listing the expids for that night
-    expids = get_night_expids(night, rawdir, tiles)
+    expids = get_night_expids(night, rawdir, lostdir, tiles)
     nexp = len(expids)
     print("processing night={} ({} exposures)".format(night, nexp))
     if nexp > 0:
@@ -1380,6 +1399,22 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, tiles):
                 exposures[key] = expids.copy()
             elif key == "SPECPROD":
                 exposures[key] = np.array([specprod for i in range(nexp)])
+            # AR setting depth/efftime/speed to zero by default
+            elif key in [
+                "B_DEPTH",
+                "R_DEPTH",
+                "Z_DEPTH",
+                "B_DEPTH_EBVAIR",
+                "R_DEPTH_EBVAIR",
+                "Z_DEPTH_EBVAIR",
+                "EFFTIME_DARK",
+                "EFFTIME_BRIGHT",
+                "EFFTIME_BACKUP",
+                "SPEED_DARK",
+                "SPEED_BRIGHT",
+                "SPEED_BACKUP",
+                ]:
+                exposures[key] = np.zeros(nexp, dtype=float)
             elif fmt[-1] == "A":
                 exposures[key] = np.array(
                     ["-" for i in range(nexp)], dtype="S{}".format(fmt[:-1])
@@ -1468,20 +1503,31 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, tiles):
                 "{:08d}".format(expid),
                 "desi-{:08d}.fits.fz".format(expid),
             )
+            # AR looking for lost+found if no raw
+            if not os.path.isfile(fn):
+                fn = os.path.join(
+                    lostdir,
+                    "{}".format(night),
+                    "{:08d}".format(expid),
+                    "desi-{:08d}.fits.fz".format(expid),
+                )
             hdr = fits.getheader(fn, 1)
             # AR header informations
             for key in hdrkeys:
                 if key == "MJDOBS":
-                    exposures[key][iexp] = hdr["MJD-OBS"]
+                    # AR e.g. 20210104 70766...
+                    if hdr["MJD-OBS"] is not None:
+                        exposures[key][iexp] = hdr["MJD-OBS"]
                 else:
                     exposures[key][iexp] = hdr[key]
             # AR Arizona time of observation
-            time_utc = pytz.utc.localize(
-                Time(hdr["MJD-OBS"], format="mjd").to_datetime()
-            )
-            exposures["ARIZONA_TIMEOBS"][iexp] = time_utc.astimezone(
-                pytz.timezone("US/Arizona")
-            ).strftime("%Y-%m-%dT%H:%M:%S")
+            if exposures["MJDOBS"][iexp] != -99:
+                time_utc = pytz.utc.localize(
+                    Time(hdr["MJD-OBS"], format="mjd").to_datetime()
+                )
+                exposures["ARIZONA_TIMEOBS"][iexp] = time_utc.astimezone(
+                    pytz.timezone("US/Arizona")
+                ).strftime("%Y-%m-%dT%H:%M:%S")
             # AR field, targets
             it = np.where(tiles["TILEID"] == hdr["TILEID"])[0][0]
             exposures["FIELD"][iexp] = tiles["FIELD"][it]
@@ -1511,24 +1557,25 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, tiles):
                 )
             # AR SKY MONITOR measurement
             # AR we keep those in "native" units (DJS email from 02Mar2021)
-            keep = skymon["MJD"] >= exposures["MJDOBS"][iexp]
-            keep &= (
-                skymon["MJD"]
-                <= exposures["MJDOBS"][iexp]
-                + exposures["EXPTIME"][iexp] / 3600.0 / 24.0
-            )
-            keep &= np.isfinite(skymon["SKYCAM0"])
-            keep &= np.isfinite(skymon["SKYCAM1"])
-            keep &= np.isfinite(skymon["AVERAGE"])
-            exposures["SKYMON_NEXP"][iexp] = keep.sum()
-            for quant in ["SKYCAM0", "SKYCAM1", "AVERAGE"]:
-                if keep.sum() > 0:
-                    exposures["SKYMON_{}_MEAN".format(quant)][iexp] = skymon[quant][
-                        keep
-                    ].mean()
-                    exposures["SKYMON_{}_MEAN_ERR".format(quant)][iexp] = skymon[quant][
-                        keep
-                    ].std() / np.sqrt(keep.sum())
+            if exposures["MJDOBS"][iexp] != -99:
+                keep = skymon["MJD"] >= exposures["MJDOBS"][iexp]
+                keep &= (
+                    skymon["MJD"]
+                    <= exposures["MJDOBS"][iexp]
+                    + exposures["EXPTIME"][iexp] / 3600.0 / 24.0
+                )
+                keep &= np.isfinite(skymon["SKYCAM0"])
+                keep &= np.isfinite(skymon["SKYCAM1"])
+                keep &= np.isfinite(skymon["AVERAGE"])
+                exposures["SKYMON_NEXP"][iexp] = keep.sum()
+                for quant in ["SKYCAM0", "SKYCAM1", "AVERAGE"]:
+                    if keep.sum() > 0:
+                        exposures["SKYMON_{}_MEAN".format(quant)][iexp] = skymon[quant][
+                            keep
+                        ].mean()
+                        exposures["SKYMON_{}_MEAN_ERR".format(quant)][iexp] = skymon[quant][
+                            keep
+                        ].std() / np.sqrt(keep.sum())
             # AR GFA information
             # AR    first trying matched_coadd
             # AR    if not present, trying acq
@@ -1584,35 +1631,35 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, tiles):
                         exposures["{}_DEPTH_EBVAIR".format(camera)][iexp] = (
                             depths_i[camera.lower()] * fact_ebv * fact_air
                         )
-                # AR/DJS effective exposure times
-                (
-                    efftime_dark,
-                    efftime_bright,
-                    efftime_backup,
-                    speed_dark,
-                    speed_bright,
-                    speed_backup,
-                ) = get_efftime_speed(
-                    exposures["EXPTIME"][iexp],
-                    # exposures["SKYMON_AVERAGE_MEAN"][iexp],
-                    exposures["SPECMODEL_SKY_RFLUX"][iexp],
-                    exposures["EBV"][iexp],
-                    exposures["GFA_TRANSPARENCY"][iexp],
-                    exposures["GFA_AIRMASS"][iexp],
-                    exposures["GFA_FIBER_FRACFLUX"][iexp],
-                    exposures["GFA_FIBER_FRACFLUX_ELG"][iexp],
-                    exposures["GFA_FIBER_FRACFLUX_BGS"][iexp],
-                    exposures["GFA_FRACFLUX_NOMINAL_POINTSOURCE"][iexp],
-                    exposures["GFA_FRACFLUX_NOMINAL_ELG"][iexp],
-                    exposures["GFA_FRACFLUX_NOMINAL_BGS"][iexp],
-                    exposures["GFA_KTERM"][iexp],
-                )
-                exposures["EFFTIME_DARK"][iexp] = efftime_dark
-                exposures["EFFTIME_BRIGHT"][iexp] = efftime_bright
-                exposures["EFFTIME_BACKUP"][iexp] = efftime_backup
-                exposures["SPEED_DARK"][iexp] = speed_dark
-                exposures["SPEED_BRIGHT"][iexp] = speed_bright
-                exposures["SPEED_BACKUP"][iexp] = speed_backup
+                    # AR/DJS effective exposure times
+                    (
+                        efftime_dark,
+                        efftime_bright,
+                        efftime_backup,
+                        speed_dark,
+                        speed_bright,
+                        speed_backup,
+                    ) = get_efftime_speed(
+                        exposures["EXPTIME"][iexp],
+                        # exposures["SKYMON_AVERAGE_MEAN"][iexp],
+                        exposures["SPECMODEL_SKY_RFLUX"][iexp],
+                        exposures["EBV"][iexp],
+                        exposures["GFA_TRANSPARENCY"][iexp],
+                        exposures["GFA_AIRMASS"][iexp],
+                        exposures["GFA_FIBER_FRACFLUX"][iexp],
+                        exposures["GFA_FIBER_FRACFLUX_ELG"][iexp],
+                        exposures["GFA_FIBER_FRACFLUX_BGS"][iexp],
+                        exposures["GFA_FRACFLUX_NOMINAL_POINTSOURCE"][iexp],
+                        exposures["GFA_FRACFLUX_NOMINAL_ELG"][iexp],
+                        exposures["GFA_FRACFLUX_NOMINAL_BGS"][iexp],
+                        exposures["GFA_KTERM"][iexp],
+                    )
+                    exposures["EFFTIME_DARK"][iexp] = efftime_dark
+                    exposures["EFFTIME_BRIGHT"][iexp] = efftime_bright
+                    exposures["EFFTIME_BACKUP"][iexp] = efftime_backup
+                    exposures["SPEED_DARK"][iexp] = speed_dark
+                    exposures["SPEED_BRIGHT"][iexp] = speed_bright
+                    exposures["SPEED_BACKUP"][iexp] = speed_backup
         # AR mjd at the middle of the exposures
         midexp_mjds = exposures["MJDOBS"] + exposures["EXPTIME"] / 2.0 / 3600.0 / 24.0
         # AR ephem 1d-quantities
@@ -1623,6 +1670,10 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, tiles):
             ][nightind]
         # AR obsconditions (DARK=1, GRAY=2, BRIGHT=4, else==-1)
         exposures["OBSCONDITIONS"] = get_conditions(midexp_mjds)
+        # AR ephem + obsconditions : setting back to -99 when MJDOBS is missing
+        keep = exposures["MJDOBS"] == -99
+        for key in ["EPHEM_{}".format(key) for key in ephkeys] + ["OBSCONDITIONS"]:
+            exposures[key][keep] = -99
         # AR building/writing fits
         cols = []
         for key, fmt, unit in zip(allkeys, allfmts, allunits):
@@ -1635,27 +1686,30 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, tiles):
 # AR per exposure information
 if args.exposures == "y":
     # AR listing existing nights
-    # AR using daily for all nights
+    # AR using rawdir and lost+found for all nights
     # AR as it should contain any existing exposures
-    nights = np.array(
-        [
-            int(fn.split("/")[-1])
-            for fn in np.sort(
-                glob(
+    rawfns = glob(
                     os.path.join(
-                        os.getenv("DESI_ROOT"),
-                        "spectro",
-                        "redux",
-                        "daily",
-                        "exposures",
+                        rawdir,
                         "202?????",
                     )
                 )
-            )
+    lostfns = glob(
+                    os.path.join(
+                        lostdir,
+                        "202?????",
+                    )
+                )
+    nights = np.unique(
+        [
+            int(fn.split("/")[-1])
+            for fn in np.sort(
+                rawfns + lostfns
+                    )
             if int(fn.split("/")[-1]) >= firstnight
         ]
     )
-    # nights = [20210101]
+    #nights = [20210104]
     # nights = nights[nights<20201231]
     print(nights)
     # AR update only the ~latest nights?
@@ -1674,7 +1728,7 @@ if args.exposures == "y":
     # AR processing nights
     # AR wrapper on process_night() given an night
     def _process_night(night):
-        nightnexp = process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, tiles)
+        nightnexp = process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, lostdir, tiles)
         return nightnexp
 
     # AR parallel processing?
@@ -1800,7 +1854,7 @@ if args.plot == "y":
     # AR  and per-tile efftime_dark
     d = fits.open(outfns["exposures"])[1].data
     # AR remove CRAP...
-    d = d[(d["EXPTIME"] > 100) & (d["OBSCONDITIONS"] != -1)]
+    d = d[(d["EXPTIME"] > 100) & (d["OBSCONDITIONS"] != -1) & (d["MJDOBS"] != -99)]
     nights, ii = np.unique(d["NIGHT"], return_index=True)
     mjds = 0.5 + d["EPHEM_NOON"][ii]
     #
@@ -1811,57 +1865,56 @@ if args.plot == "y":
     # AR per night
     #
     # AR getting stats
-    exptimes = np.zeros((len(nights), 4))
-    depths = np.zeros((len(nights), 4))
-    for i in range(len(nights)):
-        for j in range(3):
-            keep = (d["NIGHT"] == nights[i]) & (d["OBSCONDITIONS"] == vals[j])
-            exptimes[i, j] = d["EXPTIME"][keep].sum() / 3600.0
-            depths[i, j] = d["R_DEPTH_EBVAIR"][keep].sum() / 3600.0
-    # AR
-    fig, ax = plt.subplots(figsize=(20, 5))
-    for i in range(len(nights)):
-        start = 0
-        if i == 0:
-            labels = [
-                "{}={:.0f} hrs".format(names[j], exptimes[:, j].sum()) for j in range(3)
-            ]
-        else:
-            labels = [None, None, None]
-        for j in range(3):
-            tmpx = mjds[i] + np.array([-0.25, 0.25, 0.25, -0.25])
-            tmpy = start + np.array([0, 0, exptimes[i, j], exptimes[i, j]])
-            ax.fill(tmpx, tmpy, fill=True, color=cols[j], alpha=0.5, label=labels[j])
-            start += exptimes[i, j]
-            if j == 0:
-                ax.text(
-                    mjds[i],
-                    0,
-                    "{}".format(nights[i]),
-                    rotation=45,
-                    ha="right",
-                    va="top",
-                )
-    # AR
-    ax.grid(True)
-    ax.set_axisbelow(True)
-    ax.set_title(
-        "SV1 on-sky EXPTIME from {} to {} ({} exposures with EXPTIME>100 and OBSCONDITIONS!=-1)".format(
-            d["NIGHT"].min(), d["NIGHT"].max(), len(d),
+    for xquant in ["exptime", "efftime_dark"]:
+        xs = np.zeros((len(nights), 4))
+        for i in range(len(nights)):
+            for j in range(3):
+                keep = (d["NIGHT"] == nights[i]) & (d["OBSCONDITIONS"] == vals[j])
+                xs[i, j] = d[xquant.upper()][keep].sum() / 3600.0
+        # AR
+        fig, ax = plt.subplots(figsize=(20, 5))
+        for i in range(len(nights)):
+            start = 0
+            if i == 0:
+                labels = [
+                    "{}={:.0f} hrs".format(names[j], xs[:, j].sum()) for j in range(3)
+                ]
+            else:
+                labels = [None, None, None]
+            for j in range(3):
+                tmpx = mjds[i] + np.array([-0.25, 0.25, 0.25, -0.25])
+                tmpy = start + np.array([0, 0, xs[i, j], xs[i, j]])
+                ax.fill(tmpx, tmpy, fill=True, color=cols[j], alpha=0.5, label=labels[j])
+                start += xs[i, j]
+                if j == 0:
+                    ax.text(
+                        mjds[i],
+                        0,
+                        "{}".format(nights[i]),
+                        rotation=45,
+                        ha="right",
+                        va="top",
+                    )
+        # AR
+        ax.grid(True)
+        ax.set_axisbelow(True)
+        ax.set_title(
+            "SV1 on-sky {} from {} to {} ({} exposures with EXPTIME>100 and OBSCONDITIONS!=-1)".format(
+                xquant.upper(), d["NIGHT"].min(), d["NIGHT"].max(), len(d),
+            )
         )
-    )
-    ax.set_xlabel("MJD-OBS")
-    ax.set_ylabel("EXPTIME per NIGHT [hours]")
-    ax.set_ylim(-2, 10)
-    ax.xaxis.set_major_locator(MultipleLocator(5))
-    ax.yaxis.set_major_locator(MultipleLocator(1))
-    ax.legend(loc=2)
-    plt.savefig(outfns["onsky"], bbox_inches="tight")
-    plt.close()
+        ax.set_xlabel("MJD-OBS")
+        ax.set_ylabel("{} per NIGHT [hours]".format(xquant.upper()))
+        ax.set_ylim(-2, 10)
+        ax.xaxis.set_major_locator(MultipleLocator(5))
+        ax.yaxis.set_major_locator(MultipleLocator(1))
+        ax.legend(loc=2)
+        plt.savefig(outfns["onsky"][xquant], bbox_inches="tight")
+        plt.close()
     #
     # AR per tile
     #
-    for targets in ["QSO+LRG", "ELG", "QSO+ELG", "BGS+MWS"]:
+    for targets in ["QSO+LRG", "ELG", "QSO+ELG", "BGS+MWS", "SSV", "SCND"]:
         if targets == "BGS+MWS":
             effkey = "EFFTIME_BRIGHT"
             expnom = 150
@@ -2022,6 +2075,7 @@ if args.plot == "y":
     ]
     for month in months:
         d = fits.open(outfns["exposures"])[1].data
+        d = d[d["MJDOBS"] != -99]
         keep = np.array(["{}".format(night // 100) for night in d["NIGHT"]]) == month
         if keep.sum() > 0:
             d = d[keep]
@@ -2097,7 +2151,7 @@ if args.plot == "y":
     # targetss = ["BGS+MWS", "QSO+LRG", "ELG", "QSO+ELG"]
     # cols = ["g", "r", "b", "c"]
     d = fits.open(outfns["exposures"])[1].data
-    d = d[(d["EXPTIME"] > 100) & (d["OBSCONDITIONS"] != -1) & (d["EFFTIME_DARK"] > 0)]
+    d = d[(d["EXPTIME"] > 100) & (d["OBSCONDITIONS"] != -1) & (d["EFFTIME_DARK"] > 0) & (d["MJDOBS"] != -99)]
     title = "SV1 observations from {} to {}\n({} exposures with EXPTIME>100 and OBSCONDITIONS!=-1 and EFFTIME_DARK>0)".format(
         d["NIGHT"].min(), d["NIGHT"].max(), len(d),
     )
@@ -2186,8 +2240,8 @@ if args.html == "y":
     htmlmain.write("\t<ul>\n")
     htmlmain.write("\t\t<li><a href='#fitsfiles' >Fits files</a></li>\n")
     htmlmain.write("\t\t<li><a href='#skymap' >Tiles sky map</a></li>\n")
-    htmlmain.write("\t\t<li><a href='#onsky' >Per-night on-sky EXPTIME</a></li>\n")
-    htmlmain.write("\t\t<li><a href='#depth' >Tiles: exptime and depth</a></li>\n")
+    htmlmain.write("\t\t<li><a href='#pernight' >Per-night EXPTIME and EFFTIME_DARK</a></li>\n")
+    htmlmain.write("\t\t<li><a href='#pertile' >Per-tile: cumulated and per-tile EFFTIME_DARK</a></li>\n")
     htmlmain.write(
         "\t\t<li><a href='#tile-nexp-design' >Tiles: NEXP and design</a></li>\n"
     )
@@ -2241,29 +2295,30 @@ if args.html == "y":
     htmlmain.write("</tr>\n")
     htmlmain.write("\n")
 
-    # AR Per-night on-sky EXPTIME
-    htmlmain.write("<h2><a id='onsky' href='#onsky' > Per-night on-sky EXPTIME </a>\n")
+    # AR Per-night EXPTIME
+    htmlmain.write("<h2><a id='pernight' href='#pernight' > Per-night EXPTIME and EFFTIME</a>\n")
     htmlmain.write(
         "<a href='#top' style='position: absolute; right: 0;'>Top of the page</a></h2>\n"
     )
-    tmppng = outfns["onsky"].replace(args.outdir, "../")
-    htmlmain.write("<tr>\n")
-    htmlmain.write(
-        "<td align=center><a href='{}'><img SRC='{}' width=80% height=auto></a></td>\n".format(
-            tmppng, tmppng
+    for xquant in ["exptime", "efftime_dark"]:
+        tmppng = outfns["onsky"][xquant].replace(args.outdir, "../")
+        htmlmain.write("<tr>\n")
+        htmlmain.write(
+            "<td align=center><a href='{}'><img SRC='{}' width=80% height=auto></a></td>\n".format(
+                tmppng, tmppng
+            )
         )
-    )
-    htmlmain.write("</tr>\n")
-    htmlmain.write("\n")
+        htmlmain.write("</tr>\n")
+        htmlmain.write("\n")
 
-    # AR Tiles: exptime and depth
-    htmlmain.write("<h2><a id='depth' href='#depth' > Tiles: exptime and depth </a>\n")
+    # AR Per-tile: cumulated and per-tile EFFTIME_DARK
+    htmlmain.write("<h2><a id='pertile' href='#pertile' > Per-tile: cumulated and per-tile EFFTIME_DARK</a>\n")
     htmlmain.write(
         "<a href='#top' style='position: absolute; right: 0;'>Top of the page</a></h2>\n"
     )
     for png in [outfns["depth"]["cumul"]] + [
         outfns["efftime-{}".format(fsh)]
-        for fsh in ["qsolrg", "qsoelg", "elg", "bgsmws"]
+        for fsh in ["qsolrg", "qsoelg", "elg", "bgsmws", "ssv", "scnd"]
     ]:
         tmppng = png.replace(args.outdir, "../")
         htmlmain.write("<tr>\n")

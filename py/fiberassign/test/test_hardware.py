@@ -175,6 +175,122 @@ class TestHardware(unittest.TestCase):
             self.assertTrue(False)
         return
 
+    def test_thetaphi_xy(self):
+        # Test round trip consistency.
+        def check_positioner(hrdw, radius, increments, log_fail=True):
+            centers = hw.loc_pos_curved_mm
+            theta_arms = hw.loc_theta_arm
+            phi_arms = hw.loc_phi_arm
+            theta_mins = hw.loc_theta_min
+            theta_maxs = hw.loc_theta_max
+            theta_offsets = hw.loc_theta_offset
+            phi_mins = hw.loc_phi_min
+            phi_maxs = hw.loc_phi_max
+            phi_offsets = hw.loc_phi_offset
+
+            n_failed = 0
+            for loc in hw.locations:
+                center = centers[loc]
+                theta_arm = theta_arms[loc]
+                phi_arm = phi_arms[loc]
+                theta_min = theta_mins[loc]
+                theta_max = theta_maxs[loc]
+                theta_offset = theta_offsets[loc]
+                phi_min = phi_mins[loc]
+                phi_max = phi_maxs[loc]
+                phi_offset = phi_offsets[loc]
+                ang = np.arange(increments) / (2 * np.pi)
+                test_x = radius * np.cos(ang) + center[0]
+                test_y = radius * np.sin(ang) + center[1]
+                for xy in zip(test_x, test_y):
+                    thetaphi = hrdw.xy_to_thetaphi(
+                        center,
+                        xy,
+                        theta_arm,
+                        phi_arm,
+                        theta_offset,
+                        phi_offset,
+                        theta_min,
+                        phi_min,
+                        theta_max,
+                        phi_max
+                    )
+                    if thetaphi[0] is None or thetaphi[1] is None:
+                        if log_fail:
+                            print(
+                                "loc {} at ({}, {}) cannot reach ({}, {})".format(
+                                    loc, center[0], center[1], xy[0], xy[1]
+                                ), flush=True
+                            )
+                        n_failed += 1
+                        break
+                    else:
+                        if not log_fail:
+                            # log success instead
+                            print(
+                                "loc {} at ({}, {}) to ({}, {}) with ({}, {})".format(
+                                    loc, center[0], center[1],
+                                    xy[0], xy[1],
+                                    thetaphi[0]*180.0/np.pi, thetaphi[1]*180.0/np.pi
+                                ), flush=True
+                            )
+                    result = hrdw.thetaphi_to_xy(
+                        center,
+                        thetaphi[0],
+                        thetaphi[1],
+                        theta_arm,
+                        phi_arm,
+                        theta_offset,
+                        phi_offset,
+                        theta_min,
+                        phi_min,
+                        theta_max,
+                        phi_max
+                    )
+                    if result[0] is None or result[1] is None:
+                        if log_fail:
+                            print(
+                                "loc {} at ({}, {}) invalid angles ({}, {})".format(
+                                    loc, center[0], center[1],
+                                    thetaphi[0]*180.0/np.pi, thetaphi[1]*180.0/np.pi
+                                ), flush=True
+                            )
+                        n_failed += 1
+                        break
+                    else:
+                        if not log_fail:
+                            # log success instead
+                            print(
+                                "loc {} at ({}, {}) angles ({}, {}) to ({}, {})".format(
+                                    loc, center[0], center[1],
+                                    thetaphi[0]*180.0/np.pi, thetaphi[1]*180.0/np.pi,
+                                    result[0], result[1]
+                                ), flush=True
+                            )
+                    if not np.allclose([xy[0], xy[1]], [result[0], result[1]]):
+                        print(
+                            "loc {} at ({}, {}) failed roundtrip ({}, {}) != ({}, {})".format(
+                                loc, center[0], center[1],
+                                xy[0], xy[1], result[0], result[1]
+                            ), flush=True
+                        )
+                        n_failed += 1
+            return n_failed
+
+        # Test nominal focalplane
+        hw = load_hardware(rundate=test_assign_date)
+        failed = check_positioner(hw, 3.0, 100)
+        if (failed > 0):
+            print(
+                "{} positioners failed X/Y roundtrip at 3mm from center".format(
+                    failed
+                ),
+                flush=True
+            )
+            self.assertTrue(False)
+
+        return
+
 def test_suite():
     """Allows testing of only this module with the command::
 

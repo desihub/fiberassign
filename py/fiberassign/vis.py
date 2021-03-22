@@ -23,7 +23,7 @@ from ._internal import Shape
 
 from .utils import Logger, default_mp_proc
 
-from .hardware import load_hardware
+from .hardware import load_hardware, FIBER_STATE_STUCK, FIBER_STATE_BROKEN
 
 from .tiles import load_tiles
 
@@ -207,9 +207,12 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
     theta_offset = hw.loc_theta_offset
     theta_min = hw.loc_theta_min
     theta_max = hw.loc_theta_max
+    theta_pos = hw.loc_theta_pos
     phi_offset = hw.loc_phi_offset
     phi_min = hw.loc_phi_min
     phi_max = hw.loc_phi_max
+    phi_pos = hw.loc_phi_pos
+    state = hw.state
     loc_petal = dict(hw.loc_petal)
     device_type = dict(hw.loc_device_type)
     assigned = np.array(sorted(tile_assigned.keys()), dtype=np.int32)
@@ -270,16 +273,32 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
                     theta_max[lid], phi_max[lid],
                 )
         if not is_assigned:
-            # This fiber is unassigned.  Plot the positioner in its home
-            # position with theta at its minimum value and phi
-            # at 180 degrees.
-            theta = theta_offset[lid] + theta_min[lid]
-            phi = phi_offset[lid] + np.pi
-            failed = hw.loc_position_thetaphi(
-                lid, theta, phi, shptheta, shpphi
-            )
+            # This fiber is unassigned.
+            if (state[lid] & FIBER_STATE_STUCK) or (state[lid] & FIBER_STATE_BROKEN):
+                # The positioner is stuck or fiber broken.  Plot it at its current
+                # location.
+                theta = theta_pos[lid]
+                phi = phi_pos[lid]
+                print("loc {}, state {} is stuck / broken, using {} / {}".format(
+                    lid, state[lid], theta, phi
+                ), flush=True)
+                failed = hw.loc_position_thetaphi(
+                    lid, theta_pos[lid], phi_pos[lid], shptheta, shpphi
+                )
+            else:
+                # Plot the positioner in its home
+                # position with theta at its minimum value and phi
+                # at 180 degrees.
+                theta = theta_offset[lid] + theta_min[lid]
+                phi = phi_offset[lid] + phi_max[lid]
+                if phi > np.pi:
+                    phi = np.pi
+                print("loc {}, state {} is unassigned, using {} / {}".format(
+                    lid, state[lid], theta, phi
+                ), flush=True)
+                failed = hw.loc_position_thetaphi(lid, theta, phi, shptheta, shpphi)
             if failed:
-                msg = "Positioner at location {} cannot move to its home position.  This should never happen!".format(lid)
+                msg = "Positioner at location {} cannot move to its stuck or home position.  This should never happen!".format(lid)
                 log.warning(msg)
         if not failed:
             if real_shapes:
