@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/global/common/software/desi/cori/desiconda/20200801-1.4.0-spec/conda/bin/python
 
 import os
 import sys
@@ -1196,15 +1196,16 @@ def main():
                 [d["GAIA_PHOT_G_MEAN_MAG"], 22.5 - 2.5 * np.log10(d["FIBERFLUX_R"])],
                 ["GAIA_PHOT_G_MEAN_MAG)", "min(LS-R-FIBMAG)"],
             ):
-                magmin = mag[(np.isfinite(mag)) & (mag > 0)].min()
-                if magmin < magthresh:
-                    color = "r"
-                else:
-                    color = "k"
+                magmin, color = "-", "k"
+                keep = (np.isfinite(mag)) & (mag > 0)
+                if keep.sum() > 0:
+                    magmin = "{:.1f}".format(mag[keep])
+                    if magmin < magthresh:
+                        color = "r"
                 ax.text(
                     0.05,
                     y,
-                    "{} = {:.1f}".format(lab, magmin),
+                    "{} = {}".format(lab, magmin),
                     fontsize=fs,
                     color=color,
                     transform=ax.transAxes,
