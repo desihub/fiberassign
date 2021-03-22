@@ -997,7 +997,6 @@ def write_html_perexp(html, d, style, h2title):
                     "<a href='{}' target='external'> {}".format(
                     os.path.join(
                         redux_path,
-                        specprod,
                         "tiles",
                         "{}".format(d["TILEID"][i]),
                     ),
