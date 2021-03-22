@@ -109,6 +109,7 @@ if args.outdir[-1] != "/":
 
 # AR folders / files
 rawdir = os.path.join(os.getenv("DESI_ROOT"), "spectro", "data")
+lostdir = os.path.join(os.getenv("DESI_ROOT"), "spectro", "staging", "lost+found")
 surveydir = os.path.join(os.getenv("DESI_ROOT"), "survey")
 nightoutdir = os.path.join(args.outdir, "sv1-nights")
 if not os.path.isdir(nightoutdir):
@@ -1173,11 +1174,14 @@ def get_night_outfn(nightoutdir, night):
 # AR listing the expids for that night
 # AR Feb. 05, 2021 : changing the exposure listing approach
 # AR                 hopefully more reliable...
-def get_night_expids(night, rawdir, tiles):
+def get_night_expids(night, rawdir, lostdir, tiles):
     nightrawdir = "{}/{}/".format(rawdir, night)
+    nightlostdir = "{}/{}/".format(lostdir, night)
     # AR planned
+    rawfns = glob(os.path.join(nightrawdir, "????????", "fiberassign-??????.fits*"))
+    lostfns = glob(os.path.join(nightlostdir, "????????", "fiberassign-??????.fits*"))
     fns = np.sort(
-        glob(os.path.join(nightrawdir, "????????", "fiberassign-??????.fits*"))
+        rawfns + lostfns
     )
     plan_expids = np.array([fn.split("/")[-2] for fn in fns])
     plan_tileids = np.array(
@@ -1192,7 +1196,9 @@ def get_night_expids(night, rawdir, tiles):
     keep = np.in1d(plan_tileids.astype(int), tiles["TILEID"])
     plan_expids, plan_tileids = plan_expids[keep], plan_tileids[keep]
     # AR observed
-    fns = np.sort(glob(os.path.join(nightrawdir, "????????", "desi-????????.fits.fz")))
+    rawfns = glob(os.path.join(nightrawdir, "????????", "desi-????????.fits.fz"))
+    lostfns = glob(os.path.join(nightlostdir, "????????", "desi-????????.fits.fz"))
+    fns = np.sort(rawfns + lostfns)
     obs_expids = np.array([fn.split("/")[-2] for fn in fns])
     # AR keeping planned + observed
     keep = np.in1d(plan_expids, obs_expids)
@@ -1208,7 +1214,7 @@ def get_night_expids(night, rawdir, tiles):
 
 # AR processing exposures from a given night
 # AR per-exposure information (various from header, skymon, gfas + depths)
-def process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, tiles):
+def process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, lostdir, tiles):
     # AR output file name (removing if already existing)
     outfn = get_night_outfn(nightoutdir, night)
     if os.path.isfile(outfn):
@@ -1220,7 +1226,7 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, tiles):
     else:
         specprod = "daily"
     # AR listing the expids for that night
-    expids = get_night_expids(night, rawdir, tiles)
+    expids = get_night_expids(night, rawdir, lostdir, tiles)
     nexp = len(expids)
     print("processing night={} ({} exposures)".format(night, nexp))
     if nexp > 0:
@@ -1496,6 +1502,14 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, tiles):
                 "{:08d}".format(expid),
                 "desi-{:08d}.fits.fz".format(expid),
             )
+            # AR looking for lost+found if no raw
+            if not os.path.isfile(fn):
+                fn = os.path.join(
+                    lostdir,
+                    "{}".format(night),
+                    "{:08d}".format(expid),
+                    "desi-{:08d}.fits.fz".format(expid),
+                )
             hdr = fits.getheader(fn, 1)
             # AR header informations
             for key in hdrkeys:
@@ -1671,19 +1685,26 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, tiles):
 # AR per exposure information
 if args.exposures == "y":
     # AR listing existing nights
-    # AR using rawdir for all nights
+    # AR using rawdir and lost+found for all nights
     # AR as it should contain any existing exposures
-    nights = np.array(
-        [
-            int(fn.split("/")[-1])
-            for fn in np.sort(
-                glob(
+    rawfns = glob(
                     os.path.join(
                         rawdir,
                         "202?????",
                     )
                 )
-            )
+    lostfns = glob(
+                    os.path.join(
+                        lostdir,
+                        "202?????",
+                    )
+                )
+    nights = np.unique(
+        [
+            int(fn.split("/")[-1])
+            for fn in np.sort(
+                rawfns + lostfns
+                    )
             if int(fn.split("/")[-1]) >= firstnight
         ]
     )
@@ -1706,7 +1727,7 @@ if args.exposures == "y":
     # AR processing nights
     # AR wrapper on process_night() given an night
     def _process_night(night):
-        nightnexp = process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, tiles)
+        nightnexp = process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, lostdir, tiles)
         return nightnexp
 
     # AR parallel processing?
