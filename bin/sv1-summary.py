@@ -196,7 +196,9 @@ outfns["exposures"] = os.path.join(args.outdir, "sv1-exposures.fits")
 if os.path.isdir(os.path.join(args.outdir, "sv1-plots")) == False:
     os.mkdir(os.path.join(args.outdir, "sv1-plots"))
 outfns["skymap"] = os.path.join(args.outdir, "sv1-plots", "sv1-skymap.png")
-outfns["onsky"] = os.path.join(args.outdir, "sv1-plots", "sv1-onsky.png")
+outfns["onsky"] = {}
+outfns["onsky"]["exptime"] = os.path.join(args.outdir, "sv1-plots", "sv1-onsky-exptime.png")
+outfns["onsky"]["efftime_dark"] = os.path.join(args.outdir, "sv1-plots", "sv1-onsky-efftime_dark.png")
 for flavshort in ["QSO+LRG", "ELG", "BGS+MWS", "QSO+ELG", "SSV", "SCND"]:
     fsh = flavshort.lower().replace("+", "")
     outfns["efftime-{}".format(fsh)] = os.path.join(
@@ -1864,53 +1866,52 @@ if args.plot == "y":
     # AR per night
     #
     # AR getting stats
-    exptimes = np.zeros((len(nights), 4))
-    depths = np.zeros((len(nights), 4))
-    for i in range(len(nights)):
-        for j in range(3):
-            keep = (d["NIGHT"] == nights[i]) & (d["OBSCONDITIONS"] == vals[j])
-            exptimes[i, j] = d["EXPTIME"][keep].sum() / 3600.0
-            depths[i, j] = d["R_DEPTH_EBVAIR"][keep].sum() / 3600.0
-    # AR
-    fig, ax = plt.subplots(figsize=(20, 5))
-    for i in range(len(nights)):
-        start = 0
-        if i == 0:
-            labels = [
-                "{}={:.0f} hrs".format(names[j], exptimes[:, j].sum()) for j in range(3)
-            ]
-        else:
-            labels = [None, None, None]
-        for j in range(3):
-            tmpx = mjds[i] + np.array([-0.25, 0.25, 0.25, -0.25])
-            tmpy = start + np.array([0, 0, exptimes[i, j], exptimes[i, j]])
-            ax.fill(tmpx, tmpy, fill=True, color=cols[j], alpha=0.5, label=labels[j])
-            start += exptimes[i, j]
-            if j == 0:
-                ax.text(
-                    mjds[i],
-                    0,
-                    "{}".format(nights[i]),
-                    rotation=45,
-                    ha="right",
-                    va="top",
-                )
-    # AR
-    ax.grid(True)
-    ax.set_axisbelow(True)
-    ax.set_title(
-        "SV1 on-sky EXPTIME from {} to {} ({} exposures with EXPTIME>100 and OBSCONDITIONS!=-1)".format(
-            d["NIGHT"].min(), d["NIGHT"].max(), len(d),
+    for xquant in ["exptime", "efftime_dark"]:
+        xs = np.zeros((len(nights), 4))
+        for i in range(len(nights)):
+            for j in range(3):
+                keep = (d["NIGHT"] == nights[i]) & (d["OBSCONDITIONS"] == vals[j])
+                xs[i, j] = d[xquant.upper()][keep].sum() / 3600.0
+        # AR
+        fig, ax = plt.subplots(figsize=(20, 5))
+        for i in range(len(nights)):
+            start = 0
+            if i == 0:
+                labels = [
+                    "{}={:.0f} hrs".format(names[j], xs[:, j].sum()) for j in range(3)
+                ]
+            else:
+                labels = [None, None, None]
+            for j in range(3):
+                tmpx = mjds[i] + np.array([-0.25, 0.25, 0.25, -0.25])
+                tmpy = start + np.array([0, 0, xs[i, j], xs[i, j]])
+                ax.fill(tmpx, tmpy, fill=True, color=cols[j], alpha=0.5, label=labels[j])
+                start += xs[i, j]
+                if j == 0:
+                    ax.text(
+                        mjds[i],
+                        0,
+                        "{}".format(nights[i]),
+                        rotation=45,
+                        ha="right",
+                        va="top",
+                    )
+        # AR
+        ax.grid(True)
+        ax.set_axisbelow(True)
+        ax.set_title(
+            "SV1 on-sky {} from {} to {} ({} exposures with EXPTIME>100 and OBSCONDITIONS!=-1)".format(
+                xquant.upper(), d["NIGHT"].min(), d["NIGHT"].max(), len(d),
+            )
         )
-    )
-    ax.set_xlabel("MJD-OBS")
-    ax.set_ylabel("EXPTIME per NIGHT [hours]")
-    ax.set_ylim(-2, 10)
-    ax.xaxis.set_major_locator(MultipleLocator(5))
-    ax.yaxis.set_major_locator(MultipleLocator(1))
-    ax.legend(loc=2)
-    plt.savefig(outfns["onsky"], bbox_inches="tight")
-    plt.close()
+        ax.set_xlabel("MJD-OBS")
+        ax.set_ylabel("{} per NIGHT [hours]".format(xquant.upper()))
+        ax.set_ylim(-2, 10)
+        ax.xaxis.set_major_locator(MultipleLocator(5))
+        ax.yaxis.set_major_locator(MultipleLocator(1))
+        ax.legend(loc=2)
+        plt.savefig(outfns["onsky"][xquant], bbox_inches="tight")
+        plt.close()
     #
     # AR per tile
     #
@@ -2240,8 +2241,8 @@ if args.html == "y":
     htmlmain.write("\t<ul>\n")
     htmlmain.write("\t\t<li><a href='#fitsfiles' >Fits files</a></li>\n")
     htmlmain.write("\t\t<li><a href='#skymap' >Tiles sky map</a></li>\n")
-    htmlmain.write("\t\t<li><a href='#onsky' >Per-night on-sky EXPTIME</a></li>\n")
-    htmlmain.write("\t\t<li><a href='#depth' >Tiles: exptime and depth</a></li>\n")
+    htmlmain.write("\t\t<li><a href='#pernight' >Per-night EXPTIME and EFFTIME_DARK</a></li>\n")
+    htmlmain.write("\t\t<li><a href='#pertile' >Per-tile: cumulated and per-tile EFFTIME_DARK</a></li>\n")
     htmlmain.write(
         "\t\t<li><a href='#tile-nexp-design' >Tiles: NEXP and design</a></li>\n"
     )
@@ -2295,23 +2296,24 @@ if args.html == "y":
     htmlmain.write("</tr>\n")
     htmlmain.write("\n")
 
-    # AR Per-night on-sky EXPTIME
-    htmlmain.write("<h2><a id='onsky' href='#onsky' > Per-night on-sky EXPTIME </a>\n")
+    # AR Per-night EXPTIME
+    htmlmain.write("<h2><a id='pernight' href='#pernight' > Per-night EXPTIME and EFFTIME</a>\n")
     htmlmain.write(
         "<a href='#top' style='position: absolute; right: 0;'>Top of the page</a></h2>\n"
     )
-    tmppng = outfns["onsky"].replace(args.outdir, "../")
-    htmlmain.write("<tr>\n")
-    htmlmain.write(
-        "<td align=center><a href='{}'><img SRC='{}' width=80% height=auto></a></td>\n".format(
-            tmppng, tmppng
+    for xquant in ["exptime", "efftime_dark"]:
+        tmppng = outfns["onsky"][xquant].replace(args.outdir, "../")
+        htmlmain.write("<tr>\n")
+        htmlmain.write(
+            "<td align=center><a href='{}'><img SRC='{}' width=80% height=auto></a></td>\n".format(
+                tmppng, tmppng
+            )
         )
-    )
-    htmlmain.write("</tr>\n")
-    htmlmain.write("\n")
+        htmlmain.write("</tr>\n")
+        htmlmain.write("\n")
 
-    # AR Tiles: exptime and depth
-    htmlmain.write("<h2><a id='depth' href='#depth' > Tiles: exptime and depth </a>\n")
+    # AR Per-tile: cumulated and per-tile EFFTIME_DARK
+    htmlmain.write("<h2><a id='pertile' href='#pertile' > Per-tile: cumulated and per-tile EFFTIME_DARK</a>\n")
     htmlmain.write(
         "<a href='#top' style='position: absolute; right: 0;'>Top of the page</a></h2>\n"
     )
