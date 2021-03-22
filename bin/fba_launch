@@ -637,7 +637,7 @@ def main():
             mytmpouts["tiles"], d, extname="TILES", header=hdr, clobber=True,
         )
         log.info(
-            "{:.1f}s\tdotile\t{}-tiles.fits written".format(
+            "{:.1f}s\tdotile\t{} written".format(
                 time() - start, mytmpouts["tiles"],
             )
         )
