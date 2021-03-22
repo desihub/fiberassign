@@ -901,10 +901,10 @@ def write_html_tiledesign(html, tiles, ii, nexps, style, h2title, main=True):
             )
         ]
         tmparr += [
-            "<a href='{}' target='external'> {:06}.log".format(
+            "<a href='{}' target='external'> fiberassign-{:06}.log".format(
                 os.path.join(
                     "/".join(fafits.split("/")[:-1]),
-                    "{:06}.log".format(tiles["TILEID"][i]),
+                    "fiberassign-{:06}.log".format(tiles["TILEID"][i]),
                 ),
                 tiles["TILEID"][i],
             )
