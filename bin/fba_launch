@@ -43,6 +43,12 @@ sbprofs_all = {
     "sv2": {"DARK": "ELG", "BRIGHT": "BGS", "BACKUP": "PSF"},
 }
 
+# AR default REF_EPOCH for PMRA=PMDEC=REF_EPOCH=0 objects
+ref_epochs = {
+    "gaiadr2" : 2015.5
+}
+
+
 # AR for qa plot
 tile_radius_deg = 1.628
 
@@ -179,8 +185,41 @@ def get_nowradec(ra, dec, pmra, pmdec, parallax, ref_year, new_obstime, scnd=Fal
     return ra, dec
 
 
+# AR secure finite values of PMRA, PMDEC
+def force_finite_pm(
+    d,
+    pmra_key="PMRA",
+    pmdec_key="PMDEC",
+    log=None,
+    step=""
+):
+    for key in [pmra_key, pmdec_key]:
+        keep = ~np.isfinite(d[key])
+        if keep.sum() > 0:
+            d[key][keep] = 0.0
+            if log is not None:
+                log.info(
+                    "{:.1f}s\t{}\t replacing NaN by 0 for {} targets".format(
+                        time() - start, step, keep.sum()
+                    )
+                )
+    return d
+
+
+# AR PlateMaker wants a single REF_EPOCH
+# AR turning zeros to the default gaia value
+def force_nonzero_refepoch(d, ref_epoch_key="REF_EPOCH", log=None, step=""):
+    keep = d["REF_EPOCH"] == 0
+    d["REF_EPOCH"][keep] = ref_epochs[args.gaiadr]
+    if log is not None:
+        log.info("{:.1f}s\t{}\tsetting REF_EPOCH={} for {} objects with REF_EPOCH=0".format(
+                time() - start, step, ref_epochs[args.gaiadr], keep.sum())
+                )
+    return d
+                                                                                                                                                                   
+
+
 # AR update values (RA, DEC, REF_EPOCH) using proper motion
-# AR PMRA, PMDEC: convert NaN to zeros
 # AR RA, DEC:
 # AR - scnd=False: updated for REF_EPOCH>0 + AEN only
 # AR - scnd=True: updated for REF_EPOCH>0 + finite(PMRA,PMDEC) ; forces PARALLAX=0
@@ -198,16 +237,6 @@ def update_nowradec(
     gaiaaen_key="GAIA_ASTROMETRIC_EXCESS_NOISE",
     scnd=False,
 ):
-    # AR PMRA, PMDEC: convert NaN to zeros
-    for key in [pmra_key, pmdec_key]:
-        keep = ~np.isfinite(d[key])
-        if keep.sum() > 0:
-            d[key][keep] = 0.0
-            log.info(
-                "{:.1f}s\t{}: replacing NaN by 0 for {} targets".format(
-                    time() - start, key, keep.sum()
-                )
-            )
     # AR computing positions at new_obstime using Gaia PMRA, PMDEC
     nowra, nowdec = get_nowradec(
         d[ra_key],
@@ -251,6 +280,7 @@ def update_nowradec(
         )
     )
     return d
+
 
 
 # AR get matching index for two np arrays, those should be arrays with unique values, like id
@@ -692,6 +722,8 @@ def main():
                 time() - start, len(d), mytmpouts["gfa"]
             )
         )
+        # AR PMRA, PMDEC: convert NaN to zeros
+        d = force_finite_pm(d, log=log, step="dogfa")
         # AR gfa: update RA, DEC, REF_EPOCH using proper motion
         if args.pmcorr == "y":
             d = update_nowradec(d, new_obstime)
@@ -701,6 +733,9 @@ def main():
                     time() - start
                 )
             )
+            # AR single REF_EPOCH needed
+            d = force_nonzero_refepoch(d, log=log, step="dogfa")
+
         # AR gfa: write fits
         n, tmpfn = write_targets(tmpoutdir, d, indir=mydirs["gfa"], survey=args.survey)
         _ = mv_write_targets_out(tmpfn, tmpoutdir, mytmpouts["gfa"], log=log)
@@ -736,6 +771,8 @@ def main():
         d = inflate_ledger(
             d, mydirs["targ"], columns=None, header=False, strictcols=False
         )
+        # AR PMRA, PMDEC: convert NaN to zeros
+        d = force_finite_pm(d, log=log, step="domtl")
         # AR mtl: update RA, DEC, REF_EPOCH using proper motion
         if args.pmcorr == "y":
             d = update_nowradec(d, new_obstime)
@@ -745,6 +782,8 @@ def main():
                     time() - start
                 )
             )
+            # AR single REF_EPOCH needed
+            d = force_nonzero_refepoch(d, log=log, step="domtl")
         # AR mtl: write fits
         n, tmpfn = write_targets(
             tmpoutdir, d, indir=mydirs["mtl"], indir2=mydirs["targ"], survey=args.survey
