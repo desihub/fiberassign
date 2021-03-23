@@ -2557,7 +2557,7 @@ if __name__ == "__main__":
     root = "{}{:06d}".format(args.outdir, args.tileid)
 
     # AR: log filename
-    logfn = "{}.log".format(root)
+    logfn = "{}fiberassign-{:06d}.log".format(args.outdir, args.tileid)
     if os.path.isfile(logfn):
         os.remove(logfn)
 
