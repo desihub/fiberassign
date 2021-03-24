@@ -757,6 +757,13 @@ def main():
             )
         )
         tiles = fits.open(mytmpouts["tiles"])[1].data
+        # AR mtl: storing the timestamp at which we queried MTL
+        mtltime = datetime.utcnow().isoformat(timespec='seconds')
+        log.info(
+            "{:.1f}s\tdomtl\tmtltime={}".format(
+                time() - start, mtltime
+            )
+        )
         # AR mtl: read mtl
         d = custom_read_targets_in_tiles(
             [mydirs["mtl"]],
@@ -921,7 +928,6 @@ def main():
             if kwargs[0].lower() in [
                 "outdir",
                 "survey",
-                "program",
                 "rundate",
                 "pmcorr",
                 "pmtime",
@@ -935,6 +941,8 @@ def main():
         fd["PRIMARY"].write_key(
             "faargs", " ".join(tmparr),
         )
+        # AR storing 
+        fd["PRIMARY"].write_key("mtltime", mtltime)
         fd["PRIMARY"].write_key("obscon", obscon)
         # AR informations for NTS
         # AR SBPROF from https://desi.lbl.gov/trac/wiki/SurveyOps/SurveySpeed#NominalFiberfracValues
