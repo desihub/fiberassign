@@ -942,6 +942,7 @@ def main():
             "faargs", " ".join(tmparr),
         )
         # AR storing 
+        fd["PRIMARY"].write_key("faprgrm", args.program)
         fd["PRIMARY"].write_key("mtltime", mtltime)
         fd["PRIMARY"].write_key("obscon", obscon)
         # AR informations for NTS
