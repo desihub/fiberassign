@@ -1250,6 +1250,8 @@ def main():
                     magmin = mag[keep].min()
                     if magmin < magthresh:
                         magmin, color = "{:.1f}".format(magmin), "r"
+                    else:
+                        magmin, color = "{:.1f}".format(magmin), "k"
                 ax.text(
                     0.05,
                     y,
