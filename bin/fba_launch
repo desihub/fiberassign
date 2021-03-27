@@ -1052,7 +1052,7 @@ def main():
             "TARGETID",
             "FLUX_G",
             "FLUX_R",
-            "FIBERFLUX_R",
+            "FIBERTOTFLUX_R",
             "FLUX_Z",
             "FLUX_W1",
             "FLUX_W2",
@@ -1241,8 +1241,8 @@ def main():
             ax.text(0.05, y, "Min. {} mag ".format(sample), fontsize=fs, transform=ax.transAxes)
             y += dy
             for mag, lab in zip(
-                [d["GAIA_PHOT_G_MEAN_MAG"], 22.5 - 2.5 * np.log10(d["FIBERFLUX_R"])],
-                ["GAIA_PHOT_G_MEAN_MAG)", "min(LS-R-FIBMAG)"],
+                [d["GAIA_PHOT_G_MEAN_MAG"], 22.5 - 2.5 * np.log10(d["FIBERTOTFLUX_R"])],
+                ["GAIA_PHOT_G_MEAN_MAG)", "min(LS-R-FIBTOTMAG)"],
             ):
                 magmin, color = "-", "k"
                 keep = (np.isfinite(mag)) & (mag > 0)
