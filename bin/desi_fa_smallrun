@@ -1,0 +1,741 @@
+#!/usr/bin/env python
+
+import os
+import sys
+from glob import glob
+import numpy as np
+import astropy.io.fits as fits
+from astropy.table import Table
+import fitsio
+from desitarget.targetmask import obsconditions
+from desitarget.io import read_targets_in_tiles
+from desitarget.mtl import make_mtl
+from fiberassign.scripts.assign import parse_assign, run_assign_full
+from fiberassign.scripts.merge import parse_merge, run_merge
+from desimodel.footprint import is_point_in_desi
+from desiutil.redirect import stdouterr_redirected
+import healpy as hp
+from argparse import ArgumentParser
+
+# AR list of priorities (ELG=3000, LRG=3200, QSO=3400)
+# https://github.com/desihub/desitarget/blob/master/py/desitarget/data/targetmask.yaml#L186-L223
+# https://github.com/desihub/desitarget/blob/master/py/desitarget/sv1/data/sv1_targetmask.yaml#L251-L324
+# https://github.com/desihub/desitarget/blob/master/py/desitarget/sv2/data/sv2_targetmask.yaml#L152-L189
+
+
+# AR created file names
+def get_fn(outdir, flavor, passid=None):
+    # AR flavor = settings, log, tiles, sky, targ, fastats-targ, fastats-sky
+    # AR pass = passid
+    if passid is not None:
+        if flavor == "tiles":
+            fn = os.path.join(
+                outdir,
+                "faruns",
+                "farun-pass{}".format(passid),
+                "{}-pass{}.fits".format(flavor, passid),
+            )
+        if flavor == "targ":
+            fn = os.path.join(
+                outdir, "outputs", "{}-after-pass{}.fits".format(flavor, passid)
+            )
+    elif flavor == "settings":
+        fn = os.path.join(args.outdir, "inputs", "settings.asc")
+    elif flavor == "log":
+        fn = os.path.join(args.outdir, "outputs", "file.log")
+    elif flavor in ["fastats-targ", "fastats-sky"]:
+        fn = os.path.join(outdir, "outputs", "{}.asc".format(flavor))
+    else:
+        fn = os.path.join(outdir, "inputs", "{}.fits".format(flavor))
+    return fn
+
+
+# AR get matching index for two np arrays, those should be arrays with unique values, like id
+# AR https://stackoverflow.com/questions/32653441/find-indices-of-common-values-in-two-arrays
+# AR we get: A[maskA] = B[maskB]
+def unq_searchsorted(A, B):
+    # AR sorting A,B
+    tmpA = np.sort(A)
+    tmpB = np.sort(B)
+    # AR create mask equivalent to np.in1d(A,B) and np.in1d(B,A) for unique elements
+    maskA = (
+        np.searchsorted(tmpB, tmpA, "right") - np.searchsorted(tmpB, tmpA, "left")
+    ) == 1
+    maskB = (
+        np.searchsorted(tmpA, tmpB, "right") - np.searchsorted(tmpA, tmpB, "left")
+    ) == 1
+    # AR to get back to original indexes
+    return np.argsort(A)[maskA], np.argsort(B)[maskB]
+
+
+# AR creates one tiles file for with all passes
+# AR and one tiles file per pass
+def create_tiles(infn, program, radec, outdir):
+    h = fits.open(infn)
+    d = h[1].data
+    # AR gray2dark?
+    if args.gray2dark == "y":
+        keep = d["PROGRAM"] == "GRAY"
+        d["PROGRAM"][keep] = "DARK"
+        d["OBSCONDITIONS"][keep] = obsconditions.mask("DARK")
+    # AR cut on IN_DESI
+    is_indesi = d["IN_DESI"] == 1
+    # AR cut on radec
+    ramin, ramax, decmin, decmax = [float(x) for x in radec.split(",")]
+    is_radec = (d["DEC"] > decmin) & (d["DEC"] < decmax)
+    if ramax < ramin:
+        is_radec &= (d["RA"] > ramin) | (d["RA"] < ramax)
+    else:
+        is_radec &= (d["RA"] > ramin) & (d["RA"] < ramax)
+    # AR cut on program
+    is_prog = d["PROGRAM"].lower() == program
+    # AR writing one tiles file with all passes
+    keep = (is_indesi) & (is_radec) & (is_prog)
+    h[1].data = h[1].data[keep]
+    h.writeto(get_fn(args.outdir, "tiles"), overwrite=True)
+    # AR writing one tiles file for each pass
+    passids = np.unique(d["PASS"][keep])
+    for passid in passids:
+        h = fits.open(infn)
+        keep_p = (keep) & (d["PASS"] == passid)
+        print("pass = {} -> {} tiles".format(passid, keep_p.sum()))
+        h[1].data = h[1].data[keep_p]
+        fadir = os.path.join(args.outdir, "faruns", "farun-pass{}".format(passid))
+        if not os.path.isdir(fadir):
+            os.mkdir(fadir)
+        h.writeto(get_fn(args.outdir, "tiles", passid=passid), overwrite=True)
+    return True
+
+
+# AR randomly assigns QSO to be Lya
+def set_lya(d, lyafrac):
+    ii_qso = np.where((d[dtkey] & desi_mask["QSO"]) > 0)[0]
+    ii_lya = np.random.choice(ii_qso, size=int(lyafrac * len(ii_qso)), replace=False)
+    return np.in1d(np.arange(len(d), dtype=int), ii_lya)
+
+
+# AR tweak PRIORITY_INIT and PRIORITY
+def tweak_priority(d, priority_orig, priority_frac, priority_new):
+    # AR to store the targets with tweaked priority
+    ii_used = []
+    # AR original PRIORITY_INIT to work with
+    # AR (as we will update the d["PRIORITY_INIT"] array)
+    prios = d["PRIORITY_INIT"].copy()
+    for po, pf, pn in zip(
+        priority_orig.split(","), priority_frac.split(","), priority_new.split(",")
+    ):
+        ii = np.where(prios == int(po))[0]
+        n_tweak = int(len(ii) * float(pf))
+        ii_avail = ii[~np.in1d(ii, ii_used)]
+        if len(ii_avail) < n_tweak:
+            sys.exit(
+                "cannot promote {}/{} targets from PRIORITY={} to PRIORITY={}; exiting".format(
+                    n_tweak, len(ii_avail), po, pn
+                )
+            )
+        print(
+            "promoting {}/{} targets from PRIORITY={} to PRIORITY={}".format(
+                n_tweak, len(ii_avail), po, pn
+            )
+        )
+        ii_tweak = np.random.choice(ii_avail, size=n_tweak, replace=False)
+        d["PRIORITY_INIT"][ii_tweak] = int(pn)
+        d["PRIORITY"][ii_tweak] = int(pn)
+        ii_used += ii_tweak.tolist()
+    return d
+
+
+# AR update the catalogs after having run fa + stats
+def update_after_farun(input_targ, fadir, passid, output_targ):
+    # fba files
+    fns = np.sort(glob(os.path.join(fadir, "fba-??????.fits")))
+    # reading targ which received a fibre, targ available
+    # std, sky
+    samples = ["targ", "targets", "potential", "sky"]
+    extnames = ["FASSIGN", "FTARGETS", "FAVAIL", "FASSIGN"]
+    myd = {}
+    myh = {}
+    for sample in samples:
+        myd[sample] = {}
+        myh[sample] = {}
+    for fn in fns:
+        print(fn)
+        h = fits.open(fn)
+        for sample, extname in zip(samples, extnames):
+            # AR initialization
+            if fn == fns[0]:
+                myh[sample]["keys"] = ["TILEID"] + h[extname].columns.names
+                myh[sample]["fmts"] = ["J"] + h[extname].columns.formats
+                for key in myh[sample]["keys"]:
+                    myd[sample][key] = []
+            # AR appending (using bitwise)
+            if sample in ["targ", "targets"]:
+                keep = (h[extname].data["FA_TYPE"] & 1) > 0
+            elif sample == "sky":
+                keep = (h[extname].data["FA_TYPE"] & 4) > 0
+            elif sample == "potential":
+                keep = np.ones(len(h[extname].data), dtype=bool)
+            else:
+                sys.exit("wrong sample! exiting")
+            for key in myh[sample]["keys"]:
+                if key == "TILEID":
+                    myd[sample][key] += [
+                        h[1].header["TILEID"] for x in range(keep.sum())
+                    ]
+                else:
+                    myd[sample][key] += h[extname].data[key][keep].tolist()
+    # AR writing targ/targets/potential/sky
+    for sample in samples:
+        collist = []
+        for key, fmt in zip(myh[sample]["keys"], myh[sample]["fmts"]):
+            collist.append(fits.Column(name=key, format=fmt, array=myd[sample][key]))
+        h = fits.BinTableHDU.from_columns(fits.ColDefs(collist))
+        h.writeto(
+            os.path.join(fadir, "fba-{}-pass{}.fits".format(sample, passid)),
+            overwrite=True,
+        )
+    # AR input TARGETID, NUMOBS_MORE, NUMOBS_DONE
+    h = fits.open(input_targ)
+    tids = np.array(myd["targ"]["TARGETID"])
+    tids, counts = np.unique(tids, return_counts=True)
+    ii0, ii1 = unq_searchsorted(h[1].data["TARGETID"], tids)
+    # AR updating numobs_more
+    h[1].data["NUMOBS_MORE"][ii0] -= counts[ii1]
+    # AR updating NUMOBS_DONE
+    h[1].data["NUMOBS_DONE"][ii0, passid] = counts[ii1]
+    # AR updating Lya
+    # AR QSO observed in passid which are not Lya
+    keep = (
+        ((h[1].data[dtkey] & desi_mask["QSO"]) > 0)
+        & (h[1].data["NUMOBS_DONE"][:, passid] > 0)
+        & (~h[1].data["ISLYA"])
+    )
+    h[1].data["NUMOBS_MORE"][keep] = 0
+    # AR change priority of observed Lya?
+    if args.priority_lya is not None:
+        keep = (h[1].data["ISLYA"]) & (h[1].data["NUMOBS_DONE"][:, passid] > 0)
+        h[1].data["PRIORITY_INIT"][keep] = args.priority_lya
+        h[1].data["PRIORITY"][keep] = args.priority_lya
+    # AR nfiber_avail, ntile_avail
+    for sample, key in zip(["potential", "targets"], ["NFIBER_AVAIL", "NTILE_AVAIL"]):
+        tids = np.array(myd[sample]["TARGETID"])
+        tids, counts = np.unique(tids, return_counts=True)
+        ii0, ii1 = unq_searchsorted(h[1].data["TARGETID"], tids)
+        h[1].data[key][ii0, passid] = counts[ii1]
+    # writing output
+    h.writeto(output_targ, overwrite=True)
+    return True
+
+
+# AR selects object inside a "box" with a given margin in degrees
+# AR cuts in Dec.: decmin + margin < dec < decmax - margin
+# AR cuts in R.A.: accounts for the cos(Dec.) term with a 1-deg grid in Dec.
+def sel_margin(ras, decs, radec, margin):
+    ramin, ramax, decmin, decmax = [float(x) for x in radec.split(",")]
+    keep = (decs > decmin + margin) & (decs < decmax - margin)
+    grid_decs = np.linspace(-90, 90, 181)
+    for i in range(len(grid_decs) - 1):
+        decmid = 0.5 * (grid_decs[i] + grid_decs[i + 1])
+        ra_margin = margin / np.cos(np.radians(decmid))
+        sel = (decs >= grid_decs[i]) & (decs < grid_decs[i + 1])
+        if ramax < ramin:
+            reject_ramin = (ras > ramin) & (ras < ramin + ra_margin)
+            reject_ramax = (ras < ramax) & (ras > ramax - ra_margin)
+        else:
+            reject_ramin = ras < ramin + ra_margin
+            reject_ramax = ras > ramax - ra_margin
+        reject = (sel) & ((reject_ramin) | (reject_ramax))
+        keep[reject] = False
+    return keep
+
+
+# AR get the safe "box" area
+def get_area(radec, tiles, margin):
+    nside, nest = 256, True
+    theta, phi = hp.pix2ang(nside, np.arange(hp.nside2npix(nside)), nest=nest)
+    ras, decs = 180.0 / np.pi * phi, 90.0 - 180.0 / np.pi * theta
+    ii = is_point_in_desi(tiles, ras, decs)
+    ras, decs = ras[ii], decs[ii]
+    keep = sel_margin(ras, decs, radec, margin)
+    return np.round(keep.sum() * hp.nside2pixarea(nside, degrees=True), 0)
+
+
+# AR select tracers
+def sel_tracer(d, tracer):
+    if tracer == "ALL":
+        return np.ones(len(d), dtype=bool)
+    elif tracer == "LYA":
+        return ((d[dtkey] & desi_mask["QSO"]) > 0) & (d["ISLYA"])
+    else:
+        return (d[dtkey] & desi_mask[tracer]) > 0
+
+
+# AR fastats-targ
+def fastats_targ(tracers, targ_fn, area):
+    d = fits.open(targ_fn)[1].data
+    # AR cutting out a safe "box" for analysis
+    keep = sel_margin(d["RA"], d["DEC"], args.radec, args.radec_margin)
+    d = d[keep]
+    # AR number of assigned fibers per target
+    numobs_tot = d["NUMOBS_DONE"].sum(axis=1)
+    # AR
+    f = open(get_fn(args.outdir, "fastats-targ"), "w")
+    f.write("# TRACER PRIORITY TARGET_DENS DONE_FRAC DONE_DENS MEAN_NFIBER\n")
+    for tracer in tracers:
+        ist = sel_tracer(d, tracer)
+        # AR done?
+        if tracer == "LYA":
+            isdone = (ist) & (numobs_tot >= 4)
+        else:
+            isdone = (ist) & (numobs_tot >= 1)
+        prios = ["ALL"]
+        if tracer != "ALL":
+            prios += np.unique(d["PRIORITY"][ist]).tolist()
+        for prio in prios:
+            if prio == "ALL":
+                istp = ist.copy()
+            else:
+                istp = (ist) & (d["PRIORITY"] == prio)
+            # AR done?
+            if tracer == "LYA":
+                istpd = (istp) & (numobs_tot >= 4)
+            else:
+                istpd = (istp) & (numobs_tot >= 1)
+            f.write(
+                "{}\t{}\t{:.0f}\t{:.2f}\t{:.0f}\t{:.1f}\n".format(
+                    tracer,
+                    prio,
+                    istp.sum() / area,
+                    istpd.sum() / istp.sum(),
+                    istpd.sum() / area,
+                    numobs_tot[istp].mean(),
+                )
+            )
+    f.close()
+    return True
+
+
+# AR fastats-sky
+def fastats_sky(passids, area):
+    # AR
+    f = open(get_fn(args.outdir, "fastats-sky"), "w")
+    f.write("# PASS DONE_DENS EXTRA_DENS\n")
+    ntot, ntot_extra = 0, 0
+    for i in range(len(passids)):
+        fn = os.path.join(
+            args.outdir,
+            "faruns",
+            "farun-pass{}".format(passids[i]),
+            "fba-sky-pass{}.fits".format(passids[i]),
+        )
+        d = fits.open(fn)[1].data
+        # AR before cutting on "safe" box, assigning "extra" status to nfiber - (ntile x 10 x sky_per_petal fibers)
+        ntile = len(np.unique(d["TILEID"]))
+        nextra = len(d) - ntile * 10 * int(args.sky_per_petal)
+        ii = np.random.choice(len(d), size=nextra, replace=False)
+        is_extra = np.zeros(len(d), dtype=bool)
+        is_extra[ii] = True
+        # AR cutting out a safe "box" for analysis
+        keep = sel_margin(
+            d["TARGET_RA"], d["TARGET_DEC"], args.radec, args.radec_margin
+        )
+        f.write(
+            "{}\t{:.0f}\t{:.0f}\n".format(
+                passids[i], keep.sum() / area, ((keep) & (is_extra)).sum() / area
+            )
+        )
+        ntot += keep.sum()
+        ntot_extra += ((keep) & (is_extra)).sum()
+    f.write("ALL\t{:.0f}\t{:.0f}".format(ntot / area, ntot_extra / area))
+    f.close()
+    return True
+
+
+def main():
+
+    # AR create the tiles files
+    if dotile:
+        # AR then create tiles file
+        _ = create_tiles(args.tilesfn, args.program, args.radec, args.outdir)
+
+    # AR create the sky file
+    if dosky:
+        tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
+        hpdir = os.path.join(
+            os.getenv("DESI_TARGET"), "catalogs", args.dr, args.dtver, "skies"
+        )
+        # AR we only store some columns
+        columns = [
+            "RA",
+            "DEC",
+            "TARGETID",
+            "DESI_TARGET",
+            "BGS_TARGET",
+            "MWS_TARGET",
+            "SUBPRIORITY",
+            "OBSCONDITIONS",
+            "PRIORITY_INIT",
+            "NUMOBS_INIT",
+        ]
+        d = read_targets_in_tiles(hpdir, tiles, columns=columns, quick=True)
+        fitsio.write(get_fn(args.outdir, "sky"), d, clobber=True)
+
+    # AR create the targets file
+    if dotarg:
+        tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
+        hpdir = os.path.join(
+            os.getenv("DESI_TARGET"),
+            "catalogs",
+            args.dr,
+            args.dtver,
+            "targets",
+            args.survey,
+            "resolve",
+            args.program,
+        )
+        # AR we only store some columns...
+        columns = ["TARGETID", "RA", "DEC"]
+        columns += [dtkey, dtkey.replace("DESI", "BGS"), dtkey.replace("DESI", "MWS")]
+        columns += [
+            "PHOTSYS",
+            "SUBPRIORITY",
+            "OBSCONDITIONS",
+            "PRIORITY_INIT",
+            "NUMOBS_INIT",
+        ]
+        d = read_targets_in_tiles(hpdir, tiles, columns=columns, quick=True)
+        # AR remove bgs from dark program?
+        # AR we identify bgs-only from the priority
+        if args.rmvdarkbgs == "y":
+            keep = (d["PRIORITY_INIT"] != 2000) & (d["PRIORITY_INIT"] != 2100)
+            d = d[keep]
+        # AR mtl
+        myd = Table(d)
+        # AR assigns Lya
+        myd["ISLYA"] = set_lya(d, args.lyafrac)
+        # AR to store fa stats
+        npasstot = 11  # the 4112packing has 11 layers overall
+        for key in ["NFIBER_AVAIL", "NTILE_AVAIL", "NUMOBS_DONE"]:
+            myd[key] = np.zeros((len(d), npasstot), dtype=int)
+        # AR mtl
+        mtl = make_mtl(myd.as_array(), args.program.upper())
+        # AR tweak priority?
+        if args.priority_orig is not None:
+            myl = tweak_priority(
+                mtl, args.priority_orig, args.priority_frac, args.priority_new
+            )
+        mtl.write(get_fn(args.outdir, "targ"), overwrite=True)
+
+    # AR run the fiber assignment + update the target file
+    if dofa:
+        # AR passids
+        tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
+        passids = np.unique(tiles["PASS"])
+        # AR looping on passids
+        for ip in range(len(passids)):
+            passid = passids[ip]
+            # AR file/directory names
+            if ip == 0:
+                input_targ = get_fn(args.outdir, "targ")
+            else:
+                input_targ = get_fn(args.outdir, "targ", passids[ip - 1])
+            fadir = os.path.join(args.outdir, "faruns", "farun-pass{}".format(passid))
+            output_targ = get_fn(args.outdir, "targ", passid)
+            # AR clean fadir folder
+            fns = glob(os.path.join(fadir, "fba-*.fits"))
+            if len(fns) > 0:
+                for fn in fns:
+                    os.remove(fn)
+            # AR run fiber assignment
+            opts = [
+                "--rundate",
+                args.rundate,
+                "--overwrite",
+                "--write_all_targets",
+                "--footprint",
+                get_fn(args.outdir, "tiles", passid=passid),
+                "--dir",
+                fadir,
+                "--sky",
+                get_fn(args.outdir, "sky"),
+                "--targets",
+                input_targ,
+                "--sky_per_petal",
+                args.sky_per_petal,
+                "--standards_per_petal",
+                args.standards_per_petal,
+            ]
+            print("Running raw fiber assignment (fba_run)...")
+            ag = parse_assign(opts)
+            run_assign_full(ag)
+            # AR update the catalogs after having run fa + stats
+            _ = update_after_farun(input_targ, fadir, passid, output_targ)
+
+    # AR analyze the runs
+    if doresults:
+        # AR safe "box" area
+        tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
+        area = get_area(args.radec, tiles, args.radec_margin)
+        print("area = {} deg2".format(area))
+        # AR passids
+        tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
+        passids = np.unique(tiles["PASS"])
+
+        # AR fastats-targ (using the run for the last passid)
+        tracers = ["ALL", "LYA", "QSO", "LRG", "ELG"]
+        targ_fn = get_fn(args.outdir, "targ", passids[-1])
+        _ = fastats_targ(tracers, targ_fn, area)
+
+        # AR fastats-sky
+        _ = fastats_sky(passids, area)
+
+
+if __name__ == "__main__":
+
+    # AR to speed up development/debugging
+    dotile, dosky, dotarg, dofa, doresults = (
+        False,
+        False,
+        False,
+        False,
+        False,
+    )
+    dotile = True
+    dosky = True
+    dotarg = True
+    dofa = True
+    doresults = True
+
+    # AR reading arguments
+    parser = ArgumentParser()
+    parser.add_argument(
+        "--outdir",
+        help="root directory; all other paths are relative to that directory",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--program",
+        help="dark or bright (default=dark)",
+        type=str,
+        default="dark",
+        choices=["dark", "bright"],
+    )
+    parser.add_argument(
+        "--radec",
+        help="ramin,ramax,decmin,decmax boundaries for tile centres (default=160,200,45,60)",
+        type=str,
+        default="160,200,45,60",
+    )
+    parser.add_argument(
+        "--rundate",
+        help="rundate for focalplane (default=2021-03-17T23:20:01)",
+        type=str,
+        default="2021-03-17T23:20:01",
+    )
+    parser.add_argument(
+        "--dr",
+        help="legacypipe dr (default=dr9)",
+        type=str,
+        default="dr9",
+        choices=["dr8", "dr9"],
+    )
+    parser.add_argument(
+        "--survey",
+        help="main, sv1, sv2, sv3 (default=sv2)",
+        type=str,
+        default="sv2",
+        choices=["sv1", "sv2", "sv3", "main"],
+    )
+    parser.add_argument(
+        "--dtver",
+        help="desitarget version (default=0.53.0)",
+        type=str,
+        default="0.53.0",
+    )
+    parser.add_argument(
+        "--lyafrac",
+        help="fraction of QSO targets which are Lya (default=0.2)",
+        type=float,
+        default=0.2,
+    )
+    parser.add_argument(
+        "--tilesfn",
+        help="tiles file full path (default: 4112packing-dark7pass-bright4pass)",
+        type=str,
+        default="{}/survey/fiberassign/misc/tiles-4112packing-2021-02-22-formatted-dark7pass-bright4pass.fits".format(
+            os.getenv("DESI_ROOT")
+        ),
+    )
+    parser.add_argument(
+        "--gray2dark",
+        help="convert gray layer to dark layer in the tiles (default=y)",
+        type=str,
+        default="y",
+        choices=["y", "n"],
+    )
+    parser.add_argument(
+        "--rmvdarkbgs",
+        help="remove BGS-only targets from dark observations? (default=y)",
+        type=str,
+        default="y",
+        choices=["y", "n"],
+    )
+    parser.add_argument(
+        "--standards_per_petal",
+        help="required number of standards per petal (default=10)",
+        type=str,
+        default="10",
+    )
+    parser.add_argument(
+        "--sky_per_petal",
+        help="required number of sky targets per petal (default=40)",
+        type=str,
+        default="40",
+    )
+    parser.add_argument(
+        "--priority_orig",
+        help="comma-separated list of priorities to promote (e.g. 3000,3200)",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--priority_frac",
+        help="comma-separated list of the fraction of --priority_orig targets to promote (e.g. 0.25,0.15)",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--priority_new",
+        help="comma-separated list of the priority values to promote the --priority_orig to (e.g. 3400,3400)",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--priority_lya",
+        help="once observed, priority to be set for Lya (default=None, i.e. keep the same priority)",
+        type=int,
+        default=None,
+    )
+    parser.add_argument(
+        "--radec_margin",
+        help="margin in degrees to safely extract an inner box for analysis with non boundary effects; box will be cut by args.radec_margin in Dec. and args.radec_margin/cos(Dec.) in R.A. (default=2)",
+        type=float,
+        default=2,
+    )
+    parser.add_argument(
+        "--nolog", help="do not print log file (default=n)", type=str, default="n",
+    )
+
+    #
+    args = parser.parse_args()
+    for kwargs in args._get_kwargs():
+        print(kwargs)
+
+    # AR safe
+    if args.outdir[-1] != "/":
+        args.outdir += "/"
+    if (args.lyafrac < 0) | (args.lyafrac > 1):
+        sys.exit(
+            "args.lyafrac = {} => should be within 0 and 1; exiting".format(ags.lyafrac)
+        )
+    po, pf, pn = args.priority_orig, args.priority_frac, args.priority_new
+    if (po is not None) | (pf is not None) | (pn is not None):
+        if (po is None) | (pf is None) | (pn is None):
+            sys.exit(
+                "args.priority_orig, args.priority_frac, args.priority_new should all be or not be None; exiting"
+            )
+        npo, npf, npn = len(po.split(",")), len(pf.split(",")), len(pn.split(","))
+        if (npo != npf) | (npo != npn) | (npf != npn):
+            sys.exit(
+                "inconsistent args.priority_orig, args.priority_frac, args.priority_new; exiting"
+            )
+
+    # AR outdir
+    if not os.path.isdir(args.outdir):
+        os.mkdir(args.outdir)
+
+    # AR subdirs
+    for subdir in ["inputs", "faruns", "outputs"]:
+        if not os.path.isdir(os.path.join(args.outdir, subdir)):
+            os.mkdir(os.path.join(args.outdir, subdir))
+
+    # AR cleaning
+    if dotile:
+        for passid in [None] + np.arange(11, dtype=int).tolist():
+            fn = get_fn(args.outdir, "tiles", passid=passid)
+            if os.path.isfile(fn):
+                os.remove(fn)
+    if dosky:
+        fn = get_fn(args.outdir, "sky")
+        if os.path.isfile(fn):
+            os.remove(fn)
+    if dotarg:
+        fn = get_fn(args.outdir, "targ")
+        if os.path.isfile(fn):
+            os.remove(fn)
+    if dofa:
+        fns = glob(os.path.join(args.outdir, "faruns", "farun-pass*", "*fits"))
+        fns += [
+            get_fn(args.outdir, "tiles", passid=passid)
+            for passid in np.arange(11, dtype=int)
+        ]
+        for fn in fns:
+            if os.path.isfile(fn):
+                os.remove(fn)
+
+    # AR saving settings
+    fn = open(get_fn(args.outdir, "settings"), "w")
+    for kwargs in args._get_kwargs():
+        fn.write("{} = {}\n".format(kwargs[0], kwargs[1]))
+    fn.write("\n")
+    fn.write(
+        "python {} {}\n".format(
+            sys.argv[0],
+            " ".join(
+                [
+                    "--" + kwargs[0] + " " + str(kwargs[1])
+                    for kwargs in args._get_kwargs()
+                    if kwargs[1] is not None
+                ]
+            ),
+        )
+    )
+    fn.write("\n")
+    fn.close()
+
+    # AR log file
+    if args.nolog == "n":
+        logfn = get_fn(args.outdir, "log")
+    else:
+        logfn = None
+
+    # AR reproducible random seed
+    np.random.seed(12345)
+
+    # AR mask + key used to select targets
+    if args.survey == "main":
+        from desitarget.targetmask import desi_mask
+
+        dtkey = "DESI_TARGET"
+    if args.survey == "sv1":
+        from desitarget.sv1.sv1_targetmask import desi_mask
+
+        dtkey = "SV1_DESI_TARGET"
+    if args.survey == "sv2":
+        from desitarget.sv2.sv2_targetmask import desi_mask
+
+        dtkey = "SV2_DESI_TARGET"
+    if args.survey == "sv3":
+        from desitarget.sv3.sv3_targetmask import desi_mask
+
+        dtkey = "SV3_DESI_TARGET"
+
+    # AR: log filename
+    if args.nolog == "n":
+        if os.path.isfile(logfn):
+            os.remove(logfn)
+        with stdouterr_redirected(to=logfn):
+            main()
+    else:
+        main()
