@@ -89,8 +89,15 @@ def create_tiles(infn, program, radec, outdir):
         is_radec &= (d["RA"] > ramin) & (d["RA"] < ramax)
     # AR cut on program
     is_prog = d["PROGRAM"].lower() == program
+    # AR cut on the number of passes
+    # AR first pass is 0
+    # AR with 4112packing-2021-03-28, bright and backup
+    # AR also start at pass=0
+    if args.npass > d["PASS"][is_prog].max() + 1:
+        print("WARNING : requesting {} passes, whereas only {} passes available".format(args.npass, d["PASS"][is_prog].max() + 1))
+    is_pass = d["PASS"] + 1 <= args.npass
     # AR writing one tiles file with all passes
-    keep = (is_indesi) & (is_radec) & (is_prog)
+    keep = (is_indesi) & (is_radec) & (is_prog) & (is_pass)
     h[1].data = h[1].data[keep]
     h.writeto(get_fn(args.outdir, "tiles"), overwrite=True)
     # AR writing one tiles file for each pass
@@ -414,9 +421,8 @@ def main():
         # AR assigns Lya
         myd["ISLYA"] = set_lya(d, args.lyafrac)
         # AR to store fa stats
-        npasstot = 11  # the 4112packing has 11 layers overall
         for key in ["NFIBER_AVAIL", "NTILE_AVAIL", "NUMOBS_DONE"]:
-            myd[key] = np.zeros((len(d), npasstot), dtype=int)
+            myd[key] = np.zeros((len(d), args.npass), dtype=int)
         # AR mtl
         mtl = make_mtl(myd.as_array(), args.program.upper())
         # AR tweak priority?
@@ -561,11 +567,17 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--tilesfn",
-        help="tiles file full path (default: 4112packing-dark7pass-bright4pass)",
+        help="tiles file full path (default: 4112packing-2021-03-28-formatted-dark15pass-bright4pass-backup4pass)",
         type=str,
-        default="{}/survey/fiberassign/misc/tiles-4112packing-2021-02-22-formatted-dark7pass-bright4pass.fits".format(
+        default="{}/survey/fiberassign/misc/tiles-4112packing-2021-03-28-formatted-dark15pass-bright4pass-backup4pass.fits".format(
             os.getenv("DESI_ROOT")
         ),
+    )
+    parser.add_argument(
+        "--npass",
+        help="number of tiling passes for the run (default: dark=7, bright=backup=4)",
+        type=int,
+        default=None,
     )
     parser.add_argument(
         "--gray2dark",
@@ -631,6 +643,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
     for kwargs in args._get_kwargs():
         print(kwargs)
+
+    # AR npass
+    if args.npass is None:
+        args.npass = 7 * (args.program == "dark") + 4 * (args.program != "dark")
 
     # AR safe
     if args.outdir[-1] != "/":
