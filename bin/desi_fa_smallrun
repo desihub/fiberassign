@@ -75,7 +75,7 @@ def create_tiles(infn, program, radec, outdir):
     d = h[1].data
     # AR gray2dark?
     if args.gray2dark == "y":
-        keep = d["PROGRAM"] == "GRAY"
+        keep = d["PROGRAM"].upper() == "GRAY"
         d["PROGRAM"][keep] = "DARK"
         d["OBSCONDITIONS"][keep] = obsconditions.mask("DARK")
     # AR cut on IN_DESI
@@ -410,6 +410,10 @@ def main():
             "PRIORITY_INIT",
             "NUMOBS_INIT",
         ]
+        for band in ["G", "R", "Z", "W1", "W2"]:
+            columns += ["FLUX_{}".format(band), "MW_TRANSMISSION_{}".format(band)]
+            if band in ["G", "R", "Z"]:
+                columns += ["FIBERFLUX_{}".format(band)]
         d = read_targets_in_tiles(hpdir, tiles, columns=columns, quick=True)
         # AR remove bgs from dark program?
         # AR we identify bgs-only from the priority
