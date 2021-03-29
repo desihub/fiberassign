@@ -257,14 +257,19 @@ def sel_margin(ras, decs, radec, margin):
 
 
 # AR get the safe "box" area
+# AR picking one pixweight file
+# AR we just want the fracarea here
 def get_area(radec, tiles, margin):
-    nside, nest = 256, True
+    if args.dr == "dr8":
+        fn = "{}/targets/catalogs/dr8/0.31.1/pixweight/pixweight-dr8-0.31.1.fits".format(os.getenv("DESI_ROOT"))
+    if args.dr == "dr9":
+        fn = "{}/target/catalogs/dr9/0.47.0/pixweight/main/resolve/dark/pixweight-dark.fits".format(os.getenv("DESI_ROOT"))
+    h = fits.open(fn)
+    nside, nest = h[1].header["HPXNSIDE"], h[1].header["HPXNEST"]
     theta, phi = hp.pix2ang(nside, np.arange(hp.nside2npix(nside)), nest=nest)
     ras, decs = 180.0 / np.pi * phi, 90.0 - 180.0 / np.pi * theta
-    ii = is_point_in_desi(tiles, ras, decs)
-    ras, decs = ras[ii], decs[ii]
     keep = sel_margin(ras, decs, radec, margin)
-    return np.round(keep.sum() * hp.nside2pixarea(nside, degrees=True), 0)
+    return np.round(h[1].data["FRACAREA"][keep].sum() * hp.nside2pixarea(nside, degrees=True), 0)
 
 
 # AR select tracers
@@ -365,6 +370,11 @@ def main():
         # AR then create tiles file
         _ = create_tiles(args.tilesfn, args.program, args.radec, args.outdir)
 
+    # AR safe "box" area
+    tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
+    area = get_area(args.radec, tiles, args.radec_margin)                                                                                                 
+    print("area = {} deg2".format(area))
+
     # AR create the sky file
     if dosky:
         tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
@@ -435,6 +445,24 @@ def main():
                 mtl, args.priority_orig, args.priority_frac, args.priority_new
             )
         mtl.write(get_fn(args.outdir, "targ"), overwrite=True)
+        # AR propagating some settings into the PRIMARY header
+        fd = fitsio.FITS(get_fn(args.outdir, "targ"), "rw")
+        # AR faflavor
+        fd["MTL"].write_key("DTVER", args.dtver)
+        fd["MTL"].write_key("SURVEY", args.survey)
+        fd["MTL"].write_key("PROGRAM", args.program)
+        fd["MTL"].write_key("RADEC", args.radec)
+        fd["MTL"].write_key("MARGIN", args.radec_margin)
+        fd["MTL"].write_key("AREASAFE", area)
+        fd["MTL"].write_key("PRIOORIG", args.priority_orig)
+        fd["MTL"].write_key("PRIOFRAC", args.priority_frac)
+        fd["MTL"].write_key("PRIONEW", args.priority_new)
+        fd["MTL"].write_key("TILESFN", args.tilesfn)
+        fd["MTL"].write_key("RUNDATE", args.rundate)
+        fd["MTL"].write_key("NSKYPET", args.sky_per_petal)
+        fd["MTL"].write_key("NSTDPET", args.standards_per_petal)
+        fd.close()        
+
 
     # AR run the fiber assignment + update the target file
     if dofa:
@@ -483,10 +511,6 @@ def main():
 
     # AR analyze the runs
     if doresults:
-        # AR safe "box" area
-        tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
-        area = get_area(args.radec, tiles, args.radec_margin)
-        print("area = {} deg2".format(area))
         # AR passids
         tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
         passids = np.unique(tiles["PASS"])
