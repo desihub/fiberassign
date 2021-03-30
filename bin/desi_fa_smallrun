@@ -15,6 +15,7 @@ from fiberassign.scripts.merge import parse_merge, run_merge
 from desimodel.footprint import is_point_in_desi
 from desiutil.redirect import stdouterr_redirected
 import healpy as hp
+from desitarget.internal import sharedmem
 from argparse import ArgumentParser
 
 # AR list of priorities (ELG=3000, LRG=3200, QSO=3400)
@@ -94,7 +95,11 @@ def create_tiles(infn, program, radec, outdir):
     # AR with 4112packing-2021-03-28, bright and backup
     # AR also start at pass=0
     if args.npass > d["PASS"][is_prog].max() + 1:
-        print("WARNING : requesting {} passes, whereas only {} passes available".format(args.npass, d["PASS"][is_prog].max() + 1))
+        print(
+            "WARNING : requesting {} passes, whereas only {} passes available".format(
+                args.npass, d["PASS"][is_prog].max() + 1
+            )
+        )
     is_pass = d["PASS"] + 1 <= args.npass
     # AR writing one tiles file with all passes
     keep = (is_indesi) & (is_radec) & (is_prog) & (is_pass)
@@ -150,6 +155,54 @@ def tweak_priority(d, priority_orig, priority_frac, priority_new):
         d["PRIORITY"][ii_tweak] = int(pn)
         ii_used += ii_tweak.tolist()
     return d
+
+
+# AR internal function to run fiber assignment
+# AR on a tile, when args.numproc > 1
+# AR uses global variables:
+# AR - sky_ra, sky_dec : input sky coordinates
+# AR - targ_ra, targ_dec : input target coordinates
+def _do_run_assign_full(intargfn_fadir_footfn_skyfn_targfn):
+    global sky_ra, sky_dec
+    global targ_ra, targ_dec
+    # AR decode folder/filenames
+    intargfn, fadir, footfn, skyfn, targfn = intargfn_fadir_footfn_skyfn_targfn.split(
+        ","
+    )
+    # AR sky
+    ii = np.where(is_point_in_desi(fits.open(footfn)[1].data, sky_ra, sky_dec))[0]
+    d = fitsio.read(get_fn(args.outdir, "sky"), rows=ii)
+    fitsio.write(skyfn, d, clobber=True)
+    # AR targ
+    ii = np.where(is_point_in_desi(fits.open(footfn)[1].data, targ_ra, targ_dec))[0]
+    d = fitsio.read(intargfn, rows=ii)
+    fitsio.write(targfn, d, clobber=True)
+    # AR run fiber assignment
+    opts = [
+        "--rundate",
+        args.rundate,
+        "--overwrite",
+        "--write_all_targets",
+        "--footprint",
+        footfn,
+        "--dir",
+        fadir,
+        "--sky",
+        skyfn,
+        "--targets",
+        targfn,
+        "--sky_per_petal",
+        args.sky_per_petal,
+        "--standards_per_petal",
+        args.standards_per_petal,
+    ]
+    print("run_assign_full for {}...".format(targfn))
+    ag = parse_assign(opts)
+    run_assign_full(ag)
+    # AR clean input files
+    for fn in [footfn, skyfn, targfn]:
+        os.remove(fn)
+    return True
 
 
 # AR update the catalogs after having run fa + stats
@@ -261,15 +314,21 @@ def sel_margin(ras, decs, radec, margin):
 # AR we just want the fracarea here
 def get_area(radec, tiles, margin):
     if args.dr == "dr8":
-        fn = "{}/targets/catalogs/dr8/0.31.1/pixweight/pixweight-dr8-0.31.1.fits".format(os.getenv("DESI_ROOT"))
+        fn = "{}/targets/catalogs/dr8/0.31.1/pixweight/pixweight-dr8-0.31.1.fits".format(
+            os.getenv("DESI_ROOT")
+        )
     if args.dr == "dr9":
-        fn = "{}/target/catalogs/dr9/0.47.0/pixweight/main/resolve/dark/pixweight-dark.fits".format(os.getenv("DESI_ROOT"))
+        fn = "{}/target/catalogs/dr9/0.47.0/pixweight/main/resolve/dark/pixweight-dark.fits".format(
+            os.getenv("DESI_ROOT")
+        )
     h = fits.open(fn)
     nside, nest = h[1].header["HPXNSIDE"], h[1].header["HPXNEST"]
     theta, phi = hp.pix2ang(nside, np.arange(hp.nside2npix(nside)), nest=nest)
     ras, decs = 180.0 / np.pi * phi, 90.0 - 180.0 / np.pi * theta
     keep = sel_margin(ras, decs, radec, margin)
-    return np.round(h[1].data["FRACAREA"][keep].sum() * hp.nside2pixarea(nside, degrees=True), 0)
+    return np.round(
+        h[1].data["FRACAREA"][keep].sum() * hp.nside2pixarea(nside, degrees=True), 0
+    )
 
 
 # AR select tracers
@@ -372,7 +431,7 @@ def main():
 
     # AR safe "box" area
     tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
-    area = get_area(args.radec, tiles, args.radec_margin)                                                                                                 
+    area = get_area(args.radec, tiles, args.radec_margin)
     print("area = {} deg2".format(area))
 
     # AR create the sky file
@@ -437,6 +496,10 @@ def main():
         # AR to store fa stats
         for key in ["NFIBER_AVAIL", "NTILE_AVAIL", "NUMOBS_DONE"]:
             myd[key] = np.zeros((len(d), args.npass), dtype=int)
+        # AR flagging "safe" radec
+        myd["ISRADEC_SAFE"] = sel_margin(
+            d["RA"], d["DEC"], args.radec, args.radec_margin
+        )
         # AR mtl
         mtl = make_mtl(myd.as_array(), args.program.upper())
         # AR tweak priority?
@@ -461,53 +524,97 @@ def main():
         fd["MTL"].write_key("RUNDATE", args.rundate)
         fd["MTL"].write_key("NSKYPET", args.sky_per_petal)
         fd["MTL"].write_key("NSTDPET", args.standards_per_petal)
-        fd.close()        
-
+        fd.close()
 
     # AR run the fiber assignment + update the target file
     if dofa:
-        # AR passids
+        # AR listing passids
         tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
         passids = np.unique(tiles["PASS"])
+        # AR sky_ra, sky_dec as global variable if args.numproc > 1
+        if args.numproc > 1:
+            global sky_ra, sky_dec
+            d = fitsio.read(get_fn(args.outdir, "sky"), columns=["RA", "DEC"])
+            sky_ra, sky_dec = d["RA"], d["DEC"]
         # AR looping on passids
         for ip in range(len(passids)):
             passid = passids[ip]
             # AR file/directory names
             if ip == 0:
                 input_targ = get_fn(args.outdir, "targ")
+                # AR targ_ra, targ_dec for as global variable if args.numproc > 1
+                # AR same for all passids
+                if args.numproc > 1:
+                    global targ_ra, targ_dec
+                    d = fitsio.read(input_targ, columns=["RA", "DEC"])
+                    targ_ra, targ_dec = d["RA"], d["DEC"]
             else:
                 input_targ = get_fn(args.outdir, "targ", passids[ip - 1])
             fadir = os.path.join(args.outdir, "faruns", "farun-pass{}".format(passid))
             output_targ = get_fn(args.outdir, "targ", passid)
             # AR clean fadir folder
-            fns = glob(os.path.join(fadir, "fba-*.fits"))
+            fns = glob(os.path.join(fadir, "fba-*.fits*"))
             if len(fns) > 0:
                 for fn in fns:
                     os.remove(fn)
             # AR run fiber assignment
-            opts = [
-                "--rundate",
-                args.rundate,
-                "--overwrite",
-                "--write_all_targets",
-                "--footprint",
-                get_fn(args.outdir, "tiles", passid=passid),
-                "--dir",
-                fadir,
-                "--sky",
-                get_fn(args.outdir, "sky"),
-                "--targets",
-                input_targ,
-                "--sky_per_petal",
-                args.sky_per_petal,
-                "--standards_per_petal",
-                args.standards_per_petal,
-            ]
-            print("Running raw fiber assignment (fba_run)...")
-            ag = parse_assign(opts)
-            run_assign_full(ag)
+            if args.numproc == 1:
+                opts = [
+                    "--rundate",
+                    args.rundate,
+                    "--overwrite",
+                    "--write_all_targets",
+                    "--footprint",
+                    get_fn(args.outdir, "tiles", passid=passid),
+                    "--dir",
+                    fadir,
+                    "--sky",
+                    get_fn(args.outdir, "sky"),
+                    "--targets",
+                    input_targ,
+                    "--sky_per_petal",
+                    args.sky_per_petal,
+                    "--standards_per_petal",
+                    args.standards_per_petal,
+                ]
+                print("Running raw fiber assignment (fba_run)...")
+                ag = parse_assign(opts)
+                run_assign_full(ag)
+            else:
+                # AR tileids for that passid
+                tileids = tiles["TILEID"][tiles["PASS"] == passid]
+                # AR tiles file for that passid
+                foot_pass = get_fn(args.outdir, "tiles", passid=passid)
+                # AR preparing files per tileid
+                intargfn_fadir_footfn_skyfn_targfn = []
+                for tileid in tileids:
+                    # AR tileid filenames
+                    footfn = foot_pass.replace(
+                        ".fits", "-{:06d}.fits".format(int(tileid))
+                    )
+                    skyfn = footfn.replace("tiles-", "sky-")
+                    targfn = footfn.replace("tiles-", "targ-")
+                    h = fits.open(foot_pass)
+                    h[1].data = h[1].data[h[1].data["TILEID"] == tileid]
+                    h.writeto(footfn, overwrite=True)
+                    # AR
+                    intargfn_fadir_footfn_skyfn_targfn += [
+                        ",".join([input_targ, fadir, footfn, skyfn, targfn])
+                    ]
+                pool = sharedmem.MapReduce(np=args.numproc)
+                with pool:
+                    _ = pool.map(
+                        _do_run_assign_full, intargfn_fadir_footfn_skyfn_targfn
+                    )
+
             # AR update the catalogs after having run fa + stats
             _ = update_after_farun(input_targ, fadir, passid, output_targ)
+        # AR after last run, we provide a catalog cut on the safe region
+        h = fits.open(get_fn(args.outdir, "targ", passid))
+        h[1].data = h[1].data[h[1].data["ISRADEC_SAFE"]]
+        h.writeto(
+            get_fn(args.outdir, "targ", passid).replace(".fits", "-radec_safe.fits")
+        )
 
     # AR analyze the runs
     if doresults:
@@ -666,7 +773,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--nolog", help="do not print log file (default=n)", type=str, default="n",
     )
-
+    parser.add_argument(
+        "--numproc",
+        help="number of concurrent processes to use (default=1)",
+        type=int,
+        default=1,
+    )
     #
     args = parser.parse_args()
     for kwargs in args._get_kwargs():
@@ -722,7 +834,16 @@ if __name__ == "__main__":
         fns = glob(os.path.join(args.outdir, "faruns", "farun-pass*", "*fits"))
         fns += [
             get_fn(args.outdir, "tiles", passid=passid)
-            for passid in np.arange(11, dtype=int)
+            for passid in np.arange(args.npass, dtype=int)
+        ]
+        fns += [
+            get_fn(args.outdir, "targ", passid=passid)
+            for passid in np.arange(args.npass, dtype=int)
+        ]
+        fns += [
+            get_fn(args.outdir, "targ", passid=args.npass).replace(
+                ".fits", "-radec_safe.fits"
+            )
         ]
         for fn in fns:
             if os.path.isfile(fn):
