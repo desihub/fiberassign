@@ -17,7 +17,7 @@ import fitsio
 # should import the SV bitmasks here.
 # AR duplicating what s required for sv2;
 # AR should definitely be re-written to handle sv3, etc
-
+# AR and duplicating for sv3...
 
 from desitarget.targetmask import desi_mask
 
@@ -27,6 +27,7 @@ from desitarget.sv1.sv1_targetmask import desi_mask as sv1_mask
 from desitarget.sv1.sv1_targetmask import scnd_mask as sv1_scnd_mask
 # AR
 from desitarget.sv2.sv2_targetmask import desi_mask as sv2_mask
+from desitarget.sv3.sv3_targetmask import desi_mask as sv3_mask
 
 from desitarget.targets import main_cmx_or_sv
 
@@ -116,6 +117,62 @@ def default_main_excludemask():
     excludemask |= desi_mask.BRIGHT_OBJECT
     excludemask |= desi_mask.IN_BRIGHT_OBJECT
     return excludemask
+
+
+def default_sv3_sciencemask():
+    """Returns default mask of bits for science targets in SV1 survey.
+    """
+    sciencemask = 0
+    sciencemask |= sv3_mask["LRG"].mask
+    sciencemask |= sv3_mask["ELG"].mask
+    sciencemask |= sv3_mask["QSO"].mask
+    sciencemask |= sv3_mask["BGS_ANY"].mask
+    sciencemask |= sv3_mask["MWS_ANY"].mask
+    sciencemask |= sv3_mask["SCND_ANY"].mask
+    return sciencemask
+
+def default_sv3_stdmask():
+    """Returns default mask of bits for standards in SV1 survey.
+    """
+    stdmask = 0
+    stdmask |= sv3_mask["STD_FAINT"].mask
+    stdmask |= sv3_mask["STD_WD"].mask
+    stdmask |= sv3_mask["STD_BRIGHT"].mask
+    return stdmask
+
+def default_sv3_skymask():
+    """Returns default mask of bits for sky targets in SV1 survey.
+    """
+    skymask = 0
+    skymask |= sv3_mask["SKY"].mask
+    return skymask
+
+def default_sv3_suppskymask():
+    """Returns default mask of bits for suppsky targets in SV1 survey.
+    """
+    suppskymask = 0
+    suppskymask |= sv3_mask["SUPP_SKY"].mask
+    return suppskymask
+
+def default_sv3_safemask():
+    """Returns default mask of bits for 'safe' targets in SV1 survey.
+
+    Note: these are targets of last resort; they are safe locations where
+    we won't saturate the detector, but aren't good for anything else.
+    """
+    safemask = 0
+    safemask |= sv3_mask["BAD_SKY"].mask
+    return safemask
+
+def default_sv3_excludemask():
+    """Returns default mask of bits for SV1 survey targets to NOT observe.
+    """
+    excludemask = 0
+    # Exclude BRIGHT_OBJECT and IN_BRIGHT_OBJECT, but not NEAR_BRIGHT_OBJECT
+    excludemask |= sv3_mask.BRIGHT_OBJECT
+    excludemask |= sv3_mask.IN_BRIGHT_OBJECT
+    return excludemask
+
 
 def default_sv2_sciencemask():
     """Returns default mask of bits for science targets in SV1 survey.
@@ -445,6 +502,14 @@ def default_survey_target_masks(survey):
         suppskymask = default_sv2_suppskymask()
         safemask = default_sv2_safemask()
         excludemask = default_sv2_excludemask()
+    # AR duplicating for sv3...
+    elif survey == "sv3":
+        sciencemask = default_sv3_sciencemask()
+        stdmask = default_sv3_stdmask()
+        skymask = default_sv3_skymask()
+        suppskymask = default_sv3_suppskymask()
+        safemask = default_sv3_safemask()
+        excludemask = default_sv3_excludemask()
 
     return (sciencemask, stdmask, skymask, suppskymask, safemask, excludemask)
 
@@ -473,6 +538,8 @@ def default_target_masks(data):
         col = "SV1_DESI_TARGET"
     elif filesurvey == "sv2":
         col = "SV2_DESI_TARGET"
+    elif filesurvey == "sv3":
+        col = "SV3_DESI_TARGET"
     sciencemask, stdmask, skymask, suppskymask, safemask, excludemask = \
         default_survey_target_masks(filesurvey)
     return (filesurvey, col, sciencemask, stdmask, skymask, suppskymask,
@@ -771,6 +838,20 @@ def load_target_table(tgs, tgdata, survey=None, typeforce=None, typecol=None,
             "|".join(sv2_mask.names(safemask))))
         log.debug("  excludemask {}".format(
             "|".join(sv2_mask.names(excludemask))))
+    # AR adding sv3...
+    elif survey == "sv3":
+        log.debug("  sciencemask {}".format(
+            "|".join(sv3_mask.names(sciencemask))))
+        log.debug("  stdmask     {}".format(
+            "|".join(sv3_mask.names(stdmask))))
+        log.debug("  skymask     {}".format(
+            "|".join(sv3_mask.names(skymask))))
+        log.debug("  suppskymask     {}".format(                                                                                                              
+            "|".join(sv3_mask.names(suppskymask))))
+        log.debug("  safemask    {}".format(
+            "|".join(sv3_mask.names(safemask))))
+        log.debug("  excludemask {}".format(
+            "|".join(sv3_mask.names(excludemask))))
     else:
         raise RuntimeError("unknown survey type, should never get here!")
     append_target_table(tgs, tgdata, survey, typeforce, typecol, sciencemask,
