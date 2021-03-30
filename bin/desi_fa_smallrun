@@ -293,19 +293,14 @@ def update_after_farun(input_targ, fadir, passid, output_targ):
 def sel_margin(ras, decs, radec, margin):
     ramin, ramax, decmin, decmax = [float(x) for x in radec.split(",")]
     keep = (decs > decmin + margin) & (decs < decmax - margin)
-    grid_decs = np.linspace(-90, 90, 181)
-    for i in range(len(grid_decs) - 1):
-        decmid = 0.5 * (grid_decs[i] + grid_decs[i + 1])
-        ra_margin = margin / np.cos(np.radians(decmid))
-        sel = (decs >= grid_decs[i]) & (decs < grid_decs[i + 1])
-        if ramax < ramin:
-            reject_ramin = (ras > ramin) & (ras < ramin + ra_margin)
-            reject_ramax = (ras < ramax) & (ras > ramax - ra_margin)
-        else:
-            reject_ramin = ras < ramin + ra_margin
-            reject_ramax = ras > ramax - ra_margin
-        reject = (sel) & ((reject_ramin) | (reject_ramax))
-        keep[reject] = False
+    ra_margins = margin / np.cos(np.radians(decs))
+    if ramax < ramin:
+        reject_ramin = (ras > ramin) & (ras < ramin + ra_margins)
+        reject_ramax = (ras < ramax) & (ras > ramax - ra_margins)
+    else:
+        reject_ramin = ras < ramin + ra_margins
+        reject_ramax = ras > ramax - ra_margins
+    keep[(reject_ramin) | (reject_ramax)] = False
     return keep
 
 
