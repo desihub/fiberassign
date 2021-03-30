@@ -697,9 +697,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--tilesfn",
-        help="tiles file full path (default: 4112packing-2021-03-28-formatted-dark15pass-bright4pass-backup4pass)",
+        help="tiles file full path (default: 4112packing-2021-03-29-formatted-dark15pass-bright4pass-backup4pass)",
         type=str,
-        default="{}/survey/fiberassign/misc/tiles-4112packing-2021-03-28-formatted-dark15pass-bright4pass-backup4pass.fits".format(
+        default="{}/survey/fiberassign/misc/tiles-4112packing-2021-03-29-formatted-dark15pass-bright4pass-backup4pass.fits".format(
             os.getenv("DESI_ROOT")
         ),
     )
