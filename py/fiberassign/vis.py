@@ -47,9 +47,9 @@ def set_matplotlib_pdf_backend():
         return
     try:
         import matplotlib
-        matplotlib.use("pdf", warn=False)
+        matplotlib.use("pdf")
         import matplotlib.pyplot as plt
-    except:
+    except ValueError:
         warnings.warn(
             """Couldn't set the PDF matplotlib backend,
 positioner plots may be low resolution.
