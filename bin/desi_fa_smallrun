@@ -591,7 +591,7 @@ def main():
         mtl = make_mtl(myd.as_array(), args.program.upper())
         # AR tweak priority?
         if args.priority_orig is not None:
-            myl = tweak_priority(
+            mtl = tweak_priority(
                 mtl, args.priority_orig, args.priority_frac, args.priority_new
             )
         mtl.write(get_fn(args.outdir, "targ"), overwrite=True)
