@@ -7,6 +7,8 @@ import numpy as np
 import astropy.io.fits as fits
 from astropy.table import Table
 import fitsio
+from astropy import units
+from astropy.coordinates import SkyCoord
 from desitarget.targetmask import obsconditions
 from desitarget.io import read_targets_in_tiles
 from desitarget.mtl import make_mtl
@@ -44,7 +46,7 @@ def get_fn(outdir, flavor, passid=None):
         fn = os.path.join(args.outdir, "inputs", "settings.asc")
     elif flavor == "log":
         fn = os.path.join(args.outdir, "outputs", "file.log")
-    elif flavor in ["fastats-targ", "fastats-sky"]:
+    elif flavor in ["fastats-targ", "fastats-sky", "fastats-pairs"]:
         fn = os.path.join(outdir, "outputs", "{}.asc".format(flavor))
     else:
         fn = os.path.join(outdir, "inputs", "{}.fits".format(flavor))
@@ -340,9 +342,6 @@ def sel_tracer(d, tracer):
 # AR ! should be run on a region excluding the edges !
 def fastats_targ(tracers, targ_fn, area):
     d = fits.open(targ_fn)[1].data
-    # AR cutting out a safe "box" for analysis
-    keep = sel_margin(d["RA"], d["DEC"], args.radec, args.radec_margin)
-    d = d[keep]
     # AR number of assigned fibers per target
     numobs_tot = d["NUMOBS_DONE"].sum(axis=1)
     # AR
@@ -417,6 +416,82 @@ def fastats_sky(passids, area):
     f.close()
     return True
 
+# AR find all pairs with search_radius (arcsec)
+# AR copied from https://github.com/rongpu/desi-examples/blob/master/bright_star_contamination/match_coord.py
+def search_around(ra1, dec1, ra2, dec2, search_radius=1., verbose=True):
+	# protect the global variables from being changed by np.sort
+	ra1, dec1, ra2, dec2 = list(map(np.copy, [ra1, dec1, ra2, dec2]))
+	# Matching catalogs
+	sky1 = SkyCoord(ra1*units.degree,dec1*units.degree, frame='icrs')
+	sky2 = SkyCoord(ra2*units.degree,dec2*units.degree, frame='icrs')
+	idx1, idx2, d2d, d3d = sky2.search_around_sky(sky1, seplimit=search_radius*units.arcsec)
+	if verbose:
+		print(('%d nearby objects'%len(idx1)))
+	# convert distances to numpy array in arcsec
+	d2d   = np.array(d2d.to(units.arcsec))
+	d_ra  = (ra2[idx2]-ra1[idx1])*3600.    # in arcsec
+	d_dec = (dec2[idx2]-dec1[idx1])*3600. # in arcsec
+	##### Convert d_ra to actual arcsecs #####
+	mask       = d_ra > 180*3600
+	d_ra[mask] = d_ra[mask] - 360.*3600
+	mask       = d_ra < -180*3600
+	d_ra[mask] = d_ra[mask] + 360.*3600
+	d_ra       = d_ra * np.cos(dec1[idx1]/180*np.pi)
+	##########################################
+	return idx1, idx2, d2d, d_ra, d_dec
+
+
+# AR pair count diagnosis
+# AR ! should be run on a region excluding the edges !
+# AR based on Ashley https://github.com/desihub/LSS/blob/master/Sandbox/testassignments.ipynb
+def fastats_pairs(tracers, targ_fn, d2dmax_degree):
+    d = fits.open(targ_fn)[1].data
+    ras, decs = d["RA"], d["DEC"]
+    # AR number of assigned fibers per target
+    numobs_tot = d["NUMOBS_DONE"].sum(axis=1)
+    # AR count pairs
+    f = open(get_fn(args.outdir, "fastats-pairs"), "w")
+    f.write("# TRACER1 TRACER2 ASSGN2TGT RAND2TGT RATIO\n")
+    for i1 in range(len(tracers)-1):
+        tracer1 = tracers[i1]
+        ist1 = sel_tracer(d, tracer1)
+        ist1assgn = (ist1) & (numobs_tot >= 1)
+        for i2 in range(i1+1, len(tracers)):
+            tracer2 = tracers[i2]
+            ist2 = sel_tracer(d, tracer2)
+            # AR excluding tracer1
+            ist2 &= ~ist1
+            ist2assgn = (ist2) & (numobs_tot >= 1)
+            # AR TGT pairs
+            _, _, d2d, _, _ = search_around(
+                    ras[ist1], decs[ist1],
+                    ras[ist2], decs[ist2],
+                    search_radius=d2dmax_degree*3600,
+                    verbose=False)
+            np_tgt = len(d2d)
+            # AR ASSGN pairs
+            _, _, d2d, _, _ = search_around(
+                    ras[ist1assgn], decs[ist1assgn],
+                    ras[ist2assgn], decs[ist2assgn],
+                    search_radius=d2dmax_degree*3600,
+                    verbose=False)
+            np_assgn = len(d2d)
+            # AR fraction of pairs with both assigned
+            frac_assgn = np_assgn/np_tgt
+            # AR fraction of pairs if random
+            frac_rand = (ist1assgn.sum()/ist1.sum()) * (ist2assgn.sum()/ist2.sum())
+            f.write(
+                "{}\t{}\t{:.2f}\t{:.2f}\t{:.2f}\n".format(
+                    tracer1,
+                    tracer2,
+                    frac_assgn,
+                    frac_rand,
+                    frac_assgn/frac_rand,
+                )
+            )
+    f.close()
+    return True
+ 
 
 def main():
 
@@ -621,10 +696,17 @@ def main():
         # AR fastats-targ:
         # AR using the run for the last passid, cut on the "safe" region
         tracers = ["ALL", "LYA", "QSO", "LRG", "ELG"]
-        targ_fn = get_fn(args.outdir, "targ", passid=args.npass).replace(
+        targ_fn = get_fn(args.outdir, "targ", passid=args.npass - 1).replace(
                 ".fits", "-radec_safe.fits"
             )
         _ = fastats_targ(tracers, targ_fn, area)
+
+        # AR basic pair counting
+        # AR cf. Ashley https://github.com/desihub/LSS/blob/master/Sandbox/testassignments.ipynb
+        tracers = ["QSO", "LRG", "ELG"]
+        #tracers = ["ELG", "QSO", "LRG"]
+        d2dmax_degree = 0.01 
+        _ = fastats_pairs(tracers, targ_fn, d2dmax_degree)
 
         # AR fastats-sky:
         # AR using the whole region to get the numbers right
