@@ -337,6 +337,7 @@ def sel_tracer(d, tracer):
 
 
 # AR fastats-targ
+# AR ! should be run on a region excluding the edges !
 def fastats_targ(tracers, targ_fn, area):
     d = fits.open(targ_fn)[1].data
     # AR cutting out a safe "box" for analysis
@@ -617,12 +618,16 @@ def main():
         tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
         passids = np.unique(tiles["PASS"])
 
-        # AR fastats-targ (using the run for the last passid)
+        # AR fastats-targ:
+        # AR using the run for the last passid, cut on the "safe" region
         tracers = ["ALL", "LYA", "QSO", "LRG", "ELG"]
-        targ_fn = get_fn(args.outdir, "targ", passids[-1])
+        targ_fn = get_fn(args.outdir, "targ", passid=args.npass).replace(
+                ".fits", "-radec_safe.fits"
+            )
         _ = fastats_targ(tracers, targ_fn, area)
 
-        # AR fastats-sky
+        # AR fastats-sky:
+        # AR using the whole region to get the numbers right
         _ = fastats_sky(passids, area)
 
 
