@@ -9,7 +9,7 @@ from astropy.io import fits
 from astropy.table import Table
 import fitsio
 import desitarget
-from desitarget.io import read_targets_in_tiles, write_targets
+from desitarget.io import read_targets_in_tiles, write_targets, write_skies
 from desitarget.mtl import inflate_ledger
 from desitarget.targetmask import desi_mask, obsconditions
 from desitarget.targets import set_obsconditions
@@ -692,12 +692,11 @@ def main():
             log=log,
             step="dosky",
         )
-        n, tmpfn = write_targets(
+        n, tmpfn = write_skies(
             tmpoutdir,
             d,
             indir=mydirs["sky"],
             indir2=mydirs["skysupp"],
-            survey=args.survey,
         )
         _ = mv_write_targets_out(tmpfn, tmpoutdir, mytmpouts["sky"], log=log)
         log.info("{:.1f}s\tdosky\t{} written".format(time() - start, mytmpouts["sky"]))
