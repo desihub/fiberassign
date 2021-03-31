@@ -306,7 +306,7 @@ def sel_margin(ras, decs, radec, margin):
 # AR get the tile area and the safe "box" area
 # AR picking one pixweight file
 # AR we just want the fracarea here
-def (radec, tiles, margin):
+def get_area(radec, tiles, margin):
     if args.dr == "dr8":
         fn = "{}/targets/catalogs/dr8/0.31.1/pixweight/pixweight-dr8-0.31.1.fits".format(
             os.getenv("DESI_ROOT")
