@@ -303,7 +303,7 @@ def sel_margin(ras, decs, radec, margin):
     return keep
 
 
-# AR get the safe "box" area
+# AR get the tile area and the safe "box" area
 # AR picking one pixweight file
 # AR we just want the fracarea here
 def get_area(radec, tiles, margin):
@@ -319,10 +319,17 @@ def get_area(radec, tiles, margin):
     nside, nest = h[1].header["HPXNSIDE"], h[1].header["HPXNEST"]
     theta, phi = hp.pix2ang(nside, np.arange(hp.nside2npix(nside)), nest=nest)
     ras, decs = 180.0 / np.pi * phi, 90.0 - 180.0 / np.pi * theta
-    keep = sel_margin(ras, decs, radec, margin)
-    return np.round(
+    # AR cutting on tiles
+    keep = is_point_in_desi(tiles, ras, decs)
+    area_tile = np.round(
         h[1].data["FRACAREA"][keep].sum() * hp.nside2pixarea(nside, degrees=True), 0
     )
+    # AR further cutting on margins
+    keep &= sel_margin(ras, decs, radec, margin)
+    area_safe = np.round(
+        h[1].data["FRACAREA"][keep].sum() * hp.nside2pixarea(nside, degrees=True), 0
+    )
+    return area_tile, area_safe
 
 
 # AR select tracers
@@ -504,14 +511,14 @@ def main():
 
     # AR safe "box" area
     tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
-    area = get_area(args.radec, tiles, args.radec_margin)
-    print("area = {} deg2".format(area))
+    area_tile, area_safe = get_area(args.radec, tiles, args.radec_margin)
+    print("area_tile = {} deg2, area_safe = {} deg2".format(area_tile, area_safe))
 
     # AR create the sky file
     if dosky:
         tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
-        if args.dtver == "0.54.0.dev4695":
-            hpdir = "/global/cscratch1/sd/adamyers/dr9/0.54.0.dev4695/skies"
+        if args.dtver in ["0.54.0.dev4695", "0.55.0.dev4725"]:
+            hpdir = os.path.join("/global/cscratch1/sd/adamyers/dr9", args.dtver, "skies")
         else:
             hpdir = os.path.join(
                 os.getenv("DESI_TARGET"), "catalogs", args.dr, args.dtver, "skies"
@@ -535,12 +542,14 @@ def main():
     # AR create the targets file
     if dotarg:
         tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
-        if args.dtver == "0.54.0.dev4695":
+        if args.dtver in ["0.54.0.dev4695", "0.55.0.dev4725"]:
             hpdir = os.path.join(
-                "/global/cscratch1/sd/adamyers/dr9/0.54.0.dev4695/targets",
+                "/global/cscratch1/sd/adamyers/dr9",
+                args.dtver,
+                "targets",
                 args.survey,
                 "resolve",
-                "dark/",
+                args.program,
             )
         else:
             hpdir = os.path.join(
@@ -600,7 +609,8 @@ def main():
         fd["MTL"].write_key("PROGRAM", args.program)
         fd["MTL"].write_key("RADEC", args.radec)
         fd["MTL"].write_key("MARGIN", args.radec_margin)
-        fd["MTL"].write_key("AREASAFE", area)
+        fd["MTL"].write_key("AREATILE", area_tile)
+        fd["MTL"].write_key("AREASAFE", area_safe)
         fd["MTL"].write_key("PRIOMASK", args.priority_mask)
         fd["MTL"].write_key("PRIOFRAC", args.priority_frac)
         fd["MTL"].write_key("PRIONEW", args.priority_new)
@@ -712,7 +722,7 @@ def main():
         targ_fn = get_fn(args.outdir, "targ", passid=args.npass - 1).replace(
             ".fits", "-radec_safe.fits"
         )
-        _ = fastats_targ(tracers, targ_fn, area)
+        _ = fastats_targ(tracers, targ_fn, area_safe)
 
         # AR basic pair counting
         # AR cf. Ashley https://github.com/desihub/LSS/blob/master/Sandbox/testassignments.ipynb
@@ -722,7 +732,7 @@ def main():
 
         # AR fastats-sky:
         # AR using the whole region to get the numbers right
-        _ = fastats_sky(passids, area)
+        _ = fastats_sky(passids, area_tile)
 
 
 if __name__ == "__main__":
@@ -935,7 +945,7 @@ if __name__ == "__main__":
             for passid in np.arange(args.npass, dtype=int)
         ]
         fns += [
-            get_fn(args.outdir, "targ", passid=args.npass).replace(
+            get_fn(args.outdir, "targ", passid=args.npass-1).replace(
                 ".fits", "-radec_safe.fits"
             )
         ]
