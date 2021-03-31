@@ -3,10 +3,29 @@
 fiberassign change log
 ======================
 
-2.1.2 (unreleased)
+2.2.1 (unreleased)
 ------------------
 
-* No changes yet
+* No changes yet.
+
+2.2.0 (2021-03-31)
+------------------
+
+* Support dedicated secondary programs (PR `#311`_).
+* Migrate from Travis to GitHub workflows (PR `#313`_).
+* Support sv1 tiles (PR `#314`_).
+* Support new desimodel focal plane state format (PR `#315`_).
+* Support sv2 tiles (PR `#318`_).
+* new fba_launch wrapper script (PR `#319`_).
+* Support matplotlib 3.3.4 (PR `#320`_).
+
+.. _`#311`: https://github.com/desihub/fiberassign/pull/311
+.. _`#313`: https://github.com/desihub/fiberassign/pull/313
+.. _`#314`: https://github.com/desihub/fiberassign/pull/314
+.. _`#315`: https://github.com/desihub/fiberassign/pull/315
+.. _`#318`: https://github.com/desihub/fiberassign/pull/318
+.. _`#319`: https://github.com/desihub/fiberassign/pull/319
+.. _`#320`: https://github.com/desihub/fiberassign/pull/320
 
 2.1.1 (2021-02-11)
 ------------------
