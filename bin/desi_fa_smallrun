@@ -129,32 +129,29 @@ def set_lya(d, lyafrac):
 
 
 # AR tweak PRIORITY_INIT and PRIORITY
-def tweak_priority(d, priority_orig, priority_frac, priority_new):
+def tweak_priority(d, priority_mask, priority_frac, priority_new):
     # AR to store the targets with tweaked priority
     ii_used = []
-    # AR original PRIORITY_INIT to work with
-    # AR (as we will update the d["PRIORITY_INIT"] array)
-    prios = d["PRIORITY_INIT"].copy()
-    for po, pf, pn in zip(
-        priority_orig.split(","), priority_frac.split(","), priority_new.split(",")
+    for pm, pf, pn in zip(
+        priority_mask.split(","), priority_frac.split(","), priority_new.split(",")
     ):
-        ii = np.where(prios == int(po))[0]
+        ii = np.where((d[dtkey] & desi_mask[pm]) > 0)[0]
         n_tweak = int(len(ii) * float(pf))
         ii_avail = ii[~np.in1d(ii, ii_used)]
         if len(ii_avail) < n_tweak:
             sys.exit(
-                "cannot promote {}/{} targets from PRIORITY={} to PRIORITY={}; exiting".format(
-                    n_tweak, len(ii_avail), po, pn
+                "cannot force {}/{} {} targets to PRIORITY={}; exiting".format(
+                    n_tweak, len(ii_avail), pm, pn
                 )
             )
         print(
-            "promoting {}/{} targets from PRIORITY={} to PRIORITY={}".format(
-                n_tweak, len(ii_avail), po, pn
+            "forcing {}/{} {} targets to PRIORITY={}".format(
+                n_tweak, len(ii_avail), pm, pn
             )
         )
         ii_tweak = np.random.choice(ii_avail, size=n_tweak, replace=False)
-        d["PRIORITY_INIT"][ii_tweak] = int(pn)
-        d["PRIORITY"][ii_tweak] = int(pn)
+        d["PRIORITY_INIT"][ii_tweak] = np.clip(d["PRIORITY_INIT"][ii_tweak], int(pn), None)
+        d["PRIORITY"][ii_tweak] = np.clip(d["PRIORITY"][ii_tweak], int(pn), None)
         ii_used += ii_tweak.tolist()
     return d
 
@@ -590,9 +587,9 @@ def main():
         # AR mtl
         mtl = make_mtl(myd.as_array(), args.program.upper())
         # AR tweak priority?
-        if args.priority_orig is not None:
+        if args.priority_mask is not None:
             mtl = tweak_priority(
-                mtl, args.priority_orig, args.priority_frac, args.priority_new
+                mtl, args.priority_mask, args.priority_frac, args.priority_new
             )
         mtl.write(get_fn(args.outdir, "targ"), overwrite=True)
         # AR propagating some settings into the PRIMARY header
@@ -604,7 +601,7 @@ def main():
         fd["MTL"].write_key("RADEC", args.radec)
         fd["MTL"].write_key("MARGIN", args.radec_margin)
         fd["MTL"].write_key("AREASAFE", area)
-        fd["MTL"].write_key("PRIOORIG", args.priority_orig)
+        fd["MTL"].write_key("PRIOMASK", args.priority_mask)
         fd["MTL"].write_key("PRIOFRAC", args.priority_frac)
         fd["MTL"].write_key("PRIONEW", args.priority_new)
         fd["MTL"].write_key("TILESFN", args.tilesfn)
@@ -838,20 +835,20 @@ if __name__ == "__main__":
         default="40",
     )
     parser.add_argument(
-        "--priority_orig",
-        help="comma-separated list of priorities to promote (e.g. 3000,3200)",
+        "--priority_mask",
+        help="comma-separated list of the desi_mask names to promote the priority of (e.g. ELG_HIP,LRG)",
         type=str,
         default=None,
     )
     parser.add_argument(
         "--priority_frac",
-        help="comma-separated list of the fraction of --priority_orig targets to promote (e.g. 0.25,0.15)",
+        help="comma-separated list of the fraction of --priority_mask targets to promote (e.g. 0.25,0.15)",
         type=str,
         default=None,
     )
     parser.add_argument(
         "--priority_new",
-        help="comma-separated list of the priority values to promote the --priority_orig to (e.g. 3400,3400)",
+        help="comma-separated list of the priority values to promote the --priority_mask to (e.g. 3400,3400)",
         type=str,
         default=None,
     )
@@ -892,16 +889,16 @@ if __name__ == "__main__":
         sys.exit(
             "args.lyafrac = {} => should be within 0 and 1; exiting".format(ags.lyafrac)
         )
-    po, pf, pn = args.priority_orig, args.priority_frac, args.priority_new
-    if (po is not None) | (pf is not None) | (pn is not None):
-        if (po is None) | (pf is None) | (pn is None):
+    pm, pf, pn = args.priority_mask, args.priority_frac, args.priority_new
+    if (pm is not None) | (pf is not None) | (pn is not None):
+        if (pm is None) | (pf is None) | (pn is None):
             sys.exit(
-                "args.priority_orig, args.priority_frac, args.priority_new should all be or not be None; exiting"
+                "args.priority_mask, args.priority_frac, args.priority_new should all be or not be None; exiting"
             )
-        npo, npf, npn = len(po.split(",")), len(pf.split(",")), len(pn.split(","))
-        if (npo != npf) | (npo != npn) | (npf != npn):
+        npm, npf, npn = len(pm.split(",")), len(pf.split(",")), len(pn.split(","))
+        if (npm != npf) | (npm != npn) | (npf != npn):
             sys.exit(
-                "inconsistent args.priority_orig, args.priority_frac, args.priority_new; exiting"
+                "inconsistent args.priority_mask, args.priority_frac, args.priority_new; exiting"
             )
 
     # AR outdir
