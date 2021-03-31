@@ -18,6 +18,8 @@ fiberassign change log
 * Support sv2 tiles (PR `#318`_).
 * new fba_launch wrapper script (PR `#319`_).
 * Support matplotlib 3.3.4 (PR `#320`_).
+* use desitarget write_skies instead of write_targets for skies
+  (commit dd69bdd)
 
 .. _`#311`: https://github.com/desihub/fiberassign/pull/311
 .. _`#313`: https://github.com/desihub/fiberassign/pull/313
