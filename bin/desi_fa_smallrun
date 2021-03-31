@@ -517,8 +517,8 @@ def main():
     # AR create the sky file
     if dosky:
         tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
-        if args.dtver == "0.54.0.dev4695":
-            hpdir = "/global/cscratch1/sd/adamyers/dr9/0.54.0.dev4695/skies"
+        if args.dtver in ["0.54.0.dev4695", "0.55.0.dev4725"]:
+            hpdir = os.path.join("/global/cscratch1/sd/adamyers/dr9", args.dtver, "skies")
         else:
             hpdir = os.path.join(
                 os.getenv("DESI_TARGET"), "catalogs", args.dr, args.dtver, "skies"
@@ -542,12 +542,14 @@ def main():
     # AR create the targets file
     if dotarg:
         tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
-        if args.dtver == "0.54.0.dev4695":
+        if args.dtver in ["0.54.0.dev4695", "0.55.0.dev4725"]:
             hpdir = os.path.join(
-                "/global/cscratch1/sd/adamyers/dr9/0.54.0.dev4695/targets",
+                "/global/cscratch1/sd/adamyers/dr9",
+                args.dtver,
+                "targets",
                 args.survey,
                 "resolve",
-                "dark/",
+                args.program,
             )
         else:
             hpdir = os.path.join(
