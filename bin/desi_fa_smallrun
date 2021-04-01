@@ -10,11 +10,12 @@ import fitsio
 from astropy import units
 from astropy.coordinates import SkyCoord
 from desitarget.targetmask import obsconditions
+from desitarget.targets import encode_targetid
 from desitarget.io import read_targets_in_tiles
 from desitarget.mtl import make_mtl, calc_priority
 from fiberassign.scripts.assign import parse_assign, run_assign_full
 from fiberassign.scripts.merge import parse_merge, run_merge
-from desimodel.footprint import is_point_in_desi
+from desimodel.footprint import is_point_in_desi, tiles2pix
 from desiutil.redirect import stdouterr_redirected
 import healpy as hp
 from desitarget.internal import sharedmem
@@ -119,6 +120,92 @@ def create_tiles(infn, program, radec, outdir):
             os.mkdir(fadir)
         h.writeto(get_fn(args.outdir, "tiles", passid=passid), overwrite=True)
     return True
+
+
+# AR wrapper to read targets
+def wrapper_read_targets():
+    if args.dtver in ["0.54.0.dev4695", "0.55.0.dev4725"]:
+        hpdir = os.path.join(
+            "/global/cscratch1/sd/adamyers/dr9",
+            args.dtver,
+            "targets",
+            args.survey,
+            "resolve",
+            args.program,
+        )
+    else:
+        hpdir = os.path.join(
+            os.getenv("DESI_TARGET"),
+            "catalogs",
+            args.dr,
+            args.dtver,
+            "targets",                                                                                                                                         
+            args.survey,
+            "resolve",
+            args.program,
+        )
+    # AR we only store some columns...
+    columns = ["TARGETID", "RA", "DEC"]
+    columns += [dtkey, dtkey.replace("DESI", "BGS"), dtkey.replace("DESI", "MWS")]
+    columns += [
+        "PHOTSYS",
+        "SUBPRIORITY",
+        "OBSCONDITIONS",
+        "PRIORITY_INIT",
+        "NUMOBS_INIT",
+    ]
+    for band in ["G", "R", "Z", "W1", "W2"]:
+        columns += ["FLUX_{}".format(band), "MW_TRANSMISSION_{}".format(band)]
+        if band in ["G", "R", "Z"]:
+            columns += ["FIBERFLUX_{}".format(band)]
+    d = read_targets_in_tiles(hpdir, tiles, columns=columns, quick=True)
+    # AR remove bgs from dark program?
+    # AR we identify bgs-only from the priority
+    if args.rmvdarkbgs == "y":
+        keep = (d["PRIORITY_INIT"] != 2000) & (d["PRIORITY_INIT"] != 2100)
+        d = d[keep]
+    return d
+
+
+# AR wrapper to read randoms
+def wrapper_read_randoms():
+    tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
+    # AR all sky 2500/deg2 random file
+    fn = os.path.join(os.getenv("DESI_ROOT"), "target/catalogs/dr9/0.49.0/randoms/resolve/randoms-allsky-1-0.fits")
+    # AR healpix settings
+    from astropy.time import Time
+    print(Time.now(), "start")
+    hdr = fits.getheader(fn, 1)
+    nside, nest = hdr["HPXNSIDE"], hdr["HPXNEST"]
+    rand_dens = hdr["DENSITY"]
+    # AR hp pixels touching the tiles
+    pixlist = tiles2pix(nside, tiles=tiles)
+    # AR reading the hpxpixel
+    d = fitsio.read(fn, columns=["HPXPIXEL"])
+    print(Time.now(), "first read done")
+    # AR cutting on rands touching pixlist
+    rows = np.where(np.in1d(d["HPXPIXEL"], pixlist))[0]
+    d = fitsio.read(fn, columns=["RA", "DEC", "BRICKID"], rows=rows)
+    print(Time.now(), "second read done")
+    # AR properly cutting on the tiles footprint
+    keep = is_point_in_desi(tiles, d["RA"], d["DEC"])
+    d = d[keep]
+    ras, decs, brickids = d["RA"], d["DEC"], d["BRICKID"]
+    nrand = len(ras)
+    # AR creating fake columns
+    print(Time.now(), "start build table")
+    d = Table()
+    d["TARGETID"] = encode_targetid(objid=np.arange(nrand), brickid=brickids)
+    d["RA"], d["DEC"] = ras, decs
+    d[dtkey] = np.zeros(nrand, dtype=int) + desi_mask["ELG"] # AR making them ELGs
+    d[dtkey.replace("DESI", "BGS")] = np.zeros(nrand, dtype=int)
+    d[dtkey.replace("DESI", "MWS")] = np.zeros(nrand, dtype=int)
+    d["PRIORITY_INIT"] = np.zeros(nrand, dtype=int) + desi_mask["ELG"].priorities["UNOBS"]
+    d["SUBPRIORITY"] = np.random.uniform(low=0, high=1, size=nrand)
+    d["NUMOBS_INIT"] = np.ones(nrand, dtype=int)
+    d["OBSCONDITIONS"] = np.array([args.program.upper() for x in ras])
+    print(Time.now(), "done")
+    return d, rand_dens
 
 
 # AR randomly assigns QSO to be Lya
@@ -579,46 +666,11 @@ def main():
     # AR create the targets file
     if dotarg:
         tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
-        if args.dtver in ["0.54.0.dev4695", "0.55.0.dev4725"]:
-            hpdir = os.path.join(
-                "/global/cscratch1/sd/adamyers/dr9",
-                args.dtver,
-                "targets",
-                args.survey,
-                "resolve",
-                args.program,
-            )
+        # AR use randoms instead of targets?
+        if args.randoms == "y":
+            d, rand_dens = wrapper_read_randoms()
         else:
-            hpdir = os.path.join(
-                os.getenv("DESI_TARGET"),
-                "catalogs",
-                args.dr,
-                args.dtver,
-                "targets",
-                args.survey,
-                "resolve",
-                args.program,
-            )
-        # AR we only store some columns...
-        columns = ["TARGETID", "RA", "DEC"]
-        columns += [dtkey, dtkey.replace("DESI", "BGS"), dtkey.replace("DESI", "MWS")]
-        columns += [
-            "PHOTSYS",
-            "SUBPRIORITY",
-            "OBSCONDITIONS",
-            "PRIORITY_INIT",
-            "NUMOBS_INIT",
-        ]
-        for band in ["G", "R", "Z", "W1", "W2"]:
-            columns += ["FLUX_{}".format(band), "MW_TRANSMISSION_{}".format(band)]
-            if band in ["G", "R", "Z"]:
-                columns += ["FIBERFLUX_{}".format(band)]
-        d = read_targets_in_tiles(hpdir, tiles, columns=columns, quick=True)
-        # AR remove bgs from dark program?
-        # AR we identify bgs-only from the priority
-        if args.rmvdarkbgs == "y":
-            keep = (d["PRIORITY_INIT"] != 2000) & (d["PRIORITY_INIT"] != 2100)
-            d = d[keep]
+            d, = wrapper_read_targets()
         # AR mtl
         myd = Table(d)
         # AR assigns Lya
@@ -640,7 +692,6 @@ def main():
         mtl.write(get_fn(args.outdir, "targ"), overwrite=True)
         # AR propagating some settings into the PRIMARY header
         fd = fitsio.FITS(get_fn(args.outdir, "targ"), "rw")
-        # AR faflavor
         fd["MTL"].write_key("DTVER", args.dtver)
         fd["MTL"].write_key("SURVEY", args.survey)
         fd["MTL"].write_key("PROGRAM", args.program)
@@ -655,6 +706,8 @@ def main():
         fd["MTL"].write_key("RUNDATE", args.rundate)
         fd["MTL"].write_key("NSKYPET", args.sky_per_petal)
         fd["MTL"].write_key("NSTDPET", args.standards_per_petal)
+        if args.randoms == "y":
+            fd["MTL"].write_key("RANDDENS", rand_dens)
         fd.close()
 
     # AR run the fiber assignment + update the target file
@@ -755,7 +808,10 @@ def main():
 
         # AR fastats-targ:
         # AR using the run for the last passid, cut on the "safe" region
-        tracers = ["ALL", "LYA", "QSO", "LRG", "ELG"]
+        if args.randoms == "y":
+            tracers = ["ELG"]
+        else:
+            tracers = ["ALL", "LYA", "QSO", "LRG", "ELG"]
         targ_fn = get_fn(args.outdir, "targ", passid=args.npass - 1).replace(
             ".fits", "-radec_safe.fits"
         )
@@ -763,9 +819,10 @@ def main():
 
         # AR basic pair counting
         # AR cf. Ashley https://github.com/desihub/LSS/blob/master/Sandbox/testassignments.ipynb
-        tracers = ["QSO", "LRG", "ELG"]
-        d2dmax_degree = 0.01
-        _ = fastats_pairs(tracers, targ_fn, d2dmax_degree)
+        if args.randoms == "n":
+            tracers = ["QSO", "LRG", "ELG"]
+            d2dmax_degree = 0.01
+            _ = fastats_pairs(tracers, targ_fn, d2dmax_degree)
 
         # AR fastats-sky:
         # AR using the whole region to get the numbers right
@@ -803,6 +860,13 @@ if __name__ == "__main__":
         default="dark",
         choices=["dark", "bright"],
     )
+    parser.add_argument(
+        "--randoms",
+        help="use 2500/deg2 randoms instead of targets (default=n)",
+        type=str,
+        default="n",
+        choices=["y", "n"],
+    )                                                                                                                                                                  
     parser.add_argument(
         "--radec",
         help="ramin,ramax,decmin,decmax boundaries for tile centres (default=160,200,45,60)",
