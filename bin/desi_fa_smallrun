@@ -11,7 +11,7 @@ from astropy import units
 from astropy.coordinates import SkyCoord
 from desitarget.targetmask import obsconditions
 from desitarget.io import read_targets_in_tiles
-from desitarget.mtl import make_mtl
+from desitarget.mtl import make_mtl, calc_priority
 from fiberassign.scripts.assign import parse_assign, run_assign_full
 from fiberassign.scripts.merge import parse_merge, run_merge
 from desimodel.footprint import is_point_in_desi
@@ -150,7 +150,9 @@ def tweak_priority(d, priority_mask, priority_frac, priority_new):
             )
         )
         ii_tweak = np.random.choice(ii_avail, size=n_tweak, replace=False)
-        d["PRIORITY_INIT"][ii_tweak] = np.clip(d["PRIORITY_INIT"][ii_tweak], int(pn), None)
+        d["PRIORITY_INIT"][ii_tweak] = np.clip(
+            d["PRIORITY_INIT"][ii_tweak], int(pn), None
+        )
         d["PRIORITY"][ii_tweak] = np.clip(d["PRIORITY"][ii_tweak], int(pn), None)
         ii_used += ii_tweak.tolist()
     return d
@@ -260,6 +262,9 @@ def update_after_farun(input_targ, fadir, passid, output_targ):
     ii0, ii1 = unq_searchsorted(h[1].data["TARGETID"], tids)
     # AR updating numobs_more
     h[1].data["NUMOBS_MORE"][ii0] -= counts[ii1]
+    h[1].data["NUMOBS_MORE"] = np.clip(h[1].data["NUMOBS_MORE"], 0, None)
+    # AR updating numobs
+    h[1].data["NUMOBS"][ii0] += counts[ii1]
     # AR updating NUMOBS_DONE
     h[1].data["NUMOBS_DONE"][ii0, passid] = counts[ii1]
     # AR updating Lya
@@ -270,10 +275,40 @@ def update_after_farun(input_targ, fadir, passid, output_targ):
         & (~h[1].data["ISLYA"])
     )
     h[1].data["NUMOBS_MORE"][keep] = 0
+    # AR emulate mtl update?
+    # AR if yes, updates: Z, ZWARN, ZTILEID, PRIORITY, TARGET_STATE
+    if args.mtl_update == "y":
+        # AR fake ztargets table, cf. make_mtl()
+        # AR in make_mtl(): targets => h[1].data here
+        n1 = len(ii1)
+        ztargets = Table()
+        ztargets["TARGETID"] = tids[ii1]
+        ztargets["NUMOBS"] = counts[ii1]
+        # AR 0 < Z < 2
+        ztargets["Z"] = np.random.uniform(low=0, high=2.0, size=n1)
+        # AR 2.1 < Z < 5 for Lya
+        ztargets["Z"][h[1].data["ISLYA"][ii0]] = np.random.uniform(
+            low=2.1, high=5, size=h[1].data["ISLYA"][ii0].sum()
+        )
+        ztargets["ZWARN"] = np.zeros(n1, dtype=np.int32)
+        ztargets["ZTILEID"] = 1 * np.ones(n1, dtype=np.int32)
+        ztargets["NUMOBS_MORE"] = h[1].data["NUMOBS_MORE"][ii0]  # AR added
+        zmatcher = ii0.copy()
+        # ADM extract just the targets that match the input zcat.
+        targets_zmatcher = h[1].data[zmatcher]
+        # ADM assign priorities. Only things in the zcat can have changed
+        # ADM priorities. Anything else is assigned PRIORITY_INIT, below.
+        priority, target_state = calc_priority(
+            targets_zmatcher, ztargets, args.program.upper(), state=True
+        )
+        # ADM now populate the new mtl columns with the updated information.
+        h[1].data["PRIORITY"][zmatcher] = priority
+        h[1].data["TARGET_STATE"][zmatcher] = target_state
+        for col in ["Z", "ZWARN", "ZTILEID"]:
+            h[1].data[col][zmatcher] = ztargets[col]
     # AR change priority of observed Lya?
     if args.priority_lya is not None:
         keep = (h[1].data["ISLYA"]) & (h[1].data["NUMOBS_DONE"][:, passid] > 0)
-        h[1].data["PRIORITY_INIT"][keep] = args.priority_lya
         h[1].data["PRIORITY"][keep] = args.priority_lya
     # AR nfiber_avail, ntile_avail
     for sample, key in zip(["potential", "targets"], ["NFIBER_AVAIL", "NTILE_AVAIL"]):
@@ -518,7 +553,9 @@ def main():
     if dosky:
         tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
         if args.dtver in ["0.54.0.dev4695", "0.55.0.dev4725"]:
-            hpdir = os.path.join("/global/cscratch1/sd/adamyers/dr9", args.dtver, "skies")
+            hpdir = os.path.join(
+                "/global/cscratch1/sd/adamyers/dr9", args.dtver, "skies"
+            )
         else:
             hpdir = os.path.join(
                 os.getenv("DESI_TARGET"), "catalogs", args.dr, args.dtver, "skies"
@@ -869,6 +906,13 @@ if __name__ == "__main__":
         default=None,
     )
     parser.add_argument(
+        "--mtl_update",
+        help="emulate mtl update of Z, ZWARN, ZTILEID, PRIORITY, TARGET_STATE after each pass? (default=y)",
+        type=str,
+        default="y",
+        choices=["y", "n"],
+    )
+    parser.add_argument(
         "--radec_margin",
         help="margin in degrees to safely extract an inner box for analysis with non boundary effects; box will be cut by args.radec_margin in Dec. and args.radec_margin/cos(Dec.) in R.A. (default=2)",
         type=float,
@@ -885,12 +929,13 @@ if __name__ == "__main__":
     )
     #
     args = parser.parse_args()
-    for kwargs in args._get_kwargs():
-        print(kwargs)
 
     # AR npass
     if args.npass is None:
         args.npass = 7 * (args.program == "dark") + 4 * (args.program != "dark")
+
+    for kwargs in args._get_kwargs():
+        print(kwargs)
 
     # AR safe
     if args.outdir[-1] != "/":
@@ -945,7 +990,7 @@ if __name__ == "__main__":
             for passid in np.arange(args.npass, dtype=int)
         ]
         fns += [
-            get_fn(args.outdir, "targ", passid=args.npass-1).replace(
+            get_fn(args.outdir, "targ", passid=args.npass - 1).replace(
                 ".fits", "-radec_safe.fits"
             )
         ]
