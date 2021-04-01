@@ -472,7 +472,7 @@ def fastats_targ(tracers, targ_fn, area):
     numobs_tot = d["NUMOBS_DONE"].sum(axis=1)
     # AR
     f = open(get_fn(args.outdir, "fastats-targ"), "w")
-    f.write("# TRACER PRIORITY TARGET_DENS DONE_FRAC DONE_DENS MEAN_NFIBER\n")
+    f.write("# TRACER PRIORITY_INIT TARGET_DENS DONE_FRAC DONE_DENS MEAN_NFIBER\n")
     for tracer in tracers:
         ist = sel_tracer(d, tracer)
         # AR done?
@@ -482,12 +482,12 @@ def fastats_targ(tracers, targ_fn, area):
             isdone = (ist) & (numobs_tot >= 1)
         prios = ["ALL"]
         if tracer != "ALL":
-            prios += np.unique(d["PRIORITY"][ist]).tolist()
+            prios += np.unique(d["PRIORITY_INIT"][ist]).tolist()
         for prio in prios:
             if prio == "ALL":
                 istp = ist.copy()
             else:
-                istp = (ist) & (d["PRIORITY"] == prio)
+                istp = (ist) & (d["PRIORITY_INIT"] == prio)
             # AR done?
             if tracer == "LYA":
                 istpd = (istp) & (numobs_tot >= 4)
