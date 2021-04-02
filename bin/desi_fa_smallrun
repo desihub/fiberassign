@@ -124,6 +124,7 @@ def create_tiles(infn, program, radec, outdir):
 
 # AR wrapper to read targets
 def wrapper_read_targets():
+    tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
     if args.dtver in ["0.54.0.dev4695", "0.55.0.dev4725"]:
         hpdir = os.path.join(
             "/global/cscratch1/sd/adamyers/dr9",
@@ -670,7 +671,7 @@ def main():
         if args.randoms == "y":
             d, rand_dens = wrapper_read_randoms()
         else:
-            d, = wrapper_read_targets()
+            d = wrapper_read_targets()
         # AR mtl
         myd = Table(d)
         # AR assigns Lya
