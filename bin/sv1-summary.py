@@ -115,7 +115,7 @@ nightoutdir = os.path.join(args.outdir, "sv1-nights")
 if not os.path.isdir(nightoutdir):
     os.mkdir(nightoutdir)
 ephemdir = os.path.join(
-    surveydir, "observations", "misc", "ephem-bgd-jan2021"
+    surveydir, "observations", "misc", "ephem-bgd-mar2021"
 )  # jan2021: using dark_max_sun_altitude=-18, bright_max_sun_altitude=-12
 # ephemdir = os.path.join(surveydir, "observations", "misc", "ephem-bgd-master")
 pixwfn = (
@@ -171,9 +171,9 @@ os.environ["DESISURVEY_OUTPUT"] = ephemdir
 # AR      and are used in get_obsconditions()
 START_DATE, STOP_DATE = datetime.date(2019, 1, 1), datetime.date(2025, 12, 31)
 start_iso, stop_iso = START_DATE.isoformat(), STOP_DATE.isoformat()
-ephem_config = desisurvey.config.Configuration(
-    file_name=os.path.join(ephemdir, "config.yaml")
-)
+ephem_config = desisurvey.config.Configuration()
+#    file_name=os.path.join(ephemdir, "config.yaml")
+#)
 ephem_fn = ephem_config.get_path("ephem_{}_{}.fits".format(start_iso, stop_iso))
 desisurvey.utils.freeze_iers()
 # AR should not happen, unless new settings are entered
@@ -1669,7 +1669,9 @@ def process_night(night, nightoutdir, skymon, gfa, ephem, rawdir, lostdir, tiles
                 key.lower().replace("lst", "LST")
             ][nightind]
         # AR obsconditions (DARK=1, GRAY=2, BRIGHT=4, else==-1)
-        exposures["OBSCONDITIONS"] = get_conditions(midexp_mjds)
+        tmpobsconds = get_conditions(midexp_mjds)
+        for obscond, obsval in zip(["DARK", "GRAY", "BRIGHT", "UNKNOWN"], [1, 2, 4, -1]):
+            exposures["OBSCONDITIONS"][tmpobsconds == obscond] = obsval
         # AR ephem + obsconditions : setting back to -99 when MJDOBS is missing
         keep = exposures["MJDOBS"] == -99
         for key in ["EPHEM_{}".format(key) for key in ephkeys] + ["OBSCONDITIONS"]:
@@ -1709,7 +1711,7 @@ if args.exposures == "y":
             if int(fn.split("/")[-1]) >= firstnight
         ]
     )
-    #nights = [20210104]
+    #nights = [20210320]
     # nights = nights[nights<20201231]
     print(nights)
     # AR update only the ~latest nights?
@@ -1757,12 +1759,12 @@ if args.exposures == "y":
     for camera in ["b", "r", "z"]:
         hmerge.header["THRU{}".format(camera)] = thrufn[camera]
     hmerge.header["EPHEMFN"] = ephem_fn
-    hmerge.header["DMAXSA"] = ephem_config.programs.DARK.max_sun_altitude().value
-    hmerge.header["GMAXMI"] = ephem_config.programs.GRAY.max_moon_illumination()
-    hmerge.header[
-        "GMAXMIAP"
-    ] = ephem_config.programs.GRAY.max_moon_illumination_altitude_product().value
-    hmerge.header["BMAXSA"] = ephem_config.programs.BRIGHT.max_sun_altitude().value
+    #hmerge.header["DMAXSA"] = ephem_config.programs.DARK.max_sun_altitude().value
+    #hmerge.header["GMAXMI"] = ephem_config.programs.GRAY.max_moon_illumination()
+    #hmerge.header[
+    #    "GMAXMIAP"
+    #] = ephem_config.programs.GRAY.max_moon_illumination_altitude_product().value
+    #hmerge.header["BMAXSA"] = ephem_config.programs.BRIGHT.max_sun_altitude().value
     # AR writing to fits
     hmerge.writeto(outfns["exposures"], overwrite=True)
 
@@ -1899,7 +1901,7 @@ if args.plot == "y":
         ax.grid(True)
         ax.set_axisbelow(True)
         ax.set_title(
-            "SV1 on-sky {} from {} to {} ({} exposures with EXPTIME>100 and OBSCONDITIONS!=-1)".format(
+            "SV1 {} from {} to {} ({} exposures with EXPTIME>100 and OBSCONDITIONS!=-1)".format(
                 xquant.upper(), d["NIGHT"].min(), d["NIGHT"].max(), len(d),
             )
         )
