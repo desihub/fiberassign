@@ -776,7 +776,7 @@ def main():
         )
         # AR mtl: add all desitarget columns
         d = inflate_ledger(
-            d, mydirs["targ"], columns=None, header=False, strictcols=False
+            d, mydirs["targ"], columns=None, header=False, strictcols=False, quick=True
         )
         # AR PMRA, PMDEC: convert NaN to zeros
         d = force_finite_pm(d, log=log, step="domtl")
