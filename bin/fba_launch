@@ -34,13 +34,16 @@ from argparse import ArgumentParser
 
 # AR goal effective time
 # AR https://desi.lbl.gov/svn/data/surveyops/trunk/ops/config-sv2.yaml
+# AR https://desi.lbl.gov/svn/data/surveyops/trunk/ops/config-sv3.yaml as of Apr. 5th
 goaltimes_all = {
     "sv2": {"DARK": 1000.0, "BRIGHT": 150.0, "BACKUP": 30.0},
+    "sv3": {"DARK": 1200.0, "BRIGHT": 220.0, "BACKUP": 30.0},
 }
 
 # AR surface brightness profile to be used for computing time -> efftime relation
 sbprofs_all = {
     "sv2": {"DARK": "ELG", "BRIGHT": "BGS", "BACKUP": "PSF"},
+    "sv3": {"DARK": "ELG", "BRIGHT": "BGS", "BACKUP": "PSF"},
 }
 
 # AR default REF_EPOCH for PMRA=PMDEC=REF_EPOCH=0 objects
@@ -573,8 +576,6 @@ def main():
     mydirs["mtl"] = os.path.join(
         os.getenv("DESI_TARGET"),
         "mtl",
-        args.dtver,
-        "mtl",
         args.survey,
         args.program.lower(),
     )
@@ -757,10 +758,10 @@ def main():
         )
         tiles = fits.open(mytmpouts["tiles"])[1].data
         # AR mtl: storing the timestamp at which we queried MTL
-        mtltime = datetime.utcnow().isoformat(timespec='seconds')
+        # AR mtl: actually not exactly.. (timestamp when script started)
         log.info(
             "{:.1f}s\tdomtl\tmtltime={}".format(
-                time() - start, mtltime
+                time() - start, utc_time_now
             )
         )
         # AR mtl: read mtl
@@ -942,7 +943,7 @@ def main():
         )
         # AR storing 
         fd["PRIMARY"].write_key("faprgrm", args.program)
-        fd["PRIMARY"].write_key("mtltime", mtltime)
+        fd["PRIMARY"].write_key("mtltime", utc_time_now)
         fd["PRIMARY"].write_key("obscon", obscon)
         # AR informations for NTS
         # AR SBPROF from https://desi.lbl.gov/trac/wiki/SurveyOps/SurveySpeed#NominalFiberfracValues
@@ -991,6 +992,9 @@ def main():
         if args.survey == "sv2":
             from desitarget.sv2 import sv2_targetmask as targetmask
             from fiberassign.targets import default_sv2_stdmask as default_stdmask
+        if args.survey == "sv3":
+            from desitarget.sv3 import sv3_targetmask as targetmask
+            from fiberassign.targets import default_sv3_stdmask as default_stdmask
         yaml_masks = {
             "DESI_TARGET": targetmask.desi_mask,
             "BGS_TARGET": targetmask.bgs_mask,
@@ -1000,8 +1004,8 @@ def main():
         # AR WD masks
         wd_mskkeys, wd_msks = [], []
         for mskkey in ["DESI_TARGET", "MWS_TARGET"]:
-            wd_mskkeys += [mskkey for key in yaml_masks[mskkey].names() if "WD" in key]
-            wd_msks += [key for key in yaml_masks[mskkey].names() if "WD" in key]
+            wd_mskkeys += [mskkey for key in yaml_masks[mskkey].names() if "_WD" in key]
+            wd_msks += [key for key in yaml_masks[mskkey].names() if "_WD" in key]
         log.info("{:.1f}s\tdoplot\twd_mskkeys = {}".format(time() - start, wd_mskkeys))
         log.info("{:.1f}s\tdoplot\twd_msks = {}".format(time() - start, wd_msks))
         # AR STD masks
@@ -1761,7 +1765,7 @@ if __name__ == "__main__":
         type=str,
         default=None,
         required=True,
-        choices=["sv2"],
+        choices=["sv2", "sv3"],
     )
     parser.add_argument(
         "--program",
@@ -1809,9 +1813,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--rundate",
-        help="rundate for focalplane (default=2019-09-16T00:00:00; full-reach all petals)",
+        help="yyyy-mm-ddThh:mm:ss rundate for focalplane (default=current UTC time)",
         type=str,
-        default="2019-09-16T00:00:00",
+        default=None,
         required=False,
     )
     parser.add_argument(
@@ -1860,9 +1864,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--pmtime",
-        help="yyyy-mm-ddThh:mm:ss, time use to compute new coordinates after applying proper motion since REF_EPOCH (default=midnight of Time.now())",
+        help="yyyy-mm-ddThh:mm:ss, time use to compute new coordinates after applying proper motion since REF_EPOCH (default=current UTC time)",
         type=str,
-        default=Time(Time.now().isot[:10] + "T00:00:00", format="isot").isot,
+        default=None,
         required=False,
     )
     parser.add_argument(
@@ -1882,6 +1886,13 @@ if __name__ == "__main__":
         args.outdir += "/"
     if os.path.isdir(args.outdir) == False:
         os.mkdir(args.outdir)
+
+    # AR rundate, pmtime
+    utc_time_now = datetime.utcnow().isoformat(timespec='seconds')
+    if args.rundate is None:
+        args.rundate = utc_time_now
+    if args.pmtime is None:
+        args.pmtime = utc_time_now
 
     # AR goaltime
     if args.goaltime is None:
