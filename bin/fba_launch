@@ -558,7 +558,6 @@ def main():
     mydirs["gfa"] = os.path.join(
         os.getenv("DESI_TARGET"), "catalogs", args.dr, args.dtver, "gfas"
     )
-    mydirs["scnd"] = "-"
     if args.program == "BACKUP":
         dtcat = args.gaiadr
     else:
@@ -579,6 +578,26 @@ def main():
         args.survey,
         args.program.lower(),
     )
+    # AR secondary (dark, bright; no secondary for backup)
+    if args.program in ["DARK", "BRIGHT"]:
+        mydirs["scnd"] = os.path.join(
+        os.getenv("DESI_TARGET"),
+        "catalogs",
+        args.dr,
+        args.dtver,
+        "targets",
+        args.survey,
+        "secondary",
+        args.program.lower(),
+        "{}targets-{}-secondary.fits".format(args.survey, args.program.lower())
+    )
+        mydirs["scndmtl"] =  os.path.join(
+            os.getenv("DESI_TARGET"),
+            "mtl",
+            args.survey,
+            "secondary",
+            args.program.lower(),
+        )
 
     # AR log
     for key in list(mydirs.keys()):
@@ -798,23 +817,80 @@ def main():
         _ = mv_write_targets_out(tmpfn, tmpoutdir, mytmpouts["targ"], log=log)
         # AR mtl: update header
         fd = fitsio.FITS(mytmpouts["targ"], "rw")
-        fd["TARGETS"].write_key("COMMENT", "RA,DEC updated with PM for AEN objects")
+        if args.pmcorr == "y":
+            fd["TARGETS"].write_key("COMMENT", "RA,DEC updated with PM for AEN objects")
         fd["TARGETS"].write_key("COMMENT", "REF_EPOCH updated for all objects")
         fd.close()
         log.info("{:.1f}s\tdomtl\t{} written".format(time() - start, mytmpouts["targ"]))
 
     # AR secondary targets
-    if doscnd:
-        log.info("")
-        log.info("")
+    # AR if not backup
+    log.info("")
+    log.info("")
+    log.info(
+        "{:.1f}s\tdoscnd\tTIMESTAMP={}".format(time() - start, Time.now().isot)
+    )
+    if (doscnd) & ("scnd" in list(mydirs.keys())):
         log.info(
-            "{:.1f}s\tdoscnd\tTIMESTAMP={}".format(time() - start, Time.now().isot)
+            "{:.1f}s\tdoscnd\tstart generating {}".format(
+                time() - start, mytmpouts["scnd"]
+            )
         )
-        log.warning(
-            "{:.1f}s\tdoscnd\tdoscnd not implemented yet; exiting".format(
+        tiles = fits.open(mytmpouts["tiles"])[1].data
+        # AR scnd: storing the timestamp at which we queried MTL
+        # AR scnd: actually not exactly.. (timestamp when script started)
+        log.info(
+            "{:.1f}s\tdoscnd\tmtltime={}".format(
+                time() - start, utc_time_now
+            )
+        )
+        # AR scnd: read scnd mtl
+        d = custom_read_targets_in_tiles(
+            [mydirs["scndmtl"]],
+            tiles,
+            quick=False,
+            mtl=True,
+            unique=True,
+            log=log,
+            step="doscnd",
+        )
+        # AR scnd: add all desitarget columns
+        # AR scnd: commenting out for now has issue with inflate_ledger() and secondary
+        #d = inflate_ledger(
+        #    d, mydirs["scnd"], columns=None, header=False, strictcols=False, quick=False
+        #)
+        # AR PMRA, PMDEC: convert NaN to zeros
+        d = force_finite_pm(d, log=log, step="doscnd")
+        # AR scnd: update RA, DEC, REF_EPOCH using proper motion
+        if args.pmcorr == "y":
+            d = update_nowradec(d, new_obstime)
+        else:
+            log.info(
+                "{:.1f}s\tdoscnd\t*not* applying proper-motion correction".format(
+                    time() - start
+                )
+            )
+            # AR single REF_EPOCH needed
+            d = force_nonzero_refepoch(d, log=log, step="doscnd")
+        # AR scnd: write fits
+        n, tmpfn = write_targets(
+            tmpoutdir, d, indir=mydirs["scndmtl"], indir2=mydirs["scnd"], survey=args.survey
+        )
+        _ = mv_write_targets_out(tmpfn, tmpoutdir, mytmpouts["scnd"], log=log)
+        # AR scnd: update header
+        fd = fitsio.FITS(mytmpouts["scnd"], "rw")
+        if args.pmcorr == "y":
+            fd["TARGETS"].write_key("COMMENT", "RA,DEC updated with PM for AEN objects")
+        fd["TARGETS"].write_key("COMMENT", "REF_EPOCH updated for all objects")
+        fd.close()
+        log.info("{:.1f}s\tdoscnd\t{} written".format(time() - start, mytmpouts["scnd"]))
+    else:
+        log.info(
+            "{:.1f}s\tdoscnd\tno secondary here".format(
                 time() - start
             )
         )
+
 
     # AR fiberassign
     if dofa:
@@ -1081,6 +1157,9 @@ def main():
                     key in ["DESI_TARGET", "BGS_TARGET", "MWS_TARGET", "SCND_TARGET",]
                 ) & (args.survey[:2] == "sv"):
                     parent[key] += d["{}_{}".format(args.survey.upper(), key)].tolist()
+                # AR flux, ebv for secondary
+                elif key not in d.dtype.names:
+                    parent[key] += [0. for x in d["RA"]]
                 else:
                     parent[key] += d[key].tolist()
         for key in keys:
@@ -1727,7 +1806,7 @@ if __name__ == "__main__":
     dogfa = True
     dostd = True
     domtl = True
-    # doscnd = True
+    doscnd = True
     dofa = True
     dozip = True
     doplot = True
