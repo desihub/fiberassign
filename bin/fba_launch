@@ -793,6 +793,16 @@ def main():
             log=log,
             step="domtl",
         )
+        # AR mtl: removing by hand BACKUP_BRIGHT for sv3/BACKUP
+        if (args.survey == "sv3") & (args.program == "BACKUP"):
+            from desitarget.sv3.sv3_targetmask import mws_mask
+            keep = (d["SV3_MWS_TARGET"] & mws_mask["BACKUP_BRIGHT"]) == 0
+            log.info(
+                "{:.1f}s\tdomtl\tremoving {}/{} BACKUP_BRIGHT targets".format(
+                time() - start, len(d) - keep.sum(), len(d)
+                )
+            )
+            d = d[keep]
         # AR mtl: add all desitarget columns
         d = inflate_ledger(
             d, mydirs["targ"], columns=None, header=False, strictcols=False, quick=True
