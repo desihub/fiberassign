@@ -504,7 +504,7 @@ def main():
         )
 
     # AR safe: DESI environment variables
-    for key in ["DESI_ROOT", "DESI_TARGET", "DESIMODEL"]:
+    for key in ["DESI_ROOT", "DESI_TARGET", "DESIMODEL", "DESI_SURVEYOPS"]:
         if os.getenv(key) is None:
             log.error(
                 "{:.1f}s\tsettings\tenvironment variable {} not defined; exiting".format(
@@ -573,7 +573,7 @@ def main():
         args.program.lower(),
     )
     mydirs["mtl"] = os.path.join(
-        os.getenv("DESI_TARGET"),
+        os.getenv("DESI_SURVEYOPS"),
         "mtl",
         args.survey,
         args.program.lower(),
@@ -592,7 +592,7 @@ def main():
         "{}targets-{}-secondary.fits".format(args.survey, args.program.lower())
     )
         mydirs["scndmtl"] =  os.path.join(
-            os.getenv("DESI_TARGET"),
+            os.getenv("DESI_SURVEYOPS"),
             "mtl",
             args.survey,
             "secondary",
