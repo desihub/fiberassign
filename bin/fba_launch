@@ -951,20 +951,6 @@ def main():
         ag = parse_assign(opts)
         run_assign_full(ag)
 
-        # AR fba: TARGET_RA, TARGET_DEC forcing NaN to 0
-        fd = fitsio.FITS(mytmpouts["fba"], "rw")
-        for key in ["TARGET_RA", "TARGET_DEC"]:
-            x = fd["FASSIGN"].read_column(key)
-            keep = ~np.isfinite(x)
-            x[keep] = 0.
-            fd["FASSIGN"].write_column(key, x)
-            log.info(
-                    "{:.1f}s\tdofa\tfba key={} : replacing {} NaN by 0 (locations={})".format(
-                        time() - start, key, keep.sum(), ",".join(fd["FASSIGN"].read_column("LOCATION")[keep].astype(str)) 
-                    )
-            )
-        fd.close()
-
         # AR merging
         # AR not using run_merge(), because it looks for all fba-TILEID.fits file
         # AR in the out directory...
