@@ -16,7 +16,7 @@ from desitarget.targets import set_obsconditions
 import desimodel
 import fiberassign
 from fiberassign.scripts.assign import parse_assign, run_assign_full
-from fiberassign.assign import merge_results
+from fiberassign.assign import merge_results, minimal_target_columns
 from fiberassign.utils import Logger
 from time import time
 from datetime import datetime
@@ -803,9 +803,17 @@ def main():
                 )
             )
             d = d[keep]
-        # AR mtl: add all desitarget columns
+        # AR mtl: add columns not present in ledgers
+        # AR mtl: need to provide exact list (if columns=None, inflate_ledger()
+        # AR mtl:    overwrites existing columns)
+        columns = [key for key in minimal_target_columns if key not in d.dtype.names]
+        log.info(
+            "{:.1f}s\tdomtl\tadding {} from {}".format(
+            time() - start, ",".join(columns), mydirs["targ"]
+            )
+        )
         d = inflate_ledger(
-            d, mydirs["targ"], columns=None, header=False, strictcols=False, quick=True
+            d, mydirs["targ"], columns=columns, header=False, strictcols=False, quick=True
         )
         # AR PMRA, PMDEC: convert NaN to zeros
         d = force_finite_pm(d, log=log, step="domtl")
