@@ -32,7 +32,8 @@ class Assignment : public std::enable_shared_from_this <Assignment> {
 
         void assign_unused(uint8_t tgtype, int32_t max_per_petal = -1,
                            std::string const & pos_type = std::string("POS"),
-                           int32_t start_tile = -1, int32_t stop_tile = -1);
+                           int32_t start_tile = -1, int32_t stop_tile = -1,
+                           bool use_zero_obsremain = false);
 
         void assign_force(uint8_t tgtype, int32_t required_per_petal = 0,
                           int32_t start_tile = -1, int32_t stop_tile = -1);
@@ -79,7 +80,7 @@ class Assignment : public std::enable_shared_from_this <Assignment> {
             std::vector <int32_t> const & locs,
             std::map <int32_t, std::vector <target_weight> > & tile_target_avail,
             std::map <int64_t, std::vector <location_weight> > & tile_loc_avail,
-            std::vector <target_weight> & tile_target_weights
+            std::vector <target_weight> & tile_target_weights, bool use_zero_obsremain
         ) const;
 
         int32_t petal_count(

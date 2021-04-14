@@ -328,9 +328,6 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
                 ):
                     # This positioner is not moveable and therefore has a theta / phi
                     # position in the hardware model.  Used this fixed fiber location.
-                    print("loc {}, state {} is stuck / broken, using {} / {}".format(
-                        loc, hw.state[loc], hw.loc_theta_pos[loc], hw.loc_phi_pos[loc],
-                    ), flush=True)
                     xy = hw.thetaphi_to_xy(
                         hw.loc_pos_curved_mm[loc],
                         hw.loc_theta_pos[loc],
@@ -353,9 +350,6 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
                     phmax = hw.loc_phi_max[loc] + hw.loc_phi_offset[loc]
                     if phmax > np.pi:
                         phmax = np.pi
-                    print("loc {}, state {} is unassigned, using {} / {}".format(
-                        loc, hw.state[loc], thmin, phmax,
-                    ), flush=True)
                     xy = hw.thetaphi_to_xy(
                         hw.loc_pos_curved_mm[loc],
                         thmin,
@@ -1571,7 +1565,8 @@ def run(
     sky_per_petal=40,
     start_tile=-1,
     stop_tile=-1,
-    redistribute=True
+    redistribute=True,
+    use_zero_obsremain=True
 ):
     """Run fiber assignment.
 
@@ -1645,9 +1640,19 @@ def run(
     gt.stop("Force assignment of sufficient supp_sky")
 
     # If there are any unassigned fibers, try to place them somewhere.
-    # Assigning science again is a no-op, but...
+    # When assigning science targets to these unused fibers, also consider targets
+    # with no remaining observations.  Getting extra observations of science
+    # targets is preferred over additional standards and sky.  See desi-survey email
+    # list archive message 1865 and preceding discussion thread.
     gt.start("Assign remaining unassigned fibers")
-    asgn.assign_unused(TARGET_TYPE_SCIENCE, -1, "POS", start_tile, stop_tile)
+    asgn.assign_unused(
+        TARGET_TYPE_SCIENCE,
+        -1,
+        "POS",
+        start_tile,
+        stop_tile,
+        use_zero_obsremain=use_zero_obsremain
+    )
     asgn.assign_unused(TARGET_TYPE_STANDARD, -1, "POS", start_tile, stop_tile)
     asgn.assign_unused(TARGET_TYPE_SKY, -1, "POS", start_tile, stop_tile)
     asgn.assign_unused(TARGET_TYPE_SUPPSKY, -1, "POS", start_tile, stop_tile)

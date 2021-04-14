@@ -166,6 +166,10 @@ def parse_assign(optlist=None):
                         action="store_true",
                         help="Disable redistribution of science targets.")
 
+    parser.add_argument("--no_zero_obsremain", required=False, default=False,
+                        action="store_true",
+                        help="Disable oversubscription of science targets with leftover fibers.")
+
     args = None
     if optlist is None:
         args = parser.parse_args()
@@ -360,7 +364,8 @@ def run_assign_full(args):
         asgn,
         args.standards_per_petal,
         args.sky_per_petal,
-        redistribute=(not args.no_redistribute)
+        redistribute=(not args.no_redistribute),
+        use_zero_obsremain=(not args.no_zero_obsremain)
     )
 
     gt.stop("run_assign_full calculation")
@@ -441,7 +446,8 @@ def run_assign_bytile(args):
             args.sky_per_petal,
             start_tile=tile_id,
             stop_tile=tile_id,
-            redistribute=(not args.no_redistribute)
+            redistribute=(not args.no_redistribute),
+            use_zero_obsremain=(not args.no_zero_obsremain)
         )
 
     gt.stop("run_assign_bytile calculation")

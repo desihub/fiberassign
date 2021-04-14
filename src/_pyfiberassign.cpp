@@ -1545,7 +1545,8 @@ PYBIND11_MODULE(_internal, m) {
              py::arg("tgtype")=TARGET_TYPE_SCIENCE,
              py::arg("max_per_petal")=-1,
              py::arg("pos_type")=std::string("POS"),
-             py::arg("start_tile")=-1, py::arg("stop_tile")=-1, R"(
+             py::arg("start_tile")=-1, py::arg("stop_tile")=-1,
+             py::arg("use_zero_obsremain")=false, R"(
             Assign targets to unused locations.
 
             This will attempt to assign targets of the specified type to
@@ -1562,6 +1563,8 @@ PYBIND11_MODULE(_internal, m) {
                     sequence of tiles.
                 stop_tile (int): Stop assignment at this tile ID (inclusive)
                     in the sequence of tiles.
+                use_zero_obsremain (bool): If True, and tgtype is science targets,
+                    then consider science targets with < 1 observation remaining.
 
             Returns:
                 None

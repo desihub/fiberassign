@@ -125,7 +125,8 @@ void fba::Assignment::tile_available(
     std::vector <int32_t> const & locs,
     std::map <int32_t, std::vector <target_weight> > & tile_target_avail,
     std::map <int64_t, std::vector <location_weight> > & tile_loc_avail,
-    std::vector <target_weight> & tile_target_weights
+    std::vector <target_weight> & tile_target_weights,
+    bool use_zero_obsremain
 ) const {
     // Reset output objects
     tile_target_avail.clear();
@@ -143,8 +144,13 @@ void fba::Assignment::tile_available(
                 // This is not the correct target type.
                 continue;
             }
-            if ((tgtype == TARGET_TYPE_SCIENCE) && (tg.obsremain <= 0)) {
-                // Done observing science observations for this target
+            if (
+                (tgtype == TARGET_TYPE_SCIENCE)
+                && (tg.obsremain <= 0)
+                && ! use_zero_obsremain
+            ) {
+                // Done observing science observations for this target, and we are
+                // not considering science targets with zero obs remaining.
                 continue;
             }
             // distance from target to positioner
@@ -229,7 +235,8 @@ bool fba::Assignment::petal_count_max(
 
 void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
                                     std::string const & pos_type,
-                                    int32_t start_tile, int32_t stop_tile) {
+                                    int32_t start_tile, int32_t stop_tile,
+                                    bool use_zero_obsremain) {
     fba::Timer tm;
     tm.start();
 
@@ -337,7 +344,8 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
             loc_unassigned,
             tile_target_avail,
             tile_loc_avail,
-            tile_target_weights
+            tile_target_weights,
+            use_zero_obsremain
         );
 
         // Sort targets by total priority from highest to lowest.
@@ -717,7 +725,8 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
             loc_science,
             tile_target_avail,
             tile_loc_avail,
-            tile_target_weights
+            tile_target_weights,
+            false
         );
 
         gtm.stop(gtmname.str());
