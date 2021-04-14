@@ -19,7 +19,7 @@ from fiberassign.scripts.assign import parse_assign, run_assign_full
 from fiberassign.assign import merge_results, minimal_target_columns
 from fiberassign.utils import Logger
 from time import time
-from datetime import datetime
+from datetime import datetime, timezone
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 import matplotlib
@@ -219,7 +219,7 @@ def force_nonzero_refepoch(d, ref_epoch_key="REF_EPOCH", log=None, step=""):
                 time() - start, step, ref_epochs[args.gaiadr], keep.sum())
                 )
     return d
-                                                                                                                                                                   
+
 
 
 # AR update values (RA, DEC, REF_EPOCH) using proper motion
@@ -649,7 +649,7 @@ def main():
             )
             sys.exit()
 
-    
+
     # AR tiles
     if dotile:
         hdr = fitsio.FITSHDR()
@@ -1035,7 +1035,7 @@ def main():
         fd["PRIMARY"].write_key(
             "faargs", " ".join(tmparr),
         )
-        # AR storing 
+        # AR storing
         fd["PRIMARY"].write_key("faprgrm", args.program)
         fd["PRIMARY"].write_key("mtltime", utc_time_now)
         fd["PRIMARY"].write_key("obscon", obscon)
@@ -1985,7 +1985,7 @@ if __name__ == "__main__":
         os.mkdir(args.outdir)
 
     # AR rundate, pmtime
-    utc_time_now = datetime.utcnow().isoformat(timespec='seconds')
+    utc_time_now = datetime.now(tz=timezone.utc).isoformat(timespec='seconds')
     if args.rundate is None:
         args.rundate = utc_time_now
     if args.pmtime is None:

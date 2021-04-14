@@ -9,7 +9,7 @@ Functions for loading information about the telescope hardware.
 """
 from __future__ import absolute_import, division, print_function
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 import numpy as np
 
@@ -40,7 +40,7 @@ def load_hardware(focalplane=None, rundate=None):
             should be a tuple of the same data types returned by
             desimodel.io.load_focalplane()
         rundate (str):  ISO 8601 format time stamp as a string in the
-            format YYYY-MM-DDTHH:MM:SS.  If None, uses current time.
+            format YYYY-MM-DDTHH:MM:SS+-zz:zz.  If None, uses current time.
 
     Returns:
         (Hardware):  The hardware object.
@@ -50,18 +50,38 @@ def load_hardware(focalplane=None, rundate=None):
 
     # The timestamp for this run.
     runtime = None
+    if time is None:
+        time = datetime.now(tz=timezone.utc)
+    elif time.tzinfo is None:
+        msg = "Requested focalplane time '{}' is not timezone-aware.  Assuming UTC.".format(time)
+        log.warning(msg)
+        time = time.replace(tzinfo=timezone.utc)
+
+
+    runtime = None
     if rundate is None:
-        runtime = datetime.utcnow()
+        runtime = datetime.now(tz=timezone.utc)
     else:
-        runtime = datetime.strptime(rundate, "%Y-%m-%dT%H:%M:%S")
+        try:
+            runtime = datetime.strptime(rundate, "%Y-%m-%dT%H:%M:%S%z")
+        except ValueError:
+            runtime = datetime.strptime(rundate, "%Y-%m-%dT%H:%M:%S")
+            msg = "Requested run date '{}' is not timezone-aware.  Assuming UTC.".format(runtime)
+            log.warning(msg)
+            runtime = runtime.replace(tzinfo=timezone.utc)
+    runtimestr = None
+    try:
+        runtimestr = runtime.isoformat(timespec="seconds")
+    except TypeError:
+        runtimestr = runtime.isoformat()
 
     # Get the focalplane information
     fp = None
     exclude = None
     state = None
-    tmstr = "UNKNOWN"
+    create_time = "UNKNOWN"
     if focalplane is None:
-        fp, exclude, state, tmstr = dmio.load_focalplane(runtime)
+        fp, exclude, state, create_time = dmio.load_focalplane(runtime)
     else:
         fp, exclude, state = focalplane
 
@@ -153,7 +173,7 @@ def load_hardware(focalplane=None, rundate=None):
     if "MIN_P" in state.colnames:
         # This is a new-format focalplane model (after desimodel PR #143)
         hw = Hardware(
-            tmstr,
+            runtimestr,
             locations,
             fp["PETAL"][keep_rows],
             fp["DEVICE"][keep_rows],
@@ -198,7 +218,7 @@ def load_hardware(focalplane=None, rundate=None):
             fake_pos_p[ilid] = pp
             fake_pos_t[ilid] = pt
         hw = Hardware(
-            tmstr,
+            runtimestr,
             locations,
             fp["PETAL"][keep_rows],
             fp["DEVICE"][keep_rows],

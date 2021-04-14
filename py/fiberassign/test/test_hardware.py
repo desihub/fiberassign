@@ -150,7 +150,7 @@ class TestHardware(unittest.TestCase):
 
         # Now we are going to artificially restrict the phi angle range and test that
         # we cannot access the outer areas of the patrol radius.
-        runtime = datetime.strptime(test_assign_date, "%Y-%m-%dT%H:%M:%S")
+        runtime = datetime.strptime(test_assign_date, "%Y-%m-%dT%H:%M:%S%z")
         fp, exclude, state, tmstr = dmio.load_focalplane(runtime)
 
         # make a copy so that we aren't modifying the desimodel cache

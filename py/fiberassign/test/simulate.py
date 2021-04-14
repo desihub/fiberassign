@@ -3,7 +3,7 @@ Simulation utilities for fiberassign tests.
 """
 import os
 import shutil
-from datetime import datetime
+from datetime import datetime, timezone
 
 from collections import OrderedDict
 
@@ -24,7 +24,7 @@ from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                                  TARGET_TYPE_SUPPSKY,
                                  TARGET_TYPE_SUPPSKY, TARGET_TYPE_STANDARD)
 
-test_assign_date = "2020-01-01T00:00:00"
+test_assign_date = "2020-01-01T00:00:00+00:00"
 
 def sim_data_dir():
     dir = "test_fiberassign_output"
@@ -57,9 +57,9 @@ def sim_science_fractions():
 def sim_focalplane(rundate=None, fakepos=False):
     runtime = None
     if rundate is None:
-        runtime = datetime.utcnow()
+        runtime = datetime.now(tz=timezone.utc)
     else:
-        runtime = datetime.strptime(rundate, "%Y-%m-%dT%H:%M:%S")
+        runtime = datetime.strptime(rundate, "%Y-%m-%dT%H:%M:%S%z")
 
     # First get the starting focalplane from desimodel
     fp, exclude, state, tmstr = dmio.load_focalplane(runtime)
