@@ -1565,7 +1565,8 @@ def run(
     sky_per_petal=40,
     start_tile=-1,
     stop_tile=-1,
-    redistribute=True
+    redistribute=True,
+    use_zero_obsremain=True
 ):
     """Run fiber assignment.
 
@@ -1645,7 +1646,12 @@ def run(
     # list archive message 1865 and preceding discussion thread.
     gt.start("Assign remaining unassigned fibers")
     asgn.assign_unused(
-        TARGET_TYPE_SCIENCE, -1, "POS", start_tile, stop_tile, use_zero_obsremain=True
+        TARGET_TYPE_SCIENCE,
+        -1,
+        "POS",
+        start_tile,
+        stop_tile,
+        use_zero_obsremain=use_zero_obsremain
     )
     asgn.assign_unused(TARGET_TYPE_STANDARD, -1, "POS", start_tile, stop_tile)
     asgn.assign_unused(TARGET_TYPE_SKY, -1, "POS", start_tile, stop_tile)
