@@ -50,15 +50,6 @@ def load_hardware(focalplane=None, rundate=None):
 
     # The timestamp for this run.
     runtime = None
-    if time is None:
-        time = datetime.now(tz=timezone.utc)
-    elif time.tzinfo is None:
-        msg = "Requested focalplane time '{}' is not timezone-aware.  Assuming UTC.".format(time)
-        log.warning(msg)
-        time = time.replace(tzinfo=timezone.utc)
-
-
-    runtime = None
     if rundate is None:
         runtime = datetime.now(tz=timezone.utc)
     else:
