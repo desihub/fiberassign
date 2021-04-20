@@ -14,6 +14,7 @@ from desitarget.mtl import inflate_ledger
 from desitarget.targetmask import desi_mask, obsconditions
 from desitarget.targets import set_obsconditions
 import desimodel
+from desimodel.footprint import is_point_in_desi
 import fiberassign
 from fiberassign.scripts.assign import parse_assign, run_assign_full
 from fiberassign.assign import merge_results, minimal_target_columns
@@ -599,6 +600,15 @@ def main():
             args.program.lower(),
         )
 
+    # AR ToO (same for dark, bright)
+    mydirs["too"] = os.path.join(
+            os.getenv("DESI_SURVEYOPS"),
+            "mtl",
+            args.survey,
+            "ToO",
+            "ToO.ecsv",
+        )
+
     # AR log
     for key in list(mydirs.keys()):
         log.info(
@@ -909,6 +919,71 @@ def main():
             )
         )
 
+    # AR ToO targets
+    log.info("")
+    log.info("")
+    log.info(
+        "{:.1f}s\tdotoo\tTIMESTAMP={}".format(time() - start, Time.now().isot)
+    )
+    if dotoo:
+        log.info(
+            "{:.1f}s\tdotoo\tstart generating {}".format(
+                time() - start, mytmpouts["too"]
+            )
+        )
+        tiles = fits.open(mytmpouts["tiles"])[1].data
+        # AR too: storing the timestamp at which we queried MTL
+        # AR too: actually not exactly.. (timestamp when script started)
+        log.info(
+            "{:.1f}s\tdotoo\tmtltime={}".format(
+                time() - start, utc_time_now
+            )
+        )
+        # AR too: read too mtl
+        # AR cut on:
+        # AR - tiles
+        # AR - mjd (! TBD !)
+        d = Table.read(mydirs["too"])
+        keep = is_point_in_desi(tiles, d["RA"], d["DEC"])
+        mjd_now = Time(utc_time_now, format="isot").mjd
+        keep &= (d["MJD_BEGIN"] < mjd_now + 30) & (d["MJD_END"] > mjd_now - 1)
+        log.info(
+            "{:.1f}s\tdotoo\tkeeping {}/{} targets in tiles and in the MJD time window: {}, {}".format(
+                time() - start, keep.sum(), len(keep), mjd_now - 1, mjd_now + 1
+            )
+        )
+        if keep.sum() > 0:
+            d = d[keep]
+            # AR PMRA, PMDEC: convert NaN to zeros
+            d = force_finite_pm(d, log=log, step="dotoo")
+            # AR too: update RA, DEC, REF_EPOCH using proper motion
+            if args.pmcorr == "y":
+                d = update_nowradec(d, new_obstime)
+            else:
+                log.info(
+                    "{:.1f}s\tdotoo\t*not* applying proper-motion correction".format(
+                        time() - start
+                    )
+                )
+                # AR single REF_EPOCH needed
+                # AR TBD currently all targets have PMRA=PMDEC=0,
+                # AR TBD so it s fine to just change all REF_EPOCH
+                d["REF_EPOCH"] = np.zeros(len(d))
+                d = force_nonzero_refepoch(d, log=log, step="dotoo")
+            # AR too: write fits
+            n, tmpfn = write_targets(
+                tmpoutdir, d.as_array(), indir=mydirs["too"], survey=args.survey
+            )
+            _ = mv_write_targets_out(tmpfn, tmpoutdir, mytmpouts["too"], log=log)
+            # AR too: update header
+            fd = fitsio.FITS(mytmpouts["too"], "rw")
+            if args.pmcorr == "y":
+                fd["TARGETS"].write_key("COMMENT", "RA,DEC updated with PM for AEN objects")
+            fd["TARGETS"].write_key("COMMENT", "REF_EPOCH updated for all objects")
+            fd.close()
+            log.info("{:.1f}s\tdotoo\t{} written".format(time() - start, mytmpouts["too"]))
+        else:
+            log.info("{:.1f}s\tdotoo\tno too kept too targets, no {} written".format(time() - start, mytmpouts["too"]))
 
     # AR fiberassign
     if dofa:
@@ -932,6 +1007,10 @@ def main():
         if (doscnd) & (os.path.isfile(mytmpouts["scnd"])):
             opts += [
                 mytmpouts["scnd"],
+            ]
+        if (dotoo) & (os.path.isfile(mytmpouts["too"])):
+            opts += [
+                mytmpouts["too"],
             ]
         opts += [
             "--rundate",
@@ -1746,7 +1825,7 @@ def main():
         log.info(
             "{:.1f}s\tdoclean\tTIMESTAMP={}".format(time() - start, Time.now().isot)
         )
-        for key in ["tiles", "sky", "gfa", "targ", "scnd", "fba"]:
+        for key in ["tiles", "sky", "gfa", "targ", "scnd", "too", "fba"]:
             if os.path.isfile(mytmpouts[key]):
                 os.remove(mytmpouts[key])
                 log.info(
@@ -1764,7 +1843,7 @@ def main():
         )
         # AR optional files
         if args.doclean == "n":
-            for key in ["tiles", "sky", "gfa", "targ", "scnd", "fba"]:
+            for key in ["tiles", "sky", "gfa", "targ", "scnd", "too", "fba"]:
                 if os.path.isfile(mytmpouts[key]):
                     _ = shutil.move(mytmpouts[key], myouts[key])
                     log.info(
@@ -1807,7 +1886,8 @@ def main():
 if __name__ == "__main__":
 
     # AR to speed up development/debugging
-    dotile, dosky, dogfa, dostd, domtl, doscnd, dofa, dozip, doplot, domove = (
+    dotile, dosky, dogfa, dostd, domtl, doscnd, dotoo, dofa, dozip, doplot, domove = (
+        False,
         False,
         False,
         False,
@@ -1825,6 +1905,7 @@ if __name__ == "__main__":
     dostd = True
     domtl = True
     doscnd = True
+    dotoo = True
     dofa = True
     dozip = True
     doplot = True
@@ -1968,7 +2049,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--doclean",
-        help="delete TILEID-{tiles,sky,std,gfa,targ,scnd}.fits files (y/n)",
+        help="delete TILEID-{tiles,sky,std,gfa,targ,scnd,too}.fits files (y/n)",
         type=str,
         default="n",
         required=False,
@@ -2008,7 +2089,7 @@ if __name__ == "__main__":
     # AR output files
     myouts = {}
     #
-    for key in ["tiles", "sky", "gfa", "targ", "scnd"]:
+    for key in ["tiles", "sky", "gfa", "targ", "scnd", "too"]:
         myouts[key] = os.path.join(
             args.outdir, "{:06d}-{}.fits".format(args.tileid, key)
         )
