@@ -6,7 +6,11 @@ fiberassign change log
 2.2.1 (unreleased)
 ------------------
 
-* No changes yet.
+* Change assignment strategy of leftover fibers (PR `#321`_).
+* Use UTC time everywhere (PR `#327`_).
+
+.. _`#321`: https://github.com/desihub/fiberassign/pull/321
+.. _`#327`: https://github.com/desihub/fiberassign/pull/327
 
 2.2.0 (2021-03-31)
 ------------------
