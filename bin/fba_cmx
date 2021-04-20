@@ -18,7 +18,7 @@ from fiberassign.scripts.merge import parse_merge, run_merge
 from fiberassign.utils import Logger
 import fiberassign
 from time import time
-from datetime import datetime
+from datetime import datetime, timezone
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 import matplotlib
@@ -91,7 +91,7 @@ def cmx_make_mtl(d, outfn, tmpoutdir):
     mtl["NUMOBS_MORE"] = mtl["NUMOBS_INIT"]
     mtl["PRIORITY"] = mtl["PRIORITY_INIT"]
     mtl["TARGET_STATE"] = "UNOBS"
-    mtl["TIMESTAMP"] = datetime.utcnow().isoformat(timespec="seconds")
+    mtl["TIMESTAMP"] = datetime.now(tz=timezone.utc).isoformat(timespec="seconds")
     mtl["VERSION"] = fiberassign.__version__
     obsconmask = set_obsconditions(
         d
@@ -1381,7 +1381,7 @@ if __name__ == "__main__":
     """
 
     """
-    TBD : 
+    TBD :
         - validate the code for tiles outside desi footprint, for dithering => DONE
         - add epoch as input (see Eddie email to desi-survey from Oct., 30, 2020)
         - "starfaint" flavor: pick other targets than STD_FAINT,SV0_WD, which are not enough

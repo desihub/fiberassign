@@ -86,7 +86,7 @@ def parse_plot(optlist=None):
                         "fiber assignment, used to load the correct "
                         "focalplane properties and state from desimodel.  "
                         "Default uses the current date.  Format is "
-                        "YYYY-MM-DDTHH:mm:ss in UTC time.")
+                        "YYYY-MM-DDTHH:mm:ss+-zz:zz.")
 
     parser.add_argument("--serial", required=False, default=False,
                         action="store_true",

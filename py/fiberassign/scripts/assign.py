@@ -89,7 +89,7 @@ def parse_assign(optlist=None):
                         "fiber assignment, used to load the correct "
                         "focalplane properties and state from desimodel.  "
                         "Default uses the current date.  Format is "
-                        "YYYY-MM-DDTHH:mm:ss in UTC time.")
+                        "YYYY-MM-DDTHH:mm:ss+-zz:zz.")
 
     parser.add_argument("--obsdate", type=str, required=False, default="2022-07-01",
                         help="Plan field rotations for this date (YEARMMDD, "
