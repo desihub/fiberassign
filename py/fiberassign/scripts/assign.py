@@ -431,9 +431,15 @@ def run_assign_bytile(args):
     favail = LocationsAvailable(tgsavail)
     gt.stop("Compute Locations Available")
 
+    # Find stuck positioners and compute whether they will land on acceptable
+    # sky locations for each tile.
+    gt.start("Compute Stuck locations on good sky")
+    stucksky = stuck_on_sky(hw, tiles)
+    gt.stop("Compute Stuck locations on good sky")
+
     # Create assignment object
     gt.start("Construct Assignment")
-    asgn = Assignment(tgs, tgsavail, favail)
+    asgn = Assignment(tgs, tgsavail, favail, stucksky)
     gt.stop("Construct Assignment")
 
     # We are now going to loop over tiles and assign each one fully before
