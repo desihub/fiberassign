@@ -14,7 +14,8 @@ namespace fbg = fiberassign::geom;
 
 fba::Assignment::Assignment(fba::Targets::pshr tgs,
                             fba::TargetsAvailable::pshr tgsavail,
-                            fba::LocationsAvailable::pshr locavail) {
+                            fba::LocationsAvailable::pshr locavail,
+                            std::map < int32_t, std::map <int32_t, bool> > stuck_sky) {
     fba::Timer tm;
     tm.start();
 
@@ -59,6 +60,26 @@ fba::Assignment::Assignment(fba::Targets::pshr tgs,
                 nassign_petal[tp][tile_id][p] = 0;
             }
             tile_target_xy[tile_id].clear();
+            if (tp == TARGET_TYPE_SKY) {
+                // for any stuck positioners that land on good sky,
+                // increment the counter
+                if (stuck_sky.count(tile_id)==0)
+                    continue;
+                for (auto & st : stuck_sky[tile_id]) {
+                    // st: < loc_id, bool >
+                    int32_t loc = st.first;
+                    bool good_sky = st.second;
+                    if (!good_sky)
+                        continue;
+                    int32_t petal = hw_->loc_petal[loc];
+                    nassign_tile .at(tp).at(tile_id)++;
+                    nassign_petal.at(tp).at(tile_id).at(petal)++;
+                    logmsg.str("");
+                    logmsg << "tile " << tile_id << " loc " << loc
+                           << " on petal " << petal << " is STUCK on a good sky.";
+                    logger.debug(logmsg.str().c_str());
+                }
+            }
         }
     }
 

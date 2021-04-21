@@ -28,7 +28,10 @@ class Assignment : public std::enable_shared_from_this <Assignment> {
         typedef std::shared_ptr <Assignment> pshr;
 
         Assignment(Targets::pshr tgs, TargetsAvailable::pshr tgsavail,
-                   LocationsAvailable::pshr locavail);
+                   LocationsAvailable::pshr locavail,
+                   std::map<int32_t, std::map<int32_t, bool> > stuck_sky
+                   = std::map<int32_t, std::map<int32_t,bool> >());
+                   
 
         void assign_unused(uint8_t tgtype, int32_t max_per_petal = -1,
                            std::string const & pos_type = std::string("POS"),

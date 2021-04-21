@@ -32,6 +32,7 @@ from ..targets import (str_to_target_type, TARGET_TYPE_SCIENCE,
 from ..assign import (Assignment, write_assignment_fits,
                       result_path, run)
 
+from ..stucksky import stuck_on_sky
 
 def parse_assign(optlist=None):
     """Parse assignment options.

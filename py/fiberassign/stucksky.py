@@ -123,6 +123,8 @@ def stuck_on_sky(hw, tiles):
         for loc,good in zip(stuck_loc, good_sky):
             stuck_sky[tile_id][loc] = good
 
+    return stuck_sky
+
 def _radec2kd(ra, dec):
     from scipy.spatial import KDTree
     import numpy as np
