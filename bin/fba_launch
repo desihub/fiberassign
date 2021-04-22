@@ -57,6 +57,15 @@ ref_epochs = {
 tile_radius_deg = 1.628
 
 
+# AR/SB assert a date format of "YYYY-MM-DDThh:mm:ss+00:00"
+def assert_isoformat_utc(time_str):
+    try:
+        test_time = datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%S%z")
+    except ValueError:
+        return False
+    # AR/SB it parses as an ISO string, now just check UTC timezone +00:00 and not +0000
+    return time_str.endswith('+00:00')
+
 # AR like read_targets_in_tiles(), but allows two folders
 # AR and sanity check TARGETID if two folders
 # AR targdirs : list of directories (2 for sky, skysupp, 1 otherwise)
@@ -131,8 +140,8 @@ def get_isaen(g, aen):
 
 # AR courtesy of DL : adapted from legacypipe.survey
 # AR originally named "radec_at_mjd()", renamed to get_nowradec
-def get_nowradec(ra, dec, pmra, pmdec, parallax, ref_year, new_obstime, scnd=False):
-    # AR new_obstime = Time.now()
+def get_nowradec(ra, dec, pmra, pmdec, parallax, ref_year, pmtime_utc_str, scnd=False):
+    # AR pmtime_utc : UTC time of the new ref_epoch; "%Y-%m-%dT%H:%M:%S%z", e.g. "2021-04-21T00:00:00+00:00"
     # AR scnd=True -> parallax is set to 0, i.e. not used
     """
     Units:
@@ -143,8 +152,13 @@ def get_nowradec(ra, dec, pmra, pmdec, parallax, ref_year, new_obstime, scnd=Fal
     Returns: RA,Dec
     """
     equinox = 53084.28  # mjd of the spring equinox in 2004
+    equinox_jyear = Time(equinox, format="mjd").jyear
     axistilt = 23.44  # degrees
     arcsecperrad = 3600.0 * 180.0 / np.pi
+    # AR pmtime
+    pmtime_utc = datetime.strptime(pmtime_utc_str, "%Y-%m-%dT%H:%M:%S%z")
+    pmtime_utc_jyear = Time(pmtime_utc).jyear
+    pmtime_utc_mjd = Time(pmtime_utc).mjd
 
     def xyztoradec(xyz):
         assert len(xyz.shape) == 2
@@ -160,7 +174,7 @@ def get_nowradec(ra, dec, pmra, pmdec, parallax, ref_year, new_obstime, scnd=Fal
         cosd = np.cos(dec)
         return np.vstack((cosd * np.cos(ra), cosd * np.sin(ra), np.sin(dec))).T
 
-    dt = new_obstime.jyear - ref_year
+    dt = pmtime_utc_jyear - ref_year
     cosdec = np.cos(np.deg2rad(dec))
     dec = dec + dt * pmdec / (3600.0 * 1000.0)
     ra = ra + (dt * pmra / (3600.0 * 1000.0)) / cosdec
@@ -173,7 +187,7 @@ def get_nowradec(ra, dec, pmra, pmdec, parallax, ref_year, new_obstime, scnd=Fal
         suntheta = (
             2.0
             * np.pi
-            * np.fmod(new_obstime.jyear - Time(equinox, format="mjd").jyear, 1.0)
+            * np.fmod(pmtime_utc_jyear - equinox_jyear, 1.0)
         )
         # Finite differences on the unit sphere -- xyztoradec handles
         # points that are not exactly on the surface of the sphere.
@@ -230,7 +244,7 @@ def force_nonzero_refepoch(d, ref_epoch_key="REF_EPOCH", log=None, step=""):
 # AR REF_EPOCH: updated for *all* objects
 def update_nowradec(
     d,
-    new_obstime,
+    pmtime_utc_str,
     ra_key="RA",
     dec_key="DEC",
     pmra_key="PMRA",
@@ -241,7 +255,10 @@ def update_nowradec(
     gaiaaen_key="GAIA_ASTROMETRIC_EXCESS_NOISE",
     scnd=False,
 ):
-    # AR computing positions at new_obstime using Gaia PMRA, PMDEC
+    # AR
+    pmtime_utc = datetime.strptime(pmtime_utc_str, "%Y-%m-%dT%H:%M:%S%z")
+    pmtime_utc_jyear = Time(pmtime_utc).jyear
+    # AR computing positions at pmtime_utc_str using Gaia PMRA, PMDEC
     nowra, nowdec = get_nowradec(
         d[ra_key],
         d[dec_key],
@@ -249,7 +266,7 @@ def update_nowradec(
         d[pmdec_key],
         d[parallax_key],
         d[ref_epoch_key],
-        new_obstime,
+        pmtime_utc_str,
         scnd=scnd,
     )
     if scnd == True:
@@ -261,13 +278,13 @@ def update_nowradec(
     # AR storing changes to report extrema in the log
     dra = nowra - d[ra_key]
     ddec = nowdec - d[dec_key]
-    # AR updating positions to new_obstime for targets passing the AEN criterion
+    # AR updating positions to pmtime_utc_str for targets passing the AEN criterion
     d[ra_key][keep] = nowra[keep]
     d[dec_key][keep] = nowdec[keep]
     log.info(
         "{:.1f}s\tupdating RA,DEC at {} with PM for {:.0f}/{:.0f} targets passing AEN; maximum changes: RA={:.1f},{:.1f} arcsec, DEC={:.1f},{:.1f} arcsec".format(
             time() - start,
-            new_obstime.jyear,
+            pmtime_utc_jyear,
             keep.sum(),
             len(keep),
             3600.0 * dra.min(),
@@ -277,10 +294,10 @@ def update_nowradec(
         )
     )
     # AR updating REF_EPOCH for *all* objects (for PlateMaker)
-    d[ref_epoch_key] = new_obstime.jyear
+    d[ref_epoch_key] = pmtime_utc_jyear
     log.info(
         "{:.1f}s\tupdating REF_EPOCH to {} for all {} targets".format(
-            time() - start, new_obstime.jyear, len(keep)
+            time() - start, pmtime_utc_jyear, len(keep)
         )
     )
     return d
@@ -519,12 +536,20 @@ def main():
             )
 
     # AR time used to update the positions using proper motions
-    new_obstime = Time(args.pmtime, format="isot")
-    log.info(
-        "{:.1f}s\tsettings\tnew_obstime={}, i.e. MJD={} to update coordinates with proper motion".format(
-            time() - start, new_obstime.isot, new_obstime.mjd
+    if not assert_isoformat_utc(args.pmtime_utc_str):
+        log.error(
+            "{:.1f}s\tsettings\targs.pmtime_utc_str={} is not yyyy-mm-ddThh:mm:ss+00:00; exiting".format(
+                time() - start, args.pmtime_utc_str
+            )
         )
-    )
+
+    # AR rundate correctly formatted?
+    if not assert_isoformat_utc(args.rundate): 
+        log.error(
+            "{:.1f}s\tsettings\targs.rundate={} is not yyyy-mm-ddThh:mm:ss+00:00; exiting".format(
+                time() - start, args.rundate
+            )
+        )
 
     # AR (temporary) output files
     for key in list(myouts.keys()):
@@ -755,7 +780,7 @@ def main():
         d = force_finite_pm(d, log=log, step="dogfa")
         # AR gfa: update RA, DEC, REF_EPOCH using proper motion
         if args.pmcorr == "y":
-            d = update_nowradec(d, new_obstime)
+            d = update_nowradec(d, args.pmtime_utc_str)
         else:
             log.info(
                 "{:.1f}s\tdogfa\t*not* applying proper-motion correction".format(
@@ -790,7 +815,7 @@ def main():
         # AR mtl: actually not exactly.. (timestamp when script started)
         log.info(
             "{:.1f}s\tdomtl\tmtltime={}".format(
-                time() - start, utc_time_now
+                time() - start, utc_time_now_str
             )
         )
         # AR mtl: read mtl
@@ -829,7 +854,7 @@ def main():
         d = force_finite_pm(d, log=log, step="domtl")
         # AR mtl: update RA, DEC, REF_EPOCH using proper motion
         if args.pmcorr == "y":
-            d = update_nowradec(d, new_obstime)
+            d = update_nowradec(d, args.pmtime_utc_str)
         else:
             log.info(
                 "{:.1f}s\tdomtl\t*not* applying proper-motion correction".format(
@@ -869,7 +894,7 @@ def main():
         # AR scnd: actually not exactly.. (timestamp when script started)
         log.info(
             "{:.1f}s\tdoscnd\tmtltime={}".format(
-                time() - start, utc_time_now
+                time() - start, utc_time_now_str
             )
         )
         # AR scnd: read scnd mtl
@@ -891,7 +916,7 @@ def main():
         d = force_finite_pm(d, log=log, step="doscnd")
         # AR scnd: update RA, DEC, REF_EPOCH using proper motion
         if args.pmcorr == "y":
-            d = update_nowradec(d, new_obstime)
+            d = update_nowradec(d, args.pmtime_utc_str)
         else:
             log.info(
                 "{:.1f}s\tdoscnd\t*not* applying proper-motion correction".format(
@@ -936,7 +961,7 @@ def main():
         # AR too: actually not exactly.. (timestamp when script started)
         log.info(
             "{:.1f}s\tdotoo\tmtltime={}".format(
-                time() - start, utc_time_now
+                time() - start, utc_time_now_str
             )
         )
         # AR too: read too mtl
@@ -945,11 +970,10 @@ def main():
         # AR - mjd (! TBD !)
         d = Table.read(mydirs["too"])
         keep = is_point_in_desi(tiles, d["RA"], d["DEC"])
-        mjd_now = Time(utc_time_now, format="isot").mjd
         keep &= (d["MJD_BEGIN"] < mjd_now + 30) & (d["MJD_END"] > mjd_now - 1)
         log.info(
             "{:.1f}s\tdotoo\tkeeping {}/{} targets in tiles and in the MJD time window: {}, {}".format(
-                time() - start, keep.sum(), len(keep), mjd_now - 1, mjd_now + 1
+                time() - start, keep.sum(), len(keep), mjd_now -1, mjd_now + 30
             )
         )
         if keep.sum() > 0:
@@ -958,7 +982,7 @@ def main():
             d = force_finite_pm(d, log=log, step="dotoo")
             # AR too: update RA, DEC, REF_EPOCH using proper motion
             if args.pmcorr == "y":
-                d = update_nowradec(d, new_obstime)
+                d = update_nowradec(d, args.pmtime_utc_str)
             else:
                 log.info(
                     "{:.1f}s\tdotoo\t*not* applying proper-motion correction".format(
@@ -1103,10 +1127,14 @@ def main():
                 "survey",
                 "rundate",
                 "pmcorr",
-                "pmtime",
+                "pmtime_utc_str",
             ]:
                 if kwargs[1] is not None:
-                    fd["PRIMARY"].write_key(kwargs[0], kwargs[1])
+                    if kwargs[0] == "pmtime_utc_str":
+                        tmparg = "pmtime"
+                    else:
+                        tmparg = kwargs[0]
+                    fd["PRIMARY"].write_key(tmparg, kwargs[1])
             if (kwargs[0].lower() not in ["outdir", "forcetileid"]) & (
                 kwargs[1] is not None
             ):
@@ -1116,7 +1144,7 @@ def main():
         )
         # AR storing
         fd["PRIMARY"].write_key("faprgrm", args.program)
-        fd["PRIMARY"].write_key("mtltime", utc_time_now)
+        fd["PRIMARY"].write_key("mtltime", utc_time_now_str)
         fd["PRIMARY"].write_key("obscon", obscon)
         # AR informations for NTS
         # AR SBPROF from https://desi.lbl.gov/trac/wiki/SurveyOps/SurveySpeed#NominalFiberfracValues
@@ -1991,7 +2019,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--rundate",
-        help="yyyy-mm-ddThh:mm:ss rundate for focalplane (default=current UTC time)",
+        help="yyyy-mm-ddThh:mm:ss+00:00 rundate for focalplane with UTC timezone formatting (default=current UTC time)",
         type=str,
         default=None,
         required=False,
@@ -2041,8 +2069,8 @@ if __name__ == "__main__":
         required=False,
     )
     parser.add_argument(
-        "--pmtime",
-        help="yyyy-mm-ddThh:mm:ss, time use to compute new coordinates after applying proper motion since REF_EPOCH (default=current UTC time)",
+        "--pmtime_utc_str",
+        help="yyyy-mm-ddThh:mm:ss+00:00, UTC time use to compute new coordinates after applying proper motion since REF_EPOCH (default=current UTC time)",
         type=str,
         default=None,
         required=False,
@@ -2065,12 +2093,14 @@ if __name__ == "__main__":
     if os.path.isdir(args.outdir) == False:
         os.mkdir(args.outdir)
 
-    # AR rundate, pmtime
-    utc_time_now = datetime.now(tz=timezone.utc).isoformat(timespec='seconds')
+    # AR utc_time_now, rundate, pmtime
+    utc_time_now = datetime.now(tz=timezone.utc)
+    utc_time_now_str = utc_time_now.isoformat(timespec='seconds')
+    mjd_now = Time(utc_time_now).mjd
     if args.rundate is None:
-        args.rundate = utc_time_now
-    if args.pmtime is None:
-        args.pmtime = utc_time_now
+        args.rundate = utc_time_now_str
+    if args.pmtime_utc_str is None:
+        args.pmtime_utc_str = utc_time_now_str
 
     # AR goaltime
     if args.goaltime is None:
@@ -2115,3 +2145,4 @@ if __name__ == "__main__":
     with stdouterr_redirected(to=mytmpouts["log"]):
         main()
     # main()
+
