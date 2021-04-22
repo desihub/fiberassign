@@ -3,14 +3,23 @@
 fiberassign change log
 ======================
 
-2.2.1 (unreleased)
+2.3.1 (unreleased)
 ------------------
 
+* No changes yet.
+
+2.3.0 (2021-04-22)
+------------------
+
+First used for tiles 98,179,198,209,231,287,315,375,423,438,441
+on 2021-04-22 before making tag.
+
 * Change assignment strategy of leftover fibers (PR `#321`_).
-* Use UTC time everywhere (PR `#327`_).
+* Use UTC time everywhere (PR `#327`_, `#328`_).
 
 .. _`#321`: https://github.com/desihub/fiberassign/pull/321
 .. _`#327`: https://github.com/desihub/fiberassign/pull/327
+.. _`#328`: https://github.com/desihub/fiberassign/pull/328
 
 2.2.0 (2021-03-31)
 ------------------
