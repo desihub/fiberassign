@@ -1130,15 +1130,15 @@ def main():
                 "pmtime_utc_str",
             ]:
                 if kwargs[1] is not None:
-                    fd["PRIMARY"].write_key(kwargs[0], kwargs[1])
+                    if kwargs[0] == "pmtime_utc_str":
+                        tmparg = "pmtime"
+                    else:
+                        tmparg = kwargs[0]
+                    fd["PRIMARY"].write_key(tmparg, kwargs[1])
             if (kwargs[0].lower() not in ["outdir", "forcetileid"]) & (
                 kwargs[1] is not None
             ):
-                if kwargs[0] == "pmtime_utc_str":
-                    tmparg = "pmtime"
-                else:
-                    tmparg = kwargs[0]
-                tmparr += ["--{} {}".format(tmparg, kwargs[1])]
+                tmparr += ["--{} {}".format(kwargs[0], kwargs[1])]
         fd["PRIMARY"].write_key(
             "faargs", " ".join(tmparr),
         )
