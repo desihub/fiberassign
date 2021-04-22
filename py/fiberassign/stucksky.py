@@ -17,7 +17,7 @@ def stuck_on_sky(hw, tiles):
 
     skybricks_dir = os.environ['SKYBRICKS_DIR']
     skybricks_fn = os.path.join(skybricks_dir, 'skybricks-exist.fits')
-    skybricks = fitsio.read(skybricks_fn)
+    skybricks = fitsio.read(skybricks_fn, upper=True)
     #for attr in ['ra1','ra2','dec1','dec2','brickname']:
     #    setattr(skybricks, attr, skybricks[attr.upper()])
     skykd = _radec2kd(skybricks['RA'], skybricks['DEC'])
