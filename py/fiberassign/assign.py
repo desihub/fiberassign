@@ -325,7 +325,7 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
             for iloc, loc in enumerate(empty_fibers):
                 # For stuck positioners on good sky, set the FA_TYPE SKY bit.
                 if (hw.state[loc] & FIBER_STATE_STUCK) and stuck_sky_tile is not None:
-                    if stuck_sky_tile[loc]:
+                    if stuck_sky_tile.get(loc, False):
                         empty_tgtype[iloc] = TARGET_TYPE_SKY
 
                 if (
