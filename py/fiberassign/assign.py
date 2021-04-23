@@ -139,7 +139,7 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
     tm = Timer()
     tm.start()
     tile_id, tile_ra, tile_dec, tile_obstheta, tile_obstime, tile_obsha, \
-        tile_file, gfa_targets = params
+        tile_file, gfa_targets, stuck_sky_tile = params
     log = Logger.get()
 
     # Hardware properties
@@ -320,8 +320,14 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
 
             empty_x = np.zeros(len(empty_fibers), dtype=np.float64)
             empty_y = np.zeros(len(empty_fibers), dtype=np.float64)
+            empty_tgtype = np.zeros(len(empty_fibers), dtype=np.uint8)
 
             for iloc, loc in enumerate(empty_fibers):
+                # For stuck positioners on good sky, set the FA_TYPE SKY bit.
+                if (hw.state[loc] & FIBER_STATE_STUCK) and stuck_sky_tile is not None:
+                    if stuck_sky_tile[loc]:
+                        empty_tgtype[iloc] = TARGET_TYPE_SKY
+
                 if (
                     (hw.state[loc] & FIBER_STATE_STUCK) or
                     (hw.state[loc] & FIBER_STATE_BROKEN)
@@ -377,6 +383,7 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
             )
             assigned_tgx[assigned_invalid] = [x for x, y in empty_xy]
             assigned_tgy[assigned_invalid] = [y for x, y in empty_xy]
+            assigned_tgtype[assigned_invalid] |= empty_tgtype
 
         if (len(assigned_valid) > 0):
             # The target IDs assigned to fibers (note- NOT sorted)
@@ -515,7 +522,7 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
 
 def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fba-",
                           split_dir=False, all_targets=False,
-                          gfa_targets=None, overwrite=False):
+                          gfa_targets=None, overwrite=False, stucksky=None):
     """Write out assignment results in FITS format.
 
     For each tile, all available targets (not only the assigned targets) and
@@ -563,13 +570,15 @@ def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fba-",
 
         outfile = result_path(tid, dir=out_dir, prefix=out_prefix,
                               create=True, split=split_dir)
-        if gfa_targets is None:
-            params = (tid, tra, tdec, ttheta, ttime, tha, outfile, None)
-        else:
-            params = (
-                tid, tra, tdec, ttheta, ttime, tha, outfile, gfa_targets[i]
-            )
+        gfa = None
+        if gfa_targets is not None:
+            gfa = gfa_targets[i]
 
+        stuck = None
+        if stucksky is not None:
+            stuck = stucksky[tid]
+
+        params = (tid, tra, tdec, ttheta, ttime, tha, outfile, gfa, stuck)
         write_tile(params)
 
     tm.stop()

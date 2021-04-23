@@ -473,7 +473,8 @@ def run_assign_bytile(args):
     write_assignment_fits(tiles, asgn, out_dir=args.dir,
                           out_prefix=args.prefix, split_dir=args.split,
                           all_targets=args.write_all_targets,
-                          gfa_targets=gfa_targets, overwrite=args.overwrite)
+                          gfa_targets=gfa_targets, overwrite=args.overwrite,
+                          stucksky=stucksky)
 
     gt.stop("run_assign_bytile write output")
 
