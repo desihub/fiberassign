@@ -1,5 +1,3 @@
-
-
     
 def stuck_on_sky(hw, tiles):
     '''
@@ -8,18 +6,22 @@ def stuck_on_sky(hw, tiles):
     Returns a nested dict:
         stuck_sky[tileid][loc] = bool_good_sky
     '''
-    from scipy.spatial import KDTree
-    import numpy as np
-    import fitsio
     import os
-    from fiberassign.hardware import FIBER_STATE_STUCK
+    import numpy as np
+    from scipy.spatial import KDTree
+    import fitsio
     from astropy.wcs import WCS
+    from fiberassign.hardware import FIBER_STATE_STUCK
+    from fiberassign.utils import Logger
 
-    skybricks_dir = os.environ['SKYBRICKS_DIR']
+    skybricks_dir = os.environ.get('SKYBRICKS_DIR', None)
+    if skybricks_dir is None:
+        log = Logger.get()
+        log.warning('Environment variable SKYBRICKS_DIR is not set; not looking up whether '
+                    'stuck positioners land on good sky')
+        return
     skybricks_fn = os.path.join(skybricks_dir, 'skybricks-exist.fits')
     skybricks = fitsio.read(skybricks_fn, upper=True)
-    #for attr in ['ra1','ra2','dec1','dec2','brickname']:
-    #    setattr(skybricks, attr, skybricks[attr.upper()])
     skykd = _radec2kd(skybricks['RA'], skybricks['DEC'])
 
     tilekd = _radec2kd(tiles.ra, tiles.dec)
