@@ -1612,7 +1612,7 @@ def run(
 
     # First-pass assignment of science targets
     gt.start("Assign unused fibers to science targets")
-    asgn.assign_unused(TARGET_TYPE_SCIENCE, -1, "POS", start_tile, stop_tile)
+    asgn.assign_unused(TARGET_TYPE_SCIENCE, -1, -1, "POS", start_tile, stop_tile)
     gt.stop("Assign unused fibers to science targets")
 
     # Redistribute science targets across available petals
@@ -1715,8 +1715,8 @@ def run(
 
     # Assign sky monitor fibers
     gt.start("Assign sky monitor fibers")
-    asgn.assign_unused(TARGET_TYPE_SKY, -1, -1 "ETC", start_tile, stop_tile)
-    asgn.assign_unused(TARGET_TYPE_SUPPSKY, -1, -1 "ETC", start_tile, stop_tile)
+    asgn.assign_unused(TARGET_TYPE_SKY, -1, -1, "ETC", start_tile, stop_tile)
+    asgn.assign_unused(TARGET_TYPE_SUPPSKY, -1, -1, "ETC", start_tile, stop_tile)
     asgn.assign_unused(TARGET_TYPE_SAFE, -1, -1, "ETC", start_tile, stop_tile)
     gt.stop("Assign sky monitor fibers")
 

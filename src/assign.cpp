@@ -35,7 +35,9 @@ fba::Assignment::Assignment(fba::Targets::pshr tgs,
 
     // Get the hardware and tile configuration
     tiles_ = tgsavail_->tiles();
+    std::cout << "get hardware" << std::endl;
     hw_ = tgsavail_->hardware();
+    std::cout << "get hardware done. nslitblock " << hw_->nslitblock << std::endl;
 
     // Initialize assignment counts
 
@@ -61,32 +63,41 @@ fba::Assignment::Assignment(fba::Targets::pshr tgs,
             for (int32_t p = 0; p < hw_->npetal; ++p) {
                 nassign_petal[tp][tile_id][p] = 0;
             }
-            for (int32_t p = 0; p < hw_->nslitblock; ++p) {
-                nassign_slitblock[tp][tile_id][p] = 0;
+            for (int32_t s = 0; s < hw_->nslitblock; ++s) {
+                nassign_slitblock[tp][tile_id][s] = 0;
             }
             tile_target_xy[tile_id].clear();
-            if (tp == TARGET_TYPE_SKY) {
-                // for any stuck positioners that land on good sky,
-                // increment the counter
-                if (stuck_sky.count(tile_id)==0)
+            if (tp != TARGET_TYPE_SKY)
+                continue;
+            // for any stuck positioners that land on good sky,
+            // increment the counter
+            // None on this tile?
+            if (stuck_sky.count(tile_id)==0)
+                continue;
+            for (auto & st : stuck_sky[tile_id]) {
+                // st: < loc_id, bool >
+                int32_t loc = st.first;
+                bool good_sky = st.second;
+                if (!good_sky)
                     continue;
-                for (auto & st : stuck_sky[tile_id]) {
-                    // st: < loc_id, bool >
-                    int32_t loc = st.first;
-                    bool good_sky = st.second;
-                    if (!good_sky)
-                        continue;
-                    nassign_tile .at(tp).at(tile_id)++;
-                    int32_t petal = hw_->loc_petal[loc];
-                    nassign_petal.at(tp).at(tile_id).at(petal)++;
-                    int32_t slitblock = hw_->loc_slitblock[loc];
-                    nassign_slitblock.at(tp).at(tile_id).at(slitblock)++;
+                int32_t petal = hw_->loc_petal[loc];
+                int32_t slitblock = hw_->loc_slitblock[loc];
+                if (slitblock == -1) {
+                    // ETC fiber
                     logmsg.str("");
-                    logmsg << "tile " << tile_id << " loc " << loc
-                           << " on petal " << petal << " and slitblock "
-                           << slitblock << " is STUCK on a good sky.";
+                    logmsg << "tile " << tile_id << " loc " << loc << " petal " << petal << " slitblock " << slitblock << " is type " << hw_->loc_device_type[loc];
                     logger.debug(logmsg.str().c_str());
+                    continue;
                 }
+                nassign_tile .at(tp).at(tile_id)++;
+
+                nassign_petal.at(tp).at(tile_id).at(petal)++;
+                nassign_slitblock.at(tp).at(tile_id).at(slitblock)++;
+                logmsg.str("");
+                logmsg << "tile " << tile_id << " loc " << loc
+                       << " on petal " << petal << " and slitblock "
+                       << slitblock << " is STUCK on a good sky.";
+                logger.debug(logmsg.str().c_str());
             }
         }
     }
