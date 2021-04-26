@@ -59,12 +59,14 @@ fba::Assignment::Assignment(fba::Targets::pshr tgs,
             int32_t tile_id = tiles_->id[t];
             nassign_tile[tp][tile_id] = 0;
             nassign_petal[tp][tile_id].clear();
-            nassign_slitblock[tp][tile_id].clear();
             for (int32_t p = 0; p < hw_->npetal; ++p) {
                 nassign_petal[tp][tile_id][p] = 0;
             }
-            for (int32_t s = 0; s < hw_->nslitblock; ++s) {
-                nassign_slitblock[tp][tile_id][s] = 0;
+            for (int32_t p = 0; p < hw_->npetal; ++p) {
+                nassign_slitblock[tp][tile_id][p].clear();
+                for (int32_t s = 0; s < hw_->nslitblock; ++s) {
+                    nassign_slitblock[tp][tile_id][p][s] = 0;
+                }
             }
             tile_target_xy[tile_id].clear();
             if (tp != TARGET_TYPE_SKY)
@@ -90,9 +92,8 @@ fba::Assignment::Assignment(fba::Targets::pshr tgs,
                     continue;
                 }
                 nassign_tile .at(tp).at(tile_id)++;
-
                 nassign_petal.at(tp).at(tile_id).at(petal)++;
-                nassign_slitblock.at(tp).at(tile_id).at(slitblock)++;
+                nassign_slitblock.at(tp).at(tile_id).at(petal).at(slitblock)++;
                 logmsg.str("");
                 logmsg << "tile " << tile_id << " loc " << loc
                        << " on petal " << petal << " and slitblock "
@@ -276,16 +277,17 @@ bool fba::Assignment::petal_count_max(
 int32_t fba::Assignment::slitblock_count(
     uint8_t tgtype,
     int32_t tile,
+    int32_t petal,
     int32_t slitblock
 ) const {
-    int32_t ret = nassign_slitblock.at(tgtype).at(tile).at(slitblock);
+    int32_t ret = nassign_slitblock.at(tgtype).at(tile).at(petal).at(slitblock);
     // If assigning SUPP_SKY targets, also include the "regular"
     // sky count on this slitblock and vice-versa.
     if (tgtype == TARGET_TYPE_SUPPSKY) {
-        ret += nassign_slitblock.at(TARGET_TYPE_SKY).at(tile).at(slitblock);
+        ret += nassign_slitblock.at(TARGET_TYPE_SKY).at(tile).at(petal).at(slitblock);
     }
     if (tgtype == TARGET_TYPE_SKY) {
-        ret += nassign_slitblock.at(TARGET_TYPE_SUPPSKY).at(tile).at(slitblock);
+        ret += nassign_slitblock.at(TARGET_TYPE_SUPPSKY).at(tile).at(petal).at(slitblock);
     }
     return ret;
 }
@@ -295,10 +297,11 @@ bool fba::Assignment::slitblock_count_max(
     uint8_t tgtype,
     int32_t max_per_slitblock,
     int32_t tile,
+    int32_t petal,
     int32_t slitblock
 ) const {
     // Check slitblock count limits
-    int32_t cur_slitblock = slitblock_count(tgtype, tile, slitblock);
+    int32_t cur_slitblock = slitblock_count(tgtype, tile, petal, slitblock);
     return (cur_slitblock >= max_per_slitblock);
 }
 
@@ -480,7 +483,7 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
                 // The slitblock of this location
                 int32_t s = hw_->loc_slitblock.at(loc);
                 // Check slitblock count limits
-                if (slitblock_count_max(tgtype, max_per_slitblock, tile_id, s)) {
+                if (slitblock_count_max(tgtype, max_per_slitblock, tile_id, p, s)) {
                     continue;
                 }
 
@@ -841,8 +844,8 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
 
         // The unique petals used for this tile
         std::set <int32_t> unique_petal;
-        // The unique slitblocks used for this tile
-        std::set <int32_t> unique_slitblock;
+        // The unique (petal,slitblocks) used for this tile
+        std::set <std::pair<int32_t, int32_t> > unique_slitblock;
 
         for (auto const & tgwit : science_targets) {
             // This current science target ID
@@ -864,9 +867,9 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
 
             // The slitblock of this location
             int32_t s = hw_->loc_slitblock.at(tgloc);
-            unique_slitblock.insert(s);
+            unique_slitblock.insert(std::make_pair(p, s));
             // Check slitblock count limits
-            if (slitblock_count_max(tgtype, required_per_slitblock, tile_id, s)) {
+            if (slitblock_count_max(tgtype, required_per_slitblock, tile_id, p, s)) {
                 continue;
             }
 
@@ -993,14 +996,17 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
             }
         }
         // Check final slitblock assignment counts
-        for (auto const & p : unique_slitblock) {
-            int32_t cur_slitblock = slitblock_count(tgtype, tile_id, p);
+        for (auto const & u : unique_slitblock) {
+            int32_t p = u.first;
+            int32_t s = u.second;
+            int32_t cur_slitblock = slitblock_count(tgtype, tile_id, p, s);
             if (cur_slitblock < required_per_slitblock) {
                 logmsg.str("");
                 logmsg << "assign force " << tgstr << ": tile " << tile_id
-                    << ", slitblock " << p << " could only assign " << cur_slitblock
-                    << " (require " << required_per_slitblock
-                    << ").  Insufficient number of objects or too many collisions";
+                       << ", petal " << p
+                       << ", slitblock " << s << " could only assign " << cur_slitblock
+                       << " (require " << required_per_slitblock
+                       << ").  Insufficient number of objects or too many collisions";
                 logger.warning(logmsg.str().c_str());
             }
         }
@@ -1402,7 +1408,7 @@ void fba::Assignment::assign_tileloc(fba::Hardware const * hw,
         if (tgobj.is_type(tt)) {
             nassign_tile.at(tt).at(tile)++;
             nassign_petal.at(tt).at(tile).at(petal)++;
-            nassign_slitblock.at(tt).at(tile).at(slitblock)++;
+            nassign_slitblock.at(tt).at(tile).at(petal).at(slitblock)++;
             if (extra_log) {
                 logmsg.str("");
                 logmsg << "assign_tileloc: tile " << tile << ", loc "
@@ -1412,7 +1418,7 @@ void fba::Assignment::assign_tileloc(fba::Hardware const * hw,
                     << " N_petal now = "
                     << nassign_petal.at(tt).at(tile).at(petal)
                     << " N_slitblock now = "
-                    << nassign_slitblock.at(tt).at(tile).at(slitblock);
+                    << nassign_slitblock.at(tt).at(tile).at(petal).at(slitblock);
                 logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
             }
         }
@@ -1480,7 +1486,7 @@ void fba::Assignment::unassign_tileloc(fba::Hardware const * hw,
         if (tgobj.is_type(tt)) {
             nassign_tile.at(tt).at(tile)--;
             nassign_petal.at(tt).at(tile).at(petal)--;
-            nassign_slitblock.at(tt).at(tile).at(slitblock)--;
+            nassign_slitblock.at(tt).at(tile).at(petal).at(slitblock)--;
             if (extra_log) {
                 logmsg.str("");
                 logmsg << "unassign_tileloc: tile " << tile << ", loc "
@@ -1490,7 +1496,7 @@ void fba::Assignment::unassign_tileloc(fba::Hardware const * hw,
                     << " N_petal now = "
                     << nassign_petal.at(tt).at(tile).at(petal)
                     << " N_slitblock now = "
-                    << nassign_slitblock.at(tt).at(tile).at(slitblock);
+                    << nassign_slitblock.at(tt).at(tile).at(petal).at(slitblock);
                 logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
             }
         }

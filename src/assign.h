@@ -103,6 +103,7 @@ class Assignment : public std::enable_shared_from_this <Assignment> {
         int32_t slitblock_count(
             uint8_t tgtype,
             int32_t tile,
+            int32_t petal,
             int32_t slitblock
         ) const;
 
@@ -110,6 +111,7 @@ class Assignment : public std::enable_shared_from_this <Assignment> {
             uint8_t tgtype,
             int32_t max_per_slitblock,
             int32_t tile,
+            int32_t petal,
             int32_t slitblock
         ) const;
 
@@ -175,9 +177,10 @@ class Assignment : public std::enable_shared_from_this <Assignment> {
         // [target_type][tile_id][petal_id] = count
         std::map <uint8_t,
             std::map <int32_t, std::map <int32_t, int32_t> > > nassign_petal;
-        // [target_type][tile_id][slitblock_id] = count
+        // [target_type][tile_id][petal_id][slitblock_id] = count
         std::map <uint8_t,
-            std::map <int32_t, std::map <int32_t, int32_t> > > nassign_slitblock;
+            std::map <int32_t,
+            std::map <int32_t, std::map <int32_t, int32_t> > > > nassign_slitblock;
 
         // shared handle to the hardware configuration.
         Hardware::pshr hw_;

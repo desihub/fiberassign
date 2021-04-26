@@ -112,6 +112,7 @@ fba::Hardware::Hardware(std::string const & timestr,
         loc_fiber[location[i]] = fiber[i];
         loc_slitblock[location[i]] = slitblock[i];
         loc_blockfiber[location[i]] = blockfiber[i];
+        //std::cout << device_type[i] << " " << i << ": petal " << petal[i] << " slitblock " << slitblock[i] << std::endl;
         petal_locations[petal[i]].push_back(location[i]);
         loc_pos_cs5_mm[location[i]] = std::make_pair(x_mm[i], y_mm[i]);
         state[location[i]] = status[i];
