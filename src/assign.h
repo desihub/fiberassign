@@ -31,14 +31,15 @@ class Assignment : public std::enable_shared_from_this <Assignment> {
                    LocationsAvailable::pshr locavail,
                    std::map<int32_t, std::map<int32_t, bool> > stuck_sky
                    = std::map<int32_t, std::map<int32_t,bool> >());
-                   
 
         void assign_unused(uint8_t tgtype, int32_t max_per_petal = -1,
+                           int32_t max_per_slitblock = -1,
                            std::string const & pos_type = std::string("POS"),
                            int32_t start_tile = -1, int32_t stop_tile = -1,
                            bool use_zero_obsremain = false);
 
         void assign_force(uint8_t tgtype, int32_t required_per_petal = 0,
+                          int32_t required_per_slitblock = 0,
                           int32_t start_tile = -1, int32_t stop_tile = -1);
 
         void redistribute_science(int32_t start_tile = -1,
@@ -97,6 +98,19 @@ class Assignment : public std::enable_shared_from_this <Assignment> {
             int32_t max_per_petal,
             int32_t tile,
             int32_t petal
+        ) const;
+
+        int32_t slitblock_count(
+            uint8_t tgtype,
+            int32_t tile,
+            int32_t slitblock
+        ) const;
+
+        bool slitblock_count_max(
+            uint8_t tgtype,
+            int32_t max_per_slitblock,
+            int32_t tile,
+            int32_t slitblock
         ) const;
 
         bool ok_to_assign(
@@ -158,8 +172,12 @@ class Assignment : public std::enable_shared_from_this <Assignment> {
         // The number of assigned locations per tile and spectrograph (petal)
         // For each target class.
         std::map <uint8_t, std::map <int32_t, int32_t> > nassign_tile;
+        // [target_type][tile_id][petal_id] = count
         std::map <uint8_t,
             std::map <int32_t, std::map <int32_t, int32_t> > > nassign_petal;
+        // [target_type][tile_id][slitblock_id] = count
+        std::map <uint8_t,
+            std::map <int32_t, std::map <int32_t, int32_t> > > nassign_slitblock;
 
         // shared handle to the hardware configuration.
         Hardware::pshr hw_;
