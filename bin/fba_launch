@@ -1063,6 +1063,12 @@ def main():
             "--gfafile",
             mytmpouts["gfa"],
         ]
+        if args.sky_per_slitblock:
+            opts += [
+                "--sky_per_slitblock",
+                str(args.sky_per_slitblock),
+            ]
+
         log.info(
             "{:.1f}s\tdofa\ttileid={:06d}: running raw fiber assignment (run_assign_full) with opts={}".format(
                 time() - start, args.tileid, " ; ".join(opts)
@@ -2052,6 +2058,13 @@ if __name__ == "__main__":
         help="required number of sky targets per petal (default=40)",
         type=str,
         default="40",
+        required=False,
+    )
+    parser.add_argument(
+        "--sky_per_slitblock",
+        help="Required number of sky targets per fiber slitblock",
+        type=int,
+        default=0,
         required=False,
     )
     parser.add_argument(

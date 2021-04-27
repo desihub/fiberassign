@@ -35,9 +35,7 @@ fba::Assignment::Assignment(fba::Targets::pshr tgs,
 
     // Get the hardware and tile configuration
     tiles_ = tgsavail_->tiles();
-    std::cout << "get hardware" << std::endl;
     hw_ = tgsavail_->hardware();
-    std::cout << "get hardware done. nslitblock " << hw_->nslitblock << std::endl;
 
     // Initialize assignment counts
 
@@ -96,7 +94,7 @@ fba::Assignment::Assignment(fba::Targets::pshr tgs,
                 nassign_slitblock.at(tp).at(tile_id).at(petal).at(slitblock)++;
                 logmsg.str("");
                 logmsg << "tile " << tile_id << " loc " << loc
-                       << " on petal " << petal << " and slitblock "
+                       << " on petal " << petal << ", slitblock "
                        << slitblock << " is STUCK on a good sky.";
                 logger.debug(logmsg.str().c_str());
             }
