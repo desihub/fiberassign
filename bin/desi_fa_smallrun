@@ -100,19 +100,17 @@ def create_tiles(infn, program, radec, outdir):
         is_radec &= (d["RA"] > ramin) | (d["RA"] < ramax)
     else:
         is_radec &= (d["RA"] > ramin) & (d["RA"] < ramax)
-    # AR cut on program
-    is_prog = np.array([program.lower() for program in d["PROGRAM"]]) == program
     # AR cut on the number of passes (first pass is 0)
-    if args.npass > d["PASS"][is_prog].max() + 1:
+    if args.npass > d["PASS"].max() + 1:
         log.error(
             "{:.1f}s\tcreate_tiles\tWARNING : requesting {} passes, whereas only {} passes available".format(
-                time() - start, args.npass, d["PASS"][is_prog].max() + 1
+                time() - start, args.npass, d["PASS"].max() + 1
             )
         )
         sys.exit()
     is_pass = d["PASS"] + 1 <= args.npass
     # AR writing one tiles file with all passes
-    keep = (is_indesi) & (is_radec) & (is_prog) & (is_pass)
+    keep = (is_indesi) & (is_radec) & (is_pass)
     d = d[keep]
     fitsio.write(get_fn(args.outdir, "tiles"), d.as_array(), clobber=True)
     # AR writing one tiles file for each pass
