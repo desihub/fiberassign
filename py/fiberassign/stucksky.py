@@ -64,7 +64,8 @@ def stuck_on_sky(hw, tiles):
                 hw.loc_theta_min[loc],
                 hw.loc_phi_min[loc],
                 hw.loc_theta_max[loc],
-                hw.loc_phi_max[loc]
+                hw.loc_phi_max[loc],
+                True
             )
             stuck_x[iloc] = loc_x
             stuck_y[iloc] = loc_y

@@ -345,7 +345,8 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
                         hw.loc_theta_min[loc],
                         hw.loc_phi_min[loc],
                         hw.loc_theta_max[loc],
-                        hw.loc_phi_max[loc]
+                        hw.loc_phi_max[loc],
+                        ignore_range=True
                     )
                     empty_x[iloc] = xy[0]
                     empty_y[iloc] = xy[1]
