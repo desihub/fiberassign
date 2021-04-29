@@ -283,20 +283,20 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
                     lid, state[lid], theta, phi
                 ), flush=True)
                 failed = hw.loc_position_thetaphi(
-                    lid, theta_pos[lid], phi_pos[lid], shptheta, shpphi
+                    lid, theta, phi, shptheta, shpphi, True
                 )
             else:
                 # Plot the positioner in its home
                 # position with theta at its minimum value and phi
                 # at 180 degrees.
-                theta = theta_offset[lid] + theta_min[lid]
-                phi = phi_offset[lid] + phi_max[lid]
+                theta = theta_offset[lid] + theta_min[lid] + 1e-6
+                phi = phi_offset[lid] + phi_max[lid] - 1e-6
                 if phi > np.pi:
                     phi = np.pi
                 print("loc {}, state {} is unassigned, using {} / {}".format(
                     lid, state[lid], theta, phi
                 ), flush=True)
-                failed = hw.loc_position_thetaphi(lid, theta, phi, shptheta, shpphi)
+                failed = hw.loc_position_thetaphi(lid, theta, phi, shptheta, shpphi, True)
             if failed:
                 msg = "Positioner at location {} cannot move to its stuck or home position.  This should never happen!".format(lid)
                 log.warning(msg)
