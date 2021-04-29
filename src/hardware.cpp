@@ -132,6 +132,67 @@ fba::Hardware::Hardware(std::string const & timestr,
         loc_phi_max[location[i]] = phi_max[i] * M_PI / 180.0;
         loc_phi_pos[location[i]] = phi_pos[i] * M_PI / 180.0;
         loc_phi_arm[location[i]] = phi_arm[i];
+
+        if (state[location[i]] & (FIBER_STATE_STUCK | FIBER_STATE_BROKEN)) {
+            if ((loc_theta_pos[location[i]] < loc_theta_min[location[i]]) ||
+                (loc_theta_pos[location[i]] > loc_theta_max[location[i]])) {
+                logmsg.str("");
+                logmsg << "STUCK/BROKEN positioner (loc " << location[i]
+                       << ") theta value is outside of range: theta = "
+                       << loc_theta_pos[location[i]] << " vs range [" << loc_theta_min[location[i]]
+                       << ", " << loc_theta_max[location[i]] << "]; CLIPPING to valid range";
+                logger.info(logmsg.str().c_str());
+                loc_theta_pos[location[i]] = std::min(std::max(loc_theta_pos[location[i]],
+                                                               loc_theta_min[location[i]]),
+                                                      loc_theta_max[location[i]]);
+            }
+            if ((loc_phi_pos[location[i]] < loc_phi_min[location[i]]) ||
+                (loc_phi_pos[location[i]] > loc_phi_max[location[i]])) {
+                logmsg.str("");
+                logmsg << "STUCK/BROKEN positioner (loc " << location[i]
+                       << ") phi value is outside of range: phi = "
+                       << loc_phi_pos[location[i]] << " vs range [" << loc_phi_min[location[i]]
+                       << ", " << loc_phi_max[location[i]] << "]; CLIPPING to valid range";
+                logger.info(logmsg.str().c_str());
+                loc_phi_pos[location[i]] = std::min(std::max(loc_phi_pos[location[i]],
+                                                               loc_phi_min[location[i]]),
+                                                      loc_phi_max[location[i]]);
+            }
+        }
+        // RESTRICT but not stuck or broken (ie we'll still try to move it) -- CLIP theta/phi
+        // to allowed ranges!
+        if ((state[location[i]] & FIBER_STATE_RESTRICT) &&
+            (((state[location[i]] & (FIBER_STATE_STUCK | FIBER_STATE_BROKEN)) == 0))) {
+
+            if ((loc_theta_pos[location[i]] < loc_theta_min[location[i]]) ||
+                (loc_theta_pos[location[i]] > loc_theta_max[location[i]])) {
+                logmsg.str("");
+                logmsg << "RESTRICT positioner (loc " << location[i]
+                       << ") theta value is outside of range: theta = "
+                       << loc_theta_pos[location[i]] << " vs range [" << loc_theta_min[location[i]]
+                       << ", " << loc_theta_max[location[i]] << "]; CLIPPING to valid range!";
+                logger.info(logmsg.str().c_str());
+                loc_theta_pos[location[i]] = std::min(std::max(loc_theta_pos[location[i]],
+                                                               loc_theta_min[location[i]]),
+                                                      loc_theta_max[location[i]]);
+            }
+            if ((loc_phi_pos[location[i]] < loc_phi_min[location[i]]) ||
+                (loc_phi_pos[location[i]] > loc_phi_max[location[i]])) {
+                logmsg.str("");
+                logmsg << "RESTRICT positioner (loc " << location[i]
+                       << ") phi value is outside of range: phi = "
+                       << loc_phi_pos[location[i]] << " vs range [" << loc_phi_min[location[i]]
+                       << ", " << loc_phi_max[location[i]] << "]; CLIPPING to valid range!";
+                logger.info(logmsg.str().c_str());
+                loc_phi_pos[location[i]] = std::min(std::max(loc_phi_pos[location[i]],
+                                                               loc_phi_min[location[i]]),
+                                                      loc_phi_max[location[i]]);
+            }
+
+
+
+        }
+
         loc_theta_excl[location[i]] = excl_theta[i];
         loc_phi_excl[location[i]] = excl_phi[i];
         loc_gfa_excl[location[i]] = excl_gfa[i];
