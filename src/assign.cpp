@@ -1337,8 +1337,8 @@ bool fba::Assignment::ok_to_assign (fba::Hardware const * hw, int32_t tile,
                 loc,
                 tpos,
                 nb,
-                hw->loc_theta_pos.at(nb),
-                hw->loc_phi_pos.at(nb)
+                hw->loc_theta_offset.at(nb) + hw->loc_theta_pos.at(nb),
+                hw->loc_phi_offset.at(nb)   + hw->loc_phi_pos.at(nb)
             );
         } else {
             // Neighbor is working, check for collisions with the neighbor in
