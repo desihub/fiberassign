@@ -1610,10 +1610,16 @@ def run(
     """
     gt = GlobalTimers.get()
 
+    print('Start:')
+    asgn.print_status(start_tile, stop_tile)
+
     # First-pass assignment of science targets
     gt.start("Assign unused fibers to science targets")
     asgn.assign_unused(TARGET_TYPE_SCIENCE, -1, -1, "POS", start_tile, stop_tile)
     gt.stop("Assign unused fibers to science targets")
+
+    print('After assigning unused fibers to science targets:')
+    asgn.print_status(start_tile, stop_tile)
 
     # Redistribute science targets across available petals
     if redistribute:
@@ -1621,12 +1627,18 @@ def run(
         asgn.redistribute_science(start_tile, stop_tile)
         gt.stop("Redistribute science targets")
 
+        print('After redistributing science targets:')
+        asgn.print_status(start_tile, stop_tile)
+
     # Assign standards, up to some limit
     gt.start("Assign unused fibers to standards")
     asgn.assign_unused(
         TARGET_TYPE_STANDARD, std_per_petal, -1, "POS", start_tile, stop_tile
     )
     gt.stop("Assign unused fibers to standards")
+
+    print('After assigning standards:')
+    asgn.print_status(start_tile, stop_tile)
 
     def do_assign_unused_sky(ttype):
         if sky_per_petal > 0 and sky_per_slitblock > 0:
@@ -1636,17 +1648,24 @@ def run(
                 ttype, -1, sky_per_slitblock, "POS",
                 start_tile, stop_tile
             )
+            print('After assigning [supp]sky per-slitblock:')
+            asgn.print_status(start_tile, stop_tile)
+
             # Then assign using the petal requirement, because it may(should) require
             # more fibers overall.
             asgn.assign_unused(
                 ttype, sky_per_petal, -1, "POS",
                 start_tile, stop_tile
             )
+            print('After assigning [supp]sky per-petal:')
+            asgn.print_status(start_tile, stop_tile)
         else:
             asgn.assign_unused(
                 ttype, sky_per_petal, sky_per_slitblock, "POS",
                 start_tile, stop_tile
             )
+            print('After assigning [supp]sky:')
+            asgn.print_status(start_tile, stop_tile)
 
     # Assign sky to unused fibers, up to some limit
     gt.start("Assign unused fibers to sky")
@@ -1665,6 +1684,9 @@ def run(
     )
     gt.stop("Force assignment of sufficient standards")
 
+    print('After force-assigning standards:')
+    asgn.print_status(start_tile, stop_tile)
+
     def do_assign_forced_sky(ttype):
         # This function really feels redundant with do_assign_unused_sky, but
         # when I tried to make a single function to do both calls, I had to call
@@ -1673,12 +1695,18 @@ def run(
             # Slitblock first
             asgn.assign_force(
                 ttype, -1, sky_per_slitblock, start_tile, stop_tile)
+            print('After force-assigning [supp]sky per-slitblock:')
+            asgn.print_status(start_tile, stop_tile)
             # Then petal
             asgn.assign_force(
                 ttype, sky_per_petal, -1, start_tile, stop_tile)
+            print('After force-assigning [supp]sky per-petal:')
+            asgn.print_status(start_tile, stop_tile)
         else:
             asgn.assign_force(
                 ttype, sky_per_petal, sky_per_slitblock, start_tile, stop_tile)
+            print('After force-assigning [supp]sky:')
+            asgn.print_status(start_tile, stop_tile)
 
     gt.start("Force assignment of sufficient sky")
     do_assign_forced_sky(TARGET_TYPE_SKY)
@@ -1703,6 +1731,10 @@ def run(
         stop_tile,
         use_zero_obsremain=use_zero_obsremain
     )
+
+    print('After assigning reobservations of science targets:')
+    asgn.print_status(start_tile, stop_tile)
+
     asgn.assign_unused(TARGET_TYPE_STANDARD, -1, -1, "POS", start_tile, stop_tile)
     asgn.assign_unused(TARGET_TYPE_SKY, -1, -1, "POS", start_tile, stop_tile)
     asgn.assign_unused(TARGET_TYPE_SUPPSKY, -1, -1, "POS", start_tile, stop_tile)
@@ -1712,6 +1744,9 @@ def run(
     # So after this is run every fiber should be assigned to something.
     asgn.assign_unused(TARGET_TYPE_SAFE, -1, -1, "POS", start_tile, stop_tile)
     gt.stop("Assign remaining unassigned fibers")
+
+    print('Final assignments:')
+    asgn.print_status(start_tile, stop_tile)
 
     # Assign sky monitor fibers
     gt.start("Assign sky monitor fibers")

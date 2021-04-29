@@ -1526,6 +1526,9 @@ PYBIND11_MODULE(_internal, m) {
         .def("tiles_assigned", &fba::Assignment::tiles_assigned, R"(
             Return an array of currently assigned tile IDs.
         )")
+        .def("print_status", &fba::Assignment::print_status, R"(
+            Prints a summary of counts of assignments per target class.
+        )")
         .def("tile_location_target", &fba::Assignment::tile_location_target,
             py::return_value_policy::reference_internal, py::arg("tile"), R"(
             Return the assignment for a given tile.

@@ -32,6 +32,8 @@ class Assignment : public std::enable_shared_from_this <Assignment> {
                    std::map<int32_t, std::map<int32_t, bool> > stuck_sky
                    = std::map<int32_t, std::map<int32_t,bool> >());
 
+        void print_status(int32_t start_tile = -1, int32_t stop_tile = -1);
+
         void assign_unused(uint8_t tgtype, int32_t max_per_petal = -1,
                            int32_t max_per_slitblock = -1,
                            std::string const & pos_type = std::string("POS"),
