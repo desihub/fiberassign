@@ -119,7 +119,8 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
             fbg::dpair & position,
             fbg::dpair const & center, double const & theta, double const & phi,
             double theta_arm, double phi_arm, double theta_zero, double phi_zero,
-            double theta_min, double phi_min, double theta_max, double phi_max) const;
+            double theta_min, double phi_min, double theta_max, double phi_max,
+            bool ignore_range=false) const;
 
         bool position_xy_bad(int32_t loc, fbg::dpair const & xy) const;
 

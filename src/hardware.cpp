@@ -754,7 +754,8 @@ bool fba::Hardware::thetaphi_to_xy(
         fbg::dpair & position,
         fbg::dpair const & center, double const & theta, double const & phi,
         double theta_arm, double phi_arm, double theta_zero, double phi_zero,
-        double theta_min, double phi_min, double theta_max, double phi_max
+        double theta_min, double phi_min, double theta_max, double phi_max,
+        bool ignore_range
     ) const {
 
     // Check that requested angles are in range.
@@ -763,7 +764,8 @@ bool fba::Hardware::thetaphi_to_xy(
             theta, phi, theta_zero, theta_min, theta_max, phi_zero, phi_min, phi_max
         )
     ) {
-        return true;
+        if (!ignore_range)
+            return true;
     }
 
     double x_theta = center.first + theta_arm * ::cos(theta);
