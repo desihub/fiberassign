@@ -353,8 +353,8 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
                 else:
                     # This is an unassigned, working positioner.  Place it in a folded
                     # state.
-                    thmin = hw.loc_theta_min[loc] + hw.loc_theta_offset[loc]
-                    phmax = hw.loc_phi_max[loc] + hw.loc_phi_offset[loc]
+                    thmin = hw.loc_theta_min[loc] + hw.loc_theta_offset[loc] + 1e-6
+                    phmax = hw.loc_phi_max[loc] + hw.loc_phi_offset[loc] - 1e-6
                     if phmax > np.pi:
                         phmax = np.pi
                     xy = hw.thetaphi_to_xy(
