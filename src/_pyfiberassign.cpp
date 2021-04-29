@@ -995,7 +995,7 @@ PYBIND11_MODULE(_internal, m) {
         )")
         .def("loc_position_thetaphi", &fba::Hardware::loc_position_thetaphi,
             py::arg("loc"), py::arg("theta"), py::arg("phi"),
-            py::arg("shptheta"), py::arg("shpphi"), R"(
+             py::arg("shptheta"), py::arg("shpphi"), py::arg("ignore_range")=false, R"(
             Move a positioner to a given set of theta / phi angles.
 
             This takes the specified angles and computes the shapes of
@@ -1009,6 +1009,7 @@ PYBIND11_MODULE(_internal, m) {
                 phi (float): The phi angle.
                 shptheta (Shape):  The theta shape.
                 shpphi (Shape):  The phi shape.
+                ignore_range=false (bool): Ignore phi/theta min/max limits?
 
             Returns:
                 None

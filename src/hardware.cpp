@@ -618,7 +618,8 @@ bool fba::Hardware::move_positioner_thetaphi(
         fbg::shape & shptheta, fbg::shape & shpphi,
         fbg::dpair const & center, double theta, double phi,
         double theta_arm, double phi_arm, double theta_zero, double phi_zero,
-        double theta_min, double phi_min, double theta_max, double phi_max
+        double theta_min, double phi_min, double theta_max, double phi_max,
+        bool ignore_range
         ) const {
     // Check that requested angles are in range.
     if (
@@ -626,7 +627,8 @@ bool fba::Hardware::move_positioner_thetaphi(
             theta, phi, theta_zero, theta_min, theta_max, phi_zero, phi_min, phi_max
         )
     ) {
-        return true;
+        if (!ignore_range)
+            return true;
     }
 
     double ctheta = ::cos(theta);
@@ -864,7 +866,7 @@ bool fba::Hardware::loc_position_xy(
 
 bool fba::Hardware::loc_position_thetaphi(
     int32_t loc, double theta, double phi, fbg::shape & shptheta,
-    fbg::shape & shpphi) const {
+    fbg::shape & shpphi, bool ignore_range) const {
 
     // Start from exclusion polygon for this location.
     shptheta = loc_theta_excl.at(loc);
@@ -881,7 +883,8 @@ bool fba::Hardware::loc_position_thetaphi(
         loc_theta_min.at(loc),
         loc_phi_min.at(loc),
         loc_theta_max.at(loc),
-        loc_phi_max.at(loc));
+        loc_phi_max.at(loc),
+        ignore_range);
 
     return failed;
 }
