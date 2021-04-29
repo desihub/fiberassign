@@ -551,6 +551,15 @@ def main():
             )
         )
 
+    # AR mtltime correctly formatted?
+    if not assert_isoformat_utc(args.mtltime): 
+        log.error(
+            "{:.1f}s\tsettings\targs.mtltime={} is not yyyy-mm-ddThh:mm:ss+00:00; exiting".format(
+                time() - start, args.mtltime
+            )
+        )
+        sys.exit()
+
     # AR (temporary) output files
     for key in list(myouts.keys()):
         log.info(
