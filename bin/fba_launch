@@ -69,9 +69,9 @@ def assert_isoformat_utc(time_str):
 # AR like read_targets_in_tiles(), but allows two folders
 # AR and sanity check TARGETID if two folders
 # AR targdirs : list of directories (2 for sky, skysupp, 1 otherwise)
-# AR mtl, unique, quick inputs: True/False, as for read_targets_in_tiles()
+# AR mtl, unique, isodate, quick inputs: True/False, as for read_targets_in_tiles()
 def custom_read_targets_in_tiles(
-    targdirs, tiles, quick=True, mtl=False, unique=True, log=None, step=""
+    targdirs, tiles, quick=True, mtl=False, unique=True, isodate=None, log=None, step=""
 ):
     # AR reading
     if log is not None:
@@ -82,12 +82,12 @@ def custom_read_targets_in_tiles(
         )
     if len(targdirs) == 1:
         d = read_targets_in_tiles(
-            targdirs[0], tiles=tiles, quick=quick, mtl=mtl, unique=unique
+            targdirs[0], tiles=tiles, quick=quick, mtl=mtl, unique=unique, isodate=isodate,
         )
     else:
         ds = [
             read_targets_in_tiles(
-                targdir, tiles=tiles, quick=quick, mtl=mtl, unique=unique
+                targdir, tiles=tiles, quick=quick, mtl=mtl, unique=unique, isodate=isodate,
             )
             for targdir in targdirs
         ]
@@ -812,10 +812,9 @@ def main():
         )
         tiles = fits.open(mytmpouts["tiles"])[1].data
         # AR mtl: storing the timestamp at which we queried MTL
-        # AR mtl: actually not exactly.. (timestamp when script started)
         log.info(
             "{:.1f}s\tdomtl\tmtltime={}".format(
-                time() - start, utc_time_now_str
+                time() - start, args.mtltime
             )
         )
         # AR mtl: read mtl
@@ -825,6 +824,7 @@ def main():
             quick=False,
             mtl=True,
             unique=True,
+            isodate=args.mtltime,
             log=log,
             step="domtl",
         )
@@ -891,10 +891,9 @@ def main():
         )
         tiles = fits.open(mytmpouts["tiles"])[1].data
         # AR scnd: storing the timestamp at which we queried MTL
-        # AR scnd: actually not exactly.. (timestamp when script started)
         log.info(
             "{:.1f}s\tdoscnd\tmtltime={}".format(
-                time() - start, utc_time_now_str
+                time() - start, args.mtltime
             )
         )
         # AR scnd: read scnd mtl
@@ -904,6 +903,7 @@ def main():
             quick=False,
             mtl=True,
             unique=True,
+            isodate=args.mtltime,
             log=log,
             step="doscnd",
         )
@@ -1144,7 +1144,7 @@ def main():
         )
         # AR storing
         fd["PRIMARY"].write_key("faprgrm", args.program)
-        fd["PRIMARY"].write_key("mtltime", utc_time_now_str)
+        fd["PRIMARY"].write_key("mtltime", args.mtltime)
         fd["PRIMARY"].write_key("obscon", obscon)
         # AR informations for NTS
         # AR SBPROF from https://desi.lbl.gov/trac/wiki/SurveyOps/SurveySpeed#NominalFiberfracValues
@@ -2025,6 +2025,13 @@ if __name__ == "__main__":
         required=False,
     )
     parser.add_argument(
+        "--mtltime",
+        help="yyyy-mm-ddThh:mm:ss+00:00 MTL isodate, with UTC timezone formatting (default=current UTC time)",
+        type=str,
+        default=None,
+        required=False,
+    )
+    parser.add_argument(
         "--standards_per_petal",
         help="required number of standards per petal (default=10)",
         type=str,
@@ -2099,6 +2106,8 @@ if __name__ == "__main__":
     mjd_now = Time(utc_time_now).mjd
     if args.rundate is None:
         args.rundate = utc_time_now_str
+    if args.mtltime is None:
+        args.mtltime = utc_time_now_str
     if args.pmtime_utc_str is None:
         args.pmtime_utc_str = utc_time_now_str
 
