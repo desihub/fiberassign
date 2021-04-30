@@ -1617,7 +1617,6 @@ def run(
         tiles = list(counts.keys())
         tiles.sort()
         for tile in tiles:
-            #print('Tile ', tile)
             msg = 'Tile %i: ' % tile
             if when is not None:
                 msg += when
@@ -1630,12 +1629,9 @@ def run(
                 if n is None:
                     log.warning('Key', k, 'missing from Assignment.get_counts return value')
                 else:
-                    #print('  %s: %i' % (k, n))
                     if n>0 or always:
                         ss.append('%s: %i' % (k,n))
-            log.debug(msg + ', '.join(ss))
-            #for k,v in tilecounts.items():
-            #    print('  %s: %i' % (k,v))
+            log.info(msg + ', '.join(ss))
 
     print_counts('Start: ')
 
