@@ -143,30 +143,6 @@ fba::Assignment::Assignment(fba::Targets::pshr tgs,
     tm.report(logmsg.str().c_str());
 }
 
-void fba::Assignment::print_status(int32_t start_tile, int32_t stop_tile) {
-    int32_t tstart;
-    int32_t tstop;
-    if (start_tile < 0) {
-        tstart = 0;
-    } else {
-        tstart = tiles_->order.at(start_tile);
-    }
-    if (stop_tile < 0) {
-        tstop = tiles_->id.size() - 1;
-    } else {
-        tstop = tiles_->order.at(stop_tile);
-    }
-    for (int32_t t = tstart; t <= tstop; ++t) {
-        int32_t tile_id = tiles_->id[t];
-        std::cout << "Tile " << tile_id << std::endl;
-        std::cout << "  SCIENCE: " << nassign_tile[TARGET_TYPE_SCIENCE][tile_id] << std::endl;
-        std::cout << "  STANDARD: " << nassign_tile[TARGET_TYPE_STANDARD][tile_id] << std::endl;
-        std::cout << "  SKY: " << nassign_tile[TARGET_TYPE_SKY][tile_id] << std::endl;
-        std::cout << "  SAFE: " << nassign_tile[TARGET_TYPE_SAFE][tile_id] << std::endl;
-        std::cout << "  SUPPSKY: " << nassign_tile[TARGET_TYPE_SUPPSKY][tile_id] << std::endl;
-    }
-}
-
 std::map< int32_t, std::map< std::string, int32_t > >
 fba::Assignment::get_counts(int32_t start_tile, int32_t stop_tile) {
     int32_t tstart;

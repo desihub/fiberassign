@@ -1526,9 +1526,6 @@ PYBIND11_MODULE(_internal, m) {
         .def("tiles_assigned", &fba::Assignment::tiles_assigned, R"(
             Return an array of currently assigned tile IDs.
         )")
-        .def("print_status", &fba::Assignment::print_status, R"(
-            Prints a summary of counts of assignments per target class.
-        )")
         .def("get_counts", &fba::Assignment::get_counts, R"(
             Returns a summary of counts of assignments per target class.
             Return value is a dict: tile_id -> dict( type -> count ).
