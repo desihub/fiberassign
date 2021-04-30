@@ -1200,6 +1200,13 @@ def merge_results_tile(out_dtype, copy_fba, params):
                 # This required column is coming from external catalogs
                 external_cols.append(field)
 
+    # Special handling for STUCK positioners that land on good SKY positions.
+    # In the FA files these get FA_TYPE & 4 (SKY) and a negative TARGETID.
+    stucksky_rows = np.where((fiber_data['TARGETID'] < 0) *
+                             ((fiber_data['FA_TYPE'] & TARGET_TYPE_SKY) != 0))[0]
+    if len(stucksky_rows):
+        outdata['OBJTYPE'][stucksky_rows] = 'SKY'
+
     # tm.stop()
     # tm.report("  copy raw data to output {}".format(tile_id))
     # tm.clear()
@@ -1274,7 +1281,7 @@ def merge_results_tile(out_dtype, copy_fba, params):
         os.remove(outfile)
     fd = fitsio.FITS(outfile, "rw")
 
-    # Write a heaader-only primary HDU
+    # Write a header-only primary HDU
     fd.write(None, header=inhead, extname="PRIMARY")
 
     # Write the main FIBERASSIGN HDU- only the data for science positioners
