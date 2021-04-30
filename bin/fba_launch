@@ -108,7 +108,7 @@ def custom_read_targets_in_tiles(
     return d
 
 
-# AR moves the file created by write_targets to outidr
+# AR moves the file created by write_targets to outdir
 # AR removes folders created by write_targets
 # AR - infn : filename output by write_targets()
 # AR - targdir : folder provided as write_targets() input

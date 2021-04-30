@@ -167,6 +167,47 @@ void fba::Assignment::print_status(int32_t start_tile, int32_t stop_tile) {
     }
 }
 
+std::map< int32_t, std::map< std::string, int32_t > >
+fba::Assignment::get_counts(int32_t start_tile, int32_t stop_tile) {
+    int32_t tstart;
+    int32_t tstop;
+    std::map< int32_t, std::map< std::string, int32_t > > counts;
+
+    if (start_tile < 0) {
+        tstart = 0;
+    } else {
+        tstart = tiles_->order.at(start_tile);
+    }
+    if (stop_tile < 0) {
+        tstop = tiles_->id.size() - 1;
+    } else {
+        tstop = tiles_->order.at(stop_tile);
+    }
+    for (int32_t t = tstart; t <= tstop; ++t) {
+        int32_t tile_id = tiles_->id[t];
+
+        counts[tile_id].clear();
+
+        int n_sci_not_std = 0;
+        // count targets that are SCIENCE and not STANDARD
+        for (auto const & it : loc_target[tile_id]) {
+            int64_t target_id = it.second;
+            auto &tgobj = tgs_->data.at(target_id);
+            bool is_sci = tgobj.is_type(TARGET_TYPE_SCIENCE);
+            bool is_std = tgobj.is_type(TARGET_TYPE_STANDARD);
+            if (is_sci && !is_std)
+                n_sci_not_std++;
+        }
+        counts[tile_id]["SCIENCE"] = nassign_tile[TARGET_TYPE_SCIENCE][tile_id];
+        counts[tile_id]["SCIENCE not STANDARD"] = n_sci_not_std;
+        counts[tile_id]["STANDARD"] = nassign_tile[TARGET_TYPE_STANDARD][tile_id];
+        counts[tile_id]["SKY"] = nassign_tile[TARGET_TYPE_SKY][tile_id];
+        counts[tile_id]["SUPPSKY"] = nassign_tile[TARGET_TYPE_SUPPSKY][tile_id];
+        counts[tile_id]["SAFE"] = nassign_tile[TARGET_TYPE_SAFE][tile_id];
+    }
+    return counts;
+}
+
 std::vector <int32_t> fba::Assignment::tiles_assigned() const {
     std::vector <int32_t> ret;
     for (auto const & it : loc_target) {
