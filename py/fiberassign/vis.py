@@ -277,8 +277,8 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
             if (state[lid] & FIBER_STATE_STUCK) or (state[lid] & FIBER_STATE_BROKEN):
                 # The positioner is stuck or fiber broken.  Plot it at its current
                 # location.
-                theta = theta_pos[lid]
-                phi = phi_pos[lid]
+                theta = theta_pos[lid] + theta_offset[lid]
+                phi   = phi_pos  [lid] + phi_offset  [lid]
                 print("loc {}, state {} is stuck / broken, using {} / {}".format(
                     lid, state[lid], theta, phi
                 ), flush=True)
@@ -289,8 +289,9 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
                 # Plot the positioner in its home
                 # position with theta at its minimum value and phi
                 # at 180 degrees.
+                # The 1e-6 values are to avoid numerical issues checking bounds
                 theta = theta_offset[lid] + theta_min[lid] + 1e-6
-                phi = phi_offset[lid] + phi_max[lid] - 1e-6
+                phi   = phi_offset  [lid] + phi_max  [lid] - 1e-6
                 if phi > np.pi:
                     phi = np.pi
                 print("loc {}, state {} is unassigned, using {} / {}".format(

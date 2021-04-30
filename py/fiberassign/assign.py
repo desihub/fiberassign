@@ -336,8 +336,8 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
                     # position in the hardware model.  Used this fixed fiber location.
                     xy = hw.thetaphi_to_xy(
                         hw.loc_pos_curved_mm[loc],
-                        hw.loc_theta_pos[loc],
-                        hw.loc_phi_pos[loc],
+                        hw.loc_theta_pos[loc] + hw.loc_theta_offset[loc],
+                        hw.loc_phi_pos  [loc] + hw.loc_phi_offset  [loc],
                         hw.loc_theta_arm[loc],
                         hw.loc_phi_arm[loc],
                         hw.loc_theta_offset[loc],
@@ -354,7 +354,7 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
                     # This is an unassigned, working positioner.  Place it in a folded
                     # state.
                     thmin = hw.loc_theta_min[loc] + hw.loc_theta_offset[loc] + 1e-6
-                    phmax = hw.loc_phi_max[loc] + hw.loc_phi_offset[loc] - 1e-6
+                    phmax = hw.loc_phi_max  [loc] + hw.loc_phi_offset  [loc] - 1e-6
                     if phmax > np.pi:
                         phmax = np.pi
                     xy = hw.thetaphi_to_xy(
