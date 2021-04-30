@@ -868,7 +868,8 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
             int32_t s = hw_->loc_slitblock.at(tgloc);
             unique_slitblock.insert(std::make_pair(p, s));
             // Check slitblock count limits
-            if (slitblock_count_max(tgtype, required_per_slitblock, tile_id, p, s)) {
+            if ((required_per_slitblock > 0) &&
+                slitblock_count_max(tgtype, required_per_slitblock, tile_id, p, s)) {
                 continue;
             }
 
