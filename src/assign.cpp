@@ -474,7 +474,7 @@ void fba::Assignment::assign_unused(uint8_t tgtype, int32_t max_per_petal,
                 // The petal of this location
                 int32_t p = hw_->loc_petal.at(loc);
                 // Check petal count limits
-                if (petal_count_max(tgtype, max_per_petal, tile_id, p)) {
+                if (max_per_petal && petal_count_max(tgtype, max_per_petal, tile_id, p)) {
                     continue;
                 }
 
@@ -859,7 +859,8 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
             unique_petal.insert(p);
 
             // Check petal count limits
-            if (petal_count_max(tgtype, required_per_petal, tile_id, p)) {
+            if ((required_per_petal > 0) &&
+                petal_count_max(tgtype, required_per_petal, tile_id, p)) {
                 continue;
             }
 
