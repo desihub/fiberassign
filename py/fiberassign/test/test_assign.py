@@ -7,6 +7,8 @@ import shutil
 
 import unittest
 
+import glob
+
 from datetime import datetime
 
 import json
@@ -148,16 +150,10 @@ class TestAssign(unittest.TestCase):
         plotpetals = [0]
         # plotpetals = None
 
-        plot_tiles(hw, tiles, result_dir=test_dir,
-                   result_prefix="basic_", plot_dir=test_dir,
-                   plot_prefix="basic_",
-                   result_split_dir=False, petals=plotpetals,
+        plot_tiles(glob.glob(os.path.join(test_dir, "basic_*")), petals=plotpetals,
                    serial=True)
 
-        plot_tiles(hw, tiles, result_dir=test_dir,
-                   result_prefix="full_", plot_dir=test_dir,
-                   plot_prefix="full_",
-                   result_split_dir=False, petals=plotpetals,
+        plot_tiles(glob.glob(os.path.join(test_dir, "full_*")), petals=plotpetals,
                    serial=True)
 
         target_files = [
@@ -291,16 +287,10 @@ class TestAssign(unittest.TestCase):
                 self.assertEqual(tgprior, props.priority)
                 self.assertEqual(tgobs, props.obscond)
 
-        plot_tiles(hw, tiles, result_dir=test_dir,
-                   result_prefix="basic_tile-", plot_dir=test_dir,
-                   plot_prefix="basic_tile-",
-                   result_split_dir=False, petals=plotpetals,
+        plot_tiles(glob.glob(os.path.join(test_dir, "basic_tile-*")), petals=plotpetals,
                    serial=True)
 
-        plot_tiles(hw, tiles, result_dir=test_dir,
-                   result_prefix="full_tile-", plot_dir=test_dir,
-                   plot_prefix="full_tile-",
-                   result_split_dir=False, petals=plotpetals,
+        plot_tiles(glob.glob(os.path.join(test_dir, "full_tile-*")), petals=plotpetals,
                    serial=True)
         return
 
@@ -389,8 +379,7 @@ class TestAssign(unittest.TestCase):
 
         plotpetals = [0]
         #plotpetals = None
-        plot_tiles(hw, tiles, result_dir=test_dir, plot_dir=test_dir,
-                   result_prefix="fba-",
+        plot_tiles(glob.glob(os.path.join(test_dir, "fba-*")),
                    real_shapes=True, petals=plotpetals, serial=True)
 
         qa_tiles(hw, tiles, result_dir=test_dir)
@@ -599,7 +588,7 @@ class TestAssign(unittest.TestCase):
             ppet = 6
             if odir == "theta_36":
                 ppet = rotator[6]
-            plot_tiles(hw, tiles, result_dir=out, plot_dir=out,
+            plot_tiles(glob.glob(os.path.join(out, "fba-*")),
                        real_shapes=True, petals=[ppet], serial=True)
 
             # Explicitly free everything

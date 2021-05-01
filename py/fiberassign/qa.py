@@ -317,7 +317,7 @@ def qa_tile_file(hw, params):
     log.info("Processing tile {}".format(tile_id))
 
     header, fiber_data, targets_data, avail_data, gfa_data = read_assignment_fits_tile(
-        (tile_id, tile_file)
+        (tile_file)
     )
 
     # Target properties
@@ -465,7 +465,7 @@ def qa_targets(
         itid = int(tid)
 
         header, fiber_data, targets_data, avail_data, gfa_data = \
-            read_assignment_fits_tile((tid, tf))
+            read_assignment_fits_tile((tf))
 
         # Target properties
         tgs, tgprops = qa_parse_table(header, targets_data)
