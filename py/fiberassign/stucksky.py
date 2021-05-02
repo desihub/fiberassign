@@ -40,7 +40,9 @@ def stuck_on_sky(hw, tiles):
         stuck_sky[tile_id] = dict()
     
         # Stuck locations and their angles
-        stuck_loc = [x for x in hw.locations if hw.state[x] & FIBER_STATE_STUCK]
+        stuck_loc = [loc for loc in hw.locations
+                     if ((hw.state[loc] & FIBER_STATE_STUCK != 0) and
+                         (hw.loc_device_type[loc] == 'POS'))]
         stuck_theta = [hw.loc_theta_pos[x] for x in stuck_loc]
         stuck_phi   = [hw.loc_phi_pos  [x] for x in stuck_loc]
 
