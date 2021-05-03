@@ -105,6 +105,60 @@ def sim_focalplane(rundate=None, fakepos=False):
 
     return fp, exclude, state
 
+def sim_stuck_sky(dirnm, hw, tiles):
+    from desiutil.brick import Bricks
+    bricks = Bricks(bricksize=1)
+    tab = bricks.to_table()
+    skybricks_dir = os.path.join(dirnm, 'skybricks')
+    os.makedirs(skybricks_dir)
+    skyfn = os.path.join(skybricks_dir, 'skybricks-exist.fits')
+    tab.write(skyfn)
+
+    # create bricks touched by 'tiles'.
+    rad = 1.6
+
+    def radec2xyz(r, d):
+        r = np.deg2rad(r)
+        d = np.deg2rad(d)
+        x = np.cos(r) * np.cos(d)
+        y = np.sin(r) * np.cos(d)
+        z = np.sin(d)
+        return np.vstack((x,y,z)).T
+
+    skyxyz = radec2xyz(tab['RA'], tab['DEC'])
+    ns = skyxyz.shape[0]
+    tilexyz = radec2xyz(tiles.ra, tiles.dec)
+    nt = tilexyz.shape[0]
+    maxr2 = (np.deg2rad(rad + np.sqrt(2)/2.))**2
+
+    skybricks = set()
+    for i in range(nt):
+        r2 = np.sum((tilexyz[i,:] - skyxyz)**2, axis=1)
+        J = np.flatnonzero(r2 < maxr2)
+        skybricks.update(J)
+    for i in skybricks:
+        print('Writing fake SKYBRICK', tab['BRICKNAME'][i])
+        # skybrick size in pixels
+        sz = 3672
+        # fraction of pixels to say are good sky
+        goodsky_frac = 0.75
+        randsky = (16*(np.random.uniform(size=(sz,sz)) > goodsky_frac)).astype(np.uint8)
+        # Add WCS header
+        hdr = fitsio.FITSHDR()
+        hdr['CTYPE1'] = 'RA---TAN'
+        hdr['CTYPE2'] = 'DEC--TAN'
+        hdr['CRVAL1'] = tab['RA'][i]
+        hdr['CRVAL2'] = tab['DEC'][i]
+        hdr['CRPIX1'] = (sz+1)/2.
+        hdr['CRPIX2'] = (sz+1)/2.
+        hdr['CD1_1'] = -1./3600.
+        hdr['CD1_2'] =  0.
+        hdr['CD2_1'] =  0.
+        hdr['CD2_2'] =  1./3600.
+        outfn = os.path.join(skybricks_dir, 'sky-%s.fits.gz' % tab['BRICKNAME'][i])
+        fitsio.write(outfn, randsky, header=hdr)
+
+    os.environ['SKYBRICKS_DIR'] = skybricks_dir
 
 def sim_tiles(path, selectfile=None):
     tile_dtype = np.dtype([
