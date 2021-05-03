@@ -77,7 +77,7 @@ fba::Assignment::Assignment(fba::Targets::pshr tgs,
                     logmsg.str("");
                     logmsg << "tile " << tile_id << " loc " << loc
                            << " on petal " << petal << " is STUCK on a good sky.";
-                    logger.debug(logmsg.str().c_str());
+                    logger.debug_tfg(tile_id, loc, -1, logmsg.str().c_str());
                 }
             }
         }
