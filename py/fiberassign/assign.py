@@ -351,14 +351,18 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
                     empty_x[iloc] = xy[0]
                     empty_y[iloc] = xy[1]
                 else:
-                    # This is an unassigned, working positioner.  Place it in a folded
-                    # state.
-                    thmin =     hw.loc_theta_min[loc]         + hw.loc_theta_offset[loc] + 1e-6
-                    phmax = min(hw.loc_phi_max  [loc], np.pi) + hw.loc_phi_offset  [loc] - 1e-6
+                    # This is an unassigned, working positioner.
+                    # Place it in a folded state.
+                    theta,phi = get_parked_thetaphi(hw.loc_theta_offset[loc],
+                                                    hw.loc_theta_min[loc],
+                                                    hw.loc_theta_max[loc],
+                                                    hw.loc_phi_offset[loc],
+                                                    hw.loc_phi_min[loc],
+                                                    hw.loc_phi_max[loc])
                     xy = hw.thetaphi_to_xy(
                         hw.loc_pos_curved_mm[loc],
-                        thmin,
-                        phmax,
+                        theta,
+                        phi,
                         hw.loc_theta_arm[loc],
                         hw.loc_phi_arm[loc],
                         hw.loc_theta_offset[loc],
@@ -370,6 +374,8 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
                     )
                     empty_x[iloc] = xy[0]
                     empty_y[iloc] = xy[1]
+                    if xy[0] is None:
+                        print('WARNING: X,Y position for unassigned, parked positioner loc =', loc, ' is invalid.')
 
             radec = hw.xy2radec_multi(
                 tile_ra, tile_dec, tile_obstheta, empty_x, empty_y, False, 0
@@ -1573,6 +1579,22 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
         results = pool.map(merge_tile, tile_map_list)
 
     return
+
+def get_parked_thetaphi(theta_offset, theta_min, theta_max,
+                        phi_offset,   phi_min,   phi_max):
+    # To avoid numerical issues when outside_theta_phi_range() detects
+    # whether this value is >= min; we're adding then subtracting
+    # theta_offset, so cancellation error is a possibility.
+    eta = 1e-9
+
+    theta = theta_offset + theta_min + eta
+
+    # 150 degrees (https://github.com/desihub/fiberassign/issues/194)
+    phi_target = 150.
+    phi_target = np.clip(np.deg2rad(phi_target), phi_min + eta, phi_max - eta)
+    phi = phi_offset + phi_target
+
+    return theta, phi
 
 def run(
     asgn,

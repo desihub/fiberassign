@@ -33,7 +33,7 @@ from .targets import (Targets, load_target_table,
                       TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE)
 
 from .assign import (read_assignment_fits_tile, result_tiles, result_path,
-                     avail_table_to_dict)
+                     avail_table_to_dict, get_parked_thetaphi)
 
 plt = None
 
@@ -286,14 +286,11 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
                     lid, theta, phi, shptheta, shpphi, True
                 )
             else:
-                # Plot the positioner in its home
-                # position with theta at its minimum value and phi
-                # at 180 degrees.
-                # The 1e-6 values are to avoid numerical issues checking bounds
-                theta = theta_offset[lid] + theta_min[lid] + 1e-6
-                phi   = phi_offset  [lid] + phi_max  [lid] - 1e-6
-                if phi > np.pi:
-                    phi = np.pi
+                # Plot the positioner in its home (parked) position
+                theta,phi = get_parked_thetaphi(theta_offset[lid],
+                                                theta_min[lid], theta_max[lid],
+                                                phi_offset[lid],
+                                                phi_min[lid], phi_max[lid])
                 print("loc {}, state {} is unassigned, using {} / {}".format(
                     lid, state[lid], theta, phi
                 ), flush=True)
