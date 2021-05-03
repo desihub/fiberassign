@@ -115,7 +115,7 @@ def sim_stuck_sky(dirnm, hw, tiles):
     tab.write(skyfn)
 
     # create bricks touched by 'tiles'.
-    rad = 1.6
+    rad = hw.focalplane_radius_deg
 
     def radec2xyz(r, d):
         r = np.deg2rad(r)
