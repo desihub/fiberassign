@@ -819,6 +819,22 @@ bool fba::Hardware::thetaphi_to_xy(
         double theta_min, double phi_min, double theta_max, double phi_max,
         bool ignore_range
     ) const {
+    // Note:
+    //
+    // The desimodel {theta,phi}_pos values are relative to
+    // {theta,phi}_offset.
+    //
+    // However, the thetaphi_to_xy() routine (as well as other
+    // routines that take theta,phi values) here expects "absolute"
+    // theta,phi values -- theta angles in the x,y focal-plane frame;
+    // we therefore need to apply theta,phi_offset values if we're
+    // passing in theta,phi values from desimodel.
+    //
+    // This is way more important for theta, because desimodel has
+    // applied the petal rotations to the theta_offsets -- so it
+    // includes both rotation of the device and the petal position --
+    // the theta_offsets span the full range of [-pi, +pi].
+    // The phi_offset values are all clustered around zero.
 
     // Check that requested angles are in range.
     if (

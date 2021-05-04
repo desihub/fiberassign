@@ -1582,9 +1582,11 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
 
 def get_parked_thetaphi(theta_offset, theta_min, theta_max,
                         phi_offset,   phi_min,   phi_max):
-    # To avoid numerical issues when outside_theta_phi_range() detects
-    # whether this value is >= min; we're adding then subtracting
-    # theta_offset, so cancellation error is a possibility.
+    # Here we're adding theta/phi offset, and in the
+    # outside_theta_phi_range() function, those offsets get subtracted
+    # off again before being compared with theta/phi min/max.
+    # Machine-precision errors can cause that check to fail.  To avoid
+    # this, we manually add a little margin.
     eta = 1e-9
 
     theta = theta_offset + theta_min + eta
