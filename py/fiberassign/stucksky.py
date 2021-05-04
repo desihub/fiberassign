@@ -177,13 +177,3 @@ def _radec2xyz(ra, dec):
     xyz[:,1] = np.sin(rr) * np.cos(dd)
     xyz[:,2] = np.sin(dd)
     return xyz
-            
-if __name__ == '__main__':
-    from fiberassign.tiles import load_tiles
-    from fiberassign.hardware import load_hardware
-
-    rundate = '2021-04-22T00:00:00'
-    tiles = load_tiles('tiles.fits')
-    hw = load_hardware(rundate=rundate)
-
-    stuck_on_sky(hw, tiles)
