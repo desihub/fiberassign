@@ -32,6 +32,7 @@ from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
 from fiberassign.assign import (Assignment, write_assignment_fits,
                                 write_assignment_ascii, merge_results,
                                 read_assignment_fits_tile, run)
+from fiberassign.stucksky import stuck_on_sky
 
 from fiberassign.qa import qa_tiles
 
@@ -47,12 +48,16 @@ from fiberassign.scripts.qa_plot import parse_plot_qa, run_plot_qa
 
 
 from .simulate import (test_subdir_create, sim_tiles, sim_targets,
-                       sim_focalplane, petal_rotation, test_assign_date)
+                       sim_focalplane, petal_rotation, test_assign_date,
+                       sim_stuck_sky)
 
 
 class TestAssign(unittest.TestCase):
 
     def setUp(self):
+        self.saved_skybricks = os.environ.get('STUCKSKY_DIR')
+        if self.saved_skybricks is not None:
+            del os.environ['SKYBRICKS_DIR']
         self.density_science = 5000
         self.density_standards = 5000
         self.density_sky = 100
@@ -60,7 +65,8 @@ class TestAssign(unittest.TestCase):
         pass
 
     def tearDown(self):
-        pass
+        if self.saved_skybricks is not None:
+            os.environ['STUCKSKY_DIR'] = self.saved_skybricks
 
     def test_io(self):
         np.random.seed(123456789)
@@ -121,8 +127,11 @@ class TestAssign(unittest.TestCase):
         # Compute the fibers on all tiles available for each target
         favail = LocationsAvailable(tgsavail)
 
+        # Pass empty map of STUCK positioners that land on good sky
+        stucksky = {}
+
         # First pass assignment
-        asgn = Assignment(tgs, tgsavail, favail)
+        asgn = Assignment(tgs, tgsavail, favail, stucksky)
         asgn.assign_unused(TARGET_TYPE_SCIENCE)
 
         # Write out, merge, read back in and verify
@@ -295,7 +304,10 @@ class TestAssign(unittest.TestCase):
                    serial=True)
         return
 
-    def test_full(self):
+    def test_stucksky(self):
+        return self.test_full(do_stucksky=True)
+
+    def test_full(self, do_stucksky=False):
         test_dir = test_subdir_create("assign_test_full")
         np.random.seed(123456789)
         input_mtl = os.path.join(test_dir, "mtl.fits")
@@ -347,6 +359,9 @@ class TestAssign(unittest.TestCase):
         sim_tiles(tfile)
         tiles = load_tiles(tiles_file=tfile)
 
+        if do_stucksky:
+            sim_stuck_sky(test_dir, hw, tiles)
+
         # Compute the targets available to each fiber for each tile.
         tgsavail = TargetsAvailable(hw, tgs, tiles, tree)
 
@@ -356,12 +371,21 @@ class TestAssign(unittest.TestCase):
         # Compute the fibers on all tiles available for each target
         favail = LocationsAvailable(tgsavail)
 
+        # Pass empty map of STUCK positioners that land on good sky
+        stucksky = None
+        if do_stucksky:
+            stucksky = stuck_on_sky(hw, tiles)
+        if stucksky is None:
+            # (the pybind code doesn't like None when a dict is expected...)
+            stucksky = {}
+
         # Create assignment object
-        asgn = Assignment(tgs, tgsavail, favail)
+        asgn = Assignment(tgs, tgsavail, favail, stucksky)
 
         run(asgn)
 
-        write_assignment_fits(tiles, asgn, out_dir=test_dir, all_targets=True)
+        write_assignment_fits(tiles, asgn, out_dir=test_dir, all_targets=True,
+                              stucksky=stucksky)
 
         plotpetals = [0]
         #plotpetals = None
@@ -378,9 +402,15 @@ class TestAssign(unittest.TestCase):
         for tile, props in qadata.items():
             self.assertTrue(props["assign_science"] >= 4485)
             self.assertEqual(100, props["assign_std"])
-            self.assertTrue(
-                (props["assign_sky"] + props["assign_suppsky"]) >= 400
-            )
+            if do_stucksky:
+                # We get 3 stuck positioners landing on good sky!
+                self.assertTrue(
+                    (props["assign_sky"] + props["assign_suppsky"]) >= 397
+                    )
+            else:
+                self.assertTrue(
+                    (props["assign_sky"] + props["assign_suppsky"]) >= 400
+                    )
 
         plot_qa(qadata, os.path.join(test_dir, "qa"), outformat="pdf",
                 labels=True)
@@ -553,8 +583,11 @@ class TestAssign(unittest.TestCase):
             # Compute the fibers on all tiles available for each target
             favail = LocationsAvailable(tgsavail)
 
+            # Pass empty map of STUCK positioners that land on good sky
+            stucksky = {}
+
             # Create assignment object
-            asgn = Assignment(tgs, tgsavail, favail)
+            asgn = Assignment(tgs, tgsavail, favail, stucksky)
 
             # First-pass assignment of science targets
             asgn.assign_unused(TARGET_TYPE_SCIENCE)
@@ -626,3 +659,6 @@ def test_suite():
         python setup.py test -m <modulename>
     """
     return unittest.defaultTestLoader.loadTestsFromName(__name__)
+
+# Note that you can run a single test function with
+# python3 -m unittest fiberassign.test.test_assign.TestAssign.test_full

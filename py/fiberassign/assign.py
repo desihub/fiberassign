@@ -581,7 +581,7 @@ def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fba-",
 
         stuck = None
         if stucksky is not None:
-            stuck = stucksky[tid]
+            stuck = stucksky.get(tid,{})
 
         params = (tid, tra, tdec, ttheta, ttime, tha, outfile, gfa, stuck)
         write_tile(params)

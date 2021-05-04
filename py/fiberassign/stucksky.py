@@ -1,4 +1,99 @@
-    
+import os
+import numpy as np
+
+class Skybricks(object):
+    '''
+    This class handles dynamic lookup of whether a given (RA,Dec) should make a good location for a sky fiber.
+    '''    
+    def __init__(self, skybricks_dir=None):
+        '''
+        Create a Skybricks object, reading metadata.
+
+        *skybricks_dir*: directory to find skybricks data files; if None, will read from SKYBRICKS_DIR environment variable.
+        '''
+        import fitsio
+        if skybricks_dir is None:
+            skybricks_dir = os.environ.get('SKYBRICKS_DIR', None)
+        if skybricks_dir is None:
+            raise RuntimeError('Environment variable SKYBRICKS_DIR is not set; needed to look up dynamic sky fiber positions')
+        self.skybricks_dir = skybricks_dir
+        skybricks_fn = os.path.join(self.skybricks_dir, 'skybricks-exist.fits')
+        self.skybricks = fitsio.read(skybricks_fn, upper=True)
+        self.skykd = _radec2kd(self.skybricks['RA'], self.skybricks['DEC'])
+
+    def lookup_tile(self, tilera, tiledec, tileradius,
+                    ras, decs):
+        '''
+        Given scalar (tilera, tiledec) RA,Dec (in degrees) and tile radius (in degrees),
+        for a set of RA,Dec points within that tile, does the lookup for all those positions,
+        returning a *good_sky* boolean array.
+
+        *tilera*: scalar RA in deg of tile center
+        *tiledec*: scalar Dec in deg of tile center
+        *tileradius*: scalar radiun in deg of the tile
+        *ras*: numpy array of RAs in deg
+        *decs*: numpy array of Decs in deg
+
+        Returns:
+        *good_sky*: boolean numpy array of length(ras), would these RA,Decs make good sky fibers?
+        '''
+        import fitsio
+        from astropy.wcs import WCS
+        from fiberassign.utils import Logger
+
+        log = Logger.get()
+        # skybricks are 1 x 1 deg.
+        brickrad = (1. * np.sqrt(2.) / 2.)
+        searchrad = 1.01 * (tileradius + brickrad)
+        # here, convert search radius to radians -- an overestimate vs
+        # unit-sphere distance, but that's the safe direction.
+        searchrad = np.deg2rad(searchrad)
+        tilexyz = _radec2xyz([tilera], [tiledec])
+        sky_inds = self.skykd.query_ball_point(tilexyz[0,:], searchrad)
+        good_sky = np.zeros(len(ras), bool)
+        # Check possibly-overlapping skybricks.
+        for i in sky_inds:
+            # Do any of the query points overlap in the brick's RA,DEC
+            # unique-area bounding-box?
+            I = np.flatnonzero(
+                (ras  >= self.skybricks['RA1'][i]) *
+                (ras  <  self.skybricks['RA2'][i]) *
+                (decs >= self.skybricks['DEC1'][i]) *
+                (decs <  self.skybricks['DEC2'][i]))
+            log.debug('Skybricks: %i locations overlap skybrick %s' %
+                      (len(I), self.skybricks['BRICKNAME'][i]))
+            if len(I) == 0:
+                continue
+
+            # Read skybrick file
+            fn = os.path.join(self.skybricks_dir,
+                              'sky-%s.fits.gz' % self.skybricks['BRICKNAME'][i])
+            if not os.path.exists(fn):
+                log.warning('Missing "skybrick" file: %s' % fn)
+                continue
+            skymap,hdr = fitsio.read(fn, header=True)
+            H,W = skymap.shape
+            # create WCS object
+            w = WCS(naxis=2)
+            w.wcs.ctype = [hdr['CTYPE1'], hdr['CTYPE2']]
+            w.wcs.crpix = [hdr['CRPIX1'], hdr['CRPIX2']]
+            w.wcs.crval = [hdr['CRVAL1'], hdr['CRVAL2']]
+            w.wcs.cd = [[hdr['CD1_1'], hdr['CD1_2']],
+                        [hdr['CD2_1'], hdr['CD2_2']]]
+            x,y = w.wcs_world2pix(ras[I], decs[I], 0)
+            x = np.round(x).astype(int)
+            y = np.round(y).astype(int)
+            # we have margins that should ensure this...
+            if not (np.all(x >= 0) and np.all(x <  W) and
+                    np.all(y >= 0) and np.all(y <  H)):
+                raise RuntimeError('Skybrick %s: locations project outside the brick bounds' %
+                                   (self.skybricks['BRICKNAME'][i]))
+
+            # FIXME -- look at surrounding pixels too??
+            good_sky[I] = (skymap[y, x] == 0)
+        return good_sky
+
+
 def stuck_on_sky(hw, tiles):
     '''
     Will STUCK positioners land on good SKY locations for the given set of tiles?
@@ -6,40 +101,23 @@ def stuck_on_sky(hw, tiles):
     Returns a nested dict:
         stuck_sky[tileid][loc] = bool_good_sky
     '''
-    import os
-    import numpy as np
-    from scipy.spatial import KDTree
-    import fitsio
-    from astropy.wcs import WCS
-    from fiberassign.hardware import FIBER_STATE_STUCK, FIBER_STATE_BROKEN
     from fiberassign.utils import Logger
+    from fiberassign.hardware import FIBER_STATE_STUCK, FIBER_STATE_BROKEN
 
     log = Logger.get()
 
-    skybricks_dir = os.environ.get('SKYBRICKS_DIR', None)
-    if skybricks_dir is None:
-        log.warning('Environment variable SKYBRICKS_DIR is not set; not looking up whether '
-                    'stuck positioners land on good sky')
+    try:
+        skybricks = Skybricks()
+    except:
+        log.warning('Environment variable SKYBRICKS_DIR is not set; not looking '
+                    'up whether stuck positioners land on good sky')
         return
-    skybricks_fn = os.path.join(skybricks_dir, 'skybricks-exist.fits')
-    skybricks = fitsio.read(skybricks_fn, upper=True)
-    skykd = _radec2kd(skybricks['RA'], skybricks['DEC'])
-
-    tilekd = _radec2kd(tiles.ra, tiles.dec)
-
-    # skybricks are 1 x 1 deg.
-    brickrad = (1. * np.sqrt(2.) / 2.)
-    searchrad = 1.01 * (hw.focalplane_radius_deg + brickrad)
-
-    # here, convert search radius to radians -- an overestimate vs
-    # unit-sphere distance, but that's the safe direction.
-    sky_indices = tilekd.query_ball_tree(skykd, np.deg2rad(searchrad))
 
     stuck_sky = dict()
-    for tile_id, tile_ra, tile_dec, tile_theta, sky_inds in zip(
-            tiles.id, tiles.ra, tiles.dec, tiles.obstheta, sky_indices):
+    for tile_id, tile_ra, tile_dec, tile_theta in zip(
+            tiles.id, tiles.ra, tiles.dec, tiles.obstheta):
         stuck_sky[tile_id] = dict()
-    
+
         # Stuck locations and their angles
         stuck_loc = [loc for loc in hw.locations
                      if (((hw.state[loc] & FIBER_STATE_STUCK) != 0) and
@@ -82,48 +160,9 @@ def stuck_on_sky(hw, tiles):
         loc_ra  = np.array([r for r,d in loc_radec])
         loc_dec = np.array([d for r,d in loc_radec])
 
-        good_sky = np.zeros(len(loc_ra), bool)
-        # Check possibly-overlapping skybricks.
-        for i in sky_inds:
-            loc_in = np.flatnonzero(
-                (loc_ra  >= skybricks['RA1'][i]) *
-                (loc_ra  <  skybricks['RA2'][i]) *
-                (loc_dec >= skybricks['DEC1'][i]) *
-                (loc_dec <  skybricks['DEC2'][i]))
-            log.debug('%i fibers overlap sky brick %s' % (len(loc_in), skybricks['BRICKNAME'][i]))
-            if len(loc_in) == 0:
-                continue
-
-            fn = os.path.join(skybricks_dir,
-                              'sky-%s.fits.gz' % skybricks['BRICKNAME'][i])
-            if not os.path.exists(fn):
-                log.warning('Sky bricks: missing file %s' % fn)
-                continue
-
-            skymap,hdr = fitsio.read(fn, header=True)
-            H,W = skymap.shape
-
-            # load WCS
-            w = WCS(naxis=2)
-            w.wcs.ctype = [hdr['CTYPE1'], hdr['CTYPE2']]
-            w.wcs.crpix = [hdr['CRPIX1'], hdr['CRPIX2']]
-            w.wcs.crval = [hdr['CRVAL1'], hdr['CRVAL2']]
-            w.wcs.cd = [[hdr['CD1_1'], hdr['CD1_2']],
-                        [hdr['CD2_1'], hdr['CD2_2']]]
-            x,y = w.wcs_world2pix(loc_ra[loc_in], loc_dec[loc_in], 0)
-            x = np.round(x).astype(int)
-            y = np.round(y).astype(int)
-            # we have margins that should ensure this...
-            assert(np.all(x >= 0))
-            assert(np.all(x <  W))
-            assert(np.all(y >= 0))
-            assert(np.all(y <  H))
-
-            # FIXME -- look at surrounding pixels too??
-            good_sky[loc_in] = (skymap[y, x] == 0)
-
+        good_sky = skybricks.lookup_tile(tile_ra, tile_dec, hw.focalplane_radius_deg,
+                                         loc_ra, loc_dec)
         log.debug('%i of %i stuck positioners land on good sky' % (np.sum(good_sky), len(good_sky)))
-
         for loc,good in zip(stuck_loc, good_sky):
             stuck_sky[tile_id][loc] = good
 
@@ -131,23 +170,14 @@ def stuck_on_sky(hw, tiles):
 
 def _radec2kd(ra, dec):
     from scipy.spatial import KDTree
-    import numpy as np
+    xyz = _radec2xyz(ra, dec)
+    return KDTree(xyz)
 
+def _radec2xyz(ra, dec):
     rr = np.deg2rad(ra)
     dd = np.deg2rad(dec)
     xyz = np.zeros((len(rr),3))
     xyz[:,0] = np.cos(rr) * np.cos(dd)
     xyz[:,1] = np.sin(rr) * np.cos(dd)
     xyz[:,2] = np.sin(dd)
-    return KDTree(xyz)
-                
-            
-if __name__ == '__main__':
-    from fiberassign.tiles import load_tiles
-    from fiberassign.hardware import load_hardware
-
-    rundate = '2021-04-22T00:00:00'
-    tiles = load_tiles('tiles.fits')
-    hw = load_hardware(rundate=rundate)
-
-    stuck_on_sky(hw, tiles)
+    return xyz
