@@ -55,6 +55,9 @@ from .simulate import (test_subdir_create, sim_tiles, sim_targets,
 class TestAssign(unittest.TestCase):
 
     def setUp(self):
+        self.saved_skybricks = os.environ.get('STUCKSKY_DIR')
+        if self.saved_skybricks is not None:
+            del os.environ['SKYBRICKS_DIR']
         self.density_science = 5000
         self.density_standards = 5000
         self.density_sky = 100
@@ -62,7 +65,8 @@ class TestAssign(unittest.TestCase):
         pass
 
     def tearDown(self):
-        pass
+        if self.saved_skybricks is not None:
+            os.environ['STUCKSKY_DIR'] = self.saved_skybricks
 
     def test_io(self):
         np.random.seed(123456789)
