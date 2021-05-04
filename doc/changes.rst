@@ -3,10 +3,19 @@
 fiberassign change log
 ======================
 
-2.3.1 (unreleased)
+2.4.0 (unreleased)
 ------------------
 
-* No changes yet.
+* ``fba_launch --isodate`` option to set timestamp for MTL ledger reading
+  (PR `#334`_).
+* Assign stuck positioners to sky if possible (PR `#337`_).
+* Add per-slitblock sky fiber limits (PR `#338`_).
+* Report counts of assigned fibers as fiberassign proceeds (PR `#339`_).
+
+.. _`#334`: https://github.com/desihub/fiberassign/pull/334
+.. _`#337`: https://github.com/desihub/fiberassign/pull/337
+.. _`#338`: https://github.com/desihub/fiberassign/pull/338
+.. _`#339`: https://github.com/desihub/fiberassign/pull/339
 
 2.3.0 (2021-04-22)
 ------------------
