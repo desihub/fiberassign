@@ -24,6 +24,7 @@ fba::Assignment::Assignment(fba::Targets::pshr tgs,
 
     fba::Logger & logger = fba::Logger::get();
     std::ostringstream logmsg;
+    bool extra_log = logger.extra_debug();
 
     gtmname.str("");
     gtmname << "Assignment ctor: total";
@@ -74,10 +75,12 @@ fba::Assignment::Assignment(fba::Targets::pshr tgs,
                     int32_t petal = hw_->loc_petal[loc];
                     nassign_tile .at(tp).at(tile_id)++;
                     nassign_petal.at(tp).at(tile_id).at(petal)++;
-                    logmsg.str("");
-                    logmsg << "tile " << tile_id << " loc " << loc
-                           << " on petal " << petal << " is STUCK on a good sky.";
-                    logger.debug_tfg(tile_id, loc, -1, logmsg.str().c_str());
+                    if (extra_log) {
+                        logmsg.str("");
+                        logmsg << "tile " << tile_id << " loc " << loc
+                               << " on petal " << petal << " is STUCK on a good sky.";
+                        logger.debug_tfg(tile_id, loc, -1, logmsg.str().c_str());
+                    }
                 }
             }
         }
