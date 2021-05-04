@@ -119,6 +119,10 @@ def parse_assign(optlist=None):
                         default=40, help="Required number of sky targets per"
                         " petal")
 
+    parser.add_argument("--sky_per_slitblock", type=int, required=False,
+                        default=0, help="Required number of sky targets per"
+                        " fiber slitblock")
+
     parser.add_argument("--write_all_targets", required=False, default=False,
                         action="store_true",
                         help="When writing target properties, write data "
@@ -374,6 +378,7 @@ def run_assign_full(args):
         asgn,
         args.standards_per_petal,
         args.sky_per_petal,
+        args.sky_per_slitblock,
         redistribute=(not args.no_redistribute),
         use_zero_obsremain=(not args.no_zero_obsremain)
     )
@@ -461,6 +466,7 @@ def run_assign_bytile(args):
             asgn,
             args.standards_per_petal,
             args.sky_per_petal,
+            args.sky_per_slitblock,
             start_tile=tile_id,
             stop_tile=tile_id,
             redistribute=(not args.no_redistribute),

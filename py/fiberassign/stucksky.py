@@ -53,13 +53,15 @@ class Skybricks(object):
         good_sky = np.zeros(len(ras), bool)
         # Check possibly-overlapping skybricks.
         for i in sky_inds:
-            # Do any of the query points overlap in the brick's RA,DEC unique-area bounding-box?
+            # Do any of the query points overlap in the brick's RA,DEC
+            # unique-area bounding-box?
             I = np.flatnonzero(
                 (ras  >= self.skybricks['RA1'][i]) *
                 (ras  <  self.skybricks['RA2'][i]) *
                 (decs >= self.skybricks['DEC1'][i]) *
                 (decs <  self.skybricks['DEC2'][i]))
-            log.debug('Skybricks: %i locations overlap skybrick %s' % (len(I), self.skybricks['BRICKNAME'][i]))
+            log.debug('Skybricks: %i locations overlap skybrick %s' %
+                      (len(I), self.skybricks['BRICKNAME'][i]))
             if len(I) == 0:
                 continue
 
@@ -82,8 +84,10 @@ class Skybricks(object):
             x = np.round(x).astype(int)
             y = np.round(y).astype(int)
             # we have margins that should ensure this...
-            if not (np.all(x >= 0) and np.all(x <  W) and np.all(y >= 0) and np.all(y <  H)):
-                raise RuntimeError('Skybrick %s: locations project outside the brick bounds' % (self.skybricks['BRICKNAME'][i]))
+            if not (np.all(x >= 0) and np.all(x <  W) and
+                    np.all(y >= 0) and np.all(y <  H)):
+                raise RuntimeError('Skybrick %s: locations project outside the brick bounds' %
+                                   (self.skybricks['BRICKNAME'][i]))
 
             # FIXME -- look at surrounding pixels too??
             good_sky[I] = (skymap[y, x] == 0)
@@ -105,8 +109,8 @@ def stuck_on_sky(hw, tiles):
     try:
         skybricks = Skybricks()
     except:
-        log.warning('Environment variable SKYBRICKS_DIR is not set; not looking up whether '
-                    'stuck positioners land on good sky')
+        log.warning('Environment variable SKYBRICKS_DIR is not set; not looking '
+                    'up whether stuck positioners land on good sky')
         return
 
     stuck_sky = dict()
@@ -116,8 +120,8 @@ def stuck_on_sky(hw, tiles):
 
         # Stuck locations and their angles
         stuck_loc = [loc for loc in hw.locations
-                     if ((hw.state[loc] & FIBER_STATE_STUCK != 0) and
-                         (hw.state[loc] & FIBER_STATE_BROKEN == 0) and
+                     if (((hw.state[loc] & FIBER_STATE_STUCK) != 0) and
+                         ((hw.state[loc] & FIBER_STATE_BROKEN) == 0) and
                          (hw.loc_device_type[loc] == 'POS'))]
         stuck_theta = [hw.loc_theta_pos[x] for x in stuck_loc]
         stuck_phi   = [hw.loc_phi_pos  [x] for x in stuck_loc]
@@ -158,7 +162,6 @@ def stuck_on_sky(hw, tiles):
         good_sky = skybricks.lookup_tile(tile_ra, tile_dec, hw.focalplane_radius_deg,
                                          loc_ra, loc_dec)
         log.debug('%i of %i stuck positioners land on good sky' % (np.sum(good_sky), len(good_sky)))
-
         for loc,good in zip(stuck_loc, good_sky):
             stuck_sky[tile_id][loc] = good
 

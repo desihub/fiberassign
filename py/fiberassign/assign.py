@@ -1579,6 +1579,7 @@ def run(
     asgn,
     std_per_petal=10,
     sky_per_petal=40,
+    sky_per_slitblock=0,
     start_tile=-1,
     stop_tile=-1,
     redistribute=True,
@@ -1597,6 +1598,7 @@ def run(
         asgn (Assignment):  The assignment class
         std_per_petal (int):  The number of standards to assign per petal
         sky_per_petal (int):  The number of sky to assign per petal
+        sky_per_slitblock (int):  The number of sky to assign per slitblock
         start_tile (int):  If specified, the first tile ID to assign.
         stop_tile (int):  If specified, the last tile ID to assign.
         redistribute (bool):  If True, attempt to shift science targets to unassigned
@@ -1610,7 +1612,7 @@ def run(
 
     # First-pass assignment of science targets
     gt.start("Assign unused fibers to science targets")
-    asgn.assign_unused(TARGET_TYPE_SCIENCE, -1, "POS", start_tile, stop_tile)
+    asgn.assign_unused(TARGET_TYPE_SCIENCE, -1, -1, "POS", start_tile, stop_tile)
     gt.stop("Assign unused fibers to science targets")
 
     # Redistribute science targets across available petals
@@ -1622,37 +1624,68 @@ def run(
     # Assign standards, up to some limit
     gt.start("Assign unused fibers to standards")
     asgn.assign_unused(
-        TARGET_TYPE_STANDARD, std_per_petal, "POS", start_tile, stop_tile
+        TARGET_TYPE_STANDARD, std_per_petal, -1, "POS", start_tile, stop_tile
     )
     gt.stop("Assign unused fibers to standards")
 
+    def do_assign_unused_sky(ttype):
+        if sky_per_petal > 0 and sky_per_slitblock > 0:
+            # Assign using the slitblock requirement first, because it is
+            # more specific
+            asgn.assign_unused(
+                ttype, -1, sky_per_slitblock, "POS",
+                start_tile, stop_tile
+            )
+            # Then assign using the petal requirement, because it may(should) require
+            # more fibers overall.
+            asgn.assign_unused(
+                ttype, sky_per_petal, -1, "POS",
+                start_tile, stop_tile
+            )
+        else:
+            asgn.assign_unused(
+                ttype, sky_per_petal, sky_per_slitblock, "POS",
+                start_tile, stop_tile
+            )
+
     # Assign sky to unused fibers, up to some limit
     gt.start("Assign unused fibers to sky")
-    asgn.assign_unused(
-        TARGET_TYPE_SKY, sky_per_petal, "POS", start_tile, stop_tile
-    )
+    do_assign_unused_sky(TARGET_TYPE_SKY)
     gt.stop("Assign unused fibers to sky")
 
     # Assign suppsky to unused fibers, up to some limit
     gt.start("Assign unused fibers to supp_sky")
-    asgn.assign_unused(
-        TARGET_TYPE_SUPPSKY, sky_per_petal, "POS", start_tile, stop_tile
-    )
+    do_assign_unused_sky(TARGET_TYPE_SUPPSKY)
     gt.stop("Assign unused fibers to supp_sky")
 
     # Force assignment if needed
     gt.start("Force assignment of sufficient standards")
     asgn.assign_force(
-        TARGET_TYPE_STANDARD, std_per_petal, start_tile, stop_tile
+        TARGET_TYPE_STANDARD, std_per_petal, -1, start_tile, stop_tile
     )
     gt.stop("Force assignment of sufficient standards")
 
+    def do_assign_forced_sky(ttype):
+        # This function really feels redundant with do_assign_unused_sky, but
+        # when I tried to make a single function to do both calls, I had to call
+        # f(*(preargs + pos_arg + postargs)) and it looked too mysterious.
+        if sky_per_petal > 0 and sky_per_slitblock > 0:
+            # Slitblock first
+            asgn.assign_force(
+                ttype, -1, sky_per_slitblock, start_tile, stop_tile)
+            # Then petal
+            asgn.assign_force(
+                ttype, sky_per_petal, -1, start_tile, stop_tile)
+        else:
+            asgn.assign_force(
+                ttype, sky_per_petal, sky_per_slitblock, start_tile, stop_tile)
+
     gt.start("Force assignment of sufficient sky")
-    asgn.assign_force(TARGET_TYPE_SKY, sky_per_petal, start_tile, stop_tile)
+    do_assign_forced_sky(TARGET_TYPE_SKY)
     gt.stop("Force assignment of sufficient sky")
 
     gt.start("Force assignment of sufficient supp_sky")
-    asgn.assign_force(TARGET_TYPE_SUPPSKY, sky_per_petal, start_tile, stop_tile)
+    do_assign_forced_sky(TARGET_TYPE_SUPPSKY)
     gt.stop("Force assignment of sufficient supp_sky")
 
     # If there are any unassigned fibers, try to place them somewhere.
@@ -1664,26 +1697,27 @@ def run(
     asgn.assign_unused(
         TARGET_TYPE_SCIENCE,
         -1,
+        -1,
         "POS",
         start_tile,
         stop_tile,
         use_zero_obsremain=use_zero_obsremain
     )
-    asgn.assign_unused(TARGET_TYPE_STANDARD, -1, "POS", start_tile, stop_tile)
-    asgn.assign_unused(TARGET_TYPE_SKY, -1, "POS", start_tile, stop_tile)
-    asgn.assign_unused(TARGET_TYPE_SUPPSKY, -1, "POS", start_tile, stop_tile)
+    asgn.assign_unused(TARGET_TYPE_STANDARD, -1, -1, "POS", start_tile, stop_tile)
+    asgn.assign_unused(TARGET_TYPE_SKY, -1, -1, "POS", start_tile, stop_tile)
+    asgn.assign_unused(TARGET_TYPE_SUPPSKY, -1, -1, "POS", start_tile, stop_tile)
 
     # Assign safe location to unused fibers (no maximum).  There should
     # always be at least one safe location (i.e. "BAD_SKY") for each fiber.
     # So after this is run every fiber should be assigned to something.
-    asgn.assign_unused(TARGET_TYPE_SAFE, -1, "POS", start_tile, stop_tile)
+    asgn.assign_unused(TARGET_TYPE_SAFE, -1, -1, "POS", start_tile, stop_tile)
     gt.stop("Assign remaining unassigned fibers")
 
     # Assign sky monitor fibers
     gt.start("Assign sky monitor fibers")
-    asgn.assign_unused(TARGET_TYPE_SKY, -1, "ETC", start_tile, stop_tile)
-    asgn.assign_unused(TARGET_TYPE_SUPPSKY, -1, "ETC", start_tile, stop_tile)
-    asgn.assign_unused(TARGET_TYPE_SAFE, -1, "ETC", start_tile, stop_tile)
+    asgn.assign_unused(TARGET_TYPE_SKY, -1, -1, "ETC", start_tile, stop_tile)
+    asgn.assign_unused(TARGET_TYPE_SUPPSKY, -1, -1, "ETC", start_tile, stop_tile)
+    asgn.assign_unused(TARGET_TYPE_SAFE, -1, -1, "ETC", start_tile, stop_tile)
     gt.stop("Assign sky monitor fibers")
 
     return asgn

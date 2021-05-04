@@ -187,6 +187,9 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
         // The number of petals
         int32_t npetal;
 
+        // The number of slitblocks
+        int32_t nslitblock;
+
         // The number of science fibers (device == "POS") per petal.
         int32_t nfiber_petal;
 

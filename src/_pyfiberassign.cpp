@@ -1546,6 +1546,7 @@ PYBIND11_MODULE(_internal, m) {
         .def("assign_unused", &fba::Assignment::assign_unused,
              py::arg("tgtype")=TARGET_TYPE_SCIENCE,
              py::arg("max_per_petal")=-1,
+             py::arg("max_per_slitblock")=-1,
              py::arg("pos_type")=std::string("POS"),
              py::arg("start_tile")=-1, py::arg("stop_tile")=-1,
              py::arg("use_zero_obsremain")=false, R"(
@@ -1559,6 +1560,8 @@ PYBIND11_MODULE(_internal, m) {
                     of the predefined TARGET_TYPE_* module attributes.
                 max_per_petal (int): Limit the assignment to this many objects
                     per petal.  Default is no limit.
+                max_per_slitblock (int): Limit the assignment to this many objects
+                    per slitblock.  Default is no limit.
                 pos_type (str): Only consider this positioner device type.
                     Default is "POS".
                 start_tile (int): Start assignment at this tile ID in the
@@ -1575,6 +1578,7 @@ PYBIND11_MODULE(_internal, m) {
         .def("assign_force", &fba::Assignment::assign_force,
              py::arg("tgtype")=TARGET_TYPE_SCIENCE,
              py::arg("required_per_petal")=0,
+             py::arg("required_per_slitblock")=0,
              py::arg("start_tile")=-1, py::arg("stop_tile")=-1, R"(
             Force assignment of targets to unused locations.
 
@@ -1586,6 +1590,8 @@ PYBIND11_MODULE(_internal, m) {
                 tgtype (int): The target type to assign, which must be one
                     of the predefined TARGET_TYPE_* module attributes.
                 required_per_petal (int): Bump science targets until this
+                    limit is reached.
+                required_per_slitblock (int): Bump science targets until this
                     limit is reached.
                 start_tile (int): Start assignment at this tile ID in the
                     sequence of tiles.

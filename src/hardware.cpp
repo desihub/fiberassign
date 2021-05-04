@@ -64,6 +64,14 @@ fba::Hardware::Hardware(std::string const & timestr,
     }
     npetal = static_cast <size_t> (maxpetal + 1);
 
+    int32_t maxslitblock = 0;
+    for (auto const & p : slitblock) {
+        if (p > maxslitblock) {
+            maxslitblock = p;
+        }
+    }
+    nslitblock = static_cast <size_t> (maxslitblock + 1);
+
     loc_pos_cs5_mm.clear();
     loc_pos_curved_mm.clear();
     loc_petal.clear();
