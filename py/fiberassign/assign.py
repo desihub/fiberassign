@@ -1610,16 +1610,43 @@ def run(
     """
     gt = GlobalTimers.get()
 
+    log = Logger.get()
+
+    def print_counts(when=None):
+        counts = asgn.get_counts(start_tile, stop_tile)
+        tiles = list(counts.keys())
+        tiles.sort()
+        for tile in tiles:
+            msg = 'Tile %i: ' % tile
+            if when is not None:
+                msg += when
+            tilecounts = counts[tile]
+            keys = [('SCIENCE',True), ('SCIENCE not STANDARD',False), ('STANDARD',True),
+                    ('SKY',True), ('SUPPSKY',False), ('SAFE',False)]
+            ss = []
+            for k,always in keys:
+                n = tilecounts.get(k, None)
+                if n is None:
+                    log.warning('Key', k, 'missing from Assignment.get_counts return value')
+                else:
+                    if n>0 or always:
+                        ss.append('%s: %i' % (k,n))
+            log.info(msg + ', '.join(ss))
+
+    print_counts('Start: ')
+
     # First-pass assignment of science targets
     gt.start("Assign unused fibers to science targets")
     asgn.assign_unused(TARGET_TYPE_SCIENCE, -1, -1, "POS", start_tile, stop_tile)
     gt.stop("Assign unused fibers to science targets")
+    print_counts('After assigning unused fibers to science targets: ')
 
     # Redistribute science targets across available petals
     if redistribute:
         gt.start("Redistribute science targets")
         asgn.redistribute_science(start_tile, stop_tile)
         gt.stop("Redistribute science targets")
+        print_counts('After redistributing science targets: ')
 
     # Assign standards, up to some limit
     gt.start("Assign unused fibers to standards")
@@ -1627,6 +1654,7 @@ def run(
         TARGET_TYPE_STANDARD, std_per_petal, -1, "POS", start_tile, stop_tile
     )
     gt.stop("Assign unused fibers to standards")
+    print_counts('After assigning standards: ')
 
     def do_assign_unused_sky(ttype):
         if sky_per_petal > 0 and sky_per_slitblock > 0:
@@ -1636,17 +1664,21 @@ def run(
                 ttype, -1, sky_per_slitblock, "POS",
                 start_tile, stop_tile
             )
+            print_counts('After assigning [supp]sky per-slitblock: ')
+
             # Then assign using the petal requirement, because it may(should) require
             # more fibers overall.
             asgn.assign_unused(
                 ttype, sky_per_petal, -1, "POS",
                 start_tile, stop_tile
             )
+            print_counts('After assigning [supp]sky per-petal: ')
         else:
             asgn.assign_unused(
                 ttype, sky_per_petal, sky_per_slitblock, "POS",
                 start_tile, stop_tile
             )
+            print_counts('After assigning [supp]sky: ')
 
     # Assign sky to unused fibers, up to some limit
     gt.start("Assign unused fibers to sky")
@@ -1664,6 +1696,7 @@ def run(
         TARGET_TYPE_STANDARD, std_per_petal, -1, start_tile, stop_tile
     )
     gt.stop("Force assignment of sufficient standards")
+    print_counts('After force-assigning standards: ')
 
     def do_assign_forced_sky(ttype):
         # This function really feels redundant with do_assign_unused_sky, but
@@ -1673,12 +1706,15 @@ def run(
             # Slitblock first
             asgn.assign_force(
                 ttype, -1, sky_per_slitblock, start_tile, stop_tile)
+            print_counts('After force-assigning [supp]sky per-slitblock: ')
             # Then petal
             asgn.assign_force(
                 ttype, sky_per_petal, -1, start_tile, stop_tile)
+            print_counts('After force-assigning [supp]sky per-petal: ')
         else:
             asgn.assign_force(
                 ttype, sky_per_petal, sky_per_slitblock, start_tile, stop_tile)
+            print_counts('After force-assigning [supp]sky: ')
 
     gt.start("Force assignment of sufficient sky")
     do_assign_forced_sky(TARGET_TYPE_SKY)
@@ -1703,6 +1739,8 @@ def run(
         stop_tile,
         use_zero_obsremain=use_zero_obsremain
     )
+    print_counts('After assigning reobservations of science targets: ')
+
     asgn.assign_unused(TARGET_TYPE_STANDARD, -1, -1, "POS", start_tile, stop_tile)
     asgn.assign_unused(TARGET_TYPE_SKY, -1, -1, "POS", start_tile, stop_tile)
     asgn.assign_unused(TARGET_TYPE_SUPPSKY, -1, -1, "POS", start_tile, stop_tile)
@@ -1712,6 +1750,7 @@ def run(
     # So after this is run every fiber should be assigned to something.
     asgn.assign_unused(TARGET_TYPE_SAFE, -1, -1, "POS", start_tile, stop_tile)
     gt.stop("Assign remaining unassigned fibers")
+    print_counts('Final assignments: ')
 
     # Assign sky monitor fibers
     gt.start("Assign sky monitor fibers")
