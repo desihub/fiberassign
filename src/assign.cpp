@@ -1035,14 +1035,14 @@ void fba::Assignment::assign_force(uint8_t tgtype, int32_t required_per_petal,
     gtm.stop(gtmname.str());
 
     logmsg.str("");
-    if (required_per_petal && required_per_slitblock) {
+    if ((required_per_petal > 0) && (required_per_slitblock > 0)) {
         logmsg << "Force assignment of " << required_per_petal << " "
                << tgstr << " targets per petal and " << required_per_slitblock
                << " per slitblock";
-    } else if (required_per_petal) {
+    } else if (required_per_petal > 0) {
         logmsg << "Force assignment of " << required_per_petal << " "
                << tgstr << " targets per petal";
-    } else if (required_per_slitblock) {
+    } else if (required_per_slitblock > 0) {
         logmsg << "Force assignment of " << required_per_slitblock << " "
                << tgstr << " targets per slitblock";
     }
