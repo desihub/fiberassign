@@ -32,6 +32,7 @@ from ..targets import (str_to_target_type, TARGET_TYPE_SCIENCE,
 from ..assign import (Assignment, write_assignment_fits,
                       result_path, run)
 
+from ..stucksky import stuck_on_sky
 
 def parse_assign(optlist=None):
     """Parse assignment options.
@@ -355,9 +356,18 @@ def run_assign_full(args):
     favail = LocationsAvailable(tgsavail)
     gt.stop("Compute Locations Available")
 
+    # Find stuck positioners and compute whether they will land on acceptable
+    # sky locations for each tile.
+    gt.start("Compute Stuck locations on good sky")
+    stucksky = stuck_on_sky(hw, tiles)
+    if stucksky is None:
+        # (the pybind code doesn't like None when a dict is expected...)
+        stucksky = {}
+    gt.stop("Compute Stuck locations on good sky")
+
     # Create assignment object
     gt.start("Construct Assignment")
-    asgn = Assignment(tgs, tgsavail, favail)
+    asgn = Assignment(tgs, tgsavail, favail, stucksky)
     gt.stop("Construct Assignment")
 
     run(
@@ -384,7 +394,8 @@ def run_assign_full(args):
     write_assignment_fits(tiles, asgn, out_dir=args.dir,
                           out_prefix=args.prefix, split_dir=args.split,
                           all_targets=args.write_all_targets,
-                          gfa_targets=gfa_targets, overwrite=args.overwrite)
+                          gfa_targets=gfa_targets, overwrite=args.overwrite,
+                          stucksky=stucksky)
 
     gt.stop("run_assign_full write output")
 
@@ -431,9 +442,15 @@ def run_assign_bytile(args):
     favail = LocationsAvailable(tgsavail)
     gt.stop("Compute Locations Available")
 
+    # Find stuck positioners and compute whether they will land on acceptable
+    # sky locations for each tile.
+    gt.start("Compute Stuck locations on good sky")
+    stucksky = stuck_on_sky(hw, tiles)
+    gt.stop("Compute Stuck locations on good sky")
+
     # Create assignment object
     gt.start("Construct Assignment")
-    asgn = Assignment(tgs, tgsavail, favail)
+    asgn = Assignment(tgs, tgsavail, favail, stucksky)
     gt.stop("Construct Assignment")
 
     # We are now going to loop over tiles and assign each one fully before
@@ -466,7 +483,8 @@ def run_assign_bytile(args):
     write_assignment_fits(tiles, asgn, out_dir=args.dir,
                           out_prefix=args.prefix, split_dir=args.split,
                           all_targets=args.write_all_targets,
-                          gfa_targets=gfa_targets, overwrite=args.overwrite)
+                          gfa_targets=gfa_targets, overwrite=args.overwrite,
+                          stucksky=stucksky)
 
     gt.stop("run_assign_bytile write output")
 

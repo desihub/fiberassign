@@ -139,7 +139,7 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
     tm = Timer()
     tm.start()
     tile_id, tile_ra, tile_dec, tile_obstheta, tile_obstime, tile_obsha, \
-        tile_file, gfa_targets = params
+        tile_file, gfa_targets, stuck_sky_tile = params
     log = Logger.get()
 
     # Hardware properties
@@ -320,8 +320,14 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
 
             empty_x = np.zeros(len(empty_fibers), dtype=np.float64)
             empty_y = np.zeros(len(empty_fibers), dtype=np.float64)
+            empty_tgtype = np.zeros(len(empty_fibers), dtype=np.uint8)
 
             for iloc, loc in enumerate(empty_fibers):
+                # For stuck positioners on good sky, set the FA_TYPE SKY bit.
+                if (hw.state[loc] & FIBER_STATE_STUCK) and stuck_sky_tile is not None:
+                    if stuck_sky_tile.get(loc, False):
+                        empty_tgtype[iloc] = TARGET_TYPE_SKY
+
                 if (
                     (hw.state[loc] & FIBER_STATE_STUCK) or
                     (hw.state[loc] & FIBER_STATE_BROKEN)
@@ -377,6 +383,7 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
             )
             assigned_tgx[assigned_invalid] = [x for x, y in empty_xy]
             assigned_tgy[assigned_invalid] = [y for x, y in empty_xy]
+            assigned_tgtype[assigned_invalid] |= empty_tgtype
 
         if (len(assigned_valid) > 0):
             # The target IDs assigned to fibers (note- NOT sorted)
@@ -515,7 +522,7 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
 
 def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fba-",
                           split_dir=False, all_targets=False,
-                          gfa_targets=None, overwrite=False):
+                          gfa_targets=None, overwrite=False, stucksky=None):
     """Write out assignment results in FITS format.
 
     For each tile, all available targets (not only the assigned targets) and
@@ -563,13 +570,15 @@ def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fba-",
 
         outfile = result_path(tid, dir=out_dir, prefix=out_prefix,
                               create=True, split=split_dir)
-        if gfa_targets is None:
-            params = (tid, tra, tdec, ttheta, ttime, tha, outfile, None)
-        else:
-            params = (
-                tid, tra, tdec, ttheta, ttime, tha, outfile, gfa_targets[i]
-            )
+        gfa = None
+        if gfa_targets is not None:
+            gfa = gfa_targets[i]
 
+        stuck = None
+        if stucksky is not None:
+            stuck = stucksky.get(tid,{})
+
+        params = (tid, tra, tdec, ttheta, ttime, tha, outfile, gfa, stuck)
         write_tile(params)
 
     tm.stop()
@@ -1191,6 +1200,13 @@ def merge_results_tile(out_dtype, copy_fba, params):
                 # This required column is coming from external catalogs
                 external_cols.append(field)
 
+    # Special handling for STUCK positioners that land on good SKY positions.
+    # In the FA files these get FA_TYPE & 4 (SKY) and a negative TARGETID.
+    stucksky_rows = np.where((fiber_data['TARGETID'] < 0) *
+                             ((fiber_data['FA_TYPE'] & TARGET_TYPE_SKY) != 0))[0]
+    if len(stucksky_rows):
+        outdata['OBJTYPE'][stucksky_rows] = 'SKY'
+
     # tm.stop()
     # tm.report("  copy raw data to output {}".format(tile_id))
     # tm.clear()
@@ -1265,7 +1281,7 @@ def merge_results_tile(out_dtype, copy_fba, params):
         os.remove(outfile)
     fd = fitsio.FITS(outfile, "rw")
 
-    # Write a heaader-only primary HDU
+    # Write a header-only primary HDU
     fd.write(None, header=inhead, extname="PRIMARY")
 
     # Write the main FIBERASSIGN HDU- only the data for science positioners

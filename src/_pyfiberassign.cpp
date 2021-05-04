@@ -1503,8 +1503,10 @@ PYBIND11_MODULE(_internal, m) {
 
         )")
         .def(py::init < fba::Targets::pshr, fba::TargetsAvailable::pshr,
-             fba::LocationsAvailable::pshr > (), py::arg("tgs"),
-             py::arg("tgsavail"), py::arg("locavail")
+             fba::LocationsAvailable::pshr,
+             std::map<int32_t, std::map<int32_t, bool> >
+             >(), py::arg("tgs"),
+             py::arg("tgsavail"), py::arg("locavail"), py::arg("stuck_sky")
          )
         .def("targets", &fba::Assignment::targets, R"(
             Return a handle to the Targets object used.

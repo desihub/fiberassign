@@ -30,6 +30,7 @@ class TestTiles(unittest.TestCase):
 
     def test_read(self):
         test_dir = test_subdir_create("tiles_test_read")
+        print('test_dir', test_dir)
         hw = load_hardware()
         tfile = os.path.join(test_dir, "footprint.fits")
         sfile = os.path.join(test_dir, "footprint_keep.txt")

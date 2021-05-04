@@ -140,8 +140,11 @@ class TestQA(unittest.TestCase):
         # Compute the fibers on all tiles available for each target
         favail = LocationsAvailable(tgsavail)
 
+        # Pass empty map of STUCK positioners that land on good sky
+        stucksky = {}
+
         # Create assignment object
-        asgn = Assignment(tgs, tgsavail, favail)
+        asgn = Assignment(tgs, tgsavail, favail, stucksky)
 
         # First-pass assignment of science targets
         asgn.assign_unused(TARGET_TYPE_SCIENCE)
