@@ -105,59 +105,60 @@ fba::Hardware::Hardware(std::string const & timestr,
     int32_t stcount = 0;
 
     for (int32_t i = 0; i < nloc; ++i) {
-        locations.push_back(location[i]);
-        loc_petal[location[i]] = petal[i];
-        loc_device[location[i]] = device[i];
-        loc_device_type[location[i]] = device_type[i];
-        loc_fiber[location[i]] = fiber[i];
-        loc_slitblock[location[i]] = slitblock[i];
-        loc_blockfiber[location[i]] = blockfiber[i];
-        petal_locations[petal[i]].push_back(location[i]);
-        loc_pos_cs5_mm[location[i]] = std::make_pair(x_mm[i], y_mm[i]);
-        state[location[i]] = status[i];
+        int32_t loc = location[i];
+        locations.push_back(loc);
+        loc_petal[loc] = petal[i];
+        loc_device[loc] = device[i];
+        loc_device_type[loc] = device_type[i];
+        loc_fiber[loc] = fiber[i];
+        loc_slitblock[loc] = slitblock[i];
+        loc_blockfiber[loc] = blockfiber[i];
+        petal_locations[petal[i]].push_back(loc);
+        loc_pos_cs5_mm[loc] = std::make_pair(x_mm[i], y_mm[i]);
+        state[loc] = status[i];
         if ((status[i] & FIBER_STATE_STUCK) || (status[i] & FIBER_STATE_BROKEN)) {
             stcount++;
         }
-        neighbors[location[i]].clear();
-        petal_edge[location[i]] = false;
-        gfa_edge[location[i]] = false;
-        loc_theta_offset[location[i]] = theta_offset[i] * M_PI / 180.0;
-        loc_theta_min[location[i]] = theta_min[i] * M_PI / 180.0;
-        loc_theta_max[location[i]] = theta_max[i] * M_PI / 180.0;
-        loc_theta_pos[location[i]] = theta_pos[i] * M_PI / 180.0;
-        loc_theta_arm[location[i]] = theta_arm[i];
-        loc_phi_offset[location[i]] = phi_offset[i] * M_PI / 180.0;
-        loc_phi_min[location[i]] = phi_min[i] * M_PI / 180.0;
-        loc_phi_max[location[i]] = phi_max[i] * M_PI / 180.0;
-        loc_phi_pos[location[i]] = phi_pos[i] * M_PI / 180.0;
-        loc_phi_arm[location[i]] = phi_arm[i];
+        neighbors[loc].clear();
+        petal_edge[loc] = false;
+        gfa_edge[loc] = false;
+        loc_theta_offset[loc] = theta_offset[i] * M_PI / 180.0;
+        loc_theta_min[loc] = theta_min[i] * M_PI / 180.0;
+        loc_theta_max[loc] = theta_max[i] * M_PI / 180.0;
+        loc_theta_pos[loc] = theta_pos[i] * M_PI / 180.0;
+        loc_theta_arm[loc] = theta_arm[i];
+        loc_phi_offset[loc] = phi_offset[i] * M_PI / 180.0;
+        loc_phi_min[loc] = phi_min[i] * M_PI / 180.0;
+        loc_phi_max[loc] = phi_max[i] * M_PI / 180.0;
+        loc_phi_pos[loc] = phi_pos[i] * M_PI / 180.0;
+        loc_phi_arm[loc] = phi_arm[i];
 
         // Only STATE != 0 fibers seem to have the theta,phi values set; check these.
-        if (state[location[i]] & (FIBER_STATE_STUCK | FIBER_STATE_BROKEN | FIBER_STATE_RESTRICT)) {
-            if ((loc_theta_pos[location[i]] < loc_theta_min[location[i]]) ||
-                (loc_theta_pos[location[i]] > loc_theta_max[location[i]])) {
+        if (state[loc] & (FIBER_STATE_STUCK | FIBER_STATE_BROKEN | FIBER_STATE_RESTRICT)) {
+            if ((loc_theta_pos[loc] < loc_theta_min[loc]) ||
+                (loc_theta_pos[loc] > loc_theta_max[loc])) {
                 logmsg.str("");
-                logmsg << ("STUCK/BROKEN/RESTRICT positioner (loc " << location[i]
+                logmsg << ("STUCK/BROKEN/RESTRICT positioner (loc " << loc
                        << ") theta value is outside of range: theta = "
-                       << loc_theta_pos[location[i]] << " vs range [" << loc_theta_min[location[i]]
-                       << ", " << loc_theta_max[location[i]] << "].";
+                       << loc_theta_pos[loc] << " vs range [" << loc_theta_min[loc]
+                       << ", " << loc_theta_max[loc] << "].";
                 logger.info(logmsg.str().c_str());
             }
-            if ((loc_phi_pos[location[i]] < loc_phi_min[location[i]]) ||
-                (loc_phi_pos[location[i]] > loc_phi_max[location[i]])) {
+            if ((loc_phi_pos[loc] < loc_phi_min[loc]) ||
+                (loc_phi_pos[loc] > loc_phi_max[loc])) {
                 logmsg.str("");
-                logmsg << "STUCK/BROKEN/RESTRICT positioner (loc " << location[i]
+                logmsg << "STUCK/BROKEN/RESTRICT positioner (loc " << loc
                        << ") phi value is outside of range: phi = "
-                       << loc_phi_pos[location[i]] << " vs range [" << loc_phi_min[location[i]]
-                       << ", " << loc_phi_max[location[i]] << "].";
+                       << loc_phi_pos[loc] << " vs range [" << loc_phi_min[loc]
+                       << ", " << loc_phi_max[loc] << "].";
                 logger.info(logmsg.str().c_str());
             }
         }
 
-        loc_theta_excl[location[i]] = excl_theta[i];
-        loc_phi_excl[location[i]] = excl_phi[i];
-        loc_gfa_excl[location[i]] = excl_gfa[i];
-        loc_petal_excl[location[i]] = excl_petal[i];
+        loc_theta_excl[loc] = excl_theta[i];
+        loc_phi_excl[loc] = excl_phi[i];
+        loc_gfa_excl[loc] = excl_gfa[i];
+        loc_petal_excl[loc] = excl_petal[i];
     }
 
     logmsg.str("");
