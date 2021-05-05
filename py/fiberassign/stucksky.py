@@ -123,8 +123,8 @@ def stuck_on_sky(hw, tiles):
                      if (((hw.state[loc] & FIBER_STATE_STUCK) != 0) and
                          ((hw.state[loc] & FIBER_STATE_BROKEN) == 0) and
                          (hw.loc_device_type[loc] == 'POS'))]
-        stuck_theta = [hw.loc_theta_pos[x] for x in stuck_loc]
-        stuck_phi   = [hw.loc_phi_pos  [x] for x in stuck_loc]
+        stuck_theta = [hw.loc_theta_pos[loc] + hw.loc_theta_offset[loc] for loc in stuck_loc]
+        stuck_phi   = [hw.loc_phi_pos  [loc] + hw.loc_phi_offset  [loc] for loc in stuck_loc]
 
         # Convert positioner angle orientations to curved focal surface X / Y (not CS5)
         # Note:  we could add some methods to the python bindings to vectorize this or make it less clunky...
@@ -142,7 +142,8 @@ def stuck_on_sky(hw, tiles):
                 hw.loc_theta_min[loc],
                 hw.loc_phi_min[loc],
                 hw.loc_theta_max[loc],
-                hw.loc_phi_max[loc]
+                hw.loc_phi_max[loc],
+                True
             )
             stuck_x[iloc] = loc_x
             stuck_y[iloc] = loc_y

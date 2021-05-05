@@ -911,12 +911,14 @@ PYBIND11_MODULE(_internal, m) {
                 double theta_min,
                 double phi_min,
                 double theta_max,
-                double phi_max
+                double phi_max,
+                bool ignore_range=false
             ) {
                 std::pair <double, double> xy;
                 bool failed = self.thetaphi_to_xy(
                     xy, center, theta, phi, theta_arm, phi_arm, theta_zero,
-                    phi_zero, theta_min, phi_min, theta_max, phi_max
+                    phi_zero, theta_min, phi_min, theta_max, phi_max,
+                    ignore_range
                 );
                 if (failed) {
                     return py::make_tuple(py::none(), py::none());
@@ -927,7 +929,7 @@ PYBIND11_MODULE(_internal, m) {
             py::arg("theta"), py::arg("phi"), py::arg("theta_arm"), py::arg("phi_arm"),
             py::arg("theta_zero"), py::arg("phi_zero"),
             py::arg("theta_min"), py::arg("phi_min"),
-            py::arg("theta_max"), py::arg("phi_max"), R"(
+             py::arg("theta_max"), py::arg("phi_max"), py::arg("ignore_range")=false, R"(
             Compute the X / Y fiber location for positioner Theta / Phi angles.
 
             Note that all X/Y calculations involving positioners are performed
@@ -945,6 +947,7 @@ PYBIND11_MODULE(_internal, m) {
                 phi_min (float): The phi min relative to the offset.
                 theta_max (float): The theta max relative to the offset.
                 phi_max (float): The phi max relative to the offset.
+                ignore_range=False (bool): Ignore MIN/MAX_THETA/PHI and always return X,Y
 
             Returns:
                 (tuple): The X / Y location or (None, None) if the angles are
@@ -992,7 +995,7 @@ PYBIND11_MODULE(_internal, m) {
         )")
         .def("loc_position_thetaphi", &fba::Hardware::loc_position_thetaphi,
             py::arg("loc"), py::arg("theta"), py::arg("phi"),
-            py::arg("shptheta"), py::arg("shpphi"), R"(
+             py::arg("shptheta"), py::arg("shpphi"), py::arg("ignore_range")=false, R"(
             Move a positioner to a given set of theta / phi angles.
 
             This takes the specified angles and computes the shapes of
@@ -1006,6 +1009,7 @@ PYBIND11_MODULE(_internal, m) {
                 phi (float): The phi angle.
                 shptheta (Shape):  The theta shape.
                 shpphi (Shape):  The phi shape.
+                ignore_range=false (bool): Ignore phi/theta min/max limits?
 
             Returns:
                 None

@@ -336,8 +336,8 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
                     # position in the hardware model.  Used this fixed fiber location.
                     xy = hw.thetaphi_to_xy(
                         hw.loc_pos_curved_mm[loc],
-                        hw.loc_theta_pos[loc],
-                        hw.loc_phi_pos[loc],
+                        hw.loc_theta_pos[loc] + hw.loc_theta_offset[loc],
+                        hw.loc_phi_pos  [loc] + hw.loc_phi_offset  [loc],
                         hw.loc_theta_arm[loc],
                         hw.loc_phi_arm[loc],
                         hw.loc_theta_offset[loc],
@@ -345,21 +345,24 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
                         hw.loc_theta_min[loc],
                         hw.loc_phi_min[loc],
                         hw.loc_theta_max[loc],
-                        hw.loc_phi_max[loc]
+                        hw.loc_phi_max[loc],
+                        ignore_range=True
                     )
                     empty_x[iloc] = xy[0]
                     empty_y[iloc] = xy[1]
                 else:
-                    # This is an unassigned, working positioner.  Place it in a folded
-                    # state.
-                    thmin = hw.loc_theta_min[loc] + hw.loc_theta_offset[loc]
-                    phmax = hw.loc_phi_max[loc] + hw.loc_phi_offset[loc]
-                    if phmax > np.pi:
-                        phmax = np.pi
+                    # This is an unassigned, working positioner.
+                    # Place it in a folded state.
+                    theta,phi = get_parked_thetaphi(hw.loc_theta_offset[loc],
+                                                    hw.loc_theta_min[loc],
+                                                    hw.loc_theta_max[loc],
+                                                    hw.loc_phi_offset[loc],
+                                                    hw.loc_phi_min[loc],
+                                                    hw.loc_phi_max[loc])
                     xy = hw.thetaphi_to_xy(
                         hw.loc_pos_curved_mm[loc],
-                        thmin,
-                        phmax,
+                        theta,
+                        phi,
                         hw.loc_theta_arm[loc],
                         hw.loc_phi_arm[loc],
                         hw.loc_theta_offset[loc],
@@ -371,6 +374,8 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
                     )
                     empty_x[iloc] = xy[0]
                     empty_y[iloc] = xy[1]
+                    if xy[0] is None:
+                        print('WARNING: X,Y position for unassigned, parked positioner loc =', loc, ' is invalid.')
 
             radec = hw.xy2radec_multi(
                 tile_ra, tile_dec, tile_obstheta, empty_x, empty_y, False, 0
@@ -1574,6 +1579,18 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
         results = pool.map(merge_tile, tile_map_list)
 
     return
+
+def get_parked_thetaphi(theta_offset, theta_min, theta_max,
+                        phi_offset,   phi_min,   phi_max):
+    # Arbitrarily,
+    theta = theta_offset + theta_min
+
+    # Put phi arm at 150 degrees (https://github.com/desihub/fiberassign/issues/194)
+    phi_target = 150.
+    phi_target = np.clip(np.deg2rad(phi_target), phi_min, phi_max)
+    phi = phi_offset + phi_target
+
+    return theta, phi
 
 def run(
     asgn,

@@ -33,7 +33,7 @@ from .targets import (Targets, load_target_table,
                       TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE)
 
 from .assign import (read_assignment_fits_tile, result_tiles, result_path,
-                     avail_table_to_dict)
+                     avail_table_to_dict, get_parked_thetaphi)
 
 plt = None
 
@@ -277,26 +277,24 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
             if (state[lid] & FIBER_STATE_STUCK) or (state[lid] & FIBER_STATE_BROKEN):
                 # The positioner is stuck or fiber broken.  Plot it at its current
                 # location.
-                theta = theta_pos[lid]
-                phi = phi_pos[lid]
+                theta = theta_pos[lid] + theta_offset[lid]
+                phi   = phi_pos  [lid] + phi_offset  [lid]
                 print("loc {}, state {} is stuck / broken, using {} / {}".format(
                     lid, state[lid], theta, phi
                 ), flush=True)
                 failed = hw.loc_position_thetaphi(
-                    lid, theta_pos[lid], phi_pos[lid], shptheta, shpphi
+                    lid, theta, phi, shptheta, shpphi, True
                 )
             else:
-                # Plot the positioner in its home
-                # position with theta at its minimum value and phi
-                # at 180 degrees.
-                theta = theta_offset[lid] + theta_min[lid]
-                phi = phi_offset[lid] + phi_max[lid]
-                if phi > np.pi:
-                    phi = np.pi
+                # Plot the positioner in its home (parked) position
+                theta,phi = get_parked_thetaphi(theta_offset[lid],
+                                                theta_min[lid], theta_max[lid],
+                                                phi_offset[lid],
+                                                phi_min[lid], phi_max[lid])
                 print("loc {}, state {} is unassigned, using {} / {}".format(
                     lid, state[lid], theta, phi
                 ), flush=True)
-                failed = hw.loc_position_thetaphi(lid, theta, phi, shptheta, shpphi)
+                failed = hw.loc_position_thetaphi(lid, theta, phi, shptheta, shpphi, True)
             if failed:
                 msg = "Positioner at location {} cannot move to its stuck or home position.  This should never happen!".format(lid)
                 log.warning(msg)

@@ -105,41 +105,68 @@ fba::Hardware::Hardware(std::string const & timestr,
     int32_t stcount = 0;
 
     for (int32_t i = 0; i < nloc; ++i) {
-        locations.push_back(location[i]);
-        loc_petal[location[i]] = petal[i];
-        loc_device[location[i]] = device[i];
-        loc_device_type[location[i]] = device_type[i];
-        loc_fiber[location[i]] = fiber[i];
-        loc_slitblock[location[i]] = slitblock[i];
-        loc_blockfiber[location[i]] = blockfiber[i];
-        petal_locations[petal[i]].push_back(location[i]);
-        loc_pos_cs5_mm[location[i]] = std::make_pair(x_mm[i], y_mm[i]);
-        state[location[i]] = status[i];
+        int32_t loc = location[i];
+        locations.push_back(loc);
+        loc_petal[loc] = petal[i];
+        loc_device[loc] = device[i];
+        loc_device_type[loc] = device_type[i];
+        loc_fiber[loc] = fiber[i];
+        loc_slitblock[loc] = slitblock[i];
+        loc_blockfiber[loc] = blockfiber[i];
+        petal_locations[petal[i]].push_back(loc);
+        loc_pos_cs5_mm[loc] = std::make_pair(x_mm[i], y_mm[i]);
+        state[loc] = status[i];
         if ((status[i] & FIBER_STATE_STUCK) || (status[i] & FIBER_STATE_BROKEN)) {
             stcount++;
         }
-        neighbors[location[i]].clear();
-        petal_edge[location[i]] = false;
-        gfa_edge[location[i]] = false;
-        loc_theta_offset[location[i]] = theta_offset[i] * M_PI / 180.0;
-        loc_theta_min[location[i]] = theta_min[i] * M_PI / 180.0;
-        loc_theta_max[location[i]] = theta_max[i] * M_PI / 180.0;
-        loc_theta_pos[location[i]] = theta_pos[i] * M_PI / 180.0;
-        loc_theta_arm[location[i]] = theta_arm[i];
-        loc_phi_offset[location[i]] = phi_offset[i] * M_PI / 180.0;
-        loc_phi_min[location[i]] = phi_min[i] * M_PI / 180.0;
-        loc_phi_max[location[i]] = phi_max[i] * M_PI / 180.0;
-        loc_phi_pos[location[i]] = phi_pos[i] * M_PI / 180.0;
-        loc_phi_arm[location[i]] = phi_arm[i];
-        loc_theta_excl[location[i]] = excl_theta[i];
-        loc_phi_excl[location[i]] = excl_phi[i];
-        loc_gfa_excl[location[i]] = excl_gfa[i];
-        loc_petal_excl[location[i]] = excl_petal[i];
+        neighbors[loc].clear();
+        petal_edge[loc] = false;
+        gfa_edge[loc] = false;
+        loc_theta_offset[loc] = theta_offset[i] * M_PI / 180.0;
+        loc_theta_min[loc] = theta_min[i] * M_PI / 180.0;
+        loc_theta_max[loc] = theta_max[i] * M_PI / 180.0;
+        loc_theta_pos[loc] = theta_pos[i] * M_PI / 180.0;
+        loc_theta_arm[loc] = theta_arm[i];
+        loc_phi_offset[loc] = phi_offset[i] * M_PI / 180.0;
+        loc_phi_min[loc] = phi_min[i] * M_PI / 180.0;
+        loc_phi_max[loc] = phi_max[i] * M_PI / 180.0;
+        loc_phi_pos[loc] = phi_pos[i] * M_PI / 180.0;
+        loc_phi_arm[loc] = phi_arm[i];
+
+        // Only STATE != 0 fibers seem to have the theta,phi values set; check these.
+        if (state[loc] & (FIBER_STATE_STUCK | FIBER_STATE_BROKEN | FIBER_STATE_RESTRICT)) {
+            if ((loc_theta_pos[loc] < loc_theta_min[loc]) ||
+                (loc_theta_pos[loc] > loc_theta_max[loc])) {
+                logmsg.str("");
+                logmsg << ((state[loc] & FIBER_STATE_STUCK) ? "STUCK" : "     ") << " | "
+                       << ((state[loc] & FIBER_STATE_BROKEN) ? "BROKEN" : "      ") << " | "
+                       << ((state[loc] & FIBER_STATE_RESTRICT) ? "RESTRICT" : "        ")
+                       << " positioner (loc " << loc << ") theta value is outside of range: theta = "
+                       << loc_theta_pos[loc] << " vs range [" << loc_theta_min[loc]
+                       << ", " << loc_theta_max[loc] << "].";
+                logger.info(logmsg.str().c_str());
+            }
+            if ((loc_phi_pos[loc] < loc_phi_min[loc]) ||
+                (loc_phi_pos[loc] > loc_phi_max[loc])) {
+                logmsg.str("");
+                logmsg << ((state[loc] & FIBER_STATE_STUCK) ? "STUCK" : "     ") << " | "
+                       << ((state[loc] & FIBER_STATE_BROKEN) ? "BROKEN" : "      ") << " | "
+                       << ((state[loc] & FIBER_STATE_RESTRICT) ? "RESTRICT" : "        ")
+                       << " positioner (loc " << loc << ") phi value is outside of range: phi = "
+                       << loc_phi_pos[loc] << " vs range [" << loc_phi_min[loc]
+                       << ", " << loc_phi_max[loc] << "].";
+                logger.info(logmsg.str().c_str());
+            }
+        }
+
+        loc_theta_excl[loc] = excl_theta[i];
+        loc_phi_excl[loc] = excl_phi[i];
+        loc_gfa_excl[loc] = excl_gfa[i];
+        loc_petal_excl[loc] = excl_petal[i];
     }
 
     logmsg.str("");
-    logmsg << "Focalplane has " << stcount
-        << " fibers that are stuck or broken";
+    logmsg << "Focalplane has " << stcount << " fibers that are stuck or broken";
     logger.info(logmsg.str().c_str());
 
     // Sort the locations
@@ -588,10 +615,18 @@ bool _outside_theta_phi_range(
     // a clockwise rotation from theta_zero.
     double diff_hi = _angle_diff(theta, theta_zero);
     double diff_lo = _angle_diff(theta_zero, theta);
-    if (
-        ((diff_hi > theta_max) || (diff_hi < theta_min))
-        && ((-diff_lo > theta_max) || (-diff_lo < theta_min))
-    ) {
+
+    // Since calling code may add theta_offset (aka theta_zero here),
+    // which we then subtract off, we want to put a little margin on
+    // the min/max checks.  (In most cases where we are passing
+    // theta/phi values through from the desimodel inputs and we need
+    // to add offsets, we also ignore this range check, so this is
+    // maybe overly cautious.)
+    double eps = 1e-12;
+
+    if ((   ( diff_hi > (theta_max + eps)) || ( diff_hi < (theta_min - eps)))
+        && ((-diff_lo > (theta_max + eps)) || (-diff_lo < (theta_min - eps)))
+        ) {
         return true;
     }
 
@@ -601,10 +636,9 @@ bool _outside_theta_phi_range(
     // a negative phi_min indicates a clockwise rotation from phi_zero.
     diff_hi = _angle_diff(phi, phi_zero);
     diff_lo = _angle_diff(phi_zero, phi);
-    if (
-        ((diff_hi > phi_max) || (diff_hi < phi_min))
-        && ((-diff_lo > phi_max) || (-diff_lo < phi_min))
-    ) {
+    if ((   ( diff_hi > (phi_max + eps)) || ( diff_hi < (phi_min - eps)))
+        && ((-diff_lo > (phi_max + eps)) || (-diff_lo < (phi_min - eps)))
+        ) {
         return true;
     }
 
@@ -617,7 +651,8 @@ bool fba::Hardware::move_positioner_thetaphi(
         fbg::shape & shptheta, fbg::shape & shpphi,
         fbg::dpair const & center, double theta, double phi,
         double theta_arm, double phi_arm, double theta_zero, double phi_zero,
-        double theta_min, double phi_min, double theta_max, double phi_max
+        double theta_min, double phi_min, double theta_max, double phi_max,
+        bool ignore_range
         ) const {
     // Check that requested angles are in range.
     if (
@@ -625,7 +660,8 @@ bool fba::Hardware::move_positioner_thetaphi(
             theta, phi, theta_zero, theta_min, theta_max, phi_zero, phi_min, phi_max
         )
     ) {
-        return true;
+        if (!ignore_range)
+            return true;
     }
 
     double ctheta = ::cos(theta);
@@ -753,8 +789,25 @@ bool fba::Hardware::thetaphi_to_xy(
         fbg::dpair & position,
         fbg::dpair const & center, double const & theta, double const & phi,
         double theta_arm, double phi_arm, double theta_zero, double phi_zero,
-        double theta_min, double phi_min, double theta_max, double phi_max
+        double theta_min, double phi_min, double theta_max, double phi_max,
+        bool ignore_range
     ) const {
+    // Note:
+    //
+    // The desimodel {theta,phi}_pos values are relative to
+    // {theta,phi}_offset.
+    //
+    // However, the thetaphi_to_xy() routine (as well as other
+    // routines that take theta,phi values) here expects "absolute"
+    // theta,phi values -- theta angles in the x,y focal-plane frame;
+    // we therefore need to apply theta,phi_offset values if we're
+    // passing in theta,phi values from desimodel.
+    //
+    // This is way more important for theta, because desimodel has
+    // applied the petal rotations to the theta_offsets -- so it
+    // includes both rotation of the device and the petal position --
+    // the theta_offsets span the full range of [-pi, +pi].
+    // The phi_offset values are all clustered around zero.
 
     // Check that requested angles are in range.
     if (
@@ -762,7 +815,8 @@ bool fba::Hardware::thetaphi_to_xy(
             theta, phi, theta_zero, theta_min, theta_max, phi_zero, phi_min, phi_max
         )
     ) {
-        return true;
+        if (!ignore_range)
+            return true;
     }
 
     double x_theta = center.first + theta_arm * ::cos(theta);
@@ -861,7 +915,7 @@ bool fba::Hardware::loc_position_xy(
 
 bool fba::Hardware::loc_position_thetaphi(
     int32_t loc, double theta, double phi, fbg::shape & shptheta,
-    fbg::shape & shpphi) const {
+    fbg::shape & shpphi, bool ignore_range) const {
 
     // Start from exclusion polygon for this location.
     shptheta = loc_theta_excl.at(loc);
@@ -878,7 +932,8 @@ bool fba::Hardware::loc_position_thetaphi(
         loc_theta_min.at(loc),
         loc_phi_min.at(loc),
         loc_theta_max.at(loc),
-        loc_phi_max.at(loc));
+        loc_phi_max.at(loc),
+        ignore_range);
 
     return failed;
 }
@@ -1003,7 +1058,8 @@ bool fba::Hardware::collide_thetaphi(
 
 bool fba::Hardware::collide_xy_thetaphi(
         int32_t loc1, fbg::dpair const & xy1,
-        int32_t loc2, double theta2, double phi2) const {
+        int32_t loc2, double theta2, double phi2,
+        bool ignore_thetaphi_range) const {
 
     fbg::shape shptheta1(loc_theta_excl.at(loc1));
     fbg::shape shpphi1(loc_phi_excl.at(loc1));
@@ -1015,8 +1071,8 @@ bool fba::Hardware::collide_xy_thetaphi(
     fbg::shape shptheta2(loc_theta_excl.at(loc2));
     fbg::shape shpphi2(loc_phi_excl.at(loc2));
     bool failed2 = loc_position_thetaphi(loc2, theta2, phi2, shptheta2,
-                                         shpphi2);
-    if (failed2) {
+                                         shpphi2, ignore_thetaphi_range);
+    if (failed2 && !ignore_thetaphi_range) {
         return true;
     }
 

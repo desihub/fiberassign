@@ -106,7 +106,8 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
             fbg::dpair const & center, double theta, double phi,
             double theta_arm, double phi_arm, double theta_zero,
             double phi_zero, double theta_min, double phi_min,
-            double theta_max, double phi_max) const;
+            double theta_max, double phi_max,
+            bool ignore_range=false) const;
 
         bool xy_to_thetaphi(
                 double & theta, double & phi,
@@ -119,7 +120,8 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
             fbg::dpair & position,
             fbg::dpair const & center, double const & theta, double const & phi,
             double theta_arm, double phi_arm, double theta_zero, double phi_zero,
-            double theta_min, double phi_min, double theta_max, double phi_max) const;
+            double theta_min, double phi_min, double theta_max, double phi_max,
+            bool ignore_range=false) const;
 
         bool position_xy_bad(int32_t loc, fbg::dpair const & xy) const;
 
@@ -136,7 +138,7 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
 
         bool loc_position_thetaphi(
             int32_t loc, double theta, double phi, fbg::shape & shptheta,
-            fbg::shape & shpphi) const;
+            fbg::shape & shpphi, bool ignore_range=false) const;
 
         bool collide_xy(int32_t loc1, fbg::dpair const & xy1,
                         int32_t loc2, fbg::dpair const & xy2) const;
@@ -148,7 +150,8 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
             int32_t loc2, double theta2, double phi2) const;
 
         bool collide_xy_thetaphi(int32_t loc1, fbg::dpair const & xy1,
-                                 int32_t loc2, double theta2, double phi2) const;
+                                 int32_t loc2, double theta2, double phi2,
+                                 bool ignore_thetaphi_range=false) const;
 
         std::vector <std::pair <bool, std::pair <fbg::shape, fbg::shape> > >
         loc_position_xy_multi(
