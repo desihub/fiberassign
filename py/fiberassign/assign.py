@@ -311,6 +311,9 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         assigned_tgbits = np.zeros(nloc, dtype=np.int64)
         assigned_tgtype = np.zeros(nloc, dtype=np.uint8)
 
+        # For later, locs of stuck fibers that land on good sky
+        stuck_sky_locs = set()
+
         if (len(assigned_invalid) > 0):
             # Fill our unassigned location X/Y coordinates with either their fixed
             # location (for positioners that are nonfunctional) or as "folded in"
@@ -325,8 +328,11 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
             for iloc, loc in enumerate(empty_fibers):
                 # For stuck positioners on good sky, set the FA_TYPE SKY bit.
                 if (hw.state[loc] & FIBER_STATE_STUCK) and stuck_sky_tile is not None:
+                    # (note, the stuck_sky code does the check for STUCK, not BROKEN,
+                    #  type POS, etc; that's in the stuck_sky_tile map.)
                     if stuck_sky_tile.get(loc, False):
                         empty_tgtype[iloc] = TARGET_TYPE_SKY
+                        stuck_sky_locs.add(loc)
 
                 if (
                     (hw.state[loc] & FIBER_STATE_STUCK) or
@@ -438,7 +444,8 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         fstate = dict(hw.state)
         fstatus = np.zeros(nloc, dtype=np.int32)
         # Set unused bit
-        fstatus |= [0 if x in tdata.keys() else FIBER_STATE_UNASSIGNED
+        fstatus |= [0 if (x in tdata.keys()) or (x in stuck_sky_locs)
+                    else FIBER_STATE_UNASSIGNED
                     for x in locs]
         # Set stuck / broken / restricted bits.
         fstatus |= [2 if (fstate[x] & FIBER_STATE_STUCK) else 0
