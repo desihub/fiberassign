@@ -138,8 +138,10 @@ fba::Hardware::Hardware(std::string const & timestr,
             if ((loc_theta_pos[loc] < loc_theta_min[loc]) ||
                 (loc_theta_pos[loc] > loc_theta_max[loc])) {
                 logmsg.str("");
-                logmsg << ("STUCK/BROKEN/RESTRICT positioner (loc " << loc
-                       << ") theta value is outside of range: theta = "
+                logmsg << ((state[loc] & FIBER_STATE_STUCK) ? "STUCK" : "     ") << " | "
+                       << ((state[loc] & FIBER_STATE_BROKEN) ? "BROKEN" : "      ") << " | "
+                       << ((state[loc] & FIBER_STATE_RESTRICT) ? "RESTRICT" : "        ")
+                       << " positioner (loc " << loc << ") theta value is outside of range: theta = "
                        << loc_theta_pos[loc] << " vs range [" << loc_theta_min[loc]
                        << ", " << loc_theta_max[loc] << "].";
                 logger.info(logmsg.str().c_str());
@@ -147,8 +149,10 @@ fba::Hardware::Hardware(std::string const & timestr,
             if ((loc_phi_pos[loc] < loc_phi_min[loc]) ||
                 (loc_phi_pos[loc] > loc_phi_max[loc])) {
                 logmsg.str("");
-                logmsg << "STUCK/BROKEN/RESTRICT positioner (loc " << loc
-                       << ") phi value is outside of range: phi = "
+                logmsg << ((state[loc] & FIBER_STATE_STUCK) ? "STUCK" : "     ") << " | "
+                       << ((state[loc] & FIBER_STATE_BROKEN) ? "BROKEN" : "      ") << " | "
+                       << ((state[loc] & FIBER_STATE_RESTRICT) ? "RESTRICT" : "        ")
+                       << " positioner (loc " << loc << ") phi value is outside of range: phi = "
                        << loc_phi_pos[loc] << " vs range [" << loc_phi_min[loc]
                        << ", " << loc_phi_max[loc] << "].";
                 logger.info(logmsg.str().c_str());
@@ -162,8 +166,7 @@ fba::Hardware::Hardware(std::string const & timestr,
     }
 
     logmsg.str("");
-    logmsg << "Focalplane has " << stcount
-        << " fibers that are stuck or broken";
+    logmsg << "Focalplane has " << stcount << " fibers that are stuck or broken";
     logger.info(logmsg.str().c_str());
 
     // Sort the locations
