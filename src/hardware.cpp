@@ -1031,7 +1031,8 @@ bool fba::Hardware::collide_thetaphi(
 
 bool fba::Hardware::collide_xy_thetaphi(
         int32_t loc1, fbg::dpair const & xy1,
-        int32_t loc2, double theta2, double phi2) const {
+        int32_t loc2, double theta2, double phi2,
+        bool ignore_thetaphi_range) const {
 
     fbg::shape shptheta1(loc_theta_excl.at(loc1));
     fbg::shape shpphi1(loc_phi_excl.at(loc1));
@@ -1043,8 +1044,8 @@ bool fba::Hardware::collide_xy_thetaphi(
     fbg::shape shptheta2(loc_theta_excl.at(loc2));
     fbg::shape shpphi2(loc_phi_excl.at(loc2));
     bool failed2 = loc_position_thetaphi(loc2, theta2, phi2, shptheta2,
-                                         shpphi2);
-    if (failed2) {
+                                         shpphi2, ignore_thetaphi_range);
+    if (failed2 && !ignore_thetaphi_range) {
         return true;
     }
 

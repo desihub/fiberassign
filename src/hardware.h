@@ -150,7 +150,8 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
             int32_t loc2, double theta2, double phi2) const;
 
         bool collide_xy_thetaphi(int32_t loc1, fbg::dpair const & xy1,
-                                 int32_t loc2, double theta2, double phi2) const;
+                                 int32_t loc2, double theta2, double phi2,
+                                 bool ignore_thetaphi_range=false) const;
 
         std::vector <std::pair <bool, std::pair <fbg::shape, fbg::shape> > >
         loc_position_xy_multi(
