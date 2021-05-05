@@ -3,7 +3,12 @@
 fiberassign change log
 ======================
 
-2.4.0 (unreleased)
+2.4.1 (unreleased)
+------------------
+
+* No changes yet
+
+2.4.0 (2021-05-04)
 ------------------
 
 * ``fba_launch --isodate`` option to set timestamp for MTL ledger reading
@@ -11,11 +16,15 @@ fiberassign change log
 * Assign stuck positioners to sky if possible (PR `#337`_).
 * Add per-slitblock sky fiber limits (PR `#338`_).
 * Report counts of assigned fibers as fiberassign proceeds (PR `#339`_).
+* Apply theta-phi offsets when computing locs of stuck positioners;
+  fixes NaNs in outputs (PR `#340`_).
+* Park unassigned positioners at phi=150 instead of 180. (PR `#340`_).
 
 .. _`#334`: https://github.com/desihub/fiberassign/pull/334
 .. _`#337`: https://github.com/desihub/fiberassign/pull/337
 .. _`#338`: https://github.com/desihub/fiberassign/pull/338
 .. _`#339`: https://github.com/desihub/fiberassign/pull/339
+.. _`#340`: https://github.com/desihub/fiberassign/pull/340
 
 2.3.0 (2021-04-22)
 ------------------
