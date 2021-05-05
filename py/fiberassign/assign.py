@@ -1582,16 +1582,12 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
 
 def get_parked_thetaphi(theta_offset, theta_min, theta_max,
                         phi_offset,   phi_min,   phi_max):
-    # To avoid numerical issues when outside_theta_phi_range() detects
-    # whether this value is >= min; we're adding then subtracting
-    # theta_offset, so cancellation error is a possibility.
-    eta = 1e-9
+    # Arbitrarily,
+    theta = theta_offset + theta_min
 
-    theta = theta_offset + theta_min + eta
-
-    # 150 degrees (https://github.com/desihub/fiberassign/issues/194)
+    # Put phi arm at 150 degrees (https://github.com/desihub/fiberassign/issues/194)
     phi_target = 150.
-    phi_target = np.clip(np.deg2rad(phi_target), phi_min + eta, phi_max - eta)
+    phi_target = np.clip(np.deg2rad(phi_target), phi_min, phi_max)
     phi = phi_offset + phi_target
 
     return theta, phi

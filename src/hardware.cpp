@@ -612,10 +612,18 @@ bool _outside_theta_phi_range(
     // a clockwise rotation from theta_zero.
     double diff_hi = _angle_diff(theta, theta_zero);
     double diff_lo = _angle_diff(theta_zero, theta);
-    if (
-        ((diff_hi > theta_max) || (diff_hi < theta_min))
-        && ((-diff_lo > theta_max) || (-diff_lo < theta_min))
-    ) {
+
+    // Since calling code may add theta_offset (aka theta_zero here),
+    // which we then subtract off, we want to put a little margin on
+    // the min/max checks.  (In most cases where we are passing
+    // theta/phi values through from the desimodel inputs and we need
+    // to add offsets, we also ignore this range check, so this is
+    // maybe overly cautious.)
+    double eps = 1e-12;
+
+    if ((   ( diff_hi > (theta_max + eps)) || ( diff_hi < (theta_min - eps)))
+        && ((-diff_lo > (theta_max + eps)) || (-diff_lo < (theta_min - eps)))
+        ) {
         return true;
     }
 
@@ -625,10 +633,9 @@ bool _outside_theta_phi_range(
     // a negative phi_min indicates a clockwise rotation from phi_zero.
     diff_hi = _angle_diff(phi, phi_zero);
     diff_lo = _angle_diff(phi_zero, phi);
-    if (
-        ((diff_hi > phi_max) || (diff_hi < phi_min))
-        && ((-diff_lo > phi_max) || (-diff_lo < phi_min))
-    ) {
+    if ((   ( diff_hi > (phi_max + eps)) || ( diff_hi < (phi_min - eps)))
+        && ((-diff_lo > (phi_max + eps)) || (-diff_lo < (phi_min - eps)))
+        ) {
         return true;
     }
 
