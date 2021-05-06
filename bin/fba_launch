@@ -522,14 +522,17 @@ def main():
         )
 
     # AR safe: DESI environment variables
-    for key in ["DESI_ROOT", "DESI_TARGET", "DESIMODEL", "DESI_SURVEYOPS"]:
+    for key in [
+            "DESI_ROOT", "DESI_TARGET", "DESIMODEL", "DESI_SURVEYOPS",
+            "SKYBRICKS_DIR"
+            ]:
         if os.getenv(key) is None:
             log.error(
                 "{:.1f}s\tsettings\tenvironment variable {} not defined; exiting".format(
                     time() - start, key
                 )
             )
-            sys.exit()
+            sys.exit(1)
         else:
             log.info(
                 "{:.1f}s\tsettings\t{}={}".format(time() - start, key, os.getenv(key))
@@ -2064,7 +2067,7 @@ if __name__ == "__main__":
         "--sky_per_slitblock",
         help="Required number of sky targets per fiber slitblock",
         type=int,
-        default=0,
+        default=1,
         required=False,
     )
     parser.add_argument(
