@@ -260,7 +260,6 @@ void fba::TargetTree::near(double ra_deg, double dec_deg, double radius_rad,
     return;
 }
 
-
 fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
                                         Tiles::pshr tiles,
                                         TargetTree::pshr tree) {
@@ -370,6 +369,199 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
                                      logmsg.str().c_str());
                 }
             }
+            KDtree <KdTreePoint> nearby_tree(nearby_tree_points, 2);
+
+            size_t locs_with_targets = 0;
+
+            double loc_pos[2];
+
+            for (size_t j = 0; j < nloc; ++j) {
+                thread_data[tid][loc[j]].resize(0);
+                loc_pos[0] = loc_center_x[j];
+                loc_pos[1] = loc_center_y[j];
+
+                // Lookup targets near this location in focalplane
+                // coordinates.
+                nearby_loc = nearby_tree.near(loc_pos, 0.0, loc_patrol[j]);
+
+                if (nearby_loc.size() == 0) {
+                    // No targets for this location
+                    continue;
+                }
+
+                // The kdtree gets us the targets that are close to our
+                // region of interest.  Now go through these targets and
+                // check whether the positioner can move to each one.
+                // We DO NOT sort targets by priority, since the total priority will
+                // change as observations are made.  Instead, this sorting is done
+                // for each tile during assignment.
+
+                for (auto const & tnear : nearby_loc) {
+                    auto & obj = pobjs->data[tnear];
+                    auto obj_xy = phw->radec2xy(
+                        tra, tdec, ttheta, obj.ra, obj.dec, false
+                    );
+                    bool fail = phw->position_xy_bad(loc[j], obj_xy);
+                    if (fail) {
+                        if (logger.extra_debug()) {
+                            logmsg.str("");
+                            logmsg << std::setprecision(2) << std::fixed;
+                            logmsg << "targets avail:  tile " << tid
+                                << ", loc " << loc[j] << ", kdtree target "
+                                << obj.id << " not physically reachable by positioner";
+                            logger.debug_tfg(tid, loc[j], obj.id,
+                                             logmsg.str().c_str());
+                        }
+                    } else {
+                        thread_data[tid][loc[j]].push_back(tnear);
+                    }
+                }
+
+                if (thread_data[tid][loc[j]].size() > 0) {
+                    locs_with_targets++;
+                }
+            }
+        }
+
+        // Now reduce across threads.
+        #pragma omp critical
+        {
+            for (auto const & it : thread_data) {
+                int32_t ttile = it.first;
+
+                if (data.count(ttile) > 0) {
+                    throw std::runtime_error("Available target data already exists for tile");
+                }
+
+                data[ttile].clear();
+
+                auto const & fmap = it.second;
+
+                for (size_t f = 0; f < nloc; ++f) {
+                    int32_t lid = loc[f];
+                    if (fmap.count(lid) == 0) {
+                        // This location had no targets.
+                        continue;
+                    }
+                    data[ttile][lid] = fmap.at(lid);
+                }
+            }
+            thread_data.clear();
+        }
+    }
+
+    for (size_t i = 0; i < ntile; ++i) {
+        int32_t tid = ptiles->id[i];
+        if (data.count(tid) == 0) {
+            continue;
+        }
+        size_t total_avail = 0;
+        for (size_t j = 0; j < nloc; ++j) {
+            if (data.at(tid).count(loc[j]) > 0) {
+                total_avail += data.at(tid).at(loc[j]).size();
+            }
+        }
+        std::ostringstream msg;
+        msg.str("");
+        msg << "targets avail:  tile " << tid
+            << ", " << total_avail << " total available targets";
+        logger.debug(msg.str().c_str());
+    }
+
+    tm.stop();
+    tm.report("Computing targets available to all tile / locations");
+}
+
+fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
+                                        Tiles::pshr tiles,
+                                        std::map<int64_t, std::vector<int64_t> > tile_targetids,
+                                        std::map<int64_t, std::vector<double> > tile_x,
+                                        std::map<int64_t, std::vector<double> > tile_y) {
+    Timer tm;
+    tm.start();
+
+    fba::Logger & logger = fba::Logger::get();
+
+    data.clear();
+
+    tiles_ = tiles;
+    hw_ = hw;
+
+    size_t ntile = tiles_->id.size();
+    size_t nloc = hw_->nloc;
+
+    // patrol buffer
+    double patrol_buffer = hw_->patrol_buffer_mm;
+
+    std::vector <int32_t> loc(nloc);
+    std::vector <double> loc_center_x(nloc);
+    std::vector <double> loc_center_y(nloc);
+    std::vector <double> loc_patrol(nloc);
+
+    for (size_t j = 0; j < nloc; ++j) {
+        loc[j] = hw_->locations[j];
+        loc_center_x[j] = hw_->loc_pos_curved_mm[loc[j]].first;
+        loc_center_y[j] = hw_->loc_pos_curved_mm[loc[j]].second;
+        loc_patrol[j] = hw_->loc_theta_arm[loc[j]] + hw_->loc_phi_arm[loc[j]]
+            - patrol_buffer;
+    }
+
+    // shared_ptr reference counting is not threadsafe.  Here we extract
+    // a copy of the "raw" pointers needed inside the parallel region.
+
+    Targets * pobjs = objs.get();
+    Tiles * ptiles = tiles.get();
+    Hardware * phw = hw_.get();
+
+    #pragma omp parallel default(shared)
+    {
+        // We re-use these thread-local vectors to reduce the number
+        // of times we are realloc'ing memory for every fiber.
+        std::vector <int64_t> nearby;
+        std::vector <KdTreePoint> nearby_tree_points;
+        std::vector <int64_t> nearby_loc;
+        std::ostringstream logmsg;
+
+        // Thread local properties.
+        int32_t tid;
+        double tra;
+        double tdec;
+        double ttheta;
+        int32_t tobs;
+
+        // Thread local data for available targets- reduced at the end.
+        std::map <int32_t, std::map <int32_t,
+                  std::vector <int64_t> > > thread_data;
+
+        #pragma omp for schedule(dynamic)
+        for (size_t i = 0; i < ntile; ++i) {
+            tid = ptiles->id[i];
+            tra = ptiles->ra[i];
+            tdec = ptiles->dec[i];
+            tobs = ptiles->obscond[i];
+            ttheta = ptiles->obstheta[i];
+            thread_data[tid].clear();
+
+            if (tile_targetids[tid].size() == 0) {
+                // No targets for this tile.
+                continue;
+            }
+
+            assert(tile_targetids[tid].size() == tile_x[tid].size());
+            assert(tile_targetids[tid].size() == tile_y[tid].size());
+
+            nearby_tree_points.clear();
+            KdTreePoint cur;
+            auto vx = tile_x[tid].begin();
+            auto vy = tile_y[tid].begin();
+            for (auto vid = tile_targetids[tid].begin();
+                 vid != tile_targetids[tid].end(); vid++, vx++, vy++) {
+                cur.id = *vid;
+                cur.pos[0] = *vx;
+                cur.pos[1] = *vy;
+                nearby_tree_points.push_back(cur);
+            }
+
             KDtree <KdTreePoint> nearby_tree(nearby_tree_points, 2);
 
             size_t locs_with_targets = 0;
