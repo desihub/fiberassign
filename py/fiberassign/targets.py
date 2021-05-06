@@ -937,3 +937,34 @@ def load_target_file(tgs, tfile, survey=None, typeforce=None, typecol=None,
     tm.report("Read target file {}".format(tfile))
 
     return survey
+
+def targets_in_tiles(hw, tgs, tiles):
+    '''
+    Returns tile_targetids, tile_x, tile_y
+    '''
+    tile_targetids = {}
+    tile_x = {}
+    tile_y = {}
+
+    tree = TargetTree(tgs)
+
+    for tile_id,tile_ra,tile_dec,tile_obscond,tile_ha in zip(
+            tiles.id, tiles.ra, tiles.dec, tiles.obscond, tiles.obshourang):
+
+        tile_targetids[tile_id] = []
+        tile_x[tile_id] = []
+        tile_y[tile_id] = []
+
+        print('Tile', tile_id, 'at RA,Dec', tile_ra, tile_dec)
+
+        tile_rad = np.deg2rad(hw.focalplane_radius_deg)
+        #tids = tree.near(tile_ra, tile_dec, tile_rad)
+        tids,ras,decs,obsconds = tree.near_data(tgs, tile_ra, tile_dec, tile_rad)
+        print('Found', len(tids), 'targets near tile')
+
+        print('tile ids:', tids[:10])
+        print('tile ras:', ras[:10])
+        print('tile decs:', decs[:10])
+        print('tile obsconds:', obsconds[:10])
+
+    return tile_targetids, tile_x, tile_y

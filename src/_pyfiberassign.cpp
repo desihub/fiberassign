@@ -1417,6 +1417,38 @@ PYBIND11_MODULE(_internal, m) {
             Returns:
                 (array): An array of target IDs.
 
+        )")
+        .def("near_data", [](fba::TargetTree & self, fba::Targets::pshr targets,
+                double ra_deg,
+                double dec_deg, double radius_rad) {
+                std::vector <int64_t> result;
+                std::vector <double> result_ra;
+                std::vector <double> result_dec;
+                std::vector <int32_t> result_obscond;
+                self.near(ra_deg, dec_deg, radius_rad, result);
+                for (int64_t targetid : result) {
+                    const fba::Target & t = targets->data[targetid];
+                    result_ra.push_back(t.ra);
+                    result_dec.push_back(t.dec);
+                    result_obscond.push_back(t.obscond);
+                }
+                return std::make_tuple(result, result_ra, result_dec, result_obscond);;
+             }, py::return_value_policy::take_ownership, py::arg("targets"),
+            py::arg("ra"),
+            py::arg("dec"), py::arg("radius"), R"(
+            Get target IDs and data within a radius of a given point.
+
+            Returns an array of target IDs located within the specified
+            radius of the given RA/DEC.
+
+            Args:
+                ra (float): The RA of the sky location in degrees.
+                dec (float): The DEC of the sky location in degrees.
+                radius (float): The radius in **radians**.
+
+            Returns:
+                (array): An array of target IDs, RAs, Decs, and obsconds.
+
         )");
 
     py::class_ <fba::TargetsAvailable, fba::TargetsAvailable::pshr > (m,
