@@ -942,7 +942,7 @@ def targets_in_tiles(hw, tgs, tiles):
     '''
     Returns tile_targetids, tile_x, tile_y
     '''
-    from desimeter.transform.tan2fp import tan2fp
+    from desimeter.transform.tan2fp import tan2fp, fp2tan
     from desimeter.transform.radec2tan import radec2tan
 
     from astropy import units as u
@@ -952,8 +952,10 @@ def targets_in_tiles(hw, tgs, tiles):
     observer = EarthLocation.of_site('kpno')
     #observer = EarthLocation(lat=41.3*u.deg, lon=-74*u.deg, height=390*u.m)
 
+    ### FIXME! hard-coded mjd
     # precession
     mjd = 59706.
+
     obstime = Time(mjd, format='mjd')
     fk5_frame = FK5(equinox=obstime)
 
@@ -983,7 +985,7 @@ def targets_in_tiles(hw, tgs, tiles):
                               dec=tile_dec*u.degree, frame='icrs')
         tile_fk5 = tile_coord.transform_to(fk5_frame)
 
-        # Assume observed at zenith!
+        # Assume observed as it transits the meridian!
         ha = 0.0
         tile_zd = np.abs(tile_fk5.dec.value - observer.lat.deg)
         lst = tile_ra
@@ -1003,8 +1005,15 @@ def targets_in_tiles(hw, tgs, tiles):
         adc2 += 360 * (adc2 < 0)
         adc2 -= 360 * (adc2 > 360)
 
+        # Compute the transformation of the tile center RA,Dec first
+        xtan_tile,ytan_tile = fp2tan(np.array([0]), np.array([0]), adc1, adc2)
+        xtan_tile = xtan_tile[0]
+        ytan_tile = ytan_tile[0]
+
         xtan, ytan = radec2tan(ras, decs, tile_ra, tile_dec, mjd,
                                lst, hexrot)
+        xtan += xtan_tile
+        ytan += ytan_tile
 
         fx,fy = tan2fp(xtan, ytan, adc1, adc2)
 
@@ -1053,6 +1062,7 @@ def targets_in_tiles(hw, tgs, tiles):
         I = np.random.permutation(len(x))[:2000]
         pa = dict(alpha=0.05)
         plt.clf()
+        plt.subplots_adjust(top=0.95, hspace=0.25)
         plt.subplot(2,2,1)
         plt.plot(x[I], fx[I]-x[I], 'b.', **pa)
         plt.xlabel('x (mm)')
@@ -1075,7 +1085,8 @@ def targets_in_tiles(hw, tgs, tiles):
         I = np.random.permutation(len(x))[:1000]
         plt.clf()
         Q = plt.quiver(x[I], y[I], fx[I]-x[I], fy[I]-y[I], angles='xy', pivot='middle')
-        qk = plt.quiverkey(Q, 0.9, 0.9, 1, '1 mm', labelpos='E', coordinates='axes')
+        #plt.quiverkey(Q, 0.9, 0.9, 1, '1 mm', labelpos='E', coordinates='axes')
+        plt.quiverkey(Q, 0.9, 0.9, 0.1, '100 microns', labelpos='E', coordinates='axes')
         plt.xlabel('X (mm)')
         plt.ylabel('Y (mm)')
         plt.axis('equal')
