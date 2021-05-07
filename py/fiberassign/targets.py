@@ -942,6 +942,21 @@ def targets_in_tiles(hw, tgs, tiles):
     '''
     Returns tile_targetids, tile_x, tile_y
     '''
+    from desimeter.transform.tan2fp import tan2fp
+    from desimeter.transform.radec2tan import radec2tan
+
+    from astropy import units as u
+    from astropy.coordinates import EarthLocation, SkyCoord, FK5, AltAz
+    from astropy.time import Time
+
+    observer = EarthLocation.of_site('kpno')
+    #observer = EarthLocation(lat=41.3*u.deg, lon=-74*u.deg, height=390*u.m)
+
+    # precession
+    mjd = 59706.
+    obstime = Time(mjd, format='mjd')
+    fk5_frame = FK5(equinox=obstime)
+
     tile_targetids = {}
     tile_x = {}
     tile_y = {}
@@ -951,19 +966,152 @@ def targets_in_tiles(hw, tgs, tiles):
     for tile_id,tile_ra,tile_dec,tile_obscond,tile_ha in zip(
             tiles.id, tiles.ra, tiles.dec, tiles.obscond, tiles.obshourang):
 
-        tile_targetids[tile_id] = []
-        tile_x[tile_id] = []
-        tile_y[tile_id] = []
-
         print('Tile', tile_id, 'at RA,Dec', tile_ra, tile_dec, 'and obscond:', tile_obscond)
 
         tile_rad = np.deg2rad(hw.focalplane_radius_deg)
         #tids = tree.near(tile_ra, tile_dec, tile_rad)
         tids,ras,decs = tree.near_data(tgs, tile_ra, tile_dec, tile_rad, tile_obscond)
         print('Found', len(tids), 'targets near tile and matching obscond')
-
+        tids = np.array(tids)
+        ras  = np.array(ras)
+        decs = np.array(decs)
         print('target ids:', tids[:10])
         print('target ras:', ras[:10])
         print('target decs:', decs[:10])
 
+        tile_coord = SkyCoord(ra=tile_ra * u.degree,
+                              dec=tile_dec*u.degree, frame='icrs')
+        tile_fk5 = tile_coord.transform_to(fk5_frame)
+
+        # Assume observed at zenith!
+        ha = 0.0
+        tile_zd = np.abs(tile_fk5.dec.value - observer.lat.deg)
+        lst = tile_ra
+
+        ### FIXME!
+        hexrot = 0.
+
+        delta_adc = zd2deltaadc(tile_zd)
+
+        pa = parallactic_angle(ha, tile_dec, observer.lat.deg)
+        # ADC angles
+        adc1 = 360. - pa + delta_adc/2.
+        adc2 = 360. - pa - delta_adc/2.
+        # Wrap to [0, 360]
+        adc1 += 360 * (adc1 < 0)
+        adc1 -= 360 * (adc1 > 360)
+        adc2 += 360 * (adc2 < 0)
+        adc2 -= 360 * (adc2 > 360)
+
+        xtan, ytan = radec2tan(ras, decs, tile_ra, tile_dec, mjd,
+                               lst, hexrot)
+
+        fx,fy = tan2fp(xtan, ytan, adc1, adc2)
+
+        from desimeter.transform.xy2qs import xy2uv, uv2xy
+
+        u,v = xy2uv(fx, fy)
+
+        xys = np.array(hw.radec2xy_multi(tile_ra, tile_dec, hexrot,
+                                         ras, decs, False, 0))
+        x,y = xys[:,0], xys[:,1]
+
+        from astrometry.util.fits import fits_table
+        T = fits_table()
+        T.target_id = tids
+        T.target_ra = ras
+        T.target_dec = decs
+        T.fa_x = x
+        T.fa_y = y
+        T.dm_x = fx
+        T.dm_y = fy
+        T.dm_u = u
+        T.dm_v = v
+        T.writeto('fa-dm-coords.fits')
+
+        ####
+        fx,fy = u,v
+
+        import pylab as plt
+        plt.clf()
+        plt.plot(x, y, 'b.')
+        plt.axis('equal')
+        plt.savefig('xy-orig.png')
+        plt.clf()
+        plt.plot(fx, fy, 'r.')
+        plt.axis('equal')
+        plt.savefig('xy-new.png')
+        plt.clf()
+        plt.plot(x, fx, 'b.')
+        plt.axis('equal')
+        plt.savefig('x-vals.png')
+        plt.clf()
+        plt.plot(y, fy, 'b.')
+        plt.axis('equal')
+        plt.savefig('y-vals.png')
+
+        I = np.random.permutation(len(x))[:2000]
+        pa = dict(alpha=0.05)
+        plt.clf()
+        plt.subplot(2,2,1)
+        plt.plot(x[I], fx[I]-x[I], 'b.', **pa)
+        plt.xlabel('x (mm)')
+        plt.ylabel('dx (mm)')
+        plt.subplot(2,2,2)
+        plt.plot(x[I], fy[I]-y[I], 'b.', **pa)
+        plt.xlabel('x (mm)')
+        plt.ylabel('dy (mm)')
+        plt.subplot(2,2,3)
+        plt.plot(y[I], fx[I]-x[I], 'b.', **pa)
+        plt.xlabel('y (mm)')
+        plt.ylabel('dx (mm)')
+        plt.subplot(2,2,4)
+        plt.plot(y[I], fy[I]-y[I], 'b.', **pa)
+        plt.xlabel('y (mm)')
+        plt.ylabel('dy (mm)')
+        plt.suptitle('desimeter - fiberassign FP coordinates')
+        plt.savefig('xy-dxy.png')
+
+        I = np.random.permutation(len(x))[:1000]
+        plt.clf()
+        Q = plt.quiver(x[I], y[I], fx[I]-x[I], fy[I]-y[I], angles='xy', pivot='middle')
+        qk = plt.quiverkey(Q, 0.9, 0.9, 1, '1 mm', labelpos='E', coordinates='axes')
+        plt.xlabel('X (mm)')
+        plt.ylabel('Y (mm)')
+        plt.axis('equal')
+        plt.title('desimeter - fiberassign FP coordinates')
+        plt.savefig('quiver.png')
+
+        tile_targetids[tile_id] = tids
+        tile_x[tile_id] = fx
+        tile_y[tile_id] = fy
+
     return tile_targetids, tile_x, tile_y
+
+def zd2deltaadc(zd):
+    # This comes from the PlateMaker code -- 
+    #  https://desi.lbl.gov/trac/browser/code/online/DervishTools/trunk/desi/etc/desi/PRISM.par
+    #  https://desi.lbl.gov/trac/browser/code/online/DervishTools/trunk/desi/etc/common.tcl#L839
+    t = np.tan(np.deg2rad(zd))
+    A = -0.0183 + -0.3795*t + -0.1939*t**2
+    A = np.rad2deg(A)
+    return 2*A
+
+# This comes straight from PlateMaker: python/PlateMaker/astron.py
+# And it gives a value that = -1 * the DESI 'PARALLAC' header card.
+def parallactic_angle(ha, decl, latitude):
+    """Calculate the parallactic angle.
+
+    Args:
+        ha: Hour Angle (decimal degrees)
+        decl: declination (decimal degrees)
+        latitude: (decimal degrees)
+    Returns:
+        the parallactic angle in decimal degrees
+    """
+    rha = np.deg2rad(ha)
+    rdecl = np.deg2rad(decl)
+    rphi = np.deg2rad(latitude)
+    rpsi = -1 * np.arctan2(np.sin(rha) * np.cos(rphi),
+                           np.cos(rdecl) * np.sin(rphi) - np.sin(rdecl) * np.cos(rphi) * np.cos(rha))
+    return np.rad2deg(rpsi)
