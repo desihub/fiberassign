@@ -41,12 +41,10 @@ def parse_plot(optlist=None):
                         help="Comma-separated list of petals to plot "
                         "(default is all petals)")
 
-    parser.add_argument("--real_shapes", required=False, default=False,
+    parser.add_argument("--simple", required=False, default=False,
                         action="store_true",
-                        help="Plot the actual positioner shapes.  This looks"
-                        " better but takes much longer and makes bigger files."
-                        "  Recommended only for plotting limited "
-                        "tiles / petals.")
+                        help="Plot simple lines for the positioner arms and no "
+                        "exclusion zones.  This is less informative, but faster.")
 
     parser.add_argument("--serial", required=False, default=False,
                         action="store_true",
@@ -99,7 +97,7 @@ def run_plot(args):
     plot_tiles(
         args.files,
         petals=petals,
-        real_shapes=args.real_shapes,
+        real_shapes=(not args.simple),
         serial=args.serial
     )
     return

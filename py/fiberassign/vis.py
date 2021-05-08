@@ -66,7 +66,7 @@ def plot_target_type_color(tgtype):
     elif (tp & TARGET_TYPE_SKY) != 0:
         color = "blue"
     elif (tp & TARGET_TYPE_SUPPSKY) != 0:
-        color = "cyan"
+        color = "blue"
     elif (tp & TARGET_TYPE_STANDARD) != 0:
         color = "gold"
         if (tp & TARGET_TYPE_SCIENCE) != 0:
@@ -248,7 +248,8 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
         theta = None
         phi = None
         center = center_mm[lid]
-        tgid = tile_assigned[lid]
+        tgid = tile_assigned[lid][0]
+        is_stuck_sky = tile_assigned[lid][1]
         patrol_rad = theta_arm[lid] + phi_arm[lid]
         failed = False
         is_assigned = (tgid >= 0)
@@ -279,21 +280,25 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
                 # location.
                 theta = theta_pos[lid] + theta_offset[lid]
                 phi   = phi_pos  [lid] + phi_offset  [lid]
-                print("loc {}, state {} is stuck / broken, using {} / {}".format(
+                msg = "Device location {}, state {} is stuck / broken, plotting fixed theta = {}, phi = {}".format(
                     lid, state[lid], theta, phi
-                ), flush=True)
+                )
+                log.debug(msg)
                 failed = hw.loc_position_thetaphi(
                     lid, theta, phi, shptheta, shpphi, True
                 )
+                if is_stuck_sky:
+                    color = "cyan"
             else:
                 # Plot the positioner in its home (parked) position
-                theta,phi = get_parked_thetaphi(theta_offset[lid],
+                theta, phi = get_parked_thetaphi(theta_offset[lid],
                                                 theta_min[lid], theta_max[lid],
                                                 phi_offset[lid],
                                                 phi_min[lid], phi_max[lid])
-                print("loc {}, state {} is unassigned, using {} / {}".format(
+                msg = "Device location {}, state {} is unassigned, plotting parked theta = {}, phi = {}".format(
                     lid, state[lid], theta, phi
-                ), flush=True)
+                )
+                log.debug(msg)
                 failed = hw.loc_position_thetaphi(lid, theta, phi, shptheta, shpphi, True)
             if failed:
                 msg = "Positioner at location {} cannot move to its stuck or home position.  This should never happen!".format(lid)
@@ -383,14 +388,17 @@ def plot_assignment_tile_file(petals, real_shapes, params):
 
     plot_available(ax, targetprops, avtg, linewidth=0.1)
 
-    # Assigned targets for our selected fibers
-    tassign = {x["LOCATION"]: x["TARGETID"] for x in fiber_data
-               if (x["LOCATION"] in locs)}
+    # Assigned targets for our selected fibers.  We handle the special case of fibers
+    # being used as sky but not formally assigned to a target.
+    tassign = {
+        x["LOCATION"]: (x["TARGETID"], (x["FA_TYPE"] & TARGET_TYPE_SKY))
+        for x in fiber_data if (x["LOCATION"] in locs)
+    }
 
     log.debug("  tile {} plotting {} assigned fibers"
               .format(tile_id, len(tassign)))
 
-    fassign = {f: tassign[f] if f in tassign else -1 for f in locs}
+    fassign = {f: tassign[f] if f in tassign else (-1, False) for f in locs}
 
     plot_assignment(
         ax,
