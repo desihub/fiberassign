@@ -511,6 +511,7 @@ def main():
             mtl=False,
             log=log,
             step="dosky",
+            start=start,
         )
         n, tmpfn = write_skies(
             tmpoutdir,
@@ -518,7 +519,7 @@ def main():
             indir=mydirs["sky"],
             indir2=mydirs["skysupp"],
         )
-        _ = mv_write_targets_out(tmpfn, tmpoutdir, mytmpouts["sky"], log=log)
+        _ = mv_write_targets_out(tmpfn, tmpoutdir, mytmpouts["sky"], log=log, step="dosky", start=start, )
         log.info("{:.1f}s\tdosky\t{} written".format(time() - start, mytmpouts["sky"]))
 
     # AR gfa
@@ -534,7 +535,7 @@ def main():
         # AR gfa: read targets
         tiles = fits.open(mytmpouts["tiles"])[1].data
         d = custom_read_targets_in_tiles(
-            [mydirs["gfa"]], tiles, quick=True, mtl=False, log=log, step="dogfa"
+            [mydirs["gfa"]], tiles, quick=True, mtl=False, log=log, step="dogfa", start=start,
         )
         log.info(
             "{:.1f}s\tdogfa\tkeeping {} targets to {}".format(
@@ -542,10 +543,10 @@ def main():
             )
         )
         # AR PMRA, PMDEC: convert NaN to zeros
-        d = force_finite_pm(d, log=log, step="dogfa")
+        d = force_finite_pm(d, log=log, step="dogfa", start=start, )
         # AR gfa: update RA, DEC, REF_EPOCH using proper motion
         if args.pmcorr == "y":
-            d = update_nowradec(d, args.pmtime_utc_str)
+            d = update_nowradec(d, args.pmtime_utc_str, log=log, step="dogfa", start=start, )
         else:
             log.info(
                 "{:.1f}s\tdogfa\t*not* applying proper-motion correction".format(
@@ -553,11 +554,11 @@ def main():
                 )
             )
             # AR single REF_EPOCH needed
-            d = force_nonzero_refepoch(d, log=log, step="dogfa")
+            d = force_nonzero_refepoch(d, log=log, step="dogfa", start=start, )
 
         # AR gfa: write fits
         n, tmpfn = write_targets(tmpoutdir, d, indir=mydirs["gfa"], survey=args.survey)
-        _ = mv_write_targets_out(tmpfn, tmpoutdir, mytmpouts["gfa"], log=log)
+        _ = mv_write_targets_out(tmpfn, tmpoutdir, mytmpouts["gfa"], log=log, step="dogfa", start=start, )
         # AR gfa: update header
         fd = fitsio.FITS(mytmpouts["gfa"], "rw")
         fd["TARGETS"].write_key("COMMENT", "RA,DEC updated with PM for AEN objects")
@@ -592,6 +593,7 @@ def main():
             isodate=args.mtltime,
             log=log,
             step="domtl",
+            start=start,
         )
         # AR mtl: removing by hand BACKUP_BRIGHT for sv3/BACKUP
         if (args.survey == "sv3") & (args.program == "BACKUP"):
@@ -616,10 +618,10 @@ def main():
             d, mydirs["targ"], columns=columns, header=False, strictcols=False, quick=True
         )
         # AR PMRA, PMDEC: convert NaN to zeros
-        d = force_finite_pm(d, log=log, step="domtl")
+        d = force_finite_pm(d, log=log, step="domtl", start=start)
         # AR mtl: update RA, DEC, REF_EPOCH using proper motion
         if args.pmcorr == "y":
-            d = update_nowradec(d, args.pmtime_utc_str)
+            d = update_nowradec(d, args.pmtime_utc_str, log=log, step="domtl", start=start, )
         else:
             log.info(
                 "{:.1f}s\tdomtl\t*not* applying proper-motion correction".format(
@@ -627,12 +629,12 @@ def main():
                 )
             )
             # AR single REF_EPOCH needed
-            d = force_nonzero_refepoch(d, log=log, step="domtl")
+            d = force_nonzero_refepoch(d, log=log, step="domtl", start=start, )
         # AR mtl: write fits
         n, tmpfn = write_targets(
             tmpoutdir, d, indir=mydirs["mtl"], indir2=mydirs["targ"], survey=args.survey
         )
-        _ = mv_write_targets_out(tmpfn, tmpoutdir, mytmpouts["targ"], log=log)
+        _ = mv_write_targets_out(tmpfn, tmpoutdir, mytmpouts["targ"], log=log, step="domtl", start=start,)
         # AR mtl: update header
         fd = fitsio.FITS(mytmpouts["targ"], "rw")
         if args.pmcorr == "y":
@@ -671,6 +673,7 @@ def main():
             isodate=args.mtltime,
             log=log,
             step="doscnd",
+            start=start,
         )
         # AR scnd: add all desitarget columns
         # AR scnd: commenting out for now has issue with inflate_ledger() and secondary
@@ -678,10 +681,10 @@ def main():
         #    d, mydirs["scnd"], columns=None, header=False, strictcols=False, quick=False
         #)
         # AR PMRA, PMDEC: convert NaN to zeros
-        d = force_finite_pm(d, log=log, step="doscnd")
+        d = force_finite_pm(d, log=log, step="doscnd", start=start, )
         # AR scnd: update RA, DEC, REF_EPOCH using proper motion
         if args.pmcorr == "y":
-            d = update_nowradec(d, args.pmtime_utc_str)
+            d = update_nowradec(d, args.pmtime_utc_str, log=log, step="doscnd", start=start, )
         else:
             log.info(
                 "{:.1f}s\tdoscnd\t*not* applying proper-motion correction".format(
@@ -689,12 +692,12 @@ def main():
                 )
             )
             # AR single REF_EPOCH needed
-            d = force_nonzero_refepoch(d, log=log, step="doscnd")
+            d = force_nonzero_refepoch(d, log=log, step="doscnd", start=start, )
         # AR scnd: write fits
         n, tmpfn = write_targets(
             tmpoutdir, d, indir=mydirs["scndmtl"], indir2=mydirs["scnd"], survey=args.survey
         )
-        _ = mv_write_targets_out(tmpfn, tmpoutdir, mytmpouts["scnd"], log=log)
+        _ = mv_write_targets_out(tmpfn, tmpoutdir, mytmpouts["scnd"], log=log, step="doscnd", start=start, )
         # AR scnd: update header
         fd = fitsio.FITS(mytmpouts["scnd"], "rw")
         if args.pmcorr == "y":
@@ -744,10 +747,10 @@ def main():
         if keep.sum() > 0:
             d = d[keep]
             # AR PMRA, PMDEC: convert NaN to zeros
-            d = force_finite_pm(d, log=log, step="dotoo")
+            d = force_finite_pm(d, log=log, step="dotoo", start=start, )
             # AR too: update RA, DEC, REF_EPOCH using proper motion
             if args.pmcorr == "y":
-                d = update_nowradec(d, args.pmtime_utc_str)
+                d = update_nowradec(d, args.pmtime_utc_str, log=log, step="dotoo", start=start, )
             else:
                 log.info(
                     "{:.1f}s\tdotoo\t*not* applying proper-motion correction".format(
@@ -758,12 +761,12 @@ def main():
                 # AR TBD currently all targets have PMRA=PMDEC=0,
                 # AR TBD so it s fine to just change all REF_EPOCH
                 d["REF_EPOCH"] = np.zeros(len(d))
-                d = force_nonzero_refepoch(d, log=log, step="dotoo")
+                d = force_nonzero_refepoch(d, log=log, step="dotoo", start=start, )
             # AR too: write fits
             n, tmpfn = write_targets(
                 tmpoutdir, d.as_array(), indir=mydirs["too"], survey=args.survey
             )
-            _ = mv_write_targets_out(tmpfn, tmpoutdir, mytmpouts["too"], log=log)
+            _ = mv_write_targets_out(tmpfn, tmpoutdir, mytmpouts["too"], log=log, step="dotoo", start=start, )
             # AR too: update header
             fd = fitsio.FITS(mytmpouts["too"], "rw")
             if args.pmcorr == "y":
