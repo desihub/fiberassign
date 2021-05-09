@@ -511,3 +511,56 @@ def assert_arg_dates(
                     )
                 )
                 sys.exit(1)
+
+
+def assert_svn_tileid(
+    tileid, forcetileid="n", log=None, step="settings", start=None,
+):
+    """
+    Asserts if TILEID already exists in the SVN tile folder
+    
+    Args:
+        tileid: TILEID to check (int)
+        forcetileid (optional, defaults to "n"): "y" or "n";
+                if "n", will trigger a warning + an error
+                if "y", e will trigger a warning only
+        log (optional): Logger object
+        step (optional): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start (optional): start time for log (in seconds; output of time.time()        
+       
+    """
+    if log is None:
+        log = Logger.get()
+    if start is None:
+        start = time()
+
+    svn_trunk = os.path.join(os.getenv("DESI_TARGET"), "fiberassign/tiles/trunk")
+    # AR needs a wildcard to verify .fits and fits.gz files
+    # AR as the gzipping was not done before ~SV1
+    svn_fn = os.path.join(
+        svn_trunk, "{:06d}".format(tileid)[:3], "fiberassign-{:06d}.fits".format(tileid)
+    )
+    if os.path.isfile(svn_fn) | os.path.isfile("{}.gz".format(svn_fn)):
+        log.warning(
+            "{:.1f}s\t{}\tTILEID={} already exists in SVN folder {}".format(
+                time() - start, step, tileid, svn_trunk
+            )
+        )
+        if forcetileid == "y":
+            log.warning(
+                "{:.1f}s\t{}\tproceeding as forcetileid == y".format(
+                    time() - start, step
+                )
+            )
+        else:
+            log.error(
+                "{:.1f}s\tsettings\texiting as forcetileid == n".format(time() - start)
+            )
+            sys.exit(1)
+    else:
+        log.info(
+            "{:.1f}s\t{}\tTILEID={} does not exist in SVN folder {}; proceeding".format(
+                time() - start, step, tileid, svn_trunk
+            )
+        )
