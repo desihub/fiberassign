@@ -30,6 +30,7 @@ import tempfile
 import shutil
 from fiberassign.utils import Logger
 
+
 def assert_isoformat_utc(time_str):
     """
     Asserts if a date formats as "YYYY-MM-DDThh:mm:ss+00:00".
@@ -138,12 +139,10 @@ def mv_write_targets_out(infn, targdir, outfn, log=None, step="", start=None):
     if log is None:
         log = Logger.get()
     if start is None:
-        start = time()                                                                                                                                                                            
+        start = time()
     # AR renaming
     _ = shutil.move(infn, outfn)
-    log.info(
-        "{:.1f}s\t{}\trenaming {} to {}".format(time() - start, step, infn, outfn)
-    )
+    log.info("{:.1f}s\t{}\trenaming {} to {}".format(time() - start, step, infn, outfn))
     # AR removing folders
     if targdir[-1] != "/":
         targdir = "{}/".format(targdir)
@@ -246,7 +245,9 @@ def get_nowradec(ra, dec, pmra, pmdec, parallax, ref_year, pmtime_utc_str, scnd=
     return ra, dec
 
 
-def force_finite_pm(d, pmra_key="PMRA", pmdec_key="PMDEC", log=None, step="", start=None):
+def force_finite_pm(
+    d, pmra_key="PMRA", pmdec_key="PMDEC", log=None, step="", start=None
+):
     """
     Replaces NaN PMRA, PMDEC by 0    
     
@@ -266,7 +267,7 @@ def force_finite_pm(d, pmra_key="PMRA", pmdec_key="PMDEC", log=None, step="", st
     if log is None:
         log = Logger.get()
     if start is None:
-        start = time()                                                                                                                                                                            
+        start = time()
 
     for key in [pmra_key, pmdec_key]:
         keep = ~np.isfinite(d[key])
@@ -313,7 +314,7 @@ def force_nonzero_refepoch(
     if log is None:
         log = Logger.get()
     if start is None:
-        start = time()                                                                                                                                                                            
+        start = time()
     keep = d[ref_epoch_key] == 0
     n = (d[pmra_key][keep] != 0) | (d[pmra_key][keep] != 0)
     if n > 0:
@@ -384,7 +385,7 @@ def update_nowradec(
     if log is None:
         log = Logger.get()
     if start is None:
-        start = time()                                                                                                                                                                            
+        start = time()
     # AR
     pmtime_utc = datetime.strptime(pmtime_utc_str, "%Y-%m-%dT%H:%M:%S%z")
     pmtime_utc_jyear = Time(pmtime_utc).jyear
@@ -432,4 +433,3 @@ def update_nowradec(
         )
     )
     return d
-
