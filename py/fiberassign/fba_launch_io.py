@@ -467,12 +467,6 @@ def assert_env_vars(
                 )
             )
             sys.exit(1)
-        else:
-            log.info(
-                "{:.1f}s\t{}\t{}={}".format(
-                    time() - start, step, required_env_var, os.getenv(required_env_var)
-                )
-            )
 
 
 def assert_arg_dates(
@@ -562,6 +556,66 @@ def assert_svn_tileid(
         log.info(
             "{:.1f}s\t{}\tTILEID={} does not exist in SVN folder {}; proceeding".format(
                 time() - start, step, tileid, svn_trunk
+            )
+        )
+
+
+def print_config_infos(
+    required_env_vars=[
+        "DESI_ROOT",
+        "DESI_TARGET",
+        "DESIMODEL",
+        "DESI_SURVEYOPS",
+        "SKYBRICKS_DIR",
+    ],
+    log=None,
+    step="settings",
+    start=None,
+):
+    """
+    Print various configuration informations (machine, modules version/path, DESI environment variables).
+    
+    Args:
+        required_env_vars (optional, defaults to ["DESI_ROOT",
+        "DESI_TARGET",
+        "DESIMODEL",
+        "DESI_SURVEYOPS",
+        "SKYBRICKS_DIR",]): list of environment variables required by fba_launch
+        log (optional): Logger object
+        step (optional): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start (optional): start time for log (in seconds; output of time.time()        
+    """
+    if log is None:
+        log = Logger.get()
+    if start is None:
+        start = time()
+
+    # AR machine
+    log.info(
+        "{:.1f}s\t{}\tHOSTNAME={}".format(time() - start, step, os.getenv("HOSTNAME"))
+    )
+
+    # AR fiberassign, desitarget, desimodel code version/path
+    for module, name in zip(
+        [fiberassign, desitarget, desimodel], ["fiberassign", "desitarget", "desimodel"]
+    ):
+        log.info(
+            "{:.1f}s\t{}\trunning with {} code version: {}".format(
+                time() - start, step, name, module.__version__
+            )
+        )
+        log.info(
+            "{:.1f}s\t{}\trunning with {} code path: {}".format(
+                time() - start, step, name, module.__path__
+            )
+        )
+
+    # AR DESI environment variables
+    for required_env_var in required_env_vars:
+        log.info(
+            "{:.1f}s\t{}\t{}={}".format(
+                time() - start, step, required_env_var, os.getenv(required_env_var)
             )
         )
 
