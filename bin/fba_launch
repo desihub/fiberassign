@@ -16,7 +16,7 @@ from desitarget.targets import set_obsconditions
 import desimodel
 from desimodel.footprint import is_point_in_desi
 import fiberassign
-from fiberassign.fba_launch_io import assert_env_vars, assert_svn_tileid, assert_arg_dates, print_config_infos
+from fiberassign.fba_launch_io import assert_env_vars, assert_svn_tileid, assert_arg_dates, print_config_infos, get_desitarget_paths
 from fiberassign.scripts.assign import parse_assign, run_assign_full
 from fiberassign.assign import merge_results, minimal_target_columns
 from fiberassign.utils import Logger
@@ -282,87 +282,18 @@ def main():
             )
         )
 
-    # AR directories
+    # AR desitarget folders/files
     # AR folder architecture is now the same at NERSC/KPNO (https://github.com/desihub/fiberassign/issues/302)
     # AR DESI_ROOT : NERSC: '/global/cfs/cdirs/desi' ; KPNO: '/data/datasystems'
-    desiroot = os.getenv("DESI_ROOT")
-    path_to_svn_tiles = os.path.join(
-        os.getenv("DESI_TARGET"), "fiberassign/tiles/trunk"
-    )
-    # AR dictionary with directories
-    # AR secondary not handled yet
-    mydirs = {}
-    mydirs["sky"] = os.path.join(
-        os.getenv("DESI_TARGET"), "catalogs", args.dr, args.dtver, "skies"
-    )
-    mydirs["skysupp"] = os.path.join(
-        os.getenv("DESI_TARGET"), "catalogs", args.gaiadr, args.dtver, "skies-supp"
-    )
-    mydirs["gfa"] = os.path.join(
-        os.getenv("DESI_TARGET"), "catalogs", args.dr, args.dtver, "gfas"
-    )
-    if args.program == "BACKUP":
-        dtcat = args.gaiadr
-    else:
-        dtcat = args.dr
-    mydirs["targ"] = os.path.join(
-        os.getenv("DESI_TARGET"),
-        "catalogs",
-        dtcat,
+    mydirs = get_desitarget_paths(
         args.dtver,
-        "targets",
         args.survey,
-        "resolve",
-        args.program.lower(),
-    )
-    mydirs["mtl"] = os.path.join(
-        os.getenv("DESI_SURVEYOPS"),
-        "mtl",
-        args.survey,
-        args.program.lower(),
-    )
-    # AR secondary (dark, bright; no secondary for backup)
-    if args.program in ["DARK", "BRIGHT"]:
-        mydirs["scnd"] = os.path.join(
-        os.getenv("DESI_TARGET"),
-        "catalogs",
-        args.dr,
-        args.dtver,
-        "targets",
-        args.survey,
-        "secondary",
-        args.program.lower(),
-        "{}targets-{}-secondary.fits".format(args.survey, args.program.lower())
-    )
-        mydirs["scndmtl"] =  os.path.join(
-            os.getenv("DESI_SURVEYOPS"),
-            "mtl",
-            args.survey,
-            "secondary",
-            args.program.lower(),
-        )
-
-    # AR ToO (same for dark, bright)
-    mydirs["too"] = os.path.join(
-            os.getenv("DESI_SURVEYOPS"),
-            "mtl",
-            args.survey,
-            "ToO",
-            "ToO.ecsv",
-        )
-
-    # AR log
-    for key in list(mydirs.keys()):
-        log.info(
-            "{:.1f}s\tsettings\tdirectory for {}: {}".format(
-                time() - start, key, mydirs[key]
-            )
-        )
-    log.info(
-        "{:.1f}s\tsettings\tdirectory for svn tiles: {}".format(
-            time() - start, path_to_svn_tiles
-        )
-    )
+        args.program,
+        dr=args.dr,
+        gaiadr=args.gaiadr,
+        log=log,
+        step="settings",
+        start=start,)
 
     # AR obscon : for the tile observing conditions
     # AR obscon :   permissive value
@@ -794,6 +725,7 @@ def main():
             "FAFLAVOR", "{}{}".format(args.survey, args.program.lower())
         )
         # AR folders, with replacing $DESI_ROOT by DESIROOT
+        desiroot = os.getenv("DESI_ROOT")
         fd["PRIMARY"].write_key("DESIROOT", desiroot)
         for key in np.sort(list(mydirs.keys())):
             if (key == "mtl") & (isinstance(mydirs["mtl"], list)):
