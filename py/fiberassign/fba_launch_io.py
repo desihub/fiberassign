@@ -564,3 +564,135 @@ def assert_svn_tileid(
                 time() - start, step, tileid, svn_trunk
             )
         )
+
+
+def get_desitarget_paths(
+    dtver,
+    survey,
+    program,
+    dr="dr9",
+    gaiadr="gaiadr2",
+    log=None,
+    step="settings",
+    start=None,
+):
+    """
+    Obtain the folder/file full paths for desitarget products
+    
+    Args:
+        dtver: desitarget catalog version (string; e.g., "0.57.0")
+        survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
+        program: "dark", "bright", or "backup" (string)
+        dr (optional, defaults to "dr9"): legacypipe dr (string)
+        gaiadr (optional, defaults to "gaiadr2"): gaia dr (string)
+        log (optional): Logger object
+        step (optional): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start (optional): start time for log (in seconds; output of time.time()        
+        
+    Returns:
+        Dictionary with the following keys:
+        - sky: sky folder
+        - skysupp: skysupp folder
+        - gfa: GFA folder
+        - targ: targets folder (static catalogs, with all columns)
+        - mtl: MTL folder
+        - scnd: secondary fits catalog (static)
+        - scndmtl: MTL folder for secondary targets
+        - too: ToO ecsv catalog
+
+    Notes:
+        if survey not in ["sv1", "sv2", "sv3", "main"]
+        or program not in ["dark", "bright", or "backup"], will return a warning only
+        same warning only if the built paths/files do not exist.
+    """
+    if log is None:
+        log = Logger.get()
+    if start is None:
+        start = time()
+
+    # AR expected survey, program?
+    exp_surveys = ["sv1", "sv2", "sv3", "main"]
+    exp_programs = ["dark", "bright", "backup"]
+    if survey.lower() not in exp_surveys:
+        log.warning(
+            "{:.1f}s\t{}\tunexpected survey={} ({}; proceeding anyway)".format(
+                time() - start, step, survey.lower(), exp_surveys
+            )
+        )
+    if program.lower() not in exp_programs:
+        log.warning(
+            "{:.1f}s\t{}\tunexpected program={} ({}; proceeding anyway)".format(
+                time() - start, step, program.lower(), exp_programs
+            )
+        )
+
+    # AR folder architecture is now the same at NERSC/KPNO (https://github.com/desihub/fiberassign/issues/302)
+    mydirs = {}
+    mydirs["sky"] = os.path.join(
+        os.getenv("DESI_TARGET"), "catalogs", dr, dtver, "skies"
+    )
+    mydirs["skysupp"] = os.path.join(
+        os.getenv("DESI_TARGET"), "catalogs", gaiadr, dtver, "skies-supp"
+    )
+    mydirs["gfa"] = os.path.join(
+        os.getenv("DESI_TARGET"), "catalogs", dr, dtver, "gfas"
+    )
+    if program.lower() == "backup":
+        dtcat = gaiadr
+    else:
+        dtcat = dr
+    mydirs["targ"] = os.path.join(
+        os.getenv("DESI_TARGET"),
+        "catalogs",
+        dtcat,
+        dtver,
+        "targets",
+        survey.lower(),
+        "resolve",
+        program.lower(),
+    )
+    mydirs["mtl"] = os.path.join(
+        os.getenv("DESI_SURVEYOPS"), "mtl", survey.lower(), program.lower(),
+    )
+    # AR secondary (dark, bright; no secondary for backup)
+    if program.lower() in ["dark", "bright"]:
+        mydirs["scnd"] = os.path.join(
+            os.getenv("DESI_TARGET"),
+            "catalogs",
+            dr,
+            dtver,
+            "targets",
+            survey.lower(),
+            "secondary",
+            program.lower(),
+            "{}targets-{}-secondary.fits".format(survey.lower(), program.lower()),
+        )
+        mydirs["scndmtl"] = os.path.join(
+            os.getenv("DESI_SURVEYOPS"),
+            "mtl",
+            survey.lower(),
+            "secondary",
+            program.lower(),
+        )
+
+    # AR ToO (same for dark, bright)
+    mydirs["too"] = os.path.join(
+        os.getenv("DESI_SURVEYOPS"), "mtl", survey.lower(), "ToO", "ToO.ecsv",
+    )
+
+    # AR log
+    for key in list(mydirs.keys()):
+        log.info(
+            "{:.1f}s\t{}\tdirectory for {}: {}".format(
+                time() - start, step, key, mydirs[key]
+            )
+        )
+        if not os.path.exists(mydirs[key]):
+            log.warning(
+                "{:.1f}s\t{}\tdirectory for {}: {} does not exist".format(
+                    time() - start, step, key, mydirs[key]
+                )
+            )
+
+    return mydirs
