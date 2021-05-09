@@ -460,6 +460,9 @@ def main():
         # AR mtl: need to provide exact list (if columns=None, inflate_ledger()
         # AR mtl:    overwrites existing columns)
         columns = [key for key in minimal_target_columns if key not in d.dtype.names]
+        # AR mtl: also add GAIA_ASTROMETRIC_EXCESS_NOISE, in case args.pmcorr == "y"
+        if args.pmcorr == "y":
+            columns += ["GAIA_ASTROMETRIC_EXCESS_NOISE"]
         log.info(
             "{:.1f}s\tdomtl\tadding {} from {}".format(
             time() - start, ",".join(columns), mydirs["targ"]
