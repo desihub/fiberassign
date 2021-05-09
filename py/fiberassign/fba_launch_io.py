@@ -392,7 +392,9 @@ def update_nowradec(
         keep = d["REF_EPOCH"] > 0
     else:
         # AR targets with REF_EPOCH>0 and passing the AEN criterion
-        keep = (d["REF_EPOCH"] > 0) & (gaia_psflike(d[gaiag_key], d[gaiaaen_key], dr=gaiadr))
+        keep = (d["REF_EPOCH"] > 0) & (
+            gaia_psflike(d[gaiag_key], d[gaiaaen_key], dr=gaiadr)
+        )
     # AR storing changes to report extrema in the log
     dra = nowra - d[ra_key]
     ddec = nowdec - d[dec_key]
@@ -420,3 +422,54 @@ def update_nowradec(
         )
     )
     return d
+
+
+def assert_env_vars(
+    required_env_vars=[
+        "DESI_ROOT",
+        "DESI_TARGET",
+        "DESIMODEL",
+        "DESI_SURVEYOPS",
+        "SKYBRICKS_DIR",
+    ],
+    log=None,
+    step="settings",
+    start=None,
+):
+    """
+    Assert the environment variables required by fba_launch 
+    
+    Args:
+        required_env_vars (optional, defaults to ["DESI_ROOT",
+        "DESI_TARGET",
+        "DESIMODEL",
+        "DESI_SURVEYOPS",
+        "SKYBRICKS_DIR",]: list of environment variables required by fba_launch
+        log (optional): Logger object
+        step (optional): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start (optional): start time for log (in seconds; output of time.time()        
+        
+    Notes:
+        will exit with error if some assertions are not verified 
+    """
+    if log is None:
+        log = Logger.get()
+    if start is None:
+        start = time()
+
+    # AR safe: DESI environment variables
+    for required_env_var in required_env_vars:
+        if os.getenv(required_env_var) is None:
+            log.error(
+                "{:.1f}s\t{}\tenvironment variable {} not defined; exiting".format(
+                    time() - start, step, required_env_var
+                )
+            )
+            sys.exit(1)
+        else:
+            log.info(
+                "{:.1f}s\t{}\t{}={}".format(
+                    time() - start, step, required_env_var, os.getenv(required_env_var)
+                )
+            )
