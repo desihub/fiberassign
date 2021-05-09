@@ -255,66 +255,17 @@ def main():
     )
     log.info("{:.1f}s\tsettings\targs: {}".format(time() - start, tmpstr))
 
-    # AR machine
-    log.info(
-        "{:.1f}s\tsettings\tHOSTNAME={}".format(time() - start, os.getenv("HOSTNAME"))
-    )
-    # AR fiberassign, desitarget, desimodel code version, path
-    for module, name in zip(
-        [fiberassign, desitarget, desimodel], ["fiberassign", "desitarget", "desimodel"]
-    ):
-        log.info(
-            "{:.1f}s\tsettings\trunning with {} code version: {}".format(
-                time() - start, name, module.__version__
-            )
-        )
-        log.info(
-            "{:.1f}s\tsettings\trunning with {} code path: {}".format(
-                time() - start, name, module.__path__
-            )
-        )
+    # AR safe: DESI environment variables defined?
+    assert_env_vars(log=log, step="settings", start=start)
 
-    # AR safe: DESI environment variables
-    for key in [
-            "DESI_ROOT", "DESI_TARGET", "DESIMODEL", "DESI_SURVEYOPS",
-            "SKYBRICKS_DIR"
-            ]:
-        if os.getenv(key) is None:
-            log.error(
-                "{:.1f}s\tsettings\tenvironment variable {} not defined; exiting".format(
-                    time() - start, key
-                )
-            )
-            sys.exit(1)
-        else:
-            log.info(
-                "{:.1f}s\tsettings\t{}={}".format(time() - start, key, os.getenv(key))
-            )
+    # AR safe: TILEID already existing in SVN?
+    assert_svn_tileid(args.tileid, log=log, step="settings", start=start)
 
-    # AR time used to update the positions using proper motions
-    if not assert_isoformat_utc(args.pmtime_utc_str):
-        log.error(
-            "{:.1f}s\tsettings\targs.pmtime_utc_str={} is not yyyy-mm-ddThh:mm:ss+00:00; exiting".format(
-                time() - start, args.pmtime_utc_str
-            )
-        )
+    # AR safe: argument dates correctly formatted?
+    assert_arg_dates(args, log=log, step="settings", start=start)
 
-    # AR rundate correctly formatted?
-    if not assert_isoformat_utc(args.rundate): 
-        log.error(
-            "{:.1f}s\tsettings\targs.rundate={} is not yyyy-mm-ddThh:mm:ss+00:00; exiting".format(
-                time() - start, args.rundate
-            )
-        )
-
-    # AR mtltime correctly formatted?
-    if not assert_isoformat_utc(args.mtltime): 
-        log.error(
-            "{:.1f}s\tsettings\targs.mtltime={} is not yyyy-mm-ddThh:mm:ss+00:00; exiting".format(
-                time() - start, args.mtltime
-            )
-        )
-        sys.exit()
+    # AR print general configuration informations
+    print_config_infos(log=log, step="settings", start=start)
 
     # AR (temporary) output files
     for key in list(myouts.keys()):
@@ -417,39 +368,7 @@ def main():
     obscon = "DARK|GRAY|BRIGHT|BACKUP"
     log.info("{:.1f}s\tsettings\ttile obscon={}".format(time() - start, obscon))
 
-    # AR safe tileids
-    # AR ! only checking for the official naming/storing convention !
-    # AR ! will fail to detect duplicates tileids if files are organized differently !
-    # AR ! may also fail if two similar tileids are requested in a given parallel call!
-    prev_tileids = np.unique(
-        [
-            fn.split("/")[-1][12:18]
-            for fn in glob(
-                os.path.join(path_to_svn_tiles, "???/fiberassign-??????.fits*")
-            )
-        ]
-    )
-    if "{:06d}".format(args.tileid) in prev_tileids:
-        log.warning(
-            "{:.1f}s\tsettings\tTILEID={} already exists in svn".format(
-                time() - start, ",".join("{:06d}".format(args.tileid))
-            )
-        )
-        if args.forcetileid == "y":
-            log.warning(
-                "{:.1f}s\tsettings\tproceeding as args.forcetileid == y".format(
-                    time() - start
-                )
-            )
-        else:
-            log.error(
-                "{:.1f}s\tsettings\texiting as args.forcetileid == n".format(
-                    time() - start
-                )
-            )
-            sys.exit()
-
-
+    
     # AR tiles
     if dotile:
         hdr = fitsio.FITSHDR()
