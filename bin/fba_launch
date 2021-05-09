@@ -16,7 +16,7 @@ from desitarget.targets import set_obsconditions
 import desimodel
 from desimodel.footprint import is_point_in_desi
 import fiberassign
-from fiberassign.fba_launch_io import assert_env_vars, assert_svn_tileid, assert_arg_dates, print_config_infos, get_desitarget_paths
+from fiberassign.fba_launch_io import assert_env_vars, assert_svn_tileid, assert_arg_dates, print_config_infos, get_desitarget_paths, custom_read_targets_in_tiles, mv_write_targets_out, force_finite_pm, force_nonzero_refepoch, update_nowradec
 from fiberassign.scripts.assign import parse_assign, run_assign_full
 from fiberassign.assign import merge_results, minimal_target_columns
 from fiberassign.utils import Logger
