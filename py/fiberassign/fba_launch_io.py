@@ -444,7 +444,7 @@ def assert_env_vars(
         "DESI_TARGET",
         "DESIMODEL",
         "DESI_SURVEYOPS",
-        "SKYBRICKS_DIR",]: list of environment variables required by fba_launch
+        "SKYBRICKS_DIR",]): list of environment variables required by fba_launch
         log (optional): Logger object
         step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -473,3 +473,41 @@ def assert_env_vars(
                     time() - start, step, required_env_var, os.getenv(required_env_var)
                 )
             )
+
+
+def assert_arg_dates(
+    args,
+    dates=["pmtime_utc_str", "rundate", "mtltime"],
+    log=None,
+    step="settings",
+    start=None,
+):
+    """
+    Assert the fba_launch date arguments are correctly formatted ("YYYY-MM-DDThh:mm:ss+00:00")
+    
+    Args:
+        args: fba_launch parser.parse_args() output
+        dates (optional, defaults to ["pmtime_utc_str", "rundate", "mtltime"]): list of date fba_launch argument names to check
+        log (optional): Logger object
+        step (optional): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start (optional): start time for log (in seconds; output of time.time()        
+        
+    Notes:
+        will exit with error if some assertions are not verified 
+    """
+    if log is None:
+        log = Logger.get()
+    if start is None:
+        start = time()
+
+    # AR dates properly formatted?
+    for kwargs in args._get_kwargs():
+        if kwargs[0] in dates:
+            if not assert_isoformat_utc(kwargs[1]):
+                log.error(
+                    "{:.1f}s\t{}\t{}={} is not yyyy-mm-ddThh:mm:ss+00:00; exiting".format(
+                        time() - start, step, kwargs[0], kwargs[1],
+                    )
+                )
+                sys.exit(1)
