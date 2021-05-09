@@ -14,6 +14,7 @@ from astropy.io import fits
 from astropy.table import Table
 import fitsio
 import desitarget
+from desitarget.gaiamatch import gaia_psflike
 from desitarget.io import read_targets_in_tiles, write_targets, write_skies
 from desitarget.mtl import inflate_ledger
 from desitarget.targetmask import desi_mask, obsconditions
@@ -149,22 +150,6 @@ def mv_write_targets_out(infn, targdir, outfn, log=None, step="", start=None):
     tmpdirs = infn.replace(targdir, "").split("/")[:-1]
     for i in range(len(tmpdirs))[::-1]:
         os.rmdir(os.path.join(*[targdir] + tmpdirs[: i + 1]))
-
-
-def get_isaen(g, aen):
-    """
-    Gaia AEN criterion to identify stars
-    
-    Args:
-        g: Gaia GAIA_PHOT_G_MEAN_MAG
-        aen: GAIA GAIA_ASTROMETRIC_EXCESS_NOISE
-    Returns:
-        boolean array, True for identified stars
-    """
-    return np.logical_or(
-        (g <= 19.0) * (aen < 10.0 ** 0.5),
-        (g >= 19.0) * (aen < 10.0 ** (0.5 + 0.2 * (g - 19.0))),
-    )
 
 
 def get_nowradec(ra, dec, pmra, pmdec, parallax, ref_year, pmtime_utc_str, scnd=False):
@@ -340,6 +325,7 @@ def force_nonzero_refepoch(
 
 def update_nowradec(
     d,
+    gaiadr,
     pmtime_utc_str,
     ra_key="RA",
     dec_key="DEC",
@@ -360,6 +346,7 @@ def update_nowradec(
     Args:
         d: array with at least proper-motion columns
         pmtime_utc_str: date to update position to (format: YYYY-MM-DDThh:mm:ss+00:00)
+        gaiadr: Gaia dr ("dr2" or "edr3")
         ra_key (optional, defaults to RA): column name for RA
         dec_key (optional, defaults to DEC): column name for DEC
         pmra_key (optional, defaults to PMRA): column name for PMRA
@@ -405,7 +392,7 @@ def update_nowradec(
         keep = d["REF_EPOCH"] > 0
     else:
         # AR targets with REF_EPOCH>0 and passing the AEN criterion
-        keep = (d["REF_EPOCH"] > 0) & (get_isaen(d[gaiag_key], d[gaiaaen_key]))
+        keep = (d["REF_EPOCH"] > 0) & (gaia_psflike(d[gaiag_key], d[gaiaaen_key], dr=gaiadr))
     # AR storing changes to report extrema in the log
     dra = nowra - d[ra_key]
     ddec = nowdec - d[dec_key]
