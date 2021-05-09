@@ -554,7 +554,7 @@ def main():
                 )
             )
             # AR single REF_EPOCH needed
-            d = force_nonzero_refepoch(d, log=log, step="dogfa", start=start, )
+            d = force_nonzero_refepoch(d, ref_epochs[args.gaiadr], log=log, step="dogfa", start=start, )
 
         # AR gfa: write fits
         n, tmpfn = write_targets(tmpoutdir, d, indir=mydirs["gfa"], survey=args.survey)
@@ -629,7 +629,7 @@ def main():
                 )
             )
             # AR single REF_EPOCH needed
-            d = force_nonzero_refepoch(d, log=log, step="domtl", start=start, )
+            d = force_nonzero_refepoch(d, ref_epochs[args.gaiadr], log=log, step="domtl", start=start, )
         # AR mtl: write fits
         n, tmpfn = write_targets(
             tmpoutdir, d, indir=mydirs["mtl"], indir2=mydirs["targ"], survey=args.survey
@@ -692,7 +692,7 @@ def main():
                 )
             )
             # AR single REF_EPOCH needed
-            d = force_nonzero_refepoch(d, log=log, step="doscnd", start=start, )
+            d = force_nonzero_refepoch(d, ref_epochs[args.gaiadr], log=log, step="doscnd", start=start, )
         # AR scnd: write fits
         n, tmpfn = write_targets(
             tmpoutdir, d, indir=mydirs["scndmtl"], indir2=mydirs["scnd"], survey=args.survey
@@ -761,7 +761,7 @@ def main():
                 # AR TBD currently all targets have PMRA=PMDEC=0,
                 # AR TBD so it s fine to just change all REF_EPOCH
                 d["REF_EPOCH"] = np.zeros(len(d))
-                d = force_nonzero_refepoch(d, log=log, step="dotoo", start=start, )
+                d = force_nonzero_refepoch(d, ref_epochs[args.gaiadr], log=log, step="dotoo", start=start, )
             # AR too: write fits
             n, tmpfn = write_targets(
                 tmpoutdir, d.as_array(), indir=mydirs["too"], survey=args.survey
