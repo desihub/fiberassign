@@ -301,7 +301,7 @@ def force_nonzero_refepoch(
     if start is None:
         start = time()
     keep = d[ref_epoch_key] == 0
-    n = (d[pmra_key][keep] != 0) | (d[pmra_key][keep] != 0)
+    n = ((d[pmra_key][keep] != 0) | (d[pmra_key][keep] != 0)).sum()
     if n > 0:
         log.error(
             "{:.1f}s\t{}\t{} targets have {}=0 but {} or {} != 0; exiting".format(
@@ -309,7 +309,7 @@ def force_nonzero_refepoch(
             )
         )
         sys.exit(1)
-    d[ref_epoch_key][keep] = ref_epochs[force_ref_epoch]
+    d[ref_epoch_key][keep] = force_ref_epoch
     log.info(
         "{:.1f}s\t{}\tsetting {}={} for {} objects with {}=0".format(
             time() - start,
