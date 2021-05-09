@@ -66,11 +66,11 @@ def custom_read_targets_in_tiles(
     Args:
         targdirs: list of folders
         tiles: tiles object (as required by desitarget.io.read_targets_in_tiles)
-        quick, mtl, unique, isodate: same as desitarget.io.read_targets_in_tiles arguments
-        log: Logger object
-        step: corresponding step, for fba_launch log recording
+        quick, mtl, unique, isodate (optional): same as desitarget.io.read_targets_in_tiles arguments
+        log (optional): Logger object
+        step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start: start time for log (in seconds; output of time.time()
+        start (optional): start time for log (in seconds; output of time.time()
     Returns:
         array of targets in the passed tiles.
     """
@@ -131,10 +131,10 @@ def mv_write_targets_out(infn, targdir, outfn, log=None, step="", start=None):
         infn: filename output by desitarget.io.write_targets
         targdir: folder provided as desitarget.io.write_targets input
         outfn: desired renaming of infn
-        log: Logger object
-        step: corresponding step, for fba_launch log recording
+        log (optional): Logger object
+        step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start: start time for log (in seconds; output of time.time()
+        start (optional): start time for log (in seconds; output of time.time()
     """
     if log is None:
         log = Logger.get()
@@ -179,7 +179,7 @@ def get_nowradec(ra, dec, pmra, pmdec, parallax, ref_year, pmtime_utc_str, scnd=
         parallax: numpy array of parallax (mas)
         ref_year: reference epoch (e.g. 2015.5 for Gaia/DR2)
         pmtime_utc_str: date to update position to (format: YYYY-MM-DDThh:mm:ss+00:00)
-        scnd: secondary target? (boolean; if True, sets parallax=0)
+        scnd (optional, defaults to False): secondary target? (boolean; if True, sets parallax=0)
     Returns:
         ra: numpy array of RAs updated to pmtime_utc_str (deg)
         dec: numpy array of DECs updated to pmtime_utc_str (deg)
@@ -253,12 +253,12 @@ def force_finite_pm(
     
     Args:
         d: array with at least proper-motion columns
-        pmra_key: column name for PMRA
-        pmdec_key: column name for PMDEC
-        log: Logger object
-        step: corresponding step, for fba_launch log recording
+        pmra_key (optional, defaults to PMRA): column name for PMRA
+        pmdec_key (optional, defaults to PMDEC): column name for PMDEC
+        log (optional): Logger object
+        step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start: start time for log (in seconds; output of time.time()
+        start (optional): start time for log (in seconds; output of time.time()
 
     Returns:
         d: same as input d, but NaN proper motions replaced by 0
@@ -297,13 +297,13 @@ def force_nonzero_refepoch(
     Args:
         d: array with at least proper-motion columns
         force_ref_epoch: float, ref_epoch to replace 0 by
-        ref_epoch_key: column name for the ref_epoch
-        pmra_key: column name for PMRA
-        pmdec_key: column name for PMDEC
-        log: Logger object
-        step: corresponding step, for fba_launch log recording
+        ref_epoch_key (optional, defaults to REF_EPOCH): column name for the ref_epoch
+        pmra_key (optional, defaults to PMRA): column name for PMRA
+        pmdec_key (optional, defaults to PMDEC): column name for PMDEC
+        log (optional): Logger object
+        step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start: start time for log (in seconds; output of time.time()        
+        start (optional): start time for log (in seconds; output of time.time()        
     Returns:
         d: same as input d, but 0 ref_epochs replaced by force_ref_epoch
 
@@ -360,21 +360,21 @@ def update_nowradec(
     Args:
         d: array with at least proper-motion columns
         pmtime_utc_str: date to update position to (format: YYYY-MM-DDThh:mm:ss+00:00)
-        ra_key: column name for RA
-        dec_key: column name for DEC
-        pmra_key: column name for PMRA
-        pmdec_key: column name for PMDEC
-        parallax_key: column name for PARALLAX
-        ref_epoch_key: column name for the REF_EPOCH
-        gaia_key: column name for Gaia g-mag
-        gaiaaen_key: column name for Gaia GAIA_ASTROMETRIC_EXCESS_NOISE
-        scnd: secondary target? (boolean);
+        ra_key (optional, defaults to RA): column name for RA
+        dec_key (optional, defaults to DEC): column name for DEC
+        pmra_key (optional, defaults to PMRA): column name for PMRA
+        pmdec_key (optional, defaults to PMDEC): column name for PMDEC
+        parallax_key (optional, defaults to PARALLAX): column name for PARALLAX
+        ref_epoch_key (optional, defaults to REF_EPOCH): column name for the REF_EPOCH
+        gaia_key (optional, defaults to GAIA_PHOT_G_MEAN_MAG): column name for Gaia g-mag
+        gaiaaen_key (optional, defaults to GAIA_ASTROMETRIC_EXCESS_NOISE): column name for Gaia GAIA_ASTROMETRIC_EXCESS_NOISE
+        scnd (optional, defaults to False): secondary target? (boolean);
               if False, update for REF_EPOCH>0 + AEN only
               if True, update for REF_EPOCH>0 + finite(PMRA,PMDEC) ; forces PARALLAX=0
-        log: Logger object
-        step: corresponding step, for fba_launch log recording
+        log (optional): Logger object
+        step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start: start time for log (in seconds; output of time.time()        
+        start (optional): start time for log (in seconds; output of time.time()        
         
     Returns:
         d: same as input, but with RA, DEC updated to pmtime_utc_str
