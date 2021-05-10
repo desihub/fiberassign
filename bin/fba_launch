@@ -16,7 +16,7 @@ from desitarget.targets import set_obsconditions
 import desimodel
 from desimodel.footprint import is_point_in_desi
 import fiberassign
-from fiberassign.fba_launch_io import assert_env_vars, assert_svn_tileid, assert_arg_dates, print_config_infos, get_desitarget_paths, custom_read_targets_in_tiles, mv_write_targets_out, force_finite_pm, force_nonzero_refepoch, update_nowradec, create_tile
+from fiberassign.fba_launch_io import assert_env_vars, assert_svn_tileid, assert_arg_dates, print_config_infos, get_desitarget_paths, custom_read_targets_in_tiles, mv_write_targets_out, force_finite_pm, force_nonzero_refepoch, update_nowradec, create_tile, create_sky
 from fiberassign.scripts.assign import parse_assign, run_assign_full
 from fiberassign.assign import merge_results, minimal_target_columns
 from fiberassign.utils import Logger
@@ -315,33 +315,16 @@ def main():
 
     # AR sky
     if dosky:
-        log.info("")
-        log.info("")
-        log.info("{:.1f}s\tdosky\tTIMESTAMP={}".format(time() - start, Time.now().isot))
-        log.info(
-            "{:.1f}s\tdosky\tstart generating {}".format(
-                time() - start, mytmpouts["sky"]
-            )
-        )
-        # AR sky: read targets
-        tiles = fits.open(mytmpouts["tiles"])[1].data
-        d = custom_read_targets_in_tiles(
-            [mydirs["sky"], mydirs["skysupp"]],
-            tiles,
-            quick=True,
-            mtl=False,
+        create_sky(
+            mytmpouts["tiles"],
+            mydirs["sky"],
+            mytmpouts["sky"],
+            suppskydir=mydirs["skysupp"],
+            tmpoutdir=tmpoutdir,
             log=log,
             step="dosky",
             start=start,
         )
-        n, tmpfn = write_skies(
-            tmpoutdir,
-            d,
-            indir=mydirs["sky"],
-            indir2=mydirs["skysupp"],
-        )
-        _ = mv_write_targets_out(tmpfn, tmpoutdir, mytmpouts["sky"], log=log, step="dosky", start=start, )
-        log.info("{:.1f}s\tdosky\t{} written".format(time() - start, mytmpouts["sky"]))
 
     # AR gfa
     if dogfa:
