@@ -763,7 +763,7 @@ def create_tile(
     survey,
     obscon="DARK|GRAY|BRIGHT|BACKUP",
     log=None,
-    step="settings",
+    step="",
     start=None,
 ):
     """
@@ -775,7 +775,7 @@ def create_tile(
         tiledec: tile center Dec. (float)
         outfn: fits file name to be written
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
-        obscond (optional, defaults to "DARK|GRAY|BRIGHT|BACKUP"): tile allowed observing conditions (string)
+        obscon (optional, defaults to "DARK|GRAY|BRIGHT|BACKUP"): tile allowed observing conditions (string)
         log (optional): Logger object
         step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -816,3 +816,4 @@ def create_tile(
         outfn, d, extname="TILES", header=hdr, clobber=True,
     )
     log.info("{:.1f}s\t{}\t{} written".format(time() - start, step, outfn,))
+
