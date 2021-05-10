@@ -16,7 +16,7 @@ from desitarget.targets import set_obsconditions
 import desimodel
 from desimodel.footprint import is_point_in_desi
 import fiberassign
-from fiberassign.fba_launch_io import assert_env_vars, assert_svn_tileid, assert_arg_dates, print_config_infos, get_desitarget_paths, custom_read_targets_in_tiles, mv_write_targets_out, force_finite_pm, force_nonzero_refepoch, update_nowradec, create_tile, create_sky, create_gfa, create_mtl, create_too, launch_onetile_fa, update_fiberassign_header
+from fiberassign.fba_launch_io import assert_env_vars, assert_svn_tileid, assert_arg_dates, print_config_infos, get_desitarget_paths, custom_read_targets_in_tiles, mv_write_targets_out, force_finite_pm, force_nonzero_refepoch, update_nowradec, create_tile, create_sky, create_gfa, create_mtl, create_too, launch_onetile_fa, update_fiberassign_header, secure_gzip
 from fiberassign.scripts.assign import parse_assign, run_assign_full
 from fiberassign.assign import merge_results, minimal_target_columns
 from fiberassign.utils import Logger
@@ -445,21 +445,11 @@ def main():
 
     # AR gzip all fiberassign files
     if dozip:
-        log.info("")
-        log.info("")
-        log.info("{:.1f}s\tdozip\tTIMESTAMP={}".format(time() - start, Time.now().isot))
-        if os.path.isfile("{}.gz".format(mytmpouts["fiberassign"])):
-            os.remove("{}.gz".format(mytmpouts["fiberassign"]))
-            log.info(
-                "{:.1f}s\tdozip\tdeleting existing {}.gz".format(
-                    time() - start, mytmpouts["fiberassign"]
-                )
-            )
-        os.system("gzip {}".format(mytmpouts["fiberassign"]))
-        log.info(
-            "{:.1f}s\tdozip\tgzipping {}".format(
-                time() - start, mytmpouts["fiberassign"]
-            )
+        secure_gzip(
+            mytmpouts["fiberassign"],
+            log=log,
+            step="dozip",
+            start=start,
         )
         # AR updating the path
         mytmpouts["fiberassign"] += ".gz"
