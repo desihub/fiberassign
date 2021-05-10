@@ -817,3 +817,44 @@ def create_tile(
     )
     log.info("{:.1f}s\t{}\t{} written".format(time() - start, step, outfn,))
 
+
+def create_sky(
+    tilesfn,
+    skydir,
+    outfn,
+    suppskydir=None,
+    tmpoutdir=tempfile.mkdtemp(),
+    log=None,
+    step="",
+    start=None,
+):
+    """
+    Create a sky fits file.
+    
+    Args:
+        tilesfn: path to a tiles fits file (string)
+        skydir: desitarget sky folder (string)
+        outfn: fits file name to be written
+        suppskydir (optional, defaults to None): desitarget suppsky folder (string)
+        tmpoutdir (optional, defaults to a temporary directory): temporary directory where
+                write_skies will write (creating some sub-directories)
+        log (optional): Logger object
+        step (optional): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start (optional): start time for log (in seconds; output of time.time()
+    """
+    log.info("")
+    log.info("")
+    log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
+    log.info("{:.1f}s\t{}\tstart generating {}".format(time() - start, step, outfn))
+    # AR sky: read targets
+    tiles = fits.open(tilesfn)[1].data
+    skydirs = [skydir]
+    if suppskydir is not None:
+        skydirs.append(suppskydir)
+    d = custom_read_targets_in_tiles(
+        skydirs, tiles, quick=True, mtl=False, log=log, step=step,
+    )
+    n, tmpfn = write_skies(tmpoutdir, d, indir=skydir, indir2=suppskydir,)
+    _ = mv_write_targets_out(tmpfn, tmpoutdir, outfn, log=log, step=step, start=start)
+    log.info("{:.1f}s\t{}\t{} written".format(time() - start, step, outfn))
