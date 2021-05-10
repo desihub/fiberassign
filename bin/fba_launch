@@ -16,7 +16,7 @@ from desitarget.targets import set_obsconditions
 import desimodel
 from desimodel.footprint import is_point_in_desi
 import fiberassign
-from fiberassign.fba_launch_io import assert_env_vars, assert_svn_tileid, assert_arg_dates, print_config_infos, get_desitarget_paths, custom_read_targets_in_tiles, mv_write_targets_out, force_finite_pm, force_nonzero_refepoch, update_nowradec
+from fiberassign.fba_launch_io import assert_env_vars, assert_svn_tileid, assert_arg_dates, print_config_infos, get_desitarget_paths, custom_read_targets_in_tiles, mv_write_targets_out, force_finite_pm, force_nonzero_refepoch, update_nowradec, create_tile
 from fiberassign.scripts.assign import parse_assign, run_assign_full
 from fiberassign.assign import merge_results, minimal_target_columns
 from fiberassign.utils import Logger
@@ -282,6 +282,10 @@ def main():
             )
         )
 
+    # AR obscon : for the tile observing conditions, permissive value
+    obscon = "DARK|GRAY|BRIGHT|BACKUP"
+    log.info("{:.1f}s\tsettings\ttile obscon={}".format(time() - start, obscon))
+
     # AR desitarget folders/files
     # AR folder architecture is now the same at NERSC/KPNO (https://github.com/desihub/fiberassign/issues/302)
     # AR DESI_ROOT : NERSC: '/global/cfs/cdirs/desi' ; KPNO: '/data/datasystems'
@@ -295,52 +299,18 @@ def main():
         step="settings",
         start=start,)
 
-    # AR obscon : for the tile observing conditions
-    # AR obscon :   permissive value
-    obscon = "DARK|GRAY|BRIGHT|BACKUP"
-    log.info("{:.1f}s\tsettings\ttile obscon={}".format(time() - start, obscon))
-
-    
     # AR tiles
     if dotile:
-        hdr = fitsio.FITSHDR()
-        log.info("")
-        log.info("")
-        log.info(
-            "{:.1f}s\tdotile\tTIMESTAMP={}".format(time() - start, Time.now().isot)
-        )
-        log.info(
-            "{:.1f}s\tdotile\tstart generating {}".format(
-                time() - start, mytmpouts["tiles"]
-            )
-        )
-        d = np.zeros(
-            1,
-            dtype=[
-                ("TILEID", "i4"),
-                ("RA", "f8"),
-                ("DEC", "f8"),
-                ("OBSCONDITIONS", "i4"),
-                ("IN_DESI", "i2"),
-                ("PROGRAM", "S6"),
-            ],
-        )
-        d["TILEID"] = args.tileid
-        d["RA"] = args.tilera
-        d["DEC"] = args.tiledec
-        d["IN_DESI"] = 1  # AR forcing 1;
-        # AR otherwise the default onlydesi=True option in
-        # AR desimodel.io.load_tiles() discards tiles outside the desi footprint,
-        # AR so return no tiles for the dithered tiles outside desi
-        d["PROGRAM"] = args.survey.upper()  # AR custom... SV2, SV3, MAIN
-        d["OBSCONDITIONS"] = obsconditions.mask(obscon)
-        fitsio.write(
-            mytmpouts["tiles"], d, extname="TILES", header=hdr, clobber=True,
-        )
-        log.info(
-            "{:.1f}s\tdotile\t{} written".format(
-                time() - start, mytmpouts["tiles"],
-            )
+        create_tile(
+            args.tileid,
+            args.tilera,
+            args.tiledec,
+            mytmpouts["tiles"],
+            args.survey,
+            obscon=obscon,
+            log=log,
+            step="dotile",
+            start=start,
         )
 
     # AR sky
