@@ -16,7 +16,7 @@ from desitarget.targets import set_obsconditions
 import desimodel
 from desimodel.footprint import is_point_in_desi
 import fiberassign
-from fiberassign.fba_launch_io import assert_env_vars, assert_svn_tileid, assert_arg_dates, print_config_infos, get_desitarget_paths, custom_read_targets_in_tiles, mv_write_targets_out, force_finite_pm, force_nonzero_refepoch, update_nowradec, create_tile, create_sky, create_gfa
+from fiberassign.fba_launch_io import assert_env_vars, assert_svn_tileid, assert_arg_dates, print_config_infos, get_desitarget_paths, custom_read_targets_in_tiles, mv_write_targets_out, force_finite_pm, force_nonzero_refepoch, update_nowradec, create_tile, create_sky, create_gfa, create_mtl
 from fiberassign.scripts.assign import parse_assign, run_assign_full
 from fiberassign.assign import merge_results, minimal_target_columns
 from fiberassign.utils import Logger
@@ -344,83 +344,21 @@ def main():
 
     # AR mtl
     if domtl:
-        log.info("")
-        log.info("")
-        log.info("{:.1f}s\tdomtl\tTIMESTAMP={}".format(time() - start, Time.now().isot))
-        log.info(
-            "{:.1f}s\tdomtl\tstart generating {}".format(
-                time() - start, mytmpouts["targ"]
-            )
-        )
-        tiles = fits.open(mytmpouts["tiles"])[1].data
-        # AR mtl: storing the timestamp at which we queried MTL
-        log.info(
-            "{:.1f}s\tdomtl\tmtltime={}".format(
-                time() - start, args.mtltime
-            )
-        )
-        # AR mtl: read mtl
-        d = custom_read_targets_in_tiles(
-            [mydirs["mtl"]],
-            tiles,
-            quick=False,
-            mtl=True,
-            unique=True,
-            isodate=args.mtltime,
+        create_mtl(
+            mytmpouts["tiles"],
+            mydirs["mtl"],
+            args.mtltime,
+            mydirs["targ"],
+            args.survey,
+            args.gaiadr.replace("gaia", ""),
+            args.pmcorr,
+            mytmpouts["targ"],
+            tmpoutdir=tmpoutdir,
+            pmtime_utc_str=args.pmtime_utc_str,
             log=log,
             step="domtl",
             start=start,
         )
-        # AR mtl: removing by hand BACKUP_BRIGHT for sv3/BACKUP
-        if (args.survey == "sv3") & (args.program == "BACKUP"):
-            from desitarget.sv3.sv3_targetmask import mws_mask
-            keep = (d["SV3_MWS_TARGET"] & mws_mask["BACKUP_BRIGHT"]) == 0
-            log.info(
-                "{:.1f}s\tdomtl\tremoving {}/{} BACKUP_BRIGHT targets".format(
-                time() - start, len(d) - keep.sum(), len(d)
-                )
-            )
-            d = d[keep]
-        # AR mtl: add columns not present in ledgers
-        # AR mtl: need to provide exact list (if columns=None, inflate_ledger()
-        # AR mtl:    overwrites existing columns)
-        columns = [key for key in minimal_target_columns if key not in d.dtype.names]
-        # AR mtl: also add GAIA_ASTROMETRIC_EXCESS_NOISE, in case args.pmcorr == "y"
-        if args.pmcorr == "y":
-            columns += ["GAIA_ASTROMETRIC_EXCESS_NOISE"]
-        log.info(
-            "{:.1f}s\tdomtl\tadding {} from {}".format(
-            time() - start, ",".join(columns), mydirs["targ"]
-            )
-        )
-        d = inflate_ledger(
-            d, mydirs["targ"], columns=columns, header=False, strictcols=False, quick=True
-        )
-        # AR PMRA, PMDEC: convert NaN to zeros
-        d = force_finite_pm(d, log=log, step="domtl", start=start)
-        # AR mtl: update RA, DEC, REF_EPOCH using proper motion
-        if args.pmcorr == "y":
-            d = update_nowradec(d, args.gaiadr.replace("gaia", ""), args.pmtime_utc_str, log=log, step="domtl", start=start, )
-        else:
-            log.info(
-                "{:.1f}s\tdomtl\t*not* applying proper-motion correction".format(
-                    time() - start
-                )
-            )
-            # AR single REF_EPOCH needed
-            d = force_nonzero_refepoch(d, ref_epochs[args.gaiadr], log=log, step="domtl", start=start, )
-        # AR mtl: write fits
-        n, tmpfn = write_targets(
-            tmpoutdir, d, indir=mydirs["mtl"], indir2=mydirs["targ"], survey=args.survey
-        )
-        _ = mv_write_targets_out(tmpfn, tmpoutdir, mytmpouts["targ"], log=log, step="domtl", start=start,)
-        # AR mtl: update header
-        fd = fitsio.FITS(mytmpouts["targ"], "rw")
-        if args.pmcorr == "y":
-            fd["TARGETS"].write_key("COMMENT", "RA,DEC updated with PM for AEN objects")
-        fd["TARGETS"].write_key("COMMENT", "REF_EPOCH updated for all objects")
-        fd.close()
-        log.info("{:.1f}s\tdomtl\t{} written".format(time() - start, mytmpouts["targ"]))
 
     # AR secondary targets
     # AR if not backup
