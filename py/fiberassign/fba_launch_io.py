@@ -965,13 +965,13 @@ def create_mtl(
     start=None,
 ):
     """
-    Create a target fits file, based on MTL ledgers (and complementary columns from desitarget targets files).
+    Create a (primary or secondary) target fits file, based on MTL ledgers (and complementary columns from desitarget targets files).
     
     Args:
         tilesfn: path to a tiles fits file (string)
         mtldir: desisurveyops MTL folder (string)
         mtltime: MTL isodate (string formatted as yyyy-mm-ddThh:mm:ss+00:00)
-        targdir: desitarget targets folder (string)
+        targdir: desitarget targets folder (or file name if secondary) (string)
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         gaiadr: Gaia dr ("dr2" or "edr3")
         pmcorr: apply proper-motion correction? ("y" or "n")
