@@ -16,7 +16,7 @@ from desitarget.targets import set_obsconditions
 import desimodel
 from desimodel.footprint import is_point_in_desi
 import fiberassign
-from fiberassign.fba_launch_io import assert_env_vars, assert_svn_tileid, assert_arg_dates, print_config_infos, get_desitarget_paths, custom_read_targets_in_tiles, mv_write_targets_out, force_finite_pm, force_nonzero_refepoch, update_nowradec, create_tile, create_sky
+from fiberassign.fba_launch_io import assert_env_vars, assert_svn_tileid, assert_arg_dates, print_config_infos, get_desitarget_paths, custom_read_targets_in_tiles, mv_write_targets_out, force_finite_pm, force_nonzero_refepoch, update_nowradec, create_tile, create_sky, create_gfa
 from fiberassign.scripts.assign import parse_assign, run_assign_full
 from fiberassign.assign import merge_results, minimal_target_columns
 from fiberassign.utils import Logger
@@ -328,47 +328,19 @@ def main():
 
     # AR gfa
     if dogfa:
-        log.info("")
-        log.info("")
-        log.info("{:.1f}s\tdogfa\tTIMESTAMP={}".format(time() - start, Time.now().isot))
-        log.info(
-            "{:.1f}s\tdogfa\tstart generating {}".format(
-                time() - start, mytmpouts["gfa"]
-            )
+        create_gfa(
+            mytmpouts["tiles"],
+            mydirs["gfa"],
+            args.survey,
+            args.gaiadr.replace("gaia", ""),
+            args.pmcorr,
+            mytmpouts["gfa"],
+            tmpoutdir=tmpoutdir,
+            pmtime_utc_str=args.pmtime_utc_str,
+            log=log,
+            step="dogfa",
+            start=start,
         )
-        # AR gfa: read targets
-        tiles = fits.open(mytmpouts["tiles"])[1].data
-        d = custom_read_targets_in_tiles(
-            [mydirs["gfa"]], tiles, quick=True, mtl=False, log=log, step="dogfa", start=start,
-        )
-        log.info(
-            "{:.1f}s\tdogfa\tkeeping {} targets to {}".format(
-                time() - start, len(d), mytmpouts["gfa"]
-            )
-        )
-        # AR PMRA, PMDEC: convert NaN to zeros
-        d = force_finite_pm(d, log=log, step="dogfa", start=start, )
-        # AR gfa: update RA, DEC, REF_EPOCH using proper motion
-        if args.pmcorr == "y":
-            d = update_nowradec(d, args.gaiadr.replace("gaia", ""), args.pmtime_utc_str, log=log, step="dogfa", start=start, )
-        else:
-            log.info(
-                "{:.1f}s\tdogfa\t*not* applying proper-motion correction".format(
-                    time() - start
-                )
-            )
-            # AR single REF_EPOCH needed
-            d = force_nonzero_refepoch(d, ref_epochs[args.gaiadr], log=log, step="dogfa", start=start, )
-
-        # AR gfa: write fits
-        n, tmpfn = write_targets(tmpoutdir, d, indir=mydirs["gfa"], survey=args.survey)
-        _ = mv_write_targets_out(tmpfn, tmpoutdir, mytmpouts["gfa"], log=log, step="dogfa", start=start, )
-        # AR gfa: update header
-        fd = fitsio.FITS(mytmpouts["gfa"], "rw")
-        fd["TARGETS"].write_key("COMMENT", "RA,DEC updated with PM for AEN objects")
-        fd["TARGETS"].write_key("COMMENT", "REF_EPOCH updated for all objects")
-        fd.close()
-        log.info("{:.1f}s\tdogfa\t{} written".format(time() - start, mytmpouts["gfa"]))
 
     # AR mtl
     if domtl:
