@@ -1239,7 +1239,7 @@ def launch_onetile_fa(
         assumes the output directory is the same for fbafn and fiberassignfn
         we keep a generic "args" input, so that any later added argument in fba_launch does not
             requires a change in the launch_fa() call format.
-        fba_launch-like adding information in the header is done in another function, update_fa_header
+        fba_launch-like adding information in the header is done in another function, update_fiberassign_header
         TBD: be careful if working in the SVN-directory; maybe add additional safety lines? 
     """
     log.info("")
@@ -1335,3 +1335,109 @@ def launch_onetile_fa(
         columns=ag["columns"],
         copy_fba=ag["copy_fba"],
     )
+
+
+def update_fiberassign_header(
+    fiberassignfn,
+    args,
+    mydirs,
+    faflavor,
+    ebv,
+    obscon,
+    fascript,
+    log=None,
+    step="",
+    start=None,
+):
+    """
+    Adds various information in the fiberassign-TILEID.fits PRIMARY header.
+    
+    Args:
+        fiberassignfn: path to fiberassign-TILEID.fits file (string)
+        args: fba_launch-like parser.parse_args() output
+            should contain at least (see fba_launch arguments):
+                - outdir, survey, program, rundate, pmcorr, pmtime_utc_str
+                - faprgrm, mtltime, goaltime, goaltype, sbprof, mintfrac
+            will also be used to store in FAARGS the list of input arguments of the fba_launch call.
+        mydirs: dictionary with the desitarget paths; ideally:
+                - sky: sky folder
+                - skysupp: skysupp folder
+                - gfa: GFA folder
+                - targ: targets folder (static catalogs, with all columns)
+                - mtl: MTL folder
+                - scnd: secondary fits catalog (static)
+                - scndmtl: MTL folder for secondary targets
+                - too: ToO ecsv catalog
+        faflavor: usually {survey}{program} in lower cases (string)
+        ebv: median EBV over the tile targets (float)
+        obscon: tile allowed observing conditions (string; e.g. "DARK|GRAY|BRIGHT|BACKUP") 
+        fascript: fba_launch-like script used to designed the tile; in case of different scripts for dedicated tiles
+        log (optional): Logger object
+        step (optional): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start (optional): start time for log (in seconds; output of time.time()
+
+    Notes:
+        no check is done on mydirs.
+        TBD : faflavor could be different than {survey}{program}, e.g. in dedicated tiles
+    """
+    # AR propagating some settings into the PRIMARY header
+    fd = fitsio.FITS(fiberassignfn, "rw")
+
+    # AR faflavor
+    fd["PRIMARY"].write_key("FAFLAVOR", faflavor)
+
+    # AR folders, with replacing $DESI_ROOT by DESIROOT
+    desiroot = os.getenv("DESI_ROOT")
+    fd["PRIMARY"].write_key("DESIROOT", desiroot)
+    for key in np.sort(list(mydirs.keys())):
+        if (key == "mtl") & (isinstance(mydirs["mtl"], list)):
+            # AR header keywords: MTL, MTL2, MTL3, etc
+            # AR probably to be deprecate for sv2
+            suffixs = [""] + np.arange(2, len(mydirs["mtl"]) + 1).astype(str).tolist()
+            for mtldir, suffix in zip(mydirs["mtl"], suffixs):
+                fd["PRIMARY"].write_key(
+                    "mtl{}".format(suffix), mtldir.replace(desiroot, "DESIROOT"),
+                )
+        else:
+            fd["PRIMARY"].write_key(key, mydirs[key].replace(desiroot, "DESIROOT"))
+    # AR storing some specific arguments
+    # AR plus a (long) FAARGS keyword with storing arguments to re-run the fiber assignment
+    # AR     we exclude from FAARGS outdir, forcetiled, and any None argument
+    tmparr = []
+    for kwargs in args._get_kwargs():
+        if kwargs[0].lower() in [
+            "outdir",
+            "survey",
+            "rundate",
+            "pmcorr",
+            "pmtime_utc_str",
+        ]:
+            if kwargs[1] is not None:
+                if kwargs[0] == "pmtime_utc_str":
+                    tmparg = "pmtime"
+                else:
+                    tmparg = kwargs[0]
+                fd["PRIMARY"].write_key(tmparg, kwargs[1])
+        if (kwargs[0].lower() not in ["outdir", "forcetileid"]) & (
+            kwargs[1] is not None
+        ):
+            tmparr += ["--{} {}".format(kwargs[0], kwargs[1])]
+    fd["PRIMARY"].write_key(
+        "faargs", " ".join(tmparr),
+    )
+    # AR some keywords
+    fd["PRIMARY"].write_key("faprgrm", args.program)
+    fd["PRIMARY"].write_key("mtltime", args.mtltime)
+    fd["PRIMARY"].write_key("obscon", obscon)
+    # AR informations for NTS
+    # AR SBPROF from https://desi.lbl.gov/trac/wiki/SurveyOps/SurveySpeed#NominalFiberfracValues
+    # AR version 35
+    fd["PRIMARY"].write_key("goaltime", args.goaltime)
+    fd["PRIMARY"].write_key("goaltype", args.program)
+    fd["PRIMARY"].write_key("ebvfac", 10.0 ** (2.165 * np.median(ebv) / 2.5))
+    fd["PRIMARY"].write_key("sbprof", args.sbprof)
+    fd["PRIMARY"].write_key("mintfrac", args.mintfrac)
+    # AR fba_launch-like script name used to designed the tile
+    fd["PRIMARY"].write_key("fascript", fascript)
+    fd.close()
