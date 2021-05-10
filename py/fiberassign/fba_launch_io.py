@@ -392,7 +392,7 @@ def update_nowradec(
         keep = d["REF_EPOCH"] > 0
     else:
         # AR targets with REF_EPOCH>0 and passing the AEN criterion
-        keep = (d["REF_EPOCH"] > 0)
+        keep = d["REF_EPOCH"] > 0
         # AR gaia_psflike arguments changed at desitarget-0.58.0
         if desitarget.__version__ < "0.58.0":
             keep &= gaia_psflike(d[gaiag_key], d[gaiaaen_key])
@@ -753,3 +753,66 @@ def get_desitarget_paths(
             )
 
     return mydirs
+
+
+def create_tile(
+    tileid,
+    tilera,
+    tiledec,
+    outfn,
+    survey,
+    obscon="DARK|GRAY|BRIGHT|BACKUP",
+    log=None,
+    step="settings",
+    start=None,
+):
+    """
+    Create a tiles fits file.
+    
+    Args:
+        tileid: TILEID (int)
+        tilera: tile center R.A. (float)
+        tiledec: tile center Dec. (float)
+        outfn: fits file name to be written
+        survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
+        obscond (optional, defaults to "DARK|GRAY|BRIGHT|BACKUP"): tile allowed observing conditions (string)
+        log (optional): Logger object
+        step (optional): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start (optional): start time for log (in seconds; output of time.time()
+    """
+    hdr = fitsio.FITSHDR()
+    log.info("")
+    log.info("")
+    log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
+    log.info("{:.1f}s\t{}\tstart generating {}".format(time() - start, step, outfn))
+    log.info(
+        "{:.1f}s\t{}\ttileid={}, tilera={}, tiledec={}, survey={}, obscon={}".format(
+            time() - start, step, tileid, tilera, tiledec, survey, obscon
+        )
+    )
+    d = np.zeros(
+        1,
+        dtype=[
+            ("TILEID", "i4"),
+            ("RA", "f8"),
+            ("DEC", "f8"),
+            ("OBSCONDITIONS", "i4"),
+            ("IN_DESI", "i2"),
+            ("PROGRAM", "S6"),
+        ],
+    )
+    d["TILEID"] = tileid
+    d["RA"] = tilera
+    d["DEC"] = tiledec
+    d["IN_DESI"] = 1  # AR forcing 1;
+    # AR otherwise the default onlydesi=True option in
+    # AR desimodel.io.load_tiles() discards tiles outside the desi footprint,
+    # AR so return no tiles for the dithered tiles outside desi
+    d["PROGRAM"] = survey.upper()  # AR custom... SV2, SV3, MAIN
+    log.info("{:.1f}s\t{}\ttile obscon={}".format(time() - start, step, obscon))
+    d["OBSCONDITIONS"] = obsconditions.mask(obscon)
+    fitsio.write(
+        outfn, d, extname="TILES", header=hdr, clobber=True,
+    )
+    log.info("{:.1f}s\t{}\t{} written".format(time() - start, step, outfn,))
