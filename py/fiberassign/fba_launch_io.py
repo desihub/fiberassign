@@ -940,9 +940,10 @@ def create_gfa(
     # AR gfa: write fits
     n, tmpfn = write_targets(tmpoutdir, d, indir=gfadir, survey=survey)
     _ = mv_write_targets_out(tmpfn, tmpoutdir, outfn, log=log, step=step, start=start)
-    # AR gfa: update header
-    fd = fitsio.FITS(outfn, "rw")
-    fd["TARGETS"].write_key("COMMENT", "RA,DEC updated with PM for AEN objects")
-    fd["TARGETS"].write_key("COMMENT", "REF_EPOCH updated for all objects")
-    fd.close()
+    # AR gfa: update header if pmcorr = "y"
+    if pmcorr == "y":
+        fd = fitsio.FITS(outfn, "rw")
+        fd["TARGETS"].write_key("COMMENT", "RA,DEC updated with PM for AEN objects")
+        fd["TARGETS"].write_key("COMMENT", "REF_EPOCH updated for all objects")
+        fd.close()
     log.info("{:.1f}s\t{}\t{} written".format(time() - start, step, outfn))
