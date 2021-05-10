@@ -16,7 +16,7 @@ from desitarget.targets import set_obsconditions
 import desimodel
 from desimodel.footprint import is_point_in_desi
 import fiberassign
-from fiberassign.fba_launch_io import assert_env_vars, assert_svn_tileid, assert_arg_dates, print_config_infos, get_desitarget_paths, custom_read_targets_in_tiles, mv_write_targets_out, force_finite_pm, force_nonzero_refepoch, update_nowradec, create_tile, create_sky, create_gfa, create_mtl, create_too, launch_onetile_fa
+from fiberassign.fba_launch_io import assert_env_vars, assert_svn_tileid, assert_arg_dates, print_config_infos, get_desitarget_paths, custom_read_targets_in_tiles, mv_write_targets_out, force_finite_pm, force_nonzero_refepoch, update_nowradec, create_tile, create_sky, create_gfa, create_mtl, create_too, launch_onetile_fa, update_fiberassign_header
 from fiberassign.scripts.assign import parse_assign, run_assign_full
 from fiberassign.assign import merge_results, minimal_target_columns
 from fiberassign.utils import Logger
@@ -427,66 +427,21 @@ def main():
         )
 
         # AR propagating some settings into the PRIMARY header
-        fd = fitsio.FITS(mytmpouts["fiberassign"], "rw")
-        # AR faflavor
-        fd["PRIMARY"].write_key(
-            "FAFLAVOR", "{}{}".format(args.survey, args.program.lower())
-        )
-        # AR folders, with replacing $DESI_ROOT by DESIROOT
-        desiroot = os.getenv("DESI_ROOT")
-        fd["PRIMARY"].write_key("DESIROOT", desiroot)
-        for key in np.sort(list(mydirs.keys())):
-            if (key == "mtl") & (isinstance(mydirs["mtl"], list)):
-                # AR header keywords: MTL, MTL2, MTL3, etc
-                # AR probably to be deprecate for sv2
-                suffixs = [""] + np.arange(2, len(mydirs["mtl"]) + 1).astype(
-                    str
-                ).tolist()
-                for mtldir, suffix in zip(mydirs["mtl"], suffixs):
-                    fd["PRIMARY"].write_key(
-                        "mtl{}".format(suffix), mtldir.replace(desiroot, "DESIROOT"),
-                    )
-            else:
-                fd["PRIMARY"].write_key(key, mydirs[key].replace(desiroot, "DESIROOT"))
-        # AR storing some specific arguments
-        # AR plus a (long) FAARGS keyword with storing arguments to re-run the fiber assignment
-        # AR     we exclude from FAARGS outdir, forcetiled, and any None argument
-        tmparr = []
-        for kwargs in args._get_kwargs():
-            if kwargs[0].lower() in [
-                "outdir",
-                "survey",
-                "rundate",
-                "pmcorr",
-                "pmtime_utc_str",
-            ]:
-                if kwargs[1] is not None:
-                    if kwargs[0] == "pmtime_utc_str":
-                        tmparg = "pmtime"
-                    else:
-                        tmparg = kwargs[0]
-                    fd["PRIMARY"].write_key(tmparg, kwargs[1])
-            if (kwargs[0].lower() not in ["outdir", "forcetileid"]) & (
-                kwargs[1] is not None
-            ):
-                tmparr += ["--{} {}".format(kwargs[0], kwargs[1])]
-        fd["PRIMARY"].write_key(
-            "faargs", " ".join(tmparr),
-        )
-        # AR storing
-        fd["PRIMARY"].write_key("faprgrm", args.program)
-        fd["PRIMARY"].write_key("mtltime", args.mtltime)
-        fd["PRIMARY"].write_key("obscon", obscon)
-        # AR informations for NTS
-        # AR SBPROF from https://desi.lbl.gov/trac/wiki/SurveyOps/SurveySpeed#NominalFiberfracValues
-        # AR version 35
-        fd["PRIMARY"].write_key("goaltime", args.goaltime)
-        fd["PRIMARY"].write_key("goaltype", args.program)
+        faflavor = "{}{}".format(args.survey, args.program.lower())
         ebv = fitsio.read(mytmpouts["targ"], columns=["EBV"])["EBV"]
-        fd["PRIMARY"].write_key("ebvfac", 10.0 ** (2.165 * np.median(ebv) / 2.5))
-        fd["PRIMARY"].write_key("sbprof", args.sbprof)
-        fd["PRIMARY"].write_key("mintfrac", args.mintfrac)
-        fd.close()
+        fascript = sys.argv[0]
+        update_fiberassign_header(
+            mytmpouts["fiberassign"],
+            args,
+            mydirs,
+            faflavor,
+            ebv,
+            obscon,
+            fascript,
+            log=None,
+            step="",
+            start=None,
+        )
 
     # AR gzip all fiberassign files
     if dozip:
