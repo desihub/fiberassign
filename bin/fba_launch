@@ -16,7 +16,7 @@ from desitarget.targets import set_obsconditions
 import desimodel
 from desimodel.footprint import is_point_in_desi
 import fiberassign
-from fiberassign.fba_launch_io import assert_env_vars, assert_svn_tileid, assert_arg_dates, print_config_infos, get_desitarget_paths, custom_read_targets_in_tiles, mv_write_targets_out, force_finite_pm, force_nonzero_refepoch, update_nowradec, create_tile, create_sky, create_gfa, create_mtl, create_too
+from fiberassign.fba_launch_io import assert_env_vars, assert_svn_tileid, assert_arg_dates, print_config_infos, get_desitarget_paths, custom_read_targets_in_tiles, mv_write_targets_out, force_finite_pm, force_nonzero_refepoch, update_nowradec, create_tile, create_sky, create_gfa, create_mtl, create_too, launch_onetile_fa
 from fiberassign.scripts.assign import parse_assign, run_assign_full
 from fiberassign.assign import merge_results, minimal_target_columns
 from fiberassign.utils import Logger
@@ -405,92 +405,25 @@ def main():
 
     # AR fiberassign
     if dofa:
-        log.info("")
-        log.info("")
-        log.info("{:.1f}s\tdofa\tTIMESTAMP={}".format(time() - start, Time.now().isot))
-        log.info("{:.1f}s\tdofa\tstart running fiber assignment".format(time() - start))
-        # AR safe: delete possibly existing fba-{tileid}.fits and fiberassign-{tileid}.fits
-        # AR     : if file exists but we are here in the code
-        # AR       it means args.forcetileid="y"
-        if os.path.isfile(mytmpouts["fba"]):
-            os.remove(mytmpouts["fba"])
-        if os.path.isfile(mytmpouts["fiberassign"]):
-            os.remove(mytmpouts["fiberassign"])
-
-        # AR running fiberassign
-        opts = [
-            "--targets",
-            mytmpouts["targ"],
-        ]
+        # AR prepare targfns
+        targfns = [mytmpouts["targ"]]
         if (doscnd) & (os.path.isfile(mytmpouts["scnd"])):
-            opts += [
-                mytmpouts["scnd"],
-            ]
+            targfns.append(mytmpouts["scnd"])
         if (dotoo) & (os.path.isfile(mytmpouts["too"])):
-            opts += [
-                mytmpouts["too"],
-            ]
-        opts += [
-            "--rundate",
-            args.rundate,
-            "--overwrite",
-            "--write_all_targets",
-            "--footprint",
+            targfns.append(mytmpouts["too"])
+
+        # AR launch_onetile_fa
+        launch_onetile_fa(
+            args,
             mytmpouts["tiles"],
-            "--dir",
-            tmpoutdir,
-            "--sky",
-            mytmpouts["sky"],
-            "--sky_per_petal",
-            args.sky_per_petal,
-            "--standards_per_petal",
-            args.standards_per_petal,
-            "--gfafile",
-            mytmpouts["gfa"],
-            "--sky_per_slitblock",
-            str(args.sky_per_slitblock),
-        ]
-
-        log.info(
-            "{:.1f}s\tdofa\ttileid={:06d}: running raw fiber assignment (run_assign_full) with opts={}".format(
-                time() - start, args.tileid, " ; ".join(opts)
-            )
-        )
-        ag = parse_assign(opts)
-        run_assign_full(ag)
-
-        # AR merging
-        # AR not using run_merge(), because it looks for all fba-TILEID.fits file
-        # AR in the out directory...
-        ag = {}
-        ag["tiles"] = [args.tileid]
-        ag["columns"] = None
-        ag["targets"] = [
-            mytmpouts["gfa"],
-            mytmpouts["targ"],
-        ]
-        if (doscnd) & (os.path.isfile(mytmpouts["scnd"])):
-            ag["targets"] += [mytmpouts["scnd"]]
-        ag["sky"] = [
-            mytmpouts["sky"],
-        ]
-        ag["result_dir"] = tmpoutdir
-        ag["copy_fba"] = False
-        tmparr = []
-        for key in list(ag.keys()):
-            tmparr += ["{} = {}".format(key, ag[key])]
-        log.info(
-            "{:.1f}s\tdofa\ttileid={:06d}: merging input target data (merge_results) with argument={}".format(
-                time() - start, args.tileid, " ; ".join(tmparr)
-            )
-        )
-        merge_results(
-            ag["targets"],
-            ag["sky"],
-            ag["tiles"],
-            result_dir=ag["result_dir"],
-            columns=ag["columns"],
-            copy_fba=ag["copy_fba"],
+            targfns,
+            mytmpouts["fba"],
+            mytmpouts["fiberassign"],
+            skyfn=mytmpouts["sky"],
+            gfafn=mytmpouts["gfa"],
+            log=log,
+            step="dofa",
+            start=start,
         )
 
         # AR propagating some settings into the PRIMARY header
