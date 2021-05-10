@@ -397,7 +397,7 @@ def main():
         d = force_finite_pm(d, log=log, step="dogfa", start=start, )
         # AR gfa: update RA, DEC, REF_EPOCH using proper motion
         if args.pmcorr == "y":
-            d = update_nowradec(d, args.pmtime_utc_str, log=log, step="dogfa", start=start, )
+            d = update_nowradec(d, args.gaiadr.replace("gaia", ""), args.pmtime_utc_str, log=log, step="dogfa", start=start, )
         else:
             log.info(
                 "{:.1f}s\tdogfa\t*not* applying proper-motion correction".format(
@@ -475,7 +475,7 @@ def main():
         d = force_finite_pm(d, log=log, step="domtl", start=start)
         # AR mtl: update RA, DEC, REF_EPOCH using proper motion
         if args.pmcorr == "y":
-            d = update_nowradec(d, args.pmtime_utc_str, log=log, step="domtl", start=start, )
+            d = update_nowradec(d, args.gaiadr.replace("gaia", ""), args.pmtime_utc_str, log=log, step="domtl", start=start, )
         else:
             log.info(
                 "{:.1f}s\tdomtl\t*not* applying proper-motion correction".format(
@@ -530,7 +530,8 @@ def main():
             start=start,
         )
         # AR scnd: add all desitarget columns
-        # AR scnd: commenting out for now has issue with inflate_ledger() and secondary
+        # AR scnd: TBD commenting out for now has issue with inflate_ledger() and secondary
+        # AR scnd: TBD currently will fail if args.pmcorr = "y", because no GAIA_ASTROMETRIC_EXCESS_NOISE
         #d = inflate_ledger(
         #    d, mydirs["scnd"], columns=None, header=False, strictcols=False, quick=False
         #)
@@ -538,7 +539,7 @@ def main():
         d = force_finite_pm(d, log=log, step="doscnd", start=start, )
         # AR scnd: update RA, DEC, REF_EPOCH using proper motion
         if args.pmcorr == "y":
-            d = update_nowradec(d, args.pmtime_utc_str, log=log, step="doscnd", start=start, )
+            d = update_nowradec(d, args.gaiadr.replace("gaia", ""), args.pmtime_utc_str, log=log, step="doscnd", start=start, )
         else:
             log.info(
                 "{:.1f}s\tdoscnd\t*not* applying proper-motion correction".format(
@@ -604,7 +605,7 @@ def main():
             d = force_finite_pm(d, log=log, step="dotoo", start=start, )
             # AR too: update RA, DEC, REF_EPOCH using proper motion
             if args.pmcorr == "y":
-                d = update_nowradec(d, args.pmtime_utc_str, log=log, step="dotoo", start=start, )
+                d = update_nowradec(d, args.gaiadr.replace("gaia", ""), args.pmtime_utc_str, log=log, step="dotoo", start=start, )
             else:
                 log.info(
                     "{:.1f}s\tdotoo\t*not* applying proper-motion correction".format(
