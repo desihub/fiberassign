@@ -1441,3 +1441,30 @@ def update_fiberassign_header(
     # AR fba_launch-like script name used to designed the tile
     fd["PRIMARY"].write_key("fascript", fascript)
     fd.close()
+
+
+def secure_gzip(
+    fiberassignfn, log=None, step="", start=None,
+):
+    """
+    Secure gzipping of the fiberassign-TILEID.fits file.
+    
+    Args:
+        fiberassignfn: path to fiberassign-TILEID.fits file (string)
+        log (optional): Logger object
+        step (optional): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start (optional): start time for log (in seconds; output of time.time()
+    """
+    log.info("")
+    log.info("")
+    log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
+    if os.path.isfile("{}.gz".format(fiberassignfn)):
+        os.remove("{}.gz".format(fiberassignfn))
+        log.info(
+            "{:.1f}s\t{}\tdeleting existing {}.gz".format(
+                time() - start, step, fiberassignfn
+            )
+        )
+    os.system("gzip {}".format(fiberassignfn))
+    log.info("{:.1f}s\t{}\tgzipping {}".format(time() - start, step, fiberassignfn))
