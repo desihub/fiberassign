@@ -989,6 +989,11 @@ def create_mtl(
     Notes:
         if pmcorr="y", then pmtime_utc_str needs to be set; will trigger an error otherwise.
         for sv3-backup, we remove BACKUP_BRIGHT targets.
+        TBD : if secondary targets, we currently disable the inflate_ledger(), as it
+                seems to not currently work.
+                hence if secondary and pmcorr="y", the code will crash, as the 
+                GAIA_ASTROMETRIC_EXCESS_NOISE column will be missing; though we do not
+                expect this configuration to happen, so it should be fine for now.
     """
     log.info("")
     log.info("")
@@ -997,6 +1002,7 @@ def create_mtl(
     tiles = fits.open(tilesfn)[1].data
     # AR mtl: storing the timestamp at which we queried MTL
     log.info("{:.1f}s\t{}\tmtltime={}".format(time() - start, step, mtltime))
+
     # AR mtl: read mtl
     d = custom_read_targets_in_tiles(
         [mtldir],
@@ -1009,9 +1015,11 @@ def create_mtl(
         step=step,
         start=start,
     )
+
     # AR mtl: removing by hand BACKUP_BRIGHT for sv3/BACKUP
     # AR mtl: using an indirect way to find if program=backup,
     # AR mtl:   to avoid the need of an extra program argument
+    # AR mtl:   for sv3, there is no secondary-backup, so no ambiguity
     if (survey == "sv3") & ("backup" in mtldir):
         from desitarget.sv3.sv3_targetmask import mws_mask
 
@@ -1022,21 +1030,26 @@ def create_mtl(
             )
         )
         d = d[keep]
+
     # AR mtl: add columns not present in ledgers
     # AR mtl: need to provide exact list (if columns=None, inflate_ledger()
     # AR mtl:    overwrites existing columns)
-    columns = [key for key in minimal_target_columns if key not in d.dtype.names]
-    # AR mtl: also add GAIA_ASTROMETRIC_EXCESS_NOISE, in case args.pmcorr == "y"
-    if pmcorr == "y":
-        columns += ["GAIA_ASTROMETRIC_EXCESS_NOISE"]
-    log.info(
-        "{:.1f}s\t{}\tadding {} from {}".format(
-            time() - start, step, ",".join(columns), targdir
+    # AR mtl: TBD : we currently disable it for secondary targets
+    # AR mtl:       using an indirect way to find if secondary,
+    # AR mtl:       to avoid the need of an extra program argument
+    if "secondary" not in mtldir:
+        columns = [key for key in minimal_target_columns if key not in d.dtype.names]
+        # AR mtl: also add GAIA_ASTROMETRIC_EXCESS_NOISE, in case args.pmcorr == "y"
+        if pmcorr == "y":
+            columns += ["GAIA_ASTROMETRIC_EXCESS_NOISE"]
+        log.info(
+            "{:.1f}s\t{}\tadding {} from {}".format(
+                time() - start, step, ",".join(columns), targdir
+            )
         )
-    )
-    d = inflate_ledger(
-        d, targdir, columns=columns, header=False, strictcols=False, quick=True
-    )
+        d = inflate_ledger(
+            d, targdir, columns=columns, header=False, strictcols=False, quick=True
+        )
 
     # AR mtl: PMRA, PMDEC: convert NaN to zeros
     d = force_finite_pm(d, log=log, step=step, start=start)
