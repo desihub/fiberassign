@@ -32,6 +32,10 @@ import shutil
 from fiberassign.utils import Logger
 
 
+# AR default REF_EPOCH for PMRA=PMDEC=REF_EPOCH=0 objects
+gaia_ref_epochs = {"dr2": 2015.5}
+
+
 def assert_isoformat_utc(time_str):
     """
     Asserts if a date formats as "YYYY-MM-DDThh:mm:ss+00:00".
@@ -834,7 +838,7 @@ def create_sky(
     Args:
         tilesfn: path to a tiles fits file (string)
         skydir: desitarget sky folder (string)
-        outfn: fits file name to be written
+        outfn: fits file name to be written (string)
         suppskydir (optional, defaults to None): desitarget suppsky folder (string)
         tmpoutdir (optional, defaults to a temporary directory): temporary directory where
                 write_skies will write (creating some sub-directories)
@@ -857,4 +861,88 @@ def create_sky(
     )
     n, tmpfn = write_skies(tmpoutdir, d, indir=skydir, indir2=suppskydir,)
     _ = mv_write_targets_out(tmpfn, tmpoutdir, outfn, log=log, step=step, start=start)
+    log.info("{:.1f}s\t{}\t{} written".format(time() - start, step, outfn))
+
+
+def create_gfa(
+    tilesfn,
+    gfadir,
+    survey,
+    gaiadr,
+    pmcorr,
+    outfn,
+    tmpoutdir=tempfile.mkdtemp(),
+    pmtime_utc_str=None,
+    log=None,
+    step="",
+    start=None,
+):
+    """
+    Create a GFA fits file.
+    
+    Args:
+        tilesfn: path to a tiles fits file (string)
+        gfadir: desitarget GFA folder (string)
+        survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
+        gaiadr: Gaia dr ("dr2" or "edr3")
+        pmcorr: apply proper-motion correction? ("y" or "n")
+        outfn: fits file name to be written (string)
+        tmpoutdir (optional, defaults to a temporary directory): temporary directory where
+                write_skies will write (creating some sub-directories)
+        pmtime_utc_str (optional, defaults to None): UTC time use to compute
+                new coordinates after applying proper motion since REF_EPOCH
+                (string formatted as "yyyy-mm-ddThh:mm:ss+00:00")
+        log (optional): Logger object
+        step (optional): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start (optional): start time for log (in seconds; output of time.time()
+
+    Notes:
+        if pmcorr="y", then pmtime_utc_str needs to be set; will trigger an error otherwise.
+    """
+    log.info("")
+    log.info("")
+    log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
+    log.info("{:.1f}s\t{}\tstart generating {}".format(time() - start, step, outfn))
+    # AR gfa: read targets
+    tiles = fits.open(tilesfn)[1].data
+    d = custom_read_targets_in_tiles(
+        [gfadir], tiles, quick=True, mtl=False, log=log, step=step, start=start
+    )
+    log.info(
+        "{:.1f}s\t{}\tkeeping {} targets to {}".format(
+            time() - start, step, len(d), outfn
+        )
+    )
+    # AR gfa: PMRA, PMDEC: convert NaN to zeros
+    d = force_finite_pm(d, log=log, step=step, start=start)
+    # AR gfa: update RA, DEC, REF_EPOCH using proper motion?
+    if pmcorr == "y":
+        if pmtime_utc_str is None:
+            log.error(
+                "{:.1f}s\t{}\tneed to provide pmtime_utc_str, as proper-correction is requested; exiting".format(
+                    time() - start, step,
+                )
+            )
+            sys.exti(1)
+        d = update_nowradec(d, gaiadr, pmtime_utc_str, log=log, step=step, start=start)
+    else:
+        log.info(
+            "{:.1f}s\t{}\t*not* applying proper-motion correction".format(
+                time() - start, step
+            )
+        )
+        # AR Replaces 0 by force_ref_epoch in ref_epoch
+        d = force_nonzero_refepoch(
+            d, gaia_ref_epochs[gaiadr], log=log, step=step, start=start
+        )
+
+    # AR gfa: write fits
+    n, tmpfn = write_targets(tmpoutdir, d, indir=gfadir, survey=survey)
+    _ = mv_write_targets_out(tmpfn, tmpoutdir, outfn, log=log, step=step, start=start)
+    # AR gfa: update header
+    fd = fitsio.FITS(outfn, "rw")
+    fd["TARGETS"].write_key("COMMENT", "RA,DEC updated with PM for AEN objects")
+    fd["TARGETS"].write_key("COMMENT", "REF_EPOCH updated for all objects")
+    fd.close()
     log.info("{:.1f}s\t{}\t{} written".format(time() - start, step, outfn))
