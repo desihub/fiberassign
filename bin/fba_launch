@@ -16,7 +16,7 @@ from desitarget.targets import set_obsconditions
 import desimodel
 from desimodel.footprint import is_point_in_desi
 import fiberassign
-from fiberassign.fba_launch_io import assert_env_vars, assert_svn_tileid, assert_arg_dates, print_config_infos, get_desitarget_paths, custom_read_targets_in_tiles, mv_write_targets_out, force_finite_pm, force_nonzero_refepoch, update_nowradec, create_tile, create_sky, create_gfa, create_mtl
+from fiberassign.fba_launch_io import assert_env_vars, assert_svn_tileid, assert_arg_dates, print_config_infos, get_desitarget_paths, custom_read_targets_in_tiles, mv_write_targets_out, force_finite_pm, force_nonzero_refepoch, update_nowradec, create_tile, create_sky, create_gfa, create_mtl, create_too
 from fiberassign.scripts.assign import parse_assign, run_assign_full
 from fiberassign.assign import merge_results, minimal_target_columns
 from fiberassign.utils import Logger
@@ -386,69 +386,22 @@ def main():
         )
 
     # AR ToO targets
-    log.info("")
-    log.info("")
-    log.info(
-        "{:.1f}s\tdotoo\tTIMESTAMP={}".format(time() - start, Time.now().isot)
-    )
     if dotoo:
-        log.info(
-            "{:.1f}s\tdotoo\tstart generating {}".format(
-                time() - start, mytmpouts["too"]
-            )
+        create_too(
+            mytmpouts["tiles"],
+            mydirs["too"],
+            mjd_now - 1,
+            mjd_now + 30,
+            args.survey,
+            args.gaiadr.replace("gaia", ""),
+            args.pmcorr,
+            mytmpouts["too"],
+            tmpoutdir=tmpoutdir,
+            pmtime_utc_str=args.pmtime_utc_str,
+            log=log,
+            step="dotoo",
+            start=start,
         )
-        tiles = fits.open(mytmpouts["tiles"])[1].data
-        # AR too: storing the timestamp at which we queried MTL
-        # AR too: actually not exactly.. (timestamp when script started)
-        log.info(
-            "{:.1f}s\tdotoo\tmtltime={}".format(
-                time() - start, utc_time_now_str
-            )
-        )
-        # AR too: read too mtl
-        # AR cut on:
-        # AR - tiles
-        # AR - mjd (! TBD !)
-        d = Table.read(mydirs["too"])
-        keep = is_point_in_desi(tiles, d["RA"], d["DEC"])
-        keep &= (d["MJD_BEGIN"] < mjd_now + 30) & (d["MJD_END"] > mjd_now - 1)
-        log.info(
-            "{:.1f}s\tdotoo\tkeeping {}/{} targets in tiles and in the MJD time window: {}, {}".format(
-                time() - start, keep.sum(), len(keep), mjd_now -1, mjd_now + 30
-            )
-        )
-        if keep.sum() > 0:
-            d = d[keep]
-            # AR PMRA, PMDEC: convert NaN to zeros
-            d = force_finite_pm(d, log=log, step="dotoo", start=start, )
-            # AR too: update RA, DEC, REF_EPOCH using proper motion
-            if args.pmcorr == "y":
-                d = update_nowradec(d, args.gaiadr.replace("gaia", ""), args.pmtime_utc_str, log=log, step="dotoo", start=start, )
-            else:
-                log.info(
-                    "{:.1f}s\tdotoo\t*not* applying proper-motion correction".format(
-                        time() - start
-                    )
-                )
-                # AR single REF_EPOCH needed
-                # AR TBD currently all targets have PMRA=PMDEC=0,
-                # AR TBD so it s fine to just change all REF_EPOCH
-                d["REF_EPOCH"] = np.zeros(len(d))
-                d = force_nonzero_refepoch(d, ref_epochs[args.gaiadr], log=log, step="dotoo", start=start, )
-            # AR too: write fits
-            n, tmpfn = write_targets(
-                tmpoutdir, d.as_array(), indir=mydirs["too"], survey=args.survey
-            )
-            _ = mv_write_targets_out(tmpfn, tmpoutdir, mytmpouts["too"], log=log, step="dotoo", start=start, )
-            # AR too: update header
-            fd = fitsio.FITS(mytmpouts["too"], "rw")
-            if args.pmcorr == "y":
-                fd["TARGETS"].write_key("COMMENT", "RA,DEC updated with PM for AEN objects")
-            fd["TARGETS"].write_key("COMMENT", "REF_EPOCH updated for all objects")
-            fd.close()
-            log.info("{:.1f}s\tdotoo\t{} written".format(time() - start, mytmpouts["too"]))
-        else:
-            log.info("{:.1f}s\tdotoo\tno too kept too targets, no {} written".format(time() - start, mytmpouts["too"]))
 
     # AR fiberassign
     if dofa:
