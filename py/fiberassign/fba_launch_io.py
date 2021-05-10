@@ -1199,3 +1199,139 @@ def create_too(
                 time() - start, step, outfn
             )
         )
+
+
+def launch_onetile_fa(
+    args,
+    tilesfn,
+    targfns,
+    fbafn,
+    fiberassignfn,
+    skyfn=None,
+    gfafn=None,
+    log=None,
+    step="",
+    start=None,
+):
+    """
+    Runs the fiber assignment (run_assign_full) and merges the results (merge_results) for a single tile.
+    
+    Args:
+        args: fba_launch-like parser.parse_args() output
+            should contain at least:
+                - rundate
+                - sky_per_petal
+                - standards_per_petal
+                - sky_per_slitblock
+        tilesfn: path to the input tiles fits file (string)
+        targfns: paths to the input targets fits files, e.g. targ, scnd, too (either a string if only one file, or a list of strings)
+        fbafn: path to the output fba-TILEID.fits file (string)
+        fiberassignfn: path to the output fiberassign-TILEID.fits file (string)
+        skyfn (optional, defaults to None): path to a sky fits file (string)
+        gfafn (optional, defaults to None): path to a gfa fits file (string)
+        log (optional): Logger object
+        step (optional): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start (optional): start time for log (in seconds; output of time.time()
+
+    Notes:
+        no sanity checks done on inputs; assumed to be done elsewhere
+        assumes the output directory is the same for fbafn and fiberassignfn
+        we keep a generic "args" input, so that any later added argument in fba_launch does not
+            requires a change in the launch_fa() call format.
+        fba_launch-like adding information in the header is done in another function, update_fa_header
+        TBD: be careful if working in the SVN-directory; maybe add additional safety lines? 
+    """
+    log.info("")
+    log.info("")
+    log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
+    log.info("{:.1f}s\t{}\tstart running fiber assignment".format(time() - start, step))
+
+    # AR convert targfns to list if string (i.e. only one input file)
+    if isinstance(targfns, str):
+        targfns = [targfns]
+
+    # AR tileid
+    tileid = fits.open(tilesfn)[1].data["TILEID"][0]
+
+    # AR output directory (picking the one of fbafn)
+    outdir = os.path.dirname(fbafn)
+
+    # AR safe: delete possibly existing fba-{tileid}.fits and fiberassign-{tileid}.fits
+    # AR TBD: add additional safety check if running in SVN folder?
+    if os.path.isfile(fbafn):
+        os.remove(fbafn)
+    if os.path.isfile(fiberassignfn):
+        os.remove(fiberassignfn)
+
+    # AR preparing fba_run inputs
+    opts = [
+        "--targets",
+    ]
+    for targfn in targfns:
+        opts += [
+            targfn,
+        ]
+    opts += [
+        "--overwrite",
+        "--write_all_targets",
+        "--dir",
+        outdir,
+        "--footprint",
+        tilesfn,
+        "--rundate",
+        args.rundate,
+        "--sky_per_petal",
+        args.sky_per_petal,
+        "--standards_per_petal",
+        args.standards_per_petal,
+        "--sky_per_slitblock",
+        str(args.sky_per_slitblock),
+    ]
+    if skyfn is not None:
+        opts += [
+            "--sky",
+            skyfn,
+        ]
+    if gfafn is not None:
+        opts += [
+            "--gfafile",
+            gfafn,
+        ]
+    log.info(
+        "{:.1f}s\t{}\ttileid={:06d}: running raw fiber assignment (run_assign_full) with opts={}".format(
+            time() - start, step, tileid, " ; ".join(opts)
+        )
+    )
+    ag = parse_assign(opts)
+    run_assign_full(ag)
+
+    # AR merging
+    # AR not using run_merge(), because it looks for all fba-TILEID.fits file
+    # AR in the out directory...
+    ag = {}
+    ag["tiles"] = [tileid]
+    ag["columns"] = None
+    ag["targets"] = [gfafn] + targfns
+    if skyfn is not None:
+        ag["sky"] = [skyfn]
+    else:
+        ag["sky"] = []
+    ag["result_dir"] = outdir
+    ag["copy_fba"] = False
+    tmparr = []
+    for key in list(ag.keys()):
+        tmparr += ["{} = {}".format(key, ag[key])]
+    log.info(
+        "{:.1f}s\t{}\ttileid={:06d}: merging input target data (merge_results) with argument={}".format(
+            time() - start, step, tileid, " ; ".join(tmparr)
+        )
+    )
+    merge_results(
+        ag["targets"],
+        ag["sky"],
+        ag["tiles"],
+        result_dir=ag["result_dir"],
+        columns=ag["columns"],
+        copy_fba=ag["copy_fba"],
+    )
