@@ -438,9 +438,9 @@ def main():
             ebv,
             obscon,
             fascript,
-            log=None,
-            step="",
-            start=None,
+            log=log,
+            step="dofa",
+            start=start,
         )
 
     # AR gzip all fiberassign files
