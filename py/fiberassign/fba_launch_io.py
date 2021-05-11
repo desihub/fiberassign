@@ -71,9 +71,9 @@ def custom_read_targets_in_tiles(
     mtl=False,
     unique=True,
     isodate=None,
-    log=None,
+    log=Logger.get(),
     step="",
-    start=None,
+    start=time(),
 ):
     """
     Wrapper to desitarget.io.read_targets_in_tiles, allowing multiple folders
@@ -83,17 +83,13 @@ def custom_read_targets_in_tiles(
         targdirs: list of folders
         tiles: tiles object (as required by desitarget.io.read_targets_in_tiles)
         quick, mtl, unique, isodate (optional): same as desitarget.io.read_targets_in_tiles arguments
-        log (optional): Logger object
+        log (optional, defaults to Logger.get()): Logger object
         step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start (optional): start time for log (in seconds; output of time.time()
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
     Returns:
         array of targets in the passed tiles.
     """
-    if log is None:
-        log = Logger.get()
-    if start is None:
-        start = time()
     # AR reading
     log.info(
         "{:.1f}s\t{}\treading input targets from {}".format(
@@ -138,7 +134,7 @@ def custom_read_targets_in_tiles(
     return d
 
 
-def mv_write_targets_out(infn, targdir, outfn, log=None, step="", start=None):
+def mv_write_targets_out(infn, targdir, outfn, log=Logger.get(), step="", start=time()):
     """
     Moves the file created by desitarget.io.write_targets
     and removes folder created by desitarget.io.write_targets    
@@ -147,15 +143,11 @@ def mv_write_targets_out(infn, targdir, outfn, log=None, step="", start=None):
         infn: filename output by desitarget.io.write_targets
         targdir: folder provided as desitarget.io.write_targets input
         outfn: desired renaming of infn
-        log (optional): Logger object
+        log (optional, defaults to Logger.get()): Logger object
         step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start (optional): start time for log (in seconds; output of time.time()
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
     """
-    if log is None:
-        log = Logger.get()
-    if start is None:
-        start = time()
     # AR renaming
     _ = shutil.move(infn, outfn)
     log.info("{:.1f}s\t{}\trenaming {} to {}".format(time() - start, step, infn, outfn))
@@ -246,7 +238,7 @@ def get_nowradec(ra, dec, pmra, pmdec, parallax, ref_year, pmtime_utc_str, scnd=
 
 
 def force_finite_pm(
-    d, pmra_key="PMRA", pmdec_key="PMDEC", log=None, step="", start=None
+    d, pmra_key="PMRA", pmdec_key="PMDEC", log=Logger.get(), step="", start=time()
 ):
     """
     Replaces NaN PMRA, PMDEC by 0    
@@ -255,20 +247,15 @@ def force_finite_pm(
         d: array with at least proper-motion columns
         pmra_key (optional, defaults to PMRA): column name for PMRA
         pmdec_key (optional, defaults to PMDEC): column name for PMDEC
-        log (optional): Logger object
+        log (optional, defaults to Logger.get()): Logger object
         step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start (optional): start time for log (in seconds; output of time.time()
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
 
     Returns:
         d: same as input d, but NaN proper motions replaced by 0
         
     """
-    if log is None:
-        log = Logger.get()
-    if start is None:
-        start = time()
-
     for key in [pmra_key, pmdec_key]:
         keep = ~np.isfinite(d[key])
         if keep.sum() > 0:
@@ -287,9 +274,9 @@ def force_nonzero_refepoch(
     ref_epoch_key="REF_EPOCH",
     pmra_key="PMRA",
     pmdec_key="PMDEC",
-    log=None,
+    log=Logger.get(),
     step="",
-    start=None,
+    start=time(),
 ):
     """
     Replaces 0 by force_ref_epoch in ref_epoch
@@ -300,10 +287,10 @@ def force_nonzero_refepoch(
         ref_epoch_key (optional, defaults to REF_EPOCH): column name for the ref_epoch
         pmra_key (optional, defaults to PMRA): column name for PMRA
         pmdec_key (optional, defaults to PMDEC): column name for PMDEC
-        log (optional): Logger object
+        log (optional, defaults to Logger.get()): Logger object
         step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start (optional): start time for log (in seconds; output of time.time()        
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
     Returns:
         d: same as input d, but 0 ref_epochs replaced by force_ref_epoch
 
@@ -311,10 +298,6 @@ def force_nonzero_refepoch(
         Will exit with error if ref_epoch=0, but pmra or pmdec != 0
         
     """
-    if log is None:
-        log = Logger.get()
-    if start is None:
-        start = time()
     keep = d[ref_epoch_key] == 0
     n = ((d[pmra_key][keep] != 0) | (d[pmra_key][keep] != 0)).sum()
     if n > 0:
@@ -351,9 +334,9 @@ def update_nowradec(
     gaiag_key="GAIA_PHOT_G_MEAN_MAG",
     gaiaaen_key="GAIA_ASTROMETRIC_EXCESS_NOISE",
     scnd=False,
-    log=None,
+    log=Logger.get(),
     step="",
-    start=None,
+    start=time(),
 ):
     """
     Update (RA, DEC, REF_EPOCH) using proper motion
@@ -373,10 +356,10 @@ def update_nowradec(
         scnd (optional, defaults to False): secondary target? (boolean);
               if False, update for REF_EPOCH>0 + AEN only
               if True, update for REF_EPOCH>0 + finite(PMRA,PMDEC) ; forces PARALLAX=0
-        log (optional): Logger object
+        log (optional, defaults to Logger.get()): Logger object
         step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start (optional): start time for log (in seconds; output of time.time()        
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
         
     Returns:
         d: same as input, but with RA, DEC updated to pmtime_utc_str
@@ -384,10 +367,6 @@ def update_nowradec(
     Notes:
         REF_EPOCH is updated for *all* objects
     """
-    if log is None:
-        log = Logger.get()
-    if start is None:
-        start = time()
     # AR
     pmtime_utc = datetime.strptime(pmtime_utc_str, "%Y-%m-%dT%H:%M:%S%z")
     pmtime_utc_jyear = Time(pmtime_utc).jyear
@@ -450,9 +429,9 @@ def assert_env_vars(
         "DESI_SURVEYOPS",
         "SKYBRICKS_DIR",
     ],
-    log=None,
+    log=Logger.get(),
     step="settings",
-    start=None,
+    start=time(),
 ):
     """
     Assert the environment variables required by fba_launch 
@@ -463,19 +442,14 @@ def assert_env_vars(
         "DESIMODEL",
         "DESI_SURVEYOPS",
         "SKYBRICKS_DIR",]): list of environment variables required by fba_launch
-        log (optional): Logger object
+        log (optional, defaults to Logger.get()): Logger object
         step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start (optional): start time for log (in seconds; output of time.time()        
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
         
     Notes:
         will exit with error if some assertions are not verified 
     """
-    if log is None:
-        log = Logger.get()
-    if start is None:
-        start = time()
-
     # AR safe: DESI environment variables
     for required_env_var in required_env_vars:
         if os.getenv(required_env_var) is None:
@@ -490,9 +464,9 @@ def assert_env_vars(
 def assert_arg_dates(
     args,
     dates=["pmtime_utc_str", "rundate", "mtltime"],
-    log=None,
+    log=Logger.get(),
     step="settings",
-    start=None,
+    start=time(),
 ):
     """
     Assert the fba_launch date arguments are correctly formatted ("YYYY-MM-DDThh:mm:ss+00:00")
@@ -500,19 +474,14 @@ def assert_arg_dates(
     Args:
         args: fba_launch parser.parse_args() output
         dates (optional, defaults to ["pmtime_utc_str", "rundate", "mtltime"]): list of date fba_launch argument names to check
-        log (optional): Logger object
+        log (optional, defaults to Logger.get()): Logger object
         step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start (optional): start time for log (in seconds; output of time.time()        
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
         
     Notes:
         will exit with error if some assertions are not verified 
     """
-    if log is None:
-        log = Logger.get()
-    if start is None:
-        start = time()
-
     # AR dates properly formatted?
     for kwargs in args._get_kwargs():
         if kwargs[0] in dates:
@@ -526,7 +495,7 @@ def assert_arg_dates(
 
 
 def assert_svn_tileid(
-    tileid, forcetileid="n", log=None, step="settings", start=None,
+    tileid, forcetileid="n", log=Logger.get(), step="settings", start=time(),
 ):
     """
     Asserts if TILEID already exists in the SVN tile folder
@@ -536,17 +505,12 @@ def assert_svn_tileid(
         forcetileid (optional, defaults to "n"): "y" or "n";
                 if "n", will trigger a warning + an error
                 if "y", e will trigger a warning only
-        log (optional): Logger object
+        log (optional, defaults to Logger.get()): Logger object
         step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start (optional): start time for log (in seconds; output of time.time()        
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
        
     """
-    if log is None:
-        log = Logger.get()
-    if start is None:
-        start = time()
-
     svn_trunk = os.path.join(os.getenv("DESI_TARGET"), "fiberassign/tiles/trunk")
     # AR needs a wildcard to verify .fits and fits.gz files
     # AR as the gzipping was not done before ~SV1
@@ -586,9 +550,9 @@ def print_config_infos(
         "DESI_SURVEYOPS",
         "SKYBRICKS_DIR",
     ],
-    log=None,
+    log=Logger.get(),
     step="settings",
-    start=None,
+    start=time(),
 ):
     """
     Print various configuration informations (machine, modules version/path, DESI environment variables).
@@ -599,16 +563,11 @@ def print_config_infos(
         "DESIMODEL",
         "DESI_SURVEYOPS",
         "SKYBRICKS_DIR",]): list of environment variables required by fba_launch
-        log (optional): Logger object
+        log (optional, defaults to Logger.get()): Logger object
         step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start (optional): start time for log (in seconds; output of time.time()        
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
     """
-    if log is None:
-        log = Logger.get()
-    if start is None:
-        start = time()
-
     # AR machine
     log.info(
         "{:.1f}s\t{}\tHOSTNAME={}".format(time() - start, step, os.getenv("HOSTNAME"))
@@ -644,9 +603,9 @@ def get_desitarget_paths(
     program,
     dr="dr9",
     gaiadr="gaiadr2",
-    log=None,
+    log=Logger.get(),
     step="settings",
-    start=None,
+    start=time(),
 ):
     """
     Obtain the folder/file full paths for desitarget products
@@ -657,10 +616,10 @@ def get_desitarget_paths(
         program: "dark", "bright", or "backup" (string)
         dr (optional, defaults to "dr9"): legacypipe dr (string)
         gaiadr (optional, defaults to "gaiadr2"): gaia dr (string)
-        log (optional): Logger object
+        log (optional, defaults to Logger.get()): Logger object
         step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start (optional): start time for log (in seconds; output of time.time()        
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
         
     Returns:
         Dictionary with the following keys:
@@ -678,11 +637,6 @@ def get_desitarget_paths(
         or program not in ["dark", "bright", or "backup"], will return a warning only
         same warning only if the built paths/files do not exist.
     """
-    if log is None:
-        log = Logger.get()
-    if start is None:
-        start = time()
-
     # AR expected survey, program?
     exp_surveys = ["sv1", "sv2", "sv3", "main"]
     exp_programs = ["dark", "bright", "backup"]
@@ -777,9 +731,9 @@ def create_tile(
     outfn,
     survey,
     obscon="DARK|GRAY|BRIGHT|BACKUP",
-    log=None,
+    log=Logger.get(),
     step="",
-    start=None,
+    start=time(),
 ):
     """
     Create a tiles fits file.
@@ -791,15 +745,11 @@ def create_tile(
         outfn: fits file name to be written
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         obscon (optional, defaults to "DARK|GRAY|BRIGHT|BACKUP"): tile allowed observing conditions (string)
-        log (optional): Logger object
+        log (optional, defaults to Logger.get()): Logger object
         step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start (optional): start time for log (in seconds; output of time.time()
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
     """
-    if log is None:
-        log = Logger.get()
-    if start is None:
-        start = time()
     hdr = fitsio.FITSHDR()
     log.info("")
     log.info("")
@@ -843,9 +793,9 @@ def create_sky(
     outfn,
     suppskydir=None,
     tmpoutdir=tempfile.mkdtemp(),
-    log=None,
+    log=Logger.get(),
     step="",
-    start=None,
+    start=time(),
 ):
     """
     Create a sky fits file.
@@ -857,15 +807,11 @@ def create_sky(
         suppskydir (optional, defaults to None): desitarget suppsky folder (string)
         tmpoutdir (optional, defaults to a temporary directory): temporary directory where
                 write_skies will write (creating some sub-directories)
-        log (optional): Logger object
+        log (optional, defaults to Logger.get()): Logger object
         step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start (optional): start time for log (in seconds; output of time.time()
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
     """
-    if log is None:
-        log = Logger.get()
-    if start is None:
-        start = time()
     log.info("")
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
@@ -892,9 +838,9 @@ def create_gfa(
     outfn,
     tmpoutdir=tempfile.mkdtemp(),
     pmtime_utc_str=None,
-    log=None,
+    log=Logger.get(),
     step="",
-    start=None,
+    start=time(),
 ):
     """
     Create a GFA fits file.
@@ -911,18 +857,14 @@ def create_gfa(
         pmtime_utc_str (optional, defaults to None): UTC time use to compute
                 new coordinates after applying proper motion since REF_EPOCH
                 (string formatted as "yyyy-mm-ddThh:mm:ss+00:00")
-        log (optional): Logger object
+        log (optional, defaults to Logger.get()): Logger object
         step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start (optional): start time for log (in seconds; output of time.time()
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
 
     Notes:
         if pmcorr="y", then pmtime_utc_str needs to be set; will trigger an error otherwise.
     """
-    if log is None:
-        log = Logger.get()
-    if start is None:
-        start = time()
     log.info("")
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
@@ -983,9 +925,9 @@ def create_mtl(
     outfn,
     tmpoutdir=tempfile.mkdtemp(),
     pmtime_utc_str=None,
-    log=None,
+    log=Logger.get(),
     step="",
-    start=None,
+    start=time(),
 ):
     """
     Create a (primary or secondary) target fits file, based on MTL ledgers (and complementary columns from desitarget targets files).
@@ -1004,10 +946,10 @@ def create_mtl(
         pmtime_utc_str (optional, defaults to None): UTC time use to compute
                 new coordinates after applying proper motion since REF_EPOCH
                 (string formatted as "yyyy-mm-ddThh:mm:ss+00:00")
-        log (optional): Logger object
+        log (optional, defaults to Logger.get()): Logger object
         step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start (optional): start time for log (in seconds; output of time.time()
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
 
     Notes:
         if pmcorr="y", then pmtime_utc_str needs to be set; will trigger an error otherwise.
@@ -1018,10 +960,6 @@ def create_mtl(
                 GAIA_ASTROMETRIC_EXCESS_NOISE column will be missing; though we do not
                 expect this configuration to happen, so it should be fine for now.
     """
-    if log is None:
-        log = Logger.get()
-    if start is None:
-        start = time()
     log.info("")
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
@@ -1124,9 +1062,9 @@ def create_too(
     outfn,
     tmpoutdir=tempfile.mkdtemp(),
     pmtime_utc_str=None,
-    log=None,
+    log=Logger.get(),
     step="",
-    start=None,
+    start=time(),
 ):
     """
     Create a ToO target fits file, with selecting targets in a MJD time window.
@@ -1144,10 +1082,10 @@ def create_too(
         pmtime_utc_str (optional, defaults to None): UTC time use to compute
                 new coordinates after applying proper motion since REF_EPOCH
                 (string formatted as "yyyy-mm-ddThh:mm:ss+00:00")
-        log (optional): Logger object
+        log (optional, defaults to Logger.get()): Logger object
         step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start (optional): start time for log (in seconds; output of time.time()
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
 
     Notes:
         if pmcorr="y", then pmtime_utc_str needs to be set; will trigger an error otherwise.
@@ -1156,10 +1094,6 @@ def create_too(
                 it surely needs to be updated/refined once operations are more clear.
         some steps in common with create_mtl().
     """
-    if log is None:
-        log = Logger.get()
-    if start is None:
-        start = time()
     log.info("")
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
@@ -1240,9 +1174,9 @@ def launch_onetile_fa(
     fiberassignfn,
     skyfn=None,
     gfafn=None,
-    log=None,
+    log=Logger.get(),
     step="",
-    start=None,
+    start=time(),
 ):
     """
     Runs the fiber assignment (run_assign_full) and merges the results (merge_results) for a single tile.
@@ -1260,10 +1194,10 @@ def launch_onetile_fa(
         fiberassignfn: path to the output fiberassign-TILEID.fits file (string)
         skyfn (optional, defaults to None): path to a sky fits file (string)
         gfafn (optional, defaults to None): path to a gfa fits file (string)
-        log (optional): Logger object
+        log (optional, defaults to Logger.get()): Logger object
         step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start (optional): start time for log (in seconds; output of time.time()
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
 
     Notes:
         no sanity checks done on inputs; assumed to be done elsewhere
@@ -1273,10 +1207,6 @@ def launch_onetile_fa(
         fba_launch-like adding information in the header is done in another function, update_fiberassign_header
         TBD: be careful if working in the SVN-directory; maybe add additional safety lines? 
     """
-    if log is None:
-        log = Logger.get()
-    if start is None:
-        start = time()
     log.info("")
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
@@ -1380,9 +1310,9 @@ def update_fiberassign_header(
     ebv,
     obscon,
     fascript,
-    log=None,
+    log=Logger.get(),
     step="",
-    start=None,
+    start=time(),
 ):
     """
     Adds various information in the fiberassign-TILEID.fits PRIMARY header.
@@ -1407,19 +1337,15 @@ def update_fiberassign_header(
         ebv: median EBV over the tile targets (float)
         obscon: tile allowed observing conditions (string; e.g. "DARK|GRAY|BRIGHT|BACKUP") 
         fascript: fba_launch-like script used to designed the tile; in case of different scripts for dedicated tiles
-        log (optional): Logger object
+        log (optional, defaults to Logger.get()): Logger object
         step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start (optional): start time for log (in seconds; output of time.time()
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
 
     Notes:
         no check is done on mydirs.
         TBD : faflavor could be different than {survey}{program}, e.g. in dedicated tiles
     """
-    if log is None:
-        log = Logger.get()
-    if start is None:
-        start = time()
     # AR propagating some settings into the PRIMARY header
     fd = fitsio.FITS(fiberassignfn, "rw")
 
@@ -1483,22 +1409,18 @@ def update_fiberassign_header(
 
 
 def secure_gzip(
-    fiberassignfn, log=None, step="", start=None,
+    fiberassignfn, log=Logger.get(), step="", start=time(),
 ):
     """
     Secure gzipping of the fiberassign-TILEID.fits file.
     
     Args:
         fiberassignfn: path to fiberassign-TILEID.fits file (string)
-        log (optional): Logger object
+        log (optional, defaults to Logger.get()): Logger object
         step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start (optional): start time for log (in seconds; output of time.time()
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
     """
-    if log is None:
-        log = Logger.get()
-    if start is None:
-        start = time()
     log.info("")
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
@@ -1514,17 +1436,17 @@ def secure_gzip(
 
 
 def get_dt_masks(
-    survey, log=None, step="", start=None,
+    survey, log=Logger.get(), step="", start=time(),
 ):
     """
     Get the desitarget masks for a survey.
     
     Args:
         survey: survey name: "sv1", "sv2", "sv3" or "main") (string)
-        log (optional): Logger object
+        log (optional, defaults to Logger.get()): Logger object
         step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start (optional): start time for log (in seconds; output of time.time()
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
 
     Returns:
         yaml_masks: dictionary with storing in the
@@ -1539,11 +1461,6 @@ def get_dt_masks(
         close to desitarget.targets.main_cmx_or_sv,
         but using a dictionary, more adapted to this code
     """
-    if log is None:
-        log = Logger.get()
-    if start is None:
-        start = time()
-
     if survey == "sv1":
         from desitarget.sv1 import sv1_targetmask as targetmask
     elif survey == "sv2":
@@ -1585,27 +1502,22 @@ def get_dt_masks(
 
 
 def get_qa_tracers(
-    program, log=None, step="", start=None,
+    program, log=Logger.get(), step="", start=time(),
 ):
     """
     Returns the tracers for which we provide QA plots of fiber assignment.
     
     Args:
         program: "DARK", "BRIGHT", or "BACKUP" (string)
-        log (optional): Logger object                                                                                                                                            
+        log (optional, defaults to Logger.get()): Logger object                                                                                                                                            
         step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start (optional): start time for log (in seconds; output of time.time()
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
                                                                                                                                                                                  
     Returns:
         trmskkeys: list of keys to select the mask on (list of strings)
         trmsks: list of mask names (list of strings)
     """
-    if log is None:
-        log = Logger.get()
-    if start is None:
-        start = time()
-
     if program == "DARK":
         trmskkeys = ["DESI_TARGET", "DESI_TARGET", "DESI_TARGET"]
         trmsks = ["LRG", "ELG", "QSO"]
@@ -1629,7 +1541,7 @@ def get_qa_tracers(
 
 
 def get_parent_assign_quants(
-    survey, targfns, fiberassignfn, tilera, tiledec, log=None, step="", start=None,
+    survey, targfns, fiberassignfn, tilera, tiledec, log=Logger.get(), step="", start=time(),
 ):
     """
     Stores the parent and assigned targets properties (desitarget columns).
@@ -1640,10 +1552,10 @@ def get_parent_assign_quants(
         fiberassignfn: path to the output fiberassign-TILEID.fits file (string)
         tilera: tile center R.A. (float)
         tiledec: tile center Dec. (float)
-        log (optional): Logger object                                                                                                                                            
+        log (optional, defaults to Logger.get()): Logger object                                                                                                                                            
         step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start (optional): start time for log (in seconds; output of time.time()
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
 
     Returns:
         parent: dictionary of the parent target sample, with each key being some desitarget column
@@ -1655,11 +1567,6 @@ def get_parent_assign_quants(
         petals: dictionary with PETAL_LOC (np.array of floats) for each of the assigned "sky", "bad", "wd", "std" subsamples
         nassign: dictionary with the number of assigned fibers for each of the assigned "SKY", "BAD", "TGT", "WD", "STD"  subsamples
     """
-    if log is None:
-        log = Logger.get()
-    if start is None:
-        start = time()
-
     # AR convert targfns to list if string (i.e. only one input file)
     if isinstance(targfns, str):
         targfns = [targfns]
@@ -1787,7 +1694,7 @@ def get_parent_assign_quants(
 
 
 def print_assgn_parent_stats(
-    survey, parent, assign, log=None, step="", start=None,
+    survey, parent, assign, log=Logger.get(), step="", start=time(),
 ):
     """
     Prints for each mask the number of parent and assigned targets, and also the fraction of assigned targets.
@@ -1796,16 +1703,11 @@ def print_assgn_parent_stats(
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         parent: dictionary for the parent target sample (output by get_parent_assign_quants())
         assign: dictionary for the assigned target sample (output by get_parent_assign_quants()) 
-        log (optional): Logger object                                                                                                                                            
+        log (optional, defaults to Logger.get()): Logger object                                                                                                                                            
         step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start (optional): start time for log (in seconds; output of time.time()
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
     """
-    if log is None:
-        log = Logger.get()
-    if start is None:
-        start = time()
-
     # AR YAML and WD and STD masks
     yaml_masks, _, _, _, _ = get_dt_masks(survey, log=log, step=step, start=start,)
 
@@ -1869,9 +1771,9 @@ def qa_print_infos(
     rundate,
     parent,
     assign,
-    log=None,
+    log=Logger.get(),
     step="",
-    start=None,
+    start=time(),
 ):
     """
     Print general fiber assignment infos on the QA plot.
@@ -1888,19 +1790,14 @@ def qa_print_infos(
         rundate: used rundate (string)
         parent: dictionary for the parent target sample (output by get_parent_assign_quants())
         assign: dictionary for the assigned target sample (output by get_parent_assign_quants()) 
-        log (optional): Logger object                                                                                                                                            
+        log (optional, defaults to Logger.get()): Logger object                                                                                                                                            
         step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start (optional): start time for log (in seconds; output of time.time()
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
     """
-    if log is None:
-        log = Logger.get()
-    if start is None:
-        start = time()
-
     # AR hard-setting the plotted tracers
     # AR TBD: handle secondaries
-    trmskkeys, trmsks = get_qa_tracers(program, log=None, step="", start=None,)
+    trmskkeys, trmsks = get_qa_tracers(program, log=Logger.get(), step="", start=time(),)
 
     # AR masks
     yaml_masks, wd_mskkeys, wd_msks, std_mskkeys, std_msks = get_dt_masks(
@@ -2702,9 +2599,9 @@ def make_qa(
     rundate,
     tmpoutdir=tempfile.mkdtemp(),
     width_deg=4,
-    log=None,
+    log=Logger.get(),
     step="",
-    start=None,
+    start=time(),
 ):
     """
     Make fba_launch QA plot.
@@ -2722,16 +2619,11 @@ def make_qa(
         rundate: used rundate (string)
         tmpoutdir (optional, defaults to a temporary directory): temporary directory (to download the cutout)
         width_deg (optional, defaults to 4): width of the cutout in degrees (np.array of floats)
-        log (optional): Logger object                                                                                                                                            
+        log (optional, defaults to Logger.get()): Logger object
         step (optional): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start (optional): start time for log (in seconds; output of time.time()
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
     """
-    if log is None:
-        log = Logger.get()
-    if start is None:
-        start = time()
-
     log.info("")
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
