@@ -2,23 +2,7 @@
 
 import os
 import sys
-import subprocess
-import numpy as np
-from glob import glob
-from astropy.io import fits
-from astropy.table import Table
 import fitsio
-import desitarget
-from desitarget.io import read_targets_in_tiles, write_targets, write_skies
-from desitarget.mtl import inflate_ledger
-from desitarget.targetmask import desi_mask, obsconditions
-from desitarget.targets import set_obsconditions
-from desitarget.geomask import match
-import desimodel
-from desimodel.footprint import is_point_in_desi
-import fiberassign
-from fiberassign.scripts.assign import parse_assign, run_assign_full
-from fiberassign.assign import merge_results, minimal_target_columns
 from fiberassign.utils import Logger
 from time import time
 from datetime import datetime, timezone
