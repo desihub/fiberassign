@@ -84,7 +84,7 @@ def custom_read_targets_in_tiles(
         tiles: tiles object (as required by desitarget.io.read_targets_in_tiles)
         quick, mtl, unique, isodate (optional): same as desitarget.io.read_targets_in_tiles arguments
         log (optional, defaults to Logger.get()): Logger object
-        step (optional): corresponding step, for fba_launch log recording
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
     Returns:
@@ -144,7 +144,7 @@ def mv_write_targets_out(infn, targdir, outfn, log=Logger.get(), step="", start=
         targdir: folder provided as desitarget.io.write_targets input
         outfn: desired renaming of infn
         log (optional, defaults to Logger.get()): Logger object
-        step (optional): corresponding step, for fba_launch log recording
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
     """
@@ -248,7 +248,7 @@ def force_finite_pm(
         pmra_key (optional, defaults to PMRA): column name for PMRA
         pmdec_key (optional, defaults to PMDEC): column name for PMDEC
         log (optional, defaults to Logger.get()): Logger object
-        step (optional): corresponding step, for fba_launch log recording
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
 
@@ -288,7 +288,7 @@ def force_nonzero_refepoch(
         pmra_key (optional, defaults to PMRA): column name for PMRA
         pmdec_key (optional, defaults to PMDEC): column name for PMDEC
         log (optional, defaults to Logger.get()): Logger object
-        step (optional): corresponding step, for fba_launch log recording
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
     Returns:
@@ -357,7 +357,7 @@ def update_nowradec(
               if False, update for REF_EPOCH>0 + AEN only
               if True, update for REF_EPOCH>0 + finite(PMRA,PMDEC) ; forces PARALLAX=0
         log (optional, defaults to Logger.get()): Logger object
-        step (optional): corresponding step, for fba_launch log recording
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
         
@@ -443,7 +443,7 @@ def assert_env_vars(
         "DESI_SURVEYOPS",
         "SKYBRICKS_DIR",]): list of environment variables required by fba_launch
         log (optional, defaults to Logger.get()): Logger object
-        step (optional): corresponding step, for fba_launch log recording
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
         
@@ -475,7 +475,7 @@ def assert_arg_dates(
         args: fba_launch parser.parse_args() output
         dates (optional, defaults to ["pmtime_utc_str", "rundate", "mtltime"]): list of date fba_launch argument names to check
         log (optional, defaults to Logger.get()): Logger object
-        step (optional): corresponding step, for fba_launch log recording
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
         
@@ -506,7 +506,7 @@ def assert_svn_tileid(
                 if "n", will trigger a warning + an error
                 if "y", e will trigger a warning only
         log (optional, defaults to Logger.get()): Logger object
-        step (optional): corresponding step, for fba_launch log recording
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
        
@@ -564,7 +564,7 @@ def print_config_infos(
         "DESI_SURVEYOPS",
         "SKYBRICKS_DIR",]): list of environment variables required by fba_launch
         log (optional, defaults to Logger.get()): Logger object
-        step (optional): corresponding step, for fba_launch log recording
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
     """
@@ -617,7 +617,7 @@ def get_desitarget_paths(
         dr (optional, defaults to "dr9"): legacypipe dr (string)
         gaiadr (optional, defaults to "gaiadr2"): gaia dr (string)
         log (optional, defaults to Logger.get()): Logger object
-        step (optional): corresponding step, for fba_launch log recording
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
         
@@ -746,7 +746,7 @@ def create_tile(
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         obscon (optional, defaults to "DARK|GRAY|BRIGHT|BACKUP"): tile allowed observing conditions (string)
         log (optional, defaults to Logger.get()): Logger object
-        step (optional): corresponding step, for fba_launch log recording
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
     """
@@ -808,7 +808,7 @@ def create_sky(
         tmpoutdir (optional, defaults to a temporary directory): temporary directory where
                 write_skies will write (creating some sub-directories)
         log (optional, defaults to Logger.get()): Logger object
-        step (optional): corresponding step, for fba_launch log recording
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
     """
@@ -858,7 +858,7 @@ def create_gfa(
                 new coordinates after applying proper motion since REF_EPOCH
                 (string formatted as "yyyy-mm-ddThh:mm:ss+00:00")
         log (optional, defaults to Logger.get()): Logger object
-        step (optional): corresponding step, for fba_launch log recording
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
 
@@ -947,7 +947,7 @@ def create_mtl(
                 new coordinates after applying proper motion since REF_EPOCH
                 (string formatted as "yyyy-mm-ddThh:mm:ss+00:00")
         log (optional, defaults to Logger.get()): Logger object
-        step (optional): corresponding step, for fba_launch log recording
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
 
@@ -1083,7 +1083,7 @@ def create_too(
                 new coordinates after applying proper motion since REF_EPOCH
                 (string formatted as "yyyy-mm-ddThh:mm:ss+00:00")
         log (optional, defaults to Logger.get()): Logger object
-        step (optional): corresponding step, for fba_launch log recording
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
 
@@ -1195,7 +1195,7 @@ def launch_onetile_fa(
         skyfn (optional, defaults to None): path to a sky fits file (string)
         gfafn (optional, defaults to None): path to a gfa fits file (string)
         log (optional, defaults to Logger.get()): Logger object
-        step (optional): corresponding step, for fba_launch log recording
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
 
@@ -1338,7 +1338,7 @@ def update_fiberassign_header(
         obscon: tile allowed observing conditions (string; e.g. "DARK|GRAY|BRIGHT|BACKUP") 
         fascript: fba_launch-like script used to designed the tile; in case of different scripts for dedicated tiles
         log (optional, defaults to Logger.get()): Logger object
-        step (optional): corresponding step, for fba_launch log recording
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
 
@@ -1417,7 +1417,7 @@ def secure_gzip(
     Args:
         fiberassignfn: path to fiberassign-TILEID.fits file (string)
         log (optional, defaults to Logger.get()): Logger object
-        step (optional): corresponding step, for fba_launch log recording
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
     """
@@ -1444,7 +1444,7 @@ def get_dt_masks(
     Args:
         survey: survey name: "sv1", "sv2", "sv3" or "main") (string)
         log (optional, defaults to Logger.get()): Logger object
-        step (optional): corresponding step, for fba_launch log recording
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
 
@@ -1510,7 +1510,7 @@ def get_qa_tracers(
     Args:
         program: "DARK", "BRIGHT", or "BACKUP" (string)
         log (optional, defaults to Logger.get()): Logger object                                                                                                                                            
-        step (optional): corresponding step, for fba_launch log recording
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
                                                                                                                                                                                  
@@ -1553,7 +1553,7 @@ def get_parent_assign_quants(
         tilera: tile center R.A. (float)
         tiledec: tile center Dec. (float)
         log (optional, defaults to Logger.get()): Logger object                                                                                                                                            
-        step (optional): corresponding step, for fba_launch log recording
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
 
@@ -1704,7 +1704,7 @@ def print_assgn_parent_stats(
         parent: dictionary for the parent target sample (output by get_parent_assign_quants())
         assign: dictionary for the assigned target sample (output by get_parent_assign_quants()) 
         log (optional, defaults to Logger.get()): Logger object                                                                                                                                            
-        step (optional): corresponding step, for fba_launch log recording
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
     """
@@ -1791,7 +1791,7 @@ def qa_print_infos(
         parent: dictionary for the parent target sample (output by get_parent_assign_quants())
         assign: dictionary for the assigned target sample (output by get_parent_assign_quants()) 
         log (optional, defaults to Logger.get()): Logger object                                                                                                                                            
-        step (optional): corresponding step, for fba_launch log recording
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
     """
@@ -2620,7 +2620,7 @@ def make_qa(
         tmpoutdir (optional, defaults to a temporary directory): temporary directory (to download the cutout)
         width_deg (optional, defaults to 4): width of the cutout in degrees (np.array of floats)
         log (optional, defaults to Logger.get()): Logger object
-        step (optional): corresponding step, for fba_launch log recording
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
     """
