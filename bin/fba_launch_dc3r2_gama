@@ -43,20 +43,31 @@ import fiberassign
 # AR goal effective time
 # AR https://desi.lbl.gov/svn/data/surveyops/trunk/ops/config-sv2.yaml
 # AR https://desi.lbl.gov/svn/data/surveyops/trunk/ops/config-sv3.yaml as of Apr. 5th
-# AR DC3R2_GAMA: filling goaltime for SV1...
-# AR DC3R2_GAMA: TBD: adjust goal time?
+# AR main: [desi-survey 2390] Minimum exposure time fraction and requested effective times
 goaltimes_all = {
     "sv1": {"DARK": 1000.0, "BRIGHT": 150.0, "BACKUP": 30.0},
     "sv2": {"DARK": 1000.0, "BRIGHT": 150.0, "BACKUP": 30.0},
     "sv3": {"DARK": 1200.0, "BRIGHT": 220.0, "BACKUP": 30.0},
+    "main": {"DARK": 1000.0, "BRIGHT": 180.0, "BACKUP": 30.0},
 }
 
+
 # AR surface brightness profile to be used for computing time -> efftime relation
-# AR DC3R2_GAMA: filling sbprof for SV1...
 sbprofs_all = {
     "sv1": {"DARK": "ELG", "BRIGHT": "BGS", "BACKUP": "PSF"},
     "sv2": {"DARK": "ELG", "BRIGHT": "BGS", "BACKUP": "PSF"},
     "sv3": {"DARK": "ELG", "BRIGHT": "BGS", "BACKUP": "PSF"},
+    "main": {"DARK": "ELG", "BRIGHT": "BGS", "BACKUP": "PSF"},
+}
+
+
+# AR minimum exposure time fraction needed for this tile to be considered done
+# AR main: [desi-survey 2390] Minimum exposure time fraction and requested effective times
+mintfracs_all = {
+    "sv1": 0.9,
+    "sv2": 0.9,
+    "sv3": 0.9,
+    "main": 0.85,
 }
 
 
@@ -102,8 +113,14 @@ def main():
             )
         )
 
-    # AR faflavor
-    faflavor = "{}{}".format(args.survey, args.program.lower())
+    # AR hdr_survey, hdr_prgrm, faflavor
+    hdr_survey, hdr_faprgrm = "sv1", "dc3r2"
+    faflavor = "{}{}".format(hdr_survey, hdr_faprgrm)
+    log.info(
+        "{:.1f}s\tsettings\theader: hdr_survey={} , hdr_faprgrm={} , faflavor={}".format(
+            time() - start, hdr_survey, hdr_faprgrm, faflavor
+        )
+    )
 
     # AR obscon : for the tile observing conditions, permissive value
     obscon = "DARK|GRAY|BRIGHT|BACKUP"
@@ -206,9 +223,11 @@ def main():
         For bright fibers that had no bright targets available, the same faint target was chosen to
         be observed during bright+faint exposures, so the overlap between the two masks is expected.
         """
-        # # AR DR3R2_GAMA: using the provided catalog with {BRIGHT,FAINT}_PRIORITY
-        mydirs["scnd"] = "{}/survey/fiberassign/misc/DC3R2_GAMA_priorities.fits".format(
-            os.getenv("DESI_ROOT")
+        # AR DR3C2_GAMA: using the provided catalog with {BRIGHT,FAINT}_PRIORITY
+        mydirs[
+            "scnd"
+        ] = "{}/secondary/{}/dedicated/{}/DC3R2_GAMA_priorities.fits".format(
+            os.getenv("DESI_TARGET"), args.survey, args.dtver
         )
 
         # AR DC3R2_GAMA: reading
@@ -304,6 +323,8 @@ def main():
             mytmpouts["fiberassign"],
             args,
             mydirs,
+            hdr_survey,
+            hdr_faprgrm,
             faflavor,
             ebv,
             obscon,
@@ -538,9 +559,9 @@ if __name__ == "__main__":
         "--dtver",
         help="desitarget catalogue version",
         type=str,
-        default="0.52.0",
+        default="0.49.0",
         required=True,
-        choices=["0.52.0"],
+        choices=["0.49.0"],
     )
     parser.add_argument(
         "--pmcorr",
