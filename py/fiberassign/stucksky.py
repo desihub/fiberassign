@@ -104,6 +104,8 @@ def stuck_on_sky(hw, tiles):
     from fiberassign.utils import Logger
     from fiberassign.hardware import FIBER_STATE_STUCK, FIBER_STATE_BROKEN
 
+    from fiberassign.targets import xy2radec
+
     log = Logger.get()
 
     try:
@@ -114,8 +116,8 @@ def stuck_on_sky(hw, tiles):
         return
 
     stuck_sky = dict()
-    for tile_id, tile_ra, tile_dec, tile_theta in zip(
-            tiles.id, tiles.ra, tiles.dec, tiles.obstheta):
+    for tile_id, tile_ra, tile_dec, tile_obstime, tile_theta, tile_obsha in zip(
+            tiles.id, tiles.ra, tiles.dec, tiles.obstime, tiles.obstheta, tiles.obsha):
         stuck_sky[tile_id] = dict()
 
         # Stuck locations and their angles
@@ -147,15 +149,10 @@ def stuck_on_sky(hw, tiles):
             )
             stuck_x[iloc] = loc_x
             stuck_y[iloc] = loc_y
-        
-        loc_radec = hw.xy2radec_multi(
-            tile_ra,
-            tile_dec,
-            tile_theta,
-            stuck_x,
-            stuck_y,
-            False,
-            0
+
+        loc_radec = xy2radec(
+            tile_ra, tile_dec, tile_obstime, tile_theta, tile_obsha,
+            stuck_x, stuck_y, False, 0
         )
         loc_ra  = np.array([r for r,d in loc_radec])
         loc_dec = np.array([d for r,d in loc_radec])

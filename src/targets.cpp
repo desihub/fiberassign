@@ -509,7 +509,6 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
     // shared_ptr reference counting is not threadsafe.  Here we extract
     // a copy of the "raw" pointers needed inside the parallel region.
 
-    Targets * pobjs = objs.get();
     Tiles * ptiles = tiles.get();
     Hardware * phw = hw_.get();
 
@@ -519,7 +518,8 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
         // of times we are realloc'ing memory for every fiber.
         std::vector <int64_t> nearby;
         std::vector <KdTreePoint> nearby_tree_points;
-        std::vector <int64_t> nearby_loc;
+        std::vector <KdTreePoint> nearby_data;
+
         std::ostringstream logmsg;
 
         // Thread local properties.
@@ -573,9 +573,8 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
 
                 // Lookup targets near this location in focalplane
                 // coordinates.
-                nearby_loc = nearby_tree.near(loc_pos, 0.0, loc_patrol[j]);
-
-                if (nearby_loc.size() == 0) {
+                nearby_data = nearby_tree.near_with_data(loc_pos, 0.0, loc_patrol[j]);
+                if (nearby_data.size() == 0) {
                     // No targets for this location
                     continue;
                 }
@@ -587,11 +586,10 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
                 // change as observations are made.  Instead, this sorting is done
                 // for each tile during assignment.
 
-                for (auto const & tnear : nearby_loc) {
-                    auto & obj = pobjs->data[tnear];
-                    auto obj_xy = phw->radec2xy(
-                        tra, tdec, ttheta, obj.ra, obj.dec, false
-                    );
+                for (auto const & tnear : nearby_data) {
+                    fbg::dpair obj_xy;
+                    obj_xy.first = tnear.pos[0];
+                    obj_xy.second = tnear.pos[1];
                     bool fail = phw->position_xy_bad(loc[j], obj_xy);
                     if (fail) {
                         if (logger.extra_debug()) {
@@ -599,12 +597,12 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
                             logmsg << std::setprecision(2) << std::fixed;
                             logmsg << "targets avail:  tile " << tid
                                 << ", loc " << loc[j] << ", kdtree target "
-                                << obj.id << " not physically reachable by positioner";
-                            logger.debug_tfg(tid, loc[j], obj.id,
+                                << tnear.id << " not physically reachable by positioner";
+                            logger.debug_tfg(tid, loc[j], tnear.id,
                                              logmsg.str().c_str());
                         }
                     } else {
-                        thread_data[tid][loc[j]].push_back(tnear);
+                        thread_data[tid][loc[j]].push_back(tnear.id);
                     }
                 }
 

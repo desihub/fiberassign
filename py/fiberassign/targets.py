@@ -938,14 +938,62 @@ def load_target_file(tgs, tfile, survey=None, typeforce=None, typecol=None,
 
     return survey
 
+def radec2xy(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
+             ra, dec, use_cs5, threads=0):
+    #xy = hw.radec2xy_multi(
+    #    tile_ra, tile_dec, tile_obstheta, ra, dec, use_cs5, threads=0
+    #)
+    #x = np.array([x for x,y in xy])
+    #y = np.array([y for x,y in xy])
+    from astropy.time import Time
+    from desimeter.fiberassign import fiberassign_radec2xy_cs5, fiberassign_radec2xy_flat
+    # Note that MJD is only used for precession, so no need for
+    # high precision.
+    t = Time(tile_obstime, format='isot')
+    mjd = t.mjd
+
+    # adc1,adc2 = pm_get_adc_angles(tile_ha, tile_dec)
+    # print('ADC1', adc1, 'ADC2', adc2)
+
+    fieldrot = tile_obstheta
+    print('Fieldrot', fieldrot)
+
+    # Let desimeter use its pm-alike routines
+    adc1 = adc2 = None
+
+    # EXPID 87831 / tile 129 test - from header MOUNTHA
+    #tile_obsha = 66.793588
+
+    if use_cs5:
+        x, y = fiberassign_radec2xy_cs5(ra, dec, tile_ra, tile_dec, mjd,
+                                        tile_obsha, fieldrot, adc1, adc2)
+    else:
+        x, y = fiberassign_radec2xy_flat(ra, dec, tile_ra, tile_dec, mjd,
+                                         tile_obsha, fieldrot, adc1, adc2)
+
+    return x,y
+
+def xy2radec(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
+             x, y, use_cs5, threads=0):
+    print('WARNING: using fiberassign xy2radec')
+    radec = hw.xy2radec_multi(
+        tile_ra, tile_dec, tile_obstheta, x, y, use_cs5, threads
+        )
+    ra  = np.array([r for r,d in radec])
+    dec = np.array([d for r,d in radec])
+
+    return ra,dec
+
+def xy2cs5(x, y):
+    # There's a change in terminology between the focal-plane team and
+    # the outside world here...
+    from desimeter.transform.pos2ptl import ptl2flat
+    return ptl2flat(x, y)
+
 def targets_in_tiles(hw, tgs, tiles):
     '''
     Returns tile_targetids, tile_x, tile_y
     '''
-    from desimeter.fiberassign import fiberassign_radec2xy_cs5, pm_get_adc_angles
-    from desimeter.transform.xy2qs import xy2uv
-    from astropy.time import Time
-
     tile_targetids = {}
     tile_x = {}
     tile_y = {}
@@ -967,28 +1015,8 @@ def targets_in_tiles(hw, tgs, tiles):
         ras  = np.array(ras)
         decs = np.array(decs)
 
-        # Note that MJD is only used for precession, so no need for
-        # high precision.
-        t = Time(tile_obstime, format='isot')
-        mjd = t.mjd
-
-        # HACK -- HA for the ADC angle
-        # desi/spectro/data/20210509/00087831/pm-00087831-logs.tar
-        # -> data/platemaker/test/87831/nfs*.par
-        tile_ha = 65.528037179650539
-
-        adc1,adc2 = pm_get_adc_angles(tile_ha, tile_dec)
-        print('ADC1', adc1, 'ADC2', adc2)
-        fieldrot = tile_obstheta
-        print('Fieldrot', fieldrot)
-
-        ## HACK -- HA for the actual observation
-        # from header MOUNTHA
-        tile_ha = 66.793588
-
-        x, y = fiberassign_radec2xy_cs5(ras, decs, tile_ra, tile_dec, mjd,
-                                        tile_ha, fieldrot, adc1, adc2)
-        fx,fy = xy2uv(x, y)
+        fx,fy = radec2xy(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta,
+                         tile_ha, ras, decs, False)
 
         tile_targetids[tile_id] = tids
         tile_x[tile_id] = fx

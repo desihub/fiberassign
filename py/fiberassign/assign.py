@@ -37,6 +37,7 @@ from .utils import Logger, Timer, default_mp_proc, GlobalTimers
 from .targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY, TARGET_TYPE_SUPPSKY,
                       TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE, desi_target_type,
                       default_target_masks, default_survey_target_masks)
+from .targets import radec2xy, xy2radec, xy2cs5
 
 from .hardware import (FIBER_STATE_UNASSIGNED, FIBER_STATE_STUCK,
                        FIBER_STATE_BROKEN, FIBER_STATE_RESTRICT)
@@ -241,12 +242,12 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         #
         # NOTE:  The output format is explicitly CS5 coordinates, even though
         # we use curved focal surface internally.
-        xy = hw.radec2xy_multi(
-            tile_ra, tile_dec, tile_obstheta, tg_ra, tg_dec, True, 0
+        x,y = radec2xy(
+            hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
+            tg_ra, tg_dec, True, 0
         )
-        for indx, fxy in enumerate(xy):
-            tg_x[indx] = fxy[0]
-            tg_y[indx] = fxy[1]
+        tg_x[:] = x
+        tg_y[:] = y
 
         # tm.stop()
         # tm.report("  extract target props for {}".format(tile_id))
@@ -383,17 +384,14 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
                     if xy[0] is None:
                         print('WARNING: X,Y position for unassigned, parked positioner loc =', loc, ' is invalid.')
 
-            radec = hw.xy2radec_multi(
-                tile_ra, tile_dec, tile_obstheta, empty_x, empty_y, False, 0
-            )
-            assigned_tgra[assigned_invalid] = [x for x, y in radec]
-            assigned_tgdec[assigned_invalid] = [y for x, y in radec]
-            empty_xy = hw.radec2xy_multi(
-                tile_ra, tile_dec, tile_obstheta, assigned_tgra[assigned_invalid],
-                assigned_tgdec[assigned_invalid], True, 0
-            )
-            assigned_tgx[assigned_invalid] = [x for x, y in empty_xy]
-            assigned_tgy[assigned_invalid] = [y for x, y in empty_xy]
+            ra,dec = xy2radec(
+                hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
+                empty_x, empty_y, False, 0)
+            assigned_tgra[assigned_invalid]  = ra
+            assigned_tgdec[assigned_invalid] = dec
+            ex, ey = xy2cs5(empty_x, empty_y)
+            assigned_tgx[assigned_invalid] = ex
+            assigned_tgy[assigned_invalid] = ey
             assigned_tgtype[assigned_invalid] |= empty_tgtype
 
         if (len(assigned_valid) > 0):
