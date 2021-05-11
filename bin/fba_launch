@@ -63,7 +63,7 @@ def main():
     assert_env_vars(log=log, step="settings", start=start)
 
     # AR safe: TILEID already existing in SVN?
-    assert_svn_tileid(args.tileid, log=log, step="settings", start=start)
+    assert_svn_tileid(args.tileid, forcetileid=args.forcetileid, log=log, step="settings", start=start)
 
     # AR safe: argument dates correctly formatted?
     assert_arg_dates(args, log=log, step="settings", start=start)
