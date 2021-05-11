@@ -944,6 +944,7 @@ def targets_in_tiles(hw, tgs, tiles):
     '''
     from desimeter.transform.tan2fp import tan2fp, fp2tan
     from desimeter.transform.radec2tan import radec2tan
+    from desimeter.transform.radec2tan import hadec2altaz, apply_refraction
 
     from astropy import units as u
     from astropy.coordinates import EarthLocation, SkyCoord, FK5, AltAz
@@ -952,9 +953,9 @@ def targets_in_tiles(hw, tgs, tiles):
     observer = EarthLocation.of_site('kpno')
     #observer = EarthLocation(lat=41.3*u.deg, lon=-74*u.deg, height=390*u.m)
 
-    ### FIXME! hard-coded mjd
-    # precession
-    mjd = 59706.
+    ### FIXME! hard-coded mjd = 2022-07-01
+    # for precession
+    mjd = 59761.
 
     obstime = Time(mjd, format='mjd')
     fk5_frame = FK5(equinox=obstime)
@@ -986,9 +987,25 @@ def targets_in_tiles(hw, tgs, tiles):
         tile_fk5 = tile_coord.transform_to(fk5_frame)
 
         # Assume observed as it transits the meridian!
-        ha = 0.0
-        tile_zd = np.abs(tile_fk5.dec.value - observer.lat.deg)
-        lst = tile_ra
+
+        # expnum 87359
+        # ST      = '13:13:11.115000'    / Local Sidereal time at observation start (HH:MM
+        lst = 198.2963125
+        ha = lst - tile_ra
+        print('HA:', ha)
+        #ha = 0.0
+        #lst = tile_ra + ha
+
+        #ha = 0.0
+        #lst = tile_ra + ha
+        #tile_zd = np.abs(tile_fk5.dec.value - observer.lat.deg)
+        tile_alt,tile_az = hadec2altaz(ha, tile_fk5.dec.value)
+        print('Alt:', tile_alt)
+        tile_alt = apply_refraction(tile_alt)
+        print('Refracted alt:', tile_alt)
+
+        tile_zd = 90. - tile_alt
+        print('ZD', tile_zd)
 
         ### FIXME!
         hexrot = 0.
@@ -1005,15 +1022,49 @@ def targets_in_tiles(hw, tgs, tiles):
         adc2 += 360 * (adc2 < 0)
         adc2 -= 360 * (adc2 > 360)
 
+        print('Parallactic angle:', pa)
+        print('ADC angles: %.2f, %.2f' % (adc1, adc2))
+        
         # Compute the transformation of the tile center RA,Dec first
         xtan_tile,ytan_tile = fp2tan(np.array([0]), np.array([0]), adc1, adc2)
         xtan_tile = xtan_tile[0]
         ytan_tile = ytan_tile[0]
 
+        # Also compute the transformation along the +Y FP direction
+        # xtan_up,ytan_up = fp2tan(np.array([0]), np.array([100]), adc1, adc2)
+        # xtan_up = xtan_up[0]
+        # ytan_up = ytan_up[0]
+        # print('xtan_up - xtan_tile:', xtan_up - xtan_tile)
+        # print('ytan_up - ytan_tile:', ytan_up - ytan_tile)
+        # xtan_up - xtan_tile: 7.636258684278596e-09
+        # ytan_up - ytan_tile: 0.007164176255480823
+
+        # +Dec direction
+        cosdec = np.cos(np.deg2rad(tile_dec))
+        xt_up, yt_up = radec2tan(np.array([tile_ra, tile_ra, tile_ra, tile_ra-1./cosdec, tile_ra+1./cosdec]),
+                                 np.array([tile_dec, tile_dec+1, tile_dec-1, tile_dec, tile_dec]),
+                                 tile_ra, tile_dec, mjd, lst, hexrot)
+        xt_up += xtan_tile
+        yt_up += ytan_tile
+        dx = xt_up[1:]-xt_up[0]
+        dy = yt_up[1:]-yt_up[0]
+        # I want the angle away from vertical, hence swapping dx, dy in the atan2 call.
+        rot = np.arctan2(dx, dy)
+        rot = rot[0]
+        print('Rotation:', rot, 'radians')
+        c = np.cos(rot)
+        s = np.sin(rot)
+        R = np.array([[c, -s], [s, c]])
+        
         xtan, ytan = radec2tan(ras, decs, tile_ra, tile_dec, mjd,
                                lst, hexrot)
         xtan += xtan_tile
         ytan += ytan_tile
+
+        # Rotate
+        # rxy = np.dot(R, np.vstack((xtan,ytan)))
+        # xtan = rxy[0,:]
+        # ytan = rxy[1,:]
 
         fx,fy = tan2fp(xtan, ytan, adc1, adc2)
 
@@ -1021,6 +1072,17 @@ def targets_in_tiles(hw, tgs, tiles):
 
         u,v = xy2uv(fx, fy)
 
+        # fx_up,fy_up = tan2fp(xt_up, yt_up, adc1, adc2)
+        # u_up,v_up = xy2uv(fx_up, fy_up)
+        # print('xt_up:', xt_up)
+        # print('yt_up:', yt_up)
+        # print('fx_up:', fx_up)
+        # print('fy_up:', fy_up)
+        # print('u_up:', u_up)
+        # print('v_up:', v_up)
+
+
+        
         xys = np.array(hw.radec2xy_multi(tile_ra, tile_dec, hexrot,
                                          ras, decs, False, 0))
         x,y = xys[:,0], xys[:,1]
@@ -1038,7 +1100,7 @@ def targets_in_tiles(hw, tgs, tiles):
         T.dm_v = v
         T.writeto('fa-dm-coords.fits')
 
-        ####
+        #### USE U,V in outputs....
         fx,fy = u,v
 
         import pylab as plt
