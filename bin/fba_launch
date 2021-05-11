@@ -17,7 +17,6 @@ from desitarget.geomask import match
 import desimodel
 from desimodel.footprint import is_point_in_desi
 import fiberassign
-from fiberassign.fba_launch_io import assert_env_vars, assert_svn_tileid, assert_arg_dates, print_config_infos, get_desitarget_paths, custom_read_targets_in_tiles, mv_write_targets_out, force_finite_pm, force_nonzero_refepoch, update_nowradec, create_tile, create_sky, create_gfa, create_mtl, create_too, launch_onetile_fa, update_fiberassign_header, secure_gzip, make_qa
 from fiberassign.scripts.assign import parse_assign, run_assign_full
 from fiberassign.assign import merge_results, minimal_target_columns
 from fiberassign.utils import Logger
@@ -27,6 +26,22 @@ from astropy.time import Time
 import tempfile
 import shutil
 from desiutil.redirect import stdouterr_redirected
+from fiberassign.fba_launch_io import (
+    assert_env_vars,
+    assert_svn_tileid,
+    assert_arg_dates,
+    print_config_infos,
+    get_desitarget_paths,
+    create_tile,
+    create_sky,
+    create_gfa,
+    create_mtl,
+    create_too,
+    launch_onetile_fa,
+    update_fiberassign_header,
+    secure_gzip,
+    make_qa,
+)
 from argparse import ArgumentParser
 
 # AR goal effective time
