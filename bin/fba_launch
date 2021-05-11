@@ -18,7 +18,7 @@ from fiberassign.fba_launch_io import (
     get_desitarget_paths,
     create_tile,
     create_sky,
-    create_gfa,
+    create_targ_nomtl,
     create_mtl,
     create_too,
     launch_onetile_fa,
@@ -134,7 +134,7 @@ def main():
 
     # AR gfa
     if dogfa:
-        create_gfa(
+        create_targ_nomtl(
             mytmpouts["tiles"],
             mydirs["gfa"],
             args.survey,
