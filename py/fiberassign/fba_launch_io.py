@@ -7,9 +7,7 @@ from __future__ import absolute_import, division
 
 import os
 import sys
-import subprocess
 import numpy as np
-from glob import glob
 from astropy.io import fits
 from astropy.table import Table
 import fitsio
@@ -26,7 +24,7 @@ import fiberassign
 from fiberassign.scripts.assign import parse_assign, run_assign_full
 from fiberassign.assign import merge_results, minimal_target_columns
 from time import time
-from datetime import datetime, timezone
+from datetime import datetime
 from astropy.time import Time
 import tempfile
 import shutil
