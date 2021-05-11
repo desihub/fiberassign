@@ -33,16 +33,25 @@ from argparse import ArgumentParser
 # AR goal effective time
 # AR https://desi.lbl.gov/svn/data/surveyops/trunk/ops/config-sv2.yaml
 # AR https://desi.lbl.gov/svn/data/surveyops/trunk/ops/config-sv3.yaml as of Apr. 5th
+# AR main: [desi-survey 2390] Minimum exposure time fraction and requested effective times
 goaltimes_all = {
+    "sv1": {"DARK": 1000.0, "BRIGHT": 150.0, "BACKUP": 30.0},
     "sv2": {"DARK": 1000.0, "BRIGHT": 150.0, "BACKUP": 30.0},
     "sv3": {"DARK": 1200.0, "BRIGHT": 220.0, "BACKUP": 30.0},
+    "main": {"DARK": 1000.0, "BRIGHT": 180.0, "BACKUP": 30.0},
 }
 
 # AR surface brightness profile to be used for computing time -> efftime relation
 sbprofs_all = {
+    "sv1": {"DARK": "ELG", "BRIGHT": "BGS", "BACKUP": "PSF"},
     "sv2": {"DARK": "ELG", "BRIGHT": "BGS", "BACKUP": "PSF"},
     "sv3": {"DARK": "ELG", "BRIGHT": "BGS", "BACKUP": "PSF"},
+    "main": {"DARK": "ELG", "BRIGHT": "BGS", "BACKUP": "PSF"},
 }
+
+# AR minimum exposure time fraction needed for this tile to be considered done
+# AR main: [desi-survey 2390] Minimum exposure time fraction and requested effective times
+mintfracs_all = {"sv1" : 0.9, "sv2" : 0.9, "sv3": 0.9, "main": 0.85, }
 
 
 def main():
@@ -375,7 +384,7 @@ if __name__ == "__main__":
         type=str,
         default=None,
         required=True,
-        choices=["sv2", "sv3"],
+        choices=["sv1", "sv2", "sv3", "main"],
     )
     parser.add_argument(
         "--program",
@@ -387,10 +396,10 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--goaltime",
-        help="goal effective time (default for sv2: {})".format(
+        help="goal effective time (default for main: {})".format(
             ", ".join(
                 [
-                    "{}={}".format(key, goaltimes_all["sv2"][key])
+                    "{}={}".format(key, goaltimes_all["main"][key])
                     for key in ["DARK", "BRIGHT", "BACKUP"]
                 ]
             )
@@ -401,10 +410,10 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--sbprof",
-        help="surface brightness profile to be used for computing time -> efftime relation (default for sv2: {})".format(
+        help="surface brightness profile to be used for computing time -> efftime relation (default for main: {})".format(
             ", ".join(
                 [
-                    "{}={}".format(key, sbprofs_all["sv2"][key])
+                    "{}={}".format(key, sbprofs_all["main"][key])
                     for key in ["DARK", "BRIGHT", "BACKUP"]
                 ]
             )
@@ -416,9 +425,11 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--mintfrac",
-        help="minimum exposure time fraction needed for this tile to be considered done (default=0.9)",
+        help="minimum exposure time fraction needed for this tile to be considered done (default for main: {}".format(
+            mintfracs_all["main"],
+        ),
         type=float,
-        default=0.9,
+        default=None,
         required=False,
     )
     parser.add_argument(
@@ -534,6 +545,10 @@ if __name__ == "__main__":
     # AR sbprof
     if args.sbprof is None:
         args.sbprof = sbprofs_all[args.survey][args.program]
+
+    # AR mintfrac
+    if args.mintfrac is None:
+        args.mintfrac = mintfracs_all[args.survey]
 
     # AR create a temporary directory for generated files
     tmpoutdir = tempfile.mkdtemp()
