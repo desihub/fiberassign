@@ -30,6 +30,16 @@ from fiberassign.fba_launch_io import (
 )
 from argparse import ArgumentParser
 
+# AR DC3R2_GAMA
+import numpy as np
+from astropy.table import Table
+from desitarget.geomask import is_in_cap
+from desitarget.targetmask import obsconditions
+from desitarget.mtl import mtldatamodel
+from desitarget.io import write_mtl
+from fiberassign.fba_launch_io import tile_radius_deg
+import fiberassign
+
 # AR goal effective time
 # AR https://desi.lbl.gov/svn/data/surveyops/trunk/ops/config-sv2.yaml
 # AR https://desi.lbl.gov/svn/data/surveyops/trunk/ops/config-sv3.yaml as of Apr. 5th
@@ -41,6 +51,7 @@ goaltimes_all = {
     "main": {"DARK": 1000.0, "BRIGHT": 180.0, "BACKUP": 30.0},
 }
 
+
 # AR surface brightness profile to be used for computing time -> efftime relation
 sbprofs_all = {
     "sv1": {"DARK": "ELG", "BRIGHT": "BGS", "BACKUP": "PSF"},
@@ -49,9 +60,15 @@ sbprofs_all = {
     "main": {"DARK": "ELG", "BRIGHT": "BGS", "BACKUP": "PSF"},
 }
 
+
 # AR minimum exposure time fraction needed for this tile to be considered done
 # AR main: [desi-survey 2390] Minimum exposure time fraction and requested effective times
-mintfracs_all = {"sv1" : 0.9, "sv2" : 0.9, "sv3": 0.9, "main": 0.85, }
+mintfracs_all = {
+    "sv1": 0.9,
+    "sv2": 0.9,
+    "sv3": 0.9,
+    "main": 0.85,
+}
 
 
 def main():
@@ -72,7 +89,9 @@ def main():
     assert_env_vars(log=log, step="settings", start=start)
 
     # AR safe: TILEID already existing in SVN?
-    assert_svn_tileid(args.tileid, forcetileid=args.forcetileid, log=log, step="settings", start=start)
+    assert_svn_tileid(
+        args.tileid, forcetileid=args.forcetileid, log=log, step="settings", start=start
+    )
 
     # AR safe: argument dates correctly formatted?
     assert_arg_dates(args, log=log, step="settings", start=start)
@@ -95,7 +114,7 @@ def main():
         )
 
     # AR hdr_survey, hdr_prgrm, faflavor
-    hdr_survey, hdr_faprgrm = args.survey, args.program.lower()
+    hdr_survey, hdr_faprgrm = "sv1", "dc3r2"
     faflavor = "{}{}".format(hdr_survey, hdr_faprgrm)
     log.info(
         "{:.1f}s\tsettings\theader: hdr_survey={} , hdr_faprgrm={} , faflavor={}".format(
@@ -118,7 +137,8 @@ def main():
         gaiadr=args.gaiadr,
         log=log,
         step="settings",
-        start=start,)
+        start=start,
+    )
 
     # AR tiles
     if dotile:
@@ -163,12 +183,13 @@ def main():
             start=start,
         )
 
-    # AR mtl
+    # AR mtl -> no MTL for SV1
+    # AR so we use the ill-named create_gfa() function with mydirs["targ"]
+    # AR to query the desitarget target catalogs
+    # AR so that we have standards
     if domtl:
-        create_mtl(
+        create_targ_nomtl(
             mytmpouts["tiles"],
-            mydirs["mtl"],
-            args.mtltime,
             mydirs["targ"],
             args.survey,
             args.gaiadr.replace("gaia", ""),
@@ -177,52 +198,99 @@ def main():
             tmpoutdir=tmpoutdir,
             pmtime_utc_str=args.pmtime_utc_str,
             log=log,
-            step="domtl",
+            step="dotarg",
             start=start,
         )
 
     # AR secondary targets
-    # AR if not backup
-    if (doscnd) & ("scnd" in list(mydirs.keys())):
-        create_mtl(
-            mytmpouts["tiles"],
-            mydirs["scndmtl"],
-            args.mtltime,
-            mydirs["scnd"],
-            args.survey,
-            args.gaiadr.replace("gaia", ""),
-            args.pmcorr,
-            mytmpouts["scnd"],
-            tmpoutdir=tmpoutdir,
-            pmtime_utc_str=args.pmtime_utc_str,
-            log=log,
-            step="doscnd",
-            start=start,
+    # AR we add here the DC3R2_GAMA targets
+    # AR with tweaking the priorities
+    # AR same, no MTL, using create_gfa()
+    if doscnd:
+        """
+        Two sets of priorities per tile:
+        - one being bright (MAG_FIBER_Z  <  21.5)
+        - the other being correspondingly fainter (MAG_FIBER_Z  <  22.10).
+        We've simultaneously optimized these to maximize the color space covered with multiplicity
+            (cells that have more than one target) and to maximize the change in magnitude of the
+            targets across all cells. The provided target lists are a cut subset of Anand's, where
+            we removed targets that come from colors (CELL_IDs) well constrained by ELG/LRG samples,
+            as well as targets that have already been observed for DC3R2 over SV.
+        The formatting is identical to the provided .fits file, with the addition of the selections
+        given as a Boolean masks in the columns 'BRIGHT_PRIORITY' and 'FAINT_PRIORITY'.
+        Therefore, the six lists are contained here if you split on each of the three TILEIDs and
+            apply each mask once.
+        For bright fibers that had no bright targets available, the same faint target was chosen to
+        be observed during bright+faint exposures, so the overlap between the two masks is expected.
+        """
+        # AR DR3C2_GAMA: using the provided catalog with {BRIGHT,FAINT}_PRIORITY
+        mydirs[
+            "scnd"
+        ] = "{}/secondary/{}/dedicated/{}/DC3R2_GAMA_priorities.fits".format(
+            os.getenv("DESI_TARGET"), args.survey, args.dtver
         )
-    else:
+
+        # AR DC3R2_GAMA: reading
+        d = fitsio.read(mydirs["scnd"])
+        mtl = Table(d)
+        # AR DC3R2_GAMA: adding NUMOBS_INIT=1 column
+        mtl["NUMOBS_INIT"] = np.ones(len(mtl), dtype=int)
+        # AR DC3R2_GAMA: addin PRIORITY_INIT column:
+        # - 4000 by default (above SV1 primary targets)
+        # - 5000 for {BRIGHT,FAINT}_PRIORITY ones
+        mtl["PRIORITY_INIT"] = 4000 + np.zeros(len(mtl), dtype=int)
+        if args.program == "DARK":
+            key = "FAINT_PRIORITY"
+        else:
+            key = "BRIGHT_PRIORITY"
+        mtl["PRIORITY_INIT"][mtl[key]] = 5000
         log.info(
-            "{:.1f}s\tdoscnd\tno secondary here".format(
-                time() - start
+            "{:.1f}s\tdoscnd\tpromoting {}/{} targets with {}".format(
+                time() - start, mtl[key].sum(), len(mtl), key
             )
         )
+        #
+        mtl.meta["EXTNAME"] = "MTL"
+        for col in [
+            "SUBPRIORITY",
+            "NUMOBS_MORE",
+            "NUMOBS",
+            "Z",
+            "ZWARN",
+            "TARGET_STATE",
+            "TIMESTAMP",
+            "VERSION",
+        ]:
+            mtl[col] = np.empty(len(mtl), dtype=mtldatamodel[col].dtype)
+        # AR DC3R2_GAMA: MTL columns
+        mtl["NUMOBS_MORE"] = mtl["NUMOBS_INIT"]
+        mtl["PRIORITY"] = mtl["PRIORITY_INIT"]
+        np.random.seed(1234)
+        mtl["SUBPRIORITY"] = np.random.uniform(len(mtl))
+        mtl["TARGET_STATE"] = "UNOBS"
+        mtl["TIMESTAMP"] = utc_time_now_str
+        mtl["VERSION"] = fiberassign.__version__
+        mtl["OBSCONDITIONS"] = obsconditions.mask(obscon)
+        # AR DC3R2_GAMA: cutting on tile
+        tiles = fitsio.read(mytmpouts["tiles"])
+        keep = is_in_cap(mtl, [args.tilera, args.tiledec, tile_radius_deg])
+        log.info(
+            "{:.1f}s\tdoscnd\tkeeping {}/{} targets in the tile".format(
+                time() - start, keep.sum(), len(mtl)
+            )
+        )
+        mtl = mtl[keep]
+        fitsio.write(mytmpouts["scnd"], mtl.as_array(), clobber=True)
+    else:
+        log.info("{:.1f}s\tdoscnd\tno secondary here".format(time() - start))
 
     # AR ToO targets
     # AR TBD: handling to MJD window boundaries as script argument?
     if dotoo:
-        create_too(
-            mytmpouts["tiles"],
-            mydirs["too"],
-            mjd_now - 1,
-            mjd_now + 30,
-            args.survey,
-            args.gaiadr.replace("gaia", ""),
-            args.pmcorr,
-            mytmpouts["too"],
-            tmpoutdir=tmpoutdir,
-            pmtime_utc_str=args.pmtime_utc_str,
-            log=log,
-            step="dotoo",
-            start=start,
+        log.info(
+            "{:.1f}s\tdotoo\tno ToO here, as we are running with SV1".format(
+                time() - start
+            )
         )
 
     # AR fiberassign
@@ -269,10 +337,7 @@ def main():
     # AR gzip all fiberassign files
     if dozip:
         secure_gzip(
-            mytmpouts["fiberassign"],
-            log=log,
-            step="dozip",
-            start=start,
+            mytmpouts["fiberassign"], log=log, step="dozip", start=start,
         )
         # AR updating the path
         mytmpouts["fiberassign"] += ".gz"
@@ -280,7 +345,6 @@ def main():
 
     # AR QA plots
     if doqa:
-
         # AR used targfns
         targfns = [mytmpouts["targ"]]
         if os.path.isfile(mytmpouts["scnd"]):
@@ -288,6 +352,7 @@ def main():
         if os.path.isfile(mytmpouts["too"]):
             targfns.append(mytmpouts["too"])
 
+        # AR DC3R2_GAMA: adding DC3R2_GAMA targets
         make_qa(
             mytmpouts["png"],
             args.survey,
@@ -302,6 +367,8 @@ def main():
             args.rundate,
             tmpoutdir=tmpoutdir,
             width_deg=4,
+            # extra_trmsks=["DC3R2_GAMA"],
+            # extra_trmskkeys=["SCND_TARGET"],
             log=log,
             step="doqa",
             start=start,
@@ -309,29 +376,18 @@ def main():
 
     # AR do clean?
     if args.doclean == "y":
-        rmv_nonsvn(
-            mytmpouts,
-            myouts,
-            log=log,
-            step="doclean",
-            start=start
-        )
+        rmv_nonsvn(mytmpouts, myouts, log=log, step="doclean", start=start)
 
     # AR move tmpoutdir -> args.outdir
     if domove:
         mv_temp2final(
-            mytmpouts,
-            myouts,
-            args.doclean,
-            log=log,
-            step="domove",
-            start=start,
+            mytmpouts, myouts, args.doclean, log=log, step="domove", start=start,
         )
 
     # AR and we re done
     log.info("")
     log.info("")
-    log.info("{:.1f}s\tend\tTIMESTAMP={}".format(time() - start, Time.now().isot))                                                                                               
+    log.info("{:.1f}s\tend\tTIMESTAMP={}".format(time() - start, Time.now().isot))
 
 
 if __name__ == "__main__":
@@ -354,7 +410,7 @@ if __name__ == "__main__":
     dogfa = True
     domtl = True
     doscnd = True
-    dotoo = True
+    # dotoo = True
     dofa = True
     dozip = True
     doqa = True
@@ -381,18 +437,28 @@ if __name__ == "__main__":
         choices=["y", "n"],
     )
     parser.add_argument(
-        "--tilera", help="tile centre ra", type=float, default=None, required=True,
+        "--tilera",
+        help="tile centre ra",
+        type=float,
+        default=None,
+        required=True,
+        choices=[214, 217.5, 221],
     )
     parser.add_argument(
-        "--tiledec", help="tile centre dec", type=float, default=None, required=True,
+        "--tiledec",
+        help="tile centre dec",
+        type=float,
+        default=None,
+        required=True,
+        choices=[0],
     )
     parser.add_argument(
         "--survey",
-        help="survey",
+        help="survey (forcing sv1)",
         type=str,
-        default=None,
+        default="sv1",
         required=True,
-        choices=["sv1", "sv2", "sv3", "main"],
+        choices=["sv1"],
     )
     parser.add_argument(
         "--program",
@@ -400,14 +466,14 @@ if __name__ == "__main__":
         type=str,
         default=None,
         required=True,
-        choices=["DARK", "BRIGHT", "BACKUP"],
+        choices=["DARK", "BRIGHT"],
     )
     parser.add_argument(
         "--goaltime",
-        help="goal effective time (default for main: {})".format(
+        help="goal effective time (default for sv2: {})".format(
             ", ".join(
                 [
-                    "{}={}".format(key, goaltimes_all["main"][key])
+                    "{}={}".format(key, goaltimes_all["sv2"][key])
                     for key in ["DARK", "BRIGHT", "BACKUP"]
                 ]
             )
@@ -418,10 +484,10 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--sbprof",
-        help="surface brightness profile to be used for computing time -> efftime relation (default for main: {})".format(
+        help="surface brightness profile to be used for computing time -> efftime relation (default for sv2: {})".format(
             ", ".join(
                 [
-                    "{}={}".format(key, sbprofs_all["main"][key])
+                    "{}={}".format(key, sbprofs_all["sv2"][key])
                     for key in ["DARK", "BRIGHT", "BACKUP"]
                 ]
             )
@@ -433,11 +499,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--mintfrac",
-        help="minimum exposure time fraction needed for this tile to be considered done (default for main: {}".format(
-            mintfracs_all["main"],
-        ),
+        help="minimum exposure time fraction needed for this tile to be considered done (default=0.9)",
         type=float,
-        default=None,
+        default=0.9,
         required=False,
     )
     parser.add_argument(
@@ -495,8 +559,9 @@ if __name__ == "__main__":
         "--dtver",
         help="desitarget catalogue version",
         type=str,
-        default=None,
+        default="0.49.0",
         required=True,
+        choices=["0.49.0"],
     )
     parser.add_argument(
         "--pmcorr",
@@ -521,9 +586,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--log-stdout",
-        action='store_true',
+        action="store_true",
         help="log to stdout instead of redirecting to a file",
-        )
+    )
     #
     args = parser.parse_args()
     log = Logger.get()
@@ -537,7 +602,7 @@ if __name__ == "__main__":
 
     # AR utc_time_now, rundate, pmtime
     utc_time_now = datetime.now(tz=timezone.utc)
-    utc_time_now_str = utc_time_now.isoformat(timespec='seconds')
+    utc_time_now_str = utc_time_now.isoformat(timespec="seconds")
     mjd_now = Time(utc_time_now).mjd
     if args.rundate is None:
         args.rundate = utc_time_now_str
@@ -554,13 +619,9 @@ if __name__ == "__main__":
     if args.sbprof is None:
         args.sbprof = sbprofs_all[args.survey][args.program]
 
-    # AR mintfrac
-    if args.mintfrac is None:
-        args.mintfrac = mintfracs_all[args.survey]
-
     # AR create a temporary directory for generated files
     tmpoutdir = tempfile.mkdtemp()
-
+    # tmpoutdir = "/global/cscratch1/sd/raichoor/tmpdir/fiberassign-dc3r2_gama/"
     if tmpoutdir[-1] != "/":
         tmpoutdir += "/"
 
@@ -604,4 +665,4 @@ if __name__ == "__main__":
     if len(tmpfiles) == 0:
         os.rmdir(tmpoutdir)
     else:
-        log.error('temp directory not empty: {}'.format(tmpfiles))
+        log.error("temp directory not empty: {}".format(tmpfiles))
