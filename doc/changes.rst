@@ -3,10 +3,21 @@
 fiberassign change log
 ======================
 
-2.4.1 (unreleased)
+2.5.1 (unreleased)
 ------------------
 
-* No changes yet
+* No changes yet.
+
+2.5.0 (2021-05-11)
+------------------
+
+* Major refactor of ``bin/fba_launch`` into functions in
+  ``fiberassign.fba_launch_io`` for reuse by other scripts (PR `#343`_).
+* Support skybricks for blank sky lookup (PR `#341`_, `#342`_).
+
+.. _`#341`: https://github.com/desihub/fiberassign/pull/341
+.. _`#342`: https://github.com/desihub/fiberassign/pull/342
+.. _`#343`: https://github.com/desihub/fiberassign/pull/343
 
 2.4.0 (2021-05-04)
 ------------------
