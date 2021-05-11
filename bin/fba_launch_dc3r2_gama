@@ -171,7 +171,7 @@ def main():
     # AR to query the desitarget target catalogs
     # AR so that we have standards
     if domtl:
-        create_gfa(
+        create_targ_nomtl(
             mytmpouts["tiles"],
             mydirs["targ"],
             args.survey,
