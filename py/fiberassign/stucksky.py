@@ -67,7 +67,7 @@ class Skybricks(object):
 
             # Read skybrick file
             fn = os.path.join(self.skybricks_dir,
-                              'sky-%s.fits.gz' % self.skybricks['BRICKNAME'][i])
+                              'sky-%s.fits.fz' % self.skybricks['BRICKNAME'][i])
             if not os.path.exists(fn):
                 log.warning('Missing "skybrick" file: %s' % fn)
                 continue
