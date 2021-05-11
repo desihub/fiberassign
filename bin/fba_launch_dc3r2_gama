@@ -1,0 +1,647 @@
+#!/usr/bin/env python
+
+import os
+import sys
+import fitsio
+from fiberassign.utils import Logger
+from time import time
+from datetime import datetime, timezone
+from astropy.time import Time
+import tempfile
+import shutil
+from desiutil.redirect import stdouterr_redirected
+from fiberassign.fba_launch_io import (
+    assert_env_vars,
+    assert_svn_tileid,
+    assert_arg_dates,
+    print_config_infos,
+    get_desitarget_paths,
+    create_tile,
+    create_sky,
+    create_targ_nomtl,
+    create_mtl,
+    create_too,
+    launch_onetile_fa,
+    update_fiberassign_header,
+    secure_gzip,
+    make_qa,
+    rmv_nonsvn,
+    mv_temp2final,
+)
+from argparse import ArgumentParser
+
+# AR DC3R2_GAMA
+import numpy as np
+from astropy.table import Table
+from desitarget.geomask import is_in_cap
+from desitarget.targetmask import obsconditions
+from desitarget.mtl import mtldatamodel
+from desitarget.io import write_mtl
+from fiberassign.fba_launch_io import tile_radius_deg
+import fiberassign
+
+# AR goal effective time
+# AR https://desi.lbl.gov/svn/data/surveyops/trunk/ops/config-sv2.yaml
+# AR https://desi.lbl.gov/svn/data/surveyops/trunk/ops/config-sv3.yaml as of Apr. 5th
+# AR DC3R2_GAMA: filling goaltime for SV1...
+# AR DC3R2_GAMA: TBD: adjust goal time?
+goaltimes_all = {
+    "sv1": {"DARK": 1000.0, "BRIGHT": 150.0, "BACKUP": 30.0},
+    "sv2": {"DARK": 1000.0, "BRIGHT": 150.0, "BACKUP": 30.0},
+    "sv3": {"DARK": 1200.0, "BRIGHT": 220.0, "BACKUP": 30.0},
+}
+
+# AR surface brightness profile to be used for computing time -> efftime relation
+# AR DC3R2_GAMA: filling sbprof for SV1...
+sbprofs_all = {
+    "sv1": {"DARK": "ELG", "BRIGHT": "BGS", "BACKUP": "PSF"},
+    "sv2": {"DARK": "ELG", "BRIGHT": "BGS", "BACKUP": "PSF"},
+    "sv3": {"DARK": "ELG", "BRIGHT": "BGS", "BACKUP": "PSF"},
+}
+
+
+def main():
+    #
+    start = time()
+    log.info("{:.1f}s\tstart\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+
+    log.info("")
+    log.info("")
+    log.info("{:.1f}s\tsettings\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+    # AR printing settings
+    tmpstr = " , ".join(
+        [kwargs[0] + "=" + str(kwargs[1]) for kwargs in args._get_kwargs()]
+    )
+    log.info("{:.1f}s\tsettings\targs: {}".format(time() - start, tmpstr))
+
+    # AR safe: DESI environment variables defined?
+    assert_env_vars(log=log, step="settings", start=start)
+
+    # AR safe: TILEID already existing in SVN?
+    assert_svn_tileid(
+        args.tileid, forcetileid=args.forcetileid, log=log, step="settings", start=start
+    )
+
+    # AR safe: argument dates correctly formatted?
+    assert_arg_dates(args, log=log, step="settings", start=start)
+
+    # AR print general configuration informations
+    print_config_infos(log=log, step="settings", start=start)
+
+    # AR (temporary) output files
+    for key in list(myouts.keys()):
+        log.info(
+            "{:.1f}s\tsettings\toutput file for {}: {}".format(
+                time() - start, key, myouts[key]
+            )
+        )
+    for key in list(mytmpouts.keys()):
+        log.info(
+            "{:.1f}s\tsettings\ttemporary output file for {}: {}".format(
+                time() - start, key, mytmpouts[key]
+            )
+        )
+
+    # AR faflavor
+    faflavor = "{}{}".format(args.survey, args.program.lower())
+
+    # AR obscon : for the tile observing conditions, permissive value
+    obscon = "DARK|GRAY|BRIGHT|BACKUP"
+    log.info("{:.1f}s\tsettings\ttile obscon={}".format(time() - start, obscon))
+
+    # AR desitarget folders/files
+    # AR folder architecture is now the same at NERSC/KPNO (https://github.com/desihub/fiberassign/issues/302)
+    # AR DESI_ROOT : NERSC: '/global/cfs/cdirs/desi' ; KPNO: '/data/datasystems'
+    mydirs = get_desitarget_paths(
+        args.dtver,
+        args.survey,
+        args.program,
+        dr=args.dr,
+        gaiadr=args.gaiadr,
+        log=log,
+        step="settings",
+        start=start,
+    )
+
+    # AR tiles
+    if dotile:
+        create_tile(
+            args.tileid,
+            args.tilera,
+            args.tiledec,
+            mytmpouts["tiles"],
+            args.survey,
+            obscon=obscon,
+            log=log,
+            step="dotile",
+            start=start,
+        )
+
+    # AR sky
+    if dosky:
+        create_sky(
+            mytmpouts["tiles"],
+            mydirs["sky"],
+            mytmpouts["sky"],
+            suppskydir=mydirs["skysupp"],
+            tmpoutdir=tmpoutdir,
+            log=log,
+            step="dosky",
+            start=start,
+        )
+
+    # AR gfa
+    if dogfa:
+        create_targ_nomtl(
+            mytmpouts["tiles"],
+            mydirs["gfa"],
+            args.survey,
+            args.gaiadr.replace("gaia", ""),
+            args.pmcorr,
+            mytmpouts["gfa"],
+            tmpoutdir=tmpoutdir,
+            pmtime_utc_str=args.pmtime_utc_str,
+            log=log,
+            step="dogfa",
+            start=start,
+        )
+
+    # AR mtl -> no MTL for SV1
+    # AR so we use the ill-named create_gfa() function with mydirs["targ"]
+    # AR to query the desitarget target catalogs
+    # AR so that we have standards
+    if domtl:
+        create_gfa(
+            mytmpouts["tiles"],
+            mydirs["targ"],
+            args.survey,
+            args.gaiadr.replace("gaia", ""),
+            args.pmcorr,
+            mytmpouts["targ"],
+            tmpoutdir=tmpoutdir,
+            pmtime_utc_str=args.pmtime_utc_str,
+            log=log,
+            step="dotarg",
+            start=start,
+        )
+
+    # AR secondary targets
+    # AR we add here the DC3R2_GAMA targets
+    # AR with tweaking the priorities
+    # AR same, no MTL, using create_gfa()
+    if doscnd:
+        """
+        Two sets of priorities per tile:
+        - one being bright (MAG_FIBER_Z  <  21.5)
+        - the other being correspondingly fainter (MAG_FIBER_Z  <  22.10).
+        We've simultaneously optimized these to maximize the color space covered with multiplicity
+            (cells that have more than one target) and to maximize the change in magnitude of the
+            targets across all cells. The provided target lists are a cut subset of Anand's, where
+            we removed targets that come from colors (CELL_IDs) well constrained by ELG/LRG samples,
+            as well as targets that have already been observed for DC3R2 over SV.
+        The formatting is identical to the provided .fits file, with the addition of the selections
+        given as a Boolean masks in the columns 'BRIGHT_PRIORITY' and 'FAINT_PRIORITY'.
+        Therefore, the six lists are contained here if you split on each of the three TILEIDs and
+            apply each mask once.
+        For bright fibers that had no bright targets available, the same faint target was chosen to
+        be observed during bright+faint exposures, so the overlap between the two masks is expected.
+        """
+        # # AR DR3R2_GAMA: using the provided catalog with {BRIGHT,FAINT}_PRIORITY
+        mydirs["scnd"] = "{}/survey/fiberassign/misc/DC3R2_GAMA_priorities.fits".format(
+            os.getenv("DESI_ROOT")
+        )
+
+        # AR DC3R2_GAMA: reading
+        d = fitsio.read(mydirs["scnd"])
+        mtl = Table(d)
+        # AR DC3R2_GAMA: adding NUMOBS_INIT=1 column
+        mtl["NUMOBS_INIT"] = np.ones(len(mtl), dtype=int)
+        # AR DC3R2_GAMA: addin PRIORITY_INIT column:
+        # - 4000 by default (above SV1 primary targets)
+        # - 5000 for {BRIGHT,FAINT}_PRIORITY ones
+        mtl["PRIORITY_INIT"] = 4000 + np.zeros(len(mtl), dtype=int)
+        if args.program == "DARK":
+            key = "FAINT_PRIORITY"
+        else:
+            key = "BRIGHT_PRIORITY"
+        mtl["PRIORITY_INIT"][mtl[key]] = 5000
+        log.info(
+            "{:.1f}s\tdoscnd\tpromoting {}/{} targets with {}".format(
+                time() - start, mtl[key].sum(), len(mtl), key
+            )
+        )
+        #
+        mtl.meta["EXTNAME"] = "MTL"
+        for col in [
+            "SUBPRIORITY",
+            "NUMOBS_MORE",
+            "NUMOBS",
+            "Z",
+            "ZWARN",
+            "TARGET_STATE",
+            "TIMESTAMP",
+            "VERSION",
+        ]:
+            mtl[col] = np.empty(len(mtl), dtype=mtldatamodel[col].dtype)
+        # AR DC3R2_GAMA: MTL columns
+        mtl["NUMOBS_MORE"] = mtl["NUMOBS_INIT"]
+        mtl["PRIORITY"] = mtl["PRIORITY_INIT"]
+        np.random.seed(1234)
+        mtl["SUBPRIORITY"] = np.random.uniform(len(mtl))
+        mtl["TARGET_STATE"] = "UNOBS"
+        mtl["TIMESTAMP"] = utc_time_now_str
+        mtl["VERSION"] = fiberassign.__version__
+        mtl["OBSCONDITIONS"] = obsconditions.mask(obscon)
+        # AR DC3R2_GAMA: cutting on tile
+        tiles = fitsio.read(mytmpouts["tiles"])
+        keep = is_in_cap(mtl, [args.tilera, args.tiledec, tile_radius_deg])
+        log.info(
+            "{:.1f}s\tdoscnd\tkeeping {}/{} targets in the tile".format(
+                time() - start, keep.sum(), len(mtl)
+            )
+        )
+        mtl = mtl[keep]
+        fitsio.write(mytmpouts["scnd"], mtl.as_array(), clobber=True)
+    else:
+        log.info("{:.1f}s\tdoscnd\tno secondary here".format(time() - start))
+
+    # AR ToO targets
+    # AR TBD: handling to MJD window boundaries as script argument?
+    if dotoo:
+        log.info(
+            "{:.1f}s\tdotoo\tno ToO here, as we are running with SV1".format(
+                time() - start
+            )
+        )
+
+    # AR fiberassign
+    if dofa:
+        # AR prepare targfns
+        targfns = [mytmpouts["targ"]]
+        if (doscnd) & (os.path.isfile(mytmpouts["scnd"])):
+            targfns.append(mytmpouts["scnd"])
+        if (dotoo) & (os.path.isfile(mytmpouts["too"])):
+            targfns.append(mytmpouts["too"])
+
+        # AR launch_onetile_fa
+        launch_onetile_fa(
+            args,
+            mytmpouts["tiles"],
+            targfns,
+            mytmpouts["fba"],
+            mytmpouts["fiberassign"],
+            skyfn=mytmpouts["sky"],
+            gfafn=mytmpouts["gfa"],
+            log=log,
+            step="dofa",
+            start=start,
+        )
+
+        # AR propagating some settings into the PRIMARY header
+        ebv = fitsio.read(mytmpouts["targ"], columns=["EBV"])["EBV"]
+        fascript = sys.argv[0]
+        update_fiberassign_header(
+            mytmpouts["fiberassign"],
+            args,
+            mydirs,
+            faflavor,
+            ebv,
+            obscon,
+            fascript,
+            log=log,
+            step="dofa",
+            start=start,
+        )
+
+    # AR gzip all fiberassign files
+    if dozip:
+        secure_gzip(
+            mytmpouts["fiberassign"], log=log, step="dozip", start=start,
+        )
+        # AR updating the path
+        mytmpouts["fiberassign"] += ".gz"
+        myouts["fiberassign"] += ".gz"
+
+    # AR QA plots
+    if doqa:
+        # AR used targfns
+        targfns = [mytmpouts["targ"]]
+        if os.path.isfile(mytmpouts["scnd"]):
+            targfns.append(mytmpouts["scnd"])
+        if os.path.isfile(mytmpouts["too"]):
+            targfns.append(mytmpouts["too"])
+
+        # AR DC3R2_GAMA: adding DC3R2_GAMA targets
+        make_qa(
+            mytmpouts["png"],
+            args.survey,
+            args.program,
+            faflavor,
+            targfns,
+            mytmpouts["fiberassign"],
+            args.tileid,
+            args.tilera,
+            args.tiledec,
+            obscon,
+            args.rundate,
+            tmpoutdir=tmpoutdir,
+            width_deg=4,
+            # extra_trmsks=["DC3R2_GAMA"],
+            # extra_trmskkeys=["SCND_TARGET"],
+            log=log,
+            step="doqa",
+            start=start,
+        )
+
+    # AR do clean?
+    if args.doclean == "y":
+        rmv_nonsvn(mytmpouts, myouts, log=log, step="doclean", start=start)
+
+    # AR move tmpoutdir -> args.outdir
+    if domove:
+        mv_temp2final(
+            mytmpouts, myouts, args.doclean, log=log, step="domove", start=start,
+        )
+
+    # AR and we re done
+    log.info("")
+    log.info("")
+    log.info("{:.1f}s\tend\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+
+
+if __name__ == "__main__":
+
+    # AR to speed up development/debugging
+    dotile, dosky, dogfa, domtl, doscnd, dotoo, dofa, dozip, doqa, domove = (
+        False,
+        False,
+        False,
+        False,
+        False,
+        False,
+        False,
+        False,
+        False,
+        False,
+    )
+    dotile = True
+    dosky = True
+    dogfa = True
+    domtl = True
+    doscnd = True
+    # dotoo = True
+    dofa = True
+    dozip = True
+    doqa = True
+    domove = True
+
+    # AR reading arguments
+    parser = ArgumentParser()
+    parser.add_argument(
+        "--outdir", help="output directory", type=str, default=None, required=True,
+    )
+    parser.add_argument(
+        "--tileid",
+        help="output TILEID (e.g., 63142)",
+        type=int,
+        default=None,
+        required=True,
+    )
+    parser.add_argument(
+        "--forcetileid",
+        help="y/n, if y, allows to generate tileids which already exist in svn (default=n)",
+        type=str,
+        default="n",
+        required=False,
+        choices=["y", "n"],
+    )
+    parser.add_argument(
+        "--tilera",
+        help="tile centre ra",
+        type=float,
+        default=None,
+        required=True,
+        choices=[214, 217.5, 221],
+    )
+    parser.add_argument(
+        "--tiledec",
+        help="tile centre dec",
+        type=float,
+        default=None,
+        required=True,
+        choices=[0],
+    )
+    parser.add_argument(
+        "--survey",
+        help="survey (forcing sv1)",
+        type=str,
+        default="sv1",
+        required=True,
+        choices=["sv1"],
+    )
+    parser.add_argument(
+        "--program",
+        help="program",
+        type=str,
+        default=None,
+        required=True,
+        choices=["DARK", "BRIGHT"],
+    )
+    parser.add_argument(
+        "--goaltime",
+        help="goal effective time (default for sv2: {})".format(
+            ", ".join(
+                [
+                    "{}={}".format(key, goaltimes_all["sv2"][key])
+                    for key in ["DARK", "BRIGHT", "BACKUP"]
+                ]
+            )
+        ),
+        type=float,
+        default=None,
+        required=False,
+    )
+    parser.add_argument(
+        "--sbprof",
+        help="surface brightness profile to be used for computing time -> efftime relation (default for sv2: {})".format(
+            ", ".join(
+                [
+                    "{}={}".format(key, sbprofs_all["sv2"][key])
+                    for key in ["DARK", "BRIGHT", "BACKUP"]
+                ]
+            )
+        ),
+        type=str,
+        default=None,
+        required=False,
+        choices=["ELG", "BGS", "PSF", "FLT"],
+    )
+    parser.add_argument(
+        "--mintfrac",
+        help="minimum exposure time fraction needed for this tile to be considered done (default=0.9)",
+        type=float,
+        default=0.9,
+        required=False,
+    )
+    parser.add_argument(
+        "--rundate",
+        help="yyyy-mm-ddThh:mm:ss+00:00 rundate for focalplane with UTC timezone formatting (default=current UTC time)",
+        type=str,
+        default=None,
+        required=False,
+    )
+    parser.add_argument(
+        "--mtltime",
+        help="yyyy-mm-ddThh:mm:ss+00:00 MTL isodate, with UTC timezone formatting (default=current UTC time)",
+        type=str,
+        default=None,
+        required=False,
+    )
+    parser.add_argument(
+        "--standards_per_petal",
+        help="required number of standards per petal (default=10)",
+        type=str,
+        default="10",
+        required=False,
+    )
+    parser.add_argument(
+        "--sky_per_petal",
+        help="required number of sky targets per petal (default=40)",
+        type=str,
+        default="40",
+        required=False,
+    )
+    parser.add_argument(
+        "--sky_per_slitblock",
+        help="Required number of sky targets per fiber slitblock",
+        type=int,
+        default=1,
+        required=False,
+    )
+    parser.add_argument(
+        "--dr",
+        help="legacypipe dr (default=dr9)",
+        type=str,
+        default="dr9",
+        required=False,
+        choices=["dr9"],
+    )
+    parser.add_argument(
+        "--gaiadr",
+        help="gaia dr (default=gaiadr2)",
+        type=str,
+        default="gaiadr2",
+        required=False,
+        choices=["gaiadr2"],
+    )
+    parser.add_argument(
+        "--dtver",
+        help="desitarget catalogue version",
+        type=str,
+        default="0.52.0",
+        required=True,
+        choices=["0.52.0"],
+    )
+    parser.add_argument(
+        "--pmcorr",
+        help="apply proper-motion-correction before fiber assignment? (y/n) (default=n)",
+        type=str,
+        default="n",
+        required=False,
+    )
+    parser.add_argument(
+        "--pmtime_utc_str",
+        help="yyyy-mm-ddThh:mm:ss+00:00, UTC time use to compute new coordinates after applying proper motion since REF_EPOCH (default=current UTC time)",
+        type=str,
+        default=None,
+        required=False,
+    )
+    parser.add_argument(
+        "--doclean",
+        help="delete TILEID-{tiles,sky,std,gfa,targ,scnd,too}.fits files (y/n)",
+        type=str,
+        default="n",
+        required=False,
+    )
+    parser.add_argument(
+        "--log-stdout",
+        action="store_true",
+        help="log to stdout instead of redirecting to a file",
+    )
+    #
+    args = parser.parse_args()
+    log = Logger.get()
+    start = time()
+
+    # AR safe: outdir
+    if args.outdir[-1] != "/":
+        args.outdir += "/"
+    if os.path.isdir(args.outdir) == False:
+        os.mkdir(args.outdir)
+
+    # AR utc_time_now, rundate, pmtime
+    utc_time_now = datetime.now(tz=timezone.utc)
+    utc_time_now_str = utc_time_now.isoformat(timespec="seconds")
+    mjd_now = Time(utc_time_now).mjd
+    if args.rundate is None:
+        args.rundate = utc_time_now_str
+    if args.mtltime is None:
+        args.mtltime = utc_time_now_str
+    if args.pmtime_utc_str is None:
+        args.pmtime_utc_str = utc_time_now_str
+
+    # AR goaltime
+    if args.goaltime is None:
+        args.goaltime = goaltimes_all[args.survey][args.program]
+
+    # AR sbprof
+    if args.sbprof is None:
+        args.sbprof = sbprofs_all[args.survey][args.program]
+
+    # AR create a temporary directory for generated files
+    tmpoutdir = tempfile.mkdtemp()
+    # tmpoutdir = "/global/cscratch1/sd/raichoor/tmpdir/fiberassign-dc3r2_gama/"
+    if tmpoutdir[-1] != "/":
+        tmpoutdir += "/"
+
+    # AR output files
+    myouts = {}
+    #
+    for key in ["tiles", "sky", "gfa", "targ", "scnd", "too"]:
+        myouts[key] = os.path.join(
+            args.outdir, "{:06d}-{}.fits".format(args.tileid, key)
+        )
+    myouts["fba"] = os.path.join(args.outdir, "fba-{:06d}.fits".format(args.tileid))
+    myouts["fiberassign"] = os.path.join(
+        args.outdir, "fiberassign-{:06d}.fits".format(args.tileid)
+    )
+    myouts["png"] = os.path.join(
+        args.outdir, "fiberassign-{:06d}.png".format(args.tileid)
+    )
+    myouts["log"] = os.path.join(
+        args.outdir, "fiberassign-{:06d}.log".format(args.tileid)
+    )
+
+    # AR temporary output files
+    mytmpouts = {}
+    for key in list(myouts.keys()):
+        mytmpouts[key] = myouts[key].replace(args.outdir, tmpoutdir)
+
+    # AR temporary log file
+    if os.path.isfile(mytmpouts["log"]):
+        os.remove(mytmpouts["log"])
+    if args.log_stdout:
+        main()
+    else:
+        with stdouterr_redirected(to=mytmpouts["log"]):
+            main()
+
+        # AR/SB moving the log at last if it was sent to a file
+        _ = shutil.move(mytmpouts["log"], myouts["log"])
+
+    # AR deleting folder if empty
+    tmpfiles = os.listdir(tmpoutdir)
+    if len(tmpfiles) == 0:
+        os.rmdir(tmpoutdir)
+    else:
+        log.error("temp directory not empty: {}".format(tmpfiles))
