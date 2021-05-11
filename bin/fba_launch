@@ -41,6 +41,8 @@ from fiberassign.fba_launch_io import (
     update_fiberassign_header,
     secure_gzip,
     make_qa,
+    rmv_nonsvn,
+    mv_temp2final,
 )
 from argparse import ArgumentParser
 
@@ -312,61 +314,29 @@ def main():
 
     # AR do clean?
     if args.doclean == "y":
-        log.info("")
-        log.info("")
-        log.info(
-            "{:.1f}s\tdoclean\tTIMESTAMP={}".format(time() - start, Time.now().isot)
+        rmv_nonsvn(
+            mytmpouts,
+            myouts,
+            log=log,
+            step="doclean",
+            start=start
         )
-        for key in ["tiles", "sky", "gfa", "targ", "scnd", "too", "fba"]:
-            if os.path.isfile(mytmpouts[key]):
-                os.remove(mytmpouts[key])
-                log.info(
-                    "{:.1f}s\tdoclean\tdeleting file {}".format(
-                        time() - start, mytmpouts[key]
-                    )
-                )
 
     # AR move tmpoutdir -> args.outdir
     if domove:
-        log.info("")
-        log.info("")
-        log.info(
-            "{:.1f}s\tdomove\tTIMESTAMP={}".format(time() - start, Time.now().isot)
+        mv_temp2final(
+            mytmpouts,
+            myouts,
+            args.doclean,
+            log=log,
+            step="domove",
+            start=start,
         )
-        # AR optional files
-        if args.doclean == "n":
-            for key in ["tiles", "sky", "gfa", "targ", "scnd", "too", "fba"]:
-                if os.path.isfile(mytmpouts[key]):
-                    _ = shutil.move(mytmpouts[key], myouts[key])
-                    log.info(
-                        "{:.1f}s\tdomove\tmoving file {} to {}".format(
-                            time() - start, mytmpouts[key], myouts[key]
-                        )
-                    )
-                else:
-                    log.info(
-                        "{:.1f}s\tdomove\tno file {}".format(
-                            time() - start, mytmpouts[key]
-                        )
-                    )
-        # AR svn-checked files
-        for key in ["fiberassign", "png"]:
-            _ = shutil.move(mytmpouts[key], myouts[key])
-            log.info(
-                "{:.1f}s\tdomove\tmoving {} to {}".format(
-                    time() - start, mytmpouts[key], myouts[key]
-                )
-            )
-        key = "log"
-        log.info(
-            "{:.1f}s\tdomove\tmoving {} to {}".format(
-                time() - start, mytmpouts[key], myouts[key]
-            )
-        )
-        # AR and we re done
-        log.info("")
-        log.info("")
-        log.info("{:.1f}s\tend\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+
+    # AR and we re done
+    log.info("")
+    log.info("")
+    log.info("{:.1f}s\tend\tTIMESTAMP={}".format(time() - start, Time.now().isot))                                                                                               
 
 
 if __name__ == "__main__":
