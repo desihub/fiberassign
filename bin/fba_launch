@@ -412,7 +412,7 @@ if __name__ == "__main__":
         type=str,
         default=None,
         required=False,
-        choices={"ELG, BGS, PSF, FLT"},
+        choices=["ELG", "BGS", "PSF", "FLT"],
     )
     parser.add_argument(
         "--mintfrac",
