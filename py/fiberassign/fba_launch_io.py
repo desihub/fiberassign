@@ -1307,6 +1307,8 @@ def update_fiberassign_header(
     fiberassignfn,
     args,
     mydirs,
+    hdr_survey,
+    hdr_faprgrm,
     faflavor,
     ebv,
     obscon,
@@ -1334,6 +1336,8 @@ def update_fiberassign_header(
                 - scnd: secondary fits catalog (static)
                 - scndmtl: MTL folder for secondary targets
                 - too: ToO ecsv catalog
+        hdr_survey: value for the SURVEY keyword (string)
+        hdr_faprgrm: value for the FAPRGRM keyword (string)
         faflavor: usually {survey}{program} in lower cases (string)
         ebv: median EBV over the tile targets (float)
         obscon: tile allowed observing conditions (string; e.g. "DARK|GRAY|BRIGHT|BACKUP") 
@@ -1345,8 +1349,20 @@ def update_fiberassign_header(
 
     Notes:
         no check is done on mydirs.
-        TBD : faflavor could be different than {survey}{program}, e.g. in dedicated tiles
+        hdr_survey, hdr_faprgrm: for the "regular" surveys (e.g., sv3, main), those will be args.survey, args.program
+            but for dedicated survey, they will (have to) be different. 
+        faflavor has to be {hdr_survey}{hdr_faprgrm}; will exit with an error if not;
+            keeping this to be sure it is not forgotten to be done for dedicated programs.
     """
+    # AR sanity check on faflavor
+    if faflavor != "{}{}".format(hdr_survey, hdr_faprgrm):
+        log.error(
+            "{:.1f}s\t{}\tfaflavor={} inconsitent with hdr_survey={} and hdr_faprgrm={}; exiting".format(
+                time() - start, step, faflavor, hdr_survey, hdr_faprgrm,
+            )
+        )
+        sys.exit(1)
+
     # AR propagating some settings into the PRIMARY header
     fd = fitsio.FITS(fiberassignfn, "rw")
 
@@ -1372,19 +1388,6 @@ def update_fiberassign_header(
     # AR     we exclude from FAARGS outdir, forcetiled, and any None argument
     tmparr = []
     for kwargs in args._get_kwargs():
-        if kwargs[0].lower() in [
-            "outdir",
-            "survey",
-            "rundate",
-            "pmcorr",
-            "pmtime_utc_str",
-        ]:
-            if kwargs[1] is not None:
-                if kwargs[0] == "pmtime_utc_str":
-                    tmparg = "pmtime"
-                else:
-                    tmparg = kwargs[0]
-                fd["PRIMARY"].write_key(tmparg, kwargs[1])
         if (kwargs[0].lower() not in ["outdir", "forcetileid"]) & (
             kwargs[1] is not None
         ):
@@ -1393,7 +1396,12 @@ def update_fiberassign_header(
         "faargs", " ".join(tmparr),
     )
     # AR some keywords
-    fd["PRIMARY"].write_key("faprgrm", args.program)
+    fd["PRIMARY"].write_key("outdir", args.outdir)
+    fd["PRIMARY"].write_key("survey", hdr_survey) # AR not args.survey!
+    fd["PRIMARY"].write_key("rundate", args.rundate)
+    fd["PRIMARY"].write_key("pmcorr", args.pmcorr)
+    fd["PRIMARY"].write_key("pmtime", args.pmtime_utc_str)
+    fd["PRIMARY"].write_key("faprgrm", hdr_faprgrm) # AR not args.program!
     fd["PRIMARY"].write_key("mtltime", args.mtltime)
     fd["PRIMARY"].write_key("obscon", obscon)
     # AR informations for NTS
