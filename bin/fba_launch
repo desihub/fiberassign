@@ -94,8 +94,14 @@ def main():
             )
         )
 
-    # AR faflavor
-    faflavor = "{}{}".format(args.survey, args.program.lower())
+    # AR hdr_survey, hdr_prgrm, faflavor
+    hdr_survey, hdr_faprgrm = args.survey, args.program.lower()
+    faflavor = "{}{}".format(hdr_survey, hdr_faprgrm)
+    log.info(
+        "{:.1f}s\tsettings\theader: hdr_survey={} , hdr_faprgrm={} , faflavor={}".format(
+            time() - start, hdr_survey, hdr_faprgrm, faflavor
+        )
+    )
 
     # AR obscon : for the tile observing conditions, permissive value
     obscon = "DARK|GRAY|BRIGHT|BACKUP"
@@ -249,6 +255,8 @@ def main():
             mytmpouts["fiberassign"],
             args,
             mydirs,
+            hdr_survey,
+            hdr_faprgrm,
             faflavor,
             ebv,
             obscon,
