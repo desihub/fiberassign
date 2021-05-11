@@ -44,12 +44,6 @@ sbprofs_all = {
     "sv3": {"DARK": "ELG", "BRIGHT": "BGS", "BACKUP": "PSF"},
 }
 
-# AR default REF_EPOCH for PMRA=PMDEC=REF_EPOCH=0 objects
-ref_epochs = {
-    "gaiadr2" : 2015.5
-}
-
-
 
 def main():
     #
@@ -326,8 +320,7 @@ def main():
 if __name__ == "__main__":
 
     # AR to speed up development/debugging
-    dotile, dosky, dogfa, dostd, domtl, doscnd, dotoo, dofa, dozip, doqa, domove = (
-        False,
+    dotile, dosky, dogfa, domtl, doscnd, dotoo, dofa, dozip, doqa, domove = (
         False,
         False,
         False,
@@ -342,7 +335,6 @@ if __name__ == "__main__":
     dotile = True
     dosky = True
     dogfa = True
-    dostd = True
     domtl = True
     doscnd = True
     dotoo = True
