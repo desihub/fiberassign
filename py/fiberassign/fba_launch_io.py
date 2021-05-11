@@ -827,25 +827,27 @@ def create_sky(
     log.info("{:.1f}s\t{}\t{} written".format(time() - start, step, outfn))
 
 
-def create_gfa(
+def create_targ_nomtl(
     tilesfn,
-    gfadir,
+    targdir,
     survey,
     gaiadr,
     pmcorr,
     outfn,
     tmpoutdir=tempfile.mkdtemp(),
     pmtime_utc_str=None,
+    quick=True,
     log=Logger.get(),
     step="",
     start=time(),
 ):
     """
-    Create a GFA fits file.
+    Create a target fits file, with solely using desitarget catalogs, no MTL.
+        e.g. for the GFA, but could be used for other purposes.
     
     Args:
         tilesfn: path to a tiles fits file (string)
-        gfadir: desitarget GFA folder (string)
+        targdir: desitarget target folder (string)
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         gaiadr: Gaia dr ("dr2" or "edr3")
         pmcorr: apply proper-motion correction? ("y" or "n")
@@ -855,6 +857,7 @@ def create_gfa(
         pmtime_utc_str (optional, defaults to None): UTC time use to compute
                 new coordinates after applying proper motion since REF_EPOCH
                 (string formatted as "yyyy-mm-ddThh:mm:ss+00:00")
+        quick (optional, defaults to True): boolean, arguments of desitarget.io.read_targets_in_tiles()
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -867,19 +870,19 @@ def create_gfa(
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
     log.info("{:.1f}s\t{}\tstart generating {}".format(time() - start, step, outfn))
-    # AR gfa: read targets
+    # AR targ_nomtl: read targets
     tiles = fits.open(tilesfn)[1].data
     d = custom_read_targets_in_tiles(
-        [gfadir], tiles, quick=True, mtl=False, log=log, step=step, start=start
+        [targdir], tiles, quick=quick, mtl=False, log=log, step=step, start=start
     )
     log.info(
         "{:.1f}s\t{}\tkeeping {} targets to {}".format(
             time() - start, step, len(d), outfn
         )
     )
-    # AR gfa: PMRA, PMDEC: convert NaN to zeros
+    # AR targ_nomtl: PMRA, PMDEC: convert NaN to zeros
     d = force_finite_pm(d, log=log, step=step, start=start)
-    # AR gfa: update RA, DEC, REF_EPOCH using proper motion?
+    # AR targ_nomtl: update RA, DEC, REF_EPOCH using proper motion?
     if pmcorr == "y":
         if pmtime_utc_str is None:
             log.error(
@@ -895,15 +898,15 @@ def create_gfa(
                 time() - start, step
             )
         )
-        # AR Replaces 0 by force_ref_epoch in ref_epoch
+        # AR targ_nomtl: Replaces 0 by force_ref_epoch in ref_epoch
         d = force_nonzero_refepoch(
             d, gaia_ref_epochs[gaiadr], log=log, step=step, start=start
         )
 
-    # AR gfa: write fits
-    n, tmpfn = write_targets(tmpoutdir, d, indir=gfadir, survey=survey)
+    # AR targ_nomtl: write fits
+    n, tmpfn = write_targets(tmpoutdir, d, indir=targdir, survey=survey)
     _ = mv_write_targets_out(tmpfn, tmpoutdir, outfn, log=log, step=step, start=start)
-    # AR gfa: update header if pmcorr = "y"
+    # AR targ_nomtl: update header if pmcorr = "y"
     if pmcorr == "y":
         fd = fitsio.FITS(outfn, "rw")
         fd["TARGETS"].write_key("COMMENT", "RA,DEC updated with PM for AEN objects")
@@ -1500,12 +1503,13 @@ def get_dt_masks(
 
 
 def get_qa_tracers(
-    program, log=Logger.get(), step="", start=time(),
+    survey, program, log=Logger.get(), step="", start=time(),
 ):
     """
     Returns the tracers for which we provide QA plots of fiber assignment.
     
     Args:
+        survey: survey name: "sv1", "sv2", "sv3" or "main") (string)
         program: "DARK", "BRIGHT", or "BACKUP" (string)
         log (optional, defaults to Logger.get()): Logger object                                                                                                                                            
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
@@ -1523,7 +1527,10 @@ def get_qa_tracers(
         trmskkeys = ["BGS_TARGET", "BGS_TARGET"]
         trmsks = ["BGS_BRIGHT", "BGS_FAINT"]
         trmskkeys += ["MWS_TARGET", "MWS_TARGET"]
-        trmsks += ["MWS_BROAD", "MWS_NEARBY"]
+        if survey == "sv1":
+            trmsks += ["MWS_MAIN_BROAD", "MWS_NEARBY"]
+        else:
+            trmsks += ["MWS_BROAD", "MWS_NEARBY"]
     elif program == "BACKUP":
         trmskkeys = ["MWS_TARGET", "MWS_TARGET", "MWS_TARGET"]
         trmsks = ["BACKUP_BRIGHT", "BACKUP_FAINT", "BACKUP_VERY_FAINT"]
@@ -1818,7 +1825,7 @@ def qa_print_infos(
     # AR hard-setting the plotted tracers
     # AR TBD: handle secondaries
     trmskkeys, trmsks = get_qa_tracers(
-        program, log=Logger.get(), step="", start=time(),
+        survey, program, log=Logger.get(), step="", start=time(),
     )
 
     # AR masks
@@ -2643,7 +2650,7 @@ def make_qa(
 
     # AR plotted tracers
     # AR TBD: handle secondary?
-    trmskkeys, trmsks = get_qa_tracers(program, log=log, step="doplot", start=start,)
+    trmskkeys, trmsks = get_qa_tracers(survey, program, log=log, step="doplot", start=start,)
 
     # AR storing parent/assigned quantities
     parent, assign, dras, ddecs, petals, nassign = get_parent_assign_quants(
