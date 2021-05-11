@@ -1777,7 +1777,7 @@ def flux2mag(flux, band=None, ebv=None):
     mag = np.nan + np.zeros(len(flux))
     mag[keep] = 22.5 - 2.5 * np.log10(flux[keep])
     if ebv is not None:
-        mag -= get_ext_coeffs[band] * ebv
+        mag -= get_ext_coeffs(band) * ebv
     return mag
 
 
