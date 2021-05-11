@@ -30,6 +30,37 @@ def isolated(ra, dec, mindist=5.0):
     index, separation, dist3d = cx.match_to_catalog_sky(cx, nthneighbor=2)
     return separation.to(u.arcsec) > mindist*u.arcsec
 
+def gaia_synth_r_flux(tab):
+    '''
+    Generate synthetic r band flux based on Gaia photometry
+    Args:
+        tab: table with columns GAIA_PHOT_G_MEAN_MAG, GAIA_PHOT_BP_MEAN_MAG,
+             GAIA_PHOT_RP_MEAN_MAG
+    Returns:
+        array of synthetic Gaia-based r-band fluxes
+
+    This code has largely been borrowed from legacypipe/reference.py
+    Uses Rongpu Zhou's Gaia DR2 transformation from (G, BP-RP) to DECam r
+    '''
+
+    color = tab["GAIA_PHOT_BP_MEAN_MAG"] - tab["GAIA_PHOT_RP_MEAN_MAG"]
+    # no BP-RP color: use average color
+    color[np.logical_not(np.isfinite(color))] = 1.4
+    # clip to reasonable range for the polynomial fit
+    color = np.clip(color, -0.6, 4.1)
+
+    coeffs = [0.1139078673, -0.2868955307, 0.0013196434, 0.1029151074,
+              0.1196710702, -0.3729031390, 0.1859874242, 0.1370162451,
+              -0.1808580848, 0.0803219195, -0.0180218196, 0.0020584707,
+              -0.0000953486]
+
+    synth_r_mag = np.array(tab["GAIA_PHOT_G_MEAN_MAG"])
+
+    for order,c in enumerate(coeffs):
+            synth_r_mag += c * color**order
+
+    synth_r_flux = np.power(10, (22.5-synth_r_mag)/2.5)
+    return synth_r_flux
 
 def get_gfa_targets(tiles, gfafile,faintlim=99):
      
@@ -137,6 +168,9 @@ def get_gfa_targets(tiles, gfafile,faintlim=99):
         t["ETC_FLAG"] = flag
         t["GUIDE_FLAG"] = flag
         t["FOCUS_FLAG"] = flag
+
+        # patch in Gaia-based synthetic r flux for use by ETC
+        t["FLUX_R"] = gaia_synth_r_flux(tab)
 
         gfa_targets.append(t)
 
