@@ -104,7 +104,7 @@ def stuck_on_sky(hw, tiles):
     from fiberassign.utils import Logger
     from fiberassign.hardware import FIBER_STATE_STUCK, FIBER_STATE_BROKEN
 
-    from fiberassign.target import xy2radec
+    from fiberassign.targets import xy2radec
 
     log = Logger.get()
 
