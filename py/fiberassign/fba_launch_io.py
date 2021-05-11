@@ -1541,7 +1541,14 @@ def get_qa_tracers(
 
 
 def get_parent_assign_quants(
-    survey, targfns, fiberassignfn, tilera, tiledec, log=Logger.get(), step="", start=time(),
+    survey,
+    targfns,
+    fiberassignfn,
+    tilera,
+    tiledec,
+    log=Logger.get(),
+    step="",
+    start=time(),
 ):
     """
     Stores the parent and assigned targets properties (desitarget columns).
@@ -1734,6 +1741,23 @@ def print_assgn_parent_stats(
     log.info("======= ASSIGNMENT STATISTICS : END =======")
 
 
+def get_ext_coeffs(band):
+    """
+    Returns the extinction coefficient for a given band.
+
+    Args:
+        band: band name: "G", "R", "Z", "W1", or "W2" (string)
+
+    Returns:
+        ext: extinction coefficient (float)
+
+    Note:
+        https://www.legacysurvey.org/dr9/catalogs/#galactic-extinction-coefficients
+    """
+    exts = {"G": 3.214, "R": 2.165, "Z": 1.211, "W1": 0.184, "W2": 0.113}
+    return exts[band]
+
+
 def flux2mag(flux, band=None, ebv=None):
     """
     Converts a flux to a (optionally extinction-corrected) magnitude
@@ -1748,14 +1772,12 @@ def flux2mag(flux, band=None, ebv=None):
 
     Notes:
         flux < 0 values are converted to NaN in magnitudes
-        ext. coeffs: https://www.legacysurvey.org/dr9/catalogs/#galactic-extinction-coefficients
     """
     keep = flux > 0
     mag = np.nan + np.zeros(len(flux))
     mag[keep] = 22.5 - 2.5 * np.log10(flux[keep])
     if ebv is not None:
-        exts = {"G": 3.214, "R": 2.165, "Z": 1.211, "W1": 0.184, "W2": 0.113}
-        mag -= exts[band] * ebv
+        mag -= get_ext_coeffs[band] * ebv
     return mag
 
 
@@ -1797,7 +1819,9 @@ def qa_print_infos(
     """
     # AR hard-setting the plotted tracers
     # AR TBD: handle secondaries
-    trmskkeys, trmsks = get_qa_tracers(program, log=Logger.get(), step="", start=time(),)
+    trmskkeys, trmsks = get_qa_tracers(
+        program, log=Logger.get(), step="", start=time(),
+    )
 
     # AR masks
     yaml_masks, wd_mskkeys, wd_msks, std_mskkeys, std_msks = get_dt_masks(
@@ -2236,23 +2260,6 @@ def get_qa_farange(fafrac, dfa=0.2):
     famin = np.max([0, np.round(fafrac - dfa / 2, 1)])
     famax = np.min([1, np.round(fafrac + dfa / 2, 1)])
     return famin, famax
-
-
-def get_ext_coeffs(band):
-    """
-    Returns the extinction coefficient for a given band.
-
-    Args:
-        band: band name: "G", "R", "Z", "W1", or "W2" (string)
-
-    Returns:
-        ext: extinction coefficient (float)
-
-    Note:
-        https://www.legacysurvey.org/dr9/catalogs/#galactic-extinction-coefficients
-    """
-    exts = {"G": 3.214, "R": 2.165, "Z": 1.211, "W1": 0.184, "W2": 0.113}
-    return exts[band]
 
 
 def plot_hist_tracer(ax, survey, parent, assign, msk, mskkey):
