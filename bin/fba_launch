@@ -267,7 +267,7 @@ def main():
         myouts["fiberassign"] += ".gz"
 
     # AR QA plots
-    if doplot:
+    if doqa:
 
         # AR used targfns
         targfns = [mytmpouts["targ"]]
@@ -291,7 +291,7 @@ def main():
             tmpoutdir=tmpoutdir,
             width_deg=4,
             log=log,
-            step="doplot",
+            step="doqa",
             start=start,
         )
 
@@ -357,7 +357,7 @@ def main():
 if __name__ == "__main__":
 
     # AR to speed up development/debugging
-    dotile, dosky, dogfa, dostd, domtl, doscnd, dotoo, dofa, dozip, doplot, domove = (
+    dotile, dosky, dogfa, dostd, domtl, doscnd, dotoo, dofa, dozip, doqa, domove = (
         False,
         False,
         False,
@@ -379,7 +379,7 @@ if __name__ == "__main__":
     dotoo = True
     dofa = True
     dozip = True
-    doplot = True
+    doqa = True
     domove = True
 
     # AR reading arguments
