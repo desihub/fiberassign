@@ -938,50 +938,11 @@ def load_target_file(tgs, tfile, survey=None, typeforce=None, typecol=None,
 
     return survey
 
-
-# These are reproductions of PlateMaker Tcl functions in
-# https://desi.lbl.gov/trac/browser/code/online/DervishTools/trunk/desi/etc/nfs.tcl#L43
-# def pm_sidtim(mjd):
-#     return fmod(mjd + (mjd-52903.54875)*(366.24125/365.24125-1.),1.)*360.
-def pm_zd(ha, dec, lat):
-    rha = np.deg2rad(ha)
-    rdec = np.deg2rad(dec)
-    rphi = np.deg2rad(lat)
-    rzen = np.arccos(np.cos(rha) * np.cos(rdec) * np.cos(rphi) +
-            np.sin(rdec) * np.sin(rphi))
-    return np.rad2deg(rzen)
-def pm_psi(ha, dec, latitude):
-    rha = np.deg2rad(ha)
-    rdec = np.deg2rad(dec)
-    rphi = np.deg2rad(latitude)
-    rpsi = np.arctan2(np.sin(rha) * np.cos(rphi), np.cos(rdec) * np.sin(rphi) - np.sin(rdec) * np.cos(rphi) * np.cos(rha))
-    return np.rad2deg(rpsi)
-def pm_zd2deltaadc(zd):
-    t = np.tan(np.deg2rad(zd))
-    A = -0.0183 + -0.3795*t + -0.1939*t**2
-    A = np.rad2deg(A)
-    return 2*A
-def pm_get_adc_angles(ha, dec):
-    # Here we're reproducing PlateMaker's astrometric
-    # transformations to get to the ADC angles it's going to set.
-    # These have degree-level disagreements with other methods.
-    pm_longitude = 111.6003
-    pm_latitude  =  31.9634
-    #lst0 = pm_sidtim(mjd)
-    #st = lst0 - longitude
-    #ha = st - tile_ra
-    zd  = pm_zd (ha, dec, pm_latitude)
-    psi = pm_psi(ha, dec, pm_latitude)
-    dadc = pm_zd2deltaadc(zd)
-    adc1 = psi + dadc/2.
-    adc2 = psi - dadc/2.
-    return adc1, adc2
-
 def targets_in_tiles(hw, tgs, tiles):
     '''
     Returns tile_targetids, tile_x, tile_y
     '''
-    from desimeter.fiberassign import fiberassign_radec2xy_cs5
+    from desimeter.fiberassign import fiberassign_radec2xy_cs5, pm_get_adc_angles
     from desimeter.transform.xy2qs import xy2uv
     from astropy.time import Time
 
@@ -1011,8 +972,20 @@ def targets_in_tiles(hw, tgs, tiles):
         t = Time(tile_obstime, format='isot')
         mjd = t.mjd
 
+        # HACK -- HA for the ADC angle
+        # desi/spectro/data/20210509/00087831/pm-00087831-logs.tar
+        # -> data/platemaker/test/87831/nfs*.par
+        tile_ha = 65.528037179650539
+
         adc1,adc2 = pm_get_adc_angles(tile_ha, tile_dec)
+        print('ADC1', adc1, 'ADC2', adc2)
         fieldrot = tile_obstheta
+        print('Fieldrot', fieldrot)
+
+        ## HACK -- HA for the actual observation
+        # from header MOUNTHA
+        tile_ha = 66.793588
+
         x, y = fiberassign_radec2xy_cs5(ras, decs, tile_ra, tile_dec, mjd,
                                         tile_ha, fieldrot, adc1, adc2)
         fx,fy = xy2uv(x, y)
