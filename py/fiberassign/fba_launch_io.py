@@ -2763,3 +2763,89 @@ def make_qa(
         outpng, bbox_inches="tight",
     )
     plt.close()
+
+
+def rmv_nonsvn(mytmpouts, myouts, log=Logger.get(), step="", start=time()):
+    """
+    Remove fba_launch non-SVN products
+    
+    Args:
+        mytmpouts: dictionary with the temporary files location (dictionary);
+            concerns the following keys:
+                "tiles", "sky", "gfa", "targ", "scnd", "too", "fba"
+        myouts: dictionary with the fba_launch args.outdir location (dictionary);
+            contains same keys as mytmpouts
+        log (optional, defaults to Logger.get()): Logger object
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+    """
+    log.info("")
+    log.info("")
+    log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
+    for key in ["tiles", "sky", "gfa", "targ", "scnd", "too", "fba"]:
+        if os.path.isfile(mytmpouts[key]):
+            os.remove(mytmpouts[key])
+            log.info(
+                "{:.1f}s\t{}\tdeleting file {}".format(
+                    time() - start, step, mytmpouts[key]
+                )
+            )
+
+
+def mv_temp2final(mytmpouts, myouts, doclean, log=Logger.get(), step="", start=time()):
+    """
+    Moves the fba_launch outputs from the temporary location to the args.outdir location.   
+
+    Args:
+        mytmpouts: dictionary with the temporary files location (dictionary);
+            contains the following keys:
+                "fiberassign", "png", "log"
+                if doclean="n", also: "tiles", "sky", "gfa", "targ", "scnd", "too", "fba"
+        myouts: dictionary with the fba_launch args.outdir location (dictionary);
+            contains same keys as mytmpouts
+        doclean: remove non-SVN files? "y" or "n" (string);
+            args.clean fba_launch argument
+        log (optional, defaults to Logger.get()): Logger object
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+
+    Notes:
+        actually, the log is not moved here; it is moved in fba_launch, after the main()
+    """
+    log.info("")
+    log.info("")
+    log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
+    # AR optional files
+    if doclean == "n":
+        for key in ["tiles", "sky", "gfa", "targ", "scnd", "too", "fba"]:
+            if os.path.isfile(mytmpouts[key]):
+                _ = shutil.move(mytmpouts[key], myouts[key])
+                log.info(
+                    "{:.1f}s\t{}\tmoving file {} to {}".format(
+                        time() - start, step, mytmpouts[key], myouts[key]
+                    )
+                )
+            else:
+                log.info(
+                    "{:.1f}s\t{}\tno file {}".format(
+                        time() - start, step, mytmpouts[key]
+                    )
+                )
+    # AR SVN-checked files
+    for key in ["fiberassign", "png"]:
+        _ = shutil.move(mytmpouts[key], myouts[key])
+        log.info(
+            "{:.1f}s\t{}\tmoving {} to {}".format(
+                time() - start, step, mytmpouts[key], myouts[key]
+            )
+        )
+    # AR actually here not moving the log file
+    # AR moving it after the main() in fba_launch
+    key = "log"
+    log.info(
+        "{:.1f}s\t{}\tmoving {} to {}".format(
+            time() - start, step, mytmpouts[key], myouts[key]
+        )
+    )
