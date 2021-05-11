@@ -938,27 +938,52 @@ def load_target_file(tgs, tfile, survey=None, typeforce=None, typecol=None,
 
     return survey
 
+
+# These are reproductions of PlateMaker Tcl functions in
+# https://desi.lbl.gov/trac/browser/code/online/DervishTools/trunk/desi/etc/nfs.tcl#L43
+# def pm_sidtim(mjd):
+#     return fmod(mjd + (mjd-52903.54875)*(366.24125/365.24125-1.),1.)*360.
+def pm_zd(ha, dec, lat):
+    rha = np.deg2rad(ha)
+    rdec = np.deg2rad(dec)
+    rphi = np.deg2rad(lat)
+    rzen = np.arccos(np.cos(rha) * np.cos(rdec) * np.cos(rphi) +
+            np.sin(rdec) * np.sin(rphi))
+    return np.rad2deg(rzen)
+def pm_psi(ha, dec, latitude):
+    rha = np.deg2rad(ha)
+    rdec = np.deg2rad(dec)
+    rphi = np.deg2rad(latitude)
+    rpsi = np.arctan2(np.sin(rha) * np.cos(rphi), np.cos(rdec) * np.sin(rphi) - np.sin(rdec) * np.cos(rphi) * np.cos(rha))
+    return np.rad2deg(rpsi)
+def pm_zd2deltaadc(zd):
+    t = np.tan(np.deg2rad(zd))
+    A = -0.0183 + -0.3795*t + -0.1939*t**2
+    A = np.rad2deg(A)
+    return 2*A
+def pm_get_adc_angles(ha, dec):
+    # Here we're reproducing PlateMaker's astrometric
+    # transformations to get to the ADC angles it's going to set.
+    # These have degree-level disagreements with other methods.
+    pm_longitude = 111.6003
+    pm_latitude  =  31.9634
+    #lst0 = pm_sidtim(mjd)
+    #st = lst0 - longitude
+    #ha = st - tile_ra
+    zd  = pm_zd (ha, dec, pm_latitude)
+    psi = pm_psi(ha, dec, pm_latitude)
+    dadc = pm_zd2deltaadc(zd)
+    adc1 = psi + dadc/2.
+    adc2 = psi - dadc/2.
+    return adc1, adc2
+
 def targets_in_tiles(hw, tgs, tiles):
     '''
     Returns tile_targetids, tile_x, tile_y
     '''
-    from desimeter.transform.tan2fp import tan2fp, fp2tan
-    from desimeter.transform.radec2tan import radec2tan
-    from desimeter.transform.radec2tan import hadec2altaz, apply_refraction
-
-    from astropy import units as u
-    from astropy.coordinates import EarthLocation, SkyCoord, FK5, AltAz
+    from desimeter.fiberassign import fiberassign_radec2xy_cs5
+    from desimeter.transform.xy2qs import xy2uv
     from astropy.time import Time
-
-    observer = EarthLocation.of_site('kpno')
-    #observer = EarthLocation(lat=41.3*u.deg, lon=-74*u.deg, height=390*u.m)
-
-    ### FIXME! hard-coded mjd = 2022-07-01
-    # for precession
-    mjd = 59761.
-
-    obstime = Time(mjd, format='mjd')
-    fk5_frame = FK5(equinox=obstime)
 
     tile_targetids = {}
     tile_x = {}
@@ -966,225 +991,34 @@ def targets_in_tiles(hw, tgs, tiles):
 
     tree = TargetTree(tgs)
 
-    for tile_id,tile_ra,tile_dec,tile_obscond,tile_ha in zip(
-            tiles.id, tiles.ra, tiles.dec, tiles.obscond, tiles.obshourang):
+    for (tile_id, tile_ra, tile_dec, tile_obscond, tile_ha, tile_obstheta,
+         tile_obstime) in zip(
+            tiles.id, tiles.ra, tiles.dec, tiles.obscond, tiles.obshourang,
+            tiles.obstheta, tiles.obstime):
 
-        print('Tile', tile_id, 'at RA,Dec', tile_ra, tile_dec, 'and obscond:', tile_obscond)
+        print('Tile', tile_id, 'at RA,Dec', tile_ra, tile_dec, 'obscond:', tile_obscond, 'HA', tile_ha, 'obstime', tile_obstime)
 
         tile_rad = np.deg2rad(hw.focalplane_radius_deg)
-        #tids = tree.near(tile_ra, tile_dec, tile_rad)
-        tids,ras,decs = tree.near_data(tgs, tile_ra, tile_dec, tile_rad, tile_obscond)
+        tids,ras,decs = tree.near_data(tgs, tile_ra, tile_dec, tile_rad,
+                                       tile_obscond)
         print('Found', len(tids), 'targets near tile and matching obscond')
         tids = np.array(tids)
         ras  = np.array(ras)
         decs = np.array(decs)
-        print('target ids:', tids[:10])
-        print('target ras:', ras[:10])
-        print('target decs:', decs[:10])
 
-        tile_coord = SkyCoord(ra=tile_ra * u.degree,
-                              dec=tile_dec*u.degree, frame='icrs')
-        tile_fk5 = tile_coord.transform_to(fk5_frame)
+        # Note that MJD is only used for precession, so no need for
+        # high precision.
+        t = Time(tile_obstime, format='isot')
+        mjd = t.mjd
 
-        # Assume observed as it transits the meridian!
-
-        # expnum 87359
-        # ST      = '13:13:11.115000'    / Local Sidereal time at observation start (HH:MM
-        lst = 198.2963125
-        ha = lst - tile_ra
-        print('HA:', ha)
-        #ha = 0.0
-        #lst = tile_ra + ha
-
-        #ha = 0.0
-        #lst = tile_ra + ha
-        #tile_zd = np.abs(tile_fk5.dec.value - observer.lat.deg)
-        tile_alt,tile_az = hadec2altaz(ha, tile_fk5.dec.value)
-        print('Alt:', tile_alt)
-        tile_alt = apply_refraction(tile_alt)
-        print('Refracted alt:', tile_alt)
-
-        tile_zd = 90. - tile_alt
-        print('ZD', tile_zd)
-
-        ### FIXME!
-        hexrot = 0.
-
-        delta_adc = zd2deltaadc(tile_zd)
-
-        pa = parallactic_angle(ha, tile_dec, observer.lat.deg)
-        # ADC angles
-        adc1 = 360. - pa + delta_adc/2.
-        adc2 = 360. - pa - delta_adc/2.
-        # Wrap to [0, 360]
-        adc1 += 360 * (adc1 < 0)
-        adc1 -= 360 * (adc1 > 360)
-        adc2 += 360 * (adc2 < 0)
-        adc2 -= 360 * (adc2 > 360)
-
-        print('Parallactic angle:', pa)
-        print('ADC angles: %.2f, %.2f' % (adc1, adc2))
-        
-        # Compute the transformation of the tile center RA,Dec first
-        xtan_tile,ytan_tile = fp2tan(np.array([0]), np.array([0]), adc1, adc2)
-        xtan_tile = xtan_tile[0]
-        ytan_tile = ytan_tile[0]
-
-        # Also compute the transformation along the +Y FP direction
-        # xtan_up,ytan_up = fp2tan(np.array([0]), np.array([100]), adc1, adc2)
-        # xtan_up = xtan_up[0]
-        # ytan_up = ytan_up[0]
-        # print('xtan_up - xtan_tile:', xtan_up - xtan_tile)
-        # print('ytan_up - ytan_tile:', ytan_up - ytan_tile)
-        # xtan_up - xtan_tile: 7.636258684278596e-09
-        # ytan_up - ytan_tile: 0.007164176255480823
-
-        # +Dec direction
-        cosdec = np.cos(np.deg2rad(tile_dec))
-        xt_up, yt_up = radec2tan(np.array([tile_ra, tile_ra, tile_ra, tile_ra-1./cosdec, tile_ra+1./cosdec]),
-                                 np.array([tile_dec, tile_dec+1, tile_dec-1, tile_dec, tile_dec]),
-                                 tile_ra, tile_dec, mjd, lst, hexrot)
-        xt_up += xtan_tile
-        yt_up += ytan_tile
-        dx = xt_up[1:]-xt_up[0]
-        dy = yt_up[1:]-yt_up[0]
-        # I want the angle away from vertical, hence swapping dx, dy in the atan2 call.
-        rot = np.arctan2(dx, dy)
-        rot = rot[0]
-        print('Rotation:', rot, 'radians')
-        c = np.cos(rot)
-        s = np.sin(rot)
-        R = np.array([[c, -s], [s, c]])
-        
-        xtan, ytan = radec2tan(ras, decs, tile_ra, tile_dec, mjd,
-                               lst, hexrot)
-        xtan += xtan_tile
-        ytan += ytan_tile
-
-        # Rotate
-        # rxy = np.dot(R, np.vstack((xtan,ytan)))
-        # xtan = rxy[0,:]
-        # ytan = rxy[1,:]
-
-        fx,fy = tan2fp(xtan, ytan, adc1, adc2)
-
-        from desimeter.transform.xy2qs import xy2uv, uv2xy
-
-        u,v = xy2uv(fx, fy)
-
-        # fx_up,fy_up = tan2fp(xt_up, yt_up, adc1, adc2)
-        # u_up,v_up = xy2uv(fx_up, fy_up)
-        # print('xt_up:', xt_up)
-        # print('yt_up:', yt_up)
-        # print('fx_up:', fx_up)
-        # print('fy_up:', fy_up)
-        # print('u_up:', u_up)
-        # print('v_up:', v_up)
-
-
-        
-        xys = np.array(hw.radec2xy_multi(tile_ra, tile_dec, hexrot,
-                                         ras, decs, False, 0))
-        x,y = xys[:,0], xys[:,1]
-
-        from astrometry.util.fits import fits_table
-        T = fits_table()
-        T.target_id = tids
-        T.target_ra = ras
-        T.target_dec = decs
-        T.fa_x = x
-        T.fa_y = y
-        T.dm_x = fx
-        T.dm_y = fy
-        T.dm_u = u
-        T.dm_v = v
-        T.writeto('fa-dm-coords.fits')
-
-        #### USE U,V in outputs....
-        fx,fy = u,v
-
-        import pylab as plt
-        plt.clf()
-        plt.plot(x, y, 'b.')
-        plt.axis('equal')
-        plt.savefig('xy-orig.png')
-        plt.clf()
-        plt.plot(fx, fy, 'r.')
-        plt.axis('equal')
-        plt.savefig('xy-new.png')
-        plt.clf()
-        plt.plot(x, fx, 'b.')
-        plt.axis('equal')
-        plt.savefig('x-vals.png')
-        plt.clf()
-        plt.plot(y, fy, 'b.')
-        plt.axis('equal')
-        plt.savefig('y-vals.png')
-
-        I = np.random.permutation(len(x))[:2000]
-        pa = dict(alpha=0.05)
-        plt.clf()
-        plt.subplots_adjust(top=0.95, hspace=0.25)
-        plt.subplot(2,2,1)
-        plt.plot(x[I], fx[I]-x[I], 'b.', **pa)
-        plt.xlabel('x (mm)')
-        plt.ylabel('dx (mm)')
-        plt.subplot(2,2,2)
-        plt.plot(x[I], fy[I]-y[I], 'b.', **pa)
-        plt.xlabel('x (mm)')
-        plt.ylabel('dy (mm)')
-        plt.subplot(2,2,3)
-        plt.plot(y[I], fx[I]-x[I], 'b.', **pa)
-        plt.xlabel('y (mm)')
-        plt.ylabel('dx (mm)')
-        plt.subplot(2,2,4)
-        plt.plot(y[I], fy[I]-y[I], 'b.', **pa)
-        plt.xlabel('y (mm)')
-        plt.ylabel('dy (mm)')
-        plt.suptitle('desimeter - fiberassign FP coordinates')
-        plt.savefig('xy-dxy.png')
-
-        I = np.random.permutation(len(x))[:1000]
-        plt.clf()
-        Q = plt.quiver(x[I], y[I], fx[I]-x[I], fy[I]-y[I], angles='xy', pivot='middle')
-        #plt.quiverkey(Q, 0.9, 0.9, 1, '1 mm', labelpos='E', coordinates='axes')
-        plt.quiverkey(Q, 0.9, 0.9, 0.1, '100 microns', labelpos='E', coordinates='axes')
-        plt.xlabel('X (mm)')
-        plt.ylabel('Y (mm)')
-        plt.axis('equal')
-        plt.title('desimeter - fiberassign FP coordinates')
-        plt.savefig('quiver.png')
+        adc1,adc2 = pm_get_adc_angles(tile_ha, tile_dec)
+        fieldrot = tile_obstheta
+        x, y = fiberassign_radec2xy_cs5(ras, decs, tile_ra, tile_dec, mjd,
+                                        tile_ha, fieldrot, adc1, adc2)
+        fx,fy = xy2uv(x, y)
 
         tile_targetids[tile_id] = tids
         tile_x[tile_id] = fx
         tile_y[tile_id] = fy
 
     return tile_targetids, tile_x, tile_y
-
-def zd2deltaadc(zd):
-    # This comes from the PlateMaker code -- 
-    #  https://desi.lbl.gov/trac/browser/code/online/DervishTools/trunk/desi/etc/desi/PRISM.par
-    #  https://desi.lbl.gov/trac/browser/code/online/DervishTools/trunk/desi/etc/common.tcl#L839
-    t = np.tan(np.deg2rad(zd))
-    A = -0.0183 + -0.3795*t + -0.1939*t**2
-    A = np.rad2deg(A)
-    return 2*A
-
-# This comes straight from PlateMaker: python/PlateMaker/astron.py
-# And it gives a value that = -1 * the DESI 'PARALLAC' header card.
-def parallactic_angle(ha, decl, latitude):
-    """Calculate the parallactic angle.
-
-    Args:
-        ha: Hour Angle (decimal degrees)
-        decl: declination (decimal degrees)
-        latitude: (decimal degrees)
-    Returns:
-        the parallactic angle in decimal degrees
-    """
-    rha = np.deg2rad(ha)
-    rdecl = np.deg2rad(decl)
-    rphi = np.deg2rad(latitude)
-    rpsi = -1 * np.arctan2(np.sin(rha) * np.cos(rphi),
-                           np.cos(rdecl) * np.sin(rphi) - np.sin(rdecl) * np.cos(rphi) * np.cos(rha))
-    return np.rad2deg(rpsi)
