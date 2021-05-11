@@ -3,10 +3,17 @@
 fiberassign change log
 ======================
 
-2.5.1 (unreleased)
+2.6.0 (unreleased)
 ------------------
 
-* No changes yet.
+* No changes yet
+
+2.5.1 (2021-05-11)
+------------------
+
+* Adds ``bin/fba_launch_dc3r2_gama`` to support a special tile (PR `#345`_).
+
+.. _`#345`: https://github.com/desihub/fiberassign/pull/345
 
 2.5.0 (2021-05-11)
 ------------------
