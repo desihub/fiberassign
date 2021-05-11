@@ -194,6 +194,25 @@ template <class Ttype> class KDtree {
         std::vector <int64_t> near (const int n, const double pos[],
                                 const double rmin, const double rmax) const {
             // Returns a vector of object ids near pos within node n.
+            std::vector <int64_t> rtn;
+            std::vector <Ttype> nil;
+            _near_internal(n, pos, rmin, rmax, rtn, nil, false);
+            return rtn;
+        }
+
+        std::vector <Ttype> near_with_data (const int n, const double pos[],
+                                const double rmin, const double rmax) const {
+            std::vector <int64_t> nil;
+            std::vector <Ttype> rtn;
+            _near_internal(n, pos, rmin, rmax, nil, rtn, true);
+            return rtn;
+        }
+
+        void _near_internal (const int n, const double pos[],
+                             const double rmin, const double rmax,
+                             std::vector <int64_t> & rtn_id,
+                             std::vector <Ttype> & rtn_obj,
+                             bool save_obj) const {
             std::vector <int64_t> retlist;
             const double rmax2 = rmax * rmax, rmin2 = rmin * rmin;
             double mindst2 = 0;
@@ -227,15 +246,24 @@ template <class Ttype> class KDtree {
                     if ( ( maxdst2 < rmax2) && ( mindst2 > rmin2) &&
                          ( tree[n].objs.size() > 0) ) {
                         // Contents of cell are entirely within range.
+                        size_t orig_size;
                         try {
-                            retlist.resize(tree[n].objs.size() );
+                            if (!save_obj) {
+                                orig_size = rtn_id.size();
+                                rtn_id.resize(orig_size + tree[n].objs.size());
+                            }
                         } catch (std::exception & e) {
                             fiberassign::myexception(e);
                         }
-                        for (size_t i = 0; i < tree[n].objs.size(); ++i) {
-                            retlist[i] = tree[n].objs[i].id;
+                        if (save_obj)
+                            rtn_obj.insert(rtn_obj.end(),
+                                           tree[n].objs.begin(), tree[n].objs.end());
+                        else {
+                            for (size_t i = 0, iout=orig_size; i < tree[n].objs.size(); ++i, ++iout) {
+                                rtn_id[iout] = tree[n].objs[i].id;
+                            }
                         }
-                        return (retlist);
+                        return;
                     } else if (nobj(n) > 0) {
                         // Have lists of objects ... do the brute force
                         // calculation.
@@ -247,7 +275,10 @@ template <class Ttype> class KDtree {
                             }
                             if ( ( r2 < rmax2) && ( r2 > rmin2) ) {
                                 try {
-                                    retlist.push_back(tree[n].objs[i].id);
+                                    if (save_obj)
+                                        rtn_obj.push_back(tree[n].objs[i]);
+                                    else
+                                        rtn_id.push_back(tree[n].objs[i].id);
                                 } catch (std::exception & e) {
                                     fiberassign::myexception(e);
                                 }
@@ -257,31 +288,14 @@ template <class Ttype> class KDtree {
                         // Traverse down the hierarchy.
                         int m;
                         if ( (m = get_left_child(n) ) >= 0) {
-                            std::vector <int64_t> nbr = near(m, pos, rmin, rmax);
-                            if (nbr.size() > 0) {
-                                try {
-                                    retlist.insert(retlist.end(),
-                                                   nbr.begin(), nbr.end() );
-                                } catch (std::exception & e) {
-                                    fiberassign::myexception(e);
-                                }
-                            }
+                            _near_internal(m, pos, rmin, rmax, rtn_id, rtn_obj, save_obj);
                         }
                         if ( (m = get_right_child(n) ) >= 0) {
-                            std::vector <int64_t> nbr = near(m, pos, rmin, rmax);
-                            if (nbr.size() > 0) {
-                                try {
-                                    retlist.insert(retlist.end(),
-                                                   nbr.begin(), nbr.end() );
-                                } catch (std::exception & e) {
-                                    fiberassign::myexception(e);
-                                }
-                            }
+                            _near_internal(m, pos, rmin, rmax, rtn_id, rtn_obj, save_obj);
                         }
                     }
                 }
             }
-            return (retlist);
         }
 
     public:
@@ -393,6 +407,12 @@ template <class Ttype> class KDtree {
                                 const double rmax) const {
             return (near(root, pos, rmin, rmax) );
         }
+
+        std::vector <Ttype> near_with_data (const double pos[], const double rmin,
+                                const double rmax) const {
+            return (near_with_data(root, pos, rmin, rmax) );
+        }
+
 };
 
 
