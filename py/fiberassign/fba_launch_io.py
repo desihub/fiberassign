@@ -19,6 +19,7 @@ from desitarget.io import read_targets_in_tiles, write_targets, write_skies
 from desitarget.mtl import inflate_ledger
 from desitarget.targetmask import desi_mask, obsconditions
 from desitarget.targets import set_obsconditions
+from desitarget.geomask import match
 import desimodel
 from desimodel.footprint import is_point_in_desi
 import fiberassign
@@ -30,10 +31,20 @@ from astropy.time import Time
 import tempfile
 import shutil
 from fiberassign.utils import Logger
-
+import matplotlib.pyplot as plt
+from matplotlib import gridspec
+import matplotlib
+from astropy import units
+from astropy.coordinates import SkyCoord, Distance
+import matplotlib.image as mpimg
 
 # AR default REF_EPOCH for PMRA=PMDEC=REF_EPOCH=0 objects
 gaia_ref_epochs = {"dr2": 2015.5}
+
+# AR tile radius in degrees
+tile_radius_deg = 1.628
+# AR approx. tile area in degrees
+tile_area = np.pi * tile_radius_deg ** 2
 
 
 def assert_isoformat_utc(time_str):
@@ -785,6 +796,10 @@ def create_tile(
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start (optional): start time for log (in seconds; output of time.time()
     """
+    if log is None:
+        log = Logger.get()
+    if start is None:
+        start = time()
     hdr = fitsio.FITSHDR()
     log.info("")
     log.info("")
@@ -847,6 +862,10 @@ def create_sky(
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start (optional): start time for log (in seconds; output of time.time()
     """
+    if log is None:
+        log = Logger.get()
+    if start is None:
+        start = time()
     log.info("")
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
@@ -900,6 +919,10 @@ def create_gfa(
     Notes:
         if pmcorr="y", then pmtime_utc_str needs to be set; will trigger an error otherwise.
     """
+    if log is None:
+        log = Logger.get()
+    if start is None:
+        start = time()
     log.info("")
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
@@ -995,6 +1018,10 @@ def create_mtl(
                 GAIA_ASTROMETRIC_EXCESS_NOISE column will be missing; though we do not
                 expect this configuration to happen, so it should be fine for now.
     """
+    if log is None:
+        log = Logger.get()
+    if start is None:
+        start = time()
     log.info("")
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
@@ -1129,6 +1156,10 @@ def create_too(
                 it surely needs to be updated/refined once operations are more clear.
         some steps in common with create_mtl().
     """
+    if log is None:
+        log = Logger.get()
+    if start is None:
+        start = time()
     log.info("")
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
@@ -1242,6 +1273,10 @@ def launch_onetile_fa(
         fba_launch-like adding information in the header is done in another function, update_fiberassign_header
         TBD: be careful if working in the SVN-directory; maybe add additional safety lines? 
     """
+    if log is None:
+        log = Logger.get()
+    if start is None:
+        start = time()
     log.info("")
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
@@ -1381,6 +1416,10 @@ def update_fiberassign_header(
         no check is done on mydirs.
         TBD : faflavor could be different than {survey}{program}, e.g. in dedicated tiles
     """
+    if log is None:
+        log = Logger.get()
+    if start is None:
+        start = time()
     # AR propagating some settings into the PRIMARY header
     fd = fitsio.FITS(fiberassignfn, "rw")
 
@@ -1456,6 +1495,10 @@ def secure_gzip(
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start (optional): start time for log (in seconds; output of time.time()
     """
+    if log is None:
+        log = Logger.get()
+    if start is None:
+        start = time()
     log.info("")
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
@@ -1468,3 +1511,1356 @@ def secure_gzip(
         )
     os.system("gzip {}".format(fiberassignfn))
     log.info("{:.1f}s\t{}\tgzipping {}".format(time() - start, step, fiberassignfn))
+
+
+def get_dt_masks(
+    survey, log=None, step="", start=None,
+):
+    """
+    Get the desitarget masks for a survey.
+    
+    Args:
+        survey: survey name: "sv1", "sv2", "sv3" or "main") (string)
+        log (optional): Logger object
+        step (optional): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start (optional): start time for log (in seconds; output of time.time()
+
+    Returns:
+        yaml_masks: dictionary with storing in the
+            "DESI_TARGET", "BGS_TARGET", "MWS_TARGET", "SCND_TARGET" keys
+            the corresponding desitarget YAML masks for survey
+        wd_mskkeys: list of keys identifying the WDs
+        wd_msks: list of masks identifying the WDs
+        std_mskkeys: list of keys identifying the STDs
+        std_msks: list of masks identifying the STDs
+
+    Notes:
+        close to desitarget.targets.main_cmx_or_sv,
+        but using a dictionary, more adapted to this code
+    """
+    if log is None:
+        log = Logger.get()
+    if start is None:
+        start = time()
+
+    if survey == "sv1":
+        from desitarget.sv1 import sv1_targetmask as targetmask
+    elif survey == "sv2":
+        from desitarget.sv2 import sv2_targetmask as targetmask
+    elif survey == "sv3":
+        from desitarget.sv3 import sv3_targetmask as targetmask
+    elif survey == "main":
+        from desitarget import targetmask
+        from fiberassign.targets import default_stdmask
+    else:
+        log.error(
+            "{:.1f}s\t{}\tsurvey={} is not in sv1, sv2, sv3 or main; exiting".format(
+                time() - start, step, survey
+            )
+        )
+        sys.exit(1)
+
+    # AR YAML masks
+    yaml_masks = {
+        "DESI_TARGET": targetmask.desi_mask,
+        "BGS_TARGET": targetmask.bgs_mask,
+        "MWS_TARGET": targetmask.mws_mask,
+        "SCND_TARGET": targetmask.scnd_mask,
+    }
+
+    # AR WD masks
+    wd_mskkeys, wd_msks = [], []
+    for mskkey in ["DESI_TARGET", "MWS_TARGET"]:
+        wd_mskkeys += [mskkey for key in yaml_masks[mskkey].names() if "_WD" in key]
+        wd_msks += [key for key in yaml_masks[mskkey].names() if "_WD" in key]
+
+    # AR STD masks
+    std_mskkeys, std_msks = [], []
+    for mskkey in ["DESI_TARGET", "MWS_TARGET"]:
+        std_mskkeys += [mskkey for key in yaml_masks[mskkey].names() if "STD" in key]
+        std_msks += [key for key in yaml_masks[mskkey].names() if "STD" in key]
+
+    return yaml_masks, wd_mskkeys, wd_msks, std_mskkeys, std_msks
+
+
+def get_qa_tracers(
+    program, log=None, step="", start=None,
+):
+    """
+    Returns the tracers for which we provide QA plots of fiber assignment.
+    
+    Args:
+        program: "DARK", "BRIGHT", or "BACKUP" (string)
+        log (optional): Logger object                                                                                                                                            
+        step (optional): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start (optional): start time for log (in seconds; output of time.time()
+                                                                                                                                                                                 
+    Returns:
+        trmskkeys: list of keys to select the mask on (list of strings)
+        trmsks: list of mask names (list of strings)
+    """
+    if log is None:
+        log = Logger.get()
+    if start is None:
+        start = time()
+
+    if program == "DARK":
+        trmskkeys = ["DESI_TARGET", "DESI_TARGET", "DESI_TARGET"]
+        trmsks = ["LRG", "ELG", "QSO"]
+    elif program == "BRIGHT":
+        trmskkeys = ["BGS_TARGET", "BGS_TARGET"]
+        trmsks = ["BGS_BRIGHT", "BGS_FAINT"]
+        trmskkeys += ["MWS_TARGET", "MWS_TARGET"]
+        trmsks += ["MWS_BROAD", "MWS_NEARBY"]
+    elif program == "BACKUP":
+        trmskkeys = ["MWS_TARGET", "MWS_TARGET", "MWS_TARGET"]
+        trmsks = ["BACKUP_BRIGHT", "BACKUP_FAINT", "BACKUP_VERY_FAINT"]
+    else:
+        log.error(
+            "{:.1f}s\t{}\tprogram={} not in DARK, BRIGHT, or BACKUP; exiting".format(
+                time() - start, step, program
+            )
+        )
+        sys.exit(1)
+
+    return trmskkeys, trmsks
+
+
+def get_parent_assign_quants(
+    survey, targfns, fiberassignfn, tilera, tiledec, log=None, step="", start=None,
+):
+    """
+    Stores the parent and assigned targets properties (desitarget columns).
+    
+    Args:
+        survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
+        targfns: paths to the input targets fits files, e.g. targ, scnd, too (either a string if only one file, or a list of strings)
+        fiberassignfn: path to the output fiberassign-TILEID.fits file (string)
+        tilera: tile center R.A. (float)
+        tiledec: tile center Dec. (float)
+        log (optional): Logger object                                                                                                                                            
+        step (optional): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start (optional): start time for log (in seconds; output of time.time()
+
+    Returns:
+        parent: dictionary of the parent target sample, with each key being some desitarget column
+        assign: same as parent, with similar row-ordering (filling with zeros or NaNs if not assigned)
+        dras: dictionary with projected distance (degrees) along R.A. to the center of the tile (np.array of floats),
+            for each of the following subsample: "parent", "assign", "sky", "bad", "wd", "std" (all assigned subsamples,
+            except parent)
+        ddecs: same as dras, for projected distances along Dec.
+        petals: dictionary with PETAL_LOC (np.array of floats) for each of the assigned "sky", "bad", "wd", "std" subsamples
+        nassign: dictionary with the number of assigned fibers for each of the assigned "SKY", "BAD", "TGT", "WD", "STD"  subsamples
+    """
+    if log is None:
+        log = Logger.get()
+    if start is None:
+        start = time()
+
+    # AR convert targfns to list if string (i.e. only one input file)
+    if isinstance(targfns, str):
+        targfns = [targfns]
+
+    # AR initializing dictionaires
+    parent, assign, dras, ddecs, petals, nassign = {}, {}, {}, {}, {}, {}
+
+    # AR YAML and WD and STD masks
+    yaml_masks, wd_mskkeys, wd_msks, std_mskkeys, std_msks = get_dt_masks(
+        survey, log=log, step=step, start=start,
+    )
+
+    # AR keys we use (plus few for assign)
+    keys = [
+        "TARGETID",
+        "FLUX_G",
+        "FLUX_R",
+        "FIBERTOTFLUX_R",
+        "FLUX_Z",
+        "FLUX_W1",
+        "FLUX_W2",
+        "EBV",
+        "GAIA_PHOT_G_MEAN_MAG",
+        "RA",
+        "DEC",
+        "DESI_TARGET",
+        "BGS_TARGET",
+        "MWS_TARGET",
+        "SCND_TARGET",
+    ]
+
+    # AR parent
+    for key in keys:
+        parent[key] = []
+    for targfn in targfns:
+        d = fits.open(targfn)[1].data
+        for key in keys:
+            if (key in ["DESI_TARGET", "BGS_TARGET", "MWS_TARGET", "SCND_TARGET",]) & (
+                survey.lower()[:2] == "sv"
+            ):
+                if "{}_{}".format(survey.upper(), key) in d.dtype.names:
+                    parent[key] += d["{}_{}".format(survey.upper(), key)].tolist()
+                else:
+                    parent[key] += [0 for x in d["RA"]]
+            # AR flux, ebv for secondary
+            elif key not in d.dtype.names:
+                parent[key] += [0.0 for x in d["RA"]]
+            else:
+                parent[key] += d[key].tolist()
+    for key in keys:
+        parent[key] = np.array(parent[key])
+    dras["parent"], ddecs["parent"] = get_tpos(
+        tilera, tiledec, parent["RA"], parent["DEC"]
+    )
+
+    # AR fiberassign
+    d = fits.open(fiberassignfn)[1].data
+    # AR
+    for key in ["SKY", "BAD", "TGT"]:
+        nassign[key] = (d["OBJTYPE"] == key).sum()
+    # AR SKY
+    keep = d["OBJTYPE"] == "SKY"
+    dras["sky"], ddecs["sky"] = get_tpos(
+        tilera, tiledec, d["TARGET_RA"][keep], d["TARGET_DEC"][keep]
+    )
+    petals["sky"] = d["PETAL_LOC"][keep]
+    # AR BAD
+    keep = d["OBJTYPE"] == "BAD"
+    dras["bad"], ddecs["bad"] = get_tpos(
+        tilera, tiledec, d["TARGET_RA"][keep], d["TARGET_DEC"][keep]
+    )
+    petals["bad"] = d["PETAL_LOC"][keep]
+    # AR TGT
+    # AR arrays twinning the parent ordering, with nans/zeros
+    # AR e.g. SV2_DESI_TARGET -> DESI_TARGET
+    d = d[d["OBJTYPE"] == "TGT"]
+    # AR TARGETIDs are unique in both arrays, so we can use geomask
+    iip, ii = match(parent["TARGETID"], d["TARGETID"])
+    keys = [key for key in keys if key != "RA" and key != "DEC"]
+    keys += [
+        "TARGET_RA",
+        "TARGET_DEC",
+        "PETAL_LOC",
+    ]
+    for key in keys:
+        if key in [
+            "TARGETID",
+            "DESI_TARGET",
+            "BGS_TARGET",
+            "MWS_TARGET",
+            "SCND_TARGET",
+        ]:
+            assign[key] = np.zeros(len(parent["TARGETID"]), dtype=int)
+            if (key != "TARGETID") & (survey.lower()[:2] == "sv"):
+                assign[key][iip] = d["{}_{}".format(survey.upper(), key)][ii]
+            else:
+                assign[key][iip] = d[key][ii]
+        else:
+            assign[key] = np.nan + np.zeros(len(parent["TARGETID"]))
+            assign[key][iip] = d[key][ii]
+    dras["assign"], ddecs["assign"] = get_tpos(
+        tilera, tiledec, assign["TARGET_RA"], assign["TARGET_DEC"]
+    )
+
+    # AR WD
+    keep = np.zeros(len(assign["TARGET_RA"]), dtype=bool)
+    for mskkey, msk in zip(wd_mskkeys, wd_msks):
+        keep |= (assign[mskkey] & yaml_masks[mskkey][msk]) > 0
+    dras["wd"], ddecs["wd"] = get_tpos(
+        tilera, tiledec, assign["TARGET_RA"][keep], assign["TARGET_DEC"][keep]
+    )
+    petals["wd"] = assign["PETAL_LOC"][keep]
+    nassign["WD"] = keep.sum()
+    # AR STD
+    keep = np.zeros(len(assign["TARGET_RA"]), dtype=bool)
+    for mskkey, msk in zip(std_mskkeys, std_msks):
+        keep |= (assign[mskkey] & yaml_masks[mskkey][msk]) > 0
+    dras["std"], ddecs["std"] = get_tpos(
+        tilera, tiledec, assign["TARGET_RA"][keep], assign["TARGET_DEC"][keep]
+    )
+    petals["std"] = assign["PETAL_LOC"][keep]
+    nassign["STD"] = keep.sum()
+
+    return parent, assign, dras, ddecs, petals, nassign
+
+
+def print_assgn_parent_stats(
+    survey, parent, assign, log=None, step="", start=None,
+):
+    """
+    Prints for each mask the number of parent and assigned targets, and also the fraction of assigned targets.
+    
+    Args:
+        survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
+        parent: dictionary for the parent target sample (output by get_parent_assign_quants())
+        assign: dictionary for the assigned target sample (output by get_parent_assign_quants()) 
+        log (optional): Logger object                                                                                                                                            
+        step (optional): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start (optional): start time for log (in seconds; output of time.time()
+    """
+    if log is None:
+        log = Logger.get()
+    if start is None:
+        start = time()
+
+    # AR YAML and WD and STD masks
+    yaml_masks, _, _, _, _ = get_dt_masks(survey, log=log, step=step, start=start,)
+
+    # AR stats : assigned / parent
+    log.info("======= ASSIGNMENT STATISTICS : START =======")
+    log.info("# MASKKEY\tMASK\tPARENT\tASSIGN\tFRACTION")
+    for mskkey in list(yaml_masks.keys()):
+        if survey.lower()[:2] == "sv":
+            mskkey_orig = "{}_{}".format(survey.upper(), mskkey)
+        else:
+            mskkey_orig = mskkey
+        for msk in yaml_masks[mskkey].names():
+            nparent = ((parent[mskkey] & yaml_masks[mskkey][msk]) > 0).sum()
+            nassign = ((assign[mskkey] & yaml_masks[mskkey][msk]) > 0).sum()
+            if nparent == 0:
+                frac = 0.0
+            else:
+                frac = nassign / nparent
+            log.info(
+                "{}\t{}\t{}\t{}\t{:.2f}".format(
+                    mskkey_orig, msk, nparent, nassign, frac
+                )
+            )
+    log.info("======= ASSIGNMENT STATISTICS : END =======")
+
+
+def flux2mag(flux, band=None, ebv=None):
+    """
+    Converts a flux to a (optionally extinction-corrected) magnitude
+
+    Args:
+        flux: flux in Nmgy (np.array of floats)
+        band (optional, defaults to None): band name: "G", "R", "Z", "W1", or "W2" (string)
+        ebv (optional, defaults to None): EBV values (np.array of floats)
+
+    Returns:
+        mag: AB magnitudes (np.array of floats); extinction-corrected if band and ebv not None
+
+    Notes:
+        flux < 0 values are converted to NaN in magnitudes
+        ext. coeffs: https://www.legacysurvey.org/dr9/catalogs/#galactic-extinction-coefficients
+    """
+    keep = flux > 0
+    mag = np.nan + np.zeros(len(flux))
+    mag[keep] = 22.5 - 2.5 * np.log10(flux[keep])
+    if ebv is not None:
+        exts = {"G": 3.214, "R": 2.165, "Z": 1.211, "W1": 0.184, "W2": 0.113}
+        mag -= exts[band] * ebv
+    return mag
+
+
+def qa_print_infos(
+    ax,
+    survey,
+    program,
+    faflavor,
+    tileid,
+    tilera,
+    tiledec,
+    obscon,
+    rundate,
+    parent,
+    assign,
+    log=None,
+    step="",
+    start=None,
+):
+    """
+    Print general fiber assignment infos on the QA plot.
+    
+    Args:
+        ax: pyplot object
+        survey: "sv1", "sv2", "sv3" or "main" (string)
+        program: "DARK", "BRIGHT", or "BACKUP" (string)
+        faflavor: usually {survey}{program} in lower cases (string)
+        tileid: tile TILEID (int)
+        tilera: tile center R.A. in degrees (float)
+        tiledec: tile center Dec. in degrees (float)
+        obscon: tile allowed observing conditions (string; e.g. "DARK|GRAY|BRIGHT|BACKUP") 
+        rundate: used rundate (string)
+        parent: dictionary for the parent target sample (output by get_parent_assign_quants())
+        assign: dictionary for the assigned target sample (output by get_parent_assign_quants()) 
+        log (optional): Logger object                                                                                                                                            
+        step (optional): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start (optional): start time for log (in seconds; output of time.time()
+    """
+    if log is None:
+        log = Logger.get()
+    if start is None:
+        start = time()
+
+    # AR hard-setting the plotted tracers
+    # AR TBD: handle secondaries
+    trmskkeys, trmsks = get_qa_tracers(program, log=None, step="", start=None,)
+
+    # AR masks
+    yaml_masks, wd_mskkeys, wd_msks, std_mskkeys, std_msks = get_dt_masks(
+        survey, log=log, step=step, start=start,
+    )
+
+    # AR infos : general
+    x, y, dy, fs = 0.05, 0.95, -0.1, 10
+    for t in [
+        "flavor={}".format(faflavor),
+        "TILEID={:06d}".format(tileid),
+        "RA,DEC={:.3f},{:.3f}".format(tilera, tiledec),
+        "obscon={}".format(obscon),
+        "rundate={}".format(rundate),
+        "",
+    ]:
+        ax.text(x, y, t.expandtabs(), fontsize=fs, transform=ax.transAxes)
+        y += dy
+    # AR infos: wd/std + tracers
+    xs = [0.05, 0.65, 0.95, 1.20]
+    has = ["left", "right", "right", "right"]
+    tracers = []
+    for mskkey, msk in zip(wd_mskkeys + std_mskkeys, wd_msks + std_msks):
+        n = ((assign[mskkey] & yaml_masks[mskkey][msk]) > 0).sum()
+        tracers += [[msk, "{}".format(n), "", ""]]
+    tracers += [["", "", "", ""], ["MASK", "ASSGN", "PARENT", "FAFRAC"]]
+    for msk, mskkey in zip(trmsks, trmskkeys):
+        nparent = ((parent[mskkey] & yaml_masks[mskkey][msk]) > 0).sum()
+        n = ((assign[mskkey] & yaml_masks[mskkey][msk]) > 0).sum()
+        tracers += [
+            [msk, "{}".format(n), "{}".format(nparent), "{:.2f}".format(n / nparent),]
+        ]
+    tracers += [["", "", "", ""]]
+    for tracer in tracers:
+        for i in range(4):
+            ax.text(
+                xs[i],
+                y,
+                tracer[i].expandtabs(),
+                fontsize=fs,
+                ha=has[i],
+                transform=ax.transAxes,
+            )
+        y += dy
+
+    # AR infos: brightest target and assigned object
+    # AR infos: taking a default 16, in case new programs are added
+    magthresh = 16.0
+    if program == "DARK":
+        magthres = 16.0
+    if program == "BRIGHT":
+        magthresh = 15.0
+    if program == "BACKUP":
+        magthresh = 15.0
+    for sample, d in zip(["parent", "assgn"], [parent, assign]):
+        ax.text(
+            0.05, y, "Min. {} mag ".format(sample), fontsize=fs, transform=ax.transAxes
+        )
+        y += dy
+        for mag, lab in zip(
+            [d["GAIA_PHOT_G_MEAN_MAG"], flux2mag(d["FIBERTOTFLUX_R"])],
+            ["GAIA_PHOT_G_MEAN_MAG)", "min(LS-R-FIBTOTMAG)"],
+        ):
+            magmin, color = "-", "k"
+            keep = (np.isfinite(mag)) & (mag > 0)
+            if keep.sum() > 0:
+                magmin = mag[keep].min()
+                if magmin < magthresh:
+                    magmin, color = "{:.1f}".format(magmin), "r"
+                else:
+                    magmin, color = "{:.1f}".format(magmin), "k"
+            ax.text(
+                0.05,
+                y,
+                "{} = {}".format(lab, magmin),
+                fontsize=fs,
+                color=color,
+                transform=ax.transAxes,
+            )
+            y += dy
+        y += dy
+
+
+def qa_print_petal_infos(
+    ax, petals, assign,
+):
+    """
+    Print general the assigned SKY, BAD, WD, STD, TGT per petal on the QA plot.
+    
+    Args:
+        ax: pyplot object
+        petals: dictionary with PETAL_LOC (np.array of floats) for each of the assigned "sky", "bad", "wd", "std" subsamples
+        assign: dictionary for the assigned target sample (output by get_parent_assign_quants()) 
+    """
+    # AR stats per petal
+    xs = [0.05, 0.25, 0.45, 0.65, 0.85, 1.05]
+    ts = ["PETAL", "NSKY", "NBAD", "NWD", "NSTD", "NTGT"]
+    y, dy = 0.95, -0.1
+    fs = 10
+    for i in range(6):
+        ax.text(xs[i], y, ts[i], fontsize=fs, ha="center", transform=ax.transAxes)
+    y += dy
+    for p in range(10):
+        if (petals["std"] == p).sum() == 0:
+            color = "r"
+        else:
+            color = "k"
+        ts = [
+            "{:.0f}".format(p),
+            "{:.0f}".format((petals["sky"] == p).sum()),
+            "{:.0f}".format((petals["bad"] == p).sum()),
+            "{:.0f}".format((petals["wd"] == p).sum()),
+            "{:.0f}".format((petals["std"] == p).sum()),
+            "{:.0f}".format((assign["PETAL_LOC"] == p).sum()),
+        ]
+        for i in range(6):
+            ax.text(
+                xs[i],
+                y,
+                ts[i],
+                color=color,
+                fontsize=fs,
+                ha="center",
+                transform=ax.transAxes,
+            )
+        y += dy
+    # AR stats for all petals
+    ts = [
+        "ALL",
+        "{:.0f}".format(len(petals["sky"])),
+        "{:.0f}".format(len(petals["bad"])),
+        "{:.0f}".format(len(petals["wd"])),
+        "{:.0f}".format(len(petals["std"])),
+        "{:.0f}".format(np.isfinite(assign["PETAL_LOC"]).sum()),
+    ]
+    for i in range(6):
+        ax.text(
+            xs[i],
+            y,
+            ts[i],
+            color=color,
+            fontsize=fs,
+            ha="center",
+            transform=ax.transAxes,
+        )
+
+
+def get_viewer_cutout(
+    tileid,
+    tilera,
+    tiledec,
+    tmpoutdir=tempfile.mkdtemp(),
+    width_deg=4,
+    pixscale=10,
+    dr="dr9",
+):
+    """
+    Downloads a cutout of the tile region from legacysurvey.org/viewer.
+    
+    Args:
+        tileid: tile TILEID (int)
+        tilera: tile center R.A. (float)
+        tiledec: tile center Dec. (float)
+        tmpoutdir (optional, defaults to a temporary directory): temporary directory where
+        width_deg (optional, defaults to 4): width of the cutout in degrees (float)
+        pixscale (optional, defaults to 10): pixel scale of the cutout
+        dr (optional, default do "dr9"): imaging data release
+
+    Returns:
+        img: output of mpimg.imread() reading of the cutout (np.array of floats)
+    """
+    # AR cutout
+    size = int(width_deg * 3600.0 / pixscale)
+    layer = "ls-{}".format(dr)
+    tmpstr = 'wget -q -O {}tmp-{}.jpeg "http://legacysurvey.org/viewer-dev/jpeg-cutout/?layer={}&ra={:.5f}&dec={:.5f}&pixscale={:.0f}&size={:.0f}"'.format(
+        tmpoutdir, tileid, layer, tilera, tiledec, pixscale, size
+    )
+    # print(tmpstr)
+    os.system(tmpstr)
+    try:
+        img = mpimg.imread("{}tmp-{}.jpeg".format(tmpoutdir, tileid))
+        os.remove("{}tmp-{}.jpeg".format(tmpoutdir, tileid))
+    except:
+        img = np.zeros((size, size, 3))
+    return img
+
+
+def mycmap(name, n, cmin=0, cmax=1):
+    """
+    Defines a quantised color scheme.
+    
+    Args:
+        name: matplotlib colormap name (used through: matplotlib.cm.get_cmap(name)) (string)
+        n: number of different colors to be in the color scheme (int)
+        cmin (optional, defaults to 0): flooring "color-value" (float)
+        cmax (optional, defaults to 1): ceiling "color-value" (float)
+
+    Returns:
+        The quantised color map.
+
+    Notes:
+        https://matplotlib.org/examples/api/colorbar_only.html
+    """
+    cmaporig = matplotlib.cm.get_cmap(name)
+    mycol = cmaporig(np.linspace(cmin, cmax, n))
+    cmap = matplotlib.colors.ListedColormap(mycol)
+    cmap.set_under(mycol[0])
+    cmap.set_over(mycol[-1])
+    return cmap
+
+
+def get_tpos(tilera, tiledec, ras, decs):
+    """
+    Computes the projected distance of a set of coordinates to a tile center.
+    
+    Args:
+        tilera: tile center R.A. in degrees (float)
+        tiledec: tile center Dec. in degrees (float)
+        ras: R.A. in degrees (np.array of floats)
+        decs: Dec. in degrees (np.array of floats)
+                                                                                                                                                                                 
+    Returns:
+        dras: projected distance (degrees) to the tile center along R.A. (np.array of floats)
+        ddecs: projected distance (degrees) to the tile center along Dec. (np.array of floats)
+    """
+    tsky = SkyCoord(ra=tilera * units.deg, dec=tiledec * units.deg, frame="icrs")
+    sky = SkyCoord(ra=ras * units.deg, dec=decs * units.deg, frame="icrs")
+    spho = tsky.spherical_offsets_to(sky)
+    return spho[0].value, spho[1].value
+
+
+def deg2pix(dras, ddecs, width_deg, width_pix):
+    """
+    Converts (dras,ddecs) to (xs,ys) in cutout img pixels.
+
+    Args:
+        dras: projected distance (degrees) along R.A. to the center of the cutout (np.array of floats)
+        ddecs: projected distance (degrees) along Dec. to the center of the cutout (np.array of floats)
+        width_deg: width of the cutout in degrees (np.array of floats)
+        width_pix: width of the cutout in pixels (np.array of floats)
+
+    Returns:
+        dxs: distance (pixels) along x to the center of the cutout (np.array of floats)
+        dys: distance (pixels) along y to the center of the cutout (np.array of floats)
+
+    Notes:
+        not sure at the <1 pixel level...
+    """
+    dxs = width_pix * (0.5 - dras / width_deg)
+    dys = width_pix * (0.5 + ddecs / width_deg)
+    return dxs, dys
+
+
+def plot_cutout(
+    ax,
+    img,
+    width_deg,
+    dras,
+    ddecs,
+    dopetal=False,
+    c="w",
+    alpha=None,
+    txts=None,
+    xtxts=None,
+    ytxts=None,
+    vmin=None,
+    vmax=None,
+    cmap=mycmap("coolwarm", 10, 0, 1),
+):
+    """
+    Plots a ls-dr9 cutout, with overlaying targets coordinates.
+
+    Args:
+        ax: pyplot object
+        img: mpimg.imread(ls-dr9-cutout)
+        width_deg: width of the cutout in degrees (np.array of floats)
+        dras: targets projected distance (degrees) along R.A. to the center of the cutout (np.array of floats)
+        ddecs: targets projected distance (degrees) along Dec. to the center of the cutout (np.array of floats)
+        dopetal (optional, defaults to False): overplot petals? (boolean)
+        c (optional, defaults to "w"): color used to display targets (string)
+        alpha (optional, defaults to None): pyplot alpha
+        txts (optional, defaults to None): list of text to display (list of strings)
+        xtxts (optional, defaults to None): list normalized x-positions of text to display (list of strings)
+        ytxts (optional, defaults to None): list normalized y-positions of text to display (list of strings)
+        vmin (optional, defaults to None): minimum value for the colorbar
+        vmax (optional, defaults to None): maximum value for the colorbar
+        cmap (optional, defaults to mycmap("coolwarm", 10, 0, 1)): colormap scheme
+    """
+    # AR txts, xtxts, ytxts : lists
+    # AR setting transparency as a function of density /deg2
+    if (dras is not None) & (alpha is None):
+        tmpdens = np.array([0, 100, 500, 1000, 5000, 7500, 1e10],)
+        tmpalph = np.array([1, 0.8, 0.5, 0.2, 0.1, 0.05, 0.025])
+        alpha = tmpalph[
+            np.where(tmpdens > len(dras) / (np.pi * tile_radius_deg ** 2))[0][0]
+        ]
+    width_pix = img.shape[0]
+    ax.imshow(
+        img,
+        origin="upper",
+        zorder=0,
+        extent=[0, width_pix, 0, width_pix],
+        aspect="equal",
+    )
+    ax.set_aspect("equal")
+    ax.set_xlim(-0.5, width_pix + 0.5)
+    ax.set_ylim(-0.5, width_pix + 0.5)
+
+    # AR data points
+    if dras is not None:
+        # AR rescaling degrees to img pixels ; not sure at <1 pixel...
+        dxs, dys = deg2pix(dras, ddecs, width_deg, width_pix)
+        if isinstance(c, str):
+            ax.scatter(dxs, dys, c=c, s=1, alpha=alpha)
+        else:
+            ax.scatter(dxs, dys, c=c, s=1, alpha=alpha, vmin=vmin, vmax=vmax, cmap=cm)
+    # AR per petal infos
+    if dopetal:
+        for ang, p in zip(
+            np.linspace(2 * np.pi, 0, 11), [7, 8, 9, 0, 1, 2, 3, 4, 5, 6]
+        ):
+            dxs, dys = deg2pix(
+                np.array([0, tile_radius_deg * np.cos(ang)]),
+                np.array([0, tile_radius_deg * np.sin(ang)]),
+                width_deg,
+                width_pix,
+            )
+            ax.plot(
+                dxs, dys, c="r", lw=0.25, alpha=1.0, zorder=1,
+            )
+            anglab = ang + 0.1 * np.pi
+            dxs, dys = deg2pix(
+                1.1 * tile_radius_deg * np.cos(anglab),
+                1.1 * tile_radius_deg * np.sin(anglab),
+                width_deg,
+                width_pix,
+            )
+            ax.text(
+                dxs, dys, "{:.0f}".format(p), color="r", va="center", ha="center",
+            )
+
+    ax.axis("off")
+    if txts is not None:
+        for txt, xtxt, ytxt in zip(txts, xtxts, ytxts):
+            ax.text(
+                xtxt,
+                ytxt,
+                txt,
+                color="y",
+                fontweight="bold",
+                fontsize=10,
+                ha="center",
+                va="top",
+                transform=ax.transAxes,
+            )
+
+
+def plot_hist(ax, mags, magps, msk):
+    """
+    Plots a normalized histogram for the assigned magnitudes (xs) and the parent magnitudes (xps).
+
+    Args:
+        ax: pyplot object
+        mags: assigned magnitudes (np.array of floats)
+        magps : parent magnitudes (np.array of floats)
+        msk: mask name of the plotted sample
+    """
+    #
+    selp = np.isfinite(magps)
+    sel = np.isfinite(mags)
+    bins = np.linspace(magps[selp].min(), magps[selp].max(), 26)
+    #
+    cps, _, _ = ax.hist(
+        magps[selp],
+        bins=bins,
+        histtype="step",
+        alpha=0.3,
+        lw=3,
+        color="k",
+        density=False,
+        label="{} parent ({})".format(msk, len(magps)),
+    )
+    cs, _, _, = ax.hist(
+        mags[sel],
+        bins=bins,
+        histtype="step",
+        alpha=1.0,
+        lw=1.0,
+        color="k",
+        density=False,
+        label="{} assigned ({})".format(msk, len(mags)),
+    )
+    ax.set_ylabel("counts")
+    ax.grid(True)
+    # ax.legend(loc=2)
+    axr = ax.twinx()
+    axr.plot(
+        0.5 * (bins[1:] + bins[:-1]),
+        np.array(cs) / np.array(cps).astype(float),
+        color="r",
+        lw=0.5,
+    )
+    axr.yaxis.label.set_color("r")
+    axr.tick_params(axis="y", colors="r")
+    axr.set_ylabel("ratio", labelpad=0)
+    axr.set_ylim(0, 1)
+    txts = [msk, "assigned/parent = {}/{}".format(len(mags), len(magps))]
+    xtxts = [0.5, 0.5]
+    ytxts = [0.98, 0.90]
+    for txt, xtxt, ytxt in zip(txts, xtxts, ytxts):
+        ax.text(
+            xtxt,
+            ytxt,
+            txt,
+            color="k",
+            fontweight="bold",
+            fontsize=10,
+            ha="center",
+            va="top",
+            transform=ax.transAxes,
+        )
+
+
+def get_qa_farange(fafrac, dfa=0.2):
+    """
+    Picks the plotted fiber assignment rate range for the QA plot.
+
+    Args:
+        fafrac: fiber assignment rate for the plotted sample (float)
+        dfa (optional, defaults to 0.2): plotted range (float)
+
+    Returns:
+        famin: lower boundary of the plotted fiber assignment rate (float)
+        famax: upper boundary of the plotted fiber assignment rate (float)
+    """
+    famin = np.max([0, np.round(fafrac - dfa / 2, 1)])
+    famax = np.min([1, np.round(fafrac + dfa / 2, 1)])
+    return famin, famax
+
+
+def get_ext_coeffs(band):
+    """
+    Returns the extinction coefficient for a given band.
+
+    Args:
+        band: band name: "G", "R", "Z", "W1", or "W2" (string)
+
+    Returns:
+        ext: extinction coefficient (float)
+
+    Note:
+        https://www.legacysurvey.org/dr9/catalogs/#galactic-extinction-coefficients
+    """
+    exts = {"G": 3.214, "R": 2.165, "Z": 1.211, "W1": 0.184, "W2": 0.113}
+    return exts[band]
+
+
+def plot_hist_tracer(ax, survey, parent, assign, msk, mskkey):
+    """
+    Plots a normalized histogram for the assigned magnitudes (xs) and the parent magnitudes (xps).
+
+    Args:
+        ax: pyplot object
+        survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
+        parent: dictionary for the parent target sample (output by get_parent_assign_quants())                                                                                   
+        assign: dictionary for the assigned target sample (output by get_parent_assign_quants()) 
+        msk: mask name of the plotted sample (string)
+        mskkey: key to select the mask on (string)
+    """
+    # AR YAML mask dictionary
+    yaml_masks, _, _, _, _ = get_dt_masks(survey)
+
+    # AR selecting the relevant tracer
+    if mskkey in list(parent.keys()):
+        mskpsel = (parent[mskkey] & yaml_masks[mskkey][msk]) > 0
+    else:
+        mskpsel = np.zeros(len(parent["TARGETID"]), dtype=bool)
+    # AR if no parent target, just skip
+    if mskpsel.sum() > 0:
+        msksel = (assign[mskkey] & yaml_masks[mskkey][msk]) > 0
+        famin, famax = get_qa_farange(msksel.sum() / float(mskpsel.sum()))
+        # AR mag hist
+        band = "R"
+        if "MWS" in msk:
+            band = "R"
+        if "BGS" in msk:
+            band = "R"
+        if "LRG" in msk:
+            band = "Z"
+        if "ELG" in msk:
+            band = "G"
+        if "QSO" in msk:
+            band = "R"
+        #
+        dohist = 0
+        # AR if ls-dr9 flux is here, we plot that
+        if ((parent["FLUX_{}".format(band)] > 0) & (mskpsel)).sum() > 0:
+            dohist = 1
+            # AR parent
+            magp = flux2mag(
+                parent["FLUX_{}".format(band)][mskpsel],
+                band=band,
+                ebv=parent["EBV"][mskpsel],
+            )
+            # AR assign
+            mag = flux2mag(
+                assign["FLUX_{}".format(band)][msksel],
+                band=band,
+                ebv=assign["EBV"][msksel],
+            )
+            # AR xlabel
+            ax.set_xlabel(
+                "22.5 - 2.5*log10(FLUX_{}) - {:.3f} * EBV".format(
+                    band, get_ext_coeffs(band)
+                )
+            )
+        # AR if no ls-dr9 flux, we try gaia_g
+        elif ((np.isfinite(parent["GAIA_PHOT_G_MEAN_MAG"])) & (mskpsel)).sum() > 0:
+            dohist = 1
+            magp = parent["GAIA_PHOT_G_MEAN_MAG"][mskpsel]
+            mag = assign["GAIA_PHOT_G_MEAN_MAG"][msksel]
+            ax.set_xlabel("GAIA_PHOT_G_MEAN_MAG")
+        if dohist == 1:
+            plot_hist(ax, mag, magp, msk)
+            _, ymax = ax.get_ylim()
+            ax.set_ylim(0.8, 100 * ymax)
+            ax.set_yscale("log")
+
+
+def plot_colcol_tracer(
+    ax,
+    xbands,
+    ybands,
+    survey,
+    parent,
+    assign,
+    msk,
+    mskkey,
+    xlim,
+    ylim,
+    gridsize=20,
+    cm=mycmap("coolwarm", 10, 0, 1),
+):
+    """
+    Plots a color-color diagram, with color-coding with the fiber assignment rate,
+        and transparency-coding the density.
+
+    Args:
+        ax: pyplot object
+        survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
+        xbands: two-elements list, the x-axis color being xbands[1] - xbands[0] (list of strings)
+        ybands: two-elements list, the y-axis color being ybands[1] - ybands[0] (list of strings)
+        parent: dictionary for the parent target sample (output by get_parent_assign_quants())                                                                                   
+        assign: dictionary for the assigned target sample (output by get_parent_assign_quants()) 
+        msk: mask name of the plotted sample (string)
+        mskkey: key to select the mask on (string)
+        xlim: plt.xlim
+        ylim: plt.ylim
+        gridsize (optional, defaults to 20): plt.hexbin gridsize parameter (int)
+        cmap (optional, defaults to mycmap("coolwarm", 10, 0, 1)): colormap scheme
+    """
+    # AR YAML mask dictionary
+    yaml_masks, _, _, _, _ = get_dt_masks(survey)
+
+    # AR selecting the relevant tracer
+    if mskkey in list(parent.keys()):
+        mskpsel = (parent[mskkey] & yaml_masks[mskkey][msk]) > 0
+    else:
+        mskpsel = np.zeros(len(parent["TARGETID"]), dtype=bool)
+
+    # AR plotting if some parent objects with valid colors
+    keep = mskpsel.copy()
+    for band in [xbands[0], xbands[1], ybands[0], ybands[1]]:
+        keep &= parent["FLUX_{}".format(band)] > 0
+
+    if keep.sum() > 0:
+        # AR
+        msksel = (assign[mskkey] & yaml_masks[mskkey][msk]) > 0
+
+        # AR using a dictionary
+        tmpdict = {"parent": {}, "assign": {}}
+        for sample_name, sample, sel in zip(
+            ["parent", "assign"], [parent, assign], [mskpsel, msksel]
+        ):
+            for axis_name, bands in zip(["x", "y"], [xbands, ybands]):
+                mag0 = flux2mag(
+                    sample["FLUX_{}".format(bands[0])][sel],
+                    bands[0],
+                    sample["EBV"][sel],
+                )
+                mag1 = flux2mag(
+                    sample["FLUX_{}".format(bands[1])][sel],
+                    bands[1],
+                    sample["EBV"][sel],
+                )
+                tmpdict[sample_name][axis_name] = mag0 - mag1
+
+        # AR first getting the hexbin outputs
+        hbp = ax.hexbin(
+            tmpdict["parent"]["x"],
+            tmpdict["parent"]["y"],
+            C=None,
+            gridsize=gridsize,
+            extent=(xlim[1], xlim[0], ylim[0], ylim[1]),
+            mincnt=0,
+            visible=False,
+        )
+        hb = ax.hexbin(
+            tmpdict["assign"]["x"],
+            tmpdict["assign"]["y"],
+            C=None,
+            gridsize=gridsize,
+            extent=(xlim[1], xlim[0], ylim[0], ylim[1]),
+            mincnt=0,
+            visible=False,
+        )
+
+        # AR restricting to pixels with some parent data
+        keep = hbp.get_array() > 0
+        tmpx = hb.get_offsets()[keep, 0]
+        tmpy = hb.get_offsets()[keep, 1]
+        tmpc = hb.get_array()[keep]
+        tmpcp = hbp.get_array()[keep].astype(float)
+
+        # AR fraction assigned, clipped to famin,famax
+        fafrac = msksel.sum() / float(mskpsel.sum())
+        famin, famax = get_qa_farange(fafrac)
+        c = cm(np.clip(((tmpc / tmpcp) - famin) / (famax - famin), 0, 1))
+
+        # AR transparency = f(nb of parent obj)
+        tmpmin, tmpmax = (
+            1,
+            1.2 * tmpcp.sum() / float(len(hbp.get_array())),
+        )
+        c[:, 3] = np.clip((tmpcp - tmpmin) / (tmpmax - tmpmin), 0, 1)
+        sc = ax.scatter(tmpx, tmpy, c=c, s=15,)
+        sc.cmap = cm
+        ax.set_xlabel("{} - {}".format(xbands[0].lower(), xbands[1].lower()))
+        ax.set_ylabel("{} - {}".format(ybands[0].lower(), ybands[1].lower()))
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
+        ax.grid(True)
+        ax.text(
+            0.5,
+            0.93,
+            msk,
+            color="k",
+            fontweight="bold",
+            fontsize=10,
+            ha="center",
+            transform=ax.transAxes,
+        )
+        cbar = plt.colorbar(sc)
+        cbar.set_label("fraction assigned")
+        cbar.mappable.set_clim(famin, famax)
+
+
+def plot_sky_fa(
+    axs,
+    img,
+    survey,
+    parent,
+    assign,
+    dras,
+    ddecs,
+    msk,
+    mskkey,
+    width_deg,
+    gridsize=30,
+    cm=mycmap("coolwarm", 10, 0, 1),
+):
+    """
+    Plots the sky distribution of the parent sample, the assigned sample, and of the fiber assignment rate.
+
+    Args:
+        axs: list of 3 pyplot objects, respectively for the parent sample, the assigned sample, and the fiber assignment rate
+        img: mpimg.imread(ls-dr9-cutout)
+        survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
+        parent: dictionary for the parent target sample (output by get_parent_assign_quants())                                                                                   
+        assign: dictionary for the assigned target sample (output by get_parent_assign_quants()) 
+        dras: dictionary with projected distance (degrees) along R.A. to the center of the tile (np.array of floats),                                                            
+            for each of the following subsample: "parent", "assign", "sky", "bad", "wd", "std" (all assigned subsamples,
+            except parent)
+        ddecs: same as dras, for projected distances along Dec.
+        msk: mask name of the plotted sample (string)
+        mskkey: key to select the mask on (string)
+        width_deg: width of the cutout in degrees (np.array of floats)
+        gridsize (optional, defaults to 30): plt.hexbin gridsize parameter (int)
+        cmap (optional, defaults to mycmap("coolwarm", 10, 0, 1)): colormap scheme
+    """
+    # AR YAML mask dictionary
+    yaml_masks, _, _, _, _ = get_dt_masks(survey)
+
+    # AR selecting the relevant tracer
+    if mskkey in list(parent.keys()):
+        mskpsel = (parent[mskkey] & yaml_masks[mskkey][msk]) > 0
+    else:
+        mskpsel = np.zeros(len(parent["TARGETID"]), dtype=bool)
+
+    if mskpsel.sum() > 0:
+        # AR assign sample tracer selection
+        msksel = (assign[mskkey] & yaml_masks[mskkey][msk]) > 0
+
+        # AR xlim, ylim
+        xlim = (width_deg / 2, -width_deg / 2)
+        ylim = (-width_deg / 2, width_deg / 2)
+
+        # AR area of the plotting window in deg2
+        plot_area = (xlim[0] - xlim[1]) * (ylim[1] - ylim[0])
+
+        # AR parent
+        plot_cutout(
+            axs[0],
+            img,
+            width_deg,
+            dras["parent"][mskpsel],
+            ddecs["parent"][mskpsel],
+            dopetal=True,
+            txts=[
+                msk,
+                "parent : {:.0f}".format(mskpsel.sum() / tile_area) + r" deg$^{-2}$",
+            ],
+            xtxts=[0.5, 0.5],
+            ytxts=[0.98, 0.1],
+        )
+
+        # AR assigned
+        plot_cutout(
+            axs[1],
+            img,
+            width_deg,
+            dras["assign"][msksel],
+            ddecs["assign"][msksel],
+            dopetal=True,
+            txts=[
+                msk,
+                "assigned : {:.0f}".format(msksel.sum() / tile_area) + r" deg$^{-2}$",
+            ],
+            xtxts=[0.5, 0.5],
+            ytxts=[0.98, 0.1],
+        )
+
+        # AR fraction assigned, clipped to famin,famax
+        fafrac = msksel.sum() / float(mskpsel.sum())
+        famin, famax = get_qa_farange(fafrac)
+        txts = [msk, r"mean = {:.2f}".format(fafrac)]
+        xtxts = [0.5, 0.5]
+        ytxts = [0.93, 0.03]
+
+        # AR assigned fraction
+        ax = axs[2]
+        x = dras["parent"][mskpsel]
+        y = ddecs["parent"][mskpsel]
+        C = np.in1d(parent["TARGETID"][mskpsel], assign["TARGETID"][msksel])
+        hb = ax.hexbin(
+            x,
+            y,
+            C=C,
+            gridsize=gridsize,
+            extent=(xlim[1], xlim[0], ylim[0], ylim[1]),
+            mincnt=1,
+            alpha=0.5,
+            vmin=famin,
+            vmax=famax,
+        )
+        hb.cmap = cm
+        ax.set_xlabel(r"$\Delta$RA [deg.]")
+        ax.set_ylabel(r"$\Delta$DEC [deg.]")
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
+        ax.grid(True)
+        for txt, xtxt, ytxt in zip(txts, xtxts, ytxts):
+            ax.text(
+                xtxt,
+                ytxt,
+                txt,
+                color="k",
+                fontweight="bold",
+                fontsize=10,
+                ha="center",
+                transform=ax.transAxes,
+            )
+        cbar = plt.colorbar(hb)
+        cbar.set_label("fraction assigned")
+        cbar.mappable.set_clim(famin, famax)
+
+
+def make_qa(
+    outpng,
+    survey,
+    program,
+    faflavor,
+    targfns,
+    fiberassignfn,
+    tileid,
+    tilera,
+    tiledec,
+    obscon,
+    rundate,
+    tmpoutdir=tempfile.mkdtemp(),
+    width_deg=4,
+    log=None,
+    step="",
+    start=None,
+):
+    """
+    Make fba_launch QA plot.
+    
+    Args:
+        outpng: written output PNG file (string)
+        survey: "sv1", "sv2", "sv3" or "main" (string)
+        program: "DARK", "BRIGHT", or "BACKUP" (string)
+        faflavor: usually {survey}{program} in lower cases (string)
+        fiberassignfn: path to the output fiberassign-TILEID.fits file (string)
+        tileid: tile TILEID (int)
+        tilera: tile center R.A. in degrees (float)
+        tiledec: tile center Dec. in degrees (float)
+        obscon: tile allowed observing conditions (string; e.g. "DARK|GRAY|BRIGHT|BACKUP") 
+        rundate: used rundate (string)
+        tmpoutdir (optional, defaults to a temporary directory): temporary directory (to download the cutout)
+        width_deg (optional, defaults to 4): width of the cutout in degrees (np.array of floats)
+        log (optional): Logger object                                                                                                                                            
+        step (optional): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start (optional): start time for log (in seconds; output of time.time()
+    """
+    if log is None:
+        log = Logger.get()
+    if start is None:
+        start = time()
+
+    log.info("")
+    log.info("")
+    log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
+    # AR WD and STD used masks
+    _, wd_mskkeys, wd_msks, std_mskkeys, std_msks = get_dt_masks(
+        survey, log=log, step=step, start=start,
+    )
+    log.info("{:.1f}s\t{}\twd_mskkeys = {}".format(time() - start, step, wd_mskkeys))
+    log.info("{:.1f}s\t{}\twd_msks = {}".format(time() - start, step, wd_msks))
+    log.info("{:.1f}s\t{}\tstd_mskkeys = {}".format(time() - start, step, std_mskkeys))
+    log.info("{:.1f}s\t{}\tstd_msks = {}".format(time() - start, step, std_msks))
+
+    # AR plotted tracers
+    # AR TBD: handle secondary?
+    trmskkeys, trmsks = get_qa_tracers(program, log=log, step="doplot", start=start,)
+
+    # AR storing parent/assigned quantities
+    parent, assign, dras, ddecs, petals, nassign = get_parent_assign_quants(
+        survey, targfns, fiberassignfn, tilera, tiledec, log=log, step=step, start=start
+    )
+
+    # AR stats : assigned / parent
+    print_assgn_parent_stats(survey, parent, assign, log=log, step=step, start=start)
+
+    # AR start plotting
+    fig = plt.figure(figsize=(30, 3 * (1 + len(trmsks))))
+    gs = gridspec.GridSpec(1 + len(trmsks), 7, wspace=0.5, hspace=0.3)
+
+    # AR overall infos
+    ax = plt.subplot(gs[0, 0])
+    ax.axis("off")
+    # AR infos : general
+    qa_print_infos(
+        ax,
+        survey,
+        program,
+        faflavor,
+        tileid,
+        tilera,
+        tiledec,
+        obscon,
+        rundate,
+        parent,
+        assign,
+        log=log,
+        step=step,
+        start=start,
+    )
+
+    # AR stats per petal
+    ax = plt.subplot(gs[0, 1])
+    ax.axis("off")
+    qa_print_petal_infos(
+        ax, petals, assign,
+    )
+
+    # AR cutout
+    img = get_viewer_cutout(
+        tileid,
+        tilera,
+        tiledec,
+        tmpoutdir=tmpoutdir,
+        width_deg=width_deg,
+        pixscale=10,
+        dr="dr9",
+    )
+
+    # AR SKY, BAD, WD, STD, TGT
+    iys = [2, 3, 4, 5, 6]
+    keys = ["sky", "bad", "wd", "std", "assign"]
+    txts = ["SKY", "BAD", "WD", "STD", "TGT"]
+    alphas = [0.25, 1.0, 1.0, 1.0, 0.025]
+    for iy, key, txt, alpha in zip(iys, keys, txts, alphas):
+        ax = fig.add_subplot(gs[0, iy])
+        plot_cutout(
+            ax,
+            img,
+            width_deg,
+            dras[key],
+            ddecs[key],
+            dopetal=True,
+            alpha=alpha,
+            txts=[txt],
+            xtxts=[0.2],
+            ytxts=[0.98],
+        )
+
+    # AR looping on tracers
+    ix = 1
+    for msk, mskkey in zip(trmsks, trmskkeys):
+
+        # AR parent and assign magnitude distributions
+        plot_hist_tracer(plt.subplot(gs[ix, 1]), survey, parent, assign, msk, mskkey)
+
+        # AR color-color diagram, with fiber assignment rate color-coded, and density transparency-coded
+        gridsize = 20
+        for iy, xbands, ybands, xlim, ylim in zip(
+            [2, 3],
+            [("R", "Z"), ("R", "Z")],
+            [("G", "R"), ("R", "W1")],
+            [(-0.5, 2.5), (-0.5, 2.5)],
+            [(-0.5, 2.5), (-2, 5)],
+        ):
+            ax = plt.subplot(gs[ix, iy])
+            plot_colcol_tracer(
+                ax,
+                xbands,
+                ybands,
+                survey,
+                parent,
+                assign,
+                msk,
+                mskkey,
+                xlim,
+                ylim,
+                gridsize=20,
+            )
+
+        # AR position in tile
+        axs = [plt.subplot(gs[ix, 4]), plt.subplot(gs[ix, 5]), plt.subplot(gs[ix, 6])]
+        plot_sky_fa(
+            axs, img, survey, parent, assign, dras, ddecs, msk, mskkey, width_deg
+        )
+
+        #
+        ix += 1
+
+    #  AR saving plot
+    plt.savefig(
+        outpng, bbox_inches="tight",
+    )
+    plt.close()
