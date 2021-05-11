@@ -170,7 +170,7 @@ def get_gfa_targets(tiles, gfafile,faintlim=99):
         t["FOCUS_FLAG"] = flag
 
         # patch in Gaia-based synthetic r flux for use by ETC
-        t["FLUX_R"] = gaia_synth_r_flux(tab)
+        t["FLUX_R"] = gaia_synth_r_flux(t)
 
         gfa_targets.append(t)
 
