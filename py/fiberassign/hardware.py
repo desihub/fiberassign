@@ -344,5 +344,5 @@ def xy2radec(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
 def xy2cs5(x, y):
     # There's a change in terminology between the focal-plane team and
     # the outside world here...
-    from desimeter.transform.pos2ptl import ptl2flat
+    from desimeter.transform.pos2ptl import flat2ptl
     return flat2ptl(x, y)
