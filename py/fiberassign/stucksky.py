@@ -117,7 +117,7 @@ def stuck_on_sky(hw, tiles):
 
     stuck_sky = dict()
     for tile_id, tile_ra, tile_dec, tile_obstime, tile_theta, tile_obsha in zip(
-            tiles.id, tiles.ra, tiles.dec, tiles.obstime, tiles.obstheta, tiles.obsha):
+            tiles.id, tiles.ra, tiles.dec, tiles.obstime, tiles.obstheta, tiles.obshourang):
         stuck_sky[tile_id] = dict()
 
         # Stuck locations and their angles
@@ -150,16 +150,14 @@ def stuck_on_sky(hw, tiles):
             stuck_x[iloc] = loc_x
             stuck_y[iloc] = loc_y
 
-        loc_radec = xy2radec(
-            tile_ra, tile_dec, tile_obstime, tile_theta, tile_obsha,
+        loc_ra,loc_dec = xy2radec(
+            hw, tile_ra, tile_dec, tile_obstime, tile_theta, tile_obsha,
             stuck_x, stuck_y, False, 0
         )
-        loc_ra  = np.array([r for r,d in loc_radec])
-        loc_dec = np.array([d for r,d in loc_radec])
 
         good_sky = skybricks.lookup_tile(tile_ra, tile_dec, hw.focalplane_radius_deg,
                                          loc_ra, loc_dec)
-        log.debug('%i of %i stuck positioners land on good sky' % (np.sum(good_sky), len(good_sky)))
+        log.info('%i of %i stuck positioners land on good sky locations' % (np.sum(good_sky), len(good_sky)))
         for loc,good in zip(stuck_loc, good_sky):
             stuck_sky[tile_id][loc] = good
 

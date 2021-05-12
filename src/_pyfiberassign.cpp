@@ -1474,10 +1474,6 @@ PYBIND11_MODULE(_internal, m) {
 
         )")
         .def(py::init < fba::Hardware::pshr, fba::Targets::pshr,
-             fba::Tiles::pshr, fba::TargetTree::pshr > (), py::arg("hw"),
-             py::arg("objs"), py::arg("tiles"), py::arg("tree")
-        )
-        .def(py::init < fba::Hardware::pshr, fba::Targets::pshr,
              fba::Tiles::pshr, std::map<int64_t, std::vector<int64_t> >,
              std::map<int64_t, std::vector<double> >,
              std::map<int64_t, std::vector<double> >
