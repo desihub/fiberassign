@@ -433,16 +433,18 @@ def run_assign_bytile(args):
 
     # Create a hierarchical triangle mesh lookup of the targets positions
     gt.start("Construct target tree")
-    tree = TargetTree(tgs)
+    #tree = TargetTree(tgs)
+    tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles)
     gt.stop("Construct target tree")
 
     # Compute the targets available to each fiber for each tile.
     gt.start("Compute Targets Available")
-    tgsavail = TargetsAvailable(hw, tgs, tiles, tree)
+    #tgsavail = TargetsAvailable(hw, tgs, tiles, tree)
+    tgsavail = TargetsAvailable(hw, tgs, tiles, tile_targetids, tile_x, tile_y)
     gt.stop("Compute Targets Available")
 
     # Free the tree
-    del tree
+    #del tree
 
     # Compute the fibers on all tiles available for each target and sky
     gt.start("Compute Locations Available")
