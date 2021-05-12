@@ -76,11 +76,13 @@ def get_svn_version(svn_dir):
     Notes:
         Credits to SB
     """
-    cmd = ['svn', 'info', '--show-item', 'revision', os.path.expandvars(svn_dir)]
+    cmd = ["svn", "info", "--show-item", "revision", os.path.expandvars(svn_dir)]
     try:
-        svn_ver = subprocess.check_output(cmd, stderr=subprocess.DEVNULL).strip().decode()
+        svn_ver = (
+            subprocess.check_output(cmd, stderr=subprocess.DEVNULL).strip().decode()
+        )
     except subprocess.CalledProcessError:
-        svn_ver = 'unknown'
+        svn_ver = "unknown"
     return svn_ver
 
 
@@ -1419,11 +1421,11 @@ def update_fiberassign_header(
     )
     # AR some keywords
     fd["PRIMARY"].write_key("outdir", args.outdir)
-    fd["PRIMARY"].write_key("survey", hdr_survey) # AR not args.survey!
+    fd["PRIMARY"].write_key("survey", hdr_survey)  # AR not args.survey!
     fd["PRIMARY"].write_key("rundate", args.rundate)
     fd["PRIMARY"].write_key("pmcorr", args.pmcorr)
     fd["PRIMARY"].write_key("pmtime", args.pmtime_utc_str)
-    fd["PRIMARY"].write_key("faprgrm", hdr_faprgrm) # AR not args.program!
+    fd["PRIMARY"].write_key("faprgrm", hdr_faprgrm)  # AR not args.program!
     fd["PRIMARY"].write_key("mtltime", args.mtltime)
     fd["PRIMARY"].write_key("obscon", obscon)
     # AR informations for NTS
@@ -1437,8 +1439,12 @@ def update_fiberassign_header(
     # AR fba_launch-like script name used to designed the tile
     fd["PRIMARY"].write_key("fascript", fascript)
     # AR SVN revision number
-    fd["PRIMARY"].write_key("svndm", get_svn_version(os.path.join(os.getenv("DESIMODEL"), "data")))
-    fd["PRIMARY"].write_key("svnmtl", get_svn_version(os.path.join(os.getenv("DESI_SURVEYOPS"), "mtl")))
+    fd["PRIMARY"].write_key(
+        "svndm", get_svn_version(os.path.join(os.getenv("DESIMODEL"), "data"))
+    )
+    fd["PRIMARY"].write_key(
+        "svnmtl", get_svn_version(os.path.join(os.getenv("DESI_SURVEYOPS"), "mtl"))
+    )
     fd.close()
 
 
@@ -2683,7 +2689,9 @@ def make_qa(
 
     # AR plotted tracers
     # AR TBD: handle secondary?
-    trmskkeys, trmsks = get_qa_tracers(survey, program, log=log, step="doplot", start=start,)
+    trmskkeys, trmsks = get_qa_tracers(
+        survey, program, log=log, step="doplot", start=start,
+    )
 
     # AR storing parent/assigned quantities
     parent, assign, dras, ddecs, petals, nassign = get_parent_assign_quants(
