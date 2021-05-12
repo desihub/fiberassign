@@ -96,6 +96,9 @@ def parse_assign(optlist=None):
                         help="Plan field rotations for this date (YEARMMDD, "
                         "or ISO 8601 YEAR-MM-DD with or without time).")
 
+    parser.add_argument("--ha" type=float, required=False, default=0.,
+                        help="Design for the given Hour Angle in degrees.")
+
     parser.add_argument("--fieldrot", type=float, required=False, default=None,
                         help="Override obsdate and use this field rotation "
                         "for all tiles (degrees counter clockwise in CS5)")
@@ -292,7 +295,7 @@ def run_assign_init(args):
                 except ValueError:
                     pass
     tiles = load_tiles(tiles_file=args.footprint, select=tileselect,
-        obstime=args.obsdate, obstheta=args.fieldrot)
+        obstime=args.obsdate, obstheta=args.fieldrot, obsha=args.ha)
 
     # Before doing significant calculations, check for pre-existing files
     if not args.overwrite:
