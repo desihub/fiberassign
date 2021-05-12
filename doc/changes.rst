@@ -3,10 +3,15 @@
 fiberassign change log
 ======================
 
-2.6.0 (unreleased)
+2.5.2 (unreleased)
 ------------------
 
-* No changes yet
+* Record $DESI_SUREYOPS/mtl and $DESIMODEL/data svn revision numbers in
+  output header keywords SVNMTL and SVNDM (PR `#346`_).
+* Simplify and improve ``bin/fba_plot`` (PR `#336`_).
+
+.. _`#336`: https://github.com/desihub/fiberassign/pull/336
+.. _`#346`: https://github.com/desihub/fiberassign/pull/346
 
 2.5.1 (2021-05-11)
 ------------------

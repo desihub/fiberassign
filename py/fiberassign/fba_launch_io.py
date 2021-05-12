@@ -87,10 +87,10 @@ def get_svn_version(svn_dir):
         svn_dir: SVN folder path (string)
 
     Returns:
-        svnver: SVN revision number of svn_dir (int)
+        svnver: SVN revision number of svn_dir, or "unknown" if not an svn checkout
 
     Notes:
-        Credits to SB
+        `svn_dir` can contain environment variables to expand, e.g. "$DESIMODEL/data"
     """
     cmd = ["svn", "info", "--show-item", "revision", os.path.expandvars(svn_dir)]
     try:
@@ -99,6 +99,7 @@ def get_svn_version(svn_dir):
         )
     except subprocess.CalledProcessError:
         svn_ver = "unknown"
+
     return svn_ver
 
 
