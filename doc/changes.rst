@@ -20,7 +20,8 @@ fiberassign change log
 
 * Major refactor of ``bin/fba_launch`` into functions in
   ``fiberassign.fba_launch_io`` for reuse by other scripts (PR `#343`_).
-* Support skybricks for blank sky lookup (PR `#341`_, `#342`_).
+* Headers record skybricks input version; support skybricks/v3 format
+  (PR `#341`_, `#342`_).
 
 .. _`#341`: https://github.com/desihub/fiberassign/pull/341
 .. _`#342`: https://github.com/desihub/fiberassign/pull/342
@@ -31,7 +32,8 @@ fiberassign change log
 
 * ``fba_launch --isodate`` option to set timestamp for MTL ledger reading
   (PR `#334`_).
-* Assign stuck positioners to sky if possible (PR `#337`_).
+* Assign stuck positioners to sky if possible, using skybricks/v2 lookup
+  (PR `#337`_).
 * Add per-slitblock sky fiber limits (PR `#338`_).
 * Report counts of assigned fibers as fiberassign proceeds (PR `#339`_).
 * Apply theta-phi offsets when computing locs of stuck positioners;
