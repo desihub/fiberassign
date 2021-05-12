@@ -312,9 +312,6 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
 
         // Thread local properties.
         int32_t tid;
-        double tra;
-        double tdec;
-        double ttheta;
 
         // Thread local data for available targets- reduced at the end.
         std::map <int32_t, std::map <int32_t,
@@ -326,9 +323,6 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
         #pragma omp for schedule(dynamic)
         for (size_t i = 0; i < ntile; ++i) {
             tid = ptiles->id[i];
-            tra = ptiles->ra[i];
-            tdec = ptiles->dec[i];
-            ttheta = ptiles->obstheta[i];
             thread_data[tid].clear();
             thread_data_xy[tid].clear();
 
