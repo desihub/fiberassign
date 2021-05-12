@@ -458,6 +458,7 @@ def plot_tiles(files, out_dir=None, petals=None, real_shapes=False, serial=False
 
     Args:
         files (list):  The list of fiberassign files.
+        out_dir (str): Output directory for plots.
         petals (list):  List of petals to plot.
         real_shapes (bool):  If True, plot the full positioner shapes.
         serial (bool):  If True, disable use of multiprocessing.
