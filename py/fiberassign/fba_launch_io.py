@@ -1254,6 +1254,14 @@ def launch_onetile_fa(
         "--sky_per_slitblock",
         str(args.sky_per_slitblock),
     ]
+    if args.ha != 0:
+        opts += ["--ha", str(args.ha)]
+    if args.margin_pos != 0:
+        opts += ["--margin-pos", str(args.margin_pos)]
+    if args.margin_gfa != 0:
+        opts += ["--margin-gfa", str(args.margin_gfa)]
+    if args.margin_petal != 0:
+        opts += ["--margin-petal", str(args.margin_petal)]
     if skyfn is not None:
         opts += [
             "--sky",
