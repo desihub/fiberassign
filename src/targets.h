@@ -170,7 +170,12 @@ class TargetsAvailable : public std::enable_shared_from_this <TargetsAvailable> 
 
         std::map <int32_t, std::vector <int64_t> > tile_data(int32_t tile) const;
 
+        // data[tile][loc] = vector< target_id >
         std::map <int32_t, std::map <int32_t, std::vector <int64_t> > > data;
+
+        // data_xy[tile][loc] = vector< pair( x, y) >
+        std::map <int32_t, std::map <int32_t, std::vector <
+            std::pair<double, double> > > > data_xy;
 
     private :
 

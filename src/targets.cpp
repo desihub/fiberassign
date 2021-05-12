@@ -319,7 +319,10 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
 
         // Thread local data for available targets- reduced at the end.
         std::map <int32_t, std::map <int32_t,
-                  std::vector <int64_t> > > thread_data;
+                                     std::vector <int64_t> > > thread_data;
+        std::map <int32_t, std::map <int32_t,
+                                     std::vector <
+                                         std::pair<double, double> > > > thread_data_xy;
 
         #pragma omp for schedule(dynamic)
         for (size_t i = 0; i < ntile; ++i) {
@@ -329,6 +332,7 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
             tobs = ptiles->obscond[i];
             ttheta = ptiles->obstheta[i];
             thread_data[tid].clear();
+            thread_data_xy[tid].clear();
 
             if (tile_targetids[tid].size() == 0) {
                 // No targets for this tile.
@@ -358,6 +362,7 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
 
             for (size_t j = 0; j < nloc; ++j) {
                 thread_data[tid][loc[j]].resize(0);
+                thread_data_xy[tid][loc[j]].resize(0);
                 loc_pos[0] = loc_center_x[j];
                 loc_pos[1] = loc_center_y[j];
 
@@ -393,6 +398,7 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
                         }
                     } else {
                         thread_data[tid][loc[j]].push_back(tnear.id);
+                        thread_data_xy[tid][loc[j]].push_back(std::make_pair(tnear.pos[0], tnear.pos[1]));
                     }
                 }
 
@@ -426,6 +432,23 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
                 }
             }
             thread_data.clear();
+            for (auto const & it : thread_data_xy) {
+                int32_t ttile = it.first;
+                if (data_xy.count(ttile) > 0) {
+                    throw std::runtime_error("Available target data already exists for tile");
+                }
+                data_xy[ttile].clear();
+                auto const & fmap = it.second;
+                for (size_t f = 0; f < nloc; ++f) {
+                    int32_t lid = loc[f];
+                    if (fmap.count(lid) == 0) {
+                        // This location had no targets.
+                        continue;
+                    }
+                    data_xy[ttile][lid] = fmap.at(lid);
+                }
+            }
+            thread_data_xy.clear();
         }
     }
 

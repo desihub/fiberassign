@@ -152,17 +152,6 @@ class Assignment : public std::enable_shared_from_this <Assignment> {
             std::vector <double> & tgdec
         ) const;
 
-        void project_targets(
-            Hardware const * hw,
-            Targets const * tgs,
-            TargetsAvailable const * tgsavail,
-            int32_t tile_id,
-            double tile_ra,
-            double tile_dec,
-            double tile_theta,
-            std::map <int64_t, std::pair <double, double> > & target_xy
-        ) const;
-
         void reassign_science_target(
             int32_t tstart,
             int32_t tstop,

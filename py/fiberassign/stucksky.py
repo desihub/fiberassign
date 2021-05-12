@@ -117,7 +117,7 @@ def stuck_on_sky(hw, tiles):
 
     stuck_sky = dict()
     for tile_id, tile_ra, tile_dec, tile_obstime, tile_theta, tile_obsha in zip(
-            tiles.id, tiles.ra, tiles.dec, tiles.obstime, tiles.obstheta, tiles.obsha):
+            tiles.id, tiles.ra, tiles.dec, tiles.obstime, tiles.obstheta, tiles.obshourang):
         stuck_sky[tile_id] = dict()
 
         # Stuck locations and their angles
