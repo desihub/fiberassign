@@ -67,7 +67,7 @@ class Skybricks(object):
 
             # Read skybrick file
             fn = os.path.join(self.skybricks_dir,
-                              'sky-%s.fits.gz' % self.skybricks['BRICKNAME'][i])
+                              'sky-%s.fits.fz' % self.skybricks['BRICKNAME'][i])
             if not os.path.exists(fn):
                 log.warning('Missing "skybrick" file: %s' % fn)
                 continue
@@ -150,16 +150,14 @@ def stuck_on_sky(hw, tiles):
             stuck_x[iloc] = loc_x
             stuck_y[iloc] = loc_y
 
-        loc_radec = xy2radec(
-            tile_ra, tile_dec, tile_obstime, tile_theta, tile_obsha,
+        loc_ra,loc_dec = xy2radec(
+            hw, tile_ra, tile_dec, tile_obstime, tile_theta, tile_obsha,
             stuck_x, stuck_y, False, 0
         )
-        loc_ra  = np.array([r for r,d in loc_radec])
-        loc_dec = np.array([d for r,d in loc_radec])
 
         good_sky = skybricks.lookup_tile(tile_ra, tile_dec, hw.focalplane_radius_deg,
                                          loc_ra, loc_dec)
-        log.debug('%i of %i stuck positioners land on good sky' % (np.sum(good_sky), len(good_sky)))
+        log.info('%i of %i stuck positioners land on good sky locations' % (np.sum(good_sky), len(good_sky)))
         for loc,good in zip(stuck_loc, good_sky):
             stuck_sky[tile_id][loc] = good
 
