@@ -984,7 +984,7 @@ def xy2cs5(x, y):
     # There's a change in terminology between the focal-plane team and
     # the outside world here...
     from desimeter.transform.pos2ptl import ptl2flat
-    return ptl2flat(x, y)
+    return flat2ptl(x, y)
 
 def targets_in_tiles(hw, tgs, tiles):
     '''
