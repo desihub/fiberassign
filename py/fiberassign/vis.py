@@ -453,7 +453,7 @@ def plot_assignment_tile_file(petals, real_shapes, params):
     return
 
 
-def plot_tiles(files, petals=None, real_shapes=False, serial=False):
+def plot_tiles(files, out_dir=None, petals=None, real_shapes=False, serial=False):
     """Plot assignment output.
 
     Args:
@@ -472,10 +472,15 @@ def plot_tiles(files, petals=None, real_shapes=False, serial=False):
 
     plot_tile = partial(plot_assignment_tile_file, petals, real_shapes)
 
+    if (out_dir is not None) and not os.path.isdir(out_dir):
+        os.makedirs(out_dir)
+
     file_map_list = list()
     for f in files:
         d, base = os.path.split(f)
-        root = f.split(".")[0]
+        if out_dir is not None:
+            d = out_dir
+        root = base.split(".")[0]
         file_map_list.append((f, os.path.join(d, "{}.pdf".format(root))))
 
     if serial:

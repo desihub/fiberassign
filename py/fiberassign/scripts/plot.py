@@ -37,6 +37,9 @@ def parse_plot(optlist=None):
     """
     parser = argparse.ArgumentParser()
 
+    parser.add_argument("--out_dir", type=str, required=False, default=None,
+                        help="Output directory for all plots.")
+
     parser.add_argument("--petals", type=str, required=False, default=None,
                         help="Comma-separated list of petals to plot "
                         "(default is all petals)")
@@ -98,6 +101,7 @@ def run_plot(args):
         args.files,
         petals=petals,
         real_shapes=(not args.simple),
-        serial=args.serial
+        serial=args.serial,
+        out_dir=args.out_dir
     )
     return
