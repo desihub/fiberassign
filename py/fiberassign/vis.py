@@ -59,7 +59,7 @@ Proceeding with the default matplotlib backend."""
 
 
 def plot_target_type_color(tgtype):
-    color = "gray"
+    color = "fuchsia"
     tp = int(tgtype)
     if (tp & TARGET_TYPE_SAFE) != 0:
         color = "black"
@@ -162,6 +162,25 @@ def plot_positioner_simple(ax, patrol_rad, loc, center, theta_ang, theta_arm,
     return
 
 
+def plot_positioner_invalid(ax, patrol_rad, loc, center, color="k", linewidth=0.2):
+    """Plot one fiber positioner which has invalid angles.
+    """
+    set_matplotlib_pdf_backend()
+    patrol = plt.Circle((center[0], center[1]), radius=patrol_rad, fc=color,
+                        ec="none", alpha=0.1)
+    ax.add_artist(patrol)
+
+    fontpt = 2.0
+    xtxt = center[0]
+    ytxt = center[1] + 0.5
+    ax.text(xtxt, ytxt, "{}".format(loc),
+            color='k', fontsize=fontpt,
+            horizontalalignment='center',
+            verticalalignment='center',
+            bbox=None)
+    return
+
+
 def plot_tile_targets_props(hw, tile_ra, tile_dec, tile_theta, tgs,
                             avail_tgid=None):
     if avail_tgid is None:
@@ -240,7 +259,7 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
                 ax.plot(xpts, ypts, linewidth=0.2*linewidth, color="gray")
 
     for lid in assigned:
-        color = "gray"
+        color = "fuchsia"
         if (device_type[lid] != "POS") and (device_type[lid] != "ETC"):
             continue
         shptheta = Shape()
@@ -261,9 +280,6 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
             if failed:
                 msg = "Positioner at location {} cannot move to target {} at (x, y) = ({}, {}).  This should have been dected during assignment!".format(lid, tgid, targetprops[tgid]["xy"][0], targetprops[tgid]["xy"][1])
                 log.warning(msg)
-                raise RuntimeError(msg)
-                is_assigned = False
-                failed = False
             else:
                 color = targetprops[tgid]["color"]
                 theta, phi = hw.xy_to_thetaphi(
@@ -273,22 +289,21 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
                     theta_min[lid], phi_min[lid],
                     theta_max[lid], phi_max[lid],
                 )
-        if not is_assigned:
+        else:
             # This fiber is unassigned.
+            print(f"{lid} ({state[lid]} & {FIBER_STATE_STUCK}) or ({state[lid]} & {FIBER_STATE_BROKEN}) = {(state[lid] & FIBER_STATE_STUCK) or (state[lid] & FIBER_STATE_BROKEN)}")
             if (state[lid] & FIBER_STATE_STUCK) or (state[lid] & FIBER_STATE_BROKEN):
                 # The positioner is stuck or fiber broken.  Plot it at its current
                 # location.
+                color = "gray"
+                if is_stuck_sky:
+                    color = "cyan"
                 theta = theta_pos[lid] + theta_offset[lid]
                 phi   = phi_pos  [lid] + phi_offset  [lid]
                 msg = "Device location {}, state {} is stuck / broken, plotting fixed theta = {}, phi = {}".format(
                     lid, state[lid], theta, phi
                 )
                 log.debug(msg)
-                failed = hw.loc_position_thetaphi(
-                    lid, theta, phi, shptheta, shpphi, True
-                )
-                if is_stuck_sky:
-                    color = "cyan"
             else:
                 # Plot the positioner in its home (parked) position
                 theta, phi = get_parked_thetaphi(theta_offset[lid],
@@ -299,11 +314,17 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
                     lid, state[lid], theta, phi
                 )
                 log.debug(msg)
-                failed = hw.loc_position_thetaphi(lid, theta, phi, shptheta, shpphi, True)
+            failed = hw.loc_position_thetaphi(
+                lid, theta, phi, shptheta, shpphi, True
+            )
             if failed:
                 msg = "Positioner at location {} cannot move to its stuck or home position.  This should never happen!".format(lid)
                 log.warning(msg)
-        if not failed:
+        if failed:
+            plot_positioner_invalid(
+                ax, patrol_rad, lid, center, color=color, linewidth=linewidth
+            )
+        else:
             if real_shapes:
                 plot_positioner(
                     ax, patrol_rad, lid, center, shptheta, shpphi,
@@ -320,6 +341,9 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
 def plot_assignment_tile_file(petals, real_shapes, params):
     (infile, outfile) = params
     set_matplotlib_pdf_backend()
+
+    from matplotlib.patches import Patch
+
     log = Logger.get()
 
     if os.path.isfile(outfile):
@@ -407,6 +431,20 @@ def plot_assignment_tile_file(petals, real_shapes, params):
         fassign,
         linewidth=0.1,
         real_shapes=real_shapes
+    )
+
+    ax.legend(
+        handles=[
+            Patch(color="red", label="Science"),
+            Patch(color="gold", label="Standard"),
+            Patch(color="green", label="Standard & Science"),
+            Patch(color="blue", label="Sky or Supp. Sky"),
+            Patch(color="black", label="Safe (BAD_SKY)"),
+            Patch(color="cyan", label="Stuck on Sky"),
+            Patch(color="gray", label="Stuck or Fiber Broken"),
+            Patch(color="fuchsia", label="Working & Unassigned"),
+        ],
+        loc=1
     )
 
     ax.set_xlabel("Curved Focal Surface Millimeters", fontsize="large")
