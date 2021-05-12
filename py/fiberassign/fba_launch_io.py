@@ -5,13 +5,30 @@ Utility functions for fba_launch
 """
 from __future__ import absolute_import, division
 
+# system
 import os
 import subprocess
 import sys
+import tempfile
+import shutil
+
+# time
+from time import time
+from datetime import datetime
+
+#
 import numpy as np
+import fitsio
+
+# astropy
 from astropy.io import fits
 from astropy.table import Table
-import fitsio
+from astropy.time import Time
+from astropy import units
+from astropy.coordinates import SkyCoord, Distance
+from astropy.time import Time
+
+# desitarget
 import desitarget
 from desitarget.gaiamatch import gaia_psflike
 from desitarget.io import read_targets_in_tiles, write_targets, write_skies
@@ -19,22 +36,21 @@ from desitarget.mtl import inflate_ledger
 from desitarget.targetmask import desi_mask, obsconditions
 from desitarget.targets import set_obsconditions
 from desitarget.geomask import match
+
+# desimodel
 import desimodel
 from desimodel.footprint import is_point_in_desi
+
+# fiberassign
 import fiberassign
 from fiberassign.scripts.assign import parse_assign, run_assign_full
 from fiberassign.assign import merge_results, minimal_target_columns
-from time import time
-from datetime import datetime
-from astropy.time import Time
-import tempfile
-import shutil
 from fiberassign.utils import Logger
+
+# matplotlib
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 import matplotlib
-from astropy import units
-from astropy.coordinates import SkyCoord, Distance
 import matplotlib.image as mpimg
 
 # AR default REF_EPOCH for PMRA=PMDEC=REF_EPOCH=0 objects
