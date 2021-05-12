@@ -1526,7 +1526,7 @@ def get_dt_masks(
         from desitarget.sv3 import sv3_targetmask as targetmask
     elif survey == "main":
         from desitarget import targetmask
-        from fiberassign.targets import default_stdmask
+        from fiberassign.targets import default_main_stdmask
     else:
         log.error(
             "{:.1f}s\t{}\tsurvey={} is not in sv1, sv2, sv3 or main; exiting".format(
