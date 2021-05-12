@@ -7,6 +7,8 @@ import shutil
 
 import unittest
 
+import glob
+
 from datetime import datetime
 
 import json
@@ -115,7 +117,10 @@ class TestAssign(unittest.TestCase):
 
         # Compute the targets available to each fiber for each tile.
         fp, exclude, state = sim_focalplane(rundate=test_assign_date)
-        hw = load_hardware(focalplane=(fp, exclude, state))
+        hw = load_hardware(
+            focalplane=(fp, exclude, state),
+            rundate=test_assign_date
+        )
         tfile = os.path.join(test_dir, "footprint.fits")
         sim_tiles(tfile)
         tiles = load_tiles(tiles_file=tfile)
@@ -148,16 +153,10 @@ class TestAssign(unittest.TestCase):
         plotpetals = [0]
         # plotpetals = None
 
-        plot_tiles(hw, tiles, result_dir=test_dir,
-                   result_prefix="basic_", plot_dir=test_dir,
-                   plot_prefix="basic_",
-                   result_split_dir=False, petals=plotpetals,
+        plot_tiles(glob.glob(os.path.join(test_dir, "basic_*.fits")), petals=plotpetals,
                    serial=True)
 
-        plot_tiles(hw, tiles, result_dir=test_dir,
-                   result_prefix="full_", plot_dir=test_dir,
-                   plot_prefix="full_",
-                   result_split_dir=False, petals=plotpetals,
+        plot_tiles(glob.glob(os.path.join(test_dir, "full_*.fits")), petals=plotpetals,
                    serial=True)
 
         target_files = [
@@ -184,7 +183,7 @@ class TestAssign(unittest.TestCase):
             infile = os.path.join(test_dir,
                                   "basic_tile-{:06d}.fits".format(tid))
             inhead, fiber_data, targets_data, avail_data, gfa_targets = \
-                read_assignment_fits_tile((tid, infile))
+                read_assignment_fits_tile((infile))
 
             for lid, tgid, tgra, tgdec in zip(
                     fiber_data["LOCATION"],
@@ -201,7 +200,7 @@ class TestAssign(unittest.TestCase):
             infile = os.path.join(test_dir,
                                   "full_tile-{:06d}.fits".format(tid))
             inhead, fiber_data, targets_data, avail_data, gfa_targets = \
-                read_assignment_fits_tile((tid, infile))
+                read_assignment_fits_tile((infile))
             for lid, tgid, tgra, tgdec in zip(
                     fiber_data["LOCATION"],
                     fiber_data["TARGETID"],
@@ -291,16 +290,10 @@ class TestAssign(unittest.TestCase):
                 self.assertEqual(tgprior, props.priority)
                 self.assertEqual(tgobs, props.obscond)
 
-        plot_tiles(hw, tiles, result_dir=test_dir,
-                   result_prefix="basic_tile-", plot_dir=test_dir,
-                   plot_prefix="basic_tile-",
-                   result_split_dir=False, petals=plotpetals,
+        plot_tiles(glob.glob(os.path.join(test_dir, "basic_tile-*")), petals=plotpetals,
                    serial=True)
 
-        plot_tiles(hw, tiles, result_dir=test_dir,
-                   result_prefix="full_tile-", plot_dir=test_dir,
-                   plot_prefix="full_tile-",
-                   result_split_dir=False, petals=plotpetals,
+        plot_tiles(glob.glob(os.path.join(test_dir, "full_tile-*")), petals=plotpetals,
                    serial=True)
         return
 
@@ -354,7 +347,7 @@ class TestAssign(unittest.TestCase):
 
         # Read hardware properties
         fp, exclude, state = sim_focalplane(rundate=test_assign_date)
-        hw = load_hardware(focalplane=(fp, exclude, state))
+        hw = load_hardware(focalplane=(fp, exclude, state), rundate=test_assign_date)
         tfile = os.path.join(test_dir, "footprint.fits")
         sim_tiles(tfile)
         tiles = load_tiles(tiles_file=tfile)
@@ -389,8 +382,7 @@ class TestAssign(unittest.TestCase):
 
         plotpetals = [0]
         #plotpetals = None
-        plot_tiles(hw, tiles, result_dir=test_dir, plot_dir=test_dir,
-                   result_prefix="fba-",
+        plot_tiles(glob.glob(os.path.join(test_dir, "fba-*.fits")),
                    real_shapes=True, petals=plotpetals, serial=True)
 
         qa_tiles(hw, tiles, result_dir=test_dir)
@@ -471,13 +463,11 @@ class TestAssign(unittest.TestCase):
         plotpetals = "0"
         #plotpetals = "0,1,2,3,4,5,6,7,8,9"
         opts = {
-            "footprint": tfile,
-            "dir": test_dir,
             "petals": plotpetals,
             "serial": True,
-            "rundate": test_assign_date
         }
         optlist = option_list(opts)
+        optlist.extend(list(glob.glob(os.path.join(test_dir, "fba-*.fits"))))
         args = parse_plot(optlist)
         run_plot(args)
 
@@ -575,7 +565,10 @@ class TestAssign(unittest.TestCase):
             fp, exclude, state = sim_focalplane(rundate=test_assign_date, fakepos=True)
 
             # Load the focalplane
-            hw = load_hardware(focalplane=(fp, exclude, state))
+            hw = load_hardware(
+                focalplane=(fp, exclude, state),
+                rundate=test_assign_date
+            )
 
             # Compute the targets available to each fiber for each tile.
             tgsavail = TargetsAvailable(hw, tgs, tiles, tree)
@@ -599,7 +592,7 @@ class TestAssign(unittest.TestCase):
             ppet = 6
             if odir == "theta_36":
                 ppet = rotator[6]
-            plot_tiles(hw, tiles, result_dir=out, plot_dir=out,
+            plot_tiles(glob.glob(os.path.join(out, "fba-*.fits")),
                        real_shapes=True, petals=[ppet], serial=True)
 
             # Explicitly free everything
