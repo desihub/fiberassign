@@ -71,6 +71,13 @@ def parse_plot(optlist=None):
                         "  Recommended only for plotting limited "
                         "tiles / petals.")
 
+    parser.add_argument("--margin-pos", type=float, required=False, default=0.,
+                        help="Add margin (in mm) around positioner keep-out polygons")
+    parser.add_argument("--margin-petal", type=float, required=False, default=0.,
+                        help="Add margin (in mm) around petal-boundary keep-out polygons")
+    parser.add_argument("--margin-gfa", type=float, required=False, default=0.,
+                        help="Add margin (in mm) around GFA keep-out polygons")
+
     parser.add_argument("--footprint", type=str, required=False, default=None,
                         help="Optional FITS file defining the footprint.  If"
                         " not specified, the default footprint from desimodel"
@@ -110,6 +117,16 @@ def parse_plot(optlist=None):
     if args.out_prefix is None:
         args.out_prefix = args.prefix
 
+    # Set up margins dict
+    args.margins = {}
+    if args.margin_pos != 0:
+        args.margins['theta'] = args.margin_pos
+        args.margins['phi']   = args.margin_pos
+    if args.margin_petal != 0:
+        args.margins['petal'] = args.margin_petal
+    if args.margin_gfa != 0:
+        args.margins['gfa'] = args.margin_gfa
+
     return args
 
 
@@ -126,7 +143,7 @@ def run_plot_init(args):
 
     """
     # Read hardware properties
-    hw = load_hardware(rundate=args.rundate)
+    hw = load_hardware(rundate=args.rundate, add_margins=args.margins)
 
     # Read tiles we are using
     tileselect = None

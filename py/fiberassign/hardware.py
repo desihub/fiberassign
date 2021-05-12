@@ -31,8 +31,62 @@ from ._internal import (
     Shape,
 )
 
+def expand_closed_curve(xx, yy, margin):
+    ex, ey = [],[]
 
-def load_hardware(focalplane=None, rundate=None):
+    # These are closed curves (last point = first point)
+    assert(xx[0] == xx[-1])
+    assert(yy[0] == yy[-1])
+
+    N = len(xx)
+    for j in range(N):
+        i = j - 1
+        if i == -1:
+            # wrap around, skipping repeated point
+            i = N-2
+        k = j + 1
+        if k == N:
+            k = 1
+
+        x1 = xx[i]
+        y1 = yy[i]
+        x2 = xx[j]
+        y2 = yy[j]
+        x3 = xx[k]
+        y3 = yy[k]
+
+        vx1 = x2 - x1
+        vy1 = y2 - y1
+        vx2 = x3 - x2
+        vy2 = y3 - y2
+
+        cross1 = vx1 * vy2 - vx2 * vy1
+        vv1 = np.hypot(vx1,vy1)
+        vv2 = np.hypot(vx2,vy2)
+        theta = np.arcsin(cross1 / (vv1 * vv2))
+        dot = vx1*vx2 + vy1*vy2
+        a = np.arctan2(vy1, vx1)
+        if dot < 0:
+            # sharp turn -- the theta=arcsin aliases the angle, which is outside
+            # the range of [-pi/2, +pi/2]; adjust theta to the aliased angle.
+            if theta > 0:
+                theta =  np.pi - theta
+            else:
+                theta = -np.pi - theta
+        da = np.pi/2. + theta/2.
+        # This keeps the vectors parallel to their originals
+        stretch = 1./np.cos(theta/2.)
+        dx = -margin * stretch * np.cos(a + da)
+        dy = -margin * stretch * np.sin(a + da)
+
+        ex.append(x2 + dx)
+        ey.append(y2 + dy)
+
+    return ex, ey
+
+
+def load_hardware(focalplane=None, rundate=None,
+                  add_margins={}):
     """Create a hardware class representing properties of the telescope.
 
     Args:
@@ -138,6 +192,11 @@ def load_hardware(focalplane=None, rundate=None):
                 cr.append(Circle(crc[0], crc[1]))
             sg = list()
             for sgm in shp[obj]["segments"]:
+                if obj in add_margins:
+                    sx = [x for x,y in sgm]
+                    sy = [y for x,y in sgm]
+                    ex,ey = expand_closed_curve(sx, sy, add_margins[obj])
+                    sgm = list(zip(ex, ey))
                 sg.append(Segments(sgm))
             fshp = Shape((0.0, 0.0), cr, sg)
             excl[nm][obj] = fshp
