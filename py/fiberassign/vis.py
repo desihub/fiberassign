@@ -31,7 +31,7 @@ from .targets import (Targets, load_target_table,
                       TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                       TARGET_TYPE_SUPPSKY,
                       TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE)
-from .targets import radec2xy
+from .hardware import radec2xy
 
 from .assign import (read_assignment_fits_tile, result_tiles, result_path,
                      avail_table_to_dict, get_parked_thetaphi)

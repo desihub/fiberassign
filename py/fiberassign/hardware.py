@@ -239,3 +239,51 @@ def load_hardware(focalplane=None, rundate=None):
             [positioners[x]["petal"] for x in locations],
         )
     return hw
+
+def radec2xy(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
+             ra, dec, use_cs5, threads=0):
+    #xy = hw.radec2xy_multi(
+    #    tile_ra, tile_dec, tile_obstheta, ra, dec, use_cs5, threads=0
+    #)
+    #x = np.array([x for x,y in xy])
+    #y = np.array([y for x,y in xy])
+    from astropy.time import Time
+    from desimeter.fiberassign import fiberassign_radec2xy_cs5, fiberassign_radec2xy_flat
+    # Note that MJD is only used for precession, so no need for
+    # high precision.
+    t = Time(tile_obstime, format='isot')
+    mjd = t.mjd
+
+    # Don't pass adc[12]: Let desimeter use its pm-alike routines
+    if use_cs5:
+        x, y = fiberassign_radec2xy_cs5(ra, dec, tile_ra, tile_dec, mjd,
+                                        tile_obsha, tile_obstheta)
+    else:
+        x, y = fiberassign_radec2xy_flat(ra, dec, tile_ra, tile_dec, mjd,
+                                         tile_obsha, tile_obstheta)
+    return x,y
+
+def xy2radec(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
+             x, y, use_cs5, threads=0):
+    # radec = hw.xy2radec_multi(
+    #     tile_ra, tile_dec, tile_obstheta, x, y, use_cs5, threads
+    #     )
+    # ra  = np.array([r for r,d in radec])
+    # dec = np.array([d for r,d in radec])
+    from desimeter.fiberassign import fiberassign_cs5_xy2radec, fiberassign_flat_xy2radec
+    from astropy.time import Time
+    t = Time(tile_obstime, format='isot')
+    mjd = t.mjd
+    if use_cs5:
+        ra,dec = fiberassign_cs5_xy2radec(x, y, tile_ra, tile_dec, mjd,
+                                          tile_obsha, tile_obstheta)
+    else:
+        ra,dec = fiberassign_flat_xy2radec(x, y, tile_ra, tile_dec, mjd,
+                                           tile_obsha, tile_obstheta)
+    return ra,dec
+
+def xy2cs5(x, y):
+    # There's a change in terminology between the focal-plane team and
+    # the outside world here...
+    from desimeter.transform.pos2ptl import ptl2flat
+    return flat2ptl(x, y)

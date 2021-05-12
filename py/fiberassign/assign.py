@@ -37,10 +37,10 @@ from .utils import Logger, Timer, default_mp_proc, GlobalTimers
 from .targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY, TARGET_TYPE_SUPPSKY,
                       TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE, desi_target_type,
                       default_target_masks, default_survey_target_masks)
-from .targets import radec2xy, xy2radec, xy2cs5
 
 from .hardware import (FIBER_STATE_UNASSIGNED, FIBER_STATE_STUCK,
-                       FIBER_STATE_BROKEN, FIBER_STATE_RESTRICT)
+                       FIBER_STATE_BROKEN, FIBER_STATE_RESTRICT,
+                       radec2xy, xy2radec, xy2cs5)
 
 from ._internal import Assignment
 
