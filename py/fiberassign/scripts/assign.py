@@ -120,7 +120,7 @@ def parse_assign(optlist=None):
                         " petal")
 
     parser.add_argument("--sky_per_slitblock", type=int, required=False,
-                        default=0, help="Required number of sky targets per"
+                        default=1, help="Required number of sky targets per"
                         " fiber slitblock")
 
     parser.add_argument("--margin-pos", type=float, required=False, default=0.,

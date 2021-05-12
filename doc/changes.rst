@@ -3,19 +3,48 @@
 fiberassign change log
 ======================
 
-2.4.0 (unreleased)
+2.6.0 (unreleased)
+------------------
+
+* No changes yet
+
+2.5.1 (2021-05-11)
+------------------
+
+* Adds ``bin/fba_launch_dc3r2_gama`` to support a special tile (PR `#345`_).
+
+.. _`#345`: https://github.com/desihub/fiberassign/pull/345
+
+2.5.0 (2021-05-11)
+------------------
+
+* Major refactor of ``bin/fba_launch`` into functions in
+  ``fiberassign.fba_launch_io`` for reuse by other scripts (PR `#343`_).
+* Headers record skybricks input version; support skybricks/v3 format
+  (PR `#341`_, `#342`_).
+
+.. _`#341`: https://github.com/desihub/fiberassign/pull/341
+.. _`#342`: https://github.com/desihub/fiberassign/pull/342
+.. _`#343`: https://github.com/desihub/fiberassign/pull/343
+
+2.4.0 (2021-05-04)
 ------------------
 
 * ``fba_launch --isodate`` option to set timestamp for MTL ledger reading
   (PR `#334`_).
-* Assign stuck positioners to sky if possible (PR `#337`_).
+* Assign stuck positioners to sky if possible, using skybricks/v2 lookup
+  (PR `#337`_).
 * Add per-slitblock sky fiber limits (PR `#338`_).
 * Report counts of assigned fibers as fiberassign proceeds (PR `#339`_).
+* Apply theta-phi offsets when computing locs of stuck positioners;
+  fixes NaNs in outputs (PR `#340`_).
+* Park unassigned positioners at phi=150 instead of 180. (PR `#340`_).
 
 .. _`#334`: https://github.com/desihub/fiberassign/pull/334
 .. _`#337`: https://github.com/desihub/fiberassign/pull/337
 .. _`#338`: https://github.com/desihub/fiberassign/pull/338
 .. _`#339`: https://github.com/desihub/fiberassign/pull/339
+.. _`#340`: https://github.com/desihub/fiberassign/pull/340
 
 2.3.0 (2021-04-22)
 ------------------

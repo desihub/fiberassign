@@ -24,7 +24,7 @@ from collections import OrderedDict
 
 import fitsio
 
-from desiutil.depend import add_dependencies
+from desiutil.depend import add_dependencies, setdep
 
 import desimodel.focalplane
 
@@ -281,6 +281,16 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
                 "desitarget"
             ]
         )
+
+        #- Keep SKYBRICKS_DIR used to lookup sky locations,
+        #- shortening full path if possible
+        skybricks = os.getenv('SKYBRICKS_DIR', None)
+        if (skybricks is not None) and ('DESI_ROOT' in os.environ):
+            if skybricks.startswith(os.environ['DESI_ROOT']):
+                skybricks = skybricks.replace(
+                        os.environ['DESI_ROOT'], '$DESI_ROOT', 1)
+        setdep(header, 'SKYBRICKS_DIR', skybricks)
+
         fd.write(None, header=header, extname="PRIMARY")
 
         # FIXME:  write "-1" for unassigned targets.  Write all other fiber
