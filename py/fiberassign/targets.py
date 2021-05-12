@@ -952,36 +952,32 @@ def radec2xy(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
     t = Time(tile_obstime, format='isot')
     mjd = t.mjd
 
-    # adc1,adc2 = pm_get_adc_angles(tile_ha, tile_dec)
-    # print('ADC1', adc1, 'ADC2', adc2)
-
-    fieldrot = tile_obstheta
-    print('Fieldrot', fieldrot)
-
-    # Let desimeter use its pm-alike routines
-    adc1 = adc2 = None
-
-    # EXPID 87831 / tile 129 test - from header MOUNTHA
-    #tile_obsha = 66.793588
-
+    # Don't pass adc[12]: Let desimeter use its pm-alike routines
     if use_cs5:
         x, y = fiberassign_radec2xy_cs5(ra, dec, tile_ra, tile_dec, mjd,
-                                        tile_obsha, fieldrot, adc1, adc2)
+                                        tile_obsha, tile_obstheta)
     else:
         x, y = fiberassign_radec2xy_flat(ra, dec, tile_ra, tile_dec, mjd,
-                                         tile_obsha, fieldrot, adc1, adc2)
-
+                                         tile_obsha, tile_obstheta)
     return x,y
 
 def xy2radec(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
              x, y, use_cs5, threads=0):
-    print('WARNING: using fiberassign xy2radec')
-    radec = hw.xy2radec_multi(
-        tile_ra, tile_dec, tile_obstheta, x, y, use_cs5, threads
-        )
-    ra  = np.array([r for r,d in radec])
-    dec = np.array([d for r,d in radec])
-
+    # radec = hw.xy2radec_multi(
+    #     tile_ra, tile_dec, tile_obstheta, x, y, use_cs5, threads
+    #     )
+    # ra  = np.array([r for r,d in radec])
+    # dec = np.array([d for r,d in radec])
+    from desimeter.fiberassign import fiberassign_cs5_xy2radec, fiberassign_flat_xy2radec
+    from astropy.time import Time
+    t = Time(tile_obstime, format='isot')
+    mjd = t.mjd
+    if use_cs5:
+        ra,dec = fiberassign_cs5_xy2radec(x, y, tile_ra, tile_dec, mjd,
+                                          tile_obsha, tile_obstheta)
+    else:
+        ra,dec = fiberassign_flat_xy2radec(x, y, tile_ra, tile_dec, mjd,
+                                           tile_obsha, tile_obstheta)
     return ra,dec
 
 def xy2cs5(x, y):
