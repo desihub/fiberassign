@@ -291,7 +291,6 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
                 )
         else:
             # This fiber is unassigned.
-            print(f"{lid} ({state[lid]} & {FIBER_STATE_STUCK}) or ({state[lid]} & {FIBER_STATE_BROKEN}) = {(state[lid] & FIBER_STATE_STUCK) or (state[lid] & FIBER_STATE_BROKEN)}")
             if (state[lid] & FIBER_STATE_STUCK) or (state[lid] & FIBER_STATE_BROKEN):
                 # The positioner is stuck or fiber broken.  Plot it at its current
                 # location.
