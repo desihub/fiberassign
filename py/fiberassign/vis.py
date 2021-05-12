@@ -31,6 +31,7 @@ from .targets import (Targets, load_target_table,
                       TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                       TARGET_TYPE_SUPPSKY,
                       TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE)
+from .targets import radec2xy
 
 from .assign import (read_assignment_fits_tile, result_tiles, result_path,
                      avail_table_to_dict, get_parked_thetaphi)
@@ -162,7 +163,9 @@ def plot_positioner_simple(ax, patrol_rad, loc, center, theta_ang, theta_arm,
     return
 
 
-def plot_tile_targets_props(hw, tile_ra, tile_dec, tile_theta, tgs,
+def plot_tile_targets_props(hw, tile_ra, tile_dec,
+                            tile_obstime, tile_obstheta, tile_obsha,
+                            tgs,
                             avail_tgid=None):
     if avail_tgid is None:
         avail_tgid = tgs.ids()
@@ -177,7 +180,10 @@ def plot_tile_targets_props(hw, tile_ra, tile_dec, tile_theta, tgs,
     # We disable threading here, since it does not interact well with
     # multiprocessing.
 
-    tgxy = hw.radec2xy_multi(tile_ra, tile_dec, tile_theta, ra, dec, False, 1)
+    tgx,tgy = radec2xy(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
+                       ra, dec, False, threads=1)
+    tgxy = list(zip(tgx,tgy))
+
     props = {tgid: {"xy": xy, "color": cl} for tgid, xy, cl
              in zip(avail_tgid, tgxy, color)}
 
@@ -322,7 +328,8 @@ def plot_assignment_tile_file_initialize(hw):
 
 
 def plot_assignment_tile_file(locs, real_shapes, params):
-    (tile_id, tile_ra, tile_dec, tile_theta, infile, outfile) = params
+    (tile_id, tile_ra, tile_dec,
+     tile_obstime, tile_theta, tile_obsha, infile, outfile) = params
     set_matplotlib_pdf_backend()
     log = Logger.get()
 
@@ -355,7 +362,9 @@ def plot_assignment_tile_file(locs, real_shapes, params):
         load_target_table(tgs, targets_data)
 
     targetprops = plot_tile_targets_props(plot_assignment_tile_file_hw,
-                                          tile_ra, tile_dec, tile_theta, tgs)
+                                          tile_ra, tile_dec,
+                                          tile_obstime, tile_theta, tile_obsha,
+                                          tgs)
 
     log.debug("  tile {} has {} targets with properties"
               .format(tile_id, len(targets_data)))
@@ -439,13 +448,16 @@ def plot_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign-",
     tiles_order = tiles.order
     tiles_ra = tiles.ra
     tiles_dec = tiles.dec
+    tiles_obstime = tiles.obstime
     tiles_theta = tiles.obstheta
+    tiles_obsha = tiles.obshourang
 
     avail_tiles = np.array(tiles_id)
     select_tiles = [x for x in foundtiles if x in avail_tiles]
 
     tile_map_list = [(x, tiles_ra[tiles_order[x]], tiles_dec[tiles_order[x]],
-                      tiles_theta[tiles_order[x]],
+                      tiles_obstime[tiles_order[x]], tiles_theta[tiles_order[x]],
+                      tiles_obsha[tiles_order[x]],
                       result_path(x, dir=result_dir, prefix=result_prefix,
                                   split=result_split_dir),
                       result_path(x, dir=plot_dir, prefix=plot_prefix,
@@ -468,7 +480,8 @@ def plot_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign-",
     return
 
 
-def plot_assignment_tile(hw, tgs, tile_id, tile_ra, tile_dec, tile_theta,
+def plot_assignment_tile(hw, tgs, tile_id, tile_ra, tile_dec,
+                         tile_obstime, tile_theta, tile_obsha,
                          tile_assign, tile_avail=None, petals=None,
                          real_shapes=False, outfile=None, figsize=8):
     set_matplotlib_pdf_backend()
@@ -495,7 +508,8 @@ def plot_assignment_tile(hw, tgs, tile_id, tile_ra, tile_dec, tile_theta,
         avtg_ids = np.unique([x for f in avtg_locs for x in tile_avail[f]])
 
     # Target properties
-    targetprops = plot_tile_targets_props(hw, tile_ra, tile_dec, tile_theta,
+    targetprops = plot_tile_targets_props(hw, tile_ra, tile_dec,
+                                          tile_obstime, tile_theta, tile_obsha,
                                           tgs, avail_tgid=avtg_ids)
 
     fig = plt.figure(figsize=(figsize, figsize))
