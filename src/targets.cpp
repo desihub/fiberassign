@@ -7,7 +7,7 @@
 #include <utils.h>
 #include <tiles.h>
 #include <targets.h>
-
+#include <assert.h>
 
 namespace fba = fiberassign;
 
@@ -315,7 +315,6 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
         double tra;
         double tdec;
         double ttheta;
-        int32_t tobs;
 
         // Thread local data for available targets- reduced at the end.
         std::map <int32_t, std::map <int32_t,
@@ -329,7 +328,6 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
             tid = ptiles->id[i];
             tra = ptiles->ra[i];
             tdec = ptiles->dec[i];
-            tobs = ptiles->obscond[i];
             ttheta = ptiles->obstheta[i];
             thread_data[tid].clear();
             thread_data_xy[tid].clear();
