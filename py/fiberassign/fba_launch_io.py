@@ -6,6 +6,7 @@ Utility functions for fba_launch
 from __future__ import absolute_import, division
 
 import os
+import subprocess
 import sys
 import numpy as np
 from astropy.io import fits
@@ -60,6 +61,27 @@ def assert_isoformat_utc(time_str):
         return False
     # AR/SB it parses as an ISO string, now just check UTC timezone +00:00 and not +0000
     return time_str.endswith("+00:00")
+
+
+def get_svn_version(svn_dir):
+    """
+    Gets the SVN revision number of an SVN folder.
+
+    Args:
+        svn_dir: SVN folder path (string)
+
+    Returns:
+        svnver: SVN revision number of svn_dir (int)
+
+    Notes:
+        Credits to SB
+    """
+    cmd = ['svn', 'info', '--show-item', 'revision', os.path.expandvars(svn_dir)]
+    try:
+        svn_ver = subprocess.check_output(cmd, stderr=subprocess.DEVNULL).strip().decode()
+    except subprocess.CalledProcessError:
+        svn_ver = 'unknown'
+    return svn_ver
 
 
 def custom_read_targets_in_tiles(
@@ -1414,6 +1436,9 @@ def update_fiberassign_header(
     fd["PRIMARY"].write_key("mintfrac", args.mintfrac)
     # AR fba_launch-like script name used to designed the tile
     fd["PRIMARY"].write_key("fascript", fascript)
+    # AR SVN revision number
+    fd["PRIMARY"].write_key("svndm", get_svn_version(os.path.join(os.getenv("DESIMODEL"), "data")))
+    fd["PRIMARY"].write_key("svnmtl", get_svn_version(os.path.join(os.getenv("DESI_SURVEYOPS"), "mtl")))
     fd.close()
 
 
