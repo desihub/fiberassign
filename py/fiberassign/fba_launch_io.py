@@ -132,6 +132,9 @@ def get_program_latest_timestamp(
         required_env_vars=["DESI_SURVEYOPS"], log=log, step=step, start=start,
     )
 
+    # AR defaults to None (returned if no file or no selected rows)
+    timestamp = None
+
     # AR check if the per-tile file is here
     # AR no need to check the scnd-mtl-done-tiles.ecsv file,
     # AR     as we restrict to a given program ([desi-survey 2434])
@@ -151,10 +154,7 @@ def get_program_latest_timestamp(
             # AR TBD  update is done on the desitarget side
             tm += timedelta(minutes=1)
             timestamp = tm.isoformat(timespec="seconds")
-            return timestamp
-    # AR if no file or no selected rows, we default to None
-    else:
-        None
+    return timestamp
 
 
 def custom_read_targets_in_tiles(
