@@ -140,7 +140,7 @@ def get_program_latest_timestamp(
         d = Table.read(fn)
         keep = d["PROGRAM"] == program.upper()
         if keep.sum() > 0:
-            d = d[d["PROGRAM"] == program]
+            d = d[keep]
             # AR taking the latest timestamp
             tm = np.unique(d["TIMESTAMP"])[-1]
             # AR does not end with +NN:MM timezone?
