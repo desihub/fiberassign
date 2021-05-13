@@ -11,6 +11,7 @@ import tempfile
 import shutil
 from desiutil.redirect import stdouterr_redirected
 from fiberassign.fba_launch_io import (
+    get_program_latest_timestamp,
     assert_env_vars,
     assert_svn_tileid,
     assert_arg_dates,
@@ -449,7 +450,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--mtltime",
-        help="yyyy-mm-ddThh:mm:ss+00:00 MTL isodate, with UTC timezone formatting (default=current UTC time)",
+        help="yyyy-mm-ddThh:mm:ss+00:00 MTL isodate, with UTC timezone formatting (default=latest MTL timestamp for args.program if available, if not current UTC time)",
         type=str,
         default=None,
         required=False,
@@ -541,10 +542,17 @@ if __name__ == "__main__":
     mjd_now = Time(utc_time_now).mjd
     if args.rundate is None:
         args.rundate = utc_time_now_str
-    if args.mtltime is None:
-        args.mtltime = utc_time_now_str
     if args.pmtime_utc_str is None:
         args.pmtime_utc_str = utc_time_now_str
+
+    # AR mtltime
+    # AR if possible: setting to the latest timestamp for the program
+    # AR else: setting to utc_time_now_str
+    if args.mtltime is None:
+        args.mtltime = utc_time_now_str
+        timestamp = get_program_latest_timestamp(args.program)
+        if timestamp is not None:
+            args.mtltime = timestamp
 
     # AR goaltime
     if args.goaltime is None:
