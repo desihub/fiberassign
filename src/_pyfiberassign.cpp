@@ -1473,12 +1473,12 @@ PYBIND11_MODULE(_internal, m) {
             tree (TargetTree):  The HTM tree of object positions.
 
         )")
-        .def(py::init < fba::Hardware::pshr, fba::Targets::pshr,
+        .def(py::init < fba::Hardware::pshr,
              fba::Tiles::pshr, std::map<int64_t, std::vector<int64_t> >,
              std::map<int64_t, std::vector<double> >,
              std::map<int64_t, std::vector<double> >
              > (), py::arg("hw"),
-             py::arg("objs"), py::arg("tiles"), py::arg("tile_targetid"),
+             py::arg("tiles"), py::arg("tile_targetid"),
              py::arg("tile_x"), py::arg("tile_y")
         )
         .def("hardware", &fba::TargetsAvailable::hardware, R"(

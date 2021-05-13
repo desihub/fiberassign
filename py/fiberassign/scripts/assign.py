@@ -26,7 +26,7 @@ from ..targets import (str_to_target_type, TARGET_TYPE_SCIENCE,
                        TARGET_TYPE_SKY, TARGET_TYPE_SUPPSKY,
                        TARGET_TYPE_STANDARD,
                        TARGET_TYPE_SAFE, Targets, TargetsAvailable,
-                       TargetTree, LocationsAvailable,
+                       LocationsAvailable,
                        load_target_file, targets_in_tiles)
 
 from ..assign import (Assignment, write_assignment_fits,
@@ -364,19 +364,17 @@ def run_assign_full(args):
     hw, tiles, tgs = run_assign_init(args)
 
     # Create a hierarchical triangle mesh lookup of the targets positions
-    gt.start("Construct target tree")
-    #tree = TargetTree(tgs)
+    gt.start("Compute targets locations in tile")
     tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles)
-    gt.stop("Construct target tree")
+    gt.stop("Compute targets locations in tile")
 
     # Compute the targets available to each fiber for each tile.
     gt.start("Compute Targets Available")
-    #tgsavail = TargetsAvailable(hw, tgs, tiles, tree)
-    tgsavail = TargetsAvailable(hw, tgs, tiles, tile_targetids, tile_x, tile_y)
+    tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
     gt.stop("Compute Targets Available")
 
-    # Free the tree
-    #del tree
+    # Free the target locations
+    del tile_targetids, tile_x, tile_y
 
     # Compute the fibers on all tiles available for each target and sky
     gt.start("Compute Locations Available")
@@ -453,19 +451,17 @@ def run_assign_bytile(args):
     hw, tiles, tgs = run_assign_init(args)
 
     # Create a hierarchical triangle mesh lookup of the targets positions
-    gt.start("Construct target tree")
-    #tree = TargetTree(tgs)
+    gt.start("Compute targets locations in tile")
     tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles)
-    gt.stop("Construct target tree")
+    gt.stop("Compute targets locations in tile")
 
     # Compute the targets available to each fiber for each tile.
     gt.start("Compute Targets Available")
-    #tgsavail = TargetsAvailable(hw, tgs, tiles, tree)
-    tgsavail = TargetsAvailable(hw, tgs, tiles, tile_targetids, tile_x, tile_y)
+    tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
     gt.stop("Compute Targets Available")
 
-    # Free the tree
-    #del tree
+    # Free the target locations
+    del tile_targetids, tile_x, tile_y
 
     # Compute the fibers on all tiles available for each target and sky
     gt.start("Compute Locations Available")
@@ -476,6 +472,9 @@ def run_assign_bytile(args):
     # sky locations for each tile.
     gt.start("Compute Stuck locations on good sky")
     stucksky = stuck_on_sky(hw, tiles)
+    if stucksky is None:
+        # (the pybind code doesn't like None when a dict is expected...)
+        stucksky = {}
     gt.stop("Compute Stuck locations on good sky")
 
     # Create assignment object
