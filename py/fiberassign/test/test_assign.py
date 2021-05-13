@@ -124,10 +124,9 @@ class TestAssign(unittest.TestCase):
         tfile = os.path.join(test_dir, "footprint.fits")
         sim_tiles(tfile)
         tiles = load_tiles(tiles_file=tfile)
-        tgsavail = TargetsAvailable(hw, tgs, tiles, tree)
-
-        # Free the tree
-        del tree
+        # Precompute target positions
+        tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles)
+        tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
 
         # Compute the fibers on all tiles available for each target
         favail = LocationsAvailable(tgsavail)
@@ -342,9 +341,6 @@ class TestAssign(unittest.TestCase):
         load_target_file(tgs, input_sky)
         load_target_file(tgs, input_suppsky)
 
-        # Create a hierarchical triangle mesh lookup of the targets positions
-        tree = TargetTree(tgs, 0.01)
-
         # Read hardware properties
         fp, exclude, state = sim_focalplane(rundate=test_assign_date)
         hw = load_hardware(focalplane=(fp, exclude, state), rundate=test_assign_date)
@@ -355,8 +351,11 @@ class TestAssign(unittest.TestCase):
         if do_stucksky:
             sim_stuck_sky(test_dir, hw, tiles)
 
+        # Precompute target positions
+        tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles)
+
         # Compute the targets available to each fiber for each tile.
-        tgsavail = TargetsAvailable(hw, tgs, tiles, tree)
+        tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
 
         # Free the tree
         del tree
