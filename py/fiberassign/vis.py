@@ -23,7 +23,8 @@ from ._internal import Shape
 
 from .utils import Logger, default_mp_proc
 
-from .hardware import load_hardware, FIBER_STATE_STUCK, FIBER_STATE_BROKEN
+from .hardware import (load_hardware, FIBER_STATE_STUCK, FIBER_STATE_BROKEN,
+                       radec2xy)
 
 from .tiles import load_tiles
 
@@ -180,9 +181,9 @@ def plot_positioner_invalid(ax, patrol_rad, loc, center, color="k", linewidth=0.
             bbox=None)
     return
 
-
-def plot_tile_targets_props(hw, tile_ra, tile_dec, tile_theta, tgs,
-                            avail_tgid=None):
+def plot_tile_targets_props(hw, tile_ra, tile_dec,
+                            tile_obstime, tile_obstheta, tile_obsha,
+                            tgs, avail_tgid=None):
     if avail_tgid is None:
         avail_tgid = tgs.ids()
     ra = np.full(len(avail_tgid), 9999.9, dtype=np.float64)
@@ -196,7 +197,10 @@ def plot_tile_targets_props(hw, tile_ra, tile_dec, tile_theta, tgs,
     # We disable threading here, since it does not interact well with
     # multiprocessing.
 
-    tgxy = hw.radec2xy_multi(tile_ra, tile_dec, tile_theta, ra, dec, False, 1)
+    tgx,tgy = radec2xy(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
+                       ra, dec, False, threads=1)
+    tgxy = list(zip(tgx,tgy))
+
     props = {tgid: {"xy": xy, "color": cl} for tgid, xy, cl
              in zip(avail_tgid, tgxy, color)}
 
@@ -342,7 +346,6 @@ def plot_assignment_tile_file(petals, real_shapes, params):
     set_matplotlib_pdf_backend()
 
     from matplotlib.patches import Patch
-
     log = Logger.get()
 
     if os.path.isfile(outfile):
@@ -358,6 +361,8 @@ def plot_assignment_tile_file(petals, real_shapes, params):
     tile_ra = float(header["TILERA"])
     tile_dec = float(header["TILEDEC"])
     tile_theta = float(header["FIELDROT"])
+    tile_obstime = header["FA_PLAN"]
+    tile_obsha = float(header["FA_HA"])
 
     run_date = header["FA_RUN"]
 
@@ -391,7 +396,10 @@ def plot_assignment_tile_file(petals, real_shapes, params):
     else:
         load_target_table(tgs, targets_data)
 
-    targetprops = plot_tile_targets_props(hw, tile_ra, tile_dec, tile_theta, tgs)
+    targetprops = plot_tile_targets_props(hw,
+                                          tile_ra, tile_dec,
+                                          tile_obstime, tile_theta, tile_obsha,
+                                          tgs)
 
     log.debug("  tile {} has {} targets with properties"
               .format(tile_id, len(targets_data)))
@@ -494,7 +502,8 @@ def plot_tiles(files, out_dir=None, petals=None, real_shapes=False, serial=False
     return
 
 
-def plot_assignment_tile(hw, tgs, tile_id, tile_ra, tile_dec, tile_theta,
+def plot_assignment_tile(hw, tgs, tile_id, tile_ra, tile_dec,
+                         tile_obstime, tile_theta, tile_obsha,
                          tile_assign, tile_avail=None, petals=None,
                          real_shapes=False, outfile=None, figsize=8):
     set_matplotlib_pdf_backend()
@@ -521,7 +530,8 @@ def plot_assignment_tile(hw, tgs, tile_id, tile_ra, tile_dec, tile_theta,
         avtg_ids = np.unique([x for f in avtg_locs for x in tile_avail[f]])
 
     # Target properties
-    targetprops = plot_tile_targets_props(hw, tile_ra, tile_dec, tile_theta,
+    targetprops = plot_tile_targets_props(hw, tile_ra, tile_dec,
+                                          tile_obstime, tile_theta, tile_obsha,
                                           tgs, avail_tgid=avtg_ids)
 
     fig = plt.figure(figsize=(figsize, figsize))

@@ -26,8 +26,8 @@ from ..targets import (str_to_target_type, TARGET_TYPE_SCIENCE,
                        TARGET_TYPE_SKY, TARGET_TYPE_SUPPSKY,
                        TARGET_TYPE_STANDARD,
                        TARGET_TYPE_SAFE, Targets, TargetsAvailable,
-                       TargetTree, LocationsAvailable,
-                       load_target_file)
+                       LocationsAvailable,
+                       load_target_file, targets_in_tiles)
 
 from ..assign import (Assignment, write_assignment_fits,
                       result_path, run)
@@ -95,6 +95,9 @@ def parse_assign(optlist=None):
     parser.add_argument("--obsdate", type=str, required=False, default="2022-07-01",
                         help="Plan field rotations for this date (YEARMMDD, "
                         "or ISO 8601 YEAR-MM-DD with or without time).")
+
+    parser.add_argument("--ha", type=float, required=False, default=0.,
+                        help="Design for the given Hour Angle in degrees.")
 
     parser.add_argument("--fieldrot", type=float, required=False, default=None,
                         help="Override obsdate and use this field rotation "
@@ -274,7 +277,7 @@ def run_assign_init(args):
                 except ValueError:
                     pass
     tiles = load_tiles(tiles_file=args.footprint, select=tileselect,
-        obstime=args.obsdate, obstheta=args.fieldrot)
+        obstime=args.obsdate, obstheta=args.fieldrot, obsha=args.ha)
 
     # Before doing significant calculations, check for pre-existing files
     if not args.overwrite:
@@ -343,17 +346,17 @@ def run_assign_full(args):
     hw, tiles, tgs = run_assign_init(args)
 
     # Create a hierarchical triangle mesh lookup of the targets positions
-    gt.start("Construct target tree")
-    tree = TargetTree(tgs)
-    gt.stop("Construct target tree")
+    gt.start("Compute targets locations in tile")
+    tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles)
+    gt.stop("Compute targets locations in tile")
 
     # Compute the targets available to each fiber for each tile.
     gt.start("Compute Targets Available")
-    tgsavail = TargetsAvailable(hw, tgs, tiles, tree)
+    tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
     gt.stop("Compute Targets Available")
 
-    # Free the tree
-    del tree
+    # Free the target locations
+    del tile_targetids, tile_x, tile_y
 
     # Compute the fibers on all tiles available for each target and sky
     gt.start("Compute Locations Available")
@@ -430,17 +433,17 @@ def run_assign_bytile(args):
     hw, tiles, tgs = run_assign_init(args)
 
     # Create a hierarchical triangle mesh lookup of the targets positions
-    gt.start("Construct target tree")
-    tree = TargetTree(tgs)
-    gt.stop("Construct target tree")
+    gt.start("Compute targets locations in tile")
+    tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles)
+    gt.stop("Compute targets locations in tile")
 
     # Compute the targets available to each fiber for each tile.
     gt.start("Compute Targets Available")
-    tgsavail = TargetsAvailable(hw, tgs, tiles, tree)
+    tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
     gt.stop("Compute Targets Available")
 
-    # Free the tree
-    del tree
+    # Free the target locations
+    del tile_targetids, tile_x, tile_y
 
     # Compute the fibers on all tiles available for each target and sky
     gt.start("Compute Locations Available")
@@ -451,6 +454,9 @@ def run_assign_bytile(args):
     # sky locations for each tile.
     gt.start("Compute Stuck locations on good sky")
     stucksky = stuck_on_sky(hw, tiles)
+    if stucksky is None:
+        # (the pybind code doesn't like None when a dict is expected...)
+        stucksky = {}
     gt.stop("Compute Stuck locations on good sky")
 
     # Create assignment object

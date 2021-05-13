@@ -377,6 +377,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--tiledec", help="tile centre dec", type=float, default=None, required=True,
     )
+    parser.add_argument("--ha", type=float, required=False, default=0.,
+                        help="Design for the given Hour Angle in degrees.")
     parser.add_argument(
         "--survey",
         help="survey",

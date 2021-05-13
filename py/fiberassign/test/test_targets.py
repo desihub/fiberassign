@@ -23,7 +23,7 @@ from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                                  default_main_safemask,
                                  default_main_excludemask,
                                  Targets, TargetTree, TargetsAvailable,
-                                 LocationsAvailable)
+                                 LocationsAvailable, targets_in_tiles)
 
 from .simulate import (test_subdir_create, sim_tiles, sim_targets, test_assign_date)
 
@@ -65,18 +65,17 @@ class TestTargets(unittest.TestCase):
         tt.dec += 1.0e-5
         tt.subpriority = 0.99
 
-        # Create a hierarchical triangle mesh lookup of the targets positions
-        tree = TargetTree(tgs, 0.01)
-
         # Compute the targets available to each fiber for each tile.
         hw = load_hardware()
         tfile = os.path.join(test_dir, "footprint.fits")
         sim_tiles(tfile)
         tiles = load_tiles(tiles_file=tfile)
-        tgsavail = TargetsAvailable(hw, tgs, tiles, tree)
+        # Precompute target positions
+        tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles)
+        tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
 
         # Free the tree
-        del tree
+        del tile_targetids, tile_x, tile_y
 
         # Compute the fibers on all tiles available for each target
         favail = LocationsAvailable(tgsavail)

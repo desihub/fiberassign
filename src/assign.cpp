@@ -112,23 +112,30 @@ fba::Assignment::Assignment(fba::Targets::pshr tgs,
     target_loc.clear();
 
     auto const * ptiles = tiles_.get();
-    auto const * phw = hw_.get();
-    auto const * ptgs = tgs_.get();
     auto const * ptgsavail = tgsavail_.get();
 
     gtmname.str("");
     gtmname << "Assignment ctor: project targets";
     gtm.start(gtmname.str());
 
-    #pragma omp parallel for schedule(dynamic) default(none) shared(ntile, ptiles, phw, ptgs, ptgsavail, logmsg, logger)
+    #pragma omp parallel for schedule(dynamic) default(none) shared(ntile, ptiles, ptgsavail, logmsg, logger)
     for (size_t t = 0; t < ntile; ++t) {
         int32_t tile_id = ptiles->id[t];
-        double tile_ra = ptiles->ra[t];
-        double tile_dec = ptiles->dec[t];
-        double tile_theta = ptiles->obstheta[t];
         std::map <int64_t, std::pair <double, double> > local_xy;
-        project_targets(phw, ptgs, ptgsavail, tile_id, tile_ra, tile_dec,
-                        tile_theta, local_xy);
+
+        auto loc_targetid = ptgsavail->data.at(tile_id);
+        auto loc_targetxy = ptgsavail->data_xy.at(tile_id);
+
+        // loc -> vector(targetid)
+        auto it_ids = loc_targetid.begin();
+        // loc -> vector(x,y)
+        auto it_xys = loc_targetxy.begin();
+        for (; it_ids != loc_targetid.end(); it_ids++, it_xys++) {
+            auto it_id = it_ids->second.begin();
+            auto it_xy = it_xys->second.begin();
+            for (; it_id != it_ids->second.end(); it_id++, it_xy++)
+                local_xy[*it_id] = *it_xy;
+        }
         #pragma omp critical
         {
             logmsg.str("");
@@ -1612,61 +1619,6 @@ void fba::Assignment::targets_to_project(
 
     return;
 }
-
-
-void fba::Assignment::project_targets(fba::Hardware const * hw,
-        fba::Targets const * tgs, fba::TargetsAvailable const * tgsavail,
-        int32_t tile_id, double tile_ra, double tile_dec, double tile_theta,
-        std::map <int64_t, std::pair <double, double> > & target_xy) const {
-    // This function computes the projection of all available targets
-    // into focalplane coordinates for one tile.  We do this once and then
-    // use these positions multiple times.
-
-    // Clear the output
-    target_xy.clear();
-
-    if (tgsavail->data.count(tile_id) == 0) {
-        // This tile has no locations with available targets.
-        return;
-    }
-
-    // Reference to the available targets for this tile.
-    auto const & tfavail = tgsavail->data.at(tile_id);
-
-    if (tfavail.size() == 0) {
-        // There are no locations on this tile with available targets.
-        return;
-    }
-
-    // List of locations we are projecting- anything with targets available.
-    std::vector <int32_t> lids;
-    for (auto const & f : hw->locations) {
-        if ((tfavail.count(f) != 0) && (tfavail.at(f).size() > 0)) {
-            lids.push_back(f);
-        }
-    }
-
-    // Vectors of all targets to compute
-    std::vector <int64_t> tgids;
-    std::vector <double> tgra;
-    std::vector <double> tgdec;
-
-    targets_to_project(tgs, tfavail, lids, tgids, tgra, tgdec);
-
-    // Now thread over the targets to compute.  Note we are always working in the
-    // curved focal surface for assignment.
-    bool use_CS5 = false;
-
-    std::vector <std::pair <double, double> > xy;
-    hw->radec2xy_multi(tile_ra, tile_dec, tile_theta, tgra, tgdec, xy, use_CS5);
-
-    for (size_t t = 0; t < tgids.size(); ++t) {
-        target_xy[tgids[t]] = xy[t];
-    }
-
-    return;
-}
-
 
 
 fba::Hardware::pshr fba::Assignment::hardware() const {

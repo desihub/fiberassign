@@ -32,6 +32,7 @@ from desitarget.sv3.sv3_targetmask import desi_mask as sv3_mask
 from desitarget.targets import main_cmx_or_sv
 
 from .utils import Logger, Timer
+from .hardware import radec2xy
 
 from ._internal import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                         TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE,
@@ -937,3 +938,37 @@ def load_target_file(tgs, tfile, survey=None, typeforce=None, typecol=None,
     tm.report("Read target file {}".format(tfile))
 
     return survey
+
+def targets_in_tiles(hw, tgs, tiles):
+    '''
+    Returns tile_targetids, tile_x, tile_y
+    '''
+    tile_targetids = {}
+    tile_x = {}
+    tile_y = {}
+
+    tree = TargetTree(tgs)
+
+    for (tile_id, tile_ra, tile_dec, tile_obscond, tile_ha, tile_obstheta,
+         tile_obstime) in zip(
+            tiles.id, tiles.ra, tiles.dec, tiles.obscond, tiles.obshourang,
+            tiles.obstheta, tiles.obstime):
+
+        print('Tile', tile_id, 'at RA,Dec', tile_ra, tile_dec, 'obscond:', tile_obscond, 'HA', tile_ha, 'obstime', tile_obstime)
+
+        tile_rad = np.deg2rad(hw.focalplane_radius_deg)
+        tids,ras,decs = tree.near_data(tgs, tile_ra, tile_dec, tile_rad,
+                                       tile_obscond)
+        print('Found', len(tids), 'targets near tile and matching obscond')
+        tids = np.array(tids)
+        ras  = np.array(ras)
+        decs = np.array(decs)
+
+        fx,fy = radec2xy(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta,
+                         tile_ha, ras, decs, False)
+
+        tile_targetids[tile_id] = tids
+        tile_x[tile_id] = fx
+        tile_y[tile_id] = fy
+
+    return tile_targetids, tile_x, tile_y

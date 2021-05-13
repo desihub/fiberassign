@@ -151,14 +151,18 @@ typedef struct {
 
 // Class holding the object IDs available for each tile and location.
 
+
 class TargetsAvailable : public std::enable_shared_from_this <TargetsAvailable> {
 
     public :
 
         typedef std::shared_ptr <TargetsAvailable> pshr;
 
-        TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
-                         Tiles::pshr tiles, TargetTree::pshr tree);
+        TargetsAvailable(Hardware::pshr hw,
+                         Tiles::pshr tiles,
+                         std::map<int64_t, std::vector<int64_t> > tile_targetids,
+                         std::map<int64_t, std::vector<double> > tile_x,
+                         std::map<int64_t, std::vector<double> > tile_y);
 
         Hardware::pshr hardware() const;
 
@@ -166,7 +170,12 @@ class TargetsAvailable : public std::enable_shared_from_this <TargetsAvailable> 
 
         std::map <int32_t, std::vector <int64_t> > tile_data(int32_t tile) const;
 
+        // data[tile][loc] = vector< target_id >
         std::map <int32_t, std::map <int32_t, std::vector <int64_t> > > data;
+
+        // data_xy[tile][loc] = vector< pair( x, y) >
+        std::map <int32_t, std::map <int32_t, std::vector <
+            std::pair<double, double> > > > data_xy;
 
     private :
 

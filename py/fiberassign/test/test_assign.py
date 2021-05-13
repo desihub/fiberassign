@@ -28,7 +28,7 @@ from fiberassign.tiles import load_tiles, Tiles
 from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                                  TARGET_TYPE_SUPPSKY,
                                  TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE,
-                                 Targets, TargetsAvailable, TargetTree,
+                                 Targets, TargetsAvailable, targets_in_tiles,
                                  LocationsAvailable, load_target_file)
 
 from fiberassign.assign import (Assignment, write_assignment_fits,
@@ -112,9 +112,6 @@ class TestAssign(unittest.TestCase):
         load_target_file(tgs, input_sky)
         load_target_file(tgs, input_suppsky)
 
-        # Create a hierarchical triangle mesh lookup of the targets positions
-        tree = TargetTree(tgs, 0.01)
-
         # Compute the targets available to each fiber for each tile.
         fp, exclude, state = sim_focalplane(rundate=test_assign_date)
         hw = load_hardware(
@@ -124,10 +121,9 @@ class TestAssign(unittest.TestCase):
         tfile = os.path.join(test_dir, "footprint.fits")
         sim_tiles(tfile)
         tiles = load_tiles(tiles_file=tfile)
-        tgsavail = TargetsAvailable(hw, tgs, tiles, tree)
-
-        # Free the tree
-        del tree
+        # Precompute target positions
+        tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles)
+        tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
 
         # Compute the fibers on all tiles available for each target
         favail = LocationsAvailable(tgsavail)
@@ -342,9 +338,6 @@ class TestAssign(unittest.TestCase):
         load_target_file(tgs, input_sky)
         load_target_file(tgs, input_suppsky)
 
-        # Create a hierarchical triangle mesh lookup of the targets positions
-        tree = TargetTree(tgs, 0.01)
-
         # Read hardware properties
         fp, exclude, state = sim_focalplane(rundate=test_assign_date)
         hw = load_hardware(focalplane=(fp, exclude, state), rundate=test_assign_date)
@@ -355,11 +348,13 @@ class TestAssign(unittest.TestCase):
         if do_stucksky:
             sim_stuck_sky(test_dir, hw, tiles)
 
-        # Compute the targets available to each fiber for each tile.
-        tgsavail = TargetsAvailable(hw, tgs, tiles, tree)
+        # Precompute target positions
+        tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles)
 
-        # Free the tree
-        del tree
+        # Compute the targets available to each fiber for each tile.
+        tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
+
+        del tile_targetids, tile_x, tile_y
 
         # Compute the fibers on all tiles available for each target
         favail = LocationsAvailable(tgsavail)
@@ -552,10 +547,6 @@ class TestAssign(unittest.TestCase):
             load_target_file(tgs, input_sky)
             load_target_file(tgs, input_suppsky)
 
-            # Create a hierarchical triangle mesh lookup of the targets
-            # positions
-            tree = TargetTree(tgs, 0.01)
-
             # Manually override the field rotation
             tiles = load_tiles(tiles_file=tfile, obstheta=float(rt))
             if tile_ids is None:
@@ -570,8 +561,11 @@ class TestAssign(unittest.TestCase):
                 rundate=test_assign_date
             )
 
+            # Precompute target positions
+            tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles)
+
             # Compute the targets available to each fiber for each tile.
-            tgsavail = TargetsAvailable(hw, tgs, tiles, tree)
+            tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
 
             # Compute the fibers on all tiles available for each target
             favail = LocationsAvailable(tgsavail)
@@ -601,7 +595,7 @@ class TestAssign(unittest.TestCase):
             del tgsavail
             del hw
             del tiles
-            del tree
+            del tile_targetids, tile_x, tile_y
             del tgs
 
         # For each tile, compare the assignment output and verify that they

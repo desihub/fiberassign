@@ -745,6 +745,7 @@ PYBIND11_MODULE(_internal, m) {
                 (float): the angle in radians.
 
         )")
+        /*
         .def("radec2xy", &fba::Hardware::radec2xy, py::arg("tilera"),
             py::arg("tiledec"), py::arg("tiletheta"), py::arg("ra"),
             py::arg("dec"), py::arg("use_CS5"), R"(
@@ -848,6 +849,7 @@ PYBIND11_MODULE(_internal, m) {
                 (list): list of (RA, DEC) tuples.
 
         )")
+         */
         .def("xy_to_thetaphi", [](
                 fba::Hardware & self,
                 std::pair <double, double> const & center,
@@ -1413,9 +1415,49 @@ PYBIND11_MODULE(_internal, m) {
                 ra (float): The RA of the sky location in degrees.
                 dec (float): The DEC of the sky location in degrees.
                 radius (float): The radius in **radians**.
+                tile_obscond (int): The observing conditions bitmask of targets to return.
 
             Returns:
-                (array): An array of target IDs.
+                (array int64): An array of target IDs.
+                (array double): An array of target RAs.
+                (array double): An array of target Decs.
+
+        )")
+        .def("near_data", [](fba::TargetTree & self, fba::Targets::pshr targets,
+                             double ra_deg,
+                             double dec_deg, double radius_rad,
+                             int32_t tile_obscond) {
+                std::vector <int64_t> result;
+                std::vector <int64_t> result_keep;
+                std::vector <double> result_ra;
+                std::vector <double> result_dec;
+                self.near(ra_deg, dec_deg, radius_rad, result);
+                for (int64_t targetid : result) {
+                    const fba::Target & t = targets->data[targetid];
+                    if ((tile_obscond & t.obscond) == 0)
+                        // Observing conditions required for target
+                        // do not match this tile
+                        continue;
+                    result_keep.push_back(targetid);
+                    result_ra.push_back(t.ra);
+                    result_dec.push_back(t.dec);
+                }
+                return std::make_tuple(result_keep, result_ra, result_dec);
+             }, py::return_value_policy::take_ownership, py::arg("targets"),
+            py::arg("ra"),
+             py::arg("dec"), py::arg("radius"), py::arg("obs_cond"), R"(
+            Get target IDs and data within a radius of a given point.
+
+            Returns an array of target IDs located within the specified
+            radius of the given RA/DEC.
+
+            Args:
+                ra (float): The RA of the sky location in degrees.
+                dec (float): The DEC of the sky location in degrees.
+                radius (float): The radius in **radians**.
+
+            Returns:
+                (array): An array of target IDs, RAs, Decs, and obsconds.
 
         )");
 
@@ -1433,9 +1475,13 @@ PYBIND11_MODULE(_internal, m) {
             tree (TargetTree):  The HTM tree of object positions.
 
         )")
-        .def(py::init < fba::Hardware::pshr, fba::Targets::pshr,
-             fba::Tiles::pshr, fba::TargetTree::pshr > (), py::arg("hw"),
-             py::arg("objs"), py::arg("tiles"), py::arg("tree")
+        .def(py::init < fba::Hardware::pshr,
+             fba::Tiles::pshr, std::map<int64_t, std::vector<int64_t> >,
+             std::map<int64_t, std::vector<double> >,
+             std::map<int64_t, std::vector<double> >
+             > (), py::arg("hw"),
+             py::arg("tiles"), py::arg("tile_targetid"),
+             py::arg("tile_x"), py::arg("tile_y")
         )
         .def("hardware", &fba::TargetsAvailable::hardware, R"(
             Return a handle to the Hardware object used.

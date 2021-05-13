@@ -25,7 +25,8 @@ import astropy.time
 from ._internal import Tiles
 
 
-def load_tiles(tiles_file=None, select=None, obstime=None, obstheta=None):
+def load_tiles(tiles_file=None, select=None, obstime=None, obstheta=None,
+               obsha=None):
     """Load tiles from a file.
 
     Load tile data either from the specified file or from the default provided
@@ -38,6 +39,7 @@ def load_tiles(tiles_file=None, select=None, obstime=None, obstheta=None):
             of all tiles.
         obstheta (float):  The angle in degrees to override the field rotation
             of all tiles.
+        obsha (float): The Hour Angle in degrees to design the observation of all tiles.
 
     Returns:
         (Tiles):  A Tiles object.
@@ -92,6 +94,8 @@ def load_tiles(tiles_file=None, select=None, obstime=None, obstheta=None):
 
     # default to zero Hour Angle; may be refined later
     ha_obs = np.zeros(len(keeprows), dtype=np.float64)
+    if obsha is not None:
+        ha_obs[:] = obsha
 
     tls = Tiles(tiles_data["TILEID"][keeprows], tiles_data["RA"][keeprows],
                 tiles_data["DEC"][keeprows],

@@ -7,7 +7,7 @@
 #include <utils.h>
 #include <tiles.h>
 #include <targets.h>
-
+#include <assert.h>
 
 namespace fba = fiberassign;
 
@@ -260,10 +260,11 @@ void fba::TargetTree::near(double ra_deg, double dec_deg, double radius_rad,
     return;
 }
 
-
-fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
+fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw,
                                         Tiles::pshr tiles,
-                                        TargetTree::pshr tree) {
+                                        std::map<int64_t, std::vector<int64_t> > tile_targetids,
+                                        std::map<int64_t, std::vector<double> > tile_x,
+                                        std::map<int64_t, std::vector<double> > tile_y) {
     Timer tm;
     tm.start();
 
@@ -271,16 +272,11 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
 
     data.clear();
 
-    double deg2rad = M_PI / 180.0;
-
     tiles_ = tiles;
     hw_ = hw;
 
     size_t ntile = tiles_->id.size();
     size_t nloc = hw_->nloc;
-
-    // Radius of the tile.
-    double tile_radius = hw_->focalplane_radius_deg * deg2rad;
 
     // patrol buffer
     double patrol_buffer = hw_->patrol_buffer_mm;
@@ -301,9 +297,7 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
     // shared_ptr reference counting is not threadsafe.  Here we extract
     // a copy of the "raw" pointers needed inside the parallel region.
 
-    Targets * pobjs = objs.get();
     Tiles * ptiles = tiles.get();
-    TargetTree * ptree = tree.get();
     Hardware * phw = hw_.get();
 
     #pragma omp parallel default(shared)
@@ -312,64 +306,46 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
         // of times we are realloc'ing memory for every fiber.
         std::vector <int64_t> nearby;
         std::vector <KdTreePoint> nearby_tree_points;
-        std::vector <int64_t> nearby_loc;
+        std::vector <KdTreePoint> nearby_data;
+
         std::ostringstream logmsg;
 
         // Thread local properties.
         int32_t tid;
-        double tra;
-        double tdec;
-        double ttheta;
-        int32_t tobs;
-        std::pair <double, double> target_xy;
 
         // Thread local data for available targets- reduced at the end.
         std::map <int32_t, std::map <int32_t,
-                  std::vector <int64_t> > > thread_data;
+                                     std::vector <int64_t> > > thread_data;
+        std::map <int32_t, std::map <int32_t,
+                                     std::vector <
+                                         std::pair<double, double> > > > thread_data_xy;
 
         #pragma omp for schedule(dynamic)
         for (size_t i = 0; i < ntile; ++i) {
             tid = ptiles->id[i];
-            tra = ptiles->ra[i];
-            tdec = ptiles->dec[i];
-            tobs = ptiles->obscond[i];
-            ttheta = ptiles->obstheta[i];
             thread_data[tid].clear();
+            thread_data_xy[tid].clear();
 
-            // Get all targets in range of this tile
-            ptree->near(tra, tdec, tile_radius, nearby);
-
-            if (nearby.size() == 0) {
-                // No targets for this tile
+            if (tile_targetids[tid].size() == 0) {
+                // No targets for this tile.
                 continue;
             }
 
-            // Project objects onto the focal plane
+            assert(tile_targetids[tid].size() == tile_x[tid].size());
+            assert(tile_targetids[tid].size() == tile_y[tid].size());
 
             nearby_tree_points.clear();
             KdTreePoint cur;
-            for (auto const & tnear : nearby) {
-                auto const & obj = pobjs->data[tnear];
-                if ((obj.obscond & tobs) != 0) {
-                    // Only use targets with correct obs conditions
-                    target_xy = phw->radec2xy(
-                        tra, tdec, ttheta, obj.ra, obj.dec, false
-                    );
-                    cur.id = obj.id;
-                    cur.pos[0] = target_xy.first;
-                    cur.pos[1] = target_xy.second;
-                    nearby_tree_points.push_back(cur);
-                } else if (logger.extra_debug()) {
-                    logmsg.str("");
-                    logmsg << std::setprecision(2) << std::fixed;
-                    logmsg << "targets avail:  tile " << tid
-                        << ", skip TARGET ID " << obj.id
-                        << " with incompatible OBSCONDITIONS ("
-                        << obj.obscond << ") for tile (" << tobs << ")";
-                    logger.debug_tfg(tid, -1, obj.id,
-                                     logmsg.str().c_str());
-                }
+            auto vx = tile_x[tid].begin();
+            auto vy = tile_y[tid].begin();
+            for (auto vid = tile_targetids[tid].begin();
+                 vid != tile_targetids[tid].end(); vid++, vx++, vy++) {
+                cur.id = *vid;
+                cur.pos[0] = *vx;
+                cur.pos[1] = *vy;
+                nearby_tree_points.push_back(cur);
             }
+
             KDtree <KdTreePoint> nearby_tree(nearby_tree_points, 2);
 
             size_t locs_with_targets = 0;
@@ -378,14 +354,14 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
 
             for (size_t j = 0; j < nloc; ++j) {
                 thread_data[tid][loc[j]].resize(0);
+                thread_data_xy[tid][loc[j]].resize(0);
                 loc_pos[0] = loc_center_x[j];
                 loc_pos[1] = loc_center_y[j];
 
                 // Lookup targets near this location in focalplane
                 // coordinates.
-                nearby_loc = nearby_tree.near(loc_pos, 0.0, loc_patrol[j]);
-
-                if (nearby_loc.size() == 0) {
+                nearby_data = nearby_tree.near_with_data(loc_pos, 0.0, loc_patrol[j]);
+                if (nearby_data.size() == 0) {
                     // No targets for this location
                     continue;
                 }
@@ -397,11 +373,10 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
                 // change as observations are made.  Instead, this sorting is done
                 // for each tile during assignment.
 
-                for (auto const & tnear : nearby_loc) {
-                    auto & obj = pobjs->data[tnear];
-                    auto obj_xy = phw->radec2xy(
-                        tra, tdec, ttheta, obj.ra, obj.dec, false
-                    );
+                for (auto const & tnear : nearby_data) {
+                    fbg::dpair obj_xy;
+                    obj_xy.first = tnear.pos[0];
+                    obj_xy.second = tnear.pos[1];
                     bool fail = phw->position_xy_bad(loc[j], obj_xy);
                     if (fail) {
                         if (logger.extra_debug()) {
@@ -409,12 +384,13 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
                             logmsg << std::setprecision(2) << std::fixed;
                             logmsg << "targets avail:  tile " << tid
                                 << ", loc " << loc[j] << ", kdtree target "
-                                << obj.id << " not physically reachable by positioner";
-                            logger.debug_tfg(tid, loc[j], obj.id,
+                                << tnear.id << " not physically reachable by positioner";
+                            logger.debug_tfg(tid, loc[j], tnear.id,
                                              logmsg.str().c_str());
                         }
                     } else {
-                        thread_data[tid][loc[j]].push_back(tnear);
+                        thread_data[tid][loc[j]].push_back(tnear.id);
+                        thread_data_xy[tid][loc[j]].push_back(std::make_pair(tnear.pos[0], tnear.pos[1]));
                     }
                 }
 
@@ -448,6 +424,23 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
                 }
             }
             thread_data.clear();
+            for (auto const & it : thread_data_xy) {
+                int32_t ttile = it.first;
+                if (data_xy.count(ttile) > 0) {
+                    throw std::runtime_error("Available target data already exists for tile");
+                }
+                data_xy[ttile].clear();
+                auto const & fmap = it.second;
+                for (size_t f = 0; f < nloc; ++f) {
+                    int32_t lid = loc[f];
+                    if (fmap.count(lid) == 0) {
+                        // This location had no targets.
+                        continue;
+                    }
+                    data_xy[ttile][lid] = fmap.at(lid);
+                }
+            }
+            thread_data_xy.clear();
         }
     }
 
