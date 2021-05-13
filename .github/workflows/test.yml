@@ -15,6 +15,7 @@ jobs:
     env:
       DESIUTIL_VERSION: master
       DESIMODEL_VERSION: master
+      DESIMETER_VERSION: master
       DESIMODEL_DATA: trunk
       DESIMODEL: ${{ github.workspace }}/desimodel
       DESITARGET_VERSION: master
@@ -41,6 +42,8 @@ jobs:
           svn export https://desi.lbl.gov/svn/code/desimodel/${{ env.DESIMODEL_DATA }}/data ${{ env.DESIMODEL }}/data
       - name: Install desitarget
         run: python3 -m pip install --no-cache-dir git+https://github.com/desihub/desitarget.git@${{ env.DESITARGET_VERSION }}#egg=desitarget
+      - name: Install desimeter
+        run: python3 -m pip install --no-cache-dir git+https://github.com/desihub/desimeter.git@${{ env.DESIMETER_VERSION }}#egg=desimeter
       - name: Install Fiberassign
         run: CC=g++ CXX=g++ CFLAGS="-fPIC" LDSHARED="g++ -shared" python3 -m pip install -vvv .
       - name: Run Tests
