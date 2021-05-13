@@ -776,6 +776,10 @@ def get_desitarget_paths(
     )
     # AR secondary (dark, bright; no secondary for backup)
     if program.lower() in ["dark", "bright"]:
+        if survey.lower() == "main":
+            basename = "targets-{}-secondary.fits".format(program.lower())
+        else:
+            basename = "{}targets-{}-secondary.fits".format(survey.lower(), program.lower())
         mydirs["scnd"] = os.path.join(
             os.getenv("DESI_TARGET"),
             "catalogs",
@@ -785,7 +789,7 @@ def get_desitarget_paths(
             survey.lower(),
             "secondary",
             program.lower(),
-            "{}targets-{}-secondary.fits".format(survey.lower(), program.lower()),
+            basename,
         )
         mydirs["scndmtl"] = os.path.join(
             os.getenv("DESI_SURVEYOPS"),
