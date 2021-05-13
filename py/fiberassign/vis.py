@@ -362,7 +362,7 @@ def plot_assignment_tile_file(petals, real_shapes, params):
     tile_dec = float(header["TILEDEC"])
     tile_theta = float(header["FIELDROT"])
     tile_obstime = header["FA_PLAN"]
-    tile_obsha = float(header["FA_HA"]
+    tile_obsha = float(header["FA_HA"])
 
     run_date = header["FA_RUN"]
 
@@ -396,7 +396,7 @@ def plot_assignment_tile_file(petals, real_shapes, params):
     else:
         load_target_table(tgs, targets_data)
 
-    targetprops = plot_tile_targets_props(plot_assignment_tile_file_hw,
+    targetprops = plot_tile_targets_props(hw,
                                           tile_ra, tile_dec,
                                           tile_obstime, tile_theta, tile_obsha,
                                           tgs)
@@ -477,7 +477,7 @@ def plot_tiles(files, out_dir=None, petals=None, real_shapes=False, serial=False
     """
     log = Logger.get()
 
-    log.info("Found {} fiberassign tile files".format(len(foundtiles)))
+    log.info("Plotting {} fiberassign tile files".format(len(files)))
 
     plot_tile = partial(plot_assignment_tile_file, petals, real_shapes)
 
