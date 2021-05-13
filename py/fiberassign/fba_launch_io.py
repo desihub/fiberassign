@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 import shutil
+import re
 
 # time
 from time import time
@@ -141,7 +142,10 @@ def get_program_latest_timestamp(
         if keep.sum() > 0:
             d = d[d["PROGRAM"] == program]
             # AR taking the latest timestamp
-            tm = "{}+00:00".format(np.unique(d["TIMESTAMP"])[-1])
+            tm = np.unique(d["TIMESTAMP"])[-1]
+            # AR does not end with +NN:MM timezone?
+            if re.search('\+\d{2}:\d{2}$', tm) is None:
+                tm = "{}+00:00".format(tm)
             tm = datetime.strptime(tm, "%Y-%m-%dT%H:%M:%S%z")
             # AR TBD: we currently add one minute; can be removed once
             # AR TBD  update is done on the desitarget side
