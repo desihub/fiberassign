@@ -260,7 +260,7 @@ void fba::TargetTree::near(double ra_deg, double dec_deg, double radius_rad,
     return;
 }
 
-fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw, Targets::pshr objs,
+fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw,
                                         Tiles::pshr tiles,
                                         std::map<int64_t, std::vector<int64_t> > tile_targetids,
                                         std::map<int64_t, std::vector<double> > tile_x,

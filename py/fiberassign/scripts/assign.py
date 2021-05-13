@@ -352,7 +352,7 @@ def run_assign_full(args):
 
     # Compute the targets available to each fiber for each tile.
     gt.start("Compute Targets Available")
-    tgsavail = TargetsAvailable(hw, tgs, tiles, tile_targetids, tile_x, tile_y)
+    tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
     gt.stop("Compute Targets Available")
 
     # Free the target locations
@@ -439,7 +439,7 @@ def run_assign_bytile(args):
 
     # Compute the targets available to each fiber for each tile.
     gt.start("Compute Targets Available")
-    tgsavail = TargetsAvailable(hw, tgs, tiles, tile_targetids, tile_x, tile_y)
+    tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
     gt.stop("Compute Targets Available")
 
     # Free the target locations
