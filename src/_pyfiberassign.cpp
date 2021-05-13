@@ -745,6 +745,7 @@ PYBIND11_MODULE(_internal, m) {
                 (float): the angle in radians.
 
         )")
+        /*
         .def("radec2xy", &fba::Hardware::radec2xy, py::arg("tilera"),
             py::arg("tiledec"), py::arg("tiletheta"), py::arg("ra"),
             py::arg("dec"), py::arg("use_CS5"), R"(
@@ -848,6 +849,7 @@ PYBIND11_MODULE(_internal, m) {
                 (list): list of (RA, DEC) tuples.
 
         )")
+         */
         .def("xy_to_thetaphi", [](
                 fba::Hardware & self,
                 std::pair <double, double> const & center,

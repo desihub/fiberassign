@@ -381,7 +381,7 @@ double fba::Hardware::radial_dist2ang_curved (double const & arc_mm) const {
     return theta_rad;
 }
 
-
+/*
 fiberassign::geom::dpair fba::Hardware::radec2xy(
     double const & tilera, double const & tiledec, double const & tiletheta,
     double const & ra, double const & dec, bool use_CS5) const {
@@ -580,7 +580,7 @@ void fba::Hardware::xy2radec_multi(
 
     return;
 }
-
+ */
 
 double _angle_diff(double hi, double low) {
     double twopi = 2.0 * M_PI;
