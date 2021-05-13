@@ -112,9 +112,6 @@ class TestAssign(unittest.TestCase):
         load_target_file(tgs, input_sky)
         load_target_file(tgs, input_suppsky)
 
-        # Create a hierarchical triangle mesh lookup of the targets positions
-        tree = TargetTree(tgs, 0.01)
-
         # Compute the targets available to each fiber for each tile.
         fp, exclude, state = sim_focalplane(rundate=test_assign_date)
         hw = load_hardware(
@@ -357,8 +354,7 @@ class TestAssign(unittest.TestCase):
         # Compute the targets available to each fiber for each tile.
         tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
 
-        # Free the tree
-        del tree
+        del tile_targetids, tile_x, tile_y
 
         # Compute the fibers on all tiles available for each target
         favail = LocationsAvailable(tgsavail)

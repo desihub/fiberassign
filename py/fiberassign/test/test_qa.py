@@ -28,7 +28,7 @@ from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                                  TARGET_TYPE_SUPPSKY,
                                  TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE,
                                  Targets, TargetsAvailable, TargetTree,
-                                 LocationsAvailable, load_target_file)
+                                 LocationsAvailable, load_target_file, targets_in_tiles)
 
 from fiberassign.assign import (Assignment, write_assignment_fits,
                                 write_assignment_ascii, merge_results,
@@ -121,9 +121,6 @@ class TestQA(unittest.TestCase):
         tgs = Targets()
         load_target_file(tgs, input_mtl)
 
-        # Create a hierarchical triangle mesh lookup of the targets positions
-        tree = TargetTree(tgs, 0.01)
-
         # Read hardware properties
         fp, exclude, state = sim_focalplane(rundate=test_assign_date)
         hw = load_hardware(focalplane=(fp, exclude, state))
@@ -131,11 +128,10 @@ class TestQA(unittest.TestCase):
         sim_tiles(tfile)
         tiles = load_tiles(tiles_file=tfile)
 
+        # Precompute target positions
+        tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles)
         # Compute the targets available to each fiber for each tile.
-        tgsavail = TargetsAvailable(hw, tgs, tiles, tree)
-
-        # Free the tree
-        del tree
+        tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
 
         # Compute the fibers on all tiles available for each target
         favail = LocationsAvailable(tgsavail)
