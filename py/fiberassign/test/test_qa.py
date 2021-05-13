@@ -28,7 +28,7 @@ from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                                  TARGET_TYPE_SUPPSKY,
                                  TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE,
                                  Targets, TargetsAvailable, TargetTree,
-                                 LocationsAvailable, load_target_file)
+                                 LocationsAvailable, load_target_file, targets_in_tiles)
 
 from fiberassign.assign import (Assignment, write_assignment_fits,
                                 write_assignment_ascii, merge_results,
