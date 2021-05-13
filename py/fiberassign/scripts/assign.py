@@ -259,7 +259,7 @@ def parse_assign(optlist=None):
         args.margins['theta'] = args.margin_pos
         args.margins['phi']   = args.margin_pos
     if args.margin_petal != 0:
-        ## The petal polygon is "backwards", so have to give it a negative margin
+        ## The petal polygon is listed in *clockwise* order, so we have to give it a negative margin!
         args.margins['petal'] = -args.margin_petal
     if args.margin_gfa != 0:
         args.margins['gfa'] = args.margin_gfa
