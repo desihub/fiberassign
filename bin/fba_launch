@@ -11,6 +11,7 @@ import tempfile
 import shutil
 from desiutil.redirect import stdouterr_redirected
 from fiberassign.fba_launch_io import (
+    get_program_latest_timestamp,
     assert_env_vars,
     assert_svn_tileid,
     assert_arg_dates,
@@ -51,7 +52,12 @@ sbprofs_all = {
 
 # AR minimum exposure time fraction needed for this tile to be considered done
 # AR main: [desi-survey 2390] Minimum exposure time fraction and requested effective times
-mintfracs_all = {"sv1" : 0.9, "sv2" : 0.9, "sv3": 0.9, "main": 0.85, }
+mintfracs_all = {
+    "sv1": 0.9,
+    "sv2": 0.9,
+    "sv3": 0.9,
+    "main": 0.85,
+}
 
 
 def main():
@@ -72,7 +78,9 @@ def main():
     assert_env_vars(log=log, step="settings", start=start)
 
     # AR safe: TILEID already existing in SVN?
-    assert_svn_tileid(args.tileid, forcetileid=args.forcetileid, log=log, step="settings", start=start)
+    assert_svn_tileid(
+        args.tileid, forcetileid=args.forcetileid, log=log, step="settings", start=start
+    )
 
     # AR safe: argument dates correctly formatted?
     assert_arg_dates(args, log=log, step="settings", start=start)
@@ -118,7 +126,8 @@ def main():
         gaiadr=args.gaiadr,
         log=log,
         step="settings",
-        start=start,)
+        start=start,
+    )
 
     # AR tiles
     if dotile:
@@ -200,11 +209,7 @@ def main():
             start=start,
         )
     else:
-        log.info(
-            "{:.1f}s\tdoscnd\tno secondary here".format(
-                time() - start
-            )
-        )
+        log.info("{:.1f}s\tdoscnd\tno secondary here".format(time() - start))
 
     # AR ToO targets
     # AR TBD: handling to MJD window boundaries as script argument?
@@ -269,10 +274,7 @@ def main():
     # AR gzip all fiberassign files
     if dozip:
         secure_gzip(
-            mytmpouts["fiberassign"],
-            log=log,
-            step="dozip",
-            start=start,
+            mytmpouts["fiberassign"], log=log, step="dozip", start=start,
         )
         # AR updating the path
         mytmpouts["fiberassign"] += ".gz"
@@ -309,29 +311,18 @@ def main():
 
     # AR do clean?
     if args.doclean == "y":
-        rmv_nonsvn(
-            mytmpouts,
-            myouts,
-            log=log,
-            step="doclean",
-            start=start
-        )
+        rmv_nonsvn(mytmpouts, myouts, log=log, step="doclean", start=start)
 
     # AR move tmpoutdir -> args.outdir
     if domove:
         mv_temp2final(
-            mytmpouts,
-            myouts,
-            args.doclean,
-            log=log,
-            step="domove",
-            start=start,
+            mytmpouts, myouts, args.doclean, log=log, step="domove", start=start,
         )
 
     # AR and we re done
     log.info("")
     log.info("")
-    log.info("{:.1f}s\tend\tTIMESTAMP={}".format(time() - start, Time.now().isot))                                                                                               
+    log.info("{:.1f}s\tend\tTIMESTAMP={}".format(time() - start, Time.now().isot))
 
 
 if __name__ == "__main__":
@@ -449,7 +440,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--mtltime",
-        help="yyyy-mm-ddThh:mm:ss+00:00 MTL isodate, with UTC timezone formatting (default=current UTC time)",
+        help="yyyy-mm-ddThh:mm:ss+00:00 MTL isodate, with UTC timezone formatting (default=latest MTL timestamp for args.program if available, if not current UTC time)",
         type=str,
         default=None,
         required=False,
@@ -521,9 +512,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--log-stdout",
-        action='store_true',
+        action="store_true",
         help="log to stdout instead of redirecting to a file",
-        )
+    )
     #
     args = parser.parse_args()
     log = Logger.get()
@@ -537,14 +528,21 @@ if __name__ == "__main__":
 
     # AR utc_time_now, rundate, pmtime
     utc_time_now = datetime.now(tz=timezone.utc)
-    utc_time_now_str = utc_time_now.isoformat(timespec='seconds')
+    utc_time_now_str = utc_time_now.isoformat(timespec="seconds")
     mjd_now = Time(utc_time_now).mjd
     if args.rundate is None:
         args.rundate = utc_time_now_str
-    if args.mtltime is None:
-        args.mtltime = utc_time_now_str
     if args.pmtime_utc_str is None:
         args.pmtime_utc_str = utc_time_now_str
+
+    # AR mtltime
+    # AR if possible: setting to the latest timestamp for the program
+    # AR else: setting to utc_time_now_str
+    if args.mtltime is None:
+        args.mtltime = utc_time_now_str
+        timestamp = get_program_latest_timestamp(args.program)
+        if timestamp is not None:
+            args.mtltime = timestamp
 
     # AR goaltime
     if args.goaltime is None:
@@ -604,4 +602,4 @@ if __name__ == "__main__":
     if len(tmpfiles) == 0:
         os.rmdir(tmpoutdir)
     else:
-        log.error('temp directory not empty: {}'.format(tmpfiles))
+        log.error("temp directory not empty: {}".format(tmpfiles))

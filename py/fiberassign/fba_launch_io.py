@@ -11,10 +11,11 @@ import subprocess
 import sys
 import tempfile
 import shutil
+import re
 
 # time
 from time import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 #
 import numpy as np
@@ -101,6 +102,59 @@ def get_svn_version(svn_dir):
         svn_ver = "unknown"
 
     return svn_ver
+
+
+def get_program_latest_timestamp(
+    program, log=Logger.get(), step="", start=time(),
+):
+    """
+    Get the latest timestamp for a given program from the MTL per-tile file.
+
+    Args:
+        program: ideally "dark", "bright", or "backup" (string)
+                though if different will return None
+        log (optional, defaults to Logger.get()): Logger object
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+
+    Returns:
+        if some entries for input program: UTC YYYY-MM-DDThh:mm:ss+00:00 formatted timestamp (string)
+        else: None
+
+    Notes:
+        if the per-tile MTL files does not exist or has zero entries,
+        TBD: currently add +1min because of a mismatch between the ledgers and the per-tile file.
+        TBD: still see if a +1min or +1s is desirable
+    """
+    # AR check DESI_SURVEYOPS is defined
+    assert_env_vars(
+        required_env_vars=["DESI_SURVEYOPS"], log=log, step=step, start=start,
+    )
+
+    # AR defaults to None (returned if no file or no selected rows)
+    timestamp = None
+
+    # AR check if the per-tile file is here
+    # AR no need to check the scnd-mtl-done-tiles.ecsv file,
+    # AR     as we restrict to a given program ([desi-survey 2434])
+    fn = os.path.join(os.getenv("DESI_SURVEYOPS"), "mtl", "mtl-done-tiles.ecsv")
+    if os.path.isfile(fn):
+        d = Table.read(fn)
+        keep = d["PROGRAM"] == program.upper()
+        if keep.sum() > 0:
+            d = d[keep]
+            # AR taking the latest timestamp
+            tm = np.unique(d["TIMESTAMP"])[-1]
+            # AR does not end with +NN:MM timezone?
+            if re.search('\+\d{2}:\d{2}$', tm) is None:
+                tm = "{}+00:00".format(tm)
+            tm = datetime.strptime(tm, "%Y-%m-%dT%H:%M:%S%z")
+            # AR TBD: we currently add one minute; can be removed once
+            # AR TBD  update is done on the desitarget side
+            tm += timedelta(minutes=1)
+            timestamp = tm.isoformat(timespec="seconds")
+    return timestamp
 
 
 def custom_read_targets_in_tiles(
