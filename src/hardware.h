@@ -75,6 +75,9 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
 
         double radial_dist2ang_curved (double const & arc_mm) const;
 
+        /*
+         * We use desimeter now instead, but keeping these for posterity...
+
         fbg::dpair radec2xy(double const & tilera,
                             double const & tiledec,
                             double const & tiletheta,
@@ -100,6 +103,7 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
                             std::vector <double> const & y_mm,
                             std::vector <std::pair <double, double> >
                                 & radec, bool use_CS5, int threads = 0) const;
+         */
 
         bool move_positioner_thetaphi(
             fbg::shape & shptheta, fbg::shape & shpphi,

@@ -11,10 +11,11 @@ import subprocess
 import sys
 import tempfile
 import shutil
+import re
 
 # time
 from time import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 #
 import numpy as np
@@ -101,6 +102,59 @@ def get_svn_version(svn_dir):
         svn_ver = "unknown"
 
     return svn_ver
+
+
+def get_program_latest_timestamp(
+    program, log=Logger.get(), step="", start=time(),
+):
+    """
+    Get the latest timestamp for a given program from the MTL per-tile file.
+
+    Args:
+        program: ideally "dark", "bright", or "backup" (string)
+                though if different will return None
+        log (optional, defaults to Logger.get()): Logger object
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+
+    Returns:
+        if some entries for input program: UTC YYYY-MM-DDThh:mm:ss+00:00 formatted timestamp (string)
+        else: None
+
+    Notes:
+        if the per-tile MTL files does not exist or has zero entries,
+        TBD: currently add +1min because of a mismatch between the ledgers and the per-tile file.
+        TBD: still see if a +1min or +1s is desirable
+    """
+    # AR check DESI_SURVEYOPS is defined
+    assert_env_vars(
+        required_env_vars=["DESI_SURVEYOPS"], log=log, step=step, start=start,
+    )
+
+    # AR defaults to None (returned if no file or no selected rows)
+    timestamp = None
+
+    # AR check if the per-tile file is here
+    # AR no need to check the scnd-mtl-done-tiles.ecsv file,
+    # AR     as we restrict to a given program ([desi-survey 2434])
+    fn = os.path.join(os.getenv("DESI_SURVEYOPS"), "mtl", "mtl-done-tiles.ecsv")
+    if os.path.isfile(fn):
+        d = Table.read(fn)
+        keep = d["PROGRAM"] == program.upper()
+        if keep.sum() > 0:
+            d = d[keep]
+            # AR taking the latest timestamp
+            tm = np.unique(d["TIMESTAMP"])[-1]
+            # AR does not end with +NN:MM timezone?
+            if re.search('\+\d{2}:\d{2}$', tm) is None:
+                tm = "{}+00:00".format(tm)
+            tm = datetime.strptime(tm, "%Y-%m-%dT%H:%M:%S%z")
+            # AR TBD: we currently add one minute; can be removed once
+            # AR TBD  update is done on the desitarget side
+            tm += timedelta(minutes=1)
+            timestamp = tm.isoformat(timespec="seconds")
+    return timestamp
 
 
 def custom_read_targets_in_tiles(
@@ -722,6 +776,10 @@ def get_desitarget_paths(
     )
     # AR secondary (dark, bright; no secondary for backup)
     if program.lower() in ["dark", "bright"]:
+        if survey.lower() == "main":
+            basename = "targets-{}-secondary.fits".format(program.lower())
+        else:
+            basename = "{}targets-{}-secondary.fits".format(survey.lower(), program.lower())
         mydirs["scnd"] = os.path.join(
             os.getenv("DESI_TARGET"),
             "catalogs",
@@ -731,7 +789,7 @@ def get_desitarget_paths(
             survey.lower(),
             "secondary",
             program.lower(),
-            "{}targets-{}-secondary.fits".format(survey.lower(), program.lower()),
+            basename,
         )
         mydirs["scndmtl"] = os.path.join(
             os.getenv("DESI_SURVEYOPS"),
@@ -1294,6 +1352,8 @@ def launch_onetile_fa(
         args.standards_per_petal,
         "--sky_per_slitblock",
         str(args.sky_per_slitblock),
+        "--ha",
+        str(args.ha),
     ]
     if args.ha != 0:
         opts += ["--ha", str(args.ha)]
@@ -1680,11 +1740,13 @@ def get_parent_assign_quants(
     for targfn in targfns:
         d = fits.open(targfn)[1].data
         for key in keys:
-            if (key in ["DESI_TARGET", "BGS_TARGET", "MWS_TARGET", "SCND_TARGET",]) & (
-                survey.lower()[:2] == "sv"
-            ):
-                if "{}_{}".format(survey.upper(), key) in d.dtype.names:
-                    parent[key] += d["{}_{}".format(survey.upper(), key)].tolist()
+            if key in ["DESI_TARGET", "BGS_TARGET", "MWS_TARGET", "SCND_TARGET",]:
+                if survey.lower()[:2] == "sv":
+                    key_orig = "{}_{}".format(survey.upper(), key)
+                else:
+                    key_orig = key
+                if key_orig in d.dtype.names:
+                    parent[key] += d[key_orig].tolist()
                 else:
                     parent[key] += [0 for x in d["RA"]]
             # AR flux, ebv for secondary

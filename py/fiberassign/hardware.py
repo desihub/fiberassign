@@ -334,6 +334,25 @@ def load_hardware(focalplane=None, rundate=None,
 
 def radec2xy(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
              ra, dec, use_cs5, threads=0):
+    '''
+    For the tile pointed at (tilera, tiledec), project the (ra, dec)
+    value into X/Y mm.
+
+    Args:
+      hw: Hardware object
+      tile_ra (float): Tile RA
+      tile_dec (float): Tile Dec
+      tile_obstime (string): Tile observation time, YYYY-MM-DDTHH:MM:SS / Astropy "isot" format.
+      tile_obstheta (float): Tile "fieldrot" rotation angle.
+      tile_obsha (float): Tile designed Hour Angle, in degrees.
+      ra (numpy array): RA to project, in degrees
+      dec (numpy array): Dec to project, in degrees
+      use_CS5 (bool):  If True, return CS5 coordinates, else curved.
+      threads=0 (int): currently unused; for backward compatibility.
+
+    Returns:
+      x, y: numpy arrays: the (X, Y) projected locations.
+    '''
     #xy = hw.radec2xy_multi(
     #    tile_ra, tile_dec, tile_obstheta, ra, dec, use_cs5, threads=0
     #)
@@ -357,6 +376,24 @@ def radec2xy(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
 
 def xy2radec(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
              x, y, use_cs5, threads=0):
+    '''
+    For the tile pointed at (tilera, tiledec), compute the RA,Dec
+    pointing of the specified X/Y location in millimeters.
+
+    Args:
+      hw: Hardware object
+      tile_obstime (string): Tile observation time, YYYY-MM-DDTHH:MM:SS / Astropy "isot" format.
+      tile_obstheta (float): Tile "fieldrot" rotation angle.
+      tile_obsha (float): Tile designed Hour Angle, in degrees.
+      x (numpy array): X position in mm.
+      y (numpy array): Y position in mm.
+      use_CS5 (bool):  If True, assume X,Y are CS5 coordinates, else curved.
+      threads=0 (int): currently unused; for backward compatibility.
+
+    Returns:
+      ra, dec (numpy arrays): the (RA, Dec) values of the focalplane locations,
+                              in degrees.
+    '''
     # radec = hw.xy2radec_multi(
     #     tile_ra, tile_dec, tile_obstheta, x, y, use_cs5, threads
     #     )
@@ -375,6 +412,18 @@ def xy2radec(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
     return ra,dec
 
 def xy2cs5(x, y):
+    '''
+    Converts from curved focal-plane X,Y coordinates in mm into CS5
+    coordinates in mm.
+
+    Args:
+    x (numpy array): X coord (mm)
+    y (numpy array): Y coord (mm)
+
+    Returns:
+    cs5x (numpy array): CS5 X coord (mm)
+    cs5y (numpy array): CS5 Y coord (mm)
+    '''
     # There's a change in terminology between the focal-plane team and
     # the outside world here...
     from desimeter.transform.pos2ptl import flat2ptl
