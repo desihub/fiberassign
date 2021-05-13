@@ -776,6 +776,10 @@ def get_desitarget_paths(
     )
     # AR secondary (dark, bright; no secondary for backup)
     if program.lower() in ["dark", "bright"]:
+        if survey.lower() == "main":
+            basename = "targets-{}-secondary.fits".format(program.lower())
+        else:
+            basename = "{}targets-{}-secondary.fits".format(survey.lower(), program.lower())
         mydirs["scnd"] = os.path.join(
             os.getenv("DESI_TARGET"),
             "catalogs",
@@ -785,7 +789,7 @@ def get_desitarget_paths(
             survey.lower(),
             "secondary",
             program.lower(),
-            "{}targets-{}-secondary.fits".format(survey.lower(), program.lower()),
+            basename,
         )
         mydirs["scndmtl"] = os.path.join(
             os.getenv("DESI_SURVEYOPS"),
@@ -1726,11 +1730,13 @@ def get_parent_assign_quants(
     for targfn in targfns:
         d = fits.open(targfn)[1].data
         for key in keys:
-            if (key in ["DESI_TARGET", "BGS_TARGET", "MWS_TARGET", "SCND_TARGET",]) & (
-                survey.lower()[:2] == "sv"
-            ):
-                if "{}_{}".format(survey.upper(), key) in d.dtype.names:
-                    parent[key] += d["{}_{}".format(survey.upper(), key)].tolist()
+            if key in ["DESI_TARGET", "BGS_TARGET", "MWS_TARGET", "SCND_TARGET",]:
+                if survey.lower()[:2] == "sv":
+                    key_orig = "{}_{}".format(survey.upper(), key)
+                else:
+                    key_orig = key
+                if key_orig in d.dtype.names:
+                    parent[key] += d[key_orig].tolist()
                 else:
                     parent[key] += [0 for x in d["RA"]]
             # AR flux, ebv for secondary
