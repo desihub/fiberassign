@@ -30,29 +30,45 @@ def isolated(ra, dec, mindist=5.0):
     index, separation, dist3d = cx.match_to_catalog_sky(cx, nthneighbor=2)
     return separation.to(u.arcsec) > mindist*u.arcsec
 
-def gaia_synth_r_flux(tab):
+def gaia_synth_r_flux(tab, gaiadr="dr2"):
     '''
     Generate synthetic r band flux based on Gaia photometry
     Args:
         tab: table with columns GAIA_PHOT_G_MEAN_MAG, GAIA_PHOT_BP_MEAN_MAG,
              GAIA_PHOT_RP_MEAN_MAG
+        gaiadr: string, must be either "dr2" or "edr3" (default to "dr2")
+
     Returns:
         array of synthetic Gaia-based r-band fluxes
 
     This code has largely been borrowed from legacypipe/reference.py
-    Uses Rongpu Zhou's Gaia DR2 transformation from (G, BP-RP) to DECam r
+    Uses Rongpu Zhou's transformations from (G, BP-RP) to DECam r
     '''
 
     color = tab["GAIA_PHOT_BP_MEAN_MAG"] - tab["GAIA_PHOT_RP_MEAN_MAG"]
-    # no BP-RP color: use average color
-    color[np.logical_not(np.isfinite(color))] = 1.4
-    # clip to reasonable range for the polynomial fit
-    color = np.clip(color, -0.6, 4.1)
 
-    coeffs = [0.1139078673, -0.2868955307, 0.0013196434, 0.1029151074,
-              0.1196710702, -0.3729031390, 0.1859874242, 0.1370162451,
-              -0.1808580848, 0.0803219195, -0.0180218196, 0.0020584707,
-              -0.0000953486]
+    # the 1.0.0 targeting gfas files have a mixture of zero and NaN
+    # placeholder values for BP and RP
+    badcolor = np.logical_not(np.isfinite(color)) | (tab["GAIA_PHOT_BP_MEAN_MAG"] == 0) | (tab["GAIA_PHOT_RP_MEAN_MAG"] == 0)
+
+    # color clipping parameters to match transform training color range
+    # from Rongpu:
+    color_lo = {"dr2": -0.6, "edr3": -0.5}
+    color_hi = {"dr2": 4.1, "edr3": 4.5}
+
+    # clip to reasonable range for the polynomial fit
+    color = np.clip(color, color_lo[gaiadr], color_hi[gaiadr])
+
+    coeffs = {"dr2": [0.1139078673, -0.2868955307, 0.0013196434, 0.1029151074,
+                      0.1196710702, -0.3729031390, 0.1859874242, 0.1370162451,
+                     -0.1808580848, 0.0803219195, -0.0180218196, 0.0020584707,
+                     -0.0000953486],
+              "edr3": [0.1431278873, -0.2999797766, -0.0553379742, 0.1544273115,
+                       0.3068634689, -0.9499143903, 0.9769739362, -0.4926704528,
+                       0.1272539574, -0.0133178183, -0.0008153813, 0.0003094116,
+                      -0.0000198891]}
+
+    coeffs = coeffs[gaiadr]
 
     synth_r_mag = np.array(tab["GAIA_PHOT_G_MEAN_MAG"])
 
@@ -60,15 +76,21 @@ def gaia_synth_r_flux(tab):
             synth_r_mag += c * color**order
 
     synth_r_flux = np.power(10, (22.5-synth_r_mag)/2.5)
+
+    # -99 is the FLUX_R placeholder that GFA_TARGETS uses
+    synth_r_flux[badcolor] = -99.0
+
     return synth_r_flux
 
-def get_gfa_targets(tiles, gfafile,faintlim=99):
+def get_gfa_targets(tiles, gfafile, faintlim=99, gaiadr="dr2"):
      
     """Returns a list of tables of GFA targets on each tile
 
     Args:
         tiles: table with columns TILEID, RA, DEC; or Tiles object
         targets: table of targets with columsn RA, DEC
+        gaiadr: string, must be either "dr2" or "edr3" (default to "dr2")
+                MAY NOT BE FULLY IMPLEMENTED
 
     Returns:
         list of tables (one row per input tile) with the subset of targets
@@ -170,7 +192,7 @@ def get_gfa_targets(tiles, gfafile,faintlim=99):
         t["FOCUS_FLAG"] = flag
 
         # patch in Gaia-based synthetic r flux for use by ETC
-        t["FLUX_R"] = gaia_synth_r_flux(t)
+        t["FLUX_R"] = gaia_synth_r_flux(t, gaiadr=gaiadr)
 
         gfa_targets.append(t)
 
