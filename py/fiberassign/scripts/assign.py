@@ -96,7 +96,7 @@ def parse_assign(optlist=None):
                         help="Plan field rotations for this date (YEARMMDD, "
                         "or ISO 8601 YEAR-MM-DD with or without time).")
 
-    parser.add_argument("--ha" type=float, required=False, default=0.,
+    parser.add_argument("--ha", type=float, required=False, default=0.,
                         help="Design for the given Hour Angle in degrees.")
 
     parser.add_argument("--fieldrot", type=float, required=False, default=None,
