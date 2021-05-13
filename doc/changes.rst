@@ -6,17 +6,21 @@ fiberassign change log
 2.6.0 (unreleased)
 ------------------
 
+* Simplify and improve ``bin/fba_plot`` (PR `#336`_).
+* Use Gaia-based FLUX_R for GFA_TARGETS extension to avoid DR9 saturation
+  (PR `#344`_).
 * Record $DESI_SUREYOPS/mtl and $DESIMODEL/data svn revision numbers in
   output header keywords SVNMTL and SVNDM (PR `#346`_).
-* Simplify and improve ``bin/fba_plot`` (PR `#336`_).
 * Add inner exclusion ``|R1+R2|+100um`` (commits `01206c1`_ and `6e78851`_)
 * ``fba_launch --mtltile`` default to latest timestamp in mtl file (PR `#347`_).
-
+* ``fba_launch`` add support for main survey inputs (PR `#349`_).
 .. _`#336`: https://github.com/desihub/fiberassign/pull/336
 .. _`#346`: https://github.com/desihub/fiberassign/pull/346
 .. _`01206c1`: https://github.com/desihub/fiberassign/commit/01206c14d397df3e7901220257b826c721a66762
 .. _`6e78851`: https://github.com/desihub/fiberassign/commit/6e78851160ebe10a172f5121391121c78242306f
+.. _`#344`: https://github.com/desihub/fiberassign/pull/344
 .. _`#347`: https://github.com/desihub/fiberassign/pull/347
+.. _`#349`: https://github.com/desihub/fiberassign/pull/349
 
 2.5.1 (2021-05-11)
 ------------------
