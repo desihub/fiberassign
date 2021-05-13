@@ -23,7 +23,8 @@ from ._internal import Shape
 
 from .utils import Logger, default_mp_proc
 
-from .hardware import load_hardware, FIBER_STATE_STUCK, FIBER_STATE_BROKEN
+from .hardware import (load_hardware, FIBER_STATE_STUCK, FIBER_STATE_BROKEN,
+                       radec2xy)
 
 from .tiles import load_tiles
 
@@ -31,7 +32,6 @@ from .targets import (Targets, load_target_table,
                       TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                       TARGET_TYPE_SUPPSKY,
                       TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE)
-from .hardware import radec2xy
 
 from .assign import (read_assignment_fits_tile, result_tiles, result_path,
                      avail_table_to_dict, get_parked_thetaphi)
@@ -60,14 +60,14 @@ Proceeding with the default matplotlib backend."""
 
 
 def plot_target_type_color(tgtype):
-    color = "gray"
+    color = "fuchsia"
     tp = int(tgtype)
     if (tp & TARGET_TYPE_SAFE) != 0:
         color = "black"
     elif (tp & TARGET_TYPE_SKY) != 0:
         color = "blue"
     elif (tp & TARGET_TYPE_SUPPSKY) != 0:
-        color = "cyan"
+        color = "blue"
     elif (tp & TARGET_TYPE_STANDARD) != 0:
         color = "gold"
         if (tp & TARGET_TYPE_SCIENCE) != 0:
@@ -163,10 +163,27 @@ def plot_positioner_simple(ax, patrol_rad, loc, center, theta_ang, theta_arm,
     return
 
 
+def plot_positioner_invalid(ax, patrol_rad, loc, center, color="k", linewidth=0.2):
+    """Plot one fiber positioner which has invalid angles.
+    """
+    set_matplotlib_pdf_backend()
+    patrol = plt.Circle((center[0], center[1]), radius=patrol_rad, fc=color,
+                        ec="none", alpha=0.1)
+    ax.add_artist(patrol)
+
+    fontpt = 2.0
+    xtxt = center[0]
+    ytxt = center[1] + 0.5
+    ax.text(xtxt, ytxt, "{}".format(loc),
+            color='k', fontsize=fontpt,
+            horizontalalignment='center',
+            verticalalignment='center',
+            bbox=None)
+    return
+
 def plot_tile_targets_props(hw, tile_ra, tile_dec,
                             tile_obstime, tile_obstheta, tile_obsha,
-                            tgs,
-                            avail_tgid=None):
+                            tgs, avail_tgid=None):
     if avail_tgid is None:
         avail_tgid = tgs.ids()
     ra = np.full(len(avail_tgid), 9999.9, dtype=np.float64)
@@ -246,7 +263,7 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
                 ax.plot(xpts, ypts, linewidth=0.2*linewidth, color="gray")
 
     for lid in assigned:
-        color = "gray"
+        color = "fuchsia"
         if (device_type[lid] != "POS") and (device_type[lid] != "ETC"):
             continue
         shptheta = Shape()
@@ -254,7 +271,8 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
         theta = None
         phi = None
         center = center_mm[lid]
-        tgid = tile_assigned[lid]
+        tgid = tile_assigned[lid][0]
+        is_stuck_sky = tile_assigned[lid][1]
         patrol_rad = theta_arm[lid] + phi_arm[lid]
         failed = False
         is_assigned = (tgid >= 0)
@@ -266,9 +284,6 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
             if failed:
                 msg = "Positioner at location {} cannot move to target {} at (x, y) = ({}, {}).  This should have been dected during assignment!".format(lid, tgid, targetprops[tgid]["xy"][0], targetprops[tgid]["xy"][1])
                 log.warning(msg)
-                raise RuntimeError(msg)
-                is_assigned = False
-                failed = False
             else:
                 color = targetprops[tgid]["color"]
                 theta, phi = hw.xy_to_thetaphi(
@@ -278,33 +293,41 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
                     theta_min[lid], phi_min[lid],
                     theta_max[lid], phi_max[lid],
                 )
-        if not is_assigned:
+        else:
             # This fiber is unassigned.
             if (state[lid] & FIBER_STATE_STUCK) or (state[lid] & FIBER_STATE_BROKEN):
                 # The positioner is stuck or fiber broken.  Plot it at its current
                 # location.
+                color = "gray"
+                if is_stuck_sky:
+                    color = "cyan"
                 theta = theta_pos[lid] + theta_offset[lid]
                 phi   = phi_pos  [lid] + phi_offset  [lid]
-                print("loc {}, state {} is stuck / broken, using {} / {}".format(
+                msg = "Device location {}, state {} is stuck / broken, plotting fixed theta = {}, phi = {}".format(
                     lid, state[lid], theta, phi
-                ), flush=True)
-                failed = hw.loc_position_thetaphi(
-                    lid, theta, phi, shptheta, shpphi, True
                 )
+                log.debug(msg)
             else:
                 # Plot the positioner in its home (parked) position
-                theta,phi = get_parked_thetaphi(theta_offset[lid],
+                theta, phi = get_parked_thetaphi(theta_offset[lid],
                                                 theta_min[lid], theta_max[lid],
                                                 phi_offset[lid],
                                                 phi_min[lid], phi_max[lid])
-                print("loc {}, state {} is unassigned, using {} / {}".format(
+                msg = "Device location {}, state {} is unassigned, plotting parked theta = {}, phi = {}".format(
                     lid, state[lid], theta, phi
-                ), flush=True)
-                failed = hw.loc_position_thetaphi(lid, theta, phi, shptheta, shpphi, True)
+                )
+                log.debug(msg)
+            failed = hw.loc_position_thetaphi(
+                lid, theta, phi, shptheta, shpphi, True
+            )
             if failed:
                 msg = "Positioner at location {} cannot move to its stuck or home position.  This should never happen!".format(lid)
                 log.warning(msg)
-        if not failed:
+        if failed:
+            plot_positioner_invalid(
+                ax, patrol_rad, lid, center, color=color, linewidth=linewidth
+            )
+        else:
             if real_shapes:
                 plot_positioner(
                     ax, patrol_rad, lid, center, shptheta, shpphi,
@@ -318,19 +341,11 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
     return
 
 
-plot_assignment_tile_file_hw = None
-
-
-def plot_assignment_tile_file_initialize(hw):
-    global plot_assignment_tile_file_hw
-    plot_assignment_tile_file_hw = hw
-    return
-
-
-def plot_assignment_tile_file(locs, real_shapes, params):
-    (tile_id, tile_ra, tile_dec,
-     tile_obstime, tile_theta, tile_obsha, infile, outfile) = params
+def plot_assignment_tile_file(petals, real_shapes, params):
+    (infile, outfile) = params
     set_matplotlib_pdf_backend()
+
+    from matplotlib.patches import Patch
     log = Logger.get()
 
     if os.path.isfile(outfile):
@@ -340,7 +355,27 @@ def plot_assignment_tile_file(locs, real_shapes, params):
         log.info("Creating {}".format(outfile))
 
     header, fiber_data, targets_data, avail_data, gfa_data = \
-        read_assignment_fits_tile((tile_id, infile))
+        read_assignment_fits_tile((infile))
+
+    tile_id = int(header["TILEID"])
+    tile_ra = float(header["TILERA"])
+    tile_dec = float(header["TILEDEC"])
+    tile_theta = float(header["FIELDROT"])
+    tile_obstime = header["FA_PLAN"]
+    tile_obsha = float(header["FA_HA"])
+
+    run_date = header["FA_RUN"]
+
+    hw = load_hardware(rundate=run_date)
+
+    locs = None
+    if petals is None:
+        locs = [x for x in hw.locations]
+    else:
+        locs = list()
+        for p in petals:
+            locs.extend([x for x in hw.petal_locations[p]])
+    locs = np.array(locs)
 
     tavail = avail_table_to_dict(avail_data)
 
@@ -361,7 +396,7 @@ def plot_assignment_tile_file(locs, real_shapes, params):
     else:
         load_target_table(tgs, targets_data)
 
-    targetprops = plot_tile_targets_props(plot_assignment_tile_file_hw,
+    targetprops = plot_tile_targets_props(hw,
                                           tile_ra, tile_dec,
                                           tile_obstime, tile_theta, tile_obsha,
                                           tgs)
@@ -384,17 +419,40 @@ def plot_assignment_tile_file(locs, real_shapes, params):
 
     plot_available(ax, targetprops, avtg, linewidth=0.1)
 
-    # Assigned targets for our selected fibers
-    tassign = {x["LOCATION"]: x["TARGETID"] for x in fiber_data
-               if (x["LOCATION"] in locs)}
+    # Assigned targets for our selected fibers.  We handle the special case of fibers
+    # being used as sky but not formally assigned to a target.
+    tassign = {
+        x["LOCATION"]: (x["TARGETID"], (x["FA_TYPE"] & TARGET_TYPE_SKY))
+        for x in fiber_data if (x["LOCATION"] in locs)
+    }
 
     log.debug("  tile {} plotting {} assigned fibers"
               .format(tile_id, len(tassign)))
 
-    fassign = {f: tassign[f] if f in tassign else -1 for f in locs}
+    fassign = {f: tassign[f] if f in tassign else (-1, False) for f in locs}
 
-    plot_assignment(ax, plot_assignment_tile_file_hw, targetprops, fassign,
-                    linewidth=0.1, real_shapes=real_shapes)
+    plot_assignment(
+        ax,
+        hw,
+        targetprops,
+        fassign,
+        linewidth=0.1,
+        real_shapes=real_shapes
+    )
+
+    ax.legend(
+        handles=[
+            Patch(color="red", label="Science"),
+            Patch(color="gold", label="Standard"),
+            Patch(color="green", label="Standard & Science"),
+            Patch(color="blue", label="Sky or Supp. Sky"),
+            Patch(color="black", label="Safe (BAD_SKY)"),
+            Patch(color="cyan", label="Stuck on Sky"),
+            Patch(color="gray", label="Stuck or Fiber Broken"),
+            Patch(color="fuchsia", label="Working & Unassigned"),
+        ],
+        loc=1
+    )
 
     ax.set_xlabel("Curved Focal Surface Millimeters", fontsize="large")
     ax.set_ylabel("Curved Focal Surface Millimeters", fontsize="large")
@@ -403,22 +461,12 @@ def plot_assignment_tile_file(locs, real_shapes, params):
     return
 
 
-def plot_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign-",
-               result_split_dir=False, plot_dir=".",
-               plot_prefix="fiberassign-",
-               plot_split_dir=False, petals=None, real_shapes=False,
-               serial=False):
+def plot_tiles(files, out_dir=None, petals=None, real_shapes=False, serial=False):
     """Plot assignment output.
 
     Args:
-        hw (Hardware):  the hardware description.
-        tiles (Tiles):  a Tiles object.
-        result_dir (str):  Top-level directory of fiberassign results.
-        result_prefix (str):  Prefix of each per-tile file name.
-        result_split_dir (bool):  Results are in split tile directories.
-        plot_dir (str):  Top-level directory for plots.
-        plot_prefix (str):  Prefix of each per-tile output file name.
-        plot_split_dir (bool):  Write outputs in split tile directories.
+        files (list):  The list of fiberassign files.
+        out_dir (str): Output directory for plots.
         petals (list):  List of petals to plot.
         real_shapes (bool):  If True, plot the full positioner shapes.
         serial (bool):  If True, disable use of multiprocessing.
@@ -429,53 +477,27 @@ def plot_tiles(hw, tiles, result_dir=".", result_prefix="fiberassign-",
     """
     log = Logger.get()
 
-    foundtiles = result_tiles(dir=result_dir, prefix=result_prefix)
+    log.info("Plotting {} fiberassign tile files".format(len(files)))
 
-    log.info("Found {} fiberassign tile files".format(len(foundtiles)))
+    plot_tile = partial(plot_assignment_tile_file, petals, real_shapes)
 
-    locs = None
-    if petals is None:
-        locs = [x for x in hw.locations]
-    else:
-        locs = list()
-        for p in petals:
-            locs.extend([x for x in hw.petal_locations[p]])
-    locs = np.array(locs)
+    if (out_dir is not None) and not os.path.isdir(out_dir):
+        os.makedirs(out_dir)
 
-    plot_tile = partial(plot_assignment_tile_file, locs, real_shapes)
-
-    tiles_id = tiles.id
-    tiles_order = tiles.order
-    tiles_ra = tiles.ra
-    tiles_dec = tiles.dec
-    tiles_obstime = tiles.obstime
-    tiles_theta = tiles.obstheta
-    tiles_obsha = tiles.obshourang
-
-    avail_tiles = np.array(tiles_id)
-    select_tiles = [x for x in foundtiles if x in avail_tiles]
-
-    tile_map_list = [(x, tiles_ra[tiles_order[x]], tiles_dec[tiles_order[x]],
-                      tiles_obstime[tiles_order[x]], tiles_theta[tiles_order[x]],
-                      tiles_obsha[tiles_order[x]],
-                      result_path(x, dir=result_dir, prefix=result_prefix,
-                                  split=result_split_dir),
-                      result_path(x, dir=plot_dir, prefix=plot_prefix,
-                                  ext="pdf", create=True,
-                                  split=plot_split_dir))
-                     for x in select_tiles]
-
-    log.info("Selecting {} fiberassign tile files".format(len(tile_map_list)))
+    file_map_list = list()
+    for f in files:
+        d, base = os.path.split(f)
+        if out_dir is not None:
+            d = out_dir
+        root = base.split(".")[0]
+        file_map_list.append((f, os.path.join(d, "{}.pdf".format(root))))
 
     if serial:
-        plot_assignment_tile_file_initialize(hw)
-        for params in tile_map_list:
+        for params in file_map_list:
             plot_tile(params)
     else:
-        with mp.Pool(processes=default_mp_proc,
-                     initializer=plot_assignment_tile_file_initialize,
-                     initargs=(hw,)) as pool:
-            pool.map(plot_tile, tile_map_list)
+        with mp.Pool(processes=default_mp_proc) as pool:
+            pool.map(plot_tile, file_map_list)
 
     return
 

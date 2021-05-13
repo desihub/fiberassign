@@ -716,7 +716,7 @@ def read_assignment_fits_tile(params):
     input target catalogs.
 
     Args:
-        params (tuple):  The tile ID and tile file path packed as a tuple for
+        params (tuple):  The tile file path packed as a tuple for
             use in multiprocessing.
 
     Returns:
@@ -724,7 +724,7 @@ def read_assignment_fits_tile(params):
             recarray, the available targets recarray, and the GFA targets
 
     """
-    (tile_id, tile_file) = params
+    (tile_file) = params
     log = Logger.get()
     # Output tile file
     if not os.path.isfile(tile_file):
@@ -1064,7 +1064,7 @@ def merge_results_tile(out_dtype, copy_fba, params):
     tm.start()
 
     inhead, fiber_data, targets_data, avail_data, gfa_targets = \
-        read_assignment_fits_tile((tile_id, infile))
+        read_assignment_fits_tile((infile))
 
     # tm.stop()
     # tm.report("  read input data {}".format(tile_id))

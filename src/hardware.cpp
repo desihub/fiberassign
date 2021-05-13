@@ -133,29 +133,36 @@ fba::Hardware::Hardware(std::string const & timestr,
         loc_phi_pos[loc] = phi_pos[i] * M_PI / 180.0;
         loc_phi_arm[loc] = phi_arm[i];
 
-        // Only STATE != 0 fibers seem to have the theta,phi values set; check these.
-        if (state[loc] & (FIBER_STATE_STUCK | FIBER_STATE_BROKEN | FIBER_STATE_RESTRICT)) {
+        // For stuck positioners or broken fibers, the current fixed theta / phi angle
+        // values should be specified.  Other movable positioners (even if restricted)
+        // will have these values set to zero and they will not be used in fiberassign.
+        // Check that these fixed angles are within range and print a message if not.
+        // This can happen when a positioner is within its "physical" angle range but
+        // not within the "targetable" range we get from desimodel.  Internally for
+        // these fixed positioners we just take the given positions as true, regardless
+        // of range.
+        if (state[loc] & (FIBER_STATE_STUCK | FIBER_STATE_BROKEN)) {
             if ((loc_theta_pos[loc] < loc_theta_min[loc]) ||
                 (loc_theta_pos[loc] > loc_theta_max[loc])) {
                 logmsg.str("");
-                logmsg << ((state[loc] & FIBER_STATE_STUCK) ? "STUCK" : "     ") << " | "
-                       << ((state[loc] & FIBER_STATE_BROKEN) ? "BROKEN" : "      ") << " | "
-                       << ((state[loc] & FIBER_STATE_RESTRICT) ? "RESTRICT" : "        ")
+                logmsg << ((state[loc] & FIBER_STATE_STUCK) ? "STUCK" : "     ")
+                       << " | "
+                       << ((state[loc] & FIBER_STATE_BROKEN) ? "BROKEN" : "      ")
                        << " positioner (loc " << loc << ") theta value is outside of range: theta = "
                        << loc_theta_pos[loc] << " vs range [" << loc_theta_min[loc]
                        << ", " << loc_theta_max[loc] << "].";
-                logger.info(logmsg.str().c_str());
+                logger.debug(logmsg.str().c_str());
             }
             if ((loc_phi_pos[loc] < loc_phi_min[loc]) ||
                 (loc_phi_pos[loc] > loc_phi_max[loc])) {
                 logmsg.str("");
-                logmsg << ((state[loc] & FIBER_STATE_STUCK) ? "STUCK" : "     ") << " | "
-                       << ((state[loc] & FIBER_STATE_BROKEN) ? "BROKEN" : "      ") << " | "
-                       << ((state[loc] & FIBER_STATE_RESTRICT) ? "RESTRICT" : "        ")
+                logmsg << ((state[loc] & FIBER_STATE_STUCK) ? "STUCK" : "     ")
+                       << " | "
+                       << ((state[loc] & FIBER_STATE_BROKEN) ? "BROKEN" : "      ")
                        << " positioner (loc " << loc << ") phi value is outside of range: phi = "
                        << loc_phi_pos[loc] << " vs range [" << loc_phi_min[loc]
                        << ", " << loc_phi_max[loc] << "].";
-                logger.info(logmsg.str().c_str());
+                logger.debug(logmsg.str().c_str());
             }
         }
 

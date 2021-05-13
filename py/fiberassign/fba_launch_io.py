@@ -5,12 +5,30 @@ Utility functions for fba_launch
 """
 from __future__ import absolute_import, division
 
+# system
 import os
+import subprocess
 import sys
+import tempfile
+import shutil
+
+# time
+from time import time
+from datetime import datetime
+
+#
 import numpy as np
+import fitsio
+
+# astropy
 from astropy.io import fits
 from astropy.table import Table
-import fitsio
+from astropy.time import Time
+from astropy import units
+from astropy.coordinates import SkyCoord, Distance
+from astropy.time import Time
+
+# desitarget
 import desitarget
 from desitarget.gaiamatch import gaia_psflike
 from desitarget.io import read_targets_in_tiles, write_targets, write_skies
@@ -18,22 +36,21 @@ from desitarget.mtl import inflate_ledger
 from desitarget.targetmask import desi_mask, obsconditions
 from desitarget.targets import set_obsconditions
 from desitarget.geomask import match
+
+# desimodel
 import desimodel
 from desimodel.footprint import is_point_in_desi
+
+# fiberassign
 import fiberassign
 from fiberassign.scripts.assign import parse_assign, run_assign_full
 from fiberassign.assign import merge_results, minimal_target_columns
-from time import time
-from datetime import datetime
-from astropy.time import Time
-import tempfile
-import shutil
 from fiberassign.utils import Logger
+
+# matplotlib
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 import matplotlib
-from astropy import units
-from astropy.coordinates import SkyCoord, Distance
 import matplotlib.image as mpimg
 
 # AR default REF_EPOCH for PMRA=PMDEC=REF_EPOCH=0 objects
@@ -60,6 +77,30 @@ def assert_isoformat_utc(time_str):
         return False
     # AR/SB it parses as an ISO string, now just check UTC timezone +00:00 and not +0000
     return time_str.endswith("+00:00")
+
+
+def get_svn_version(svn_dir):
+    """
+    Gets the SVN revision number of an SVN folder.
+
+    Args:
+        svn_dir: SVN folder path (string)
+
+    Returns:
+        svnver: SVN revision number of svn_dir, or "unknown" if not an svn checkout
+
+    Notes:
+        `svn_dir` can contain environment variables to expand, e.g. "$DESIMODEL/data"
+    """
+    cmd = ["svn", "info", "--show-item", "revision", os.path.expandvars(svn_dir)]
+    try:
+        svn_ver = (
+            subprocess.check_output(cmd, stderr=subprocess.DEVNULL).strip().decode()
+        )
+    except subprocess.CalledProcessError:
+        svn_ver = "unknown"
+
+    return svn_ver
 
 
 def custom_read_targets_in_tiles(
@@ -1405,11 +1446,11 @@ def update_fiberassign_header(
     )
     # AR some keywords
     fd["PRIMARY"].write_key("outdir", args.outdir)
-    fd["PRIMARY"].write_key("survey", hdr_survey) # AR not args.survey!
+    fd["PRIMARY"].write_key("survey", hdr_survey)  # AR not args.survey!
     fd["PRIMARY"].write_key("rundate", args.rundate)
     fd["PRIMARY"].write_key("pmcorr", args.pmcorr)
     fd["PRIMARY"].write_key("pmtime", args.pmtime_utc_str)
-    fd["PRIMARY"].write_key("faprgrm", hdr_faprgrm) # AR not args.program!
+    fd["PRIMARY"].write_key("faprgrm", hdr_faprgrm)  # AR not args.program!
     fd["PRIMARY"].write_key("mtltime", args.mtltime)
     fd["PRIMARY"].write_key("obscon", obscon)
     # AR informations for NTS
@@ -1422,6 +1463,13 @@ def update_fiberassign_header(
     fd["PRIMARY"].write_key("mintfrac", args.mintfrac)
     # AR fba_launch-like script name used to designed the tile
     fd["PRIMARY"].write_key("fascript", fascript)
+    # AR SVN revision number
+    fd["PRIMARY"].write_key(
+        "svndm", get_svn_version(os.path.join(os.getenv("DESIMODEL"), "data"))
+    )
+    fd["PRIMARY"].write_key(
+        "svnmtl", get_svn_version(os.path.join(os.getenv("DESI_SURVEYOPS"), "mtl"))
+    )
     fd.close()
 
 
@@ -1486,7 +1534,7 @@ def get_dt_masks(
         from desitarget.sv3 import sv3_targetmask as targetmask
     elif survey == "main":
         from desitarget import targetmask
-        from fiberassign.targets import default_stdmask
+        from fiberassign.targets import default_main_stdmask
     else:
         log.error(
             "{:.1f}s\t{}\tsurvey={} is not in sv1, sv2, sv3 or main; exiting".format(
@@ -2666,7 +2714,9 @@ def make_qa(
 
     # AR plotted tracers
     # AR TBD: handle secondary?
-    trmskkeys, trmsks = get_qa_tracers(survey, program, log=log, step="doplot", start=start,)
+    trmskkeys, trmsks = get_qa_tracers(
+        survey, program, log=log, step="doplot", start=start,
+    )
 
     # AR storing parent/assigned quantities
     parent, assign, dras, ddecs, petals, nassign = get_parent_assign_quants(
