@@ -23,7 +23,8 @@ from ._internal import Shape
 
 from .utils import Logger, default_mp_proc
 
-from .hardware import load_hardware, FIBER_STATE_STUCK, FIBER_STATE_BROKEN
+from .hardware import (load_hardware, FIBER_STATE_STUCK, FIBER_STATE_BROKEN,
+                       radec2xy)
 
 from .tiles import load_tiles
 
@@ -31,7 +32,6 @@ from .targets import (Targets, load_target_table,
                       TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                       TARGET_TYPE_SUPPSKY,
                       TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE)
-from .hardware import radec2xy
 
 from .assign import (read_assignment_fits_tile, result_tiles, result_path,
                      avail_table_to_dict, get_parked_thetaphi)
@@ -342,8 +342,7 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
 
 
 def plot_assignment_tile_file(petals, real_shapes, params):
-    (tile_id, tile_ra, tile_dec,
-     tile_obstime, tile_theta, tile_obsha, infile, outfile) = params
+    (infile, outfile) = params
     set_matplotlib_pdf_backend()
 
     from matplotlib.patches import Patch
@@ -362,6 +361,8 @@ def plot_assignment_tile_file(petals, real_shapes, params):
     tile_ra = float(header["TILERA"])
     tile_dec = float(header["TILEDEC"])
     tile_theta = float(header["FIELDROT"])
+    tile_obstime = header["FA_PLAN"]
+    tile_obsha = float(header["FA_HA"]
 
     run_date = header["FA_RUN"]
 
@@ -476,40 +477,10 @@ def plot_tiles(files, out_dir=None, petals=None, real_shapes=False, serial=False
     """
     log = Logger.get()
 
-    foundtiles = result_tiles(dir=result_dir, prefix=result_prefix)
-
     log.info("Found {} fiberassign tile files".format(len(foundtiles)))
-
-    locs = None
-    if petals is None:
-        locs = [x for x in hw.locations]
-    else:
-        locs = list()
-        for p in petals:
-            locs.extend([x for x in hw.petal_locations[p]])
-    locs = np.array(locs)
-
-    plot_tile = partial(plot_assignment_tile_file, locs, real_shapes)
-
-    tiles_id = tiles.id
-    tiles_order = tiles.order
-    tiles_ra = tiles.ra
-    tiles_dec = tiles.dec
-    tiles_obstime = tiles.obstime
-    tiles_theta = tiles.obstheta
-    tiles_obsha = tiles.obshourang
 
     plot_tile = partial(plot_assignment_tile_file, petals, real_shapes)
 
-    tile_map_list = [(x, tiles_ra[tiles_order[x]], tiles_dec[tiles_order[x]],
-                      tiles_obstime[tiles_order[x]], tiles_theta[tiles_order[x]],
-                      tiles_obsha[tiles_order[x]],
-                      result_path(x, dir=result_dir, prefix=result_prefix,
-                                  split=result_split_dir),
-                      result_path(x, dir=plot_dir, prefix=plot_prefix,
-                                  ext="pdf", create=True,
-                                  split=plot_split_dir))
-                     for x in select_tiles]
     if (out_dir is not None) and not os.path.isdir(out_dir):
         os.makedirs(out_dir)
 
