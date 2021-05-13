@@ -1730,11 +1730,13 @@ def get_parent_assign_quants(
     for targfn in targfns:
         d = fits.open(targfn)[1].data
         for key in keys:
-            if (key in ["DESI_TARGET", "BGS_TARGET", "MWS_TARGET", "SCND_TARGET",]) & (
-                survey.lower()[:2] == "sv"
-            ):
-                if "{}_{}".format(survey.upper(), key) in d.dtype.names:
-                    parent[key] += d["{}_{}".format(survey.upper(), key)].tolist()
+            if key in ["DESI_TARGET", "BGS_TARGET", "MWS_TARGET", "SCND_TARGET",]:
+                if survey.lower()[:2] == "sv":
+                    key_orig = "{}_{}".format(survey.upper(), key)
+                else:
+                    key_orig = key
+                if key_orig in d.dtype.names:
+                    parent[key] += d[key_orig].tolist()
                 else:
                     parent[key] += [0 for x in d["RA"]]
             # AR flux, ebv for secondary
