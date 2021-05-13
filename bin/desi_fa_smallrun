@@ -79,9 +79,11 @@ def get_fn(outdir, flavor, passid=None):
 # AR so we just work from the 15 dark passes
 # AR and change the PROGRAM value
 def create_tiles(infn, program, radec, outdir):
-    d_orig = fitsio.read(infn)
-    # AR cut on the 15 dark passes, irrespective of args.program
-    d_orig = d_orig[d_orig["PROGRAM"] == "dark"]
+    d_orig = Table.read(infn)
+    # AR cut on the 7 dark passes, irrespective of args.program
+    # AR protecting against upper/lower case, if using files like 4112-packing
+    keep = np.array([program.lower() for program in d_orig["PROGRAM"]]) == "dark"
+    d_orig = d_orig[keep]
     # AR
     d = Table()
     for key in d_orig.dtype.names:
@@ -90,7 +92,9 @@ def create_tiles(infn, program, radec, outdir):
     d["PROGRAM"] = args.program
     d["OBSCONDITIONS"] = obsconditions.mask(args.program.upper())
     # AR populate TILEID with CENTERID
-    d["TILEID"] = d["CENTERID"].copy()
+    # AR in case using like tiles-4112-packing-20210329-decorated.fits)
+    if len(np.unique(d["TILEID"])) == 1:
+        d["TILEID"] = d["CENTERID"].copy()
     # AR cut on IN_DESI
     is_indesi = d["IN_DESI"]
     # AR cut on radec
@@ -1050,10 +1054,10 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--tilesfn",
-        help="tiles file full path (default: tiles-4112-packing-20210329-decorated.fits)",
+        help="tiles file full path (default: $DESI_SURVEYOPS/ops/tiles-main.ecsv)",
         type=str,
-        default="{}/users/schlafly/tiling/tiles-4112-packing-20210329-decorated.fits".format(
-            os.getenv("DESI_ROOT")
+        default="{}/ops/tiles-main.ecsv".format(
+            os.getenv("DESI_SURVEYOPS")
         ),
     )
     parser.add_argument(
