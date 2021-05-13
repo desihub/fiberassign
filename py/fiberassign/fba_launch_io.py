@@ -1294,6 +1294,8 @@ def launch_onetile_fa(
         args.standards_per_petal,
         "--sky_per_slitblock",
         str(args.sky_per_slitblock),
+        "--ha",
+        str(args.ha),
     ]
     if skyfn is not None:
         opts += [
