@@ -475,13 +475,6 @@ if __name__ == "__main__":
     parser.add_argument("--margin-gfa", type=float, required=False, default=0.,
                         help="Add margin (in mm) around GFA keep-out polygons")
     parser.add_argument(
-        "--ha",
-        help="Design Hour Angle, in degrees",
-        type=float,
-        default=0.,
-        required=False,
-    )
-    parser.add_argument(
         "--dr",
         help="legacypipe dr (default=dr9)",
         type=str,
