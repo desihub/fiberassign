@@ -112,12 +112,8 @@ def stuck_on_sky(hw, tiles):
 
     log = Logger.get()
 
-    try:
-        skybricks = Skybricks()
-    except:
-        log.warning('Environment variable SKYBRICKS_DIR is not set; not looking '
-                    'up whether stuck positioners land on good sky')
-        return
+    # Only load the Skybricks object the first time we need it (there might not be any stuck positioners, eg in tests)
+    skybricks = None
 
     stuck_sky = dict()
     for tile_id, tile_ra, tile_dec, tile_obstime, tile_theta, tile_obsha in zip(
@@ -129,6 +125,8 @@ def stuck_on_sky(hw, tiles):
                      if (((hw.state[loc] & FIBER_STATE_STUCK) != 0) and
                          ((hw.state[loc] & FIBER_STATE_BROKEN) == 0) and
                          (hw.loc_device_type[loc] == 'POS'))]
+        if len(stuck_loc) == 0:
+            continue
         stuck_theta = [hw.loc_theta_pos[loc] + hw.loc_theta_offset[loc] for loc in stuck_loc]
         stuck_phi   = [hw.loc_phi_pos  [loc] + hw.loc_phi_offset  [loc] for loc in stuck_loc]
 
@@ -158,6 +156,14 @@ def stuck_on_sky(hw, tiles):
             hw, tile_ra, tile_dec, tile_obstime, tile_theta, tile_obsha,
             stuck_x, stuck_y, False, 0
         )
+
+        if skybricks is None:
+            try:
+                skybricks = Skybricks()
+            except:
+                log.warning('Environment variable SKYBRICKS_DIR is not set; not looking '
+                            'up whether stuck positioners land on good sky')
+            return
 
         good_sky = skybricks.lookup_tile(tile_ra, tile_dec, hw.focalplane_radius_deg,
                                          loc_ra, loc_dec)
