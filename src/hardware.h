@@ -203,8 +203,8 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
         // when considering available targets.
         double patrol_buffer_mm;
 
-        // The inner keepout region for positioners.
-        double inner_keepout_mm;
+        // The inner keepout region additional buffer for positioners.
+        double inner_keepout_buffer_mm;
 
         // Locations
         std::vector <int32_t> locations;

@@ -205,7 +205,7 @@ fba::Hardware::Hardware(std::string const & timestr,
     // their patrol radius (theta becomes unstable; may required large
     // moves or cause unforseen collisions when the online system
     // computes a different theta).
-    inner_keepout_mm = 0.2;
+    inner_keepout_buffer_mm = 0.1;
 
     // Compute the positioner locations in the curved focal surface.
     for (int32_t i = 0; i < nloc; ++i) {
@@ -876,7 +876,8 @@ bool fba::Hardware::position_xy_bad(int32_t loc, fbg::dpair const & xy) const {
     // Check inner keepout region.
     auto centerxy = loc_pos_curved_mm.at(loc);
     double r = ::hypot(xy.first - centerxy.first, xy.second - centerxy.second);
-    if (r < inner_keepout_mm) {
+    double r_min = ::abs(loc_theta_arm.at(loc) - loc_phi_arm.at(loc));
+    if (r < r_min + inner_keepout_buffer_mm) {
         return true;
     }
     bool fail = xy_to_thetaphi(
