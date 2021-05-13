@@ -39,7 +39,7 @@ def load_tiles(tiles_file=None, select=None, obstime=None, obstheta=None,
             of all tiles.
         obstheta (float):  The angle in degrees to override the field rotation
             of all tiles.
-        obsha (float): The Hour Angle in degrees to design the obervation of all tiles.
+        obsha (float): The Hour Angle in degrees to design the observation of all tiles.
 
     Returns:
         (Tiles):  A Tiles object.
