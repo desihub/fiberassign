@@ -324,36 +324,7 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params,
         fdata["TARGETID"] = assigned_tgids
 
         if tagalong is not None:
-            # for ic,c in enumerate(tagalong.columns):
-            #     outarr = fdata[tagalong.get_output_name(c)]
-            #     defval = tagalong.get_default(c)
-            #     for i,tid in enumerate(assigned_tgids):
-            #         try:
-            #             arr = tagalong.data[tid]
-            #             outarr[i] = arr[ic]
-            #         except KeyError:
-            #             if defval is not None:
-            #                 outarr[i] = defval
-            # Set defaults
-            for c in tagalong.columns:
-                defval = tagalong.get_default(c)
-                if defval is None:
-                    continue
-                outarr = fdata[tagalong.get_output_name(c)]
-                outarr[:] = defval
-            # Fetch tagalong data into these output arrays
-            outarrs = [fdata[tagalong.get_output_name(c)]
-                       for c in tagalong.columns]
-            for i,tid in enumerate(assigned_tgids):
-                try:
-                    # grab the row of data for this targetid
-                    vals = tagalong.data[tid]
-                    # set output array elements
-                    for outarr,val in zip(outarrs, vals):
-                        outarr[i] = val
-                except KeyError:
-                    # no such targetid (eg, made-up negative sky targetids)
-                    pass
+            tagalong.set_data(assigned_tgids, fdata)
                             
         # Rows containing assigned locations
         assigned_valid = np.where(assigned_tgids >= 0)[0]
@@ -558,26 +529,7 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params,
         fdata["OBSCONDITIONS"] = tg_obscond
 
         if tagalong is not None:
-            # Set defaults
-            for c in tagalong.columns:
-                outarr = fdata[tagalong.get_output_name(c)]
-                defval = tagalong.get_default(c)
-                if defval is None:
-                    continue
-                outarr[:] = defval
-            # Fetch tagalong data into these output arrays
-            outarrs = [fdata[tagalong.get_output_name(c)]
-                       for c in tagalong.columns]
-            for i,tid in enumerate(tgids):
-                try:
-                    # grab the row of data for this targetid
-                    vals = tagalong.data[tid]
-                    # set output array elements
-                    for outarr,val in zip(outarrs, vals):
-                        outarr[i] = val
-                except KeyError:
-                    # no such targetid (eg, made-up negative sky targetids)
-                    pass
+            tagalong.set_data(tgids, fdata)
 
         # tm.stop()
         # tm.report("  copy targets data tile {}".format(tile_id))

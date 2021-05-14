@@ -27,7 +27,7 @@ from fiberassign.tiles import load_tiles, Tiles
 from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                                  TARGET_TYPE_SUPPSKY,
                                  TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE,
-                                 Targets, TargetsAvailable, TargetTree,
+                                 Targets, TargetsAvailable,
                                  LocationsAvailable, load_target_file, targets_in_tiles)
 
 from fiberassign.assign import (Assignment, write_assignment_fits,

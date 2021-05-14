@@ -37,21 +37,53 @@ from .hardware import radec2xy
 from ._internal import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                         TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE,
                         TARGET_TYPE_SUPPSKY,
-                        Target, Targets, TargetTree, TargetsAvailable,
+                        Target, Targets, TargetsAvailable,
                         LocationsAvailable)
 
 
 class TargetTagalong(object):
     def __init__(self, columns):
-        self.data = {}
         self.columns = columns
-        #self.coltypes = list(column_types.values())
+        self.data = []
 
     def get_default(self, column):
         return None
 
     def get_output_name(self, column):
         return column
+
+    def add_data(self, targetids, tabledata):
+        tgarrays = [targetids] + [tabledata[k] for k in self.columns]
+        self.data.append(tgarrays)
+
+    def set_data(self, targetids, tabledata):
+        '''
+        Sets *ALL* rows of the given *tabledata* object to defaults,
+        and then fills in values for the given targetids, if they are found.
+        '''
+        # Set defaults
+        for c in self.columns:
+            defval = self.get_default(c)
+            if defval is None:
+                continue
+            outarr = tabledata[self.get_output_name(c)]
+            outarr[:] = defval
+
+        # Build output targetid-to-index map
+        outmap = dict([(tid,i) for i,tid in enumerate(targetids)])
+        # Put tagalong data into these output arrays
+        outarrs = [tabledata[self.get_output_name(c)] for c in self.columns]
+        # Go through my many data arrays
+        for thedata in self.data:
+            tids = thedata[0]
+            # Search for output array indices for these targetids
+            outinds = np.array([outmap.get(tid, -1) for tid in tids])
+            ininds = np.flatnonzero(outinds >= 0)
+            outinds = outinds[ininds]
+
+            for outarr,inarr in zip(outarrs, thedata[1:]):
+                outarr[outinds] = inarr[ininds]
+
 
 def str_to_target_type(input):
     if input == "science":
@@ -620,11 +652,7 @@ def append_target_table(tgs, tgdata, survey, typeforce, typecol, sciencemask,
     d_targetid[:] = tgdata["TARGETID"][:]
 
     if tagalong is not None:
-        tgarrays = [d_targetid] + [tgdata[k] for k in tagalong.columns]
-        for data in zip(*tgarrays):
-            tid = data[0]
-            rest = data[1:]
-            tagalong.data[tid] = rest
+        tagalong.add_data(d_targetid, tgdata)
 
     if "TARGET_RA" in tgdata.dtype.names:
         d_ra[:] = tgdata["TARGET_RA"][:]
