@@ -157,13 +157,10 @@ def get_program_latest_timestamp(
     return timestamp
 
 
-def custom_read_targets_in_tiles(
+def custom_read_targets_nomtl_in_tiles(
     targdirs,
     tiles,
     quick=True,
-    mtl=False,
-    unique=True,
-    isodate=None,
     log=Logger.get(),
     step="",
     start=time(),
@@ -175,7 +172,7 @@ def custom_read_targets_in_tiles(
     Args:
         targdirs: list of folders
         tiles: tiles object (as required by desitarget.io.read_targets_in_tiles)
-        quick, mtl, unique, isodate (optional): same as desitarget.io.read_targets_in_tiles arguments
+        quick (optional, default to True): same as desitarget.io.read_targets_in_tiles argument
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -194,9 +191,6 @@ def custom_read_targets_in_tiles(
             targdirs[0],
             tiles=tiles,
             quick=quick,
-            mtl=mtl,
-            unique=unique,
-            isodate=isodate,
         )
     else:
         ds = [
@@ -204,9 +198,6 @@ def custom_read_targets_in_tiles(
                 targdir,
                 tiles=tiles,
                 quick=quick,
-                mtl=mtl,
-                unique=unique,
-                isodate=isodate,
             )
             for targdir in targdirs
         ]
