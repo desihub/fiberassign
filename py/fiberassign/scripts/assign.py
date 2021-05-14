@@ -27,7 +27,8 @@ from ..targets import (str_to_target_type, TARGET_TYPE_SCIENCE,
                        TARGET_TYPE_STANDARD,
                        TARGET_TYPE_SAFE, Targets, TargetsAvailable,
                        LocationsAvailable,
-                       load_target_file, targets_in_tiles)
+                       load_target_file, targets_in_tiles,
+                       TargetTagalong)
 
 from ..assign import (Assignment, write_assignment_fits,
                       result_path, run)
@@ -266,7 +267,6 @@ def parse_assign(optlist=None):
 
     return args
 
-
 def run_assign_init(args):
     """Initialize assignment inputs.
 
@@ -310,6 +310,12 @@ def run_assign_init(args):
 
     # Create empty target list
     tgs = Targets()
+    # create empty cargo hold (for carting around auxiliary target data,
+    tagalong = TargetTagalong([
+        'PLATE_RA',
+        'PLATE_DEC',
+        # 'PLATE_REF_EPOCH',
+        ])
 
     # Append each input target file.  These target files must all be of the
     # same survey type, and will set the Targets object to be of that survey.
@@ -327,7 +333,8 @@ def run_assign_init(args):
                          stdmask=args.stdmask,
                          skymask=args.skymask,
                          safemask=args.safemask,
-                         excludemask=args.excludemask)
+                         excludemask=args.excludemask,
+                         tagalong=tagalong)
     # Now load the sky target files.  These are main-survey files that we will
     # force to be treated as the survey type of the other target files.
     survey = tgs.survey()
@@ -338,9 +345,10 @@ def run_assign_init(args):
                          stdmask=args.stdmask,
                          skymask=args.skymask,
                          safemask=args.safemask,
-                         excludemask=args.excludemask)
+                         excludemask=args.excludemask,
+                         tagalong=tagalong)
 
-    return (hw, tiles, tgs)
+    return (hw, tiles, tgs, tagalong)
 
 
 def run_assign_full(args):
@@ -361,7 +369,7 @@ def run_assign_full(args):
     gt.start("run_assign_full calculation")
 
     # Load data
-    hw, tiles, tgs = run_assign_init(args)
+    hw, tiles, tgs, tagalong = run_assign_init(args)
 
     # Create a hierarchical triangle mesh lookup of the targets positions
     gt.start("Compute targets locations in tile")
@@ -421,7 +429,7 @@ def run_assign_full(args):
                           out_prefix=args.prefix, split_dir=args.split,
                           all_targets=args.write_all_targets,
                           gfa_targets=gfa_targets, overwrite=args.overwrite,
-                          stucksky=stucksky)
+                          stucksky=stucksky, tagalong=tagalong)
 
     gt.stop("run_assign_full write output")
 
@@ -448,7 +456,7 @@ def run_assign_bytile(args):
     gt.start("run_assign_bytile calculation")
 
     # Load data
-    hw, tiles, tgs = run_assign_init(args)
+    hw, tiles, tgs, tagalong = run_assign_init(args)
 
     # Create a hierarchical triangle mesh lookup of the targets positions
     gt.start("Compute targets locations in tile")
@@ -514,7 +522,7 @@ def run_assign_bytile(args):
                           out_prefix=args.prefix, split_dir=args.split,
                           all_targets=args.write_all_targets,
                           gfa_targets=gfa_targets, overwrite=args.overwrite,
-                          stucksky=stucksky)
+                          stucksky=stucksky, tagalong=tagalong)
 
     gt.stop("run_assign_bytile write output")
 

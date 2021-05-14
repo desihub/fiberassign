@@ -127,7 +127,8 @@ def result_path(tile_id, dir=".", prefix="fba-",
     return path
 
 
-def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
+def write_assignment_fits_tile(asgn, fulltarget, overwrite, params,
+                               tagalong=None):
     """Write a single tile assignment to a FITS file.
 
     Args:
@@ -222,9 +223,9 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
 
         tg_ra = np.empty(ntarget, dtype=np.float64)
         tg_dec = np.empty(ntarget, dtype=np.float64)
-        tg_pra = np.empty(ntarget, dtype=np.float64)
-        tg_pdec = np.empty(ntarget, dtype=np.float64)
-        tg_pepoch = np.empty(ntarget, dtype=np.float64)
+        #tg_pra = np.empty(ntarget, dtype=np.float64)
+        #tg_pdec = np.empty(ntarget, dtype=np.float64)
+        #tg_pepoch = np.empty(ntarget, dtype=np.float64)
         tg_bits = np.zeros(ntarget, dtype=np.int64)
         tg_x = np.empty(ntarget, dtype=np.float64)
         tg_y = np.empty(ntarget, dtype=np.float64)
@@ -238,9 +239,9 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
             props = tgs.get(tg)
             tg_ra[indx] = props.ra
             tg_dec[indx] = props.dec
-            tg_pra[indx] = props.platera
-            tg_pdec[indx] = props.platedec
-            tg_pepoch[indx] = props.platerefepoch
+            #tg_pra[indx] = props.platera
+            #tg_pdec[indx] = props.platedec
+            #tg_pepoch[indx] = props.platerefepoch
             tg_bits[indx] = props.bits
             tg_type[indx] = props.type
             tg_priority[indx] = props.priority
@@ -322,6 +323,38 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
                                   for x in locs], dtype=np.int64)
         fdata["TARGETID"] = assigned_tgids
 
+        if tagalong is not None:
+            # for ic,c in enumerate(tagalong.columns):
+            #     outarr = fdata[tagalong.get_output_name(c)]
+            #     defval = tagalong.get_default(c)
+            #     for i,tid in enumerate(assigned_tgids):
+            #         try:
+            #             arr = tagalong.data[tid]
+            #             outarr[i] = arr[ic]
+            #         except KeyError:
+            #             if defval is not None:
+            #                 outarr[i] = defval
+            # Set defaults
+            for c in tagalong.columns:
+                defval = tagalong.get_default(c)
+                if defval is None:
+                    continue
+                outarr = fdata[tagalong.get_output_name(c)]
+                outarr[:] = defval
+            # Fetch tagalong data into these output arrays
+            outarrs = [fdata[tagalong.get_output_name(c)]
+                       for c in tagalong.columns]
+            for i,tid in enumerate(assigned_tgids):
+                try:
+                    # grab the row of data for this targetid
+                    vals = tagalong.data[tid]
+                    # set output array elements
+                    for outarr,val in zip(outarrs, vals):
+                        outarr[i] = val
+                except KeyError:
+                    # no such targetid (eg, made-up negative sky targetids)
+                    pass
+                            
         # Rows containing assigned locations
         assigned_valid = np.where(assigned_tgids >= 0)[0]
         assigned_invalid = np.where(assigned_tgids < 0)[0]
@@ -331,9 +364,9 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         assigned_tgy = np.full(nloc, 9999.9, dtype=np.float64)
         assigned_tgra = np.full(nloc, 9999.9, dtype=np.float64)
         assigned_tgdec = np.full(nloc, 9999.9, dtype=np.float64)
-        assigned_tgpra = np.full(nloc, 9999.9, dtype=np.float64)
-        assigned_tgpdec = np.full(nloc, 9999.9, dtype=np.float64)
-        assigned_tgpepoch = np.full(nloc, 9999.9, dtype=np.float64)
+        #assigned_tgpra = np.full(nloc, 9999.9, dtype=np.float64)
+        #assigned_tgpdec = np.full(nloc, 9999.9, dtype=np.float64)
+        #assigned_tgpepoch = np.full(nloc, 9999.9, dtype=np.float64)
         assigned_tgbits = np.zeros(nloc, dtype=np.int64)
         assigned_tgtype = np.zeros(nloc, dtype=np.uint8)
 
@@ -414,8 +447,13 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
                 empty_x, empty_y, False, 0)
             assigned_tgra[assigned_invalid]  = ra
             assigned_tgdec[assigned_invalid] = dec
-            assigned_tgpra[assigned_invalid]  = ra
-            assigned_tgpdec[assigned_invalid] = dec
+            #assigned_tgpra[assigned_invalid]  = ra
+            #assigned_tgpdec[assigned_invalid] = dec
+            # These array elements should have had their default values;
+            # we set them now!
+            fdata["PLATE_RA" ][assigned_invalid] = ra
+            fdata["PLATE_DEC"][assigned_invalid] = dec
+            
             ex, ey = xy2cs5(empty_x, empty_y)
             assigned_tgx[assigned_invalid] = ex
             assigned_tgy[assigned_invalid] = ey
@@ -431,9 +469,9 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
             # Copy values out of the full target list.
             assigned_tgra[assigned_valid] = np.array(tg_ra[target_rows])
             assigned_tgdec[assigned_valid] = np.array(tg_dec[target_rows])
-            assigned_tgpra[assigned_valid] = np.array(tg_pra[target_rows])
-            assigned_tgpdec[assigned_valid] = np.array(tg_pdec[target_rows])
-            assigned_tgpepoch[assigned_valid] = np.array(tg_pepoch[target_rows])
+            # assigned_tgpra[assigned_valid] = np.array(tg_pra[target_rows])
+            # assigned_tgpdec[assigned_valid] = np.array(tg_pdec[target_rows])
+            # assigned_tgpepoch[assigned_valid] = np.array(tg_pepoch[target_rows])
             assigned_tgx[assigned_valid] = np.array(tg_x[target_rows])
             assigned_tgy[assigned_valid] = np.array(tg_y[target_rows])
             assigned_tgtype[assigned_valid] = np.array(tg_type[target_rows])
@@ -441,8 +479,8 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
 
         fdata["TARGET_RA"] = assigned_tgra
         fdata["TARGET_DEC"] = assigned_tgdec
-        fdata["PLATE_RA"] = assigned_tgpra
-        fdata["PLATE_DEC"] = assigned_tgpdec
+        #fdata["PLATE_RA"] = assigned_tgpra
+        #fdata["PLATE_DEC"] = assigned_tgpdec
         #fdata["PLATE_REF_EPOCH"] = assigned_tgpepoch
         fdata["FIBERASSIGN_X"] = assigned_tgx
         fdata["FIBERASSIGN_Y"] = assigned_tgy
@@ -510,14 +548,36 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         fdata["TARGETID"] = tgids
         fdata["TARGET_RA"] = tg_ra
         fdata["TARGET_DEC"] = tg_dec
-        fdata["PLATE_RA"] = tg_pra
-        fdata["PLATE_DEC"] = tg_pdec
+        #fdata["PLATE_RA"] = tg_pra
+        #fdata["PLATE_DEC"] = tg_pdec
         #fdata["PLATE_REF_EPOCH"] = tg_pepoch
         fdata["FA_TARGET"] = tg_bits
         fdata["FA_TYPE"] = tg_type
         fdata["PRIORITY"] = tg_priority
         fdata["SUBPRIORITY"] = tg_subpriority
         fdata["OBSCONDITIONS"] = tg_obscond
+
+        if tagalong is not None:
+            # Set defaults
+            for c in tagalong.columns:
+                outarr = fdata[tagalong.get_output_name(c)]
+                defval = tagalong.get_default(c)
+                if defval is None:
+                    continue
+                outarr[:] = defval
+            # Fetch tagalong data into these output arrays
+            outarrs = [fdata[tagalong.get_output_name(c)]
+                       for c in tagalong.columns]
+            for i,tid in enumerate(tgids):
+                try:
+                    # grab the row of data for this targetid
+                    vals = tagalong.data[tid]
+                    # set output array elements
+                    for outarr,val in zip(outarrs, vals):
+                        outarr[i] = val
+                except KeyError:
+                    # no such targetid (eg, made-up negative sky targetids)
+                    pass
 
         # tm.stop()
         # tm.report("  copy targets data tile {}".format(tile_id))
@@ -568,7 +628,8 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
 
 def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fba-",
                           split_dir=False, all_targets=False,
-                          gfa_targets=None, overwrite=False, stucksky=None):
+                          gfa_targets=None, overwrite=False, stucksky=None,
+                          tagalong=None):
     """Write out assignment results in FITS format.
 
     For each tile, all available targets (not only the assigned targets) and
@@ -625,7 +686,7 @@ def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fba-",
             stuck = stucksky.get(tid,{})
 
         params = (tid, tra, tdec, ttheta, ttime, tha, outfile, gfa, stuck)
-        write_tile(params)
+        write_tile(params, tagalong=tagalong)
 
     tm.stop()
     tm.report("Write output files")

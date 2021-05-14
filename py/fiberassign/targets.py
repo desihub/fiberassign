@@ -41,6 +41,18 @@ from ._internal import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                         LocationsAvailable)
 
 
+class TargetTagalong(object):
+    def __init__(self, columns):
+        self.data = {}
+        self.columns = columns
+        #self.coltypes = list(column_types.values())
+
+    def get_default(self, column):
+        return None
+
+    def get_output_name(self, column):
+        return column
+
 def str_to_target_type(input):
     if input == "science":
         return TARGET_TYPE_SCIENCE
@@ -548,7 +560,8 @@ def default_target_masks(data):
 
 
 def append_target_table(tgs, tgdata, survey, typeforce, typecol, sciencemask,
-                        stdmask, skymask, suppskymask, safemask, excludemask):
+                        stdmask, skymask, suppskymask, safemask, excludemask,
+                        tagalong=None):
     """Append a target recarray / table to a Targets object.
 
     This function is used to take a slice of targets table (as read from a
@@ -605,6 +618,14 @@ def append_target_table(tgs, tgdata, survey, typeforce, typecol, sciencemask,
     d_prior = np.zeros(nrows, dtype=np.int32)
     d_subprior = np.zeros(nrows, dtype=np.float64)
     d_targetid[:] = tgdata["TARGETID"][:]
+
+    if tagalong is not None:
+        tgarrays = [d_targetid] + [tgdata[k] for k in tagalong.columns]
+        for data in zip(*tgarrays):
+            tid = data[0]
+            rest = data[1:]
+            tagalong.data[tid] = rest
+
     if "TARGET_RA" in tgdata.dtype.names:
         d_ra[:] = tgdata["TARGET_RA"][:]
     else:
@@ -682,7 +703,8 @@ def append_target_table(tgs, tgdata, survey, typeforce, typecol, sciencemask,
 
 def load_target_table(tgs, tgdata, survey=None, typeforce=None, typecol=None,
                       sciencemask=None, stdmask=None, skymask=None,
-                      suppskymask=None, safemask=None, excludemask=None):
+                      suppskymask=None, safemask=None, excludemask=None,
+                      tagalong=None):
     """Append targets from a table.
 
     Use the table data to append targets to the input Targets object.
@@ -877,14 +899,15 @@ def load_target_table(tgs, tgdata, survey=None, typeforce=None, typecol=None,
     else:
         raise RuntimeError("unknown survey type, should never get here!")
     append_target_table(tgs, tgdata, survey, typeforce, typecol, sciencemask,
-                        stdmask, skymask, suppskymask, safemask, excludemask)
+                        stdmask, skymask, suppskymask, safemask, excludemask,
+                        tagalong=tagalong)
     return
 
 
 def load_target_file(tgs, tfile, survey=None, typeforce=None, typecol=None,
                      sciencemask=None, stdmask=None, skymask=None,
                      suppskymask=None, safemask=None, excludemask=None,
-                     rowbuffer=1000000):
+                     rowbuffer=1000000, tagalong=None):
     """Append targets from a file.
 
     Read the specified file and append targets to the input Targets object.
@@ -952,7 +975,8 @@ def load_target_file(tgs, tfile, survey=None, typeforce=None, typecol=None,
                           skymask=skymask,
                           suppskymask=suppskymask,
                           safemask=safemask,
-                          excludemask=excludemask)
+                          excludemask=excludemask,
+                          tagalong=tagalong)
         offset += n
 
     tm.stop()
