@@ -1169,6 +1169,7 @@ def create_too(
 ):
     """
     Create a ToO target fits file, with selecting targets in a MJD time window.
+    If no ToO file, or no selected targets, do nothing.
     
     Args:
         tilesfn: path to a tiles fits file (string)
@@ -1202,6 +1203,19 @@ def create_too(
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
     log.info("{:.1f}s\t{}\tstart generating {}".format(time() - start, step, outfn))
+
+    # AR too: is there a file?
+    # AR too: if no, just skip
+    if not os.path.isfile(toofn):
+        log.info(
+            "{:.1f}s\t{}\tno ToO input file present: {}, not writing any {}".format(
+                time() - start, step, toofn, outfn
+            )
+        )
+        return
+
+    # AR too: if yes, we proceed
+    # AR too: tile file
     tiles = fits.open(tilesfn)[1].data
 
     # AR too: read too file
