@@ -998,6 +998,8 @@ merged_fiberassign_req_columns = OrderedDict([
     ("FIBERSTATUS", "i4"),
     ("TARGET_RA", "f8"),
     ("TARGET_DEC", "f8"),
+    ("PLATE_RA", "f8"),
+    ("PLATE_DEC", "f8"),
     ("PMRA", "f4"),
     ("PMDEC", "f4"),
     ("REF_EPOCH", "f4"),
