@@ -1162,6 +1162,7 @@ def create_too(
     outfn,
     tmpoutdir=tempfile.mkdtemp(),
     pmtime_utc_str=None,
+    too_tile=False,
     log=Logger.get(),
     step="",
     start=time(),
@@ -1182,6 +1183,9 @@ def create_too(
         pmtime_utc_str (optional, defaults to None): UTC time use to compute
                 new coordinates after applying proper motion since REF_EPOCH
                 (string formatted as "yyyy-mm-ddThh:mm:ss+00:00")
+        too_tile (optional, defaults to False): if False, we only keep TOO_TYPE!="TILE",
+                if True, we do not cut on TOO_TYPE, hence keeping both TOO_TYPE="FIBER" *and*
+                TOO_TYPE="TILE" for ToO dedicated tiles (boolean)
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -1206,10 +1210,12 @@ def create_too(
     # AR - mjd (! TBD !)
     d = Table.read(toofn)
     keep = is_point_in_desi(tiles, d["RA"], d["DEC"])
+    if not too_tile:
+        keep &= d["TOO_TYPE"] != "TILE"
     keep &= (d["MJD_BEGIN"] < mjd_max) & (d["MJD_END"] > mjd_min)
     log.info(
-        "{:.1f}s\t{}\tkeeping {}/{} targets in tiles and in the MJD time window: {}, {}".format(
-            time() - start, step, keep.sum(), len(keep), mjd_min, mjd_max
+        "{:.1f}s\t{}\tkeeping {}/{} targets in tiles, with TOO_TYPE={}, and in the MJD time window: {}, {}".format(
+            time() - start, step, keep.sum(), len(keep), "TILE,FIBER" if too_tile else "FIBER", mjd_min, mjd_max
         )
     )
 
