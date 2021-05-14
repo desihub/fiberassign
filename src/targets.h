@@ -49,6 +49,9 @@ class Target {
             int64_t tid,
             double tra,
             double tdec,
+            double pra,
+            double pdec,
+            double pepoch,
             int64_t tbits,
             int32_t tobsremain,
             int32_t tpriority,
@@ -60,6 +63,9 @@ class Target {
         int64_t id;
         double ra;
         double dec;
+        double platera;
+        double platedec;
+        double plateepoch;
         int64_t bits;
         int32_t obsremain;
         int32_t priority;
@@ -94,6 +100,9 @@ class Targets : public std::enable_shared_from_this <Targets> {
             std::vector <int64_t> const & id,
             std::vector <double> const & ra,
             std::vector <double> const & dec,
+            std::vector <double> const & pra,
+            std::vector <double> const & pdec,
+            std::vector <double> const & pepoch,
             std::vector <int64_t> const & targetbits,
             std::vector <int32_t> const & obsremain,
             std::vector <int32_t> const & priority,

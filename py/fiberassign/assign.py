@@ -72,6 +72,9 @@ results_assign_columns = OrderedDict([
     ("DEVICE_TYPE", "a3"),
     ("TARGET_RA", "f8"),
     ("TARGET_DEC", "f8"),
+    ("PLATE_RA", "f8"),
+    ("PLATE_DEC", "f8"),
+    #("PLATE_REF_EPOCH", "f8"),
     ("FA_TARGET", "i8"),
     ("FA_TYPE", "u1"),
     ("FIBERASSIGN_X", "f4"),
@@ -82,6 +85,9 @@ results_targets_columns = OrderedDict([
     ("TARGETID", "i8"),
     ("TARGET_RA", "f8"),
     ("TARGET_DEC", "f8"),
+    ("PLATE_RA", "f8"),
+    ("PLATE_DEC", "f8"),
+    #("PLATE_REF_EPOCH", "f8"),
     ("FA_TARGET", "i8"),
     ("FA_TYPE", "u1"),
     ("PRIORITY", "i4"),
@@ -216,6 +222,9 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
 
         tg_ra = np.empty(ntarget, dtype=np.float64)
         tg_dec = np.empty(ntarget, dtype=np.float64)
+        tg_pra = np.empty(ntarget, dtype=np.float64)
+        tg_pdec = np.empty(ntarget, dtype=np.float64)
+        tg_pepoch = np.empty(ntarget, dtype=np.float64)
         tg_bits = np.zeros(ntarget, dtype=np.int64)
         tg_x = np.empty(ntarget, dtype=np.float64)
         tg_y = np.empty(ntarget, dtype=np.float64)
@@ -229,6 +238,9 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
             props = tgs.get(tg)
             tg_ra[indx] = props.ra
             tg_dec[indx] = props.dec
+            tg_pra[indx] = props.platera
+            tg_pdec[indx] = props.platedec
+            tg_pepoch[indx] = props.platerefepoch
             tg_bits[indx] = props.bits
             tg_type[indx] = props.type
             tg_priority[indx] = props.priority
@@ -319,6 +331,9 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         assigned_tgy = np.full(nloc, 9999.9, dtype=np.float64)
         assigned_tgra = np.full(nloc, 9999.9, dtype=np.float64)
         assigned_tgdec = np.full(nloc, 9999.9, dtype=np.float64)
+        assigned_tgpra = np.full(nloc, 9999.9, dtype=np.float64)
+        assigned_tgpdec = np.full(nloc, 9999.9, dtype=np.float64)
+        assigned_tgpepoch = np.full(nloc, 9999.9, dtype=np.float64)
         assigned_tgbits = np.zeros(nloc, dtype=np.int64)
         assigned_tgtype = np.zeros(nloc, dtype=np.uint8)
 
@@ -399,6 +414,8 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
                 empty_x, empty_y, False, 0)
             assigned_tgra[assigned_invalid]  = ra
             assigned_tgdec[assigned_invalid] = dec
+            assigned_tgpra[assigned_invalid]  = ra
+            assigned_tgpdec[assigned_invalid] = dec
             ex, ey = xy2cs5(empty_x, empty_y)
             assigned_tgx[assigned_invalid] = ex
             assigned_tgy[assigned_invalid] = ey
@@ -414,6 +431,9 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
             # Copy values out of the full target list.
             assigned_tgra[assigned_valid] = np.array(tg_ra[target_rows])
             assigned_tgdec[assigned_valid] = np.array(tg_dec[target_rows])
+            assigned_tgpra[assigned_valid] = np.array(tg_pra[target_rows])
+            assigned_tgpdec[assigned_valid] = np.array(tg_pdec[target_rows])
+            assigned_tgpepoch[assigned_valid] = np.array(tg_pepoch[target_rows])
             assigned_tgx[assigned_valid] = np.array(tg_x[target_rows])
             assigned_tgy[assigned_valid] = np.array(tg_y[target_rows])
             assigned_tgtype[assigned_valid] = np.array(tg_type[target_rows])
@@ -421,6 +441,9 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
 
         fdata["TARGET_RA"] = assigned_tgra
         fdata["TARGET_DEC"] = assigned_tgdec
+        fdata["PLATE_RA"] = assigned_tgpra
+        fdata["PLATE_DEC"] = assigned_tgpdec
+        #fdata["PLATE_REF_EPOCH"] = assigned_tgpepoch
         fdata["FIBERASSIGN_X"] = assigned_tgx
         fdata["FIBERASSIGN_Y"] = assigned_tgy
         fdata["FA_TARGET"] = assigned_tgbits
@@ -487,6 +510,9 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         fdata["TARGETID"] = tgids
         fdata["TARGET_RA"] = tg_ra
         fdata["TARGET_DEC"] = tg_dec
+        fdata["PLATE_RA"] = tg_pra
+        fdata["PLATE_DEC"] = tg_pdec
+        #fdata["PLATE_REF_EPOCH"] = tg_pepoch
         fdata["FA_TARGET"] = tg_bits
         fdata["FA_TYPE"] = tg_type
         fdata["PRIORITY"] = tg_priority

@@ -38,6 +38,9 @@ fba::Target::Target() {
     id = -1;
     ra = 0.0;
     dec = 0.0;
+    platera = 0.0;
+    platedec = 0.0;
+    plateepoch = 0.0;
     bits = 0;
     obsremain = 0;
     priority = 0;
@@ -50,6 +53,9 @@ fba::Target::Target() {
 fba::Target::Target(int64_t tid,
                     double tra,
                     double tdec,
+                    double pra,
+                    double pdec,
+                    double pepoch,
                     int64_t tbits,
                     int32_t tobsremain,
                     int32_t tpriority,
@@ -59,6 +65,9 @@ fba::Target::Target(int64_t tid,
     id = tid;
     ra = tra;
     dec = tdec;
+    platera = pra;
+    platedec = pdec;
+    plateepoch = pepoch;
     bits = tbits;
     obsremain = tobsremain;
     priority = tpriority;
@@ -124,6 +133,9 @@ void fba::Targets::append(std::string const & tsurvey,
                           std::vector <int64_t> const & id,
                           std::vector <double> const & ra,
                           std::vector <double> const & dec,
+                          std::vector <double> const & pra,
+                          std::vector <double> const & pdec,
+                          std::vector <double> const & pepoch,
                           std::vector <int64_t> const & targetbits,
                           std::vector <int32_t> const & obsremain,
                           std::vector <int32_t> const & priority,
@@ -176,7 +188,7 @@ void fba::Targets::append(std::string const & tsurvey,
             logger.error(logmsg.str().c_str());
             throw std::runtime_error(logmsg.str().c_str());
         } else {
-            data[id[t]] = Target(id[t], ra[t], dec[t], targetbits[t],
+            data[id[t]] = Target(id[t], ra[t], dec[t], pra[t], pdec[t], pepoch[t], targetbits[t],
                                  obsremain[t], priority[t], subpriority[t],
                                  obscond[t], type[t]);
         }

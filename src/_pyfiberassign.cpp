@@ -1174,9 +1174,18 @@ PYBIND11_MODULE(_internal, m) {
         .def_readwrite("dec", &fba::Target::dec, R"(
             The target DEC.
         )")
+        .def_readwrite("platera", &fba::Target::platera, R"(
+            The target PLATE_RA.
+        )")
+        .def_readwrite("platedec", &fba::Target::platedec, R"(
+            The target PLATEDEC.
+        )")
+        .def_readwrite("platerefepoch", &fba::Target::plateepoch, R"(
+            The target PLATEREFEPOCH.
+        )")
         .def_readwrite("bits", &fba::Target::bits, R"(
             The target bitfield (e.g. DESI_TARGET, CMX_TARGET, etc).
-        )")
+`        )")
         .def_readwrite("obsremain", &fba::Target::obsremain, R"(
             The remaining observations for this target.
         )")
@@ -1222,7 +1231,7 @@ PYBIND11_MODULE(_internal, m) {
         );
 
     // Define a numpy dtype wrapper around our internal "Target" class.
-    PYBIND11_NUMPY_DTYPE(fba::Target, id, ra, dec, bits, obsremain, priority,
+    PYBIND11_NUMPY_DTYPE(fba::Target, id, ra, dec, platera, platedec, plateepoch, bits, obsremain, priority,
                          subpriority, obscond, type);
 
 
@@ -1237,6 +1246,7 @@ PYBIND11_MODULE(_internal, m) {
         .def(py::init < > ())
         .def("append", &fba::Targets::append, py::arg("tsurvey"),
             py::arg("ids"), py::arg("ras"), py::arg("decs"),
+            py::arg("pras"), py::arg("pdecs"), py::arg("pepochs"),
             py::arg("targetbits"), py::arg("obsremain"),
             py::arg("priority"), py::arg("subpriority"),
             py::arg("obscond"), py::arg("type"), R"(
@@ -1247,6 +1257,9 @@ PYBIND11_MODULE(_internal, m) {
                 ids (array):  array of int64 target IDs.
                 ras (array):  array of float64 target RA coordinates.
                 decs (array):  array of float64 target DEC coordinates.
+                pras (array):  array of float64 target PLATE_RA coordinates.
+                pdecs (array):  array of float64 target PLATE_DEC coordinates.
+                pepochs (array):  array of float64 target PLATE_REF_EPOCH vals.
                 obsremain (array):  array of int32 number of remaining
                     observations.
                 targetbits (array):  array of int64 bit values (DESI_TARGET,

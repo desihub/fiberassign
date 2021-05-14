@@ -596,6 +596,9 @@ def append_target_table(tgs, tgdata, survey, typeforce, typecol, sciencemask,
     d_targetid = np.zeros(nrows, dtype=np.int64)
     d_ra = np.zeros(nrows, dtype=np.float64)
     d_dec = np.zeros(nrows, dtype=np.float64)
+    d_pra = np.zeros(nrows, dtype=np.float64)
+    d_pdec = np.zeros(nrows, dtype=np.float64)
+    d_pepoch = np.zeros(nrows, dtype=np.float64)
     d_bits = np.zeros(nrows, dtype=np.int64)
     d_type = np.zeros(nrows, dtype=np.uint8)
     d_nobs = np.zeros(nrows, dtype=np.int32)
@@ -610,6 +613,24 @@ def append_target_table(tgs, tgdata, survey, typeforce, typecol, sciencemask,
         d_dec[:] = tgdata["TARGET_DEC"][:]
     else:
         d_dec[:] = tgdata["DEC"][:]
+
+    if "PLATE_RA" in tgdata.dtype.names:
+        print('Copying PLATE_RA from input file')
+        d_pra[:] = tgdata["PLATE_RA"][:]
+    else:
+        print('Copying PLATE_RA from RA/TARGET_RA')
+        d_pra[:] = d_ra[:]
+    if "PLATE_DEC" in tgdata.dtype.names:
+        print('Copying PLATE_DEC from input file')
+        d_pdec[:] = tgdata["PLATE_DEC"][:]
+    else:
+        print('Copying PLATE_DEC from DEC/TARGET_DEC')
+        d_pdec[:] = d_dec[:]
+    if "PLATE_REF_EPOCH" in tgdata.dtype.names:
+        print('Copying PLATE_REF_EPOCH from input file')
+        d_pepoch[:] = tgdata["PLATE_REF_EPOCH"][:]
+    else:
+        print('No PLATE_REF_EPOCH')
 
     if typeforce is not None:
         d_type[:] = typeforce
@@ -654,7 +675,7 @@ def append_target_table(tgs, tgdata, survey, typeforce, typecol, sciencemask,
 
     # Append the data to our targets list.  This will print a
     # warning if there are duplicate target IDs.
-    tgs.append(survey, d_targetid, d_ra, d_dec, d_bits, d_nobs, d_prior,
+    tgs.append(survey, d_targetid, d_ra, d_dec, d_pra, d_pdec, d_pepoch, d_bits, d_nobs, d_prior,
                d_subprior, d_obscond, d_type)
     return
 
