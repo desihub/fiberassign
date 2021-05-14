@@ -992,7 +992,18 @@ def targets_in_tiles(hw, tgs, tiles):
     tile_x = {}
     tile_y = {}
 
-    tree = TargetTree(tgs)
+    target_ids = tgs.ids()
+    target_ra  = np.zeros(len(target_ids))
+    target_dec = np.zeros(len(target_ids))
+    target_obscond = np.zeros(len(target_ids), np.int32)
+    for i,tid in enumerate(target_ids):
+        tg = tgs.get(tid)
+        target_ra[i] = tg.ra
+        target_dec[i] = tg.dec
+        target_obscond[i] = tg.obscond
+    #target_ra  = np.array([tgs.get(tid).ra  for tid in target_ids])
+    #target_dec = np.array([tgs.get(tid).dec for tid in target_ids])
+    kd = _radec2kd(target_ra, target_dec)
 
     for (tile_id, tile_ra, tile_dec, tile_obscond, tile_ha, tile_obstheta,
          tile_obstime) in zip(
@@ -1001,13 +1012,15 @@ def targets_in_tiles(hw, tgs, tiles):
 
         print('Tile', tile_id, 'at RA,Dec', tile_ra, tile_dec, 'obscond:', tile_obscond, 'HA', tile_ha, 'obstime', tile_obstime)
 
-        tile_rad = np.deg2rad(hw.focalplane_radius_deg)
-        tids,ras,decs = tree.near_data(tgs, tile_ra, tile_dec, tile_rad,
-                                       tile_obscond)
+        inds = _kd_query_radec(kd, tile_ra, tile_dec, hw.focalplane_radius_deg)
+        match = np.flatnonzero(target_obscond[inds] & tile_obscond)
+        inds = inds[match]
+        del match
+        ras  = target_ra [inds]
+        decs = target_dec[inds]
+        tids = target_ids[inds]
+        del inds
         print('Found', len(tids), 'targets near tile and matching obscond')
-        tids = np.array(tids)
-        ras  = np.array(ras)
-        decs = np.array(decs)
 
         fx,fy = radec2xy(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta,
                          tile_ha, ras, decs, False)
@@ -1017,3 +1030,33 @@ def targets_in_tiles(hw, tgs, tiles):
         tile_y[tile_id] = fy
 
     return tile_targetids, tile_x, tile_y
+
+
+def _radec2kd(ra, dec):
+    """
+    Creates a scipy KDTree from the given *ra*, *dec* arrays (in deg).
+    """
+    from scipy.spatial import KDTree
+    xyz = _radec2xyz(ra, dec)
+    return KDTree(xyz)
+
+
+def _radec2xyz(ra, dec):
+    """
+    Converts arrays from *ra*, *dec* (in deg) to XYZ unit-sphere
+    coordinates.
+    """
+    rr = np.deg2rad(ra)
+    dd = np.deg2rad(dec)
+    return np.vstack((np.cos(rr) * np.cos(dd),
+                      np.sin(rr) * np.cos(dd),
+                      np.sin(dd))).T
+
+def _kd_query_radec(kd, ra, dec, radius_deg):
+    searchrad = np.deg2rad(radius_deg)
+    # Convert from radius to (tangent) distance on the unit sphere.
+    searchrad = np.sqrt(2. * (1. - np.cos(searchrad)))
+    xyz = _radec2xyz([ra], [dec])
+    inds = kd.query_ball_point(xyz[0, :], searchrad)
+    inds = np.array(inds)
+    return inds

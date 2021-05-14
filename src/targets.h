@@ -125,32 +125,6 @@ typedef struct {
     double nhat[3];
 } TreePoint;
 
-class TargetTree : public std::enable_shared_from_this <TargetTree> {
-
-    public :
-
-        typedef std::shared_ptr <TargetTree> pshr;
-
-        TargetTree(Targets::pshr objs, double min_tree_size = 0.01);
-
-        void near(double ra_deg, double dec_deg, double radius_rad,
-            std::vector <int64_t> & result) const;
-
-    private :
-
-        // Helper vector with just the data we need for the tree.
-        std::vector <TreePoint> treelist_;
-
-        // Wrap in a unique pointer so that resources are freed automatically
-        // on destruction.
-        std::unique_ptr < htmTree <TreePoint> > tree_;
-
-        // min tree size parameter.
-        double mintreesz_;
-
-};
-
-
 // Data for one point of the KD tree.
 
 typedef struct {
@@ -159,7 +133,6 @@ typedef struct {
 } KdTreePoint;
 
 // Class holding the object IDs available for each tile and location.
-
 
 class TargetsAvailable : public std::enable_shared_from_this <TargetsAvailable> {
 
