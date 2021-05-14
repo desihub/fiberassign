@@ -19,8 +19,7 @@ from fiberassign.fba_launch_io import (
     get_desitarget_paths,
     create_tile,
     create_sky,
-    create_targ_nomtl,
-    create_mtl,
+    create_targ,
     create_too,
     launch_onetile_fa,
     update_fiberassign_header,
@@ -158,7 +157,7 @@ def main():
 
     # AR gfa
     if dogfa:
-        create_targ_nomtl(
+        create_targ(
             mytmpouts["tiles"],
             mydirs["gfa"],
             args.survey,
@@ -172,40 +171,51 @@ def main():
             start=start,
         )
 
-    # AR mtl
-    if domtl:
-        create_mtl(
+    # AR targ
+    if dotarg:
+        # AR using MTL or not?
+        if args.nomtl:
+            mtldir, isodate, quick, step = None, None, True, "dotarg_nomtl"
+        else:
+             mtldir, isodate, quick, step = mydirs["mtl"], args.mtltime, False, "dotarg_mtl"
+        create_targ(
             mytmpouts["tiles"],
-            mydirs["mtl"],
-            args.mtltime,
             mydirs["targ"],
             args.survey,
             args.gaiadr.replace("gaia", ""),
             args.pmcorr,
             mytmpouts["targ"],
+            mtldir=mtldir,
+            isodate=isodate,
+            quick=quick,
             tmpoutdir=tmpoutdir,
             pmtime_utc_str=args.pmtime_utc_str,
             log=log,
-            step="domtl",
+            step=step,
             start=start,
         )
 
     # AR secondary targets
     # AR if not backup
     if (doscnd) & ("scnd" in list(mydirs.keys())):
-        create_mtl(
+        if args.nomtl:
+            mtldir, isodate, step = None, None, "doscnd_nomtl"
+        else:
+             mtldir, isodate, step = mydirs["scndmtl"], args.mtltime, "doscnd_mtl"
+        create_targ(
             mytmpouts["tiles"],
-            mydirs["scndmtl"],
-            args.mtltime,
             mydirs["scnd"],
             args.survey,
             args.gaiadr.replace("gaia", ""),
             args.pmcorr,
             mytmpouts["scnd"],
+            mtldir=mtldir,
+            isodate=isodate,
+            quick=False, # AR False for secondary
             tmpoutdir=tmpoutdir,
             pmtime_utc_str=args.pmtime_utc_str,
             log=log,
-            step="doscnd",
+            step=step,
             start=start,
         )
     else:
@@ -328,7 +338,7 @@ def main():
 if __name__ == "__main__":
 
     # AR to speed up development/debugging
-    dotile, dosky, dogfa, domtl, doscnd, dotoo, dofa, dozip, doqa, domove = (
+    dotile, dosky, dogfa, dotarg, doscnd, dotoo, dofa, dozip, doqa, domove = (
         False,
         False,
         False,
@@ -343,7 +353,7 @@ if __name__ == "__main__":
     dotile = True
     dosky = True
     dogfa = True
-    domtl = True
+    dotarg = True
     doscnd = True
     dotoo = True
     dofa = True
@@ -438,6 +448,12 @@ if __name__ == "__main__":
         help="yyyy-mm-ddThh:mm:ss+00:00 rundate for focalplane with UTC timezone formatting (default=current UTC time)",
         type=str,
         default=None,
+        required=False,
+    )
+    parser.add_argument(
+        "--nomtl",
+        help="disables the use of MTL ledgers, only queries the desitarget catalogs",
+        action="store_true",
         required=False,
     )
     parser.add_argument(
