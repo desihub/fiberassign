@@ -218,6 +218,102 @@ def custom_read_targets_nomtl_in_tiles(
     return d
 
 
+def custom_read_targets_mtl_in_tiles(
+    tiles,
+    mtldir,
+    targdir,
+    survey,
+    gaiadr,
+    pmcorr,
+    outfn,
+    quick=True,
+    unique=True,
+    isodate=None,
+    log=Logger.get(),
+    step="",
+    start=time(),
+):
+    """
+    Wrapper to desitarget.io.read_targets_in_tiles using MTL + inflate_ledger.
+
+    Args:
+        tiles: tiles object (as required by desitarget.io.read_targets_in_tiles)
+        mtldir: desisurveyops MTL folder (string)
+        targdir: desitarget targets folder (or file name if secondary) (string)
+        survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
+        gaiadr: Gaia dr ("dr2" or "edr3")
+        pmcorr: apply proper-motion correction? ("y" or "n")
+        outfn: fits file name to be written (string)
+        quick, unique, isodate (optional, default to True, True, None): same as desitarget.io.read_targets_in_tiles arguments
+            isodate formatting: yyyy-mm-ddThh:mm:ss+00:00
+        log (optional, defaults to Logger.get()): Logger object
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+
+    Returns:
+        array of targets in the passed tiles.
+
+    Notes:
+        args.mtltime in fba_launch is the isodate
+        if pmcorr="y", then pmtime_utc_str needs to be set; will trigger an error otherwise.
+        for sv3-backup, we remove BACKUP_BRIGHT targets.
+        TBD : if secondary targets, we currently disable the inflate_ledger(), as it
+                seems to not currently work.
+                hence if secondary and pmcorr="y", the code will crash, as the 
+                GAIA_ASTROMETRIC_EXCESS_NOISE column will be missing; though we do not
+                expect this configuration to happen, so it should be fine for now.
+    """
+    # AR mtl: storing the timestamp at which we queried MTL
+    log.info("{:.1f}s\t{}\tMTL isodate={}".format(time() - start, step, isodate))
+
+    # AR mtl: read MTL ledgers
+    d = read_targets_in_tiles(
+        mtldir,
+        tiles=tiles,
+        quick=quick,
+        mtl=True,
+        unique=unique,
+        isodate=isodate,
+    )
+    
+    # AR mtl: removing by hand BACKUP_BRIGHT for sv3/BACKUP
+    # AR mtl: using an indirect way to find if program=backup,
+    # AR mtl:   to avoid the need of an extra program argument
+    # AR mtl:   for sv3, there is no secondary-backup, so no ambiguity
+    if (survey == "sv3") & ("backup" in mtldir):
+        from desitarget.sv3.sv3_targetmask import mws_mask
+
+        keep = (d["SV3_MWS_TARGET"] & mws_mask["BACKUP_BRIGHT"]) == 0
+        log.info(
+            "{:.1f}s\t{}\tremoving {}/{} BACKUP_BRIGHT targets".format(
+                time() - start, step, len(d) - keep.sum(), len(d)
+            )
+        )
+        d = d[keep]
+
+    # AR mtl: add columns not present in ledgers
+    # AR mtl: need to provide exact list (if columns=None, inflate_ledger()
+    # AR mtl:    overwrites existing columns)
+    # AR mtl: TBD : we currently disable it for secondary targets
+    # AR mtl:       using an indirect way to find if secondary,
+    # AR mtl:       to avoid the need of an extra program argument
+    if "secondary" not in mtldir:
+        columns = [key for key in minimal_target_columns if key not in d.dtype.names]
+        # AR mtl: also add GAIA_ASTROMETRIC_EXCESS_NOISE, in case args.pmcorr == "y"
+        if pmcorr == "y":
+            columns += ["GAIA_ASTROMETRIC_EXCESS_NOISE"]
+        log.info(
+            "{:.1f}s\t{}\tadding {} from {}".format(
+                time() - start, step, ",".join(columns), targdir
+            )
+        )
+        d = inflate_ledger(
+            d, targdir, columns=columns, header=False, strictcols=False, quick=True
+        )
+    return d
+
+
 def mv_write_targets_out(infn, targdir, outfn, log=Logger.get(), step="", start=time()):
     """
     Moves the file created by desitarget.io.write_targets
