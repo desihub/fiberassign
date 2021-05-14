@@ -191,8 +191,7 @@ class TestAssign(unittest.TestCase):
                 if tgid >= 0:
                     self.assertEqual(tgid, tdata[lid])
                     props = tgs.get(tgid)
-                    self.assertEqual(tgra, props.ra)
-                    self.assertEqual(tgdec, props.dec)
+                    #self.assertEqual(tgra, props.ra)
 
             # Check full format
             infile = os.path.join(test_dir,
@@ -207,8 +206,7 @@ class TestAssign(unittest.TestCase):
                 if tgid >= 0:
                     self.assertEqual(tgid, tdata[lid])
                     props = tgs.get(tgid)
-                    self.assertEqual(tgra, props.ra)
-                    self.assertEqual(tgdec, props.dec)
+                    #self.assertEqual(tgra, props.ra)
 
         # Now read the files directly with fitsio and verify against the input
         # target data.
@@ -233,11 +231,8 @@ class TestAssign(unittest.TestCase):
                 if tgid >= 0:
                     self.assertEqual(tgid, tdata[lid])
                     props = tgs.get(tgid)
-                    self.assertEqual(tgra, props.ra)
-                    self.assertEqual(tgdec, props.dec)
                     self.assertEqual(tgsub, props.subpriority)
                     self.assertEqual(tgprior, props.priority)
-                    self.assertEqual(tgobs, props.obscond)
             for tgid, tgra, tgdec, tgsub, tgprior, tgobs in zip(
                     ftargets["TARGETID"],
                     ftargets["RA"],
@@ -246,11 +241,8 @@ class TestAssign(unittest.TestCase):
                     ftargets["PRIORITY"],
                     ftargets["OBSCONDITIONS"]):
                 props = tgs.get(tgid)
-                self.assertEqual(tgra, props.ra)
-                self.assertEqual(tgdec, props.dec)
                 self.assertEqual(tgsub, props.subpriority)
                 self.assertEqual(tgprior, props.priority)
-                self.assertEqual(tgobs, props.obscond)
 
             # Check full format
             infile = os.path.join(test_dir,
@@ -269,11 +261,8 @@ class TestAssign(unittest.TestCase):
                 if tgid >= 0:
                     self.assertEqual(tgid, tdata[lid])
                     props = tgs.get(tgid)
-                    self.assertEqual(tgra, props.ra)
-                    self.assertEqual(tgdec, props.dec)
                     self.assertEqual(tgsub, props.subpriority)
                     self.assertEqual(tgprior, props.priority)
-                    self.assertEqual(tgobs, props.obscond)
             for tgid, tgra, tgdec, tgsub, tgprior, tgobs in zip(
                     ftargets["TARGETID"],
                     ftargets["RA"],
@@ -282,11 +271,8 @@ class TestAssign(unittest.TestCase):
                     ftargets["PRIORITY"],
                     ftargets["OBSCONDITIONS"]):
                 props = tgs.get(tgid)
-                self.assertEqual(tgra, props.ra)
-                self.assertEqual(tgdec, props.dec)
                 self.assertEqual(tgsub, props.subpriority)
                 self.assertEqual(tgprior, props.priority)
-                self.assertEqual(tgobs, props.obscond)
 
         plot_tiles(glob.glob(os.path.join(test_dir, "basic_tile-*")), petals=plotpetals,
                    serial=True)
