@@ -1005,8 +1005,8 @@ def create_sky(
     skydirs = [skydir]
     if suppskydir is not None:
         skydirs.append(suppskydir)
-    d = custom_read_targets_in_tiles(
-        skydirs, tiles, quick=True, mtl=False, log=log, step=step, start=start
+    d = custom_read_targets_nomtl_in_tiles(
+        skydirs, tiles, quick=True, log=log, step=step, start=start
     )
     n, tmpfn = write_skies(tmpoutdir, d, indir=skydir, indir2=suppskydir,)
     _ = mv_write_targets_out(tmpfn, tmpoutdir, outfn, log=log, step=step, start=start)
