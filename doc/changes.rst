@@ -6,7 +6,10 @@ fiberassign change log
 3.0.1 (unreleased)
 ------------------
 
-* No changes yet.
+* Robust if target-of-opportunity (ToO) inputs don't exist (PR `#352`_).
+* Don't set $SKYBRICKS_DIR in module file (desitarget does that now) (direct commit).
+
+.. _`#352`: https://github.com/desihub/fiberassign/pull/352
 
 3.0.0 (2021-05-13)
 ------------------
