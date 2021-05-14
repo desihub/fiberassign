@@ -1584,43 +1584,6 @@ void fba::Assignment::unassign_tileloc(fba::Hardware const * hw,
 }
 
 
-void fba::Assignment::targets_to_project(
-    fba::Targets const * tgs,
-    std::map <int32_t, std::vector <int64_t> > const & tgsavail,
-    std::vector <int32_t> const & locs,
-    std::vector <int64_t> & tgids,
-    std::vector <double> & tgra,
-    std::vector <double> & tgdec) const {
-    // This function computes the target IDs that need to be projected
-    // for a given set of locations on a tile.
-
-    std::set <int64_t> seen;
-    tgids.clear();
-    tgra.clear();
-    tgdec.clear();
-
-    for (auto const & lid : locs) {
-        // Project this location's targets
-        if (tgsavail.count(lid) > 0) {
-            // The available targets for this location.
-            auto const & avail = tgsavail.at(lid);
-            for (auto const & id : avail) {
-                if (seen.count(id) == 0) {
-                    // This target has not yet been processed.
-                    auto const & tg = tgs->data.at(id);
-                    tgids.push_back(id);
-                    tgra.push_back(tg.ra);
-                    tgdec.push_back(tg.dec);
-                    seen.insert(id);
-                }
-            }
-        }
-    }
-
-    return;
-}
-
-
 fba::Hardware::pshr fba::Assignment::hardware() const {
     return hw_;
 }
