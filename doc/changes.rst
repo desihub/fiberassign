@@ -6,10 +6,15 @@ fiberassign change log
 3.0.1 (unreleased)
 ------------------
 
+First release used for main survey observations.
+
 * Robust if target-of-opportunity (ToO) inputs don't exist (PR `#352`_).
 * Don't set $SKYBRICKS_DIR in module file (desitarget does that now) (direct commit).
+* Add PLATE_RA, PLATE_DEC columns while merging as placeholders for future
+  chromatic offsets use (PR `#355`_).
 
 .. _`#352`: https://github.com/desihub/fiberassign/pull/352
+.. _`#355`: https://github.com/desihub/fiberassign/pull/355
 
 3.0.0 (2021-05-13)
 ------------------
