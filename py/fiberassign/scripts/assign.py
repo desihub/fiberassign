@@ -267,7 +267,7 @@ def parse_assign(optlist=None):
 
     return args
 
-def run_assign_init(args):
+def run_assign_init(args, plate_radec=True):
     """Initialize assignment inputs.
 
     This uses the previously parsed options to load the input files needed.
@@ -311,7 +311,7 @@ def run_assign_init(args):
     # Create empty target list
     tgs = Targets()
     # Create structure for carrying along auxiliary target data not needed by C++.
-    tagalong = create_tagalong()
+    tagalong = create_tagalong(plate_radec=plate_radec)
 
     # Append each input target file.  These target files must all be of the
     # same survey type, and will set the Targets object to be of that survey.
@@ -345,7 +345,7 @@ def run_assign_init(args):
     return (hw, tiles, tgs, tagalong)
 
 
-def run_assign_full(args):
+def run_assign_full(args, plate_radec=True):
     """Run fiber assignment over all tiles simultaneously.
 
     This uses the previously parsed options to read input data and run through
@@ -363,7 +363,7 @@ def run_assign_full(args):
     gt.start("run_assign_full calculation")
 
     # Load data
-    hw, tiles, tgs, tagalong = run_assign_init(args)
+    hw, tiles, tgs, tagalong = run_assign_init(args, plate_radec=plate_radec)
 
     # Create a hierarchical triangle mesh lookup of the targets positions
     gt.start("Compute targets locations in tile")

@@ -119,7 +119,8 @@ class TestQA(unittest.TestCase):
         log_msg = "Simulated {} science targets\n".format(nscience)
 
         tgs = Targets()
-        load_target_file(tgs, input_mtl)
+        tagalong = create_tagalong(plate_radec=False)
+        load_target_file(tgs, tagalong, input_mtl)
 
         # Read hardware properties
         fp, exclude, state = sim_focalplane(rundate=test_assign_date)
@@ -129,7 +130,6 @@ class TestQA(unittest.TestCase):
         tiles = load_tiles(tiles_file=tfile)
 
         # Precompute target positions
-        tagalong = create_tagalong()
         tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles, tagalong)
         # Compute the targets available to each fiber for each tile.
         tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
@@ -149,7 +149,7 @@ class TestQA(unittest.TestCase):
         # Redistribute
         asgn.redistribute_science()
 
-        write_assignment_fits(tiles, asgn, out_dir=test_dir, all_targets=True)
+        write_assignment_fits(tiles, tagalong, asgn, out_dir=test_dir, all_targets=True)
 
         tile_ids = list(tiles.id)
 

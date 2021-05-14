@@ -118,16 +118,20 @@ class TargetTagalong(object):
                 outarr[outinds] = thedata[ic][ininds]
         return outarrs
 
-def create_tagalong():
-    return TargetTagalong([
+def create_tagalong(plate_radec=True):
+    cols = [
         'RA',   # -> TARGET_RA
         'DEC',  # -> TARGET_DEC
         'OBSCOND',
         'FA_TARGET',
-        'PLATE_RA',
-        'PLATE_DEC',
-        # 'PLATE_REF_EPOCH',
-        ],
+        ]
+    if plate_radec:
+        cols.extend([
+            'PLATE_RA',
+            'PLATE_DEC',
+            # 'PLATE_REF_EPOCH',
+            ])
+    return TargetTagalong(cols,
         outnames={'RA':'TARGET_RA', 'DEC':'TARGET_DEC',
                   'OBSCOND':None})
     # (OBSCOND doesn't appear in all the output files, so we handle it specially)

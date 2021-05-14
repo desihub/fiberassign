@@ -108,10 +108,11 @@ class TestAssign(unittest.TestCase):
         )
 
         tgs = Targets()
-        load_target_file(tgs, input_mtl)
-        load_target_file(tgs, input_std)
-        load_target_file(tgs, input_sky)
-        load_target_file(tgs, input_suppsky)
+        tagalong = create_tagalong(plate_radec=False)
+        load_target_file(tgs, tagalong, input_mtl)
+        load_target_file(tgs, tagalong, input_std)
+        load_target_file(tgs, tagalong, input_sky)
+        load_target_file(tgs, tagalong, input_suppsky)
 
         # Compute the targets available to each fiber for each tile.
         fp, exclude, state = sim_focalplane(rundate=test_assign_date)
@@ -123,7 +124,6 @@ class TestAssign(unittest.TestCase):
         sim_tiles(tfile)
         tiles = load_tiles(tiles_file=tfile)
         # Precompute target positions
-        tagalong = create_tagalong()
         tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles, tagalong)
         tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
 
@@ -139,13 +139,13 @@ class TestAssign(unittest.TestCase):
 
         # Write out, merge, read back in and verify
 
-        write_assignment_ascii(tiles, asgn, out_dir=test_dir,
+        write_assignment_ascii(tiles, asgn, tagalong, out_dir=test_dir,
                                out_prefix="test_io_ascii_")
 
-        write_assignment_fits(tiles, asgn, out_dir=test_dir,
+        write_assignment_fits(tiles, tagalong, asgn, out_dir=test_dir,
                               out_prefix="basic_", all_targets=False)
 
-        write_assignment_fits(tiles, asgn, out_dir=test_dir,
+        write_assignment_fits(tiles, tagalong, asgn, out_dir=test_dir,
                               out_prefix="full_", all_targets=True)
 
         plotpetals = [0]
@@ -335,10 +335,11 @@ class TestAssign(unittest.TestCase):
         )
 
         tgs = Targets()
-        load_target_file(tgs, input_mtl)
-        load_target_file(tgs, input_std)
-        load_target_file(tgs, input_sky)
-        load_target_file(tgs, input_suppsky)
+        tagalong = create_tagalong(plate_radec=False)
+        load_target_file(tgs, tagalong, input_mtl)
+        load_target_file(tgs, tagalong, input_std)
+        load_target_file(tgs, tagalong, input_sky)
+        load_target_file(tgs, tagalong, input_suppsky)
 
         # Read hardware properties
         fp, exclude, state = sim_focalplane(rundate=test_assign_date)
@@ -351,7 +352,6 @@ class TestAssign(unittest.TestCase):
             sim_stuck_sky(test_dir, hw, tiles)
 
         # Precompute target positions
-        tagalong = create_tagalong()
         tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles, tagalong)
 
         # Compute the targets available to each fiber for each tile.
@@ -375,7 +375,7 @@ class TestAssign(unittest.TestCase):
 
         run(asgn)
 
-        write_assignment_fits(tiles, asgn, out_dir=test_dir, all_targets=True,
+        write_assignment_fits(tiles, tagalong, asgn, out_dir=test_dir, all_targets=True,
                               stucksky=stucksky)
 
         plotpetals = [0]
@@ -456,7 +456,7 @@ class TestAssign(unittest.TestCase):
         }
         optlist = option_list(opts)
         args = parse_assign(optlist)
-        run_assign_full(args)
+        run_assign_full(args, plate_radec=False)
 
         plotpetals = "0"
         #plotpetals = "0,1,2,3,4,5,6,7,8,9"
@@ -545,10 +545,11 @@ class TestAssign(unittest.TestCase):
             odir = "theta_{:02d}".format(rt)
 
             tgs = Targets()
-            load_target_file(tgs, input_mtl)
-            load_target_file(tgs, input_std)
-            load_target_file(tgs, input_sky)
-            load_target_file(tgs, input_suppsky)
+            tagalong = create_tagalong(plate_radec=False)
+            load_target_file(tgs, tagalong, input_mtl)
+            load_target_file(tgs, tagalong, input_std)
+            load_target_file(tgs, tagalong, input_sky)
+            load_target_file(tgs, tagalong, input_suppsky)
 
             # Manually override the field rotation
             tiles = load_tiles(tiles_file=tfile, obstheta=float(rt))
@@ -565,7 +566,6 @@ class TestAssign(unittest.TestCase):
             )
 
             # Precompute target positions
-            tagalong = create_tagalong()
             tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles, tagalong)
 
             # Compute the targets available to each fiber for each tile.
@@ -585,7 +585,7 @@ class TestAssign(unittest.TestCase):
 
             out = os.path.join(test_dir, odir)
 
-            write_assignment_fits(tiles, asgn, out_dir=out, all_targets=True)
+            write_assignment_fits(tiles, tagalong, asgn, out_dir=out, all_targets=True)
 
             ppet = 6
             if odir == "theta_36":

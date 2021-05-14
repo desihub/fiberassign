@@ -52,7 +52,7 @@ class TestTargets(unittest.TestCase):
         nsuppsky = sim_targets(input_suppsky, TARGET_TYPE_SUPPSKY, tgoff)
 
         tgs = Targets()
-        tagalong = create_tagalong()
+        tagalong = create_tagalong(plate_radec=False)
         load_target_file(tgs, tagalong, input_mtl)
         load_target_file(tgs, tagalong, input_std)
         load_target_file(tgs, tagalong, input_sky)
@@ -62,8 +62,6 @@ class TestTargets(unittest.TestCase):
         # Test access
         ids = tgs.ids()
         tt = tgs.get(ids[0])
-        tt.ra += 1.0e-5
-        tt.dec += 1.0e-5
         tt.subpriority = 0.99
 
         # Compute the targets available to each fiber for each tile.
@@ -72,7 +70,6 @@ class TestTargets(unittest.TestCase):
         sim_tiles(tfile)
         tiles = load_tiles(tiles_file=tfile)
         # Precompute target positions
-        tagalong = create_tagalong()
         tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles, tagalong)
         tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
 

@@ -31,7 +31,7 @@ from .tiles import load_tiles
 from .targets import (Targets, load_target_table,
                       TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                       TARGET_TYPE_SUPPSKY,
-                      TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE)
+                      TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE, create_tagalong)
 
 from .assign import (read_assignment_fits_tile, result_tiles, result_path,
                      avail_table_to_dict, get_parked_thetaphi)
@@ -389,12 +389,13 @@ def plot_assignment_tile_file(petals, real_shapes, params):
 
     # Target properties (x, y, color) for plotting
     tgs = Targets()
+    tagalong = create_tagalong(plate_radec=False)
     if "FA_SURV" in header:
-        load_target_table(tgs, targets_data,
+        load_target_table(tgs, tagalong, targets_data,
                           survey=str(header["FA_SURV"]).rstrip(),
                           typecol="FA_TYPE")
     else:
-        load_target_table(tgs, targets_data)
+        load_target_table(tgs, tagalong, targets_data)
 
     targetprops = plot_tile_targets_props(hw,
                                           tile_ra, tile_dec,
