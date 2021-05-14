@@ -102,12 +102,11 @@ def main():
             )
         )
 
-    # AR hdr_survey, hdr_prgrm, faflavor
-    hdr_survey, hdr_faprgrm = args.survey, args.program.lower()
-    faflavor = "{}{}".format(hdr_survey, hdr_faprgrm)
+    # AR faflavor
+    faflavor = "{}{}".format(args.hdr_survey, args.hdr_faprgrm)
     log.info(
-        "{:.1f}s\tsettings\theader: hdr_survey={} , hdr_faprgrm={} , faflavor={}".format(
-            time() - start, hdr_survey, hdr_faprgrm, faflavor
+        "{:.1f}s\tsettings\theader: args.hdr_survey={} , args.hdr_faprgrm={} , faflavor={}".format(
+            time() - start, args.hdr_survey, args.hdr_faprgrm, faflavor
         )
     )
 
@@ -260,8 +259,8 @@ def main():
             mytmpouts["fiberassign"],
             args,
             mydirs,
-            hdr_survey,
-            hdr_faprgrm,
+            args.hdr_survey,
+            args.hdr_faprgrm,
             faflavor,
             ebv,
             obscon,
@@ -524,6 +523,21 @@ if __name__ == "__main__":
         help="log to stdout instead of redirecting to a file",
     )
     #
+    parser.add_argument(
+        "--hdr_survey",
+        help="SURVEY keyword in fiberassign-TILEID.fits.gz file (default=args.survey); FAFLAVOR will be {args.hdr_survey}{args.hdr_faprgrm}",
+        type=str,
+        default=None,
+        required=False,
+    )
+    parser.add_argument(
+        "--hdr_faprgrm",
+        help="FAPRGRM keyword in fiberassign-TILEID.fits.gz file (default=args.program.lower()); FAFLAVOR will be {args.hdr_survey}{args.hdr_faprgrm}",
+        type=str,
+        default=None,
+        required=False,
+    )
+
     args = parser.parse_args()
     log = Logger.get()
     start = time()
@@ -563,6 +577,12 @@ if __name__ == "__main__":
     # AR mintfrac
     if args.mintfrac is None:
         args.mintfrac = mintfracs_all[args.survey]
+
+    # AR hdr_survey, hdr_faprgrm
+    if args.hdr_survey is None:
+        args.hdr_survey = args.survey
+    if args.hdr_faprgrm is None:
+        args.hdr_faprgrm = args.program.lower()
 
     # AR create a temporary directory for generated files
     tmpoutdir = tempfile.mkdtemp()
