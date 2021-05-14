@@ -39,7 +39,6 @@ fba::Target::Target() {
     obsremain = 0;
     priority = 0;
     subpriority = 0.0;
-    obscond = 0;
     type = 0;
 }
 
@@ -48,13 +47,11 @@ fba::Target::Target(int64_t tid,
                     int32_t tobsremain,
                     int32_t tpriority,
                     double tsubpriority,
-                    int32_t tobscond,
                     uint8_t ttype) {
     id = tid;
     obsremain = tobsremain;
     priority = tpriority;
     subpriority = tsubpriority;
-    obscond = tobscond;
     type = ttype;
 }
 
@@ -116,7 +113,6 @@ void fba::Targets::append(std::string const & tsurvey,
                           std::vector <int32_t> const & obsremain,
                           std::vector <int32_t> const & priority,
                           std::vector <double> const & subpriority,
-                          std::vector <int32_t> const & obscond,
                           std::vector <uint8_t> const & type) {
     fba::Logger & logger = fba::Logger::get();
     std::ostringstream logmsg;
@@ -149,13 +145,12 @@ void fba::Targets::append(std::string const & tsurvey,
             auto const & tg = data.at(id[t]);
             logmsg << "Target ID " << id[t]
                 << " already exists with properties: (" << tg.priority << ","
-                << tg.subpriority << ") " << tg.obsremain << ", "
-                << tg.obscond << ", " << (int)(tg.type);
+                << tg.subpriority << ") " << tg.obsremain
+                   << ", " << (int)(tg.type);
             logger.error(logmsg.str().c_str());
             logmsg.str("");
             logmsg << "  New target properties: (" << priority[t] << ","
-                << subpriority[t] << ") " << obsremain[t] << ", "
-                << obscond[t];
+                   << subpriority[t] << ") " << obsremain[t];
             logger.error(logmsg.str().c_str());
             logmsg.str("");
             logmsg << "  Duplicate target IDs are not permitted.";
@@ -164,7 +159,7 @@ void fba::Targets::append(std::string const & tsurvey,
         } else {
             data[id[t]] = Target(id[t],
                                  obsremain[t], priority[t], subpriority[t],
-                                 obscond[t], type[t]);
+                                 type[t]);
         }
         if ((priority[t] > 0) && ((type[t] & TARGET_TYPE_SCIENCE) != 0)) {
             // Only consider science targets in the list of target classes.

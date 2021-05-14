@@ -67,18 +67,20 @@ class TargetTagalong(object):
         Sets *ALL* rows of the given *tabledata* object to defaults,
         and then fills in values for the given targetids, if they are found.
         '''
-        # Set defaults
+        # Set defaults, and grab output arrays
+        outarrs = []
         for c in self.columns:
             defval = self.get_default(c)
-            if defval is None:
-                continue
-            outarr = tabledata[self.get_output_name(c)]
-            outarr[:] = defval
-
+            outname = self.get_output_name(c)
+            if outname is not None:
+                outarr = tabledata[outname]
+                if defval is not None:
+                    outarr[:] = defval
+                outarrs.append(outarr)
+            else:
+                outarrs.append(None)
         # Build output targetid-to-index map
         outmap = dict([(tid,i) for i,tid in enumerate(targetids)])
-        # Put tagalong data into these output arrays
-        outarrs = [tabledata[self.get_output_name(c)] for c in self.columns]
         # Go through my many data arrays
         for thedata in self.data:
             tids = thedata[0]
@@ -86,8 +88,9 @@ class TargetTagalong(object):
             outinds = np.array([outmap.get(tid, -1) for tid in tids])
             ininds = np.flatnonzero(outinds >= 0)
             outinds = outinds[ininds]
-
             for outarr,inarr in zip(outarrs, thedata[1:]):
+                if outarr is None:
+                    continue
                 outarr[outinds] = inarr[ininds]
 
     def get(self, name):
@@ -762,12 +765,14 @@ def append_target_table(tgs, tgdata, survey, typeforce, typecol, sciencemask,
         d_subprior[:] = np.zeros(nrows, dtype=np.float64)
 
     if tagalong is not None:
-        tagalong.add_data(d_targetid, tgdata, fake={'FA_TARGET': d_bits})
+        tagalong.add_data(d_targetid, tgdata,
+                          fake={'FA_TARGET': d_bits,
+                                'OBSCOND': d_obscond})
 
     # Append the data to our targets list.  This will print a
     # warning if there are duplicate target IDs.
     tgs.append(survey, d_targetid, d_nobs, d_prior,
-               d_subprior, d_obscond, d_type)
+               d_subprior, d_type)
     return
 
 
@@ -1062,22 +1067,10 @@ def targets_in_tiles(hw, tgs, tiles, tagalong):
     tile_x = {}
     tile_y = {}
 
-    #target_ra = tagalong.get('RA')
-    #target_dec = tagalong.get('DEC')
-
     target_ids = tgs.ids()
-    target_ra, target_dec = tagalong.get_for_ids(target_ids, ['RA', 'DEC'])
+    target_ra, target_dec, target_obscond = tagalong.get_for_ids(
+        target_ids, ['RA', 'DEC', 'OBSCOND'])
 
-    #target_ra  = np.zeros(len(target_ids))
-    #target_dec = np.zeros(len(target_ids))
-    target_obscond = np.zeros(len(target_ids), np.int32)
-    for i,tid in enumerate(target_ids):
-        tg = tgs.get(tid)
-        #target_ra[i] = tg.ra
-        #target_dec[i] = tg.dec
-        target_obscond[i] = tg.obscond
-    #target_ra  = np.array([tgs.get(tid).ra  for tid in target_ids])
-    #target_dec = np.array([tgs.get(tid).dec for tid in target_ids])
     kd = _radec2kd(target_ra, target_dec)
 
     for (tile_id, tile_ra, tile_dec, tile_obscond, tile_ha, tile_obstheta,

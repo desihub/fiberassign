@@ -1177,9 +1177,6 @@ PYBIND11_MODULE(_internal, m) {
         .def_readwrite("subpriority", &fba::Target::subpriority, R"(
             The float64 subpriority on the range [0,1).
         )")
-        .def_readwrite("obscond", &fba::Target::obscond, R"(
-            The valid observing conditions allowed for this target.
-        )")
         .def_readwrite("type", &fba::Target::type, R"(
             The internal target type (science, standard, sky, safe).
         )")
@@ -1213,7 +1210,7 @@ PYBIND11_MODULE(_internal, m) {
 
     // Define a numpy dtype wrapper around our internal "Target" class.
     PYBIND11_NUMPY_DTYPE(fba::Target, id, obsremain, priority,
-                         subpriority, obscond, type);
+                         subpriority, type);
 
 
     py::class_ <fba::Targets, fba::Targets::pshr > (m, "Targets", R"(
@@ -1228,7 +1225,7 @@ PYBIND11_MODULE(_internal, m) {
         .def("append", &fba::Targets::append, py::arg("tsurvey"),
             py::arg("ids"), py::arg("obsremain"),
             py::arg("priority"), py::arg("subpriority"),
-            py::arg("obscond"), py::arg("type"), R"(
+            py::arg("type"), R"(
             Append objects to the target list.
 
             Args:
@@ -1240,8 +1237,6 @@ PYBIND11_MODULE(_internal, m) {
                     target class priority for each object.
                 subpriority (array):  array of float64 values in [0.0, 1.0]
                     representing the priority within the target class.
-                obscond (array):  array of int32 bitfields describing the
-                    valid observing conditions for each target.
                 type (array):  array of uint8 bitfields holding the types of
                     of each target (science, standard, etc).
                 survey (list):  list of strings of the survey types for each

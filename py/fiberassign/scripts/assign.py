@@ -314,12 +314,13 @@ def run_assign_init(args):
     tagalong = TargetTagalong([
         'RA',   # -> TARGET_RA
         'DEC',  # -> TARGET_DEC
+        'OBSCOND',
         'FA_TARGET',
         'PLATE_RA',
         'PLATE_DEC',
         # 'PLATE_REF_EPOCH',
         ],
-        outnames={'RA':'TARGET_RA', 'DEC':'TARGET_DEC'})
+        outnames={'RA':'TARGET_RA', 'DEC':'TARGET_DEC', 'OBSCOND':None})
 
     # Append each input target file.  These target files must all be of the
     # same survey type, and will set the Targets object to be of that survey.

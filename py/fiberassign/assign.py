@@ -232,7 +232,7 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params,
         tg_type = np.empty(ntarget, dtype=np.uint8)
         tg_priority = np.empty(ntarget, dtype=np.int32)
         tg_subpriority = np.empty(ntarget, dtype=np.float64)
-        tg_obscond = np.empty(ntarget, dtype=np.int32)
+        #tg_obscond = np.empty(ntarget, dtype=np.int32)
         tg_indx = dict()
         for indx, tg in enumerate(tgids):
             tg_indx[tg] = indx
@@ -246,10 +246,10 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params,
             tg_type[indx] = props.type
             tg_priority[indx] = props.priority
             tg_subpriority[indx] = props.subpriority
-            tg_obscond[indx] = props.obscond
+            #tg_obscond[indx] = props.obscond
 
-        (tg_ra, tg_dec, tg_bits) = tagalong.get_for_ids(tgids, ['RA', 'DEC',
-                                                                'FA_TARGET'])
+        (tg_ra, tg_dec, tg_bits, tg_obscond) = tagalong.get_for_ids(
+            tgids, ['RA', 'DEC', 'FA_TARGET', 'OBSCOND'])
 
         # We compute the X / Y focalplane coordinates for ALL available
         # targets, not just the assigned ones.  This allows us to write out
@@ -649,7 +649,7 @@ def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fba-",
     return
 
 
-def write_assignment_ascii(tiles, asgn, out_dir=".", out_prefix="fba-",
+def write_assignment_ascii(tiles, asgn, tagalong, out_dir=".", out_prefix="fba-",
                            split_dir=False):
     """Write out assignment results in ASCII format.
 
@@ -692,12 +692,17 @@ def write_assignment_ascii(tiles, asgn, out_dir=".", out_prefix="fba-",
                 f.write("#\n")
                 f.write("# LOCATION  TARGETID  RA  DEC  PRIORITY  "
                         "SUBPRIORITY  OBSCONDITIONS  FBATYPE\n")
-                for lid in sorted(tdata.keys()):
+
+                lids = sorted(tdata.keys())
+                targetids = [tdata[lid] for lid in lids]
+                (ra, dec, obscond) = tagalong.get_for_ids(targetids,
+                                              ['RA', 'DEC', 'OBSCOND'])
+                for i,lid in enumerate(lids):
                     tgid = tdata[lid]
                     tg = tgs.get(tgid)
                     f.write("{:d} {:d} {:.6f} {:.6f}\n"
-                            .format(lid, tgid, tg.ra, tg.dec, tg.priority,
-                                    tg.subpriority, tg.obscond, tg.type))
+                            .format(lid, tgid, ra[i], dec[i], tg.priority,
+                                    tg.subpriority, obscond[i], tg.type))
     return
 
 
