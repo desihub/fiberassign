@@ -36,12 +36,6 @@ std::string fba::target_string(uint8_t type) {
 
 fba::Target::Target() {
     id = -1;
-    ra = 0.0;
-    dec = 0.0;
-    platera = 0.0;
-    platedec = 0.0;
-    plateepoch = 0.0;
-    bits = 0;
     obsremain = 0;
     priority = 0;
     subpriority = 0.0;
@@ -51,24 +45,12 @@ fba::Target::Target() {
 
 
 fba::Target::Target(int64_t tid,
-                    double tra,
-                    double tdec,
-                    double pra,
-                    double pdec,
-                    double pepoch,
-                    int64_t tbits,
                     int32_t tobsremain,
                     int32_t tpriority,
                     double tsubpriority,
                     int32_t tobscond,
                     uint8_t ttype) {
     id = tid;
-    ra = tra;
-    dec = tdec;
-    platera = pra;
-    platedec = pdec;
-    plateepoch = pepoch;
-    bits = tbits;
     obsremain = tobsremain;
     priority = tpriority;
     subpriority = tsubpriority;
@@ -131,12 +113,6 @@ fba::Targets::Targets() {
 
 void fba::Targets::append(std::string const & tsurvey,
                           std::vector <int64_t> const & id,
-                          std::vector <double> const & ra,
-                          std::vector <double> const & dec,
-                          std::vector <double> const & pra,
-                          std::vector <double> const & pdec,
-                          std::vector <double> const & pepoch,
-                          std::vector <int64_t> const & targetbits,
                           std::vector <int32_t> const & obsremain,
                           std::vector <int32_t> const & priority,
                           std::vector <double> const & subpriority,
@@ -172,14 +148,12 @@ void fba::Targets::append(std::string const & tsurvey,
             logmsg.str("");
             auto const & tg = data.at(id[t]);
             logmsg << "Target ID " << id[t]
-                << " already exists with properties: ("
-                << tg.ra << "," << tg.dec << ") (" << tg.priority << ","
+                << " already exists with properties: (" << tg.priority << ","
                 << tg.subpriority << ") " << tg.obsremain << ", "
                 << tg.obscond << ", " << (int)(tg.type);
             logger.error(logmsg.str().c_str());
             logmsg.str("");
-            logmsg << "  New target properties: ("
-                << ra[t] << "," << dec[t] << ") (" << priority[t] << ","
+            logmsg << "  New target properties: (" << priority[t] << ","
                 << subpriority[t] << ") " << obsremain[t] << ", "
                 << obscond[t];
             logger.error(logmsg.str().c_str());
@@ -188,7 +162,7 @@ void fba::Targets::append(std::string const & tsurvey,
             logger.error(logmsg.str().c_str());
             throw std::runtime_error(logmsg.str().c_str());
         } else {
-            data[id[t]] = Target(id[t], ra[t], dec[t], pra[t], pdec[t], pepoch[t], targetbits[t],
+            data[id[t]] = Target(id[t],
                                  obsremain[t], priority[t], subpriority[t],
                                  obscond[t], type[t]);
         }

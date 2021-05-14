@@ -1168,24 +1168,6 @@ PYBIND11_MODULE(_internal, m) {
         .def_readonly("id", &fba::Target::id, R"(
             The target ID.
         )")
-        .def_readwrite("ra", &fba::Target::ra, R"(
-            The target RA.
-        )")
-        .def_readwrite("dec", &fba::Target::dec, R"(
-            The target DEC.
-        )")
-        .def_readwrite("platera", &fba::Target::platera, R"(
-            The target PLATE_RA.
-        )")
-        .def_readwrite("platedec", &fba::Target::platedec, R"(
-            The target PLATEDEC.
-        )")
-        .def_readwrite("platerefepoch", &fba::Target::plateepoch, R"(
-            The target PLATEREFEPOCH.
-        )")
-        .def_readwrite("bits", &fba::Target::bits, R"(
-            The target bitfield (e.g. DESI_TARGET, CMX_TARGET, etc).
-`        )")
         .def_readwrite("obsremain", &fba::Target::obsremain, R"(
             The remaining observations for this target.
         )")
@@ -1222,8 +1204,7 @@ PYBIND11_MODULE(_internal, m) {
         .def("__repr__",
             [](fba::Target const & tg) {
                 std::ostringstream o;
-                o << "<fiberassign.Target id=" << tg.id << " ra=" << tg.ra
-                << " dec=" << tg.dec << " type=" << (int)tg.type
+                o << "<fiberassign.Target id=" << tg.id << " type=" << (int)tg.type
                 << " priority=" << tg.priority << " subpriority="
                 << tg.subpriority << " >";
                 return o.str();
@@ -1231,7 +1212,7 @@ PYBIND11_MODULE(_internal, m) {
         );
 
     // Define a numpy dtype wrapper around our internal "Target" class.
-    PYBIND11_NUMPY_DTYPE(fba::Target, id, ra, dec, platera, platedec, plateepoch, bits, obsremain, priority,
+    PYBIND11_NUMPY_DTYPE(fba::Target, id, obsremain, priority,
                          subpriority, obscond, type);
 
 
@@ -1245,9 +1226,7 @@ PYBIND11_MODULE(_internal, m) {
         )")
         .def(py::init < > ())
         .def("append", &fba::Targets::append, py::arg("tsurvey"),
-            py::arg("ids"), py::arg("ras"), py::arg("decs"),
-            py::arg("pras"), py::arg("pdecs"), py::arg("pepochs"),
-            py::arg("targetbits"), py::arg("obsremain"),
+            py::arg("ids"), py::arg("obsremain"),
             py::arg("priority"), py::arg("subpriority"),
             py::arg("obscond"), py::arg("type"), R"(
             Append objects to the target list.
@@ -1255,15 +1234,8 @@ PYBIND11_MODULE(_internal, m) {
             Args:
                 survey (str):  the survey type of the target data.
                 ids (array):  array of int64 target IDs.
-                ras (array):  array of float64 target RA coordinates.
-                decs (array):  array of float64 target DEC coordinates.
-                pras (array):  array of float64 target PLATE_RA coordinates.
-                pdecs (array):  array of float64 target PLATE_DEC coordinates.
-                pepochs (array):  array of float64 target PLATE_REF_EPOCH vals.
                 obsremain (array):  array of int32 number of remaining
                     observations.
-                targetbits (array):  array of int64 bit values (DESI_TARGET,
-                    CMX_TARGET, etc).
                 priority (array):  array of int32 values representing the
                     target class priority for each object.
                 subpriority (array):  array of float64 values in [0.0, 1.0]
@@ -1274,7 +1246,6 @@ PYBIND11_MODULE(_internal, m) {
                     of each target (science, standard, etc).
                 survey (list):  list of strings of the survey types for each
                     target.
-
         )")
         .def("ids", [](fba::Targets & self) {
                 auto ntarg = self.data.size();

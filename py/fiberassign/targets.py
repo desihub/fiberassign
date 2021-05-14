@@ -42,18 +42,24 @@ from ._internal import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
 
 
 class TargetTagalong(object):
-    def __init__(self, columns):
+    def __init__(self, columns, outnames={}):
         self.columns = columns
+        self.outnames = outnames
         self.data = []
 
     def get_default(self, column):
         return None
 
     def get_output_name(self, column):
-        return column
+        return self.outnames.get(column, column)
 
-    def add_data(self, targetids, tabledata):
-        tgarrays = [targetids] + [tabledata[k] for k in self.columns]
+    def add_data(self, targetids, tabledata, fake={}):
+        tgarrays = [targetids]
+        for k in self.columns:
+            if k in fake:
+                tgarrays.append(fake[k])
+            else:
+                 tgarrays.append(tabledata[k])
         self.data.append(tgarrays)
 
     def set_data(self, targetids, tabledata):
@@ -84,6 +90,41 @@ class TargetTagalong(object):
             for outarr,inarr in zip(outarrs, thedata[1:]):
                 outarr[outinds] = inarr[ininds]
 
+    def get(self, name):
+        '''
+        Fetch appended array of the given name.
+        '''
+        arrs = []
+        i = self.columns.index(name)
+        for thedata in self.data:
+            # +1 because 'thedata' starts with TARGETID.
+            arrs.append(thedata[i+1])
+        return np.hstack(arrs)
+
+    def get_for_ids(self, targetids, names):
+        '''
+        Fetch arrays for the given names and given targetids.
+        '''
+        # Create output arrays
+        outarrs = []
+        colinds = []
+        for name in names:
+            ic = self.columns.index(name)
+            dtype = self.data[0][ic+1].dtype
+            outarrs.append(np.zeros(len(targetids), dtype))
+            colinds.append(ic+1)
+        # Build output targetid-to-index map
+        outmap = dict([(tid,i) for i,tid in enumerate(targetids)])
+        # Go through my many data arrays
+        for thedata in self.data:
+            tids = thedata[0]
+            # Search for output array indices for these targetids
+            outinds = np.array([outmap.get(tid, -1) for tid in tids])
+            ininds = np.flatnonzero(outinds >= 0)
+            outinds = outinds[ininds]
+            for outarr,ic in zip(outarrs, colinds):
+                outarr[outinds] = thedata[ic][ininds]
+        return outarrs
 
 def str_to_target_type(input):
     if input == "science":
@@ -644,15 +685,13 @@ def append_target_table(tgs, tgdata, survey, typeforce, typecol, sciencemask,
     d_pra = np.zeros(nrows, dtype=np.float64)
     d_pdec = np.zeros(nrows, dtype=np.float64)
     d_pepoch = np.zeros(nrows, dtype=np.float64)
-    d_bits = np.zeros(nrows, dtype=np.int64)
     d_type = np.zeros(nrows, dtype=np.uint8)
     d_nobs = np.zeros(nrows, dtype=np.int32)
     d_prior = np.zeros(nrows, dtype=np.int32)
     d_subprior = np.zeros(nrows, dtype=np.float64)
     d_targetid[:] = tgdata["TARGETID"][:]
 
-    if tagalong is not None:
-        tagalong.add_data(d_targetid, tgdata)
+    d_bits = np.zeros(nrows, dtype=np.int64)
 
     if "TARGET_RA" in tgdata.dtype.names:
         d_ra[:] = tgdata["TARGET_RA"][:]
@@ -722,9 +761,12 @@ def append_target_table(tgs, tgdata, survey, typeforce, typecol, sciencemask,
     else:
         d_subprior[:] = np.zeros(nrows, dtype=np.float64)
 
+    if tagalong is not None:
+        tagalong.add_data(d_targetid, tgdata, fake={'FA_TARGET': d_bits})
+
     # Append the data to our targets list.  This will print a
     # warning if there are duplicate target IDs.
-    tgs.append(survey, d_targetid, d_ra, d_dec, d_pra, d_pdec, d_pepoch, d_bits, d_nobs, d_prior,
+    tgs.append(survey, d_targetid, d_nobs, d_prior,
                d_subprior, d_obscond, d_type)
     return
 
@@ -1012,7 +1054,7 @@ def load_target_file(tgs, tfile, survey=None, typeforce=None, typecol=None,
 
     return survey
 
-def targets_in_tiles(hw, tgs, tiles):
+def targets_in_tiles(hw, tgs, tiles, tagalong):
     '''
     Returns tile_targetids, tile_x, tile_y
     '''
@@ -1020,14 +1062,19 @@ def targets_in_tiles(hw, tgs, tiles):
     tile_x = {}
     tile_y = {}
 
+    #target_ra = tagalong.get('RA')
+    #target_dec = tagalong.get('DEC')
+
     target_ids = tgs.ids()
-    target_ra  = np.zeros(len(target_ids))
-    target_dec = np.zeros(len(target_ids))
+    target_ra, target_dec = tagalong.get_for_ids(target_ids, ['RA', 'DEC'])
+
+    #target_ra  = np.zeros(len(target_ids))
+    #target_dec = np.zeros(len(target_ids))
     target_obscond = np.zeros(len(target_ids), np.int32)
     for i,tid in enumerate(target_ids):
         tg = tgs.get(tid)
-        target_ra[i] = tg.ra
-        target_dec[i] = tg.dec
+        #target_ra[i] = tg.ra
+        #target_dec[i] = tg.dec
         target_obscond[i] = tg.obscond
     #target_ra  = np.array([tgs.get(tid).ra  for tid in target_ids])
     #target_dec = np.array([tgs.get(tid).dec for tid in target_ids])

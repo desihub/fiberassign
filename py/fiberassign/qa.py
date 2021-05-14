@@ -116,7 +116,8 @@ def qa_parse_table(header, tgdata):
         if obscol is not None:
             obsinit = tgdata[obscol][row]
         tg = tgs.get(tgid)
-        dt = tg.bits
+        #dt = tg.bits
+        dt = tgdata["FA_TARGET"][row]
         tgprops[tgid] = dict()
         if dt & stdmask:
             tgprops[tgid]["class"] = "standard"

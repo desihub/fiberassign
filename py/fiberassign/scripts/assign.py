@@ -312,10 +312,14 @@ def run_assign_init(args):
     tgs = Targets()
     # create empty cargo hold (for carting around auxiliary target data,
     tagalong = TargetTagalong([
+        'RA',   # -> TARGET_RA
+        'DEC',  # -> TARGET_DEC
+        'FA_TARGET',
         'PLATE_RA',
         'PLATE_DEC',
         # 'PLATE_REF_EPOCH',
-        ])
+        ],
+        outnames={'RA':'TARGET_RA', 'DEC':'TARGET_DEC'})
 
     # Append each input target file.  These target files must all be of the
     # same survey type, and will set the Targets object to be of that survey.
@@ -373,7 +377,7 @@ def run_assign_full(args):
 
     # Create a hierarchical triangle mesh lookup of the targets positions
     gt.start("Compute targets locations in tile")
-    tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles)
+    tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles, tagalong)
     gt.stop("Compute targets locations in tile")
 
     # Compute the targets available to each fiber for each tile.
@@ -460,7 +464,7 @@ def run_assign_bytile(args):
 
     # Create a hierarchical triangle mesh lookup of the targets positions
     gt.start("Compute targets locations in tile")
-    tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles)
+    tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles, tagalong)
     gt.stop("Compute targets locations in tile")
 
     # Compute the targets available to each fiber for each tile.

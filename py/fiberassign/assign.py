@@ -221,12 +221,12 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params,
 
         ntarget = len(tgids)
 
-        tg_ra = np.empty(ntarget, dtype=np.float64)
-        tg_dec = np.empty(ntarget, dtype=np.float64)
+        #tg_ra = np.empty(ntarget, dtype=np.float64)
+        #tg_dec = np.empty(ntarget, dtype=np.float64)
         #tg_pra = np.empty(ntarget, dtype=np.float64)
         #tg_pdec = np.empty(ntarget, dtype=np.float64)
         #tg_pepoch = np.empty(ntarget, dtype=np.float64)
-        tg_bits = np.zeros(ntarget, dtype=np.int64)
+        #tg_bits = np.zeros(ntarget, dtype=np.int64)
         tg_x = np.empty(ntarget, dtype=np.float64)
         tg_y = np.empty(ntarget, dtype=np.float64)
         tg_type = np.empty(ntarget, dtype=np.uint8)
@@ -237,16 +237,19 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params,
         for indx, tg in enumerate(tgids):
             tg_indx[tg] = indx
             props = tgs.get(tg)
-            tg_ra[indx] = props.ra
-            tg_dec[indx] = props.dec
+            #tg_ra[indx] = props.ra
+            #tg_dec[indx] = props.dec
             #tg_pra[indx] = props.platera
             #tg_pdec[indx] = props.platedec
             #tg_pepoch[indx] = props.platerefepoch
-            tg_bits[indx] = props.bits
+            #tg_bits[indx] = props.bits
             tg_type[indx] = props.type
             tg_priority[indx] = props.priority
             tg_subpriority[indx] = props.subpriority
             tg_obscond[indx] = props.obscond
+
+        (tg_ra, tg_dec, tg_bits) = tagalong.get_for_ids(tgids, ['RA', 'DEC',
+                                                                'FA_TARGET'])
 
         # We compute the X / Y focalplane coordinates for ALL available
         # targets, not just the assigned ones.  This allows us to write out
@@ -325,7 +328,7 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params,
 
         if tagalong is not None:
             tagalong.set_data(assigned_tgids, fdata)
-                            
+
         # Rows containing assigned locations
         assigned_valid = np.where(assigned_tgids >= 0)[0]
         assigned_invalid = np.where(assigned_tgids < 0)[0]
