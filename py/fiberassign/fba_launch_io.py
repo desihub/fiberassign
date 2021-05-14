@@ -226,7 +226,6 @@ def custom_read_targets_mtl_in_tiles(
     gaiadr,
     pmcorr,
     outfn,
-    quick=True,
     unique=True,
     isodate=None,
     log=Logger.get(),
@@ -244,7 +243,7 @@ def custom_read_targets_mtl_in_tiles(
         gaiadr: Gaia dr ("dr2" or "edr3")
         pmcorr: apply proper-motion correction? ("y" or "n")
         outfn: fits file name to be written (string)
-        quick, unique, isodate (optional, default to True, True, None): same as desitarget.io.read_targets_in_tiles arguments
+        unique, isodate (optional, default to True, None): same as desitarget.io.read_targets_in_tiles arguments
             isodate formatting: yyyy-mm-ddThh:mm:ss+00:00
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
@@ -255,7 +254,8 @@ def custom_read_targets_mtl_in_tiles(
         array of targets in the passed tiles.
 
     Notes:
-        args.mtltime in fba_launch is the isodate
+        args.mtltime in fba_launch is the isodate.
+        for MTL ledgers reading, quick=False is requested, so no quick option here.
         if pmcorr="y", then pmtime_utc_str needs to be set; will trigger an error otherwise.
         for sv3-backup, we remove BACKUP_BRIGHT targets.
         TBD : if secondary targets, we currently disable the inflate_ledger(), as it
@@ -271,7 +271,7 @@ def custom_read_targets_mtl_in_tiles(
     d = read_targets_in_tiles(
         mtldir,
         tiles=tiles,
-        quick=quick,
+        quick=False,
         mtl=True,
         unique=unique,
         isodate=isodate,
@@ -1083,7 +1083,6 @@ def create_targ(
             gaiadr,
             pmcorr,
             outfn,
-            quick=quick,
             unique=unique,
             isodate=isodate,
             log=log,
