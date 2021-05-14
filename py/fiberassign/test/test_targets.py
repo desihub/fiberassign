@@ -23,8 +23,7 @@ from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                                  default_main_safemask,
                                  default_main_excludemask,
                                  Targets, TargetsAvailable,
-                                 LocationsAvailable, targets_in_tiles)
-from fiberassign.assign import create_tagalong
+                                 LocationsAvailable, targets_in_tiles, create_tagalong)
 
 from .simulate import (test_subdir_create, sim_tiles, sim_targets, test_assign_date)
 

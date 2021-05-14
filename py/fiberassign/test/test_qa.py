@@ -28,11 +28,11 @@ from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                                  TARGET_TYPE_SUPPSKY,
                                  TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE,
                                  Targets, TargetsAvailable,
-                                 LocationsAvailable, load_target_file, targets_in_tiles)
+                                 LocationsAvailable, load_target_file, targets_in_tiles, create_tagalong)
 
 from fiberassign.assign import (Assignment, write_assignment_fits,
                                 write_assignment_ascii, merge_results,
-                                read_assignment_fits_tile, create_tagalong)
+                                read_assignment_fits_tile)
 
 from fiberassign.qa import qa_tiles, qa_targets
 

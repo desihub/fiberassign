@@ -28,7 +28,7 @@ from ..targets import (str_to_target_type, TARGET_TYPE_SCIENCE,
                        TARGET_TYPE_SAFE, Targets, TargetsAvailable,
                        LocationsAvailable,
                        load_target_file, targets_in_tiles,
-                       TargetTagalong)
+                       create_tagalong)
 
 from ..assign import (Assignment, write_assignment_fits,
                       result_path, run)
@@ -266,20 +266,6 @@ def parse_assign(optlist=None):
         args.margins['gfa'] = args.margin_gfa
 
     return args
-
-def create_tagalong():
-    return TargetTagalong([
-        'RA',   # -> TARGET_RA
-        'DEC',  # -> TARGET_DEC
-        'OBSCOND',
-        'FA_TARGET',
-        'PLATE_RA',
-        'PLATE_DEC',
-        # 'PLATE_REF_EPOCH',
-        ],
-        outnames={'RA':'TARGET_RA', 'DEC':'TARGET_DEC',
-                  'OBSCOND':None})
-    # (OBSCOND doesn't appear in all the output files, so we handle it specially)
 
 def run_assign_init(args):
     """Initialize assignment inputs.

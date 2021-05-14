@@ -29,12 +29,12 @@ from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                                  TARGET_TYPE_SUPPSKY,
                                  TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE,
                                  Targets, TargetsAvailable, targets_in_tiles,
-                                 LocationsAvailable, load_target_file)
+                                 LocationsAvailable, load_target_file, create_tagalong)
 
 from fiberassign.assign import (Assignment, write_assignment_fits,
                                 write_assignment_ascii, merge_results,
-                                read_assignment_fits_tile, run,
-                                create_tagalong)
+                                read_assignment_fits_tile, run)
+
 from fiberassign.stucksky import stuck_on_sky
 
 from fiberassign.qa import qa_tiles

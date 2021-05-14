@@ -118,6 +118,20 @@ class TargetTagalong(object):
                 outarr[outinds] = thedata[ic][ininds]
         return outarrs
 
+def create_tagalong():
+    return TargetTagalong([
+        'RA',   # -> TARGET_RA
+        'DEC',  # -> TARGET_DEC
+        'OBSCOND',
+        'FA_TARGET',
+        'PLATE_RA',
+        'PLATE_DEC',
+        # 'PLATE_REF_EPOCH',
+        ],
+        outnames={'RA':'TARGET_RA', 'DEC':'TARGET_DEC',
+                  'OBSCOND':None})
+    # (OBSCOND doesn't appear in all the output files, so we handle it specially)
+
 def str_to_target_type(input):
     if input == "science":
         return TARGET_TYPE_SCIENCE
