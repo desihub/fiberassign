@@ -366,16 +366,17 @@ fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw,
                     continue;
                 }
 
-                // The kdtree gets us the targets that are close to our
-                // region of interest.  Now go through these targets and
-                // check whether the positioner can move to each one.
-                // We DO NOT sort targets by priority, since the total priority will
-                // change as observations are made.  Instead, this sorting is done
-                // for each tile during assignment.
+                // The kdtree gets us the targets that are close to
+                // our region of interest around each positioner.  Now
+                // go through these targets and check whether the
+                // positioner can move to each one.  We DO NOT sort
+                // targets by priority, since the total priority will
+                // change as observations are made.  Instead, this
+                // sorting is done for each tile during assignment.
 
                 for (auto const & tnear : nearby_data) {
                     fbg::dpair obj_xy;
-                    obj_xy.first = tnear.pos[0];
+                    obj_xy.first  = tnear.pos[0];
                     obj_xy.second = tnear.pos[1];
                     bool fail = phw->position_xy_bad(loc[j], obj_xy);
                     if (fail) {

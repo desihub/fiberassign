@@ -126,6 +126,13 @@ def parse_assign(optlist=None):
                         default=1, help="Required number of sky targets per"
                         " fiber slitblock")
 
+    parser.add_argument("--margin-pos", type=float, required=False, default=0.,
+                        help="Add margin (in mm) around positioner keep-out polygons")
+    parser.add_argument("--margin-petal", type=float, required=False, default=0.,
+                        help="Add margin (in mm) around petal-boundary keep-out polygons")
+    parser.add_argument("--margin-gfa", type=float, required=False, default=0.,
+                        help="Add margin (in mm) around GFA keep-out polygons")
+
     parser.add_argument("--write_all_targets", required=False, default=False,
                         action="store_true",
                         help="When writing target properties, write data "
@@ -246,6 +253,17 @@ def parse_assign(optlist=None):
                 "You must specify the output directory or the rundate")
         args.dir = "out_fiberassign_{}".format(args.rundate)
 
+    # Set up margins dict
+    args.margins = {}
+    if args.margin_pos != 0:
+        args.margins['theta'] = args.margin_pos
+        args.margins['phi']   = args.margin_pos
+    if args.margin_petal != 0:
+        ## The petal polygon is listed in *clockwise* order, so we have to give it a negative margin!
+        args.margins['petal'] = -args.margin_petal
+    if args.margin_gfa != 0:
+        args.margins['gfa'] = args.margin_gfa
+
     return args
 
 
@@ -263,7 +281,7 @@ def run_assign_init(args):
     """
     log = Logger.get()
     # Read hardware properties
-    hw = load_hardware(rundate=args.rundate)
+    hw = load_hardware(rundate=args.rundate, add_margins=args.margins)
 
     # Read tiles we are using
     tileselect = None

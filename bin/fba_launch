@@ -463,11 +463,17 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--sky_per_slitblock",
-        help="Required number of sky targets per fiber slitblock",
+        help="Required number of sky targets per fiber slitblock (default=1)",
         type=int,
         default=1,
         required=False,
     )
+    parser.add_argument("--margin-pos", type=float, required=False, default=0.05,
+                        help="Add margin (in mm) around positioner keep-out polygons (default: 0.05)")
+    parser.add_argument("--margin-petal", type=float, required=False, default=0.4,
+                        help="Add margin (in mm) around petal-boundary keep-out polygons (default: 0.4)")
+    parser.add_argument("--margin-gfa", type=float, required=False, default=0.4,
+                        help="Add margin (in mm) around GFA keep-out polygons (default: 0.4)")
     parser.add_argument(
         "--dr",
         help="legacypipe dr (default=dr9)",

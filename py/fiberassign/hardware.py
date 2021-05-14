@@ -31,8 +31,95 @@ from ._internal import (
     Shape,
 )
 
+def expand_closed_curve(xx, yy, margin):
+    '''
+    For the --margin-{pos,petal,gfa} options, we can add a buffer zone
+    around the positioner keep-out polygons.  This function implements
+    the geometry to achieve this.
 
-def load_hardware(focalplane=None, rundate=None):
+    Given a RIGHT-HANDED closed polygon xx,yy and margin, returns new
+    x,y coordinates expanded by a margin of `margin`.
+
+    (By right-handed, I mean that the points are listed
+    counter-clockwise, and if you walk the boundary, the inside of the
+    shape is to the left; the expanded points will be to the right.)
+
+    If the order of the polygon is reversed, the "expanded" points
+    will actually be on the *inside* of the polygon.  Setting the
+    margin negative counteracts this.
+
+    Note that we strictly require a closed curve.  Collinear polygon
+    segments will cause problems!
+
+    '''
+    ex, ey = [],[]
+
+    # These are closed curves (last point = first point)
+    # (this isn't strictly required by the fundamental algorithm, but is assumed
+    # in the way we select previous and next points in the loop below.)
+    assert(xx[0] == xx[-1])
+    assert(yy[0] == yy[-1])
+
+    N = len(xx)
+
+    for j in range(N):
+        # We go through the points, and for each point we consider the previous
+        # and next point.  The "expanded" point will be defined according to the
+        # two edges (vector) coming from the point.
+        i = j - 1
+        if i == -1:
+            # wrap around, skipping repeated point
+            i = N-2
+        k = j + 1
+        if k == N:
+            k = 1
+
+        x1 = xx[i]
+        y1 = yy[i]
+        x2 = xx[j]
+        y2 = yy[j]
+        x3 = xx[k]
+        y3 = yy[k]
+
+        # Vectors to and from the central point.
+        vx1 = x2 - x1
+        vy1 = y2 - y1
+        vx2 = x3 - x2
+        vy2 = y3 - y2
+        # We can't handle repeated points!
+        assert(not(vx2 == 0. and vy2 == 0.))
+
+        # Get the angle between the vectors -- our expanded point is going to
+        # be halfway between these two vectors.
+        cross1 = vx1 * vy2 - vx2 * vy1
+        vv1 = np.hypot(vx1,vy1)
+        vv2 = np.hypot(vx2,vy2)
+        theta = np.arcsin(np.clip(cross1 / (vv1 * vv2), -1., 1.))
+        # Detect sharp (>90 degree) turns
+        dot = vx1*vx2 + vy1*vy2
+        # the angle of the expanded point is relative to vector 1
+        a = np.arctan2(vy1, vx1)
+        if dot < 0:
+            # sharp turn -- the theta=arcsin aliases the angle, which is outside
+            # the range of [-pi/2, +pi/2]; adjust theta to the aliased angle.
+            if theta > 0:
+                theta =  np.pi - theta
+            else:
+                theta = -np.pi - theta
+        da = np.pi/2. + theta/2.
+        # This places the point further from the original keeps the vectors parallel to their originals
+        stretch = 1./np.cos(theta/2.)
+        dx = -margin * stretch * np.cos(a + da)
+        dy = -margin * stretch * np.sin(a + da)
+
+        ex.append(x2 + dx)
+        ey.append(y2 + dy)
+
+    return ex, ey
+
+
+def load_hardware(focalplane=None, rundate=None,
+                  add_margins={}):
     """Create a hardware class representing properties of the telescope.
 
     Args:
@@ -138,6 +225,11 @@ def load_hardware(focalplane=None, rundate=None):
                 cr.append(Circle(crc[0], crc[1]))
             sg = list()
             for sgm in shp[obj]["segments"]:
+                if obj in add_margins:
+                    sx = [x for x,y in sgm]
+                    sy = [y for x,y in sgm]
+                    ex,ey = expand_closed_curve(sx, sy, add_margins[obj])
+                    sgm = list(zip(ex, ey))
                 sg.append(Segments(sgm))
             fshp = Shape((0.0, 0.0), cr, sg)
             excl[nm][obj] = fshp

@@ -201,6 +201,12 @@ fba::Hardware::Hardware(std::string const & timestr,
     // long ago...
     patrol_buffer_mm = 0.2;
 
+    // It's difficult for positioners to reach the very center of
+    // their patrol radius (theta becomes unstable; may required large
+    // moves or cause unforseen collisions when the online system
+    // computes a different theta).
+    inner_keepout_buffer_mm = 0.1;
+
     // Compute the positioner locations in the curved focal surface.
     for (int32_t i = 0; i < nloc; ++i) {
         int32_t lid = locations[i];
@@ -867,9 +873,16 @@ bool fba::Hardware::position_xy_bad(int32_t loc, fbg::dpair const & xy) const {
         // This positioner is stuck or has a broken fiber.  We cannot position it.
         return true;
     }
+    // Check inner keepout region.
+    auto centerxy = loc_pos_curved_mm.at(loc);
+    double r = ::hypot(xy.first - centerxy.first, xy.second - centerxy.second);
+    double r_min = ::abs(loc_theta_arm.at(loc) - loc_phi_arm.at(loc));
+    if (r < r_min + inner_keepout_buffer_mm) {
+        return true;
+    }
     bool fail = xy_to_thetaphi(
         theta, phi,
-        loc_pos_curved_mm.at(loc),
+        centerxy,
         xy,
         loc_theta_arm.at(loc),
         loc_phi_arm.at(loc),
