@@ -127,8 +127,7 @@ def result_path(tile_id, dir=".", prefix="fba-",
     return path
 
 
-def write_assignment_fits_tile(asgn, fulltarget, overwrite, params,
-                               tagalong=None):
+def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
     """Write a single tile assignment to a FITS file.
 
     Args:
@@ -221,32 +220,18 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params,
 
         ntarget = len(tgids)
 
-        #tg_ra = np.empty(ntarget, dtype=np.float64)
-        #tg_dec = np.empty(ntarget, dtype=np.float64)
-        #tg_pra = np.empty(ntarget, dtype=np.float64)
-        #tg_pdec = np.empty(ntarget, dtype=np.float64)
-        #tg_pepoch = np.empty(ntarget, dtype=np.float64)
-        #tg_bits = np.zeros(ntarget, dtype=np.int64)
         tg_x = np.empty(ntarget, dtype=np.float64)
         tg_y = np.empty(ntarget, dtype=np.float64)
         tg_type = np.empty(ntarget, dtype=np.uint8)
         tg_priority = np.empty(ntarget, dtype=np.int32)
         tg_subpriority = np.empty(ntarget, dtype=np.float64)
-        #tg_obscond = np.empty(ntarget, dtype=np.int32)
         tg_indx = dict()
         for indx, tg in enumerate(tgids):
             tg_indx[tg] = indx
             props = tgs.get(tg)
-            #tg_ra[indx] = props.ra
-            #tg_dec[indx] = props.dec
-            #tg_pra[indx] = props.platera
-            #tg_pdec[indx] = props.platedec
-            #tg_pepoch[indx] = props.platerefepoch
-            #tg_bits[indx] = props.bits
             tg_type[indx] = props.type
             tg_priority[indx] = props.priority
             tg_subpriority[indx] = props.subpriority
-            #tg_obscond[indx] = props.obscond
 
         (tg_ra, tg_dec, tg_bits, tg_obscond) = tagalong.get_for_ids(
             tgids, ['RA', 'DEC', 'FA_TARGET', 'OBSCOND'])
@@ -326,8 +311,7 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params,
                                   for x in locs], dtype=np.int64)
         fdata["TARGETID"] = assigned_tgids
 
-        if tagalong is not None:
-            tagalong.set_data(assigned_tgids, fdata)
+        tagalong.set_data(assigned_tgids, fdata)
 
         # Rows containing assigned locations
         assigned_valid = np.where(assigned_tgids >= 0)[0]
@@ -338,10 +322,6 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params,
         assigned_tgy = np.full(nloc, 9999.9, dtype=np.float64)
         assigned_tgra = np.full(nloc, 9999.9, dtype=np.float64)
         assigned_tgdec = np.full(nloc, 9999.9, dtype=np.float64)
-        #assigned_tgpra = np.full(nloc, 9999.9, dtype=np.float64)
-        #assigned_tgpdec = np.full(nloc, 9999.9, dtype=np.float64)
-        #assigned_tgpepoch = np.full(nloc, 9999.9, dtype=np.float64)
-        assigned_tgbits = np.zeros(nloc, dtype=np.int64)
         assigned_tgtype = np.zeros(nloc, dtype=np.uint8)
 
         # For later, locs of stuck fibers that land on good sky
@@ -421,13 +401,10 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params,
                 empty_x, empty_y, False, 0)
             assigned_tgra[assigned_invalid]  = ra
             assigned_tgdec[assigned_invalid] = dec
-            #assigned_tgpra[assigned_invalid]  = ra
-            #assigned_tgpdec[assigned_invalid] = dec
-            # These array elements should have had their default values;
-            # we set them now!
+            # These rows will have had default values; set them now!
             fdata["PLATE_RA" ][assigned_invalid] = ra
             fdata["PLATE_DEC"][assigned_invalid] = dec
-            
+
             ex, ey = xy2cs5(empty_x, empty_y)
             assigned_tgx[assigned_invalid] = ex
             assigned_tgy[assigned_invalid] = ey
@@ -443,22 +420,14 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params,
             # Copy values out of the full target list.
             assigned_tgra[assigned_valid] = np.array(tg_ra[target_rows])
             assigned_tgdec[assigned_valid] = np.array(tg_dec[target_rows])
-            # assigned_tgpra[assigned_valid] = np.array(tg_pra[target_rows])
-            # assigned_tgpdec[assigned_valid] = np.array(tg_pdec[target_rows])
-            # assigned_tgpepoch[assigned_valid] = np.array(tg_pepoch[target_rows])
             assigned_tgx[assigned_valid] = np.array(tg_x[target_rows])
             assigned_tgy[assigned_valid] = np.array(tg_y[target_rows])
             assigned_tgtype[assigned_valid] = np.array(tg_type[target_rows])
-            assigned_tgbits[assigned_valid] = np.array(tg_bits[target_rows])
 
         fdata["TARGET_RA"] = assigned_tgra
         fdata["TARGET_DEC"] = assigned_tgdec
-        #fdata["PLATE_RA"] = assigned_tgpra
-        #fdata["PLATE_DEC"] = assigned_tgpdec
-        #fdata["PLATE_REF_EPOCH"] = assigned_tgpepoch
         fdata["FIBERASSIGN_X"] = assigned_tgx
         fdata["FIBERASSIGN_Y"] = assigned_tgy
-        fdata["FA_TARGET"] = assigned_tgbits
         fdata["FA_TYPE"] = assigned_tgtype
 
         fibers = dict(hw.loc_fiber)
@@ -519,20 +488,14 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params,
                   .format(tile_id))
 
         fdata = np.zeros(ntarget, dtype=targets_dtype)
+        tagalong.set_data(tgids, fdata)
         fdata["TARGETID"] = tgids
         fdata["TARGET_RA"] = tg_ra
         fdata["TARGET_DEC"] = tg_dec
-        #fdata["PLATE_RA"] = tg_pra
-        #fdata["PLATE_DEC"] = tg_pdec
-        #fdata["PLATE_REF_EPOCH"] = tg_pepoch
-        fdata["FA_TARGET"] = tg_bits
         fdata["FA_TYPE"] = tg_type
         fdata["PRIORITY"] = tg_priority
         fdata["SUBPRIORITY"] = tg_subpriority
         fdata["OBSCONDITIONS"] = tg_obscond
-
-        if tagalong is not None:
-            tagalong.set_data(tgids, fdata)
 
         # tm.stop()
         # tm.report("  copy targets data tile {}".format(tile_id))
@@ -581,10 +544,9 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params,
     return
 
 
-def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fba-",
+def write_assignment_fits(tiles, tagalong, asgn, out_dir=".", out_prefix="fba-",
                           split_dir=False, all_targets=False,
-                          gfa_targets=None, overwrite=False, stucksky=None,
-                          tagalong=None):
+                          gfa_targets=None, overwrite=False, stucksky=None):
     """Write out assignment results in FITS format.
 
     For each tile, all available targets (not only the assigned targets) and
@@ -621,7 +583,7 @@ def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fba-",
     tileha = tiles.obshourang
 
     write_tile = partial(write_assignment_fits_tile,
-                         asgn, all_targets, overwrite)
+                         asgn, tagalong, all_targets, overwrite)
 
     for i, tid in enumerate(tileids):
         tra = tilera[tileorder[tid]]
@@ -641,7 +603,7 @@ def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fba-",
             stuck = stucksky.get(tid,{})
 
         params = (tid, tra, tdec, ttheta, ttime, tha, outfile, gfa, stuck)
-        write_tile(params, tagalong=tagalong)
+        write_tile(params)
 
     tm.stop()
     tm.report("Write output files")
@@ -1741,7 +1703,8 @@ def run(
     gt.stop("Assign unused fibers to standards")
     print_counts('After assigning standards: ')
 
-    def do_assign_unused_sky(ttype):
+    def do_assign_unused_sky(ttype, supp=False):
+        tag = 'supp' if supp else ''
         if sky_per_petal > 0 and sky_per_slitblock > 0:
             # Assign using the slitblock requirement first, because it is
             # more specific
@@ -1749,7 +1712,7 @@ def run(
                 ttype, -1, sky_per_slitblock, "POS",
                 start_tile, stop_tile
             )
-            print_counts('After assigning [supp]sky per-slitblock: ')
+            print_counts('After assigning %ssky per-slitblock: ' % tag)
 
             # Then assign using the petal requirement, because it may(should) require
             # more fibers overall.
@@ -1757,13 +1720,13 @@ def run(
                 ttype, sky_per_petal, -1, "POS",
                 start_tile, stop_tile
             )
-            print_counts('After assigning [supp]sky per-petal: ')
+            print_counts('After assigning %ssky per-petal: ' % tag)
         else:
             asgn.assign_unused(
                 ttype, sky_per_petal, sky_per_slitblock, "POS",
                 start_tile, stop_tile
             )
-            print_counts('After assigning [supp]sky: ')
+            print_counts('After assigning %ssky: ' % tag)
 
     # Assign sky to unused fibers, up to some limit
     gt.start("Assign unused fibers to sky")
@@ -1772,7 +1735,7 @@ def run(
 
     # Assign suppsky to unused fibers, up to some limit
     gt.start("Assign unused fibers to supp_sky")
-    do_assign_unused_sky(TARGET_TYPE_SUPPSKY)
+    do_assign_unused_sky(TARGET_TYPE_SUPPSKY, supp=True)
     gt.stop("Assign unused fibers to supp_sky")
 
     # Force assignment if needed
@@ -1783,7 +1746,8 @@ def run(
     gt.stop("Force assignment of sufficient standards")
     print_counts('After force-assigning standards: ')
 
-    def do_assign_forced_sky(ttype):
+    def do_assign_forced_sky(ttype, supp=False):
+        tag = 'supp' if supp else ''
         # This function really feels redundant with do_assign_unused_sky, but
         # when I tried to make a single function to do both calls, I had to call
         # f(*(preargs + pos_arg + postargs)) and it looked too mysterious.
@@ -1791,22 +1755,22 @@ def run(
             # Slitblock first
             asgn.assign_force(
                 ttype, -1, sky_per_slitblock, start_tile, stop_tile)
-            print_counts('After force-assigning [supp]sky per-slitblock: ')
+            print_counts('After force-assigning %ssky per-slitblock: ' % tag)
             # Then petal
             asgn.assign_force(
                 ttype, sky_per_petal, -1, start_tile, stop_tile)
-            print_counts('After force-assigning [supp]sky per-petal: ')
+            print_counts('After force-assigning %ssky per-petal: ' % tag)
         else:
             asgn.assign_force(
                 ttype, sky_per_petal, sky_per_slitblock, start_tile, stop_tile)
-            print_counts('After force-assigning [supp]sky: ')
+            print_counts('After force-assigning %ssky: ' % tag)
 
     gt.start("Force assignment of sufficient sky")
     do_assign_forced_sky(TARGET_TYPE_SKY)
     gt.stop("Force assignment of sufficient sky")
 
     gt.start("Force assignment of sufficient supp_sky")
-    do_assign_forced_sky(TARGET_TYPE_SUPPSKY)
+    do_assign_forced_sky(TARGET_TYPE_SUPPSKY, supp=True)
     gt.stop("Force assignment of sufficient supp_sky")
 
     # If there are any unassigned fibers, try to place them somewhere.

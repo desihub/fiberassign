@@ -93,17 +93,6 @@ class TargetTagalong(object):
                     continue
                 outarr[outinds] = inarr[ininds]
 
-    def get(self, name):
-        '''
-        Fetch appended array of the given name.
-        '''
-        arrs = []
-        i = self.columns.index(name)
-        for thedata in self.data:
-            # +1 because 'thedata' starts with TARGETID.
-            arrs.append(thedata[i+1])
-        return np.hstack(arrs)
-
     def get_for_ids(self, targetids, names):
         '''
         Fetch arrays for the given names and given targetids.
@@ -635,9 +624,9 @@ def default_target_masks(data):
             safemask, excludemask)
 
 
-def append_target_table(tgs, tgdata, survey, typeforce, typecol, sciencemask,
-                        stdmask, skymask, suppskymask, safemask, excludemask,
-                        tagalong=None):
+def append_target_table(tgs, tagalong, tgdata, survey, typeforce, typecol,
+                        sciencemask,
+                        stdmask, skymask, suppskymask, safemask, excludemask):
     """Append a target recarray / table to a Targets object.
 
     This function is used to take a slice of targets table (as read from a
@@ -681,21 +670,19 @@ def append_target_table(tgs, tgdata, survey, typeforce, typecol, sciencemask,
             raise RuntimeError("Cannot force objects to be an invalid type")
     # Create buffers for column data
     nrows = len(tgdata["TARGETID"][:])
-    d_obscond = np.zeros(nrows, dtype=np.int32)
+    # Arrays needed by C++
     d_targetid = np.zeros(nrows, dtype=np.int64)
-    d_ra = np.zeros(nrows, dtype=np.float64)
-    d_dec = np.zeros(nrows, dtype=np.float64)
-    d_pra = np.zeros(nrows, dtype=np.float64)
-    d_pdec = np.zeros(nrows, dtype=np.float64)
-    d_pepoch = np.zeros(nrows, dtype=np.float64)
     d_type = np.zeros(nrows, dtype=np.uint8)
     d_nobs = np.zeros(nrows, dtype=np.int32)
     d_prior = np.zeros(nrows, dtype=np.int32)
     d_subprior = np.zeros(nrows, dtype=np.float64)
-    d_targetid[:] = tgdata["TARGETID"][:]
-
+    # Arrays that have special handling
+    d_ra = np.zeros(nrows, dtype=np.float64)
+    d_dec = np.zeros(nrows, dtype=np.float64)
     d_bits = np.zeros(nrows, dtype=np.int64)
+    d_obscond = np.zeros(nrows, dtype=np.int32)
 
+    d_targetid[:] = tgdata["TARGETID"][:]
     if "TARGET_RA" in tgdata.dtype.names:
         d_ra[:] = tgdata["TARGET_RA"][:]
     else:
@@ -704,24 +691,6 @@ def append_target_table(tgs, tgdata, survey, typeforce, typecol, sciencemask,
         d_dec[:] = tgdata["TARGET_DEC"][:]
     else:
         d_dec[:] = tgdata["DEC"][:]
-
-    if "PLATE_RA" in tgdata.dtype.names:
-        print('Copying PLATE_RA from input file')
-        d_pra[:] = tgdata["PLATE_RA"][:]
-    else:
-        print('Copying PLATE_RA from RA/TARGET_RA')
-        d_pra[:] = d_ra[:]
-    if "PLATE_DEC" in tgdata.dtype.names:
-        print('Copying PLATE_DEC from input file')
-        d_pdec[:] = tgdata["PLATE_DEC"][:]
-    else:
-        print('Copying PLATE_DEC from DEC/TARGET_DEC')
-        d_pdec[:] = d_dec[:]
-    if "PLATE_REF_EPOCH" in tgdata.dtype.names:
-        print('Copying PLATE_REF_EPOCH from input file')
-        d_pepoch[:] = tgdata["PLATE_REF_EPOCH"][:]
-    else:
-        print('No PLATE_REF_EPOCH')
 
     if typeforce is not None:
         d_type[:] = typeforce
@@ -764,22 +733,21 @@ def append_target_table(tgs, tgdata, survey, typeforce, typecol, sciencemask,
     else:
         d_subprior[:] = np.zeros(nrows, dtype=np.float64)
 
-    if tagalong is not None:
-        tagalong.add_data(d_targetid, tgdata,
-                          fake={'FA_TARGET': d_bits,
-                                'OBSCOND': d_obscond})
+    tagalong.add_data(d_targetid, tgdata,
+                      fake={'RA': d_ra,
+                            'DEC': d_dec,
+                            'FA_TARGET': d_bits,
+                            'OBSCOND': d_obscond})
 
     # Append the data to our targets list.  This will print a
     # warning if there are duplicate target IDs.
-    tgs.append(survey, d_targetid, d_nobs, d_prior,
-               d_subprior, d_type)
+    tgs.append(survey, d_targetid, d_nobs, d_prior, d_subprior, d_type)
     return
 
 
-def load_target_table(tgs, tgdata, survey=None, typeforce=None, typecol=None,
+def load_target_table(tgs, tagalong, tgdata, survey=None, typeforce=None, typecol=None,
                       sciencemask=None, stdmask=None, skymask=None,
-                      suppskymask=None, safemask=None, excludemask=None,
-                      tagalong=None):
+                      suppskymask=None, safemask=None, excludemask=None):
     """Append targets from a table.
 
     Use the table data to append targets to the input Targets object.
@@ -973,16 +941,15 @@ def load_target_table(tgs, tgdata, survey=None, typeforce=None, typecol=None,
             "|".join(sv3_mask.names(excludemask))))
     else:
         raise RuntimeError("unknown survey type, should never get here!")
-    append_target_table(tgs, tgdata, survey, typeforce, typecol, sciencemask,
-                        stdmask, skymask, suppskymask, safemask, excludemask,
-                        tagalong=tagalong)
+    append_target_table(tgs, tagalong, tgdata, survey, typeforce, typecol, sciencemask,
+                        stdmask, skymask, suppskymask, safemask, excludemask)
     return
 
 
-def load_target_file(tgs, tfile, survey=None, typeforce=None, typecol=None,
+def load_target_file(tgs, tagalong, tfile, survey=None, typeforce=None, typecol=None,
                      sciencemask=None, stdmask=None, skymask=None,
                      suppskymask=None, safemask=None, excludemask=None,
-                     rowbuffer=1000000, tagalong=None):
+                     rowbuffer=1000000):
     """Append targets from a file.
 
     Read the specified file and append targets to the input Targets object.
@@ -1042,7 +1009,7 @@ def load_target_file(tgs, tfile, survey=None, typeforce=None, typecol=None,
         data = fits[1].read(rows=np.arange(offset, offset+n, dtype=np.int64))
         log.debug("Target file {} read rows {} - {}"
                   .format(tfile, offset, offset+n-1))
-        load_target_table(tgs, data, survey=survey,
+        load_target_table(tgs, tagalong, data, survey=survey,
                           typeforce=typeforce,
                           typecol=typecol,
                           sciencemask=sciencemask,
@@ -1050,8 +1017,7 @@ def load_target_file(tgs, tfile, survey=None, typeforce=None, typecol=None,
                           skymask=skymask,
                           suppskymask=suppskymask,
                           safemask=safemask,
-                          excludemask=excludemask,
-                          tagalong=tagalong)
+                          excludemask=excludemask)
         offset += n
 
     tm.stop()

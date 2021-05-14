@@ -310,7 +310,7 @@ def run_assign_init(args):
 
     # Create empty target list
     tgs = Targets()
-    # create empty cargo hold (for carting around auxiliary target data,
+    # Create structure for carrying along auxiliary target data not needed by C++.
     tagalong = TargetTagalong([
         'RA',   # -> TARGET_RA
         'DEC',  # -> TARGET_DEC
@@ -320,7 +320,9 @@ def run_assign_init(args):
         'PLATE_DEC',
         # 'PLATE_REF_EPOCH',
         ],
-        outnames={'RA':'TARGET_RA', 'DEC':'TARGET_DEC', 'OBSCOND':None})
+        outnames={'RA':'TARGET_RA', 'DEC':'TARGET_DEC',
+                  'OBSCOND':None})
+    # (OBSCOND doesn't appear in all the output files, so we handle it specially)
 
     # Append each input target file.  These target files must all be of the
     # same survey type, and will set the Targets object to be of that survey.
@@ -332,26 +334,24 @@ def run_assign_init(args):
         if len(tgprops) > 1:
             # we are forcing the target type for this file
             typeforce = str_to_target_type(tgprops[1])
-        load_target_file(tgs, tgfile, typeforce=typeforce,
+        load_target_file(tgs, tagalong, tgfile, typeforce=typeforce,
                          typecol=args.mask_column,
                          sciencemask=args.sciencemask,
                          stdmask=args.stdmask,
                          skymask=args.skymask,
                          safemask=args.safemask,
-                         excludemask=args.excludemask,
-                         tagalong=tagalong)
+                         excludemask=args.excludemask)
     # Now load the sky target files.  These are main-survey files that we will
     # force to be treated as the survey type of the other target files.
     survey = tgs.survey()
     for tgarg in args.sky:
-        load_target_file(tgs, tgarg, survey=survey, typeforce=typeforce,
+        load_target_file(tgs, tagalong, tgarg, survey=survey, typeforce=typeforce,
                          typecol=args.mask_column,
                          sciencemask=args.sciencemask,
                          stdmask=args.stdmask,
                          skymask=args.skymask,
                          safemask=args.safemask,
-                         excludemask=args.excludemask,
-                         tagalong=tagalong)
+                         excludemask=args.excludemask)
 
     return (hw, tiles, tgs, tagalong)
 
@@ -430,11 +430,11 @@ def run_assign_full(args):
         gfa_targets = get_gfa_targets(tiles, args.gfafile)
 
     # Write output
-    write_assignment_fits(tiles, asgn, out_dir=args.dir,
+    write_assignment_fits(tiles, tagalong, asgn, out_dir=args.dir,
                           out_prefix=args.prefix, split_dir=args.split,
                           all_targets=args.write_all_targets,
                           gfa_targets=gfa_targets, overwrite=args.overwrite,
-                          stucksky=stucksky, tagalong=tagalong)
+                          stucksky=stucksky)
 
     gt.stop("run_assign_full write output")
 
@@ -523,11 +523,11 @@ def run_assign_bytile(args):
         gfa_targets = get_gfa_targets(tiles, args.gfafile)
 
     # Write output
-    write_assignment_fits(tiles, asgn, out_dir=args.dir,
+    write_assignment_fits(tiles, tagalong, asgn, out_dir=args.dir,
                           out_prefix=args.prefix, split_dir=args.split,
                           all_targets=args.write_all_targets,
                           gfa_targets=gfa_targets, overwrite=args.overwrite,
-                          stucksky=stucksky, tagalong=tagalong)
+                          stucksky=stucksky)
 
     gt.stop("run_assign_bytile write output")
 
