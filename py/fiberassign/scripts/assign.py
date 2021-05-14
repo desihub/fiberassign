@@ -267,6 +267,20 @@ def parse_assign(optlist=None):
 
     return args
 
+def create_tagalong():
+    return TargetTagalong([
+        'RA',   # -> TARGET_RA
+        'DEC',  # -> TARGET_DEC
+        'OBSCOND',
+        'FA_TARGET',
+        'PLATE_RA',
+        'PLATE_DEC',
+        # 'PLATE_REF_EPOCH',
+        ],
+        outnames={'RA':'TARGET_RA', 'DEC':'TARGET_DEC',
+                  'OBSCOND':None})
+    # (OBSCOND doesn't appear in all the output files, so we handle it specially)
+
 def run_assign_init(args):
     """Initialize assignment inputs.
 
@@ -311,18 +325,7 @@ def run_assign_init(args):
     # Create empty target list
     tgs = Targets()
     # Create structure for carrying along auxiliary target data not needed by C++.
-    tagalong = TargetTagalong([
-        'RA',   # -> TARGET_RA
-        'DEC',  # -> TARGET_DEC
-        'OBSCOND',
-        'FA_TARGET',
-        'PLATE_RA',
-        'PLATE_DEC',
-        # 'PLATE_REF_EPOCH',
-        ],
-        outnames={'RA':'TARGET_RA', 'DEC':'TARGET_DEC',
-                  'OBSCOND':None})
-    # (OBSCOND doesn't appear in all the output files, so we handle it specially)
+    tagalong = create_tagalong()
 
     # Append each input target file.  These target files must all be of the
     # same survey type, and will set the Targets object to be of that survey.

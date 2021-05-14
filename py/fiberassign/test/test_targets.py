@@ -24,6 +24,7 @@ from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                                  default_main_excludemask,
                                  Targets, TargetsAvailable,
                                  LocationsAvailable, targets_in_tiles)
+from fiberassign.assign import create_tagalong
 
 from .simulate import (test_subdir_create, sim_tiles, sim_targets, test_assign_date)
 
@@ -52,10 +53,11 @@ class TestTargets(unittest.TestCase):
         nsuppsky = sim_targets(input_suppsky, TARGET_TYPE_SUPPSKY, tgoff)
 
         tgs = Targets()
-        load_target_file(tgs, input_mtl)
-        load_target_file(tgs, input_std)
-        load_target_file(tgs, input_sky)
-        load_target_file(tgs, input_suppsky)
+        tagalong = create_tagalong()
+        load_target_file(tgs, tagalong, input_mtl)
+        load_target_file(tgs, tagalong, input_std)
+        load_target_file(tgs, tagalong, input_sky)
+        load_target_file(tgs, tagalong, input_suppsky)
         print(tgs)
 
         # Test access
@@ -71,7 +73,8 @@ class TestTargets(unittest.TestCase):
         sim_tiles(tfile)
         tiles = load_tiles(tiles_file=tfile)
         # Precompute target positions
-        tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles)
+        tagalong = create_tagalong()
+        tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles, tagalong)
         tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
 
         # Free the tree

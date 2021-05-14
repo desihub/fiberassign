@@ -32,7 +32,7 @@ from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
 
 from fiberassign.assign import (Assignment, write_assignment_fits,
                                 write_assignment_ascii, merge_results,
-                                read_assignment_fits_tile)
+                                read_assignment_fits_tile, create_tagalong)
 
 from fiberassign.qa import qa_tiles, qa_targets
 
@@ -129,7 +129,8 @@ class TestQA(unittest.TestCase):
         tiles = load_tiles(tiles_file=tfile)
 
         # Precompute target positions
-        tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles)
+        tagalong = create_tagalong()
+        tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles, tagalong)
         # Compute the targets available to each fiber for each tile.
         tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
 

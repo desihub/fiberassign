@@ -33,7 +33,8 @@ from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
 
 from fiberassign.assign import (Assignment, write_assignment_fits,
                                 write_assignment_ascii, merge_results,
-                                read_assignment_fits_tile, run)
+                                read_assignment_fits_tile, run,
+                                create_tagalong)
 from fiberassign.stucksky import stuck_on_sky
 
 from fiberassign.qa import qa_tiles
@@ -122,7 +123,8 @@ class TestAssign(unittest.TestCase):
         sim_tiles(tfile)
         tiles = load_tiles(tiles_file=tfile)
         # Precompute target positions
-        tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles)
+        tagalong = create_tagalong()
+        tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles, tagalong)
         tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
 
         # Compute the fibers on all tiles available for each target
@@ -349,7 +351,8 @@ class TestAssign(unittest.TestCase):
             sim_stuck_sky(test_dir, hw, tiles)
 
         # Precompute target positions
-        tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles)
+        tagalong = create_tagalong()
+        tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles, tagalong)
 
         # Compute the targets available to each fiber for each tile.
         tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
@@ -562,7 +565,8 @@ class TestAssign(unittest.TestCase):
             )
 
             # Precompute target positions
-            tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles)
+            tagalong = create_tagalong()
+            tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles, tagalong)
 
             # Compute the targets available to each fiber for each tile.
             tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
