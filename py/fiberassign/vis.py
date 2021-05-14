@@ -181,18 +181,15 @@ def plot_positioner_invalid(ax, patrol_rad, loc, center, color="k", linewidth=0.
             bbox=None)
     return
 
-def plot_tile_targets_props(hw, tile_ra, tile_dec,
+def plot_tile_targets_props(hw, tagalong, tile_ra, tile_dec,
                             tile_obstime, tile_obstheta, tile_obsha,
                             tgs, avail_tgid=None):
     if avail_tgid is None:
         avail_tgid = tgs.ids()
-    ra = np.full(len(avail_tgid), 9999.9, dtype=np.float64)
-    dec = np.full(len(avail_tgid), 9999.9, dtype=np.float64)
+    ra, dec = tagalong.get_for_ids(avail_tgid, ['RA', 'DEC'])
     color = list()
     for idx, tgid in enumerate(avail_tgid):
         tg = tgs.get(tgid)
-        ra[idx] = tg.ra
-        dec[idx] = tg.dec
         color.append(plot_target_type_color(tg.type))
     # We disable threading here, since it does not interact well with
     # multiprocessing.
@@ -397,7 +394,7 @@ def plot_assignment_tile_file(petals, real_shapes, params):
     else:
         load_target_table(tgs, tagalong, targets_data)
 
-    targetprops = plot_tile_targets_props(hw,
+    targetprops = plot_tile_targets_props(hw, tagalong,
                                           tile_ra, tile_dec,
                                           tile_obstime, tile_theta, tile_obsha,
                                           tgs)
@@ -503,7 +500,7 @@ def plot_tiles(files, out_dir=None, petals=None, real_shapes=False, serial=False
     return
 
 
-def plot_assignment_tile(hw, tgs, tile_id, tile_ra, tile_dec,
+def plot_assignment_tile(hw, tgs, tagalong, tile_id, tile_ra, tile_dec,
                          tile_obstime, tile_theta, tile_obsha,
                          tile_assign, tile_avail=None, petals=None,
                          real_shapes=False, outfile=None, figsize=8):
@@ -531,7 +528,7 @@ def plot_assignment_tile(hw, tgs, tile_id, tile_ra, tile_dec,
         avtg_ids = np.unique([x for f in avtg_locs for x in tile_avail[f]])
 
     # Target properties
-    targetprops = plot_tile_targets_props(hw, tile_ra, tile_dec,
+    targetprops = plot_tile_targets_props(hw, tagalong, tile_ra, tile_dec,
                                           tile_obstime, tile_theta, tile_obsha,
                                           tgs, avail_tgid=avtg_ids)
 
