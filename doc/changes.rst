@@ -3,7 +3,12 @@
 fiberassign change log
 ======================
 
-3.0.0 (unreleased)
+3.0.1 (unreleased)
+------------------
+
+* No changes yet.
+
+3.0.0 (2021-05-13)
 ------------------
 
 Major update to use desimeter for x,y <-> ra,dec transforms to include
@@ -19,6 +24,8 @@ Requires desimeter >= 3.6.5 and desitarget >= 1.0.0 .
 * ``fba_launch --mtltile`` default to latest timestamp in mtl file (PR `#347`_).
 * ``fba_launch`` add support for main survey inputs (PR `#349`_).
 * Use desimeter for x,y <-> ra,dec transforms (PR `#348`_).
+* Expand default positioner polygons by 50 microns and edges by 400 microns,
+  adjustable with options (PR `#350`_).
 
 .. _`#336`: https://github.com/desihub/fiberassign/pull/336
 .. _`#346`: https://github.com/desihub/fiberassign/pull/346
@@ -28,6 +35,7 @@ Requires desimeter >= 3.6.5 and desitarget >= 1.0.0 .
 .. _`#347`: https://github.com/desihub/fiberassign/pull/347
 .. _`#348`: https://github.com/desihub/fiberassign/pull/348
 .. _`#349`: https://github.com/desihub/fiberassign/pull/349
+.. _`#350`: https://github.com/desihub/fiberassign/pull/350
 
 2.5.1 (2021-05-11)
 ------------------
