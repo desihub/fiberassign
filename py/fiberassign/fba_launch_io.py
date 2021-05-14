@@ -1013,23 +1013,26 @@ def create_sky(
     log.info("{:.1f}s\t{}\t{} written".format(time() - start, step, outfn))
 
 
-def create_targ_nomtl(
+def create_targ(
     tilesfn,
     targdir,
     survey,
     gaiadr,
     pmcorr,
     outfn,
+    mtldir=None,
+    isodate=None,
+    quick=True,
+    unique=True,
     tmpoutdir=tempfile.mkdtemp(),
     pmtime_utc_str=None,
-    quick=True,
     log=Logger.get(),
     step="",
     start=time(),
 ):
     """
     Create a target fits file, with solely using desitarget catalogs, no MTL.
-        e.g. for the GFA, but could be used for other purposes.
+        e.g. for the GFA, but could be used for primary or secondary targets.
     
     Args:
         tilesfn: path to a tiles fits file (string)
@@ -1038,37 +1041,74 @@ def create_targ_nomtl(
         gaiadr: Gaia dr ("dr2" or "edr3")
         pmcorr: apply proper-motion correction? ("y" or "n")
         outfn: fits file name to be written (string)
+        mtldir (optional, defaults to None): MTL ledger folder; if provided will read ledgers (string)
+        quick, unique, isodate (optional, default to True, True, None): same as desitarget.io.read_targets_in_tiles arguments
+            isodate formatting: yyyy-mm-ddThh:mm:ss+00:00
         tmpoutdir (optional, defaults to a temporary directory): temporary directory where
                 write_skies will write (creating some sub-directories)
         pmtime_utc_str (optional, defaults to None): UTC time use to compute
                 new coordinates after applying proper motion since REF_EPOCH
                 (string formatted as "yyyy-mm-ddThh:mm:ss+00:00")
-        quick (optional, defaults to True): boolean, arguments of desitarget.io.read_targets_in_tiles()
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
 
     Notes:
+        args.mtltime in fba_launch is the isodate.
+        if reading MTL ledgers, should set quick=False.
+        isodate and unique are used only if reading MTL ledgers.
         if pmcorr="y", then pmtime_utc_str needs to be set; will trigger an error otherwise.
     """
     log.info("")
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
     log.info("{:.1f}s\t{}\tstart generating {}".format(time() - start, step, outfn))
-    # AR targ_nomtl: read targets
+
+    # AR targ: read targets
     tiles = fits.open(tilesfn)[1].data
-    d = custom_read_targets_in_tiles(
-        [targdir], tiles, quick=quick, mtl=False, log=log, step=step, start=start
-    )
+
+    # AR targ: MTL?
+    if mtldir is not None:
+        log.info(
+            "{:.1f}s\t{}\tmtldir={} -> reading MTL ledgers".format(
+                time() - start, step, mtldir
+            )
+        )
+        d = custom_read_targets_mtl_in_tiles(
+            tiles,
+            mtldir,
+            targdir,
+            survey,
+            gaiadr,
+            pmcorr,
+            outfn,
+            quick=quick,
+            unique=unique,
+            isodate=isodate,
+            log=log,
+            step=step,
+            start=start,
+        )
+    # AR targ: no MTL
+    else:
+        log.info(
+            "{:.1f}s\t{}\tmtldir=None -> reading desitarget catalogs only (no MTL ledgers)".format(
+                time() - start, step
+            )
+        )
+        d = custom_read_targets_nomtl_in_tiles(
+            [targdir], tiles, quick=quick, log=log, step=step, start=start
+        )
     log.info(
         "{:.1f}s\t{}\tkeeping {} targets to {}".format(
             time() - start, step, len(d), outfn
         )
     )
-    # AR targ_nomtl: PMRA, PMDEC: convert NaN to zeros
+
+    # AR targ: PMRA, PMDEC: convert NaN to zeros
     d = force_finite_pm(d, log=log, step=step, start=start)
-    # AR targ_nomtl: update RA, DEC, REF_EPOCH using proper motion?
+    # AR targ: update RA, DEC, REF_EPOCH using proper motion?
     if pmcorr == "y":
         if pmtime_utc_str is None:
             log.error(
@@ -1076,7 +1116,7 @@ def create_targ_nomtl(
                     time() - start, step,
                 )
             )
-            sys.exti(1)
+            sys.exit(1)
         d = update_nowradec(d, gaiadr, pmtime_utc_str, log=log, step=step, start=start)
     else:
         log.info(
@@ -1084,15 +1124,20 @@ def create_targ_nomtl(
                 time() - start, step
             )
         )
-        # AR targ_nomtl: Replaces 0 by force_ref_epoch in ref_epoch
+        # AR targ: Replaces 0 by force_ref_epoch in ref_epoch
         d = force_nonzero_refepoch(
             d, gaia_ref_epochs[gaiadr], log=log, step=step, start=start
         )
 
-    # AR targ_nomtl: write fits
-    n, tmpfn = write_targets(tmpoutdir, d, indir=targdir, survey=survey)
+    # AR targ: write fits
+    if mtldir is not None:
+        indir, indir2 = mtldir, targdir
+    else:
+        indir, indir2 = targdir, None
+    n, tmpfn = write_targets(tmpoutdir, d, indir=indir, indir2=indir2, survey=survey)
     _ = mv_write_targets_out(tmpfn, tmpoutdir, outfn, log=log, step=step, start=start)
-    # AR targ_nomtl: update header if pmcorr = "y"
+
+    # AR targ: update header if pmcorr = "y"
     if pmcorr == "y":
         fd = fitsio.FITS(outfn, "rw")
         fd["TARGETS"].write_key("COMMENT", "RA,DEC updated with PM for AEN objects")
