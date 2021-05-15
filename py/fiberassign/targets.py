@@ -751,11 +751,15 @@ def append_target_table(tgs, tagalong, tgdata, survey, typeforce, typecol,
     else:
         d_subprior[:] = np.zeros(nrows, dtype=np.float64)
 
-    tagalong.add_data(d_targetid, tgdata,
-                      fake={'RA': d_ra,
-                            'DEC': d_dec,
-                            'FA_TARGET': d_bits,
-                            'OBSCOND': d_obscond})
+    fake = {'RA': d_ra,
+            'DEC': d_dec,
+            'FA_TARGET': d_bits,
+            'OBSCOND': d_obscond}
+    if not 'PLATE_RA' in tgdata.dtype.fields:
+        print('Warning: no PLATE_RA, PLATE_DEC in target file; using RA,DEC or TARGET_RA,DEC')
+        fake.update({'PLATE_RA': d_ra,
+                     'PLATE_DEC': d_dec,})
+    tagalong.add_data(d_targetid, tgdata, fake=fake)
 
     # Append the data to our targets list.  This will print a
     # warning if there are duplicate target IDs.
