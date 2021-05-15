@@ -1305,6 +1305,14 @@ def merge_results_tile(out_dtype, copy_fba, params):
             cols_to_keep.append(c)
     outdata = outdata[cols_to_keep]
 
+    #- HACK: add PLATE_RA, PLATE_DEC if they aren't already there
+    if ('PLATE_RA' not in outdata.dtype.names):
+        log.info('Adding PLATE_RA=TARGET_RA and PLATE_DEC=TARGET_DEC columns')
+        from numpy.lib.recfunctions import append_fields
+        ra = outdata['TARGET_RA']
+        dec = outdata['TARGET_DEC']
+        outdata = append_fields(outdata, ['PLATE_RA', 'PLATE_DEC'], [ra,dec])
+
     cols_to_keep = list()
     for c in tile_targets.dtype.names:
         if len(tile_targets[c].shape) < 2: #Don't propagate 2D target columns into TARGETS HDU

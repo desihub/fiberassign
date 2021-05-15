@@ -3,10 +3,30 @@
 fiberassign change log
 ======================
 
-3.0.1 (unreleased)
+4.0.1 (unreleased)
 ------------------
 
 * No changes yet.
+
+4.0.0 (2021-05-14)
+------------------
+
+First release used for main survey observations.
+
+Note: the format changed to add PLATE_RA, PLATE_DEC output columns, thus
+bumping the major version number even though the results are algorithmically
+identical to 3.0.0.
+
+* Robust if target-of-opportunity (ToO) inputs don't exist (PR `#352`_).
+* Don't set $SKYBRICKS_DIR in module file (desitarget does that now) (direct commit).
+* Add PLATE_RA, PLATE_DEC columns while merging as placeholders for future
+  chromatic offsets use (PR `#355`_).
+* Add ``fba_launch --hdr_survey X --hdr_faprgrm Y`` options, defaulting to
+  ``--survey`` and ``--program`` (PR `#356`_).
+
+.. _`#352`: https://github.com/desihub/fiberassign/pull/352
+.. _`#355`: https://github.com/desihub/fiberassign/pull/355
+.. _`#356`: https://github.com/desihub/fiberassign/pull/356
 
 3.0.0 (2021-05-13)
 ------------------
