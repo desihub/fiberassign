@@ -42,24 +42,63 @@ from ._internal import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
 
 
 class TargetTagalong(object):
+    '''
+    This class holds data from the targeting input files that we want
+    to propagate to the output fiberassign files, and that are not
+    needed by the C++ layer.
+    '''
     def __init__(self, columns, outnames={}):
+        '''
+        Create a new tag-along object.
+
+        Args:
+        *columns*: list of strings: the column names that will be saved.
+        *outnames*: dict, string to string: mapping from 'columns' to the name
+                    the column will be given in the output file; None to omit
+                    from the output file.
+        '''
         self.columns = columns
         self.outnames = outnames
+        # Internally, we store one tuple for each targeting file read
+        # (to avoid manipulating/reformatting the arrays too much),
+        # where each tuple starts with the TARGETID of the targets, followed
+        # by the data arrays for each column in *columns*.
         self.data = []
 
     def get_default(self, column):
+        '''
+        Returns the default value to return for a given *column*, or
+        None if not set.
+        '''
         return None
 
     def get_output_name(self, column):
+        '''
+        Returns the column name to use in the output file for the
+        given input column name.
+        '''
         return self.outnames.get(column, column)
 
     def add_data(self, targetids, tabledata, fake={}):
+        '''
+        Stores data from an input (targeting file) table.
+
+        Arguments:
+        *targetids*: numpy array of TARGETID values that must be in the same
+                     order as the data arrays in *tabledata*.
+        *tabledata*: numpy record-array / table from which this tagalong's
+                     *columns* will be read.
+        *fake*: dict from string column name to numpy array, containing column
+                     data that will be used in place of reading from *tabledata*.
+        '''
         tgarrays = [targetids]
         for k in self.columns:
             if k in fake:
+                assert(len(fake[k]) == len(targetids))
                 tgarrays.append(fake[k])
             else:
-                 tgarrays.append(tabledata[k])
+                assert(len(tabledata[k]) == len(targetids))
+                tgarrays.append(tabledata[k])
         self.data.append(tgarrays)
 
     def set_data(self, targetids, tabledata):
@@ -72,20 +111,23 @@ class TargetTagalong(object):
         for c in self.columns:
             defval = self.get_default(c)
             outname = self.get_output_name(c)
-            if outname is not None:
+            if outname is None:
+                # We're omitting this column from the output
+                outarrs.append(None)
+            else:
                 outarr = tabledata[outname]
                 if defval is not None:
                     outarr[:] = defval
                 outarrs.append(outarr)
-            else:
-                outarrs.append(None)
         # Build output targetid-to-index map
         outmap = dict([(tid,i) for i,tid in enumerate(targetids)])
         # Go through my many data arrays
         for thedata in self.data:
+            # TARGETIDs are the first element in the tuple
             tids = thedata[0]
             # Search for output array indices for these targetids
             outinds = np.array([outmap.get(tid, -1) for tid in tids])
+            # Keep only the indices of targetids that were found
             ininds = np.flatnonzero(outinds >= 0)
             outinds = outinds[ininds]
             for outarr,inarr in zip(outarrs, thedata[1:]):
@@ -95,13 +137,15 @@ class TargetTagalong(object):
 
     def get_for_ids(self, targetids, names):
         '''
-        Fetch arrays for the given names and given targetids.
+        Fetch arrays for the given columns names and given targetids.
         '''
         # Create output arrays
         outarrs = []
         colinds = []
         for name in names:
             ic = self.columns.index(name)
+            # Look at the data saved for my first dataset to determine
+            # the output type.
             dtype = self.data[0][ic+1].dtype
             outarrs.append(np.zeros(len(targetids), dtype))
             colinds.append(ic+1)
