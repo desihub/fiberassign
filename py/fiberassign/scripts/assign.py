@@ -127,11 +127,11 @@ def parse_assign(optlist=None):
                         default=1, help="Required number of sky targets per"
                         " fiber slitblock")
 
-    parser.add_argument("--margin-pos", type=float, required=False, default=0.05,
+    parser.add_argument("--margin-pos", "--margin_pos", type=float, required=False, default=0.05,
                         help="Add margin (in mm) around positioner keep-out polygons")
-    parser.add_argument("--margin-petal", type=float, required=False, default=0.4,
+    parser.add_argument("--margin-petal", "--margin_petal", type=float, required=False, default=0.4,
                         help="Add margin (in mm) around petal-boundary keep-out polygons")
-    parser.add_argument("--margin-gfa", type=float, required=False, default=0.4,
+    parser.add_argument("--margin-gfa", "--margin_gfa", type=float, required=False, default=0.4,
                         help="Add margin (in mm) around GFA keep-out polygons")
 
     parser.add_argument("--write_all_targets", required=False, default=False,
