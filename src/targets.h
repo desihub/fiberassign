@@ -14,7 +14,6 @@
 #include <exception>
 #include <sstream>
 
-#include <htmTree.h>
 #include <kdTree.h>
 
 #include <utils.h>
