@@ -249,6 +249,7 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
         )
         tg_x[:] = x
         tg_y[:] = y
+        del tg_ra, tg_dec, x, y
 
         # tm.stop()
         # tm.report("  extract target props for {}".format(tile_id))
@@ -316,7 +317,7 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
                                   else -(unassign_offset + x)
                                   for x in locs], dtype=np.int64)
         fdata["TARGETID"] = assigned_tgids
-
+        # Fill in all the data values we've been carrying around!
         tagalong.set_data(assigned_tgids, fdata)
 
         # Rows containing assigned locations
@@ -326,8 +327,6 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
         # Buffers for X/Y/RA/DEC
         assigned_tgx = np.full(nloc, 9999.9, dtype=np.float64)
         assigned_tgy = np.full(nloc, 9999.9, dtype=np.float64)
-        assigned_tgra = np.full(nloc, 9999.9, dtype=np.float64)
-        assigned_tgdec = np.full(nloc, 9999.9, dtype=np.float64)
         assigned_tgtype = np.zeros(nloc, dtype=np.uint8)
 
         # For later, locs of stuck fibers that land on good sky
@@ -405,11 +404,11 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
             ra,dec = xy2radec(
                 hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
                 empty_x, empty_y, False, 0)
-            assigned_tgra[assigned_invalid]  = ra
-            assigned_tgdec[assigned_invalid] = dec
             # These rows will have had default values; set them now!
             fdata["PLATE_RA" ][assigned_invalid] = ra
             fdata["PLATE_DEC"][assigned_invalid] = dec
+            fdata["TARGET_RA" ][assigned_invalid] = ra
+            fdata["TARGET_DEC"][assigned_invalid] = dec
 
             ex, ey = xy2cs5(empty_x, empty_y)
             assigned_tgx[assigned_invalid] = ex
@@ -424,14 +423,10 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
             target_rows = [tg_indx[x] for x in assigned_real]
 
             # Copy values out of the full target list.
-            assigned_tgra[assigned_valid] = np.array(tg_ra[target_rows])
-            assigned_tgdec[assigned_valid] = np.array(tg_dec[target_rows])
             assigned_tgx[assigned_valid] = np.array(tg_x[target_rows])
             assigned_tgy[assigned_valid] = np.array(tg_y[target_rows])
             assigned_tgtype[assigned_valid] = np.array(tg_type[target_rows])
 
-        fdata["TARGET_RA"] = assigned_tgra
-        fdata["TARGET_DEC"] = assigned_tgdec
         fdata["FIBERASSIGN_X"] = assigned_tgx
         fdata["FIBERASSIGN_Y"] = assigned_tgy
         fdata["FA_TYPE"] = assigned_tgtype
@@ -494,10 +489,9 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
                   .format(tile_id))
 
         fdata = np.zeros(ntarget, dtype=targets_dtype)
+        # Fill in all the data values we've been carrying around!
         tagalong.set_data(tgids, fdata)
         fdata["TARGETID"] = tgids
-        fdata["TARGET_RA"] = tg_ra
-        fdata["TARGET_DEC"] = tg_dec
         fdata["FA_TYPE"] = tg_type
         fdata["PRIORITY"] = tg_priority
         fdata["SUBPRIORITY"] = tg_subpriority
@@ -1310,14 +1304,6 @@ def merge_results_tile(out_dtype, copy_fba, params):
         if len(outdata[c].shape) < 2: #Don't propagate 2D target columns into FIBERASSIGN HDU
             cols_to_keep.append(c)
     outdata = outdata[cols_to_keep]
-
-    #- HACK: add PLATE_RA, PLATE_DEC if they aren't already there
-    if ('PLATE_RA' not in outdata.dtype.names):
-        log.info('Adding PLATE_RA=TARGET_RA and PLATE_DEC=TARGET_DEC columns')
-        from numpy.lib.recfunctions import append_fields
-        ra = outdata['TARGET_RA']
-        dec = outdata['TARGET_DEC']
-        outdata = append_fields(outdata, ['PLATE_RA', 'PLATE_DEC'], [ra,dec])
 
     cols_to_keep = list()
     for c in tile_targets.dtype.names:

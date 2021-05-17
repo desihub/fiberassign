@@ -47,7 +47,7 @@ class TargetTagalong(object):
     to propagate to the output fiberassign files, and that are not
     needed by the C++ layer.
     '''
-    def __init__(self, columns, outnames={}):
+    def __init__(self, columns, outnames={}, aliases={}):
         '''
         Create a new tag-along object.
 
@@ -56,9 +56,11 @@ class TargetTagalong(object):
         *outnames*: dict, string to string: mapping from 'columns' to the name
                     the column will be given in the output file; None to omit
                     from the output file.
+        *aliases*: dict, string to string: for get_for_ids(), column aliases.
         '''
         self.columns = columns
         self.outnames = outnames
+        self.aliases = aliases
         # Internally, we store one tuple for each targeting file read
         # (to avoid manipulating/reformatting the arrays too much),
         # where each tuple starts with the TARGETID of the targets, followed
@@ -143,6 +145,7 @@ class TargetTagalong(object):
         outarrs = []
         colinds = []
         for name in names:
+            name = self.aliases.get(name, name)
             ic = self.columns.index(name)
             # Look at the data saved for my first dataset to determine
             # the output type.
@@ -164,21 +167,33 @@ class TargetTagalong(object):
 
 def create_tagalong(plate_radec=True):
     cols = [
-        'RA',   # -> TARGET_RA
-        'DEC',  # -> TARGET_DEC
+        'TARGET_RA',
+        'TARGET_DEC',
         'OBSCOND',
         'FA_TARGET',
         ]
+
     if plate_radec:
         cols.extend([
             'PLATE_RA',
             'PLATE_DEC',
             # 'PLATE_REF_EPOCH',
             ])
-    return TargetTagalong(cols,
-        outnames={'RA':'TARGET_RA', 'DEC':'TARGET_DEC',
-                  'OBSCOND':None})
-    # (OBSCOND doesn't appear in all the output files, so we handle it specially)
+        # If PLATE_{RA,DEC} exist in the input target tables, use those
+        # when converting RA,DEC to focal-plane coords.
+        aliases = {
+            'RA':  'PLATE_RA',
+            'DEC': 'PLATE_DEC',
+            }
+    else:
+        aliases = {
+            'RA':  'TARGET_RA',
+            'DEC': 'TARGET_DEC',
+            }
+
+    # (OBSCOND doesn't appear in all the fiberassign output HDUs,
+    # so we handle it specially)
+    return TargetTagalong(cols, outnames={'OBSCOND':None}, aliases=aliases)
 
 def str_to_target_type(input):
     if input == "science":
@@ -795,8 +810,8 @@ def append_target_table(tgs, tagalong, tgdata, survey, typeforce, typecol,
     else:
         d_subprior[:] = np.zeros(nrows, dtype=np.float64)
 
-    fake = {'RA': d_ra,
-            'DEC': d_dec,
+    fake = {'TARGET_RA': d_ra,
+            'TARGET_DEC': d_dec,
             'FA_TARGET': d_bits,
             'OBSCOND': d_obscond}
     if not 'PLATE_RA' in tgdata.dtype.fields:
