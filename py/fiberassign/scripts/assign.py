@@ -358,7 +358,8 @@ def run_assign_full(args, plate_radec=True):
     # Load data
     hw, tiles, tgs, tagalong = run_assign_init(args, plate_radec=plate_radec)
 
-    # Create a hierarchical triangle mesh lookup of the targets positions
+    # Find targets within tiles, and project their RA,Dec positions
+    # into focal-plane coordinates.
     gt.start("Compute targets locations in tile")
     tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles, tagalong)
     gt.stop("Compute targets locations in tile")
@@ -445,7 +446,8 @@ def run_assign_bytile(args):
     # Load data
     hw, tiles, tgs, tagalong = run_assign_init(args)
 
-    # Create a hierarchical triangle mesh lookup of the targets positions
+    # Find targets within tiles, and project their RA,Dec positions
+    # into focal-plane coordinates.
     gt.start("Compute targets locations in tile")
     tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles, tagalong)
     gt.stop("Compute targets locations in tile")
