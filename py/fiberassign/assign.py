@@ -233,8 +233,8 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
             tg_priority[indx] = props.priority
             tg_subpriority[indx] = props.subpriority
 
-        (tg_ra, tg_dec, tg_bits, tg_obscond) = tagalong.get_for_ids(
-            tgids, ['RA', 'DEC', 'FA_TARGET', 'OBSCOND'])
+        (tg_ra, tg_dec, tg_obscond) = tagalong.get_for_ids(
+            tgids, ['RA', 'DEC', 'OBSCOND'])
 
         # We compute the X / Y focalplane coordinates for ALL available
         # targets, not just the assigned ones.  This allows us to write out
