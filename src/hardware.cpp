@@ -43,7 +43,9 @@ fba::Hardware::Hardware(std::string const & timestr,
                         std::vector <fbg::shape> const & excl_theta,
                         std::vector <fbg::shape> const & excl_phi,
                         std::vector <fbg::shape> const & excl_gfa,
-                        std::vector <fbg::shape> const & excl_petal) {
+                        std::vector <fbg::shape> const & excl_petal,
+                        std::map    <std::string, double> const & added_margs) :
+    added_margins(added_margs) {
     nloc = location.size();
 
     fba::Logger & logger = fba::Logger::get();

@@ -363,7 +363,16 @@ def plot_assignment_tile_file(petals, real_shapes, params):
 
     run_date = header["FA_RUN"]
 
-    hw = load_hardware(rundate=run_date)
+    # Retrieve additional margins to add to positioner, petal & gfa exclusion
+    # polygons from header cards.
+    margins = {}
+    for key in ['pos', 'gfa', 'petal']:
+        hdrkey = "FA_M_%s" % key[:3]
+        if hdrkey in header:
+            margins[key] = header[hdrkey]
+    log.debug('Read exclusion polygon margins from header: %s' % str(margins))
+
+    hw = load_hardware(rundate=run_date, add_margins=margins)
 
     locs = None
     if petals is None:

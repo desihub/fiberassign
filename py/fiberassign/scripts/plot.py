@@ -49,13 +49,6 @@ def parse_plot(optlist=None):
                         help="Plot simple lines for the positioner arms and no "
                         "exclusion zones.  This is less informative, but faster.")
 
-    parser.add_argument("--margin-pos", type=float, required=False, default=0.,
-                        help="Add margin (in mm) around positioner keep-out polygons")
-    parser.add_argument("--margin-petal", type=float, required=False, default=0.,
-                        help="Add margin (in mm) around petal-boundary keep-out polygons")
-    parser.add_argument("--margin-gfa", type=float, required=False, default=0.,
-                        help="Add margin (in mm) around GFA keep-out polygons")
-
     parser.add_argument("--serial", required=False, default=False,
                         action="store_true",
                         help="Disable the use of multiprocessing.  Needed by "
@@ -68,17 +61,6 @@ def parse_plot(optlist=None):
         args = parser.parse_args()
     else:
         args = parser.parse_args(optlist)
-
-    # Set up margins dict
-    args.margins = {}
-    if args.margin_pos != 0:
-        args.margins['theta'] = args.margin_pos
-        args.margins['phi']   = args.margin_pos
-    if args.margin_petal != 0:
-        ## The petal polygon is "backwards", so have to give it a negative margin
-        args.margins['petal'] = -args.margin_petal
-    if args.margin_gfa != 0:
-        args.margins['gfa'] = args.margin_gfa
 
     return args
 

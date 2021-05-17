@@ -265,6 +265,12 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
         header["FA_HA"] = tile_obsha
         header["FA_RUN"] = hw.time()
 
+        margins = hw.added_margins
+        keys = list(margins.keys())
+        keys.sort()
+        for k in keys:
+            header["FA_M_%s" % k[:3]] = margins[k]
+
         header["REQRA"] = tile_ra
         header["REQDEC"] = tile_dec
         header["FIELDNUM"] = 0

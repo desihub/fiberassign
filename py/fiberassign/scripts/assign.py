@@ -255,16 +255,9 @@ def parse_assign(optlist=None):
         args.dir = "out_fiberassign_{}".format(args.rundate)
 
     # Set up margins dict
-    args.margins = {}
-    if args.margin_pos != 0:
-        args.margins['theta'] = args.margin_pos
-        args.margins['phi']   = args.margin_pos
-    if args.margin_petal != 0:
-        ## The petal polygon is listed in *clockwise* order, so we have to give it a negative margin!
-        args.margins['petal'] = -args.margin_petal
-    if args.margin_gfa != 0:
-        args.margins['gfa'] = args.margin_gfa
-
+    args.margins = dict(pos=args.margin_pos,
+                        petal=args.margin_petal,
+                        gfa=args.margin_gfa)
     return args
 
 def run_assign_init(args, plate_radec=True):

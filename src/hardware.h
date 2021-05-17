@@ -62,7 +62,8 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
             std::vector <fbg::shape> const & excl_theta,
             std::vector <fbg::shape> const & excl_phi,
             std::vector <fbg::shape> const & excl_gfa,
-            std::vector <fbg::shape> const & excl_petal
+            std::vector <fbg::shape> const & excl_petal,
+            std::map    <std::string, double> const & added_margins
         );
 
         std::string time() const;
@@ -284,6 +285,9 @@ class Hardware : public std::enable_shared_from_this <Hardware> {
 
         // The Petal exclusion polygon for each location
         std::map <int32_t, fbg::shape> loc_petal_excl;
+
+        // The margins that were added to the exclusion polygons.
+        std::map <std::string, double> added_margins;
 
     private :
 

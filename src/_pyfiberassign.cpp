@@ -534,6 +534,10 @@ PYBIND11_MODULE(_internal, m) {
                 of the GFA for each device.
             excl_petal (list):  The Shape object for the exclusion polygon
                 of the petal edge for each device.
+            added_margins (dict): dict from string to float of margins that
+                were added to the *excl_* exclusion polygons.  Elements could
+                include 'pos' for positioners, 'petal' for overall petal, and
+                'gfa' for GFA chips.
 
         )")
         .def(py::init <
@@ -564,7 +568,9 @@ PYBIND11_MODULE(_internal, m) {
             std::vector <fbg::shape> const &,
             std::vector <fbg::shape> const &,
             std::vector <fbg::shape> const &,
-            std::vector <fbg::shape> const &> (), py::arg("timestr"),
+            std::vector <fbg::shape> const &,
+            std::map<std::string, double> const &> (),
+            py::arg("timestr"),
             py::arg("location"),
             py::arg("petal"), py::arg("device"), py::arg("slitblock"),
             py::arg("blockfiber"), py::arg("fiber"), py::arg("device_type"),
@@ -575,7 +581,7 @@ PYBIND11_MODULE(_internal, m) {
             py::arg("phi_max"), py::arg("phi_pos"), py::arg("phi_arm"),
             py::arg("ps_radius"), py::arg("ps_theta"), py::arg("arclen"),
             py::arg("excl_theta"), py::arg("excl_phi"),
-            py::arg("excl_gfa"), py::arg("excl_petal")
+            py::arg("excl_gfa"), py::arg("excl_petal"), py::arg("added_margins")
         )
         .def_readonly("nloc", &fba::Hardware::nloc, R"(
             The number of device locations.
@@ -663,6 +669,9 @@ PYBIND11_MODULE(_internal, m) {
         )")
         .def_readonly("loc_petal_excl", &fba::Hardware::loc_petal_excl, R"(
             Dictionary of petal exclusion shapes for each location.
+        )")
+        .def_readonly("added_margins", &fba::Hardware::added_margins, R"(
+            Dictionary of additional margins that were added to exclusion polygons.
         )")
         .def_readonly("neighbor_radius_mm",
                       &fba::Hardware::neighbor_radius_mm, R"(
@@ -1117,6 +1126,7 @@ PYBIND11_MODULE(_internal, m) {
                     excl_gfa[i] = p.loc_gfa_excl.at(lid[i]);
                     excl_petal[i] = p.loc_petal_excl.at(lid[i]);
                 }
+                std::map<std::string, double> added = p.added_margins;
                 return py::make_tuple(
                     timestr,
                     lid, petal, device, slitblock, blockfiber, fiber,
@@ -1124,7 +1134,7 @@ PYBIND11_MODULE(_internal, m) {
                     theta_min, theta_max, theta_pos, theta_arm, phi_offset, phi_min,
                     phi_max, phi_pos, phi_arm, ps_radius, ps_theta, arclen,
                     excl_theta, excl_phi,
-                    excl_gfa, excl_petal);
+                    excl_gfa, excl_petal, added);
             },
             [](py::tuple t) { // __setstate__
                 return new fba::Hardware(
@@ -1155,7 +1165,8 @@ PYBIND11_MODULE(_internal, m) {
                     t[24].cast<std::vector<fbg::shape> >(),
                     t[25].cast<std::vector<fbg::shape> >(),
                     t[26].cast<std::vector<fbg::shape> >(),
-                    t[27].cast<std::vector<fbg::shape> >()
+                    t[27].cast<std::vector<fbg::shape> >(),
+                    t[28].cast<std::map<std::string, double> >()
                 );
             }
         ));
