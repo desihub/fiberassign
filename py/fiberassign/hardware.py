@@ -57,6 +57,10 @@ def expand_closed_curve(xx, yy, margin):
     # These are closed curves (last point = first point)
     # (this isn't strictly required by the fundamental algorithm, but is assumed
     # in the way we select previous and next points in the loop below.)
+    if (xx[0] != xx[-1]) or (yy[0] != yy[-1]):
+        log = Logger.get()
+        log.warning('Expected exclusion polygons to be closed curves; got x, y = %s, %s' % (str(xx), str(yy)))
+        return xx, yy
     assert(xx[0] == xx[-1])
     assert(yy[0] == yy[-1])
 
