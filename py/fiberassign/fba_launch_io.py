@@ -2128,6 +2128,7 @@ def get_viewer_cutout(
     width_deg=4,
     pixscale=10,
     dr="dr9",
+    timeout=15,
 ):
     """
     Downloads a cutout of the tile region from legacysurvey.org/viewer.
@@ -2140,6 +2141,7 @@ def get_viewer_cutout(
         width_deg (optional, defaults to 4): width of the cutout in degrees (float)
         pixscale (optional, defaults to 10): pixel scale of the cutout
         dr (optional, default do "dr9"): imaging data release
+        timeout (optional, defaults to 15): time (in seconds) after which we quit the wget cal (int)
 
     Returns:
         img: output of mpimg.imread() reading of the cutout (np.array of floats)
@@ -2148,8 +2150,8 @@ def get_viewer_cutout(
     tmpfn = "{}tmp-{}.jpeg".format(tmpoutdir, tileid)
     size = int(width_deg * 3600.0 / pixscale)
     layer = "ls-{}".format(dr)
-    tmpstr = 'wget -q -O {} "http://legacysurvey.org/viewer-dev/jpeg-cutout/?layer={}&ra={:.5f}&dec={:.5f}&pixscale={:.0f}&size={:.0f}"'.format(
-        tmpfn, layer, tilera, tiledec, pixscale, size
+    tmpstr = 'timeout {} wget -q -O {} "http://legacysurvey.org/viewer-dev/jpeg-cutout/?layer={}&ra={:.5f}&dec={:.5f}&pixscale={:.0f}&size={:.0f}"'.format(
+        tmpfn, timout, layer, tilera, tiledec, pixscale, size
     )
     # print(tmpstr)
     os.system(tmpstr)
