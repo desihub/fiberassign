@@ -2155,9 +2155,10 @@ def get_viewer_cutout(
     os.system(tmpstr)
     try:
         img = mpimg.imread(tmpfn)
-        os.remove(tmpfn)
     except:
         img = np.zeros((size, size, 3))
+    if os.path.isfile(tmpfn):
+        os.remove(tmpfn)
     return img
 
 
