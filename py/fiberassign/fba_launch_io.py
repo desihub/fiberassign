@@ -2869,6 +2869,10 @@ def make_qa(
         width_deg=width_deg,
         pixscale=10,
         dr="dr9",
+        timeout=15,
+        log=log,
+        step=step,
+        start=start,
     )
 
     # AR SKY, BAD, WD, STD, TGT
