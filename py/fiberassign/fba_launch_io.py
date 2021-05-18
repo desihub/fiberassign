@@ -2144,7 +2144,7 @@ def get_viewer_cutout(
         width_deg (optional, defaults to 4): width of the cutout in degrees (float)
         pixscale (optional, defaults to 10): pixel scale of the cutout
         dr (optional, default do "dr9"): imaging data release
-        timeout (optional, defaults to 15): time (in seconds) after which we quit the wget cal (int)
+        timeout (optional, defaults to 15): time (in seconds) after which we quit the wget call (int)
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
