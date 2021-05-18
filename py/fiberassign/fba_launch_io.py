@@ -2145,16 +2145,17 @@ def get_viewer_cutout(
         img: output of mpimg.imread() reading of the cutout (np.array of floats)
     """
     # AR cutout
+    tmpfn = "{}tmp-{}.jpeg".format(tmpoutdir, tileid)
     size = int(width_deg * 3600.0 / pixscale)
     layer = "ls-{}".format(dr)
-    tmpstr = 'wget -q -O {}tmp-{}.jpeg "http://legacysurvey.org/viewer-dev/jpeg-cutout/?layer={}&ra={:.5f}&dec={:.5f}&pixscale={:.0f}&size={:.0f}"'.format(
-        tmpoutdir, tileid, layer, tilera, tiledec, pixscale, size
+    tmpstr = 'wget -q -O {} "http://legacysurvey.org/viewer-dev/jpeg-cutout/?layer={}&ra={:.5f}&dec={:.5f}&pixscale={:.0f}&size={:.0f}"'.format(
+        tmpfn, layer, tilera, tiledec, pixscale, size
     )
     # print(tmpstr)
     os.system(tmpstr)
     try:
-        img = mpimg.imread("{}tmp-{}.jpeg".format(tmpoutdir, tileid))
-        os.remove("{}tmp-{}.jpeg".format(tmpoutdir, tileid))
+        img = mpimg.imread(tmpfn)
+        os.remove(tmpfn)
     except:
         img = np.zeros((size, size, 3))
     return img
