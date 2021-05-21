@@ -994,14 +994,15 @@ def create_sky(
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
     log.info("{:.1f}s\t{}\tstart generating {}".format(time() - start, step, outfn))
+
     # AR sky: read targets
     tiles = fits.open(tilesfn)[1].data
     skydirs = [skydir]
     if suppskydir is not None:
         skydirs.append(suppskydir)
-    d = custom_read_targets_in_tiles(
-        skydirs, tiles, quick=True, mtl=False, log=log, step=step, start=start
-    )
+    ds = [quick_read_targets_in_tiles(skydir, tiles, log=log, step=step, start=start) for skydir in skydirs]
+    d = np.concatenate(ds)
+
     n, tmpfn = write_skies(tmpoutdir, d, indir=skydir, indir2=suppskydir,)
     _ = mv_write_targets_out(tmpfn, tmpoutdir, outfn, log=log, step=step, start=start)
     log.info("{:.1f}s\t{}\t{} written".format(time() - start, step, outfn))
@@ -1050,16 +1051,11 @@ def create_targ_nomtl(
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
     log.info("{:.1f}s\t{}\tstart generating {}".format(time() - start, step, outfn))
+
     # AR targ_nomtl: read targets
     tiles = fits.open(tilesfn)[1].data
-    d = custom_read_targets_in_tiles(
-        [targdir], tiles, quick=quick, mtl=False, log=log, step=step, start=start
-    )
-    log.info(
-        "{:.1f}s\t{}\tkeeping {} targets to {}".format(
-            time() - start, step, len(d), outfn
-        )
-    )
+    d = quick_read_targets_in_tiles(targdir, tiles, log=log, step=step, start=start)
+
     # AR targ_nomtl: PMRA, PMDEC: convert NaN to zeros
     d = force_finite_pm(d, log=log, step=step, start=start)
     # AR targ_nomtl: update RA, DEC, REF_EPOCH using proper motion?
