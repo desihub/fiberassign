@@ -37,7 +37,7 @@ from desitarget.io import read_targets_in_tiles, write_targets, write_skies
 from desitarget.mtl import inflate_ledger
 from desitarget.targetmask import desi_mask, obsconditions
 from desitarget.targets import set_obsconditions
-from desitarget.geomask import match
+from desitarget.geomask import match, pixarea2nside, nside2nside
 
 # desimodel
 import desimodel
@@ -203,8 +203,12 @@ def quick_read_targets_in_tiles(
     filenside, hpxnside =  hdr["FILENSID"], hdr["HPXNSIDE"]
 
     # AR now getting the corresponding NESTED hp pixels
-    # AR overlapping the tile
-    filepixs = tiles2pix(filenside, tiles=tiles)
+    # AR    overlapping the tile
+    # AR for pixlist, following the same approach as in desitarget.io.read_targets_in_quick()
+    # AR    so that we the same ordering of files reading, hence same ordering of targets
+    nside = pixarea2nside(7.)
+    pixlist = tiles2pix(nside, tiles=tiles)
+    filepixs = nside2nside(nside, filenside, pixlist)
     hpxpixs = tiles2pix(hpxnside, tiles=tiles)
     # ADM "standard" format formatter for a file:
     formatter = glob(os.path.join(targdir, "*.fits"))[0].split("hp-")[0]+"hp-{}.fits"
