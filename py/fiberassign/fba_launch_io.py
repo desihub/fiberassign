@@ -1146,17 +1146,15 @@ def create_mtl(
     log.info("{:.1f}s\t{}\tmtltime={}".format(time() - start, step, mtltime))
 
     # AR mtl: read mtl
-    d = custom_read_targets_in_tiles(
-        [mtldir],
-        tiles,
-        quick=False,
-        mtl=True,
-        unique=True,
-        isodate=mtltime,
-        log=log,
-        step=step,
-        start=start,
-    )
+    d = read_targets_in_tiles(
+            mtldir,
+            tiles=tiles,
+            quick=False,
+            mtl=True,
+            unique=True,
+            isodate=mtltime,
+        )
+    log.info("{:.1f}s\t{}\treading {} targets in MTL ledgers".format(time() - start, step, len(d)))
 
     # AR mtl: removing by hand BACKUP_BRIGHT for sv3/BACKUP
     # AR mtl: using an indirect way to find if program=backup,
