@@ -12,6 +12,7 @@ import sys
 import tempfile
 import shutil
 import re
+from glob import glob
 
 # time
 from time import time
@@ -40,7 +41,7 @@ from desitarget.geomask import match
 
 # desimodel
 import desimodel
-from desimodel.footprint import is_point_in_desi
+from desimodel.footprint import is_point_in_desi, tiles2pix
 
 # desimeter
 import desimeter
@@ -227,6 +228,86 @@ def custom_read_targets_in_tiles(
                 )
             )
             d = d[ii_m1.tolist() + ii_nm1.tolist()]
+    return d
+
+
+def quick_read_targets_in_tiles(
+    targdir,
+    tiles,
+    columns=None,
+    log=Logger.get(),
+    step="",
+    start=time(),
+):
+    """
+    Quick reading of desitarget *.fits catalogs to extract targets inside a tile.
+    Catalogs can be e.g. for gfas, skies, main/dark, etc.
+
+    Args:
+        targdir: desitarget folder with fits files (string)
+        tiles: tiles object (as required by desitarget.io.read_targets_in_tiles)
+        columns (optional, defaults to None): columns to be read (list)
+        log (optional, defaults to Logger.get()): Logger object
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+
+    Returns:
+        array of targets in the passed tiles.
+
+    Notes:
+        works only for *.fits files, not for MTL ledgers.
+        if no targets are selected, the returned array will still have the correct structure.
+        formatter copied from desitarget.io.py
+    """
+    log.info(
+        "{:.1f}s\t{}\treading input targets from {}".format(
+            time() - start, step, targdir
+        )
+    )
+
+    # AR getting nside for the file names and the HPXPIXEL column
+    # AR using first file
+    fn = glob(os.path.join(targdir, "*-hp-*.fits"))[0]
+    hdr = fits.getheader(fn, 1)
+    filenside, hpxnside =  hdr["FILENSID"], hdr["HPXNSIDE"]
+
+    # AR now getting the corresponding NESTED hp pixels
+    # AR overlapping the tile
+    filepixs = tiles2pix(filenside, tiles=tiles)
+    hpxpixs = tiles2pix(hpxnside, tiles=tiles)
+    # ADM "standard" format formatter for a file:
+    formatter = glob(os.path.join(targdir, "*.fits"))[0].split("hp-")[0]+"hp-{}.fits"
+    # AR list of filenames
+    fns = [formatter.format(filepix) for filepix in filepixs]
+    log.info(
+        "{:.1f}s\t{}\twill read files with filepixs={} (filenside={})".format(
+            time() - start, step, filepixs, filenside
+        )
+    )
+    # AR first getting the indexes of objects with an HPXPIXEL value
+    # AR overlapping the tile
+    hpxpixelss = [fitsio.read(fn, columns=["HPXPIXEL"])["HPXPIXEL"] for fn in fns]
+    iis = [np.where(np.in1d(hpxpixels, hpxpixs))[0] for hpxpixels in hpxpixelss]
+    log.info(
+        "{:.1f}s\t{}\tfirst keeping {} objects with HPXPIXEL in {} (hpxnside={})".format(
+            time() - start, step, np.sum([len(ii) for ii in iis]), hpxpixs, hpxnside
+        )
+    )
+
+    # AR then taking the subsample exactly in the tile
+    radecs = [fitsio.read(fn, rows=ii, columns=["RA", "DEC"]) for fn, ii in zip(fns, iis)]
+    iis = [ii[is_point_in_desi(tiles, radec["RA"], radec["DEC"])] for radec, ii in zip(radecs, iis)]
+    log.info(
+        "{:.1f}s\t{}\tfinally keeping {} objects after further cutting with is_point_in_desi".format(
+            time() - start, step, np.sum([len(ii) for ii in iis])
+        )
+    )
+
+    # AR reading + concatenating
+    ds = [fitsio.read(fn, rows=ii, columns=columns) for fn, ii in zip(fns, iis)]
+    d = np.concatenate(ds)
+
     return d
 
 
