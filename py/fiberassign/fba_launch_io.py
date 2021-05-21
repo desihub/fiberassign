@@ -1004,14 +1004,14 @@ def create_sky(
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
     log.info("{:.1f}s\t{}\tstart generating {}".format(time() - start, step, outfn))
+
     # AR sky: read targets
     tiles = fits.open(tilesfn)[1].data
     skydirs = [skydir]
     if suppskydir is not None:
         skydirs.append(suppskydir)
-    d = custom_read_targets_in_tiles(
-        skydirs, tiles, quick=True, mtl=False, log=log, step=step, start=start
-    )
+    ds = [quick_read_targets_in_tiles(skydir, tiles, log=log, step=step, start=start) for skydir in skydirs]
+    d = np.concatenate(ds)
 
     # AR adding PLATE_RA, PLATE_DEC?
     if add_plate_cols:
@@ -1081,11 +1081,10 @@ def create_targ_nomtl(
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
     log.info("{:.1f}s\t{}\tstart generating {}".format(time() - start, step, outfn))
+
     # AR targ_nomtl: read targets
     tiles = fits.open(tilesfn)[1].data
-    d = custom_read_targets_in_tiles(
-        [targdir], tiles, quick=quick, mtl=False, log=log, step=step, start=start
-    )
+    d = quick_read_targets_in_tiles(targdir, tiles, log=log, step=step, start=start)    
     log.info(
         "{:.1f}s\t{}\tkeeping {} targets to {}".format(
             time() - start, step, len(d), outfn
