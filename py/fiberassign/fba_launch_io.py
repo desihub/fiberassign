@@ -24,7 +24,7 @@ import fitsio
 
 # astropy
 from astropy.io import fits
-from astropy.table import Table
+from astropy.table import Table, hstack
 from astropy.time import Time
 from astropy import units
 from astropy.coordinates import SkyCoord, Distance
@@ -34,10 +34,9 @@ from astropy.time import Time
 import desitarget
 from desitarget.gaiamatch import gaia_psflike
 from desitarget.io import read_targets_in_tiles, write_targets, write_skies
-from desitarget.mtl import inflate_ledger
 from desitarget.targetmask import desi_mask, obsconditions
 from desitarget.targets import set_obsconditions
-from desitarget.geomask import match, pixarea2nside, nside2nside
+from desitarget.geomask import match, pixarea2nside, nside2nside, match_to
 
 # desimodel
 import desimodel
@@ -1121,9 +1120,28 @@ def create_mtl(
                 time() - start, step, ",".join(columns), targdir
             )
         )
-        d = inflate_ledger(
-            d, targdir, columns=columns, header=False, strictcols=False, quick=True
-        )
+        # AR quick way to do same as desitarget.mtl.inflate_ledger()
+        t = quick_read_targets_in_tiles(targdir, tiles, columns = ["TARGETID"] + columns, log=log, step=step, start=start)
+        ii = match_to(t["TARGETID"], d["TARGETID"])
+        if ((len(ii) != len(d)) | (len(ii) != len(t))):
+            log.error(
+                "{:.1f}s\t{}\tmismatch between targs and mtls: len(targs)={}, len(mtls)={}, common={}; exiting".format(
+                    time() - start, step, len(t), len(mtl), len(ii)
+                )
+            )
+            sys.exit(1)
+        t = t[ii]
+        # AR now turning to Table, and removing TARGETID
+        t = Table(t)
+        t.remove_column("TARGETID")
+        # AR starting with the added columns to preserve the same column ordering as in inflate_ledger()..
+        d = Table(d)
+        # AR putting TARGETID first, for the same reason
+        keys = ["TARGETID"] + [key for key in d.dtype.names if key != "TARGETID"]
+        d = d[keys]
+        # AR and stacking horizontally
+        d = hstack([t, d])
+        d = d.as_array()
 
     # AR mtl: PMRA, PMDEC: convert NaN to zeros
     d = force_finite_pm(d, log=log, step=step, start=start)
