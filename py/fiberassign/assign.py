@@ -269,8 +269,25 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         header["FIELDNUM"] = 0
         header["FA_VER"] = __version__
         header["FA_SURV"] = tgs.survey()
-        #- code dependency versions (desitarget, desimodel, desimeter etc)
+
+        #- Add code dependency versions for default list of packages, then
+        #- call again for ones that are most critical to record just in
+        #- case they get dropped from the default list in the future.
+        #- (it won't add a second copy if they are already there)
         add_dependencies(header)
+        add_dependencies(
+            header,
+            module_names=[
+                "numpy",
+                "matplotlib",
+                "astropy",
+                "fitsio",
+                "desiutil",
+                "desimodel",
+                "desitarget",
+                "desimeter",
+            ]
+        )
 
         #- Keep SKYBRICKS_DIR used to lookup sky locations,
         #- shortening full path if possible
