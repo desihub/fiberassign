@@ -78,13 +78,14 @@ def plot_target_type_color(tgtype):
 
 
 def plot_positioner(ax, patrol_rad, loc, center, shptheta, shpphi, color="k",
-                    linewidth=0.2):
+                    linewidth=0.2, fontpt=2.0):
     """Plot one fiber positioner.
     """
     set_matplotlib_pdf_backend()
-    patrol = plt.Circle((center[0], center[1]), radius=patrol_rad, fc=color,
-                        ec="none", alpha=0.1)
-    ax.add_artist(patrol)
+    if patrol_rad > 0:
+        patrol = plt.Circle((center[0], center[1]), radius=patrol_rad, fc=color,
+                            ec="none", alpha=0.1)
+        ax.add_artist(patrol)
     # Plot the arm from the center to the body
     thetacent = shptheta.axis
     armwidth = 0.25
@@ -111,9 +112,6 @@ def plot_positioner(ax, patrol_rad, loc, center, shptheta, shpphi, color="k",
             xpts = np.array([p[0] for p in segs.points])
             ypts = np.array([p[1] for p in segs.points])
             ax.plot(xpts, ypts, linewidth=linewidth, color=color)
-    fontpix = armwidth * 2
-    fontpt = int(0.25 * fontpix)
-    fontpt = 2.0
     xtxt = center[0] - 2 * armwidth * cosarm
     ytxt = center[1] - 2 * armwidth * sinarm
     ax.text(xtxt, ytxt, "{}".format(loc),
@@ -163,7 +161,8 @@ def plot_positioner_simple(ax, patrol_rad, loc, center, theta_ang, theta_arm,
     return
 
 
-def plot_positioner_invalid(ax, patrol_rad, loc, center, color="k", linewidth=0.2):
+def plot_positioner_invalid(ax, patrol_rad, loc, center, color="k", linewidth=0.2,
+                            fontpt=2.0):
     """Plot one fiber positioner which has invalid angles.
     """
     set_matplotlib_pdf_backend()
@@ -171,7 +170,6 @@ def plot_positioner_invalid(ax, patrol_rad, loc, center, color="k", linewidth=0.
                         ec="none", alpha=0.1)
     ax.add_artist(patrol)
 
-    fontpt = 2.0
     xtxt = center[0]
     ytxt = center[1] + 0.5
     ax.text(xtxt, ytxt, "{}".format(loc),
@@ -219,7 +217,7 @@ def plot_available(ax, targetprops, selected, linewidth=0.1):
 
 
 def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
-                    real_shapes=False):
+                    real_shapes=False, fontpt=2.):
     log = Logger.get()
     center_mm = hw.loc_pos_curved_mm
     theta_arm = hw.loc_theta_arm
@@ -322,13 +320,14 @@ def plot_assignment(ax, hw, targetprops, tile_assigned, linewidth=0.1,
                 log.warning(msg)
         if failed:
             plot_positioner_invalid(
-                ax, patrol_rad, lid, center, color=color, linewidth=linewidth
+                ax, patrol_rad, lid, center, color=color, linewidth=linewidth,
+                fontpt=fontpt
             )
         else:
             if real_shapes:
                 plot_positioner(
                     ax, patrol_rad, lid, center, shptheta, shpphi,
-                    color=color, linewidth=linewidth
+                    color=color, linewidth=linewidth, fontpt=fontpt
                 )
             else:
                 plot_positioner_simple(
