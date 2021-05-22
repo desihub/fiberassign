@@ -277,6 +277,12 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
         header["FIELDNUM"] = 0
         header["FA_VER"] = __version__
         header["FA_SURV"] = tgs.survey()
+
+        #- Add code dependency versions for default list of packages, then
+        #- call again for ones that are most critical to record just in
+        #- case they get dropped from the default list in the future.
+        #- (it won't add a second copy if they are already there)
+        add_dependencies(header)
         add_dependencies(
             header,
             module_names=[
@@ -286,7 +292,8 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
                 "fitsio",
                 "desiutil",
                 "desimodel",
-                "desitarget"
+                "desitarget",
+                "desimeter",
             ]
         )
 

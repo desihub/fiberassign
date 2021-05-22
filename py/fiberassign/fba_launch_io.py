@@ -2197,6 +2197,10 @@ def get_viewer_cutout(
     width_deg=4,
     pixscale=10,
     dr="dr9",
+    timeout=15,
+    log=Logger.get(),
+    step="",
+    start=time(),
 ):
     """
     Downloads a cutout of the tile region from legacysurvey.org/viewer.
@@ -2209,23 +2213,39 @@ def get_viewer_cutout(
         width_deg (optional, defaults to 4): width of the cutout in degrees (float)
         pixscale (optional, defaults to 10): pixel scale of the cutout
         dr (optional, default do "dr9"): imaging data release
+        timeout (optional, defaults to 15): time (in seconds) after which we quit the wget call (int)
+        log (optional, defaults to Logger.get()): Logger object
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
 
     Returns:
         img: output of mpimg.imread() reading of the cutout (np.array of floats)
     """
     # AR cutout
+    tmpfn = "{}tmp-{}.jpeg".format(tmpoutdir, tileid)
     size = int(width_deg * 3600.0 / pixscale)
     layer = "ls-{}".format(dr)
-    tmpstr = 'wget -q -O {}tmp-{}.jpeg "http://legacysurvey.org/viewer-dev/jpeg-cutout/?layer={}&ra={:.5f}&dec={:.5f}&pixscale={:.0f}&size={:.0f}"'.format(
-        tmpoutdir, tileid, layer, tilera, tiledec, pixscale, size
+    tmpstr = 'timeout {} wget -q -O {} "http://legacysurvey.org/viewer-dev/jpeg-cutout/?layer={}&ra={:.5f}&dec={:.5f}&pixscale={:.0f}&size={:.0f}"'.format(
+        tmpfn, timeout, layer, tilera, tiledec, pixscale, size
     )
     # print(tmpstr)
-    os.system(tmpstr)
+
     try:
-        img = mpimg.imread("{}tmp-{}.jpeg".format(tmpoutdir, tileid))
-        os.remove("{}tmp-{}.jpeg".format(tmpoutdir, tileid))
+        subprocess.check_call(tmpstr, stderr=subprocess.DEVNULL, shell=True)
+    except subprocess.CalledProcessError:
+        log.warning(
+            "{:.1f}s\t{}\tno cutout from viewer after {}s, stopping the wget call".format(
+                time() - start, step, timeout
+            )
+        )
+
+    try:
+        img = mpimg.imread(tmpfn)
     except:
         img = np.zeros((size, size, 3))
+    if os.path.isfile(tmpfn):
+        os.remove(tmpfn)
     return img
 
 
@@ -2918,6 +2938,10 @@ def make_qa(
         width_deg=width_deg,
         pixscale=10,
         dr="dr9",
+        timeout=15,
+        log=log,
+        step=step,
+        start=start,
     )
 
     # AR SKY, BAD, WD, STD, TGT

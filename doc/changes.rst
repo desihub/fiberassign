@@ -3,10 +3,19 @@
 fiberassign change log
 ======================
 
-4.0.1 (unreleased)
+4.0.2 (unreleased)
 ------------------
 
 * No changes yet.
+
+4.0.1 (2021-05-18)
+------------------
+
+No algorithmic changes.
+
+* Add timeout to wget fetch of imaging cutout for QA (PR `#361`_).
+
+.. _`#361`: https://github.com/desihub/fiberassign/pull/361
 
 4.0.0 (2021-05-14)
 ------------------
