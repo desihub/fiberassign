@@ -157,13 +157,10 @@ def get_program_latest_timestamp(
     return timestamp
 
 
-def custom_read_targets_in_tiles(
+def custom_read_targets_nomtl_in_tiles(
     targdirs,
     tiles,
     quick=True,
-    mtl=False,
-    unique=True,
-    isodate=None,
     log=Logger.get(),
     step="",
     start=time(),
@@ -175,7 +172,7 @@ def custom_read_targets_in_tiles(
     Args:
         targdirs: list of folders
         tiles: tiles object (as required by desitarget.io.read_targets_in_tiles)
-        quick, mtl, unique, isodate (optional): same as desitarget.io.read_targets_in_tiles arguments
+        quick (optional, default to True): same as desitarget.io.read_targets_in_tiles argument
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -194,9 +191,6 @@ def custom_read_targets_in_tiles(
             targdirs[0],
             tiles=tiles,
             quick=quick,
-            mtl=mtl,
-            unique=unique,
-            isodate=isodate,
         )
     else:
         ds = [
@@ -204,9 +198,6 @@ def custom_read_targets_in_tiles(
                 targdir,
                 tiles=tiles,
                 quick=quick,
-                mtl=mtl,
-                unique=unique,
-                isodate=isodate,
             )
             for targdir in targdirs
         ]
@@ -224,6 +215,102 @@ def custom_read_targets_in_tiles(
                 )
             )
             d = d[ii_m1.tolist() + ii_nm1.tolist()]
+    return d
+
+
+def custom_read_targets_mtl_in_tiles(
+    tiles,
+    mtldir,
+    targdir,
+    survey,
+    gaiadr,
+    pmcorr,
+    outfn,
+    unique=True,
+    isodate=None,
+    log=Logger.get(),
+    step="",
+    start=time(),
+):
+    """
+    Wrapper to desitarget.io.read_targets_in_tiles using MTL + inflate_ledger.
+
+    Args:
+        tiles: tiles object (as required by desitarget.io.read_targets_in_tiles)
+        mtldir: desisurveyops MTL folder (string)
+        targdir: desitarget targets folder (or file name if secondary) (string)
+        survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
+        gaiadr: Gaia dr ("dr2" or "edr3")
+        pmcorr: apply proper-motion correction? ("y" or "n")
+        outfn: fits file name to be written (string)
+        unique, isodate (optional, default to True, None): same as desitarget.io.read_targets_in_tiles arguments
+            isodate formatting: yyyy-mm-ddThh:mm:ss+00:00
+        log (optional, defaults to Logger.get()): Logger object
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+
+    Returns:
+        array of targets in the passed tiles.
+
+    Notes:
+        args.mtltime in fba_launch is the isodate.
+        for MTL ledgers reading, quick=False is requested, so no quick option here.
+        if pmcorr="y", then pmtime_utc_str needs to be set; will trigger an error otherwise.
+        for sv3-backup, we remove BACKUP_BRIGHT targets.
+        TBD : if secondary targets, we currently disable the inflate_ledger(), as it
+                seems to not currently work.
+                hence if secondary and pmcorr="y", the code will crash, as the 
+                GAIA_ASTROMETRIC_EXCESS_NOISE column will be missing; though we do not
+                expect this configuration to happen, so it should be fine for now.
+    """
+    # AR mtl: storing the timestamp at which we queried MTL
+    log.info("{:.1f}s\t{}\tMTL isodate={}".format(time() - start, step, isodate))
+
+    # AR mtl: read MTL ledgers
+    d = read_targets_in_tiles(
+        mtldir,
+        tiles=tiles,
+        quick=False,
+        mtl=True,
+        unique=unique,
+        isodate=isodate,
+    )
+    
+    # AR mtl: removing by hand BACKUP_BRIGHT for sv3/BACKUP
+    # AR mtl: using an indirect way to find if program=backup,
+    # AR mtl:   to avoid the need of an extra program argument
+    # AR mtl:   for sv3, there is no secondary-backup, so no ambiguity
+    if (survey == "sv3") & ("backup" in mtldir):
+        from desitarget.sv3.sv3_targetmask import mws_mask
+
+        keep = (d["SV3_MWS_TARGET"] & mws_mask["BACKUP_BRIGHT"]) == 0
+        log.info(
+            "{:.1f}s\t{}\tremoving {}/{} BACKUP_BRIGHT targets".format(
+                time() - start, step, len(d) - keep.sum(), len(d)
+            )
+        )
+        d = d[keep]
+
+    # AR mtl: add columns not present in ledgers
+    # AR mtl: need to provide exact list (if columns=None, inflate_ledger()
+    # AR mtl:    overwrites existing columns)
+    # AR mtl: TBD : we currently disable it for secondary targets
+    # AR mtl:       using an indirect way to find if secondary,
+    # AR mtl:       to avoid the need of an extra program argument
+    if "secondary" not in mtldir:
+        columns = [key for key in minimal_target_columns if key not in d.dtype.names]
+        # AR mtl: also add GAIA_ASTROMETRIC_EXCESS_NOISE, in case args.pmcorr == "y"
+        if pmcorr == "y":
+            columns += ["GAIA_ASTROMETRIC_EXCESS_NOISE"]
+        log.info(
+            "{:.1f}s\t{}\tadding {} from {}".format(
+                time() - start, step, ",".join(columns), targdir
+            )
+        )
+        d = inflate_ledger(
+            d, targdir, columns=columns, header=False, strictcols=False, quick=True
+        )
     return d
 
 
@@ -918,31 +1005,34 @@ def create_sky(
     skydirs = [skydir]
     if suppskydir is not None:
         skydirs.append(suppskydir)
-    d = custom_read_targets_in_tiles(
-        skydirs, tiles, quick=True, mtl=False, log=log, step=step, start=start
+    d = custom_read_targets_nomtl_in_tiles(
+        skydirs, tiles, quick=True, log=log, step=step, start=start
     )
     n, tmpfn = write_skies(tmpoutdir, d, indir=skydir, indir2=suppskydir,)
     _ = mv_write_targets_out(tmpfn, tmpoutdir, outfn, log=log, step=step, start=start)
     log.info("{:.1f}s\t{}\t{} written".format(time() - start, step, outfn))
 
 
-def create_targ_nomtl(
+def create_targ(
     tilesfn,
     targdir,
     survey,
     gaiadr,
     pmcorr,
     outfn,
+    mtldir=None,
+    isodate=None,
+    quick=True,
+    unique=True,
     tmpoutdir=tempfile.mkdtemp(),
     pmtime_utc_str=None,
-    quick=True,
     log=Logger.get(),
     step="",
     start=time(),
 ):
     """
     Create a target fits file, with solely using desitarget catalogs, no MTL.
-        e.g. for the GFA, but could be used for other purposes.
+        e.g. for the GFA, but could be used for primary or secondary targets.
     
     Args:
         tilesfn: path to a tiles fits file (string)
@@ -951,37 +1041,73 @@ def create_targ_nomtl(
         gaiadr: Gaia dr ("dr2" or "edr3")
         pmcorr: apply proper-motion correction? ("y" or "n")
         outfn: fits file name to be written (string)
+        mtldir (optional, defaults to None): MTL ledger folder; if provided will read ledgers (string)
+        quick, unique, isodate (optional, default to True, True, None): same as desitarget.io.read_targets_in_tiles arguments
+            isodate formatting: yyyy-mm-ddThh:mm:ss+00:00
         tmpoutdir (optional, defaults to a temporary directory): temporary directory where
                 write_skies will write (creating some sub-directories)
         pmtime_utc_str (optional, defaults to None): UTC time use to compute
                 new coordinates after applying proper motion since REF_EPOCH
                 (string formatted as "yyyy-mm-ddThh:mm:ss+00:00")
-        quick (optional, defaults to True): boolean, arguments of desitarget.io.read_targets_in_tiles()
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
 
     Notes:
+        args.mtltime in fba_launch is the isodate.
+        if reading MTL ledgers, should set quick=False.
+        isodate and unique are used only if reading MTL ledgers.
         if pmcorr="y", then pmtime_utc_str needs to be set; will trigger an error otherwise.
     """
     log.info("")
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
     log.info("{:.1f}s\t{}\tstart generating {}".format(time() - start, step, outfn))
-    # AR targ_nomtl: read targets
+
+    # AR targ: read targets
     tiles = fits.open(tilesfn)[1].data
-    d = custom_read_targets_in_tiles(
-        [targdir], tiles, quick=quick, mtl=False, log=log, step=step, start=start
-    )
+
+    # AR targ: MTL?
+    if mtldir is not None:
+        log.info(
+            "{:.1f}s\t{}\tmtldir={} -> reading MTL ledgers".format(
+                time() - start, step, mtldir
+            )
+        )
+        d = custom_read_targets_mtl_in_tiles(
+            tiles,
+            mtldir,
+            targdir,
+            survey,
+            gaiadr,
+            pmcorr,
+            outfn,
+            unique=unique,
+            isodate=isodate,
+            log=log,
+            step=step,
+            start=start,
+        )
+    # AR targ: no MTL
+    else:
+        log.info(
+            "{:.1f}s\t{}\tmtldir=None -> reading desitarget catalogs only (no MTL ledgers)".format(
+                time() - start, step
+            )
+        )
+        d = custom_read_targets_nomtl_in_tiles(
+            [targdir], tiles, quick=quick, log=log, step=step, start=start
+        )
     log.info(
         "{:.1f}s\t{}\tkeeping {} targets to {}".format(
             time() - start, step, len(d), outfn
         )
     )
-    # AR targ_nomtl: PMRA, PMDEC: convert NaN to zeros
+
+    # AR targ: PMRA, PMDEC: convert NaN to zeros
     d = force_finite_pm(d, log=log, step=step, start=start)
-    # AR targ_nomtl: update RA, DEC, REF_EPOCH using proper motion?
+    # AR targ: update RA, DEC, REF_EPOCH using proper motion?
     if pmcorr == "y":
         if pmtime_utc_str is None:
             log.error(
@@ -989,7 +1115,7 @@ def create_targ_nomtl(
                     time() - start, step,
                 )
             )
-            sys.exti(1)
+            sys.exit(1)
         d = update_nowradec(d, gaiadr, pmtime_utc_str, log=log, step=step, start=start)
     else:
         log.info(
@@ -997,152 +1123,20 @@ def create_targ_nomtl(
                 time() - start, step
             )
         )
-        # AR targ_nomtl: Replaces 0 by force_ref_epoch in ref_epoch
+        # AR targ: Replaces 0 by force_ref_epoch in ref_epoch
         d = force_nonzero_refepoch(
             d, gaia_ref_epochs[gaiadr], log=log, step=step, start=start
         )
 
-    # AR targ_nomtl: write fits
-    n, tmpfn = write_targets(tmpoutdir, d, indir=targdir, survey=survey)
+    # AR targ: write fits
+    if mtldir is not None:
+        indir, indir2 = mtldir, targdir
+    else:
+        indir, indir2 = targdir, None
+    n, tmpfn = write_targets(tmpoutdir, d, indir=indir, indir2=indir2, survey=survey)
     _ = mv_write_targets_out(tmpfn, tmpoutdir, outfn, log=log, step=step, start=start)
-    # AR targ_nomtl: update header if pmcorr = "y"
-    if pmcorr == "y":
-        fd = fitsio.FITS(outfn, "rw")
-        fd["TARGETS"].write_key("COMMENT", "RA,DEC updated with PM for AEN objects")
-        fd["TARGETS"].write_key("COMMENT", "REF_EPOCH updated for all objects")
-        fd.close()
-    log.info("{:.1f}s\t{}\t{} written".format(time() - start, step, outfn))
 
-
-def create_mtl(
-    tilesfn,
-    mtldir,
-    mtltime,
-    targdir,
-    survey,
-    gaiadr,
-    pmcorr,
-    outfn,
-    tmpoutdir=tempfile.mkdtemp(),
-    pmtime_utc_str=None,
-    log=Logger.get(),
-    step="",
-    start=time(),
-):
-    """
-    Create a (primary or secondary) target fits file, based on MTL ledgers (and complementary columns from desitarget targets files).
-    
-    Args:
-        tilesfn: path to a tiles fits file (string)
-        mtldir: desisurveyops MTL folder (string)
-        mtltime: MTL isodate (string formatted as yyyy-mm-ddThh:mm:ss+00:00)
-        targdir: desitarget targets folder (or file name if secondary) (string)
-        survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
-        gaiadr: Gaia dr ("dr2" or "edr3")
-        pmcorr: apply proper-motion correction? ("y" or "n")
-        outfn: fits file name to be written (string)
-        tmpoutdir (optional, defaults to a temporary directory): temporary directory where
-                write_skies will write (creating some sub-directories)
-        pmtime_utc_str (optional, defaults to None): UTC time use to compute
-                new coordinates after applying proper motion since REF_EPOCH
-                (string formatted as "yyyy-mm-ddThh:mm:ss+00:00")
-        log (optional, defaults to Logger.get()): Logger object
-        step (optional, defaults to ""): corresponding step, for fba_launch log recording
-            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
-
-    Notes:
-        if pmcorr="y", then pmtime_utc_str needs to be set; will trigger an error otherwise.
-        for sv3-backup, we remove BACKUP_BRIGHT targets.
-        TBD : if secondary targets, we currently disable the inflate_ledger(), as it
-                seems to not currently work.
-                hence if secondary and pmcorr="y", the code will crash, as the 
-                GAIA_ASTROMETRIC_EXCESS_NOISE column will be missing; though we do not
-                expect this configuration to happen, so it should be fine for now.
-    """
-    log.info("")
-    log.info("")
-    log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
-    log.info("{:.1f}s\t{}\tstart generating {}".format(time() - start, step, outfn))
-    tiles = fits.open(tilesfn)[1].data
-    # AR mtl: storing the timestamp at which we queried MTL
-    log.info("{:.1f}s\t{}\tmtltime={}".format(time() - start, step, mtltime))
-
-    # AR mtl: read mtl
-    d = custom_read_targets_in_tiles(
-        [mtldir],
-        tiles,
-        quick=False,
-        mtl=True,
-        unique=True,
-        isodate=mtltime,
-        log=log,
-        step=step,
-        start=start,
-    )
-
-    # AR mtl: removing by hand BACKUP_BRIGHT for sv3/BACKUP
-    # AR mtl: using an indirect way to find if program=backup,
-    # AR mtl:   to avoid the need of an extra program argument
-    # AR mtl:   for sv3, there is no secondary-backup, so no ambiguity
-    if (survey == "sv3") & ("backup" in mtldir):
-        from desitarget.sv3.sv3_targetmask import mws_mask
-
-        keep = (d["SV3_MWS_TARGET"] & mws_mask["BACKUP_BRIGHT"]) == 0
-        log.info(
-            "{:.1f}s\t{}\tremoving {}/{} BACKUP_BRIGHT targets".format(
-                time() - start, step, len(d) - keep.sum(), len(d)
-            )
-        )
-        d = d[keep]
-
-    # AR mtl: add columns not present in ledgers
-    # AR mtl: need to provide exact list (if columns=None, inflate_ledger()
-    # AR mtl:    overwrites existing columns)
-    # AR mtl: TBD : we currently disable it for secondary targets
-    # AR mtl:       using an indirect way to find if secondary,
-    # AR mtl:       to avoid the need of an extra program argument
-    if "secondary" not in mtldir:
-        columns = [key for key in minimal_target_columns if key not in d.dtype.names]
-        # AR mtl: also add GAIA_ASTROMETRIC_EXCESS_NOISE, in case args.pmcorr == "y"
-        if pmcorr == "y":
-            columns += ["GAIA_ASTROMETRIC_EXCESS_NOISE"]
-        log.info(
-            "{:.1f}s\t{}\tadding {} from {}".format(
-                time() - start, step, ",".join(columns), targdir
-            )
-        )
-        d = inflate_ledger(
-            d, targdir, columns=columns, header=False, strictcols=False, quick=True
-        )
-
-    # AR mtl: PMRA, PMDEC: convert NaN to zeros
-    d = force_finite_pm(d, log=log, step=step, start=start)
-    # AR mtl: update RA, DEC, REF_EPOCH using proper motion?
-    if pmcorr == "y":
-        if pmtime_utc_str is None:
-            log.error(
-                "{:.1f}s\t{}\tneed to provide pmtime_utc_str, as proper-correction is requested; exiting".format(
-                    time() - start, step,
-                )
-            )
-            sys.exti(1)
-        d = update_nowradec(d, gaiadr, pmtime_utc_str, log=log, step=step, start=start)
-    else:
-        log.info(
-            "{:.1f}s\t{}\t*not* applying proper-motion correction".format(
-                time() - start, step
-            )
-        )
-        # AR Replaces 0 by force_ref_epoch in ref_epoch
-        d = force_nonzero_refepoch(
-            d, gaia_ref_epochs[gaiadr], log=log, step=step, start=start
-        )
-    # AR mtl: write fits
-    n, tmpfn = write_targets(tmpoutdir, d, indir=mtldir, indir2=targdir, survey=survey)
-    _ = mv_write_targets_out(tmpfn, tmpoutdir, outfn, log=log, step=step, start=start,)
-
-    # AR mtl: update header if pmcorr = "y"
+    # AR targ: update header if pmcorr = "y"
     if pmcorr == "y":
         fd = fitsio.FITS(outfn, "rw")
         fd["TARGETS"].write_key("COMMENT", "RA,DEC updated with PM for AEN objects")
