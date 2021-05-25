@@ -518,7 +518,7 @@ if __name__ == "__main__":
         required=False,
     )
     parser.add_argument(
-        "--log-stdout",
+        "--log-stdout", "--log_stdout",
         action="store_true",
         help="log to stdout instead of redirecting to a file",
     )
