@@ -72,27 +72,27 @@ results_assign_columns = OrderedDict([
     ("DEVICE_TYPE", "a3"),
     ("TARGET_RA", "f8"),
     ("TARGET_DEC", "f8"),
-    ("PLATE_RA", "f8"),
-    ("PLATE_DEC", "f8"),
-    #("PLATE_REF_EPOCH", "f8"),
     ("FA_TARGET", "i8"),
     ("FA_TYPE", "u1"),
     ("FIBERASSIGN_X", "f4"),
     ("FIBERASSIGN_Y", "f4"),
+    ("PLATE_RA", "f8"),
+    ("PLATE_DEC", "f8"),
+    #("PLATE_REF_EPOCH", "f8"),
 ])
 
 results_targets_columns = OrderedDict([
     ("TARGETID", "i8"),
     ("TARGET_RA", "f8"),
     ("TARGET_DEC", "f8"),
-    ("PLATE_RA", "f8"),
-    ("PLATE_DEC", "f8"),
-    #("PLATE_REF_EPOCH", "f8"),
     ("FA_TARGET", "i8"),
     ("FA_TYPE", "u1"),
     ("PRIORITY", "i4"),
     ("SUBPRIORITY", "f8"),
     ("OBSCONDITIONS", "i4"),
+    ("PLATE_RA", "f8"),
+    ("PLATE_DEC", "f8"),
+    #("PLATE_REF_EPOCH", "f8"),
 ])
 
 results_avail_columns = OrderedDict([
@@ -988,8 +988,6 @@ merged_fiberassign_req_columns = OrderedDict([
     ("FIBERSTATUS", "i4"),
     ("TARGET_RA", "f8"),
     ("TARGET_DEC", "f8"),
-    ("PLATE_RA", "f8"),
-    ("PLATE_DEC", "f8"),
     ("PMRA", "f4"),
     ("PMDEC", "f4"),
     ("REF_EPOCH", "f4"),
@@ -1002,7 +1000,9 @@ merged_fiberassign_req_columns = OrderedDict([
     #("NUMTARGET", "i2"),
     ("PRIORITY", "i4"),
     ("SUBPRIORITY", "f8"),
-    ("OBSCONDITIONS", "i4")
+    ("OBSCONDITIONS", "i4"),
+    ("PLATE_RA", "f8"),
+    ("PLATE_DEC", "f8"),
 ])
 
 # AR commenting out NUMTARGET ([desi-survey 1032])
@@ -1017,8 +1017,6 @@ merged_skymon_columns = OrderedDict([
     ("FA_TYPE", "u1"),
     ("TARGET_RA", "f8"),
     ("TARGET_DEC", "f8"),
-    ("PLATE_RA", "f8"),
-    ("PLATE_DEC", "f8"),
     ("FIBERASSIGN_X", "f4"),
     ("FIBERASSIGN_Y", "f4"),
     ("BRICKNAME", "a8"),
@@ -1033,6 +1031,8 @@ merged_skymon_columns = OrderedDict([
     #("FIBERFLUX_IVAR_G", "f4"),
     #("FIBERFLUX_IVAR_R", "f4"),
     #("FIBERFLUX_IVAR_Z", "f4"),
+    ("PLATE_RA", "f8"),
+    ("PLATE_DEC", "f8"),
 ])
 
 # AR TARGETS extension columns
@@ -1043,13 +1043,13 @@ merged_targets_columns = OrderedDict([
     ("TARGETID", "i8"),
     ("RA", "f8"),
     ("DEC", "f8"),
-    ("PLATE_RA", "f8"),
-    ("PLATE_DEC", "f8"),
     ("FA_TARGET", "i8"),
     ("FA_TYPE", "u1"),
     ("PRIORITY", "i4"),
     ("SUBPRIORITY", "f8"),
-    ("OBSCONDITIONS", "i4")
+    ("OBSCONDITIONS", "i4"),
+    ("PLATE_RA", "f8"),
+    ("PLATE_DEC", "f8"),
 ])
 
 merged_potential_columns = OrderedDict([
