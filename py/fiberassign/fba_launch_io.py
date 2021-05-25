@@ -1096,6 +1096,24 @@ def create_mtl(
         )
         d = d[keep]
 
+    # AR mtl: removing by hand MWS_FAINT_* for main if mtltime < 20210524
+    # AR mtl:   as those were not included in desitarget-1.0.0 main catalogs
+    # AR mtl: as 20210524 in during full moon with no obervations/updates,
+    # AR mtl:   no need to have something precise
+    mtltime_day = int(datetime.strptime(mtltime, "%Y-%m-%dT%H:%M:%S%z").strftime("%Y%m%d"))
+    mtltime_cut = 20210524
+    if (survey == "main") & (mtltime_day < mtltime_cut):
+        from desitarget.targetmask import mws_mask
+
+        keep = (d["MWS_TARGET"] & mws_mask["MWS_FAINT_BLUE"]) == 0
+        keep &= (d["MWS_TARGET"] & mws_mask["MWS_FAINT_RED"]) == 0
+        log.info(
+            "{:.1f}s\t{}\tremoving {}/{} MWS_FAINT_BLUE|MWS_FAINT_RED targets, as survey={} and mtltime<{}".format(
+                time() - start, step, len(d) - keep.sum(), len(d), survey, mtltime_cut
+            )
+        )
+        d = d[keep]
+
     # AR mtl: add columns not present in ledgers
     # AR mtl: need to provide exact list (if columns=None, inflate_ledger()
     # AR mtl:    overwrites existing columns)
