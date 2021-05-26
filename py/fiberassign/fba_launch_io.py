@@ -956,7 +956,7 @@ def create_targ_nomtl(
         pmcorr: apply proper-motion correction? ("y" or "n")
         outfn: fits file name to be written (string)
         tmpoutdir (optional, defaults to a temporary directory): temporary directory where
-                write_skies will write (creating some sub-directories)
+                write_targets will write (creating some sub-directories)
         pmtime_utc_str (optional, defaults to None): UTC time use to compute
                 new coordinates after applying proper motion since REF_EPOCH
                 (string formatted as "yyyy-mm-ddThh:mm:ss+00:00")
@@ -1048,7 +1048,7 @@ def create_mtl(
         pmcorr: apply proper-motion correction? ("y" or "n")
         outfn: fits file name to be written (string)
         tmpoutdir (optional, defaults to a temporary directory): temporary directory where
-                write_skies will write (creating some sub-directories)
+                write_targets will write (creating some sub-directories)
         pmtime_utc_str (optional, defaults to None): UTC time use to compute
                 new coordinates after applying proper motion since REF_EPOCH
                 (string formatted as "yyyy-mm-ddThh:mm:ss+00:00")
@@ -1188,7 +1188,7 @@ def create_too(
         pmcorr: apply proper-motion correction? ("y" or "n")
         outfn: fits file name to be written (string)
         tmpoutdir (optional, defaults to a temporary directory): temporary directory where
-                write_skies will write (creating some sub-directories)
+                write_targets will write (creating some sub-directories)
         pmtime_utc_str (optional, defaults to None): UTC time use to compute
                 new coordinates after applying proper motion since REF_EPOCH
                 (string formatted as "yyyy-mm-ddThh:mm:ss+00:00")
