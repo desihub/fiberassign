@@ -1001,6 +1001,9 @@ merged_fiberassign_req_columns = OrderedDict([
     ("PRIORITY", "i4"),
     ("SUBPRIORITY", "f8"),
     ("OBSCONDITIONS", "i4"),
+])
+# Columns that should appear at the end of the table.
+merged_fiberassign_req_columns_at_end = OrderedDict([
     ("PLATE_RA", "f8"),
     ("PLATE_DEC", "f8"),
 ])
@@ -1031,8 +1034,6 @@ merged_skymon_columns = OrderedDict([
     #("FIBERFLUX_IVAR_G", "f4"),
     #("FIBERFLUX_IVAR_R", "f4"),
     #("FIBERFLUX_IVAR_Z", "f4"),
-    ("PLATE_RA", "f8"),
-    ("PLATE_DEC", "f8"),
 ])
 
 # AR TARGETS extension columns
@@ -1048,8 +1049,8 @@ merged_targets_columns = OrderedDict([
     ("PRIORITY", "i4"),
     ("SUBPRIORITY", "f8"),
     ("OBSCONDITIONS", "i4"),
-    ("PLATE_RA", "f8"),
-    ("PLATE_DEC", "f8"),
+    #("PLATE_RA", "f8"),
+    #("PLATE_DEC", "f8"),
 ])
 
 merged_potential_columns = OrderedDict([
@@ -1439,8 +1440,10 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
     # dtype in any of the target files.  We take the first target file and
     # construct the output recarray dtype from the columns in that file.
     out_dtype = None
-    dcols = [(x, y) for x, y in merged_fiberassign_req_columns.items()]
-    dcolnames = [x for x in merged_fiberassign_req_columns.keys()]
+    cols = merged_fiberassign_req_columns.copy()
+    cols.update(merged_fiberassign_req_columns_at_end)
+    dcols = [(x, y) for x, y in cols.items()]
+    dcolnames = [x for x in cols.keys()]
 
     tgdata = dict()
     tgdtype = dict()
@@ -1587,6 +1590,10 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
                     dcols.extend([(colname, subd[0], subd[1])])
                 dcolnames.append(colname)
 
+
+    end_keys = [k for k,v in merged_fiberassign_req_columns_at_end.items()]
+    dcols = ([c for c in dcols if c[0] not in end_keys] +
+             [c for c in dcols if c[0] in end_keys])
     out_dtype = np.dtype(dcols)
 
     # AR adding any *_TARGET columns to the TARGETS columns

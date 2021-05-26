@@ -169,6 +169,7 @@ def main():
             log=log,
             step="dogfa",
             start=start,
+            add_plate_cols=False,
         )
 
     # AR mtl
