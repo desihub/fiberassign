@@ -908,6 +908,10 @@ def create_sky(
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+
+    Notes:
+        20210526 : implementation of using subpriority=False in write_skies
+                    to avoid an over-writting of the SUBPRIORITY
     """
     log.info("")
     log.info("")
@@ -921,7 +925,7 @@ def create_sky(
     d = custom_read_targets_in_tiles(
         skydirs, tiles, quick=True, mtl=False, log=log, step=step, start=start
     )
-    n, tmpfn = write_skies(tmpoutdir, d, indir=skydir, indir2=suppskydir,)
+    n, tmpfn = write_skies(tmpoutdir, d, indir=skydir, indir2=suppskydir, subpriority=False)
     _ = mv_write_targets_out(tmpfn, tmpoutdir, outfn, log=log, step=step, start=start)
     log.info("{:.1f}s\t{}\t{} written".format(time() - start, step, outfn))
 
@@ -964,6 +968,8 @@ def create_targ_nomtl(
 
     Notes:
         if pmcorr="y", then pmtime_utc_str needs to be set; will trigger an error otherwise.
+        20210526 : implementation of using subpriority=False in write_targets
+                    to avoid an over-writting of the SUBPRIORITY
     """
     log.info("")
     log.info("")
@@ -1003,7 +1009,7 @@ def create_targ_nomtl(
         )
 
     # AR targ_nomtl: write fits
-    n, tmpfn = write_targets(tmpoutdir, d, indir=targdir, survey=survey)
+    n, tmpfn = write_targets(tmpoutdir, d, indir=targdir, survey=survey, subpriority=False)
     _ = mv_write_targets_out(tmpfn, tmpoutdir, outfn, log=log, step=step, start=start)
     # AR targ_nomtl: update header if pmcorr = "y"
     if pmcorr == "y":
@@ -1059,6 +1065,8 @@ def create_mtl(
                 hence if secondary and pmcorr="y", the code will crash, as the 
                 GAIA_ASTROMETRIC_EXCESS_NOISE column will be missing; though we do not
                 expect this configuration to happen, so it should be fine for now.
+        20210526 : implementation of using subpriority=False in write_targets
+                    to avoid an over-writting of the SUBPRIORITY
     """
     log.info("")
     log.info("")
@@ -1139,7 +1147,7 @@ def create_mtl(
             d, gaia_ref_epochs[gaiadr], log=log, step=step, start=start
         )
     # AR mtl: write fits
-    n, tmpfn = write_targets(tmpoutdir, d, indir=mtldir, indir2=targdir, survey=survey)
+    n, tmpfn = write_targets(tmpoutdir, d, indir=mtldir, indir2=targdir, survey=survey, subpriority=False)
     _ = mv_write_targets_out(tmpfn, tmpoutdir, outfn, log=log, step=step, start=start,)
 
     # AR mtl: update header if pmcorr = "y"
@@ -1198,6 +1206,8 @@ def create_too(
                 from the tile design date;
                 it surely needs to be updated/refined once operations are more clear.
         some steps in common with create_mtl().
+        20210526 : implementation of using subpriority=False in write_targets
+                    to avoid an over-writting of the SUBPRIORITY
     """
     log.info("")
     log.info("")
@@ -1266,7 +1276,7 @@ def create_too(
             )
 
         # AR mtl: write fits
-        n, tmpfn = write_targets(tmpoutdir, d.as_array(), indir=toofn, survey=survey)
+        n, tmpfn = write_targets(tmpoutdir, d.as_array(), indir=toofn, survey=survey, subpriority=False)
         _ = mv_write_targets_out(
             tmpfn, tmpoutdir, outfn, log=log, step=step, start=start,
         )
