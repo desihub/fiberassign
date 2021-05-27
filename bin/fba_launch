@@ -303,9 +303,6 @@ def main():
             args.rundate,
             tmpoutdir=tmpoutdir,
             width_deg=4,
-            log=log,
-            step="doqa",
-            start=start,
         )
 
     # AR do clean?
