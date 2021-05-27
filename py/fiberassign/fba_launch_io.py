@@ -1309,11 +1309,14 @@ def launch_onetile_fa(
     start=time(),
 ):
     """
-    Runs the fiber assignment (run_assign_full) and merges the results (merge_results) for a single tile.
+    Runs the fiber assignment (run_assign_full),
+        merges the results (merge_results) for a single tile,
+        and prints the assignment stats for each mask.
     
     Args:
         args: fba_launch-like parser.parse_args() output
             should contain at least:
+                - survey
                 - rundate
                 - sky_per_petal
                 - standards_per_petal
@@ -1346,8 +1349,11 @@ def launch_onetile_fa(
     if isinstance(targfns, str):
         targfns = [targfns]
 
-    # AR tileid
-    tileid = fits.open(tilesfn)[1].data["TILEID"][0]
+    # AR tileid, tilera, tiledec
+    tiles = fits.open(tilesfn)[1].data
+    tileid = tiles["TILEID"][0]
+    tilera = tiles["RA"][0]
+    tiledec = tiles["DEC"][0]
 
     # AR output directory (picking the one of fbafn)
     outdir = os.path.dirname(fbafn)
@@ -1439,6 +1445,26 @@ def launch_onetile_fa(
         result_dir=ag["result_dir"],
         columns=ag["columns"],
         copy_fba=ag["copy_fba"],
+    )
+
+
+    log.info(
+        "{:.1f}s\t{}\tcomputing assignment statiscs: start".format(
+            time() - start, step
+        )
+    )
+
+    # AR storing parent/assigned quantities
+    parent, assign, dras, ddecs, petals, nassign = get_parent_assign_quants(
+        args.survey, targfns, fiberassignfn, tilera, tiledec, log=log, step=step, start=start
+    )
+    # AR stats : assigned / parent
+    print_assgn_parent_stats(args.survey, parent, assign, log=log, step=step, start=start)
+
+    log.info(
+        "{:.1f}s\t{}\tcomputing assignment statiscs: done".format(
+            time() - start, step
+        )
     )
 
 
@@ -2834,9 +2860,6 @@ def make_qa(
     parent, assign, dras, ddecs, petals, nassign = get_parent_assign_quants(
         survey, targfns, fiberassignfn, tilera, tiledec, log=log, step=step, start=start
     )
-
-    # AR stats : assigned / parent
-    print_assgn_parent_stats(survey, parent, assign, log=log, step=step, start=start)
 
     # AR start plotting
     fig = plt.figure(figsize=(30, 3 * (1 + len(trmsks))))
