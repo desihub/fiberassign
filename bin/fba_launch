@@ -32,7 +32,7 @@ from fiberassign.fba_launch_io import (
 from argparse import ArgumentParser
 
 # AR allowed steps in fba_launch
-steps_all = ["tile", "sky", "gfa", "targ", "scnd", "too", "fa", "zip", "move", "qa"]
+steps_all = ["tiles", "sky", "gfa", "targ", "scnd", "too", "fa", "zip", "move", "qa"]
 
 
 # AR goal effective time
@@ -142,7 +142,7 @@ def main():
     )
 
     # AR tiles
-    if "tile" in steps:
+    if "tiles" in steps:
         create_tile(
             args.tileid,
             args.tilera,
@@ -151,13 +151,13 @@ def main():
             args.survey,
             obscon=obscon,
             log=log,
-            step="tile",
+            step="tiles",
             start=start,
         )
     else:
         log.info("")
         log.info("")
-        log.info("{:.1f}s\t{}\tnot executing, as per args.steps/args.nosteps".format(time() - start, "tile"))
+        log.info("{:.1f}s\t{}\tnot executing, as per args.steps/args.nosteps".format(time() - start, "tiles"))
 
     # AR sky
     if "sky" in steps:
