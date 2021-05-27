@@ -37,9 +37,163 @@ from .hardware import radec2xy
 from ._internal import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                         TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE,
                         TARGET_TYPE_SUPPSKY,
-                        Target, Targets, TargetTree, TargetsAvailable,
+                        Target, Targets, TargetsAvailable,
                         LocationsAvailable)
 
+
+class TargetTagalong(object):
+    '''
+    This class holds data from the targeting input files that we want
+    to propagate to the output fiberassign files, and that are not
+    needed by the C++ layer.
+    '''
+    def __init__(self, columns, outnames={}, aliases={}):
+        '''
+        Create a new tag-along object.
+
+        Args:
+        *columns*: list of strings: the column names that will be saved.
+        *outnames*: dict, string to string: mapping from 'columns' to the name
+                    the column will be given in the output file; None to omit
+                    from the output file.
+        *aliases*: dict, string to string: for get_for_ids(), column aliases.
+        '''
+        self.columns = columns
+        self.outnames = outnames
+        self.aliases = aliases
+        # Internally, we store one tuple for each targeting file read
+        # (to avoid manipulating/reformatting the arrays too much),
+        # where each tuple starts with the TARGETID of the targets, followed
+        # by the data arrays for each column in *columns*.
+        self.data = []
+
+    def get_default(self, column):
+        '''
+        Returns the default value to return for a given *column*, or
+        None if not set.
+        '''
+        return None
+
+    def get_output_name(self, column):
+        '''
+        Returns the column name to use in the output file for the
+        given input column name.
+        '''
+        return self.outnames.get(column, column)
+
+    def add_data(self, targetids, tabledata, fake={}):
+        '''
+        Stores data from an input (targeting file) table.
+
+        Arguments:
+        *targetids*: numpy array of TARGETID values that must be in the same
+                     order as the data arrays in *tabledata*.
+        *tabledata*: numpy record-array / table from which this tagalong's
+                     *columns* will be read.
+        *fake*: dict from string column name to numpy array, containing column
+                     data that will be used in place of reading from *tabledata*.
+        '''
+        tgarrays = [targetids]
+        for k in self.columns:
+            if k in fake:
+                assert(len(fake[k]) == len(targetids))
+                tgarrays.append(fake[k])
+            else:
+                assert(len(tabledata[k]) == len(targetids))
+                tgarrays.append(tabledata[k])
+        self.data.append(tgarrays)
+
+    def set_data(self, targetids, tabledata):
+        '''
+        Sets *ALL* rows of the given *tabledata* object to defaults,
+        and then fills in values for the given targetids, if they are found.
+        '''
+        # Set defaults, and grab output arrays
+        outarrs = []
+        for c in self.columns:
+            defval = self.get_default(c)
+            outname = self.get_output_name(c)
+            if outname is None:
+                # We're omitting this column from the output
+                outarrs.append(None)
+            else:
+                outarr = tabledata[outname]
+                if defval is not None:
+                    outarr[:] = defval
+                outarrs.append(outarr)
+        # Build output targetid-to-index map
+        outmap = dict([(tid,i) for i,tid in enumerate(targetids)])
+        # Go through my many data arrays
+        for thedata in self.data:
+            # TARGETIDs are the first element in the tuple
+            tids = thedata[0]
+            # Search for output array indices for these targetids
+            outinds = np.array([outmap.get(tid, -1) for tid in tids])
+            # Keep only the indices of targetids that were found
+            ininds = np.flatnonzero(outinds >= 0)
+            outinds = outinds[ininds]
+            for outarr,inarr in zip(outarrs, thedata[1:]):
+                if outarr is None:
+                    continue
+                outarr[outinds] = inarr[ininds]
+
+    def get_for_ids(self, targetids, names):
+        '''
+        Fetch arrays for the given columns names and given targetids.
+        '''
+        # Create output arrays
+        outarrs = []
+        colinds = []
+        for name in names:
+            name = self.aliases.get(name, name)
+            ic = self.columns.index(name)
+            # Look at the data saved for my first dataset to determine
+            # the output type.
+            dtype = self.data[0][ic+1].dtype
+            outarrs.append(np.zeros(len(targetids), dtype))
+            colinds.append(ic+1)
+        # Build output targetid-to-index map
+        outmap = dict([(tid,i) for i,tid in enumerate(targetids)])
+        # Go through my many data arrays
+        for thedata in self.data:
+            tids = thedata[0]
+            # Search for output array indices for these targetids
+            outinds = np.array([outmap.get(tid, -1) for tid in tids])
+            ininds = np.flatnonzero(outinds >= 0)
+            outinds = outinds[ininds]
+            for outarr,ic in zip(outarrs, colinds):
+                outarr[outinds] = thedata[ic][ininds]
+        return outarrs
+
+def create_tagalong(plate_radec=True):
+    cols = [
+        'TARGET_RA',
+        'TARGET_DEC',
+        'OBSCOND',
+        'FA_TARGET',
+        ]
+
+    if plate_radec:
+        cols.extend([
+            'PLATE_RA',
+            'PLATE_DEC',
+            # 'PLATE_REF_EPOCH',
+            ])
+        # If PLATE_{RA,DEC} exist in the input target tables, use those
+        # when converting RA,DEC to focal-plane coords.
+        aliases = {
+            'RA':  'PLATE_RA',
+            'DEC': 'PLATE_DEC',
+            }
+    else:
+        aliases = {
+            'RA':  'TARGET_RA',
+            'DEC': 'TARGET_DEC',
+            }
+
+    # (OBSCOND doesn't appear in all the fiberassign output HDUs,
+    # so we handle it specially)
+    return TargetTagalong(cols, outnames={'OBSCOND':None}, aliases=aliases)
 
 def str_to_target_type(input):
     if input == "science":
@@ -547,7 +701,8 @@ def default_target_masks(data):
             safemask, excludemask)
 
 
-def append_target_table(tgs, tgdata, survey, typeforce, typecol, sciencemask,
+def append_target_table(tgs, tagalong, tgdata, survey, typeforce, typecol,
+                        sciencemask,
                         stdmask, skymask, suppskymask, safemask, excludemask):
     """Append a target recarray / table to a Targets object.
 
@@ -592,15 +747,18 @@ def append_target_table(tgs, tgdata, survey, typeforce, typecol, sciencemask,
             raise RuntimeError("Cannot force objects to be an invalid type")
     # Create buffers for column data
     nrows = len(tgdata["TARGETID"][:])
-    d_obscond = np.zeros(nrows, dtype=np.int32)
+    # Arrays needed by C++
     d_targetid = np.zeros(nrows, dtype=np.int64)
-    d_ra = np.zeros(nrows, dtype=np.float64)
-    d_dec = np.zeros(nrows, dtype=np.float64)
-    d_bits = np.zeros(nrows, dtype=np.int64)
     d_type = np.zeros(nrows, dtype=np.uint8)
     d_nobs = np.zeros(nrows, dtype=np.int32)
     d_prior = np.zeros(nrows, dtype=np.int32)
     d_subprior = np.zeros(nrows, dtype=np.float64)
+    # Arrays that have special handling
+    d_ra = np.zeros(nrows, dtype=np.float64)
+    d_dec = np.zeros(nrows, dtype=np.float64)
+    d_bits = np.zeros(nrows, dtype=np.int64)
+    d_obscond = np.zeros(nrows, dtype=np.int32)
+
     d_targetid[:] = tgdata["TARGETID"][:]
     if "TARGET_RA" in tgdata.dtype.names:
         d_ra[:] = tgdata["TARGET_RA"][:]
@@ -652,14 +810,23 @@ def append_target_table(tgs, tgdata, survey, typeforce, typecol, sciencemask,
     else:
         d_subprior[:] = np.zeros(nrows, dtype=np.float64)
 
+    fake = {'TARGET_RA': d_ra,
+            'TARGET_DEC': d_dec,
+            'FA_TARGET': d_bits,
+            'OBSCOND': d_obscond}
+    if not 'PLATE_RA' in tgdata.dtype.fields:
+        print('Warning: no PLATE_RA, PLATE_DEC in target file; using RA,DEC or TARGET_RA,DEC')
+        fake.update({'PLATE_RA': d_ra,
+                     'PLATE_DEC': d_dec,})
+    tagalong.add_data(d_targetid, tgdata, fake=fake)
+
     # Append the data to our targets list.  This will print a
     # warning if there are duplicate target IDs.
-    tgs.append(survey, d_targetid, d_ra, d_dec, d_bits, d_nobs, d_prior,
-               d_subprior, d_obscond, d_type)
+    tgs.append(survey, d_targetid, d_nobs, d_prior, d_subprior, d_type)
     return
 
 
-def load_target_table(tgs, tgdata, survey=None, typeforce=None, typecol=None,
+def load_target_table(tgs, tagalong, tgdata, survey=None, typeforce=None, typecol=None,
                       sciencemask=None, stdmask=None, skymask=None,
                       suppskymask=None, safemask=None, excludemask=None):
     """Append targets from a table.
@@ -855,12 +1022,12 @@ def load_target_table(tgs, tgdata, survey=None, typeforce=None, typecol=None,
             "|".join(sv3_mask.names(excludemask))))
     else:
         raise RuntimeError("unknown survey type, should never get here!")
-    append_target_table(tgs, tgdata, survey, typeforce, typecol, sciencemask,
+    append_target_table(tgs, tagalong, tgdata, survey, typeforce, typecol, sciencemask,
                         stdmask, skymask, suppskymask, safemask, excludemask)
     return
 
 
-def load_target_file(tgs, tfile, survey=None, typeforce=None, typecol=None,
+def load_target_file(tgs, tagalong, tfile, survey=None, typeforce=None, typecol=None,
                      sciencemask=None, stdmask=None, skymask=None,
                      suppskymask=None, safemask=None, excludemask=None,
                      rowbuffer=1000000):
@@ -923,7 +1090,7 @@ def load_target_file(tgs, tfile, survey=None, typeforce=None, typecol=None,
         data = fits[1].read(rows=np.arange(offset, offset+n, dtype=np.int64))
         log.debug("Target file {} read rows {} - {}"
                   .format(tfile, offset, offset+n-1))
-        load_target_table(tgs, data, survey=survey,
+        load_target_table(tgs, tagalong, data, survey=survey,
                           typeforce=typeforce,
                           typecol=typecol,
                           sciencemask=sciencemask,
@@ -939,7 +1106,7 @@ def load_target_file(tgs, tfile, survey=None, typeforce=None, typecol=None,
 
     return survey
 
-def targets_in_tiles(hw, tgs, tiles):
+def targets_in_tiles(hw, tgs, tiles, tagalong):
     '''
     Returns tile_targetids, tile_x, tile_y
     '''
@@ -947,7 +1114,11 @@ def targets_in_tiles(hw, tgs, tiles):
     tile_x = {}
     tile_y = {}
 
-    tree = TargetTree(tgs)
+    target_ids = tgs.ids()
+    target_ra, target_dec, target_obscond = tagalong.get_for_ids(
+        target_ids, ['RA', 'DEC', 'OBSCOND'])
+
+    kd = _radec2kd(target_ra, target_dec)
 
     for (tile_id, tile_ra, tile_dec, tile_obscond, tile_ha, tile_obstheta,
          tile_obstime) in zip(
@@ -956,13 +1127,15 @@ def targets_in_tiles(hw, tgs, tiles):
 
         print('Tile', tile_id, 'at RA,Dec', tile_ra, tile_dec, 'obscond:', tile_obscond, 'HA', tile_ha, 'obstime', tile_obstime)
 
-        tile_rad = np.deg2rad(hw.focalplane_radius_deg)
-        tids,ras,decs = tree.near_data(tgs, tile_ra, tile_dec, tile_rad,
-                                       tile_obscond)
+        inds = _kd_query_radec(kd, tile_ra, tile_dec, hw.focalplane_radius_deg)
+        match = np.flatnonzero(target_obscond[inds] & tile_obscond)
+        inds = inds[match]
+        del match
+        ras  = target_ra [inds]
+        decs = target_dec[inds]
+        tids = target_ids[inds]
+        del inds
         print('Found', len(tids), 'targets near tile and matching obscond')
-        tids = np.array(tids)
-        ras  = np.array(ras)
-        decs = np.array(decs)
 
         fx,fy = radec2xy(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta,
                          tile_ha, ras, decs, False)
@@ -972,3 +1145,33 @@ def targets_in_tiles(hw, tgs, tiles):
         tile_y[tile_id] = fy
 
     return tile_targetids, tile_x, tile_y
+
+
+def _radec2kd(ra, dec):
+    """
+    Creates a scipy KDTree from the given *ra*, *dec* arrays (in deg).
+    """
+    from scipy.spatial import KDTree
+    xyz = _radec2xyz(ra, dec)
+    return KDTree(xyz)
+
+
+def _radec2xyz(ra, dec):
+    """
+    Converts arrays from *ra*, *dec* (in deg) to XYZ unit-sphere
+    coordinates.
+    """
+    rr = np.deg2rad(ra)
+    dd = np.deg2rad(dec)
+    return np.vstack((np.cos(rr) * np.cos(dd),
+                      np.sin(rr) * np.cos(dd),
+                      np.sin(dd))).T
+
+def _kd_query_radec(kd, ra, dec, radius_deg):
+    searchrad = np.deg2rad(radius_deg)
+    # Convert from radius to (tangent) distance on the unit sphere.
+    searchrad = np.sqrt(2. * (1. - np.cos(searchrad)))
+    xyz = _radec2xyz([ra], [dec])
+    inds = kd.query_ball_point(xyz[0, :], searchrad)
+    inds = np.array(inds)
+    return inds

@@ -534,6 +534,10 @@ PYBIND11_MODULE(_internal, m) {
                 of the GFA for each device.
             excl_petal (list):  The Shape object for the exclusion polygon
                 of the petal edge for each device.
+            added_margins (dict): dict from string to float of margins that
+                were added to the *excl_* exclusion polygons.  Elements could
+                include 'pos' for positioners, 'petal' for overall petal, and
+                'gfa' for GFA chips.
 
         )")
         .def(py::init <
@@ -564,7 +568,9 @@ PYBIND11_MODULE(_internal, m) {
             std::vector <fbg::shape> const &,
             std::vector <fbg::shape> const &,
             std::vector <fbg::shape> const &,
-            std::vector <fbg::shape> const &> (), py::arg("timestr"),
+            std::vector <fbg::shape> const &,
+            std::map<std::string, double> const &> (),
+            py::arg("timestr"),
             py::arg("location"),
             py::arg("petal"), py::arg("device"), py::arg("slitblock"),
             py::arg("blockfiber"), py::arg("fiber"), py::arg("device_type"),
@@ -575,7 +581,7 @@ PYBIND11_MODULE(_internal, m) {
             py::arg("phi_max"), py::arg("phi_pos"), py::arg("phi_arm"),
             py::arg("ps_radius"), py::arg("ps_theta"), py::arg("arclen"),
             py::arg("excl_theta"), py::arg("excl_phi"),
-            py::arg("excl_gfa"), py::arg("excl_petal")
+            py::arg("excl_gfa"), py::arg("excl_petal"), py::arg("added_margins")
         )
         .def_readonly("nloc", &fba::Hardware::nloc, R"(
             The number of device locations.
@@ -663,6 +669,9 @@ PYBIND11_MODULE(_internal, m) {
         )")
         .def_readonly("loc_petal_excl", &fba::Hardware::loc_petal_excl, R"(
             Dictionary of petal exclusion shapes for each location.
+        )")
+        .def_readonly("added_margins", &fba::Hardware::added_margins, R"(
+            Dictionary of additional margins that were added to exclusion polygons.
         )")
         .def_readonly("neighbor_radius_mm",
                       &fba::Hardware::neighbor_radius_mm, R"(
@@ -1117,6 +1126,7 @@ PYBIND11_MODULE(_internal, m) {
                     excl_gfa[i] = p.loc_gfa_excl.at(lid[i]);
                     excl_petal[i] = p.loc_petal_excl.at(lid[i]);
                 }
+                std::map<std::string, double> added = p.added_margins;
                 return py::make_tuple(
                     timestr,
                     lid, petal, device, slitblock, blockfiber, fiber,
@@ -1124,7 +1134,7 @@ PYBIND11_MODULE(_internal, m) {
                     theta_min, theta_max, theta_pos, theta_arm, phi_offset, phi_min,
                     phi_max, phi_pos, phi_arm, ps_radius, ps_theta, arclen,
                     excl_theta, excl_phi,
-                    excl_gfa, excl_petal);
+                    excl_gfa, excl_petal, added);
             },
             [](py::tuple t) { // __setstate__
                 return new fba::Hardware(
@@ -1155,7 +1165,8 @@ PYBIND11_MODULE(_internal, m) {
                     t[24].cast<std::vector<fbg::shape> >(),
                     t[25].cast<std::vector<fbg::shape> >(),
                     t[26].cast<std::vector<fbg::shape> >(),
-                    t[27].cast<std::vector<fbg::shape> >()
+                    t[27].cast<std::vector<fbg::shape> >(),
+                    t[28].cast<std::map<std::string, double> >()
                 );
             }
         ));
@@ -1168,15 +1179,6 @@ PYBIND11_MODULE(_internal, m) {
         .def_readonly("id", &fba::Target::id, R"(
             The target ID.
         )")
-        .def_readwrite("ra", &fba::Target::ra, R"(
-            The target RA.
-        )")
-        .def_readwrite("dec", &fba::Target::dec, R"(
-            The target DEC.
-        )")
-        .def_readwrite("bits", &fba::Target::bits, R"(
-            The target bitfield (e.g. DESI_TARGET, CMX_TARGET, etc).
-        )")
         .def_readwrite("obsremain", &fba::Target::obsremain, R"(
             The remaining observations for this target.
         )")
@@ -1185,9 +1187,6 @@ PYBIND11_MODULE(_internal, m) {
         )")
         .def_readwrite("subpriority", &fba::Target::subpriority, R"(
             The float64 subpriority on the range [0,1).
-        )")
-        .def_readwrite("obscond", &fba::Target::obscond, R"(
-            The valid observing conditions allowed for this target.
         )")
         .def_readwrite("type", &fba::Target::type, R"(
             The internal target type (science, standard, sky, safe).
@@ -1213,8 +1212,7 @@ PYBIND11_MODULE(_internal, m) {
         .def("__repr__",
             [](fba::Target const & tg) {
                 std::ostringstream o;
-                o << "<fiberassign.Target id=" << tg.id << " ra=" << tg.ra
-                << " dec=" << tg.dec << " type=" << (int)tg.type
+                o << "<fiberassign.Target id=" << tg.id << " type=" << (int)tg.type
                 << " priority=" << tg.priority << " subpriority="
                 << tg.subpriority << " >";
                 return o.str();
@@ -1222,8 +1220,8 @@ PYBIND11_MODULE(_internal, m) {
         );
 
     // Define a numpy dtype wrapper around our internal "Target" class.
-    PYBIND11_NUMPY_DTYPE(fba::Target, id, ra, dec, bits, obsremain, priority,
-                         subpriority, obscond, type);
+    PYBIND11_NUMPY_DTYPE(fba::Target, id, obsremain, priority,
+                         subpriority, type);
 
 
     py::class_ <fba::Targets, fba::Targets::pshr > (m, "Targets", R"(
@@ -1236,32 +1234,24 @@ PYBIND11_MODULE(_internal, m) {
         )")
         .def(py::init < > ())
         .def("append", &fba::Targets::append, py::arg("tsurvey"),
-            py::arg("ids"), py::arg("ras"), py::arg("decs"),
-            py::arg("targetbits"), py::arg("obsremain"),
+            py::arg("ids"), py::arg("obsremain"),
             py::arg("priority"), py::arg("subpriority"),
-            py::arg("obscond"), py::arg("type"), R"(
+            py::arg("type"), R"(
             Append objects to the target list.
 
             Args:
                 survey (str):  the survey type of the target data.
                 ids (array):  array of int64 target IDs.
-                ras (array):  array of float64 target RA coordinates.
-                decs (array):  array of float64 target DEC coordinates.
                 obsremain (array):  array of int32 number of remaining
                     observations.
-                targetbits (array):  array of int64 bit values (DESI_TARGET,
-                    CMX_TARGET, etc).
                 priority (array):  array of int32 values representing the
                     target class priority for each object.
                 subpriority (array):  array of float64 values in [0.0, 1.0]
                     representing the priority within the target class.
-                obscond (array):  array of int32 bitfields describing the
-                    valid observing conditions for each target.
                 type (array):  array of uint8 bitfields holding the types of
                     of each target (science, standard, etc).
                 survey (list):  list of strings of the survey types for each
                     target.
-
         )")
         .def("ids", [](fba::Targets & self) {
                 auto ntarg = self.data.size();
@@ -1384,82 +1374,6 @@ PYBIND11_MODULE(_internal, m) {
             }
         );
 
-
-    py::class_ <fba::TargetTree, fba::TargetTree::pshr > (m, "TargetTree",
-        R"(
-        Class representing an HTM tree of targets
-
-        This encapsulates a Hierarchical Triangular Mesh tree structure that
-        makes it efficient search for targets within a radius of some point.
-
-        Args:
-            tgs (Targets):  A Targets object.
-            min_tree_size (float):  (Optional) minimum node size of tree.
-
-        )")
-        .def(py::init < fba::Targets::pshr, double > (),
-            py::arg("tgs"), py::arg("min_tree_size") = 0.01)
-        .def("near", [](fba::TargetTree & self, double ra_deg,
-                double dec_deg, double radius_rad) {
-                std::vector <int64_t> result;
-                self.near(ra_deg, dec_deg, radius_rad, result);
-                return result;
-            }, py::return_value_policy::take_ownership, py::arg("ra"),
-            py::arg("dec"), py::arg("radius"), R"(
-            Get target IDs within a radius of a given point.
-
-            Returns an array of target IDs located within the specified
-            radius of the given RA/DEC.
-
-            Args:
-                ra (float): The RA of the sky location in degrees.
-                dec (float): The DEC of the sky location in degrees.
-                radius (float): The radius in **radians**.
-                tile_obscond (int): The observing conditions bitmask of targets to return.
-
-            Returns:
-                (array int64): An array of target IDs.
-                (array double): An array of target RAs.
-                (array double): An array of target Decs.
-
-        )")
-        .def("near_data", [](fba::TargetTree & self, fba::Targets::pshr targets,
-                             double ra_deg,
-                             double dec_deg, double radius_rad,
-                             int32_t tile_obscond) {
-                std::vector <int64_t> result;
-                std::vector <int64_t> result_keep;
-                std::vector <double> result_ra;
-                std::vector <double> result_dec;
-                self.near(ra_deg, dec_deg, radius_rad, result);
-                for (int64_t targetid : result) {
-                    const fba::Target & t = targets->data[targetid];
-                    if ((tile_obscond & t.obscond) == 0)
-                        // Observing conditions required for target
-                        // do not match this tile
-                        continue;
-                    result_keep.push_back(targetid);
-                    result_ra.push_back(t.ra);
-                    result_dec.push_back(t.dec);
-                }
-                return std::make_tuple(result_keep, result_ra, result_dec);
-             }, py::return_value_policy::take_ownership, py::arg("targets"),
-            py::arg("ra"),
-             py::arg("dec"), py::arg("radius"), py::arg("obs_cond"), R"(
-            Get target IDs and data within a radius of a given point.
-
-            Returns an array of target IDs located within the specified
-            radius of the given RA/DEC.
-
-            Args:
-                ra (float): The RA of the sky location in degrees.
-                dec (float): The DEC of the sky location in degrees.
-                radius (float): The radius in **radians**.
-
-            Returns:
-                (array): An array of target IDs, RAs, Decs, and obsconds.
-
-        )");
 
     py::class_ <fba::TargetsAvailable, fba::TargetsAvailable::pshr > (m,
         "TargetsAvailable", R"(

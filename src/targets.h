@@ -14,7 +14,6 @@
 #include <exception>
 #include <sstream>
 
-#include <htmTree.h>
 #include <kdTree.h>
 
 #include <utils.h>
@@ -47,24 +46,16 @@ class Target {
 
         Target(
             int64_t tid,
-            double tra,
-            double tdec,
-            int64_t tbits,
             int32_t tobsremain,
             int32_t tpriority,
             double tsubpriority,
-            int32_t tobscond,
             uint8_t ttype
         );
 
         int64_t id;
-        double ra;
-        double dec;
-        int64_t bits;
         int32_t obsremain;
         int32_t priority;
         double subpriority;
-        int32_t obscond;
         uint8_t type;
 
         bool is_science() const;
@@ -92,13 +83,9 @@ class Targets : public std::enable_shared_from_this <Targets> {
         void append (
             std::string const & tsurvey,
             std::vector <int64_t> const & id,
-            std::vector <double> const & ra,
-            std::vector <double> const & dec,
-            std::vector <int64_t> const & targetbits,
             std::vector <int32_t> const & obsremain,
             std::vector <int32_t> const & priority,
             std::vector <double> const & subpriority,
-            std::vector <int32_t> const & obscond,
             std::vector <uint8_t> const & type
         );
 
@@ -116,32 +103,6 @@ typedef struct {
     double nhat[3];
 } TreePoint;
 
-class TargetTree : public std::enable_shared_from_this <TargetTree> {
-
-    public :
-
-        typedef std::shared_ptr <TargetTree> pshr;
-
-        TargetTree(Targets::pshr objs, double min_tree_size = 0.01);
-
-        void near(double ra_deg, double dec_deg, double radius_rad,
-            std::vector <int64_t> & result) const;
-
-    private :
-
-        // Helper vector with just the data we need for the tree.
-        std::vector <TreePoint> treelist_;
-
-        // Wrap in a unique pointer so that resources are freed automatically
-        // on destruction.
-        std::unique_ptr < htmTree <TreePoint> > tree_;
-
-        // min tree size parameter.
-        double mintreesz_;
-
-};
-
-
 // Data for one point of the KD tree.
 
 typedef struct {
@@ -150,7 +111,6 @@ typedef struct {
 } KdTreePoint;
 
 // Class holding the object IDs available for each tile and location.
-
 
 class TargetsAvailable : public std::enable_shared_from_this <TargetsAvailable> {
 

@@ -890,6 +890,7 @@ def create_sky(
     outfn,
     suppskydir=None,
     tmpoutdir=tempfile.mkdtemp(),
+    add_plate_cols=True,
     log=Logger.get(),
     step="",
     start=time(),
@@ -904,12 +905,14 @@ def create_sky(
         suppskydir (optional, defaults to None): desitarget suppsky folder (string)
         tmpoutdir (optional, defaults to a temporary directory): temporary directory where
                 write_skies will write (creating some sub-directories)
+        add_plate_cols (optional, defaults to True): adds a PLATE_RA, PLATE_DEC columns (boolean)
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
 
     Notes:
+        add_plate_cols: not adding PLATE_REF_EPOCH;
         20210526 : implementation of using subpriority=False in write_skies
                     to avoid an over-writting of the SUBPRIORITY
     """
@@ -925,6 +928,19 @@ def create_sky(
     d = custom_read_targets_in_tiles(
         skydirs, tiles, quick=True, mtl=False, log=log, step=step, start=start
     )
+
+    # AR adding PLATE_RA, PLATE_DEC?
+    if add_plate_cols:
+        d = Table(d)
+        d["PLATE_RA"] = d["RA"]
+        d["PLATE_DEC"] = d["DEC"]
+        d = d.as_array()
+        log.info(
+            "{:.1f}s\t{}\tadding PLATE_RA, PLATE_DEC columns".format(
+                time() - start, step
+            )
+        )
+
     n, tmpfn = write_skies(tmpoutdir, d, indir=skydir, indir2=suppskydir, subpriority=False)
     _ = mv_write_targets_out(tmpfn, tmpoutdir, outfn, log=log, step=step, start=start)
     log.info("{:.1f}s\t{}\t{} written".format(time() - start, step, outfn))
@@ -939,6 +955,7 @@ def create_targ_nomtl(
     outfn,
     tmpoutdir=tempfile.mkdtemp(),
     pmtime_utc_str=None,
+    add_plate_cols=True,
     quick=True,
     log=Logger.get(),
     step="",
@@ -960,6 +977,7 @@ def create_targ_nomtl(
         pmtime_utc_str (optional, defaults to None): UTC time use to compute
                 new coordinates after applying proper motion since REF_EPOCH
                 (string formatted as "yyyy-mm-ddThh:mm:ss+00:00")
+        add_plate_cols (optional, defaults to True): adds a PLATE_RA, PLATE_DEC, PLATE_REF_EPOCH columns (boolean)
         quick (optional, defaults to True): boolean, arguments of desitarget.io.read_targets_in_tiles()
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
@@ -968,6 +986,10 @@ def create_targ_nomtl(
 
     Notes:
         if pmcorr="y", then pmtime_utc_str needs to be set; will trigger an error otherwise.
+
+        TBD: the PLATE_{RA,DEC,REF_EPOCH} columns currently simply are copy of RA,DEC,REF_EPOCH
+        TBD:    but it prepares e.g. to add chromatic offsets.
+
         20210526 : implementation of using subpriority=False in write_targets
                     to avoid an over-writting of the SUBPRIORITY
     """
@@ -985,6 +1007,20 @@ def create_targ_nomtl(
             time() - start, step, len(d), outfn
         )
     )
+
+    # AR adding PLATE_RA, PLATE_DEC, PLATE_REF_EPOCH ?
+    if add_plate_cols:
+        d = Table(d)
+        d["PLATE_RA"] = d["RA"]
+        d["PLATE_DEC"] = d["DEC"]
+        d["PLATE_REF_EPOCH"] = d["REF_EPOCH"]
+        d = d.as_array()
+        log.info(
+            "{:.1f}s\t{}\tadding PLATE_RA, PLATE_DEC, PLATE_REF_EPOCH columns".format(
+                time() - start, step
+            )
+        )
+
     # AR targ_nomtl: PMRA, PMDEC: convert NaN to zeros
     d = force_finite_pm(d, log=log, step=step, start=start)
     # AR targ_nomtl: update RA, DEC, REF_EPOCH using proper motion?
@@ -1031,6 +1067,7 @@ def create_mtl(
     outfn,
     tmpoutdir=tempfile.mkdtemp(),
     pmtime_utc_str=None,
+    add_plate_cols=True,
     log=Logger.get(),
     step="",
     start=time(),
@@ -1052,6 +1089,7 @@ def create_mtl(
         pmtime_utc_str (optional, defaults to None): UTC time use to compute
                 new coordinates after applying proper motion since REF_EPOCH
                 (string formatted as "yyyy-mm-ddThh:mm:ss+00:00")
+        add_plate_cols (optional, defaults to True): adds a PLATE_RA and PLATE_DEC columns (boolean)
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -1065,6 +1103,10 @@ def create_mtl(
                 hence if secondary and pmcorr="y", the code will crash, as the 
                 GAIA_ASTROMETRIC_EXCESS_NOISE column will be missing; though we do not
                 expect this configuration to happen, so it should be fine for now.
+
+        TBD: the PLATE_{RA,DEC,REF_EPOCH} columns currently simply are copy of RA,DEC,REF_EPOCH
+        TBD:    but it prepares e.g. to add chromatic offsets.
+
         20210526 : implementation of using subpriority=False in write_targets
                     to avoid an over-writting of the SUBPRIORITY
     """
@@ -1124,6 +1166,19 @@ def create_mtl(
             d, targdir, columns=columns, header=False, strictcols=False, quick=True
         )
 
+    # AR adding PLATE_RA, PLATE_DEC, PLATE_REF_EPOCH ?
+    if add_plate_cols:
+        d = Table(d)
+        d["PLATE_RA"] = d["RA"]
+        d["PLATE_DEC"] = d["DEC"]
+        d["PLATE_REF_EPOCH"] = d["REF_EPOCH"]
+        d = d.as_array()
+        log.info(
+            "{:.1f}s\t{}\tadding PLATE_RA, PLATE_DEC, PLATE_REF_EPOCH columns".format(
+                time() - start, step
+            )
+        )
+
     # AR mtl: PMRA, PMDEC: convert NaN to zeros
     d = force_finite_pm(d, log=log, step=step, start=start)
     # AR mtl: update RA, DEC, REF_EPOCH using proper motion?
@@ -1171,6 +1226,7 @@ def create_too(
     tmpoutdir=tempfile.mkdtemp(),
     pmtime_utc_str=None,
     too_tile=False,
+    add_plate_cols=True,
     log=Logger.get(),
     step="",
     start=time(),
@@ -1195,6 +1251,7 @@ def create_too(
         too_tile (optional, defaults to False): if False, we only keep TOO_TYPE!="TILE",
                 if True, we do not cut on TOO_TYPE, hence keeping both TOO_TYPE="FIBER" *and*
                 TOO_TYPE="TILE" for ToO dedicated tiles (boolean)
+        add_plate_cols (optional, defaults to True): adds a PLATE_RA and PLATE_DEC columns (boolean)
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -1206,6 +1263,10 @@ def create_too(
                 from the tile design date;
                 it surely needs to be updated/refined once operations are more clear.
         some steps in common with create_mtl().
+
+        TBD: the PLATE_{RA,DEC,REF_EPOCH} columns currently simply are copy of RA,DEC,REF_EPOCH
+        TBD:    but it prepares e.g. to add chromatic offsets.
+
         20210526 : implementation of using subpriority=False in write_targets
                     to avoid an over-writting of the SUBPRIORITY
     """
@@ -1233,6 +1294,18 @@ def create_too(
     # AR - tiles
     # AR - mjd (! TBD !)
     d = Table.read(toofn)
+
+    # AR adding PLATE_RA, PLATE_DEC, PLATE_REF_EPOCH ?
+    if add_plate_cols:
+        d["PLATE_RA"] = d["RA"]
+        d["PLATE_DEC"] = d["DEC"]
+        d["PLATE_REF_EPOCH"] = d["REF_EPOCH"]
+        log.info(
+            "{:.1f}s\t{}\tadding PLATE_RA, PLATE_DEC, REF_EPOCH columns".format(
+                time() - start, step
+            )
+        )
+
     keep = is_point_in_desi(tiles, d["RA"], d["DEC"])
     if not too_tile:
         keep &= d["TOO_TYPE"] != "TILE"

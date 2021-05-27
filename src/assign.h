@@ -143,15 +143,6 @@ class Assignment : public std::enable_shared_from_this <Assignment> {
             uint8_t type
         );
 
-        void targets_to_project(
-            Targets const * tgs,
-            std::map <int32_t, std::vector <int64_t> > const & tgsavail,
-            std::vector <int32_t> const & locs,
-            std::vector <int64_t> & tgids,
-            std::vector <double> & tgra,
-            std::vector <double> & tgdec
-        ) const;
-
         void reassign_science_target(
             int32_t tstart,
             int32_t tstop,

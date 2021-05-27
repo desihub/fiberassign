@@ -27,7 +27,8 @@ from ..targets import (str_to_target_type, TARGET_TYPE_SCIENCE,
                        TARGET_TYPE_STANDARD,
                        TARGET_TYPE_SAFE, Targets, TargetsAvailable,
                        LocationsAvailable,
-                       load_target_file, targets_in_tiles)
+                       load_target_file, targets_in_tiles,
+                       create_tagalong)
 
 from ..assign import (Assignment, write_assignment_fits,
                       result_path, run)
@@ -126,11 +127,11 @@ def parse_assign(optlist=None):
                         default=1, help="Required number of sky targets per"
                         " fiber slitblock")
 
-    parser.add_argument("--margin-pos", type=float, required=False, default=0.,
+    parser.add_argument("--margin-pos", "--margin_pos", type=float, required=False, default=0.05,
                         help="Add margin (in mm) around positioner keep-out polygons")
-    parser.add_argument("--margin-petal", type=float, required=False, default=0.,
+    parser.add_argument("--margin-petal", "--margin_petal", type=float, required=False, default=0.4,
                         help="Add margin (in mm) around petal-boundary keep-out polygons")
-    parser.add_argument("--margin-gfa", type=float, required=False, default=0.,
+    parser.add_argument("--margin-gfa", "--margin_gfa", type=float, required=False, default=0.4,
                         help="Add margin (in mm) around GFA keep-out polygons")
 
     parser.add_argument("--write_all_targets", required=False, default=False,
@@ -254,20 +255,12 @@ def parse_assign(optlist=None):
         args.dir = "out_fiberassign_{}".format(args.rundate)
 
     # Set up margins dict
-    args.margins = {}
-    if args.margin_pos != 0:
-        args.margins['theta'] = args.margin_pos
-        args.margins['phi']   = args.margin_pos
-    if args.margin_petal != 0:
-        ## The petal polygon is listed in *clockwise* order, so we have to give it a negative margin!
-        args.margins['petal'] = -args.margin_petal
-    if args.margin_gfa != 0:
-        args.margins['gfa'] = args.margin_gfa
-
+    args.margins = dict(pos=args.margin_pos,
+                        petal=args.margin_petal,
+                        gfa=args.margin_gfa)
     return args
 
-
-def run_assign_init(args):
+def run_assign_init(args, plate_radec=True):
     """Initialize assignment inputs.
 
     This uses the previously parsed options to load the input files needed.
@@ -310,6 +303,8 @@ def run_assign_init(args):
 
     # Create empty target list
     tgs = Targets()
+    # Create structure for carrying along auxiliary target data not needed by C++.
+    tagalong = create_tagalong(plate_radec=plate_radec)
 
     # Append each input target file.  These target files must all be of the
     # same survey type, and will set the Targets object to be of that survey.
@@ -321,7 +316,7 @@ def run_assign_init(args):
         if len(tgprops) > 1:
             # we are forcing the target type for this file
             typeforce = str_to_target_type(tgprops[1])
-        load_target_file(tgs, tgfile, typeforce=typeforce,
+        load_target_file(tgs, tagalong, tgfile, typeforce=typeforce,
                          typecol=args.mask_column,
                          sciencemask=args.sciencemask,
                          stdmask=args.stdmask,
@@ -332,7 +327,7 @@ def run_assign_init(args):
     # force to be treated as the survey type of the other target files.
     survey = tgs.survey()
     for tgarg in args.sky:
-        load_target_file(tgs, tgarg, survey=survey, typeforce=typeforce,
+        load_target_file(tgs, tagalong, tgarg, survey=survey, typeforce=typeforce,
                          typecol=args.mask_column,
                          sciencemask=args.sciencemask,
                          stdmask=args.stdmask,
@@ -340,10 +335,10 @@ def run_assign_init(args):
                          safemask=args.safemask,
                          excludemask=args.excludemask)
 
-    return (hw, tiles, tgs)
+    return (hw, tiles, tgs, tagalong)
 
 
-def run_assign_full(args):
+def run_assign_full(args, plate_radec=True):
     """Run fiber assignment over all tiles simultaneously.
 
     This uses the previously parsed options to read input data and run through
@@ -361,11 +356,12 @@ def run_assign_full(args):
     gt.start("run_assign_full calculation")
 
     # Load data
-    hw, tiles, tgs = run_assign_init(args)
+    hw, tiles, tgs, tagalong = run_assign_init(args, plate_radec=plate_radec)
 
-    # Create a hierarchical triangle mesh lookup of the targets positions
+    # Find targets within tiles, and project their RA,Dec positions
+    # into focal-plane coordinates.
     gt.start("Compute targets locations in tile")
-    tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles)
+    tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles, tagalong)
     gt.stop("Compute targets locations in tile")
 
     # Compute the targets available to each fiber for each tile.
@@ -417,7 +413,7 @@ def run_assign_full(args):
         gfa_targets = get_gfa_targets(tiles, args.gfafile)
 
     # Write output
-    write_assignment_fits(tiles, asgn, out_dir=args.dir,
+    write_assignment_fits(tiles, tagalong, asgn, out_dir=args.dir,
                           out_prefix=args.prefix, split_dir=args.split,
                           all_targets=args.write_all_targets,
                           gfa_targets=gfa_targets, overwrite=args.overwrite,
@@ -448,11 +444,12 @@ def run_assign_bytile(args):
     gt.start("run_assign_bytile calculation")
 
     # Load data
-    hw, tiles, tgs = run_assign_init(args)
+    hw, tiles, tgs, tagalong = run_assign_init(args)
 
-    # Create a hierarchical triangle mesh lookup of the targets positions
+    # Find targets within tiles, and project their RA,Dec positions
+    # into focal-plane coordinates.
     gt.start("Compute targets locations in tile")
-    tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles)
+    tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles, tagalong)
     gt.stop("Compute targets locations in tile")
 
     # Compute the targets available to each fiber for each tile.
@@ -510,7 +507,7 @@ def run_assign_bytile(args):
         gfa_targets = get_gfa_targets(tiles, args.gfafile)
 
     # Write output
-    write_assignment_fits(tiles, asgn, out_dir=args.dir,
+    write_assignment_fits(tiles, tagalong, asgn, out_dir=args.dir,
                           out_prefix=args.prefix, split_dir=args.split,
                           all_targets=args.write_all_targets,
                           gfa_targets=gfa_targets, overwrite=args.overwrite,

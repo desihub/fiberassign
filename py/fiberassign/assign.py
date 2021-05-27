@@ -76,6 +76,9 @@ results_assign_columns = OrderedDict([
     ("FA_TYPE", "u1"),
     ("FIBERASSIGN_X", "f4"),
     ("FIBERASSIGN_Y", "f4"),
+    ("PLATE_RA", "f8"),
+    ("PLATE_DEC", "f8"),
+    #("PLATE_REF_EPOCH", "f8"),
 ])
 
 results_targets_columns = OrderedDict([
@@ -87,6 +90,9 @@ results_targets_columns = OrderedDict([
     ("PRIORITY", "i4"),
     ("SUBPRIORITY", "f8"),
     ("OBSCONDITIONS", "i4"),
+    ("PLATE_RA", "f8"),
+    ("PLATE_DEC", "f8"),
+    #("PLATE_REF_EPOCH", "f8"),
 ])
 
 results_avail_columns = OrderedDict([
@@ -121,7 +127,7 @@ def result_path(tile_id, dir=".", prefix="fba-",
     return path
 
 
-def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
+def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
     """Write a single tile assignment to a FITS file.
 
     Args:
@@ -214,26 +220,21 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
 
         ntarget = len(tgids)
 
-        tg_ra = np.empty(ntarget, dtype=np.float64)
-        tg_dec = np.empty(ntarget, dtype=np.float64)
-        tg_bits = np.zeros(ntarget, dtype=np.int64)
         tg_x = np.empty(ntarget, dtype=np.float64)
         tg_y = np.empty(ntarget, dtype=np.float64)
         tg_type = np.empty(ntarget, dtype=np.uint8)
         tg_priority = np.empty(ntarget, dtype=np.int32)
         tg_subpriority = np.empty(ntarget, dtype=np.float64)
-        tg_obscond = np.empty(ntarget, dtype=np.int32)
         tg_indx = dict()
         for indx, tg in enumerate(tgids):
             tg_indx[tg] = indx
             props = tgs.get(tg)
-            tg_ra[indx] = props.ra
-            tg_dec[indx] = props.dec
-            tg_bits[indx] = props.bits
             tg_type[indx] = props.type
             tg_priority[indx] = props.priority
             tg_subpriority[indx] = props.subpriority
-            tg_obscond[indx] = props.obscond
+
+        (tg_ra, tg_dec, tg_obscond) = tagalong.get_for_ids(
+            tgids, ['RA', 'DEC', 'OBSCOND'])
 
         # We compute the X / Y focalplane coordinates for ALL available
         # targets, not just the assigned ones.  This allows us to write out
@@ -248,6 +249,7 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         )
         tg_x[:] = x
         tg_y[:] = y
+        del tg_ra, tg_dec, x, y
 
         # tm.stop()
         # tm.report("  extract target props for {}".format(tile_id))
@@ -263,6 +265,12 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         header["FA_PLAN"] = tile_obstime
         header["FA_HA"] = tile_obsha
         header["FA_RUN"] = hw.time()
+
+        margins = hw.added_margins
+        keys = list(margins.keys())
+        keys.sort()
+        for k in keys:
+            header["FA_M_%s" % k[:3]] = margins[k]
 
         header["REQRA"] = tile_ra
         header["REQDEC"] = tile_dec
@@ -316,6 +324,8 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
                                   else -(unassign_offset + x)
                                   for x in locs], dtype=np.int64)
         fdata["TARGETID"] = assigned_tgids
+        # Fill in all the data values we've been carrying around!
+        tagalong.set_data(assigned_tgids, fdata)
 
         # Rows containing assigned locations
         assigned_valid = np.where(assigned_tgids >= 0)[0]
@@ -324,9 +334,6 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
         # Buffers for X/Y/RA/DEC
         assigned_tgx = np.full(nloc, 9999.9, dtype=np.float64)
         assigned_tgy = np.full(nloc, 9999.9, dtype=np.float64)
-        assigned_tgra = np.full(nloc, 9999.9, dtype=np.float64)
-        assigned_tgdec = np.full(nloc, 9999.9, dtype=np.float64)
-        assigned_tgbits = np.zeros(nloc, dtype=np.int64)
         assigned_tgtype = np.zeros(nloc, dtype=np.uint8)
 
         # For later, locs of stuck fibers that land on good sky
@@ -404,8 +411,12 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
             ra,dec = xy2radec(
                 hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
                 empty_x, empty_y, False, 0)
-            assigned_tgra[assigned_invalid]  = ra
-            assigned_tgdec[assigned_invalid] = dec
+            # These rows will have had default values; set them now!
+            fdata["PLATE_RA" ][assigned_invalid] = ra
+            fdata["PLATE_DEC"][assigned_invalid] = dec
+            fdata["TARGET_RA" ][assigned_invalid] = ra
+            fdata["TARGET_DEC"][assigned_invalid] = dec
+
             ex, ey = xy2cs5(empty_x, empty_y)
             assigned_tgx[assigned_invalid] = ex
             assigned_tgy[assigned_invalid] = ey
@@ -419,18 +430,12 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
             target_rows = [tg_indx[x] for x in assigned_real]
 
             # Copy values out of the full target list.
-            assigned_tgra[assigned_valid] = np.array(tg_ra[target_rows])
-            assigned_tgdec[assigned_valid] = np.array(tg_dec[target_rows])
             assigned_tgx[assigned_valid] = np.array(tg_x[target_rows])
             assigned_tgy[assigned_valid] = np.array(tg_y[target_rows])
             assigned_tgtype[assigned_valid] = np.array(tg_type[target_rows])
-            assigned_tgbits[assigned_valid] = np.array(tg_bits[target_rows])
 
-        fdata["TARGET_RA"] = assigned_tgra
-        fdata["TARGET_DEC"] = assigned_tgdec
         fdata["FIBERASSIGN_X"] = assigned_tgx
         fdata["FIBERASSIGN_Y"] = assigned_tgy
-        fdata["FA_TARGET"] = assigned_tgbits
         fdata["FA_TYPE"] = assigned_tgtype
 
         fibers = dict(hw.loc_fiber)
@@ -491,10 +496,9 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
                   .format(tile_id))
 
         fdata = np.zeros(ntarget, dtype=targets_dtype)
+        # Fill in all the data values we've been carrying around!
+        tagalong.set_data(tgids, fdata)
         fdata["TARGETID"] = tgids
-        fdata["TARGET_RA"] = tg_ra
-        fdata["TARGET_DEC"] = tg_dec
-        fdata["FA_TARGET"] = tg_bits
         fdata["FA_TYPE"] = tg_type
         fdata["PRIORITY"] = tg_priority
         fdata["SUBPRIORITY"] = tg_subpriority
@@ -547,7 +551,7 @@ def write_assignment_fits_tile(asgn, fulltarget, overwrite, params):
     return
 
 
-def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fba-",
+def write_assignment_fits(tiles, tagalong, asgn, out_dir=".", out_prefix="fba-",
                           split_dir=False, all_targets=False,
                           gfa_targets=None, overwrite=False, stucksky=None):
     """Write out assignment results in FITS format.
@@ -586,7 +590,7 @@ def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fba-",
     tileha = tiles.obshourang
 
     write_tile = partial(write_assignment_fits_tile,
-                         asgn, all_targets, overwrite)
+                         asgn, tagalong, all_targets, overwrite)
 
     for i, tid in enumerate(tileids):
         tra = tilera[tileorder[tid]]
@@ -614,7 +618,7 @@ def write_assignment_fits(tiles, asgn, out_dir=".", out_prefix="fba-",
     return
 
 
-def write_assignment_ascii(tiles, asgn, out_dir=".", out_prefix="fba-",
+def write_assignment_ascii(tiles, asgn, tagalong, out_dir=".", out_prefix="fba-",
                            split_dir=False):
     """Write out assignment results in ASCII format.
 
@@ -657,12 +661,17 @@ def write_assignment_ascii(tiles, asgn, out_dir=".", out_prefix="fba-",
                 f.write("#\n")
                 f.write("# LOCATION  TARGETID  RA  DEC  PRIORITY  "
                         "SUBPRIORITY  OBSCONDITIONS  FBATYPE\n")
-                for lid in sorted(tdata.keys()):
+
+                lids = sorted(tdata.keys())
+                targetids = [tdata[lid] for lid in lids]
+                (ra, dec, obscond) = tagalong.get_for_ids(targetids,
+                                              ['RA', 'DEC', 'OBSCOND'])
+                for i,lid in enumerate(lids):
                     tgid = tdata[lid]
                     tg = tgs.get(tgid)
                     f.write("{:d} {:d} {:.6f} {:.6f}\n"
-                            .format(lid, tgid, tg.ra, tg.dec, tg.priority,
-                                    tg.subpriority, tg.obscond, tg.type))
+                            .format(lid, tgid, ra[i], dec[i], tg.priority,
+                                    tg.subpriority, obscond[i], tg.type))
     return
 
 
@@ -714,7 +723,7 @@ def gfa_table_to_dict(gfa_data):
     gfa = {f: np.array(av) for f, av in gfa.items()}
     return gfa
 
-def read_assignment_fits_tile(params):
+def read_assignment_fits_tile(tile_file):
     """Read in results.
 
     This reads in only the result information that was originally written by
@@ -723,15 +732,13 @@ def read_assignment_fits_tile(params):
     input target catalogs.
 
     Args:
-        params (tuple):  The tile file path packed as a tuple for
-            use in multiprocessing.
+        tile_file: pathname
 
     Returns:
         (tuple):  The FITS header, assignment recarray, target property
             recarray, the available targets recarray, and the GFA targets
 
     """
-    (tile_file) = params
     log = Logger.get()
     # Output tile file
     if not os.path.isfile(tile_file):
@@ -776,8 +783,8 @@ def read_assignment_fits_tile(params):
                     fiber_data[col][npos:] = fbsky[col]
 
         full_targets_columns = [(x, y) for x, y in
-                                results_targets_columns.items()]
-        full_names = [x for x, y in results_targets_columns.items()]
+                                merged_targets_columns.items()]
+        full_names = [x for x, y in merged_targets_columns.items()]
         fbtargets = fd["TARGETS"].read()
         nrawtarget = fd["TARGETS"].get_nrows()
 
@@ -991,7 +998,12 @@ merged_fiberassign_req_columns = OrderedDict([
     #("NUMTARGET", "i2"),
     ("PRIORITY", "i4"),
     ("SUBPRIORITY", "f8"),
-    ("OBSCONDITIONS", "i4")
+    ("OBSCONDITIONS", "i4"),
+])
+# Columns that should appear at the end of the table.
+merged_fiberassign_req_columns_at_end = OrderedDict([
+    ("PLATE_RA", "f8"),
+    ("PLATE_DEC", "f8"),
 ])
 
 # AR commenting out NUMTARGET ([desi-survey 1032])
@@ -1034,7 +1046,9 @@ merged_targets_columns = OrderedDict([
     ("FA_TYPE", "u1"),
     ("PRIORITY", "i4"),
     ("SUBPRIORITY", "f8"),
-    ("OBSCONDITIONS", "i4")
+    ("OBSCONDITIONS", "i4"),
+    #("PLATE_RA", "f8"),
+    #("PLATE_DEC", "f8"),
 ])
 
 merged_potential_columns = OrderedDict([
@@ -1071,7 +1085,7 @@ def merge_results_tile(out_dtype, copy_fba, params):
     tm.start()
 
     inhead, fiber_data, targets_data, avail_data, gfa_targets = \
-        read_assignment_fits_tile((infile))
+        read_assignment_fits_tile(infile)
 
     # tm.stop()
     # tm.report("  read input data {}".format(tile_id))
@@ -1297,14 +1311,6 @@ def merge_results_tile(out_dtype, copy_fba, params):
             cols_to_keep.append(c)
     outdata = outdata[cols_to_keep]
 
-    #- HACK: add PLATE_RA, PLATE_DEC if they aren't already there
-    if ('PLATE_RA' not in outdata.dtype.names):
-        log.info('Adding PLATE_RA=TARGET_RA and PLATE_DEC=TARGET_DEC columns')
-        from numpy.lib.recfunctions import append_fields
-        ra = outdata['TARGET_RA']
-        dec = outdata['TARGET_DEC']
-        outdata = append_fields(outdata, ['PLATE_RA', 'PLATE_DEC'], [ra,dec])
-
     cols_to_keep = list()
     for c in tile_targets.dtype.names:
         if len(tile_targets[c].shape) < 2: #Don't propagate 2D target columns into TARGETS HDU
@@ -1432,8 +1438,10 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
     # dtype in any of the target files.  We take the first target file and
     # construct the output recarray dtype from the columns in that file.
     out_dtype = None
-    dcols = [(x, y) for x, y in merged_fiberassign_req_columns.items()]
-    dcolnames = [x for x in merged_fiberassign_req_columns.keys()]
+    cols = merged_fiberassign_req_columns.copy()
+    cols.update(merged_fiberassign_req_columns_at_end)
+    dcols = [(x, y) for x, y in cols.items()]
+    dcolnames = [x for x in cols.keys()]
 
     tgdata = dict()
     tgdtype = dict()
@@ -1580,6 +1588,10 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
                     dcols.extend([(colname, subd[0], subd[1])])
                 dcolnames.append(colname)
 
+
+    end_keys = [k for k,v in merged_fiberassign_req_columns_at_end.items()]
+    dcols = ([c for c in dcols if c[0] not in end_keys] +
+             [c for c in dcols if c[0] in end_keys])
     out_dtype = np.dtype(dcols)
 
     # AR adding any *_TARGET columns to the TARGETS columns
@@ -1703,7 +1715,8 @@ def run(
     gt.stop("Assign unused fibers to standards")
     print_counts('After assigning standards: ')
 
-    def do_assign_unused_sky(ttype):
+    def do_assign_unused_sky(ttype, supp=False):
+        tag = 'supp' if supp else ''
         if sky_per_petal > 0 and sky_per_slitblock > 0:
             # Assign using the slitblock requirement first, because it is
             # more specific
@@ -1711,7 +1724,7 @@ def run(
                 ttype, -1, sky_per_slitblock, "POS",
                 start_tile, stop_tile
             )
-            print_counts('After assigning [supp]sky per-slitblock: ')
+            print_counts('After assigning %ssky per-slitblock: ' % tag)
 
             # Then assign using the petal requirement, because it may(should) require
             # more fibers overall.
@@ -1719,13 +1732,13 @@ def run(
                 ttype, sky_per_petal, -1, "POS",
                 start_tile, stop_tile
             )
-            print_counts('After assigning [supp]sky per-petal: ')
+            print_counts('After assigning %ssky per-petal: ' % tag)
         else:
             asgn.assign_unused(
                 ttype, sky_per_petal, sky_per_slitblock, "POS",
                 start_tile, stop_tile
             )
-            print_counts('After assigning [supp]sky: ')
+            print_counts('After assigning %ssky: ' % tag)
 
     # Assign sky to unused fibers, up to some limit
     gt.start("Assign unused fibers to sky")
@@ -1734,7 +1747,7 @@ def run(
 
     # Assign suppsky to unused fibers, up to some limit
     gt.start("Assign unused fibers to supp_sky")
-    do_assign_unused_sky(TARGET_TYPE_SUPPSKY)
+    do_assign_unused_sky(TARGET_TYPE_SUPPSKY, supp=True)
     gt.stop("Assign unused fibers to supp_sky")
 
     # Force assignment if needed
@@ -1745,7 +1758,8 @@ def run(
     gt.stop("Force assignment of sufficient standards")
     print_counts('After force-assigning standards: ')
 
-    def do_assign_forced_sky(ttype):
+    def do_assign_forced_sky(ttype, supp=False):
+        tag = 'supp' if supp else ''
         # This function really feels redundant with do_assign_unused_sky, but
         # when I tried to make a single function to do both calls, I had to call
         # f(*(preargs + pos_arg + postargs)) and it looked too mysterious.
@@ -1753,22 +1767,22 @@ def run(
             # Slitblock first
             asgn.assign_force(
                 ttype, -1, sky_per_slitblock, start_tile, stop_tile)
-            print_counts('After force-assigning [supp]sky per-slitblock: ')
+            print_counts('After force-assigning %ssky per-slitblock: ' % tag)
             # Then petal
             asgn.assign_force(
                 ttype, sky_per_petal, -1, start_tile, stop_tile)
-            print_counts('After force-assigning [supp]sky per-petal: ')
+            print_counts('After force-assigning %ssky per-petal: ' % tag)
         else:
             asgn.assign_force(
                 ttype, sky_per_petal, sky_per_slitblock, start_tile, stop_tile)
-            print_counts('After force-assigning [supp]sky: ')
+            print_counts('After force-assigning %ssky: ' % tag)
 
     gt.start("Force assignment of sufficient sky")
     do_assign_forced_sky(TARGET_TYPE_SKY)
     gt.stop("Force assignment of sufficient sky")
 
     gt.start("Force assignment of sufficient supp_sky")
-    do_assign_forced_sky(TARGET_TYPE_SUPPSKY)
+    do_assign_forced_sky(TARGET_TYPE_SUPPSKY, supp=True)
     gt.stop("Force assignment of sufficient supp_sky")
 
     # If there are any unassigned fibers, try to place them somewhere.

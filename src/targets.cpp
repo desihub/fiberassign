@@ -36,34 +36,22 @@ std::string fba::target_string(uint8_t type) {
 
 fba::Target::Target() {
     id = -1;
-    ra = 0.0;
-    dec = 0.0;
-    bits = 0;
     obsremain = 0;
     priority = 0;
     subpriority = 0.0;
-    obscond = 0;
     type = 0;
 }
 
 
 fba::Target::Target(int64_t tid,
-                    double tra,
-                    double tdec,
-                    int64_t tbits,
                     int32_t tobsremain,
                     int32_t tpriority,
                     double tsubpriority,
-                    int32_t tobscond,
                     uint8_t ttype) {
     id = tid;
-    ra = tra;
-    dec = tdec;
-    bits = tbits;
     obsremain = tobsremain;
     priority = tpriority;
     subpriority = tsubpriority;
-    obscond = tobscond;
     type = ttype;
 }
 
@@ -122,13 +110,9 @@ fba::Targets::Targets() {
 
 void fba::Targets::append(std::string const & tsurvey,
                           std::vector <int64_t> const & id,
-                          std::vector <double> const & ra,
-                          std::vector <double> const & dec,
-                          std::vector <int64_t> const & targetbits,
                           std::vector <int32_t> const & obsremain,
                           std::vector <int32_t> const & priority,
                           std::vector <double> const & subpriority,
-                          std::vector <int32_t> const & obscond,
                           std::vector <uint8_t> const & type) {
     fba::Logger & logger = fba::Logger::get();
     std::ostringstream logmsg;
@@ -160,25 +144,22 @@ void fba::Targets::append(std::string const & tsurvey,
             logmsg.str("");
             auto const & tg = data.at(id[t]);
             logmsg << "Target ID " << id[t]
-                << " already exists with properties: ("
-                << tg.ra << "," << tg.dec << ") (" << tg.priority << ","
-                << tg.subpriority << ") " << tg.obsremain << ", "
-                << tg.obscond << ", " << (int)(tg.type);
+                << " already exists with properties: (" << tg.priority << ","
+                << tg.subpriority << ") " << tg.obsremain
+                   << ", " << (int)(tg.type);
             logger.error(logmsg.str().c_str());
             logmsg.str("");
-            logmsg << "  New target properties: ("
-                << ra[t] << "," << dec[t] << ") (" << priority[t] << ","
-                << subpriority[t] << ") " << obsremain[t] << ", "
-                << obscond[t];
+            logmsg << "  New target properties: (" << priority[t] << ","
+                   << subpriority[t] << ") " << obsremain[t];
             logger.error(logmsg.str().c_str());
             logmsg.str("");
             logmsg << "  Duplicate target IDs are not permitted.";
             logger.error(logmsg.str().c_str());
             throw std::runtime_error(logmsg.str().c_str());
         } else {
-            data[id[t]] = Target(id[t], ra[t], dec[t], targetbits[t],
+            data[id[t]] = Target(id[t],
                                  obsremain[t], priority[t], subpriority[t],
-                                 obscond[t], type[t]);
+                                 type[t]);
         }
         if ((priority[t] > 0) && ((type[t] & TARGET_TYPE_SCIENCE) != 0)) {
             // Only consider science targets in the list of target classes.
@@ -194,71 +175,6 @@ void fba::Targets::append(std::string const & tsurvey,
     // }
 }
 
-
-fba::TargetTree::TargetTree(Targets::pshr objs, double min_tree_size) {
-    Timer tm;
-    tm.start();
-
-    fba::Logger & logger = fba::Logger::get();
-    std::ostringstream logmsg;
-
-    mintreesz_ = min_tree_size;
-
-    treelist_.resize(0);
-
-    TreePoint tp;
-    double theta;
-    double phi;
-    double deg2rad = M_PI / 180.0;
-    double stheta;
-
-    for (auto const & obj : objs->data) {
-        tp.id = obj.first;
-        theta = (90.0 - obj.second.dec) * deg2rad;
-        phi = (obj.second.ra) * deg2rad;
-        stheta = ::sin(theta);
-        tp.nhat[0] = ::cos(phi) * stheta;
-        tp.nhat[1] = ::sin(phi) * stheta;
-        tp.nhat[2] = ::cos(theta);
-        if (logger.extra_debug()) {
-            logmsg.str("");
-            logmsg << "add target ID " << obj.first << " to tree at "
-                << "RA = " << obj.second.ra << ", DEC = " << obj.second.dec;
-            logger.debug_tfg(-1, -1, obj.first, logmsg.str().c_str());
-        }
-        treelist_.push_back(tp);
-    }
-
-    tree_ = std::unique_ptr <htmTree <TreePoint> > (
-        new htmTree <TreePoint> (treelist_, mintreesz_)
-    );
-    // This is more convenient, but not introduced until C++14.
-    // tree_ = std::make_unique < htmTree <TreePoint> > (treelist_, mintreesz_);
-    tree_->stats();
-    tm.stop();
-    tm.report("Building target tree");
-}
-
-
-void fba::TargetTree::near(double ra_deg, double dec_deg, double radius_rad,
-    std::vector <int64_t> & result) const {
-
-    double deg2rad = M_PI / 180.0;
-    double theta = (90.0 - dec_deg) * deg2rad;
-    double phi = ra_deg * deg2rad;
-    double stheta = ::sin(theta);
-    double nhat[3];
-    nhat[0] = ::cos(phi) * stheta;
-    nhat[1] = ::sin(phi) * stheta;
-    nhat[2] = ::cos(theta);
-
-    std::vector <int> temp = tree_->near (treelist_, nhat, radius_rad);
-    result.resize(temp.size());
-    for (size_t i = 0; i < temp.size(); ++i) {
-        result[i] = treelist_[temp[i]].id;
-    }
-    return;
-}
 
 fba::TargetsAvailable::TargetsAvailable(Hardware::pshr hw,
                                         Tiles::pshr tiles,

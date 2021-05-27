@@ -57,6 +57,10 @@ def expand_closed_curve(xx, yy, margin):
     # These are closed curves (last point = first point)
     # (this isn't strictly required by the fundamental algorithm, but is assumed
     # in the way we select previous and next points in the loop below.)
+    if (xx[0] != xx[-1]) or (yy[0] != yy[-1]):
+        log = Logger.get()
+        log.warning('Expected exclusion polygons to be closed curves; got x, y = %s, %s' % (str(xx), str(yy)))
+        return xx, yy
     assert(xx[0] == xx[-1])
     assert(yy[0] == yy[-1])
 
@@ -217,6 +221,21 @@ def load_hardware(focalplane=None, rundate=None,
 
     excl = dict()
 
+    # Slightly reformat the 'add_margins' dict: 'pos' gets copied to
+    # 'theta' and 'phi'.
+    margins = {}
+    if 'pos' in add_margins:
+        margins['theta'] = add_margins['pos']
+        margins['phi']   = add_margins['pos']
+    if 'gfa' in add_margins:
+        margins['gfa'] = add_margins['gfa']
+    # PLUS -- and this is a HACK --
+    # because the 'petal' exclusion polygons are listed in the db dump files
+    # in "left-handed" order, unlike the other polygons, we must NEGATE the
+    # margin!
+    if 'petal' in add_margins:
+        margins['petal'] = -add_margins['petal']
+
     for nm, shp in exclude.items():
         excl[nm] = dict()
         for obj in shp.keys():
@@ -225,10 +244,10 @@ def load_hardware(focalplane=None, rundate=None,
                 cr.append(Circle(crc[0], crc[1]))
             sg = list()
             for sgm in shp[obj]["segments"]:
-                if obj in add_margins:
+                if obj in margins:
                     sx = [x for x,y in sgm]
                     sy = [y for x,y in sgm]
-                    ex,ey = expand_closed_curve(sx, sy, add_margins[obj])
+                    ex,ey = expand_closed_curve(sx, sy, margins[obj])
                     sgm = list(zip(ex, ey))
                 sg.append(Segments(sgm))
             fshp = Shape((0.0, 0.0), cr, sg)
@@ -284,6 +303,7 @@ def load_hardware(focalplane=None, rundate=None,
             [positioners[x]["phi"] for x in locations],
             [positioners[x]["gfa"] for x in locations],
             [positioners[x]["petal"] for x in locations],
+            add_margins
         )
     else:
         # This is an old-format focalplane model (prior to desimodel PR #143).  For
@@ -329,6 +349,7 @@ def load_hardware(focalplane=None, rundate=None,
             [positioners[x]["phi"] for x in locations],
             [positioners[x]["gfa"] for x in locations],
             [positioners[x]["petal"] for x in locations],
+            add_margins
         )
     return hw
 

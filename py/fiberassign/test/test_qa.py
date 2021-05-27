@@ -27,12 +27,11 @@ from fiberassign.tiles import load_tiles, Tiles
 from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                                  TARGET_TYPE_SUPPSKY,
                                  TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE,
-                                 Targets, TargetsAvailable, TargetTree,
-                                 LocationsAvailable, load_target_file, targets_in_tiles)
+                                 Targets, TargetsAvailable,
+                                 LocationsAvailable, load_target_file, targets_in_tiles, create_tagalong)
 
 from fiberassign.assign import (Assignment, write_assignment_fits,
-                                write_assignment_ascii, merge_results,
-                                read_assignment_fits_tile)
+                                write_assignment_ascii, merge_results)
 
 from fiberassign.qa import qa_tiles, qa_targets
 
@@ -119,7 +118,8 @@ class TestQA(unittest.TestCase):
         log_msg = "Simulated {} science targets\n".format(nscience)
 
         tgs = Targets()
-        load_target_file(tgs, input_mtl)
+        tagalong = create_tagalong(plate_radec=False)
+        load_target_file(tgs, tagalong, input_mtl)
 
         # Read hardware properties
         fp, exclude, state = sim_focalplane(rundate=test_assign_date)
@@ -129,7 +129,7 @@ class TestQA(unittest.TestCase):
         tiles = load_tiles(tiles_file=tfile)
 
         # Precompute target positions
-        tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles)
+        tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles, tagalong)
         # Compute the targets available to each fiber for each tile.
         tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
 
@@ -148,7 +148,7 @@ class TestQA(unittest.TestCase):
         # Redistribute
         asgn.redistribute_science()
 
-        write_assignment_fits(tiles, asgn, out_dir=test_dir, all_targets=True)
+        write_assignment_fits(tiles, tagalong, asgn, out_dir=test_dir, all_targets=True)
 
         tile_ids = list(tiles.id)
 

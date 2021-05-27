@@ -44,6 +44,7 @@ from .targets import (
     default_cmx_skymask,
     default_cmx_suppskymask,
     default_cmx_safemask,
+    create_tagalong,
 )
 
 from .assign import (
@@ -60,12 +61,13 @@ def qa_parse_table(header, tgdata):
     """
     log = Logger.get()
     tgs = Targets()
+    tagalong = create_tagalong(plate_radec=False)
     if "FA_SURV" in header:
         load_target_table(
-            tgs, tgdata, survey=str(header["FA_SURV"]).rstrip(), typecol="FA_TYPE"
+            tgs, tagalong, tgdata, survey=str(header["FA_SURV"]).rstrip(), typecol="FA_TYPE"
         )
     else:
-        load_target_table(tgs, tgdata)
+        load_target_table(tgs, tagalong, tgdata)
     survey = tgs.survey()
 
     lrgmask = int(desi_mask["LRG"].mask)
@@ -116,7 +118,8 @@ def qa_parse_table(header, tgdata):
         if obscol is not None:
             obsinit = tgdata[obscol][row]
         tg = tgs.get(tgid)
-        dt = tg.bits
+        #dt = tg.bits
+        dt = tgdata["FA_TARGET"][row]
         tgprops[tgid] = dict()
         if dt & stdmask:
             tgprops[tgid]["class"] = "standard"
@@ -465,7 +468,7 @@ def qa_targets(
         itid = int(tid)
 
         header, fiber_data, targets_data, avail_data, gfa_data = \
-            read_assignment_fits_tile((tf))
+            read_assignment_fits_tile(tf)
 
         # Target properties
         tgs, tgprops = qa_parse_table(header, targets_data)

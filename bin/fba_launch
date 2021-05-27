@@ -169,6 +169,7 @@ def main():
             log=log,
             step="dogfa",
             start=start,
+            add_plate_cols=False,
         )
 
     # AR mtl
@@ -467,11 +468,11 @@ if __name__ == "__main__":
         default=1,
         required=False,
     )
-    parser.add_argument("--margin-pos", type=float, required=False, default=0.05,
+    parser.add_argument("--margin-pos", "--margin_pos", type=float, required=False, default=0.05,
                         help="Add margin (in mm) around positioner keep-out polygons (default: 0.05)")
-    parser.add_argument("--margin-petal", type=float, required=False, default=0.4,
+    parser.add_argument("--margin-petal", "--margin_petal", type=float, required=False, default=0.4,
                         help="Add margin (in mm) around petal-boundary keep-out polygons (default: 0.4)")
-    parser.add_argument("--margin-gfa", type=float, required=False, default=0.4,
+    parser.add_argument("--margin-gfa", "--margin_gfa", type=float, required=False, default=0.4,
                         help="Add margin (in mm) around GFA keep-out polygons (default: 0.4)")
     parser.add_argument(
         "--dr",
@@ -518,7 +519,7 @@ if __name__ == "__main__":
         required=False,
     )
     parser.add_argument(
-        "--log-stdout",
+        "--log-stdout", "--log_stdout",
         action="store_true",
         help="log to stdout instead of redirecting to a file",
     )
