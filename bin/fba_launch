@@ -32,7 +32,7 @@ from fiberassign.fba_launch_io import (
 from argparse import ArgumentParser
 
 # AR allowed steps in fba_launch
-steps_all = ["tile", "sky", "gfa", "mtl", "scnd", "too", "fa", "zip", "move", "qa"]
+steps_all = ["tile", "sky", "gfa", "targ", "scnd", "too", "fa", "zip", "move", "qa"]
 
 
 # AR goal effective time
@@ -196,8 +196,8 @@ def main():
         log.info("")
         log.info("{:.1f}s\t{}\tnot executing, as per args.steps/args.nosteps".format(time() - start, "gfa"))
 
-    # AR mtl
-    if "mtl" in steps:
+    # AR targ
+    if "targ" in steps:
         create_mtl(
             mytmpouts["tiles"],
             mydirs["mtl"],
@@ -210,13 +210,13 @@ def main():
             tmpoutdir=tmpoutdir,
             pmtime_utc_str=args.pmtime_utc_str,
             log=log,
-            step="mtl",
+            step="targ",
             start=start,
         )
     else:
         log.info("")
         log.info("")
-        log.info("{:.1f}s\t{}\tnot executing, as per args.steps/args.nosteps".format(time() - start, "mtl"))
+        log.info("{:.1f}s\t{}\tnot executing, as per args.steps/args.nosteps".format(time() - start, "targ"))
 
     # AR secondary targets
     # AR if not backup
