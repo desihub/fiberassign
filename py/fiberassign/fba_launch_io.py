@@ -2930,16 +2930,14 @@ def make_qa(
     plt.close()
 
 
-def rmv_nonsvn(mytmpouts, myouts, log=Logger.get(), step="", start=time()):
+def rmv_nonsvn(myouts, log=Logger.get(), step="", start=time()):
     """
     Remove fba_launch non-SVN products
     
     Args:
-        mytmpouts: dictionary with the temporary files location (dictionary);
-            concerns the following keys:
-                "tiles", "sky", "gfa", "targ", "scnd", "too", "fba"
         myouts: dictionary with the fba_launch args.outdir location (dictionary);
-            contains same keys as mytmpouts
+            must contain the following keys:
+                "tiles", "sky", "gfa", "targ", "scnd", "too", "fba"
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -2949,16 +2947,16 @@ def rmv_nonsvn(mytmpouts, myouts, log=Logger.get(), step="", start=time()):
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
     for key in ["tiles", "sky", "gfa", "targ", "scnd", "too", "fba"]:
-        if os.path.isfile(mytmpouts[key]):
-            os.remove(mytmpouts[key])
+        if os.path.isfile(myouts[key]):
+            os.remove(myouts[key])
             log.info(
                 "{:.1f}s\t{}\tdeleting file {}".format(
-                    time() - start, step, mytmpouts[key]
+                    time() - start, step, myouts[key]
                 )
             )
 
 
-def mv_temp2final(mytmpouts, myouts, doclean, log=Logger.get(), step="", start=time()):
+def mv_temp2final(mytmpouts, myouts, log=Logger.get(), step="", start=time()):
     """
     Moves the fba_launch outputs from the temporary location to the args.outdir location.   
 
@@ -2969,8 +2967,6 @@ def mv_temp2final(mytmpouts, myouts, doclean, log=Logger.get(), step="", start=t
                 if doclean="n", also: "tiles", "sky", "gfa", "targ", "scnd", "too", "fba"
         myouts: dictionary with the fba_launch args.outdir location (dictionary);
             contains same keys as mytmpouts
-        doclean: remove non-SVN files? "y" or "n" (string);
-            args.clean fba_launch argument
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -2983,21 +2979,20 @@ def mv_temp2final(mytmpouts, myouts, doclean, log=Logger.get(), step="", start=t
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
     # AR optional files
-    if doclean == "n":
-        for key in ["tiles", "sky", "gfa", "targ", "scnd", "too", "fba"]:
-            if os.path.isfile(mytmpouts[key]):
-                _ = shutil.move(mytmpouts[key], myouts[key])
-                log.info(
-                    "{:.1f}s\t{}\tmoving file {} to {}".format(
-                        time() - start, step, mytmpouts[key], myouts[key]
-                    )
+    for key in ["tiles", "sky", "gfa", "targ", "scnd", "too", "fba"]:
+        if os.path.isfile(mytmpouts[key]):
+            _ = shutil.move(mytmpouts[key], myouts[key])
+            log.info(
+                "{:.1f}s\t{}\tmoving file {} to {}".format(
+                    time() - start, step, mytmpouts[key], myouts[key]
                 )
-            else:
-                log.info(
-                    "{:.1f}s\t{}\tno file {}".format(
-                        time() - start, step, mytmpouts[key]
-                    )
+            )
+        else:
+            log.info(
+                "{:.1f}s\t{}\tno file {}".format(
+                    time() - start, step, mytmpouts[key]
                 )
+            )
     # AR fiberassign-TILEID.fits.gz
     # AR fiberassign-TILEID.png is created after the call to mv_temp2final
     for key in ["fiberassign"]:

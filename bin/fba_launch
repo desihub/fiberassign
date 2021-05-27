@@ -282,7 +282,7 @@ def main():
     # AR move tmpoutdir -> args.outdir
     if domove:
         mv_temp2final(
-            mytmpouts, myouts, args.doclean, log=log, step="domove", start=start,
+            mytmpouts, myouts, log=log, step="domove", start=start,
         )
 
     # AR QA plots
@@ -313,7 +313,7 @@ def main():
 
     # AR do clean?
     if args.doclean == "y":
-        rmv_nonsvn(mytmpouts, myouts, log=log, step="doclean", start=start)
+        rmv_nonsvn(myouts, log=log, step="doclean", start=start)
 
     # AR and we re done
     log.info("")
@@ -509,7 +509,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--doclean",
-        help="delete TILEID-{tiles,sky,std,gfa,targ,scnd,too}.fits files (y/n)",
+        help="delete TILEID-{tiles,sky,std,gfa,targ,scnd,too}.fits files (y/n); if doclean=y",
         type=str,
         default="n",
         required=False,
