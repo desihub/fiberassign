@@ -154,6 +154,10 @@ def main():
             step="tile",
             start=start,
         )
+    else:
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\t{}\tnot executing, as per args.steps/args.nosteps".format(time() - start, "tile"))
 
     # AR sky
     if "sky" in steps:
@@ -167,6 +171,10 @@ def main():
             step="sky",
             start=start,
         )
+    else:
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\t{}\tnot executing, as per args.steps/args.nosteps".format(time() - start, "sky"))
 
     # AR gfa
     if "gfa" in steps:
@@ -183,6 +191,10 @@ def main():
             step="gfa",
             start=start,
         )
+    else:
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\t{}\tnot executing, as per args.steps/args.nosteps".format(time() - start, "gfa"))
 
     # AR mtl
     if "mtl" in steps:
@@ -201,27 +213,37 @@ def main():
             step="mtl",
             start=start,
         )
+    else:
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\t{}\tnot executing, as per args.steps/args.nosteps".format(time() - start, "mtl"))
 
     # AR secondary targets
     # AR if not backup
-    if ("scnd" in steps) & ("scnd" in list(mydirs.keys())):
-        create_mtl(
-            mytmpouts["tiles"],
-            mydirs["scndmtl"],
-            args.mtltime,
-            mydirs["scnd"],
-            args.survey,
-            args.gaiadr.replace("gaia", ""),
-            args.pmcorr,
-            mytmpouts["scnd"],
-            tmpoutdir=tmpoutdir,
-            pmtime_utc_str=args.pmtime_utc_str,
-            log=log,
-            step="scnd",
-            start=start,
-        )
+    if ("scnd" in steps):
+        if ("scnd" in list(mydirs.keys())):
+            create_mtl(
+                mytmpouts["tiles"],
+                mydirs["scndmtl"],
+                args.mtltime,
+                mydirs["scnd"],
+                args.survey,
+                args.gaiadr.replace("gaia", ""),
+                args.pmcorr,
+                mytmpouts["scnd"],
+                tmpoutdir=tmpoutdir,
+                pmtime_utc_str=args.pmtime_utc_str,
+                log=log,
+                step="scnd",
+                start=start,
+            )
+        else:
+            log.info("{:.1f}s\tscnd\tno secondary here".format(time() - start))
     else:
-        log.info("{:.1f}s\tdoscnd\tno secondary here".format(time() - start))
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\t{}\tnot executing, as per args.steps/args.nosteps".format(time() - start, "scnd"))
+
 
     # AR ToO targets
     # AR TBD: handling to MJD window boundaries as script argument?
@@ -241,6 +263,10 @@ def main():
             step="too",
             start=start,
         )
+    else:
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\t{}\tnot executing, as per args.steps/args.nosteps".format(time() - start, "too"))
 
     # AR fiberassign
     if "fa" in steps:
@@ -282,6 +308,10 @@ def main():
             step="fa",
             start=start,
         )
+    else:
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\t{}\tnot executing, as per args.steps/args.nosteps".format(time() - start, "fa"))
 
     # AR gzip all fiberassign files
     if "zip" in steps:
@@ -291,12 +321,20 @@ def main():
         # AR updating the path
         mytmpouts["fiberassign"] += ".gz"
         myouts["fiberassign"] += ".gz"
+    else:
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\t{}\tnot executing, as per args.steps/args.nosteps".format(time() - start, "zip"))
 
     # AR move tmpoutdir -> args.outdir
     if "move" in steps:
         mv_temp2final(
             mytmpouts, myouts, log=log, step="move", start=start,
         )
+    else:
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\t{}\tnot executing, as per args.steps/args.nosteps".format(time() - start, "move"))
 
     # AR QA plots
     if "qa" in steps:
@@ -329,6 +367,10 @@ def main():
             tmpoutdir=tmpoutdir,
             width_deg=4,
         )
+    else:
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\t{}\tnot executing, as per args.steps/args.nosteps".format(time() - start, "qa"))
 
     # AR do clean?
     if args.doclean == "y":
