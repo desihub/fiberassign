@@ -310,6 +310,9 @@ def main():
             targfns.append(myouts["scnd"])
         if os.path.isfile(myouts["too"]):
             targfns.append(myouts["too"])
+        # AR fiberassign, updating path
+        if "zip" not in steps:
+            myouts["fiberassign"] += ".gz"
 
         make_qa(
             myouts["png"],
