@@ -644,9 +644,26 @@ if __name__ == "__main__":
 
     # AR steps/nosteps
     if args.steps is not None and args.nosteps is not None:
-        sys.exit("only *one* of args.steps and args.nosteps has to be set to None; exiting")
+        log.error("only *one* of args.steps and args.nosteps has to be set to None; exiting")
+        sys.exit(1)
     if args.steps is None:
         args.steps = ",".join(steps_all)
+        if args.nosteps is not None:
+            wrong_nosteps = [step for step in args.nosteps.split(",") if step not in steps_all]
+            if len(wrong_nosteps) > 0:
+                log.error("args.nosteps have the following not authorized steps : {}; exiting".format(
+                    wrong_nosteps
+                    )
+                )
+                sys.exit(1)
+    else:
+        wrong_steps = [step for step in args.steps.split(",") if step not in steps_all]
+        if len(wrong_steps) > 0:
+            log.error("args.steps have the following not authorized steps : {}; exiting".format(
+                wrong_steps
+                )
+            )
+            sys.exit(1)
 
     # AR create a temporary directory for generated files
     tmpoutdir = tempfile.mkdtemp()
