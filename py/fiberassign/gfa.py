@@ -11,6 +11,7 @@ import numpy as np
 import fitsio
 from astropy.table import Table
 import desimodel.focalplane.gfa
+from desitarget.gaiamatch import gaia_psflike
 
 from ._internal import Tiles
 from .utils import Logger, Timer
@@ -175,10 +176,8 @@ def get_gfa_targets(tiles, gfafile, faintlim=99, gaiadr="dr2"):
         # AR not passing the Gaia AEN criterion (PM correction done for AEN targets only)
         g = t["GAIA_PHOT_G_MEAN_MAG"]
         aen = t["GAIA_ASTROMETRIC_EXCESS_NOISE"]
-        isaen = np.logical_or(
-            (g <= 19.0) * (aen < 10.0 ** 0.5),
-            (g >= 19.0) * (aen < 10.0 ** (0.5 + 0.2 * (g - 19.0))),
-        )
+        gaiadr = "dr2" if "G2" in t["REF_CAT"] else "edr3"
+        isaen = gaia_psflike(aen, g, dr=gaiadr)
         flag[~isaen] |= 2**4
         
         
