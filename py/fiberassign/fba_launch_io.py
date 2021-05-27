@@ -1222,7 +1222,7 @@ def create_too(
                 time() - start, step, toofn, outfn
             )
         )
-        return
+        return False
 
     # AR too: if yes, we proceed
     # AR too: tile file
@@ -1294,6 +1294,8 @@ def create_too(
                 time() - start, step, outfn
             )
         )
+
+    return True
 
 
 def launch_onetile_fa(
@@ -2959,17 +2961,16 @@ def rmv_nonsvn(myouts, log=Logger.get(), step="", start=time()):
             )
 
 
-def mv_temp2final(mytmpouts, myouts, log=Logger.get(), step="", start=time()):
+def mv_temp2final(mytmpouts, myouts, expected_keys, log=Logger.get(), step="", start=time()):
     """
     Moves the fba_launch outputs from the temporary location to the args.outdir location.   
 
     Args:
         mytmpouts: dictionary with the temporary files location (dictionary);
-            contains the following keys:
-                "fiberassign", "log"
-                if doclean="n", also: "tiles", "sky", "gfa", "targ", "scnd", "too", "fba"
+            contains the following keys: "tiles",  "sky", "gfa", "targ", "scnd", "too", "fba", "fiberassign"
         myouts: dictionary with the fba_launch args.outdir location (dictionary);
-            contains same keys as mytmpouts
+            contains at least same keys as mytmpouts
+        expected_keys: list of keys of mytmpouts, myouts with the files to move
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -2981,8 +2982,8 @@ def mv_temp2final(mytmpouts, myouts, log=Logger.get(), step="", start=time()):
     log.info("")
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
-    # AR optional files
-    for key in ["tiles", "sky", "gfa", "targ", "scnd", "too", "fba"]:
+    # AR
+    for key in expected_keys:
         if os.path.isfile(mytmpouts[key]):
             _ = shutil.move(mytmpouts[key], myouts[key])
             log.info(
@@ -2991,20 +2992,13 @@ def mv_temp2final(mytmpouts, myouts, log=Logger.get(), step="", start=time()):
                 )
             )
         else:
-            log.info(
-                "{:.1f}s\t{}\tno file {}".format(
+            log.error(
+                "{:.1f}s\t{}\tfile {} is missing, though we expect it; exiting".format(
                     time() - start, step, mytmpouts[key]
                 )
             )
-    # AR fiberassign-TILEID.fits.gz
-    # AR fiberassign-TILEID.png is created after the call to mv_temp2final
-    for key in ["fiberassign"]:
-        _ = shutil.move(mytmpouts[key], myouts[key])
-        log.info(
-            "{:.1f}s\t{}\tmoving {} to {}".format(
-                time() - start, step, mytmpouts[key], myouts[key]
-            )
-        )
+            sys.exit(1)
+
     # AR actually here not moving the log file
     # AR moving it after the main() in fba_launch
     key = "log"
@@ -3013,3 +3007,4 @@ def mv_temp2final(mytmpouts, myouts, log=Logger.get(), step="", start=time()):
             time() - start, step, mytmpouts[key], myouts[key]
         )
     )
+

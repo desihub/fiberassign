@@ -87,6 +87,15 @@ def main():
         log.info("{:.1f}s\tsettings\tsteps to exclude: -".format(time() - start))
     log.info("{:.1f}s\tsettings\tsteps to execute: {}".format(time() - start, steps))
 
+    # AR files we expect to be created, given args.steps, for the "move" step
+    expected_files = {}
+    for step in steps:
+        if step not in ["zip", "move", "qa"]:
+            if step == "fa":
+                expected_files["fba"], expected_files["fiberassign"] = True, True
+            else:
+                expected_files[step] = True
+
     # AR safe: DESI environment variables defined?
     assert_env_vars(log=log, step="settings", start=start)
 
@@ -238,6 +247,7 @@ def main():
                 start=start,
             )
         else:
+            expected_files["scnd"] = False
             log.info("{:.1f}s\tscnd\tno secondary here".format(time() - start))
     else:
         log.info("")
@@ -248,7 +258,7 @@ def main():
     # AR ToO targets
     # AR TBD: handling to MJD window boundaries as script argument?
     if "too" in steps:
-        create_too(
+        expected_files["too"] = create_too(
             mytmpouts["tiles"],
             mydirs["too"],
             mjd_now - 1,
@@ -338,8 +348,10 @@ def main():
 
     # AR move tmpoutdir -> args.outdir
     if "move" in steps:
+        # AR files we expect to be created
+        expected_keys = [key for key in list(expected_files.keys()) if expected_files[key]]
         mv_temp2final(
-            mytmpouts, myouts, log=log, step="move", start=start,
+            mytmpouts, myouts, expected_keys, log=log, step="move", start=start,
         )
     else:
         log.info("")
