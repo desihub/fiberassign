@@ -913,6 +913,8 @@ def create_sky(
 
     Notes:
         add_plate_cols: not adding PLATE_REF_EPOCH;
+        20210526 : implementation of using subpriority=False in write_skies
+                    to avoid an over-writting of the SUBPRIORITY
     """
     log.info("")
     log.info("")
@@ -939,7 +941,7 @@ def create_sky(
             )
         )
 
-    n, tmpfn = write_skies(tmpoutdir, d, indir=skydir, indir2=suppskydir,)
+    n, tmpfn = write_skies(tmpoutdir, d, indir=skydir, indir2=suppskydir, subpriority=False)
     _ = mv_write_targets_out(tmpfn, tmpoutdir, outfn, log=log, step=step, start=start)
     log.info("{:.1f}s\t{}\t{} written".format(time() - start, step, outfn))
 
@@ -971,7 +973,7 @@ def create_targ_nomtl(
         pmcorr: apply proper-motion correction? ("y" or "n")
         outfn: fits file name to be written (string)
         tmpoutdir (optional, defaults to a temporary directory): temporary directory where
-                write_skies will write (creating some sub-directories)
+                write_targets will write (creating some sub-directories)
         pmtime_utc_str (optional, defaults to None): UTC time use to compute
                 new coordinates after applying proper motion since REF_EPOCH
                 (string formatted as "yyyy-mm-ddThh:mm:ss+00:00")
@@ -984,8 +986,12 @@ def create_targ_nomtl(
 
     Notes:
         if pmcorr="y", then pmtime_utc_str needs to be set; will trigger an error otherwise.
+
         TBD: the PLATE_{RA,DEC,REF_EPOCH} columns currently simply are copy of RA,DEC,REF_EPOCH
         TBD:    but it prepares e.g. to add chromatic offsets.
+
+        20210526 : implementation of using subpriority=False in write_targets
+                    to avoid an over-writting of the SUBPRIORITY
     """
     log.info("")
     log.info("")
@@ -1039,7 +1045,7 @@ def create_targ_nomtl(
         )
 
     # AR targ_nomtl: write fits
-    n, tmpfn = write_targets(tmpoutdir, d, indir=targdir, survey=survey)
+    n, tmpfn = write_targets(tmpoutdir, d, indir=targdir, survey=survey, subpriority=False)
     _ = mv_write_targets_out(tmpfn, tmpoutdir, outfn, log=log, step=step, start=start)
     # AR targ_nomtl: update header if pmcorr = "y"
     if pmcorr == "y":
@@ -1079,7 +1085,7 @@ def create_mtl(
         pmcorr: apply proper-motion correction? ("y" or "n")
         outfn: fits file name to be written (string)
         tmpoutdir (optional, defaults to a temporary directory): temporary directory where
-                write_skies will write (creating some sub-directories)
+                write_targets will write (creating some sub-directories)
         pmtime_utc_str (optional, defaults to None): UTC time use to compute
                 new coordinates after applying proper motion since REF_EPOCH
                 (string formatted as "yyyy-mm-ddThh:mm:ss+00:00")
@@ -1097,8 +1103,12 @@ def create_mtl(
                 hence if secondary and pmcorr="y", the code will crash, as the 
                 GAIA_ASTROMETRIC_EXCESS_NOISE column will be missing; though we do not
                 expect this configuration to happen, so it should be fine for now.
+
         TBD: the PLATE_{RA,DEC,REF_EPOCH} columns currently simply are copy of RA,DEC,REF_EPOCH
         TBD:    but it prepares e.g. to add chromatic offsets.
+
+        20210526 : implementation of using subpriority=False in write_targets
+                    to avoid an over-writting of the SUBPRIORITY
     """
     log.info("")
     log.info("")
@@ -1192,7 +1202,7 @@ def create_mtl(
             d, gaia_ref_epochs[gaiadr], log=log, step=step, start=start
         )
     # AR mtl: write fits
-    n, tmpfn = write_targets(tmpoutdir, d, indir=mtldir, indir2=targdir, survey=survey)
+    n, tmpfn = write_targets(tmpoutdir, d, indir=mtldir, indir2=targdir, survey=survey, subpriority=False)
     _ = mv_write_targets_out(tmpfn, tmpoutdir, outfn, log=log, step=step, start=start,)
 
     # AR mtl: update header if pmcorr = "y"
@@ -1234,7 +1244,7 @@ def create_too(
         pmcorr: apply proper-motion correction? ("y" or "n")
         outfn: fits file name to be written (string)
         tmpoutdir (optional, defaults to a temporary directory): temporary directory where
-                write_skies will write (creating some sub-directories)
+                write_targets will write (creating some sub-directories)
         pmtime_utc_str (optional, defaults to None): UTC time use to compute
                 new coordinates after applying proper motion since REF_EPOCH
                 (string formatted as "yyyy-mm-ddThh:mm:ss+00:00")
@@ -1253,8 +1263,12 @@ def create_too(
                 from the tile design date;
                 it surely needs to be updated/refined once operations are more clear.
         some steps in common with create_mtl().
+
         TBD: the PLATE_{RA,DEC,REF_EPOCH} columns currently simply are copy of RA,DEC,REF_EPOCH
         TBD:    but it prepares e.g. to add chromatic offsets.
+
+        20210526 : implementation of using subpriority=False in write_targets
+                    to avoid an over-writting of the SUBPRIORITY
     """
     log.info("")
     log.info("")
@@ -1335,7 +1349,7 @@ def create_too(
             )
 
         # AR mtl: write fits
-        n, tmpfn = write_targets(tmpoutdir, d.as_array(), indir=toofn, survey=survey)
+        n, tmpfn = write_targets(tmpoutdir, d.as_array(), indir=toofn, survey=survey, subpriority=False)
         _ = mv_write_targets_out(
             tmpfn, tmpoutdir, outfn, log=log, step=step, start=start,
         )
