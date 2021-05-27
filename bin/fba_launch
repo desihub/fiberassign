@@ -556,7 +556,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--doclean",
-        help="delete TILEID-{tiles,sky,std,gfa,targ,scnd,too}.fits files (y/n); if doclean=y",
+        help="delete TILEID-{tiles,sky,std,gfa,targ,scnd,too}.fits files (y/n)",
         type=str,
         default="n",
         required=False,
