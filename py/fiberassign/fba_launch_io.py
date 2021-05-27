@@ -2965,7 +2965,7 @@ def mv_temp2final(mytmpouts, myouts, doclean, log=Logger.get(), step="", start=t
     Args:
         mytmpouts: dictionary with the temporary files location (dictionary);
             contains the following keys:
-                "fiberassign", "png", "log"
+                "fiberassign", "log"
                 if doclean="n", also: "tiles", "sky", "gfa", "targ", "scnd", "too", "fba"
         myouts: dictionary with the fba_launch args.outdir location (dictionary);
             contains same keys as mytmpouts
@@ -2998,8 +2998,9 @@ def mv_temp2final(mytmpouts, myouts, doclean, log=Logger.get(), step="", start=t
                         time() - start, step, mytmpouts[key]
                     )
                 )
-    # AR SVN-checked files
-    for key in ["fiberassign", "png"]:
+    # AR fiberassign-TILEID.fits.gz
+    # AR fiberassign-TILEID.png is created after the call to mv_temp2final
+    for key in ["fiberassign"]:
         _ = shutil.move(mytmpouts[key], myouts[key])
         log.info(
             "{:.1f}s\t{}\tmoving {} to {}".format(

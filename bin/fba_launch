@@ -279,23 +279,29 @@ def main():
         mytmpouts["fiberassign"] += ".gz"
         myouts["fiberassign"] += ".gz"
 
+    # AR move tmpoutdir -> args.outdir
+    if domove:
+        mv_temp2final(
+            mytmpouts, myouts, args.doclean, log=log, step="domove", start=start,
+        )
+
     # AR QA plots
     if doqa:
 
         # AR used targfns
-        targfns = [mytmpouts["targ"]]
-        if os.path.isfile(mytmpouts["scnd"]):
-            targfns.append(mytmpouts["scnd"])
-        if os.path.isfile(mytmpouts["too"]):
-            targfns.append(mytmpouts["too"])
+        targfns = [myouts["targ"]]
+        if os.path.isfile(myouts["scnd"]):
+            targfns.append(myouts["scnd"])
+        if os.path.isfile(myouts["too"]):
+            targfns.append(myouts["too"])
 
         make_qa(
-            mytmpouts["png"],
+            myouts["png"],
             args.survey,
             args.program,
             faflavor,
             targfns,
-            mytmpouts["fiberassign"],
+            myouts["fiberassign"],
             args.tileid,
             args.tilera,
             args.tiledec,
@@ -308,12 +314,6 @@ def main():
     # AR do clean?
     if args.doclean == "y":
         rmv_nonsvn(mytmpouts, myouts, log=log, step="doclean", start=start)
-
-    # AR move tmpoutdir -> args.outdir
-    if domove:
-        mv_temp2final(
-            mytmpouts, myouts, args.doclean, log=log, step="domove", start=start,
-        )
 
     # AR and we re done
     log.info("")
@@ -606,9 +606,11 @@ if __name__ == "__main__":
     )
 
     # AR temporary output files
+    # AR    except for png, as doqa is after domove
     mytmpouts = {}
     for key in list(myouts.keys()):
-        mytmpouts[key] = myouts[key].replace(args.outdir, tmpoutdir)
+        if key != "png":
+            mytmpouts[key] = myouts[key].replace(args.outdir, tmpoutdir)
 
     # AR temporary log file
     if os.path.isfile(mytmpouts["log"]):
