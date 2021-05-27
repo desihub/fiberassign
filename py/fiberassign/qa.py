@@ -468,7 +468,7 @@ def qa_targets(
         itid = int(tid)
 
         header, fiber_data, targets_data, avail_data, gfa_data = \
-            read_assignment_fits_tile((tf))
+            read_assignment_fits_tile(tf)
 
         # Target properties
         tgs, tgprops = qa_parse_table(header, targets_data)

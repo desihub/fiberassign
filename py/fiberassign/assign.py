@@ -723,7 +723,7 @@ def gfa_table_to_dict(gfa_data):
     gfa = {f: np.array(av) for f, av in gfa.items()}
     return gfa
 
-def read_assignment_fits_tile(params):
+def read_assignment_fits_tile(tile_file):
     """Read in results.
 
     This reads in only the result information that was originally written by
@@ -740,7 +740,6 @@ def read_assignment_fits_tile(params):
             recarray, the available targets recarray, and the GFA targets
 
     """
-    (tile_file) = params
     log = Logger.get()
     # Output tile file
     if not os.path.isfile(tile_file):
@@ -1087,7 +1086,7 @@ def merge_results_tile(out_dtype, copy_fba, params):
     tm.start()
 
     inhead, fiber_data, targets_data, avail_data, gfa_targets = \
-        read_assignment_fits_tile((infile))
+        read_assignment_fits_tile(infile)
 
     # tm.stop()
     # tm.report("  read input data {}".format(tile_id))

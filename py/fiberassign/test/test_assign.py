@@ -181,7 +181,7 @@ class TestAssign(unittest.TestCase):
             infile = os.path.join(test_dir,
                                   "basic_tile-{:06d}.fits".format(tid))
             inhead, fiber_data, targets_data, avail_data, gfa_targets = \
-                read_assignment_fits_tile((infile))
+                read_assignment_fits_tile(infile)
 
             for lid, tgid, tgra, tgdec in zip(
                     fiber_data["LOCATION"],
@@ -197,7 +197,7 @@ class TestAssign(unittest.TestCase):
             infile = os.path.join(test_dir,
                                   "full_tile-{:06d}.fits".format(tid))
             inhead, fiber_data, targets_data, avail_data, gfa_targets = \
-                read_assignment_fits_tile((infile))
+                read_assignment_fits_tile(infile)
             for lid, tgid, tgra, tgdec in zip(
                     fiber_data["LOCATION"],
                     fiber_data["TARGETID"],

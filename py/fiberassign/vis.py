@@ -351,7 +351,7 @@ def plot_assignment_tile_file(petals, real_shapes, params):
         log.info("Creating {}".format(outfile))
 
     header, fiber_data, targets_data, avail_data, gfa_data = \
-        read_assignment_fits_tile((infile))
+        read_assignment_fits_tile(infile)
 
     tile_id = int(header["TILEID"])
     tile_ra = float(header["TILERA"])
