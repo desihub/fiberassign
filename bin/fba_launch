@@ -31,6 +31,10 @@ from fiberassign.fba_launch_io import (
 )
 from argparse import ArgumentParser
 
+# AR allowed steps in fba_launch
+steps_all = ["tiles", "sky", "gfa", "targ", "scnd", "too", "fa", "zip", "move", "qa"]
+
+
 # AR goal effective time
 # AR https://desi.lbl.gov/svn/data/surveyops/trunk/ops/config-sv2.yaml
 # AR https://desi.lbl.gov/svn/data/surveyops/trunk/ops/config-sv3.yaml as of Apr. 5th
@@ -73,6 +77,24 @@ def main():
         [kwargs[0] + "=" + str(kwargs[1]) for kwargs in args._get_kwargs()]
     )
     log.info("{:.1f}s\tsettings\targs: {}".format(time() - start, tmpstr))
+
+    # AR steps to execute in fba_launch
+    steps = [step for step in args.steps.split(",")]
+    if args.nosteps is not None:
+        steps = [step for step in steps if step not in args.nosteps.split(",")]
+        log.info("{:.1f}s\tsettings\tsteps to exclude: {}".format(time() - start, args.nosteps.split(",")))
+    else:
+        log.info("{:.1f}s\tsettings\tsteps to exclude: -".format(time() - start))
+    log.info("{:.1f}s\tsettings\tsteps to execute: {}".format(time() - start, steps))
+
+    # AR files we expect to be created, given args.steps, for the "move" step
+    expected_files = {}
+    for step in steps:
+        if step not in ["zip", "move", "qa"]:
+            if step == "fa":
+                expected_files["fba"], expected_files["fiberassign"] = True, True
+            else:
+                expected_files[step] = True
 
     # AR safe: DESI environment variables defined?
     assert_env_vars(log=log, step="settings", start=start)
@@ -129,7 +151,7 @@ def main():
     )
 
     # AR tiles
-    if dotile:
+    if "tiles" in steps:
         create_tile(
             args.tileid,
             args.tilera,
@@ -138,12 +160,16 @@ def main():
             args.survey,
             obscon=obscon,
             log=log,
-            step="dotile",
+            step="tiles",
             start=start,
         )
+    else:
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\t{}\tnot executing, as per args.steps/args.nosteps".format(time() - start, "tiles"))
 
     # AR sky
-    if dosky:
+    if "sky" in steps:
         create_sky(
             mytmpouts["tiles"],
             mydirs["sky"],
@@ -151,12 +177,16 @@ def main():
             suppskydir=mydirs["skysupp"],
             tmpoutdir=tmpoutdir,
             log=log,
-            step="dosky",
+            step="sky",
             start=start,
         )
+    else:
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\t{}\tnot executing, as per args.steps/args.nosteps".format(time() - start, "sky"))
 
     # AR gfa
-    if dogfa:
+    if "gfa" in steps:
         create_targ_nomtl(
             mytmpouts["tiles"],
             mydirs["gfa"],
@@ -167,13 +197,17 @@ def main():
             tmpoutdir=tmpoutdir,
             pmtime_utc_str=args.pmtime_utc_str,
             log=log,
-            step="dogfa",
+            step="gfa",
             start=start,
             add_plate_cols=False,
         )
+    else:
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\t{}\tnot executing, as per args.steps/args.nosteps".format(time() - start, "gfa"))
 
-    # AR mtl
-    if domtl:
+    # AR targ
+    if "targ" in steps:
         create_mtl(
             mytmpouts["tiles"],
             mydirs["mtl"],
@@ -186,35 +220,46 @@ def main():
             tmpoutdir=tmpoutdir,
             pmtime_utc_str=args.pmtime_utc_str,
             log=log,
-            step="domtl",
-            start=start,
-        )
-
-    # AR secondary targets
-    # AR if not backup
-    if (doscnd) & ("scnd" in list(mydirs.keys())):
-        create_mtl(
-            mytmpouts["tiles"],
-            mydirs["scndmtl"],
-            args.mtltime,
-            mydirs["scnd"],
-            args.survey,
-            args.gaiadr.replace("gaia", ""),
-            args.pmcorr,
-            mytmpouts["scnd"],
-            tmpoutdir=tmpoutdir,
-            pmtime_utc_str=args.pmtime_utc_str,
-            log=log,
-            step="doscnd",
+            step="targ",
             start=start,
         )
     else:
-        log.info("{:.1f}s\tdoscnd\tno secondary here".format(time() - start))
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\t{}\tnot executing, as per args.steps/args.nosteps".format(time() - start, "targ"))
+
+    # AR secondary targets
+    # AR if not backup
+    if ("scnd" in steps):
+        if ("scnd" in list(mydirs.keys())):
+            create_mtl(
+                mytmpouts["tiles"],
+                mydirs["scndmtl"],
+                args.mtltime,
+                mydirs["scnd"],
+                args.survey,
+                args.gaiadr.replace("gaia", ""),
+                args.pmcorr,
+                mytmpouts["scnd"],
+                tmpoutdir=tmpoutdir,
+                pmtime_utc_str=args.pmtime_utc_str,
+                log=log,
+                step="scnd",
+                start=start,
+            )
+        else:
+            expected_files["scnd"] = False
+            log.info("{:.1f}s\tscnd\tno secondary here".format(time() - start))
+    else:
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\t{}\tnot executing, as per args.steps/args.nosteps".format(time() - start, "scnd"))
+
 
     # AR ToO targets
     # AR TBD: handling to MJD window boundaries as script argument?
-    if dotoo:
-        create_too(
+    if "too" in steps:
+        expected_files["too"] = create_too(
             mytmpouts["tiles"],
             mydirs["too"],
             mjd_now - 1,
@@ -226,18 +271,32 @@ def main():
             tmpoutdir=tmpoutdir,
             pmtime_utc_str=args.pmtime_utc_str,
             log=log,
-            step="dotoo",
+            step="too",
             start=start,
         )
+    else:
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\t{}\tnot executing, as per args.steps/args.nosteps".format(time() - start, "too"))
 
     # AR fiberassign
-    if dofa:
+    if "fa" in steps:
         # AR prepare targfns
         targfns = [mytmpouts["targ"]]
-        if (doscnd) & (os.path.isfile(mytmpouts["scnd"])):
+        if ("scnd" in steps) & (os.path.isfile(mytmpouts["scnd"])):
             targfns.append(mytmpouts["scnd"])
-        if (dotoo) & (os.path.isfile(mytmpouts["too"])):
+        if ("too" in steps) & (os.path.isfile(mytmpouts["too"])):
             targfns.append(mytmpouts["too"])
+        # AR sky?
+        if "sky" in steps:
+            skyfn = mytmpouts["sky"]
+        else:
+            skyfn = None
+        # AR gfa?
+        if "gfa" in steps:
+            gfafn = mytmpouts["gfa"]
+        else:
+            gfafn = None
 
         # AR launch_onetile_fa
         launch_onetile_fa(
@@ -246,10 +305,10 @@ def main():
             targfns,
             mytmpouts["fba"],
             mytmpouts["fiberassign"],
-            skyfn=mytmpouts["sky"],
-            gfafn=mytmpouts["gfa"],
+            skyfn=skyfn,
+            gfafn=gfafn,
             log=log,
-            step="dofa",
+            step="fa",
             start=start,
         )
 
@@ -267,36 +326,62 @@ def main():
             obscon,
             fascript,
             log=log,
-            step="dofa",
+            step="fa",
             start=start,
         )
+    else:
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\t{}\tnot executing, as per args.steps/args.nosteps".format(time() - start, "fa"))
 
     # AR gzip all fiberassign files
-    if dozip:
+    if "zip" in steps:
         secure_gzip(
-            mytmpouts["fiberassign"], log=log, step="dozip", start=start,
+            mytmpouts["fiberassign"], log=log, step="zip", start=start,
         )
         # AR updating the path
         mytmpouts["fiberassign"] += ".gz"
         myouts["fiberassign"] += ".gz"
+    else:
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\t{}\tnot executing, as per args.steps/args.nosteps".format(time() - start, "zip"))
+
+    # AR move tmpoutdir -> args.outdir
+    if "move" in steps:
+        # AR files we expect to be created
+        expected_keys = [key for key in list(expected_files.keys()) if expected_files[key]]
+        mv_temp2final(
+            mytmpouts, myouts, expected_keys, log=log, step="move", start=start,
+        )
+    else:
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\t{}\tnot executing, as per args.steps/args.nosteps".format(time() - start, "move"))
 
     # AR QA plots
-    if doqa:
+    if "qa" in steps:
 
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, "qa", Time.now().isot))
         # AR used targfns
-        targfns = [mytmpouts["targ"]]
-        if os.path.isfile(mytmpouts["scnd"]):
-            targfns.append(mytmpouts["scnd"])
-        if os.path.isfile(mytmpouts["too"]):
-            targfns.append(mytmpouts["too"])
+        targfns = [myouts["targ"]]
+        if os.path.isfile(myouts["scnd"]):
+            targfns.append(myouts["scnd"])
+        if os.path.isfile(myouts["too"]):
+            targfns.append(myouts["too"])
+        # AR fiberassign, updating path
+        if "zip" not in steps:
+            myouts["fiberassign"] += ".gz"
 
         make_qa(
-            mytmpouts["png"],
+            myouts["png"],
             args.survey,
             args.program,
             faflavor,
             targfns,
-            mytmpouts["fiberassign"],
+            myouts["fiberassign"],
             args.tileid,
             args.tilera,
             args.tiledec,
@@ -304,52 +389,31 @@ def main():
             args.rundate,
             tmpoutdir=tmpoutdir,
             width_deg=4,
-            log=log,
-            step="doqa",
-            start=start,
         )
+    else:
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\t{}\tnot executing, as per args.steps/args.nosteps".format(time() - start, "qa"))
 
     # AR do clean?
     if args.doclean == "y":
-        rmv_nonsvn(mytmpouts, myouts, log=log, step="doclean", start=start)
-
-    # AR move tmpoutdir -> args.outdir
-    if domove:
-        mv_temp2final(
-            mytmpouts, myouts, args.doclean, log=log, step="domove", start=start,
-        )
+        rmv_nonsvn(myouts, log=log, step="clean", start=start)
 
     # AR and we re done
+    if not args.log_stdout:
+        log.info("")
+        log.info("")
+        log.info(
+            "{:.1f}s\t{}\tmoving {} to {}".format(
+                time() - start, "log", mytmpouts["log"], myouts["log"]
+            )
+        )
     log.info("")
     log.info("")
     log.info("{:.1f}s\tend\tTIMESTAMP={}".format(time() - start, Time.now().isot))
 
 
 if __name__ == "__main__":
-
-    # AR to speed up development/debugging
-    dotile, dosky, dogfa, domtl, doscnd, dotoo, dofa, dozip, doqa, domove = (
-        False,
-        False,
-        False,
-        False,
-        False,
-        False,
-        False,
-        False,
-        False,
-        False,
-    )
-    dotile = True
-    dosky = True
-    dogfa = True
-    domtl = True
-    doscnd = True
-    dotoo = True
-    dofa = True
-    dozip = True
-    doqa = True
-    domove = True
 
     # AR reading arguments
     parser = ArgumentParser()
@@ -538,6 +602,20 @@ if __name__ == "__main__":
         default=None,
         required=False,
     )
+    parser.add_argument(
+        "--steps",
+        help="comma-separated list of steps to accomplish, amongst {} (defaults to {} if args.nosteps=None)".format(steps_all, ",".join(steps_all)),
+        type=str,
+        default=None,
+        required=False,
+    )
+    parser.add_argument(
+        "--nosteps",
+        help="comma-separated list of steps *not* to accomplish, amongst {} (default=None); cannot be used if some args.steps values are also provided".format(steps_all),
+        type=str,
+        default=None,
+        required=False,
+    )
 
     args = parser.parse_args()
     log = Logger.get()
@@ -585,6 +663,29 @@ if __name__ == "__main__":
     if args.hdr_faprgrm is None:
         args.hdr_faprgrm = args.program.lower()
 
+    # AR steps/nosteps
+    if args.steps is not None and args.nosteps is not None:
+        log.error("only *one* of args.steps and args.nosteps has to be set to None; exiting")
+        sys.exit(1)
+    if args.steps is None:
+        args.steps = ",".join(steps_all)
+        if args.nosteps is not None:
+            wrong_nosteps = [step for step in args.nosteps.split(",") if step not in steps_all]
+            if len(wrong_nosteps) > 0:
+                log.error("args.nosteps have the following not authorized steps : {}; exiting".format(
+                    wrong_nosteps
+                    )
+                )
+                sys.exit(1)
+    else:
+        wrong_steps = [step for step in args.steps.split(",") if step not in steps_all]
+        if len(wrong_steps) > 0:
+            log.error("args.steps have the following not authorized steps : {}; exiting".format(
+                wrong_steps
+                )
+            )
+            sys.exit(1)
+
     # AR create a temporary directory for generated files
     tmpoutdir = tempfile.mkdtemp()
 
@@ -610,9 +711,11 @@ if __name__ == "__main__":
     )
 
     # AR temporary output files
+    # AR    except for png, as doqa is after domove
     mytmpouts = {}
     for key in list(myouts.keys()):
-        mytmpouts[key] = myouts[key].replace(args.outdir, tmpoutdir)
+        if key != "png":
+            mytmpouts[key] = myouts[key].replace(args.outdir, tmpoutdir)
 
     # AR temporary log file
     if os.path.isfile(mytmpouts["log"]):

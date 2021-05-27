@@ -1283,7 +1283,7 @@ def create_too(
                 time() - start, step, toofn, outfn
             )
         )
-        return
+        return False
 
     # AR too: if yes, we proceed
     # AR too: tile file
@@ -1368,6 +1368,8 @@ def create_too(
             )
         )
 
+    return True
+
 
 def launch_onetile_fa(
     args,
@@ -1382,11 +1384,14 @@ def launch_onetile_fa(
     start=time(),
 ):
     """
-    Runs the fiber assignment (run_assign_full) and merges the results (merge_results) for a single tile.
+    Runs the fiber assignment (run_assign_full),
+        merges the results (merge_results) for a single tile,
+        and prints the assignment stats for each mask.
     
     Args:
         args: fba_launch-like parser.parse_args() output
             should contain at least:
+                - survey
                 - rundate
                 - sky_per_petal
                 - standards_per_petal
@@ -1419,8 +1424,11 @@ def launch_onetile_fa(
     if isinstance(targfns, str):
         targfns = [targfns]
 
-    # AR tileid
-    tileid = fits.open(tilesfn)[1].data["TILEID"][0]
+    # AR tileid, tilera, tiledec
+    tiles = fits.open(tilesfn)[1].data
+    tileid = tiles["TILEID"][0]
+    tilera = tiles["RA"][0]
+    tiledec = tiles["DEC"][0]
 
     # AR output directory (picking the one of fbafn)
     outdir = os.path.dirname(fbafn)
@@ -1490,7 +1498,10 @@ def launch_onetile_fa(
     ag = {}
     ag["tiles"] = [tileid]
     ag["columns"] = None
-    ag["targets"] = [gfafn] + targfns
+    if gfafn is not None:
+        ag["targets"] = [gfafn] + targfns
+    else:
+        ag["targets"] = targfns
     if skyfn is not None:
         ag["sky"] = [skyfn]
     else:
@@ -1512,6 +1523,26 @@ def launch_onetile_fa(
         result_dir=ag["result_dir"],
         columns=ag["columns"],
         copy_fba=ag["copy_fba"],
+    )
+
+
+    log.info(
+        "{:.1f}s\t{}\tcomputing assignment statiscs: start".format(
+            time() - start, step
+        )
+    )
+
+    # AR storing parent/assigned quantities
+    parent, assign, dras, ddecs, petals, nassign = get_parent_assign_quants(
+        args.survey, targfns, fiberassignfn, tilera, tiledec,
+    )
+    # AR stats : assigned / parent
+    print_assgn_parent_stats(args.survey, parent, assign, log=log, step=step, start=start)
+
+    log.info(
+        "{:.1f}s\t{}\tcomputing assignment statiscs: done".format(
+            time() - start, step
+        )
     )
 
 
@@ -1664,14 +1695,14 @@ def secure_gzip(
 
 
 def get_dt_masks(
-    survey, log=Logger.get(), step="", start=time(),
+    survey, log=None, step="", start=time(),
 ):
     """
     Get the desitarget masks for a survey.
     
     Args:
         survey: survey name: "sv1", "sv2", "sv3" or "main") (string)
-        log (optional, defaults to Logger.get()): Logger object
+        log (optional, defaults to None): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
@@ -1699,11 +1730,14 @@ def get_dt_masks(
         from desitarget import targetmask
         from fiberassign.targets import default_main_stdmask
     else:
-        log.error(
-            "{:.1f}s\t{}\tsurvey={} is not in sv1, sv2, sv3 or main; exiting".format(
-                time() - start, step, survey
+        if log is not None:
+            log.error(
+                "{:.1f}s\t{}\tsurvey={} is not in sv1, sv2, sv3 or main; exiting".format(
+                    time() - start, step, survey
+                )
             )
-        )
+        else:
+            print("survey={} is not in sv1, sv2, sv3 or main; exiting".format(survey))
         sys.exit(1)
 
     # AR YAML masks
@@ -1730,7 +1764,7 @@ def get_dt_masks(
 
 
 def get_qa_tracers(
-    survey, program, log=Logger.get(), step="", start=time(),
+    survey, program, log=None, step="", start=time(),
 ):
     """
     Returns the tracers for which we provide QA plots of fiber assignment.
@@ -1738,7 +1772,7 @@ def get_qa_tracers(
     Args:
         survey: survey name: "sv1", "sv2", "sv3" or "main") (string)
         program: "DARK", "BRIGHT", or "BACKUP" (string)
-        log (optional, defaults to Logger.get()): Logger object                                                                                                                                            
+        log (optional, defaults to None): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
@@ -1762,11 +1796,14 @@ def get_qa_tracers(
         trmskkeys = ["MWS_TARGET", "MWS_TARGET", "MWS_TARGET"]
         trmsks = ["BACKUP_BRIGHT", "BACKUP_FAINT", "BACKUP_VERY_FAINT"]
     else:
-        log.error(
-            "{:.1f}s\t{}\tprogram={} not in DARK, BRIGHT, or BACKUP; exiting".format(
-                time() - start, step, program
+        if log is not None:
+            log.error(
+                "{:.1f}s\t{}\tprogram={} not in DARK, BRIGHT, or BACKUP; exiting".format(
+                    time() - start, step, program
+                )
             )
-        )
+        else:
+            print("program={} not in DARK, BRIGHT, or BACKUP; exiting".format(program))
         sys.exit(1)
 
     return trmskkeys, trmsks
@@ -1778,9 +1815,6 @@ def get_parent_assign_quants(
     fiberassignfn,
     tilera,
     tiledec,
-    log=Logger.get(),
-    step="",
-    start=time(),
 ):
     """
     Stores the parent and assigned targets properties (desitarget columns).
@@ -1791,10 +1825,6 @@ def get_parent_assign_quants(
         fiberassignfn: path to the output fiberassign-TILEID.fits file (string)
         tilera: tile center R.A. (float)
         tiledec: tile center Dec. (float)
-        log (optional, defaults to Logger.get()): Logger object                                                                                                                                            
-        step (optional, defaults to ""): corresponding step, for fba_launch log recording
-            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
 
     Returns:
         parent: dictionary of the parent target sample, with each key being some desitarget column
@@ -1814,9 +1844,7 @@ def get_parent_assign_quants(
     parent, assign, dras, ddecs, petals, nassign = {}, {}, {}, {}, {}, {}
 
     # AR YAML and WD and STD masks
-    yaml_masks, wd_mskkeys, wd_msks, std_mskkeys, std_msks = get_dt_masks(
-        survey, log=log, step=step, start=start,
-    )
+    yaml_masks, wd_mskkeys, wd_msks, std_mskkeys, std_msks = get_dt_masks(survey)
 
     # AR keys we use (plus few for assign)
     keys = [
@@ -2027,9 +2055,6 @@ def qa_print_infos(
     rundate,
     parent,
     assign,
-    log=Logger.get(),
-    step="",
-    start=time(),
 ):
     """
     Print general fiber assignment infos on the QA plot.
@@ -2046,21 +2071,13 @@ def qa_print_infos(
         rundate: used rundate (string)
         parent: dictionary for the parent target sample (output by get_parent_assign_quants())
         assign: dictionary for the assigned target sample (output by get_parent_assign_quants()) 
-        log (optional, defaults to Logger.get()): Logger object                                                                                                                                            
-        step (optional, defaults to ""): corresponding step, for fba_launch log recording
-            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
     """
     # AR hard-setting the plotted tracers
     # AR TBD: handle secondaries
-    trmskkeys, trmsks = get_qa_tracers(
-        survey, program, log=Logger.get(), step="", start=time(),
-    )
+    trmskkeys, trmsks = get_qa_tracers(survey, program)
 
     # AR masks
-    yaml_masks, wd_mskkeys, wd_msks, std_mskkeys, std_msks = get_dt_masks(
-        survey, log=log, step=step, start=start,
-    )
+    yaml_masks, wd_mskkeys, wd_msks, std_mskkeys, std_msks = get_dt_masks(survey)
 
     # AR infos : general
     x, y, dy, fs = 0.05, 0.95, -0.1, 10
@@ -2212,9 +2229,6 @@ def get_viewer_cutout(
     pixscale=10,
     dr="dr9",
     timeout=15,
-    log=Logger.get(),
-    step="",
-    start=time(),
 ):
     """
     Downloads a cutout of the tile region from legacysurvey.org/viewer.
@@ -2248,11 +2262,7 @@ def get_viewer_cutout(
     try:
         subprocess.check_call(tmpstr, stderr=subprocess.DEVNULL, shell=True)
     except subprocess.CalledProcessError:
-        log.warning(
-            "{:.1f}s\t{}\tno cutout from viewer after {}s, stopping the wget call".format(
-                time() - start, step, timeout
-            )
-        )
+        print("no cutout from viewer after {}s, stopping the wget call".format(timeout))
 
     try:
         img = mpimg.imread(tmpfn)
@@ -2860,9 +2870,6 @@ def make_qa(
     rundate,
     tmpoutdir=tempfile.mkdtemp(),
     width_deg=4,
-    log=Logger.get(),
-    step="",
-    start=time(),
 ):
     """
     Make fba_launch QA plot.
@@ -2880,36 +2887,18 @@ def make_qa(
         rundate: used rundate (string)
         tmpoutdir (optional, defaults to a temporary directory): temporary directory (to download the cutout)
         width_deg (optional, defaults to 4): width of the cutout in degrees (np.array of floats)
-        log (optional, defaults to Logger.get()): Logger object
-        step (optional, defaults to ""): corresponding step, for fba_launch log recording
-            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
     """
-    log.info("")
-    log.info("")
-    log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
     # AR WD and STD used masks
-    _, wd_mskkeys, wd_msks, std_mskkeys, std_msks = get_dt_masks(
-        survey, log=log, step=step, start=start,
-    )
-    log.info("{:.1f}s\t{}\twd_mskkeys = {}".format(time() - start, step, wd_mskkeys))
-    log.info("{:.1f}s\t{}\twd_msks = {}".format(time() - start, step, wd_msks))
-    log.info("{:.1f}s\t{}\tstd_mskkeys = {}".format(time() - start, step, std_mskkeys))
-    log.info("{:.1f}s\t{}\tstd_msks = {}".format(time() - start, step, std_msks))
+    _, wd_mskkeys, wd_msks, std_mskkeys, std_msks = get_dt_masks(survey)
 
     # AR plotted tracers
     # AR TBD: handle secondary?
-    trmskkeys, trmsks = get_qa_tracers(
-        survey, program, log=log, step="doplot", start=start,
-    )
+    trmskkeys, trmsks = get_qa_tracers(survey, program)
 
     # AR storing parent/assigned quantities
     parent, assign, dras, ddecs, petals, nassign = get_parent_assign_quants(
-        survey, targfns, fiberassignfn, tilera, tiledec, log=log, step=step, start=start
+        survey, targfns, fiberassignfn, tilera, tiledec
     )
-
-    # AR stats : assigned / parent
-    print_assgn_parent_stats(survey, parent, assign, log=log, step=step, start=start)
 
     # AR start plotting
     fig = plt.figure(figsize=(30, 3 * (1 + len(trmsks))))
@@ -2931,9 +2920,6 @@ def make_qa(
         rundate,
         parent,
         assign,
-        log=log,
-        step=step,
-        start=start,
     )
 
     # AR stats per petal
@@ -2953,9 +2939,6 @@ def make_qa(
         pixscale=10,
         dr="dr9",
         timeout=15,
-        log=log,
-        step=step,
-        start=start,
     )
 
     # AR SKY, BAD, WD, STD, TGT
@@ -3025,16 +3008,14 @@ def make_qa(
     plt.close()
 
 
-def rmv_nonsvn(mytmpouts, myouts, log=Logger.get(), step="", start=time()):
+def rmv_nonsvn(myouts, log=Logger.get(), step="", start=time()):
     """
     Remove fba_launch non-SVN products
     
     Args:
-        mytmpouts: dictionary with the temporary files location (dictionary);
-            concerns the following keys:
-                "tiles", "sky", "gfa", "targ", "scnd", "too", "fba"
         myouts: dictionary with the fba_launch args.outdir location (dictionary);
-            contains same keys as mytmpouts
+            must contain the following keys:
+                "tiles", "sky", "gfa", "targ", "scnd", "too", "fba"
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -3044,28 +3025,25 @@ def rmv_nonsvn(mytmpouts, myouts, log=Logger.get(), step="", start=time()):
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
     for key in ["tiles", "sky", "gfa", "targ", "scnd", "too", "fba"]:
-        if os.path.isfile(mytmpouts[key]):
-            os.remove(mytmpouts[key])
+        if os.path.isfile(myouts[key]):
+            os.remove(myouts[key])
             log.info(
                 "{:.1f}s\t{}\tdeleting file {}".format(
-                    time() - start, step, mytmpouts[key]
+                    time() - start, step, myouts[key]
                 )
             )
 
 
-def mv_temp2final(mytmpouts, myouts, doclean, log=Logger.get(), step="", start=time()):
+def mv_temp2final(mytmpouts, myouts, expected_keys, log=Logger.get(), step="", start=time()):
     """
     Moves the fba_launch outputs from the temporary location to the args.outdir location.   
 
     Args:
         mytmpouts: dictionary with the temporary files location (dictionary);
-            contains the following keys:
-                "fiberassign", "png", "log"
-                if doclean="n", also: "tiles", "sky", "gfa", "targ", "scnd", "too", "fba"
+            contains the following keys: "tiles",  "sky", "gfa", "targ", "scnd", "too", "fba", "fiberassign"
         myouts: dictionary with the fba_launch args.outdir location (dictionary);
-            contains same keys as mytmpouts
-        doclean: remove non-SVN files? "y" or "n" (string);
-            args.clean fba_launch argument
+            contains at least same keys as mytmpouts
+        expected_keys: list of keys of mytmpouts, myouts with the files to move
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -3077,35 +3055,20 @@ def mv_temp2final(mytmpouts, myouts, doclean, log=Logger.get(), step="", start=t
     log.info("")
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
-    # AR optional files
-    if doclean == "n":
-        for key in ["tiles", "sky", "gfa", "targ", "scnd", "too", "fba"]:
-            if os.path.isfile(mytmpouts[key]):
-                _ = shutil.move(mytmpouts[key], myouts[key])
-                log.info(
-                    "{:.1f}s\t{}\tmoving file {} to {}".format(
-                        time() - start, step, mytmpouts[key], myouts[key]
-                    )
+    # AR
+    for key in expected_keys:
+        if os.path.isfile(mytmpouts[key]):
+            _ = shutil.move(mytmpouts[key], myouts[key])
+            log.info(
+                "{:.1f}s\t{}\tmoving file {} to {}".format(
+                    time() - start, step, mytmpouts[key], myouts[key]
                 )
-            else:
-                log.info(
-                    "{:.1f}s\t{}\tno file {}".format(
-                        time() - start, step, mytmpouts[key]
-                    )
-                )
-    # AR SVN-checked files
-    for key in ["fiberassign", "png"]:
-        _ = shutil.move(mytmpouts[key], myouts[key])
-        log.info(
-            "{:.1f}s\t{}\tmoving {} to {}".format(
-                time() - start, step, mytmpouts[key], myouts[key]
             )
-        )
-    # AR actually here not moving the log file
-    # AR moving it after the main() in fba_launch
-    key = "log"
-    log.info(
-        "{:.1f}s\t{}\tmoving {} to {}".format(
-            time() - start, step, mytmpouts[key], myouts[key]
-        )
-    )
+        else:
+            log.error(
+                "{:.1f}s\t{}\tfile {} is missing, though we expect it; exiting".format(
+                    time() - start, step, mytmpouts[key]
+                )
+            )
+            sys.exit(1)
+
