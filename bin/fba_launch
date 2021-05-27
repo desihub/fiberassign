@@ -32,7 +32,7 @@ from fiberassign.fba_launch_io import (
 from argparse import ArgumentParser
 
 # AR allowed steps in fba_launch
-steps_all = ["tile", "sky", "gfa", "mtl", "scnd", "too", "fa", "zip", "qa", "move"]
+steps_all = ["tile", "sky", "gfa", "mtl", "scnd", "too", "fa", "zip", "move", "qa"]
 
 
 # AR goal effective time
