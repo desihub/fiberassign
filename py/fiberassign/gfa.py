@@ -69,13 +69,12 @@ def is_gaia_variable(tab):
 
     return is_variable
 
-def gaia_synth_r_flux(tab, gaiadr="dr2"):
+def gaia_synth_r_flux(tab):
     '''
     Generate synthetic r band flux based on Gaia photometry
     Args:
         tab: table with columns GAIA_PHOT_G_MEAN_MAG, GAIA_PHOT_BP_MEAN_MAG,
-             GAIA_PHOT_RP_MEAN_MAG
-        gaiadr: string, must be either "dr2" or "edr3" (default to "dr2")
+             GAIA_PHOT_RP_MEAN_MAG, REF_CAT
 
     Returns:
         array of synthetic Gaia-based r-band fluxes
@@ -83,6 +82,8 @@ def gaia_synth_r_flux(tab, gaiadr="dr2"):
     This code has largely been borrowed from legacypipe/reference.py
     Uses Rongpu Zhou's transformations from (G, BP-RP) to DECam r
     '''
+
+    gaiadr = "dr2" if "G2" in tab["REF_CAT"] else "edr3"
 
     color = tab["GAIA_PHOT_BP_MEAN_MAG"] - tab["GAIA_PHOT_RP_MEAN_MAG"]
 
@@ -121,15 +122,13 @@ def gaia_synth_r_flux(tab, gaiadr="dr2"):
 
     return synth_r_flux
 
-def get_gfa_targets(tiles, gfafile, faintlim=99, gaiadr="dr2"):
+def get_gfa_targets(tiles, gfafile, faintlim=99):
      
     """Returns a list of tables of GFA targets on each tile
 
     Args:
         tiles: table with columns TILEID, RA, DEC; or Tiles object
         targets: table of targets with columsn RA, DEC
-        gaiadr: string, must be either "dr2" or "edr3" (default to "dr2")
-                MAY NOT BE FULLY IMPLEMENTED
 
     Returns:
         list of tables (one row per input tile) with the subset of targets
@@ -235,7 +234,7 @@ def get_gfa_targets(tiles, gfafile, faintlim=99, gaiadr="dr2"):
         t["ETC_FLAG"] = flag
 
         # patch in Gaia-based synthetic r flux for use by ETC
-        t["FLUX_R"] = gaia_synth_r_flux(t, gaiadr=gaiadr)
+        t["FLUX_R"] = gaia_synth_r_flux(t)
 
         gfa_targets.append(t)
 
