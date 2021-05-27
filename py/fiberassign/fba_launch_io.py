@@ -2999,12 +2999,3 @@ def mv_temp2final(mytmpouts, myouts, expected_keys, log=Logger.get(), step="", s
             )
             sys.exit(1)
 
-    # AR actually here not moving the log file
-    # AR moving it after the main() in fba_launch
-    key = "log"
-    log.info(
-        "{:.1f}s\t{}\tmoving {} to {}".format(
-            time() - start, step, mytmpouts[key], myouts[key]
-        )
-    )
-

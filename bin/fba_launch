@@ -399,6 +399,14 @@ def main():
         rmv_nonsvn(myouts, log=log, step="clean", start=start)
 
     # AR and we re done
+    if not args.log_stdout:
+        log.info("")
+        log.info("")
+        log.info(
+            "{:.1f}s\t{}\tmoving {} to {}".format(
+                time() - start, "log", mytmpouts["log"], myouts["log"]
+            )
+        )
     log.info("")
     log.info("")
     log.info("{:.1f}s\tend\tTIMESTAMP={}".format(time() - start, Time.now().isot))
