@@ -590,7 +590,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--nosteps",
-        help="comma-separated list of steps *not* to accomplish, amongst {} (default=None)".format(steps_all),
+        help="comma-separated list of steps *not* to accomplish, amongst {} (default=None); cannot be used if some args.steps values are also provided".format(steps_all),
         type=str,
         default=None,
         required=False,
