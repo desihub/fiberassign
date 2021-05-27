@@ -732,8 +732,7 @@ def read_assignment_fits_tile(tile_file):
     input target catalogs.
 
     Args:
-        params (tuple):  The tile file path packed as a tuple for
-            use in multiprocessing.
+        tile_file: pathname
 
     Returns:
         (tuple):  The FITS header, assignment recarray, target property
@@ -784,8 +783,8 @@ def read_assignment_fits_tile(tile_file):
                     fiber_data[col][npos:] = fbsky[col]
 
         full_targets_columns = [(x, y) for x, y in
-                                results_targets_columns.items()]
-        full_names = [x for x, y in results_targets_columns.items()]
+                                merged_targets_columns.items()]
+        full_names = [x for x, y in merged_targets_columns.items()]
         fbtargets = fd["TARGETS"].read()
         nrawtarget = fd["TARGETS"].get_nrows()
 
