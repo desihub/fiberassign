@@ -288,6 +288,9 @@ def main():
     # AR QA plots
     if doqa:
 
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, "doqa", Time.now().isot))
         # AR used targfns
         targfns = [myouts["targ"]]
         if os.path.isfile(myouts["scnd"]):
