@@ -394,30 +394,6 @@ def main():
 
 if __name__ == "__main__":
 
-    # AR to speed up development/debugging
-    dotile, dosky, dogfa, domtl, doscnd, dotoo, dofa, dozip, doqa, domove = (
-        False,
-        False,
-        False,
-        False,
-        False,
-        False,
-        False,
-        False,
-        False,
-        False,
-    )
-    dotile = True
-    dosky = True
-    dogfa = True
-    domtl = True
-    doscnd = True
-    dotoo = True
-    dofa = True
-    dozip = True
-    doqa = True
-    domove = True
-
     # AR reading arguments
     parser = ArgumentParser()
     parser.add_argument(
