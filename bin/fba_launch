@@ -276,6 +276,16 @@ def main():
             targfns.append(mytmpouts["scnd"])
         if ("too" in steps) & (os.path.isfile(mytmpouts["too"])):
             targfns.append(mytmpouts["too"])
+        # AR sky?
+        if "sky" in steps:
+            skyfn = mytmpouts["sky"]
+        else:
+            skyfn = None
+        # AR gfa?
+        if "gfa" in steps:
+            gfafn = mytmpouts["gfa"]
+        else:
+            gfafn = None
 
         # AR launch_onetile_fa
         launch_onetile_fa(
@@ -284,8 +294,8 @@ def main():
             targfns,
             mytmpouts["fba"],
             mytmpouts["fiberassign"],
-            skyfn=mytmpouts["sky"],
-            gfafn=mytmpouts["gfa"],
+            skyfn=skyfn,
+            gfafn=gfafn,
             log=log,
             step="fa",
             start=start,
