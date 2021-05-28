@@ -2038,7 +2038,8 @@ def flux2mag(flux, band=None, ebv=None):
     Notes:
         flux < 0 values are converted to NaN in magnitudes
     """
-    keep = flux > 0
+    # np.nan_to_num: NaN -> 0, so keep=False.
+    keep = (np.nan_to_num(flux) > 0)
     mag = np.nan + np.zeros(len(flux))
     mag[keep] = 22.5 - 2.5 * np.log10(flux[keep])
     if ebv is not None:
@@ -2140,7 +2141,8 @@ def qa_print_infos(
             ["GAIA_PHOT_G_MEAN_MAG)", "min(LS-R-FIBTOTMAG)"],
         ):
             magmin, color = "-", "k"
-            keep = (np.isfinite(mag)) & (mag > 0)
+            # np.nan_to_num: NaN,Inf -> 0, so keep=False.
+            keep = (np.nan_to_num(mag, posinf=0., neginf=0.) > 0)
             if keep.sum() > 0:
                 magmin = mag[keep].min()
                 if magmin < magthresh:
@@ -2659,13 +2661,13 @@ def plot_colcol_tracer(
             for axis_name, bands in zip(["x", "y"], [xbands, ybands]):
                 mag0 = flux2mag(
                     sample["FLUX_{}".format(bands[0])][sel],
-                    bands[0],
-                    sample["EBV"][sel],
+                    band=bands[0],
+                    ebv=sample["EBV"][sel],
                 )
                 mag1 = flux2mag(
                     sample["FLUX_{}".format(bands[1])][sel],
-                    bands[1],
-                    sample["EBV"][sel],
+                    band=bands[1],
+                    ebv=sample["EBV"][sel],
                 )
                 tmpdict[sample_name][axis_name] = mag0 - mag1
 
