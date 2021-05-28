@@ -3,10 +3,25 @@
 fiberassign change log
 ======================
 
-4.0.2 (unreleased)
+5.0.0 (unreleased)
 ------------------
 
-* No changes yet.
+Algorithmic changes to not change SUBPRIORITY when running fiberassign.
+
+* Refactor internal dataflow for PLATE_RA/PLATE_DEC, without external
+  changes to outputs except different POTENTIAL_TARGETS row order (PR `#353`_).
+* Include desimeter in DEPNAMnn/DEPVERnn keywords (PR `#364`_).
+* Don't override SUBPRIORITY while preparing files (PR `#366`_).
+* Add Gaia-based variability bit 5 to ETC_FLAG (PR `#367`_).
+* fba_launch options to run/exclude specific steps (PR `#368`_).
+* use desitarget.gaiamatch.gaia_psflike() for PSF-like criterion (PR `#369`_).
+
+.. _`#353`: https://github.com/desihub/fiberassign/pull/353
+.. _`#364`: https://github.com/desihub/fiberassign/pull/364
+.. _`#366`: https://github.com/desihub/fiberassign/pull/366
+.. _`#367`: https://github.com/desihub/fiberassign/pull/367
+.. _`#368`: https://github.com/desihub/fiberassign/pull/368
+.. _`#369`: https://github.com/desihub/fiberassign/pull/369
 
 4.0.1 (2021-05-18)
 ------------------
