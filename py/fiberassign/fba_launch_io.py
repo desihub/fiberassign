@@ -2138,8 +2138,8 @@ def qa_print_infos(
             ["GAIA_PHOT_G_MEAN_MAG)", "min(LS-R-FIBTOTMAG)"],
         ):
             magmin, color = "-", "k"
-            # np.nan_to_num: NaN -> 0, so keep=False.
-            keep = (np.nan_to_num(mag) > 0)
+            # np.nan_to_num: NaN,Inf -> 0, so keep=False.
+            keep = (np.nan_to_num(mag, posinf=0., neginf=0.) > 0)
             if keep.sum() > 0:
                 magmin = mag[keep].min()
                 if magmin < magthresh:
