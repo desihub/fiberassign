@@ -232,27 +232,6 @@ def load_hardware(focalplane=None, rundate=None,
     if 'petal' in add_margins:
         margins['petal'] = -add_margins['petal']
 
-
-    for nm, shp in exclude.items():
-        excl[nm] = dict()
-        for obj in shp.keys():
-            cr = list()
-            for crc in shp[obj]["circles"]:
-                cr.append(Circle(crc[0], crc[1]))
-            sg = list()
-            for sgm in shp[obj]["segments"]:
-                if obj in margins:
-                    sx = [x for x,y in sgm]
-                    sy = [y for x,y in sgm]
-                    ex,ey = expand_closed_curve(sx, sy, margins[obj])
-                    sgm = list(zip(ex, ey))
-                sg.append(Segments(sgm))
-            fshp = Shape((0.0, 0.0), cr, sg)
-            excl[nm][obj] = fshp
-
-        if not exclname in excl:
-            parse_exclusion(exclname)
-
     # Convert the exclusion polygons into shapes (as required)
     excl = dict()
     def get_exclusions(exclname):
