@@ -2658,13 +2658,13 @@ def plot_colcol_tracer(
             for axis_name, bands in zip(["x", "y"], [xbands, ybands]):
                 mag0 = flux2mag(
                     sample["FLUX_{}".format(bands[0])][sel],
-                    bands[0],
-                    sample["EBV"][sel],
+                    band=bands[0],
+                    ebv=sample["EBV"][sel],
                 )
                 mag1 = flux2mag(
                     sample["FLUX_{}".format(bands[1])][sel],
-                    bands[1],
-                    sample["EBV"][sel],
+                    band=bands[1],
+                    ebv=sample["EBV"][sel],
                 )
                 tmpdict[sample_name][axis_name] = mag0 - mag1
 
