@@ -30,13 +30,51 @@ def isolated(ra, dec, mindist=5.0):
     index, separation, dist3d = cx.match_to_catalog_sky(cx, nthneighbor=2)
     return separation.to(u.arcsec) > mindist*u.arcsec
 
-def gaia_synth_r_flux(tab, gaiadr="dr2"):
+def is_gaia_variable(tab):
+    '''
+    Decide whether each star is flux variable based on Gaia variability proxy
+    Args:
+        tab: table with columns GAIA_PHOT_G_MEAN_MAG, GAIA_PHOT_G_N_OBS,
+             GAIA_PHOT_G_MEAN_FLUX_OVER_ERROR
+    Returns:
+        boolean array listing whether each star is variable (True) or
+        not (False)
+
+    The Gaia flux variability proxy can only be computed when the column
+    GAIA_PHOT_G_N_OBS is available. This column first became available
+    in the desitarget 'gfas' files when these were transitioned to
+    use Gaia eDR3 (even though the column PHOT_G_N_OBS was not a new eDR3
+    addition to the native Gaia catalogs themselves).
+
+    If any of the columns needed to compute the variability flag are not
+    present, then all stars will be labeled as not variable.
+
+    One reference for the variability metric and cut adopted here is:
+        https://arxiv.org/pdf/2009.07746.pdf
+    Specifically Equation 2.
+    '''
+
+    colnames = tab.colnames
+
+    if ('GAIA_PHOT_G_MEAN_MAG' not in colnames) or ('GAIA_PHOT_G_N_OBS' not in colnames) or ('GAIA_PHOT_G_MEAN_FLUX_OVER_ERROR' not in colnames):
+        return np.zeros(len(tab), dtype=bool)
+
+    # avoid division by zero in cases with REF_CAT = T2, where
+    # GAIA_PHOT_G_N_OBS and GAIA_PHOT_G_MEAN_FLUX_OVER_ERROR will both be
+    # 0-valued in the desitarget 'gfas' files
+    # in cases with REF_CAT = T2, this setup will give amplproxyg = 0
+    amplproxyg = np.sqrt(tab['GAIA_PHOT_G_N_OBS'])/(tab['GAIA_PHOT_G_MEAN_FLUX_OVER_ERROR'] + (tab['GAIA_PHOT_G_MEAN_FLUX_OVER_ERROR'] == 0).astype(float))
+
+    is_variable = np.logical_and(amplproxyg > 0.06, tab['GAIA_PHOT_G_MEAN_MAG'] < 18.3)
+
+    return is_variable
+
+def gaia_synth_r_flux(tab):
     '''
     Generate synthetic r band flux based on Gaia photometry
     Args:
         tab: table with columns GAIA_PHOT_G_MEAN_MAG, GAIA_PHOT_BP_MEAN_MAG,
-             GAIA_PHOT_RP_MEAN_MAG
-        gaiadr: string, must be either "dr2" or "edr3" (default to "dr2")
+             GAIA_PHOT_RP_MEAN_MAG, REF_CAT
 
     Returns:
         array of synthetic Gaia-based r-band fluxes
@@ -44,6 +82,8 @@ def gaia_synth_r_flux(tab, gaiadr="dr2"):
     This code has largely been borrowed from legacypipe/reference.py
     Uses Rongpu Zhou's transformations from (G, BP-RP) to DECam r
     '''
+
+    gaiadr = "dr2" if "G2" in tab["REF_CAT"] else "edr3"
 
     color = tab["GAIA_PHOT_BP_MEAN_MAG"] - tab["GAIA_PHOT_RP_MEAN_MAG"]
 
@@ -82,15 +122,13 @@ def gaia_synth_r_flux(tab, gaiadr="dr2"):
 
     return synth_r_flux
 
-def get_gfa_targets(tiles, gfafile, faintlim=99, gaiadr="dr2"):
+def get_gfa_targets(tiles, gfafile, faintlim=99):
      
     """Returns a list of tables of GFA targets on each tile
 
     Args:
         tiles: table with columns TILEID, RA, DEC; or Tiles object
         targets: table of targets with columsn RA, DEC
-        gaiadr: string, must be either "dr2" or "edr3" (default to "dr2")
-                MAY NOT BE FULLY IMPLEMENTED
 
     Returns:
         list of tables (one row per input tile) with the subset of targets
@@ -186,13 +224,17 @@ def get_gfa_targets(tiles, gfafile, faintlim=99, gaiadr="dr2"):
             log.error("ERROR: no good GFA targets for "
                       "ETC/GUIDE/FOCUS on tile {}".format(tileid))
 
-        
-        t["ETC_FLAG"] = flag
         t["GUIDE_FLAG"] = flag
         t["FOCUS_FLAG"] = flag
 
+        # variable star flagging specifically for ETC
+        is_variable = is_gaia_variable(t)
+        flag[is_variable] |= 2**5
+
+        t["ETC_FLAG"] = flag
+
         # patch in Gaia-based synthetic r flux for use by ETC
-        t["FLUX_R"] = gaia_synth_r_flux(t, gaiadr=gaiadr)
+        t["FLUX_R"] = gaia_synth_r_flux(t)
 
         gfa_targets.append(t)
 
