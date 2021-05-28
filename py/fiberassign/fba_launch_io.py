@@ -2035,7 +2035,8 @@ def flux2mag(flux, band=None, ebv=None):
     Notes:
         flux < 0 values are converted to NaN in magnitudes
     """
-    keep = flux > 0
+    # np.nan_to_num: NaN -> 0, so keep=False.
+    keep = (np.nan_to_num(flux) > 0)
     mag = np.nan + np.zeros(len(flux))
     mag[keep] = 22.5 - 2.5 * np.log10(flux[keep])
     if ebv is not None:
@@ -2137,7 +2138,8 @@ def qa_print_infos(
             ["GAIA_PHOT_G_MEAN_MAG)", "min(LS-R-FIBTOTMAG)"],
         ):
             magmin, color = "-", "k"
-            keep = (np.isfinite(mag)) & (mag > 0)
+            # np.nan_to_num: NaN -> 0, so keep=False.
+            keep = (np.nan_to_num(mag) > 0)
             if keep.sum() > 0:
                 magmin = mag[keep].min()
                 if magmin < magthresh:
