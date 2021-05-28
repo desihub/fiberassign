@@ -217,10 +217,6 @@ def load_hardware(focalplane=None, rundate=None,
     for rw, loc in enumerate(state["LOCATION"]):
         loc_to_state[loc] = rw
 
-    # Convert the exclusion polygons into shapes.
-
-    excl = dict()
-
     # Slightly reformat the 'add_margins' dict: 'pos' gets copied to
     # 'theta' and 'phi'.
     margins = {}
@@ -235,6 +231,7 @@ def load_hardware(focalplane=None, rundate=None,
     # margin!
     if 'petal' in add_margins:
         margins['petal'] = -add_margins['petal']
+
 
     for nm, shp in exclude.items():
         excl[nm] = dict()
@@ -253,21 +250,48 @@ def load_hardware(focalplane=None, rundate=None,
             fshp = Shape((0.0, 0.0), cr, sg)
             excl[nm][obj] = fshp
 
-    # For each positioner, select the exclusion polynomials.
+        if not exclname in excl:
+            parse_exclusion(exclname)
 
+    # Convert the exclusion polygons into shapes (as required)
+    excl = dict()
+    def get_exclusions(exclname):
+        e = excl.get(exclname)
+        if e is not None:
+            return e
+        shp = exclude[exclname]
+        excl[exclname] = dict()
+        for obj in shp.keys():
+            cr = list()
+            for crc in shp[obj]["circles"]:
+                cr.append(Circle(crc[0], crc[1]))
+            sg = list()
+            for sgm in shp[obj]["segments"]:
+                if obj in margins:
+                    sx = [x for x,y in sgm]
+                    sy = [y for x,y in sgm]
+                    ex,ey = expand_closed_curve(sx, sy, margins[obj])
+                    sgm = list(zip(ex, ey))
+                sg.append(Segments(sgm))
+            fshp = Shape((0.0, 0.0), cr, sg)
+            excl[exclname][obj] = fshp
+        return excl[exclname]
+
+    # For each positioner, select the exclusion polynomials.
     positioners = dict()
 
     for loc in locations:
         exclname = state["EXCLUSION"][loc_to_state[loc]]
         positioners[loc] = dict()
-        positioners[loc]["theta"] = Shape(excl[exclname]["theta"])
-        positioners[loc]["phi"] = Shape(excl[exclname]["phi"])
-        if "gfa" in excl[exclname]:
-            positioners[loc]["gfa"] = Shape(excl[exclname]["gfa"])
+        posexcl = get_exclusions(exclname)
+        positioners[loc]["theta"] = Shape(posexcl["theta"])
+        positioners[loc]["phi"] = Shape(posexcl["phi"])
+        if "gfa" in posexcl:
+            positioners[loc]["gfa"] = Shape(posexcl["gfa"])
         else:
             positioners[loc]["gfa"] = Shape()
-        if "petal" in excl[exclname]:
-            positioners[loc]["petal"] = Shape(excl[exclname]["petal"])
+        if "petal" in posexcl:
+            positioners[loc]["petal"] = Shape(posexcl["petal"])
         else:
             positioners[loc]["petal"] = Shape()
 
