@@ -42,6 +42,9 @@ from desitarget.geomask import match
 import desimodel
 from desimodel.footprint import is_point_in_desi
 
+# desimeter
+import desimeter
+
 # fiberassign
 import fiberassign
 from fiberassign.scripts.assign import parse_assign, run_assign_full
@@ -666,9 +669,9 @@ def print_config_infos(
         "{:.1f}s\t{}\tHOSTNAME={}".format(time() - start, step, os.getenv("HOSTNAME"))
     )
 
-    # AR fiberassign, desitarget, desimodel code version/path
+    # AR fiberassign, desitarget, desimodel, desimeter code version/path
     for module, name in zip(
-        [fiberassign, desitarget, desimodel], ["fiberassign", "desitarget", "desimodel"]
+        [fiberassign, desitarget, desimodel, desimeter], ["fiberassign", "desitarget", "desimodel", "desimeter"]
     ):
         log.info(
             "{:.1f}s\t{}\trunning with {} code version: {}".format(
