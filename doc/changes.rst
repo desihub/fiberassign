@@ -3,7 +3,12 @@
 fiberassign change log
 ======================
 
-5.0.0 (unreleased)
+5.0.1 (unreleased)
+------------------
+
+* No changes yet
+
+5.0.0 (2021-05-29)
 ------------------
 
 Algorithmic changes to not change SUBPRIORITY when running fiberassign.
@@ -15,6 +20,9 @@ Algorithmic changes to not change SUBPRIORITY when running fiberassign.
 * Add Gaia-based variability bit 5 to ETC_FLAG (PR `#367`_).
 * fba_launch options to run/exclude specific steps (PR `#368`_).
 * use desitarget.gaiamatch.gaia_psflike() for PSF-like criterion (PR `#369`_).
+* use np.nan_to_num() to avoid warnings: RuntimeWarning: invalid value encountered in greater (PR `#370`_).
+* Only interpret exclusion regions on demand (PR `#371`_).
+* adding desimeter path, version in log (PR `#372`_).
 
 .. _`#353`: https://github.com/desihub/fiberassign/pull/353
 .. _`#364`: https://github.com/desihub/fiberassign/pull/364
@@ -22,6 +30,9 @@ Algorithmic changes to not change SUBPRIORITY when running fiberassign.
 .. _`#367`: https://github.com/desihub/fiberassign/pull/367
 .. _`#368`: https://github.com/desihub/fiberassign/pull/368
 .. _`#369`: https://github.com/desihub/fiberassign/pull/369
+.. _`#370`: https://github.com/desihub/fiberassign/pull/370
+.. _`#371`: https://github.com/desihub/fiberassign/pull/371
+.. _`#372`: https://github.com/desihub/fiberassign/pull/372
 
 4.0.1 (2021-05-18)
 ------------------
