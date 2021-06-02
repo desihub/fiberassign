@@ -221,8 +221,6 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
 
         ntarget = len(tgids)
 
-        tg_x = np.empty(ntarget, dtype=np.float64)
-        tg_y = np.empty(ntarget, dtype=np.float64)
         tg_indx = dict((t,i) for i,t in enumerate(tgids))
         tg_type, tg_priority, tg_subpriority = tgs.get_type_priority_subpriority(tgids)
 
@@ -236,13 +234,10 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
         #
         # NOTE:  The output format is explicitly CS5 coordinates, even though
         # we use curved focal surface internally.
-        x,y = radec2xy(
+        tg_x,tg_y = radec2xy(
             hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
-            tg_ra, tg_dec, True, 0
-        )
-        tg_x[:] = x
-        tg_y[:] = y
-        del tg_ra, tg_dec, x, y
+            tg_ra, tg_dec, True)
+        del tg_ra, tg_dec
 
         # tm.stop()
         # tm.report("  extract target props for {}".format(tile_id))
