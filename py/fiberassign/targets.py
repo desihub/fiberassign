@@ -1108,7 +1108,8 @@ def load_target_file(tgs, tagalong, tfile, survey=None, typeforce=None, typecol=
 
 def targets_in_tiles(hw, tgs, tiles, tagalong):
     '''
-    Returns tile_targetids, tile_x, tile_y
+    Returns tile_targetids, tile_x, tile_y,
+    which are maps from tileid to numpy arrays.
     '''
     tile_targetids = {}
     tile_x = {}

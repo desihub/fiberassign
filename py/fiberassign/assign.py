@@ -223,16 +223,8 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
 
         tg_x = np.empty(ntarget, dtype=np.float64)
         tg_y = np.empty(ntarget, dtype=np.float64)
-        tg_type = np.empty(ntarget, dtype=np.uint8)
-        tg_priority = np.empty(ntarget, dtype=np.int32)
-        tg_subpriority = np.empty(ntarget, dtype=np.float64)
-        tg_indx = dict()
-        for indx, tg in enumerate(tgids):
-            tg_indx[tg] = indx
-            props = tgs.get(tg)
-            tg_type[indx] = props.type
-            tg_priority[indx] = props.priority
-            tg_subpriority[indx] = props.subpriority
+        tg_indx = dict((t,i) for i,t in enumerate(tgids))
+        tg_type, tg_priority, tg_subpriority = tgs.get_type_priority_subpriority(tgids)
 
         (tg_ra, tg_dec, tg_obscond) = tagalong.get_for_ids(
             tgids, ['RA', 'DEC', 'OBSCOND'])
