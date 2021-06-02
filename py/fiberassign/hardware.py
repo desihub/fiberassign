@@ -236,13 +236,7 @@ def load_hardware(focalplane=None, rundate=None,
     excl = dict()
     # cache expanded polygons (because many of the polygons are actually duplicates)
     expanded = {}
-    nhit = 0
-    nexp = 0
     def get_exclusions(exclname):
-
-        nonlocal nhit
-        nonlocal nexp
-
         e = excl.get(exclname)
         if e is not None:
             return e
@@ -257,7 +251,6 @@ def load_hardware(focalplane=None, rundate=None,
                 if obj in margins:
                     key = (obj, tuple(tuple(xy) for xy in sgm))
                     if key in expanded:
-                        nhit += 1
                         sgm = expanded[key]
                     else:
                         sx = [x for x,y in sgm]
@@ -265,7 +258,6 @@ def load_hardware(focalplane=None, rundate=None,
                         ex,ey = expand_closed_curve(sx, sy, margins[obj])
                         sgm = list(zip(ex, ey))
                         expanded[key] = sgm
-                        nexp += 1
                 sg.append(Segments(sgm))
             fshp = Shape((0.0, 0.0), cr, sg)
             excl[exclname][obj] = fshp
@@ -288,9 +280,6 @@ def load_hardware(focalplane=None, rundate=None,
             positioners[loc]["petal"] = Shape(posexcl["petal"])
         else:
             positioners[loc]["petal"] = Shape()
-
-    print('Polygons expanded:', nexp)
-    print('N cached:', nhit)
 
     hw = None
     if "MIN_P" in state.colnames:
