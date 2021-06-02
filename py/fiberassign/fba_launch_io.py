@@ -963,6 +963,7 @@ def create_targ_nomtl(
     log=Logger.get(),
     step="",
     start=time(),
+    refid_to_targetid=False,
 ):
     """
     Create a target fits file, with solely using desitarget catalogs, no MTL.
@@ -1046,6 +1047,15 @@ def create_targ_nomtl(
         d = force_nonzero_refepoch(
             d, gaia_ref_epochs[gaiadr], log=log, step=step, start=start
         )
+
+    if refid_to_targetid:
+        tid = d["TARGETID"]
+        rid = d["REF_ID"]
+        I, = np.nonzero(tid == -1)
+        if len(I):
+            log.info("{:.1f}s\t{}\tFilled TARGETID with REF_ID for {} targets with TARGETID=-1".format(
+                time() - start, step, len(I)))
+            tid[I] = rid[I]
 
     # AR targ_nomtl: write fits
     n, tmpfn = write_targets(tmpoutdir, d, indir=targdir, survey=survey, subpriority=False)

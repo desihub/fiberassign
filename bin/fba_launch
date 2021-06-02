@@ -200,6 +200,7 @@ def main():
             step="gfa",
             start=start,
             add_plate_cols=False,
+            refid_to_targetid=True,
         )
     else:
         log.info("")
