@@ -32,7 +32,7 @@ from desitarget.sv3.sv3_targetmask import desi_mask as sv3_mask
 from desitarget.targets import main_cmx_or_sv
 
 from .utils import Logger, Timer
-from .hardware import radec2xy
+from .hardware import radec2xy, cs52xy
 
 from ._internal import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                         TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE,
@@ -1114,6 +1114,7 @@ def targets_in_tiles(hw, tgs, tiles, tagalong):
     tile_targetids = {}
     tile_x = {}
     tile_y = {}
+    tile_xy_cs5 = {}
 
     target_ids = tgs.ids()
     target_ra, target_dec, target_obscond = tagalong.get_for_ids(
@@ -1138,14 +1139,17 @@ def targets_in_tiles(hw, tgs, tiles, tagalong):
         del inds
         print('Found', len(tids), 'targets near tile and matching obscond')
 
-        fx,fy = radec2xy(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta,
-                         tile_ha, ras, decs, False)
+        x, y = radec2xy(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta,
+                        tile_ha, ras, decs, True)
+        # Save CS5 mapping
+        tile_xy_cs5[tile_id] = dict((tid,(xi,yi)) for tid,xi,yi in zip(tids, x, y))
+        x, y = cs52xy(x, y)
 
         tile_targetids[tile_id] = tids
-        tile_x[tile_id] = fx
-        tile_y[tile_id] = fy
+        tile_x[tile_id] = x
+        tile_y[tile_id] = y
 
-    return tile_targetids, tile_x, tile_y
+    return tile_targetids, tile_x, tile_y, tile_xy_cs5
 
 
 def _radec2kd(ra, dec):
