@@ -255,7 +255,7 @@ def load_hardware(focalplane=None, rundate=None,
             sg = list()
             for sgm in shp[obj]["segments"]:
                 if obj in margins:
-                    key = (obj, sgm)
+                    key = (obj, tuple(tuple(xy) for xy in sgm))
                     if key in expanded:
                         nhit += 1
                         sgm = expanded[key]
