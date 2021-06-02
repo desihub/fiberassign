@@ -29,8 +29,7 @@ def stuck_on_sky(hw, tiles):
         state = hw.state
         devtype = hw.loc_device_type
         stuck_loc = [loc for loc in hw.locations
-                     if (((state[loc] & FIBER_STATE_STUCK) != 0) and
-                         ((state[loc] & FIBER_STATE_BROKEN) == 0) and
+                     if (((state[loc] & (FIBER_STATE_STUCK | FIBER_STATE_BROKEN)) == FIBER_STATE_STUCK) and
                          (devtype[loc] == 'POS'))]
         if len(stuck_loc) == 0:
             log.debug('Tile %i: %i positioners are stuck/broken' % (tile_id, len(stuck_loc)))
