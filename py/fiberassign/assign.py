@@ -21,6 +21,7 @@ from multiprocessing.sharedctypes import RawArray
 from functools import partial
 
 from collections import OrderedDict
+from types import SimpleNamespace
 
 import fitsio
 
@@ -350,9 +351,18 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
             empty_y = np.zeros(len(empty_fibers), dtype=np.float64)
             empty_tgtype = np.zeros(len(empty_fibers), dtype=np.uint8)
 
+            # pull relevant fields out of hw into python
+            hwduck = SimpleNamespace()
+            for attribute in [
+                    'state', 'loc_pos_curved_mm', 'loc_theta_pos',
+                    'loc_theta_offset', 'loc_phi_pos', 'loc_phi_offset',
+                    'loc_theta_arm', 'loc_phi_arm', 'loc_theta_min',
+                    'loc_phi_min', 'loc_theta_max', 'loc_phi_max']:
+                setattr(hwduck, attribute, getattr(hw, attribute))
+
             for iloc, loc in enumerate(empty_fibers):
                 # For stuck positioners on good sky, set the FA_TYPE SKY bit.
-                if (hw.state[loc] & FIBER_STATE_STUCK) and stuck_sky_tile is not None:
+                if (hwduck.state[loc] & FIBER_STATE_STUCK) and stuck_sky_tile is not None:
                     # (note, the stuck_sky code does the check for STUCK, not BROKEN,
                     #  type POS, etc; that's in the stuck_sky_tile map.)
                     if stuck_sky_tile.get(loc, False):
@@ -360,23 +370,23 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
                         stuck_sky_locs.add(loc)
 
                 if (
-                    (hw.state[loc] & FIBER_STATE_STUCK) or
-                    (hw.state[loc] & FIBER_STATE_BROKEN)
+                    (hwduck.state[loc] & FIBER_STATE_STUCK) or
+                    (hwduck.state[loc] & FIBER_STATE_BROKEN)
                 ):
                     # This positioner is not moveable and therefore has a theta / phi
                     # position in the hardware model.  Used this fixed fiber location.
                     xy = hw.thetaphi_to_xy(
-                        hw.loc_pos_curved_mm[loc],
-                        hw.loc_theta_pos[loc] + hw.loc_theta_offset[loc],
-                        hw.loc_phi_pos  [loc] + hw.loc_phi_offset  [loc],
-                        hw.loc_theta_arm[loc],
-                        hw.loc_phi_arm[loc],
-                        hw.loc_theta_offset[loc],
-                        hw.loc_phi_offset[loc],
-                        hw.loc_theta_min[loc],
-                        hw.loc_phi_min[loc],
-                        hw.loc_theta_max[loc],
-                        hw.loc_phi_max[loc],
+                        hwduck.loc_pos_curved_mm[loc],
+                        hwduck.loc_theta_pos[loc] + hwduck.loc_theta_offset[loc],
+                        hwduck.loc_phi_pos  [loc] + hwduck.loc_phi_offset  [loc],
+                        hwduck.loc_theta_arm[loc],
+                        hwduck.loc_phi_arm[loc],
+                        hwduck.loc_theta_offset[loc],
+                        hwduck.loc_phi_offset[loc],
+                        hwduck.loc_theta_min[loc],
+                        hwduck.loc_phi_min[loc],
+                        hwduck.loc_theta_max[loc],
+                        hwduck.loc_phi_max[loc],
                         ignore_range=True
                     )
                     empty_x[iloc] = xy[0]
@@ -384,24 +394,24 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
                 else:
                     # This is an unassigned, working positioner.
                     # Place it in a folded state.
-                    theta,phi = get_parked_thetaphi(hw.loc_theta_offset[loc],
-                                                    hw.loc_theta_min[loc],
-                                                    hw.loc_theta_max[loc],
-                                                    hw.loc_phi_offset[loc],
-                                                    hw.loc_phi_min[loc],
-                                                    hw.loc_phi_max[loc])
+                    theta,phi = get_parked_thetaphi(hwduck.loc_theta_offset[loc],
+                                                    hwduck.loc_theta_min[loc],
+                                                    hwduck.loc_theta_max[loc],
+                                                    hwduck.loc_phi_offset[loc],
+                                                    hwduck.loc_phi_min[loc],
+                                                    hwduck.loc_phi_max[loc])
                     xy = hw.thetaphi_to_xy(
-                        hw.loc_pos_curved_mm[loc],
+                        hwduck.loc_pos_curved_mm[loc],
                         theta,
                         phi,
-                        hw.loc_theta_arm[loc],
-                        hw.loc_phi_arm[loc],
-                        hw.loc_theta_offset[loc],
-                        hw.loc_phi_offset[loc],
-                        hw.loc_theta_min[loc],
-                        hw.loc_phi_min[loc],
-                        hw.loc_theta_max[loc],
-                        hw.loc_phi_max[loc]
+                        hwduck.loc_theta_arm[loc],
+                        hwduck.loc_phi_arm[loc],
+                        hwduck.loc_theta_offset[loc],
+                        hwduck.loc_phi_offset[loc],
+                        hwduck.loc_theta_min[loc],
+                        hwduck.loc_phi_min[loc],
+                        hwduck.loc_theta_max[loc],
+                        hwduck.loc_phi_max[loc]
                     )
                     empty_x[iloc] = xy[0]
                     empty_y[iloc] = xy[1]
@@ -523,9 +533,11 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
         fdata = np.zeros(navail, dtype=avail_dtype)
         off = 0
         for lid in sorted(avail.keys()):
-            for tg in avail[lid]:
-                fdata[off] = (lid, fibers[lid], tg)
-                off += 1
+            tg = avail[lid]
+            fdata['LOCATION'][off:off+len(tg)] = lid
+            fdata['FIBER'][off:off+len(tg)] = fibers[lid]
+            fdata['TARGETID'][off:off+len(tg)] = tg
+            off += len(tg)
 
         # tm.stop()
         # tm.report("  copy avail data tile {}".format(tile_id))
