@@ -25,33 +25,47 @@ def stuck_on_sky(hw, tiles):
         stuck_sky[tile_id] = dict()
 
         # Stuck locations and their angles
+        # (grab the hw dictionaries once -- these are python wrappers over C++ so not simple accessors)
+        state = hw.state
+        devtype = hw.loc_device_type
         stuck_loc = [loc for loc in hw.locations
-                     if (((hw.state[loc] & FIBER_STATE_STUCK) != 0) and
-                         ((hw.state[loc] & FIBER_STATE_BROKEN) == 0) and
-                         (hw.loc_device_type[loc] == 'POS'))]
+                     if (((state[loc] & FIBER_STATE_STUCK) != 0) and
+                         ((state[loc] & FIBER_STATE_BROKEN) == 0) and
+                         (devtype[loc] == 'POS'))]
         if len(stuck_loc) == 0:
             log.debug('Tile %i: %i positioners are stuck/broken' % (tile_id, len(stuck_loc)))
             continue
-        stuck_theta = [hw.loc_theta_pos[loc] + hw.loc_theta_offset[loc] for loc in stuck_loc]
-        stuck_phi   = [hw.loc_phi_pos  [loc] + hw.loc_phi_offset  [loc] for loc in stuck_loc]
+        theta_pos = hw.loc_theta_pos
+        theta_off = hw.loc_theta_offset
+        phi_pos = hw.loc_phi_pos
+        phi_off = hw.loc_phi_offset
+        stuck_theta = [theta_pos[loc] + theta_off[loc] for loc in stuck_loc]
+        stuck_phi   = [phi_pos  [loc] + phi_off  [loc] for loc in stuck_loc]
 
         # Convert positioner angle orientations to curved focal surface X / Y (not CS5)
         # Note:  we could add some methods to the python bindings to vectorize this or make it less clunky...
         stuck_x = np.zeros(len(stuck_loc))
         stuck_y = np.zeros(len(stuck_loc))
+        curved_mm = hw.loc_pos_curved_mm
+        theta_arm = hw.loc_theta_arm
+        phi_arm   = hw.loc_phi_arm
+        theta_min = hw.loc_theta_min
+        theta_max = hw.loc_theta_max
+        phi_min   = hw.loc_phi_min
+        phi_max   = hw.loc_phi_max
         for iloc, (loc, theta, phi) in enumerate(zip(stuck_loc, stuck_theta, stuck_phi)):
             loc_x, loc_y = hw.thetaphi_to_xy(
-                hw.loc_pos_curved_mm[loc],
+                curved_mm[loc],
                 theta,
                 phi,
-                hw.loc_theta_arm[loc],
-                hw.loc_phi_arm[loc],
-                hw.loc_theta_offset[loc],
-                hw.loc_phi_offset[loc],
-                hw.loc_theta_min[loc],
-                hw.loc_phi_min[loc],
-                hw.loc_theta_max[loc],
-                hw.loc_phi_max[loc],
+                theta_arm[loc],
+                phi_arm[loc],
+                theta_off[loc],
+                phi_off[loc],
+                theta_min[loc],
+                phi_min[loc],
+                theta_max[loc],
+                phi_max[loc],
                 True
             )
             stuck_x[iloc] = loc_x
