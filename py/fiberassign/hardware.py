@@ -452,3 +452,20 @@ def xy2cs5(x, y):
     # the outside world here...
     from desimeter.transform.pos2ptl import flat2ptl
     return flat2ptl(x, y)
+
+def cs52xy(x, y):
+    '''
+    Converts from CS5 coordinates (mm) into curved focal-plane X,Y coordinates in mm.
+
+    Args:
+    cs5x (numpy array): CS5 X coord (mm)
+    cs5y (numpy array): CS5 Y coord (mm)
+
+    Returns:
+    x (numpy array): X coord (mm)
+    y (numpy array): Y coord (mm)
+    '''
+    # There's a change in terminology between the focal-plane team and
+    # the outside world here...
+    from desimeter.transform.pos2ptl import ptl2flat
+    return ptl2flat(x, y)
