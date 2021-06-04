@@ -3096,5 +3096,5 @@ def copy_to_svn(svntiledir, tileid, myouts,
         if not os.path.exists(filename):
             continue
         outfn = os.path.join(svntiledir, os.path.basename(filename))
-        shutil.copy(myouts['fiberassign'], outfn)
+        shutil.copy(filename, outfn)
         os.chmod(outfn, filemode)
