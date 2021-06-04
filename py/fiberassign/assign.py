@@ -1130,6 +1130,10 @@ def merge_results_tile(out_dtype, copy_fba, params):
         # must build an explicit mapping from target catalog rows to output
         # table rows.
         tgids = tgview["TARGETID"]
+
+        if len(tgids) != len(set(tgids)):
+            raise RuntimeError('TARGETID values in file %s are not unique.' % tf)
+
         inrows = np.where(np.isin(tgids, tile_tgids, assume_unique=True))[0]
         outrows = np.where(np.isin(tile_tgids, tgids, assume_unique=True))[0]
         tfcolsin = list()
