@@ -187,12 +187,6 @@ if __name__ == "__main__":
         default=None,
         required=False,
     )
-    parser.add_argument(
-        "--log-stdout",
-        "--log_stdout",
-        action="store_true",
-        help="log to stdout instead of redirecting to a file",
-    )
     #
     parser.add_argument(
         "--steps",
