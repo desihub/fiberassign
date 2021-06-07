@@ -1130,19 +1130,8 @@ def merge_results_tile(out_dtype, copy_fba, params):
         # table rows.
         tgids = tgview["TARGETID"]
 
-        # Try to patch TARGETID values of -1 with REF_ID.
-        # This occurs in the GFA targets, where Gaia-only sources appear with TARGETID=-1
-        # and REF_ID = Gaia sourceid.
-        I, = np.nonzero(tgids == -1)
-        if len(I) and "REF_ID" in tgview.dtype.names:
-            log.debug("%i TARGETIDs == -1 in %s; patching from REF_ID" % (len(I), tf))
-            tgids = np.copy(tgids)
-            tgids[I] = tgview["REF_ID"][I]
-
         inrows  = np.where(np.isin(tgids, tile_tgids, assume_unique=True))[0]
         outrows = np.where(np.isin(tile_tgids, tgids, assume_unique=True))[0]
-        # Demand a unique mapping
-        assert(len(inrows) == len(outrows))
         tfcolsin = list()
         tfcolsout = list()
         for c in tgview.dtype.names:
@@ -1157,6 +1146,11 @@ def merge_results_tile(out_dtype, copy_fba, params):
         # tm.report("  indexing {} for {}".format(tf, tile_id))
         # tm.clear()
         # tm.start()
+
+        # FIXME -- work around a bug that is fixed in #375.  Remove once that is merged.
+        N = min(len(inrows), len(outrows))
+        inrows = inrows[:N]
+        outrows = outrows[:N]
 
         if len(outrows) > 0:
             for c, nm in zip(tfcolsin, tfcolsout):
