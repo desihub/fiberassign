@@ -1,0 +1,174 @@
+#! /usr/bin/env python
+
+import os
+import tempfile
+import numpy as np
+
+def main():
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    #parser.add_argument('--check', action='store_true', default=False, help='Run checks that new fiberasign file == old fiberassign file?')
+    parser.add_argument('--md5', action='store_true', default=False, help='Checks for data unit equality: requires "fitsgetext" from Astrometry.net')
+    parser.add_argument('fileA', help='First file to compare')
+    parser.add_argument('fileB', help='Second file to compare')
+
+    args = parser.parse_args()
+
+    if args.md5:
+        td = tempfile.TemporaryDirectory()
+        tmpdir = td.name
+        origfn = args.fileA
+        if origfn.endswith('.gz'):
+            tmpfn = os.path.join(tmpdir, 'orig.fits')
+            cmd = 'gunzip -cd %s > %s' % (origfn, tmpfn)
+            print(cmd)
+            if os.system(cmd):
+                raise RuntimeError('gunzip fileA failed')
+            origfn = tmpfn
+
+        newfn = args.fileB
+        if newfn.endswith('.gz'):
+            tmpfn = os.path.join(tmpdir, 'new.fits')
+            cmd = 'gunzip -cd %s > %s' % (newfn, tmpfn)
+            print(cmd)
+            if os.system(cmd):
+                raise RuntimeError('gunzip fileA failed')
+            newfn = tmpfn
+
+        origdir = os.path.join(tmpdir, 'orig')
+        os.mkdir(origdir)
+        newdir = os.path.join(tmpdir, 'new')
+        os.mkdir(newdir)
+        cmd = 'fitsgetext -i %s -o %s/%%02i.dat -a -D' % (origfn, origdir)
+        print(cmd)
+        if os.system(cmd):
+            raise RuntimeError('fitsgetext of fileA failed')
+        cmd = 'fitsgetext -i %s -o %s/%%02i.dat -a -D' % (newfn, newdir)
+        print(cmd)
+        if os.system(cmd):
+            raise RuntimeError('fitsgetext of fileB failed')
+
+        md5fn = os.path.join(tmpdir, 'md5.txt')
+        cmd = 'cd %s && md5sum -b ??.dat > %s' % (origdir, md5fn)
+        print(cmd)
+        if os.system(cmd):
+            raise RuntimeError('md5sum of fileA data failed')
+        cmd = 'cd %s && md5sum -c %s' % (newdir, md5fn)
+        print(cmd)
+        rtn = os.system(cmd)
+        print('Return value:', rtn)
+        #if rtn:
+        #if os.system(cmd):
+        #    raise RuntimeError('md5sum of fileB data failed')
+
+        del td
+
+    #if args.check:
+    if True:
+        import fitsio
+
+        F1 = fitsio.FITS(args.fileA)
+        F2 = fitsio.FITS(args.fileB)
+
+        if len(F1) != len(F2):
+            print('Different number of HDUs in files!')
+            print(len(F1), 'HDUs in', args.fileA)
+            print(len(F2), 'HDUs in', args.fileB)
+
+        for hdu in range(min(len(F1), len(F2))):
+            hdr1 = F1[hdu].read_header()
+            # FIXME -- allow scrambled order of EXTNAMES ?
+            hdr2 = F2[hdu].read_header()
+            extname1 = hdr1['EXTNAME']
+            extname2 = hdr2['EXTNAME']
+            print('Comparing headers for EXTNAME', extname1, '/', extname2)
+            if len(hdr1) != len(hdr2):
+                print('Different number of header cards in files!')
+                print(len(hdr1), 'cards in', args.fileA, 'EXTNAME', extname1)
+                print(len(hdr2), 'cards in', args.fileB, 'EXTNAME', extname2)
+
+            # Check for strict equality
+            for i,(r1,r2) in enumerate(zip(hdr1.records(), hdr2.records())):
+                if r1 != r2:
+                    print('Header card', i, 'differs:')
+                    print('  ', r1['name'], '=', r1['value'], '/', r1['comment'])
+                    print('vs', r2['name'], '=', r2['value'], '/', r2['comment'])
+
+            # Check by keyword
+            for r1 in hdr1.records():
+                key = r1['name']
+                if key in ['COMMENT', 'HISTORY']:
+                    # no one-to-one mappings
+                    continue
+                if key in hdr2:
+                    val1 = r1['value']
+                    val2 = hdr2[key]
+                    if val1 != val2:
+                        print('Header values for %s differ:' % key)
+                        print('    %s' % val1)
+                        print(' vs %s' % val2)
+                else:
+                    print('Header value for %s only present in %s' % (key, args.fileA))
+            for r2 in hdr2.records():
+                key = r2['name']
+                if key in ['COMMENT', 'HISTORY']:
+                    # no one-to-one mappings
+                    continue
+                if not key in hdr1:
+                    print('Header value for %s only present in %s' % (key, args.fileB))
+
+            #if hdu == 0:
+            #    continue
+            tab1 = F1[hdu].read()
+            tab2 = F2[hdu].read()
+
+            if tab1 is None and tab2 is None:
+                continue
+            ##assert(len(tab1) == len(tab2))
+            if len(tab1) != len(tab2):
+                print('Table lengths differ: %i vs %i' % (len(tab1), len(tab2)))
+
+            cs1 = set(tab1.dtype.name)
+            cs2 = set(tab2.dtype.name)
+            if cs1 != cs2:
+                print('Columns differ.')
+                print('Only in fileA: columns', ', '.join(sorted(list(cs1 - cs2))))
+                print('Only in fileB: columns', ', '.join(sorted(list(cs2 - cs1))))
+
+            columns = list(tab1.dtype.names)
+            columns.sort()
+            for c in columns:
+                print('Checking table column', c)
+                x1 = tab1[c]
+                x2 = tab2[c]
+                n = min(len(x1), len(x2))
+                x1 = x1[:n]
+                x2 = x2[:n]
+                ok = False
+                try:
+                    ok = np.all(np.logical_or(x1 == x2,
+                                              np.logical_not(np.isfinite(x1)) * np.logical_not(np.isfinite(x2))))
+                except:
+                    ok = np.all(x1 == x2)
+                if not ok:
+                    try:
+                        eq = np.logical_or(x1 == x2,
+                                           np.logical_not(np.isfinite(x1)) * np.logical_not(np.isfinite(x2)))
+                    except:
+                        eq = (x1 == x2)
+                    I, = np.nonzero(np.logical_not(eq))
+                    print(len(I), 'rows are different for column', c)
+                    try:
+                        rms = np.sqrt(np.mean((x1 - x2)**2))
+                        print('RMS difference:', rms)
+                    except:
+                        pass
+                    for i in I[:10]:
+                        print('  row % 8i  %20s  %20s' % (i, x1[i], x2[i]))
+                    if len(I)>10:
+                        print('...')
+
+
+if __name__ == '__main__':
+    main()
+    
