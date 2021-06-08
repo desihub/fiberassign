@@ -146,7 +146,7 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
     tm = Timer()
     tm.start()
     tile_id, tile_ra, tile_dec, tile_obstheta, tile_obstime, tile_obsha, \
-        tile_file, gfa_targets, stuck_sky_tile = params
+        tile_file, gfa_targets, stuck_sky_tile, tile_xy_cs5 = params
     log = Logger.get()
 
     # Hardware properties
@@ -233,23 +233,28 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
             tg_priority[indx] = props.priority
             tg_subpriority[indx] = props.subpriority
 
-        (tg_ra, tg_dec, tg_obscond) = tagalong.get_for_ids(
-            tgids, ['RA', 'DEC', 'OBSCOND'])
+        if tile_xy_cs5 is not None:
+            (tg_obscond,) = tagalong.get_for_ids(tgids, ['OBSCOND'])
 
-        # We compute the X / Y focalplane coordinates for ALL available
-        # targets, not just the assigned ones.  This allows us to write out
-        # the focalplane coordinates of all available targets as computed by
-        # the code at the time it was run.
-        #
-        # NOTE:  The output format is explicitly CS5 coordinates, even though
-        # we use curved focal surface internally.
-        x,y = radec2xy(
-            hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
-            tg_ra, tg_dec, True, 0
-        )
-        tg_x[:] = x
-        tg_y[:] = y
-        del tg_ra, tg_dec, x, y
+            xy = np.array([tile_xy_cs5[tid] for tid in tgids])
+            tg_x = xy[:,0]
+            tg_y = xy[:,1]
+            del xy
+        else:
+            (tg_ra, tg_dec, tg_obscond) = tagalong.get_for_ids(
+                tgids, ['RA', 'DEC', 'OBSCOND'])
+
+            # We compute the X / Y focalplane coordinates for ALL available
+            # targets, not just the assigned ones.  This allows us to write out
+            # the focalplane coordinates of all available targets as computed by
+            # the code at the time it was run.
+            #
+            # NOTE:  The output format is explicitly CS5 coordinates, even though
+            # we use curved focal surface internally.
+            tg_x,tg_y = radec2xy(
+                hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
+                tg_ra, tg_dec, True)
+            del tg_ra, tg_dec
 
         # tm.stop()
         # tm.report("  extract target props for {}".format(tile_id))
@@ -553,7 +558,8 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
 
 def write_assignment_fits(tiles, tagalong, asgn, out_dir=".", out_prefix="fba-",
                           split_dir=False, all_targets=False,
-                          gfa_targets=None, overwrite=False, stucksky=None):
+                          gfa_targets=None, overwrite=False, stucksky=None,
+                          tile_xy_cs5=None):
     """Write out assignment results in FITS format.
 
     For each tile, all available targets (not only the assigned targets) and
@@ -609,7 +615,11 @@ def write_assignment_fits(tiles, tagalong, asgn, out_dir=".", out_prefix="fba-",
         if stucksky is not None:
             stuck = stucksky.get(tid,{})
 
-        params = (tid, tra, tdec, ttheta, ttime, tha, outfile, gfa, stuck)
+        txy = None
+        if tile_xy_cs5 is not None:
+            txy = tile_xy_cs5.get(tid, None)
+
+        params = (tid, tra, tdec, ttheta, ttime, tha, outfile, gfa, stuck, txy)
         write_tile(params)
 
     tm.stop()

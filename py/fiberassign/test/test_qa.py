@@ -129,7 +129,7 @@ class TestQA(unittest.TestCase):
         tiles = load_tiles(tiles_file=tfile)
 
         # Precompute target positions
-        tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles, tagalong)
+        tile_targetids, tile_x, tile_y, tile_xy_cs5 = targets_in_tiles(hw, tgs, tiles, tagalong)
         # Compute the targets available to each fiber for each tile.
         tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
 
@@ -148,7 +148,8 @@ class TestQA(unittest.TestCase):
         # Redistribute
         asgn.redistribute_science()
 
-        write_assignment_fits(tiles, tagalong, asgn, out_dir=test_dir, all_targets=True)
+        write_assignment_fits(tiles, tagalong, asgn, out_dir=test_dir, all_targets=True,
+                              tile_xy_cs5=tile_xy_cs5)
 
         tile_ids = list(tiles.id)
 
