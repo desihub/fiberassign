@@ -21,6 +21,7 @@ from multiprocessing.sharedctypes import RawArray
 from functools import partial
 
 from collections import OrderedDict
+from types import SimpleNamespace
 
 import fitsio
 
@@ -220,18 +221,8 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
 
         ntarget = len(tgids)
 
-        tg_x = np.empty(ntarget, dtype=np.float64)
-        tg_y = np.empty(ntarget, dtype=np.float64)
-        tg_type = np.empty(ntarget, dtype=np.uint8)
-        tg_priority = np.empty(ntarget, dtype=np.int32)
-        tg_subpriority = np.empty(ntarget, dtype=np.float64)
-        tg_indx = dict()
-        for indx, tg in enumerate(tgids):
-            tg_indx[tg] = indx
-            props = tgs.get(tg)
-            tg_type[indx] = props.type
-            tg_priority[indx] = props.priority
-            tg_subpriority[indx] = props.subpriority
+        tg_indx = dict((t,i) for i,t in enumerate(tgids))
+        tg_type, tg_priority, tg_subpriority = tgs.get_type_priority_subpriority(tgids)
 
         (tg_ra, tg_dec, tg_obscond) = tagalong.get_for_ids(
             tgids, ['RA', 'DEC', 'OBSCOND'])
@@ -243,13 +234,10 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
         #
         # NOTE:  The output format is explicitly CS5 coordinates, even though
         # we use curved focal surface internally.
-        x,y = radec2xy(
+        tg_x,tg_y = radec2xy(
             hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
-            tg_ra, tg_dec, True, 0
-        )
-        tg_x[:] = x
-        tg_y[:] = y
-        del tg_ra, tg_dec, x, y
+            tg_ra, tg_dec, True)
+        del tg_ra, tg_dec
 
         # tm.stop()
         # tm.report("  extract target props for {}".format(tile_id))
@@ -350,9 +338,18 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
             empty_y = np.zeros(len(empty_fibers), dtype=np.float64)
             empty_tgtype = np.zeros(len(empty_fibers), dtype=np.uint8)
 
+            # pull relevant fields out of hw into python
+            hwduck = SimpleNamespace()
+            for attribute in [
+                    'state', 'loc_pos_curved_mm', 'loc_theta_pos',
+                    'loc_theta_offset', 'loc_phi_pos', 'loc_phi_offset',
+                    'loc_theta_arm', 'loc_phi_arm', 'loc_theta_min',
+                    'loc_phi_min', 'loc_theta_max', 'loc_phi_max']:
+                setattr(hwduck, attribute, getattr(hw, attribute))
+
             for iloc, loc in enumerate(empty_fibers):
                 # For stuck positioners on good sky, set the FA_TYPE SKY bit.
-                if (hw.state[loc] & FIBER_STATE_STUCK) and stuck_sky_tile is not None:
+                if (hwduck.state[loc] & FIBER_STATE_STUCK) and stuck_sky_tile is not None:
                     # (note, the stuck_sky code does the check for STUCK, not BROKEN,
                     #  type POS, etc; that's in the stuck_sky_tile map.)
                     if stuck_sky_tile.get(loc, False):
@@ -360,23 +357,23 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
                         stuck_sky_locs.add(loc)
 
                 if (
-                    (hw.state[loc] & FIBER_STATE_STUCK) or
-                    (hw.state[loc] & FIBER_STATE_BROKEN)
+                    (hwduck.state[loc] & FIBER_STATE_STUCK) or
+                    (hwduck.state[loc] & FIBER_STATE_BROKEN)
                 ):
                     # This positioner is not moveable and therefore has a theta / phi
                     # position in the hardware model.  Used this fixed fiber location.
                     xy = hw.thetaphi_to_xy(
-                        hw.loc_pos_curved_mm[loc],
-                        hw.loc_theta_pos[loc] + hw.loc_theta_offset[loc],
-                        hw.loc_phi_pos  [loc] + hw.loc_phi_offset  [loc],
-                        hw.loc_theta_arm[loc],
-                        hw.loc_phi_arm[loc],
-                        hw.loc_theta_offset[loc],
-                        hw.loc_phi_offset[loc],
-                        hw.loc_theta_min[loc],
-                        hw.loc_phi_min[loc],
-                        hw.loc_theta_max[loc],
-                        hw.loc_phi_max[loc],
+                        hwduck.loc_pos_curved_mm[loc],
+                        hwduck.loc_theta_pos[loc] + hwduck.loc_theta_offset[loc],
+                        hwduck.loc_phi_pos  [loc] + hwduck.loc_phi_offset  [loc],
+                        hwduck.loc_theta_arm[loc],
+                        hwduck.loc_phi_arm[loc],
+                        hwduck.loc_theta_offset[loc],
+                        hwduck.loc_phi_offset[loc],
+                        hwduck.loc_theta_min[loc],
+                        hwduck.loc_phi_min[loc],
+                        hwduck.loc_theta_max[loc],
+                        hwduck.loc_phi_max[loc],
                         ignore_range=True
                     )
                     empty_x[iloc] = xy[0]
@@ -384,24 +381,24 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
                 else:
                     # This is an unassigned, working positioner.
                     # Place it in a folded state.
-                    theta,phi = get_parked_thetaphi(hw.loc_theta_offset[loc],
-                                                    hw.loc_theta_min[loc],
-                                                    hw.loc_theta_max[loc],
-                                                    hw.loc_phi_offset[loc],
-                                                    hw.loc_phi_min[loc],
-                                                    hw.loc_phi_max[loc])
+                    theta,phi = get_parked_thetaphi(hwduck.loc_theta_offset[loc],
+                                                    hwduck.loc_theta_min[loc],
+                                                    hwduck.loc_theta_max[loc],
+                                                    hwduck.loc_phi_offset[loc],
+                                                    hwduck.loc_phi_min[loc],
+                                                    hwduck.loc_phi_max[loc])
                     xy = hw.thetaphi_to_xy(
-                        hw.loc_pos_curved_mm[loc],
+                        hwduck.loc_pos_curved_mm[loc],
                         theta,
                         phi,
-                        hw.loc_theta_arm[loc],
-                        hw.loc_phi_arm[loc],
-                        hw.loc_theta_offset[loc],
-                        hw.loc_phi_offset[loc],
-                        hw.loc_theta_min[loc],
-                        hw.loc_phi_min[loc],
-                        hw.loc_theta_max[loc],
-                        hw.loc_phi_max[loc]
+                        hwduck.loc_theta_arm[loc],
+                        hwduck.loc_phi_arm[loc],
+                        hwduck.loc_theta_offset[loc],
+                        hwduck.loc_phi_offset[loc],
+                        hwduck.loc_theta_min[loc],
+                        hwduck.loc_phi_min[loc],
+                        hwduck.loc_theta_max[loc],
+                        hwduck.loc_phi_max[loc]
                     )
                     empty_x[iloc] = xy[0]
                     empty_y[iloc] = xy[1]
@@ -523,9 +520,11 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
         fdata = np.zeros(navail, dtype=avail_dtype)
         off = 0
         for lid in sorted(avail.keys()):
-            for tg in avail[lid]:
-                fdata[off] = (lid, fibers[lid], tg)
-                off += 1
+            tg = avail[lid]
+            fdata['LOCATION'][off:off+len(tg)] = lid
+            fdata['FIBER'][off:off+len(tg)] = fibers[lid]
+            fdata['TARGETID'][off:off+len(tg)] = tg
+            off += len(tg)
 
         # tm.stop()
         # tm.report("  copy avail data tile {}".format(tile_id))
@@ -1130,7 +1129,8 @@ def merge_results_tile(out_dtype, copy_fba, params):
         # must build an explicit mapping from target catalog rows to output
         # table rows.
         tgids = tgview["TARGETID"]
-        inrows = np.where(np.isin(tgids, tile_tgids, assume_unique=True))[0]
+
+        inrows  = np.where(np.isin(tgids, tile_tgids, assume_unique=True))[0]
         outrows = np.where(np.isin(tile_tgids, tgids, assume_unique=True))[0]
         tfcolsin = list()
         tfcolsout = list()
@@ -1147,10 +1147,14 @@ def merge_results_tile(out_dtype, copy_fba, params):
         # tm.clear()
         # tm.start()
 
+        # FIXME -- work around a bug that is fixed in #375.  Remove once that is merged.
+        N = min(len(inrows), len(outrows))
+        inrows = inrows[:N]
+        outrows = outrows[:N]
+
         if len(outrows) > 0:
-            for irw, orw in zip(inrows, outrows):
-                for c, nm in zip(tfcolsin, tfcolsout):
-                    tile_targets[nm][orw] = tgview[c][irw]
+            for c, nm in zip(tfcolsin, tfcolsout):
+                tile_targets[nm][outrows] = tgview[c][inrows]
         del tgids
         del inrows
         del outrows
@@ -1173,8 +1177,10 @@ def merge_results_tile(out_dtype, copy_fba, params):
         # must build an explicit mapping from target catalog rows to output
         # table rows.
         skyids = skyview["TARGETID"]
-        inrows = np.where(np.isin(skyids, tile_tgids, assume_unique=True))[0]
+        inrows  = np.where(np.isin(skyids, tile_tgids, assume_unique=True))[0]
         outrows = np.where(np.isin(tile_tgids, skyids, assume_unique=True))[0]
+        # Demand a unique mapping
+        assert(len(inrows) == len(outrows))
         tfcolsin = list()
         tfcolsout = list()
         for c in skyview.dtype.names:
@@ -1186,9 +1192,8 @@ def merge_results_tile(out_dtype, copy_fba, params):
                 tfcolsout.append(nm)
 
         if len(outrows) > 0:
-            for irw, orw in zip(inrows, outrows):
-                for c, nm in zip(tfcolsin, tfcolsout):
-                    tile_targets[nm][orw] = skyview[c][irw]
+            for c, nm in zip(tfcolsin, tfcolsout):
+                tile_targets[nm][outrows] = skyview[c][inrows]
         del skyids
         del inrows
         del outrows
