@@ -928,9 +928,10 @@ def create_sky(
     skydirs = [skydir]
     if suppskydir is not None:
         skydirs.append(suppskydir)
-    d = custom_read_targets_in_tiles(
-        skydirs, tiles, quick=True, mtl=False, log=log, step=step, start=start
-    )
+    ds = [read_targets_in_tiles(skydir, tiles=tiles, quick=quick) for skydir in skydirs]
+    for skydir, d in zip(skydirs, ds):
+        log.info("{:.1f}s\t{}\treadin {} targets from {}".format(time() - start, step, len(d), skydir)
+    d = np.concatenate(ds)
 
     # AR adding PLATE_RA, PLATE_DEC?
     if add_plate_cols:
