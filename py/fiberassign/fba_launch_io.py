@@ -858,9 +858,9 @@ def create_sky(
     skydirs = [skydir]
     if suppskydir is not None:
         skydirs.append(suppskydir)
-    ds = [read_targets_in_tiles(skydir, tiles=tiles, quick=quick) for skydir in skydirs]
+    ds = [read_targets_in_tiles(skydir, tiles=tiles, quick=True) for skydir in skydirs]
     for skydir, d in zip(skydirs, ds):
-        log.info("{:.1f}s\t{}\treadin {} targets from {}".format(time() - start, step, len(d), skydir)
+        log.info("{:.1f}s\t{}\treadin {} targets from {}".format(time() - start, step, len(d), skydir))
     d = np.concatenate(ds)
 
     # AR adding PLATE_RA, PLATE_DEC?
@@ -1096,7 +1096,7 @@ def create_mtl(
                 time() - start, step, ",".join(columns), targdir
             )
         )
-        targ = read_targets_in_tiles(targdir, tiles=tiles, quick=quick, columns=columns + ["TARGETID"]))
+        targ = read_targets_in_tiles(targdir, tiles=tiles, quick=True, columns=columns + ["TARGETID"])
         d = match_ledger_to_targets(d, targ)
 
     # AR adding PLATE_RA, PLATE_DEC, PLATE_REF_EPOCH ?
