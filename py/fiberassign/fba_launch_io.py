@@ -33,7 +33,7 @@ from astropy.time import Time
 import desitarget
 from desitarget.gaiamatch import gaia_psflike
 from desitarget.io import read_targets_in_tiles, write_targets, write_skies
-from desitarget.mtl import inflate_ledger
+from desitarget.mtl import match_ledger_to_targets
 from desitarget.targetmask import desi_mask, obsconditions
 from desitarget.targets import set_obsconditions
 from desitarget.geomask import match
@@ -1096,9 +1096,8 @@ def create_mtl(
                 time() - start, step, ",".join(columns), targdir
             )
         )
-        d = inflate_ledger(
-            d, targdir, columns=columns, header=False, strictcols=False, quick=True
-        )
+        targ = read_targets_in_tiles(targdir, tiles=tiles, quick=quick, columns=columns + ["TARGETID"]))
+        d = match_ledger_to_targets(d, targ)
 
     # AR adding PLATE_RA, PLATE_DEC, PLATE_REF_EPOCH ?
     if add_plate_cols:
