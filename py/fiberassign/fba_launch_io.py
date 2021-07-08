@@ -33,7 +33,7 @@ from astropy.time import Time
 import desitarget
 from desitarget.gaiamatch import gaia_psflike
 from desitarget.io import read_targets_in_tiles, write_targets, write_skies
-from desitarget.mtl import inflate_ledger
+from desitarget.mtl import match_ledger_to_targets
 from desitarget.targetmask import desi_mask, obsconditions
 from desitarget.targets import set_obsconditions
 from desitarget.geomask import match
@@ -158,76 +158,6 @@ def get_program_latest_timestamp(
             tm += timedelta(minutes=1)
             timestamp = tm.isoformat(timespec="seconds")
     return timestamp
-
-
-def custom_read_targets_in_tiles(
-    targdirs,
-    tiles,
-    quick=True,
-    mtl=False,
-    unique=True,
-    isodate=None,
-    log=Logger.get(),
-    step="",
-    start=time(),
-):
-    """
-    Wrapper to desitarget.io.read_targets_in_tiles, allowing multiple folders
-    and sanity check TARGETID if more than one folder.
-
-    Args:
-        targdirs: list of folders
-        tiles: tiles object (as required by desitarget.io.read_targets_in_tiles)
-        quick, mtl, unique, isodate (optional): same as desitarget.io.read_targets_in_tiles arguments
-        log (optional, defaults to Logger.get()): Logger object
-        step (optional, defaults to ""): corresponding step, for fba_launch log recording
-            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
-    Returns:
-        array of targets in the passed tiles.
-    """
-    # AR reading
-    log.info(
-        "{:.1f}s\t{}\treading input targets from {}".format(
-            time() - start, step, targdirs
-        )
-    )
-    if len(targdirs) == 1:
-        d = read_targets_in_tiles(
-            targdirs[0],
-            tiles=tiles,
-            quick=quick,
-            mtl=mtl,
-            unique=unique,
-            isodate=isodate,
-        )
-    else:
-        ds = [
-            read_targets_in_tiles(
-                targdir,
-                tiles=tiles,
-                quick=quick,
-                mtl=mtl,
-                unique=unique,
-                isodate=isodate,
-            )
-            for targdir in targdirs
-        ]
-        # AR merging
-        d = np.concatenate(ds)
-        # AR remove duplicates based on TARGETID (so duplicates not identified if in mixed surveys)
-        ii_m1 = np.where(d["TARGETID"] == -1)[0]
-        ii_nm1 = np.where(d["TARGETID"] != -1)[0]
-        _, ii = np.unique(d["TARGETID"][ii_nm1], return_index=True)
-        ii_nm1 = ii_nm1[ii]
-        if len(ii_m1) + len(ii_nm1) != len(d):
-            log.info(
-                "{:.1f}s\t{}\tremoving {}/{} duplicates".format(
-                    time() - start, step, len(d) - len(ii_m1) - len(ii_nm1), len(d)
-                )
-            )
-            d = d[ii_m1.tolist() + ii_nm1.tolist()]
-    return d
 
 
 def mv_write_targets_out(infn, targdir, outfn, log=Logger.get(), step="", start=time()):
@@ -928,9 +858,10 @@ def create_sky(
     skydirs = [skydir]
     if suppskydir is not None:
         skydirs.append(suppskydir)
-    d = custom_read_targets_in_tiles(
-        skydirs, tiles, quick=True, mtl=False, log=log, step=step, start=start
-    )
+    ds = [read_targets_in_tiles(skydir, tiles=tiles, quick=True) for skydir in skydirs]
+    for skydir, d in zip(skydirs, ds):
+        log.info("{:.1f}s\t{}\treadin {} targets from {}".format(time() - start, step, len(d), skydir))
+    d = np.concatenate(ds)
 
     # AR adding PLATE_RA, PLATE_DEC?
     if add_plate_cols:
@@ -1002,9 +933,7 @@ def create_targ_nomtl(
     log.info("{:.1f}s\t{}\tstart generating {}".format(time() - start, step, outfn))
     # AR targ_nomtl: read targets
     tiles = fits.open(tilesfn)[1].data
-    d = custom_read_targets_in_tiles(
-        [targdir], tiles, quick=quick, mtl=False, log=log, step=step, start=start
-    )
+    d = read_targets_in_tiles(targdir, tiles=tiles, quick=quick)
     log.info(
         "{:.1f}s\t{}\tkeeping {} targets to {}".format(
             time() - start, step, len(d), outfn
@@ -1122,16 +1051,18 @@ def create_mtl(
     log.info("{:.1f}s\t{}\tmtltime={}".format(time() - start, step, mtltime))
 
     # AR mtl: read mtl
-    d = custom_read_targets_in_tiles(
-        [mtldir],
-        tiles,
+    d = read_targets_in_tiles(
+        mtldir,
+        tiles=tiles,
         quick=False,
         mtl=True,
         unique=True,
         isodate=mtltime,
-        log=log,
-        step=step,
-        start=start,
+    )
+    log.info(
+        "{:.1f}s\t{}\treading {} targets from {}".format(
+            time() - start, step, len(d), mtldir
+        )
     )
 
     # AR mtl: removing by hand BACKUP_BRIGHT for sv3/BACKUP
@@ -1165,9 +1096,8 @@ def create_mtl(
                 time() - start, step, ",".join(columns), targdir
             )
         )
-        d = inflate_ledger(
-            d, targdir, columns=columns, header=False, strictcols=False, quick=True
-        )
+        targ = read_targets_in_tiles(targdir, tiles=tiles, quick=True, columns=columns + ["TARGETID"])
+        d = match_ledger_to_targets(d, targ)
 
     # AR adding PLATE_RA, PLATE_DEC, PLATE_REF_EPOCH ?
     if add_plate_cols:
