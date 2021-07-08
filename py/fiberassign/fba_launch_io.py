@@ -69,7 +69,7 @@ tile_area = np.pi * tile_radius_deg ** 2
 def assert_isoformat_utc(time_str):
     """
     Asserts if a date formats as "YYYY-MM-DDThh:mm:ss+00:00".
-    
+
     Args:
         time_str: string with a date
     Returns:
@@ -233,8 +233,8 @@ def custom_read_targets_in_tiles(
 def mv_write_targets_out(infn, targdir, outfn, log=Logger.get(), step="", start=time()):
     """
     Moves the file created by desitarget.io.write_targets
-    and removes folder created by desitarget.io.write_targets    
-    
+    and removes folder created by desitarget.io.write_targets
+
     Args:
         infn: filename output by desitarget.io.write_targets
         targdir: folder provided as desitarget.io.write_targets input
@@ -258,7 +258,7 @@ def mv_write_targets_out(infn, targdir, outfn, log=Logger.get(), step="", start=
 def get_nowradec(ra, dec, pmra, pmdec, parallax, ref_year, pmtime_utc_str, scnd=False):
     """
     Apply proper motion correction
-    
+
     Args:
         ra: numpy array of RAs (deg)
         dec: numpy array of DECs (deg)
@@ -337,8 +337,8 @@ def force_finite_pm(
     d, pmra_key="PMRA", pmdec_key="PMDEC", log=Logger.get(), step="", start=time()
 ):
     """
-    Replaces NaN PMRA, PMDEC by 0    
-    
+    Replaces NaN PMRA, PMDEC by 0
+
     Args:
         d: array with at least proper-motion columns
         pmra_key (optional, defaults to PMRA): column name for PMRA
@@ -350,7 +350,7 @@ def force_finite_pm(
 
     Returns:
         d: same as input d, but NaN proper motions replaced by 0
-        
+
     """
     for key in [pmra_key, pmdec_key]:
         keep = ~np.isfinite(d[key])
@@ -376,7 +376,7 @@ def force_nonzero_refepoch(
 ):
     """
     Replaces 0 by force_ref_epoch in ref_epoch
-    
+
     Args:
         d: array with at least proper-motion columns
         force_ref_epoch: float, ref_epoch to replace 0 by
@@ -386,13 +386,13 @@ def force_nonzero_refepoch(
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
     Returns:
         d: same as input d, but 0 ref_epochs replaced by force_ref_epoch
 
     Notes:
         Will exit with error if ref_epoch=0, but pmra or pmdec != 0
-        
+
     """
     keep = d[ref_epoch_key] == 0
     n = ((d[pmra_key][keep] != 0) | (d[pmra_key][keep] != 0)).sum()
@@ -436,7 +436,7 @@ def update_nowradec(
 ):
     """
     Update (RA, DEC, REF_EPOCH) using proper motion
-    
+
     Args:
         d: array with at least proper-motion columns
         pmtime_utc_str: date to update position to (format: YYYY-MM-DDThh:mm:ss+00:00)
@@ -455,8 +455,8 @@ def update_nowradec(
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
-        
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+
     Returns:
         d: same as input, but with RA, DEC updated to pmtime_utc_str
 
@@ -530,8 +530,8 @@ def assert_env_vars(
     start=time(),
 ):
     """
-    Assert the environment variables required by fba_launch 
-    
+    Assert the environment variables required by fba_launch
+
     Args:
         required_env_vars (optional, defaults to ["DESI_ROOT",
         "DESI_TARGET",
@@ -541,10 +541,10 @@ def assert_env_vars(
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
-        
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+
     Notes:
-        will exit with error if some assertions are not verified 
+        will exit with error if some assertions are not verified
     """
     # AR safe: DESI environment variables
     for required_env_var in required_env_vars:
@@ -566,17 +566,17 @@ def assert_arg_dates(
 ):
     """
     Assert the fba_launch date arguments are correctly formatted ("YYYY-MM-DDThh:mm:ss+00:00")
-    
+
     Args:
         args: fba_launch parser.parse_args() output
         dates (optional, defaults to ["pmtime_utc_str", "rundate", "mtltime"]): list of date fba_launch argument names to check
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
-        
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+
     Notes:
-        will exit with error if some assertions are not verified 
+        will exit with error if some assertions are not verified
     """
     # AR dates properly formatted?
     for kwargs in args._get_kwargs():
@@ -595,7 +595,7 @@ def assert_svn_tileid(
 ):
     """
     Asserts if TILEID already exists in the SVN tile folder
-    
+
     Args:
         tileid: TILEID to check (int)
         forcetileid (optional, defaults to "n"): "y" or "n";
@@ -604,8 +604,8 @@ def assert_svn_tileid(
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
-       
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+
     """
     svn_trunk = os.path.join(os.getenv("DESI_TARGET"), "fiberassign/tiles/trunk")
     # AR needs a wildcard to verify .fits and fits.gz files
@@ -652,7 +652,7 @@ def print_config_infos(
 ):
     """
     Print various configuration informations (machine, modules version/path, DESI environment variables).
-    
+
     Args:
         required_env_vars (optional, defaults to ["DESI_ROOT",
         "DESI_TARGET",
@@ -662,7 +662,7 @@ def print_config_infos(
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
     """
     # AR machine
     log.info(
@@ -705,7 +705,7 @@ def get_desitarget_paths(
 ):
     """
     Obtain the folder/file full paths for desitarget products
-    
+
     Args:
         dtver: desitarget catalog version (string; e.g., "0.57.0")
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
@@ -715,8 +715,8 @@ def get_desitarget_paths(
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
-        
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+
     Returns:
         Dictionary with the following keys:
         - sky: sky folder
@@ -837,7 +837,7 @@ def create_tile(
 ):
     """
     Create a tiles fits file.
-    
+
     Args:
         tileid: TILEID (int)
         tilera: tile center R.A. (float)
@@ -900,7 +900,7 @@ def create_sky(
 ):
     """
     Create a sky fits file.
-    
+
     Args:
         tilesfn: path to a tiles fits file (string)
         skydir: desitarget sky folder (string)
@@ -967,7 +967,7 @@ def create_targ_nomtl(
     """
     Create a target fits file, with solely using desitarget catalogs, no MTL.
         e.g. for the GFA, but could be used for other purposes.
-    
+
     Args:
         tilesfn: path to a tiles fits file (string)
         targdir: desitarget target folder (string)
@@ -1077,7 +1077,7 @@ def create_mtl(
 ):
     """
     Create a (primary or secondary) target fits file, based on MTL ledgers (and complementary columns from desitarget targets files).
-    
+
     Args:
         tilesfn: path to a tiles fits file (string)
         mtldir: desisurveyops MTL folder (string)
@@ -1103,7 +1103,7 @@ def create_mtl(
         for sv3-backup, we remove BACKUP_BRIGHT targets.
         TBD : if secondary targets, we currently disable the inflate_ledger(), as it
                 seems to not currently work.
-                hence if secondary and pmcorr="y", the code will crash, as the 
+                hence if secondary and pmcorr="y", the code will crash, as the
                 GAIA_ASTROMETRIC_EXCESS_NOISE column will be missing; though we do not
                 expect this configuration to happen, so it should be fine for now.
 
@@ -1237,11 +1237,11 @@ def create_too(
     """
     Create a ToO target fits file, with selecting targets in a MJD time window.
     If no ToO file, or no selected targets, do nothing.
-    
+
     Args:
         tilesfn: path to a tiles fits file (string)
         toofn: ToO file name (string)
-        mjd_min, mjd_max (floats): we keep targets with MJD_BEGIN < mjd_max and MJD_END > mjd_min 
+        mjd_min, mjd_max (floats): we keep targets with MJD_BEGIN < mjd_max and MJD_END > mjd_min
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         gaiadr: Gaia dr ("dr2" or "edr3")
         pmcorr: apply proper-motion correction? ("y" or "n")
@@ -1390,7 +1390,7 @@ def launch_onetile_fa(
     Runs the fiber assignment (run_assign_full),
         merges the results (merge_results) for a single tile,
         and prints the assignment stats for each mask.
-    
+
     Args:
         args: fba_launch-like parser.parse_args() output
             should contain at least:
@@ -1416,7 +1416,7 @@ def launch_onetile_fa(
         we keep a generic "args" input, so that any later added argument in fba_launch does not
             requires a change in the launch_fa() call format.
         fba_launch-like adding information in the header is done in another function, update_fiberassign_header
-        TBD: be careful if working in the SVN-directory; maybe add additional safety lines? 
+        TBD: be careful if working in the SVN-directory; maybe add additional safety lines?
     """
     log.info("")
     log.info("")
@@ -1565,7 +1565,7 @@ def update_fiberassign_header(
 ):
     """
     Adds various information in the fiberassign-TILEID.fits PRIMARY header.
-    
+
     Args:
         fiberassignfn: path to fiberassign-TILEID.fits file (string)
         args: fba_launch-like parser.parse_args() output
@@ -1586,7 +1586,7 @@ def update_fiberassign_header(
         hdr_faprgrm: value for the FAPRGRM keyword (string)
         faflavor: usually {survey}{program} in lower cases (string)
         ebv: median EBV over the tile targets (float)
-        obscon: tile allowed observing conditions (string; e.g. "DARK|GRAY|BRIGHT|BACKUP") 
+        obscon: tile allowed observing conditions (string; e.g. "DARK|GRAY|BRIGHT|BACKUP")
         fascript: fba_launch-like script used to designed the tile; in case of different scripts for dedicated tiles
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
@@ -1596,7 +1596,7 @@ def update_fiberassign_header(
     Notes:
         no check is done on mydirs.
         hdr_survey, hdr_faprgrm: for the "regular" surveys (e.g., sv3, main), those will be args.survey, args.program
-            but for dedicated survey, they will (have to) be different. 
+            but for dedicated survey, they will (have to) be different.
         faflavor has to be {hdr_survey}{hdr_faprgrm}; will exit with an error if not;
             keeping this to be sure it is not forgotten to be done for dedicated programs.
     """
@@ -1675,7 +1675,7 @@ def secure_gzip(
 ):
     """
     Secure gzipping of the fiberassign-TILEID.fits file.
-    
+
     Args:
         fiberassignfn: path to fiberassign-TILEID.fits file (string)
         log (optional, defaults to Logger.get()): Logger object
@@ -1702,7 +1702,7 @@ def get_dt_masks(
 ):
     """
     Get the desitarget masks for a survey.
-    
+
     Args:
         survey: survey name: "sv1", "sv2", "sv3" or "main") (string)
         log (optional, defaults to None): Logger object
@@ -1771,7 +1771,7 @@ def get_qa_tracers(
 ):
     """
     Returns the tracers for which we provide QA plots of fiber assignment.
-    
+
     Args:
         survey: survey name: "sv1", "sv2", "sv3" or "main") (string)
         program: "DARK", "BRIGHT", or "BACKUP" (string)
@@ -1779,7 +1779,7 @@ def get_qa_tracers(
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
-                                                                                                                                                                                 
+
     Returns:
         trmskkeys: list of keys to select the mask on (list of strings)
         trmsks: list of mask names (list of strings)
@@ -1821,7 +1821,7 @@ def get_parent_assign_quants(
 ):
     """
     Stores the parent and assigned targets properties (desitarget columns).
-    
+
     Args:
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         targfns: paths to the input targets fits files, e.g. targ, scnd, too (either a string if only one file, or a list of strings)
@@ -1970,12 +1970,12 @@ def print_assgn_parent_stats(
 ):
     """
     Prints for each mask the number of parent and assigned targets, and also the fraction of assigned targets.
-    
+
     Args:
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         parent: dictionary for the parent target sample (output by get_parent_assign_quants())
-        assign: dictionary for the assigned target sample (output by get_parent_assign_quants()) 
-        log (optional, defaults to Logger.get()): Logger object                                                                                                                                            
+        assign: dictionary for the assigned target sample (output by get_parent_assign_quants())
+        log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
@@ -2062,7 +2062,7 @@ def qa_print_infos(
 ):
     """
     Print general fiber assignment infos on the QA plot.
-    
+
     Args:
         ax: pyplot object
         survey: "sv1", "sv2", "sv3" or "main" (string)
@@ -2071,10 +2071,10 @@ def qa_print_infos(
         tileid: tile TILEID (int)
         tilera: tile center R.A. in degrees (float)
         tiledec: tile center Dec. in degrees (float)
-        obscon: tile allowed observing conditions (string; e.g. "DARK|GRAY|BRIGHT|BACKUP") 
+        obscon: tile allowed observing conditions (string; e.g. "DARK|GRAY|BRIGHT|BACKUP")
         rundate: used rundate (string)
         parent: dictionary for the parent target sample (output by get_parent_assign_quants())
-        assign: dictionary for the assigned target sample (output by get_parent_assign_quants()) 
+        assign: dictionary for the assigned target sample (output by get_parent_assign_quants())
     """
     # AR hard-setting the plotted tracers
     # AR TBD: handle secondaries
@@ -2166,11 +2166,11 @@ def qa_print_petal_infos(
 ):
     """
     Print general the assigned SKY, BAD, WD, STD, TGT per petal on the QA plot.
-    
+
     Args:
         ax: pyplot object
         petals: dictionary with PETAL_LOC (np.array of floats) for each of the assigned "sky", "bad", "wd", "std" subsamples
-        assign: dictionary for the assigned target sample (output by get_parent_assign_quants()) 
+        assign: dictionary for the assigned target sample (output by get_parent_assign_quants())
     """
     # AR stats per petal
     xs = [0.05, 0.25, 0.45, 0.65, 0.85, 1.05]
@@ -2237,7 +2237,7 @@ def get_viewer_cutout(
 ):
     """
     Downloads a cutout of the tile region from legacysurvey.org/viewer.
-    
+
     Args:
         tileid: tile TILEID (int)
         tilera: tile center R.A. (float)
@@ -2260,14 +2260,14 @@ def get_viewer_cutout(
     size = int(width_deg * 3600.0 / pixscale)
     layer = "ls-{}".format(dr)
     tmpstr = 'timeout {} wget -q -O {} "http://legacysurvey.org/viewer-dev/jpeg-cutout/?layer={}&ra={:.5f}&dec={:.5f}&pixscale={:.0f}&size={:.0f}"'.format(
-        tmpfn, timeout, layer, tilera, tiledec, pixscale, size
+        timeout, tmpfn, layer, tilera, tiledec, pixscale, size
     )
     # print(tmpstr)
 
     try:
         subprocess.check_call(tmpstr, stderr=subprocess.DEVNULL, shell=True)
     except subprocess.CalledProcessError:
-        print("no cutout from viewer after {}s, stopping the wget call".format(timeout))
+        print("no cutouttime from viewer after {}s, stopping the wget call".format(timeout))
 
     try:
         img = mpimg.imread(tmpfn)
@@ -2281,7 +2281,7 @@ def get_viewer_cutout(
 def mycmap(name, n, cmin=0, cmax=1):
     """
     Defines a quantised color scheme.
-    
+
     Args:
         name: matplotlib colormap name (used through: matplotlib.cm.get_cmap(name)) (string)
         n: number of different colors to be in the color scheme (int)
@@ -2305,13 +2305,13 @@ def mycmap(name, n, cmin=0, cmax=1):
 def get_tpos(tilera, tiledec, ras, decs):
     """
     Computes the projected distance of a set of coordinates to a tile center.
-    
+
     Args:
         tilera: tile center R.A. in degrees (float)
         tiledec: tile center Dec. in degrees (float)
         ras: R.A. in degrees (np.array of floats)
         decs: Dec. in degrees (np.array of floats)
-                                                                                                                                                                                 
+
     Returns:
         dras: projected distance (degrees) to the tile center along R.A. (np.array of floats)
         ddecs: projected distance (degrees) to the tile center along Dec. (np.array of floats)
@@ -2538,8 +2538,8 @@ def plot_hist_tracer(ax, survey, parent, assign, msk, mskkey):
     Args:
         ax: pyplot object
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
-        parent: dictionary for the parent target sample (output by get_parent_assign_quants())                                                                                   
-        assign: dictionary for the assigned target sample (output by get_parent_assign_quants()) 
+        parent: dictionary for the parent target sample (output by get_parent_assign_quants())
+        assign: dictionary for the assigned target sample (output by get_parent_assign_quants())
         msk: mask name of the plotted sample (string)
         mskkey: key to select the mask on (string)
     """
@@ -2626,8 +2626,8 @@ def plot_colcol_tracer(
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         xbands: two-elements list, the x-axis color being xbands[1] - xbands[0] (list of strings)
         ybands: two-elements list, the y-axis color being ybands[1] - ybands[0] (list of strings)
-        parent: dictionary for the parent target sample (output by get_parent_assign_quants())                                                                                   
-        assign: dictionary for the assigned target sample (output by get_parent_assign_quants()) 
+        parent: dictionary for the parent target sample (output by get_parent_assign_quants())
+        assign: dictionary for the assigned target sample (output by get_parent_assign_quants())
         msk: mask name of the plotted sample (string)
         mskkey: key to select the mask on (string)
         xlim: plt.xlim
@@ -2752,9 +2752,9 @@ def plot_sky_fa(
         axs: list of 3 pyplot objects, respectively for the parent sample, the assigned sample, and the fiber assignment rate
         img: mpimg.imread(ls-dr9-cutout)
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
-        parent: dictionary for the parent target sample (output by get_parent_assign_quants())                                                                                   
-        assign: dictionary for the assigned target sample (output by get_parent_assign_quants()) 
-        dras: dictionary with projected distance (degrees) along R.A. to the center of the tile (np.array of floats),                                                            
+        parent: dictionary for the parent target sample (output by get_parent_assign_quants())
+        assign: dictionary for the assigned target sample (output by get_parent_assign_quants())
+        dras: dictionary with projected distance (degrees) along R.A. to the center of the tile (np.array of floats),
             for each of the following subsample: "parent", "assign", "sky", "bad", "wd", "std" (all assigned subsamples,
             except parent)
         ddecs: same as dras, for projected distances along Dec.
@@ -2878,7 +2878,7 @@ def make_qa(
 ):
     """
     Make fba_launch QA plot.
-    
+
     Args:
         outpng: written output PNG file (string)
         survey: "sv1", "sv2", "sv3" or "main" (string)
@@ -2888,7 +2888,7 @@ def make_qa(
         tileid: tile TILEID (int)
         tilera: tile center R.A. in degrees (float)
         tiledec: tile center Dec. in degrees (float)
-        obscon: tile allowed observing conditions (string; e.g. "DARK|GRAY|BRIGHT|BACKUP") 
+        obscon: tile allowed observing conditions (string; e.g. "DARK|GRAY|BRIGHT|BACKUP")
         rundate: used rundate (string)
         tmpoutdir (optional, defaults to a temporary directory): temporary directory (to download the cutout)
         width_deg (optional, defaults to 4): width of the cutout in degrees (np.array of floats)
@@ -3016,7 +3016,7 @@ def make_qa(
 def rmv_nonsvn(myouts, log=Logger.get(), step="", start=time()):
     """
     Remove fba_launch non-SVN products
-    
+
     Args:
         myouts: dictionary with the fba_launch args.outdir location (dictionary);
             must contain the following keys:
@@ -3041,7 +3041,7 @@ def rmv_nonsvn(myouts, log=Logger.get(), step="", start=time()):
 
 def mv_temp2final(mytmpouts, myouts, expected_keys, log=Logger.get(), step="", start=time()):
     """
-    Moves the fba_launch outputs from the temporary location to the args.outdir location.   
+    Moves the fba_launch outputs from the temporary location to the args.outdir location.
 
     Args:
         mytmpouts: dictionary with the temporary files location (dictionary);
@@ -3077,3 +3077,24 @@ def mv_temp2final(mytmpouts, myouts, expected_keys, log=Logger.get(), step="", s
             )
             sys.exit(1)
 
+
+def copy_to_svn(svntiledir, tileid, myouts,
+                worldreadable=False, log=Logger.get()):
+    if svntiledir is None:
+        log.info('Not copying to svn; svntiledir is None.')
+        return
+    subdir = ('%06d' % tileid)[:3]
+    dirmode = 0o2775 if worldreadable else 0o2770
+    filemode = 0o664 if worldreadable else 0o660
+    svntiledir = os.path.join(svntiledir, subdir)
+    files = []
+    files += [myouts['fiberassign'], myouts['log'], myouts['png']]
+    os.makedirs(svntiledir, exist_ok=True,
+                mode=dirmode)
+    for filename in files:
+        # depending on specific steps that got executed, a file may not exist.
+        if not os.path.exists(filename):
+            continue
+        outfn = os.path.join(svntiledir, os.path.basename(filename))
+        shutil.copy(filename, outfn)
+        os.chmod(outfn, filemode)

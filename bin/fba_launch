@@ -28,6 +28,7 @@ from fiberassign.fba_launch_io import (
     make_qa,
     rmv_nonsvn,
     mv_temp2final,
+    copy_to_svn,
 )
 from argparse import ArgumentParser
 
@@ -616,6 +617,19 @@ if __name__ == "__main__":
         default=None,
         required=False,
     )
+    parser.add_argument(
+        "--svntiledir",
+        help="SVN tile directory; fiberassign-* files created should be copied here.",
+        type=str,
+        default=None,
+        required=False,
+    )
+    parser.add_argument(
+        "--worldreadable",
+        help="Permissions should be world readable.",
+        action='store_true',
+        default=False,
+    )
 
     args = parser.parse_args()
     log = Logger.get()
@@ -624,8 +638,11 @@ if __name__ == "__main__":
     # AR safe: outdir
     if args.outdir[-1] != "/":
         args.outdir += "/"
-    if os.path.isdir(args.outdir) == False:
-        os.mkdir(args.outdir)
+    subdir = ('%06d' % args.tileid)[:3]
+    if not os.path.isdir(os.path.join(args.outdir, subdir)):
+        dirmode = 0o2775 if args.worldreadable else 0o2770
+        os.makedirs(os.path.join(args.outdir, subdir), exist_ok=True,
+                    mode=dirmode)
 
     # AR utc_time_now, rundate, pmtime
     utc_time_now = datetime.now(tz=timezone.utc)
@@ -697,17 +714,18 @@ if __name__ == "__main__":
     #
     for key in ["tiles", "sky", "gfa", "targ", "scnd", "too"]:
         myouts[key] = os.path.join(
-            args.outdir, "{:06d}-{}.fits".format(args.tileid, key)
+            args.outdir, subdir, "{:06d}-{}.fits".format(args.tileid, key)
         )
-    myouts["fba"] = os.path.join(args.outdir, "fba-{:06d}.fits".format(args.tileid))
+    myouts["fba"] = os.path.join(
+        args.outdir, subdir, "fba-{:06d}.fits".format(args.tileid))
     myouts["fiberassign"] = os.path.join(
-        args.outdir, "fiberassign-{:06d}.fits".format(args.tileid)
+        args.outdir, subdir, "fiberassign-{:06d}.fits".format(args.tileid)
     )
     myouts["png"] = os.path.join(
-        args.outdir, "fiberassign-{:06d}.png".format(args.tileid)
+        args.outdir, subdir,  "fiberassign-{:06d}.png".format(args.tileid)
     )
     myouts["log"] = os.path.join(
-        args.outdir, "fiberassign-{:06d}.log".format(args.tileid)
+        args.outdir, subdir, "fiberassign-{:06d}.log".format(args.tileid)
     )
 
     # AR temporary output files
@@ -715,7 +733,8 @@ if __name__ == "__main__":
     mytmpouts = {}
     for key in list(myouts.keys()):
         if key != "png":
-            mytmpouts[key] = myouts[key].replace(args.outdir, tmpoutdir)
+            mytmpouts[key] = myouts[key].replace(
+                os.path.join(args.outdir, subdir), tmpoutdir)
 
     # AR temporary log file
     if os.path.isfile(mytmpouts["log"]):
@@ -728,6 +747,11 @@ if __name__ == "__main__":
 
         # AR/SB moving the log at last if it was sent to a file
         _ = shutil.move(mytmpouts["log"], myouts["log"])
+
+    # must occur outside of main to get log.
+    if args.svntiledir is not None:
+        copy_to_svn(args.svntiledir, args.tileid, myouts,
+                    worldreadable=args.worldreadable)
 
     # AR deleting folder if empty
     tmpfiles = os.listdir(tmpoutdir)
