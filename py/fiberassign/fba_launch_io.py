@@ -1300,6 +1300,7 @@ def create_too(
                 time() - start, step, outfn
             )
         )
+        return False
 
     return True
 
