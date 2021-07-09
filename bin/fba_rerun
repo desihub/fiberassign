@@ -82,7 +82,7 @@ def main():
         # AR handling of the "action_store=True" arguments..
         # AR - if True, we keep the argument name
         # AR - if False, we remove
-        if key in ["--log_stdout"]:
+        if key in ["--log_stdout", "--worldreadable"]:
             if val == "False":
                 continue
             else:
