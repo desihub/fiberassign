@@ -3,8 +3,19 @@
 fiberassign change log
 ======================
 
-5.1.1 (unreleased)
------------------
+5.1.2 (unreleased)
+------------------
+
+5.1.1 (2021-07-09)
+------------------
+
+No algorithmic changes, bug fixes.
+
+* fix case if no ToO targets selected, for mv_temp2final() (PR `#382`)
+* Proper handling of --worldreadable in fba_rerun (PR `#382`)
+
+.. _`#382`: https://github.com/desihub/fiberassign/pull/382
+.. _`#383`: https://github.com/desihub/fiberassign/pull/383
 
 5.1.0 (2021-07-08)
 ------------------
