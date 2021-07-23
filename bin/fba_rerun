@@ -7,12 +7,12 @@ from datetime import datetime
 from astropy.time import Time
 from astropy.io import fits
 import numpy as np
-from fiberassign.fba_launch_io import assert_env_vars, print_config_infos
 from fiberassign.utils import Logger
 import desitarget
 import desimeter
 import fiberassign
-
+if fiberassign.__version__ >= "2.5.0":
+    from fiberassign.fba_launch_io import assert_env_vars, print_config_infos
 from argparse import ArgumentParser
 
 # AR allowed steps in fba_launch
@@ -129,10 +129,12 @@ def main():
                     )
 
     # AR safe: DESI environment variables defined?
-    assert_env_vars(log=log, step="settings", start=start)
+    if fiberassign.__version__ >= "2.5.0":
+        assert_env_vars(log=log, step="settings", start=start)
 
     # AR print general configuration informations
-    print_config_infos(log=log, step="settings", start=start)
+    if fiberassign.__version__ >= "2.5.0":
+        print_config_infos(log=log, step="settings", start=start)
 
     # AR for information, compare desitarget, desimeter, fiberassign
     # AR    code version with what was used in args.infiberassign
