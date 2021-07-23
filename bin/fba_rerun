@@ -110,6 +110,15 @@ def main():
             else:
                 mydict[key] = val
 
+    # AR args.mtltime has been introduced in 2.4.0
+    # AR if the tile was run with a previous version, we add it as an argument
+    if (hdr["FA_VER"] < "2.4.0") & (fiberassign.__version__ >= "2.4.0"):
+        mydict["--mtltime"] = hdr["MTLTIME"]
+        log.info("{:.1f}s\tsettings\tadding mydict['mtltime']={} as FA_VER={}<2.4.0 and runnning with {}>=2.4.0".format(
+                time() - start, hdr["MTLTIME"], hdr["FA_VER"], fiberassign.__version__,
+            )
+        )
+
     # AR assume UTC for pmtime, pmtime_utc_str, rundate, mtltime?
     if args.assume_utc:
         for key in ["--pmtime", "--pmtime_utc_str", "--rundate", "--mtltime"]:
