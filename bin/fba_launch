@@ -647,11 +647,13 @@ if __name__ == "__main__":
     # AR utc_time_now, rundate, pmtime
     utc_time_now = datetime.now(tz=timezone.utc)
     utc_time_now_str = utc_time_now.isoformat(timespec="seconds")
-    mjd_now = Time(utc_time_now).mjd
     if args.rundate is None:
         args.rundate = utc_time_now_str
+    # AR mjd_now, pmtime: setting to rundate if not set
+    # AR    (instead of utc_time_now_str, to allow reproducibility)
+    mjd_now = Time(args.rundate).mjd
     if args.pmtime_utc_str is None:
-        args.pmtime_utc_str = utc_time_now_str
+        args.pmtime_utc_str = args.rundate
 
     # AR mtltime
     # AR if possible: setting to the latest timestamp for the program
