@@ -7,7 +7,7 @@ from datetime import datetime
 from astropy.time import Time
 from astropy.io import fits
 import numpy as np
-from fiberassign.fba_launch_io import assert_env_vars, print_config_infos, assert_isoformat_utc
+from fiberassign.fba_launch_io import assert_env_vars, print_config_infos
 from fiberassign.utils import Logger
 import desitarget
 import desimeter
@@ -114,21 +114,19 @@ def main():
     if args.assume_utc:
         for key in ["--pmtime", "--pmtime_utc_str", "--rundate", "--mtltime"]:
             if key in list(mydict.keys()):
-                if not assert_isoformat_utc(mydict[key]):
-                    try:
-                        test_time = datetime.strptime(mydict[key], "%Y-%m-%dT%H:%M:%S")
-                    except ValueError:
-                        log.error("mydict[{}]={} fails assert_isoformat_utc() and is not %Y-%m-%dT%H:%M:%S; exiting".format(
-                                key, mydict[key],
-                            )
-                        )
-                        sys.exit(1)
+                try:
+                    _ = datetime.strptime(mydict[key], "%Y-%m-%dT%H:%M:%S")
                     log.info(
-                        "{:.1f}s\tsettings\t{}: switching {} to {}+00:00".format(
+                        "{:.1f}s\tsettings\t{}: modifying {} to {}+00:00".format(
                             time() - start, key, mydict[key], mydict[key]
                         )
                     )
                     mydict[key] += "+00:00"
+                except ValueError:
+                    log.warning("{:.1f}s\tsettings\tmydict[{}]={} is not %Y-%m-%dT%H:%M:%S; not changing it, even if args.assume_utc".format(
+                            time() - start, key, mydict[key],
+                        )
+                    )
 
     # AR safe: DESI environment variables defined?
     assert_env_vars(log=log, step="settings", start=start)
