@@ -119,6 +119,23 @@ def main():
             )
         )
 
+    # AR case of 19 SV3 tiles designed on 2021-04-10:
+    # AR    those have rundate = 2021-04-10 21:28:37
+    # AR    there has been a fp update on 2021-04-10T20:00:39+00:00
+    # AR    but apparently the desi-state*ecsv file at NERSC was not updated then
+    # AR    so the original fiberassign run considered the previous fp state
+    # AR    =>
+    # AR    we manually modify the rundate, pmtime, mtltime
+    if hdr["TILEID"] in [4, 30, 58, 84, 112, 139, 166, 193, 220, 248, 275, 302, 329, 356, 364, 383, 391, 410, 418]:
+        for key in ["--pmtime", "--rundate", "--mtltime"]:
+            if mydict[key] == "2021-04-10T21:28:37":
+                log.info("{:.1f}s\tsettings\tmodifying mydict[{}] from {} to {} (TILEID={} designed when desi-state*ecsv file not updated at NERSC".format(
+                        time() - start, key, mydict[key], mydict[key].replace("21:28:37", "20:00:00"), hdr["TILEID"],
+                    )
+                )
+                mydict[key] = mydict[key].replace("21:28:37", "20:00:00")
+
+
     # AR assume UTC for pmtime, pmtime_utc_str, rundate, mtltime?
     if args.assume_utc:
         for key in ["--pmtime", "--pmtime_utc_str", "--rundate", "--mtltime"]:
