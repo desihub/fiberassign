@@ -163,6 +163,15 @@ def main():
             )
         )
 
+    # AR dtver: pre-shutdown main, replace 1.0.0 by 1.1.1
+    # AR because of missing CALIB targets that were bumped by MWS secondary targets
+    if (mydict["--survey"] == "main") & (mydict["--dtver"] == "1.0.0"):
+        mydict["--dtver"] = "1.1.1"
+        log.info("{:.1f}s\tsettings\tmodifying mydict[--dtver]=1.0.0 to mydict[--dtver]=1.1.1".format(
+                time() - start,
+            )
+        )
+
     # AR safe: DESI environment variables defined?
     if fiberassign.__version__ >= "2.5.0":
         assert_env_vars(log=log, step="settings", start=start)
