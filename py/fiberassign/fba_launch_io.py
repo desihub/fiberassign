@@ -33,7 +33,10 @@ from astropy.time import Time
 import desitarget
 from desitarget.gaiamatch import gaia_psflike
 from desitarget.io import read_targets_in_tiles, write_targets, write_skies
-from desitarget.mtl import match_ledger_to_targets
+if desitarget.__version__ < "1.2.2":
+    from desitarget.mtl import inflate_ledger
+else:
+    from desitarget.mtl import match_ledger_to_targets
 from desitarget.targetmask import desi_mask, obsconditions
 from desitarget.targets import set_obsconditions
 from desitarget.geomask import match
@@ -848,6 +851,9 @@ def create_sky(
         add_plate_cols: not adding PLATE_REF_EPOCH;
         20210526 : implementation of using subpriority=False in write_skies
                     to avoid an over-writting of the SUBPRIORITY
+        20210727 : introducing a condition on the desitarget version,
+                    to be able to reproduce SV3 pre-20210526 intermediate files,
+                    with desitarget version < 1.1.0
     """
     log.info("")
     log.info("")
@@ -875,7 +881,12 @@ def create_sky(
             )
         )
 
-    n, tmpfn = write_skies(tmpoutdir, d, indir=skydir, indir2=suppskydir, subpriority=False)
+    # AR possibility to use the desitarget versions used for SV3
+    # AR where the SUBPRIORITY was overwritten
+    if desitarget.__version__ < "1.1.0":
+        n, tmpfn = write_skies(tmpoutdir, d, indir=skydir, indir2=suppskydir)
+    else:
+        n, tmpfn = write_skies(tmpoutdir, d, indir=skydir, indir2=suppskydir, subpriority=False)
     _ = mv_write_targets_out(tmpfn, tmpoutdir, outfn, log=log, step=step, start=start)
     log.info("{:.1f}s\t{}\t{} written".format(time() - start, step, outfn))
 
@@ -926,6 +937,9 @@ def create_targ_nomtl(
 
         20210526 : implementation of using subpriority=False in write_targets
                     to avoid an over-writting of the SUBPRIORITY
+        20210727 : introducing a condition on the desitarget version,
+                    to be able to reproduce SV3 pre-20210526 intermediate files,
+                    with desitarget version < 1.1.0
     """
     log.info("")
     log.info("")
@@ -977,7 +991,12 @@ def create_targ_nomtl(
         )
 
     # AR targ_nomtl: write fits
-    n, tmpfn = write_targets(tmpoutdir, d, indir=targdir, survey=survey, subpriority=False)
+    # AR possibility to use the desitarget versions used for SV3
+    # AR where the SUBPRIORITY was overwritten
+    if desitarget.__version__ < "1.1.0":
+        n, tmpfn = write_targets(tmpoutdir, d, indir=targdir, survey=survey)
+    else:
+        n, tmpfn = write_targets(tmpoutdir, d, indir=targdir, survey=survey, subpriority=False)
     _ = mv_write_targets_out(tmpfn, tmpoutdir, outfn, log=log, step=step, start=start)
     # AR targ_nomtl: update header if pmcorr = "y"
     if pmcorr == "y":
@@ -1041,6 +1060,9 @@ def create_mtl(
 
         20210526 : implementation of using subpriority=False in write_targets
                     to avoid an over-writting of the SUBPRIORITY
+        20210727 : introducing a condition on the desitarget version,
+                    to be able to reproduce SV3 pre-20210526 intermediate files,
+                    with desitarget version < 1.1.0
     """
     log.info("")
     log.info("")
@@ -1096,8 +1118,12 @@ def create_mtl(
                 time() - start, step, ",".join(columns), targdir
             )
         )
-        targ = read_targets_in_tiles(targdir, tiles=tiles, quick=True, columns=columns + ["TARGETID"])
-        d = match_ledger_to_targets(d, targ)
+        # AR backwards-compatibility to rerun SV3
+        if desitarget.__version__ < "1.2.2":
+            d = inflate_ledger(d, targdir, columns=columns, header=False, strictcols=False, quick=True)
+        else:
+            targ = read_targets_in_tiles(targdir, tiles=tiles, quick=True, columns=columns + ["TARGETID"])
+            d = match_ledger_to_targets(d, targ)
 
     # AR adding PLATE_RA, PLATE_DEC, PLATE_REF_EPOCH ?
     if add_plate_cols:
@@ -1135,7 +1161,12 @@ def create_mtl(
             d, gaia_ref_epochs[gaiadr], log=log, step=step, start=start
         )
     # AR mtl: write fits
-    n, tmpfn = write_targets(tmpoutdir, d, indir=mtldir, indir2=targdir, survey=survey, subpriority=False)
+    # AR possibility to use the desitarget versions used for SV3
+    # AR where the SUBPRIORITY was overwritten
+    if desitarget.__version__ < "1.1.0":
+        n, tmpfn = write_targets(tmpoutdir, d, indir=mtldir, indir2=targdir, survey=survey)
+    else:
+        n, tmpfn = write_targets(tmpoutdir, d, indir=mtldir, indir2=targdir, survey=survey, subpriority=False)
     _ = mv_write_targets_out(tmpfn, tmpoutdir, outfn, log=log, step=step, start=start,)
 
     # AR mtl: update header if pmcorr = "y"
@@ -1202,6 +1233,9 @@ def create_too(
 
         20210526 : implementation of using subpriority=False in write_targets
                     to avoid an over-writting of the SUBPRIORITY
+        20210727 : introducing a condition on the desitarget version,
+                    to be able to reproduce SV3 pre-20210526 intermediate files,
+                    with desitarget version < 1.1.0
     """
     log.info("")
     log.info("")
@@ -1282,7 +1316,12 @@ def create_too(
             )
 
         # AR mtl: write fits
-        n, tmpfn = write_targets(tmpoutdir, d.as_array(), indir=toofn, survey=survey, subpriority=False)
+        # AR possibility to use the desitarget versions used for SV3
+        # AR where the SUBPRIORITY was overwritten
+        if desitarget.__version__ < "1.1.0":
+            n, tmpfn = write_targets(tmpoutdir, d.as_array(), indir=toofn, survey=survey)
+        else:
+            n, tmpfn = write_targets(tmpoutdir, d.as_array(), indir=toofn, survey=survey, subpriority=False)
         _ = mv_write_targets_out(
             tmpfn, tmpoutdir, outfn, log=log, step=step, start=start,
         )
