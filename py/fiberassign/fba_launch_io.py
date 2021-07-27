@@ -33,6 +33,7 @@ from astropy.time import Time
 import desitarget
 from desitarget.gaiamatch import gaia_psflike
 from desitarget.io import read_targets_in_tiles, write_targets, write_skies
+
 if desitarget.__version__ < "1.2.2":
     from desitarget.mtl import inflate_ledger
 else:
@@ -153,7 +154,7 @@ def get_program_latest_timestamp(
             # AR taking the latest timestamp
             tm = np.unique(d["TIMESTAMP"])[-1]
             # AR does not end with +NN:MM timezone?
-            if re.search('\+\d{2}:\d{2}$', tm) is None:
+            if re.search("\+\d{2}:\d{2}$", tm) is None:
                 tm = "{}+00:00".format(tm)
             tm = datetime.strptime(tm, "%Y-%m-%dT%H:%M:%S%z")
             # AR TBD: we currently add one minute; can be removed once
@@ -604,7 +605,8 @@ def print_config_infos(
 
     # AR fiberassign, desitarget, desimodel, desimeter code version/path
     for module, name in zip(
-        [fiberassign, desitarget, desimodel, desimeter], ["fiberassign", "desitarget", "desimodel", "desimeter"]
+        [fiberassign, desitarget, desimodel, desimeter],
+        ["fiberassign", "desitarget", "desimodel", "desimeter"],
     ):
         log.info(
             "{:.1f}s\t{}\trunning with {} code version: {}".format(
@@ -715,7 +717,9 @@ def get_desitarget_paths(
         if survey.lower() == "main":
             basename = "targets-{}-secondary.fits".format(program.lower())
         else:
-            basename = "{}targets-{}-secondary.fits".format(survey.lower(), program.lower())
+            basename = "{}targets-{}-secondary.fits".format(
+                survey.lower(), program.lower()
+            )
         mydirs["scnd"] = os.path.join(
             os.getenv("DESI_TARGET"),
             "catalogs",
@@ -866,7 +870,11 @@ def create_sky(
         skydirs.append(suppskydir)
     ds = [read_targets_in_tiles(skydir, tiles=tiles, quick=True) for skydir in skydirs]
     for skydir, d in zip(skydirs, ds):
-        log.info("{:.1f}s\t{}\treadin {} targets from {}".format(time() - start, step, len(d), skydir))
+        log.info(
+            "{:.1f}s\t{}\treadin {} targets from {}".format(
+                time() - start, step, len(d), skydir
+            )
+        )
     d = np.concatenate(ds)
 
     # AR adding PLATE_RA, PLATE_DEC?
@@ -886,7 +894,9 @@ def create_sky(
     if desitarget.__version__ < "1.1.0":
         n, tmpfn = write_skies(tmpoutdir, d, indir=skydir, indir2=suppskydir)
     else:
-        n, tmpfn = write_skies(tmpoutdir, d, indir=skydir, indir2=suppskydir, subpriority=False)
+        n, tmpfn = write_skies(
+            tmpoutdir, d, indir=skydir, indir2=suppskydir, subpriority=False
+        )
     _ = mv_write_targets_out(tmpfn, tmpoutdir, outfn, log=log, step=step, start=start)
     log.info("{:.1f}s\t{}\t{} written".format(time() - start, step, outfn))
 
@@ -996,7 +1006,9 @@ def create_targ_nomtl(
     if desitarget.__version__ < "1.1.0":
         n, tmpfn = write_targets(tmpoutdir, d, indir=targdir, survey=survey)
     else:
-        n, tmpfn = write_targets(tmpoutdir, d, indir=targdir, survey=survey, subpriority=False)
+        n, tmpfn = write_targets(
+            tmpoutdir, d, indir=targdir, survey=survey, subpriority=False
+        )
     _ = mv_write_targets_out(tmpfn, tmpoutdir, outfn, log=log, step=step, start=start)
     # AR targ_nomtl: update header if pmcorr = "y"
     if pmcorr == "y":
@@ -1074,12 +1086,7 @@ def create_mtl(
 
     # AR mtl: read mtl
     d = read_targets_in_tiles(
-        mtldir,
-        tiles=tiles,
-        quick=False,
-        mtl=True,
-        unique=True,
-        isodate=mtltime,
+        mtldir, tiles=tiles, quick=False, mtl=True, unique=True, isodate=mtltime,
     )
     log.info(
         "{:.1f}s\t{}\treading {} targets from {}".format(
@@ -1120,9 +1127,13 @@ def create_mtl(
         )
         # AR backwards-compatibility to rerun SV3
         if desitarget.__version__ < "1.2.2":
-            d = inflate_ledger(d, targdir, columns=columns, header=False, strictcols=False, quick=True)
+            d = inflate_ledger(
+                d, targdir, columns=columns, header=False, strictcols=False, quick=True
+            )
         else:
-            targ = read_targets_in_tiles(targdir, tiles=tiles, quick=True, columns=columns + ["TARGETID"])
+            targ = read_targets_in_tiles(
+                targdir, tiles=tiles, quick=True, columns=columns + ["TARGETID"]
+            )
             d = match_ledger_to_targets(d, targ)
 
     # AR adding PLATE_RA, PLATE_DEC, PLATE_REF_EPOCH ?
@@ -1164,9 +1175,13 @@ def create_mtl(
     # AR possibility to use the desitarget versions used for SV3
     # AR where the SUBPRIORITY was overwritten
     if desitarget.__version__ < "1.1.0":
-        n, tmpfn = write_targets(tmpoutdir, d, indir=mtldir, indir2=targdir, survey=survey)
+        n, tmpfn = write_targets(
+            tmpoutdir, d, indir=mtldir, indir2=targdir, survey=survey
+        )
     else:
-        n, tmpfn = write_targets(tmpoutdir, d, indir=mtldir, indir2=targdir, survey=survey, subpriority=False)
+        n, tmpfn = write_targets(
+            tmpoutdir, d, indir=mtldir, indir2=targdir, survey=survey, subpriority=False
+        )
     _ = mv_write_targets_out(tmpfn, tmpoutdir, outfn, log=log, step=step, start=start,)
 
     # AR mtl: update header if pmcorr = "y"
@@ -1279,7 +1294,13 @@ def create_too(
     keep &= (d["MJD_BEGIN"] < mjd_max) & (d["MJD_END"] > mjd_min)
     log.info(
         "{:.1f}s\t{}\tkeeping {}/{} targets in tiles, with TOO_TYPE={}, and in the MJD time window: {}, {}".format(
-            time() - start, step, keep.sum(), len(keep), "TILE,FIBER" if too_tile else "FIBER", mjd_min, mjd_max
+            time() - start,
+            step,
+            keep.sum(),
+            len(keep),
+            "TILE,FIBER" if too_tile else "FIBER",
+            mjd_min,
+            mjd_max,
         )
     )
 
@@ -1319,9 +1340,13 @@ def create_too(
         # AR possibility to use the desitarget versions used for SV3
         # AR where the SUBPRIORITY was overwritten
         if desitarget.__version__ < "1.1.0":
-            n, tmpfn = write_targets(tmpoutdir, d.as_array(), indir=toofn, survey=survey)
+            n, tmpfn = write_targets(
+                tmpoutdir, d.as_array(), indir=toofn, survey=survey
+            )
         else:
-            n, tmpfn = write_targets(tmpoutdir, d.as_array(), indir=toofn, survey=survey, subpriority=False)
+            n, tmpfn = write_targets(
+                tmpoutdir, d.as_array(), indir=toofn, survey=survey, subpriority=False
+            )
         _ = mv_write_targets_out(
             tmpfn, tmpoutdir, outfn, log=log, step=step, start=start,
         )
@@ -1498,11 +1523,8 @@ def launch_onetile_fa(
         copy_fba=ag["copy_fba"],
     )
 
-
     log.info(
-        "{:.1f}s\t{}\tcomputing assignment statiscs: start".format(
-            time() - start, step
-        )
+        "{:.1f}s\t{}\tcomputing assignment statiscs: start".format(time() - start, step)
     )
 
     # AR storing parent/assigned quantities
@@ -1510,12 +1532,12 @@ def launch_onetile_fa(
         args.survey, targfns, fiberassignfn, tilera, tiledec,
     )
     # AR stats : assigned / parent
-    print_assgn_parent_stats(args.survey, parent, assign, log=log, step=step, start=start)
+    print_assgn_parent_stats(
+        args.survey, parent, assign, log=log, step=step, start=start
+    )
 
     log.info(
-        "{:.1f}s\t{}\tcomputing assignment statiscs: done".format(
-            time() - start, step
-        )
+        "{:.1f}s\t{}\tcomputing assignment statiscs: done".format(time() - start, step)
     )
 
 
@@ -1783,11 +1805,7 @@ def get_qa_tracers(
 
 
 def get_parent_assign_quants(
-    survey,
-    targfns,
-    fiberassignfn,
-    tilera,
-    tiledec,
+    survey, targfns, fiberassignfn, tilera, tiledec,
 ):
     """
     Stores the parent and assigned targets properties (desitarget columns).
@@ -1844,7 +1862,12 @@ def get_parent_assign_quants(
     for targfn in targfns:
         d = fits.open(targfn)[1].data
         for key in keys:
-            if key in ["DESI_TARGET", "BGS_TARGET", "MWS_TARGET", "SCND_TARGET",]:
+            if key in [
+                "DESI_TARGET",
+                "BGS_TARGET",
+                "MWS_TARGET",
+                "SCND_TARGET",
+            ]:
                 if survey.lower()[:2] == "sv":
                     key_orig = "{}_{}".format(survey.upper(), key)
                 else:
@@ -2009,7 +2032,7 @@ def flux2mag(flux, band=None, ebv=None):
         flux < 0 values are converted to NaN in magnitudes
     """
     # np.nan_to_num: NaN -> 0, so keep=False.
-    keep = (np.nan_to_num(flux) > 0)
+    keep = np.nan_to_num(flux) > 0
     mag = np.nan + np.zeros(len(flux))
     mag[keep] = 22.5 - 2.5 * np.log10(flux[keep])
     if ebv is not None:
@@ -2112,7 +2135,7 @@ def qa_print_infos(
         ):
             magmin, color = "-", "k"
             # np.nan_to_num: NaN,Inf -> 0, so keep=False.
-            keep = (np.nan_to_num(mag, posinf=0., neginf=0.) > 0)
+            keep = np.nan_to_num(mag, posinf=0.0, neginf=0.0) > 0
             if keep.sum() > 0:
                 magmin = mag[keep].min()
                 if magmin < magthresh:
@@ -2237,7 +2260,11 @@ def get_viewer_cutout(
     try:
         subprocess.check_call(tmpstr, stderr=subprocess.DEVNULL, shell=True)
     except subprocess.CalledProcessError:
-        print("no cutouttime from viewer after {}s, stopping the wget call".format(timeout))
+        print(
+            "no cutouttime from viewer after {}s, stopping the wget call".format(
+                timeout
+            )
+        )
 
     try:
         img = mpimg.imread(tmpfn)
@@ -3009,7 +3036,9 @@ def rmv_nonsvn(myouts, log=Logger.get(), step="", start=time()):
             )
 
 
-def mv_temp2final(mytmpouts, myouts, expected_keys, log=Logger.get(), step="", start=time()):
+def mv_temp2final(
+    mytmpouts, myouts, expected_keys, log=Logger.get(), step="", start=time()
+):
     """
     Moves the fba_launch outputs from the temporary location to the args.outdir location.
 
@@ -3048,19 +3077,17 @@ def mv_temp2final(mytmpouts, myouts, expected_keys, log=Logger.get(), step="", s
             sys.exit(1)
 
 
-def copy_to_svn(svntiledir, tileid, myouts,
-                worldreadable=False, log=Logger.get()):
+def copy_to_svn(svntiledir, tileid, myouts, worldreadable=False, log=Logger.get()):
     if svntiledir is None:
-        log.info('Not copying to svn; svntiledir is None.')
+        log.info("Not copying to svn; svntiledir is None.")
         return
-    subdir = ('%06d' % tileid)[:3]
+    subdir = ("%06d" % tileid)[:3]
     dirmode = 0o2775 if worldreadable else 0o2770
     filemode = 0o664 if worldreadable else 0o660
     svntiledir = os.path.join(svntiledir, subdir)
     files = []
-    files += [myouts['fiberassign'], myouts['log'], myouts['png']]
-    os.makedirs(svntiledir, exist_ok=True,
-                mode=dirmode)
+    files += [myouts["fiberassign"], myouts["log"], myouts["png"]]
+    os.makedirs(svntiledir, exist_ok=True, mode=dirmode)
     for filename in files:
         # depending on specific steps that got executed, a file may not exist.
         if not os.path.exists(filename):
@@ -3150,7 +3177,10 @@ def fba_rerun_intermediate_get_settings(
             )
     #
     mydict["tileid"] = int(mydict["tileid"])
-    mydict["tilera"], mydict["tiledec"] = float(mydict["tilera"]), float(mydict["tiledec"])
+    mydict["tilera"], mydict["tiledec"] = (
+        float(mydict["tilera"]),
+        float(mydict["tiledec"]),
+    )
 
     # AR case of 19 SV3 tiles designed on 2021-04-10:
     # AR    those have rundate = 2021-04-10T21:28:37
@@ -3272,11 +3302,15 @@ def fba_rerun_intermediate(
     # AR config infos
     print_config_infos(log=log, step="settings", start=start)
     # AR get settings
-    mydict = fba_rerun_intermediate_get_settings(fn, log=log, step="settings", start=start)
+    mydict = fba_rerun_intermediate_get_settings(
+        fn, log=log, step="settings", start=start
+    )
     print(mydict)
     # AR setting outdir/ABC + safe check
-    outdir = os.path.join(os.path.normpath(outdir), "{:06d}".format(mydict["tileid"])[:3])
-    if (outdir == os.path.dirname(fn)):
+    outdir = os.path.join(
+        os.path.normpath(outdir), "{:06d}".format(mydict["tileid"])[:3]
+    )
+    if outdir == os.path.dirname(fn):
         sys.exit("not safe to write in the original folder {}; exiting".format(outdir))
     # AR MJD window for ToO
     mjd_now = Time(datetime.strptime(mydict["rundate"], "%Y-%m-%dT%H:%M:%S%z")).mjd
