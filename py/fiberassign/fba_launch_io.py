@@ -1234,7 +1234,7 @@ def create_too(
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time())
 
     Notes:
         if pmcorr="y", then pmtime_utc_str needs to be set; will trigger an error otherwise.
@@ -1251,6 +1251,10 @@ def create_too(
         20210727 : introducing a condition on the desitarget version,
                     to be able to reproduce SV3 pre-20210526 intermediate files,
                     with desitarget version < 1.1.0
+        20210727 : SV3-hack for reproducibility: ToO.ecsv has been updated on 2021, Apr 30, with new rows appended.
+                    if pmtime_utc_str < 2021-04-30, we discard the appended rows, with identifying them
+                    with MJD_END > 59340; the affected tiles are designed on 2021, Apr 19-22, so need for fine-tuning.
+        TBD: we currently use pmtime_utc_str, which is an optional argument (but always provided)
     """
     log.info("")
     log.info("")
@@ -1276,6 +1280,17 @@ def create_too(
     # AR - tiles
     # AR - mjd (! TBD !)
     d = Table.read(toofn)
+
+    # AR too: SV3 handling (see Notes)
+    if ("sv3" in toofn) & (pmtime_utc_str is not None):
+        if pmtime_utc_str < "2021-04-30T00:00:00":
+            reject = d["MJD_END"] > 59340
+            log.info(
+                "{:.1f}s\t{}\twe reject {} targets with MJD_END>59340, because SV3 tile designed at {} < 2021-04-30T00:00:00".format(
+                    time() - start, step, reject.sum(), pmtime_utc_str,
+                )
+            )
+            d = d[~reject]
 
     # AR adding PLATE_RA, PLATE_DEC, PLATE_REF_EPOCH ?
     if add_plate_cols:
