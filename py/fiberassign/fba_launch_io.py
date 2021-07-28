@@ -3430,3 +3430,232 @@ def fba_rerun_intermediate(
     log.info("")
     log.info("")
     log.info("{:.1f}s\tend\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+
+
+def fba_rerun_get_settings(
+    fn, log=Logger.get(), step="rerun", start=time(),
+):
+    """
+    Get the required fiberassign settings from a fiberassign-TILEID.fits.gz file to execute
+        fba_run, to rerun the fiber assignment.
+
+    Args:
+        fn: full path to the fiberassign-TILEID.fits file to be rerun (string0
+        log (optional, defaults to Logger.get()): Logger object
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time())
+
+    Returns:
+        tileid: tileid (int)
+        mydict: dictionary with "rundate", "tileid", "tiledec", "tilera", "fieldrot", "ha" (dictionary)
+        faver: fiberassign code version to use (string)
+        skybrver: SKYBRICKS_DIR version ("-" if not set) (string)
+
+    Notes:
+        Special cases handling:
+        - fiberassign/2.2.0.dev2811 -> fiberassign/2.2.0
+        - fiberassign2.3.0.dev2838 -> fiberassign/2.3.0
+        - fiberassign/2.4.0: SKYBRICKS_DIR was not recorded yet in the header -> we set it to v2
+        - RUNDATE fix for 19 SV3 tiles designed on 2021-04-10
+    """
+    #
+    hdr = fits.getheader(fn, 0)
+    # AR SV3/Main BRIGHT/DARK?
+    faflavors = ["sv3bright", "sv3dark", "mainbright", "maindark"]
+    if hdr["FAFLAVOR"] not in faflavors:
+        log.error("FAFLAVOR={} not in {}; exiting".format(hdr["FAFLAVOR"], faflavors))
+        sys.exit(1)
+
+    # AR fiberassign code version
+    if hdr["FA_VER"] == "2.2.0.dev2811":
+        faver = "2.2.0"
+    elif hdr["FA_VER"] == "2.3.0.dev2838":
+        faver = "2.3.0"
+    else:
+        faver = hdr["FA_VER"]
+
+    # AR SKYBRICKS_DIR
+    skybrver = "-"  # default value if not set
+    keys = [cards[0] for cards in hdr.cards]
+    vals = [
+        hdr[key.replace("NAM", "VER")].split("/")[-1]
+        for key in keys
+        if hdr[key] == "SKYBRICKS_DIR"
+    ]
+    if len(vals) > 0:
+        skybrver = vals[0]
+    # AR for fiberassign/2.4.0, SKYBRICKS_DIR was not recorded yet in the header
+    if faver == "2.4.0":
+        skybrver = "v2"
+
+    mydict = {}
+
+    # AR settings from the header that we store
+    keys = [
+        "rundate",
+        "fieldrot",
+        "ha",
+    ]
+    if faver >= "2.4.0":
+        keys += ["sky_per_slitblock"]
+    if (faver >= "3.0.0") & (faver < "5.0.0"):
+        keys += ["margin-pos", "margin-petal", "margin-gfa"]
+    if faver >= "5.0.0":
+        keys += ["margin_pos", "margin_petal", "margin_gfa"]
+
+    # AR storing the FAARGS in a dictionary
+    faargs = np.array(hdr["FAARGS"].split())
+    for key in keys:
+        #
+        if key[:7] == "margin-":
+            ii = np.where(faargs == "--{}".format(key.replace("margin-", "margin_")))[0]
+        else:
+            ii = np.where(faargs == "--{}".format(key))[0]
+        if len(ii) > 0:
+            mydict[key] = faargs[ii[0] + 1]
+        # AR fieldrot: grab it from the header
+        elif key == "fieldrot":
+            mydict["fieldrot"] = hdr["FIELDROT"]
+        # AR HA: if not provided, grab it from the header (though it should be 0)
+        elif key == "ha":
+            mydict["ha"] = hdr["FA_HA"]
+        # AR sky_per_slitblock, margin_*: if not provided, set to 0
+        elif key in ["sky_per_slitblock", "margin_pos", "margin_petal", "margin_gfa"]:
+            mydict[key] = 0
+        # AR should not be other cases
+        else:
+            log.error(
+                "key={} not present in FAARGS, and not in expected missing keys; exiting".format(
+                    key
+                )
+            )
+            sys.exit(1)
+
+    # AR case of 19 SV3 tiles designed on 2021-04-10:
+    # AR    those have rundate = 2021-04-10T21:28:37
+    # AR    there has been a fp update on 2021-04-10T20:00:39+00:00
+    # AR    but apparently the desi-state*ecsv file at NERSC was not updated then
+    # AR    so the original fiberassign run considered the previous fp state
+    # AR    =>
+    # AR    we manually modify the rundate, pmtime, mtltime
+    if hdr["TILEID"] in [
+        4,
+        30,
+        58,
+        84,
+        112,
+        139,
+        166,
+        193,
+        220,
+        248,
+        275,
+        302,
+        329,
+        356,
+        364,
+        383,
+        391,
+        410,
+        418,
+    ]:
+        fixed_time = "2021-04-10T20:00:00"
+        for key in ["rundate"]:
+            log.info(
+                "{:.1f}s\t{}\tmodifying mydict[{}] from {} to {} (TILEID={} designed when desi-state*ecsv file not updated at NERSC".format(
+                    time() - start, step, key, mydict[key], fixed_time, hdr["TILEID"],
+                )
+            )
+            mydict[key] = fixed_time
+
+    return hdr["TILEID"], mydict, faver, skybrver
+
+
+def fba_rerun_fbascript(
+    infiberassignfn, outdir, intermediate_dir, log=Logger.get(), start=time(),
+):
+    """
+    Writes a bash script to rerun fiber assignment of a fiberassign-TILEID.fits.gz file.
+    Creates outdir/ABC/fba-TILEID.sh.
+    The script will create: outdir/ABC/fba-TILEID.{fits,log}.
+
+    Args:
+        infiberassignfn: full path to the fiberassign-TILEID.fits file to be rerun (string)
+        outdir: output folder (files will be written in outdir/ABC/) (string)
+        intermediate_dir: path to a folder,
+            which contains the intermediate products:
+            - outdir/ABC/TILEID-{tiles,sky,targ}.fits: required
+            - outdir/ABC/TILEID-{scnd,too}.fits: optional
+        log (optional, defaults to Logger.get()): Logger object
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time())
+
+    Notes:
+        The bash script requires that the desi (master) environment is already loaded,
+            i.e. the following has been executed: "source /global/cfs/cdirs/desi/software/desi_environment.sh master".
+        The code will use all the intermediate products present in outdir/ABC, and only those.
+        fba_rerun_fbascript() is designed to be run after fba_rerun_intermediate().
+        The code will exit with an error if any of outdir/ABC/fba-TILEID.{sh,fits,log} already exists.
+    """
+    # AR get settings, fiberassign version, and SKYBRICKS_DIR version
+    tileid, mydict, faver, skybrver = fba_rerun_get_settings(
+        infiberassignfn, log=log, step="settings", start=start
+    )
+    subdir = "{:06d}".format(tileid)[:3]
+
+    # AR output files
+    outsh = os.path.join(outdir, subdir, "fba-{:06d}.sh".format(tileid))
+    outfits = outsh.replace(".sh", ".fits")
+    outlog = outsh.replace(".sh", ".log")
+    for fn in [outsh, outfits, outlog]:
+        if os.path.isfile(fn):
+            log.error("{} already exists; exiting".format(fn))
+            sys.exit(1)
+
+    # AR files
+    mydict["dir"] = os.path.join(outdir, subdir)
+    mydict["footprint"] = os.path.join(
+        intermediate_dir, subdir, "{:06d}-tiles.fits".format(tileid)
+    )
+    mydict["sky"] = os.path.join(
+        intermediate_dir, subdir, "{:06d}-sky.fits".format(tileid)
+    )
+    mydict["targets"] = os.path.join(
+        intermediate_dir, subdir, "{:06d}-targ.fits".format(tileid)
+    )
+    for fn in [mydict["footprint"], mydict["sky"], mydict["targets"]]:
+        if not os.path.isfile(fn):
+            log.error("{} not present; exiting".format(fn))
+            sys.exit(1)
+    for root in ["scnd", "too"]:
+        fn = os.path.join(
+            intermediate_dir, subdir, "{:06d}-{}.fits".format(tileid, root)
+        )
+        if os.path.isfile(fn):
+            mydict["targets"] += " {}".format(fn)
+
+    # AR constructing the fba_run call
+    fbarun_cmd = "fba_run"
+    for key in list(mydict.keys()):
+        fbarun_cmd += " --{} {}".format(key, mydict[key])
+
+    # AR writing outsh file
+    f = open(outsh, "w")
+    f.write("#!/bin/bash\n")
+    f.write("\n")
+    f.write("module swap fiberassign/{}\n".format(faver))
+    f.write("\n")
+    # f.write("module list\n")
+    f.write("module list 2> {}\n".format(outlog))
+    f.write("\n")
+    if skybrver != "-":
+        f.write(
+            "export SKYBRICKS_DIR=$DESI_ROOT/target/skybricks/{}\n".format(skybrver)
+        )
+        # f.write("echo SKYBRICKS_DIR=$SKYBRICKS_DIR\n")
+        f.write("echo SKYBRICKS_DIR=$SKYBRICKS_DIR >> {}\n".format(outlog))
+        f.write("\n")
+    # f.write("{}\n".format(fbarun_cmd))
+    f.write("{} >> {} 2>&1\n".format(fbarun_cmd, outlog))
+    f.close()
+    os.system("chmod +x {}".format(outsh))
