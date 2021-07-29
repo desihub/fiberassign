@@ -3453,8 +3453,9 @@ def fba_rerun_get_settings(
         skybrver: SKYBRICKS_DIR version ("-" if not set) (string)
 
     Notes:
-        Special cases handling:
-        - fiberassign/2.2.0.dev2811 -> fiberassign/2.2.0
+        Special cases handling (see code for details):
+        - fiberassign/2.2.0.dev2811 and RUNDATE <  2021-04-14 -> fiberassign/2.2.0
+        - fiberassign/2.2.0.dev2811 and RUNDATE >= 2021-04-14 -> fiberassign/2.3.0
         - fiberassign2.3.0.dev2838 -> fiberassign/2.3.0
         - fiberassign/2.4.0: SKYBRICKS_DIR was not recorded yet in the header -> we set it to v2
         - RUNDATE fix for 19 SV3 tiles designed on 2021-04-10
@@ -3468,8 +3469,14 @@ def fba_rerun_get_settings(
         sys.exit(1)
 
     # AR fiberassign code version
-    if hdr["FA_VER"] == "2.2.0.dev2811":
+    # AR SV3 handling, as SV3 was run with fiberassign/master for RUNDATE<2021-04-30
+    # AR on 2021-04-13: https://github.com/desihub/fiberassign/pull/321
+    # AR                this PR changes the assignment
+    # AR                so we use 2.2.0 before, 2.3.0 after
+    if (hdr["FA_VER"] == "2.2.0.dev2811") & (hdr["RUNDATE"] < "2021-04-14"):
         faver = "2.2.0"
+    elif (hdr["FA_VER"] == "2.2.0.dev2811") & (hdr["RUNDATE"] >= "2021-04-14"):
+        faver = "2.3.0"
     elif hdr["FA_VER"] == "2.3.0.dev2838":
         faver = "2.3.0"
     else:
