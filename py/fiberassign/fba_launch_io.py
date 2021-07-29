@@ -3670,7 +3670,9 @@ def fba_rerun_fbascript(
     f.write("\n")
     f.write("module list 2> {}\n".format(outlog))
     f.write("\n")
-    if skybrver != "-":
+    if skybrver == "-":
+        f.write("unset SKYBRICKS_DIR\n")
+    else:
         f.write(
             "export SKYBRICKS_DIR=$DESI_ROOT/target/skybricks/{}\n".format(skybrver)
         )
