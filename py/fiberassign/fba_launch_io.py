@@ -3678,7 +3678,7 @@ def fba_rerun_fbascript(
         f.write("\n")
 
     # AR constructing the fba_run call
-    fbarun_cmd = "fba_run"
+    fbarun_cmd = "fba_run --write_all_targets"
     for key in list(mydict.keys()):
         fbarun_cmd += " --{} {}".format(key, mydict[key])
     f.write("{} >> {} 2>&1\n".format(fbarun_cmd, outlog))
