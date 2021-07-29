@@ -3666,6 +3666,7 @@ def fba_rerun_fbascript(
     f = open(outsh, "w")
     f.write("#!/bin/bash\n")
     f.write("\n")
+    f.write("source /global/cfs/cdirs/desi/software/desi_environment.sh master\n")
     f.write("module swap fiberassign/{}\n".format(faver))
     f.write("\n")
     f.write("module list 2> {}\n".format(outlog))
@@ -3676,8 +3677,13 @@ def fba_rerun_fbascript(
         f.write(
             "export SKYBRICKS_DIR=$DESI_ROOT/target/skybricks/{}\n".format(skybrver)
         )
-        f.write("echo SKYBRICKS_DIR=$SKYBRICKS_DIR >> {}\n".format(outlog))
-        f.write("\n")
+    f.write("\n")
+
+    # AR control informations
+    f.write("echo \"fba_run executable: `which fba_run`\" >> {}\n".format(outlog))
+    f.write("echo \"fiberassign version: `python -c 'import fiberassign; print(fiberassign.__version__)'`\" >> {}\n".format(outlog))
+    f.write("echo \"SKYBRICKS_DIR=$SKYBRICKS_DIR\" >> {}\n".format(outlog))
+    f.write("\n")
 
     # AR constructing the fba_run call
     fbarun_cmd = "fba_run --write_all_targets"
