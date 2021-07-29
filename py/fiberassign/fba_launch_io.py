@@ -3495,10 +3495,11 @@ def fba_rerun_get_settings(
     keys = [
         "rundate",
         "fieldrot",
-        "ha",
     ]
     if faver >= "2.4.0":
         keys += ["sky_per_slitblock"]
+    if faver >= "3.0.0":
+        keys += ["ha"]
     if (faver >= "3.0.0") & (faver < "5.0.0"):
         keys += ["margin-pos", "margin-petal", "margin-gfa"]
     if faver >= "5.0.0":
