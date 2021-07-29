@@ -3128,13 +3128,14 @@ def fba_rerun_intermediate_get_settings(
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
 
     Returns:
-        TBD
+        mydict: dictionary with the required fba_launch settings,
+            stored in the fiberassign*fits.gz header FAARGS (dictionary)
 
     Notes:
         Only runs for a SV3 or Main BRIGHT/DARK tile; exists with error otherwise.
         Special cases handling:
         - RUNDATE fix for 19 SV3 tiles designed on 2021-04-10
-        - MTLTIME fix for SV3 TILEID=315
+        - MTLTIME fix for SV3 TILEID=315 and 441
         - DTVER: 1.0.0->1.1.1 fix for pre-shutdown Main (NIGHT<=20210518)
         - UTC formatting for early SV3 tiles
         The SUBPRIORITY overwritting for SV3 is handled with the desitarget code version
@@ -3299,9 +3300,6 @@ def fba_rerun_intermediate(
                 write_targets will write (creating some sub-directories)
         log (optional, defaults to Logger.get()): Logger object
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
-
-    Returns:
-        TBD
 
     Notes:
         No fiberassign here.
