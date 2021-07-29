@@ -3459,7 +3459,6 @@ def fba_rerun_get_settings(
         - fiberassign2.3.0.dev2838 -> fiberassign/2.3.0
         - fiberassign/2.4.0: SKYBRICKS_DIR was not recorded yet in the header -> we set it to v2
         - RUNDATE fix for 19 SV3 tiles designed on 2021-04-10
-        - RUNDATE format for 2.2.0.dev2811: remove +00:00 if any
     """
     #
     hdr = fits.getheader(fn, 0)
@@ -3577,17 +3576,6 @@ def fba_rerun_get_settings(
                 )
             )
             mydict[key] = fixed_time
-
-    # AR because of using some fiberassign development version in SV3,
-    # AR some tiles have a rundate with +00:00, and that makes
-    # AR hardware.load_hardware crash
-    if (faver == "2.2.0") & (mydict["rundate"][-6:] == "+00:00"):
-        log.info(
-            "{:.1f}s\t{}\tmodifying mydict['rundate'] from {} to {} (TILEID={} designed with some 2.2.0 development version)".format(
-                time() - start, step, mydict["rundate"], mydict["rundate"][:-6], hdr["TILEID"]
-            )
-        )
-        mydict["rundate"] = mydict["rundate"][:-6]
 
     return hdr["TILEID"], mydict, faver, skybrver
 
