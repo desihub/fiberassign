@@ -746,6 +746,14 @@ if __name__ == "__main__":
             main()
 
         # AR/SB moving the log at last if it was sent to a file
+        # EFS remove file first if it exists; otherwise permissions
+        # errors can occur if the writer user is different from
+        # the original writer, even if the writer has permission
+        # to delete the file!
+        try:
+            os.remove(myouts["log"])
+        except FileNotFoundError:
+            pass
         _ = shutil.move(mytmpouts["log"], myouts["log"])
 
     # must occur outside of main to get log.
