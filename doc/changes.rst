@@ -3,10 +3,34 @@
 fiberassign change log
 ======================
 
-5.0.1 (unreleased)
+5.1.2 (unreleased)
 ------------------
 
-* No changes yet
+5.1.1 (2021-07-09)
+------------------
+
+No algorithmic changes, bug fixes.
+
+* fix case if no ToO targets selected, for mv_temp2final() (PR `#382`)
+* Proper handling of --worldreadable in fba_rerun (PR `#382`)
+
+.. _`#382`: https://github.com/desihub/fiberassign/pull/382
+.. _`#383`: https://github.com/desihub/fiberassign/pull/383
+
+5.1.0 (2021-07-08)
+------------------
+
+Changes to ease fiberassign on-the-fly, and fba_rerun script.
+
+* A couple of speed-ups (stuck-sky, hardware-loading) (PR `#373`)
+* fba_rerun script (PR `#376`)
+* Add features to fba_launch to support fiberassign on the fly (PR `#380`)
+# Quickread2: taking advantage of desitarget/1.2.2 speed-ups (PR `#381`)
+
+.. _`#373`: https://github.com/desihub/fiberassign/pull/373
+.. _`#376`: https://github.com/desihub/fiberassign/pull/376
+.. _`#380`: https://github.com/desihub/fiberassign/pull/380
+.. _`#381`: https://github.com/desihub/fiberassign/pull/381
 
 5.0.0 (2021-05-29)
 ------------------

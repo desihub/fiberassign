@@ -1287,6 +1287,99 @@ PYBIND11_MODULE(_internal, m) {
                 (Target): A target object.
 
         )")
+        .def("get_types", [](fba::Targets & self, std::vector<int64_t> ids) {
+                size_t n = ids.size();
+                // Create a numpy array to return
+                py::array_t < uint8_t > ret;
+                ret.resize( {n} );
+                py::buffer_info info = ret.request();
+                uint8_t * raw = static_cast < uint8_t * > (info.ptr);
+                for (auto const & id : ids) {
+                    *raw = self.data[id].type;
+                    raw++;
+                }
+                return ret;
+            }, py::return_value_policy::take_ownership, py::arg("ids"), R"(
+            Args:
+                ids (numpy array of ints): The target IDs to look up
+
+            Returns:
+                numpy array (uint8) of 'type' values for those targets.
+        )")
+        .def("get_priorities", [](fba::Targets & self, std::vector<int64_t> ids) {
+                size_t n = ids.size();
+                // Create a numpy array to return
+                py::array_t < int32_t > ret;
+                ret.resize( {n} );
+                py::buffer_info info = ret.request();
+                int32_t * raw = static_cast < int32_t * > (info.ptr);
+                for (auto const & id : ids) {
+                    *raw = self.data[id].priority;
+                    raw++;
+                }
+                return ret;
+            }, py::return_value_policy::take_ownership, py::arg("ids"), R"(
+            Args:
+                ids (numpy array of ints): The target IDs to look up
+
+            Returns:
+                numpy array (int32) of 'priority' values for those targets.
+        )")
+        .def("get_subpriorities", [](fba::Targets & self, std::vector<int64_t> ids) {
+                size_t n = ids.size();
+                // Create a numpy array to return
+                py::array_t < double > ret;
+                ret.resize( {n} );
+                py::buffer_info info = ret.request();
+                double * raw = static_cast < double * > (info.ptr);
+                for (auto const & id : ids) {
+                    *raw = self.data[id].subpriority;
+                    raw++;
+                }
+                return ret;
+            }, py::return_value_policy::take_ownership, py::arg("ids"), R"(
+            Args:
+                ids (numpy array of ints): The target IDs to look up
+
+            Returns:
+                numpy array (double) of 'subpriority' values for those targets.
+        )")
+        .def("get_type_priority_subpriority", [](fba::Targets & self, std::vector<int64_t> ids) {
+                size_t n = ids.size();
+                // Create numpy arrays to return
+                py::array_t < uint8_t > ret_type;
+                py::array_t < int32_t > ret_prio;
+                py::array_t < double >  ret_sub;
+                ret_type.resize( {n} );
+                ret_prio.resize( {n} );
+                ret_sub.resize( {n} );
+                py::buffer_info info = ret_type.request();
+                uint8_t * raw_type = static_cast < uint8_t * > (info.ptr);
+                info = ret_prio.request();
+                int32_t * raw_prio = static_cast < int32_t * > (info.ptr);
+                info = ret_sub.request();
+                double * raw_sub = static_cast < double * > (info.ptr);
+
+                for (auto const & id : ids) {
+                    fba::Target& t = self.data[id];
+                    *raw_type = t.type;
+                    raw_type++;
+                    *raw_prio = t.priority;
+                    raw_prio++;
+                    *raw_sub = t.subpriority;
+                    raw_sub++;
+                }
+                return py::make_tuple(ret_type, ret_prio, ret_sub);
+            }, py::return_value_policy::take_ownership, py::arg("ids"), R"(
+            Args:
+                ids (numpy array of ints): The target IDs to look up
+
+            Returns:
+                tuple of:
+                  numpy array (uint8) of 'type' values for those targets.
+                  numpy array (int32) of 'priority' values for those targets.
+                  numpy array (double) of 'subpriority' values for those targets.
+        )")
         .def("survey", [](fba::Targets & self) {
                 return self.survey;
             }, py::return_value_policy::copy, R"(
