@@ -11,6 +11,7 @@ from desimodel.footprint import radec2pix
 
 _sec_cache = {}
 def read_secondary(fn):
+    '''Read the given secondary targets file (FITS), with caching.'''
     global _sec_cache
     try:
         return _sec_cache[fn]
@@ -24,41 +25,64 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
           desiroot = '/global/cfs/cdirs/desi',
           outfn = None,
           ):
-    #'desi/target/fiberassign/tiles/trunk/000/fiberassign-000001.fits.gz'
-    #'desi/target/fiberassign/tiles/trunk/020/fiberassign-020004.fits.gz'
+    '''Repair the data corruption reported in https://github.com/desihub/fiberassign/pull/375
+    for a given single fiberassign file.
+
+    The patching proceeds by reading the FIBERASSIGN hdu, while checking the headers
+    for the locations of targeting files used.
+
+    Based on TARGETID, we match objects in the FIBERASSIGN file and
+    the targeting files.  For a subset of columns, we check for cases
+    where the targeting files contain different values, and patch them
+    in to the FIBERASSIGN table.
+
+    First we read the primary target files themselves, then secondary
+    targets, then ToO targets.
+
+    If any rows are changed, then an updated file is written out, preserving all other HDUs.
+
+    '''
     patched_rows = set()
 
     print('Reading', infn)
     F = fitsio.FITS(infn)
     primhdr = F[0].read_header()
-    tilera  = primhdr['TILERA']
-    tiledec = primhdr['TILEDEC']
+    #tilera  = primhdr['TILERA']
+    #tiledec = primhdr['TILEDEC']
 
+    # Find targeting files / directories in the headers.
     mtldir = primhdr['MTL']
     targdir = primhdr['TARG']
-    scndfn = primhdr['SCND']
+    scndfn = primhdr.get('SCND', '')
     toofn = primhdr.get('TOO', '')
 
+    # Swap in the local file locations. (Header values may start with the string "DESIROOT")
     mtldir = mtldir.replace('DESIROOT', desiroot)
     targdir = targdir.replace('DESIROOT', desiroot)
     scndfn = scndfn.replace('DESIROOT', desiroot)
     toofn = toofn.replace('DESIROOT', desiroot)
 
+    # Read the original FIBERASSIGN table.
     hduname = 'FIBERASSIGN'
     ff = F[hduname]
     tab = ff.read()
 
+    # We're going to match based on (positive) TARGETID.
     targetid = tab['TARGETID']
     ra = tab['TARGET_RA']
     dec = tab['TARGET_DEC']
+
+    # Start with primary target files.  These are split into healpixes, so look up which healpixes
+    # contain targets used in this tile.
 
     # Some objects have NaN TARGET_RA; skip these when looking up the healpix
     Iok = np.flatnonzero(np.isfinite(ra))
     nside = 8
     hps = radec2pix(nside, ra[Iok], dec[Iok])
 
+    # Read relevant healpixes.
     alltargets = []
-    tidset = set(targetid)
+    tidset = set(targetid[targetid > 0])
     for hp in np.unique(hps):
         pat = os.path.join(targdir, '*-hp-%03i.fits' % hp)
         #print(pat)
@@ -69,17 +93,20 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
         T = fitsio.read(fn)
         tid = T['TARGETID']
         I = np.flatnonzero([t in tidset for t in tid])
-        print('Read targets', fn, '->', len(T), 'targets,', len(I), 'matching TARGETIDs')
+        print('Read targets', fn, '->', len(T), 'targets,', len(I), 'matching (positive) TARGETIDs')
         if len(I) == 0:
             continue
         alltargets.append(T[I])    
 
+    # Merge targets and match on TARGETID.
     targets = np.hstack(alltargets)
-    tidmap = dict([(tid,i) for i,tid in enumerate(targets['TARGETID'])])
+    tidmap = dict([(tid,i) for i,tid in enumerate(targets['TARGETID']) if tid>0])
     I = np.array([tidmap.get(t, -1) for t in targetid])
     J = np.flatnonzero(I >= 0)
     I = I[J]
 
+    # We use this function to test for equality between arrays -- both
+    # being non-finite (eg NaN) counts as equal.
     def equal(a, b):
         bothnan = False
         try:
@@ -88,6 +115,7 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
             pass
         return np.logical_or(a == b, bothnan)
 
+    # This is the subset of columns we patch, based on the bug report.
     for col in ['BRICK_OBJID', 'BRICKID', 'RELEASE', 'FLUX_G', 'FLUX_R', 'FLUX_Z', 'FLUX_IVAR_G', 'FLUX_IVAR_R', 'FLUX_IVAR_Z',
                 'REF_CAT', 'GAIA_PHOT_G_MEAN_MAG', 'GAIA_PHOT_BP_MEAN_MAG', 'GAIA_PHOT_RP_MEAN_MAG', 'MASKBITS', 'REF_ID',
                 'MORPHTYPE']:
@@ -96,34 +124,41 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
         eq = equal(old, new)
         #print('Target catalogs:', col, 'equal:', Counter(eq))
         if not np.all(eq):
-            diff = np.flatnonzero(old != new)
-            #print(old[diff], 'vs', new[diff])
+            diff = np.flatnonzero(np.logical_not(eq))
             print('Target catalogs: col', col, 'patching', len(diff), 'rows')
+            print('  rows', J[diff][:5])
+            print('  old vals', tab[col][J[diff]][:5])
+            print('  new vals', new[diff][:5])
             tab[col][J[diff]] = new[diff]
             patched_rows.update(J[diff])
 
-    scnd = read_secondary(scndfn)
-    print('Read', len(scnd), 'secondaries from', scndfn)
-    sidmap = dict([(tid,i) for i,tid in enumerate(scnd['TARGETID'])])
+    # Were secondary targets used for this tile?
+    if len(scndfn):
+        scnd = read_secondary(scndfn)
+        print('Read', len(scnd), 'secondaries from', scndfn)
+        sidmap = dict([(tid,i) for i,tid in enumerate(scnd['TARGETID']) if tid > 0])
 
-    I = np.array([sidmap.get(t, -1) for t in targetid])
-    J = np.flatnonzero(I >= 0)
-    I = I[J]
+        # Match on targetid
+        I = np.array([sidmap.get(t, -1) for t in targetid])
+        J = np.flatnonzero(I >= 0)
+        I = I[J]
+    
+        for col in ['FLUX_G', 'FLUX_R', 'FLUX_Z',
+                    'GAIA_PHOT_G_MEAN_MAG', 'GAIA_PHOT_BP_MEAN_MAG', 'GAIA_PHOT_RP_MEAN_MAG',]:
+            old = tab[col][J]
+            new = scnd[col][I]
+            eq = equal(old, new)
+            #print(col, Counter(eq))
+            if not np.all(eq):
+                diff = np.flatnonzero(np.logical_not(eq))
+                print('Secondary targets: col', col, 'patching', len(diff), 'rows')
+                print('  rows', J[diff][:5])
+                print('  old vals', tab[col][J[diff]][:5])
+                print('  new vals', new[diff][:5])
+                tab[col][J[diff]] = new[diff]
+                patched_rows.update(J[diff])
 
-    for col in ['FLUX_G', 'FLUX_R', 'FLUX_Z',
-                'GAIA_PHOT_G_MEAN_MAG', 'GAIA_PHOT_BP_MEAN_MAG', 'GAIA_PHOT_RP_MEAN_MAG',]:
-        old = tab[col][J]
-        new = scnd[col][I]
-        eq = equal(old, new)
-        #print(col, Counter(eq))
-        if not np.all(eq):
-            diff = np.flatnonzero(eq)
-            print('Secondary targets: col', col, 'patching', len(diff), 'rows')
-            tab[col][J[diff]] = new[diff]
-            #print(old[diff], 'vs', new[diff])
-            #print('Difference:', old[diff] - new[diff])
-            patched_rows.update(J[diff])
-
+    # ToO files seem to have been moved... map old->new locations.
     toomap = {
         '/global/cfs/cdirs/desi/survey/ops/staging/mtl/main/ToO/ToO.ecsv' :
         '/global/cfs/cdirs/desi/target/ToO/ToO.ecsv',
@@ -133,10 +168,11 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
         }
     toofn = toomap.get(toofn, toofn)
 
+    # Were ToO targets used in this tile?
     if len(toofn):
         too = Table.read(toofn)
         print('Read', len(too), 'ToO from', toofn)
-        toomap = dict([(tid,i) for i,tid in enumerate(too['TARGETID'])])
+        toomap = dict([(tid,i) for i,tid in enumerate(too['TARGETID']) if tid > 0])
 
         I = np.array([toomap.get(t, -1) for t in targetid])
         J = np.flatnonzero(I >= 0)
@@ -148,7 +184,7 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
             new = too[col][I]
             eq = equal(old, new)
             if not np.all(eq):
-                diff = np.flatnonzero(eq)
+                diff = np.flatnonzero(np.logical_not(eq))
                 print('ToO targets: col', col, 'patching', len(diff), 'rows')
                 tab[col][J[diff]] = new[diff]
                 patched_rows.update(J[diff])
@@ -158,20 +194,21 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
         return 0
     print('Patched', len(patched_rows), 'rows')
 
+    # Make sure output directory exists but output file does not exist (fitsio is careful/picky)
     outdir = os.path.dirname(outfn)
     if not os.path.exists(outdir):
         os.makedirs(outdir)
     assert(outfn != infn)
 
-    if os.path.exists(outfn):
-        os.remove(outfn)
-    Fout = fitsio.FITS(outfn, 'rw')
+    # Write out output file, leaving other HDUs unchanged.
+    Fout = fitsio.FITS(outfn, 'rw', clobber=True)
     for ext in F:
         #print(ext.get_extname())
         extname = ext.get_extname()
         hdr = ext.read_header()
         data = ext.read()
         if extname == 'PRIMARY':
+            # fitsio will add its own headers about the FITS format, so trim out all COMMENT cards.
             newhdr = fitsio.FITSHDR()
             for r in hdr.records():
                 if r['name'] == 'COMMENT':
@@ -180,6 +217,7 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
                 newhdr.add_record(r)
             hdr = newhdr
         if extname == hduname:
+            # Swap in our updated FIBERASSIGN table!
             data = tab
         Fout.write(data, header=hdr, extname=extname)
     Fout.close()
