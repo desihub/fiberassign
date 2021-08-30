@@ -243,8 +243,10 @@ def main():
     parser.add_argument('--in-base', default='/global/cfs/cdirs/desi/target/fiberassign/tiles/trunk',
                         help='Input base path')
     parser.add_argument('--outdir', default='patched-fa')
+    parser.add_argument('--threads', type=int, help='Multiprocessing threads')
     opt = parser.parse_args()
 
+    args = []
     fa_base = opt.in_base
     for infn in opt.files:
         #infn = os.path.join(fa_base, '001/fiberassign-001000.fits.gz')
@@ -252,8 +254,19 @@ def main():
             print('All input filenames must start with --in-base = ', fa_base)
             return -1
         outfn = infn.replace(fa_base, 'patched-fa/')
-        patch(infn=infn, outfn=outfn)
-        print()
+        args.append(dict(infn=infn, outfn=outfn))
+
+    if opt.threads:
+        from astrometry.util.multiproc import multiproc
+        mp = multiproc(opt.threads)
+        mp.map(_bounce_patch, args)
+    else:
+        for kw in args:
+            patch(**kw)
+            print()
+
+def _bounce_patch(x):
+    return patch(**x)
 
 if __name__ == '__main__':
     main()
