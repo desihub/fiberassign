@@ -53,13 +53,13 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
     tileid = primhdr['TILEID']
 
     # Find targeting files / directories in the headers.
-    mtldir = primhdr['MTL']
+    #mtldir = primhdr['MTL']
     targdir = primhdr['TARG']
     scndfn = primhdr.get('SCND', '')
     toofn = primhdr.get('TOO', '')
 
     # Swap in the local file locations. (Header values may start with the string "DESIROOT")
-    mtldir = mtldir.replace('DESIROOT', desiroot)
+    #mtldir = mtldir.replace('DESIROOT', desiroot)
     targdir = targdir.replace('DESIROOT', desiroot)
     scndfn = scndfn.replace('DESIROOT', desiroot)
     toofn = toofn.replace('DESIROOT', desiroot)
@@ -93,10 +93,12 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
     alltargets = []
     tidset = set(targetid[targetid > 0])
     for hp in np.unique(hps):
-        pat = os.path.join(targdir, '*-hp-%03i.fits' % hp)
+        pat = os.path.join(targdir, '*-hp-%i.fits' % hp)
         #print(pat)
         fns = glob(pat)
         #print(fns)
+        if len(fns) != 1:
+            print('Searching for pattern', pat, 'found files', fns, '; expected 1 file.')
         assert(len(fns) == 1)
         fn = fns[0]
         T = fitsio.read(fn)
@@ -113,6 +115,7 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
     I = np.array([tidmap.get(t, -1) for t in targetid])
     J = np.flatnonzero(I >= 0)
     I = I[J]
+    print('Checking', len(I), 'matched TARGETIDs')
 
     # We use this function to test for equality between arrays -- both
     # being non-finite (eg NaN) counts as equal.
