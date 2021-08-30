@@ -43,12 +43,14 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
 
     '''
     patched_rows = set()
+    patched_neg_tids = False
 
     print('Reading', infn)
     F = fitsio.FITS(infn)
     primhdr = F[0].read_header()
     #tilera  = primhdr['TILERA']
     #tiledec = primhdr['TILEDEC']
+    tileid = primhdr['TILEID']
 
     # Find targeting files / directories in the headers.
     mtldir = primhdr['MTL']
@@ -71,6 +73,13 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
     targetid = tab['TARGETID']
     ra = tab['TARGET_RA']
     dec = tab['TARGET_DEC']
+    # Per https://github.com/desihub/fiberassign/issues/385,
+    # Swap in unique values for negative TARGETIDs.
+    I = np.flatnonzero(targetid < 0)
+    if len(I):
+        tab['TARGETID'][I] = -(tileid * 10000 + tab['LOCATION'][I])
+        print('Updated', len(I), 'negative TARGETID values')
+        patched_neg_tids = True
 
     # Start with primary target files.  These are split into healpixes, so look up which healpixes
     # contain targets used in this tile.
@@ -189,10 +198,10 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
                 tab[col][J[diff]] = new[diff]
                 patched_rows.update(J[diff])
 
-    if len(patched_rows) == 0:
+    if len(patched_rows) == 0 and not patched_neg_tids:
         print('No need to patch', infn)
         return 0
-    print('Patched', len(patched_rows), 'rows')
+    print('Patched', len(patched_rows), 'data rows')
 
     # Make sure output directory exists but output file does not exist (fitsio is careful/picky)
     outdir = os.path.dirname(outfn)
