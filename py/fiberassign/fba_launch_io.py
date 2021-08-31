@@ -164,48 +164,61 @@ def get_program_latest_timestamp(
         step=step,
         start=start,
     )
-    tiles = Table()
-    tiles["RA"], tiles["DEC"] = [tilera], [tiledec]
+    # AR existing folders?
+    hpdirnames = []
+    for hpdirname in [mtldir, scndmtldir]:
+        if hpdirname is not None:
+            if os.path.isdir(hpdirname):
+                hpdirnames.append(hpdirname)
+            else:
+                log.warning("{:.1f}s\t{}\tno existing {}".format(time() - start, step, hpdirname))
     # ADM/AR determine the pixels that touch the tiles.
     # AR assume same filenside for primary and secondary
-    nside = pixarea2nside(7.)
-    pixlist = tiles2pix(nside, tiles=tiles)
-    fileform = find_mtl_file_format_from_header(mtldir)
-    filenside = int(read_keyword_from_mtl_header(mtldir, "FILENSID"))
-    filepixlist = nside2nside(nside, filenside, pixlist)
-    log.info(
-        "{:.1f}s\t{}\tconsider tilera={}, tiledec={}".format(
-            time() - start, step, tilera, tiledec,
+    if len(hpdirnames) > 0:
+        hpdirname = hpdirnames[0]
+        tiles = Table()
+        tiles["RA"], tiles["DEC"] = [tilera], [tiledec]
+        nside = pixarea2nside(7.)
+        pixlist = tiles2pix(nside, tiles=tiles)
+        fileform = find_mtl_file_format_from_header(hpdirname)
+        filenside = int(read_keyword_from_mtl_header(hpdirname, "FILENSID"))
+        filepixlist = nside2nside(nside, filenside, pixlist)
+        log.info(
+            "{:.1f}s\t{}\tconsider tilera={}, tiledec={}".format(
+                time() - start, step, tilera, tiledec,
+            )
         )
-    )
-    log.info(
-        "{:.1f}s\t{}\ttouching healpix pixels (nside={}): {}".format(
-            time() - start, step, filenside, ", ".join(["{}".format(pix) for pix in filepixlist]),
+        log.info(
+            "{:.1f}s\t{}\ttouching healpix pixels (nside={}): {}".format(
+                time() - start, step, filenside, ", ".join(["{}".format(pix) for pix in filepixlist]),
+            )
         )
-    )
     # AR build list of files to check
     fns = [too]
-    for hpdirname in [mtldir, scndmtldir]:
+    for hpdirname in hpdirnames:
         fileform = find_mtl_file_format_from_header(hpdirname)
         for pix in filepixlist:
             fns.append(fileform.format(pix))
     # AR check the last-line TIMESTAMP for each file
     for fn in fns:
-        ii = np.where(np.array(read_ecsv_keys(fn)) == "TIMESTAMP")[0]
-        if len(ii) > 1:
-            log.error("{:.1f}s\t{}\t{}: unexpected column content; exiting".format(time() - start, step, fn))
-            sys.exit(1)
-        elif len(ii) == 0:
-            log.warning("{:.1f}s\t{}\t{}: no TIMESTAMP column; passing".format(time() - start, step, fn))
+        if os.path.isfile(fn):
+            ii = np.where(np.array(read_ecsv_keys(fn)) == "TIMESTAMP")[0]
+            if len(ii) > 1:
+                log.error("{:.1f}s\t{}\t{}: unexpected column content; exiting".format(time() - start, step, fn))
+                sys.exit(1)
+            elif len(ii) == 0:
+                log.warning("{:.1f}s\t{}\t{}: no TIMESTAMP column; passing".format(time() - start, step, fn))
+            else:
+                i = ii[0]
+                line = subprocess.check_output(["tail", "-n", "1", fn], stderr=subprocess.DEVNULL).strip().decode()
+                tm = line.split()[i]
+                # AR does not end with +NN:MM timezone?
+                if re.search('\+\d{2}:\d{2}$', tm) is None:
+                    tm = "{}+00:00".format(tm)
+                log.info("{:.1f}s\t{}\t{} last-line TIMESTAMP : {}".format(time() - start, step, fn, tm)) 
+                tms.append(tm)
         else:
-            i = ii[0]
-            line = subprocess.check_output(["tail", "-n", "1", fn], stderr=subprocess.DEVNULL).strip().decode()
-            tm = line.split()[i]
-            # AR does not end with +NN:MM timezone?
-            if re.search('\+\d{2}:\d{2}$', tm) is None:
-                tm = "{}+00:00".format(tm)
-            log.info("{:.1f}s\t{}\t{} last-line TIMESTAMP : {}".format(time() - start, step, fn, tm)) 
-            tms.append(tm)
+            log.warning("{:.1f}s\t{}\t{}: no file, passing".format(time() - start, step, fn))
 
     # AR take the latest TIMESTAMP
     if len(tms) > 0:
