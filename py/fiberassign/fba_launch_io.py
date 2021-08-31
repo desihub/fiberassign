@@ -130,9 +130,7 @@ def get_program_latest_timestamp(
         else: None
 
     Notes:
-        if the per-tile MTL files does not exist or has zero entries,
-        TBD: currently add +1min because of a mismatch between the ledgers and the per-tile file.
-        TBD: still see if a +1min or +1s is desirable
+        20210831: remove the +1min (and added "leq=True" in the read_targets_.. routines for ledgers)
     """
     # AR check DESI_SURVEYOPS is defined
     assert_env_vars(
@@ -230,12 +228,7 @@ def get_program_latest_timestamp(
 
     # AR take the latest TIMESTAMP
     if len(tms) > 0:
-        tm = np.sort(tms)[-1]
-        tm = datetime.strptime(tm, "%Y-%m-%dT%H:%M:%S%z")
-        # AR TBD: we currently add one minute; can be removed once
-        # AR TBD  update is done on the desitarget side
-        tm += timedelta(minutes=1)
-        timestamp = tm.isoformat(timespec="seconds")
+        timestamp = np.sort(tms)[-1]
 
     log.info("{:.1f}s\t{}\tlatest timestamp : {}".format(time() - start, step, timestamp))
     return timestamp
@@ -1226,6 +1219,7 @@ def create_mtl(
 
         20210526 : implementation of using subpriority=False in write_targets
                     to avoid an over-writting of the SUBPRIORITY
+        20210831 : add "leq=True" in read_targets_in_tiles()
     """
     log.info("")
     log.info("")
@@ -1243,6 +1237,7 @@ def create_mtl(
         mtl=True,
         unique=True,
         isodate=mtltime,
+        leq=True,
     )
     log.info(
         "{:.1f}s\t{}\treading {} targets from {}".format(
@@ -1387,6 +1382,7 @@ def create_too(
 
         20210526 : implementation of using subpriority=False in write_targets
                     to avoid an over-writting of the SUBPRIORITY
+        TBD : add a MTLTIME cut when TIMESTAMP is available
     """
     log.info("")
     log.info("")
