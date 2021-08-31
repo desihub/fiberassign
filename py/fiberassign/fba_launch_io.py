@@ -185,6 +185,28 @@ def mv_write_targets_out(infn, targdir, outfn, log=Logger.get(), step="", start=
         os.rmdir(os.path.join(*[targdir] + tmpdirs[: i + 1]))
 
 
+def read_ecsv_keys(fn):
+    """
+    Returns the column content of an .ecsv file.
+
+    Args:
+        fn: filename with an .ecsv format (string)
+
+    Returns:
+        keys: list of the column names in fn (list)
+    """
+    keys = []
+    with open(fn) as f:
+        for line in f:
+            if "#" not in line:
+                break
+            else:
+                if line[:10] == "# - {name:":
+                    keys.append(line.replace(":", ",").split(",")[1].strip())
+    f.close()
+    return keys
+
+
 def get_nowradec(ra, dec, pmra, pmdec, parallax, ref_year, pmtime_utc_str, scnd=False):
     """
     Apply proper motion correction
