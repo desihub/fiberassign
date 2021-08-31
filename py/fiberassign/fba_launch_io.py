@@ -789,9 +789,6 @@ def get_desitarget_paths(
         "resolve",
         program.lower(),
     )
-    mydirs["mtl"] = os.path.join(
-        os.getenv("DESI_SURVEYOPS"), "mtl", survey.lower(), program.lower(),
-    )
     # AR secondary (dark, bright; no secondary for backup)
     if program.lower() in ["dark", "bright"]:
         if survey.lower() == "main":
@@ -809,18 +806,6 @@ def get_desitarget_paths(
             program.lower(),
             basename,
         )
-        mydirs["scndmtl"] = os.path.join(
-            os.getenv("DESI_SURVEYOPS"),
-            "mtl",
-            survey.lower(),
-            "secondary",
-            program.lower(),
-        )
-
-    # AR ToO (same for dark, bright)
-    mydirs["too"] = os.path.join(
-        os.getenv("DESI_SURVEYOPS"), "mtl", survey.lower(), "ToO", "ToO.ecsv",
-    )
 
     # AR log
     for key in list(mydirs.keys()):
@@ -835,6 +820,17 @@ def get_desitarget_paths(
                     time() - start, step, key, mydirs[key]
                 )
             )
+
+    # AR ledgers
+    mydirs["mtl"], scndmtl, mydirs["too"] = get_ledger_paths(
+        survey.lower(),
+        program.lower(),
+        log=log,
+        step=step,
+        start=start,
+    )
+    if scndmtl is not None:
+        mydirs["scndmtl"] = scndmtl
 
     return mydirs
 
