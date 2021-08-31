@@ -268,15 +268,19 @@ def read_ecsv_keys(fn):
 
     Returns:
         keys: list of the column names in fn (list)
+
+    Notes:
+        Gets the column names from the first line not starting with "#".
     """
     keys = []
     with open(fn) as f:
         for line in f:
-            if "#" not in line:
-                break
-            else:
-                if line[:10] == "# - {name:":
-                    keys.append(line.replace(":", ",").split(",")[1].strip())
+            if line[0] == "#":
+                continue
+            if len(line.strip()) == 0:
+                continue
+            keys = line.split()
+            break
     f.close()
     return keys
 
