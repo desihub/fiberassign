@@ -139,6 +139,9 @@ def get_program_latest_timestamp(
         required_env_vars=["DESI_SURVEYOPS"], log=log, step=step, start=start,
     )
 
+    # AR defaults to None (returned if no file or no selected rows)
+    timestamp = None
+
     tms = []
     # AR check if the per-tile file is here
     # AR no need to check the scnd-mtl-done-tiles.ecsv file,
@@ -147,6 +150,11 @@ def get_program_latest_timestamp(
     if os.path.isfile(fn):
         d = Table.read(fn)
         keep = d["PROGRAM"] == program.upper()
+        # AR add a cut on TILEID
+        if survey == "sv3":
+            keep &= (d["TILEID"] < 1000)
+        if survey == "main":
+            keep &= (d["TILEID"] >= 1000) & (d["TILEID"] < 59000)
         if keep.sum() > 0:
             d = d[keep]
             # AR taking the latest timestamp
