@@ -780,12 +780,13 @@ def get_ledger_paths(
                 time() - start, step, name, path,
             )
         )
-        if not os.path.exists(path):
-            log.warning(
-                "{:.1f}s\t{}\tdirectory for {}: {} does not exist".format(
-                    time() - start, step, name, path,
+        if path is not None:
+            if not os.path.exists(path):
+                log.warning(
+                    "{:.1f}s\t{}\tdirectory for {}: {} does not exist".format(
+                        time() - start, step, name, path,
+                    )
                 )
-            )
     #
     return mtl, scndmtl, too
 
