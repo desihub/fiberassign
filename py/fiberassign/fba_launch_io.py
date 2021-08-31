@@ -160,6 +160,7 @@ def get_program_latest_timestamp(
             # AR does not end with +NN:MM timezone?
             if re.search('\+\d{2}:\d{2}$', tm) is None:
                 tm = "{}+00:00".format(tm)
+            log.info("{:.1f}s\t{}\tlatest TIMESTAMP from {}: {}".format(time() - start, step, fn, tm))
             tms.append(tm)
 
     # AR now checking the healpix pixels touching the tile
