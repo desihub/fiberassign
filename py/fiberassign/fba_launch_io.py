@@ -622,6 +622,91 @@ def print_config_infos(
             )
         )
 
+def get_ledger_paths(
+    survey,
+    program,
+    log=Logger.get(),
+    step="settings",
+    start=time(),
+):
+    """
+    Obtain the folder/file full paths for the primary/secondary/ToO ledgers.
+
+    Args:
+        survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
+        program: "dark", "bright", or "backup" (string)
+        log (optional, defaults to Logger.get()): Logger object
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+
+    Returns:
+        - mtl: primary ledgers MTL folder (string)
+        - scndmtl: secondary ledgers MTL folder (string)
+        - too: ToO ecsv ledger file (string)
+
+    Notes:
+        if survey not in ["sv1", "sv2", "sv3", "main"]
+        or program not in ["dark", "bright", or "backup"], will return a warning only
+        same warning only if the built paths/files do not exist.
+    """
+    # AR expected survey, program?
+    exp_surveys = ["sv1", "sv2", "sv3", "main"]
+    exp_programs = ["dark", "bright", "backup"]
+    if survey.lower() not in exp_surveys:
+        log.warning(
+            "{:.1f}s\t{}\tunexpected survey={} ({}; proceeding anyway)".format(
+                time() - start, step, survey.lower(), exp_surveys
+            )
+        )
+    if program.lower() not in exp_programs:
+        log.warning(
+            "{:.1f}s\t{}\tunexpected program={} ({}; proceeding anyway)".format(
+                time() - start, step, program.lower(), exp_programs
+            )
+        )
+
+    # AR check DESI_SURVEYOPS is defined
+    assert_env_vars(
+        required_env_vars=["DESI_SURVEYOPS"], log=log, step=step, start=start,
+    )
+
+    # AR same (svn) ledger paths at NERSC/KPNO
+    mtl = os.path.join(
+        os.getenv("DESI_SURVEYOPS"), "mtl", survey.lower(), program.lower(),
+    )
+    # AR secondary (dark, bright; no secondary for backup)
+    if program.lower() in ["dark", "bright"]:
+        scndmtl = os.path.join(
+            os.getenv("DESI_SURVEYOPS"),
+            "mtl",
+            survey.lower(),
+            "secondary",
+            program.lower(),
+        )
+    else:
+        scndmtl = None
+    # AR ToO (same for dark, bright)
+    too = os.path.join(
+        os.getenv("DESI_SURVEYOPS"), "mtl", survey.lower(), "ToO", "ToO.ecsv",
+    )
+
+    # AR log
+    for name, path in zip(["mtl", "scndmtl", "too"], [mtl, scndmtl, too]):
+        log.info(
+            "{:.1f}s\t{}\tdirectory for {}: {}".format(
+                time() - start, step, name, path,
+            )
+        )
+        if not os.path.exists(path):
+            log.warning(
+                "{:.1f}s\t{}\tdirectory for {}: {} does not exist".format(
+                    time() - start, step, name, path,
+                )
+            )
+    #
+    return mtl, scndmtl, too
+
 
 def get_desitarget_paths(
     dtver,
