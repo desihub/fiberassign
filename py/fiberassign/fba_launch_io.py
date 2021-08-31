@@ -32,15 +32,15 @@ from astropy.time import Time
 # desitarget
 import desitarget
 from desitarget.gaiamatch import gaia_psflike
-from desitarget.io import read_targets_in_tiles, write_targets, write_skies
+from desitarget.io import read_targets_in_tiles, write_targets, write_skies, read_keyword_from_mtl_header, find_mtl_file_format_from_header
 from desitarget.mtl import match_ledger_to_targets
 from desitarget.targetmask import desi_mask, obsconditions
 from desitarget.targets import set_obsconditions
-from desitarget.geomask import match
+from desitarget.geomask import match, pixarea2nside, nside2nside
 
 # desimodel
 import desimodel
-from desimodel.footprint import is_point_in_desi
+from desimodel.footprint import is_point_in_desi, tiles2pix
 
 # desimeter
 import desimeter
@@ -108,14 +108,18 @@ def get_svn_version(svn_dir):
 
 
 def get_program_latest_timestamp(
-    program, log=Logger.get(), step="", start=time(),
+    survey, program, tilera, tiledec, log=Logger.get(), step="", start=time(),
 ):
     """
-    Get the latest timestamp for a given program from the MTL per-tile file.
+    Get the latest timestamp for a given tile, from the MTL per-tile file and the
+        primary/secondary/ToO ledgers touching that tile.
 
     Args:
+        survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         program: ideally "dark", "bright", or "backup" (string)
                 though if different will return None
+        tilera: tile center R.A. (float)
+        tiledec: tile center Dec. (float)
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -135,9 +139,7 @@ def get_program_latest_timestamp(
         required_env_vars=["DESI_SURVEYOPS"], log=log, step=step, start=start,
     )
 
-    # AR defaults to None (returned if no file or no selected rows)
-    timestamp = None
-
+    tms = []
     # AR check if the per-tile file is here
     # AR no need to check the scnd-mtl-done-tiles.ecsv file,
     # AR     as we restrict to a given program ([desi-survey 2434])
@@ -152,11 +154,69 @@ def get_program_latest_timestamp(
             # AR does not end with +NN:MM timezone?
             if re.search('\+\d{2}:\d{2}$', tm) is None:
                 tm = "{}+00:00".format(tm)
-            tm = datetime.strptime(tm, "%Y-%m-%dT%H:%M:%S%z")
-            # AR TBD: we currently add one minute; can be removed once
-            # AR TBD  update is done on the desitarget side
-            tm += timedelta(minutes=1)
-            timestamp = tm.isoformat(timespec="seconds")
+            tms.append(tm)
+
+    # AR now checking the healpix pixels touching the tile
+    mtldir, scndmtldir, too = get_ledger_paths(
+        survey.lower(),
+        program.lower(),
+        log=log,
+        step=step,
+        start=start,
+    )
+    tiles = Table()
+    tiles["RA"], tiles["DEC"] = [tilera], [tiledec]
+    # ADM/AR determine the pixels that touch the tiles.
+    # AR assume same filenside for primary and secondary
+    nside = pixarea2nside(7.)
+    pixlist = tiles2pix(nside, tiles=tiles)
+    fileform = find_mtl_file_format_from_header(mtldir)
+    filenside = int(read_keyword_from_mtl_header(mtldir, "FILENSID"))
+    filepixlist = nside2nside(nside, filenside, pixlist)
+    log.info(
+        "{:.1f}s\t{}\tconsider tilera={}, tiledec={}".format(
+            time() - start, step, tilera, tiledec,
+        )
+    )
+    log.info(
+        "{:.1f}s\t{}\ttouching healpix pixels (nside={}): {}".format(
+            time() - start, step, filenside, ", ".join(["{}".format(pix) for pix in filepixlist]),
+        )
+    )
+    # AR build list of files to check
+    fns = [too]
+    for hpdirname in [mtldir, scndmtldir]:
+        fileform = find_mtl_file_format_from_header(hpdirname)
+        for pix in filepixlist:
+            fns.append(fileform.format(pix))
+    # AR check the last-line TIMESTAMP for each file
+    for fn in fns:
+        ii = np.where(np.array(read_ecsv_keys(fn)) == "TIMESTAMP")[0]
+        if len(ii) > 1:
+            log.error("{:.1f}s\t{}\t{}: unexpected column content; exiting".format(time() - start, step, fn))
+            sys.exit(1)
+        elif len(ii) == 0:
+            log.warning("{:.1f}s\t{}\t{}: no TIMESTAMP column; passing".format(time() - start, step, fn))
+        else:
+            i = ii[0]
+            line = subprocess.check_output(["tail", "-n", "1", fn], stderr=subprocess.DEVNULL).strip().decode()
+            tm = line.split()[i]
+            # AR does not end with +NN:MM timezone?
+            if re.search('\+\d{2}:\d{2}$', tm) is None:
+                tm = "{}+00:00".format(tm)
+            log.info("{:.1f}s\t{}\t{} last-line TIMESTAMP : {}".format(time() - start, step, fn, tm)) 
+            tms.append(tm)
+
+    # AR take the latest TIMESTAMP
+    if len(tms) > 0:
+        tm = np.sort(tms)[-1]
+        tm = datetime.strptime(tm, "%Y-%m-%dT%H:%M:%S%z")
+        # AR TBD: we currently add one minute; can be removed once
+        # AR TBD  update is done on the desitarget side
+        tm += timedelta(minutes=1)
+        timestamp = tm.isoformat(timespec="seconds")
+
+    log.info("{:.1f}s\t{}\tlatest timestamp : {}".format(time() - start, step, timestamp))
     return timestamp
 
 
