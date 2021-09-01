@@ -176,9 +176,6 @@ def get_program_latest_timestamp(
             d = d[keep]
             # AR taking the latest timestamp
             tm = np.unique(d["TIMESTAMP"])[-1]
-            # AR does not end with +NN:MM timezone?
-            if re.search('\+\d{2}:\d{2}$', tm) is None:
-                tm = "{}+00:00".format(tm)
             log.info("{:.1f}s\t{}\tlatest TIMESTAMP from {}: {}".format(time() - start, step, fn, tm))
             tms.append(tm)
 
@@ -238,9 +235,6 @@ def get_program_latest_timestamp(
                 i = ii[0]
                 line = get_last_line(fn)
                 tm = line.split()[i]
-                # AR does not end with +NN:MM timezone?
-                if re.search('\+\d{2}:\d{2}$', tm) is None:
-                    tm = "{}+00:00".format(tm)
                 log.info("{:.1f}s\t{}\t{} last-line TIMESTAMP : {}".format(time() - start, step, fn, tm)) 
                 tms.append(tm)
         else:
@@ -249,6 +243,9 @@ def get_program_latest_timestamp(
     # AR take the latest TIMESTAMP
     if len(tms) > 0:
         timestamp = np.sort(tms)[-1]
+        # AR does not end with +NN:MM timezone?
+        if re.search('\+\d{2}:\d{2}$', timestamp) is None:
+            timestamp = "{}+00:00".format(timestamp)
 
     log.info("{:.1f}s\t{}\tlatest timestamp : {}".format(time() - start, step, timestamp))
     return timestamp
