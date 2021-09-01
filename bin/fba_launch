@@ -89,6 +89,9 @@ def main():
         )
         if timestamp is not None:
             args.mtltime = timestamp
+            log.info("{:.1f}s\tmtltime\tsetting args.mtltime={}, based on the latest timestamp".format(time() - start, args.mtltime))
+        else:
+            log.info("{:.1f}s\tmtltime\tsetting args.mtltime={}, based on current time".format(time() - start, args.mtltime))
 
     log.info("")
     log.info("")
