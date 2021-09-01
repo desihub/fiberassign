@@ -70,6 +70,26 @@ def main():
     start = time()
     log.info("{:.1f}s\tstart\tTIMESTAMP={}".format(time() - start, Time.now().isot))
 
+    # AR mtltime
+    # AR if possible: setting to the latest timestamp for the program
+    # AR else: setting to utc_time_now_str
+    if args.mtltime is None:
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\tmtltime\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+        args.mtltime = utc_time_now_str
+        timestamp = get_program_latest_timestamp(
+            args.survey,
+            args.program,
+            args.tilera,
+            args.tiledec,
+            log=log,
+            step="mtltime",
+            start=start,
+        )
+        if timestamp is not None:
+            args.mtltime = timestamp
+
     log.info("")
     log.info("")
     log.info("{:.1f}s\tsettings\tTIMESTAMP={}".format(time() - start, Time.now().isot))
@@ -653,14 +673,8 @@ if __name__ == "__main__":
     if args.pmtime_utc_str is None:
         args.pmtime_utc_str = utc_time_now_str
 
-    # AR mtltime
-    # AR if possible: setting to the latest timestamp for the program
-    # AR else: setting to utc_time_now_str
-    if args.mtltime is None:
-        args.mtltime = utc_time_now_str
-        timestamp = get_program_latest_timestamp(args.survey, args.program, args.tilera, args.tiledec)
-        if timestamp is not None:
-            args.mtltime = timestamp
+    # AR mtltime (2021-09-01): if set to None, now setting it inside main()
+    # AR          so that it is recorded in the fiberassign-TILEID.log file
 
     # AR goaltime
     if args.goaltime is None:
