@@ -658,7 +658,7 @@ if __name__ == "__main__":
     # AR else: setting to utc_time_now_str
     if args.mtltime is None:
         args.mtltime = utc_time_now_str
-        timestamp = get_program_latest_timestamp(args.program)
+        timestamp = get_program_latest_timestamp(args.survey, args.program, args.tilera, args.tiledec)
         if timestamp is not None:
             args.mtltime = timestamp
 
