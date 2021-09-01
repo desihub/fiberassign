@@ -116,6 +116,13 @@ def get_last_line(fn):
 
     Returns:
         last_line: (string)
+
+    Notes:
+        Fails if fn has one line only; we do not protect for that case,
+            as this function is intended to be used in get_program_latest_timestamp()
+            to read *ecsv ledgers, which will always have more than one line,
+            and we want the fastest function possible, to use in fiberassign on-the-fly.
+        Copied from https://stackoverflow.com/questions/46258499/how-to-read-the-last-line-of-a-file-in-python.
     """
     with open(fn, "rb") as f:
         f.seek(-2, os.SEEK_END)
