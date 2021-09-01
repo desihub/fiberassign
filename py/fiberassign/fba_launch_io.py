@@ -133,6 +133,32 @@ def get_last_line(fn):
     return last_line
 
 
+def read_ecsv_keys(fn):
+    """
+    Returns the column content of an .ecsv file.
+
+    Args:
+        fn: filename with an .ecsv format (string)
+
+    Returns:
+        keys: list of the column names in fn (list)
+
+    Notes:
+        Gets the column names from the first line not starting with "#".
+    """
+    keys = []
+    with open(fn) as f:
+        for line in f:
+            if line[0] == "#":
+                continue
+            if len(line.strip()) == 0:
+                continue
+            keys = line.split()
+            break
+    f.close()
+    return keys
+
+
 def get_program_latest_timestamp(
     survey, program, tilera, tiledec, log=Logger.get(), step="", start=time(),
 ):
@@ -281,32 +307,6 @@ def mv_write_targets_out(infn, targdir, outfn, log=Logger.get(), step="", start=
     tmpdirs = infn.replace(targdir, "").split("/")[:-1]
     for i in range(len(tmpdirs))[::-1]:
         os.rmdir(os.path.join(*[targdir] + tmpdirs[: i + 1]))
-
-
-def read_ecsv_keys(fn):
-    """
-    Returns the column content of an .ecsv file.
-
-    Args:
-        fn: filename with an .ecsv format (string)
-
-    Returns:
-        keys: list of the column names in fn (list)
-
-    Notes:
-        Gets the column names from the first line not starting with "#".
-    """
-    keys = []
-    with open(fn) as f:
-        for line in f:
-            if line[0] == "#":
-                continue
-            if len(line.strip()) == 0:
-                continue
-            keys = line.split()
-            break
-    f.close()
-    return keys
 
 
 def get_nowradec(ra, dec, pmra, pmdec, parallax, ref_year, pmtime_utc_str, scnd=False):
