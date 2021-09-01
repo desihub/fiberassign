@@ -269,6 +269,7 @@ def main():
             args.gaiadr.replace("gaia", ""),
             args.pmcorr,
             mytmpouts["too"],
+            mtltime=args.mtltime,
             tmpoutdir=tmpoutdir,
             pmtime_utc_str=args.pmtime_utc_str,
             log=log,

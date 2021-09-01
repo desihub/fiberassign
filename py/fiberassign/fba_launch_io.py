@@ -1156,6 +1156,7 @@ def create_too(
     gaiadr,
     pmcorr,
     outfn,
+    mtltime=None,
     tmpoutdir=tempfile.mkdtemp(),
     pmtime_utc_str=None,
     too_tile=False,
@@ -1176,6 +1177,7 @@ def create_too(
         gaiadr: Gaia dr ("dr2" or "edr3")
         pmcorr: apply proper-motion correction? ("y" or "n")
         outfn: fits file name to be written (string)
+        mtltime (optional, defaults to None): MTL isodate (string formatted as yyyy-mm-ddThh:mm:ss+00:00)
         tmpoutdir (optional, defaults to a temporary directory): temporary directory where
                 write_targets will write (creating some sub-directories)
         pmtime_utc_str (optional, defaults to None): UTC time use to compute
@@ -1202,6 +1204,7 @@ def create_too(
 
         20210526 : implementation of using subpriority=False in write_targets
                     to avoid an over-writting of the SUBPRIORITY
+        20210901 : add a mtltime argument
     """
     log.info("")
     log.info("")
@@ -1227,6 +1230,31 @@ def create_too(
     # AR - tiles
     # AR - mjd (! TBD !)
     d = Table.read(toofn)
+
+    # AR cut on mtltime, if requested
+    # AR use a small bit of code from desitarget.io.read_mtl_ledger() to protect against type-issue
+    if mtltime is None:
+        log.info("{:.1f}s\t{}\tno mtltime provided, no cut on TIMESTAMP".format(time() - start, step))
+    else:
+        if "TIMESTAMP" in d.dtype.names:
+            # ADM try a couple of choices to guard against byte-type versus
+            # string-type errors.
+            try:
+                keep = d["TIMESTAMP"] <= mtltime
+            except TypeError:
+                keep = d["TIMESTAMP"] <= mtltime.encode()
+            log.info(
+                "{:.1f}s\t{}\tkeeping {}/{} targets with TIMESTAMP<={}".format(
+                    time() - start, step, keep.sum(), len(d), mtltime,
+                )
+            )
+            d = d[keep]
+        else:
+            log.info(
+                "{:.1f}s\t{}\tno TIMESTAMP column in {}, so not applying cut using mtltime={}".format(
+                    time() - start, step, toofn, mtltime,
+                )
+            )
 
     # AR adding PLATE_RA, PLATE_DEC, PLATE_REF_EPOCH ?
     if add_plate_cols:
