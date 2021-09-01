@@ -107,6 +107,25 @@ def get_svn_version(svn_dir):
     return svn_ver
 
 
+def get_last_line(fn):
+    """
+    Return the last line of a text file.
+
+    Args:
+        fn: file name (string)
+
+    Returns:
+        last_line: (string)
+    """
+    with open(fn, "rb") as f:
+        f.seek(-2, os.SEEK_END)
+        while f.read(1) != b"\n":
+            f.seek(-2, os.SEEK_CUR)
+        last_line = f.readline().decode().strip()
+    f.close()
+    return last_line
+
+
 def get_program_latest_timestamp(
     survey, program, tilera, tiledec, log=Logger.get(), step="", start=time(),
 ):
@@ -217,7 +236,7 @@ def get_program_latest_timestamp(
                 log.warning("{:.1f}s\t{}\t{}: no TIMESTAMP column; passing".format(time() - start, step, fn))
             else:
                 i = ii[0]
-                line = subprocess.check_output(["tail", "-n", "1", fn], stderr=subprocess.DEVNULL).strip().decode()
+                line = get_last_line(fn)
                 tm = line.split()[i]
                 # AR does not end with +NN:MM timezone?
                 if re.search('\+\d{2}:\d{2}$', tm) is None:
