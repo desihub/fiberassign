@@ -175,6 +175,11 @@ def mv_write_targets_out(infn, targdir, outfn, log=Logger.get(), step="", start=
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
     """
     # AR renaming
+    # Try to remove file before overwriting; somehow this avoids some permissions issues at KPNO.
+    try:
+        os.remove(outfn)
+    except FileNotFoundError:
+        pass
     _ = shutil.move(infn, outfn)
     log.info("{:.1f}s\t{}\trenaming {} to {}".format(time() - start, step, infn, outfn))
     # AR removing folders
@@ -2994,6 +2999,12 @@ def mv_temp2final(mytmpouts, myouts, expected_keys, log=Logger.get(), step="", s
     # AR
     for key in expected_keys:
         if os.path.isfile(mytmpouts[key]):
+            # Try to remove file before overwriting; somehow this avoids some permissions 
+            # issues at KPNO.
+            try:
+                os.remove(myouts[key])
+            except FileNotFoundError:
+                pass
             _ = shutil.move(mytmpouts[key], myouts[key])
             log.info(
                 "{:.1f}s\t{}\tmoving file {} to {}".format(
@@ -3027,5 +3038,12 @@ def copy_to_svn(svntiledir, tileid, myouts,
         if not os.path.exists(filename):
             continue
         outfn = os.path.join(svntiledir, os.path.basename(filename))
+        # not obvious that we should need to remove the file before copying, but
+        # this seems to be needed to squash some errors when a different user copies
+        # over a file made by a first user?
+        try:
+            os.remove(outfn)
+        except FileNotFoundError:
+            pass
         shutil.copy(filename, outfn)
         os.chmod(outfn, filemode)
