@@ -108,6 +108,13 @@ def main():
     # AR safe: argument dates correctly formatted?
     assert_arg_dates(args, log=log, step="settings", start=start)
 
+    # AR mjd_now: setting to pmtime_utc_str if not set
+    # AR    see https://github.com/desihub/fiberassign/issues/395
+    # AR    (and we just assessed args.pmtime_utc_str has the correct formatting)
+    # AR    (instead of utc_time_now_str, to allow reproducibility)
+    # AR    (purposely not tying to rundate)
+    mjd_now = Time(datetime.strptime(args.pmtime_utc_str, "%Y-%m-%dT%H:%M:%S%z")).mjd
+
     # AR print general configuration informations
     print_config_infos(log=log, step="settings", start=start)
 
@@ -647,7 +654,6 @@ if __name__ == "__main__":
     # AR utc_time_now, rundate, pmtime
     utc_time_now = datetime.now(tz=timezone.utc)
     utc_time_now_str = utc_time_now.isoformat(timespec="seconds")
-    mjd_now = Time(utc_time_now).mjd
     if args.rundate is None:
         args.rundate = utc_time_now_str
     if args.pmtime_utc_str is None:
