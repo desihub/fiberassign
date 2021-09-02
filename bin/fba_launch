@@ -71,7 +71,9 @@ def main():
     log.info("{:.1f}s\tstart\tTIMESTAMP={}".format(time() - start, Time.now().isot))
 
     # AR mtltime
-    # AR if possible: setting to the latest timestamp for the program
+    # AR if possible: setting to the latest of:
+    # AR - latest timestamp for the program
+    # AR - latest timestamp in the ledgers for pixels touching the tile
     # AR else: setting to utc_time_now_str
     if args.mtltime is None:
         log.info("")
