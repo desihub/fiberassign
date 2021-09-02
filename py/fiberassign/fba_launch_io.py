@@ -12,6 +12,7 @@ import sys
 import tempfile
 import shutil
 import re
+from glob import glob
 
 # time
 from time import time
@@ -41,6 +42,7 @@ from desitarget.geomask import match, pixarea2nside, nside2nside
 # desimodel
 import desimodel
 from desimodel.footprint import is_point_in_desi, tiles2pix
+from desimodel.io import datadir
 
 # desimeter
 import desimeter
@@ -107,7 +109,37 @@ def get_svn_version(svn_dir):
     return svn_ver
 
 
-def get_last_line(fn):
+def get_latest_rundate(log=Logger.get(), step="", start=time()):
+    """
+    Returns the latest TIME value of the latest desi-state_*ecsv file in $DESIMODEL.
+
+    Args:
+        log (optional, defaults to Logger.get()): Logger object
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+
+    Notes:
+        If not UTC-formatted, we add "+00:00".
+    """
+    # AR need DESIMODEL to be defined
+    if os.getenv("DESIMODEL") is None:
+        log.error("DESIMODEL environment variable is not defined; exiting")
+        sys.exit(1)
+    # AR take the latest desi-state_*ecsv file
+    fn = sorted(glob(os.path.join(datadir(), "focalplane", "desi-state_*ecsv")))[-1]
+    log.info("{:.1f}s\t{}\tusing {} to get the latest rundate".format(time() - start, step, fn))
+    d = Table.read(fn, include_names = ["TIME"])
+    # AR take the latest timestamp (should be the last line, but safe here)
+    rundate = np.unique(d["TIME"])[-1]
+    # AR if not UTC formatted, we add +00:00
+    if not assert_isoformat_utc(rundate):
+        rundate += "+00:00"
+    log.info("{:.1f}s\t{}\tlatest rundate: {}".format(time() - start, step, rundate))
+    return rundate
+
+
+  def get_last_line(fn):
     """
     Return the last line of a text file.
 

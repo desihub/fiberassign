@@ -13,6 +13,7 @@ from desiutil.redirect import stdouterr_redirected
 from fiberassign.fba_launch_io import (
     get_program_latest_timestamp,
     assert_env_vars,
+    get_latest_rundate,
     assert_svn_tileid,
     assert_arg_dates,
     print_config_infos,
@@ -69,6 +70,15 @@ def main():
     #
     start = time()
     log.info("{:.1f}s\tstart\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+
+    # AR rundate: if None, set to the latest time
+    # AR    in the latest desi-state*ecsv file
+    if args.rundate is None:
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\trundate\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+        args.rundate = get_latest_rundate(log=log, step="rundate", start=start)
+        log.info("{:.1f}s\trundate\tsetting args.rundate={}".format(time() - start, args.rundate))
 
     # AR mtltime
     # AR if possible: setting to the latest of:
@@ -673,10 +683,11 @@ if __name__ == "__main__":
     utc_time_now = datetime.now(tz=timezone.utc)
     utc_time_now_str = utc_time_now.isoformat(timespec="seconds")
     mjd_now = Time(utc_time_now).mjd
-    if args.rundate is None:
-        args.rundate = utc_time_now_str
     if args.pmtime_utc_str is None:
         args.pmtime_utc_str = utc_time_now_str
+
+    # AR rundate (2021-09-01): if set to None, now setting it inside main()
+    #          so that it is recorded in the fiberassign-TILEID.log file
 
     # AR mtltime (2021-09-01): if set to None, now setting it inside main()
     # AR          so that it is recorded in the fiberassign-TILEID.log file
