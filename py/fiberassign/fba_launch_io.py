@@ -16,7 +16,7 @@ from glob import glob
 
 # time
 from time import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 #
 import numpy as np
@@ -1736,6 +1736,7 @@ def update_fiberassign_header(
     ebv,
     obscon,
     fascript,
+    nowtime=datetime.now(tz=timezone.utc).isoformat(timespec="seconds"),
     log=Logger.get(),
     step="",
     start=time(),
@@ -1765,6 +1766,7 @@ def update_fiberassign_header(
         ebv: median EBV over the tile targets (float)
         obscon: tile allowed observing conditions (string; e.g. "DARK|GRAY|BRIGHT|BACKUP")
         fascript: fba_launch-like script used to designed the tile; in case of different scripts for dedicated tiles
+        nowtime (optional, defaults to datetime.now(tz=timezone.utc).isoformat(timespec="seconds")): time when the code is run (string)
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -1821,6 +1823,7 @@ def update_fiberassign_header(
     # AR some keywords
     fd["PRIMARY"].write_key("outdir", args.outdir)
     fd["PRIMARY"].write_key("survey", hdr_survey)  # AR not args.survey!
+    fd["PRIMARY"].write_key("nowtime", nowtime)
     fd["PRIMARY"].write_key("rundate", args.rundate)
     fd["PRIMARY"].write_key("pmcorr", args.pmcorr)
     fd["PRIMARY"].write_key("pmtime", args.pmtime_utc_str)

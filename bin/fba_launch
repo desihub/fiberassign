@@ -361,6 +361,7 @@ def main():
             ebv,
             obscon,
             fascript,
+            nowtime=utc_time_now_str,
             log=log,
             step="fa",
             start=start,
