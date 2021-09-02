@@ -1247,7 +1247,7 @@ def create_too(
     comments = ["in tiles"]
     # AR cutting on MJD
     keep &= (d["MJD_BEGIN"] < mjd_max) & (d["MJD_END"] > mjd_min)
-    comments.append("MJD_BEGIN<{} and MJD_END>{}".format(mjd_min, mjd_max))
+    comments.append("MJD_BEGIN<{} and MJD_END>{}".format(mjd_max, mjd_min))
     # AR case too_tile = False (i.e. not dedicated tile):
     if not too_tile:
         # AR cut on TOO_TYPE
