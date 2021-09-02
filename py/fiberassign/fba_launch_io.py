@@ -33,15 +33,15 @@ from astropy.time import Time
 # desitarget
 import desitarget
 from desitarget.gaiamatch import gaia_psflike
-from desitarget.io import read_targets_in_tiles, write_targets, write_skies
+from desitarget.io import read_targets_in_tiles, write_targets, write_skies, read_keyword_from_mtl_header, find_mtl_file_format_from_header
 from desitarget.mtl import match_ledger_to_targets
 from desitarget.targetmask import desi_mask, obsconditions
 from desitarget.targets import set_obsconditions
-from desitarget.geomask import match
+from desitarget.geomask import match, pixarea2nside, nside2nside
 
 # desimodel
 import desimodel
-from desimodel.footprint import is_point_in_desi
+from desimodel.footprint import is_point_in_desi, tiles2pix
 from desimodel.io import datadir
 
 # desimeter
@@ -139,16 +139,71 @@ def get_latest_rundate(log=Logger.get(), step="", start=time()):
     return rundate
 
 
-
-def get_program_latest_timestamp(
-    program, log=Logger.get(), step="", start=time(),
-):
+  def get_last_line(fn):
     """
-    Get the latest timestamp for a given program from the MTL per-tile file.
+    Return the last line of a text file.
 
     Args:
+        fn: file name (string)
+
+    Returns:
+        last_line: (string)
+
+    Notes:
+        Fails if fn has one line only; we do not protect for that case,
+            as this function is intended to be used in get_program_latest_timestamp()
+            to read *ecsv ledgers, which will always have more than one line,
+            and we want the fastest function possible, to use in fiberassign on-the-fly.
+        Copied from https://stackoverflow.com/questions/46258499/how-to-read-the-last-line-of-a-file-in-python.
+    """
+    with open(fn, "rb") as f:
+        f.seek(-2, os.SEEK_END)
+        while f.read(1) != b"\n":
+            f.seek(-2, os.SEEK_CUR)
+        last_line = f.readline().decode().strip()
+    f.close()
+    return last_line
+
+
+def read_ecsv_keys(fn):
+    """
+    Returns the column content of an .ecsv file.
+
+    Args:
+        fn: filename with an .ecsv format (string)
+
+    Returns:
+        keys: list of the column names in fn (list)
+
+    Notes:
+        Gets the column names from the first line not starting with "#".
+    """
+    keys = []
+    with open(fn) as f:
+        for line in f:
+            if line[0] == "#":
+                continue
+            if len(line.strip()) == 0:
+                continue
+            keys = line.split()
+            break
+    f.close()
+    return keys
+
+
+def get_program_latest_timestamp(
+    survey, program, tilera, tiledec, log=Logger.get(), step="", start=time(),
+):
+    """
+    Get the latest timestamp for a given tile, from the MTL per-tile file and the
+        primary/secondary/ToO ledgers touching that tile.
+
+    Args:
+        survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         program: ideally "dark", "bright", or "backup" (string)
                 though if different will return None
+        tilera: tile center R.A. (float)
+        tiledec: tile center Dec. (float)
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -159,9 +214,7 @@ def get_program_latest_timestamp(
         else: None
 
     Notes:
-        if the per-tile MTL files does not exist or has zero entries,
-        TBD: currently add +1min because of a mismatch between the ledgers and the per-tile file.
-        TBD: still see if a +1min or +1s is desirable
+        20210831: remove the +1min (and added "leq=True" in the read_targets_.. routines for ledgers)
     """
     # AR check DESI_SURVEYOPS is defined
     assert_env_vars(
@@ -171,6 +224,7 @@ def get_program_latest_timestamp(
     # AR defaults to None (returned if no file or no selected rows)
     timestamp = None
 
+    tms = []
     # AR check if the per-tile file is here
     # AR no need to check the scnd-mtl-done-tiles.ecsv file,
     # AR     as we restrict to a given program ([desi-survey 2434])
@@ -178,18 +232,87 @@ def get_program_latest_timestamp(
     if os.path.isfile(fn):
         d = Table.read(fn)
         keep = d["PROGRAM"] == program.upper()
+        # AR add a cut on TILEID
+        if survey == "sv3":
+            keep &= (d["TILEID"] < 1000)
+        if survey == "main":
+            keep &= (d["TILEID"] >= 1000) & (d["TILEID"] < 59000)
         if keep.sum() > 0:
             d = d[keep]
             # AR taking the latest timestamp
             tm = np.unique(d["TIMESTAMP"])[-1]
-            # AR does not end with +NN:MM timezone?
-            if re.search('\+\d{2}:\d{2}$', tm) is None:
-                tm = "{}+00:00".format(tm)
-            tm = datetime.strptime(tm, "%Y-%m-%dT%H:%M:%S%z")
-            # AR TBD: we currently add one minute; can be removed once
-            # AR TBD  update is done on the desitarget side
-            tm += timedelta(minutes=1)
-            timestamp = tm.isoformat(timespec="seconds")
+            log.info("{:.1f}s\t{}\tlatest TIMESTAMP from {}: {}".format(time() - start, step, fn, tm))
+            tms.append(tm)
+
+    # AR now checking the healpix pixels touching the tile
+    mtldir, scndmtldir, too = get_ledger_paths(
+        survey.lower(),
+        program.lower(),
+        log=log,
+        step=step,
+        start=start,
+    )
+    # AR existing folders?
+    hpdirnames = []
+    for hpdirname in [mtldir, scndmtldir]:
+        if hpdirname is not None:
+            if os.path.isdir(hpdirname):
+                hpdirnames.append(hpdirname)
+            else:
+                log.warning("{:.1f}s\t{}\tno existing {}".format(time() - start, step, hpdirname))
+    # ADM/AR determine the pixels that touch the tiles.
+    # AR assume same filenside for primary and secondary
+    if len(hpdirnames) > 0:
+        hpdirname = hpdirnames[0]
+        tiles = Table()
+        tiles["RA"], tiles["DEC"] = [tilera], [tiledec]
+        nside = pixarea2nside(7.)
+        pixlist = tiles2pix(nside, tiles=tiles)
+        fileform = find_mtl_file_format_from_header(hpdirname)
+        filenside = int(read_keyword_from_mtl_header(hpdirname, "FILENSID"))
+        filepixlist = nside2nside(nside, filenside, pixlist)
+        log.info(
+            "{:.1f}s\t{}\tconsider tilera={}, tiledec={}".format(
+                time() - start, step, tilera, tiledec,
+            )
+        )
+        log.info(
+            "{:.1f}s\t{}\ttouching healpix pixels (nside={}): {}".format(
+                time() - start, step, filenside, ", ".join(["{}".format(pix) for pix in filepixlist]),
+            )
+        )
+    # AR build list of files to check
+    fns = [too]
+    for hpdirname in hpdirnames:
+        fileform = find_mtl_file_format_from_header(hpdirname)
+        for pix in filepixlist:
+            fns.append(fileform.format(pix))
+    # AR check the last-line TIMESTAMP for each file
+    for fn in fns:
+        if os.path.isfile(fn):
+            ii = np.where(np.array(read_ecsv_keys(fn)) == "TIMESTAMP")[0]
+            if len(ii) > 1:
+                log.error("{:.1f}s\t{}\t{}: unexpected column content; exiting".format(time() - start, step, fn))
+                sys.exit(1)
+            elif len(ii) == 0:
+                log.warning("{:.1f}s\t{}\t{}: no TIMESTAMP column; passing".format(time() - start, step, fn))
+            else:
+                i = ii[0]
+                line = get_last_line(fn)
+                tm = line.split()[i]
+                log.info("{:.1f}s\t{}\t{} last-line TIMESTAMP : {}".format(time() - start, step, fn, tm)) 
+                tms.append(tm)
+        else:
+            log.warning("{:.1f}s\t{}\t{}: no file, passing".format(time() - start, step, fn))
+
+    # AR take the latest TIMESTAMP
+    if len(tms) > 0:
+        timestamp = np.sort(tms)[-1]
+        # AR does not end with +NN:MM timezone?
+        if re.search('\+\d{2}:\d{2}$', timestamp) is None:
+            timestamp = "{}+00:00".format(timestamp)
+
+    log.info("{:.1f}s\t{}\tlatest timestamp : {}".format(time() - start, step, timestamp))
     return timestamp
 
 
@@ -208,6 +331,11 @@ def mv_write_targets_out(infn, targdir, outfn, log=Logger.get(), step="", start=
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
     """
     # AR renaming
+    # Try to remove file before overwriting; somehow this avoids some permissions issues at KPNO.
+    try:
+        os.remove(outfn)
+    except FileNotFoundError:
+        pass
     _ = shutil.move(infn, outfn)
     log.info("{:.1f}s\t{}\trenaming {} to {}".format(time() - start, step, infn, outfn))
     # AR removing folders
@@ -655,6 +783,92 @@ def print_config_infos(
             )
         )
 
+def get_ledger_paths(
+    survey,
+    program,
+    log=Logger.get(),
+    step="settings",
+    start=time(),
+):
+    """
+    Obtain the folder/file full paths for the primary/secondary/ToO ledgers.
+
+    Args:
+        survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
+        program: "dark", "bright", or "backup" (string)
+        log (optional, defaults to Logger.get()): Logger object
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+
+    Returns:
+        - mtl: primary ledgers MTL folder (string)
+        - scndmtl: secondary ledgers MTL folder (string)
+        - too: ToO ecsv ledger file (string)
+
+    Notes:
+        if survey not in ["sv1", "sv2", "sv3", "main"]
+        or program not in ["dark", "bright", or "backup"], will return a warning only
+        same warning only if the built paths/files do not exist.
+    """
+    # AR expected survey, program?
+    exp_surveys = ["sv1", "sv2", "sv3", "main"]
+    exp_programs = ["dark", "bright", "backup"]
+    if survey.lower() not in exp_surveys:
+        log.warning(
+            "{:.1f}s\t{}\tunexpected survey={} ({}; proceeding anyway)".format(
+                time() - start, step, survey.lower(), exp_surveys
+            )
+        )
+    if program.lower() not in exp_programs:
+        log.warning(
+            "{:.1f}s\t{}\tunexpected program={} ({}; proceeding anyway)".format(
+                time() - start, step, program.lower(), exp_programs
+            )
+        )
+
+    # AR check DESI_SURVEYOPS is defined
+    assert_env_vars(
+        required_env_vars=["DESI_SURVEYOPS"], log=log, step=step, start=start,
+    )
+
+    # AR same (svn) ledger paths at NERSC/KPNO
+    mtl = os.path.join(
+        os.getenv("DESI_SURVEYOPS"), "mtl", survey.lower(), program.lower(),
+    )
+    # AR secondary (dark, bright; no secondary for backup)
+    if program.lower() in ["dark", "bright"]:
+        scndmtl = os.path.join(
+            os.getenv("DESI_SURVEYOPS"),
+            "mtl",
+            survey.lower(),
+            "secondary",
+            program.lower(),
+        )
+    else:
+        scndmtl = None
+    # AR ToO (same for dark, bright)
+    too = os.path.join(
+        os.getenv("DESI_SURVEYOPS"), "mtl", survey.lower(), "ToO", "ToO.ecsv",
+    )
+
+    # AR log
+    for name, path in zip(["mtl", "scndmtl", "too"], [mtl, scndmtl, too]):
+        log.info(
+            "{:.1f}s\t{}\tdirectory for {}: {}".format(
+                time() - start, step, name, path,
+            )
+        )
+        if path is not None:
+            if not os.path.exists(path):
+                log.warning(
+                    "{:.1f}s\t{}\tdirectory for {}: {} does not exist".format(
+                        time() - start, step, name, path,
+                    )
+                )
+    #
+    return mtl, scndmtl, too
+
 
 def get_desitarget_paths(
     dtver,
@@ -737,9 +951,6 @@ def get_desitarget_paths(
         "resolve",
         program.lower(),
     )
-    mydirs["mtl"] = os.path.join(
-        os.getenv("DESI_SURVEYOPS"), "mtl", survey.lower(), program.lower(),
-    )
     # AR secondary (dark, bright; no secondary for backup)
     if program.lower() in ["dark", "bright"]:
         if survey.lower() == "main":
@@ -757,18 +968,6 @@ def get_desitarget_paths(
             program.lower(),
             basename,
         )
-        mydirs["scndmtl"] = os.path.join(
-            os.getenv("DESI_SURVEYOPS"),
-            "mtl",
-            survey.lower(),
-            "secondary",
-            program.lower(),
-        )
-
-    # AR ToO (same for dark, bright)
-    mydirs["too"] = os.path.join(
-        os.getenv("DESI_SURVEYOPS"), "mtl", survey.lower(), "ToO", "ToO.ecsv",
-    )
 
     # AR log
     for key in list(mydirs.keys()):
@@ -783,6 +982,17 @@ def get_desitarget_paths(
                     time() - start, step, key, mydirs[key]
                 )
             )
+
+    # AR ledgers
+    mydirs["mtl"], scndmtl, mydirs["too"] = get_ledger_paths(
+        survey.lower(),
+        program.lower(),
+        log=log,
+        step=step,
+        start=start,
+    )
+    if scndmtl is not None:
+        mydirs["scndmtl"] = scndmtl
 
     return mydirs
 
@@ -1074,6 +1284,7 @@ def create_mtl(
 
         20210526 : implementation of using subpriority=False in write_targets
                     to avoid an over-writting of the SUBPRIORITY
+        20210831 : add "leq=True" in read_targets_in_tiles()
     """
     log.info("")
     log.info("")
@@ -1091,6 +1302,7 @@ def create_mtl(
         mtl=True,
         unique=True,
         isodate=mtltime,
+        leq=True,
     )
     log.info(
         "{:.1f}s\t{}\treading {} targets from {}".format(
@@ -1235,6 +1447,7 @@ def create_too(
 
         20210526 : implementation of using subpriority=False in write_targets
                     to avoid an over-writting of the SUBPRIORITY
+        TBD : add a MTLTIME cut when TIMESTAMP is available
     """
     log.info("")
     log.info("")
@@ -3027,6 +3240,12 @@ def mv_temp2final(mytmpouts, myouts, expected_keys, log=Logger.get(), step="", s
     # AR
     for key in expected_keys:
         if os.path.isfile(mytmpouts[key]):
+            # Try to remove file before overwriting; somehow this avoids some permissions 
+            # issues at KPNO.
+            try:
+                os.remove(myouts[key])
+            except FileNotFoundError:
+                pass
             _ = shutil.move(mytmpouts[key], myouts[key])
             log.info(
                 "{:.1f}s\t{}\tmoving file {} to {}".format(
@@ -3060,5 +3279,12 @@ def copy_to_svn(svntiledir, tileid, myouts,
         if not os.path.exists(filename):
             continue
         outfn = os.path.join(svntiledir, os.path.basename(filename))
+        # not obvious that we should need to remove the file before copying, but
+        # this seems to be needed to squash some errors when a different user copies
+        # over a file made by a first user?
+        try:
+            os.remove(outfn)
+        except FileNotFoundError:
+            pass
         shutil.copy(filename, outfn)
         os.chmod(outfn, filemode)

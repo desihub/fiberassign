@@ -80,6 +80,31 @@ def main():
         args.rundate = get_latest_rundate(log=log, step="rundate", start=start)
         log.info("{:.1f}s\trundate\tsetting args.rundate={}".format(time() - start, args.rundate))
 
+    # AR mtltime
+    # AR if possible: setting to the latest of:
+    # AR - latest timestamp for the program
+    # AR - latest timestamp in the ledgers for pixels touching the tile
+    # AR else: setting to utc_time_now_str
+    if args.mtltime is None:
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\tmtltime\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+        args.mtltime = utc_time_now_str
+        timestamp = get_program_latest_timestamp(
+            args.survey,
+            args.program,
+            args.tilera,
+            args.tiledec,
+            log=log,
+            step="mtltime",
+            start=start,
+        )
+        if timestamp is not None:
+            args.mtltime = timestamp
+            log.info("{:.1f}s\tmtltime\tsetting args.mtltime={}, based on the latest timestamp".format(time() - start, args.mtltime))
+        else:
+            log.info("{:.1f}s\tmtltime\tsetting args.mtltime={}, based on current time".format(time() - start, args.mtltime))
+
     log.info("")
     log.info("")
     log.info("{:.1f}s\tsettings\tTIMESTAMP={}".format(time() - start, Time.now().isot))
@@ -664,14 +689,8 @@ if __name__ == "__main__":
     # AR rundate (2021-09-01): if set to None, now setting it inside main()
     #          so that it is recorded in the fiberassign-TILEID.log file
 
-    # AR mtltime
-    # AR if possible: setting to the latest timestamp for the program
-    # AR else: setting to utc_time_now_str
-    if args.mtltime is None:
-        args.mtltime = utc_time_now_str
-        timestamp = get_program_latest_timestamp(args.program)
-        if timestamp is not None:
-            args.mtltime = timestamp
+    # AR mtltime (2021-09-01): if set to None, now setting it inside main()
+    # AR          so that it is recorded in the fiberassign-TILEID.log file
 
     # AR goaltime
     if args.goaltime is None:
@@ -757,6 +776,14 @@ if __name__ == "__main__":
             main()
 
         # AR/SB moving the log at last if it was sent to a file
+        # EFS remove file first if it exists; otherwise permissions
+        # errors can occur if the writer user is different from
+        # the original writer, even if the writer has permission
+        # to delete the file!
+        try:
+            os.remove(myouts["log"])
+        except FileNotFoundError:
+            pass
         _ = shutil.move(mytmpouts["log"], myouts["log"])
 
     # must occur outside of main to get log.
