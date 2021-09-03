@@ -1311,6 +1311,7 @@ def create_mtl(
         20210903 : introducing a condition on the desitarget version,
                     to be able to reproduce SV3 pre-20210526 intermediate files,
                     with desitarget version < 1.1.0
+        20210903 : condition in read_targets_in_tiles() for desitarget < 1.1.0 compatibility.
     """
     log.info("")
     log.info("")
@@ -1321,15 +1322,25 @@ def create_mtl(
     log.info("{:.1f}s\t{}\tmtltime={}".format(time() - start, step, mtltime))
 
     # AR mtl: read mtl
-    d = read_targets_in_tiles(
-        mtldir,
-        tiles=tiles,
-        quick=False,
-        mtl=True,
-        unique=True,
-        isodate=mtltime,
-        leq=True,
-    )
+    if desitarget.__version__ < "1.1.0":
+        d = read_targets_in_tiles(
+            mtldir,
+            tiles=tiles,
+            quick=False,
+            mtl=True,
+            unique=True,
+            isodate=mtltime,
+        )
+    else:
+        d = read_targets_in_tiles(
+            mtldir,
+            tiles=tiles,
+            quick=False,
+            mtl=True,
+            unique=True,
+            isodate=mtltime,
+            leq=True,
+        )
     log.info(
         "{:.1f}s\t{}\treading {} targets from {}".format(
             time() - start, step, len(d), mtldir
