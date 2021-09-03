@@ -3376,3 +3376,342 @@ def copy_to_svn(svntiledir, tileid, myouts,
             pass
         shutil.copy(filename, outfn)
         os.chmod(outfn, filemode)
+
+
+def fba_rerun_intermediate_get_settings(
+    fn, log=Logger.get(), step="rerun", start=time(),
+):
+    """
+    Get the required settings from a fiberassign-TILEID.fits.gz file to recreate the
+        intermediate files (TILEID-{tiles,sky,targ,scnd,too}.fits) necessary
+        to rerun the fiber assignment.
+
+    Args:
+        fn: full path to the fiberassign-TILEID.fits file to be rerun (string0
+        log (optional, defaults to Logger.get()): Logger object
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+
+    Returns:
+        mydict: dictionary with the required fba_launch settings,
+            stored in the fiberassign*fits.gz header FAARGS (dictionary)
+
+    Notes:
+        Only runs for a SV3 or Main BRIGHT/DARK tile; exists with error otherwise.
+        Special cases handling:
+        - RUNDATE fix for 19 SV3 tiles designed on 2021-04-10
+        - MTLTIME fix for SV3 TILEID=315 and 441
+        - DTVER: 1.0.0->1.1.1 fix for pre-shutdown Main (NIGHT<=20210518)
+        - UTC formatting for early SV3 tiles
+        The SUBPRIORITY overwritting for SV3 is handled with the desitarget code version
+            used to rerun_intermediate()
+    """
+    #
+    hdr = fits.getheader(fn, 0)
+    # AR SV3/Main BRIGHT/DARK?
+    faflavors = ["sv3bright", "sv3dark", "mainbright", "maindark"]
+    if hdr["FAFLAVOR"] not in faflavors:
+        sys.exit("FAFLAVOR={} not in {}; exiting".format(hdr["FAFLAVOR"], faflavors))
+
+
+    mydict = {}
+
+
+    # AR fa_ver, obscon: from header
+    mydict["fa_ver"] = hdr["FA_VER"]
+    mydict["obscon"] = hdr["OBSCON"]
+
+
+    # AR settings we store
+    keys = [
+        "survey",
+        "program",
+        "rundate",
+        "mtltime",
+        "dr",
+        "gaiadr",
+        "dtver",
+        "pmcorr",
+        "pmtime_utc_str",
+        "tileid",
+        "tiledec",
+        "tilera",
+    ]
+    # AR storing the FAARGS in a dictionary
+    faargs = np.array(hdr["FAARGS"].split())
+    for key in keys:
+        #
+        ii = np.where(faargs == "--{}".format(key))[0]
+        if len(ii) > 0:
+            mydict[key] = faargs[ii[0] + 1]
+        # AR args.mtltime has been introduced in 2.4.0
+        # AR we add it as an argument if not here
+        # AR (meaning that the tile was run with a previous version)
+        elif key == "mtltime":
+            mydict["mtltime"] = hdr["MTLTIME"]
+        # AR args.pmtime_utc_str initially names args.pmtime
+        elif (key == "pmtime_utc_str") & ("--pmtime" in faargs):
+            ii = np.where(faargs == "--pmtime")[0]
+            mydict["pmtime_utc_str"] = faargs[ii[0] + 1]
+        # AR should not be other cases
+        else:
+            log.error(
+                "key={} not present in FAARGS, and not in expected missing keys; exiting".format(
+                    key
+                )
+            )
+            sys.exit(1)
+    #
+    mydict["tileid"] = int(mydict["tileid"])
+    mydict["tilera"], mydict["tiledec"] = (
+        float(mydict["tilera"]),
+        float(mydict["tiledec"]),
+    )
+
+
+    # AR case of 19 SV3 tiles designed on 2021-04-10:
+    # AR    those have rundate = 2021-04-10T21:28:37
+    # AR    there has been a fp update on 2021-04-10T20:00:39+00:00
+    # AR    but apparently the desi-state*ecsv file at NERSC was not updated then
+    # AR    so the original fiberassign run considered the previous fp state
+    # AR    =>
+    # AR    we manually modify the rundate, pmtime, mtltime
+    if hdr["TILEID"] in [
+        4,
+        30,
+        58,
+        84,
+        112,
+        139,
+        166,
+        193,
+        220,
+        248,
+        275,
+        302,
+        329,
+        356,
+        364,
+        383,
+        391,
+        410,
+        418,
+    ]:
+        fixed_time = "2021-04-10T20:00:00"
+        for key in ["pmtime_utc_str", "rundate", "mtltime"]:
+            log.info(
+                "{:.1f}s\t{}\tmodifying mydict[{}] from {} to {} (TILEID={} designed when desi-state*ecsv file not updated at NERSC".format(
+                    time() - start, step, key, mydict[key], fixed_time, hdr["TILEID"],
+                )
+            )
+            mydict[key] = fixed_time
+
+
+    # AR SV3 TILEID=315, 441
+    # AR    for both, in the original files:
+    # AR    - MTLTIME = 2021-04-22T18:55:39+00:00
+    # AR    - the latest MTL TIMESTAMP in the original target files is: 2021-04-19T20:38:52 (315) and 2021-04-20T18:42:10 (441)
+    # AR    however the MTL ledgers have been updated at 2021-04-22T17:09:xx (including TILEID=314, 440)
+    # AR    it is likely the ledgers files were not svn-updated then.
+    # AR    so we modify the MTLTIME to 2021-04-19T21:00:00 (315) and 2021-04-20T19:00:00 (441)
+    # AR    (ie after the previous MTL update, but before the 314, 440 MTL updates)
+    if hdr["TILEID"] in [315, 441]:
+        if hdr["TILEID"] == 315:
+            fixed_time = "2021-04-19T21:00:00+00:00"
+        if hdr["TILEID"] == 441:
+            fixed_time = "2021-04-20T19:00:00+00:00"
+        log.info(
+            "{:.1f}s\t{}\tmodifying mydict[mtltime] from {} to {} (TILEID={} designed when MTL ledgers not updated at NERSC".format(
+                time() - start, step, mydict["mtltime"], fixed_time, hdr["TILEID"],
+            )
+        )
+        mydict["mtltime"] = fixed_time
+
+
+    # AR assume UTC for pmtime_utc_str, rundate, mtltime
+    # AR (UTC formatting introduced in 20210422, during SV3)
+    for key in ["pmtime_utc_str", "rundate", "mtltime"]:
+        try:
+            _ = datetime.strptime(mydict[key], "%Y-%m-%dT%H:%M:%S")
+            log.info(
+                "{:.1f}s\t{}\t{}: modifying {} to {}+00:00 for TILEID={}".format(
+                    time() - start, step, key, mydict[key], mydict[key], hdr["TILEID"]
+                )
+            )
+            mydict[key] += "+00:00"
+        except ValueError:
+            log.warning(
+                "{:.1f}s\t{}\tmydict[{}]={} is not %Y-%m-%dT%H:%M:%S; not changing it, even if args.assume_utc".format(
+                    time() - start, step, key, mydict[key],
+                )
+            )
+
+
+    # AR dtver: pre-shutdown main, replace 1.0.0 by 1.1.1
+    # AR because of missing CALIB targets that were bumped by MWS secondary targets
+    if (mydict["survey"] == "main") & (mydict["dtver"] == "1.0.0"):
+        log.info(
+            "{:.1f}s\tstep\tmodifying mydict[dtver]=1.0.0 to mydict[dtver]=1.1.1".format(
+                time() - start, step
+            )
+        )
+        mydict["dtver"] = "1.1.1"
+
+
+    return mydict
+
+
+
+
+def fba_rerun_intermediate(
+    fn, outdir, tmpoutdir=tempfile.mkdtemp(), log=Logger.get(), start=time(),
+):
+    """
+    Re-create the intermediate files (TILEID-{tiles,sky,targ,scnd,too}.fits) necessary
+        to rerun the fiber assignment of a fiberassign-TILEID.fits.gz file.
+
+    Args:
+        fn: full path to the fiberassign-TILEID.fits file to be rerun (string)
+        outdir: output folder (files will be written in outdir/ABC/) (string)
+        tmpoutdir (optional, defaults to a temporary directory): temporary directory where
+                write_targets will write (creating some sub-directories)
+        log (optional, defaults to Logger.get()): Logger object
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+
+    Notes:
+        No fiberassign here; but FA_VER is used to define the MJD window for the ToO,
+            which has been redefined during 2021 shutdown.
+        The SUBPRIORITY overwritting for SV3 is handled with the desitarget code version
+            used to rerun_intermediate(); it should be <1.2.2; we suggest to use 1.0.0
+        ToO SV3: tiles run before 20210419 (Pacific) did not have ToO design.
+    """
+    #
+    start = time()
+    log.info("{:.1f}s\tstart\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+    log.info("")
+    log.info("")
+    # AR config infos
+    print_config_infos(log=log, step="settings", start=start)
+    # AR get settings
+    mydict = fba_rerun_intermediate_get_settings(
+        fn, log=log, step="settings", start=start
+    )
+    print(mydict)
+    # AR setting outdir/ABC + safe check
+    outdir = os.path.join(
+        os.path.normpath(outdir), "{:06d}".format(mydict["tileid"])[:3]
+    )
+    if outdir == os.path.dirname(fn):
+        log.error("not safe to write in the original folder {}; exiting".format(outdir))
+        sys.exit(1)
+    # AR MJD window for ToO
+    # AR - if FA_VER <= 5.1.1: mjd_min = mjd_now - 1, mjd_max = mjd_now + 30
+    # AR - if FA_VER > 5.1.1: mjd_min = mjd_max = mjd_now
+    # AR in any case, mjd_now is defined as pmtime_utc_str
+    mjd_now = Time(datetime.strptime(mydict["pmtime_utc_str"], "%Y-%m-%dT%H:%M:%S%z")).mjd
+    if mydict["fa_ver"] <= "5.1.1":
+        mjd_min, mjd_max = mjd_now - 1, mjd_now + 30
+    else:
+        mjd_min, mjd_max = mjd_now, mjd_now
+    # AR ToO were first run for SV3 on 20210419 (Pacific)
+    if mydict["pmtime_utc_str"] < "2021-04-19T07:00:00+00":
+        dotoo = False
+    else:
+        dotoo = True
+    # AR output files
+    myouts = {}
+    keys = ["tiles", "sky", "gfa", "targ", "scnd"]
+    if dotoo:
+        keys.append("too")
+    for key in keys:
+        myouts[key] = os.path.join(
+            outdir, "{:06d}-{}.fits".format(mydict["tileid"], key)
+        )
+    # AR get desitarget paths
+    mydirs = get_desitarget_paths(
+        mydict["dtver"],
+        mydict["survey"],
+        mydict["program"],
+        dr=mydict["dr"],
+        gaiadr=mydict["gaiadr"],
+        log=log,
+        step="settings",
+        start=start,
+    )
+    # AR tiles
+    create_tile(
+        mydict["tileid"],
+        mydict["tilera"],
+        mydict["tiledec"],
+        myouts["tiles"],
+        mydict["survey"],
+        mydict["obscon"],
+        log=log,
+        step="dotile",
+        start=start,
+    )
+    # AR sky
+    create_sky(
+        myouts["tiles"],
+        mydirs["sky"],
+        myouts["sky"],
+        suppskydir=mydirs["skysupp"],
+        tmpoutdir=tmpoutdir,
+        log=log,
+        step="dosky",
+        start=start,
+    )
+    # AR targ
+    create_mtl(
+        myouts["tiles"],
+        mydirs["mtl"],
+        mydict["mtltime"],
+        mydirs["targ"],
+        mydict["survey"],
+        mydict["gaiadr"].replace("gaia", ""),
+        mydict["pmcorr"],
+        myouts["targ"],
+        pmtime_utc_str=mydict["pmtime_utc_str"],
+        tmpoutdir=tmpoutdir,
+        log=log,
+        step="domtl",
+        start=start,
+    )
+    # AR secondary targets
+    create_mtl(
+        myouts["tiles"],
+        mydirs["scndmtl"],
+        mydict["mtltime"],
+        mydirs["scnd"],
+        mydict["survey"],
+        mydict["gaiadr"].replace("gaia", ""),
+        mydict["pmcorr"],
+        myouts["scnd"],
+        pmtime_utc_str=mydict["pmtime_utc_str"],
+        tmpoutdir=tmpoutdir,
+        log=log,
+        step="doscnd",
+        start=start,
+    )
+    # AR ToO targets
+    if dotoo:
+        _ = create_too(
+            myouts["tiles"],
+            mydirs["too"],
+            mjd_min,
+            mjd_max,
+            mydict["survey"],
+            mydict["gaiadr"].replace("gaia", ""),
+            mydict["pmcorr"],
+            myouts["too"],
+            pmtime_utc_str=mydict["pmtime_utc_str"],
+            tmpoutdir=tmpoutdir,
+            log=log,
+            step="dotoo",
+            start=start,
+        )
+    #
+    log.info("")
+    log.info("")
+    log.info("{:.1f}s\tend\tTIMESTAMP={}".format(time() - start, Time.now().isot))
