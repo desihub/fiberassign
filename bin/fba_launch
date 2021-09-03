@@ -143,6 +143,18 @@ def main():
     # AR safe: argument dates correctly formatted?
     assert_arg_dates(args, log=log, step="settings", start=start)
 
+    # AR mjd_now: setting to pmtime_utc_str if not set
+    # AR    see https://github.com/desihub/fiberassign/issues/395
+    # AR    (and we just assessed args.pmtime_utc_str has the correct formatting)
+    # AR    (instead of utc_time_now_str, to allow reproducibility)
+    # AR    (purposely not tying to rundate)
+    mjd_now = Time(datetime.strptime(args.pmtime_utc_str, "%Y-%m-%dT%H:%M:%S%z")).mjd
+    log.info(
+        "{:.1f}s\tsettings\tsetting mjd_now={}, corresponding to args.pmtime_utc_str={}".format(
+            time() - start, mjd_now, args.pmtime_utc_str
+        )
+    )
+
     # AR print general configuration informations
     print_config_infos(log=log, step="settings", start=start)
 
@@ -293,13 +305,14 @@ def main():
 
 
     # AR ToO targets
-    # AR TBD: handling to MJD window boundaries as script argument?
+    # AR 20210902: setting mjd_min = mjd_max = mjd_now
+    # AR        so that we select: (d["MJD_BEGIN"] < mjd_now) & (d["MJD_END"] > mjd_now)
     if "too" in steps:
         expected_files["too"] = create_too(
             mytmpouts["tiles"],
             mydirs["too"],
-            mjd_now - 1,
-            mjd_now + 30,
+            mjd_now,
+            mjd_now,
             args.survey,
             args.gaiadr.replace("gaia", ""),
             args.pmcorr,
@@ -684,7 +697,6 @@ if __name__ == "__main__":
     # AR utc_time_now, rundate, pmtime
     utc_time_now = datetime.now(tz=timezone.utc)
     utc_time_now_str = utc_time_now.isoformat(timespec="seconds")
-    mjd_now = Time(utc_time_now).mjd
     if args.pmtime_utc_str is None:
         args.pmtime_utc_str = utc_time_now_str
 
