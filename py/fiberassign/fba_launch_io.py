@@ -142,7 +142,7 @@ def get_latest_rundate(log=Logger.get(), step="", start=time()):
     return rundate
 
 
-  def get_last_line(fn):
+def get_last_line(fn):
     """
     Return the last line of a text file.
 
