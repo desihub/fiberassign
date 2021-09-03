@@ -1401,6 +1401,7 @@ def create_too(
     gaiadr,
     pmcorr,
     outfn,
+    mtltime=None,
     tmpoutdir=tempfile.mkdtemp(),
     pmtime_utc_str=None,
     too_tile=False,
@@ -1421,6 +1422,7 @@ def create_too(
         gaiadr: Gaia dr ("dr2" or "edr3")
         pmcorr: apply proper-motion correction? ("y" or "n")
         outfn: fits file name to be written (string)
+        mtltime (optional, defaults to None): MTL isodate (string formatted as yyyy-mm-ddThh:mm:ss+00:00)
         tmpoutdir (optional, defaults to a temporary directory): temporary directory where
                 write_targets will write (creating some sub-directories)
         pmtime_utc_str (optional, defaults to None): UTC time use to compute
@@ -1447,7 +1449,7 @@ def create_too(
 
         20210526 : implementation of using subpriority=False in write_targets
                     to avoid an over-writting of the SUBPRIORITY
-        TBD : add a MTLTIME cut when TIMESTAMP is available
+        20210901 : add a mtltime argument
     """
     log.info("")
     log.info("")
@@ -1485,13 +1487,41 @@ def create_too(
             )
         )
 
+    # AR cutting on tile footprint
     keep = is_point_in_desi(tiles, d["RA"], d["DEC"])
-    if not too_tile:
-        keep &= d["TOO_TYPE"] != "TILE"
+    comments = ["in tiles"]
+    # AR cutting on MJD
     keep &= (d["MJD_BEGIN"] < mjd_max) & (d["MJD_END"] > mjd_min)
+    comments.append("MJD_BEGIN<{} and MJD_END>{}".format(mjd_max, mjd_min))
+    # AR case too_tile = False (i.e. not dedicated tile):
+    if not too_tile:
+        # AR cut on TOO_TYPE
+        keep &= d["TOO_TYPE"] != "TILE"
+        comments.append("TOO_TYPE!=TILE")
+        # AR cut on mtltime, if requested
+        # AR use a small bit of code from desitarget.io.read_mtl_ledger() to protect against type-issue
+        if mtltime is None:
+            log.info("{:.1f}s\t{}\tno mtltime provided, no cut on TIMESTAMP".format(time() - start, step))
+        else:
+            if "TIMESTAMP" in d.dtype.names:
+                # ADM try a couple of choices to guard against byte-type versus
+                # string-type errors.
+                try:
+                    keep &= d["TIMESTAMP"] <= mtltime
+                except TypeError:
+                    keep &= d["TIMESTAMP"] <= mtltime.encode()
+                comments.append("with TIMESTAMP<={}".format(mtltime))
+            else:
+                log.info(
+                    "{:.1f}s\t{}\tno TIMESTAMP column in {}, so not applying cut using mtltime={}".format(
+                        time() - start, step, toofn, mtltime,
+                    )
+                )
+    else:
+        comments.append("TOO_TYPE=TILE,FIBER")
     log.info(
-        "{:.1f}s\t{}\tkeeping {}/{} targets in tiles, with TOO_TYPE={}, and in the MJD time window: {}, {}".format(
-            time() - start, step, keep.sum(), len(keep), "TILE,FIBER" if too_tile else "FIBER", mjd_min, mjd_max
+        "{:.1f}s\t{}\tkeeping {}/{} targets {}".format(
+            time() - start, step, keep.sum(), len(keep), ", ".join(comments)
         )
     )
 
