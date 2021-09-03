@@ -13,6 +13,7 @@ from desiutil.redirect import stdouterr_redirected
 from fiberassign.fba_launch_io import (
     get_program_latest_timestamp,
     assert_env_vars,
+    get_latest_rundate,
     assert_svn_tileid,
     assert_arg_dates,
     print_config_infos,
@@ -69,6 +70,40 @@ def main():
     #
     start = time()
     log.info("{:.1f}s\tstart\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+
+    # AR rundate: if None, set to the latest time
+    # AR    in the latest desi-state*ecsv file
+    if args.rundate is None:
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\trundate\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+        args.rundate = get_latest_rundate(log=log, step="rundate", start=start)
+        log.info("{:.1f}s\trundate\tsetting args.rundate={}".format(time() - start, args.rundate))
+
+    # AR mtltime
+    # AR if possible: setting to the latest of:
+    # AR - latest timestamp for the program
+    # AR - latest timestamp in the ledgers for pixels touching the tile
+    # AR else: setting to utc_time_now_str
+    if args.mtltime is None:
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\tmtltime\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+        args.mtltime = utc_time_now_str
+        timestamp = get_program_latest_timestamp(
+            args.survey,
+            args.program,
+            args.tilera,
+            args.tiledec,
+            log=log,
+            step="mtltime",
+            start=start,
+        )
+        if timestamp is not None:
+            args.mtltime = timestamp
+            log.info("{:.1f}s\tmtltime\tsetting args.mtltime={}, based on the latest timestamp".format(time() - start, args.mtltime))
+        else:
+            log.info("{:.1f}s\tmtltime\tsetting args.mtltime={}, based on current time".format(time() - start, args.mtltime))
 
     log.info("")
     log.info("")
@@ -282,6 +317,7 @@ def main():
             args.gaiadr.replace("gaia", ""),
             args.pmcorr,
             mytmpouts["too"],
+            mtltime=args.mtltime,
             tmpoutdir=tmpoutdir,
             pmtime_utc_str=args.pmtime_utc_str,
             log=log,
@@ -339,6 +375,7 @@ def main():
             ebv,
             obscon,
             fascript,
+            nowtime=utc_time_now_str,
             log=log,
             step="fa",
             start=start,
@@ -660,19 +697,14 @@ if __name__ == "__main__":
     # AR utc_time_now, rundate, pmtime
     utc_time_now = datetime.now(tz=timezone.utc)
     utc_time_now_str = utc_time_now.isoformat(timespec="seconds")
-    if args.rundate is None:
-        args.rundate = utc_time_now_str
     if args.pmtime_utc_str is None:
         args.pmtime_utc_str = utc_time_now_str
 
-    # AR mtltime
-    # AR if possible: setting to the latest timestamp for the program
-    # AR else: setting to utc_time_now_str
-    if args.mtltime is None:
-        args.mtltime = utc_time_now_str
-        timestamp = get_program_latest_timestamp(args.program)
-        if timestamp is not None:
-            args.mtltime = timestamp
+    # AR rundate (2021-09-01): if set to None, now setting it inside main()
+    #          so that it is recorded in the fiberassign-TILEID.log file
+
+    # AR mtltime (2021-09-01): if set to None, now setting it inside main()
+    # AR          so that it is recorded in the fiberassign-TILEID.log file
 
     # AR goaltime
     if args.goaltime is None:
