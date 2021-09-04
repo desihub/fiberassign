@@ -40,7 +40,7 @@ else:
     from desitarget.mtl import match_ledger_to_targets
 from desitarget.targetmask import desi_mask, obsconditions
 from desitarget.targets import set_obsconditions
-from desitarget.geomask import match, pixarea2nside, nside2nside
+from desitarget.geomask import match, match_to, pixarea2nside, nside2nside
 
 # desimodel
 import desimodel
@@ -4103,3 +4103,89 @@ def fba_rerun_fbascript(
     # AR close + make it executable
     f.close()
     os.system("chmod +x {}".format(outsh))
+
+
+def fba_rerun_check(
+    origfn,
+    rerunfn,
+    difffn,
+    log=Logger.get(),
+    start=time(),
+):
+    """
+    Compares the {TARGETID-FIBER} values for the FIBERASSIGN and POTENTIAL_ASSIGNMENTS extensions.
+
+    Args:
+        origfn: path to the original fiberassign file (string)
+        rerunfn: path to the rerun fiberassign file (string)
+        difffn: path for the output diagnosis file
+        log (optional, defaults to Logger.get()): Logger object
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time())
+    """
+    # AR internal function to add information from the TARGETS extension to POTENTIAL_ASSIGNMENTS rows
+    # AR assume there are no TARGETID duplicate
+    def populate_potass(h, keys):
+        #
+        targs_tids = h["TARGETS"].data["TARGETID"]
+        potass_tids = h["POTENTIAL_ASSIGNMENTS"].data["TARGETID"]
+        #
+        unq_potass_tids, ii_inv = np.unique(potass_tids, return_inverse=True)
+        ii_targs = match_to(targs_tids, unq_potass_tids)
+        if ii_targs.size != unq_potass_tids.size:
+            log.error("mismatch: ii_targs.size={} and unq_potass_tids.size={}; exiting".format(ii_targs.size, unq_potass_tids.size))
+            sys.exit(1)
+        #
+        potass_d = Table()
+        for key in keys:
+            if key not in ["FIBER", "PRIORITY_INIT"]:
+                unq_vals = h["TARGETS"].data[key][ii_targs]
+                potass_d[key] = unq_vals[ii_inv]
+        return potass_d
+
+    # AR read files
+    orig_h = fits.open(origfn)
+    orig_h["TARGETS"].columns["RA"].name = "TARGET_RA"
+    orig_h["TARGETS"].columns["DEC"].name = "TARGET_DEC"
+    rerun_h = fits.open(rerunfn)
+    rerun_h["TARGETS"].columns["RA"].name = "TARGET_RA"
+    rerun_h["TARGETS"].columns["DEC"].name = "TARGET_DEC"
+
+    # AR TILEID
+    tileid = orig_h[0].header["TILEID"]
+
+    # AR keys we report for mismatches
+    dtkeys = ["DESI_TARGET", "MWS_TARGET", "BGS_TARGET", "SCND_TARGET"]
+    if "SV3_DESI_TARGET" in orig_h["FIBERASSIGN"].columns.names:
+        dtkeys = ["SV3_{}".format(key) for key in dtkeys]
+    keys = ["TARGETID", "FIBER", "TARGET_RA", "TARGET_DEC", "FA_TYPE", "PRIORITY_INIT", "PRIORITY"]
+    keys += dtkeys
+
+    # AR compare
+    f = open(difffn, "w")
+    f.write("# TILEID\tEXTENSION\tSTATUS\t{}\n".format("\t".join(keys)))
+    for ext in ["FIBERASSIGN", "POTENTIAL_ASSIGNMENTS"]:
+        # AR FIBERASSIGN
+        if ext == "FIBERASSIGN":
+            orig_d = orig_h["FIBERASSIGN"].data
+            rerun_d = rerun_h["FIBERASSIGN"].data
+        # AR POTENTIAL_ASSIGNMENTS
+        # AR dummy entry for PRIORITY_INIT
+        else:
+            orig_d = populate_potass(orig_h, keys)
+            orig_d["FIBER"] = orig_h["POTENTIAL_ASSIGNMENTS"].data["FIBER"]
+            orig_d["PRIORITY_INIT"] = -99 + np.zeros(len(orig_d), dtype=int)
+            rerun_d = populate_potass(rerun_h, keys)
+            rerun_d["FIBER"] = rerun_h["POTENTIAL_ASSIGNMENTS"].data["FIBER"]
+            rerun_d["PRIORITY_INIT"] = -99 + np.zeros(len(rerun_d), dtype=int)
+        # AR {TARGETID-FIBER} ids
+        orig_ids = np.array(["{}-{}".format(tid, fib) for tid, fib in zip(orig_d["TARGETID"], orig_d["FIBER"])])
+        rerun_ids = np.array(["{}-{}".format(tid, fib) for tid, fib in zip(rerun_d["TARGETID"], rerun_d["FIBER"])])
+        # AR miss
+        ii = np.where(~np.in1d(orig_ids, rerun_ids))[0]
+        for i in ii:
+            f.write("{:06}\t{}\tmiss\t{}\n".format(tileid, ext, "\t".join(["{}".format(orig_d[key][i]) for key in keys])))
+        # AR added
+        ii = np.where(~np.in1d(rerun_ids, orig_ids))[0]
+        for i in ii:
+            f.write("{:06}\t{}\tadd\t{}\n".format(tileid, ext, "\t".join(["{}".format(rerun_d[key][i]) for key in keys])))
+    f.close()
