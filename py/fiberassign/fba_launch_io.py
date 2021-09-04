@@ -3751,7 +3751,7 @@ def fba_rerun_get_settings(
         fba_run, to rerun the fiber assignment.
 
     Args:
-        fn: full path to the fiberassign-TILEID.fits file to be rerun (string0
+        fn: full path to the fiberassign-TILEID.fits file to be rerun (string)
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -3760,6 +3760,7 @@ def fba_rerun_get_settings(
     Returns:
         tileid: tileid (int)
         mydict: dictionary with "rundate", "tileid", "tiledec", "tilera", "fieldrot", "ha" (dictionary)
+        survey: survey (string)
         faver: fiberassign code version to use (string)
         skybrver: SKYBRICKS_DIR version ("-" if not set) (string)
 
@@ -3779,6 +3780,8 @@ def fba_rerun_get_settings(
         log.error("FAFLAVOR={} not in {}; exiting".format(hdr["FAFLAVOR"], faflavors))
         sys.exit(1)
 
+    # AR survey
+    survey = hdr["SURVEY"]
 
     # AR fiberassign code version
     # AR SV3 handling, as SV3 was run with fiberassign/master for RUNDATE<2021-04-30
@@ -3895,7 +3898,7 @@ def fba_rerun_get_settings(
             mydict[key] = fixed_time
 
 
-    return hdr["TILEID"], mydict, faver, skybrver
+    return hdr["TILEID"], mydict, survey, faver, skybrver
 
 
 
@@ -3904,6 +3907,7 @@ def fba_rerun_fbascript(
     infiberassignfn,
     outdir,
     intermediate_dir,
+    run_intermediate,
     fba="none",
     fiberassign="zip",
     log=Logger.get(),
@@ -3920,9 +3924,10 @@ def fba_rerun_fbascript(
         infiberassignfn: full path to the fiberassign-TILEID.fits file to be rerun (string)
         outdir: output folder (files will be written in outdir/ABC/) (string)
         intermediate_dir: path to a folder,
-            which contains the intermediate products:
+            which contains the intermediate products (if run_intermediate=False; will generate them if run_intermediate=True):
             - outdir/ABC/TILEID-{tiles,sky,targ}.fits: required
             - outdir/ABC/TILEID-{scnd,too}.fits: optional
+        run_intermediate: generate the intermediate products? (boolean)
         fba (optional, defaults to "none"): "none"->no fba-TILEID.fits, "unzip"->fba-TILEID.fits, "zip"->fba-TILEID.fits.gz (string)
         fiberassign(optional, defaults to "zip"): "none"->no fiberassign-TILEID.fits, "unzip"->fiberassign-TILEID.fits, "zip"->fiberassign-TILEID.fits.gz (string)
         log (optional, defaults to Logger.get()): Logger object
@@ -3936,6 +3941,8 @@ def fba_rerun_fbascript(
         The code will exit with an error if any of outdir/ABC/{fa,fba,fiberassign}-TILEID.{sh,fits,log}{gz} already exists.
     """
     # AR assess arguments
+    if run_intermediate not in [True, False]:
+        log.error("run_intermediate={} not a boolean".format(run_intermediate))
     if fba not in ["none", "unzip", "zip"]:
         log.error("fba={} not in 'none', 'unzip', zip'; exiting")
         sys.exit(1)
@@ -3943,7 +3950,7 @@ def fba_rerun_fbascript(
         log.error("fiberassign={} not in 'none', 'unzip', zip'; exiting")
         sys.exit
     # AR get settings, fiberassign version, and SKYBRICKS_DIR version
-    tileid, mydict, faver, skybrver = fba_rerun_get_settings(
+    tileid, mydict, survey, faver, skybrver = fba_rerun_get_settings(
         infiberassignfn, log=log, step="settings", start=start
     )
     subdir = "{:06d}".format(tileid)[:3]
@@ -3980,26 +3987,41 @@ def fba_rerun_fbascript(
     mydict["targets"] = os.path.join(
         intermediate_dir, subdir, "{:06d}-targ.fits".format(tileid)
     )
-    for fn in [mydict["footprint"], mydict["sky"], mydict["targets"]]:
-        if not os.path.isfile(fn):
-            log.error("{} not present; exiting".format(fn))
-            sys.exit(1)
-    for root in ["scnd", "too"]:
-        fn = os.path.join(
-            intermediate_dir, subdir, "{:06d}-{}.fits".format(tileid, root)
-        )
-        if os.path.isfile(fn):
-            mydict["targets"] += " {}".format(fn)
+    if not run_intermediate:
+        for fn in [mydict["footprint"], mydict["sky"], mydict["targets"]]:
+            if not os.path.isfile(fn):
+                log.error("{} not present; exiting".format(fn))
+                sys.exit(1)
+    # AR scnd and too
+    scndfn = os.path.join(intermediate_dir, subdir, "{:06d}-scnd.fits".format(tileid))
+    toofn = os.path.join(intermediate_dir, subdir, "{:06d}-too.fits".format(tileid))
 
 
     # AR writing outsh file
     f = open(outsh, "w")
     f.write("#!/bin/bash\n")
     f.write("\n")
-    f.write("source /global/cfs/cdirs/desi/software/desi_environment.sh master\n")
+    f.write("module list 2> {}\n".format(outlog))
+    f.write("\n")
+
+    # AR run intermediate products?
+    if run_intermediate:
+        if survey == "sv3":
+            f.write("module swap desitarget/1.0.0\n")
+            f.write("echo 'module swap desitarget/1.0.0' >> {}\n".format(outlog))
+        f.write(
+            "python -c 'from fiberassign.fba_launch_io import fba_rerun_intermediate; fba_rerun_intermediate(\"{}\", \"{}\")' >> {} 2>&1\n".format(
+                infiberassignfn, intermediate_dir, outlog,
+            )
+        )
+        # HACK for development
+        f.write("export PYTHONPATH=`echo $PYTHONPATH | tr \":\" \"\\n\" | grep -v \"/global/homes/r/raichoor/software_dev/fiberassign_fba_rerun4/py\" | tr \"\\n\" \":\"`\n")
+        # HACK
+
+
     f.write("module swap fiberassign/{}\n".format(faver))
     f.write("\n")
-    f.write("module list 2> {}\n".format(outlog))
+    f.write("module list 2>> {}\n".format(outlog))
     f.write("\n")
     if skybrver == "-":
         f.write("unset SKYBRICKS_DIR\n")
@@ -4012,32 +4034,60 @@ def fba_rerun_fbascript(
 
     # AR control informations
     f.write("echo \"fba_run executable: `which fba_run`\" >> {}\n".format(outlog))
+    f.write("echo \"fiberassign path: `python -c 'import fiberassign; print(fiberassign.__path__)'`\" >> {}\n".format(outlog))
     f.write("echo \"fiberassign version: `python -c 'import fiberassign; print(fiberassign.__version__)'`\" >> {}\n".format(outlog))
     f.write("echo \"SKYBRICKS_DIR=$SKYBRICKS_DIR\" >> {}\n".format(outlog))
     f.write("\n")
 
 
     # AR constructing the fba_run call
+    # AR purposely keep --targets at the end,
+    # AR so that we can complete with scnd and too, if they exist
+    # AR because we do not if they will exist now
     fbarun_cmd = "fba_run --write_all_targets"
     for key in list(mydict.keys()):
-        fbarun_cmd += " --{} {}".format(key, mydict[key])
-    f.write("{} >> {} 2>&1\n".format(fbarun_cmd, outlog))
+        if key != "targets":
+            fbarun_cmd += " --{} {}".format(key, mydict[key])
+    key = "targets"
+    fbarun_cmd += " --{} {}".format(key, mydict[key])
+    f.write("CMD=\"{}\"\n".format(fbarun_cmd))
+    f.write("for FN in {} {}\n".format(scndfn, toofn))
+    f.write("do\n")
+    f.write("\tif [[ -f $FN ]]\n")
+    f.write("\tthen\n")
+    f.write("\t\tCMD=`echo $CMD \" \" $FN`\n")
+    f.write("\tfi\n")
+    f.write("done\n")
+    f.write("echo $CMD >> {}\n".format(outlog))
+    f.write("eval $CMD >> {} 2>&1\n".format(outlog))
     f.write("\n")
 
 
     # AR constructing the merge_results + gzipping, if requested
+    # AR need to use a non-straightforward approach
+    # AR (with lots of quotes in quotes...)
+    # AR to handle the possible existence of scnd and too files
     if fiberassign != "none":
-        merge_cmd = "python -c 'from fiberassign.assign import merge_results; "
-        merge_cmd += "merge_results("
-        targfns = ", ".join(['"{}"'.format(fn) for fn in mydict["targets"].split()])
-        merge_cmd += "[{}], ".format(targfns)
-        merge_cmd += '["{}"], '.format(mydict["sky"])
+        merge_cmd = "CMD=\"python -c 'from fiberassign.assign import merge_results; "
+        merge_cmd += "merge_results([\\\"{}\\\"\"".format(mydict["targets"])
+        f.write("{}\n".format(merge_cmd))
+        f.write("for FN in {} {}\n".format(scndfn, toofn))
+        f.write("do\n")
+        f.write("\tif [[ -f $FN ]]\n")
+        f.write("\tthen\n")
+        f.write("\t\tCMD=`echo $CMD \", \\\"\"$FN\"\\\"\"`\n")
+        f.write("\tfi\n")
+        f.write("done\n")
+        f.write("CMD=`echo $CMD \"], \"`\n")
+        merge_cmd = '[\\\"{}\\\"], '.format(mydict["sky"])
         merge_cmd += "[{}], ".format(tileid)
-        merge_cmd += 'result_dir="{}", '.format(mydict["dir"])
+        merge_cmd += 'result_dir=\\\"{}\\\", '.format(mydict["dir"])
         merge_cmd += "columns=None, "
         merge_cmd += "copy_fba=False"
         merge_cmd += ")'"
-        f.write("{} >> {} 2>&1\n".format(merge_cmd, outlog))
+        f.write("CMD=`echo $CMD \"{}\"`\n".format(merge_cmd))
+        f.write("echo $CMD >> {}\n".format(outlog))
+        f.write("eval $CMD >> {} 2>&1\n".format(outlog))
         f.write("\n")
         if fiberassign == "zip":
             f.write("gzip {}\n".format(outfiberassign))
