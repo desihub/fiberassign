@@ -3910,6 +3910,7 @@ def fba_rerun_fbascript(
     run_intermediate,
     fba="none",
     fiberassign="zip",
+    run_check=True,
     log=Logger.get(),
     start=time(),
 ):
@@ -3930,6 +3931,7 @@ def fba_rerun_fbascript(
         run_intermediate: generate the intermediate products? (boolean)
         fba (optional, defaults to "none"): "none"->no fba-TILEID.fits, "unzip"->fba-TILEID.fits, "zip"->fba-TILEID.fits.gz (string)
         fiberassign(optional, defaults to "zip"): "none"->no fiberassign-TILEID.fits, "unzip"->fiberassign-TILEID.fits, "zip"->fiberassign-TILEID.fits.gz (string)
+        run_check (optional, defaults to True): run fba_rerun_check()? (boolean)
         log (optional, defaults to Logger.get()): Logger object
         start(optional, defaults to time()): start time for log (in seconds; output of time.time())
 
@@ -3948,7 +3950,10 @@ def fba_rerun_fbascript(
         sys.exit(1)
     if fiberassign not in ["none", "unzip", "zip"]:
         log.error("fiberassign={} not in 'none', 'unzip', zip'; exiting")
-        sys.exit
+        sys.exit(1)
+    if (fiberassign == "none") & (run_check):
+        log.error("fiberassign=none and run_check=True: run_check=True requires fiberassign!=none; exiting")
+        sys.exit(1)
     # AR get settings, fiberassign version, and SKYBRICKS_DIR version
     tileid, mydict, survey, faver, skybrver = fba_rerun_get_settings(
         infiberassignfn, log=log, step="settings", start=start
@@ -3963,14 +3968,18 @@ def fba_rerun_fbascript(
     outfiberassign = os.path.join(
         outdir, subdir, "fiberassign-{:06d}.fits".format(tileid)
     )
-    for fn in [
+    fns = [
         outsh,
         outlog,
         outfba,
         "{}.gz".format(outfba),
         outfiberassign,
         "{}.gz".format(outfiberassign),
-    ]:
+    ]
+    if run_check:
+        outdiff = outsh.replace(".sh", ".diff")
+        fns.append(outdiff)
+    for fn in fns:
         if os.path.isfile(fn):
             log.error("{} already exists; exiting".format(fn))
             sys.exit(1)
@@ -4099,6 +4108,20 @@ def fba_rerun_fbascript(
         f.write("gzip {}\n".format(outfba))
         f.write("\n")
 
+    # AR run check?
+    if run_check:
+        if fiberassign == "unzip":
+            tmpfn = outfiberassign
+        if fiberassign == "zip":
+            tmpfn = "{}.gz".format(outfiberassign)
+        # HACK for development
+        f.write("export PYTHONPATH=/global/homes/r/raichoor/software_dev/fiberassign_fba_rerun4/py:$PYTHONPATH\n")
+        # HACK
+        f.write(
+            "python -c 'from fiberassign.fba_launch_io import fba_rerun_check; fba_rerun_check(\"{}\", \"{}\", \"{}\")' >> {} 2>&1\n".format(
+                infiberassignfn, tmpfn, outdiff, outlog,
+            )
+        )
 
     # AR close + make it executable
     f.close()
