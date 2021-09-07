@@ -3936,7 +3936,10 @@ def fba_rerun_fbascript(
     start=time(),
 ):
     """
-    Writes a bash script to rerun fiber assignment of a fiberassign-TILEID.fits.gz file.
+    Writes a bash script (outdir/ABC/rerun-fa-TILEID.sh) to rerun fiber assignment of a fiberassign-TILEID.fits.gz file.
+    If run_intermediate=True, also writes a bash script (outdir/ABC/rerun-intermediate-TILEID.sh) to rerun the intermediate
+        products (TILEID-{tiles,sky,targ,scnd,too}.fits).
+
     Creates outdir/ABC/fa-TILEID.sh.
     The script will create outdir/ABC/fa-TILEID.log and:
     - outdir/ABC/fba-TILEID.fits(.gz) if fba=True
@@ -3946,13 +3949,16 @@ def fba_rerun_fbascript(
         infiberassignfn: full path to the fiberassign-TILEID.fits file to be rerun (string)
         outdir: output folder (files will be written in outdir/ABC/) (string)
         intermediate_dir: path to a folder,
-            which contains the intermediate products (if run_intermediate=False; will generate them if run_intermediate=True):
-            - outdir/ABC/TILEID-{tiles,sky,targ}.fits: required
-            - outdir/ABC/TILEID-{scnd,too}.fits: optional
+            which contains the intermediate products:
+            - outdir/ABC/TILEID-{tiles,sky,targ}.fits
+            - and optionally outdir/ABC/TILEID-{scnd,too}.fits: optional
+            if run_intermediate=False, those need to be present;
+            if run_intermediate=True, outdir/ABC/rerun-intermediate-TILEID.sh will generate them
         run_intermediate: generate the intermediate products? (boolean)
         fba (optional, defaults to "none"): "none"->no fba-TILEID.fits, "unzip"->fba-TILEID.fits, "zip"->fba-TILEID.fits.gz (string)
         fiberassign(optional, defaults to "zip"): "none"->no fiberassign-TILEID.fits, "unzip"->fiberassign-TILEID.fits, "zip"->fiberassign-TILEID.fits.gz (string)
         run_check (optional, defaults to True): run fba_rerun_check()? (boolean)
+        intermediate_dir_final (optional, defaults to "-"): folder to move all intermediate products (*sh, *fits, *log) (string)
         log (optional, defaults to Logger.get()): Logger object
         start(optional, defaults to time()): start time for log (in seconds; output of time.time())
 
@@ -3960,7 +3966,7 @@ def fba_rerun_fbascript(
         The bash script requires that the desi (master) environment is already loaded,
             i.e. the following has been executed: "source /global/cfs/cdirs/desi/software/desi_environment.sh master".
         The code will use all the intermediate products present in outdir/ABC, and only those.
-        fba_rerun_fbascript() is designed to be run after fba_rerun_intermediate().
+        The code will create the sub-folders ABC/ if they do not exist
         The code will exit with an error if any of outdir/ABC/{fa,fba,fiberassign}-TILEID.{sh,fits,log}{gz} already exists.
     """
     # AR assess arguments
