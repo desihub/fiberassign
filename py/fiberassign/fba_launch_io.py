@@ -3901,6 +3901,26 @@ def fba_rerun_get_settings(
     return hdr["TILEID"], mydict, survey, faver, skybrver
 
 
+def get_fba_rerun_scriptname(infiberassignfn, outdir, rerun="fa"):
+    """
+    Gets the fba_rerun_script() *sh scripts filenames.
+
+    Args:
+        infiberassignfn: full path to the fiberassign-TILEID.fits file to be rerun (string)
+        outdir: output folder (files will be written in outdir/ABC/) (string)
+        rerun (optional, defaults to "fa"): type of rerun, "fa" or "intermediate" (string)
+
+    Returns:
+        *sh script filename (string)
+    """
+    if rerun not in ["intermediate", "fa"]:
+        sys.exit("rerun={} not in ['intermediate', 'rerun']; exiting".format(rerun))
+    tileid = fits.getheader(infiberassignfn, 0)["TILEID"]
+    subdir = "{:06d}".format(tileid)[:3]
+    if rerun == "fa":
+        return os.path.join(outdir, subdir, "rerun-fa-{:06d}.sh".format(tileid))
+    else:
+        return os.path.join(outdir, subdir, "rerun-intermediate-{:06d}.sh".format(tileid))
 
 
 def fba_rerun_fbascript(
@@ -3992,7 +4012,7 @@ def fba_rerun_fbascript(
 
 
     # AR output files
-    outsh = os.path.join(outdir, subdir, "rerun-fa-{:06d}.sh".format(tileid))
+    outsh = get_fba_rerun_scriptname(infiberassignfn, outdir, rerun="fa")
     outlog = outsh.replace(".sh", ".log")
     outfba = os.path.join(outdir, subdir, "fba-{:06d}.fits".format(tileid))
     outfiberassign = os.path.join(
@@ -4007,7 +4027,7 @@ def fba_rerun_fbascript(
         "{}.gz".format(outfiberassign),
     ]
     if run_intermediate:
-        outintsh = outsh.replace("-fa", "-intermediate")
+        outintsh = get_fba_rerun_scriptname(infiberassignfn, outdir, rerun="intermediate")
         outintlog = outintsh.replace(".sh", ".log")
         fns += [outintsh, outintlog]
     if run_check:
@@ -4191,12 +4211,6 @@ def fba_rerun_fbascript(
     # AR close + make it executable
     f.close()
     os.system("chmod +x {}".format(outsh))
-
-    # AR return the scripts to be executed (single string, comma-separated)
-    if run_intermediate:
-        return ",".join([outintsh, outsh])
-    else:
-        return outsh
 
 
 def fba_rerun_check(
