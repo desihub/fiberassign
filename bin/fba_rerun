@@ -1,0 +1,249 @@
+#!/usr/bin/env python
+
+import os
+import sys
+from time import time
+from astropy.time import Time
+from astropy.io import fits
+import numpy as np
+from fiberassign.fba_launch_io import assert_env_vars, print_config_infos
+from fiberassign.utils import Logger
+import desitarget
+import desimeter
+import fiberassign
+
+from argparse import ArgumentParser
+
+# AR allowed steps in fba_launch
+steps_all = ["tiles", "sky", "gfa", "targ", "scnd", "too", "fa", "zip", "move", "qa"]
+
+
+def main():
+    #
+    start = time()
+    log.info("{:.1f}s\tstart\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+
+    # AR steps to execute in fba_launch
+    steps = [step for step in args.steps.split(",")]
+    if args.nosteps is not None:
+        steps = [step for step in steps if step not in args.nosteps.split(",")]
+        log.info(
+            "{:.1f}s\tsettings\tsteps to exclude: {}".format(
+                time() - start, args.nosteps.split(",")
+            )
+        )
+    else:
+        log.info("{:.1f}s\tsettings\tsteps to exclude: -".format(time() - start))
+    log.info("{:.1f}s\tsettings\tsteps to execute: {}".format(time() - start, steps))
+
+    # AR reading header
+    hdr = fits.getheader(args.infiberassign, 0)
+    tmparr = ["fba_launch"]
+    faargs = hdr["FAARGS"].split()
+
+    # AR storing the FAARGS in a dictionary
+    mydict = {}
+
+    # AR outdir (not in FAARGS, on purpose)
+    if os.path.normpath(args.outdir) == os.path.normpath(hdr["OUTDIR"]):
+        log.error(
+            "{:.1f}s\tsettings\trequest to write in the outdir as original file: not permitted! exiting".format(
+                time() - start
+            )
+        )
+        sys.exit(1)
+    else:
+        mydict["--outdir"] = args.outdir
+
+    # AR forcetileid (not in FAARGS, on purpose)
+    mydict["--forcetileid"] = "y"
+
+    # AR do clean ? (overwriting what s in FAARGS)
+    mydict["--doclean"] = args.doclean
+
+    # AR steps (did not exist for fba_launch before 5.0.0)
+    # - did not exist for fba_launch before 5.0.0
+    # - if fba_rerun run with tag < 5.0.0, we do not add this argument
+    # - else, we add it; this will overwrite what s in faargs
+    if fiberassign.__version__ >= "5.0.0":
+        mydict["--steps"] = ",".join(steps)
+    else:
+        log.info(
+            "{:.1f}s\tsettings\targs.steps/args.nosteps not taken into account, as fiberassign.__version__<5.0.0".format(
+                time() - start
+            )
+        )
+
+    # AR loop on the used arguments in the fba_launch run
+    for i in range(len(faargs) // 2):
+        key = faargs[2 * i]
+        val = faargs[2 * i + 1]
+
+        # AR handling of the "action_store=True" arguments..
+        # AR - if True, we keep the argument name
+        # AR - if False, we remove
+        if key in ["--log_stdout", "--worldreadable"]:
+            if val == "False":
+                continue
+            else:
+                mydict[key] = ""
+
+        # AR doclean/steps/nosteps: we skip (if present), as we already set mydict["--steps"]
+        elif key in ["--doclean", "--steps", "--nosteps"]:
+            continue
+
+        # AR before 5.0.0, some arguments accepted with hyphen only, no underscore
+        # AR    though hyphens have been automatically converted to underscores
+        # AR    in the faargs...
+        if (fiberassign.__version__ < "5.0.0") & (
+            key in ["--log_stdout", "--margin_gfa", "--margin_petal", "--margin_pos"]
+        ):
+            mydict[key.replace("_", "-")] = val
+
+        else:
+
+            # AR dtver
+            if (key == "--dtver") & (args.dtver is not None):
+                mydict[key] = args.dtver
+            # AR
+            else:
+                mydict[key] = val
+
+    # AR safe: DESI environment variables defined?
+    assert_env_vars(log=log, step="settings", start=start)
+
+    # AR print general configuration informations
+    print_config_infos(log=log, step="settings", start=start)
+
+    # AR for information, compare desitarget, desimeter, fiberassign
+    # AR    code version with what was used in args.infiberassign
+    tmpname = [cards[0] for cards in hdr.cards if cards[1] == "desitarget"]
+    if len(tmpname) > 0:
+        inver = hdr[tmpname[0].replace("DEPNAM", "DEPVER")]
+    else:
+        inver = "-"
+    log.info(
+        "{:.1f}s\tsettings\tdesitarget: input={} , current={}".format(
+            time() - start, inver, desitarget.__version__
+        )
+    )
+    #
+    tmpname = [cards[0] for cards in hdr.cards if cards[1] == "desimeter"]
+    if len(tmpname) > 0:
+        inver = hdr[tmpname[0].replace("DEPNAM", "DEPVER")]
+    else:
+        inver = "-"
+    log.info(
+        "{:.1f}s\tsettings\tdesimeter: input={} , current={}".format(
+            time() - start, inver, desimeter.__version__
+        )
+    )
+    #
+    log.info(
+        "{:.1f}s\tsettings\tfiberassign: input={} , current={}".format(
+            time() - start, hdr["FA_VER"], fiberassign.__version__
+        )
+    )
+
+    # AR command line to execute
+    tmparr = ["fba_launch"]
+    for key in np.sort(list(mydict.keys())):
+        tmparr += [key, mydict[key]]
+        log.info(
+            "{:.1f}s\tsettings\t{}\t= {}".format(
+                time() - start, repr(key), repr(mydict[key])
+            )
+        )
+    tmpstr = " ".join(tmparr)
+    log.info("{:.1f}s\tsettings\t{}".format(time() - start, tmpstr))
+    os.system(tmpstr)
+
+
+if __name__ == "__main__":
+
+    # AR reading arguments
+    parser = ArgumentParser()
+    parser.add_argument(
+        "--infiberassign",
+        help="full path to fiberassign-TILEID.fits.gz file we want to re-run",
+        type=str,
+        default=None,
+        required=True,
+    )
+    parser.add_argument(
+        "--outdir", help="output directory", type=str, default=None, required=True,
+    )
+    parser.add_argument(
+        "--doclean",
+        help="delete TILEID-{tiles,sky,std,gfa,targ,scnd,too}.fits files? (y/n; default=n); overrides the one in fiberassign-TILEID.fits.gz",
+        type=str,
+        default="n",
+        required=False,
+    )
+    parser.add_argument(
+        "--dtver",
+        help="desitarget catalogue version; if not None, overrides the one in fiberassign-TILEID.fits.gz",
+        type=str,
+        default=None,
+        required=False,
+    )
+    #
+    parser.add_argument(
+        "--steps",
+        help="comma-separated list of steps to accomplish, amongst {} (defaults to {} if args.nosteps=None)".format(
+            steps_all, ",".join(steps_all)
+        ),
+        type=str,
+        default=None,
+        required=False,
+    )
+    parser.add_argument(
+        "--nosteps",
+        help="comma-separated list of steps *not* to accomplish, amongst {} (default=None); cannot be used if some args.steps values are also provided".format(
+            steps_all
+        ),
+        type=str,
+        default=None,
+        required=False,
+    )
+
+    args = parser.parse_args()
+    log = Logger.get()
+    start = time()
+
+    # AR safe: outdir
+    if args.outdir[-1] != "/":
+        args.outdir += "/"
+    if os.path.isdir(args.outdir) == False:
+        os.mkdir(args.outdir)
+
+    # AR steps/nosteps
+    if args.steps is not None and args.nosteps is not None:
+        log.error(
+            "only *one* of args.steps and args.nosteps has to be set to None; exiting"
+        )
+        sys.exit(1)
+    if args.steps is None:
+        args.steps = ",".join(steps_all)
+        if args.nosteps is not None:
+            wrong_nosteps = [
+                step for step in args.nosteps.split(",") if step not in steps_all
+            ]
+            if len(wrong_nosteps) > 0:
+                log.error(
+                    "args.nosteps have the following not authorized steps : {}; exiting".format(
+                        wrong_nosteps
+                    )
+                )
+                sys.exit(1)
+    else:
+        wrong_steps = [step for step in args.steps.split(",") if step not in steps_all]
+        if len(wrong_steps) > 0:
+            log.error(
+                "args.steps have the following not authorized steps : {}; exiting".format(
+                    wrong_steps
+                )
+            )
+            sys.exit(1)
+
+    main()

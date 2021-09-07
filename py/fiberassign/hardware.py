@@ -234,6 +234,8 @@ def load_hardware(focalplane=None, rundate=None,
 
     # Convert the exclusion polygons into shapes (as required)
     excl = dict()
+    # cache expanded polygons (because many of the polygons are actually duplicates)
+    expanded = {}
     def get_exclusions(exclname):
         e = excl.get(exclname)
         if e is not None:
@@ -247,10 +249,15 @@ def load_hardware(focalplane=None, rundate=None,
             sg = list()
             for sgm in shp[obj]["segments"]:
                 if obj in margins:
-                    sx = [x for x,y in sgm]
-                    sy = [y for x,y in sgm]
-                    ex,ey = expand_closed_curve(sx, sy, margins[obj])
-                    sgm = list(zip(ex, ey))
+                    key = (obj, tuple(tuple(xy) for xy in sgm))
+                    if key in expanded:
+                        sgm = expanded[key]
+                    else:
+                        sx = [x for x,y in sgm]
+                        sy = [y for x,y in sgm]
+                        ex,ey = expand_closed_curve(sx, sy, margins[obj])
+                        sgm = list(zip(ex, ey))
+                        expanded[key] = sgm
                 sg.append(Segments(sgm))
             fshp = Shape((0.0, 0.0), cr, sg)
             excl[exclname][obj] = fshp

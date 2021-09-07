@@ -12,10 +12,11 @@ import sys
 import tempfile
 import shutil
 import re
+from glob import glob
 
 # time
 from time import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 #
 import numpy as np
@@ -32,15 +33,16 @@ from astropy.time import Time
 # desitarget
 import desitarget
 from desitarget.gaiamatch import gaia_psflike
-from desitarget.io import read_targets_in_tiles, write_targets, write_skies
-from desitarget.mtl import inflate_ledger
+from desitarget.io import read_targets_in_tiles, write_targets, write_skies, read_keyword_from_mtl_header, find_mtl_file_format_from_header
+from desitarget.mtl import match_ledger_to_targets
 from desitarget.targetmask import desi_mask, obsconditions
 from desitarget.targets import set_obsconditions
-from desitarget.geomask import match
+from desitarget.geomask import match, pixarea2nside, nside2nside
 
 # desimodel
 import desimodel
-from desimodel.footprint import is_point_in_desi
+from desimodel.footprint import is_point_in_desi, tiles2pix
+from desimodel.io import datadir
 
 # desimeter
 import desimeter
@@ -69,7 +71,7 @@ tile_area = np.pi * tile_radius_deg ** 2
 def assert_isoformat_utc(time_str):
     """
     Asserts if a date formats as "YYYY-MM-DDThh:mm:ss+00:00".
-    
+
     Args:
         time_str: string with a date
     Returns:
@@ -107,15 +109,101 @@ def get_svn_version(svn_dir):
     return svn_ver
 
 
-def get_program_latest_timestamp(
-    program, log=Logger.get(), step="", start=time(),
-):
+def get_latest_rundate(log=Logger.get(), step="", start=time()):
     """
-    Get the latest timestamp for a given program from the MTL per-tile file.
+    Returns the latest TIME value of the latest desi-state_*ecsv file in $DESIMODEL.
 
     Args:
+        log (optional, defaults to Logger.get()): Logger object
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+
+    Notes:
+        If not UTC-formatted, we add "+00:00".
+    """
+    # AR need DESIMODEL to be defined
+    if os.getenv("DESIMODEL") is None:
+        log.error("DESIMODEL environment variable is not defined; exiting")
+        sys.exit(1)
+    # AR take the latest desi-state_*ecsv file
+    fn = sorted(glob(os.path.join(datadir(), "focalplane", "desi-state_*ecsv")))[-1]
+    log.info("{:.1f}s\t{}\tusing {} to get the latest rundate".format(time() - start, step, fn))
+    d = Table.read(fn, include_names = ["TIME"])
+    # AR take the latest timestamp (should be the last line, but safe here)
+    rundate = np.unique(d["TIME"])[-1]
+    # AR if not UTC formatted, we add +00:00
+    if not assert_isoformat_utc(rundate):
+        rundate += "+00:00"
+    log.info("{:.1f}s\t{}\tlatest rundate: {}".format(time() - start, step, rundate))
+    return rundate
+
+
+def get_last_line(fn):
+    """
+    Return the last line of a text file.
+
+    Args:
+        fn: file name (string)
+
+    Returns:
+        last_line: (string)
+
+    Notes:
+        Fails if fn has one line only; we do not protect for that case,
+            as this function is intended to be used in get_program_latest_timestamp()
+            to read *ecsv ledgers, which will always have more than one line,
+            and we want the fastest function possible, to use in fiberassign on-the-fly.
+        Copied from https://stackoverflow.com/questions/46258499/how-to-read-the-last-line-of-a-file-in-python.
+    """
+    with open(fn, "rb") as f:
+        f.seek(-2, os.SEEK_END)
+        while f.read(1) != b"\n":
+            f.seek(-2, os.SEEK_CUR)
+        last_line = f.readline().decode().strip()
+    f.close()
+    return last_line
+
+
+def read_ecsv_keys(fn):
+    """
+    Returns the column content of an .ecsv file.
+
+    Args:
+        fn: filename with an .ecsv format (string)
+
+    Returns:
+        keys: list of the column names in fn (list)
+
+    Notes:
+        Gets the column names from the first line not starting with "#".
+    """
+    keys = []
+    with open(fn) as f:
+        for line in f:
+            if line[0] == "#":
+                continue
+            if len(line.strip()) == 0:
+                continue
+            keys = line.split()
+            break
+    f.close()
+    return keys
+
+
+def get_program_latest_timestamp(
+    survey, program, tilera, tiledec, log=Logger.get(), step="", start=time(),
+):
+    """
+    Get the latest timestamp for a given tile, from the MTL per-tile file and the
+        primary/secondary/ToO ledgers touching that tile.
+
+    Args:
+        survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         program: ideally "dark", "bright", or "backup" (string)
                 though if different will return None
+        tilera: tile center R.A. (float)
+        tiledec: tile center Dec. (float)
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -126,9 +214,7 @@ def get_program_latest_timestamp(
         else: None
 
     Notes:
-        if the per-tile MTL files does not exist or has zero entries,
-        TBD: currently add +1min because of a mismatch between the ledgers and the per-tile file.
-        TBD: still see if a +1min or +1s is desirable
+        20210831: remove the +1min (and added "leq=True" in the read_targets_.. routines for ledgers)
     """
     # AR check DESI_SURVEYOPS is defined
     assert_env_vars(
@@ -138,6 +224,7 @@ def get_program_latest_timestamp(
     # AR defaults to None (returned if no file or no selected rows)
     timestamp = None
 
+    tms = []
     # AR check if the per-tile file is here
     # AR no need to check the scnd-mtl-done-tiles.ecsv file,
     # AR     as we restrict to a given program ([desi-survey 2434])
@@ -145,96 +232,95 @@ def get_program_latest_timestamp(
     if os.path.isfile(fn):
         d = Table.read(fn)
         keep = d["PROGRAM"] == program.upper()
+        # AR add a cut on TILEID
+        if survey == "sv3":
+            keep &= (d["TILEID"] < 1000)
+        if survey == "main":
+            keep &= (d["TILEID"] >= 1000) & (d["TILEID"] < 59000)
         if keep.sum() > 0:
             d = d[keep]
             # AR taking the latest timestamp
             tm = np.unique(d["TIMESTAMP"])[-1]
-            # AR does not end with +NN:MM timezone?
-            if re.search('\+\d{2}:\d{2}$', tm) is None:
-                tm = "{}+00:00".format(tm)
-            tm = datetime.strptime(tm, "%Y-%m-%dT%H:%M:%S%z")
-            # AR TBD: we currently add one minute; can be removed once
-            # AR TBD  update is done on the desitarget side
-            tm += timedelta(minutes=1)
-            timestamp = tm.isoformat(timespec="seconds")
-    return timestamp
+            log.info("{:.1f}s\t{}\tlatest TIMESTAMP from {}: {}".format(time() - start, step, fn, tm))
+            tms.append(tm)
 
-
-def custom_read_targets_in_tiles(
-    targdirs,
-    tiles,
-    quick=True,
-    mtl=False,
-    unique=True,
-    isodate=None,
-    log=Logger.get(),
-    step="",
-    start=time(),
-):
-    """
-    Wrapper to desitarget.io.read_targets_in_tiles, allowing multiple folders
-    and sanity check TARGETID if more than one folder.
-
-    Args:
-        targdirs: list of folders
-        tiles: tiles object (as required by desitarget.io.read_targets_in_tiles)
-        quick, mtl, unique, isodate (optional): same as desitarget.io.read_targets_in_tiles arguments
-        log (optional, defaults to Logger.get()): Logger object
-        step (optional, defaults to ""): corresponding step, for fba_launch log recording
-            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
-    Returns:
-        array of targets in the passed tiles.
-    """
-    # AR reading
-    log.info(
-        "{:.1f}s\t{}\treading input targets from {}".format(
-            time() - start, step, targdirs
-        )
+    # AR now checking the healpix pixels touching the tile
+    mtldir, scndmtldir, too = get_ledger_paths(
+        survey.lower(),
+        program.lower(),
+        log=log,
+        step=step,
+        start=start,
     )
-    if len(targdirs) == 1:
-        d = read_targets_in_tiles(
-            targdirs[0],
-            tiles=tiles,
-            quick=quick,
-            mtl=mtl,
-            unique=unique,
-            isodate=isodate,
+    # AR existing folders?
+    hpdirnames = []
+    for hpdirname in [mtldir, scndmtldir]:
+        if hpdirname is not None:
+            if os.path.isdir(hpdirname):
+                hpdirnames.append(hpdirname)
+            else:
+                log.warning("{:.1f}s\t{}\tno existing {}".format(time() - start, step, hpdirname))
+    # ADM/AR determine the pixels that touch the tiles.
+    # AR assume same filenside for primary and secondary
+    if len(hpdirnames) > 0:
+        hpdirname = hpdirnames[0]
+        tiles = Table()
+        tiles["RA"], tiles["DEC"] = [tilera], [tiledec]
+        nside = pixarea2nside(7.)
+        pixlist = tiles2pix(nside, tiles=tiles)
+        fileform = find_mtl_file_format_from_header(hpdirname)
+        filenside = int(read_keyword_from_mtl_header(hpdirname, "FILENSID"))
+        filepixlist = nside2nside(nside, filenside, pixlist)
+        log.info(
+            "{:.1f}s\t{}\tconsider tilera={}, tiledec={}".format(
+                time() - start, step, tilera, tiledec,
+            )
         )
-    else:
-        ds = [
-            read_targets_in_tiles(
-                targdir,
-                tiles=tiles,
-                quick=quick,
-                mtl=mtl,
-                unique=unique,
-                isodate=isodate,
+        log.info(
+            "{:.1f}s\t{}\ttouching healpix pixels (nside={}): {}".format(
+                time() - start, step, filenside, ", ".join(["{}".format(pix) for pix in filepixlist]),
             )
-            for targdir in targdirs
-        ]
-        # AR merging
-        d = np.concatenate(ds)
-        # AR remove duplicates based on TARGETID (so duplicates not identified if in mixed surveys)
-        ii_m1 = np.where(d["TARGETID"] == -1)[0]
-        ii_nm1 = np.where(d["TARGETID"] != -1)[0]
-        _, ii = np.unique(d["TARGETID"][ii_nm1], return_index=True)
-        ii_nm1 = ii_nm1[ii]
-        if len(ii_m1) + len(ii_nm1) != len(d):
-            log.info(
-                "{:.1f}s\t{}\tremoving {}/{} duplicates".format(
-                    time() - start, step, len(d) - len(ii_m1) - len(ii_nm1), len(d)
-                )
-            )
-            d = d[ii_m1.tolist() + ii_nm1.tolist()]
-    return d
+        )
+    # AR build list of files to check
+    fns = [too]
+    for hpdirname in hpdirnames:
+        fileform = find_mtl_file_format_from_header(hpdirname)
+        for pix in filepixlist:
+            fns.append(fileform.format(pix))
+    # AR check the last-line TIMESTAMP for each file
+    for fn in fns:
+        if os.path.isfile(fn):
+            ii = np.where(np.array(read_ecsv_keys(fn)) == "TIMESTAMP")[0]
+            if len(ii) > 1:
+                log.error("{:.1f}s\t{}\t{}: unexpected column content; exiting".format(time() - start, step, fn))
+                sys.exit(1)
+            elif len(ii) == 0:
+                log.warning("{:.1f}s\t{}\t{}: no TIMESTAMP column; passing".format(time() - start, step, fn))
+            else:
+                i = ii[0]
+                line = get_last_line(fn)
+                tm = line.split()[i]
+                log.info("{:.1f}s\t{}\t{} last-line TIMESTAMP : {}".format(time() - start, step, fn, tm)) 
+                tms.append(tm)
+        else:
+            log.warning("{:.1f}s\t{}\t{}: no file, passing".format(time() - start, step, fn))
+
+    # AR take the latest TIMESTAMP
+    if len(tms) > 0:
+        timestamp = np.sort(tms)[-1]
+        # AR does not end with +NN:MM timezone?
+        if re.search('\+\d{2}:\d{2}$', timestamp) is None:
+            timestamp = "{}+00:00".format(timestamp)
+
+    log.info("{:.1f}s\t{}\tlatest timestamp : {}".format(time() - start, step, timestamp))
+    return timestamp
 
 
 def mv_write_targets_out(infn, targdir, outfn, log=Logger.get(), step="", start=time()):
     """
     Moves the file created by desitarget.io.write_targets
-    and removes folder created by desitarget.io.write_targets    
-    
+    and removes folder created by desitarget.io.write_targets
+
     Args:
         infn: filename output by desitarget.io.write_targets
         targdir: folder provided as desitarget.io.write_targets input
@@ -245,6 +331,11 @@ def mv_write_targets_out(infn, targdir, outfn, log=Logger.get(), step="", start=
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
     """
     # AR renaming
+    # Try to remove file before overwriting; somehow this avoids some permissions issues at KPNO.
+    try:
+        os.remove(outfn)
+    except FileNotFoundError:
+        pass
     _ = shutil.move(infn, outfn)
     log.info("{:.1f}s\t{}\trenaming {} to {}".format(time() - start, step, infn, outfn))
     # AR removing folders
@@ -258,7 +349,7 @@ def mv_write_targets_out(infn, targdir, outfn, log=Logger.get(), step="", start=
 def get_nowradec(ra, dec, pmra, pmdec, parallax, ref_year, pmtime_utc_str, scnd=False):
     """
     Apply proper motion correction
-    
+
     Args:
         ra: numpy array of RAs (deg)
         dec: numpy array of DECs (deg)
@@ -337,8 +428,8 @@ def force_finite_pm(
     d, pmra_key="PMRA", pmdec_key="PMDEC", log=Logger.get(), step="", start=time()
 ):
     """
-    Replaces NaN PMRA, PMDEC by 0    
-    
+    Replaces NaN PMRA, PMDEC by 0
+
     Args:
         d: array with at least proper-motion columns
         pmra_key (optional, defaults to PMRA): column name for PMRA
@@ -350,7 +441,7 @@ def force_finite_pm(
 
     Returns:
         d: same as input d, but NaN proper motions replaced by 0
-        
+
     """
     for key in [pmra_key, pmdec_key]:
         keep = ~np.isfinite(d[key])
@@ -376,7 +467,7 @@ def force_nonzero_refepoch(
 ):
     """
     Replaces 0 by force_ref_epoch in ref_epoch
-    
+
     Args:
         d: array with at least proper-motion columns
         force_ref_epoch: float, ref_epoch to replace 0 by
@@ -386,13 +477,13 @@ def force_nonzero_refepoch(
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
     Returns:
         d: same as input d, but 0 ref_epochs replaced by force_ref_epoch
 
     Notes:
         Will exit with error if ref_epoch=0, but pmra or pmdec != 0
-        
+
     """
     keep = d[ref_epoch_key] == 0
     n = ((d[pmra_key][keep] != 0) | (d[pmra_key][keep] != 0)).sum()
@@ -436,7 +527,7 @@ def update_nowradec(
 ):
     """
     Update (RA, DEC, REF_EPOCH) using proper motion
-    
+
     Args:
         d: array with at least proper-motion columns
         pmtime_utc_str: date to update position to (format: YYYY-MM-DDThh:mm:ss+00:00)
@@ -455,8 +546,8 @@ def update_nowradec(
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
-        
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+
     Returns:
         d: same as input, but with RA, DEC updated to pmtime_utc_str
 
@@ -530,8 +621,8 @@ def assert_env_vars(
     start=time(),
 ):
     """
-    Assert the environment variables required by fba_launch 
-    
+    Assert the environment variables required by fba_launch
+
     Args:
         required_env_vars (optional, defaults to ["DESI_ROOT",
         "DESI_TARGET",
@@ -541,10 +632,10 @@ def assert_env_vars(
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
-        
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+
     Notes:
-        will exit with error if some assertions are not verified 
+        will exit with error if some assertions are not verified
     """
     # AR safe: DESI environment variables
     for required_env_var in required_env_vars:
@@ -566,17 +657,17 @@ def assert_arg_dates(
 ):
     """
     Assert the fba_launch date arguments are correctly formatted ("YYYY-MM-DDThh:mm:ss+00:00")
-    
+
     Args:
         args: fba_launch parser.parse_args() output
         dates (optional, defaults to ["pmtime_utc_str", "rundate", "mtltime"]): list of date fba_launch argument names to check
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
-        
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+
     Notes:
-        will exit with error if some assertions are not verified 
+        will exit with error if some assertions are not verified
     """
     # AR dates properly formatted?
     for kwargs in args._get_kwargs():
@@ -595,7 +686,7 @@ def assert_svn_tileid(
 ):
     """
     Asserts if TILEID already exists in the SVN tile folder
-    
+
     Args:
         tileid: TILEID to check (int)
         forcetileid (optional, defaults to "n"): "y" or "n";
@@ -604,8 +695,8 @@ def assert_svn_tileid(
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
-       
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+
     """
     svn_trunk = os.path.join(os.getenv("DESI_TARGET"), "fiberassign/tiles/trunk")
     # AR needs a wildcard to verify .fits and fits.gz files
@@ -652,7 +743,7 @@ def print_config_infos(
 ):
     """
     Print various configuration informations (machine, modules version/path, DESI environment variables).
-    
+
     Args:
         required_env_vars (optional, defaults to ["DESI_ROOT",
         "DESI_TARGET",
@@ -662,7 +753,7 @@ def print_config_infos(
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
     """
     # AR machine
     log.info(
@@ -692,6 +783,92 @@ def print_config_infos(
             )
         )
 
+def get_ledger_paths(
+    survey,
+    program,
+    log=Logger.get(),
+    step="settings",
+    start=time(),
+):
+    """
+    Obtain the folder/file full paths for the primary/secondary/ToO ledgers.
+
+    Args:
+        survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
+        program: "dark", "bright", or "backup" (string)
+        log (optional, defaults to Logger.get()): Logger object
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+
+    Returns:
+        - mtl: primary ledgers MTL folder (string)
+        - scndmtl: secondary ledgers MTL folder (string)
+        - too: ToO ecsv ledger file (string)
+
+    Notes:
+        if survey not in ["sv1", "sv2", "sv3", "main"]
+        or program not in ["dark", "bright", or "backup"], will return a warning only
+        same warning only if the built paths/files do not exist.
+    """
+    # AR expected survey, program?
+    exp_surveys = ["sv1", "sv2", "sv3", "main"]
+    exp_programs = ["dark", "bright", "backup"]
+    if survey.lower() not in exp_surveys:
+        log.warning(
+            "{:.1f}s\t{}\tunexpected survey={} ({}; proceeding anyway)".format(
+                time() - start, step, survey.lower(), exp_surveys
+            )
+        )
+    if program.lower() not in exp_programs:
+        log.warning(
+            "{:.1f}s\t{}\tunexpected program={} ({}; proceeding anyway)".format(
+                time() - start, step, program.lower(), exp_programs
+            )
+        )
+
+    # AR check DESI_SURVEYOPS is defined
+    assert_env_vars(
+        required_env_vars=["DESI_SURVEYOPS"], log=log, step=step, start=start,
+    )
+
+    # AR same (svn) ledger paths at NERSC/KPNO
+    mtl = os.path.join(
+        os.getenv("DESI_SURVEYOPS"), "mtl", survey.lower(), program.lower(),
+    )
+    # AR secondary (dark, bright; no secondary for backup)
+    if program.lower() in ["dark", "bright"]:
+        scndmtl = os.path.join(
+            os.getenv("DESI_SURVEYOPS"),
+            "mtl",
+            survey.lower(),
+            "secondary",
+            program.lower(),
+        )
+    else:
+        scndmtl = None
+    # AR ToO (same for dark, bright)
+    too = os.path.join(
+        os.getenv("DESI_SURVEYOPS"), "mtl", survey.lower(), "ToO", "ToO.ecsv",
+    )
+
+    # AR log
+    for name, path in zip(["mtl", "scndmtl", "too"], [mtl, scndmtl, too]):
+        log.info(
+            "{:.1f}s\t{}\tdirectory for {}: {}".format(
+                time() - start, step, name, path,
+            )
+        )
+        if path is not None:
+            if not os.path.exists(path):
+                log.warning(
+                    "{:.1f}s\t{}\tdirectory for {}: {} does not exist".format(
+                        time() - start, step, name, path,
+                    )
+                )
+    #
+    return mtl, scndmtl, too
+
 
 def get_desitarget_paths(
     dtver,
@@ -705,7 +882,7 @@ def get_desitarget_paths(
 ):
     """
     Obtain the folder/file full paths for desitarget products
-    
+
     Args:
         dtver: desitarget catalog version (string; e.g., "0.57.0")
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
@@ -715,8 +892,8 @@ def get_desitarget_paths(
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()        
-        
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+
     Returns:
         Dictionary with the following keys:
         - sky: sky folder
@@ -774,9 +951,6 @@ def get_desitarget_paths(
         "resolve",
         program.lower(),
     )
-    mydirs["mtl"] = os.path.join(
-        os.getenv("DESI_SURVEYOPS"), "mtl", survey.lower(), program.lower(),
-    )
     # AR secondary (dark, bright; no secondary for backup)
     if program.lower() in ["dark", "bright"]:
         if survey.lower() == "main":
@@ -794,18 +968,6 @@ def get_desitarget_paths(
             program.lower(),
             basename,
         )
-        mydirs["scndmtl"] = os.path.join(
-            os.getenv("DESI_SURVEYOPS"),
-            "mtl",
-            survey.lower(),
-            "secondary",
-            program.lower(),
-        )
-
-    # AR ToO (same for dark, bright)
-    mydirs["too"] = os.path.join(
-        os.getenv("DESI_SURVEYOPS"), "mtl", survey.lower(), "ToO", "ToO.ecsv",
-    )
 
     # AR log
     for key in list(mydirs.keys()):
@@ -820,6 +982,17 @@ def get_desitarget_paths(
                     time() - start, step, key, mydirs[key]
                 )
             )
+
+    # AR ledgers
+    mydirs["mtl"], scndmtl, mydirs["too"] = get_ledger_paths(
+        survey.lower(),
+        program.lower(),
+        log=log,
+        step=step,
+        start=start,
+    )
+    if scndmtl is not None:
+        mydirs["scndmtl"] = scndmtl
 
     return mydirs
 
@@ -837,7 +1010,7 @@ def create_tile(
 ):
     """
     Create a tiles fits file.
-    
+
     Args:
         tileid: TILEID (int)
         tilera: tile center R.A. (float)
@@ -900,7 +1073,7 @@ def create_sky(
 ):
     """
     Create a sky fits file.
-    
+
     Args:
         tilesfn: path to a tiles fits file (string)
         skydir: desitarget sky folder (string)
@@ -928,9 +1101,10 @@ def create_sky(
     skydirs = [skydir]
     if suppskydir is not None:
         skydirs.append(suppskydir)
-    d = custom_read_targets_in_tiles(
-        skydirs, tiles, quick=True, mtl=False, log=log, step=step, start=start
-    )
+    ds = [read_targets_in_tiles(skydir, tiles=tiles, quick=True) for skydir in skydirs]
+    for skydir, d in zip(skydirs, ds):
+        log.info("{:.1f}s\t{}\treadin {} targets from {}".format(time() - start, step, len(d), skydir))
+    d = np.concatenate(ds)
 
     # AR adding PLATE_RA, PLATE_DEC?
     if add_plate_cols:
@@ -967,7 +1141,7 @@ def create_targ_nomtl(
     """
     Create a target fits file, with solely using desitarget catalogs, no MTL.
         e.g. for the GFA, but could be used for other purposes.
-    
+
     Args:
         tilesfn: path to a tiles fits file (string)
         targdir: desitarget target folder (string)
@@ -1002,9 +1176,7 @@ def create_targ_nomtl(
     log.info("{:.1f}s\t{}\tstart generating {}".format(time() - start, step, outfn))
     # AR targ_nomtl: read targets
     tiles = fits.open(tilesfn)[1].data
-    d = custom_read_targets_in_tiles(
-        [targdir], tiles, quick=quick, mtl=False, log=log, step=step, start=start
-    )
+    d = read_targets_in_tiles(targdir, tiles=tiles, quick=quick)
     log.info(
         "{:.1f}s\t{}\tkeeping {} targets to {}".format(
             time() - start, step, len(d), outfn
@@ -1077,7 +1249,7 @@ def create_mtl(
 ):
     """
     Create a (primary or secondary) target fits file, based on MTL ledgers (and complementary columns from desitarget targets files).
-    
+
     Args:
         tilesfn: path to a tiles fits file (string)
         mtldir: desisurveyops MTL folder (string)
@@ -1103,7 +1275,7 @@ def create_mtl(
         for sv3-backup, we remove BACKUP_BRIGHT targets.
         TBD : if secondary targets, we currently disable the inflate_ledger(), as it
                 seems to not currently work.
-                hence if secondary and pmcorr="y", the code will crash, as the 
+                hence if secondary and pmcorr="y", the code will crash, as the
                 GAIA_ASTROMETRIC_EXCESS_NOISE column will be missing; though we do not
                 expect this configuration to happen, so it should be fine for now.
 
@@ -1112,6 +1284,7 @@ def create_mtl(
 
         20210526 : implementation of using subpriority=False in write_targets
                     to avoid an over-writting of the SUBPRIORITY
+        20210831 : add "leq=True" in read_targets_in_tiles()
     """
     log.info("")
     log.info("")
@@ -1122,16 +1295,19 @@ def create_mtl(
     log.info("{:.1f}s\t{}\tmtltime={}".format(time() - start, step, mtltime))
 
     # AR mtl: read mtl
-    d = custom_read_targets_in_tiles(
-        [mtldir],
-        tiles,
+    d = read_targets_in_tiles(
+        mtldir,
+        tiles=tiles,
         quick=False,
         mtl=True,
         unique=True,
         isodate=mtltime,
-        log=log,
-        step=step,
-        start=start,
+        leq=True,
+    )
+    log.info(
+        "{:.1f}s\t{}\treading {} targets from {}".format(
+            time() - start, step, len(d), mtldir
+        )
     )
 
     # AR mtl: removing by hand BACKUP_BRIGHT for sv3/BACKUP
@@ -1165,9 +1341,8 @@ def create_mtl(
                 time() - start, step, ",".join(columns), targdir
             )
         )
-        d = inflate_ledger(
-            d, targdir, columns=columns, header=False, strictcols=False, quick=True
-        )
+        targ = read_targets_in_tiles(targdir, tiles=tiles, quick=True, columns=columns + ["TARGETID"])
+        d = match_ledger_to_targets(d, targ)
 
     # AR adding PLATE_RA, PLATE_DEC, PLATE_REF_EPOCH ?
     if add_plate_cols:
@@ -1226,6 +1401,7 @@ def create_too(
     gaiadr,
     pmcorr,
     outfn,
+    mtltime=None,
     tmpoutdir=tempfile.mkdtemp(),
     pmtime_utc_str=None,
     too_tile=False,
@@ -1237,15 +1413,16 @@ def create_too(
     """
     Create a ToO target fits file, with selecting targets in a MJD time window.
     If no ToO file, or no selected targets, do nothing.
-    
+
     Args:
         tilesfn: path to a tiles fits file (string)
         toofn: ToO file name (string)
-        mjd_min, mjd_max (floats): we keep targets with MJD_BEGIN < mjd_max and MJD_END > mjd_min 
+        mjd_min, mjd_max (floats): we keep targets with MJD_BEGIN < mjd_max and MJD_END > mjd_min
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         gaiadr: Gaia dr ("dr2" or "edr3")
         pmcorr: apply proper-motion correction? ("y" or "n")
         outfn: fits file name to be written (string)
+        mtltime (optional, defaults to None): MTL isodate (string formatted as yyyy-mm-ddThh:mm:ss+00:00)
         tmpoutdir (optional, defaults to a temporary directory): temporary directory where
                 write_targets will write (creating some sub-directories)
         pmtime_utc_str (optional, defaults to None): UTC time use to compute
@@ -1272,6 +1449,7 @@ def create_too(
 
         20210526 : implementation of using subpriority=False in write_targets
                     to avoid an over-writting of the SUBPRIORITY
+        20210901 : add a mtltime argument
     """
     log.info("")
     log.info("")
@@ -1309,13 +1487,41 @@ def create_too(
             )
         )
 
+    # AR cutting on tile footprint
     keep = is_point_in_desi(tiles, d["RA"], d["DEC"])
-    if not too_tile:
-        keep &= d["TOO_TYPE"] != "TILE"
+    comments = ["in tiles"]
+    # AR cutting on MJD
     keep &= (d["MJD_BEGIN"] < mjd_max) & (d["MJD_END"] > mjd_min)
+    comments.append("MJD_BEGIN<{} and MJD_END>{}".format(mjd_max, mjd_min))
+    # AR case too_tile = False (i.e. not dedicated tile):
+    if not too_tile:
+        # AR cut on TOO_TYPE
+        keep &= d["TOO_TYPE"] != "TILE"
+        comments.append("TOO_TYPE!=TILE")
+        # AR cut on mtltime, if requested
+        # AR use a small bit of code from desitarget.io.read_mtl_ledger() to protect against type-issue
+        if mtltime is None:
+            log.info("{:.1f}s\t{}\tno mtltime provided, no cut on TIMESTAMP".format(time() - start, step))
+        else:
+            if "TIMESTAMP" in d.dtype.names:
+                # ADM try a couple of choices to guard against byte-type versus
+                # string-type errors.
+                try:
+                    keep &= d["TIMESTAMP"] <= mtltime
+                except TypeError:
+                    keep &= d["TIMESTAMP"] <= mtltime.encode()
+                comments.append("with TIMESTAMP<={}".format(mtltime))
+            else:
+                log.info(
+                    "{:.1f}s\t{}\tno TIMESTAMP column in {}, so not applying cut using mtltime={}".format(
+                        time() - start, step, toofn, mtltime,
+                    )
+                )
+    else:
+        comments.append("TOO_TYPE=TILE,FIBER")
     log.info(
-        "{:.1f}s\t{}\tkeeping {}/{} targets in tiles, with TOO_TYPE={}, and in the MJD time window: {}, {}".format(
-            time() - start, step, keep.sum(), len(keep), "TILE,FIBER" if too_tile else "FIBER", mjd_min, mjd_max
+        "{:.1f}s\t{}\tkeeping {}/{} targets {}".format(
+            time() - start, step, keep.sum(), len(keep), ", ".join(comments)
         )
     )
 
@@ -1370,6 +1576,7 @@ def create_too(
                 time() - start, step, outfn
             )
         )
+        return False
 
     return True
 
@@ -1390,7 +1597,7 @@ def launch_onetile_fa(
     Runs the fiber assignment (run_assign_full),
         merges the results (merge_results) for a single tile,
         and prints the assignment stats for each mask.
-    
+
     Args:
         args: fba_launch-like parser.parse_args() output
             should contain at least:
@@ -1416,7 +1623,7 @@ def launch_onetile_fa(
         we keep a generic "args" input, so that any later added argument in fba_launch does not
             requires a change in the launch_fa() call format.
         fba_launch-like adding information in the header is done in another function, update_fiberassign_header
-        TBD: be careful if working in the SVN-directory; maybe add additional safety lines? 
+        TBD: be careful if working in the SVN-directory; maybe add additional safety lines?
     """
     log.info("")
     log.info("")
@@ -1559,13 +1766,14 @@ def update_fiberassign_header(
     ebv,
     obscon,
     fascript,
+    nowtime=datetime.now(tz=timezone.utc).isoformat(timespec="seconds"),
     log=Logger.get(),
     step="",
     start=time(),
 ):
     """
     Adds various information in the fiberassign-TILEID.fits PRIMARY header.
-    
+
     Args:
         fiberassignfn: path to fiberassign-TILEID.fits file (string)
         args: fba_launch-like parser.parse_args() output
@@ -1586,8 +1794,9 @@ def update_fiberassign_header(
         hdr_faprgrm: value for the FAPRGRM keyword (string)
         faflavor: usually {survey}{program} in lower cases (string)
         ebv: median EBV over the tile targets (float)
-        obscon: tile allowed observing conditions (string; e.g. "DARK|GRAY|BRIGHT|BACKUP") 
+        obscon: tile allowed observing conditions (string; e.g. "DARK|GRAY|BRIGHT|BACKUP")
         fascript: fba_launch-like script used to designed the tile; in case of different scripts for dedicated tiles
+        nowtime (optional, defaults to datetime.now(tz=timezone.utc).isoformat(timespec="seconds")): time when the code is run (string)
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -1596,7 +1805,7 @@ def update_fiberassign_header(
     Notes:
         no check is done on mydirs.
         hdr_survey, hdr_faprgrm: for the "regular" surveys (e.g., sv3, main), those will be args.survey, args.program
-            but for dedicated survey, they will (have to) be different. 
+            but for dedicated survey, they will (have to) be different.
         faflavor has to be {hdr_survey}{hdr_faprgrm}; will exit with an error if not;
             keeping this to be sure it is not forgotten to be done for dedicated programs.
     """
@@ -1644,6 +1853,7 @@ def update_fiberassign_header(
     # AR some keywords
     fd["PRIMARY"].write_key("outdir", args.outdir)
     fd["PRIMARY"].write_key("survey", hdr_survey)  # AR not args.survey!
+    fd["PRIMARY"].write_key("nowtime", nowtime)
     fd["PRIMARY"].write_key("rundate", args.rundate)
     fd["PRIMARY"].write_key("pmcorr", args.pmcorr)
     fd["PRIMARY"].write_key("pmtime", args.pmtime_utc_str)
@@ -1675,7 +1885,7 @@ def secure_gzip(
 ):
     """
     Secure gzipping of the fiberassign-TILEID.fits file.
-    
+
     Args:
         fiberassignfn: path to fiberassign-TILEID.fits file (string)
         log (optional, defaults to Logger.get()): Logger object
@@ -1702,7 +1912,7 @@ def get_dt_masks(
 ):
     """
     Get the desitarget masks for a survey.
-    
+
     Args:
         survey: survey name: "sv1", "sv2", "sv3" or "main") (string)
         log (optional, defaults to None): Logger object
@@ -1771,7 +1981,7 @@ def get_qa_tracers(
 ):
     """
     Returns the tracers for which we provide QA plots of fiber assignment.
-    
+
     Args:
         survey: survey name: "sv1", "sv2", "sv3" or "main") (string)
         program: "DARK", "BRIGHT", or "BACKUP" (string)
@@ -1779,7 +1989,7 @@ def get_qa_tracers(
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
-                                                                                                                                                                                 
+
     Returns:
         trmskkeys: list of keys to select the mask on (list of strings)
         trmsks: list of mask names (list of strings)
@@ -1821,7 +2031,7 @@ def get_parent_assign_quants(
 ):
     """
     Stores the parent and assigned targets properties (desitarget columns).
-    
+
     Args:
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         targfns: paths to the input targets fits files, e.g. targ, scnd, too (either a string if only one file, or a list of strings)
@@ -1970,12 +2180,12 @@ def print_assgn_parent_stats(
 ):
     """
     Prints for each mask the number of parent and assigned targets, and also the fraction of assigned targets.
-    
+
     Args:
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         parent: dictionary for the parent target sample (output by get_parent_assign_quants())
-        assign: dictionary for the assigned target sample (output by get_parent_assign_quants()) 
-        log (optional, defaults to Logger.get()): Logger object                                                                                                                                            
+        assign: dictionary for the assigned target sample (output by get_parent_assign_quants())
+        log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
@@ -2062,7 +2272,7 @@ def qa_print_infos(
 ):
     """
     Print general fiber assignment infos on the QA plot.
-    
+
     Args:
         ax: pyplot object
         survey: "sv1", "sv2", "sv3" or "main" (string)
@@ -2071,10 +2281,10 @@ def qa_print_infos(
         tileid: tile TILEID (int)
         tilera: tile center R.A. in degrees (float)
         tiledec: tile center Dec. in degrees (float)
-        obscon: tile allowed observing conditions (string; e.g. "DARK|GRAY|BRIGHT|BACKUP") 
+        obscon: tile allowed observing conditions (string; e.g. "DARK|GRAY|BRIGHT|BACKUP")
         rundate: used rundate (string)
         parent: dictionary for the parent target sample (output by get_parent_assign_quants())
-        assign: dictionary for the assigned target sample (output by get_parent_assign_quants()) 
+        assign: dictionary for the assigned target sample (output by get_parent_assign_quants())
     """
     # AR hard-setting the plotted tracers
     # AR TBD: handle secondaries
@@ -2166,11 +2376,11 @@ def qa_print_petal_infos(
 ):
     """
     Print general the assigned SKY, BAD, WD, STD, TGT per petal on the QA plot.
-    
+
     Args:
         ax: pyplot object
         petals: dictionary with PETAL_LOC (np.array of floats) for each of the assigned "sky", "bad", "wd", "std" subsamples
-        assign: dictionary for the assigned target sample (output by get_parent_assign_quants()) 
+        assign: dictionary for the assigned target sample (output by get_parent_assign_quants())
     """
     # AR stats per petal
     xs = [0.05, 0.25, 0.45, 0.65, 0.85, 1.05]
@@ -2237,7 +2447,7 @@ def get_viewer_cutout(
 ):
     """
     Downloads a cutout of the tile region from legacysurvey.org/viewer.
-    
+
     Args:
         tileid: tile TILEID (int)
         tilera: tile center R.A. (float)
@@ -2260,14 +2470,14 @@ def get_viewer_cutout(
     size = int(width_deg * 3600.0 / pixscale)
     layer = "ls-{}".format(dr)
     tmpstr = 'timeout {} wget -q -O {} "http://legacysurvey.org/viewer-dev/jpeg-cutout/?layer={}&ra={:.5f}&dec={:.5f}&pixscale={:.0f}&size={:.0f}"'.format(
-        tmpfn, timeout, layer, tilera, tiledec, pixscale, size
+        timeout, tmpfn, layer, tilera, tiledec, pixscale, size
     )
     # print(tmpstr)
 
     try:
         subprocess.check_call(tmpstr, stderr=subprocess.DEVNULL, shell=True)
     except subprocess.CalledProcessError:
-        print("no cutout from viewer after {}s, stopping the wget call".format(timeout))
+        print("no cutouttime from viewer after {}s, stopping the wget call".format(timeout))
 
     try:
         img = mpimg.imread(tmpfn)
@@ -2281,7 +2491,7 @@ def get_viewer_cutout(
 def mycmap(name, n, cmin=0, cmax=1):
     """
     Defines a quantised color scheme.
-    
+
     Args:
         name: matplotlib colormap name (used through: matplotlib.cm.get_cmap(name)) (string)
         n: number of different colors to be in the color scheme (int)
@@ -2305,13 +2515,13 @@ def mycmap(name, n, cmin=0, cmax=1):
 def get_tpos(tilera, tiledec, ras, decs):
     """
     Computes the projected distance of a set of coordinates to a tile center.
-    
+
     Args:
         tilera: tile center R.A. in degrees (float)
         tiledec: tile center Dec. in degrees (float)
         ras: R.A. in degrees (np.array of floats)
         decs: Dec. in degrees (np.array of floats)
-                                                                                                                                                                                 
+
     Returns:
         dras: projected distance (degrees) to the tile center along R.A. (np.array of floats)
         ddecs: projected distance (degrees) to the tile center along Dec. (np.array of floats)
@@ -2538,8 +2748,8 @@ def plot_hist_tracer(ax, survey, parent, assign, msk, mskkey):
     Args:
         ax: pyplot object
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
-        parent: dictionary for the parent target sample (output by get_parent_assign_quants())                                                                                   
-        assign: dictionary for the assigned target sample (output by get_parent_assign_quants()) 
+        parent: dictionary for the parent target sample (output by get_parent_assign_quants())
+        assign: dictionary for the assigned target sample (output by get_parent_assign_quants())
         msk: mask name of the plotted sample (string)
         mskkey: key to select the mask on (string)
     """
@@ -2626,8 +2836,8 @@ def plot_colcol_tracer(
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         xbands: two-elements list, the x-axis color being xbands[1] - xbands[0] (list of strings)
         ybands: two-elements list, the y-axis color being ybands[1] - ybands[0] (list of strings)
-        parent: dictionary for the parent target sample (output by get_parent_assign_quants())                                                                                   
-        assign: dictionary for the assigned target sample (output by get_parent_assign_quants()) 
+        parent: dictionary for the parent target sample (output by get_parent_assign_quants())
+        assign: dictionary for the assigned target sample (output by get_parent_assign_quants())
         msk: mask name of the plotted sample (string)
         mskkey: key to select the mask on (string)
         xlim: plt.xlim
@@ -2752,9 +2962,9 @@ def plot_sky_fa(
         axs: list of 3 pyplot objects, respectively for the parent sample, the assigned sample, and the fiber assignment rate
         img: mpimg.imread(ls-dr9-cutout)
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
-        parent: dictionary for the parent target sample (output by get_parent_assign_quants())                                                                                   
-        assign: dictionary for the assigned target sample (output by get_parent_assign_quants()) 
-        dras: dictionary with projected distance (degrees) along R.A. to the center of the tile (np.array of floats),                                                            
+        parent: dictionary for the parent target sample (output by get_parent_assign_quants())
+        assign: dictionary for the assigned target sample (output by get_parent_assign_quants())
+        dras: dictionary with projected distance (degrees) along R.A. to the center of the tile (np.array of floats),
             for each of the following subsample: "parent", "assign", "sky", "bad", "wd", "std" (all assigned subsamples,
             except parent)
         ddecs: same as dras, for projected distances along Dec.
@@ -2878,7 +3088,7 @@ def make_qa(
 ):
     """
     Make fba_launch QA plot.
-    
+
     Args:
         outpng: written output PNG file (string)
         survey: "sv1", "sv2", "sv3" or "main" (string)
@@ -2888,7 +3098,7 @@ def make_qa(
         tileid: tile TILEID (int)
         tilera: tile center R.A. in degrees (float)
         tiledec: tile center Dec. in degrees (float)
-        obscon: tile allowed observing conditions (string; e.g. "DARK|GRAY|BRIGHT|BACKUP") 
+        obscon: tile allowed observing conditions (string; e.g. "DARK|GRAY|BRIGHT|BACKUP")
         rundate: used rundate (string)
         tmpoutdir (optional, defaults to a temporary directory): temporary directory (to download the cutout)
         width_deg (optional, defaults to 4): width of the cutout in degrees (np.array of floats)
@@ -3016,7 +3226,7 @@ def make_qa(
 def rmv_nonsvn(myouts, log=Logger.get(), step="", start=time()):
     """
     Remove fba_launch non-SVN products
-    
+
     Args:
         myouts: dictionary with the fba_launch args.outdir location (dictionary);
             must contain the following keys:
@@ -3041,7 +3251,7 @@ def rmv_nonsvn(myouts, log=Logger.get(), step="", start=time()):
 
 def mv_temp2final(mytmpouts, myouts, expected_keys, log=Logger.get(), step="", start=time()):
     """
-    Moves the fba_launch outputs from the temporary location to the args.outdir location.   
+    Moves the fba_launch outputs from the temporary location to the args.outdir location.
 
     Args:
         mytmpouts: dictionary with the temporary files location (dictionary);
@@ -3063,6 +3273,12 @@ def mv_temp2final(mytmpouts, myouts, expected_keys, log=Logger.get(), step="", s
     # AR
     for key in expected_keys:
         if os.path.isfile(mytmpouts[key]):
+            # Try to remove file before overwriting; somehow this avoids some permissions 
+            # issues at KPNO.
+            try:
+                os.remove(myouts[key])
+            except FileNotFoundError:
+                pass
             _ = shutil.move(mytmpouts[key], myouts[key])
             log.info(
                 "{:.1f}s\t{}\tmoving file {} to {}".format(
@@ -3077,3 +3293,31 @@ def mv_temp2final(mytmpouts, myouts, expected_keys, log=Logger.get(), step="", s
             )
             sys.exit(1)
 
+
+def copy_to_svn(svntiledir, tileid, myouts,
+                worldreadable=False, log=Logger.get()):
+    if svntiledir is None:
+        log.info('Not copying to svn; svntiledir is None.')
+        return
+    subdir = ('%06d' % tileid)[:3]
+    dirmode = 0o2775 if worldreadable else 0o2770
+    filemode = 0o664 if worldreadable else 0o660
+    svntiledir = os.path.join(svntiledir, subdir)
+    files = []
+    files += [myouts['fiberassign'], myouts['log'], myouts['png']]
+    os.makedirs(svntiledir, exist_ok=True,
+                mode=dirmode)
+    for filename in files:
+        # depending on specific steps that got executed, a file may not exist.
+        if not os.path.exists(filename):
+            continue
+        outfn = os.path.join(svntiledir, os.path.basename(filename))
+        # not obvious that we should need to remove the file before copying, but
+        # this seems to be needed to squash some errors when a different user copies
+        # over a file made by a first user?
+        try:
+            os.remove(outfn)
+        except FileNotFoundError:
+            pass
+        shutil.copy(filename, outfn)
+        os.chmod(outfn, filemode)

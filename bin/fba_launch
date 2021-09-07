@@ -13,6 +13,7 @@ from desiutil.redirect import stdouterr_redirected
 from fiberassign.fba_launch_io import (
     get_program_latest_timestamp,
     assert_env_vars,
+    get_latest_rundate,
     assert_svn_tileid,
     assert_arg_dates,
     print_config_infos,
@@ -28,6 +29,7 @@ from fiberassign.fba_launch_io import (
     make_qa,
     rmv_nonsvn,
     mv_temp2final,
+    copy_to_svn,
 )
 from argparse import ArgumentParser
 
@@ -69,6 +71,40 @@ def main():
     start = time()
     log.info("{:.1f}s\tstart\tTIMESTAMP={}".format(time() - start, Time.now().isot))
 
+    # AR rundate: if None, set to the latest time
+    # AR    in the latest desi-state*ecsv file
+    if args.rundate is None:
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\trundate\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+        args.rundate = get_latest_rundate(log=log, step="rundate", start=start)
+        log.info("{:.1f}s\trundate\tsetting args.rundate={}".format(time() - start, args.rundate))
+
+    # AR mtltime
+    # AR if possible: setting to the latest of:
+    # AR - latest timestamp for the program
+    # AR - latest timestamp in the ledgers for pixels touching the tile
+    # AR else: setting to utc_time_now_str
+    if args.mtltime is None:
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\tmtltime\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+        args.mtltime = utc_time_now_str
+        timestamp = get_program_latest_timestamp(
+            args.survey,
+            args.program,
+            args.tilera,
+            args.tiledec,
+            log=log,
+            step="mtltime",
+            start=start,
+        )
+        if timestamp is not None:
+            args.mtltime = timestamp
+            log.info("{:.1f}s\tmtltime\tsetting args.mtltime={}, based on the latest timestamp".format(time() - start, args.mtltime))
+        else:
+            log.info("{:.1f}s\tmtltime\tsetting args.mtltime={}, based on current time".format(time() - start, args.mtltime))
+
     log.info("")
     log.info("")
     log.info("{:.1f}s\tsettings\tTIMESTAMP={}".format(time() - start, Time.now().isot))
@@ -106,6 +142,18 @@ def main():
 
     # AR safe: argument dates correctly formatted?
     assert_arg_dates(args, log=log, step="settings", start=start)
+
+    # AR mjd_now: setting to pmtime_utc_str if not set
+    # AR    see https://github.com/desihub/fiberassign/issues/395
+    # AR    (and we just assessed args.pmtime_utc_str has the correct formatting)
+    # AR    (instead of utc_time_now_str, to allow reproducibility)
+    # AR    (purposely not tying to rundate)
+    mjd_now = Time(datetime.strptime(args.pmtime_utc_str, "%Y-%m-%dT%H:%M:%S%z")).mjd
+    log.info(
+        "{:.1f}s\tsettings\tsetting mjd_now={}, corresponding to args.pmtime_utc_str={}".format(
+            time() - start, mjd_now, args.pmtime_utc_str
+        )
+    )
 
     # AR print general configuration informations
     print_config_infos(log=log, step="settings", start=start)
@@ -257,17 +305,19 @@ def main():
 
 
     # AR ToO targets
-    # AR TBD: handling to MJD window boundaries as script argument?
+    # AR 20210902: setting mjd_min = mjd_max = mjd_now
+    # AR        so that we select: (d["MJD_BEGIN"] < mjd_now) & (d["MJD_END"] > mjd_now)
     if "too" in steps:
         expected_files["too"] = create_too(
             mytmpouts["tiles"],
             mydirs["too"],
-            mjd_now - 1,
-            mjd_now + 30,
+            mjd_now,
+            mjd_now,
             args.survey,
             args.gaiadr.replace("gaia", ""),
             args.pmcorr,
             mytmpouts["too"],
+            mtltime=args.mtltime,
             tmpoutdir=tmpoutdir,
             pmtime_utc_str=args.pmtime_utc_str,
             log=log,
@@ -325,6 +375,7 @@ def main():
             ebv,
             obscon,
             fascript,
+            nowtime=utc_time_now_str,
             log=log,
             step="fa",
             start=start,
@@ -616,6 +667,19 @@ if __name__ == "__main__":
         default=None,
         required=False,
     )
+    parser.add_argument(
+        "--svntiledir",
+        help="SVN tile directory; fiberassign-* files created should be copied here.",
+        type=str,
+        default=None,
+        required=False,
+    )
+    parser.add_argument(
+        "--worldreadable",
+        help="Permissions should be world readable.",
+        action='store_true',
+        default=False,
+    )
 
     args = parser.parse_args()
     log = Logger.get()
@@ -624,26 +688,23 @@ if __name__ == "__main__":
     # AR safe: outdir
     if args.outdir[-1] != "/":
         args.outdir += "/"
-    if os.path.isdir(args.outdir) == False:
-        os.mkdir(args.outdir)
+    subdir = ('%06d' % args.tileid)[:3]
+    if not os.path.isdir(os.path.join(args.outdir, subdir)):
+        dirmode = 0o2775 if args.worldreadable else 0o2770
+        os.makedirs(os.path.join(args.outdir, subdir), exist_ok=True,
+                    mode=dirmode)
 
     # AR utc_time_now, rundate, pmtime
     utc_time_now = datetime.now(tz=timezone.utc)
     utc_time_now_str = utc_time_now.isoformat(timespec="seconds")
-    mjd_now = Time(utc_time_now).mjd
-    if args.rundate is None:
-        args.rundate = utc_time_now_str
     if args.pmtime_utc_str is None:
         args.pmtime_utc_str = utc_time_now_str
 
-    # AR mtltime
-    # AR if possible: setting to the latest timestamp for the program
-    # AR else: setting to utc_time_now_str
-    if args.mtltime is None:
-        args.mtltime = utc_time_now_str
-        timestamp = get_program_latest_timestamp(args.program)
-        if timestamp is not None:
-            args.mtltime = timestamp
+    # AR rundate (2021-09-01): if set to None, now setting it inside main()
+    #          so that it is recorded in the fiberassign-TILEID.log file
+
+    # AR mtltime (2021-09-01): if set to None, now setting it inside main()
+    # AR          so that it is recorded in the fiberassign-TILEID.log file
 
     # AR goaltime
     if args.goaltime is None:
@@ -697,17 +758,18 @@ if __name__ == "__main__":
     #
     for key in ["tiles", "sky", "gfa", "targ", "scnd", "too"]:
         myouts[key] = os.path.join(
-            args.outdir, "{:06d}-{}.fits".format(args.tileid, key)
+            args.outdir, subdir, "{:06d}-{}.fits".format(args.tileid, key)
         )
-    myouts["fba"] = os.path.join(args.outdir, "fba-{:06d}.fits".format(args.tileid))
+    myouts["fba"] = os.path.join(
+        args.outdir, subdir, "fba-{:06d}.fits".format(args.tileid))
     myouts["fiberassign"] = os.path.join(
-        args.outdir, "fiberassign-{:06d}.fits".format(args.tileid)
+        args.outdir, subdir, "fiberassign-{:06d}.fits".format(args.tileid)
     )
     myouts["png"] = os.path.join(
-        args.outdir, "fiberassign-{:06d}.png".format(args.tileid)
+        args.outdir, subdir,  "fiberassign-{:06d}.png".format(args.tileid)
     )
     myouts["log"] = os.path.join(
-        args.outdir, "fiberassign-{:06d}.log".format(args.tileid)
+        args.outdir, subdir, "fiberassign-{:06d}.log".format(args.tileid)
     )
 
     # AR temporary output files
@@ -715,7 +777,8 @@ if __name__ == "__main__":
     mytmpouts = {}
     for key in list(myouts.keys()):
         if key != "png":
-            mytmpouts[key] = myouts[key].replace(args.outdir, tmpoutdir)
+            mytmpouts[key] = myouts[key].replace(
+                os.path.join(args.outdir, subdir), tmpoutdir)
 
     # AR temporary log file
     if os.path.isfile(mytmpouts["log"]):
@@ -727,7 +790,20 @@ if __name__ == "__main__":
             main()
 
         # AR/SB moving the log at last if it was sent to a file
+        # EFS remove file first if it exists; otherwise permissions
+        # errors can occur if the writer user is different from
+        # the original writer, even if the writer has permission
+        # to delete the file!
+        try:
+            os.remove(myouts["log"])
+        except FileNotFoundError:
+            pass
         _ = shutil.move(mytmpouts["log"], myouts["log"])
+
+    # must occur outside of main to get log.
+    if args.svntiledir is not None:
+        copy_to_svn(args.svntiledir, args.tileid, myouts,
+                    worldreadable=args.worldreadable)
 
     # AR deleting folder if empty
     tmpfiles = os.listdir(tmpoutdir)
