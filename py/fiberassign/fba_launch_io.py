@@ -3926,7 +3926,6 @@ def get_fba_rerun_scriptname(infiberassignfn, outdir, rerun="fa"):
 def fba_rerun_fbascript(
     infiberassignfn,
     outdir,
-    intermediate_dir,
     run_intermediate,
     fba="none",
     fiberassign="zip",
@@ -3949,13 +3948,8 @@ def fba_rerun_fbascript(
     Args:
         infiberassignfn: full path to the fiberassign-TILEID.fits file to be rerun (string)
         outdir: output folder (files will be written in outdir/ABC/) (string)
-        intermediate_dir: path to a folder,
-            which contains the intermediate products:
-            - outdir/ABC/TILEID-{tiles,sky,targ}.fits
-            - and optionally outdir/ABC/TILEID-{scnd,too}.fits: optional
-            if run_intermediate=False, those need to be present;
-            if run_intermediate=True, outdir/ABC/rerun-intermediate-TILEID.sh will generate them
-        run_intermediate: generate the intermediate products? (boolean)
+        run_intermediate: generate the intermediate products? (outdir/ABC/TILEID-{tiles,sky,targ,scnd,too}.fits) (boolean)
+            if run_intermediate=False, the intermediate products need to be present
         fba (optional, defaults to "none"): "none"->no fba-TILEID.fits, "unzip"->fba-TILEID.fits, "zip"->fba-TILEID.fits.gz (string)
         fiberassign(optional, defaults to "zip"): "none"->no fiberassign-TILEID.fits, "unzip"->fiberassign-TILEID.fits, "zip"->fiberassign-TILEID.fits.gz (string)
         run_check (optional, defaults to True): run fba_rerun_check()? (boolean)
@@ -3980,10 +3974,9 @@ def fba_rerun_fbascript(
     if not os.path.isfile(infiberassignfn):
         log.error("no {} file; exiting".format(infiberassignfn))
         sys.exit(1)
-    for mydir in [outdir, intermediate_dir]:
-        if not os.path.isdir(mydir):
-            log.error("no {} folder; exiting".format(mydir))
-            sys.exit(1)
+    if not os.path.isdir(outdir):
+        log.error("no {} folder; exiting".format(outdir))
+        sys.exit(1)
     if run_intermediate not in [True, False]:
         log.error("run_intermediate={} not a boolean; exiting".format(run_intermediate))
         sys.exit(1)
@@ -4014,8 +4007,6 @@ def fba_rerun_fbascript(
     # AR create sub-folders?
     subdir = "{:06d}".format(tileid)[:3]
     mydirs = [os.path.join(outdir, subdir)]
-    if run_intermediate:
-        mydirs.append(os.path.join(intermediate_dir, subdir))
     if intermediate_dir_final != "-":
         mydirs.append(os.path.join(intermediate_dir_final, subdir))
     for mydir in mydirs:
@@ -4058,23 +4049,17 @@ def fba_rerun_fbascript(
 
     # AR files
     mydict["dir"] = os.path.join(outdir, subdir)
-    mydict["footprint"] = os.path.join(
-        intermediate_dir, subdir, "{:06d}-tiles.fits".format(tileid)
-    )
-    mydict["sky"] = os.path.join(
-        intermediate_dir, subdir, "{:06d}-sky.fits".format(tileid)
-    )
-    mydict["targets"] = os.path.join(
-        intermediate_dir, subdir, "{:06d}-targ.fits".format(tileid)
-    )
+    mydict["footprint"] = os.path.join(outdir, subdir, "{:06d}-tiles.fits".format(tileid))
+    mydict["sky"] = os.path.join(outdir, subdir, "{:06d}-sky.fits".format(tileid))
+    mydict["targets"] = os.path.join(outdir, subdir, "{:06d}-targ.fits".format(tileid))
     if not run_intermediate:
         for fn in [mydict["footprint"], mydict["sky"], mydict["targets"]]:
             if not os.path.isfile(fn):
                 log.error("{} not present; exiting".format(fn))
                 sys.exit(1)
     # AR scnd and too
-    scndfn = os.path.join(intermediate_dir, subdir, "{:06d}-scnd.fits".format(tileid))
-    toofn = os.path.join(intermediate_dir, subdir, "{:06d}-too.fits".format(tileid))
+    scndfn = os.path.join(outdir, subdir, "{:06d}-scnd.fits".format(tileid))
+    toofn = os.path.join(outdir, subdir, "{:06d}-too.fits".format(tileid))
 
 
     # AR intermediate files to potentially move if intermediate_dir_final
@@ -4105,7 +4090,7 @@ def fba_rerun_fbascript(
         f.write("\n")
         f.write(
             "python -c 'from fiberassign.fba_launch_io import fba_rerun_intermediate; fba_rerun_intermediate(\"{}\", \"{}\")' >> {} 2>&1\n".format(
-                infiberassignfn, intermediate_dir, outintlog,
+                infiberassignfn, outdir, outintlog,
             )
         )
         # AR close + make it executable
