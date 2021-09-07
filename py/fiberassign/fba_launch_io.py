@@ -3932,6 +3932,7 @@ def fba_rerun_fbascript(
     fiberassign="zip",
     run_check=True,
     intermediate_dir_final="-",
+    overwrite=False,
     log=Logger.get(),
     start=time(),
 ):
@@ -3959,6 +3960,7 @@ def fba_rerun_fbascript(
         fiberassign(optional, defaults to "zip"): "none"->no fiberassign-TILEID.fits, "unzip"->fiberassign-TILEID.fits, "zip"->fiberassign-TILEID.fits.gz (string)
         run_check (optional, defaults to True): run fba_rerun_check()? (boolean)
         intermediate_dir_final (optional, defaults to "-"): folder to move all intermediate products (*sh, *fits, *log) (string)
+        overwrite (optional, defaults to False): overwrite any existing file? (boolean)
         log (optional, defaults to Logger.get()): Logger object
         start(optional, defaults to time()): start time for log (in seconds; output of time.time())
 
@@ -3966,8 +3968,13 @@ def fba_rerun_fbascript(
         The bash script requires that the desi (master) environment is already loaded,
             i.e. the following has been executed: "source /global/cfs/cdirs/desi/software/desi_environment.sh master".
         The code will use all the intermediate products present in outdir/ABC, and only those.
-        The code will create the sub-folders ABC/ if they do not exist
-        The code will exit with an error if any of outdir/ABC/{fa,fba,fiberassign}-TILEID.{sh,fits,log}{gz} already exists.
+        The code will create the sub-folders ABC/ if they do not exist.
+        If any of the following (according to arguments) files already exist:
+            - outdir/ABC/rerun-fa-TILEID.{sh, log, diff} , outdir/ABC/{fba,fiberassign}-TILEID.fits{.gz},
+            - intermediate_dir_final/ABC/rerun-intermediate-TILEID.{sh,log} , TILEID-{tiles,sky,targ,scnd,too}.fits
+        the code will:
+            - exit with an error if overwrite=False;
+            - beforehand delete those if overwrite=True.
     """
     # AR assess arguments
     if not os.path.isfile(infiberassignfn):
@@ -4041,8 +4048,12 @@ def fba_rerun_fbascript(
         fns.append(outdiff)
     for fn in fns:
         if os.path.isfile(fn):
-            log.error("{} already exists; exiting".format(fn))
-            sys.exit(1)
+            if overwrite:
+                log.info("remove already existing {}".format(fn))
+                os.remove(fn)
+            else:
+                log.error("{} already exists; exiting".format(fn))
+                sys.exit(1)
 
 
     # AR files
@@ -4074,8 +4085,12 @@ def fba_rerun_fbascript(
         for fn in int2mv_fns:
             tmpfn = os.path.join(intermediate_dir_final, subdir, os.path.basename(fn))
             if os.path.isfile(tmpfn):
-                log.error("{} already exists; exiting".format(tmpfn))
-                sys.exit(1)
+                if overwrite:
+                    log.info("remove already existing {}".format(tmpfn))
+                    os.remove(tmpfn)
+                else:
+                    log.error("{} already exists; exiting".format(tmpfn))
+                    sys.exit(1)
 
 
     # AR run intermediate products?
