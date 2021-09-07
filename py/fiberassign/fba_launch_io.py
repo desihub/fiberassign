@@ -3940,11 +3940,6 @@ def fba_rerun_fbascript(
     If run_intermediate=True, also writes a bash script (outdir/ABC/rerun-intermediate-TILEID.sh) to rerun the intermediate
         products (TILEID-{tiles,sky,targ,scnd,too}.fits).
 
-    Creates outdir/ABC/fa-TILEID.sh.
-    The script will create outdir/ABC/fa-TILEID.log and:
-    - outdir/ABC/fba-TILEID.fits(.gz) if fba=True
-    - outdir/ABC/fiberassign-TILEID.fits(.gz) if fiberassign=True
-
     Args:
         infiberassignfn: full path to the fiberassign-TILEID.fits file to be rerun (string)
         outdir: output folder (files will be written in outdir/ABC/) (string)
