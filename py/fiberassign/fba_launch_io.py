@@ -1708,10 +1708,7 @@ def launch_onetile_fa(
     ag = {}
     ag["tiles"] = [tileid]
     ag["columns"] = None
-    if gfafn is not None:
-        ag["targets"] = [gfafn] + targfns
-    else:
-        ag["targets"] = targfns
+    ag["targets"] = targfns
     if skyfn is not None:
         ag["sky"] = [skyfn]
     else:
