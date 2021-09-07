@@ -23,7 +23,7 @@ from astropy.table import Table
 from astropy.time import Time
 
 # desitarget
-#import desitarget
+# import desitarget
 from desitarget.geomask import match_to
 
 # fiberassign
@@ -76,14 +76,11 @@ def fba_rerun_intermediate_get_settings(
     if hdr["FAFLAVOR"] not in faflavors:
         sys.exit("FAFLAVOR={} not in {}; exiting".format(hdr["FAFLAVOR"], faflavors))
 
-
     mydict = {}
-
 
     # AR fa_ver, obscon: from header
     mydict["fa_ver"] = hdr["FA_VER"]
     mydict["obscon"] = hdr["OBSCON"]
-
 
     # AR settings we store
     keys = [
@@ -131,7 +128,6 @@ def fba_rerun_intermediate_get_settings(
         float(mydict["tiledec"]),
     )
 
-
     # AR case of 19 SV3 tiles designed on 2021-04-10:
     # AR    those have rundate = 2021-04-10T21:28:37
     # AR    there has been a fp update on 2021-04-10T20:00:39+00:00
@@ -169,7 +165,6 @@ def fba_rerun_intermediate_get_settings(
             )
             mydict[key] = fixed_time
 
-
     # AR SV3 TILEID=315, 441
     # AR    for both, in the original files:
     # AR    - MTLTIME = 2021-04-22T18:55:39+00:00
@@ -190,7 +185,6 @@ def fba_rerun_intermediate_get_settings(
         )
         mydict["mtltime"] = fixed_time
 
-
     # AR assume UTC for pmtime_utc_str, rundate, mtltime
     # AR (UTC formatting introduced in 20210422, during SV3)
     for key in ["pmtime_utc_str", "rundate", "mtltime"]:
@@ -209,7 +203,6 @@ def fba_rerun_intermediate_get_settings(
                 )
             )
 
-
     # AR dtver: pre-shutdown main, replace 1.0.0 by 1.1.1
     # AR because of missing CALIB targets that were bumped by MWS secondary targets
     if (mydict["survey"] == "main") & (mydict["dtver"] == "1.0.0"):
@@ -220,10 +213,7 @@ def fba_rerun_intermediate_get_settings(
         )
         mydict["dtver"] = "1.1.1"
 
-
     return mydict
-
-
 
 
 def fba_rerun_intermediate(
@@ -271,7 +261,9 @@ def fba_rerun_intermediate(
     # AR - if FA_VER <= 5.1.1: mjd_min = mjd_now - 1, mjd_max = mjd_now + 30
     # AR - if FA_VER > 5.1.1: mjd_min = mjd_max = mjd_now
     # AR in any case, mjd_now is defined as pmtime_utc_str
-    mjd_now = Time(datetime.strptime(mydict["pmtime_utc_str"], "%Y-%m-%dT%H:%M:%S%z")).mjd
+    mjd_now = Time(
+        datetime.strptime(mydict["pmtime_utc_str"], "%Y-%m-%dT%H:%M:%S%z")
+    ).mjd
     if mydict["fa_ver"] <= "5.1.1":
         mjd_min, mjd_max = mjd_now - 1, mjd_now + 30
     else:
@@ -433,7 +425,6 @@ def fba_rerun_get_settings(
     else:
         faver = hdr["FA_VER"]
 
-
     # AR SKYBRICKS_DIR
     skybrver = "-"  # default value if not set
     keys = [cards[0] for cards in hdr.cards]
@@ -448,9 +439,7 @@ def fba_rerun_get_settings(
     if faver == "2.4.0":
         skybrver = "v2"
 
-
     mydict = {}
-
 
     # AR settings from the header that we store
     keys = [
@@ -465,7 +454,6 @@ def fba_rerun_get_settings(
         keys += ["margin-pos", "margin-petal", "margin-gfa"]
     if faver >= "5.0.0":
         keys += ["margin_pos", "margin_petal", "margin_gfa"]
-
 
     # AR storing the FAARGS in a dictionary
     faargs = np.array(hdr["FAARGS"].split())
@@ -494,7 +482,6 @@ def fba_rerun_get_settings(
                 )
             )
             sys.exit(1)
-
 
     # AR case of 19 SV3 tiles designed on 2021-04-10:
     # AR    those have rundate = 2021-04-10T21:28:37
@@ -533,7 +520,6 @@ def fba_rerun_get_settings(
             )
             mydict[key] = fixed_time
 
-
     return hdr["TILEID"], mydict, survey, faver, skybrver
 
 
@@ -556,7 +542,9 @@ def get_fba_rerun_scriptname(infiberassignfn, outdir, rerun="fa"):
     if rerun == "fa":
         return os.path.join(outdir, subdir, "rerun-fa-{:06d}.sh".format(tileid))
     else:
-        return os.path.join(outdir, subdir, "rerun-intermediate-{:06d}.sh".format(tileid))
+        return os.path.join(
+            outdir, subdir, "rerun-intermediate-{:06d}.sh".format(tileid)
+        )
 
 
 def fba_rerun_fbascript(
@@ -615,25 +603,27 @@ def fba_rerun_fbascript(
         log.error("fba={} not in 'none', 'unzip', zip'; exiting".format(outfba_type))
         sys.exit(1)
     if outfiberassign_type not in ["none", "unzip", "zip"]:
-        log.error("fiberassign={} not in 'none', 'unzip', zip'; exiting").format(outfiberassign_type)
+        log.error("fiberassign={} not in 'none', 'unzip', zip'; exiting").format(
+            outfiberassign_type
+        )
         sys.exit(1)
     if run_check not in [True, False]:
         log.error("run_check={} not a boolean; exiting".format(run_check))
         sys.exit(1)
     if (outfiberassign_type == "none") & (run_check):
-        log.error("outfiberassign_type=none and run_check=True: run_check=True requires outfiberassign_type!=none; exiting")
+        log.error(
+            "outfiberassign_type=none and run_check=True: run_check=True requires outfiberassign_type!=none; exiting"
+        )
         sys.exit(1)
     if intermediate_dir_final != "-":
         if not os.path.isdir(intermediate_dir_final):
             log.error("no {} folder; exiting".format(intermediate_dir_final))
             sys.exit(1)
 
-
     # AR get settings, fiberassign version, and SKYBRICKS_DIR version
     tileid, mydict, survey, faver, skybrver = fba_rerun_get_settings(
         infiberassignfn, log=log, step="settings", start=start
     )
-
 
     # AR create sub-folders?
     subdir = "{:06d}".format(tileid)[:3]
@@ -644,7 +634,6 @@ def fba_rerun_fbascript(
         if not os.path.isdir(mydir):
             log.info("create {}".format(mydir))
             os.system("mkdir {}".format(mydir))
-
 
     # AR output files
     outsh = get_fba_rerun_scriptname(infiberassignfn, outdir, rerun="fa")
@@ -662,7 +651,9 @@ def fba_rerun_fbascript(
         "{}.gz".format(outfiberassign),
     ]
     if run_intermediate:
-        outintsh = get_fba_rerun_scriptname(infiberassignfn, outdir, rerun="intermediate")
+        outintsh = get_fba_rerun_scriptname(
+            infiberassignfn, outdir, rerun="intermediate"
+        )
         outintlog = outintsh.replace(".sh", ".log")
         fns += [outintsh, outintlog]
     if run_check:
@@ -677,10 +668,11 @@ def fba_rerun_fbascript(
                 log.error("{} already exists; exiting".format(fn))
                 sys.exit(1)
 
-
     # AR files
     mydict["dir"] = os.path.join(outdir, subdir)
-    mydict["footprint"] = os.path.join(outdir, subdir, "{:06d}-tiles.fits".format(tileid))
+    mydict["footprint"] = os.path.join(
+        outdir, subdir, "{:06d}-tiles.fits".format(tileid)
+    )
     mydict["sky"] = os.path.join(outdir, subdir, "{:06d}-sky.fits".format(tileid))
     mydict["targets"] = os.path.join(outdir, subdir, "{:06d}-targ.fits".format(tileid))
     if not run_intermediate:
@@ -691,7 +683,6 @@ def fba_rerun_fbascript(
     # AR scnd and too
     scndfn = os.path.join(outdir, subdir, "{:06d}-scnd.fits".format(tileid))
     toofn = os.path.join(outdir, subdir, "{:06d}-too.fits".format(tileid))
-
 
     # AR intermediate files to potentially move if intermediate_dir_final
     if intermediate_dir_final != "-":
@@ -708,7 +699,6 @@ def fba_rerun_fbascript(
                     log.error("{} already exists; exiting".format(tmpfn))
                     sys.exit(1)
 
-
     # AR run intermediate products?
     if run_intermediate:
         f = open(outintsh, "w")
@@ -720,14 +710,13 @@ def fba_rerun_fbascript(
         f.write("module list 2> {}\n".format(outintlog))
         f.write("\n")
         f.write(
-            "python -c 'from fiberassign.fba_rerun_io import fba_rerun_intermediate; fba_rerun_intermediate(\"{}\", \"{}\")' >> {} 2>&1\n".format(
+            'python -c \'from fiberassign.fba_rerun_io import fba_rerun_intermediate; fba_rerun_intermediate("{}", "{}")\' >> {} 2>&1\n'.format(
                 infiberassignfn, outdir, outintlog,
             )
         )
         # AR close + make it executable
         f.close()
         os.system("chmod +x {}".format(outintsh))
-
 
     # AR writing outsh file
     f = open(outsh, "w")
@@ -746,15 +735,21 @@ def fba_rerun_fbascript(
             "export SKYBRICKS_DIR=$DESI_ROOT/target/skybricks/{}\n".format(skybrver)
         )
 
-
     # AR control informations
-    f.write("echo \"fba_run executable: `which fba_run`\" >> {}\n".format(outlog))
-    f.write("echo \"fiberassign path: `python -c 'import fiberassign; print(fiberassign.__path__)'`\" >> {}\n".format(outlog))
-    f.write("echo \"fiberassign version: `python -c 'import fiberassign; print(fiberassign.__version__)'`\" >> {}\n".format(outlog))
-    f.write("echo \"SKYBRICKS_DIR=$SKYBRICKS_DIR\" >> {}\n".format(outlog))
+    f.write('echo "fba_run executable: `which fba_run`" >> {}\n'.format(outlog))
+    f.write(
+        "echo \"fiberassign path: `python -c 'import fiberassign; print(fiberassign.__path__)'`\" >> {}\n".format(
+            outlog
+        )
+    )
+    f.write(
+        "echo \"fiberassign version: `python -c 'import fiberassign; print(fiberassign.__version__)'`\" >> {}\n".format(
+            outlog
+        )
+    )
+    f.write('echo "SKYBRICKS_DIR=$SKYBRICKS_DIR" >> {}\n'.format(outlog))
     f.write("\n")
     f.write("\n")
-
 
     # AR constructing the fba_run call
     # AR purposely keep --targets at the end,
@@ -769,12 +764,12 @@ def fba_rerun_fbascript(
     f.write("# ===============\n")
     f.write("# fba_run call\n")
     f.write("# ===============\n")
-    f.write("CMD=\"{}\"\n".format(fbarun_cmd))
+    f.write('CMD="{}"\n'.format(fbarun_cmd))
     f.write("for FN in {} {}\n".format(scndfn, toofn))
     f.write("do\n")
     f.write("\tif [[ -f $FN ]]\n")
     f.write("\tthen\n")
-    f.write("\t\tCMD=`echo $CMD \" \" $FN`\n")
+    f.write('\t\tCMD=`echo $CMD " " $FN`\n')
     f.write("\tfi\n")
     f.write("done\n")
     f.write("echo $CMD >> {}\n".format(outlog))
@@ -782,14 +777,13 @@ def fba_rerun_fbascript(
     f.write("\n")
     f.write("\n")
 
-
     # AR constructing the merge_results + gzipping, if requested
     # AR need to use a non-straightforward approach
     # AR (with lots of quotes in quotes...)
     # AR to handle the possible existence of scnd and too files
     if outfiberassign_type != "none":
         merge_cmd = "CMD=\"python -c 'from fiberassign.assign import merge_results; "
-        merge_cmd += "merge_results([\\\"{}\\\"\"".format(mydict["targets"])
+        merge_cmd += 'merge_results([\\"{}\\""'.format(mydict["targets"])
         f.write("# ===============\n")
         f.write("# merge_results call\n")
         f.write("# ===============\n")
@@ -798,17 +792,17 @@ def fba_rerun_fbascript(
         f.write("do\n")
         f.write("\tif [[ -f $FN ]]\n")
         f.write("\tthen\n")
-        f.write("\t\tCMD=`echo $CMD \", \\\"\"$FN\"\\\"\"`\n")
+        f.write('\t\tCMD=`echo $CMD ", \\""$FN"\\""`\n')
         f.write("\tfi\n")
         f.write("done\n")
-        f.write("CMD=`echo $CMD \"], \"`\n")
-        merge_cmd = '[\\\"{}\\\"], '.format(mydict["sky"])
+        f.write('CMD=`echo $CMD "], "`\n')
+        merge_cmd = '[\\"{}\\"], '.format(mydict["sky"])
         merge_cmd += "[{}], ".format(tileid)
-        merge_cmd += 'result_dir=\\\"{}\\\", '.format(mydict["dir"])
+        merge_cmd += 'result_dir=\\"{}\\", '.format(mydict["dir"])
         merge_cmd += "columns=None, "
         merge_cmd += "copy_fba=False"
         merge_cmd += ")'"
-        f.write("CMD=`echo $CMD \"{}\"`\n".format(merge_cmd))
+        f.write('CMD=`echo $CMD "{}"`\n'.format(merge_cmd))
         f.write("echo $CMD >> {}\n".format(outlog))
         f.write("eval $CMD >> {} 2>&1\n".format(outlog))
         f.write("\n")
@@ -845,14 +839,15 @@ def fba_rerun_fbascript(
         f.write("# running check\n")
         f.write("# ===============\n")
         # HACK for development
-        f.write("export PYTHONPATH=/global/homes/r/raichoor/software_dev/fiberassign_fba_rerun4/py:$PYTHONPATH\n")
+        f.write(
+            "export PYTHONPATH=/global/homes/r/raichoor/software_dev/fiberassign_fba_rerun4/py:$PYTHONPATH\n"
+        )
         # HACK
         f.write(
-            "python -c 'from fiberassign.fba_rerun_io import fba_rerun_check; fba_rerun_check(\"{}\", \"{}\", \"{}\")' >> {} 2>&1\n".format(
+            'python -c \'from fiberassign.fba_rerun_io import fba_rerun_check; fba_rerun_check("{}", "{}", "{}")\' >> {} 2>&1\n'.format(
                 infiberassignfn, tmpfn, outdiff, outlog,
             )
         )
-
 
     # AR move intermediate products to a final folder?
     if intermediate_dir_final != "-":
@@ -864,15 +859,14 @@ def fba_rerun_fbascript(
         f.write("# ===============\n")
         f.write("for FN in {}\n".format(" ".join(int2mv_fns)))
         f.write("do\n")
-        f.write("\tif [[ -f \"$FN\" ]]\n")
+        f.write('\tif [[ -f "$FN" ]]\n')
         f.write("\tthen\n")
-        f.write("\t\techo \"moving $FN to {}\" >> {}\n".format(mydir, outlog))
+        f.write('\t\techo "moving $FN to {}" >> {}\n'.format(mydir, outlog))
         f.write("\t\tmv $FN {}\n".format(mydir))
         f.write("\telse\n")
-        f.write("\t\techo \"no $FN to move\" >> {}\n".format(outlog))
+        f.write('\t\techo "no $FN to move" >> {}\n'.format(outlog))
         f.write("\tfi\n")
         f.write("done\n")
-
 
     # AR close + make it executable
     f.close()
@@ -880,11 +874,7 @@ def fba_rerun_fbascript(
 
 
 def fba_rerun_check(
-    origfn,
-    rerunfn,
-    difffn,
-    log=Logger.get(),
-    start=time(),
+    origfn, rerunfn, difffn, log=Logger.get(), start=time(),
 ):
     """
     Compares the {TARGETID-FIBER} values for the FIBERASSIGN and POTENTIAL_ASSIGNMENTS extensions.
@@ -906,7 +896,11 @@ def fba_rerun_check(
         unq_potass_tids, ii_inv = np.unique(potass_tids, return_inverse=True)
         ii_targs = match_to(targs_tids, unq_potass_tids)
         if ii_targs.size != unq_potass_tids.size:
-            log.error("mismatch: ii_targs.size={} and unq_potass_tids.size={}; exiting".format(ii_targs.size, unq_potass_tids.size))
+            log.error(
+                "mismatch: ii_targs.size={} and unq_potass_tids.size={}; exiting".format(
+                    ii_targs.size, unq_potass_tids.size
+                )
+            )
             sys.exit(1)
         #
         potass_d = Table()
@@ -931,7 +925,15 @@ def fba_rerun_check(
     dtkeys = ["DESI_TARGET", "MWS_TARGET", "BGS_TARGET", "SCND_TARGET"]
     if "SV3_DESI_TARGET" in orig_h["FIBERASSIGN"].columns.names:
         dtkeys = ["SV3_{}".format(key) for key in dtkeys]
-    keys = ["TARGETID", "FIBER", "TARGET_RA", "TARGET_DEC", "FA_TYPE", "PRIORITY_INIT", "PRIORITY"]
+    keys = [
+        "TARGETID",
+        "FIBER",
+        "TARGET_RA",
+        "TARGET_DEC",
+        "FA_TYPE",
+        "PRIORITY_INIT",
+        "PRIORITY",
+    ]
     keys += dtkeys
 
     # AR compare
@@ -952,14 +954,36 @@ def fba_rerun_check(
             rerun_d["FIBER"] = rerun_h["POTENTIAL_ASSIGNMENTS"].data["FIBER"]
             rerun_d["PRIORITY_INIT"] = -99 + np.zeros(len(rerun_d), dtype=int)
         # AR {TARGETID-FIBER} ids
-        orig_ids = np.array(["{}-{}".format(tid, fib) for tid, fib in zip(orig_d["TARGETID"], orig_d["FIBER"])])
-        rerun_ids = np.array(["{}-{}".format(tid, fib) for tid, fib in zip(rerun_d["TARGETID"], rerun_d["FIBER"])])
+        orig_ids = np.array(
+            [
+                "{}-{}".format(tid, fib)
+                for tid, fib in zip(orig_d["TARGETID"], orig_d["FIBER"])
+            ]
+        )
+        rerun_ids = np.array(
+            [
+                "{}-{}".format(tid, fib)
+                for tid, fib in zip(rerun_d["TARGETID"], rerun_d["FIBER"])
+            ]
+        )
         # AR miss
         ii = np.where(~np.in1d(orig_ids, rerun_ids))[0]
         for i in ii:
-            f.write("{:06}\t{}\tmiss\t{}\n".format(tileid, ext, "\t".join(["{}".format(orig_d[key][i]) for key in keys])))
+            f.write(
+                "{:06}\t{}\tmiss\t{}\n".format(
+                    tileid,
+                    ext,
+                    "\t".join(["{}".format(orig_d[key][i]) for key in keys]),
+                )
+            )
         # AR added
         ii = np.where(~np.in1d(rerun_ids, orig_ids))[0]
         for i in ii:
-            f.write("{:06}\t{}\tadd\t{}\n".format(tileid, ext, "\t".join(["{}".format(rerun_d[key][i]) for key in keys])))
+            f.write(
+                "{:06}\t{}\tadd\t{}\n".format(
+                    tileid,
+                    ext,
+                    "\t".join(["{}".format(rerun_d[key][i]) for key in keys]),
+                )
+            )
     f.close()
