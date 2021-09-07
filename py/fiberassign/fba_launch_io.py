@@ -3965,11 +3965,23 @@ def fba_rerun_fbascript(
     if (fiberassign == "none") & (run_check):
         log.error("fiberassign=none and run_check=True: run_check=True requires fiberassign!=none; exiting")
         sys.exit(1)
+
+
     # AR get settings, fiberassign version, and SKYBRICKS_DIR version
     tileid, mydict, survey, faver, skybrver = fba_rerun_get_settings(
         infiberassignfn, log=log, step="settings", start=start
     )
+
+
+    # AR create sub-folders?
     subdir = "{:06d}".format(tileid)[:3]
+    mydirs = [os.path.join(outdir, subdir)]
+    if run_intermediate:
+        mydirs.append(os.path.join(intermediate_dir, subdir))
+    for mydir in mydirs:
+        if not os.path.isdir(mydir):
+            log.info("create {}".format(mydir))
+            os.system("mkdir {}".format(mydir))
 
 
     # AR output files
