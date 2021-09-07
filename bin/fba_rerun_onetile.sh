@@ -52,17 +52,17 @@ export PYTHONPATH=/global/homes/r/raichoor/software_dev/fiberassign_fba_rerun4/p
 
 # AR generate the *sh file(s)
 echo "Generate *sh file(s)"
-python -c 'from fiberassign.fba_launch_io import fba_rerun_fbascript; fba_rerun_fbascript("'$ORIGFN'", "'$RERUNDIR'", '$INTERMEDIATE', fba="'$FBA'", fiberassign="'$FASSIGN'", run_check='$RUNCHECK', intermediate_dir_final="'$INTERMEDIATE_FINAL'", overwrite='$OVERWRITE')'
+python -c 'from fiberassign.fba_rerun_io import fba_rerun_fbascript; fba_rerun_fbascript("'$ORIGFN'", "'$RERUNDIR'", '$INTERMEDIATE', fba="'$FBA'", fiberassign="'$FASSIGN'", run_check='$RUNCHECK', intermediate_dir_final="'$INTERMEDIATE_FINAL'", overwrite='$OVERWRITE')'
 
 
 if [[ "$INTERMEDIATE" != "-" ]]
 then
-    FN=`python -c 'from fiberassign.fba_launch_io import get_fba_rerun_scriptname; a = get_fba_rerun_scriptname("'$ORIGFN'", "'$RERUNDIR'", "intermediate"); print(a)'`
+    FN=`python -c 'from fiberassign.fba_rerun_io import get_fba_rerun_scriptname; a = get_fba_rerun_scriptname("'$ORIGFN'", "'$RERUNDIR'", "intermediate"); print(a)'`
     echo "Execute $FN"
     $FN
 fi
 
-FN=`python -c 'from fiberassign.fba_launch_io import get_fba_rerun_scriptname; a = get_fba_rerun_scriptname("'$ORIGFN'", "'$RERUNDIR'", "fa"); print(a)'`
+FN=`python -c 'from fiberassign.fba_rerun_io import get_fba_rerun_scriptname; a = get_fba_rerun_scriptname("'$ORIGFN'", "'$RERUNDIR'", "fa"); print(a)'`
 # HACK for development
 export PYTHONPATH=`echo $PYTHONPATH | tr ":" "\n" | grep -v "/global/homes/r/raichoor/software_dev/fiberassign_fba_rerun4/py" | tr "\n" ":"`
 # HACK
