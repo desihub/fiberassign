@@ -733,17 +733,18 @@ def fba_rerun_fbascript(
     f = open(outsh, "w")
     f.write("#!/bin/bash\n")
     f.write("\n")
+    f.write("# ===============\n")
+    f.write("# setting + printing the environment\n")
+    f.write("# ===============\n")
     f.write("module swap fiberassign/{}\n".format(faver))
     f.write("echo 'module swap fiberassign/{}' >> {}\n".format(faver, outlog))
     f.write("module list 2>> {}\n".format(outlog))
-    f.write("\n")
     if skybrver == "-":
         f.write("unset SKYBRICKS_DIR\n")
     else:
         f.write(
             "export SKYBRICKS_DIR=$DESI_ROOT/target/skybricks/{}\n".format(skybrver)
         )
-    f.write("\n")
 
 
     # AR control informations
@@ -751,6 +752,7 @@ def fba_rerun_fbascript(
     f.write("echo \"fiberassign path: `python -c 'import fiberassign; print(fiberassign.__path__)'`\" >> {}\n".format(outlog))
     f.write("echo \"fiberassign version: `python -c 'import fiberassign; print(fiberassign.__version__)'`\" >> {}\n".format(outlog))
     f.write("echo \"SKYBRICKS_DIR=$SKYBRICKS_DIR\" >> {}\n".format(outlog))
+    f.write("\n")
     f.write("\n")
 
 
@@ -764,6 +766,9 @@ def fba_rerun_fbascript(
             fbarun_cmd += " --{} {}".format(key, mydict[key])
     key = "targets"
     fbarun_cmd += " --{} {}".format(key, mydict[key])
+    f.write("# ===============\n")
+    f.write("# fba_run call\n")
+    f.write("# ===============\n")
     f.write("CMD=\"{}\"\n".format(fbarun_cmd))
     f.write("for FN in {} {}\n".format(scndfn, toofn))
     f.write("do\n")
@@ -775,6 +780,7 @@ def fba_rerun_fbascript(
     f.write("echo $CMD >> {}\n".format(outlog))
     f.write("eval $CMD >> {} 2>&1\n".format(outlog))
     f.write("\n")
+    f.write("\n")
 
 
     # AR constructing the merge_results + gzipping, if requested
@@ -784,6 +790,9 @@ def fba_rerun_fbascript(
     if outfiberassign_type != "none":
         merge_cmd = "CMD=\"python -c 'from fiberassign.assign import merge_results; "
         merge_cmd += "merge_results([\\\"{}\\\"\"".format(mydict["targets"])
+        f.write("# ===============\n")
+        f.write("# merge_results call\n")
+        f.write("# ===============\n")
         f.write("{}\n".format(merge_cmd))
         f.write("for FN in {} {}\n".format(scndfn, toofn))
         f.write("do\n")
@@ -803,14 +812,27 @@ def fba_rerun_fbascript(
         f.write("echo $CMD >> {}\n".format(outlog))
         f.write("eval $CMD >> {} 2>&1\n".format(outlog))
         f.write("\n")
+        f.write("\n")
         if outfiberassign_type == "zip":
+            f.write("# ===============\n")
+            f.write("# gzipping fiberassign-TILEID.fits\n")
+            f.write("# ===============\n")
             f.write("gzip {}\n".format(outfiberassign))
             f.write("\n")
+            f.write("\n")
     if outfba_type == "none":
+        f.write("# ===============\n")
+        f.write("# removing fba-TILEID.fits\n")
+        f.write("# ===============\n")
         f.write("rm {}\n".format(outfba))
         f.write("\n")
+        f.write("\n")
     if outfba_type == "zip":
+        f.write("# ===============\n")
+        f.write("# gzipping fba-TILEID.fits\n")
+        f.write("# ===============\n")
         f.write("gzip {}\n".format(outfba))
+        f.write("\n")
         f.write("\n")
 
     # AR run check?
@@ -819,6 +841,9 @@ def fba_rerun_fbascript(
             tmpfn = outfiberassign
         if outfiberassign_type == "zip":
             tmpfn = "{}.gz".format(outfiberassign)
+        f.write("# ===============\n")
+        f.write("# running check\n")
+        f.write("# ===============\n")
         # HACK for development
         f.write("export PYTHONPATH=/global/homes/r/raichoor/software_dev/fiberassign_fba_rerun4/py:$PYTHONPATH\n")
         # HACK
@@ -833,6 +858,10 @@ def fba_rerun_fbascript(
     if intermediate_dir_final != "-":
         mydir = os.path.join(intermediate_dir_final, subdir)
         f.write("\n")
+        f.write("\n")
+        f.write("# ===============\n")
+        f.write("# moving intermediate files\n")
+        f.write("# ===============\n")
         f.write("for FN in {}\n".format(" ".join(int2mv_fns)))
         f.write("do\n")
         f.write("\tif [[ -f \"$FN\" ]]\n")
