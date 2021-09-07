@@ -3962,7 +3962,7 @@ def fba_rerun_fbascript(
 
 
     # AR output files
-    outsh = os.path.join(outdir, subdir, "fa-{:06d}.sh".format(tileid))
+    outsh = os.path.join(outdir, subdir, "rerun-fa-{:06d}.sh".format(tileid))
     outlog = outsh.replace(".sh", ".log")
     outfba = os.path.join(outdir, subdir, "fba-{:06d}.fits".format(tileid))
     outfiberassign = os.path.join(
@@ -3976,6 +3976,10 @@ def fba_rerun_fbascript(
         outfiberassign,
         "{}.gz".format(outfiberassign),
     ]
+    if run_intermediate:
+        outintsh = outsh.replace("-fa", "-intermediate")
+        outintlog = outintsh.replace(".sh", ".log")
+        fns += [outintsh, outintlog]
     if run_check:
         outdiff = outsh.replace(".sh", ".diff")
         fns.append(outdiff)
@@ -4006,30 +4010,32 @@ def fba_rerun_fbascript(
     toofn = os.path.join(intermediate_dir, subdir, "{:06d}-too.fits".format(tileid))
 
 
+    # AR run intermediate products?
+    if run_intermediate:
+        f = open(outintsh, "w")
+        f.write("#!/bin/bash\n")
+        f.write("\n")
+        if survey == "sv3":
+            f.write("module swap desitarget/1.0.0\n")
+            f.write("echo 'module swap desitarget/1.0.0' >> {}\n".format(outintlog))
+        f.write("module list 2> {}\n".format(outintlog))
+        f.write("\n")
+        f.write(
+            "python -c 'from fiberassign.fba_launch_io import fba_rerun_intermediate; fba_rerun_intermediate(\"{}\", \"{}\")' >> {} 2>&1\n".format(
+                infiberassignfn, intermediate_dir, outintlog,
+            )
+        )
+        # AR close + make it executable
+        f.close()
+        os.system("chmod +x {}".format(outintsh))
+
+
     # AR writing outsh file
     f = open(outsh, "w")
     f.write("#!/bin/bash\n")
     f.write("\n")
-    f.write("module list 2> {}\n".format(outlog))
-    f.write("\n")
-
-    # AR run intermediate products?
-    if run_intermediate:
-        if survey == "sv3":
-            f.write("module swap desitarget/1.0.0\n")
-            f.write("echo 'module swap desitarget/1.0.0' >> {}\n".format(outlog))
-        f.write(
-            "python -c 'from fiberassign.fba_launch_io import fba_rerun_intermediate; fba_rerun_intermediate(\"{}\", \"{}\")' >> {} 2>&1\n".format(
-                infiberassignfn, intermediate_dir, outlog,
-            )
-        )
-        # HACK for development
-        f.write("export PYTHONPATH=`echo $PYTHONPATH | tr \":\" \"\\n\" | grep -v \"/global/homes/r/raichoor/software_dev/fiberassign_fba_rerun4/py\" | tr \"\\n\" \":\"`\n")
-        # HACK
-
-
     f.write("module swap fiberassign/{}\n".format(faver))
-    f.write("\n")
+    f.write("echo 'module swap fiberassign/{}' >> {}\n".format(faver, outlog))
     f.write("module list 2>> {}\n".format(outlog))
     f.write("\n")
     if skybrver == "-":
@@ -4126,6 +4132,12 @@ def fba_rerun_fbascript(
     # AR close + make it executable
     f.close()
     os.system("chmod +x {}".format(outsh))
+
+    # AR return the scripts to be executed (single string, comma-separated)
+    if run_intermediate:
+        return ",".join([outintsh, outsh])
+    else:
+        return outsh
 
 
 def fba_rerun_check(
