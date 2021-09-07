@@ -563,8 +563,8 @@ def fba_rerun_fbascript(
     infiberassignfn,
     outdir,
     run_intermediate,
-    fba="none",
-    fiberassign="zip",
+    outfba_type="none",
+    outfiberassign_type="zip",
     run_check=True,
     intermediate_dir_final="-",
     overwrite=False,
@@ -581,8 +581,8 @@ def fba_rerun_fbascript(
         outdir: output folder (files will be written in outdir/ABC/) (string)
         run_intermediate: generate the intermediate products? (outdir/ABC/TILEID-{tiles,sky,targ,scnd,too}.fits) (boolean)
             if run_intermediate=False, the intermediate products need to be present
-        fba (optional, defaults to "none"): "none"->no fba-TILEID.fits, "unzip"->fba-TILEID.fits, "zip"->fba-TILEID.fits.gz (string)
-        fiberassign(optional, defaults to "zip"): "none"->no fiberassign-TILEID.fits, "unzip"->fiberassign-TILEID.fits, "zip"->fiberassign-TILEID.fits.gz (string)
+        outfba (optional, defaults to "none"): "none"->no fba-TILEID.fits, "unzip"->fba-TILEID.fits, "zip"->fba-TILEID.fits.gz (string)
+        outfiberassign_type (optional, defaults to "zip"): "none"->no fiberassign-TILEID.fits, "unzip"->fiberassign-TILEID.fits, "zip"->fiberassign-TILEID.fits.gz (string)
         run_check (optional, defaults to True): run fba_rerun_check()? (boolean)
         intermediate_dir_final (optional, defaults to "-"): folder to move all intermediate products (*sh, *fits, *log) (string)
         overwrite (optional, defaults to False): overwrite any existing file? (boolean)
@@ -611,17 +611,17 @@ def fba_rerun_fbascript(
     if run_intermediate not in [True, False]:
         log.error("run_intermediate={} not a boolean; exiting".format(run_intermediate))
         sys.exit(1)
-    if fba not in ["none", "unzip", "zip"]:
-        log.error("fba={} not in 'none', 'unzip', zip'; exiting".format(fba))
+    if outfba_type not in ["none", "unzip", "zip"]:
+        log.error("fba={} not in 'none', 'unzip', zip'; exiting".format(outfba_type))
         sys.exit(1)
-    if fiberassign not in ["none", "unzip", "zip"]:
-        log.error("fiberassign={} not in 'none', 'unzip', zip'; exiting").format(fiberassign)
+    if outfiberassign_type not in ["none", "unzip", "zip"]:
+        log.error("fiberassign={} not in 'none', 'unzip', zip'; exiting").format(outfiberassign_type)
         sys.exit(1)
     if run_check not in [True, False]:
         log.error("run_check={} not a boolean; exiting".format(run_check))
         sys.exit(1)
-    if (fiberassign == "none") & (run_check):
-        log.error("fiberassign=none and run_check=True: run_check=True requires fiberassign!=none; exiting")
+    if (outfiberassign_type == "none") & (run_check):
+        log.error("outfiberassign_type=none and run_check=True: run_check=True requires outfiberassign_type!=none; exiting")
         sys.exit(1)
     if intermediate_dir_final != "-":
         if not os.path.isdir(intermediate_dir_final):
@@ -781,7 +781,7 @@ def fba_rerun_fbascript(
     # AR need to use a non-straightforward approach
     # AR (with lots of quotes in quotes...)
     # AR to handle the possible existence of scnd and too files
-    if fiberassign != "none":
+    if outfiberassign_type != "none":
         merge_cmd = "CMD=\"python -c 'from fiberassign.assign import merge_results; "
         merge_cmd += "merge_results([\\\"{}\\\"\"".format(mydict["targets"])
         f.write("{}\n".format(merge_cmd))
@@ -803,21 +803,21 @@ def fba_rerun_fbascript(
         f.write("echo $CMD >> {}\n".format(outlog))
         f.write("eval $CMD >> {} 2>&1\n".format(outlog))
         f.write("\n")
-        if fiberassign == "zip":
+        if outfiberassign_type == "zip":
             f.write("gzip {}\n".format(outfiberassign))
             f.write("\n")
-    if fba == "none":
+    if outfba_type == "none":
         f.write("rm {}\n".format(outfba))
         f.write("\n")
-    if fba == "zip":
+    if outfba_type == "zip":
         f.write("gzip {}\n".format(outfba))
         f.write("\n")
 
     # AR run check?
     if run_check:
-        if fiberassign == "unzip":
+        if outfiberassign_type == "unzip":
             tmpfn = outfiberassign
-        if fiberassign == "zip":
+        if outfiberassign_type == "zip":
             tmpfn = "{}.gz".format(outfiberassign)
         # HACK for development
         f.write("export PYTHONPATH=/global/homes/r/raichoor/software_dev/fiberassign_fba_rerun4/py:$PYTHONPATH\n")

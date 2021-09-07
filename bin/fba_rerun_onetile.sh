@@ -52,7 +52,7 @@ export PYTHONPATH=/global/homes/r/raichoor/software_dev/fiberassign_fba_rerun4/p
 
 # AR generate the *sh file(s)
 echo "Generate *sh file(s)"
-python -c 'from fiberassign.fba_rerun_io import fba_rerun_fbascript; fba_rerun_fbascript("'$ORIGFN'", "'$RERUNDIR'", '$INTERMEDIATE', fba="'$FBA'", fiberassign="'$FASSIGN'", run_check='$RUNCHECK', intermediate_dir_final="'$INTERMEDIATE_FINAL'", overwrite='$OVERWRITE')'
+python -c 'from fiberassign.fba_rerun_io import fba_rerun_fbascript; fba_rerun_fbascript("'$ORIGFN'", "'$RERUNDIR'", '$INTERMEDIATE', outfba_type="'$FBA'", outfiberassign_type="'$FASSIGN'", run_check='$RUNCHECK', intermediate_dir_final="'$INTERMEDIATE_FINAL'", overwrite='$OVERWRITE')'
 
 
 if [[ "$INTERMEDIATE" != "-" ]]
