@@ -23,7 +23,6 @@ from astropy.table import Table
 from astropy.time import Time
 
 # desitarget
-# import desitarget
 from desitarget.geomask import match_to
 
 # fiberassign
