@@ -307,7 +307,7 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
 
         # For unassigned fibers, we give each location a unique negative
         # number based on the tile and loc.
-        unassign_offset = tile_id * nloc
+        unassign_offset = tile_id * 10000
         assigned_tgids = np.array([tdata[x] if x in tdata.keys()
                                   else -(unassign_offset + x)
                                   for x in locs], dtype=np.int64)
