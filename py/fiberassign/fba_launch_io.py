@@ -3943,13 +3943,24 @@ def fba_rerun_fbascript(
         The code will exit with an error if any of outdir/ABC/{fa,fba,fiberassign}-TILEID.{sh,fits,log}{gz} already exists.
     """
     # AR assess arguments
+    if not os.path.isfile(infiberassignfn):
+        log.error("no {} file; exiting".format(infiberassignfn))
+        sys.exit(1)
+    for mydir in [outdir, intermediate_dir]:
+        if not os.path.isdir(mydir):
+            log.error("no {} folder; exiting".format(mydir))
+            sys.exit(1)
     if run_intermediate not in [True, False]:
-        log.error("run_intermediate={} not a boolean".format(run_intermediate))
+        log.error("run_intermediate={} not a boolean; exiting".format(run_intermediate))
+        sys.exit(1)
     if fba not in ["none", "unzip", "zip"]:
-        log.error("fba={} not in 'none', 'unzip', zip'; exiting")
+        log.error("fba={} not in 'none', 'unzip', zip'; exiting".format(fba))
         sys.exit(1)
     if fiberassign not in ["none", "unzip", "zip"]:
-        log.error("fiberassign={} not in 'none', 'unzip', zip'; exiting")
+        log.error("fiberassign={} not in 'none', 'unzip', zip'; exiting").format(fiberassign)
+        sys.exit(1)
+    if run_check not in [True, False]:
+        log.error("run_check={} not a boolean; exiting".format(run_check))
         sys.exit(1)
     if (fiberassign == "none") & (run_check):
         log.error("fiberassign=none and run_check=True: run_check=True requires fiberassign!=none; exiting")
