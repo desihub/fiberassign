@@ -3911,6 +3911,7 @@ def fba_rerun_fbascript(
     fba="none",
     fiberassign="zip",
     run_check=True,
+    intermediate_dir_final="-",
     log=Logger.get(),
     start=time(),
 ):
@@ -3965,6 +3966,10 @@ def fba_rerun_fbascript(
     if (fiberassign == "none") & (run_check):
         log.error("fiberassign=none and run_check=True: run_check=True requires fiberassign!=none; exiting")
         sys.exit(1)
+    if intermediate_dir_final != "-":
+        if not os.path.isdir(intermediate_dir_final):
+            log.error("no {} folder; exiting".format(intermediate_dir_final))
+            sys.exit(1)
 
 
     # AR get settings, fiberassign version, and SKYBRICKS_DIR version
@@ -3978,6 +3983,8 @@ def fba_rerun_fbascript(
     mydirs = [os.path.join(outdir, subdir)]
     if run_intermediate:
         mydirs.append(os.path.join(intermediate_dir, subdir))
+    if intermediate_dir_final != "-":
+        mydirs.append(os.path.join(intermediate_dir_final, subdir))
     for mydir in mydirs:
         if not os.path.isdir(mydir):
             log.info("create {}".format(mydir))
@@ -4031,6 +4038,18 @@ def fba_rerun_fbascript(
     # AR scnd and too
     scndfn = os.path.join(intermediate_dir, subdir, "{:06d}-scnd.fits".format(tileid))
     toofn = os.path.join(intermediate_dir, subdir, "{:06d}-too.fits".format(tileid))
+
+
+    # AR intermediate files to potentially move if intermediate_dir_final
+    if intermediate_dir_final != "-":
+        int2mv_fns = [outintsh, outintlog]
+        int2mv_fns += [mydict["footprint"], mydict["sky"], mydict["targets"]]
+        int2mv_fns += [scndfn, toofn]
+        for fn in int2mv_fns:
+            tmpfn = os.path.join(intermediate_dir_final, subdir, os.path.basename(fn))
+            if os.path.isfile(tmpfn):
+                log.error("{} already exists; exiting".format(tmpfn))
+                sys.exit(1)
 
 
     # AR run intermediate products?
@@ -4151,6 +4170,23 @@ def fba_rerun_fbascript(
                 infiberassignfn, tmpfn, outdiff, outlog,
             )
         )
+
+
+    # AR move intermediate products to a final folder?
+    if intermediate_dir_final != "-":
+        mydir = os.path.join(intermediate_dir_final, subdir)
+        f.write("\n")
+        f.write("for FN in {}\n".format(" ".join(int2mv_fns)))
+        f.write("do\n")
+        f.write("\tif [[ -f \"$FN\" ]]\n")
+        f.write("\tthen\n")
+        f.write("\t\techo \"moving $FN to {}\" >> {}\n".format(mydir, outlog))
+        f.write("\t\tmv $FN {}\n".format(mydir))
+        f.write("\telse\n")
+        f.write("\t\techo \"no $FN to move\" >> {}\n".format(outlog))
+        f.write("\tfi\n")
+        f.write("done\n")
+
 
     # AR close + make it executable
     f.close()
