@@ -124,7 +124,7 @@ class TestAssign(unittest.TestCase):
         sim_tiles(tfile)
         tiles = load_tiles(tiles_file=tfile)
         # Precompute target positions
-        tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles, tagalong)
+        tile_targetids, tile_x, tile_y, tile_xy_cs5 = targets_in_tiles(hw, tgs, tiles, tagalong)
         tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
 
         # Compute the fibers on all tiles available for each target
@@ -143,10 +143,10 @@ class TestAssign(unittest.TestCase):
                                out_prefix="test_io_ascii_")
 
         write_assignment_fits(tiles, tagalong, asgn, out_dir=test_dir,
-                              out_prefix="basic_", all_targets=False)
+                              out_prefix="basic_", all_targets=False, tile_xy_cs5=tile_xy_cs5)
 
         write_assignment_fits(tiles, tagalong, asgn, out_dir=test_dir,
-                              out_prefix="full_", all_targets=True)
+                              out_prefix="full_", all_targets=True, tile_xy_cs5=tile_xy_cs5)
 
         plotpetals = [0]
         # plotpetals = None
@@ -338,7 +338,7 @@ class TestAssign(unittest.TestCase):
             sim_stuck_sky(test_dir, hw, tiles)
 
         # Precompute target positions
-        tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles, tagalong)
+        tile_targetids, tile_x, tile_y, tile_xy_cs5 = targets_in_tiles(hw, tgs, tiles, tagalong)
 
         # Compute the targets available to each fiber for each tile.
         tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
@@ -362,7 +362,7 @@ class TestAssign(unittest.TestCase):
         run(asgn)
 
         write_assignment_fits(tiles, tagalong, asgn, out_dir=test_dir, all_targets=True,
-                              stucksky=stucksky)
+                              stucksky=stucksky, tile_xy_cs5=tile_xy_cs5)
 
         plotpetals = [0]
         #plotpetals = None
@@ -552,7 +552,7 @@ class TestAssign(unittest.TestCase):
             )
 
             # Precompute target positions
-            tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles, tagalong)
+            tile_targetids, tile_x, tile_y, tile_xy_cs5 = targets_in_tiles(hw, tgs, tiles, tagalong)
 
             # Compute the targets available to each fiber for each tile.
             tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
@@ -571,7 +571,8 @@ class TestAssign(unittest.TestCase):
 
             out = os.path.join(test_dir, odir)
 
-            write_assignment_fits(tiles, tagalong, asgn, out_dir=out, all_targets=True)
+            write_assignment_fits(tiles, tagalong, asgn, out_dir=out, all_targets=True,
+                                  tile_xy_cs5=tile_xy_cs5)
 
             ppet = 6
             if odir == "theta_36":
