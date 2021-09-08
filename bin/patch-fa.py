@@ -20,7 +20,9 @@ def read_secondary(fn):
     scnd = fitsio.read(fn)
     sidmap = dict([(tid,i) for i,tid in enumerate(scnd['TARGETID']) if tid > 0])
     val = scnd,sidmap
-    _sec_cache[fn] = val
+    # Only cache one!!
+    _sec_cache = {fn: val}
+    #_sec_cache[fn] = val
     return val
 
 def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fits.gz',
@@ -284,37 +286,39 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
 
     if len(patched_rows) == 0 and not patched_neg_tids:
         log('No need to patch', infn)
-        return 0
-    log('Patched', len(patched_rows), 'data rows')
+        stats.update(patched=0)
+    else:
+        log('Patched', len(patched_rows), 'data rows')
+        stats.update(patched=1)
 
-    # Make sure output directory exists
-    outdir = os.path.dirname(outfn)
-    if not os.path.exists(outdir):
-        os.makedirs(outdir)
-    assert(outfn != infn)
+        # Make sure output directory exists
+        outdir = os.path.dirname(outfn)
+        if not os.path.exists(outdir):
+            os.makedirs(outdir)
+        assert(outfn != infn)
 
-    # Write out output file, leaving other HDUs unchanged.
-    Fout = fitsio.FITS(outfn, 'rw', clobber=True)
-    for ext in F:
-        #log(ext.get_extname())
-        extname = ext.get_extname()
-        hdr = ext.read_header()
-        data = ext.read()
-        if extname == 'PRIMARY':
-            # fitsio will add its own headers about the FITS format, so trim out all COMMENT cards.
-            newhdr = fitsio.FITSHDR()
-            for r in hdr.records():
-                if r['name'] == 'COMMENT':
-                    #log('Skipping comment:', r['name'], r['value'])
-                    continue
-                newhdr.add_record(r)
-            hdr = newhdr
-        if extname == hduname:
-            # Swap in our updated FIBERASSIGN table!
-            data = tab
-        Fout.write(data, header=hdr, extname=extname)
-    Fout.close()
-    log('Wrote', outfn)
+        # Write out output file, leaving other HDUs unchanged.
+        Fout = fitsio.FITS(outfn, 'rw', clobber=True)
+        for ext in F:
+            #log(ext.get_extname())
+            extname = ext.get_extname()
+            hdr = ext.read_header()
+            data = ext.read()
+            if extname == 'PRIMARY':
+                # fitsio will add its own headers about the FITS format, so trim out all COMMENT cards.
+                newhdr = fitsio.FITSHDR()
+                for r in hdr.records():
+                    if r['name'] == 'COMMENT':
+                        #log('Skipping comment:', r['name'], r['value'])
+                        continue
+                    newhdr.add_record(r)
+                hdr = newhdr
+            if extname == hduname:
+                # Swap in our updated FIBERASSIGN table!
+                data = tab
+            Fout.write(data, header=hdr, extname=extname)
+        Fout.close()
+        log('Wrote', outfn)
     if log_to_string:
         print(logstr)
     return stats
@@ -360,14 +364,30 @@ def main():
     allcols.sort()
     print('allcols:', allcols)
     data = dict([(c,[]) for c in allcols])
+    # if not ''
+    blankvals = dict(
+        tileid=-1,
+        neg_targetids=-1,
+        pos_targetids=-1,
+        matched_targets=-1,
+        patched_rows_targets=-1,
+        matched_scnd=-1,
+        patched_rows_scnd=-1,
+        matched_too=-1,
+        patched_rows_too=-1,
+        patched=-1,
+        )
     for s in allstats:
         for c in allcols:
             try:
                 data[c].append(s[c])
             except KeyError:
-                data[c].append(None)
+                data[c].append(blankvals.get(c, ''))
     for c in allcols:
+        #print('Column', c, 'length', len(data[c]))
         data[c] = np.array(data[c])
+        #print('Np array:', len(data[c]))
+        #print(data[c])
     fitsio.write(opt.stats, data, names=allcols, clobber=True)
 
 def _bounce_patch(x):
