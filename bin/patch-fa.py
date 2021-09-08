@@ -111,6 +111,17 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
             log('Special-case updated SCND from', scndfn, 'to', fn)
             scndfn = fn
 
+    # Special-case a missing SCND file from sv2 (tile 81096+)
+    if scndfn == '/global/cfs/cdirs/desi/target/catalogs/dr9/0.53.0/targets/sv2/secondary/dark/sv2targets-dark-secondary.fits':
+        log('Ignoring SCND file', scndfn)
+        scndfn = ''
+
+    oldfn = '/global/cfs/cdirs/desi/target/catalogs/dr9/0.58.0/targets/main/secondary/dark/maintargets-dark-secondary.fits'
+    if scndfn == oldfn:
+        newfn = '/global/cfs/cdirs/desi/target/catalogs/dr9/0.58.0/targets/main/secondary/dark/targets-dark-secondary.fits'
+        log('Replacing', oldfn, 'with', newfn)
+        scndfn = newfn
+
     stats.update(scndfn=scndfn, toofn=toofn)
     for i,t in enumerate(targdirs):
         stats['targdir%i' % i] = t
