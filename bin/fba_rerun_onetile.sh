@@ -11,7 +11,7 @@ usage () {
     - generate the fba-TILEID.fits(.gz) and/org fiberassign-TILEID.fits(.gz) files
     - compare the rerun fiberassign to the original one.
 
-    `basename $0` ORIGFN RERUNDIR INTERMEDIATE FBA FASSIGN RUNCHECK INTERMEDIATE_FINAL
+    `basename $0` ORIGFN RERUNDIR INTERMEDIATE FBA FASSIGN RUNCHECK INTERMEDIATE_FINAL OVERWRITE FAVER_NOSWAP
 
     ORIGFN        original fiberassign-TILEID.fits.gz file we want to rerun
     RERUNDIR      folder where outputs are produced (will be in RERUNDIR/ABC/)
@@ -21,6 +21,7 @@ usage () {
     RUNCHECK      True or False (generate a *diff file)
     INTERMEDIATE_FINAL   - or folder to move intermediate products to
     OVERWRITE     True or False
+    FAVER_NOSWAP  True or False
 HELP_USAGE
 }
 
@@ -34,6 +35,7 @@ FASSIGN=$5
 RUNCHECK=$6
 INTERMEDIATE_FINAL=$7
 OVERWRITE=$8
+FAVER_NOSWAP=$9
 
 echo "Start at: " `date`
 echo ORIGFN       = $ORIGFN
@@ -44,17 +46,20 @@ echo FASSIGN      = $FASSIGN
 echo RUNCHECK     = $RUNCHECK
 echo INTERMEDIATE_FINAL = $INTERMEDIATE_FINAL
 echo OVERWRITE    = $OVERWRITE
+echo FAVER_NOSWAP = $FAVER_NOSWAP
 
 
 # HACK for development
 export PYTHONPATH=/global/homes/r/raichoor/software_dev/fiberassign_fba_rerun4/py:$PYTHONPATH
 # HACK
 
+
 # AR generate the *sh file(s)
 echo "Generate *sh file(s)"
-python -c 'from fiberassign.fba_rerun_io import fba_rerun_fbascript; fba_rerun_fbascript("'$ORIGFN'", "'$RERUNDIR'", '$INTERMEDIATE', outfba_type="'$FBA'", outfiberassign_type="'$FASSIGN'", run_check='$RUNCHECK', intermediate_dir_final="'$INTERMEDIATE_FINAL'", overwrite='$OVERWRITE')'
+python -c 'from fiberassign.fba_rerun_io import fba_rerun_fbascript; fba_rerun_fbascript("'$ORIGFN'", "'$RERUNDIR'", '$INTERMEDIATE', outfba_type="'$FBA'", outfiberassign_type="'$FASSIGN'", run_check='$RUNCHECK', intermediate_dir_final="'$INTERMEDIATE_FINAL'", overwrite='$OVERWRITE', faver_noswap='$FAVER_NOSWAP')'
 
 
+# AR rerun intermediate files, if requested
 if [[ "$INTERMEDIATE" != "-" ]]
 then
     FN=`python -c 'from fiberassign.fba_rerun_io import get_fba_rerun_scriptname; a = get_fba_rerun_scriptname("'$ORIGFN'", "'$RERUNDIR'", "intermediate"); print(a)'`
@@ -62,6 +67,8 @@ then
     $FN
 fi
 
+
+# AR rerun fa files
 FN=`python -c 'from fiberassign.fba_rerun_io import get_fba_rerun_scriptname; a = get_fba_rerun_scriptname("'$ORIGFN'", "'$RERUNDIR'", "fa"); print(a)'`
 # HACK for development
 export PYTHONPATH=`echo $PYTHONPATH | tr ":" "\n" | grep -v "/global/homes/r/raichoor/software_dev/fiberassign_fba_rerun4/py" | tr "\n" ":"`
