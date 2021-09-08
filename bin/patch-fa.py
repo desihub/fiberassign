@@ -44,6 +44,7 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
     If any rows are changed, then an updated file is written out, preserving all other HDUs.
 
     '''
+    stats = {}
     patched_rows = set()
     patched_neg_tids = False
 
@@ -54,6 +55,7 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
     #tiledec = primhdr['TILEDEC']
     tileid = primhdr['TILEID']
     fa_surv = primhdr['FA_SURV']
+    stats.update(infn=infn, tileid=tileid, fa_surv=fa_surv)
 
     # Find targeting files / directories in the headers.
     #mtldir = primhdr['MTL']
@@ -98,6 +100,10 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
             print('Special-case updated SCND from', scndfn, 'to', fn)
             scndfn = fn
 
+    stats.update(scndfn=scndfn, toofn=toofn)
+    for i,t in enumerate(targdirs):
+        stats['targdir%i' % i] = t
+
     # Read the original FIBERASSIGN table.
     hduname = 'FIBERASSIGN'
     ff = F[hduname]
@@ -110,6 +116,7 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
     # Per https://github.com/desihub/fiberassign/issues/385,
     # Swap in unique values for negative TARGETIDs.
     I = np.flatnonzero(targetid < 0)
+    stats.update(neg_targetids=len(I), pos_targetids=len(np.flatnonzero(targetid>0)))
     if len(I):
         tab['TARGETID'][I] = -(tileid * 10000 + tab['LOCATION'][I])
         print('Updated', len(I), 'negative TARGETID values')
@@ -156,6 +163,7 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
     J = np.flatnonzero(I >= 0)
     I = I[J]
     print('Checking', len(I), 'matched TARGETIDs')
+    stats.update(matched_targets=len(I))
 
     # We use this function to test for equality between arrays -- both
     # being non-finite (eg NaN) counts as equal.
@@ -168,9 +176,10 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
         return np.logical_or(a == b, bothnan)
 
     # This is the subset of columns we patch, based on the bug report.
-    for col in ['BRICK_OBJID', 'BRICKID', 'RELEASE', 'FLUX_G', 'FLUX_R', 'FLUX_Z', 'FLUX_IVAR_G', 'FLUX_IVAR_R', 'FLUX_IVAR_Z',
-                'REF_CAT', 'GAIA_PHOT_G_MEAN_MAG', 'GAIA_PHOT_BP_MEAN_MAG', 'GAIA_PHOT_RP_MEAN_MAG', 'MASKBITS', 'REF_ID',
-                'MORPHTYPE']:
+    for col in ['BRICK_OBJID', 'BRICKID', 'RELEASE', 'FLUX_G', 'FLUX_R', 'FLUX_Z',
+                'FLUX_IVAR_G', 'FLUX_IVAR_R', 'FLUX_IVAR_Z',
+                'REF_CAT', 'GAIA_PHOT_G_MEAN_MAG', 'GAIA_PHOT_BP_MEAN_MAG', 'GAIA_PHOT_RP_MEAN_MAG',
+                'MASKBITS', 'REF_ID', 'MORPHTYPE']:
         old = tab[col][J]
         new = targets[col][I]
         eq = equal(old, new)
@@ -183,6 +192,8 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
             print('  new vals', new[diff][:5])
             tab[col][J[diff]] = new[diff]
             patched_rows.update(J[diff])
+
+    stats.update(patched_rows_targets=len(patched_rows))
 
     # Were secondary targets used for this tile?
     if scndfn == '-':
@@ -197,7 +208,9 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
         I = np.array([sidmap.get(t, -1) for t in targetid])
         J = np.flatnonzero(I >= 0)
         I = I[J]
-    
+        print('Matched', len(I), 'secondary targets on TARGETID')
+        stats.update(matched_scnd=len(I))
+
         for col in ['FLUX_G', 'FLUX_R', 'FLUX_Z',
                     'GAIA_PHOT_G_MEAN_MAG', 'GAIA_PHOT_BP_MEAN_MAG', 'GAIA_PHOT_RP_MEAN_MAG',]:
             # if not col in tab.dtype.fields:
@@ -219,8 +232,10 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
                 tab[col][J[diff]] = new[diff]
                 patched_rows.update(J[diff])
 
+        stats.update(patched_rows_scnd=len(patched_rows))
 
-    # ToO files -- we're going to ignore the header values and look up the file location based on FA_SURV.
+    # ToO files -- we're going to ignore the header values and look
+    # up the file location based on FA_SURV.
     toomap = {
         'sv3': '/global/cfs/cdirs/desi/survey/ops/surveyops/trunk/mtl/sv3/ToO/ToO.ecsv',
         'main': '/global/cfs/cdirs/desi/survey/ops/surveyops/trunk/mtl/main/ToO/ToO.ecsv',
@@ -228,25 +243,9 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
         'sv2': '',
         'sv1': '',
     }
-
-    # # ToO files seem to have been moved... map old->new locations.
-    # toomap = {
-    #     '/global/cfs/cdirs/desi/survey/ops/staging/mtl/main/ToO/ToO.ecsv' :
-    #     '/global/cfs/cdirs/desi/target/ToO/ToO.ecsv',
-    # 
-    #     '/data/afternoon_planning/surveyops/trunk/mtl/sv3/ToO/ToO.ecsv' :
-    #     '/global/cfs/cdirs/desi/target/ToO/sv3/ToO.ecsv',
-    #}
-    #toofn = toomap.get(toofn, toofn)
-
     if not fa_surv in toomap:
         print('Failed to find ToO file for FA_SURV', fa_surv)
-
     toofn = toomap[fa_surv]
-    #toofn = toomap.get(fa_surv, '')
-    #if len(toofn) == 0:
-    #    print('Did not find ToO file location for FA_SURV', fa_surv)
-    #    assert(False)
 
     # Were ToO targets used in this tile?
     if len(toofn):
@@ -258,6 +257,8 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
         I = np.array([toomap.get(t, -1) for t in targetid])
         J = np.flatnonzero(I >= 0)
         I = I[J]
+        print('Matched', len(I), 'ToO targets on TARGETID')
+        stats.update(matched_too=len(I))
 
         for col in ['FLUX_G', 'FLUX_R', 'FLUX_Z',
                     'GAIA_PHOT_G_MEAN_MAG', 'GAIA_PHOT_BP_MEAN_MAG', 'GAIA_PHOT_RP_MEAN_MAG',]:
@@ -270,12 +271,14 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
                 tab[col][J[diff]] = new[diff]
                 patched_rows.update(J[diff])
 
+        stats.update(patched_rows_too=len(patched_rows))
+
     if len(patched_rows) == 0 and not patched_neg_tids:
         print('No need to patch', infn)
         return 0
     print('Patched', len(patched_rows), 'data rows')
 
-    # Make sure output directory exists but output file does not exist (fitsio is careful/picky)
+    # Make sure output directory exists
     outdir = os.path.dirname(outfn)
     if not os.path.exists(outdir):
         os.makedirs(outdir)
@@ -303,7 +306,7 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
         Fout.write(data, header=hdr, extname=extname)
     Fout.close()
     print('Wrote', outfn)
-    return len(patched_rows)
+    return stats
 
 def main():
     from argparse import ArgumentParser
@@ -312,6 +315,8 @@ def main():
     parser.add_argument('--in-base', default='/global/cfs/cdirs/desi/target/fiberassign/tiles/trunk',
                         help='Input base path')
     parser.add_argument('--outdir', default='patched-fa')
+    parser.add_argument('--stats', default='patch-fa-stats.fits',
+                        help='Output filename for patching statistics.')
     parser.add_argument('--threads', type=int, help='Multiprocessing threads')
     opt = parser.parse_args()
 
@@ -328,11 +333,31 @@ def main():
     if opt.threads:
         from astrometry.util.multiproc import multiproc
         mp = multiproc(opt.threads)
-        mp.map(_bounce_patch, args)
+        allstats = mp.map(_bounce_patch, args)
     else:
+        allstats = []
         for kw in args:
-            patch(**kw)
+            stats = patch(**kw)
+            allstats.append(stats)
             print()
+
+    # Collate and write out stats.
+    allcols = set()
+    for s in allstats:
+        allcols.update(s.keys())
+    allcols = list(allcols)
+    allcols.sort()
+    print('allcols:', allcols)
+    data = dict([(c,[]) for c in allcols])
+    for s in allstats:
+        for c in allcols:
+            try:
+                data[c].append(s[c])
+            except KeyError:
+                data[c].append(None)
+    for c in allcols:
+        data[c] = np.array(data[c])
+    fitsio.write(opt.stats, data, names=allcols, clobber=True)
 
 def _bounce_patch(x):
     return patch(**x)
