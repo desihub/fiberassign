@@ -552,6 +552,7 @@ def fba_rerun_fbascript(
     run_intermediate,
     outfba_type="none",
     outfiberassign_type="zip",
+    faver_noswap=False,
     run_check=True,
     intermediate_dir_final="-",
     overwrite=False,
@@ -570,6 +571,7 @@ def fba_rerun_fbascript(
             if run_intermediate=False, the intermediate products need to be present
         outfba (optional, defaults to "none"): "none"->no fba-TILEID.fits, "unzip"->fba-TILEID.fits, "zip"->fba-TILEID.fits.gz (string)
         outfiberassign_type (optional, defaults to "zip"): "none"->no fiberassign-TILEID.fits, "unzip"->fiberassign-TILEID.fits, "zip"->fiberassign-TILEID.fits.gz (string)
+        faver_noswap (optional, defaults to False): if True, does not "module swap fiberassign/xxx" to the original fiberassign code version  (boolean)
         run_check (optional, defaults to True): run fba_rerun_check()? (boolean)
         intermediate_dir_final (optional, defaults to "-"): folder to move all intermediate products (*sh, *fits, *log) (string)
         overwrite (optional, defaults to False): overwrite any existing file? (boolean)
@@ -724,8 +726,11 @@ def fba_rerun_fbascript(
     f.write("# ===============\n")
     f.write("# setting + printing the environment\n")
     f.write("# ===============\n")
-    f.write("module swap fiberassign/{}\n".format(faver))
-    f.write("echo 'module swap fiberassign/{}' >> {}\n".format(faver, outlog))
+    if not faver_noswap:
+        f.write("module swap fiberassign/{}\n".format(faver))
+        f.write("echo 'module swap fiberassign/{}' >> {}\n".format(faver, outlog))
+    else:
+        f.write("echo 'faver_noswap=True, so we do not swap to the original fiberassign code version' >> {}\n".format(outlog))
     f.write("module list 2>> {}\n".format(outlog))
     if skybrver == "-":
         f.write("unset SKYBRICKS_DIR\n")
