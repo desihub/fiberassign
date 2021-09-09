@@ -831,7 +831,6 @@ def main():
                 "--sky",
                 root + "-sky.fits",
                 "--targets",
-                root + "-gfa.fits",
             ]
             if args.faflavor in ["scidark", "scibright"]:
                 opts += [
