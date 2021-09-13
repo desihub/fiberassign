@@ -3,7 +3,10 @@
 usage () {
     cat <<HELP_USAGE
 
-    Bash wrapper to rerun the fiber assignment of SV3 or Main BRIGHT/DARK tiles.
+    Example of a bash wrapper to rerun the fiber assignment of SV3 or Main BRIGHT/DARK tiles.
+    This is an alternative way to make a rerun (vs. bin/fba_rerun).
+    This wrapper offers more flexibility; it calls functions in fba_rerun_io.py.
+
     It assumes the desi environment is already loaded, e.g.:
         source /global/cfs/cdirs/desi/software/desi_environment.sh master
     This script can:
