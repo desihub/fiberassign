@@ -39,75 +39,80 @@ from fiberassign.fba_launch_io import (
 )
 
 
-def fba_rerun_intermediate_get_settings(
-    fn, log=Logger.get(), step="rerun", start=time(),
+def fba_rerun_get_settings(
+    fn, bugfix=True, log=Logger.get(), step="settings", start=time(),
 ):
     """
-    Get the required settings from a fiberassign-TILEID.fits.gz file to recreate the
-        intermediate files (TILEID-{tiles,sky,targ,scnd,too}.fits) necessary
-        to rerun the fiber assignment.
+    Get the required settings from a fiberassign-TILEID.fits.gz file to rerun the assignment,
+        including the intermediate files (TILEID-{tiles,sky,targ,scnd,too}.fits).
 
     Args:
         fn: full path to the fiberassign-TILEID.fits file to be rerun (string0
         log (optional, defaults to Logger.get()): Logger object
+        bugfix (optional, defaults to True): bugfix the arguments with fba_rerun_bugfix_settings()? (boolean)
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
 
     Returns:
-        mydict: dictionary with the required fba_launch settings,
-            stored in the fiberassign*fits.gz header FAARGS (dictionary)
+        mydict: dictionary with the required various settings (dictionary);
+                the keys are:
+                    fa_ver, skybrver, survey, program, tileid, tilera, tiledec, obscon,
+                    dr, gaiadr, dtver, pmcorr, pmtime_utc_str,
+                    rundate, mtltime, fieldrot, standards_per_petal, sky_per_petal
+                    dotoo, mjd_min, mjd_max;
+                if fa_ver >= 2.4.0: also sky_per_slitblock;
+                if fa_ver >= 3.0.0: also ha, margin-pos, margin-petal, margin-gfa.
 
     Notes:
         Only runs for a SV3 or Main BRIGHT/DARK tile; exists with error otherwise.
-        Special cases handling:
-        - RUNDATE fix for 19 SV3 tiles designed on 2021-04-10
-        - MTLTIME fix for SV3 TILEID=315 and 441
-        - DTVER: 1.0.0->1.1.1 fix for pre-shutdown Main (NIGHT<=20210518)
-        - UTC formatting for early SV3 tiles
-        The SUBPRIORITY overwritting for SV3 is handled with the desitarget code version
-            used to rerun_intermediate()
     """
     #
     hdr = fits.getheader(fn, 0)
     # AR SV3/Main BRIGHT/DARK?
     faflavors = ["sv3bright", "sv3dark", "mainbright", "maindark"]
     if hdr["FAFLAVOR"] not in faflavors:
-        sys.exit("FAFLAVOR={} not in {}; exiting".format(hdr["FAFLAVOR"], faflavors))
+        log.error(
+            "{:.1f}s\t{}\tFAFLAVOR={} not in {}; exiting".format(
+                time() - start, step, hdr["FAFLAVOR"], faflavors
+            )
+        )
+        sys.exit(1)
 
     mydict = {}
 
-    # AR fa_ver, obscon: from header
-    mydict["fa_ver"] = hdr["FA_VER"]
-    mydict["obscon"] = hdr["OBSCON"]
+    # AR from header: fa_ver, obscon, fieldrot, tileid, tilera, tiledec, mtltime
+    # AR mtltime: args.mtltime has been introduced in fiberassign/2.4.0 only
+    for key in ["fa_ver", "obscon", "fieldrot", "tileid", "tilera", "tiledec", "mtltime"]:
+        mydict[key] = hdr[key.upper()]
 
     # AR settings we store
     keys = [
         "survey",
         "program",
         "rundate",
-        "mtltime",
         "dr",
         "gaiadr",
         "dtver",
         "pmcorr",
         "pmtime_utc_str",
-        "tileid",
-        "tiledec",
-        "tilera",
+        "standards_per_petal",
+        "sky_per_petal",
     ]
+    if mydict["fa_ver"] >= "2.4.0":
+        keys += ["sky_per_slitblock"]
+    if mydict["fa_ver"] >= "3.0.0":
+        keys += ["ha"]
+        keys += ["margin-pos", "margin-petal", "margin-gfa"]
     # AR storing the FAARGS in a dictionary
     faargs = np.array(hdr["FAARGS"].split())
     for key in keys:
-        #
-        ii = np.where(faargs == "--{}".format(key))[0]
+        if key[:7] == "margin-":
+            ii = np.where(faargs == "--{}".format(key.replace("margin-", "margin_")))[0]
+        else:
+            ii = np.where(faargs == "--{}".format(key))[0]
         if len(ii) > 0:
             mydict[key] = faargs[ii[0] + 1]
-        # AR args.mtltime has been introduced in 2.4.0
-        # AR we add it as an argument if not here
-        # AR (meaning that the tile was run with a previous version)
-        elif key == "mtltime":
-            mydict["mtltime"] = hdr["MTLTIME"]
         # AR args.pmtime_utc_str initially names args.pmtime
         elif (key == "pmtime_utc_str") & ("--pmtime" in faargs):
             ii = np.where(faargs == "--pmtime")[0]
@@ -115,18 +120,86 @@ def fba_rerun_intermediate_get_settings(
         # AR should not be other cases
         else:
             log.error(
-                "key={} not present in FAARGS, and not in expected missing keys; exiting".format(
-                    key
+                "{:.1f}s\t{}\tkey={} not present in FAARGS, and not in expected missing keys; exiting".format(
+                    time() - start, step, key,
                 )
             )
             sys.exit(1)
-    #
-    mydict["tileid"] = int(mydict["tileid"])
-    mydict["tilera"], mydict["tiledec"] = (
-        float(mydict["tilera"]),
-        float(mydict["tiledec"]),
-    )
 
+    # AR SKYBRICKS_DIR
+    mydict["skybrver"] = "-"  # default value if not set
+    keys = [cards[0] for cards in hdr.cards]
+    vals = [
+        hdr[key.replace("NAM", "VER")].split("/")[-1]
+        for key in keys
+        if hdr[key] == "SKYBRICKS_DIR"
+    ]
+    if len(vals) > 0:
+        mydict["skybrver"] = vals[0]
+
+    # AR ToO
+    # AR default: run ToOs, with MJD_BEGIN < mjd_now < MJD_END
+    mydict["dotoo"] = True
+    try:
+        mjd_now = Time(
+            datetime.strptime(mydict["pmtime_utc_str"], "%Y-%m-%dT%H:%M:%S%z")
+        ).mjd
+    except ValueError:
+        mjd_now = Time(
+            datetime.strptime(mydict["pmtime_utc_str"], "%Y-%m-%dT%H:%M:%S")
+        ).mjd
+    mydict["mjd_min"] = mjd_now
+    mydict["mjd_max"] = mjd_now
+
+    # AR bugfix the arguments?
+    if bugfix:
+        mydict = fba_rerun_bugfix_settings(mydict, log=log, step=step ,start=start)
+
+    return mydict
+
+
+def fba_rerun_bugfix_settings(
+    mydict, log=Logger.get(), step="settings", start=time(),
+):
+    """
+    Fixed the arguments read in fba_rerun_in_settings() to allow reproducibility.
+
+    Args:
+        mydict: dictionary with the required various settings (dictionary);
+                the keys are:
+                    fa_ver, skybrver, survey, program, tileid, tilera, tiledec, obscon,
+                    dr, gaiadr, dtver, pmcorr, pmtime_utc_str,
+                    rundate, mtltime, fieldrot, standards_per_petal, sky_per_petal
+                    dotoo, mjd_min, mjd_max;
+                if fa_ver >= 2.4.0: also sky_per_slitblock;
+                if fa_ver >= 3.0.0: also ha, margin-pos, margin-petal, margin-gfa.
+        log (optional, defaults to Logger.get()): Logger object
+        bugfix (optional, defaults to True): bugfix the arguments with fba_rerun_bugfix_settings()? (boolean)
+        step (optional, defaults to ""): corresponding step, for fba_launch log recording
+            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
+        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+
+    Returns:
+        mydict: dictionary with the bug-fixed values (dictionary)
+
+    Notes:
+        Fixes the following bugs:
+            - rundate fix for 19 SV3 tiles designed on 2021-04-10
+            - mtltime fix for SV3 TILEID=315 and 441
+            - dtver for 2021 pre-shutdown Main (NIGHT<=20210518): 1.0.0 -> 1.1.1
+            - fa_ver:
+                - fa_ver = 2.2.0.dev2811 and rundate <  2021-04-14 -> fa_ver = 2.2.0
+                - fa_ver = 2.2.0.dev2811 and rundate >= 2021-04-14 -> fa_ver = 2.3.0
+                - fa_ver = 2.3.0.dev2838 -> fa_ver = 2.3.0
+            - SKYBRICKS_DIR:
+                - fa_ver = 2.4.0 -> skybrver = "v2" (SKYBRICKS_DIR was not recorded yet in the header)
+            - ToO MJD window:
+                - fa_ver <= 5.1.1 -> mjd_min = mjd_now - 1, mjd_max = mjd_now + 30
+            - ToO dotoo:
+                - pmtime_utc_str < 2021-04-19T07:00:00+00 -> dotoo=False (ToOs were introduced on Apr. 19th, 2021)
+        The SUBPRIORITY overwritting for SV3 is handled with the desitarget code version
+            used to rerun_intermediate()
+    """
     # AR case of 19 SV3 tiles designed on 2021-04-10:
     # AR    those have rundate = 2021-04-10T21:28:37
     # AR    there has been a fp update on 2021-04-10T20:00:39+00:00
@@ -134,7 +207,7 @@ def fba_rerun_intermediate_get_settings(
     # AR    so the original fiberassign run considered the previous fp state
     # AR    =>
     # AR    we manually modify the rundate, pmtime, mtltime
-    if hdr["TILEID"] in [
+    if mydict["tileid"] in [
         4,
         30,
         58,
@@ -159,7 +232,7 @@ def fba_rerun_intermediate_get_settings(
         for key in ["pmtime_utc_str", "rundate", "mtltime"]:
             log.info(
                 "{:.1f}s\t{}\tmodifying mydict[{}] from {} to {} (TILEID={} designed when desi-state*ecsv file not updated at NERSC".format(
-                    time() - start, step, key, mydict[key], fixed_time, hdr["TILEID"],
+                    time() - start, step, key, mydict[key], fixed_time, mydict["tileid"],
                 )
             )
             mydict[key] = fixed_time
@@ -172,51 +245,91 @@ def fba_rerun_intermediate_get_settings(
     # AR    it is likely the ledgers files were not svn-updated then.
     # AR    so we modify the MTLTIME to 2021-04-19T21:00:00 (315) and 2021-04-20T19:00:00 (441)
     # AR    (ie after the previous MTL update, but before the 314, 440 MTL updates)
-    if hdr["TILEID"] in [315, 441]:
-        if hdr["TILEID"] == 315:
+    if mydict["tileid"] in [315, 441]:
+        if mydict["tileid"] == 315:
             fixed_time = "2021-04-19T21:00:00+00:00"
-        if hdr["TILEID"] == 441:
+        if mydict["tileid"] == 441:
             fixed_time = "2021-04-20T19:00:00+00:00"
         log.info(
             "{:.1f}s\t{}\tmodifying mydict[mtltime] from {} to {} (TILEID={} designed when MTL ledgers not updated at NERSC".format(
-                time() - start, step, mydict["mtltime"], fixed_time, hdr["TILEID"],
+                time() - start, step, mydict["mtltime"], fixed_time, mydict["tileid"],
             )
         )
         mydict["mtltime"] = fixed_time
 
-    # AR assume UTC for pmtime_utc_str, rundate, mtltime
-    # AR (UTC formatting introduced in 20210422, during SV3)
-    for key in ["pmtime_utc_str", "rundate", "mtltime"]:
-        try:
-            _ = datetime.strptime(mydict[key], "%Y-%m-%dT%H:%M:%S")
-            log.info(
-                "{:.1f}s\t{}\t{}: modifying {} to {}+00:00 for TILEID={}".format(
-                    time() - start, step, key, mydict[key], mydict[key], hdr["TILEID"]
-                )
-            )
-            mydict[key] += "+00:00"
-        except ValueError:
-            log.warning(
-                "{:.1f}s\t{}\tmydict[{}]={} is not %Y-%m-%dT%H:%M:%S; not changing it, even if args.assume_utc".format(
-                    time() - start, step, key, mydict[key],
-                )
-            )
-
     # AR dtver: pre-shutdown main, replace 1.0.0 by 1.1.1
-    # AR because of missing CALIB targets that were bumped by MWS secondary targets
+    # AR because main-ledgers are built from 1.1.1
     if (mydict["survey"] == "main") & (mydict["dtver"] == "1.0.0"):
         log.info(
-            "{:.1f}s\tstep\tmodifying mydict[dtver]=1.0.0 to mydict[dtver]=1.1.1".format(
+            "{:.1f}s\t{}\tmodifying mydict[dtver]=1.0.0 to mydict[dtver]=1.1.1".format(
                 time() - start, step
             )
         )
         mydict["dtver"] = "1.1.1"
 
+    # AR fiberassign code version
+    # AR SV3 handling, as SV3 was run with fiberassign/master for RUNDATE<2021-04-30
+    # AR on 2021-04-13: https://github.com/desihub/fiberassign/pull/321
+    # AR                this PR changes the assignment
+    # AR                so we use 2.2.0 before, 2.3.0 after
+    fixed_faver = None
+    if (mydict["fa_ver"] == "2.2.0.dev2811") & (mydict["rundate"] < "2021-04-14"):
+        fixed_faver = "2.2.0"
+    elif (mydict["fa_ver"] == "2.2.0.dev2811") & (mydict["rundate"] >= "2021-04-14"):
+        fixed_faver = "2.3.0"
+    elif mydict["fa_ver"] == "2.3.0.dev2838":
+        fixed_faver = "2.3.0"
+    if fixed_faver is not None:
+        log.info(
+            "{:.1f}s\t{}\tmodifying mydict[fa_ver]={} to mydict[fa_ver]={}".format(
+                time() - start, step, mydict["fa_ver"], fixed_faver,
+            )
+        )
+        mydict["fa_ver"] = fixed_faver
+
+    # AR SKYBRICKS_DIR: for fiberassign/2.4.0, SKYBRICKS_DIR was not recorded yet in the header
+    if mydict["fa_ver"] == "2.4.0":
+        fixed_skybrver = "v2"
+        log.info(
+            "{:.1f}s\t{}\tmodifying mydict[skybrver]={} to mydict[skybrver]={}".format(
+                time() - start, step, mydict["skybrver"], fixed_skybrver,
+            )
+        )
+        mydict["skybrver"] = fixed_skybrver
+
+    # AR MJD window for ToO
+    # AR - fa_ver <= 5.1.1: mjd_min = mjd_now - 1, mjd_max = mjd_now + 30
+    if mydict["fa_ver"] <= "5.1.1":
+        try:
+            mjd_now = Time(
+                datetime.strptime(mydict["pmtime_utc_str"], "%Y-%m-%dT%H:%M:%S%z")
+            ).mjd
+        except ValueError:
+            mjd_now = Time(
+                datetime.strptime(mydict["pmtime_utc_str"], "%Y-%m-%dT%H:%M:%S")
+            ).mjd
+        mjd_min, mjd_max = mjd_now - 1, mjd_now + 30
+        log.info(
+            "{:.1f}s\t{}\tsetting mjd_min={} and mjd_max={} as fa_ver = 5.1.1".format(
+                time() - start, step, mjd_min, mjd_max
+            )
+        )
+        mydict["mjd_min"], mydict["mjd_max"] = mjd_min, mjd_max
+
+    # AR ToO were first run for SV3 on 20210419 (Pacific)
+    if mydict["pmtime_utc_str"] < "2021-04-19T07:00:00+00":
+        log.info(
+            "{:.1f}s\t{}\tsetting dotoo=False, because mydict[pmtime_utc_str]={} < 2021-04-19T07:00:00+00".format(
+                time() - start, step, mydict["pmtime_utc_str"],
+            )
+        )
+        mydict["dotoo"] = False
+
     return mydict
 
 
 def fba_rerun_intermediate(
-    fn, outdir, tmpoutdir=tempfile.mkdtemp(), log=Logger.get(), start=time(),
+    fn, outdir, bugfix=True, tmpoutdir=tempfile.mkdtemp(), log=Logger.get(), start=time(),
 ):
     """
     Re-create the intermediate files (TILEID-{tiles,sky,targ,scnd,too}.fits) necessary
@@ -225,17 +338,15 @@ def fba_rerun_intermediate(
     Args:
         fn: full path to the fiberassign-TILEID.fits file to be rerun (string)
         outdir: output folder (files will be written in outdir/ABC/) (string)
+        bugfix (optional, defaults to True): bugfix the arguments with fba_rerun_bugfix_settings()? (boolean)
         tmpoutdir (optional, defaults to a temporary directory): temporary directory where
                 write_targets will write (creating some sub-directories)
         log (optional, defaults to Logger.get()): Logger object
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
 
     Notes:
-        No fiberassign here; but FA_VER is used to define the MJD window for the ToO,
-            which has been redefined during 2021 shutdown.
         The SUBPRIORITY overwritting for SV3 is handled with the desitarget code version
             used to rerun_intermediate(); it should be <1.2.2; we suggest to use 1.0.0
-        ToO SV3: tiles run before 20210419 (Pacific) did not have ToO design.
     """
     #
     start = time()
@@ -245,8 +356,8 @@ def fba_rerun_intermediate(
     # AR config infos
     print_config_infos(log=log, step="settings", start=start)
     # AR get settings
-    mydict = fba_rerun_intermediate_get_settings(
-        fn, log=log, step="settings", start=start
+    mydict = fba_rerun_get_settings(
+        fn, bugfix=bugfix, log=log, step="settings", start=start
     )
     print(mydict)
     # AR setting outdir/ABC + safe check
@@ -254,28 +365,16 @@ def fba_rerun_intermediate(
         os.path.normpath(outdir), "{:06d}".format(mydict["tileid"])[:3]
     )
     if outdir == os.path.dirname(fn):
-        log.error("not safe to write in the original folder {}; exiting".format(outdir))
+        log.error(
+            "{:.1f}s\t{settings}\tnot safe to write in the original folder {}; exiting".format(
+                time() - start, outdir
+            )
+        )
         sys.exit(1)
-    # AR MJD window for ToO
-    # AR - if FA_VER <= 5.1.1: mjd_min = mjd_now - 1, mjd_max = mjd_now + 30
-    # AR - if FA_VER > 5.1.1: mjd_min = mjd_max = mjd_now
-    # AR in any case, mjd_now is defined as pmtime_utc_str
-    mjd_now = Time(
-        datetime.strptime(mydict["pmtime_utc_str"], "%Y-%m-%dT%H:%M:%S%z")
-    ).mjd
-    if mydict["fa_ver"] <= "5.1.1":
-        mjd_min, mjd_max = mjd_now - 1, mjd_now + 30
-    else:
-        mjd_min, mjd_max = mjd_now, mjd_now
-    # AR ToO were first run for SV3 on 20210419 (Pacific)
-    if mydict["pmtime_utc_str"] < "2021-04-19T07:00:00+00":
-        dotoo = False
-    else:
-        dotoo = True
     # AR output files
     myouts = {}
     keys = ["tiles", "sky", "gfa", "targ", "scnd"]
-    if dotoo:
+    if mydict["dotoo"]:
         keys.append("too")
     for key in keys:
         myouts[key] = os.path.join(
@@ -348,12 +447,12 @@ def fba_rerun_intermediate(
         start=start,
     )
     # AR ToO targets
-    if dotoo:
+    if mydict["dotoo"]:
         _ = create_too(
             myouts["tiles"],
             mydirs["too"],
-            mjd_min,
-            mjd_max,
+            mydict["mjd_min"],
+            mydict["mjd_max"],
             mydict["survey"],
             mydict["gaiadr"].replace("gaia", ""),
             mydict["pmcorr"],
@@ -368,158 +467,6 @@ def fba_rerun_intermediate(
     log.info("")
     log.info("")
     log.info("{:.1f}s\tend\tTIMESTAMP={}".format(time() - start, Time.now().isot))
-
-
-def fba_rerun_get_settings(
-    fn, log=Logger.get(), step="rerun", start=time(),
-):
-    """
-    Get the required fiberassign settings from a fiberassign-TILEID.fits.gz file to execute
-        fba_run, to rerun the fiber assignment.
-
-    Args:
-        fn: full path to the fiberassign-TILEID.fits file to be rerun (string)
-        log (optional, defaults to Logger.get()): Logger object
-        step (optional, defaults to ""): corresponding step, for fba_launch log recording
-            (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time())
-
-    Returns:
-        tileid: tileid (int)
-        mydict: dictionary with "rundate", "tileid", "tiledec", "tilera", "fieldrot", "ha" (dictionary)
-        survey: survey (string)
-        faver: fiberassign code version to use (string)
-        skybrver: SKYBRICKS_DIR version ("-" if not set) (string)
-
-    Notes:
-        Special cases handling (see code for details):
-        - fiberassign/2.2.0.dev2811 and RUNDATE <  2021-04-14 -> fiberassign/2.2.0
-        - fiberassign/2.2.0.dev2811 and RUNDATE >= 2021-04-14 -> fiberassign/2.3.0
-        - fiberassign2.3.0.dev2838 -> fiberassign/2.3.0
-        - fiberassign/2.4.0: SKYBRICKS_DIR was not recorded yet in the header -> we set it to v2
-        - RUNDATE fix for 19 SV3 tiles designed on 2021-04-10
-    """
-    #
-    hdr = fits.getheader(fn, 0)
-    # AR SV3/Main BRIGHT/DARK?
-    faflavors = ["sv3bright", "sv3dark", "mainbright", "maindark"]
-    if hdr["FAFLAVOR"] not in faflavors:
-        log.error("FAFLAVOR={} not in {}; exiting".format(hdr["FAFLAVOR"], faflavors))
-        sys.exit(1)
-
-    # AR survey
-    survey = hdr["SURVEY"]
-
-    # AR fiberassign code version
-    # AR SV3 handling, as SV3 was run with fiberassign/master for RUNDATE<2021-04-30
-    # AR on 2021-04-13: https://github.com/desihub/fiberassign/pull/321
-    # AR                this PR changes the assignment
-    # AR                so we use 2.2.0 before, 2.3.0 after
-    if (hdr["FA_VER"] == "2.2.0.dev2811") & (hdr["RUNDATE"] < "2021-04-14"):
-        faver = "2.2.0"
-    elif (hdr["FA_VER"] == "2.2.0.dev2811") & (hdr["RUNDATE"] >= "2021-04-14"):
-        faver = "2.3.0"
-    elif hdr["FA_VER"] == "2.3.0.dev2838":
-        faver = "2.3.0"
-    else:
-        faver = hdr["FA_VER"]
-
-    # AR SKYBRICKS_DIR
-    skybrver = "-"  # default value if not set
-    keys = [cards[0] for cards in hdr.cards]
-    vals = [
-        hdr[key.replace("NAM", "VER")].split("/")[-1]
-        for key in keys
-        if hdr[key] == "SKYBRICKS_DIR"
-    ]
-    if len(vals) > 0:
-        skybrver = vals[0]
-    # AR for fiberassign/2.4.0, SKYBRICKS_DIR was not recorded yet in the header
-    if faver == "2.4.0":
-        skybrver = "v2"
-
-    mydict = {}
-
-    # AR settings from the header that we store
-    keys = [
-        "rundate",
-        "fieldrot",
-    ]
-    if faver >= "2.4.0":
-        keys += ["sky_per_slitblock"]
-    if faver >= "3.0.0":
-        keys += ["ha"]
-    if (faver >= "3.0.0") & (faver < "5.0.0"):
-        keys += ["margin-pos", "margin-petal", "margin-gfa"]
-    if faver >= "5.0.0":
-        keys += ["margin_pos", "margin_petal", "margin_gfa"]
-
-    # AR storing the FAARGS in a dictionary
-    faargs = np.array(hdr["FAARGS"].split())
-    for key in keys:
-        #
-        if key[:7] == "margin-":
-            ii = np.where(faargs == "--{}".format(key.replace("margin-", "margin_")))[0]
-        else:
-            ii = np.where(faargs == "--{}".format(key))[0]
-        if len(ii) > 0:
-            mydict[key] = faargs[ii[0] + 1]
-        # AR fieldrot: grab it from the header
-        elif key == "fieldrot":
-            mydict["fieldrot"] = hdr["FIELDROT"]
-        # AR HA: if not provided, grab it from the header (though it should be 0)
-        elif key == "ha":
-            mydict["ha"] = hdr["FA_HA"]
-        # AR sky_per_slitblock, margin_*: if not provided, set to 0
-        elif key in ["sky_per_slitblock", "margin_pos", "margin_petal", "margin_gfa"]:
-            mydict[key] = 0
-        # AR should not be other cases
-        else:
-            log.error(
-                "key={} not present in FAARGS, and not in expected missing keys; exiting".format(
-                    key
-                )
-            )
-            sys.exit(1)
-
-    # AR case of 19 SV3 tiles designed on 2021-04-10:
-    # AR    those have rundate = 2021-04-10T21:28:37
-    # AR    there has been a fp update on 2021-04-10T20:00:39+00:00
-    # AR    but apparently the desi-state*ecsv file at NERSC was not updated then
-    # AR    so the original fiberassign run considered the previous fp state
-    # AR    =>
-    # AR    we manually modify the rundate, pmtime, mtltime
-    if hdr["TILEID"] in [
-        4,
-        30,
-        58,
-        84,
-        112,
-        139,
-        166,
-        193,
-        220,
-        248,
-        275,
-        302,
-        329,
-        356,
-        364,
-        383,
-        391,
-        410,
-        418,
-    ]:
-        fixed_time = "2021-04-10T20:00:00"
-        for key in ["rundate"]:
-            log.info(
-                "{:.1f}s\t{}\tmodifying mydict[{}] from {} to {} (TILEID={} designed when desi-state*ecsv file not updated at NERSC".format(
-                    time() - start, step, key, mydict[key], fixed_time, hdr["TILEID"],
-                )
-            )
-            mydict[key] = fixed_time
-
-    return hdr["TILEID"], mydict, survey, faver, skybrver
 
 
 def get_fba_rerun_scriptname(infiberassignfn, outdir, rerun="fa"):
@@ -550,6 +497,7 @@ def fba_rerun_fbascript(
     infiberassignfn,
     outdir,
     run_intermediate,
+    bugfix=True,
     outfba_type="none",
     outfiberassign_type="zip",
     faver_noswap=False,
@@ -569,6 +517,7 @@ def fba_rerun_fbascript(
         outdir: output folder (files will be written in outdir/ABC/) (string)
         run_intermediate: generate the intermediate products? (outdir/ABC/TILEID-{tiles,sky,targ,scnd,too}.fits) (boolean)
             if run_intermediate=False, the intermediate products need to be present
+        bugfix (optional, defaults to True): bugfix the arguments with fba_rerun_bugfix_settings()? (boolean)
         outfba (optional, defaults to "none"): "none"->no fba-TILEID.fits, "unzip"->fba-TILEID.fits, "zip"->fba-TILEID.fits.gz (string)
         outfiberassign_type (optional, defaults to "zip"): "none"->no fiberassign-TILEID.fits, "unzip"->fiberassign-TILEID.fits, "zip"->fiberassign-TILEID.fits.gz (string)
         faver_noswap (optional, defaults to False): if True, does not "module swap fiberassign/xxx" to the original fiberassign code version  (boolean)
@@ -622,12 +571,12 @@ def fba_rerun_fbascript(
             sys.exit(1)
 
     # AR get settings, fiberassign version, and SKYBRICKS_DIR version
-    tileid, mydict, survey, faver, skybrver = fba_rerun_get_settings(
-        infiberassignfn, log=log, step="settings", start=start
+    mydict = fba_rerun_get_settings(
+        infiberassignfn, bugfix=bugfix, log=log, step="settings", start=start
     )
 
     # AR create sub-folders?
-    subdir = "{:06d}".format(tileid)[:3]
+    subdir = "{:06d}".format(mydict["tileid"])[:3]
     mydirs = [os.path.join(outdir, subdir)]
     if intermediate_dir_final != "-":
         mydirs.append(os.path.join(intermediate_dir_final, subdir))
@@ -639,9 +588,9 @@ def fba_rerun_fbascript(
     # AR output files
     outsh = get_fba_rerun_scriptname(infiberassignfn, outdir, rerun="fa")
     outlog = outsh.replace(".sh", ".log")
-    outfba = os.path.join(outdir, subdir, "fba-{:06d}.fits".format(tileid))
+    outfba = os.path.join(outdir, subdir, "fba-{:06d}.fits".format(mydict["tileid"]))
     outfiberassign = os.path.join(
-        outdir, subdir, "fiberassign-{:06d}.fits".format(tileid)
+        outdir, subdir, "fiberassign-{:06d}.fits".format(mydict["tileid"])
     )
     fns = [
         outsh,
@@ -672,18 +621,18 @@ def fba_rerun_fbascript(
     # AR files
     mydict["dir"] = os.path.join(outdir, subdir)
     mydict["footprint"] = os.path.join(
-        outdir, subdir, "{:06d}-tiles.fits".format(tileid)
+        outdir, subdir, "{:06d}-tiles.fits".format(mydict["tileid"])
     )
-    mydict["sky"] = os.path.join(outdir, subdir, "{:06d}-sky.fits".format(tileid))
-    mydict["targets"] = os.path.join(outdir, subdir, "{:06d}-targ.fits".format(tileid))
+    mydict["sky"] = os.path.join(outdir, subdir, "{:06d}-sky.fits".format(mydict["tileid"]))
+    mydict["targets"] = os.path.join(outdir, subdir, "{:06d}-targ.fits".format(mydict["tileid"]))
     if not run_intermediate:
         for fn in [mydict["footprint"], mydict["sky"], mydict["targets"]]:
             if not os.path.isfile(fn):
                 log.error("{} not present; exiting".format(fn))
                 sys.exit(1)
     # AR scnd and too
-    scndfn = os.path.join(outdir, subdir, "{:06d}-scnd.fits".format(tileid))
-    toofn = os.path.join(outdir, subdir, "{:06d}-too.fits".format(tileid))
+    scndfn = os.path.join(outdir, subdir, "{:06d}-scnd.fits".format(mydict["tileid"]))
+    toofn = os.path.join(outdir, subdir, "{:06d}-too.fits".format(mydict["tileid"]))
 
     # AR intermediate files to potentially move if intermediate_dir_final
     if intermediate_dir_final != "-":
@@ -705,7 +654,7 @@ def fba_rerun_fbascript(
         f = open(outintsh, "w")
         f.write("#!/bin/bash\n")
         f.write("\n")
-        if survey == "sv3":
+        if mydict["survey"] == "sv3":
             f.write("module swap desitarget/1.0.0\n")
             f.write("echo 'module swap desitarget/1.0.0' >> {}\n".format(outintlog))
         f.write("module list 2> {}\n".format(outintlog))
@@ -727,16 +676,16 @@ def fba_rerun_fbascript(
     f.write("# setting + printing the environment\n")
     f.write("# ===============\n")
     if not faver_noswap:
-        f.write("module swap fiberassign/{}\n".format(faver))
-        f.write("echo 'module swap fiberassign/{}' >> {}\n".format(faver, outlog))
+        f.write("module swap fiberassign/{}\n".format(mydict["fa_ver"]))
+        f.write("echo 'module swap fiberassign/{}' >> {}\n".format(mydict["fa_ver"], outlog))
     else:
         f.write("echo 'faver_noswap=True, so we do not swap to the original fiberassign code version' >> {}\n".format(outlog))
     f.write("module list 2>> {}\n".format(outlog))
-    if skybrver == "-":
+    if mydict["skybrver"] == "-":
         f.write("unset SKYBRICKS_DIR\n")
     else:
         f.write(
-            "export SKYBRICKS_DIR=$DESI_ROOT/target/skybricks/{}\n".format(skybrver)
+            "export SKYBRICKS_DIR=$DESI_ROOT/target/skybricks/{}\n".format(mydict["skybrver"])
         )
 
     # AR control informations
@@ -759,12 +708,18 @@ def fba_rerun_fbascript(
     # AR purposely keep --targets at the end,
     # AR so that we can complete with scnd and too, if they exist
     # AR because we do not if they will exist now
-    fbarun_cmd = "fba_run --write_all_targets"
-    for key in list(mydict.keys()):
-        if key != "targets":
-            fbarun_cmd += " --{} {}".format(key, mydict[key])
-    key = "targets"
-    fbarun_cmd += " --{} {}".format(key, mydict[key])
+    #
+    # AR fba_run arguments: --targets needs to be the last one!
+    fbarun_keys = ["rundate", "fieldrot", "standards_per_petal", "sky_per_petal", "dir", "footprint", "sky"]
+    if mydict["fa_ver"] >= "2.4.0":
+        fbarun_keys += ["sky_per_slitblock"]
+    if mydict["fa_ver"] >= "3.0.0":
+        fbarun_keys += ["ha"]
+        fbarun_keys += ["margin-pos", "margin-petal", "margin-gfa"]
+    fbarun_keys += ["targets"]
+    fbarun_cmd = "fba_run --write_all_targets" # --by_tile"
+    for key in fbarun_keys:
+        fbarun_cmd += " --{} {}".format(key, mydict[key])
     f.write("# ===============\n")
     f.write("# fba_run call\n")
     f.write("# ===============\n")
@@ -801,7 +756,7 @@ def fba_rerun_fbascript(
         f.write("done\n")
         f.write('CMD=`echo $CMD "], "`\n')
         merge_cmd = '[\\"{}\\"], '.format(mydict["sky"])
-        merge_cmd += "[{}], ".format(tileid)
+        merge_cmd += "[{}], ".format(mydict["tileid"])
         merge_cmd += 'result_dir=\\"{}\\", '.format(mydict["dir"])
         merge_cmd += "columns=None, "
         merge_cmd += "copy_fba=False"
