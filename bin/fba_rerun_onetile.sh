@@ -49,11 +49,6 @@ echo OVERWRITE    = $OVERWRITE
 echo FAVER_NOSWAP = $FAVER_NOSWAP
 
 
-# HACK for development
-export PYTHONPATH=/global/homes/r/raichoor/software_dev/fiberassign_fba_rerun4/py:$PYTHONPATH
-# HACK
-
-
 # AR generate the *sh file(s)
 echo "Generate *sh file(s)"
 python -c 'from fiberassign.fba_rerun_io import fba_rerun_fbascript; fba_rerun_fbascript("'$ORIGFN'", "'$RERUNDIR'", '$INTERMEDIATE', outfba_type="'$FBA'", outfiberassign_type="'$FASSIGN'", run_check='$RUNCHECK', intermediate_dir_final="'$INTERMEDIATE_FINAL'", overwrite='$OVERWRITE', faver_noswap='$FAVER_NOSWAP')'
@@ -70,9 +65,6 @@ fi
 
 # AR rerun fa files
 FN=`python -c 'from fiberassign.fba_rerun_io import get_fba_rerun_scriptname; a = get_fba_rerun_scriptname("'$ORIGFN'", "'$RERUNDIR'", "fa"); print(a)'`
-# HACK for development
-export PYTHONPATH=`echo $PYTHONPATH | tr ":" "\n" | grep -v "/global/homes/r/raichoor/software_dev/fiberassign_fba_rerun4/py" | tr "\n" ":"`
-# HACK
 echo "Execute $FN"
 $FN
 

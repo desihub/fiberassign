@@ -797,11 +797,9 @@ def fba_rerun_fbascript(
         f.write("# ===============\n")
         f.write("# running check\n")
         f.write("# ===============\n")
-        # HACK for development
-        f.write(
-            "export PYTHONPATH=/global/homes/r/raichoor/software_dev/fiberassign_fba_rerun4/py:$PYTHONPATH\n"
-        )
-        # HACK
+        # AR swapping back to fiberassign/master
+        f.write("module swap fiberassign/master")
+        f.write("echo 'module swap fiberassign/master to perform fba_rerun_check()' >> {}\n".format(outlog))
         f.write(
             'python -c \'from fiberassign.fba_rerun_io import fba_rerun_check; fba_rerun_check("{}", "{}", "{}")\' >> {} 2>&1\n'.format(
                 infiberassignfn, tmpfn, outdiff, outlog,
