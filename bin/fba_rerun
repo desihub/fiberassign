@@ -12,7 +12,7 @@ import desitarget
 import desimeter
 import fiberassign
 
-from argparse import ArgumentParser
+from argparse import ArgumentParser, RawTextHelpFormatter
 
 # AR allowed steps in fba_launch
 steps_all = ["tiles", "sky", "gfa", "targ", "scnd", "too", "fa", "zip", "move", "qa"]
@@ -162,7 +162,12 @@ def main():
 if __name__ == "__main__":
 
     # AR reading arguments
-    parser = ArgumentParser()
+    parser = ArgumentParser(
+        description="Code to rerun a tile design with a call to fba_launch." +
+            "\n- SV3: will fail, as fiberassign/master is not backward-compatible for SV3; one should use fiberassign/fba_rerun_io.py functions;" +
+            "\n- Main: for 2021 pre-shutdown tiles designed with dtver=1.0.0, use --dtver 1.1.1 (see [desi-survey 2989] from 2021, Sept. 8th).",
+        formatter_class=RawTextHelpFormatter
+    )
     parser.add_argument(
         "--infiberassign",
         help="full path to fiberassign-TILEID.fits.gz file we want to re-run",
