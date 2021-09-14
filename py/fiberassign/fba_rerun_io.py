@@ -47,12 +47,12 @@ def fba_rerun_get_settings(
         including the intermediate files (TILEID-{tiles,sky,targ,scnd,too}.fits).
 
     Args:
-        fn: full path to the fiberassign-TILEID.fits file to be rerun (string0
-        log (optional, defaults to Logger.get()): Logger object
+        fn: full path to the fiberassign-TILEID.fits.gz file to be rerun (string)
         bugfix (optional, defaults to True): bugfix the arguments with fba_rerun_bugfix_settings()? (boolean)
+        log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+        start (optional, defaults to time()): start time for log (in seconds; output of time.time())
 
     Returns:
         mydict: dictionary with the required various settings (dictionary);
@@ -162,7 +162,7 @@ def fba_rerun_bugfix_settings(
     mydict, log=Logger.get(), step="settings", start=time(),
 ):
     """
-    Fixed the arguments read in fba_rerun_in_settings() to allow reproducibility.
+    Fix the arguments read in fba_rerun_in_settings() to allow reproducibility.
 
     Args:
         mydict: dictionary with the required various settings (dictionary);
@@ -174,10 +174,9 @@ def fba_rerun_bugfix_settings(
                 if fa_ver >= 2.4.0: also sky_per_slitblock;
                 if fa_ver >= 3.0.0: also ha, margin-pos, margin-petal, margin-gfa.
         log (optional, defaults to Logger.get()): Logger object
-        bugfix (optional, defaults to True): bugfix the arguments with fba_rerun_bugfix_settings()? (boolean)
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+        start (optional, defaults to time()): start time for log (in seconds; output of time.time())
 
     Returns:
         mydict: dictionary with the bug-fixed values (dictionary)
@@ -342,7 +341,7 @@ def fba_rerun_intermediate(
         tmpoutdir (optional, defaults to a temporary directory): temporary directory where
                 write_targets will write (creating some sub-directories)
         log (optional, defaults to Logger.get()): Logger object
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+        start (optional, defaults to time()): start time for log (in seconds; output of time.time())
 
     Notes:
         The SUBPRIORITY overwritting for SV3 is handled with the desitarget code version
@@ -359,14 +358,14 @@ def fba_rerun_intermediate(
     mydict = fba_rerun_get_settings(
         fn, bugfix=bugfix, log=log, step="settings", start=start
     )
-    print(mydict)
+    log.info("{:.1f}s\tsettings\tmydict = {}".format(mydict))
     # AR setting outdir/ABC + safe check
     outdir = os.path.join(
         os.path.normpath(outdir), "{:06d}".format(mydict["tileid"])[:3]
     )
     if outdir == os.path.dirname(fn):
         log.error(
-            "{:.1f}s\t{settings}\tnot safe to write in the original folder {}; exiting".format(
+            "{:.1f}s\tsettings\tnot safe to write in the original folder {}; exiting".format(
                 time() - start, outdir
             )
         )
@@ -471,10 +470,10 @@ def fba_rerun_intermediate(
 
 def get_fba_rerun_scriptname(infiberassignfn, outdir, rerun="fa"):
     """
-    Gets the fba_rerun_script() *sh scripts filenames.
+    Get the fba_rerun_script() *sh scripts filenames.
 
     Args:
-        infiberassignfn: full path to the fiberassign-TILEID.fits file to be rerun (string)
+        infiberassignfn: full path to the fiberassign-TILEID.fits.gz file to be rerun (string)
         outdir: output folder (files will be written in outdir/ABC/) (string)
         rerun (optional, defaults to "fa"): type of rerun, "fa" or "intermediate" (string)
 
@@ -508,12 +507,12 @@ def fba_rerun_fbascript(
     start=time(),
 ):
     """
-    Writes a bash script (outdir/ABC/rerun-fa-TILEID.sh) to rerun fiber assignment of a fiberassign-TILEID.fits.gz file.
-    If run_intermediate=True, also writes a bash script (outdir/ABC/rerun-intermediate-TILEID.sh) to rerun the intermediate
+    Write a bash script (outdir/ABC/rerun-fa-TILEID.sh) to rerun fiber assignment of a fiberassign-TILEID.fits.gz file.
+    If run_intermediate=True, also write a bash script (outdir/ABC/rerun-intermediate-TILEID.sh) to rerun the intermediate
         products (TILEID-{tiles,sky,targ,scnd,too}.fits).
 
     Args:
-        infiberassignfn: full path to the fiberassign-TILEID.fits file to be rerun (string)
+        infiberassignfn: full path to the fiberassign-TILEID.fits.gz file to be rerun (string)
         outdir: output folder (files will be written in outdir/ABC/) (string)
         run_intermediate: generate the intermediate products? (outdir/ABC/TILEID-{tiles,sky,targ,scnd,too}.fits) (boolean)
             if run_intermediate=False, the intermediate products need to be present
@@ -525,7 +524,7 @@ def fba_rerun_fbascript(
         intermediate_dir_final (optional, defaults to "-"): folder to move all intermediate products (*sh, *fits, *log) (string)
         overwrite (optional, defaults to False): overwrite any existing file? (boolean)
         log (optional, defaults to Logger.get()): Logger object
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time())
+        start (optional, defaults to time()): start time for log (in seconds; output of time.time())
 
     Notes:
         The bash script requires that the desi (master) environment is already loaded,
@@ -707,7 +706,7 @@ def fba_rerun_fbascript(
     # AR constructing the fba_run call
     # AR purposely keep --targets at the end,
     # AR so that we can complete with scnd and too, if they exist
-    # AR because we do not if they will exist now
+    # AR because we do not know if they will exist now
     #
     # AR fba_run arguments: --targets needs to be the last one!
     fbarun_keys = ["rundate", "fieldrot", "standards_per_petal", "sky_per_petal", "dir", "footprint", "sky"]
@@ -717,7 +716,7 @@ def fba_rerun_fbascript(
         fbarun_keys += ["ha"]
         fbarun_keys += ["margin-pos", "margin-petal", "margin-gfa"]
     fbarun_keys += ["targets"]
-    fbarun_cmd = "fba_run --write_all_targets" # --by_tile"
+    fbarun_cmd = "fba_run --write_all_targets"
     for key in fbarun_keys:
         fbarun_cmd += " --{} {}".format(key, mydict[key])
     f.write("# ===============\n")
@@ -834,14 +833,18 @@ def fba_rerun_check(
     origfn, rerunfn, difffn, log=Logger.get(), start=time(),
 ):
     """
-    Compares the {TARGETID-FIBER} values for the FIBERASSIGN and POTENTIAL_ASSIGNMENTS extensions.
+    Compare the {TARGETID}-{FIBER} values for the FIBERASSIGN and POTENTIAL_ASSIGNMENTS extensions,
+        and report differences.
 
     Args:
         origfn: path to the original fiberassign file (string)
         rerunfn: path to the rerun fiberassign file (string)
         difffn: path for the output diagnosis file
         log (optional, defaults to Logger.get()): Logger object
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time())
+        start (optional, defaults to time()): start time for log (in seconds; output of time.time())
+
+    Notes:
+        Will generate difffn in any case; if no differences, then difffn will just have the header line.
     """
     # AR internal function to add information from the TARGETS extension to POTENTIAL_ASSIGNMENTS rows
     # AR assume there are no TARGETID duplicate
@@ -910,7 +913,7 @@ def fba_rerun_check(
             rerun_d = populate_potass(rerun_h, keys)
             rerun_d["FIBER"] = rerun_h["POTENTIAL_ASSIGNMENTS"].data["FIBER"]
             rerun_d["PRIORITY_INIT"] = -99 + np.zeros(len(rerun_d), dtype=int)
-        # AR {TARGETID-FIBER} ids
+        # AR {TARGETID}-{FIBER} ids
         orig_ids = np.array(
             [
                 "{}-{}".format(tid, fib)
@@ -923,7 +926,7 @@ def fba_rerun_check(
                 for tid, fib in zip(rerun_d["TARGETID"], rerun_d["FIBER"])
             ]
         )
-        # AR miss
+        # AR missed in rerun
         ii = np.where(~np.in1d(orig_ids, rerun_ids))[0]
         for i in ii:
             f.write(
@@ -933,7 +936,7 @@ def fba_rerun_check(
                     "\t".join(["{}".format(orig_d[key][i]) for key in keys]),
                 )
             )
-        # AR added
+        # AR added in rerun
         ii = np.where(~np.in1d(rerun_ids, orig_ids))[0]
         for i in ii:
             f.write(
