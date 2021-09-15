@@ -21,6 +21,7 @@ from datetime import datetime, timedelta, timezone
 #
 import numpy as np
 import fitsio
+import healpy as hp
 
 # astropy
 from astropy.io import fits
@@ -1296,11 +1297,6 @@ def create_mtl(
     Notes:
         if pmcorr="y", then pmtime_utc_str needs to be set; will trigger an error otherwise.
         for sv3-backup, we remove BACKUP_BRIGHT targets.
-        TBD : if secondary targets, we currently disable the inflate_ledger(), as it
-                seems to not currently work.
-                hence if secondary and pmcorr="y", the code will crash, as the
-                GAIA_ASTROMETRIC_EXCESS_NOISE column will be missing; though we do not
-                expect this configuration to happen, so it should be fine for now.
 
         TBD: the PLATE_{RA,DEC,REF_EPOCH} columns currently simply are copy of RA,DEC,REF_EPOCH
         TBD:    but it prepares e.g. to add chromatic offsets.
@@ -1311,7 +1307,8 @@ def create_mtl(
         20210903 : introducing a condition on the desitarget version,
                     to be able to reproduce SV3 pre-20210526 intermediate files,
                     with desitarget version < 1.1.0
-        20210903 : condition in read_targets_in_tiles() for desitarget < 1.1.0 compatibility.
+        20210903 : condition in read_targets_in_tiles() for desitarget < 1.1.0 compatibility
+        20210914 : add equivalent of match_ledger_to_targets() for secondary (except for backup)
     """
     log.info("")
     log.info("")
@@ -1365,9 +1362,10 @@ def create_mtl(
     # AR mtl: add columns not present in ledgers
     # AR mtl: need to provide exact list (if columns=None, inflate_ledger()
     # AR mtl:    overwrites existing columns)
-    # AR mtl: TBD : we currently disable it for secondary targets
-    # AR mtl:       using an indirect way to find if secondary,
-    # AR mtl:       to avoid the need of an extra program argument
+    # AR mtl: secondary: custom routine for speed-up reading
+    # AR mtl:    if backup or desitarget.__version__ < 1.2.2, no columns addition
+    #
+    # AR mtl: case not secondary
     if "secondary" not in mtldir:
         columns = [key for key in minimal_target_columns if key not in d.dtype.names]
         # AR mtl: also add GAIA_ASTROMETRIC_EXCESS_NOISE, in case args.pmcorr == "y"
@@ -1388,6 +1386,42 @@ def create_mtl(
                 targdir, tiles=tiles, quick=True, columns=columns + ["TARGETID"]
             )
             d = match_ledger_to_targets(d, targ)
+    # AR mtl: case secondary
+    else:
+        # AR mtl: secondary for backup should never happen, but safe approach still
+        if ("backup" not in mtldir) & (desitarget.__version__ >= "1.2.2"):
+            # AR mtl: hard-coding the columns, to speed up code
+            columns = ["FLUX_G", "FLUX_R", "FLUX_Z", "GAIA_PHOT_G_MEAN_MAG", "GAIA_PHOT_BP_MEAN_MAG", "GAIA_PHOT_RP_MEAN_MAG"]
+            # AR mtl: also add GAIA_ASTROMETRIC_EXCESS_NOISE, in case args.pmcorr == "y"
+            if pmcorr == "y":
+                columns += ["GAIA_ASTROMETRIC_EXCESS_NOISE"]
+            log.info(
+                "{:.1f}s\t{}\tadding {} from {}".format(
+                    time() - start, step, ",".join(columns), targdir
+                )
+            )
+            #
+            nside, nest = pixarea2nside(7.), True
+            pixlist = tiles2pix(nside, tiles=tiles)
+            radec = fitsio.read(targdir, columns=["RA", "DEC"])
+            pixs = hp.ang2pix(nside, np.radians((90. - radec["DEC"])), np.radians(radec["RA"]), nest=nest)
+            ii = np.where(np.in1d(pixs, pixlist))[0]
+            jj = is_point_in_desi(tiles, radec["RA"][ii], radec["DEC"][ii])
+            rows = ii[jj]
+            targ = fitsio.read(targdir, columns = columns + ["TARGETID"], rows=rows)
+            d = match_ledger_to_targets(d, targ)
+        elif "backup" in mtldir:
+            log.info(
+                "{:.1f}s\t{}\tno secondary targets for BACKUP program".format(
+                    time() - start, step,
+                )
+            )
+        else:
+            log.info(
+                "{:.1f}s\t{}\tas desitarget.__version__={} < 1.2.2, we do not add columns from {}".format(
+                    time() - start, step, desitarget.__version__, targdir
+                )
+            )
 
     # AR adding PLATE_RA, PLATE_DEC, PLATE_REF_EPOCH ?
     if add_plate_cols:
