@@ -449,7 +449,7 @@ def run_assign_bytile(args):
     # Find targets within tiles, and project their RA,Dec positions
     # into focal-plane coordinates.
     gt.start("Compute targets locations in tile")
-    tile_targetids, tile_x, tile_y = targets_in_tiles(hw, tgs, tiles, tagalong)
+    tile_targetids, tile_x, tile_y, tile_xy_cs5 = targets_in_tiles(hw, tgs, tiles, tagalong)
     gt.stop("Compute targets locations in tile")
 
     # Compute the targets available to each fiber for each tile.
@@ -511,7 +511,7 @@ def run_assign_bytile(args):
                           out_prefix=args.prefix, split_dir=args.split,
                           all_targets=args.write_all_targets,
                           gfa_targets=gfa_targets, overwrite=args.overwrite,
-                          stucksky=stucksky)
+                          stucksky=stucksky, tile_xy_cs5=tile_xy_cs5)
 
     gt.stop("run_assign_bytile write output")
 
