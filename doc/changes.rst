@@ -3,16 +3,54 @@
 fiberassign change log
 ======================
 
-5.1.2 (unreleased)
+5.2.1 (unreleased)
 ------------------
+
+5.2.0 (2021-09-16)
+------------------
+
+Several changes during the 2021 summer shutdown:
+- RUNDATE/MTLTIME/NOWTIME/ToO_MJD definitions to improve reproducibility
+- functions for rerun
+- propagate flux columns for secondaries
+- bug fixes
+
+* Try to remove files before overwriting them. (PR `#386`_)
+* Also use touching-tile ledgers to set default MTLTIME (PR `388`_)
+* Set default RUNDATE to the latest TIME in the desi-state*.ecsv files (PR `390`_)
+* Add NOWTIME keyword in fiberassign-TILEID.fits.gz header (PR `392`_)
+* MTLTIME argument in create_too() (PR `394`_)
+* ToO: MJD definition and cut (PR `396`_)
+* Do not patch target tables from the gfa targets file (PR `375`_)
+* Avoid recomputing radec2xy when writing out results. (PR `378`_)
+* Fix duplicate negative TARGETID for stuck positioners (PR `397`_)
+* fba_cmx: remove GFAs when calling run_merge() (PR `400`_)
+* fba_rerun4 (PR `398`_)
+* update run_assign_bytile() with xycs5 (PR `402`_)
+* create_mtl(): add flux columns for secondaries (PR `404`_)
+
+.. _`#386`: https://github.com/desihub/fiberassign/pull/386
+.. _`#388`: https://github.com/desihub/fiberassign/pull/388
+.. _`#390`: https://github.com/desihub/fiberassign/pull/390
+.. _`#392`: https://github.com/desihub/fiberassign/pull/392
+.. _`#394`: https://github.com/desihub/fiberassign/pull/394
+.. _`#396`: https://github.com/desihub/fiberassign/pull/396
+.. _`#375`: https://github.com/desihub/fiberassign/pull/375
+.. _`#378`: https://github.com/desihub/fiberassign/pull/378
+.. _`#397`: https://github.com/desihub/fiberassign/pull/397
+.. _`#400`: https://github.com/desihub/fiberassign/pull/400
+.. _`#398`: https://github.com/desihub/fiberassign/pull/398
+.. _`#402`: https://github.com/desihub/fiberassign/pull/402
+.. _`#404`: https://github.com/desihub/fiberassign/pull/404
+
 
 5.1.1 (2021-07-09)
 ------------------
 
 No algorithmic changes, bug fixes.
 
-* fix case if no ToO targets selected, for mv_temp2final() (PR `#382`)
-* Proper handling of --worldreadable in fba_rerun (PR `#382`)
+* fix case if no ToO targets selected, for mv_temp2final() (PR `#382`_)
+* Proper handling of --worldreadable in fba_rerun (PR `#383`_)
 
 .. _`#382`: https://github.com/desihub/fiberassign/pull/382
 .. _`#383`: https://github.com/desihub/fiberassign/pull/383
@@ -22,10 +60,10 @@ No algorithmic changes, bug fixes.
 
 Changes to ease fiberassign on-the-fly, and fba_rerun script.
 
-* A couple of speed-ups (stuck-sky, hardware-loading) (PR `#373`)
-* fba_rerun script (PR `#376`)
-* Add features to fba_launch to support fiberassign on the fly (PR `#380`)
-# Quickread2: taking advantage of desitarget/1.2.2 speed-ups (PR `#381`)
+* A couple of speed-ups (stuck-sky, hardware-loading) (PR `#373`_)
+* fba_rerun script (PR `#376`_)
+* Add features to fba_launch to support fiberassign on the fly (PR `#380`_)
+* Quickread2: taking advantage of desitarget/1.2.2 speed-ups (PR `#381`_)
 
 .. _`#373`: https://github.com/desihub/fiberassign/pull/373
 .. _`#376`: https://github.com/desihub/fiberassign/pull/376
