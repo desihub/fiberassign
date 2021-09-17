@@ -95,7 +95,7 @@ def main():
         # AR before 5.0.0, some arguments accepted with hyphen only, no underscore
         # AR    though hyphens have been automatically converted to underscores
         # AR    in the faargs...
-        if (fiberassign.__version__ < "5.0.0") & (
+        elif (fiberassign.__version__ < "5.0.0") & (
             key in ["--log_stdout", "--margin_gfa", "--margin_petal", "--margin_pos"]
         ):
             mydict[key.replace("_", "-")] = val
