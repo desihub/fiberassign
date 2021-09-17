@@ -3,8 +3,19 @@
 fiberassign change log
 ======================
 
-5.2.1 (unreleased)
+5.2.2 (unreleased)
 ------------------
+
+5.2.1 (2021-09-17)
+------------------
+
+Small fixes related to fiberassign on-the-fly at KPNO and rerun at NERSC.
+
+* Get SVN revision number in more compatible way (PR `#405`_)
+* Fbarerun bugfix (PR `#406`_)
+
+.. _`#405`: https://github.com/desihub/fiberassign/pull/405
+.. _`#406`: https://github.com/desihub/fiberassign/pull/406
 
 5.2.0 (2021-09-16)
 ------------------
@@ -16,18 +27,18 @@ Several changes during the 2021 summer shutdown:
 - bug fixes
 
 * Try to remove files before overwriting them. (PR `#386`_)
-* Also use touching-tile ledgers to set default MTLTIME (PR `388`_)
-* Set default RUNDATE to the latest TIME in the desi-state*.ecsv files (PR `390`_)
-* Add NOWTIME keyword in fiberassign-TILEID.fits.gz header (PR `392`_)
-* MTLTIME argument in create_too() (PR `394`_)
-* ToO: MJD definition and cut (PR `396`_)
-* Do not patch target tables from the gfa targets file (PR `375`_)
-* Avoid recomputing radec2xy when writing out results. (PR `378`_)
-* Fix duplicate negative TARGETID for stuck positioners (PR `397`_)
-* fba_cmx: remove GFAs when calling run_merge() (PR `400`_)
-* fba_rerun4 (PR `398`_)
-* update run_assign_bytile() with xycs5 (PR `402`_)
-* create_mtl(): add flux columns for secondaries (PR `404`_)
+* Also use touching-tile ledgers to set default MTLTIME (PR `#388`_)
+* Set default RUNDATE to the latest TIME in the desi-state*.ecsv files (PR `#390`_)
+* Add NOWTIME keyword in fiberassign-TILEID.fits.gz header (PR `#392`_)
+* MTLTIME argument in create_too() (PR `#394`_)
+* ToO: MJD definition and cut (PR `#396`_)
+* Do not patch target tables from the gfa targets file (PR `#375`_)
+* Avoid recomputing radec2xy when writing out results. (PR `#378`_)
+* Fix duplicate negative TARGETID for stuck positioners (PR `#397`_)
+* fba_cmx: remove GFAs when calling run_merge() (PR `#400`_)
+* fba_rerun4 (PR `#398`_)
+* update run_assign_bytile() with xycs5 (PR `#402`_)
+* create_mtl(): add flux columns for secondaries (PR `#404`_)
 
 .. _`#386`: https://github.com/desihub/fiberassign/pull/386
 .. _`#388`: https://github.com/desihub/fiberassign/pull/388
