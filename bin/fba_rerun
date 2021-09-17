@@ -89,13 +89,14 @@ def main():
                 mydict[key] = ""
 
         # AR doclean/steps/nosteps: we skip (if present), as we already set mydict["--steps"]
-        elif key in ["--doclean", "--steps", "--nosteps"]:
+        # AR svntiledir: we skip (if present), as we do not want to touch the SVN for reruns
+        elif key in ["--doclean", "--steps", "--nosteps",  "--svntiledir"]:
             continue
 
         # AR before 5.0.0, some arguments accepted with hyphen only, no underscore
         # AR    though hyphens have been automatically converted to underscores
         # AR    in the faargs...
-        if (fiberassign.__version__ < "5.0.0") & (
+        elif (fiberassign.__version__ < "5.0.0") & (
             key in ["--log_stdout", "--margin_gfa", "--margin_petal", "--margin_pos"]
         ):
             mydict[key.replace("_", "-")] = val
