@@ -89,7 +89,8 @@ def main():
                 mydict[key] = ""
 
         # AR doclean/steps/nosteps: we skip (if present), as we already set mydict["--steps"]
-        elif key in ["--doclean", "--steps", "--nosteps"]:
+        # AR svntiledir: we skip (if present), as we do not want to touch the SVN for reruns
+        elif key in ["--doclean", "--steps", "--nosteps",  "--svntiledir"]:
             continue
 
         # AR before 5.0.0, some arguments accepted with hyphen only, no underscore
