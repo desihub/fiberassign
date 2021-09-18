@@ -25,7 +25,7 @@ import healpy as hp
 
 # astropy
 from astropy.io import fits
-from astropy.table import Table
+from astropy.table import Table, vstack
 from astropy.time import Time
 from astropy import units
 from astropy.coordinates import SkyCoord, Distance
@@ -896,7 +896,7 @@ def get_desitarget_paths(
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+        start (optional, defaults to time()): start time for log (in seconds; output of time.time())
 
     Returns:
         Dictionary with the following keys:
@@ -913,6 +913,7 @@ def get_desitarget_paths(
         if survey not in ["sv1", "sv2", "sv3", "main"]
         or program not in ["dark", "bright", or "backup"], will return a warning only
         same warning only if the built paths/files do not exist.
+        20210917 : secondary -> add all existing folders (e.g., main2/) (backward-compatible change)
     """
     # AR expected survey, program?
     exp_surveys = ["sv1", "sv2", "sv3", "main"]
@@ -972,6 +973,36 @@ def get_desitarget_paths(
             program.lower(),
             basename,
         )
+        # AR check possible extra folders, like main2/, main3/, etc
+        # AR and store the file path in keys like SCND2, SCND3, etc
+        # AR note: the index in the key name is not related to the extra folder name,
+        # AR        it is just the order of appearance
+        extradirs = sorted(
+            [os.path.basename(fn)
+                for fn in glob(
+                    os.path.join(
+                        os.getenv("DESI_TARGET"), "catalogs", dr, dtver, "targets", "{}*".format(survey.lower())
+                    )
+                )
+                if os.path.basename(fn) != survey
+            ]
+        )
+        count = 2
+        for extradir in extradirs:
+            fn = os.path.join(
+                os.getenv("DESI_TARGET"),
+                "catalogs",
+                dr,
+                dtver,
+                "targets",
+                extradir,
+                "secondary",
+                program.lower(),
+                "{}{}".format(extradir, basename),
+            )
+            if os.path.isfile(fn):
+                mydirs["scnd{}".format(count)] = fn
+                count += 1
 
     # AR log
     for key in list(mydirs.keys()):
@@ -1259,7 +1290,7 @@ def create_mtl(
     tilesfn,
     mtldir,
     mtltime,
-    targdir,
+    targdirs,
     survey,
     gaiadr,
     pmcorr,
@@ -1278,7 +1309,7 @@ def create_mtl(
         tilesfn: path to a tiles fits file (string)
         mtldir: desisurveyops MTL folder (string)
         mtltime: MTL isodate (string formatted as yyyy-mm-ddThh:mm:ss+00:00)
-        targdir: desitarget targets folder (or file name if secondary) (string)
+        targdirs: desitarget targets folder (or file name(s) if secondary) (string or list)
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         gaiadr: Gaia dr ("dr2" or "edr3")
         pmcorr: apply proper-motion correction? ("y" or "n")
@@ -1309,6 +1340,8 @@ def create_mtl(
                     with desitarget version < 1.1.0
         20210903 : condition in read_targets_in_tiles() for desitarget < 1.1.0 compatibility
         20210914 : add equivalent of match_ledger_to_targets() for secondary (except for backup)
+        20210917 : add possibility of extra secondary folders, as main2/, main3/, etc (see get_desitarget_paths())
+                    for that, changing targdir arguments to targdirs
     """
     log.info("")
     log.info("")
@@ -1317,6 +1350,10 @@ def create_mtl(
     tiles = fits.open(tilesfn)[1].data
     # AR mtl: storing the timestamp at which we queried MTL
     log.info("{:.1f}s\t{}\tmtltime={}".format(time() - start, step, mtltime))
+
+    # AR change targdirs to list if a string is provided
+    if isinstance(targdirs, str):
+        targdirs = [targdirs]
 
     # AR mtl: read mtl
     if desitarget.__version__ < "1.1.0":
@@ -1373,17 +1410,17 @@ def create_mtl(
             columns += ["GAIA_ASTROMETRIC_EXCESS_NOISE"]
         log.info(
             "{:.1f}s\t{}\tadding {} from {}".format(
-                time() - start, step, ",".join(columns), targdir
+                time() - start, step, ",".join(columns), ",".join(targdirs)
             )
         )
         # AR backwards-compatibility to rerun SV3
         if desitarget.__version__ < "1.2.2":
             d = inflate_ledger(
-                d, targdir, columns=columns, header=False, strictcols=False, quick=True
+                d, targdirs[0], columns=columns, header=False, strictcols=False, quick=True
             )
         else:
             targ = read_targets_in_tiles(
-                targdir, tiles=tiles, quick=True, columns=columns + ["TARGETID"]
+                targdirs[0], tiles=tiles, quick=True, columns=columns + ["TARGETID"]
             )
             d = match_ledger_to_targets(d, targ)
     # AR mtl: case secondary
@@ -1397,19 +1434,23 @@ def create_mtl(
                 columns += ["GAIA_ASTROMETRIC_EXCESS_NOISE"]
             log.info(
                 "{:.1f}s\t{}\tadding {} from {}".format(
-                    time() - start, step, ",".join(columns), targdir
+                    time() - start, step, ",".join(columns), ",".join(targdirs)
                 )
             )
             #
             nside, nest = pixarea2nside(7.), True
             pixlist = tiles2pix(nside, tiles=tiles)
-            radec = fitsio.read(targdir, columns=["RA", "DEC"])
-            pixs = hp.ang2pix(nside, np.radians((90. - radec["DEC"])), np.radians(radec["RA"]), nest=nest)
-            ii = np.where(np.in1d(pixs, pixlist))[0]
-            jj = is_point_in_desi(tiles, radec["RA"][ii], radec["DEC"][ii])
-            rows = ii[jj]
-            targ = fitsio.read(targdir, columns = columns + ["TARGETID"], rows=rows)
-            d = match_ledger_to_targets(d, targ)
+            # AR mtl: loop on targdirs
+            targs = []
+            for targdir in targdirs:
+                radec = fitsio.read(targdir, columns=["RA", "DEC"])
+                pixs = hp.ang2pix(nside, np.radians((90. - radec["DEC"])), np.radians(radec["RA"]), nest=nest)
+                ii = np.where(np.in1d(pixs, pixlist))[0]
+                jj = is_point_in_desi(tiles, radec["RA"][ii], radec["DEC"][ii])
+                rows = ii[jj]
+                targ = Table(fitsio.read(targdir, columns = columns + ["TARGETID"], rows=rows))
+                targs.append(targ)
+            d = match_ledger_to_targets(d, vstack(targs))
         elif "backup" in mtldir:
             log.info(
                 "{:.1f}s\t{}\tno secondary targets for BACKUP program".format(
@@ -1419,7 +1460,7 @@ def create_mtl(
         else:
             log.info(
                 "{:.1f}s\t{}\tas desitarget.__version__={} < 1.2.2, we do not add columns from {}".format(
-                    time() - start, step, desitarget.__version__, targdir
+                    time() - start, step, desitarget.__version__, ",".join(targdir)
                 )
             )
 
@@ -1461,13 +1502,14 @@ def create_mtl(
     # AR mtl: write fits
     # AR possibility to use the desitarget versions used for SV3
     # AR where the SUBPRIORITY was overwritten
+    # AR indir2: just take the first targdirs folder... (only one folder possible)
     if desitarget.__version__ < "1.1.0":
         n, tmpfn = write_targets(
-            tmpoutdir, d, indir=mtldir, indir2=targdir, survey=survey
+            tmpoutdir, d, indir=mtldir, indir2=targdirs[0], survey=survey
         )
     else:
         n, tmpfn = write_targets(
-            tmpoutdir, d, indir=mtldir, indir2=targdir, survey=survey, subpriority=False
+            tmpoutdir, d, indir=mtldir, indir2=targdirs[0], survey=survey, subpriority=False
         )
     _ = mv_write_targets_out(tmpfn, tmpoutdir, outfn, log=log, step=step, start=start,)
 
@@ -1920,6 +1962,7 @@ def update_fiberassign_header(
             but for dedicated survey, they will (have to) be different.
         faflavor has to be {hdr_survey}{hdr_faprgrm}; will exit with an error if not;
             keeping this to be sure it is not forgotten to be done for dedicated programs.
+        20210917 : keywords scnd2, scnd3, etc could be automatically added (see get_desitarget_paths())
     """
     # AR sanity check on faflavor
     if faflavor != "{}{}".format(hdr_survey, hdr_faprgrm):
