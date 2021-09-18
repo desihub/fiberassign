@@ -3,8 +3,17 @@
 fiberassign change log
 ======================
 
-5.2.2 (unreleased)
+5.2.3 (unreleased)
 ------------------
+
+5.2.2 (2021-09-17)
+------------------
+
+Small fix to record the last change revision number in SVNDM and SVNMTL keywords.
+
+* get_svn_version(): now grab 'Last Changed Rev' (PR `#407`_)
+
+.. _`#407`: https://github.com/desihub/fiberassign/pull/407
 
 5.2.1 (2021-09-17)
 ------------------
