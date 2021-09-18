@@ -107,10 +107,10 @@ def get_svn_version(svn_dir):
         svn_ver = (
             subprocess.check_output(cmd, stderr=subprocess.DEVNULL).strip().decode()
         )
-        # search for "Revision: " line and parse out revision number.  Recent versions
+        # search for "Last Changed Rev: " line and parse out revision number.  Recent versions
         # of svn have a --show-item argument that does this in a less fragile way,
         # but the svn installed at KPNO is old and doesn't support this option.
-        searchstr = 'Revision: '
+        searchstr = 'Last Changed Rev: '
         svn_ver = [line[len(searchstr):] for line in svn_ver.split('\n')
                    if searchstr in line][0]
     except subprocess.CalledProcessError:
