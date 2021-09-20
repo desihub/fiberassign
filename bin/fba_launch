@@ -280,11 +280,15 @@ def main():
     # AR if not backup
     if ("scnd" in steps):
         if ("scnd" in list(mydirs.keys())):
+            targdirs = [mydirs["scnd"]]
+            for key in sorted(list(mydirs.keys())):
+                if (key[:4] == "scnd") & (key != "scnd") & (key != "scndmtl"):
+                    targdirs.append(mydirs[key])
             create_mtl(
                 mytmpouts["tiles"],
                 mydirs["scndmtl"],
                 args.mtltime,
-                mydirs["scnd"],
+                targdirs,
                 args.survey,
                 args.gaiadr.replace("gaia", ""),
                 args.pmcorr,
