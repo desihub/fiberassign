@@ -3,8 +3,17 @@
 fiberassign change log
 ======================
 
-5.2.3 (unreleased)
+5.3.1 (unreleased)
 ------------------
+
+5.3.0 (2021-09-20)
+------------------
+
+Allow several folders for inflating ledgers.
+
+* allow several folders for inflating ledgers (PR `# 408`_)
+
+.. _`#408`: https://github.com/desihub/fiberassign/pull/408
 
 5.2.2 (2021-09-17)
 ------------------
