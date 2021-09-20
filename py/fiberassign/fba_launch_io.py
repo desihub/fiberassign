@@ -905,8 +905,9 @@ def get_desitarget_paths(
         - gfa: GFA folder
         - targ: targets folder (static catalogs, with all columns)
         - mtl: MTL folder
-        - scnd: secondary fits catalog (static)
+        - scnd: secondary fits catalog (static, with all columns)
         - scndmtl: MTL folder for secondary targets
+        - scnd2, scnd3, etc: any other existing secondary fits catalog (static, with all columns)
         - too: ToO ecsv catalog
 
     Notes:
@@ -974,7 +975,7 @@ def get_desitarget_paths(
             basename,
         )
         # AR check possible extra folders, like main2/, main3/, etc
-        # AR and store the file path in keys like SCND2, SCND3, etc
+        # AR and store the file path in keys like scnd2, scnd3, etc
         # AR note: the index in the key name is not related to the extra folder name,
         # AR        it is just the order of appearance
         extradirs = sorted(
@@ -1141,7 +1142,7 @@ def create_sky(
         skydirs.append(suppskydir)
     ds = [read_targets_in_tiles(skydir, tiles=tiles, quick=True) for skydir in skydirs]
     for skydir, d in zip(skydirs, ds):
-        log.info("{:.1f}s\t{}\treadin {} targets from {}".format(time() - start, step, len(d), skydir))
+        log.info("{:.1f}s\t{}\treading {} targets from {}".format(time() - start, step, len(d), skydir))
     d = np.concatenate(ds)
 
     # AR adding PLATE_RA, PLATE_DEC?
@@ -1309,7 +1310,7 @@ def create_mtl(
         tilesfn: path to a tiles fits file (string)
         mtldir: desisurveyops MTL folder (string)
         mtltime: MTL isodate (string formatted as yyyy-mm-ddThh:mm:ss+00:00)
-        targdirs: desitarget targets folder (or file name(s) if secondary) (string or list)
+        targdirs: desitarget targets folder (or file name(s) if secondary) for static fits catalog(s) (string or list)
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         gaiadr: Gaia dr ("dr2" or "edr3")
         pmcorr: apply proper-motion correction? ("y" or "n")
@@ -1441,6 +1442,9 @@ def create_mtl(
             nside, nest = pixarea2nside(7.), True
             pixlist = tiles2pix(nside, tiles=tiles)
             # AR mtl: loop on targdirs
+            # AR mtl: note: this coding *should* work if ii or jj is empty for a targdir
+            # AR mtl:       (even if that case should not happen, as current secondary
+            # AR mtl:       targets cover the full DESI footprint)
             targs = []
             for targdir in targdirs:
                 radec = fitsio.read(targdir, columns=["RA", "DEC"])
