@@ -15,6 +15,9 @@ import re
 
 import numpy as np
 
+from astropy import units
+from astropy.coordinates import SkyCoord
+
 import multiprocessing as mp
 from multiprocessing.sharedctypes import RawArray
 
@@ -26,6 +29,7 @@ from types import SimpleNamespace
 import fitsio
 
 from desiutil.depend import add_dependencies, setdep
+from desiutil.dust import SFDMap
 
 import desimodel.focalplane
 
@@ -1087,6 +1091,9 @@ def merge_results_tile(out_dtype, copy_fba, params):
     Returns:
         None.
 
+    Notes:
+        20210928 : we populate EBV=0 rows in FIBERASSIGN with correct values.
+
     """
     (tile_id, infile, outfile) = params
     log = Logger.get()
@@ -1320,6 +1327,21 @@ def merge_results_tile(out_dtype, copy_fba, params):
     if np.all(outdata['REF_EPOCH'] == 0.0) and np.any(ismoving):
         log.error('REF_EPOCH not set, using 2015.5')
         outdata['REF_EPOCH'][ismoving] = 2015.5
+
+    # AR 20210928 : populate EBV=0 rows in FIBERASSIGN with correct values
+    if "EBV" in outdata.dtype.names:
+        sel = outdata["EBV"] == 0
+        if sel.sum() > 0:
+            ra_key, dec_key = merged_fiberassign_swap["RA"], merged_fiberassign_swap["DEC"]
+            ras, decs = outdata[ra_key][sel], outdata[dec_key][sel]
+            cs = SkyCoord(ra=ras * units.deg, dec=decs * units.deg, frame="icrs")
+            ebvs = SFDMap(scaling=1).ebv(cs)
+            outdata["EBV"][sel] = ebvs
+            log.info("Populating {} rows of FIBERASSIGN with EBV values (min={:.2f}, max={:.2f})".format(
+                    sel.sum(), ebvs.min(), ebvs.max()
+                )
+            )
+
 
     # tm.stop()
     # tm.report("  copy external data to output {}".format(tile_id))

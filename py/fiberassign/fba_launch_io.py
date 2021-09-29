@@ -625,6 +625,7 @@ def assert_env_vars(
         "DESIMODEL",
         "DESI_SURVEYOPS",
         "SKYBRICKS_DIR",
+        "DUST_DIR",
     ],
     log=Logger.get(),
     step="settings",
@@ -638,14 +639,16 @@ def assert_env_vars(
         "DESI_TARGET",
         "DESIMODEL",
         "DESI_SURVEYOPS",
-        "SKYBRICKS_DIR",]): list of environment variables required by fba_launch
+        "SKYBRICKS_DIR",
+        "DUST_DIR",]): list of environment variables required by fba_launch
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
 
     Notes:
-        will exit with error if some assertions are not verified
+        Will exit with error if some assertions are not verified.
+        20210928 : add DUST_DIR, as assign.merge_results_tile() requires it to populate EBV=0 values.
     """
     # AR safe: DESI environment variables
     for required_env_var in required_env_vars:
@@ -746,6 +749,7 @@ def print_config_infos(
         "DESIMODEL",
         "DESI_SURVEYOPS",
         "SKYBRICKS_DIR",
+        "DUST_DIR",
     ],
     log=Logger.get(),
     step="settings",
@@ -759,11 +763,15 @@ def print_config_infos(
         "DESI_TARGET",
         "DESIMODEL",
         "DESI_SURVEYOPS",
-        "SKYBRICKS_DIR",]): list of environment variables required by fba_launch
+        "SKYBRICKS_DIR",
+        "DUST_DIR",]): list of environment variables required by fba_launch
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+
+    Notes:
+        20210928 : add DUST_DIR, as assign.merge_results_tile() requires it to populate EBV=0 values.
     """
     # AR machine
     log.info(
