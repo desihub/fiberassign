@@ -271,6 +271,9 @@ def run_assign_init(args, plate_radec=True):
     Returns:
         (tuple):  The (Hardware, Tiles, Targets) needed to run assignment.
 
+    Notes:
+        20210930 : add args.rundate in load_target_file() for the targets,
+            for default_main_stdmask().
     """
     log = Logger.get()
     # Read hardware properties
@@ -322,7 +325,8 @@ def run_assign_init(args, plate_radec=True):
                          stdmask=args.stdmask,
                          skymask=args.skymask,
                          safemask=args.safemask,
-                         excludemask=args.excludemask)
+                         excludemask=args.excludemask,
+                         rundate=args.rundate)
     # Now load the sky target files.  These are main-survey files that we will
     # force to be treated as the survey type of the other target files.
     survey = tgs.survey()
