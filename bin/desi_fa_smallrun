@@ -1204,8 +1204,6 @@ if __name__ == "__main__":
         sys.exit()
 
     # AR safe
-    if args.outdir[-1] != "/":
-        args.outdir += "/"
     if (args.lyafrac < 0) | (args.lyafrac > 1):
         log.error(
             "args.lyafrac = {} => should be within 0 and 1; exiting".format(ags.lyafrac)
