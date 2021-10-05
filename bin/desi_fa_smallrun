@@ -64,10 +64,10 @@ def get_fn(outdir, flavor, passid=None):
 
 # AR creates one tiles file for with all passes
 # AR and one tiles file per pass
-# AR formatting assumed to be that of tiles-4112-packing-20210329-decorated.fits
+# AR formatting assumed to be that of tiles-main.ecsv
 # AR for that file, dark, bright, backup have the same
 # AR tile centers for a given pass
-# AR so we just work from the 15 dark passes
+# AR so we just work from the 7 dark passes
 # AR and change the PROGRAM value
 def create_tiles(infn, program, radec, outdir):
     d_orig = Table.read(infn)
@@ -102,7 +102,7 @@ def create_tiles(infn, program, radec, outdir):
                 time() - start, args.npass, d["PASS"].max() + 1
             )
         )
-        sys.exit()
+        sys.exit(1)
     is_pass = d["PASS"] + 1 <= args.npass
     # AR writing one tiles file with all passes
     keep = (is_indesi) & (is_radec) & (is_pass)
