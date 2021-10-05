@@ -25,6 +25,7 @@ from desitarget.internal import sharedmem
 import fiberassign
 from fiberassign.scripts.assign import parse_assign, run_assign_full
 from fiberassign.utils import Logger, assert_isoformat_utc
+from fiberassign.fba_launch_io import get_desitarget_paths
 
 # AR desimodel
 import desimodel
@@ -128,42 +129,45 @@ def create_tiles(infn, program, radec, outdir):
 # AR wrapper to read targets
 def wrapper_read_targets():
     tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
-    hpdir = os.path.join(
-        args.desi_target_env,
-        "catalogs",
-        args.dr,
-        args.dtver,
-        "targets",
-        args.survey,
-        "resolve",
-        args.program,
-    )
-    # AR we only store some columns...
-    columns = ["TARGETID", "RA", "DEC"]
-    columns += [
+    mydirs = get_desitarget_paths(args.dtver, args.survey, args.program, dr=args.dr, log=log)
+    # AR we only store some columns to save disk storage...
+    # AR and those columns are both in resolve and secondary desitarget fits files
+    # AR except BGS_TARGET and MWS_TARGET, which complement with zeros
+    keys = ["TARGETID", "RA", "DEC"]
+    keys += [
         dtkey,
         dtkey.replace("DESI", "BGS"),
         dtkey.replace("DESI", "MWS"),
         dtkey.replace("DESI", "SCND"),
     ]
-    columns += [
-        "PHOTSYS",
+    keys += [
         "SUBPRIORITY",
         "OBSCONDITIONS",
         "PRIORITY_INIT",
         "NUMOBS_INIT",
     ]
-    # AR removing photometric columns to save disk storage
-    # AR can be added back, if needed
-    """for band in ["G", "R", "Z", "W1", "W2"]:
-        columns += ["FLUX_{}".format(band), "MW_TRANSMISSION_{}".format(band)]
-        if band in ["G", "R", "Z"]:
-            columns += ["FIBERFLUX_{}".format(band)]"""
-    log.info("{:.1f}s\twrapper_read_targets\thpdir={}".format(time() - start, hpdir))
-    log.info(
-        "{:.1f}s\twrapper_read_targets\tcolumns={}".format(time() - start, columns)
-    )
-    d = read_targets_in_tiles(hpdir, tiles, columns=columns, quick=True)
+    # AR primary
+    log.info("{:.1f}s\twrapper_read_targets\thpdir={}".format(time() - start, mydirs["targ"]))
+    log.info("{:.1f}s\twrapper_read_targets\tkeys={}".format(time() - start, keys))
+    prim = Table(read_targets_in_tiles(mydirs["targ"], tiles, columns=keys, quick=True))
+    log.info("{:.1f}s\twrapper_read_targets\tread {} targets".format(time() - start, len(prim)))
+    # AR secondaries, also parsing scnd2, etc
+    dirkeys = [key for key in mydirs if key[:4] == "scnd" and key != "scndmtl"]
+    scnds = []
+    for dirkey in dirkeys:
+        tmpkeys = [key for key in keys if key in fits.open(mydirs[dirkey])[1].columns.names]
+        addkeys = [key for key in keys if key not in tmpkeys]
+        log.info("{:.1f}s\twrapper_read_targets\thpdir={}".format(time() - start, mydirs[dirkey]))
+        log.info("{:.1f}s\twrapper_read_targets\tkeys={}".format(time() - start, tmpkeys))
+        log.info("{:.1f}s\twrapper_read_targets\tadding zeros for {}".format(time() -start, addkeys))
+        d = Table(read_targets_in_tiles(mydirs[dirkey], tiles, columns=tmpkeys, quick=False))
+        log.info("{:.1f}s\twrapper_read_targets\tread {} targets".format(time() - start, len(d)))
+        for key in addkeys:
+            d[key] = np.zeros(len(d), dtype=prim[key].dtype)
+        scnds.append(d)
+    # AR stacking primary + secondaries
+    d = vstack([prim] + scnds)
+    log.info("{:.1f}s\twrapper_read_targets\tread {} prim+secondary targets".format(time() - start, len(d)))
     # AR changing NUMOBS_INIT?
     # AR e.g. if sv3, change NUMOBS_INIT=9 to NUMOBS_INIT=1 or 3
     # AR see https://desi.lbl.gov/trac/wiki/TargetSelectionWG/MTL#DarkTime1
