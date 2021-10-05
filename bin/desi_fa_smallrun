@@ -770,7 +770,7 @@ def main():
         )
 
     # AR create the tiles files
-    if dotile:
+    if "tiles" in args.steps.split(","):
         # AR then create tiles file
         _ = create_tiles(args.tilesfn, args.program, args.radec, args.outdir)
 
@@ -784,11 +784,11 @@ def main():
     )
 
     # AR create the sky file
-    if (dosky) & (args.numproc == 1):
+    if ("sky" in args.steps.split(",")) & (args.numproc == 1):
         _ = create_sky(get_fn(args.outdir, "tiles"), get_fn(args.outdir, "sky"))
 
     # AR create the targets file
-    if dotarg:
+    if "targ" in args.steps.split(","):
         log.info("{:.1f}s\tdotarg\tstart".format(time() - start))
         tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
         # AR use randoms instead of targets?
@@ -858,7 +858,7 @@ def main():
         )
 
     # AR run the fiber assignment + update the target file
-    if dofa:
+    if "fa" in args.steps.split(","):
         # AR listing passids
         tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
         passids = np.unique(tiles["PASS"])
@@ -954,7 +954,7 @@ def main():
         )
 
     # AR analyze the runs
-    if doresults:
+    if "stats" in args.steps.split(","):
         # AR passids
         tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
         passids = np.unique(tiles["PASS"])
@@ -997,19 +997,8 @@ def main():
 
 if __name__ == "__main__":
 
-    # AR to speed up development/debugging
-    dotile, dosky, dotarg, dofa, doresults = (
-        False,
-        False,
-        False,
-        False,
-        False,
-    )
-    dotile = True
-    dosky = True
-    dotarg = True
-    dofa = True
-    doresults = True
+    # AR allowed steps in desi_fa_smallrun
+    steps_all = ["tiles", "sky", "targ", "fa", "stats"]
 
     # AR reading arguments
     parser = ArgumentParser()
@@ -1176,6 +1165,12 @@ if __name__ == "__main__":
         type=str,
         default=os.getenv("DESI_TARGET"),
     )
+    parser.add_argument(
+        "--steps",
+        help="comma-separated list of steps to accomplish, amongst {} (defaults={})".format(steps_all, ",".join(steps_all)),
+        type=str,
+        default=",".join(steps_all),
+    )
     #
     args = parser.parse_args()
     log = Logger.get()
@@ -1184,6 +1179,15 @@ if __name__ == "__main__":
     # AR npass
     if args.npass is None:
         args.npass = 7 * (args.program == "dark") + 4 * (args.program != "dark")
+
+    # AR steps
+    wrong_steps = [step for step in args.steps.split(",") if step not in steps_all]
+    if len(wrong_steps) > 0:
+        log.error("args.steps have the following not authorized steps : {}; exiting".format(
+            wrong_steps
+            )
+        )
+        sys.exit(1)
 
     # AR utc_time_now, rundate
     utc_time_now = datetime.now(tz=timezone.utc)
@@ -1234,25 +1238,18 @@ if __name__ == "__main__":
             os.mkdir(os.path.join(args.outdir, subdir))
 
     # AR cleaning
-    if dotile:
+    fns = []
+    if "tiles" in args.steps.split(","):
         for passid in [None] + np.arange(11, dtype=int).tolist():
-            fn = get_fn(args.outdir, "tiles", passid=passid)
-            if os.path.isfile(fn):
-                os.remove(fn)
-    if dosky:
-        fn = get_fn(args.outdir, "sky")
-        if os.path.isfile(fn):
-            os.remove(fn)
-    if dotarg:
-        fn = get_fn(args.outdir, "targ")
-        if os.path.isfile(fn):
-            os.remove(fn)
-    if dofa:
-        fns = glob(os.path.join(args.outdir, "faruns", "farun-pass*", "*fits"))
-        fns += [
-            get_fn(args.outdir, "tiles", passid=passid)
-            for passid in np.arange(args.npass, dtype=int)
-        ]
+            fns += [get_fn(args.outdir, "tiles", passid=passid)]
+    if "sky" in args.steps.split(","):
+        fns += [get_fn(args.outdir, "sky")]
+    if "targ" in args.steps.split(","):
+        fns += [get_fn(args.outdir, "targ")]
+    if "fa" in args.steps.split(","):
+        fns += glob(os.path.join(args.outdir, "faruns", "farun-pass*", "fba*fits"))
+        for t in ["tiles", "sky", "targ"]:
+            fns += glob(os.path.join(args.outdir, "faruns", "farun-pass*", "{}-pass*-??????.fits".format(t)))
         fns += [
             get_fn(args.outdir, "targ", passid=passid)
             for passid in np.arange(args.npass, dtype=int)
@@ -1262,9 +1259,17 @@ if __name__ == "__main__":
                 ".fits", "-radec_safe.fits"
             )
         ]
-        for fn in fns:
-            if os.path.isfile(fn):
-                os.remove(fn)
+    if "stats" in args.steps.split(","):
+        fns += [
+            get_fn(args.outdir, "fastats-targ"),
+            get_fn(args.outdir, "fastats-sky"),
+            get_fn(args.outdir, "fastats-pairs"),
+        ]
+    #
+    for fn in fns:
+        if os.path.isfile(fn):
+            print(fn)
+            os.remove(fn)
 
     # AR saving settings
     fn = open(get_fn(args.outdir, "settings"), "w")
