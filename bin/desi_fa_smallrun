@@ -778,7 +778,7 @@ def main():
     tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
     area_tile, area_safe = get_area(args.radec, tiles, args.radec_margin)
     log.info(
-        "{:.1f}s\tdotile\tarea_tile={} deg2, area_safe={} deg2".format(
+        "{:.1f}s\tsettings\tarea_tile={} deg2, area_safe={} deg2".format(
             time() - start, area_tile, area_safe
         )
     )
@@ -789,39 +789,39 @@ def main():
 
     # AR create the targets file
     if "targ" in args.steps.split(","):
-        log.info("{:.1f}s\tdotarg\tstart".format(time() - start))
+        log.info("{:.1f}s\ttarg\tstart".format(time() - start))
         tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
         # AR use randoms instead of targets?
         if args.randoms == "y":
             d, rand_dens = wrapper_read_randoms()
         else:
             d = wrapper_read_targets()
-        log.info("{:.1f}s\tdotarg\tdone reading targets".format(time() - start))
+        log.info("{:.1f}s\ttarg\tdone reading targets".format(time() - start))
         # AR mtl
         myd = Table(d)
         # AR assigns Lya
         if args.program == "dark":
             myd["ISLYA"] = set_lya(d, args.lyafrac)
-            log.info("{:.1f}s\tdotarg\tdone setting islya".format(time() - start))
+            log.info("{:.1f}s\ttarg\tdone setting islya".format(time() - start))
         # AR to store fa stats
         for key in ["NFIBER_AVAIL", "NTILE_AVAIL", "NUMOBS_DONE"]:
             myd[key] = np.zeros((len(d), args.npass), dtype=int)
-        log.info("{:.1f}s\tdotarg\tdone creating empty cols".format(time() - start))
+        log.info("{:.1f}s\ttarg\tdone creating empty cols".format(time() - start))
         # AR flagging "safe" radec
         myd["ISRADEC_SAFE"] = sel_margin(
             d["RA"], d["DEC"], args.radec, args.radec_margin
         )
-        log.info("{:.1f}s\tdotarg\tdone isradec_safe".format(time() - start))
+        log.info("{:.1f}s\ttarg\tdone isradec_safe".format(time() - start))
         # AR mtl
         mtl = make_mtl(myd.as_array(), args.program.upper())
-        log.info("{:.1f}s\tdotarg\tdone make_mtl".format(time() - start))
+        log.info("{:.1f}s\ttarg\tdone make_mtl".format(time() - start))
         # AR tweak priority?
         if args.priority_mask is not None:
             mtl = tweak_priority(
                 mtl, args.priority_mask, args.priority_frac, args.priority_new
             )
         log.info(
-            "{:.1f}s\tdotarg\tstart writing {}".format(
+            "{:.1f}s\ttarg\tstart writing {}".format(
                 time() - start, get_fn(args.outdir, "targ")
             )
         )
@@ -852,7 +852,7 @@ def main():
             fd["MTL"].write_key("RANDDENS", rand_dens)
         fd.close()
         log.info(
-            "{:.1f}s\tdotarg\tdone writing {}".format(
+            "{:.1f}s\ttarg\tdone writing {}".format(
                 time() - start, get_fn(args.outdir, "targ")
             )
         )
@@ -865,7 +865,7 @@ def main():
         # AR looping on passids
         for ip in range(len(passids)):
             log.info(
-                "{:.1f}s\tdofa\tstart passid={}".format(time() - start, passids[ip])
+                "{:.1f}s\tfa\tstart passid={}".format(time() - start, passids[ip])
             )
             passid = passids[ip]
             # AR file/directory names
@@ -907,7 +907,7 @@ def main():
                     args.standards_per_petal,
                 ]
                 log.info(
-                    "{:.1f}s\tdofa\trun_assign_full with 1 processor".format(
+                    "{:.1f}s\tfa\trun_assign_full with 1 processor".format(
                         time() - start
                     )
                 )
@@ -940,7 +940,7 @@ def main():
                         _do_run_assign_full, intargfn_fadir_footfn_skyfn_targfn
                     )
             log.info(
-                "{:.1f}s\tdofa\tfba done passid={}".format(time() - start, passids[ip])
+                "{:.1f}s\tfa\tfba done passid={}".format(time() - start, passids[ip])
             )
             # AR update the catalogs after having run fa + stats
             _ = update_after_farun(input_targ, fadir, passid, output_targ)
