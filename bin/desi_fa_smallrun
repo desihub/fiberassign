@@ -337,6 +337,14 @@ def _do_run_assign_full(intargfn_fadir_footfn_skyfn_targfn):
         args.sky_per_petal,
         "--standards_per_petal",
         args.standards_per_petal,
+        "--sky_per_slitblock",
+        str(args.sky_per_slitblock),
+        "--margin-pos",
+        str(args.margin_pos),
+        "--margin-gfa",
+        str(args.margin_gfa),
+        "--margin-petal",
+        str(args.margin_petal)
     ]
     log.info(
         "{:.1f}s\t_do_run_assign_full\trun_assign_full for {}".format(
@@ -836,6 +844,10 @@ def main():
         fd["MTL"].write_key("RUNDATE", args.rundate)
         fd["MTL"].write_key("NSKYPET", args.sky_per_petal)
         fd["MTL"].write_key("NSTDPET", args.standards_per_petal)
+        fd["MTL"].write_key("NSKYPSL", args.sky_per_slitblock)
+        fd["MTL"].write_key("MARGPOS", args.margin_pos)
+        fd["MTL"].write_key("MARGGFA", args.margin_gfa)
+        fd["MTL"].write_key("MARGPET", args.margin_petal)
         if args.randoms == "y":
             fd["MTL"].write_key("RANDDENS", rand_dens)
         fd.close()
@@ -1087,6 +1099,19 @@ if __name__ == "__main__":
         type=str,
         default="40",
     )
+    parser.add_argument(
+        "--sky_per_slitblock",
+        help="Required number of sky targets per fiber slitblock (default=1)",
+        type=int,
+        default=1,
+        required=False,
+    )
+    parser.add_argument("--margin-pos", "--margin_pos", type=float, required=False, default=0.05,
+                        help="Add margin (in mm) around positioner keep-out polygons (default: 0.05)")
+    parser.add_argument("--margin-petal", "--margin_petal", type=float, required=False, default=0.4,
+                        help="Add margin (in mm) around petal-boundary keep-out polygons (default: 0.4)")
+    parser.add_argument("--margin-gfa", "--margin_gfa", type=float, required=False, default=0.4,
+                        help="Add margin (in mm) around GFA keep-out polygons (default: 0.4)")
     parser.add_argument(
         "--priority_mask",
         help="comma-separated list of the desi_mask names to promote the priority of (e.g. ELG_HIP,LRG)",
