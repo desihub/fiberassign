@@ -275,8 +275,11 @@ def tweak_priority(d, priority_mask, priority_frac, priority_new):
 
 # AR sky file
 def create_sky(footfn, skyfn):
-    # AR sky folder
-    hpdir = os.path.join(args.desi_target_env, "catalogs", args.dr, args.dtver, "skies")
+    # AR sky folders
+    mydirs = get_desitarget_paths(args.dtver, args.survey, args.program, dr=args.dr, log=log)
+    skydirs = [mydirs["sky"]]
+    if os.path.isdir(mydirs["skysupp"]):
+        skydirs.append(mydirs["skysupp"])
     # AR we only store some columns
     columns = [
         "RA",
@@ -290,9 +293,12 @@ def create_sky(footfn, skyfn):
         "PRIORITY_INIT",
         "NUMOBS_INIT",
     ]
-    d = read_targets_in_tiles(
-        hpdir, fits.open(footfn)[1].data, columns=columns, quick=True
-    )
+    # AR we read
+    tiles = fits.open(footfn)[1].data
+    ds = [read_targets_in_tiles(skydir, tiles=tiles, columns=columns, quick=True) for skydir in skydirs]
+    for skydir, d in zip(skydirs, ds):
+        log.info("{:.1f}s\tcreate_sky\t{}: reading {} targets from {}".format(time() - start, os.path.basename(footfn), len(d), skydir))
+    d = np.concatenate(ds)
     fitsio.write(skyfn, d, clobber=True)
     return True
 
