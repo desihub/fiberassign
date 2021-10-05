@@ -36,7 +36,7 @@ from argparse import ArgumentParser
 
 
 # AR created file names
-def get_fn(outdir, flavor, passid=None):
+def get_fn(outdir, flavor, passid=None, steps=None):
     # AR flavor = settings, log, tiles, sky, targ, fastats-targ, fastats-sky
     # AR pass = passid
     if passid is not None:
@@ -52,9 +52,9 @@ def get_fn(outdir, flavor, passid=None):
                 outdir, "outputs", "{}-after-pass{}.fits".format(flavor, passid)
             )
     elif flavor == "settings":
-        fn = os.path.join(args.outdir, "inputs", "settings.asc")
+        fn = os.path.join(outdir, "inputs", "{}-settings.asc".format(steps.replace(",", "-")))
     elif flavor == "log":
-        fn = os.path.join(args.outdir, "outputs", "file.log")
+        fn = os.path.join(outdir, "outputs", "{}.log".format(steps.replace(",", "-")))
     elif flavor in ["fastats-targ", "fastats-sky", "fastats-pairs"]:
         fn = os.path.join(outdir, "outputs", "{}.asc".format(flavor))
     else:
@@ -1268,11 +1268,10 @@ if __name__ == "__main__":
     #
     for fn in fns:
         if os.path.isfile(fn):
-            print(fn)
             os.remove(fn)
 
     # AR saving settings
-    fn = open(get_fn(args.outdir, "settings"), "w")
+    fn = open(get_fn(args.outdir, "settings", steps=args.steps), "w")
     for kwargs in args._get_kwargs():
         fn.write("{} = {}\n".format(kwargs[0], kwargs[1]))
     fn.write("\n")
@@ -1293,7 +1292,7 @@ if __name__ == "__main__":
 
     # AR log file
     if args.nolog == "n":
-        logfn = get_fn(args.outdir, "log")
+        logfn = get_fn(args.outdir, "log", steps=args.steps)
     else:
         logfn = None
 
