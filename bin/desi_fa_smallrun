@@ -429,6 +429,15 @@ def update_after_farun(input_targ, fadir, passid, output_targ):
             ztargets["Z"][h[1].data["ISLYA"][ii0]] = np.random.uniform(
                 low=2.1, high=5, size=h[1].data["ISLYA"][ii0].sum()
             )
+        # AR Z_QN, IS_QSO_QN: used as an alternative diagnosis for Lya
+        # AR    we rely only on Z here
+        # AR    we use the default values created by desitarget.mtl.make_mtl()
+        # AR    i.e. Z_QN = IS_QSO_QN = -1
+        # AR    that way, the following condition is always False:
+        # AR        ((zcat['Z_QN'] >= zcut) & (zcat["IS_QSO_QN"] == 1))
+        # AR    https://github.com/desihub/desitarget/blob/bb5d5c99f187631c3ac9d4a1eb60716a6076d164/py/desitarget/targets.py#L745-L752
+        ztargets["Z_QN"] = h[1].data["Z_QN"][ii0]
+        ztargets["IS_QSO_QN"] = h[1].data["IS_QSO_QN"][ii0]
         ztargets["ZWARN"] = np.zeros(n1, dtype=np.int32)
         ztargets["ZTILEID"] = 1 * np.ones(n1, dtype=np.int32)
         ztargets["NUMOBS_MORE"] = h[1].data["NUMOBS_MORE"][ii0]  # AR added
