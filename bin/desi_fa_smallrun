@@ -457,7 +457,7 @@ def update_after_farun(input_targ, fadir, passid, output_targ):
         n1 = len(ii1)
         ztargets = Table()
         ztargets["TARGETID"] = tids[ii1]
-        ztargets["NUMOBS"] = counts[ii1]
+        ztargets["NUMOBS"] = h[1].data["NUMOBS"][ii0]
         # AR 0 < Z < 2
         ztargets["Z"] = np.random.uniform(low=0, high=2.0, size=n1)
         # AR zcut < Z < 5 for Lya, 0 < Z < midzcut for 'loz'
