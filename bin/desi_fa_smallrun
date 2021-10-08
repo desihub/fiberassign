@@ -235,11 +235,23 @@ def wrapper_read_randoms():
     return d, rand_dens
 
 
-# AR randomly assigns QSO to be Lya
-def set_lya(d, lyafrac):
+# AR randomly assigns QSO to be Lya , 'loz' (Z<1.6)
+def set_lya_loz(d, lyafrac, lozfrac):
+    # AR indices for qso
     ii_qso = np.where((d[dtkey] & desi_mask["QSO"]) > 0)[0]
-    ii_lya = np.random.choice(ii_qso, size=int(lyafrac * len(ii_qso)), replace=False)
-    return np.in1d(np.arange(len(d), dtype=int), ii_lya)
+    n_qso = len(ii_qso)
+    n_lya = int(lyafrac * n_qso)
+    n_loz = int(lozfrac * n_qso)
+    # AR first setting lya
+    ii_lya = np.random.choice(ii_qso, size=n_lya, replace=False)
+    is_lya = np.in1d(np.arange(len(d), dtype=int), ii_lya)
+    # AR removing lya indices from the qso indices
+    ii_qso_notlya = ii_qso[~np.in1d(ii_qso, ii_lya)]
+    # AR now setting loz
+    ii_loz = np.random.choice(ii_qso_notlya, size=n_loz, replace=False)
+    is_loz = np.in1d(np.arange(len(d), dtype=int), ii_loz)
+    #
+    return is_lya, is_loz
 
 
 # AR tweak PRIORITY_INIT and PRIORITY
@@ -447,10 +459,13 @@ def update_after_farun(input_targ, fadir, passid, output_targ):
         ztargets["NUMOBS"] = counts[ii1]
         # AR 0 < Z < 2
         ztargets["Z"] = np.random.uniform(low=0, high=2.0, size=n1)
-        # AR 2.1 < Z < 5 for Lya
+        # AR 2.1 < Z < 5 for Lya, 0 < Z < 1.6 for 'loz'
         if args.program == "dark":
             ztargets["Z"][h[1].data["ISLYA"][ii0]] = np.random.uniform(
                 low=2.1, high=5, size=h[1].data["ISLYA"][ii0].sum()
+            )
+            ztargets["Z"][h[1].data["ISLOZ"][ii0]] = np.random.uniform(
+                low=0, high=1.6, size=h[1].data["ISLOZ"][ii0].sum()
             )
         # AR Z_QN, IS_QSO_QN: used as an alternative diagnosis for Lya
         # AR    we rely only on Z here
@@ -574,6 +589,8 @@ def sel_tracer(d, tracer):
         return np.ones(len(d), dtype=bool)
     elif tracer == "LYA":
         return ((d[dtkey] & desi_mask["QSO"]) > 0) & (d["ISLYA"])
+    elif tracer == "LOZ":
+        return ((d[dtkey] & desi_mask["QSO"]) > 0) & (d["ISLOZ"])
     elif tracer in ["BGS_BRIGHT", "BGS_FAINT"]:
         return (d[btkey] & bgs_mask[tracer]) > 0
     else:
@@ -806,8 +823,8 @@ def main():
         myd = Table(d)
         # AR assigns Lya
         if args.program == "dark":
-            myd["ISLYA"] = set_lya(d, args.lyafrac)
-            log.info("{:.1f}s\ttarg\tdone setting islya".format(time() - start))
+            myd["ISLYA"], myd["ISLOZ"] = set_lya_loz(d, args.lyafrac, args.lozfrac)
+            log.info("{:.1f}s\ttarg\tdone setting islya, isloz".format(time() - start))
         # AR to store fa stats
         for key in ["NFIBER_AVAIL", "NTILE_AVAIL", "NUMOBS_DONE"]:
             myd[key] = np.zeros((len(d), args.npass), dtype=int)
@@ -972,7 +989,7 @@ def main():
             tracers = ["ELG"]
         else:
             if args.program == "dark":
-                tracers = ["ALL", "LYA", "QSO", "LRG", "ELG"]
+                tracers = ["ALL", "LYA", "QSO", "LOZ", "LRG", "ELG"]
             else:
                 tracers = ["ALL", "BGS_BRIGHT", "BGS_FAINT", "MWS_ANY"]
         targ_fn = get_fn(args.outdir, "targ", passid=args.npass - 1).replace(
@@ -1068,6 +1085,12 @@ if __name__ == "__main__":
         help="fraction of QSO targets which are Lya (default=0.2)",
         type=float,
         default=0.2,
+    )
+    parser.add_argument(
+        "--lozfrac",
+        help="fraction of QSO targets which are 'loz', i.e. Z<1.6 (default=0.15)",
+        type=float,
+        default=0.15,
     )
     parser.add_argument(
         "--tilesfn",
