@@ -15,6 +15,7 @@ from time import time
 # AR desitarget
 import desitarget
 from desitarget.targets import encode_targetid
+from desitarget.targets import zcut, midzcut # zcut=2.1 (lya), midzcut=1.6 (loz)
 from desitarget.targetmask import obsconditions
 from desitarget.io import read_targets_in_tiles
 from desitarget.geomask import pixarea2nside, match  # AR to match arrays with no repeats
@@ -235,7 +236,7 @@ def wrapper_read_randoms():
     return d, rand_dens
 
 
-# AR randomly assigns QSO to be Lya , 'loz' (Z<1.6)
+# AR randomly assigns QSO to be Lya , 'loz' (Z<midzcut)
 def set_lya_loz(d, lyafrac, lozfrac):
     # AR indices for qso
     ii_qso = np.where((d[dtkey] & desi_mask["QSO"]) > 0)[0]
@@ -459,13 +460,13 @@ def update_after_farun(input_targ, fadir, passid, output_targ):
         ztargets["NUMOBS"] = counts[ii1]
         # AR 0 < Z < 2
         ztargets["Z"] = np.random.uniform(low=0, high=2.0, size=n1)
-        # AR 2.1 < Z < 5 for Lya, 0 < Z < 1.6 for 'loz'
+        # AR zcut < Z < 5 for Lya, 0 < Z < midzcut for 'loz'
         if args.program == "dark":
             ztargets["Z"][h[1].data["ISLYA"][ii0]] = np.random.uniform(
-                low=2.1, high=5, size=h[1].data["ISLYA"][ii0].sum()
+                low=zcut, high=5, size=h[1].data["ISLYA"][ii0].sum()
             )
             ztargets["Z"][h[1].data["ISLOZ"][ii0]] = np.random.uniform(
-                low=0, high=1.6, size=h[1].data["ISLOZ"][ii0].sum()
+                low=0, high=midzcut, size=h[1].data["ISLOZ"][ii0].sum()
             )
         # AR Z_QN, IS_QSO_QN: used as an alternative diagnosis for Lya
         # AR    we rely only on Z here
@@ -824,7 +825,7 @@ def main():
         # AR assigns Lya
         if args.program == "dark":
             myd["ISLYA"], myd["ISLOZ"] = set_lya_loz(d, args.lyafrac, args.lozfrac)
-            log.info("{:.1f}s\ttarg\tdone setting islya, isloz".format(time() - start))
+            log.info("{:.1f}s\ttarg\tdone setting islya (Z>{}), isloz (Z<{})".format(time() - start, zcut, midzcut))
         # AR to store fa stats
         for key in ["NFIBER_AVAIL", "NTILE_AVAIL", "NUMOBS_DONE"]:
             myd[key] = np.zeros((len(d), args.npass), dtype=int)
@@ -1088,7 +1089,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--lozfrac",
-        help="fraction of QSO targets which are 'loz', i.e. Z<1.6 (default=0.15)",
+        help="fraction of QSO targets which are 'loz', i.e. Z<{} (default=0.15)".format(midzcut),
         type=float,
         default=0.15,
     )
