@@ -236,23 +236,23 @@ def wrapper_read_randoms():
     return d, rand_dens
 
 
-# AR randomly assigns QSO to be Lya , 'loz' (Z<midzcut)
-def set_lya_loz(d, lyafrac, lozfrac):
+# AR randomly assigns QSO to be Lya , 'midz' not 'loz'
+def set_lya_midz_not_loz(d, lyafrac, midz_not_loz_frac):
     # AR indices for qso
     ii_qso = np.where((d[dtkey] & desi_mask["QSO"]) > 0)[0]
     n_qso = len(ii_qso)
     n_lya = int(lyafrac * n_qso)
-    n_loz = int(lozfrac * n_qso)
+    n_midz_not_loz = int(midz_not_loz_frac * n_qso)
     # AR first setting lya
     ii_lya = np.random.choice(ii_qso, size=n_lya, replace=False)
     is_lya = np.in1d(np.arange(len(d), dtype=int), ii_lya)
     # AR removing lya indices from the qso indices
     ii_qso_notlya = ii_qso[~np.in1d(ii_qso, ii_lya)]
-    # AR now setting loz
-    ii_loz = np.random.choice(ii_qso_notlya, size=n_loz, replace=False)
-    is_loz = np.in1d(np.arange(len(d), dtype=int), ii_loz)
+    # AR now setting midz_not_loz
+    ii_midz_not_loz = np.random.choice(ii_qso_notlya, size=n_midz_not_loz, replace=False)
+    is_midz_not_loz = np.in1d(np.arange(len(d), dtype=int), ii_midz_not_loz)
     #
-    return is_lya, is_loz
+    return is_lya, is_midz_not_loz
 
 
 # AR tweak PRIORITY_INIT and PRIORITY
@@ -445,28 +445,12 @@ def update_after_farun(input_targ, fadir, passid, output_targ):
     zcat = Table()
     zcat["TARGETID"] = tids[ii1]
     zcat["NUMOBS"] = h[1].data["NUMOBS"][ii0]
-    # AR the Z values are only used for QSOs
-    # AR so we provide dummy values, except for QSOs
-    # AR this will be for QSOs not Lya, not 'loz'
-    # AR midzcut+0.1 < Z < zcut-0.1 ; +/- 0.1 to be safe / easily identifiable
-    zcat["Z"] = np.random.uniform(low=midzcut + 0.1, high=zcut - 0.1, size=n1)
-    # AR zcut + 0.1 < Z < 5 for Lya, 0 < Z < midzcut - 0.1 for 'loz'
-    if args.program == "dark":
-        zcat["Z"][h[1].data["ISLYA"][ii0]] = np.random.uniform(
-            low=zcut + 0.1, high=5, size=h[1].data["ISLYA"][ii0].sum()
-        )
-        zcat["Z"][h[1].data["ISLOZ"][ii0]] = np.random.uniform(
-            low=0, high=midzcut - 0.1, size=h[1].data["ISLOZ"][ii0].sum()
-        )
-    # AR Z_QN, IS_QSO_QN: used as an alternative diagnosis for Lya
-    # AR    we rely only on Z here
-    # AR    we use the default values created by desitarget.mtl.make_mtl()
-    # AR    i.e. Z_QN = IS_QSO_QN = -1
-    # AR    that way, the following condition is always False:
-    # AR        ((zcat['Z_QN'] >= zcut) & (zcat["IS_QSO_QN"] == 1))
-    # AR    https://github.com/desihub/desitarget/blob/bb5d5c99f187631c3ac9d4a1eb60716a6076d164/py/desitarget/targets.py#L745-L752
-    for key in ["Z_QN", "IS_QSO_QN", "DELTACHI2"]:
+    # AR Z, Z_QN, IS_QSO_QN, DELTACHI2: we use the values in the catalog
+    # AR those are set when creating the catalog, and do not change afterwards
+    # AR those are -1 (default), except for QSO Lya and midz_not_loz
+    for key in ["Z", "Z_QN", "IS_QSO_QN", "DELTACHI2"]:
         zcat[key] = h[1].data[key][ii0]
+    # AR ZWARN, ZTILEID
     zcat["ZWARN"] = np.zeros(n1, dtype=np.int32)
     zcat["ZTILEID"] = np.ones(n1, dtype=np.int32)
     # AR we provide as input to mtl only the targets observed during this round
@@ -584,8 +568,8 @@ def sel_tracer(d, tracer):
         return np.ones(len(d), dtype=bool)
     elif tracer == "LYA":
         return ((d[dtkey] & desi_mask["QSO"]) > 0) & (d["ISLYA"])
-    elif tracer == "LOZ":
-        return ((d[dtkey] & desi_mask["QSO"]) > 0) & (d["ISLOZ"])
+    elif tracer == "MIDZNOTLOZ":
+        return ((d[dtkey] & desi_mask["QSO"]) > 0) & (d["ISMIDZNOTLOZ"])
     elif tracer in ["BGS_BRIGHT", "BGS_FAINT"]:
         return (d[btkey] & bgs_mask[tracer]) > 0
     else:
@@ -816,10 +800,6 @@ def main():
         log.info("{:.1f}s\ttarg\tdone reading targets".format(time() - start))
         # AR mtl
         myd = Table(d)
-        # AR assigns Lya
-        if args.program == "dark":
-            myd["ISLYA"], myd["ISLOZ"] = set_lya_loz(d, args.lyafrac, args.lozfrac)
-            log.info("{:.1f}s\ttarg\tdone setting islya (Z>{}), isloz (Z<{})".format(time() - start, zcut, midzcut))
         # AR to store fa stats
         for key in ["NFIBER_AVAIL", "NTILE_AVAIL", "NUMOBS_DONE"]:
             myd[key] = np.zeros((len(d), args.npass), dtype=int)
@@ -829,9 +809,38 @@ def main():
             d["RA"], d["DEC"], args.radec, args.radec_margin
         )
         log.info("{:.1f}s\ttarg\tdone isradec_safe".format(time() - start))
-        # AR mtl
+        # AR make_mtl() default values
         mtl = make_mtl(myd.as_array(), args.program.upper())
         log.info("{:.1f}s\ttarg\tdone make_mtl".format(time() - start))
+        # AR QSO: assign Lya, midz_not_loz
+        # AR - default are 'loz' (make_mtl()): Z = Z_QN = IS_QSO_QN = -1
+        # AR we change Z, Z_QN, IS_QSO_QN values:
+        # AR - 'midz' not 'loz': Z = Z_QN = midzcut + 0.1 and IS_QSO_QN = 1
+        # AR - Lya='hiz': Z = Z_QN = zcut + 0.1 and IS_QSO_QN = 1
+        if args.program == "dark":
+            mtl["ISLYA"], mtl["ISMIDZNOTLOZ"] = set_lya_midz_not_loz(mtl, args.lyafrac, args.midz_not_loz_frac)
+            # AR Lya: setting Z=Z_QN=2.2, IS_QSO_QN=1
+            for key in ["Z", "Z_QN"]:
+                mtl[key][mtl["ISLYA"]] = zcut + 0.1
+            mtl["IS_QSO_QN"][mtl["ISLYA"]] = 1
+            # AR 'midz' not 'loz'
+            for key in ["Z", "Z_QN"]:
+                mtl[key][mtl["ISMIDZNOTLOZ"]] = midzcut + 0.1
+            mtl["IS_QSO_QN"][mtl["ISMIDZNOTLOZ"]] = 1
+            isqso = (mtl[dtkey] & desi_mask["QSO"]) > 0
+            log.info(
+                "{:.1f}s\ttarg\tdone setting {}/{}={:.0f}% islya and {}/{}={:.0f}% ismidznotloz, using zcut={} and midzcut={}".format(
+                    time() - start,
+                    mtl["ISLYA"].sum(),
+                    isqso.sum(),
+                    100. * mtl["ISLYA"].sum() / isqso.sum(),
+                    mtl["ISMIDZNOTLOZ"].sum(),
+                    isqso.sum(),
+                    100. * mtl["ISMIDZNOTLOZ"].sum() / isqso.sum(),
+                    zcut,
+                    midzcut,
+                )
+            )
         # AR tweak priority?
         if args.priority_mask is not None:
             mtl = tweak_priority(
@@ -984,7 +993,7 @@ def main():
             tracers = ["ELG"]
         else:
             if args.program == "dark":
-                tracers = ["ALL", "LYA", "QSO", "LOZ", "LRG", "ELG"]
+                tracers = ["ALL", "LYA", "QSO", "MIDZNOTLOZ", "LRG", "ELG"]
             else:
                 tracers = ["ALL", "BGS_BRIGHT", "BGS_FAINT", "MWS_ANY"]
         targ_fn = get_fn(args.outdir, "targ", passid=args.npass - 1).replace(
@@ -1082,8 +1091,8 @@ if __name__ == "__main__":
         default=0.2,
     )
     parser.add_argument(
-        "--lozfrac",
-        help="fraction of QSO targets which are 'loz', i.e. Z<{} (default=0.15)".format(midzcut),
+        "--midz_not_loz_frac",
+        help="fraction of QSO targets which are 'midz' but not 'loz' (default=0.15)",
         type=float,
         default=0.15,
     )
