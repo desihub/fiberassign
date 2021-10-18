@@ -54,11 +54,6 @@ import desimeter
 # fiberassign
 import fiberassign
 from fiberassign.utils import Logger
-# AR not importing the function, to avoid
-# AR    circular imports with targets.py, which has imports from fba_launch_io.py...
-# AR    https://github.com/desihub/fiberassign/pull/415#issuecomment-934940698
-import fiberassign.scripts.assign # used functions: parse_assign, run_assign_full
-import fiberassign.assign # used functions: merge_results, minimal_target_columns
 
 # matplotlib
 import matplotlib.pyplot as plt
@@ -1376,7 +1371,7 @@ def create_mtl(
         20210914 : add equivalent of match_ledger_to_targets() for secondary (except for backup)
         20210917 : add possibility of extra secondary folders, as main2/, main3/, etc (see get_desitarget_paths())
                     for that, changing targdir arguments to targdirs
-        20211018 : minimal_target_columns -> fiberassign.assign.minimal_target_columns
+        20210930 : moving some imports inside this function to avoid circular imports.
     """
     log.info("")
     log.info("")
@@ -1385,6 +1380,12 @@ def create_mtl(
     tiles = fits.open(tilesfn)[1].data
     # AR mtl: storing the timestamp at which we queried MTL
     log.info("{:.1f}s\t{}\tmtltime={}".format(time() - start, step, mtltime))
+
+    # AR import inside this launch_onetile_fa() function
+    # AR    to avoid circular imports
+    # AR    because parse_assign as imports from targets.py,
+    # AR    which have imports from fba_launch_io.py...
+    from fiberassign.assign import minimal_target_columns
 
     # AR change targdirs to list if a string is provided
     if isinstance(targdirs, str):
@@ -1439,7 +1440,7 @@ def create_mtl(
     #
     # AR mtl: case not secondary
     if "secondary" not in mtldir:
-        columns = [key for key in fiberassign.assign.minimal_target_columns if key not in d.dtype.names]
+        columns = [key for key in minimal_target_columns if key not in d.dtype.names]
         # AR mtl: also add GAIA_ASTROMETRIC_EXCESS_NOISE, in case args.pmcorr == "y"
         if pmcorr == "y":
             columns += ["GAIA_ASTROMETRIC_EXCESS_NOISE"]
@@ -1498,7 +1499,7 @@ def create_mtl(
         else:
             log.info(
                 "{:.1f}s\t{}\tas desitarget.__version__={} < 1.2.2, we do not add columns from {}".format(
-                    time() - start, step, desitarget.__version__, ",".join(targdirs)
+                    time() - start, step, desitarget.__version__, ",".join(targdir)
                 )
             )
 
@@ -1819,13 +1820,19 @@ def launch_onetile_fa(
             requires a change in the launch_fa() call format.
         fba_launch-like adding information in the header is done in another function, update_fiberassign_header
         TBD: be careful if working in the SVN-directory; maybe add additional safety lines?
-        20211018 : parse_assign, run_assign_full -> fiberassign.scripts.assign.{parse_assign,run_assign_full}
-                    merge_results -> fiberassign.assign.merge_results
+        20210930 : moving some imports inside this function to avoid circular imports.
     """
     log.info("")
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
     log.info("{:.1f}s\t{}\tstart running fiber assignment".format(time() - start, step))
+
+    # AR import inside this launch_onetile_fa() function
+    # AR    to avoid circular imports
+    # AR    because parse_assign as imports from targets.py,
+    # AR    which have imports from fba_launch_io.py...
+    from fiberassign.assign import merge_results
+    from fiberassign.scripts.assign import parse_assign, run_assign_full
 
     # AR convert targfns to list if string (i.e. only one input file)
     if isinstance(targfns, str):
@@ -1896,8 +1903,8 @@ def launch_onetile_fa(
             time() - start, step, tileid, " ; ".join(opts)
         )
     )
-    ag = fiberassign.scripts.assign.parse_assign(opts)
-    fiberassign.scripts.assign.run_assign_full(ag)
+    ag = parse_assign(opts)
+    run_assign_full(ag)
 
     # AR merging
     # AR not using run_merge(), because it looks for all fba-TILEID.fits file
@@ -1920,7 +1927,7 @@ def launch_onetile_fa(
             time() - start, step, tileid, " ; ".join(tmparr)
         )
     )
-    fiberassign.assign.merge_results(
+    merge_results(
         ag["targets"],
         ag["sky"],
         ag["tiles"],
