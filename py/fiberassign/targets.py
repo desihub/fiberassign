@@ -39,8 +39,10 @@ from ._internal import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                         TARGET_TYPE_SUPPSKY,
                         Target, Targets, TargetsAvailable,
                         LocationsAvailable)
-
-from fiberassign.fba_launch_io import assert_isoformat_utc, get_date_cutoff
+# AR not importing the functions, to avoid
+# AR    circular imports with targets.py, which has imports from fba_launch_io.py...
+# AR    https://github.com/desihub/fiberassign/pull/415#issuecomment-934940698
+import fiberassign.fba_launch_io # used functions: assert_isoformat_utc, get_date_cutoff
 from datetime import datetime
 from astropy.time import Time
 
@@ -247,10 +249,10 @@ def default_main_stdmask(rundate=None):
     stdmask |= desi_mask["STD_BRIGHT"].mask
     # AR cutoff rundate for:
     # AR - including or not STD_WD
-    rundate_cutoff = get_date_cutoff("rundate_std_wd")
+    rundate_cutoff = fiberassign.fba_launch_io.get_date_cutoff("rundate_std_wd")
     rundate_mjd_cutoff = Time(datetime.strptime(rundate_cutoff, "%Y-%m-%dT%H:%M:%S%z")).mjd
     if rundate is not None:
-        if not assert_isoformat_utc(rundate):
+        if not fiberassign.fba_launch_io.assert_isoformat_utc(rundate):
             print(
                 "provided rundate={} does not follow the expected formatting (yyyy-mm-ddThh:mm:ss+00:00); exiting".format(
                     rundate,
