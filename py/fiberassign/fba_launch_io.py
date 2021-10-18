@@ -1499,7 +1499,7 @@ def create_mtl(
         else:
             log.info(
                 "{:.1f}s\t{}\tas desitarget.__version__={} < 1.2.2, we do not add columns from {}".format(
-                    time() - start, step, desitarget.__version__, ",".join(targdir)
+                    time() - start, step, desitarget.__version__, ",".join(targdirs)
                 )
             )
 
