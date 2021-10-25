@@ -1038,10 +1038,10 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--program",
-        help="dark or bright (default=dark)",
+        help="dark or bright or backup (default=dark)",
         type=str,
         default="dark",
-        choices=["dark", "bright"],
+        choices=["dark", "bright", "backup"],
     )
     parser.add_argument(
         "--randoms",
