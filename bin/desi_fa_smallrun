@@ -1106,7 +1106,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--npass",
-        help="number of tiling passes for the run (default: dark=7, bright=backup=4)",
+        help="number of tiling passes for the run (default: dark=7, bright=4, backup=1)",
         type=int,
         default=None,
     )
@@ -1205,7 +1205,7 @@ if __name__ == "__main__":
 
     # AR npass
     if args.npass is None:
-        args.npass = 7 * (args.program == "dark") + 4 * (args.program != "dark")
+        args.npass = 7 * (args.program == "dark") + 4 * (args.program != "dark") + 1 * (args.program == "backup")
 
     # AR steps
     wrong_steps = [step for step in args.steps.split(",") if step not in steps_all]
