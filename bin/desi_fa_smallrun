@@ -87,8 +87,11 @@ def create_tiles(infn, program, radec, outdir):
     # AR in case using like tiles-4112-packing-20210329-decorated.fits)
     if len(np.unique(d["TILEID"])) == 1:
         d["TILEID"] = d["CENTERID"].copy()
-    # AR cut on IN_DESI
-    is_indesi = d["IN_DESI"]
+    # AR cut on IN_DESI, except for backup
+    if program == "backup":
+        is_indesi = np.ones(len(d), dtype=bool)
+    else:
+        is_indesi = d["IN_DESI"]
     # AR cut on radec
     ramin, ramax, decmin, decmax = [float(x) for x in radec.split(",")]
     is_radec = (d["DEC"] > decmin) & (d["DEC"] < decmax)
