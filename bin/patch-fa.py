@@ -353,7 +353,7 @@ def main():
         if not infn.startswith(fa_base):
             print('All input filenames must start with --in-base = ', fa_base)
             return -1
-        outfn = infn.replace(fa_base, 'patched-fa/')
+        outfn = infn.replace(fa_base, opt.outdir+'/')
         args.append(dict(infn=infn, outfn=outfn))
 
     if opt.threads:
