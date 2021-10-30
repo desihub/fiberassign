@@ -1285,6 +1285,14 @@ def create_targ_nomtl(
             d, gaia_ref_epochs[gaiadr], log=log, step=step, start=start
         )
 
+    # HACK
+    # AR add SCND_TARGET column...
+    if targdir == "/global/cscratch1/sd/adamyers/gaiadr2/1.3.0.dev5218/targets/main/resolve/backup/":
+        d = Table(d)
+        d["SCND_TARGET"] = 0 * d["DESI_TARGET"]
+        d = d.as_array()
+    # HACK
+
     # AR targ_nomtl: write fits
     # AR possibility to use the desitarget versions used for SV3
     # AR where the SUBPRIORITY was overwritten
