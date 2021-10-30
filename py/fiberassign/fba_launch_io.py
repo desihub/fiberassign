@@ -957,20 +957,23 @@ def get_desitarget_paths(
     mydirs["gfa"] = os.path.join(
         os.getenv("DESI_TARGET"), "catalogs", dr, dtver, "gfas"
     )
+    # HACK
     if program.lower() == "backup":
         dtcat = gaiadr
+        mydirs["targ"] = "/global/cscratch1/sd/adamyers/gaiadr2/1.3.0.dev5218/targets/main/resolve/backup/"
     else:
         dtcat = dr
-    mydirs["targ"] = os.path.join(
-        os.getenv("DESI_TARGET"),
-        "catalogs",
-        dtcat,
-        dtver,
-        "targets",
-        survey.lower(),
-        "resolve",
-        program.lower(),
-    )
+        mydirs["targ"] = os.path.join(
+            os.getenv("DESI_TARGET"),
+            "catalogs",
+            dtcat,
+            dtver,
+            "targets",
+            survey.lower(),
+            "resolve",
+            program.lower(),
+        )
+    # HACK
     # AR secondary (dark, bright; no secondary for backup)
     if program.lower() in ["dark", "bright"]:
         if survey.lower() == "main":
