@@ -255,11 +255,10 @@ def main():
         log.info("{:.1f}s\t{}\tnot executing, as per args.steps/args.nosteps".format(time() - start, "gfa"))
 
     # AR targ
+    # AR HACK not using ledgers!
     if "targ" in steps:
-        create_mtl(
+        create_targ_nomtl(
             mytmpouts["tiles"],
-            mydirs["mtl"],
-            args.mtltime,
             mydirs["targ"],
             args.survey,
             args.gaiadr.replace("gaia", ""),
@@ -271,6 +270,7 @@ def main():
             step="targ",
             start=start,
         )
+    # AR HACK
     else:
         log.info("")
         log.info("")
