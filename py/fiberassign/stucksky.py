@@ -1,11 +1,18 @@
+import sys
 import os
 import numpy as np
 
 from desitarget.skybricks import Skybricks
+from desitarget.skyhealpixs import Skyhealpixs
 
-def stuck_on_sky(hw, tiles):
+def stuck_on_sky(hw, tiles, lookup_sky_source):
     '''
     Will STUCK positioners land on good SKY locations for the given set of tiles?
+
+    Args:
+        hw: hardware properties loaded by fiberassign.hardware.load_hardware()
+        tiles: tiles loaded by fiberassign.tiles.load_tiles()
+        lookup_sky_source: "ls" or "gaia"
 
     Returns a nested dict:
         stuck_sky[tileid][loc] = bool_good_sky
@@ -16,8 +23,19 @@ def stuck_on_sky(hw, tiles):
 
     log = Logger.get()
 
+    # AR allowed lookup_sky_source
+    if lookup_sky_source not in ["ls", "gaia"]:
+        log.error("lookup_sky_source = {} not in ['ls', 'gaia']; exiting".format(lookup_sky_source))
+        sys.exit(1)
+
     # Only load the Skybricks object the first time we need it (there might not be any stuck positioners, eg in tests)
-    skybricks = None
+    # AR keep similar approach for Skyhealpixs...
+    if lookup_sky_source == "ls":
+        skybricks = None
+        log.info("lookup_sky_source == 'ls', will look for $SKYBRICKS_DIR")
+    if lookup_sky_source == "gaia":
+        skyhealpixs = None
+        log.info("lookup_sky_source == 'gaia', will look for $SKYHEALPIXS_DIR")
 
     stuck_sky = dict()
     for tile_id, tile_ra, tile_dec, tile_obstime, tile_theta, tile_obsha in zip(
@@ -75,16 +93,29 @@ def stuck_on_sky(hw, tiles):
             stuck_x, stuck_y, False, 0
         )
 
-        if skybricks is None:
-            try:
-                skybricks = Skybricks()
-            except:
-                log.warning('Environment variable SKYBRICKS_DIR is not set; not looking '
-                            'up whether stuck positioners land on good sky')
-                return
+        # AR using the legacysurveys good locations
+        if lookup_sky_source == "ls":
+            if skybricks is None:
+                try:
+                    skybricks = Skybricks()
+                except:
+                    log.warning('Environment variable SKYBRICKS_DIR is not set; not looking '
+                                'up whether stuck positioners land on good sky')
+                    return
+            good_sky = skybricks.lookup_tile(tile_ra, tile_dec, hw.focalplane_radius_deg,
+                                             loc_ra, loc_dec)
 
-        good_sky = skybricks.lookup_tile(tile_ra, tile_dec, hw.focalplane_radius_deg,
-                                         loc_ra, loc_dec)
+        # AR using the gaia good locations
+        if lookup_sky_source == "gaia":
+            if skyhealpixs is None:
+                try:
+                    skyhealpixs = Skyhealpixs()
+                except:
+                    log.warning('Environment variable SKYHEALPIXS_DIR is not set; not looking '
+                                'up whether stuck positioners land on good sky')
+                    return
+            good_sky = skyhealpixs.lookup_position(loc_ra, loc_dec)
+
         log.info('%i of %i stuck positioners land on good sky locations' % (np.sum(good_sky), len(good_sky)))
         for loc,good in zip(stuck_loc, good_sky):
             stuck_sky[tile_id][loc] = good
