@@ -626,6 +626,7 @@ def assert_env_vars(
         "DESI_SURVEYOPS",
         "SKYBRICKS_DIR",
         "DUST_DIR",
+        "SKYHEALPIXS_DIR",
     ],
     log=Logger.get(),
     step="settings",
@@ -640,7 +641,8 @@ def assert_env_vars(
         "DESIMODEL",
         "DESI_SURVEYOPS",
         "SKYBRICKS_DIR",
-        "DUST_DIR",]): list of environment variables required by fba_launch
+        "DUST_DIR",
+        "SKYHEALPIXS_DIR",]): list of environment variables required by fba_launch
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -649,6 +651,7 @@ def assert_env_vars(
     Notes:
         Will exit with error if some assertions are not verified.
         20210928 : add DUST_DIR, as assign.merge_results_tile() requires it to populate EBV=0 values.
+        20211109 : add SKYHEALPIXS_DIR
     """
     # AR safe: DESI environment variables
     for required_env_var in required_env_vars:
@@ -750,6 +753,7 @@ def print_config_infos(
         "DESI_SURVEYOPS",
         "SKYBRICKS_DIR",
         "DUST_DIR",
+        "SKYHEALPIXS_DIR",
     ],
     log=Logger.get(),
     step="settings",
@@ -772,6 +776,7 @@ def print_config_infos(
 
     Notes:
         20210928 : add DUST_DIR, as assign.merge_results_tile() requires it to populate EBV=0 values.
+        20211109 : add SKYHEALPIXS_DIR
     """
     # AR machine
     log.info(
@@ -1777,6 +1782,7 @@ def launch_onetile_fa(
         args: fba_launch-like parser.parse_args() output
             should contain at least:
                 - survey
+                - program
                 - rundate
                 - sky_per_petal
                 - standards_per_petal
@@ -1825,6 +1831,14 @@ def launch_onetile_fa(
     if os.path.isfile(fiberassignfn):
         os.remove(fiberassignfn)
 
+    # AR look-up table for stuck skies
+    # AR note: SV3 did use "ls" for backup, however SV3 used fiberassign.__version__ < 5.0.0
+    # AR        so need to handle SV3 here
+    if args.program == "BACKUP":
+        lookup_sky_source = "gaia"
+    else:
+        lookup_sky_source = "ls"
+
     # AR preparing fba_run inputs
     opts = [
         "--targets",
@@ -1869,6 +1883,7 @@ def launch_onetile_fa(
             "--gfafile",
             gfafn,
         ]
+    opts += ["--lookup_sky_source", lookup_sky_source,]
     log.info(
         "{:.1f}s\t{}\ttileid={:06d}: running raw fiber assignment (run_assign_full) with opts={}".format(
             time() - start, step, tileid, " ; ".join(opts)

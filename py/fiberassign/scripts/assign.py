@@ -186,6 +186,11 @@ def parse_assign(optlist=None):
                         action="store_true",
                         help="Disable oversubscription of science targets with leftover fibers.")
 
+    parser.add_argument("--lookup_sky_source", required=False, default="ls",
+                        choices={"ls", "gaia"},
+                        help="Source for the look-up table for sky positions for stuck fibers:"
+                        " 'ls': uses $SKYBRICKS_DIR; 'gaia': uses $SKYHEALPIXS_DIR (default=ls)")
+
     args = None
     if optlist is None:
         args = parser.parse_args()
@@ -380,7 +385,7 @@ def run_assign_full(args, plate_radec=True):
     # Find stuck positioners and compute whether they will land on acceptable
     # sky locations for each tile.
     gt.start("Compute Stuck locations on good sky")
-    stucksky = stuck_on_sky(hw, tiles)
+    stucksky = stuck_on_sky(hw, tiles, args.lookup_sky_source)
     if stucksky is None:
         # (the pybind code doesn't like None when a dict is expected...)
         stucksky = {}
@@ -468,7 +473,7 @@ def run_assign_bytile(args):
     # Find stuck positioners and compute whether they will land on acceptable
     # sky locations for each tile.
     gt.start("Compute Stuck locations on good sky")
-    stucksky = stuck_on_sky(hw, tiles)
+    stucksky = stuck_on_sky(hw, tiles, args.lookup_sky_source)
     if stucksky is None:
         # (the pybind code doesn't like None when a dict is expected...)
         stucksky = {}
