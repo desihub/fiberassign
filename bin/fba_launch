@@ -760,7 +760,7 @@ if __name__ == "__main__":
 
     # AR lookup_sky_source
     if args.lookup_sky_source is None:
-        if (args.survey == "main") & (args.program == "backup"):
+        if (args.survey == "main") & (args.program == "BACKUP"):
             args.lookup_sky_source = "gaia"
             if os.getenv("SKYHEALPIXS_DIR") is None:
                 log.warning("SKYHEALPIXS_DIR not set: stuck positioners will not be used for skies.")
