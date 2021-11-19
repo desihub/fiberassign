@@ -299,12 +299,14 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
 
         #- Keep SKYBRICKS_DIR used to lookup sky locations,
         #- shortening full path if possible
-        skybricks = os.getenv('SKYBRICKS_DIR', None)
-        if (skybricks is not None) and ('DESI_ROOT' in os.environ):
-            if skybricks.startswith(os.environ['DESI_ROOT']):
-                skybricks = skybricks.replace(
-                        os.environ['DESI_ROOT'], '$DESI_ROOT', 1)
-        setdep(header, 'SKYBRICKS_DIR', skybricks)
+        # AR add SKYHEALPIX_DIR similarly, now looping over the variable names
+        for skyname in ["SKYBRICKS_DIR", "SKYHEALPIXS_DIR"]:
+            skydir = os.getenv(skyname, None)
+            if (skydir is not None) and ("DESI_ROOT" in os.environ):
+                if skydir.startswith(os.environ["DESI_ROOT"]):
+                    skydir = skydir.replace(
+                            os.environ["DESI_ROOT"], "$DESI_ROOT", 1)
+            setdep(header, skyname, skydir)
 
         fd.write(None, header=header, extname="PRIMARY")
 
