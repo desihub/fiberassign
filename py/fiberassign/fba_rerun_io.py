@@ -66,11 +66,13 @@ def fba_rerun_get_settings(
 
     Notes:
         Only runs for a SV3 or Main BRIGHT/DARK tile; exists with error otherwise.
+        20211119 : now also allows Main BACKUP tile
+        20211119 : add lookup_sky_source and SKYHEALPIXS_DIR
     """
     #
     hdr = fits.getheader(fn, 0)
     # AR SV3/Main BRIGHT/DARK?
-    faflavors = ["sv3bright", "sv3dark", "mainbright", "maindark"]
+    faflavors = ["sv3bright", "sv3dark", "mainbright", "maindark", "mainbackup"]
     if hdr["FAFLAVOR"] not in faflavors:
         log.error(
             "{:.1f}s\t{}\tFAFLAVOR={} not in {}; exiting".format(
@@ -104,6 +106,8 @@ def fba_rerun_get_settings(
     if mydict["fa_ver"] >= "3.0.0":
         keys += ["ha"]
         keys += ["margin-pos", "margin-petal", "margin-gfa"]
+    if mydict["fa_ver"] > "5.3.0":
+        keys += ["lookup_sky_source"]
     # AR storing the FAARGS in a dictionary
     faargs = np.array(hdr["FAARGS"].split())
     for key in keys:
@@ -136,6 +140,17 @@ def fba_rerun_get_settings(
     ]
     if len(vals) > 0:
         mydict["skybrver"] = vals[0]
+
+    # AR SKYHEALPIXS_DIR
+    mydict["skyhpver"] = "-"  # default value if not set
+    keys = [cards[0] for cards in hdr.cards]
+    vals = [
+        hdr[key.replace("NAM", "VER")].split("/")[-1]
+        for key in keys
+        if hdr[key] == "SKYHEALPIXS_DIR"
+    ]
+    if len(vals) > 0:
+        mydict["skyhpver"] = vals[0]
 
     # AR ToO
     # AR default: run ToOs, with MJD_BEGIN < mjd_now < MJD_END
@@ -569,7 +584,7 @@ def fba_rerun_fbascript(
             log.error("no {} folder; exiting".format(intermediate_dir_final))
             sys.exit(1)
 
-    # AR get settings, fiberassign version, and SKYBRICKS_DIR version
+    # AR get settings, fiberassign version, and SKYBRICKS_DIR and SKYHEALPIXS version
     mydict = fba_rerun_get_settings(
         infiberassignfn, bugfix=bugfix, log=log, step="settings", start=start
     )
@@ -686,6 +701,14 @@ def fba_rerun_fbascript(
         f.write(
             "export SKYBRICKS_DIR=$DESI_ROOT/target/skybricks/{}\n".format(mydict["skybrver"])
         )
+    # AR similarly adding SKYHEALPIXS
+    if mydict["skyhpver"] == "-":
+        f.write("unset SKYHEALPIXS_DIR\n")
+    else:
+        f.write(
+            "export SKYHEALPIXS_DIR=$DESI_ROOT/target/skyhealpixs/{}\n".format(mydict["skyhpver"])
+        )
+
 
     # AR control informations
     f.write('echo "fba_run executable: `which fba_run`" >> {}\n'.format(outlog))
@@ -700,6 +723,7 @@ def fba_rerun_fbascript(
         )
     )
     f.write('echo "SKYBRICKS_DIR=$SKYBRICKS_DIR" >> {}\n'.format(outlog))
+    f.write('echo "SKYHEALPIXS_DIR=$SKYHEALPIXS_DIR" >> {}\n'.format(outlog))
     f.write("\n")
     f.write("\n")
 
