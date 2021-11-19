@@ -1990,6 +1990,7 @@ def update_fiberassign_header(
         faflavor has to be {hdr_survey}{hdr_faprgrm}; will exit with an error if not;
             keeping this to be sure it is not forgotten to be done for dedicated programs.
         20210917 : keywords scnd2, scnd3, etc could be automatically added (see get_desitarget_paths())
+        20211119 : added lookup_sky_source keyword
     """
     # AR sanity check on faflavor
     if faflavor != "{}{}".format(hdr_survey, hdr_faprgrm):
@@ -2059,6 +2060,8 @@ def update_fiberassign_header(
     fd["PRIMARY"].write_key(
         "svnmtl", get_svn_version(os.path.join(os.getenv("DESI_SURVEYOPS"), "mtl"))
     )
+    # AR lookup_sky_source
+    fd["PRIMARY"].write_key("LKSKYSRC", args.lookup_sky_source)
     fd.close()
 
 
