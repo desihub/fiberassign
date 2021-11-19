@@ -684,6 +684,13 @@ if __name__ == "__main__":
         action='store_true',
         default=False,
     )
+    parser.add_argument(
+        "--lookup_sky_source",
+        help="'ls' or 'gaia' (default='gaia' if main/backup, 'ls' otherwise)",
+        type=str,
+        choices=["ls", "gaia"],
+        default=None,
+    )
 
     args = parser.parse_args()
     log = Logger.get()
@@ -750,6 +757,17 @@ if __name__ == "__main__":
                 )
             )
             sys.exit(1)
+
+    # AR lookup_sky_source
+    if args.lookup_sky_source is None:
+        if (args.survey == "main") & (args.program == "backup"):
+            args.lookup_sky_source = "gaia"
+            if os.getenv("SKYHEALPIXS_DIR") is None:
+                log.warning("SKYHEALPIXS_DIR not set: stuck positioners will not be used for skies.")
+        else:
+            args.lookup_sky_source = "ls"
+            if os.getenv("SKYBRICKS_DIR") is None:
+                log.warning("SKYBRICKS_DIR not set: stuck positioners will not be used for skies.")
 
     # AR create a temporary directory for generated files
     tmpoutdir = tempfile.mkdtemp()

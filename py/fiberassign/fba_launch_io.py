@@ -1787,6 +1787,7 @@ def launch_onetile_fa(
                 - sky_per_petal
                 - standards_per_petal
                 - sky_per_slitblock
+                - lookup_sky_source
         tilesfn: path to the input tiles fits file (string)
         targfns: paths to the input targets fits files, e.g. targ, scnd, too (either a string if only one file, or a list of strings)
         fbafn: path to the output fba-TILEID.fits file (string)
@@ -1796,7 +1797,7 @@ def launch_onetile_fa(
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+        start (optional, defaults to time()): start time for log (in seconds; output of time.time()
 
     Notes:
         no sanity checks done on inputs; assumed to be done elsewhere
@@ -1830,14 +1831,6 @@ def launch_onetile_fa(
         os.remove(fbafn)
     if os.path.isfile(fiberassignfn):
         os.remove(fiberassignfn)
-
-    # AR look-up table for stuck skies
-    # AR note: SV3 did use "ls" for backup, however SV3 used fiberassign.__version__ < 5.0.0
-    # AR        so need to handle SV3 here
-    if args.program == "BACKUP":
-        lookup_sky_source = "gaia"
-    else:
-        lookup_sky_source = "ls"
 
     # AR preparing fba_run inputs
     opts = [
@@ -1883,7 +1876,7 @@ def launch_onetile_fa(
             "--gfafile",
             gfafn,
         ]
-    opts += ["--lookup_sky_source", lookup_sky_source,]
+    opts += ["--lookup_sky_source", args.lookup_sky_source,]
     log.info(
         "{:.1f}s\t{}\ttileid={:06d}: running raw fiber assignment (run_assign_full) with opts={}".format(
             time() - start, step, tileid, " ; ".join(opts)
