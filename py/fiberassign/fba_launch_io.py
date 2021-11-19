@@ -1806,6 +1806,7 @@ def launch_onetile_fa(
             requires a change in the launch_fa() call format.
         fba_launch-like adding information in the header is done in another function, update_fiberassign_header
         TBD: be careful if working in the SVN-directory; maybe add additional safety lines?
+        20211119 : added lookup_sky_source
     """
     log.info("")
     log.info("")
