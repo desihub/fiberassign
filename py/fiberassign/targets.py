@@ -40,7 +40,8 @@ from ._internal import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                         Target, Targets, TargetsAvailable,
                         LocationsAvailable)
 
-from fiberassign.fba_launch_io import assert_isoformat_utc, get_date_cutoff
+from fiberassign.utils import assert_isoformat_utc, get_date_cutoff
+
 from datetime import datetime
 from astropy.time import Time
 
@@ -247,8 +248,9 @@ def default_main_stdmask(rundate=None):
     stdmask |= desi_mask["STD_BRIGHT"].mask
     # AR cutoff rundate for:
     # AR - including or not STD_WD
-    rundate_cutoff = get_date_cutoff("rundate_std_wd")
+    rundate_cutoff = get_date_cutoff("rundate", "std_wd")
     rundate_mjd_cutoff = Time(datetime.strptime(rundate_cutoff, "%Y-%m-%dT%H:%M:%S%z")).mjd
+    use_wd = False
     if rundate is not None:
         if not assert_isoformat_utc(rundate):
             print(
@@ -259,7 +261,19 @@ def default_main_stdmask(rundate=None):
             sys.exit(1)
         rundate_mjd = Time(datetime.strptime(rundate, "%Y-%m-%dT%H:%M:%S%z")).mjd
         if rundate_mjd < rundate_mjd_cutoff:
-            stdmask |= desi_mask["STD_WD"].mask
+            use_wd = True
+    if use_wd:
+        stdmask |= desi_mask["STD_WD"].mask
+        print(
+            "rundate = {} is before rundate_cutoff_std_wd = {}, so STD_WD are counted as TARGET_TYPE_STANDARD".format(
+                rundate, rundate_cutoff,
+            )
+        )
+    else:
+        print("rundate = {} is after rundate_cutoff_std_wd = {}, so STD_WD are *not* counted as TARGET_TYPE_STANDARD".format(
+                rundate, rundate_cutoff,
+            )
+        )
     return stdmask
 
 

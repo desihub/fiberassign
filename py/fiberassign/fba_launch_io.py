@@ -53,7 +53,7 @@ import desimeter
 
 # fiberassign
 import fiberassign
-from fiberassign.utils import Logger
+from fiberassign.utils import Logger, assert_isoformat_utc, get_date_cutoff
 
 # matplotlib
 import matplotlib.pyplot as plt
@@ -68,39 +68,6 @@ gaia_ref_epochs = {"dr2": 2015.5}
 tile_radius_deg = 1.628
 # AR approx. tile area in degrees
 tile_area = np.pi * tile_radius_deg ** 2
-
-
-def assert_isoformat_utc(time_str):
-    """
-    Asserts if a date formats as "YYYY-MM-DDThh:mm:ss+00:00".
-
-    Args:
-        time_str: string with a date
-    Returns:
-        boolean asserting if time_str formats as "YYYY-MM-DDThh:mm:ss+00:00"
-    """
-    try:
-        test_time = datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%S%z")
-    except ValueError:
-        return False
-    # AR/SB it parses as an ISO string, now just check UTC timezone +00:00 and not +0000
-    return time_str.endswith("+00:00")
-
-
-def get_date_cutoff(case):
-    """Returns cutoff date for some assignment decision.
-
-    Args:
-        case: "rundate_std_wd" (string)
-
-    Notes:
-        "rundate_std_wd":
-            "2021-10-01T19:00:00+00:00"
-            include or not STD_WD in default_main_stdmask()
-            https://github.com/desihub/fiberassign/pull/415
-    """
-    if case == "rundate_std_wd":
-        return "2021-10-01T19:00:00+00:00"
 
 
 def get_svn_version(svn_dir):
@@ -2173,7 +2140,7 @@ def get_dt_masks(
         std_mskkeys += [mskkey for key in yaml_masks[mskkey].names() if "STD" in key]
         std_msks += [key for key in yaml_masks[mskkey].names() if "STD" in key]
     # AR discard STD_WD from STD?
-    rundate_cutoff = get_date_cutoff("rundate_std_wd")
+    rundate_cutoff = get_date_cutoff("rundate", "std_wd")
     rundate_mjd_cutoff = Time(datetime.strptime(rundate_cutoff, "%Y-%m-%dT%H:%M:%S%z")).mjd
     if rundate is not None:
         if not assert_isoformat_utc(rundate):
