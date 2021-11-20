@@ -109,3 +109,29 @@ def get_svn_version(svn_dir):
         svn_ver = "unknown"
 
     return svn_ver
+
+
+def get_last_line(fn):
+    """
+    Return the last line of a text file.
+
+    Args:
+        fn: file name (string)
+
+    Returns:
+        last_line: (string)
+
+    Notes:
+        Fails if fn has one line only; we do not protect for that case,
+            as this function is intended to be used in get_program_latest_timestamp()
+            to read *ecsv ledgers, which will always have more than one line,
+            and we want the fastest function possible, to use in fiberassign on-the-fly.
+        Copied from https://stackoverflow.com/questions/46258499/how-to-read-the-last-line-of-a-file-in-python.
+    """
+    with open(fn, "rb") as f:
+        f.seek(-2, os.SEEK_END)
+        while f.read(1) != b"\n":
+            f.seek(-2, os.SEEK_CUR)
+        last_line = f.readline().decode().strip()
+    f.close()
+    return last_line
