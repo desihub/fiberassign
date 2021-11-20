@@ -615,6 +615,7 @@ def desi_target_type(desi_target, mws_target, sciencemask, stdmask,
             ttype = 0
     else:
         desi_target = np.asarray(desi_target)
+        mws_target = np.asarray(mws_target)
         ttype = np.zeros(len(desi_target), dtype=np.uint8)
         ttype[desi_target & sciencemask != 0] |= TARGET_TYPE_SCIENCE
         ttype[desi_target & stdmask != 0] |= TARGET_TYPE_STANDARD
