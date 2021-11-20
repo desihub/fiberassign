@@ -8,7 +8,7 @@ import unittest
 
 import numpy as np
 
-from desitarget.targetmask import desi_mask
+from desitarget.targetmask import desi_mask, mws_mask
 
 from fiberassign.hardware import load_hardware
 
@@ -22,6 +22,7 @@ from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                                  default_main_suppskymask,
                                  default_main_safemask,
                                  default_main_excludemask,
+                                 default_main_gaia_stdmask,
                                  Targets, TargetsAvailable,
                                  LocationsAvailable, targets_in_tiles, create_tagalong)
 
@@ -89,50 +90,65 @@ class TestTargets(unittest.TestCase):
         desi_target = [
             desi_mask["ELG"].mask,
             desi_mask["STD_FAINT"].mask,
+            0,
             desi_mask["SKY"].mask,
             desi_mask["SUPP_SKY"].mask,
             desi_mask["IN_BRIGHT_OBJECT"].mask,
             ]
+        mws_target = [
+            0,
+            0,
+            mws_mask["GAIA_STD_FAINT"].mask,
+            0,
+            0,
+            0,
+        ]
         fbatype = np.array([
             TARGET_TYPE_SCIENCE,
+            TARGET_TYPE_STANDARD,
             TARGET_TYPE_STANDARD,
             TARGET_TYPE_SKY,
             TARGET_TYPE_SUPPSKY,
             0
             ])
         result = desi_target_type(
-            desi_target, default_main_sciencemask(), default_main_stdmask(),
+            desi_target, mws_target, default_main_sciencemask(), default_main_stdmask(),
             default_main_skymask(), default_main_suppskymask(),
-            default_main_safemask(), default_main_excludemask())
+            default_main_safemask(), default_main_excludemask(),
+            default_main_gaia_stdmask())
         self.assertTrue(np.all(result == fbatype))
 
         # Scalar inputs
         for i in range(len(desi_target)):
             result = desi_target_type(
-                desi_target[i],
+                desi_target[i], mws_target[i],
                 default_main_sciencemask(), default_main_stdmask(),
                 default_main_skymask(), default_main_suppskymask(),
-                default_main_safemask(), default_main_excludemask())
+                default_main_safemask(), default_main_excludemask(),
+                default_main_gaia_stdmask())
             self.assertEqual(result, fbatype[i])
 
         # Does excludemask work?
         mask = desi_mask["ELG"].mask
+        mask2 = 0 # MWS_TARGET
         result = desi_target_type(
-            mask, default_main_sciencemask(), default_main_stdmask(),
+            mask, mask2, default_main_sciencemask(), default_main_stdmask(),
             default_main_skymask(), default_main_suppskymask(),
-            default_main_safemask(), default_main_excludemask())
+            default_main_safemask(), default_main_excludemask(),
+            default_main_gaia_stdmask())
         self.assertEqual(result, TARGET_TYPE_SCIENCE)
 
         result = desi_target_type(
-            mask, default_main_sciencemask(), default_main_stdmask(),
+            mask, mask2, default_main_sciencemask(), default_main_stdmask(),
             default_main_skymask(), default_main_suppskymask(),
-            default_main_safemask(), mask)
+            default_main_safemask(), mask,
+            default_main_gaia_stdmask())
         self.assertEqual(result, 0)
 
         result = desi_target_type(
-            [mask, mask], default_main_sciencemask(), default_main_stdmask(),
+            [mask, mask], [mask2, mask2], default_main_sciencemask(), default_main_stdmask(),
             default_main_skymask(), default_main_suppskymask(),
-            default_main_safemask(), mask)
+            default_main_safemask(), mask, default_main_gaia_stdmask())
         self.assertTrue(not np.any(result))
 
 
