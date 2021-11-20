@@ -55,7 +55,7 @@ import desimeter
 import fiberassign
 from fiberassign.scripts.assign import parse_assign, run_assign_full
 from fiberassign.assign import merge_results, minimal_target_columns
-from fiberassign.utils import Logger, assert_isoformat_utc
+from fiberassign.utils import Logger, assert_isoformat_utc, get_svn_version
 
 # matplotlib
 import matplotlib.pyplot as plt
@@ -70,36 +70,6 @@ gaia_ref_epochs = {"dr2": 2015.5}
 tile_radius_deg = 1.628
 # AR approx. tile area in degrees
 tile_area = np.pi * tile_radius_deg ** 2
-
-
-def get_svn_version(svn_dir):
-    """
-    Gets the SVN revision number of an SVN folder.
-
-    Args:
-        svn_dir: SVN folder path (string)
-
-    Returns:
-        svnver: SVN revision number of svn_dir, or "unknown" if not an svn checkout
-
-    Notes:
-        `svn_dir` can contain environment variables to expand, e.g. "$DESIMODEL/data"
-    """
-    cmd = ["svn", "info", os.path.expandvars(svn_dir)]
-    try:
-        svn_ver = (
-            subprocess.check_output(cmd, stderr=subprocess.DEVNULL).strip().decode()
-        )
-        # search for "Last Changed Rev: " line and parse out revision number.  Recent versions
-        # of svn have a --show-item argument that does this in a less fragile way,
-        # but the svn installed at KPNO is old and doesn't support this option.
-        searchstr = 'Last Changed Rev: '
-        svn_ver = [line[len(searchstr):] for line in svn_ver.split('\n')
-                   if searchstr in line][0]
-    except subprocess.CalledProcessError:
-        svn_ver = "unknown"
-
-    return svn_ver
 
 
 def get_latest_rundate(log=Logger.get(), step="", start=time()):

@@ -10,6 +10,7 @@ Utility functions.
 from __future__ import absolute_import, division, print_function
 
 import os
+import subprocess
 import sys
 from datetime import datetime
 
@@ -78,3 +79,33 @@ def assert_isoformat_utc(time_str):
         return False
     # AR/SB it parses as an ISO string, now just check UTC timezone +00:00 and not +0000
     return time_str.endswith("+00:00")
+
+
+def get_svn_version(svn_dir):
+    """
+    Gets the SVN revision number of an SVN folder.
+
+    Args:
+        svn_dir: SVN folder path (string)
+
+    Returns:
+        svnver: SVN revision number of svn_dir, or "unknown" if not an svn checkout
+
+    Notes:
+        `svn_dir` can contain environment variables to expand, e.g. "$DESIMODEL/data"
+    """
+    cmd = ["svn", "info", os.path.expandvars(svn_dir)]
+    try:
+        svn_ver = (
+            subprocess.check_output(cmd, stderr=subprocess.DEVNULL).strip().decode()
+        )
+        # search for "Last Changed Rev: " line and parse out revision number.  Recent versions
+        # of svn have a --show-item argument that does this in a less fragile way,
+        # but the svn installed at KPNO is old and doesn't support this option.
+        searchstr = 'Last Changed Rev: '
+        svn_ver = [line[len(searchstr):] for line in svn_ver.split('\n')
+                   if searchstr in line][0]
+    except subprocess.CalledProcessError:
+        svn_ver = "unknown"
+
+    return svn_ver
