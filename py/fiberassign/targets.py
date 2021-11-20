@@ -802,8 +802,15 @@ def append_target_table(tgs, tagalong, tgdata, survey, typeforce, typecol,
             d_bits[:] = tgdata["FA_TARGET"][:]
         else:
             d_bits[:] = tgdata[typecol][:]
+            # AR trying to protect against cases where the *MWS_TARGET column
+            # AR    is not present; that does not happen for the main
+            # AR    survey, but imagining cases where fiberassign is
+            # AR    run on some special targets set (e.g. only secondaries)
+            mws_targets = 0 * tgdata[typecol]
+            if typecol.replace("DESI", "MWS") in tgdata.dtype.names:
+                mws_targets = tgdata[typecol.replace("DESI", "MWS")]
             d_type[:] = desi_target_type(
-                tgdata[typecol], tgdata[typecol.replace("DESI", "MWS")], sciencemask, stdmask, skymask, suppskymask,
+                tgdata[typecol], mws_targets, sciencemask, stdmask, skymask, suppskymask,
                 safemask, excludemask, gaia_stdmask)
 
     if "OBSCONDITIONS" in tgdata.dtype.fields:
