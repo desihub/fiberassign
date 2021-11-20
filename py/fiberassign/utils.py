@@ -11,6 +11,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import sys
+from datetime import datetime
 
 from ._internal import (Logger, Timer, GlobalTimers, Circle, Segments, Shape,
                         Environment)
@@ -60,3 +61,20 @@ def option_list(opts):
                 else:
                     optlist.append("{}".format(val))
     return optlist
+
+
+def assert_isoformat_utc(time_str):
+    """
+    Asserts if a date formats as "YYYY-MM-DDThh:mm:ss+00:00".
+
+    Args:
+        time_str: string with a date
+    Returns:
+        boolean asserting if time_str formats as "YYYY-MM-DDThh:mm:ss+00:00"
+    """
+    try:
+        test_time = datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%S%z")
+    except ValueError:
+        return False
+    # AR/SB it parses as an ISO string, now just check UTC timezone +00:00 and not +0000
+    return time_str.endswith("+00:00")

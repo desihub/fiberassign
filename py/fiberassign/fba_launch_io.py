@@ -55,7 +55,7 @@ import desimeter
 import fiberassign
 from fiberassign.scripts.assign import parse_assign, run_assign_full
 from fiberassign.assign import merge_results, minimal_target_columns
-from fiberassign.utils import Logger
+from fiberassign.utils import Logger, assert_isoformat_utc
 
 # matplotlib
 import matplotlib.pyplot as plt
@@ -70,23 +70,6 @@ gaia_ref_epochs = {"dr2": 2015.5}
 tile_radius_deg = 1.628
 # AR approx. tile area in degrees
 tile_area = np.pi * tile_radius_deg ** 2
-
-
-def assert_isoformat_utc(time_str):
-    """
-    Asserts if a date formats as "YYYY-MM-DDThh:mm:ss+00:00".
-
-    Args:
-        time_str: string with a date
-    Returns:
-        boolean asserting if time_str formats as "YYYY-MM-DDThh:mm:ss+00:00"
-    """
-    try:
-        test_time = datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%S%z")
-    except ValueError:
-        return False
-    # AR/SB it parses as an ISO string, now just check UTC timezone +00:00 and not +0000
-    return time_str.endswith("+00:00")
 
 
 def get_svn_version(svn_dir):
