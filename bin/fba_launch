@@ -45,7 +45,7 @@ goaltimes_all = {
     "sv1": {"DARK": 1000.0, "BRIGHT": 150.0, "BACKUP": 30.0},
     "sv2": {"DARK": 1000.0, "BRIGHT": 150.0, "BACKUP": 30.0},
     "sv3": {"DARK": 1200.0, "BRIGHT": 220.0, "BACKUP": 30.0},
-    "main": {"DARK": 1000.0, "BRIGHT": 180.0, "BACKUP": 30.0},
+    "main": {"DARK": 1000.0, "BRIGHT": 180.0, "BACKUP": 60.0},
 }
 
 # AR surface brightness profile to be used for computing time -> efftime relation
