@@ -570,6 +570,7 @@ def desi_target_type(desi_target, mws_target, sciencemask, stdmask,
 
     Args:
         desi_target (iterable):  Scalar or array-like integer values.
+        mws_target (iterable): Scalar or array-like integer values.
         sciencemask (int):  Integer value to bitwise-and when checking for
             science targets.
         stdmask (int):  Integer value to bitwise-and when checking for
@@ -582,6 +583,8 @@ def desi_target_type(desi_target, mws_target, sciencemask, stdmask,
             safe targets.
         excludemask (int):  Integer value to bitwise-and when checking for
             targets to exclude.
+        gaia_stdmask (int):  Integer value to bitwise-and when checking for
+            Gaia standards targets.
 
     Returns:
         (array):  The fiberassign target types.
@@ -632,7 +635,7 @@ def default_survey_target_masks(survey):
 
     Returns:
         (tuple): The science mask, standard mask, sky mask, suppsky mask,
-            safe mask, and exclude mask for the data.
+            safe mask, exclude mask, and gaia standard mask for the data.
 
     """
     sciencemask = None
@@ -695,7 +698,8 @@ def default_target_masks(data):
 
     Returns:
         (tuple):  The survey, column name, science mask, standard mask,
-            sky mask, suppsky mask, safe mask, and exclude mask for the data.
+            sky mask, suppsky mask, safe mask, exclude mask, and
+            gaia standard mask for the data.
 
     """
     col = None
@@ -745,6 +749,8 @@ def append_target_table(tgs, tagalong, tgdata, survey, typeforce, typecol,
             safe targets.
         excludemask (int):  Integer value to bitwise-and when checking for
             targets to exclude.
+        gaia_stdmask (int):  Integer value to bitwise-and when checking for
+            Gaia standards targets.
 
     Returns:
         None
@@ -869,6 +875,7 @@ def load_target_table(tgs, tagalong, tgdata, survey=None, typeforce=None, typeco
         suppskymask (int): Bitmask for classifying targets as suppsky.
         safemask (int): Bitmask for classifying targets as a safe location.
         excludemask (int): Bitmask for excluding targets.
+        gaia_stdmask (int): Bitmask for classifying targets as a Gaia standard.
 
     Returns:
         None
@@ -1079,6 +1086,7 @@ def load_target_file(tgs, tagalong, tfile, survey=None, typeforce=None, typecol=
         excludemask (int): Bitmask for excluding targets.
         rowbuffer (int): Optional number of rows to read at once when loading
             very large files.
+        gaia_stdmask (int): Bitmask for classifying targets as a Gaia standard.
 
     Returns:
         (str): The survey type.
