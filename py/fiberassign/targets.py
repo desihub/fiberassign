@@ -19,7 +19,7 @@ import fitsio
 # AR should definitely be re-written to handle sv3, etc
 # AR and duplicating for sv3...
 
-from desitarget.targetmask import desi_mask
+from desitarget.targetmask import desi_mask, mws_mask
 
 from desitarget.cmx.cmx_targetmask import cmx_mask
 
@@ -236,6 +236,15 @@ def default_main_stdmask():
     stdmask |= desi_mask["STD_BRIGHT"].mask
     return stdmask
 
+def default_main_gaia_stdmask():
+    """Returns default mask of bits for Gaia standards in main survey.
+        Purposely not include GAIA_STD_WD, as we plan to remove WD from
+        the standards counting requirement.
+    """
+    gaia_stdmask = 0
+    gaia_stdmask |= mws_mask["GAIA_STD_FAINT"].mask
+    gaia_stdmask |= mws_mask["GAIA_STD_BRIGHT"].mask
+    return gaia_stdmask
 
 def default_main_skymask():
     """Returns default mask of bits for sky targets in main survey.
@@ -555,8 +564,8 @@ def default_cmx_excludemask():
     return excludemask
 
 
-def desi_target_type(desi_target, sciencemask, stdmask,
-                     skymask, suppskymask, safemask, excludemask):
+def desi_target_type(desi_target, mws_target, sciencemask, stdmask,
+                     skymask, suppskymask, safemask, excludemask, gaia_stdmask):
     """Determine fiber assign type from the data column.
 
     Args:
@@ -580,6 +589,7 @@ def desi_target_type(desi_target, sciencemask, stdmask,
     """
     # print('sciencemask {}'.format(sciencemask))
     # print('stdmask     {}'.format(stdmask))
+    # print('gaia_stdmask  {}'.format(gaia_stdmask))
     # print('skymask     {}'.format(skymask))
     # print('safemask    {}'.format(safemask))
     # print('excludemask {}'.format(excludemask))
@@ -589,6 +599,8 @@ def desi_target_type(desi_target, sciencemask, stdmask,
         if desi_target & sciencemask != 0:
             ttype |= TARGET_TYPE_SCIENCE
         if desi_target & stdmask != 0:
+            ttype |= TARGET_TYPE_STANDARD
+        if mws_target & gaia_stdmask != 0:
             ttype |= TARGET_TYPE_STANDARD
         if desi_target & skymask != 0:
             ttype |= TARGET_TYPE_SKY
@@ -603,6 +615,7 @@ def desi_target_type(desi_target, sciencemask, stdmask,
         ttype = np.zeros(len(desi_target), dtype=np.uint8)
         ttype[desi_target & sciencemask != 0] |= TARGET_TYPE_SCIENCE
         ttype[desi_target & stdmask != 0] |= TARGET_TYPE_STANDARD
+        ttype[mws_target  & gaia_stdmask != 0] |= TARGET_TYPE_STANDARD
         ttype[desi_target & skymask != 0] |= TARGET_TYPE_SKY
         ttype[desi_target & suppskymask != 0] |= TARGET_TYPE_SUPPSKY
         ttype[desi_target & safemask != 0] |= TARGET_TYPE_SAFE
@@ -628,6 +641,7 @@ def default_survey_target_masks(survey):
     suppskymask = None
     safemask = None
     excludemask = None
+    gaia_stdmask = None
     if survey == "main":
         sciencemask = default_main_sciencemask()
         stdmask = default_main_stdmask()
@@ -635,6 +649,7 @@ def default_survey_target_masks(survey):
         suppskymask = default_main_suppskymask()
         safemask = default_main_safemask()
         excludemask = default_main_excludemask()
+        gaia_stdmask = default_main_gaia_stdmask()
     elif survey == "cmx":
         sciencemask = default_cmx_sciencemask()
         stdmask = default_cmx_stdmask()
@@ -666,7 +681,7 @@ def default_survey_target_masks(survey):
         safemask = default_sv3_safemask()
         excludemask = default_sv3_excludemask()
 
-    return (sciencemask, stdmask, skymask, suppskymask, safemask, excludemask)
+    return (sciencemask, stdmask, skymask, suppskymask, safemask, excludemask, gaia_stdmask)
 
 
 def default_target_masks(data):
@@ -695,15 +710,15 @@ def default_target_masks(data):
         col = "SV2_DESI_TARGET"
     elif filesurvey == "sv3":
         col = "SV3_DESI_TARGET"
-    sciencemask, stdmask, skymask, suppskymask, safemask, excludemask = \
+    sciencemask, stdmask, skymask, suppskymask, safemask, excludemask, gaia_stdmask = \
         default_survey_target_masks(filesurvey)
     return (filesurvey, col, sciencemask, stdmask, skymask, suppskymask,
-            safemask, excludemask)
+            safemask, excludemask, gaia_stdmask)
 
 
 def append_target_table(tgs, tagalong, tgdata, survey, typeforce, typecol,
                         sciencemask,
-                        stdmask, skymask, suppskymask, safemask, excludemask):
+                        stdmask, skymask, suppskymask, safemask, excludemask, gaia_stdmask):
     """Append a target recarray / table to a Targets object.
 
     This function is used to take a slice of targets table (as read from a
@@ -782,8 +797,8 @@ def append_target_table(tgs, tagalong, tgdata, survey, typeforce, typecol,
         else:
             d_bits[:] = tgdata[typecol][:]
             d_type[:] = desi_target_type(
-                tgdata[typecol], sciencemask, stdmask, skymask, suppskymask,
-                safemask, excludemask)
+                tgdata[typecol], tgdata[typecol.replace("DESI", "MWS")], sciencemask, stdmask, skymask, suppskymask,
+                safemask, excludemask, gaia_stdmask)
 
     if "OBSCONDITIONS" in tgdata.dtype.fields:
         d_obscond[:] = tgdata["OBSCONDITIONS"][:]
@@ -828,7 +843,7 @@ def append_target_table(tgs, tagalong, tgdata, survey, typeforce, typecol,
 
 def load_target_table(tgs, tagalong, tgdata, survey=None, typeforce=None, typecol=None,
                       sciencemask=None, stdmask=None, skymask=None,
-                      suppskymask=None, safemask=None, excludemask=None):
+                      suppskymask=None, safemask=None, excludemask=None, gaia_stdmask=None):
     """Append targets from a table.
 
     Use the table data to append targets to the input Targets object.
@@ -910,6 +925,7 @@ def load_target_table(tgs, tagalong, tgdata, survey=None, typeforce=None, typeco
     fsuppskymask = None
     fsafemask = None
     fexcludemask = None
+    fgaia_stdmask = None
     if typecol == "FA_TYPE":
         if survey is None:
             msg = "When loading raw fiberassign tables, the survey must be \
@@ -917,10 +933,10 @@ def load_target_table(tgs, tagalong, tgdata, survey=None, typeforce=None, typeco
             log.error(msg)
             raise RuntimeError(msg)
         fsciencemask, fstdmask, fskymask, fsuppskymask, fsafemask, \
-            fexcludemask = default_survey_target_masks(survey)
+            fexcludemask, fgaia_stdmask = default_survey_target_masks(survey)
     else:
         fsurvey, fcol, fsciencemask, fstdmask, fskymask, fsuppskymask, \
-            fsafemask, fexcludemask = default_target_masks(tgdata)
+            fsafemask, fexcludemask, fgaia_stdmask = default_target_masks(tgdata)
         if fcol is None:
             # File could not be identified.  In this case, the user must
             # completely specify the bitmask and column to use.
@@ -928,7 +944,7 @@ def load_target_table(tgs, tagalong, tgdata, survey=None, typeforce=None, typeco
                 if (typecol is None) or (sciencemask is None) \
                         or (stdmask is None) or (skymask is None) \
                         or (suppskymask is None) or (safemask is None) \
-                        or (excludemask is None):
+                        or (excludemask is None) or (gaia_stdmask is None):
                     msg = "Unknown survey type.  To use this table, \
                         specify the column name and every bitmask."
                     log.error(msg)
@@ -950,6 +966,8 @@ def load_target_table(tgs, tagalong, tgdata, survey=None, typeforce=None, typeco
         safemask = fsafemask
     if excludemask is None:
         excludemask = fexcludemask
+    if gaia_stdmask is None:
+        gaia_stdmask = fgaia_stdmask
 
     log.debug("Target table using survey '{}', column {}:".format(
         survey, typecol))
@@ -966,6 +984,8 @@ def load_target_table(tgs, tagalong, tgdata, survey=None, typeforce=None, typeco
             "|".join(desi_mask.names(safemask))))
         log.debug("  excludemask {}".format(
             "|".join(desi_mask.names(excludemask))))
+        log.debug("  gaia_stdmask {}".format(
+            "|".join(desi_mask.names(gaia_stdmask))))
     elif survey == "cmx":
         log.debug("  sciencemask {}".format(
             "|".join(cmx_mask.names(sciencemask))))
@@ -1023,14 +1043,14 @@ def load_target_table(tgs, tagalong, tgdata, survey=None, typeforce=None, typeco
     else:
         raise RuntimeError("unknown survey type, should never get here!")
     append_target_table(tgs, tagalong, tgdata, survey, typeforce, typecol, sciencemask,
-                        stdmask, skymask, suppskymask, safemask, excludemask)
+                        stdmask, skymask, suppskymask, safemask, excludemask, gaia_stdmask)
     return
 
 
 def load_target_file(tgs, tagalong, tfile, survey=None, typeforce=None, typecol=None,
                      sciencemask=None, stdmask=None, skymask=None,
                      suppskymask=None, safemask=None, excludemask=None,
-                     rowbuffer=1000000):
+                     rowbuffer=1000000, gaia_stdmask=None):
     """Append targets from a file.
 
     Read the specified file and append targets to the input Targets object.
@@ -1098,7 +1118,8 @@ def load_target_file(tgs, tagalong, tfile, survey=None, typeforce=None, typecol=
                           skymask=skymask,
                           suppskymask=suppskymask,
                           safemask=safemask,
-                          excludemask=excludemask)
+                          excludemask=excludemask,
+                          gaia_stdmask=gaia_stdmask)
         offset += n
 
     tm.stop()
