@@ -55,7 +55,7 @@ import desimeter
 import fiberassign
 from fiberassign.scripts.assign import parse_assign, run_assign_full
 from fiberassign.assign import merge_results, minimal_target_columns
-from fiberassign.utils import Logger
+from fiberassign.utils import Logger, assert_isoformat_utc, get_svn_version, get_last_line, read_ecsv_keys
 
 # matplotlib
 import matplotlib.pyplot as plt
@@ -70,53 +70,6 @@ gaia_ref_epochs = {"dr2": 2015.5}
 tile_radius_deg = 1.628
 # AR approx. tile area in degrees
 tile_area = np.pi * tile_radius_deg ** 2
-
-
-def assert_isoformat_utc(time_str):
-    """
-    Asserts if a date formats as "YYYY-MM-DDThh:mm:ss+00:00".
-
-    Args:
-        time_str: string with a date
-    Returns:
-        boolean asserting if time_str formats as "YYYY-MM-DDThh:mm:ss+00:00"
-    """
-    try:
-        test_time = datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%S%z")
-    except ValueError:
-        return False
-    # AR/SB it parses as an ISO string, now just check UTC timezone +00:00 and not +0000
-    return time_str.endswith("+00:00")
-
-
-def get_svn_version(svn_dir):
-    """
-    Gets the SVN revision number of an SVN folder.
-
-    Args:
-        svn_dir: SVN folder path (string)
-
-    Returns:
-        svnver: SVN revision number of svn_dir, or "unknown" if not an svn checkout
-
-    Notes:
-        `svn_dir` can contain environment variables to expand, e.g. "$DESIMODEL/data"
-    """
-    cmd = ["svn", "info", os.path.expandvars(svn_dir)]
-    try:
-        svn_ver = (
-            subprocess.check_output(cmd, stderr=subprocess.DEVNULL).strip().decode()
-        )
-        # search for "Last Changed Rev: " line and parse out revision number.  Recent versions
-        # of svn have a --show-item argument that does this in a less fragile way,
-        # but the svn installed at KPNO is old and doesn't support this option.
-        searchstr = 'Last Changed Rev: '
-        svn_ver = [line[len(searchstr):] for line in svn_ver.split('\n')
-                   if searchstr in line][0]
-    except subprocess.CalledProcessError:
-        svn_ver = "unknown"
-
-    return svn_ver
 
 
 def get_latest_rundate(log=Logger.get(), step="", start=time()):
@@ -147,58 +100,6 @@ def get_latest_rundate(log=Logger.get(), step="", start=time()):
         rundate += "+00:00"
     log.info("{:.1f}s\t{}\tlatest rundate: {}".format(time() - start, step, rundate))
     return rundate
-
-
-def get_last_line(fn):
-    """
-    Return the last line of a text file.
-
-    Args:
-        fn: file name (string)
-
-    Returns:
-        last_line: (string)
-
-    Notes:
-        Fails if fn has one line only; we do not protect for that case,
-            as this function is intended to be used in get_program_latest_timestamp()
-            to read *ecsv ledgers, which will always have more than one line,
-            and we want the fastest function possible, to use in fiberassign on-the-fly.
-        Copied from https://stackoverflow.com/questions/46258499/how-to-read-the-last-line-of-a-file-in-python.
-    """
-    with open(fn, "rb") as f:
-        f.seek(-2, os.SEEK_END)
-        while f.read(1) != b"\n":
-            f.seek(-2, os.SEEK_CUR)
-        last_line = f.readline().decode().strip()
-    f.close()
-    return last_line
-
-
-def read_ecsv_keys(fn):
-    """
-    Returns the column content of an .ecsv file.
-
-    Args:
-        fn: filename with an .ecsv format (string)
-
-    Returns:
-        keys: list of the column names in fn (list)
-
-    Notes:
-        Gets the column names from the first line not starting with "#".
-    """
-    keys = []
-    with open(fn) as f:
-        for line in f:
-            if line[0] == "#":
-                continue
-            if len(line.strip()) == 0:
-                continue
-            keys = line.split()
-            break
-    f.close()
-    return keys
 
 
 def get_program_latest_timestamp(
