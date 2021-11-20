@@ -55,7 +55,7 @@ import desimeter
 import fiberassign
 from fiberassign.scripts.assign import parse_assign, run_assign_full
 from fiberassign.assign import merge_results, minimal_target_columns
-from fiberassign.utils import Logger, assert_isoformat_utc, get_svn_version, get_last_line
+from fiberassign.utils import Logger, assert_isoformat_utc, get_svn_version, get_last_line, read_ecsv_keys
 
 # matplotlib
 import matplotlib.pyplot as plt
@@ -100,32 +100,6 @@ def get_latest_rundate(log=Logger.get(), step="", start=time()):
         rundate += "+00:00"
     log.info("{:.1f}s\t{}\tlatest rundate: {}".format(time() - start, step, rundate))
     return rundate
-
-
-def read_ecsv_keys(fn):
-    """
-    Returns the column content of an .ecsv file.
-
-    Args:
-        fn: filename with an .ecsv format (string)
-
-    Returns:
-        keys: list of the column names in fn (list)
-
-    Notes:
-        Gets the column names from the first line not starting with "#".
-    """
-    keys = []
-    with open(fn) as f:
-        for line in f:
-            if line[0] == "#":
-                continue
-            if len(line.strip()) == 0:
-                continue
-            keys = line.split()
-            break
-    f.close()
-    return keys
 
 
 def get_program_latest_timestamp(
