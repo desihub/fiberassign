@@ -254,11 +254,6 @@ setup_keywords['ext_modules'] = ext_modules
 setup_keywords['cmdclass']['build_ext'] = BuildExt
 setup_keywords['cmdclass']['clean'] = RealClean
 
-# Add internal data directories
-#
-setup_keywords['package_data'] = {'fiberassign': ['data/*',],}
-
-
 #
 # Run setup command.
 #
