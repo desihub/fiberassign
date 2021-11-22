@@ -6,6 +6,8 @@ fiberassign change log
 5.3.1 (unreleased)
 ------------------
 
+This version now requires desitarget >= 2.2.1
+
 5.3.0 (2021-09-20)
 ------------------
 
