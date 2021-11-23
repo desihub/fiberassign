@@ -126,6 +126,15 @@ def fba_rerun_get_settings(
             )
             sys.exit(1)
 
+    # AR fieldrot, ha: protecting against negative values,
+    # AR    which cause problem as e.g. in "fba_run --fieldrot -1.0"
+    # AR    changing those to a string is not a problem
+    # AR    though, needs to be in single quotes, as this is written
+    # AR    in a bash string encapsulated in double quotes
+    for key in ["fieldrot", "ha"]:
+        if key in mydict:
+            mydict[key] = "' {}'".format(mydict[key])
+
     # AR SKYBRICKS_DIR
     mydict["skybrver"] = "-"  # default value if not set
     keys = [cards[0] for cards in hdr.cards]
