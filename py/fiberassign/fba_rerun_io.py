@@ -430,11 +430,15 @@ def fba_rerun_intermediate(
         start=start,
     )
     # AR secondary targets
+    targdirs = [mydirs["scnd"]]
+    for key in sorted(list(mydirs.keys())):
+        if (key[:4] == "scnd") & (key != "scnd") & (key != "scndmtl"):
+            targdirs.append(mydirs[key])
     create_mtl(
         myouts["tiles"],
         mydirs["scndmtl"],
         mydict["mtltime"],
-        mydirs["scnd"],
+        targdirs,
         mydict["survey"],
         mydict["gaiadr"].replace("gaia", ""),
         mydict["pmcorr"],
