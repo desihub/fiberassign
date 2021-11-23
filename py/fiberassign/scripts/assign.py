@@ -187,7 +187,7 @@ def parse_assign(optlist=None):
                         help="Disable oversubscription of science targets with leftover fibers.")
 
     parser.add_argument("--lookup_sky_source", required=False, default="ls",
-                        choices={"ls", "gaia"},
+                        choices=["ls", "gaia"],
                         help="Source for the look-up table for sky positions for stuck fibers:"
                         " 'ls': uses $SKYBRICKS_DIR; 'gaia': uses $SKYHEALPIXS_DIR (default=ls)")
 
