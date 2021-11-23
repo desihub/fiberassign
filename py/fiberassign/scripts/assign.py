@@ -159,6 +159,11 @@ def parse_assign(optlist=None):
                         help="Default DESI_TARGET mask to use for stdstar "
                              "targets")
 
+    parser.add_argument("--gaia_stdmask", required=False,
+                        default=None,
+                        help="Default MWS_TARGET mask to use for Gaia stdstar "
+                             "targets (for BACKUP program)")
+
     parser.add_argument("--skymask", required=False,
                         default=None,
                         help="Default DESI_TARGET mask to use for sky targets")
@@ -186,6 +191,11 @@ def parse_assign(optlist=None):
                         action="store_true",
                         help="Disable oversubscription of science targets with leftover fibers.")
 
+    parser.add_argument("--lookup_sky_source", required=False, default="ls",
+                        choices=["ls", "gaia"],
+                        help="Source for the look-up table for sky positions for stuck fibers:"
+                        " 'ls': uses $SKYBRICKS_DIR; 'gaia': uses $SKYHEALPIXS_DIR (default=ls)")
+
     args = None
     if optlist is None:
         args = parser.parse_args()
@@ -199,6 +209,7 @@ def parse_assign(optlist=None):
     # the first target file to know which bitmask to use
     if isinstance(args.sciencemask, str) or \
        isinstance(args.stdmask, str) or \
+       isinstance(args.gaia_stdmask, str) or \
        isinstance(args.skymask, str) or \
        isinstance(args.safemask, str) or \
        isinstance(args.excludemask, str):
@@ -207,6 +218,7 @@ def parse_assign(optlist=None):
         data = fitsio.read(args.targets[0], 1, rows=[0,1])
         filecols, filemasks, filesurvey = main_cmx_or_sv(data)
         desi_mask = filemasks[0]
+        mws_mask = filemasks[2]
 
         # convert str bit names -> int bit mask
         if isinstance(args.sciencemask, str):
@@ -220,6 +232,12 @@ def parse_assign(optlist=None):
                 args.stdmask = int(args.stdmask)
             except ValueError:
                 args.stdmask = desi_mask.mask(args.stdmask.replace(",", "|"))
+
+        if isinstance(args.gaia_stdmask, str):
+            try:
+                args.gaia_stdmask = int(args.gaia_stdmask)
+            except ValueError:
+                args.gaia_stdmask = mws_mask.mask(args.gaia_stdmask.replace(",", "|"))
 
         if isinstance(args.skymask, str):
             try:
@@ -326,6 +344,7 @@ def run_assign_init(args, plate_radec=True):
                          skymask=args.skymask,
                          safemask=args.safemask,
                          excludemask=args.excludemask,
+                         gaia_stdmask=args.gaia_stdmask,
                          rundate=args.rundate)
     # Now load the sky target files.  These are main-survey files that we will
     # force to be treated as the survey type of the other target files.
@@ -337,7 +356,8 @@ def run_assign_init(args, plate_radec=True):
                          stdmask=args.stdmask,
                          skymask=args.skymask,
                          safemask=args.safemask,
-                         excludemask=args.excludemask)
+                         excludemask=args.excludemask,
+                         gaia_stdmask=args.gaia_stdmask)
 
     return (hw, tiles, tgs, tagalong)
 
@@ -384,7 +404,7 @@ def run_assign_full(args, plate_radec=True):
     # Find stuck positioners and compute whether they will land on acceptable
     # sky locations for each tile.
     gt.start("Compute Stuck locations on good sky")
-    stucksky = stuck_on_sky(hw, tiles)
+    stucksky = stuck_on_sky(hw, tiles, args.lookup_sky_source)
     if stucksky is None:
         # (the pybind code doesn't like None when a dict is expected...)
         stucksky = {}
@@ -472,7 +492,7 @@ def run_assign_bytile(args):
     # Find stuck positioners and compute whether they will land on acceptable
     # sky locations for each tile.
     gt.start("Compute Stuck locations on good sky")
-    stucksky = stuck_on_sky(hw, tiles)
+    stucksky = stuck_on_sky(hw, tiles, args.lookup_sky_source)
     if stucksky is None:
         # (the pybind code doesn't like None when a dict is expected...)
         stucksky = {}

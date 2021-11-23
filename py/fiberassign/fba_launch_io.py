@@ -53,7 +53,7 @@ import desimeter
 
 # fiberassign
 import fiberassign
-from fiberassign.utils import Logger, assert_isoformat_utc, get_date_cutoff
+from fiberassign.utils import Logger, assert_isoformat_utc, get_svn_version, get_last_line, read_ecsv_keys, get_date_cutoff
 
 # matplotlib
 import matplotlib.pyplot as plt
@@ -68,36 +68,6 @@ gaia_ref_epochs = {"dr2": 2015.5}
 tile_radius_deg = 1.628
 # AR approx. tile area in degrees
 tile_area = np.pi * tile_radius_deg ** 2
-
-
-def get_svn_version(svn_dir):
-    """
-    Gets the SVN revision number of an SVN folder.
-
-    Args:
-        svn_dir: SVN folder path (string)
-
-    Returns:
-        svnver: SVN revision number of svn_dir, or "unknown" if not an svn checkout
-
-    Notes:
-        `svn_dir` can contain environment variables to expand, e.g. "$DESIMODEL/data"
-    """
-    cmd = ["svn", "info", os.path.expandvars(svn_dir)]
-    try:
-        svn_ver = (
-            subprocess.check_output(cmd, stderr=subprocess.DEVNULL).strip().decode()
-        )
-        # search for "Last Changed Rev: " line and parse out revision number.  Recent versions
-        # of svn have a --show-item argument that does this in a less fragile way,
-        # but the svn installed at KPNO is old and doesn't support this option.
-        searchstr = 'Last Changed Rev: '
-        svn_ver = [line[len(searchstr):] for line in svn_ver.split('\n')
-                   if searchstr in line][0]
-    except subprocess.CalledProcessError:
-        svn_ver = "unknown"
-
-    return svn_ver
 
 
 def get_latest_rundate(log=Logger.get(), step="", start=time()):
@@ -128,58 +98,6 @@ def get_latest_rundate(log=Logger.get(), step="", start=time()):
         rundate += "+00:00"
     log.info("{:.1f}s\t{}\tlatest rundate: {}".format(time() - start, step, rundate))
     return rundate
-
-
-def get_last_line(fn):
-    """
-    Return the last line of a text file.
-
-    Args:
-        fn: file name (string)
-
-    Returns:
-        last_line: (string)
-
-    Notes:
-        Fails if fn has one line only; we do not protect for that case,
-            as this function is intended to be used in get_program_latest_timestamp()
-            to read *ecsv ledgers, which will always have more than one line,
-            and we want the fastest function possible, to use in fiberassign on-the-fly.
-        Copied from https://stackoverflow.com/questions/46258499/how-to-read-the-last-line-of-a-file-in-python.
-    """
-    with open(fn, "rb") as f:
-        f.seek(-2, os.SEEK_END)
-        while f.read(1) != b"\n":
-            f.seek(-2, os.SEEK_CUR)
-        last_line = f.readline().decode().strip()
-    f.close()
-    return last_line
-
-
-def read_ecsv_keys(fn):
-    """
-    Returns the column content of an .ecsv file.
-
-    Args:
-        fn: filename with an .ecsv format (string)
-
-    Returns:
-        keys: list of the column names in fn (list)
-
-    Notes:
-        Gets the column names from the first line not starting with "#".
-    """
-    keys = []
-    with open(fn) as f:
-        for line in f:
-            if line[0] == "#":
-                continue
-            if len(line.strip()) == 0:
-                continue
-            keys = line.split()
-            break
-    f.close()
-    return keys
 
 
 def get_program_latest_timestamp(
@@ -607,6 +525,7 @@ def assert_env_vars(
         "DESI_SURVEYOPS",
         "SKYBRICKS_DIR",
         "DUST_DIR",
+        "SKYHEALPIXS_DIR",
     ],
     log=Logger.get(),
     step="settings",
@@ -621,7 +540,8 @@ def assert_env_vars(
         "DESIMODEL",
         "DESI_SURVEYOPS",
         "SKYBRICKS_DIR",
-        "DUST_DIR",]): list of environment variables required by fba_launch
+        "DUST_DIR",
+        "SKYHEALPIXS_DIR",]): list of environment variables required by fba_launch
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -630,6 +550,7 @@ def assert_env_vars(
     Notes:
         Will exit with error if some assertions are not verified.
         20210928 : add DUST_DIR, as assign.merge_results_tile() requires it to populate EBV=0 values.
+        20211109 : add SKYHEALPIXS_DIR
     """
     # AR safe: DESI environment variables
     for required_env_var in required_env_vars:
@@ -731,6 +652,7 @@ def print_config_infos(
         "DESI_SURVEYOPS",
         "SKYBRICKS_DIR",
         "DUST_DIR",
+        "SKYHEALPIXS_DIR",
     ],
     log=Logger.get(),
     step="settings",
@@ -753,6 +675,7 @@ def print_config_infos(
 
     Notes:
         20210928 : add DUST_DIR, as assign.merge_results_tile() requires it to populate EBV=0 values.
+        20211109 : add SKYHEALPIXS_DIR
     """
     # AR machine
     log.info(
@@ -1765,10 +1688,12 @@ def launch_onetile_fa(
         args: fba_launch-like parser.parse_args() output
             should contain at least:
                 - survey
+                - program
                 - rundate
                 - sky_per_petal
                 - standards_per_petal
                 - sky_per_slitblock
+                - lookup_sky_source
         tilesfn: path to the input tiles fits file (string)
         targfns: paths to the input targets fits files, e.g. targ, scnd, too (either a string if only one file, or a list of strings)
         fbafn: path to the output fba-TILEID.fits file (string)
@@ -1778,7 +1703,7 @@ def launch_onetile_fa(
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+        start (optional, defaults to time()): start time for log (in seconds; output of time.time()
 
     Notes:
         no sanity checks done on inputs; assumed to be done elsewhere
@@ -1788,6 +1713,7 @@ def launch_onetile_fa(
         fba_launch-like adding information in the header is done in another function, update_fiberassign_header
         TBD: be careful if working in the SVN-directory; maybe add additional safety lines?
         20210930 : moving some imports inside this function to avoid circular imports.
+        20211119 : added lookup_sky_source
     """
     log.info("")
     log.info("")
@@ -1865,6 +1791,7 @@ def launch_onetile_fa(
             "--gfafile",
             gfafn,
         ]
+    opts += ["--lookup_sky_source", args.lookup_sky_source,]
     log.info(
         "{:.1f}s\t{}\ttileid={:06d}: running raw fiber assignment (run_assign_full) with opts={}".format(
             time() - start, step, tileid, " ; ".join(opts)
@@ -1977,6 +1904,7 @@ def update_fiberassign_header(
         faflavor has to be {hdr_survey}{hdr_faprgrm}; will exit with an error if not;
             keeping this to be sure it is not forgotten to be done for dedicated programs.
         20210917 : keywords scnd2, scnd3, etc could be automatically added (see get_desitarget_paths())
+        20211119 : added lookup_sky_source keyword
     """
     # AR sanity check on faflavor
     if faflavor != "{}{}".format(hdr_survey, hdr_faprgrm):
@@ -2046,6 +1974,8 @@ def update_fiberassign_header(
     fd["PRIMARY"].write_key(
         "svnmtl", get_svn_version(os.path.join(os.getenv("DESI_SURVEYOPS"), "mtl"))
     )
+    # AR lookup_sky_source
+    fd["PRIMARY"].write_key("LKSKYSRC", args.lookup_sky_source)
     fd.close()
 
 

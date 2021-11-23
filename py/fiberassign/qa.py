@@ -22,7 +22,7 @@ from collections import OrderedDict
 
 import fitsio
 
-from desitarget.targetmask import desi_mask
+from desitarget.targetmask import desi_mask, mws_mask
 
 from .utils import Logger, default_mp_proc
 
@@ -31,6 +31,7 @@ from .targets import (
     load_target_table,
     default_main_sciencemask,
     default_main_stdmask,
+    default_main_gaia_stdmask,
     default_main_skymask,
     default_main_suppskymask,
     default_main_safemask,
@@ -76,9 +77,12 @@ def qa_parse_table(header, tgdata):
     stdfaintmask = int(desi_mask["STD_FAINT"].mask)
     stdwdmask = int(desi_mask["STD_WD"].mask)
     stdbrtmask = int(desi_mask["STD_BRIGHT"].mask)
+    gaiastdfaintmask = int(mws_mask["GAIA_STD_FAINT"].mask)
+    gaiastdbrtmask = int(mws_mask["GAIA_STD_BRIGHT"].mask)
 
     sciencemask = 0
     stdmask = 0
+    gaiastdmask = 0
     skymask = 0
     suppskymask = 0
     safemask = 0
@@ -87,6 +91,7 @@ def qa_parse_table(header, tgdata):
     if survey == "main":
         sciencemask = int(default_main_sciencemask())
         stdmask = int(default_main_stdmask())
+        gaiastdmask = int(default_main_gaia_stdmask())
         skymask = int(default_main_skymask())
         suppskymask = int(default_main_suppskymask())
         safemask = int(default_main_safemask())
@@ -131,6 +136,16 @@ def qa_parse_table(header, tgdata):
                 tgprops[tgid]["type"] = "STD_WD"
             elif dt & stdbrtmask:
                 tgprops[tgid]["type"] = "STD_BRIGHT"
+            else:
+                tgprops[tgid]["type"] = "NA"
+        elif dt & gaiastdmask:
+            tgprops[tgid]["class"] = "gaia-standard"
+            if dt & sciencemask:
+                tgprops[tgid]["class"] = "science-standard"
+            if dt & gaiastdfaintmask:
+                tgprops[tgid]["type"] = "GAIA_STD_FAINT"
+            elif dt & gaiastdbrtmask:
+                tgprops[tgid]["type"] = "GAIA_STD_BRIGHT"
             else:
                 tgprops[tgid]["type"] = "NA"
         elif dt & sciencemask:

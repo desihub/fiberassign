@@ -349,9 +349,10 @@ class TestAssign(unittest.TestCase):
         favail = LocationsAvailable(tgsavail)
 
         # Pass empty map of STUCK positioners that land on good sky
+        # AR 20211123 : picks lookup_sky_source = "ls" for the test
         stucksky = None
         if do_stucksky:
-            stucksky = stuck_on_sky(hw, tiles)
+            stucksky = stuck_on_sky(hw, tiles, "ls")
         if stucksky is None:
             # (the pybind code doesn't like None when a dict is expected...)
             stucksky = {}

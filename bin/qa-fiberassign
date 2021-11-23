@@ -81,15 +81,16 @@ for filename in args.tilefiles:
     stdmask = None
     skymask = None
     excludemask = None
+    gaia_stdmask = None
     col=None
     if survey is not None:
             
-        sciencemask, stdmask, skymask, suppskymask, safemask, excludemask = \
+        sciencemask, stdmask, skymask, suppskymask, safemask, excludemask, gaia_stdmask = \
                 default_survey_target_masks(survey)
   
     else:
         fsurvey, col, sciencemask, stdmask, skymask, suppskymask, safemask, \
-                excludemask = default_target_masks(fbtargets)
+                excludemask, gaia_stdmask = default_target_masks(fbtargets)
         survey = fsurvey
 
 

@@ -299,12 +299,14 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
 
         #- Keep SKYBRICKS_DIR used to lookup sky locations,
         #- shortening full path if possible
-        skybricks = os.getenv('SKYBRICKS_DIR', None)
-        if (skybricks is not None) and ('DESI_ROOT' in os.environ):
-            if skybricks.startswith(os.environ['DESI_ROOT']):
-                skybricks = skybricks.replace(
-                        os.environ['DESI_ROOT'], '$DESI_ROOT', 1)
-        setdep(header, 'SKYBRICKS_DIR', skybricks)
+        # AR add SKYHEALPIX_DIR similarly, now looping over the variable names
+        for skyname in ["SKYBRICKS_DIR", "SKYHEALPIXS_DIR"]:
+            skydir = os.getenv(skyname, None)
+            if (skydir is not None) and ("DESI_ROOT" in os.environ):
+                if skydir.startswith(os.environ["DESI_ROOT"]):
+                    skydir = skydir.replace(
+                            os.environ["DESI_ROOT"], "$DESI_ROOT", 1)
+            setdep(header, skyname, skydir)
 
         fd.write(None, header=header, extname="PRIMARY")
 
@@ -829,26 +831,32 @@ def read_assignment_fits_tile(tile_file):
 
         fsciencemask = None
         fstdmask = None
+        fgaia_stdmask = None
         fskymask = None
         fsuppskymask = None
         fexcludemask = None
         fcol = None
         if survey is not None:
             fsciencemask, fstdmask, fskymask, fsuppskymask, fsafemask, \
-                fexcludemask = default_survey_target_masks(survey)
+                fexcludemask, fgaia_stdmask = default_survey_target_masks(survey)
             fcol = "FA_TARGET"
         else:
             fsurvey, fcol, fsciencemask, fstdmask, fskymask, \
                 fsuppskymask, fsafemask, \
-                fexcludemask = default_target_masks(fbtargets)
+                fexcludemask, fgaia_stdmask = default_target_masks(fbtargets)
             survey = fsurvey
 
         for col in full_names:
             if col == "FA_TYPE":
+                # AR protect case where *MWS_TARGET does not exist
+                mws_targets = 0 * fbtargets[fcol][:]
+                if fcol.replace("DESI", "MWS") in fbtargets.dtype.names:
+                    mws_targets = fbtargets[fcol.replace("DESI", "MWS")][:]
                 targets_data[col][:nrawtarget] = [
-                    desi_target_type(x, fsciencemask, fstdmask, fskymask,
-                                     fsuppskymask, fsafemask, fexcludemask)
-                    for x in fbtargets[fcol][:]]
+                    desi_target_type(x, y, fsciencemask, fstdmask, fskymask,
+                                     fsuppskymask, fsafemask, fexcludemask,
+                                     fgaia_stdmask)
+                    for x, y in zip(fbtargets[fcol][:], mws_targets)]
             elif col == "FA_TARGET":
                 targets_data[col][:nrawtarget] = fbtargets[fcol]
             elif col == "TARGET_RA":
