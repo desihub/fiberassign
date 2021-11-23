@@ -527,6 +527,7 @@ def assert_env_vars(
         "DESI_SURVEYOPS",
         "SKYBRICKS_DIR",
         "DUST_DIR",
+        "SKYHEALPIXS_DIR",
     ],
     log=Logger.get(),
     step="settings",
@@ -541,7 +542,8 @@ def assert_env_vars(
         "DESIMODEL",
         "DESI_SURVEYOPS",
         "SKYBRICKS_DIR",
-        "DUST_DIR",]): list of environment variables required by fba_launch
+        "DUST_DIR",
+        "SKYHEALPIXS_DIR",]): list of environment variables required by fba_launch
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -550,6 +552,7 @@ def assert_env_vars(
     Notes:
         Will exit with error if some assertions are not verified.
         20210928 : add DUST_DIR, as assign.merge_results_tile() requires it to populate EBV=0 values.
+        20211109 : add SKYHEALPIXS_DIR
     """
     # AR safe: DESI environment variables
     for required_env_var in required_env_vars:
@@ -651,6 +654,7 @@ def print_config_infos(
         "DESI_SURVEYOPS",
         "SKYBRICKS_DIR",
         "DUST_DIR",
+        "SKYHEALPIXS_DIR",
     ],
     log=Logger.get(),
     step="settings",
@@ -673,6 +677,7 @@ def print_config_infos(
 
     Notes:
         20210928 : add DUST_DIR, as assign.merge_results_tile() requires it to populate EBV=0 values.
+        20211109 : add SKYHEALPIXS_DIR
     """
     # AR machine
     log.info(
@@ -1678,10 +1683,12 @@ def launch_onetile_fa(
         args: fba_launch-like parser.parse_args() output
             should contain at least:
                 - survey
+                - program
                 - rundate
                 - sky_per_petal
                 - standards_per_petal
                 - sky_per_slitblock
+                - lookup_sky_source
         tilesfn: path to the input tiles fits file (string)
         targfns: paths to the input targets fits files, e.g. targ, scnd, too (either a string if only one file, or a list of strings)
         fbafn: path to the output fba-TILEID.fits file (string)
@@ -1691,7 +1698,7 @@ def launch_onetile_fa(
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+        start (optional, defaults to time()): start time for log (in seconds; output of time.time()
 
     Notes:
         no sanity checks done on inputs; assumed to be done elsewhere
@@ -1700,6 +1707,7 @@ def launch_onetile_fa(
             requires a change in the launch_fa() call format.
         fba_launch-like adding information in the header is done in another function, update_fiberassign_header
         TBD: be careful if working in the SVN-directory; maybe add additional safety lines?
+        20211119 : added lookup_sky_source
     """
     log.info("")
     log.info("")
@@ -1770,6 +1778,7 @@ def launch_onetile_fa(
             "--gfafile",
             gfafn,
         ]
+    opts += ["--lookup_sky_source", args.lookup_sky_source,]
     log.info(
         "{:.1f}s\t{}\ttileid={:06d}: running raw fiber assignment (run_assign_full) with opts={}".format(
             time() - start, step, tileid, " ; ".join(opts)
@@ -1882,6 +1891,7 @@ def update_fiberassign_header(
         faflavor has to be {hdr_survey}{hdr_faprgrm}; will exit with an error if not;
             keeping this to be sure it is not forgotten to be done for dedicated programs.
         20210917 : keywords scnd2, scnd3, etc could be automatically added (see get_desitarget_paths())
+        20211119 : added lookup_sky_source keyword
     """
     # AR sanity check on faflavor
     if faflavor != "{}{}".format(hdr_survey, hdr_faprgrm):
@@ -1951,6 +1961,8 @@ def update_fiberassign_header(
     fd["PRIMARY"].write_key(
         "svnmtl", get_svn_version(os.path.join(os.getenv("DESI_SURVEYOPS"), "mtl"))
     )
+    # AR lookup_sky_source
+    fd["PRIMARY"].write_key("LKSKYSRC", args.lookup_sky_source)
     fd.close()
 
 

@@ -18,7 +18,7 @@ jobs:
       DESIMETER_VERSION: 0.6.5
       DESIMODEL_DATA: trunk
       DESIMODEL: ${{ github.workspace }}/desimodel
-      DESITARGET_VERSION: 1.0.0
+      DESITARGET_VERSION: 2.2.1
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
