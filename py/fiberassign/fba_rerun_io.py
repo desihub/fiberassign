@@ -358,7 +358,7 @@ def fba_rerun_intermediate(
     mydict = fba_rerun_get_settings(
         fn, bugfix=bugfix, log=log, step="settings", start=start
     )
-    log.info("{:.1f}s\tsettings\tmydict = {}".format(mydict))
+    log.info("{:.1f}s\tsettings\tmydict = {}".format(time() - start, mydict))
     # AR setting outdir/ABC + safe check
     outdir = os.path.join(
         os.path.normpath(outdir), "{:06d}".format(mydict["tileid"])[:3]
