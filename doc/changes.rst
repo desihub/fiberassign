@@ -3,10 +3,31 @@
 fiberassign change log
 ======================
 
-5.3.1 (unreleased)
+5.4.1 (unreleased)
+------------------
+
+5.4.0 (2021-11-23)
 ------------------
 
 This version now requires desitarget >= 2.2.1
+Various updates, in particular to handle the Main/BACKUP program (but not only).
+
+* Remove STD_WD from the per-petal STD counting (PR `# 415`_)
+* Skyhealpixs gaia (PR `# 416`_)
+* Gaia std (PR `# 417`_)
+* Fba rerun5 (PR `# 420`_)
+* Move some functions from fba_launch_io.py to utils.py (PR `# 419`_)
+* change main/backup goaltime from 30 to 60 (PR `# 418`_)
+* Populate EBV=0 rows in FIBERASSIGN with correct values (PR `# 414`_)
+
+.. _`#416`: https://github.com/desihub/fiberassign/pull/415
+.. _`#416`: https://github.com/desihub/fiberassign/pull/416
+.. _`#417`: https://github.com/desihub/fiberassign/pull/417
+.. _`#420`: https://github.com/desihub/fiberassign/pull/420
+.. _`#419`: https://github.com/desihub/fiberassign/pull/419
+.. _`#418`: https://github.com/desihub/fiberassign/pull/418
+.. _`#414`: https://github.com/desihub/fiberassign/pull/414
+
 
 5.3.0 (2021-09-20)
 ------------------
