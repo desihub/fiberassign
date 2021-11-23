@@ -1,2 +1,2 @@
 rundate:
-    std_wd: "2021-10-01T19:00:00+00:00" # std_wd not counted in per-petal-std after that rundate
+    std_wd: "2021-12-01T19:00:00+00:00" # std_wd not counted in per-petal-std after that rundate
