@@ -126,6 +126,15 @@ def fba_rerun_get_settings(
             )
             sys.exit(1)
 
+    # AR fieldrot, ha: protecting against negative values,
+    # AR    which cause problem as e.g. in "fba_run --fieldrot -1.0"
+    # AR    changing those to a string is not a problem
+    # AR    though, needs to be in single quotes, as this is written
+    # AR    in a bash string encapsulated in double quotes
+    for key in ["fieldrot", "ha"]:
+        if key in mydict:
+            mydict[key] = "' {}'".format(mydict[key])
+
     # AR SKYBRICKS_DIR
     mydict["skybrver"] = "-"  # default value if not set
     keys = [cards[0] for cards in hdr.cards]
@@ -358,7 +367,7 @@ def fba_rerun_intermediate(
     mydict = fba_rerun_get_settings(
         fn, bugfix=bugfix, log=log, step="settings", start=start
     )
-    log.info("{:.1f}s\tsettings\tmydict = {}".format(mydict))
+    log.info("{:.1f}s\tsettings\tmydict = {}".format(time() - start, mydict))
     # AR setting outdir/ABC + safe check
     outdir = os.path.join(
         os.path.normpath(outdir), "{:06d}".format(mydict["tileid"])[:3]
@@ -430,11 +439,15 @@ def fba_rerun_intermediate(
         start=start,
     )
     # AR secondary targets
+    targdirs = [mydirs["scnd"]]
+    for key in sorted(list(mydirs.keys())):
+        if (key[:4] == "scnd") & (key != "scnd") & (key != "scndmtl"):
+            targdirs.append(mydirs[key])
     create_mtl(
         myouts["tiles"],
         mydirs["scndmtl"],
         mydict["mtltime"],
-        mydirs["scnd"],
+        targdirs,
         mydict["survey"],
         mydict["gaiadr"].replace("gaia", ""),
         mydict["pmcorr"],
