@@ -40,6 +40,10 @@ from ._internal import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                         Target, Targets, TargetsAvailable,
                         LocationsAvailable)
 
+from fiberassign.utils import assert_isoformat_utc, get_date_cutoff
+
+from datetime import datetime
+from astropy.time import Time
 
 class TargetTagalong(object):
     '''
@@ -227,13 +231,49 @@ def default_main_sciencemask():
     return sciencemask
 
 
-def default_main_stdmask():
+def default_main_stdmask(rundate=None):
     """Returns default mask of bits for standards in main survey.
+
+    Args:
+        rundate (optional, defaults to None): yyyy-mm-ddThh:mm:ss+00:00 rundate
+            for focalplane with UTC timezone formatting (string)
+
+    Notes:
+        20210930 : we make the default behavior to discard STD_WD;
+                    if rundate < 2021-10-01T19:00:00+00:00, we include STD_WD in the stdmask
+                    to preserve backward-compatibility.
     """
     stdmask = 0
     stdmask |= desi_mask["STD_FAINT"].mask
-    stdmask |= desi_mask["STD_WD"].mask
     stdmask |= desi_mask["STD_BRIGHT"].mask
+    # AR cutoff rundate for:
+    # AR - including or not STD_WD
+    rundate_cutoff = get_date_cutoff("rundate", "std_wd")
+    rundate_mjd_cutoff = Time(datetime.strptime(rundate_cutoff, "%Y-%m-%dT%H:%M:%S%z")).mjd
+    use_wd = False
+    if rundate is not None:
+        if not assert_isoformat_utc(rundate):
+            print(
+                "provided rundate={} does not follow the expected formatting (yyyy-mm-ddThh:mm:ss+00:00); exiting".format(
+                    rundate,
+                )
+            )
+            sys.exit(1)
+        rundate_mjd = Time(datetime.strptime(rundate, "%Y-%m-%dT%H:%M:%S%z")).mjd
+        if rundate_mjd < rundate_mjd_cutoff:
+            use_wd = True
+    if use_wd:
+        stdmask |= desi_mask["STD_WD"].mask
+        print(
+            "rundate = {} is before rundate_cutoff_std_wd = {}, so STD_WD are counted as TARGET_TYPE_STANDARD".format(
+                rundate, rundate_cutoff,
+            )
+        )
+    else:
+        print("rundate = {} is after rundate_cutoff_std_wd = {}, so STD_WD are *not* counted as TARGET_TYPE_STANDARD".format(
+                rundate, rundate_cutoff,
+            )
+        )
     return stdmask
 
 def default_main_gaia_stdmask():
@@ -628,16 +668,20 @@ def desi_target_type(desi_target, mws_target, sciencemask, stdmask,
     return ttype
 
 
-def default_survey_target_masks(survey):
+def default_survey_target_masks(survey, rundate=None):
     """Return the default masks for the survey.
 
     Args:
         survey (str): The survey name.
+        rundate (optional, defaults to None): yyyy-mm-ddThh:mm:ss+00:00 rundate
+            for focalplane with UTC timezone formatting (string)
 
     Returns:
         (tuple): The science mask, standard mask, sky mask, suppsky mask,
             safe mask, exclude mask, and gaia standard mask for the data.
 
+    Notes:
+        20210930 : include rundate argument, for default_main_stdmask().
     """
     sciencemask = None
     stdmask = None
@@ -648,7 +692,7 @@ def default_survey_target_masks(survey):
     gaia_stdmask = None
     if survey == "main":
         sciencemask = default_main_sciencemask()
-        stdmask = default_main_stdmask()
+        stdmask = default_main_stdmask(rundate=rundate)
         skymask = default_main_skymask()
         suppskymask = default_main_suppskymask()
         safemask = default_main_safemask()
@@ -688,7 +732,7 @@ def default_survey_target_masks(survey):
     return (sciencemask, stdmask, skymask, suppskymask, safemask, excludemask, gaia_stdmask)
 
 
-def default_target_masks(data):
+def default_target_masks(data, rundate=None):
     """Return the column name and default mask values for the data table.
 
     This identifies the type of target data and returns the defaults for
@@ -696,12 +740,16 @@ def default_target_masks(data):
 
     Args:
         data (Table):  A Table or recarray.
+        rundate (optional, defaults to None): yyyy-mm-ddThh:mm:ss+00:00 rundate for
+            focalplane with UTC timezone formatting (string)
 
     Returns:
         (tuple):  The survey, column name, science mask, standard mask,
             sky mask, suppsky mask, safe mask, exclude mask, and
             gaia standard mask for the data.
 
+    Notes:
+        20210930 : include rundate argument, for default_main_stdmask().
     """
     col = None
     filecols, filemasks, filesurvey = main_cmx_or_sv(data)
@@ -716,7 +764,7 @@ def default_target_masks(data):
     elif filesurvey == "sv3":
         col = "SV3_DESI_TARGET"
     sciencemask, stdmask, skymask, suppskymask, safemask, excludemask, gaia_stdmask = \
-        default_survey_target_masks(filesurvey)
+        default_survey_target_masks(filesurvey, rundate=rundate)
     return (filesurvey, col, sciencemask, stdmask, skymask, suppskymask,
             safemask, excludemask, gaia_stdmask)
 
@@ -857,7 +905,8 @@ def append_target_table(tgs, tagalong, tgdata, survey, typeforce, typecol,
 
 def load_target_table(tgs, tagalong, tgdata, survey=None, typeforce=None, typecol=None,
                       sciencemask=None, stdmask=None, skymask=None,
-                      suppskymask=None, safemask=None, excludemask=None, gaia_stdmask=None):
+                      suppskymask=None, safemask=None, excludemask=None, gaia_stdmask=None,
+                      rundate=None):
     """Append targets from a table.
 
     Use the table data to append targets to the input Targets object.
@@ -884,10 +933,14 @@ def load_target_table(tgs, tagalong, tgdata, survey=None, typeforce=None, typeco
         safemask (int): Bitmask for classifying targets as a safe location.
         excludemask (int): Bitmask for excluding targets.
         gaia_stdmask (int): Bitmask for classifying targets as a Gaia standard.
+        rundate (optional, defaults to None): yyyy-mm-ddThh:mm:ss+00:00 rundate
+            for focalplane with UTC timezone formatting (string)
 
     Returns:
         None
 
+    Notes:
+        20210930 : include rundate argument, for default_main_stdmask().
     """
     log = Logger.get()
     if "TARGETID" not in tgdata.dtype.names:
@@ -948,10 +1001,10 @@ def load_target_table(tgs, tagalong, tgdata, survey=None, typeforce=None, typeco
             log.error(msg)
             raise RuntimeError(msg)
         fsciencemask, fstdmask, fskymask, fsuppskymask, fsafemask, \
-            fexcludemask, fgaia_stdmask = default_survey_target_masks(survey)
+            fexcludemask, fgaia_stdmask = default_survey_target_masks(survey, rundate=rundate)
     else:
         fsurvey, fcol, fsciencemask, fstdmask, fskymask, fsuppskymask, \
-            fsafemask, fexcludemask, fgaia_stdmask = default_target_masks(tgdata)
+            fsafemask, fexcludemask, fgaia_stdmask = default_target_masks(tgdata, rundate=rundate)
         if fcol is None:
             # File could not be identified.  In this case, the user must
             # completely specify the bitmask and column to use.
@@ -1065,7 +1118,7 @@ def load_target_table(tgs, tagalong, tgdata, survey=None, typeforce=None, typeco
 def load_target_file(tgs, tagalong, tfile, survey=None, typeforce=None, typecol=None,
                      sciencemask=None, stdmask=None, skymask=None,
                      suppskymask=None, safemask=None, excludemask=None,
-                     rowbuffer=1000000, gaia_stdmask=None):
+                     rowbuffer=1000000, gaia_stdmask=None, rundate=None):
     """Append targets from a file.
 
     Read the specified file and append targets to the input Targets object.
@@ -1095,10 +1148,14 @@ def load_target_file(tgs, tagalong, tfile, survey=None, typeforce=None, typecol=
         rowbuffer (int): Optional number of rows to read at once when loading
             very large files.
         gaia_stdmask (int): Bitmask for classifying targets as a Gaia standard.
+        rundate (optional, defaults to None): yyyy-mm-ddThh:mm:ss+00:00 rundate
+            for focalplane with UTC timezone formatting (string)
 
     Returns:
         (str): The survey type.
 
+    Notes:
+        20210930 : include rundate argument, for default_main_stdmask().
     """
     tm = Timer()
     tm.start()
@@ -1135,7 +1192,8 @@ def load_target_file(tgs, tagalong, tfile, survey=None, typeforce=None, typecol=
                           suppskymask=suppskymask,
                           safemask=safemask,
                           excludemask=excludemask,
-                          gaia_stdmask=gaia_stdmask)
+                          gaia_stdmask=gaia_stdmask,
+                          rundate=rundate)
         offset += n
 
     tm.stop()

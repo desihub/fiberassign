@@ -53,9 +53,7 @@ import desimeter
 
 # fiberassign
 import fiberassign
-from fiberassign.scripts.assign import parse_assign, run_assign_full
-from fiberassign.assign import merge_results, minimal_target_columns
-from fiberassign.utils import Logger, assert_isoformat_utc, get_svn_version, get_last_line, read_ecsv_keys
+from fiberassign.utils import Logger, assert_isoformat_utc, get_svn_version, get_last_line, read_ecsv_keys, get_date_cutoff
 
 # matplotlib
 import matplotlib.pyplot as plt
@@ -1263,6 +1261,7 @@ def create_mtl(
         20210914 : add equivalent of match_ledger_to_targets() for secondary (except for backup)
         20210917 : add possibility of extra secondary folders, as main2/, main3/, etc (see get_desitarget_paths())
                     for that, changing targdir arguments to targdirs
+        20210930 : moving some imports inside this function to avoid circular imports.
     """
     log.info("")
     log.info("")
@@ -1271,6 +1270,12 @@ def create_mtl(
     tiles = fits.open(tilesfn)[1].data
     # AR mtl: storing the timestamp at which we queried MTL
     log.info("{:.1f}s\t{}\tmtltime={}".format(time() - start, step, mtltime))
+
+    # AR import inside this launch_onetile_fa() function
+    # AR    to avoid circular imports
+    # AR    because parse_assign as imports from targets.py,
+    # AR    which have imports from fba_launch_io.py...
+    from fiberassign.assign import minimal_target_columns
 
     # AR change targdirs to list if a string is provided
     if isinstance(targdirs, str):
@@ -1384,7 +1389,7 @@ def create_mtl(
         else:
             log.info(
                 "{:.1f}s\t{}\tas desitarget.__version__={} < 1.2.2, we do not add columns from {}".format(
-                    time() - start, step, desitarget.__version__, ",".join(targdir)
+                    time() - start, step, desitarget.__version__, ",".join(targdirs)
                 )
             )
 
@@ -1707,12 +1712,20 @@ def launch_onetile_fa(
             requires a change in the launch_fa() call format.
         fba_launch-like adding information in the header is done in another function, update_fiberassign_header
         TBD: be careful if working in the SVN-directory; maybe add additional safety lines?
+        20210930 : moving some imports inside this function to avoid circular imports.
         20211119 : added lookup_sky_source
     """
     log.info("")
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
     log.info("{:.1f}s\t{}\tstart running fiber assignment".format(time() - start, step))
+
+    # AR import inside this launch_onetile_fa() function
+    # AR    to avoid circular imports
+    # AR    because parse_assign as imports from targets.py,
+    # AR    which have imports from fba_launch_io.py...
+    from fiberassign.assign import merge_results
+    from fiberassign.scripts.assign import parse_assign, run_assign_full
 
     # AR convert targfns to list if string (i.e. only one input file)
     if isinstance(targfns, str):
@@ -1994,13 +2007,14 @@ def secure_gzip(
 
 
 def get_dt_masks(
-    survey, log=None, step="", start=time(),
+    survey, rundate=None, log=None, step="", start=time(),
 ):
     """
     Get the desitarget masks for a survey.
 
     Args:
         survey: survey name: "sv1", "sv2", "sv3" or "main") (string)
+        rundate (optional, defaults to None): yyyy-mm-ddThh:mm:ss+00:00 rundate for focalplane with UTC timezone formatting (string)
         log (optional, defaults to None): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -2027,7 +2041,6 @@ def get_dt_masks(
         from desitarget.sv3 import sv3_targetmask as targetmask
     elif survey == "main":
         from desitarget import targetmask
-        from fiberassign.targets import default_main_stdmask
     else:
         if log is not None:
             log.error(
@@ -2035,8 +2048,6 @@ def get_dt_masks(
                     time() - start, step, survey
                 )
             )
-        else:
-            print("survey={} is not in sv1, sv2, sv3 or main; exiting".format(survey))
         sys.exit(1)
 
     # AR YAML masks
@@ -2058,6 +2069,22 @@ def get_dt_masks(
     for mskkey in ["DESI_TARGET", "MWS_TARGET"]:
         std_mskkeys += [mskkey for key in yaml_masks[mskkey].names() if "STD" in key]
         std_msks += [key for key in yaml_masks[mskkey].names() if "STD" in key]
+    # AR discard STD_WD from STD?
+    rundate_cutoff = get_date_cutoff("rundate", "std_wd")
+    rundate_mjd_cutoff = Time(datetime.strptime(rundate_cutoff, "%Y-%m-%dT%H:%M:%S%z")).mjd
+    if rundate is not None:
+        if not assert_isoformat_utc(rundate):
+            log.info(
+                "{:.1f}s\t{}\tprovided rundate={} does not follow the expected formatting (yyyy-mm-ddThh:mm:ss+00:00); exiting".format(
+                    time() - start, step, rundate,
+                )
+            )
+            sys.exit(1)
+        rundate_mjd = Time(datetime.strptime(rundate, "%Y-%m-%dT%H:%M:%S%z")).mjd
+        if rundate_mjd >= rundate_mjd_cutoff:
+            std_mskkeys, std_msks = np.array(std_mskkeys), np.array(std_msks)
+            sel = np.array(["_WD" not in msk for msk in std_msks])
+            std_mskkeys, std_msks = std_mskkeys[sel].tolist(), std_msks[sel].tolist()
 
     return yaml_masks, wd_mskkeys, wd_msks, std_mskkeys, std_msks
 
@@ -2114,6 +2141,7 @@ def get_parent_assign_quants(
     fiberassignfn,
     tilera,
     tiledec,
+    rundate=None,
 ):
     """
     Stores the parent and assigned targets properties (desitarget columns).
@@ -2124,6 +2152,7 @@ def get_parent_assign_quants(
         fiberassignfn: path to the output fiberassign-TILEID.fits file (string)
         tilera: tile center R.A. (float)
         tiledec: tile center Dec. (float)
+        rundate (optional, defaults to None): yyyy-mm-ddThh:mm:ss+00:00 rundate for focalplane with UTC timezone formatting (string)
 
     Returns:
         parent: dictionary of the parent target sample, with each key being some desitarget column
@@ -2143,7 +2172,7 @@ def get_parent_assign_quants(
     parent, assign, dras, ddecs, petals, nassign = {}, {}, {}, {}, {}, {}
 
     # AR YAML and WD and STD masks
-    yaml_masks, wd_mskkeys, wd_msks, std_mskkeys, std_msks = get_dt_masks(survey)
+    yaml_masks, wd_mskkeys, wd_msks, std_mskkeys, std_msks = get_dt_masks(survey, rundate=rundate)
 
     # AR keys we use (plus few for assign)
     keys = [
@@ -2377,7 +2406,7 @@ def qa_print_infos(
     trmskkeys, trmsks = get_qa_tracers(survey, program)
 
     # AR masks
-    yaml_masks, wd_mskkeys, wd_msks, std_mskkeys, std_msks = get_dt_masks(survey)
+    yaml_masks, wd_mskkeys, wd_msks, std_mskkeys, std_msks = get_dt_masks(survey, rundate=rundate)
 
     # AR infos : general
     x, y, dy, fs = 0.05, 0.95, -0.1, 10
@@ -3190,7 +3219,7 @@ def make_qa(
         width_deg (optional, defaults to 4): width of the cutout in degrees (np.array of floats)
     """
     # AR WD and STD used masks
-    _, wd_mskkeys, wd_msks, std_mskkeys, std_msks = get_dt_masks(survey)
+    _, wd_mskkeys, wd_msks, std_mskkeys, std_msks = get_dt_masks(survey, rundate=rundate)
 
     # AR plotted tracers
     # AR TBD: handle secondary?
@@ -3198,7 +3227,7 @@ def make_qa(
 
     # AR storing parent/assigned quantities
     parent, assign, dras, ddecs, petals, nassign = get_parent_assign_quants(
-        survey, targfns, fiberassignfn, tilera, tiledec
+        survey, targfns, fiberassignfn, tilera, tiledec, rundate=rundate,
     )
 
     # AR start plotting

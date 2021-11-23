@@ -13,6 +13,8 @@ import os
 import subprocess
 import sys
 from datetime import datetime
+import yaml
+from pkg_resources import resource_filename
 
 from ._internal import (Logger, Timer, GlobalTimers, Circle, Segments, Shape,
                         Environment)
@@ -81,6 +83,26 @@ def assert_isoformat_utc(time_str):
     return time_str.endswith("+00:00")
 
 
+def get_date_cutoff(datetype, cutoff_case):
+    """
+    Returns the cutoff date for a particular case, from reading the data/cutoff-dates.yaml file.
+
+    Args:
+        datetype: one of the key of data/cutoff-dates.yaml (e.g., "rundate", "mtltime", "pmtime_utc_str") (string)
+        cutoff_case: one of the config[datetype] keys in data/cutoff-dates.yaml, (e.g. "std_wd" for datetype="rundate") (string)
+
+    Returns:
+        date_cutoff: cutoff date for datetype and cutoff_case, in the "YYYY-MM-DDThh:mm:ss+00:00" formatting (string)
+
+    """
+    fn = resource_filename("fiberassign", "data/cutoff-dates.yaml")
+    with open(fn, "r") as f:
+        config = yaml.safe_load(f)
+    f.close()
+    date_cutoff = config[datetype][cutoff_case]
+    return date_cutoff
+
+  
 def get_svn_version(svn_dir):
     """
     Gets the SVN revision number of an SVN folder.
