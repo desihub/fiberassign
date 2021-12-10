@@ -533,11 +533,14 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
 
         fdata = np.zeros(navail, dtype=avail_dtype)
         off = 0
+        # The "FAVAIL" (available targets) HDU is sorted first by LOCATION,
+        # then by TARGETID.
         for lid in sorted(avail.keys()):
+            # lid (location id) is a scalar, tg (target ids) is an array
             tg = avail[lid]
             fdata['LOCATION'][off:off+len(tg)] = lid
-            fdata['FIBER'][off:off+len(tg)] = fibers[lid]
-            fdata['TARGETID'][off:off+len(tg)] = tg
+            fdata['FIBER']   [off:off+len(tg)] = fibers[lid]
+            fdata['TARGETID'][off:off+len(tg)] = sorted(tg)
             off += len(tg)
 
         # tm.stop()
@@ -549,6 +552,8 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
         del fdata
 
         if gfa_targets is not None:
+            # Sort by TARGETID
+            gfa_targets = gfa_targets[np.argsort(gfa_targets['TARGETID'])]
             try:
                 # Astropy Table
                 fd.write(gfa_targets.as_array(), extname="GFA_TARGETS")
