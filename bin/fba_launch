@@ -325,6 +325,7 @@ def main():
             mtltime=args.mtltime,
             tmpoutdir=tmpoutdir,
             pmtime_utc_str=args.pmtime_utc_str,
+            too_tile=args.too_tile,
             log=log,
             step="too",
             start=start,
@@ -695,6 +696,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--targ_std_only",
         help="only select standard stars for TILEID-targ.fits (e.g., for ToO-dedicated tiles)",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--too_tile",
+        help='do not cut on TOO_TYPE, hence keeping both TOO_TYPE="FIBER" *and* TOO_TYPE="TILE" for ToO dedicated tiles,',
         action="store_true",
     )
 
