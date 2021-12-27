@@ -267,6 +267,7 @@ def main():
             mytmpouts["targ"],
             tmpoutdir=tmpoutdir,
             pmtime_utc_str=args.pmtime_utc_str,
+            std_only=args.targ_std_only,
             log=log,
             step="targ",
             start=start,
@@ -690,6 +691,11 @@ if __name__ == "__main__":
         type=str,
         choices=["ls", "gaia"],
         default=None,
+    )
+    parser.add_argument(
+        "--targ_std_only",
+        help="only select standard stars for TILEID-targ.fits (e.g., for ToO-dedicated tiles)",
+        action="store_true",
     )
 
     args = parser.parse_args()

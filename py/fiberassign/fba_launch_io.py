@@ -54,6 +54,7 @@ import desimeter
 # fiberassign
 import fiberassign
 from fiberassign.utils import Logger, assert_isoformat_utc, get_svn_version, get_last_line, read_ecsv_keys, get_date_cutoff
+from fiberassign.targets import default_survey_target_masks
 
 # matplotlib
 import matplotlib.pyplot as plt
@@ -1118,6 +1119,7 @@ def create_targ_nomtl(
         pmtime_utc_str (optional, defaults to None): UTC time use to compute
                 new coordinates after applying proper motion since REF_EPOCH
                 (string formatted as "yyyy-mm-ddThh:mm:ss+00:00")
+        std_only (optional, defaults to False): only select standard stars? (e.g., for ToO-dedicated tiles) (boolean)
         add_plate_cols (optional, defaults to True): adds a PLATE_RA, PLATE_DEC, PLATE_REF_EPOCH columns (boolean)
         quick (optional, defaults to True): boolean, arguments of desitarget.io.read_targets_in_tiles()
         log (optional, defaults to Logger.get()): Logger object
@@ -1216,6 +1218,7 @@ def create_mtl(
     outfn,
     tmpoutdir=tempfile.mkdtemp(),
     pmtime_utc_str=None,
+    std_only=False,
     add_plate_cols=True,
     log=Logger.get(),
     step="",
@@ -1262,6 +1265,10 @@ def create_mtl(
         20210917 : add possibility of extra secondary folders, as main2/, main3/, etc (see get_desitarget_paths())
                     for that, changing targdir arguments to targdirs
         20210930 : moving some imports inside this function to avoid circular imports.
+        20211227 : add std_only:
+                    - will exclude STD_WD as no rundate used
+                    - guess the program from the mtldir
+                    - only enabled for survey="main"
     """
     log.info("")
     log.info("")
@@ -1306,6 +1313,28 @@ def create_mtl(
             time() - start, step, len(d), mtldir
         )
     )
+
+    # AR standard stars only?
+    if std_only:
+        if survey != "main":
+            log.error(
+                "{:.1f}s\t{}\tsurvey={} -> std_only option available only for survey=main; exiting".format(
+                    time() - start, step, survey,
+                )
+            )
+        _, stdmask, _, _, _, _, gaia_stdmask = default_survey_target_masks(survey)
+        program = os.path.basename(mtldir)
+        if program == "backup":
+            key, mask = "MWS_TARGET", gaia_stdmask
+        else:
+            key, mask = "DESI_TARGET", stdmask
+        sel = (d[key] & mask) > 0
+        d = d[sel]
+        log.info(
+            "{:.1f}s\t{}\tstd_only=True -> restrict to {} standards selected with '(d[{}] & {}) > 0'".format(
+                time() - start, step, sel.sum(), key, mask,
+            )
+        )
 
     # AR mtl: removing by hand BACKUP_BRIGHT for sv3/BACKUP
     # AR mtl: using an indirect way to find if program=backup,
