@@ -1935,6 +1935,7 @@ def update_fiberassign_header(
             keeping this to be sure it is not forgotten to be done for dedicated programs.
         20210917 : keywords scnd2, scnd3, etc could be automatically added (see get_desitarget_paths())
         20211119 : added lookup_sky_source keyword
+        20211227 : use newly defined args.goaltype (instead of args.program previously)
     """
     # AR sanity check on faflavor
     if faflavor != "{}{}".format(hdr_survey, hdr_faprgrm):
@@ -1944,6 +1945,14 @@ def update_fiberassign_header(
             )
         )
         sys.exit(1)
+
+    # AR check on goaltype - faprgrm
+    if args.goaltype != args.program:
+        log.warning(
+            "{:.1f}s\t{}\tgoaltype={} != program={}".format(
+                time() - start, step, args.goaltype, args.program,
+            )
+        )
 
     # AR propagating some settings into the PRIMARY header
     fd = fitsio.FITS(fiberassignfn, "rw")
@@ -1991,7 +2000,7 @@ def update_fiberassign_header(
     # AR SBPROF from https://desi.lbl.gov/trac/wiki/SurveyOps/SurveySpeed#NominalFiberfracValues
     # AR version 35
     fd["PRIMARY"].write_key("goaltime", args.goaltime)
-    fd["PRIMARY"].write_key("goaltype", args.program)
+    fd["PRIMARY"].write_key("goaltype", args.goaltype)
     fd["PRIMARY"].write_key("ebvfac", 10.0 ** (2.165 * np.median(ebv) / 2.5))
     fd["PRIMARY"].write_key("sbprof", args.sbprof)
     fd["PRIMARY"].write_key("mintfrac", args.mintfrac)
