@@ -1657,7 +1657,8 @@ def create_too(
             # AR single REF_EPOCH needed
             # AR TBD currently all targets have PMRA=PMDEC=0,
             # AR TBD so it s fine to just change all REF_EPOCH
-            d["REF_EPOCH"] = np.zeros(len(d))
+            if "REF_EPOCH" not in d.dtype.names:
+                d["REF_EPOCH"] = np.zeros(len(d))
             # AR Replaces 0 by force_ref_epoch in ref_epoch
             d = force_nonzero_refepoch(
                 d, gaia_ref_epochs[gaiadr], log=log, step=step, start=start
