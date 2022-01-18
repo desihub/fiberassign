@@ -1119,7 +1119,6 @@ def create_targ_nomtl(
         pmtime_utc_str (optional, defaults to None): UTC time use to compute
                 new coordinates after applying proper motion since REF_EPOCH
                 (string formatted as "yyyy-mm-ddThh:mm:ss+00:00")
-        std_only (optional, defaults to False): only select standard stars? (e.g., for ToO-dedicated tiles) (boolean)
         add_plate_cols (optional, defaults to True): adds a PLATE_RA, PLATE_DEC, PLATE_REF_EPOCH columns (boolean)
         quick (optional, defaults to True): boolean, arguments of desitarget.io.read_targets_in_tiles()
         log (optional, defaults to Logger.get()): Logger object
@@ -1241,6 +1240,7 @@ def create_mtl(
         pmtime_utc_str (optional, defaults to None): UTC time use to compute
                 new coordinates after applying proper motion since REF_EPOCH
                 (string formatted as "yyyy-mm-ddThh:mm:ss+00:00")
+        std_only (optional, defaults to False): only select standard stars? (e.g., for ToO-dedicated tiles); can only be used for survey='main' (boolean)
         add_plate_cols (optional, defaults to True): adds a PLATE_RA and PLATE_DEC columns (boolean)
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
