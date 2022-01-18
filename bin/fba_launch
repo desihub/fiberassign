@@ -703,7 +703,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--targ_std_only",
-        help="only select standard stars for TILEID-targ.fits (e.g., for ToO-dedicated tiles)",
+        help="only select standard stars for TILEID-targ.fits (e.g., for ToO-dedicated tiles); can only be used with args.survey='main'",
         action="store_true",
     )
     parser.add_argument(
