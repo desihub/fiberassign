@@ -1009,7 +1009,7 @@ def main():
 
         # AR basic pair counting
         # AR cf. Ashley https://github.com/desihub/LSS/blob/master/Sandbox/testassignments.ipynb
-        if args.randoms == "n":
+        if (args.randoms == "n") & (args.program != "backup"):
             if args.program == "dark":
                 tracers = ["QSO", "LRG", "ELG"]
             else:
