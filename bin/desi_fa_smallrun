@@ -66,32 +66,22 @@ def get_fn(outdir, flavor, passid=None, steps=None):
 # AR creates one tiles file for with all passes
 # AR and one tiles file per pass
 # AR formatting assumed to be that of tiles-main.ecsv
-# AR for that file, dark, bright, backup have the same
-# AR tile centers for a given pass
-# AR so we just work from the 7 dark passes
-# AR and change the PROGRAM value
-def create_tiles(infn, program, radec, outdir):
+def create_tiles(infn, program, npass, radec, outdir):
     d_orig = Table.read(infn)
-    # AR cut on the 7 dark passes, irrespective of args.program
-    # AR protecting against upper/lower case, if using files like 4112-packing
-    keep = np.array([program.lower() for program in d_orig["PROGRAM"]]) == "dark"
-    d_orig = d_orig[keep]
+    # AR cut on program
+    sel = np.array([program.lower() for program in d_orig["PROGRAM"]]) == program
+    d_orig = d_orig[sel]
     # AR
     d = Table()
     for key in d_orig.dtype.names:
         d[key] = d_orig[key]
     # AR update PROGRAM with args.program, and add OBSCONDITIONS
-    d["PROGRAM"] = args.program
-    d["OBSCONDITIONS"] = obsconditions.mask(args.program.upper())
-    # AR populate TILEID with CENTERID
-    # AR in case using like tiles-4112-packing-20210329-decorated.fits)
-    if len(np.unique(d["TILEID"])) == 1:
-        d["TILEID"] = d["CENTERID"].copy()
+    d["PROGRAM"] = program
+    d["OBSCONDITIONS"] = obsconditions.mask(program.upper())
     # AR cut on IN_DESI, except for backup
     if program == "backup":
-        is_indesi = np.ones(len(d), dtype=bool)
-    else:
-        is_indesi = d["IN_DESI"]
+        d["IN_DESI"] = np.ones(len(d), dtype=bool)
+    is_indesi = d["IN_DESI"]
     # AR cut on radec
     ramin, ramax, decmin, decmax = [float(x) for x in radec.split(",")]
     is_radec = (d["DEC"] > decmin) & (d["DEC"] < decmax)
@@ -100,22 +90,22 @@ def create_tiles(infn, program, radec, outdir):
     else:
         is_radec &= (d["RA"] > ramin) & (d["RA"] < ramax)
     # AR cut on the number of passes (first pass is 0)
-    if args.npass > d["PASS"].max() + 1:
+    if npass > d["PASS"].max() + 1:
         log.error(
-            "{:.1f}s\tcreate_tiles\tWARNING : requesting {} passes, whereas only {} passes available".format(
-                time() - start, args.npass, d["PASS"].max() + 1
+            "{:.1f}s\tcreate_tiles\tWARNING : requesting {} passes, whereas only {} passes available; exiting".format(
+                time() - start, npass, d["PASS"].max() + 1
             )
         )
         sys.exit(1)
-    is_pass = d["PASS"] + 1 <= args.npass
+    is_pass = d["PASS"] + 1 <= npass
     # AR writing one tiles file with all passes
     keep = (is_indesi) & (is_radec) & (is_pass)
     d = d[keep]
-    fitsio.write(get_fn(args.outdir, "tiles"), d.as_array(), clobber=True)
+    fitsio.write(get_fn(outdir, "tiles"), d.as_array(), clobber=True)
     # AR writing one tiles file for each pass
     passids = np.unique(d["PASS"])
     for passid in passids:
-        d = fitsio.read(get_fn(args.outdir, "tiles"))
+        d = fitsio.read(get_fn(outdir, "tiles"))
         keep_p = d["PASS"] == passid
         log.info(
             "{:.1f}s\tcreate_tiles\tpass = {} -> {} tiles".format(
@@ -434,7 +424,13 @@ def update_after_farun(input_targ, fadir, passid, output_targ):
     # AR updating numobs
     h[1].data["NUMOBS"][ii0] += counts[ii1]
     # AR updating NUMOBS_DONE
-    h[1].data["NUMOBS_DONE"][ii0, passid] = counts[ii1]
+    # AR astropy 4.0 does not preserve (nobj, 1) format when writing ecsv..
+    log.info("xxx : "+str(h[1].data["NUMOBS_DONE"].shape))
+    log.info("xxx : "+str(len(h[1].data["NUMOBS_DONE"].shape)))
+    if len(h[1].data["NUMOBS_DONE"].shape) == 1:
+        h[1].data["NUMOBS_DONE"][ii0] = counts[ii1]
+    else:
+        h[1].data["NUMOBS_DONE"][ii0, passid] = counts[ii1]
     # AR emulate mtl update
     # AR updates: Z, ZWARN, ZTILEID, PRIORITY, NUMOBS_MORE, TARGET_STATE
     log.info(
@@ -503,7 +499,11 @@ def update_after_farun(input_targ, fadir, passid, output_targ):
         tids = np.array(myd[sample]["TARGETID"])
         tids, counts = np.unique(tids, return_counts=True)
         ii0, ii1 = match(h[1].data["TARGETID"], tids)
-        h[1].data[key][ii0, passid] = counts[ii1]
+        # AR astropy 4.0 does not preserve (nobj, 1) format when writing ecsv..
+        if len(h[1].data["NUMOBS_DONE"].shape) == 1:
+            h[1].data[key][ii0] = counts[ii1]
+        else:
+            h[1].data[key][ii0, passid] = counts[ii1]
     # writing output
     log.info(
         "{:.1f}s\tupdate_after_farun\tpassid={}\tstart writing {}".format(
@@ -584,7 +584,10 @@ def sel_tracer(d, tracer):
 def fastats_targ(tracers, targ_fn, area):
     d = fits.open(targ_fn)[1].data
     # AR number of assigned fibers per target
-    numobs_tot = d["NUMOBS_DONE"].sum(axis=1)
+    if len(d["NUMOBS_DONE"].shape) == 1:
+        numobs_tot = d["NUMOBS_DONE"]
+    else:
+        numobs_tot = d["NUMOBS_DONE"].sum(axis=1)
     # AR
     f = open(get_fn(args.outdir, "fastats-targ"), "w")
     f.write("# TRACER PRIORITY_INIT TARGET_DENS DONE_FRAC DONE_DENS MEAN_NFIBER\n")
@@ -776,7 +779,7 @@ def main():
     # AR create the tiles files
     if "tiles" in args.steps.split(","):
         # AR then create tiles file
-        _ = create_tiles(args.tilesfn, args.program, args.radec, args.outdir)
+        _ = create_tiles(args.tilesfn, args.program, args.npass, args.radec, args.outdir)
 
     # AR safe "box" area
     tiles = fits.open(get_fn(args.outdir, "tiles"))[1].data
