@@ -799,6 +799,7 @@ def get_desitarget_paths(
     program,
     dr="dr9",
     gaiadr="gaiadr2",
+    custom_too_file=None,
     log=Logger.get(),
     step="settings",
     start=time(),
@@ -812,6 +813,7 @@ def get_desitarget_paths(
         program: "dark", "bright", or "backup" (string)
         dr (optional, defaults to "dr9"): legacypipe dr (string)
         gaiadr (optional, defaults to "gaiadr2"): gaia dr (string)
+        custom_too_file (default=None): full path to a custom ToO file, for development work, which overrides the official one (string)
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -834,6 +836,7 @@ def get_desitarget_paths(
         or program not in ["dark", "bright", or "backup"], will return a warning only
         same warning only if the built paths/files do not exist.
         20210917 : secondary -> add all existing folders (e.g., main2/) (backward-compatible change)
+        20220318 : add custom_too_file optional argument
     """
     # AR expected survey, program?
     exp_surveys = ["sv1", "sv2", "sv3", "main"]
@@ -948,6 +951,14 @@ def get_desitarget_paths(
     )
     if scndmtl is not None:
         mydirs["scndmtl"] = scndmtl
+    # AR custom ToO file?
+    if custom_too_file is not None:
+        mydirs["too"] = custom_too_file
+        log.warning(
+            "{:.1f}s\t{}\tusing custom ToO file {} -> this is for development only!".format(
+                time() - start, step, custom_too_file,
+            )
+        )
 
     return mydirs
 
