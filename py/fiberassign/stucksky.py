@@ -46,9 +46,14 @@ def stuck_on_sky(hw, tiles, lookup_sky_source):
         # (grab the hw dictionaries once -- these are python wrappers over C++ so not simple accessors)
         state = hw.state
         devtype = hw.loc_device_type
-        stuck_loc = [loc for loc in hw.locations
-                     if (((state[loc] & (FIBER_STATE_STUCK | FIBER_STATE_BROKEN)) == FIBER_STATE_STUCK) and
-                         (devtype[loc] == 'POS'))]
+        stuck_loc = []
+        for loc in hw.locations:
+            if devtype[loc] == 'ETC':
+                stuck_loc.append(loc)
+            elif devtype[loc] != 'POS':
+                continue
+            if (state[loc] & (FIBER_STATE_STUCK | FIBER_STATE_BROKEN)) == FIBER_STATE_STUCK:
+                stuck_loc.append(loc)
         if len(stuck_loc) == 0:
             log.debug('Tile %i: %i positioners are stuck/broken' % (tile_id, len(stuck_loc)))
             continue
@@ -121,4 +126,3 @@ def stuck_on_sky(hw, tiles, lookup_sky_source):
             stuck_sky[tile_id][loc] = good
 
     return stuck_sky
-
