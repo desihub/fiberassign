@@ -404,7 +404,8 @@ def run_assign_full(args, plate_radec=True):
     # Find stuck positioners and compute whether they will land on acceptable
     # sky locations for each tile.
     gt.start("Compute Stuck locations on good sky")
-    stucksky = stuck_on_sky(hw, tiles, args.lookup_sky_source)
+    stucksky = stuck_on_sky(hw, tiles, args.lookup_sky_source,
+                            rundate=getattr(args, 'rundate', None))
     if stucksky is None:
         # (the pybind code doesn't like None when a dict is expected...)
         stucksky = {}
