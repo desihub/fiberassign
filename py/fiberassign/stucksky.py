@@ -121,7 +121,11 @@ def stuck_on_sky(hw, tiles, lookup_sky_source):
                     return
             good_sky = skyhealpixs.lookup_position(loc_ra, loc_dec)
 
-        log.info('%i of %i stuck positioners land on good sky locations' % (np.sum(good_sky), len(good_sky)))
+        stuck_isetc = np.array([devtype[loc] == 'ETC' for loc in stuck_loc])
+        log.info('%i of %i stuck positioners land on good sky locations' %
+                 (np.sum(good_sky & ~stuck_isetc), np.sum(~stuck_isetc)))
+        log.info('%i of %i ETC positioners land on good sky locations' %
+                 (np.sum(good_sky & stuck_isetc), np.sum(stuck_isetc)))
         for loc,good in zip(stuck_loc, good_sky):
             stuck_sky[tile_id][loc] = good
 
