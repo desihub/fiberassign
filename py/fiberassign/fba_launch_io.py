@@ -955,7 +955,7 @@ def get_desitarget_paths(
     if custom_too_file is not None:
         mydirs["too"] = custom_too_file
         log.warning(
-            "{:.1f}s\t{}\tusing custom ToO file {} -> this is for development only!".format(
+            "{:.1f}s\t{}\tusing custom ToO file {} -> this is for tertiary program or development only!".format(
                 time() - start, step, custom_too_file,
             )
         )

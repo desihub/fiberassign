@@ -714,7 +714,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--custom_too_file",
-        help="full path to a custom ToO file, for *development work*, which overrides the official one (default=None)",
+        help="full path to a custom ToO file, for tertiary program or development work, which overrides the official one (default=None)",
         type=str,
         default=None,
     )
@@ -802,7 +802,7 @@ if __name__ == "__main__":
 
     # AR custom_too_file
     if args.custom_too_file is not None:
-        log.warning("args.custom_too_file is set ({}) -> this is for development only!".format(args.custom_too_file))
+        log.warning("args.custom_too_file is set ({}) -> this is for tertiary program or development only!".format(args.custom_too_file))
 
     # AR create a temporary directory for generated files
     tmpoutdir = tempfile.mkdtemp()
