@@ -1,0 +1,274 @@
+#!/usr/bin/env python
+
+import sys
+import os
+import numpy as np
+from astropy.table import Table
+from time import time
+from datetime import datetime, timezone
+from astropy.time import Time
+from desitarget.targetmask import desi_mask
+from desitarget.targetmask import obsconditions
+from desitarget.targets import encode_targetid, decode_targetid
+from desitarget.targetmask import desi_mask, scnd_mask
+from desitarget.mtl import get_utc_date
+from fiberassign.utils import assert_isoformat_utc
+from fiberassign.utils import Logger
+from argparse import ArgumentParser
+
+log = Logger.get()
+
+# AR default values
+default = {
+    "RELEASE": 8888,
+    "TIME_MJD_BEGIN": "2020-01-01T00:00:00+00:00",
+    "TIME_MJD_END": "2120-01-01T00:00:00+00:00",
+    "TOO_PRIO": "HI", # for TOO_PRIO and SCND_TARGET
+}
+
+# AR required columns from args.infn
+req_keys = [
+    "RA",
+    "DEC",
+    "PMRA",
+    "PMDEC",
+    "REF_EPOCH",
+    "PRIORITY_INIT",
+    "NUMOBS_INIT",
+    "CHECKER",
+]
+
+
+def get_parse():
+    parser = ArgumentParser()
+    parser.add_argument(
+        "-i",
+        "--infn",
+        help="input catalog (default=None)",
+        type=str,
+        required=True,
+        default=None,
+    )
+    parser.add_argument(
+        "-t",
+        "--tileid",
+        help="tileid (default=None)",
+        type=int,
+        required=True,
+        default=None,
+    )
+    parser.add_argument(
+        "-o",
+        "--outdir",
+        help="output folder (default=None)",
+        type=str,
+        required=True,
+        default=None,
+    )
+    parser.add_argument(
+        "-r",
+        "--release",
+        help="release for TARGETID (default={})".format(default["RELEASE"]),
+        type=int,
+        default=default["RELEASE"],
+    )
+    parser.add_argument(
+        "-b",
+        "--brickid",
+        help="brickid for TARGETID, <1e5 (default=None)",
+        type=int,
+        required=True,
+        default=None,
+    )
+    parser.add_argument(
+        "--utc_time_mjd_begin",
+        help="yyyy-mm-ddThh:mm:ss+00:00 time for MJD_BEGIN UTC timezone formatting (default={})".format(
+            default["TIME_MJD_BEGIN"]
+        ),
+        type=str,
+        default=default["TIME_MJD_BEGIN"],
+    )
+    parser.add_argument(
+        "--utc_time_mjd_end",
+        help="yyyy-mm-ddThh:mm:ss+00:00 time for MJD_END UTC timezone formatting (default={})".format(
+            default["TIME_MJD_END"]
+        ),
+        type=str,
+        default=default["TIME_MJD_END"],
+    )
+    parser.add_argument(
+        "--obsconditions",
+        help="observing conditions (default=None)",
+        choices=["BRIGHT", "DARK"],
+        required=True,
+        default=None,
+    )
+    parser.add_argument(
+        "--desi_mask_name",
+        help="name for DESI_TARGET (default=SCND_ANY)",
+        type=str,
+        default="SCND_ANY",
+    )
+    parser.add_argument(
+        "--scnd_mask_name",
+        help="name for SCND_TARGET (default={{args.obsconditions}}_TOO_{}P)".format(default["TOO_PRIO"]),
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--previous_tileids",
+        help="comma-separated list of already designed TILEIDs in args.outdir to set to lower priority assigned targets (default=None)",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--previous_priority",
+        help="priority to set for targets from args.previous_tileids (default=None)",
+        type=int,
+        default=None,
+    )
+    args = parser.parse_args()
+    if args.scnd_mask_name is None:
+        args.scnd_mask_name = "{}_TOO_{}P".format(args.obsconditions, default["TOO_PRIO"])
+    for kwargs in args._get_kwargs():
+        print(kwargs)
+    return args
+
+
+def get_outfn(outdir, release, brickid, tileid):
+    return os.path.join(
+        outdir, "ToO-{}-{:04d}-{:06d}.ecsv".format(release, brickid, tileid)
+    )
+
+
+def get_mjd(utc_time_mjd):
+    assert_isoformat_utc(utc_time_mjd)
+    return Time(datetime.strptime(utc_time_mjd, "%Y-%m-%dT%H:%M:%S%z")).mjd
+
+
+def main():
+
+    args = get_parse()
+
+    # AR reproducibility for SUBPRIORITY
+    np.random.seed(1234)
+
+    # AR output file
+    outfn = get_outfn(args.outdir, args.release, args.brickid, args.tileid)
+    if os.path.isfile(outfn):
+        msg = "{} already exists! exiting"
+        log.error(msg)
+        raise IOError(msg)
+    else:
+        log.info("outfn = {}".format(outfn))
+
+    # AR mjd_begin, mjd_end
+    mjd_begin = get_mjd(args.utc_time_mjd_begin)
+    mjd_end = get_mjd(args.utc_time_mjd_end)
+    log.info("set MJD_BEGIN={}, MJD_END={}".format(mjd_begin, mjd_end))
+
+    # AR first get the correct structure
+    reffn = os.path.join(os.getenv("DESI_SURVEYOPS"), "mtl", "main", "ToO", "ToO.ecsv")
+    dref = Table.read(reffn)
+
+    # AR read input file
+    din = Table.read(args.infn)
+    log.info("reading {} targets from {}".format(len(din), args.infn))
+    n = len(din)
+
+    # AR check all required keys are there
+    miss_keys = []
+    for key in req_keys:
+        if key not in din.dtype.names:
+            miss_keys.append(key)
+    if len(miss_keys) > 0:
+        msg = "{} keys are missing from {}; exiting".format(
+            ",".join(miss_keys), args.infn
+        )
+        log.error(msg)
+        raise IOError(ms)
+
+    # AR TARGETID (possibly overwrite existing one)
+    if "TARGETID" in din.dtype.names:
+        log.warning("overwriting the original TARGETIDs!")
+    din["TARGETID"] = encode_targetid(
+        release=args.release, brickid=args.brickid, objid=np.arange(len(din))
+    )
+
+    # AR previous assignment?
+    if args.previous_tileids is not None:
+        for tileid in args.previous_tileids.split(","):
+            tileid = int(tileid)
+            # AR first try args.outdir (case where tiles are designed on the same day)
+            fn = os.path.join(
+                args.outdir,
+                "{}".format("{:06d}".format(tileid)[:3]),
+                "fiberassign-{:06d}.fits.gz".format(tileid),
+            )
+            isfn = False
+            if os.path.isfile(fn):
+                isfn = True
+            # AR then try the DESI_TARGET/fiberassign
+            else:
+                log.inf("no {}".format(fn))
+                fn = os.path.join(
+                    os.getenv("DESI_TARGET"),
+                    "fiberassign",
+                    "tiles",
+                    "trunk",
+                    "{}".format("{:06d}".format(tileid)[:3]),
+                    "fiberassign-{:06d}.fits.gz".format(tileid),
+                )
+                if os.path.isfile(fn):
+                    isfn = True
+                else:
+                    log.info("no {}".format(fn))
+            if isfn:
+                log.info("reading {}".format(fn))
+                d = Table.read(fn, "FIBERASSIGN")
+                _, brickid, release, _, _, _ = decode_targetid(d["TARGETID"])
+                sel = np.in1d(release, args.release) & np.in1d(brickid, args.brickid)
+                d = d[sel]
+                sel = np.in1d(din["TARGETID"], d["TARGETID"])
+                din["PRIORITY_INIT"][sel] = args.previous_priority
+                log.info(
+                    "{} targets were already assigned on TILEID={} -> setting for those PRIORITY_INIT={}".format(
+                        sel.sum(), tileid, args.previous_priority
+                    )
+                )
+            else:
+                log.warning(
+                    "no fiberassign-{:06d}.fits.gz file found: skipping this tile".format(
+                        tileid
+                    )
+                )
+
+    # AR build output file
+    dout = Table()
+    for key in dref.dtype.names:
+        dout[key] = np.zeros_like(dref[key], shape=(n))
+    for key in req_keys + ["TARGETID"]:
+        dout[key] = din[key]
+    dout["DESI_TARGET"] = desi_mask[args.desi_mask_name]
+    dout["SCND_TARGET"] = scnd_mask[args.scnd_mask_name]
+    dout["SUBPRIORITY"] = np.random.uniform(size=n)
+    dout["OBSCONDITIONS"] = obsconditions[args.obsconditions]
+    dout["TOO_TYPE"] = "TILE"
+    dout["TOO_PRIO"] = default["TOO_PRIO"]
+    dout["OCLAYER"] = args.obsconditions
+    dout["MJD_BEGIN"] = mjd_begin
+    dout["MJD_END"] = mjd_end
+    dout["TIMESTAMP"] = get_utc_date("main")
+    # store args (we exclude any None argument)
+    tmparr = []
+    for kwargs in args._get_kwargs():
+        if kwargs[1] is not None:
+            tmparr += ["--{} {}".format(kwargs[0], kwargs[1])]
+    tooargs = " ".join(tmparr)
+    log.info("TOOARGS = {}".format(tooargs))
+    dout.meta["TOOARGS"] = tooargs
+    dout.write(outfn)
+
+
+if __name__ == "__main__":
+    main()
