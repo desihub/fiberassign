@@ -60,9 +60,14 @@ def get_parse():
         default=None,
     )
     parser.add_argument(
-        "-o",
-        "--outdir",
-        help="output folder (default=None)",
+        "--targdir",
+        help="target folder (default=$DESI_SURVEYOPS/tertiary/args.brickid))",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--fadir",
+        help="fiberassign folder (default=None)",
         type=str,
         required=True,
         default=None,
@@ -112,7 +117,7 @@ def get_parse():
     )
     parser.add_argument(
         "--previous_tileids",
-        help="comma-separated list of already designed TILEIDs in args.outdir to set to lower priority assigned targets (default=None)",
+        help="comma-separated list of already designed TILEIDs to set to lower priority assigned targets (default=None)",
         type=str,
         default=None,
     )
@@ -123,6 +128,10 @@ def get_parse():
         default=None,
     )
     args = parser.parse_args()
+    # AR targdir
+    if args.targdir is None:
+        args.targdir = os.path.join(os.getenv("DESI_SURVEYOPS"), "ops", "tertiary", "{:04d}".format(args.brickid))
+    # AR scnd_mask_name
     if args.scnd_mask_name is None:
         args.scnd_mask_name = "{}_TOO_{}P".format(args.obsconditions, default["TOO_PRIO"])
     for kwargs in args._get_kwargs():
@@ -130,9 +139,9 @@ def get_parse():
     return args
 
 
-def get_outfn(outdir, brickid, tileid):
+def get_toofn(targdir, brickid, tileid):
     return os.path.join(
-        outdir, "ToO-{:04d}-{:06d}.ecsv".format(brickid, tileid)
+        targdir, "ToO-{:04d}-{:06d}.ecsv".format(brickid, tileid)
     )
 
 
@@ -149,13 +158,13 @@ def main():
     np.random.seed(1234)
 
     # AR output file
-    outfn = get_outfn(args.outdir, args.brickid, args.tileid)
-    if os.path.isfile(outfn):
+    toofn = get_toofn(args.targdir, args.brickid, args.tileid)
+    if os.path.isfile(toofn):
         msg = "{} already exists! exiting"
         log.error(msg)
         raise IOError(msg)
     else:
-        log.info("outfn = {}".format(outfn))
+        log.info("toofn = {}".format(toofn))
 
     # AR mjd_begin, mjd_end
     mjd_begin = get_mjd(args.utc_time_mjd_begin)
@@ -194,9 +203,9 @@ def main():
     if args.previous_tileids is not None:
         for tileid in args.previous_tileids.split(","):
             tileid = int(tileid)
-            # AR first try args.outdir (case where tiles are designed on the same day)
+            # AR first try args.fadir (case where tiles are designed on the same day)
             fn = os.path.join(
-                args.outdir,
+                args.fadir,
                 "{}".format("{:06d}".format(tileid)[:3]),
                 "fiberassign-{:06d}.fits.gz".format(tileid),
             )
@@ -262,7 +271,7 @@ def main():
     tooargs = " ".join(tmparr)
     log.info("TOOARGS = {}".format(tooargs))
     dout.meta["TOOARGS"] = tooargs
-    dout.write(outfn)
+    dout.write(toofn)
 
 
 if __name__ == "__main__":
