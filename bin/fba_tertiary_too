@@ -61,7 +61,7 @@ def get_parse():
     )
     parser.add_argument(
         "--targdir",
-        help="target folder (default=$DESI_SURVEYOPS/tertiary/args.brickid))",
+        help="target folder (default=$DESI_SURVEYOPS/tertiary/args.prognum))",
         type=str,
         default=None,
     )
@@ -73,9 +73,8 @@ def get_parse():
         default=None,
     )
     parser.add_argument(
-        "-b",
-        "--brickid",
-        help="brickid for TARGETID, <1e5 (default=None)",
+        "--prognum",
+        help="prognum (used as BRICKID for TARGETID), <1e5 (default=None)",
         type=int,
         required=True,
         default=None,
@@ -130,7 +129,7 @@ def get_parse():
     args = parser.parse_args()
     # AR targdir
     if args.targdir is None:
-        args.targdir = os.path.join(os.getenv("DESI_SURVEYOPS"), "ops", "tertiary", "{:04d}".format(args.brickid))
+        args.targdir = os.path.join(os.getenv("DESI_SURVEYOPS"), "ops", "tertiary", "{:04d}".format(args.prognum))
     # AR scnd_mask_name
     if args.scnd_mask_name is None:
         args.scnd_mask_name = "{}_TOO_{}P".format(args.obsconditions, default["TOO_PRIO"])
@@ -139,9 +138,9 @@ def get_parse():
     return args
 
 
-def get_toofn(targdir, brickid, tileid):
+def get_toofn(targdir, prognum, tileid):
     return os.path.join(
-        targdir, "ToO-{:04d}-{:06d}.ecsv".format(brickid, tileid)
+        targdir, "ToO-{:04d}-{:06d}.ecsv".format(prognum, tileid)
     )
 
 
@@ -158,7 +157,7 @@ def main():
     np.random.seed(1234)
 
     # AR output file
-    toofn = get_toofn(args.targdir, args.brickid, args.tileid)
+    toofn = get_toofn(args.targdir, args.prognum, args.tileid)
     if os.path.isfile(toofn):
         msg = "{} already exists! exiting"
         log.error(msg)
@@ -190,13 +189,14 @@ def main():
             ",".join(miss_keys), args.infn
         )
         log.error(msg)
-        raise IOError(ms)
+        raise IOError(msg)
 
     # AR TARGETID (possibly overwrite existing one)
+    # AR we use args.prognum as BRICKID
     if "TARGETID" in din.dtype.names:
         log.warning("overwriting the original TARGETIDs!")
     din["TARGETID"] = encode_targetid(
-        release=release, brickid=args.brickid, objid=np.arange(len(din))
+        release=release, brickid=args.prognum, objid=np.arange(len(din))
     )
 
     # AR previous assignment?
@@ -230,8 +230,8 @@ def main():
             if isfn:
                 log.info("reading {}".format(fn))
                 prev_d = Table.read(fn, "FIBERASSIGN")
-                _, prev_brickid, prev_release, _, _, _ = decode_targetid(prev_d["TARGETID"])
-                sel = np.in1d(prev_release, release) & np.in1d(prev_brickid, args.brickid)
+                _, prev_prognum, prev_release, _, _, _ = decode_targetid(prev_d["TARGETID"])
+                sel = np.in1d(prev_release, release) & np.in1d(prev_prognum, args.prognum)
                 prev_d = prev_d[sel]
                 sel = np.in1d(din["TARGETID"], prev_d["TARGETID"])
                 din["PRIORITY_INIT"][sel] = args.previous_priority
