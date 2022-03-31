@@ -18,9 +18,11 @@ from argparse import ArgumentParser
 
 log = Logger.get()
 
+# AR release is hard-coded to 8888 for tertiary programs
+release = 8888
+
 # AR default values
 default = {
-    "RELEASE": 8888,
     "TIME_MJD_BEGIN": "2020-01-01T00:00:00+00:00",
     "TIME_MJD_END": "2120-01-01T00:00:00+00:00",
     "TOO_PRIO": "HI", # for TOO_PRIO and SCND_TARGET
@@ -64,13 +66,6 @@ def get_parse():
         type=str,
         required=True,
         default=None,
-    )
-    parser.add_argument(
-        "-r",
-        "--release",
-        help="release for TARGETID (default={})".format(default["RELEASE"]),
-        type=int,
-        default=default["RELEASE"],
     )
     parser.add_argument(
         "-b",
@@ -135,9 +130,9 @@ def get_parse():
     return args
 
 
-def get_outfn(outdir, release, brickid, tileid):
+def get_outfn(outdir, brickid, tileid):
     return os.path.join(
-        outdir, "ToO-{}-{:04d}-{:06d}.ecsv".format(release, brickid, tileid)
+        outdir, "ToO-{:04d}-{:06d}.ecsv".format(brickid, tileid)
     )
 
 
@@ -154,7 +149,7 @@ def main():
     np.random.seed(1234)
 
     # AR output file
-    outfn = get_outfn(args.outdir, args.release, args.brickid, args.tileid)
+    outfn = get_outfn(args.outdir, args.brickid, args.tileid)
     if os.path.isfile(outfn):
         msg = "{} already exists! exiting"
         log.error(msg)
@@ -192,7 +187,7 @@ def main():
     if "TARGETID" in din.dtype.names:
         log.warning("overwriting the original TARGETIDs!")
     din["TARGETID"] = encode_targetid(
-        release=args.release, brickid=args.brickid, objid=np.arange(len(din))
+        release=release, brickid=args.brickid, objid=np.arange(len(din))
     )
 
     # AR previous assignment?
@@ -225,11 +220,11 @@ def main():
                     log.info("no {}".format(fn))
             if isfn:
                 log.info("reading {}".format(fn))
-                d = Table.read(fn, "FIBERASSIGN")
-                _, brickid, release, _, _, _ = decode_targetid(d["TARGETID"])
-                sel = np.in1d(release, args.release) & np.in1d(brickid, args.brickid)
-                d = d[sel]
-                sel = np.in1d(din["TARGETID"], d["TARGETID"])
+                prev_d = Table.read(fn, "FIBERASSIGN")
+                _, prev_brickid, prev_release, _, _, _ = decode_targetid(prev_d["TARGETID"])
+                sel = np.in1d(prev_release, release) & np.in1d(prev_brickid, args.brickid)
+                prev_d = prev_d[sel]
+                sel = np.in1d(din["TARGETID"], prev_d["TARGETID"])
                 din["PRIORITY_INIT"][sel] = args.previous_priority
                 log.info(
                     "{} targets were already assigned on TILEID={} -> setting for those PRIORITY_INIT={}".format(
