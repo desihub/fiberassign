@@ -75,7 +75,9 @@ def get_parse():
     )
     parser.add_argument(
         "--scnd_mask_name",
-        help="name for SCND_TARGET (default={{targhdr['OBSCONDS']}}_TOO_{}P)".format(default["TOO_PRIO"]),
+        help="name for SCND_TARGET (default={{targhdr['OBSCONDS']}}_TOO_{}P)".format(
+            default["TOO_PRIO"]
+        ),
         type=str,
         default=None,
     )
@@ -88,10 +90,19 @@ def get_parse():
     args = parser.parse_args()
     # AR targdir
     if args.targdir is None:
-        args.targdir = os.path.join(os.getenv("DESI_SURVEYOPS"), "ops", "tertiary", "{:04d}".format(args.prognum))
+        args.targdir = os.path.join(
+            os.getenv("DESI_SURVEYOPS"),
+            "ops",
+            "tertiary",
+            "{:04d}".format(args.prognum),
+        )
     # AR scnd_mask_name
     if args.scnd_mask_name is None:
-        log.info("args.scnd_mask_name is None -> will be set to {{hdr['OBSCONDS']}}_TOO_{}P)".format(default["TOO_PRIO"]))
+        log.info(
+            "args.scnd_mask_name is None -> will be set to {{hdr['OBSCONDS']}}_TOO_{}P)".format(
+                default["TOO_PRIO"]
+            )
+        )
     for kwargs in args._get_kwargs():
         print(kwargs)
     return args
