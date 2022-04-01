@@ -28,7 +28,7 @@ default = {
     "TOO_PRIO": "HI", # for TOO_PRIO and SCND_TARGET
 }
 
-# AR required columns from args.infn
+# AR required columns from {args.targdir}/tertiary-targets-{args.prognum}.fits
 req_keys = [
     "RA",
     "DEC",
@@ -43,14 +43,6 @@ req_keys = [
 
 def get_parse():
     parser = ArgumentParser()
-    parser.add_argument(
-        "-i",
-        "--infn",
-        help="input catalog (default=None)",
-        type=str,
-        required=True,
-        default=None,
-    )
     parser.add_argument(
         "-t",
         "--tileid",
@@ -175,28 +167,33 @@ def main():
     dref = Table.read(reffn)
 
     # AR read input file
-    din = Table.read(args.infn)
-    log.info("reading {} targets from {}".format(len(din), args.infn))
-    n = len(din)
+    targfn = os.path.join(args.targdir, "tertiary-targets-{:04d}.fits".format(args.prognum))
+    if not os.path.isfile(targfn):
+        msg = "missing {}; exiting".format(targfn)
+        log.error(msg)
+        raise IOerror(msg)
+    targ = Table.read(targfn)
+    log.info("reading {} targets from {}".format(len(targ), targfn))
+    ntarg = len(targ)
 
     # AR check all required keys are there
     miss_keys = []
     for key in req_keys:
-        if key not in din.dtype.names:
+        if key not in targ.dtype.names:
             miss_keys.append(key)
     if len(miss_keys) > 0:
         msg = "{} keys are missing from {}; exiting".format(
-            ",".join(miss_keys), args.infn
+            ",".join(miss_keys), targfn
         )
         log.error(msg)
         raise IOError(msg)
 
     # AR TARGETID (possibly overwrite existing one)
     # AR we use args.prognum as BRICKID
-    if "TARGETID" in din.dtype.names:
+    if "TARGETID" in targ.dtype.names:
         log.warning("overwriting the original TARGETIDs!")
-    din["TARGETID"] = encode_targetid(
-        release=release, brickid=args.prognum, objid=np.arange(len(din))
+    targ["TARGETID"] = encode_targetid(
+        release=release, brickid=args.prognum, objid=np.arange(ntarg)
     )
 
     # AR previous assignment?
@@ -233,8 +230,8 @@ def main():
                 _, prev_prognum, prev_release, _, _, _ = decode_targetid(prev_d["TARGETID"])
                 sel = np.in1d(prev_release, release) & np.in1d(prev_prognum, args.prognum)
                 prev_d = prev_d[sel]
-                sel = np.in1d(din["TARGETID"], prev_d["TARGETID"])
-                din["PRIORITY_INIT"][sel] = args.previous_priority
+                sel = np.in1d(targ["TARGETID"], prev_d["TARGETID"])
+                targ["PRIORITY_INIT"][sel] = args.previous_priority
                 log.info(
                     "{} targets were already assigned on TILEID={} -> setting for those PRIORITY_INIT={}".format(
                         sel.sum(), tileid, args.previous_priority
@@ -250,12 +247,12 @@ def main():
     # AR build output file
     dout = Table()
     for key in dref.dtype.names:
-        dout[key] = np.zeros_like(dref[key], shape=(n))
+        dout[key] = np.zeros_like(dref[key], shape=(ntarg))
     for key in req_keys + ["TARGETID"]:
-        dout[key] = din[key]
+        dout[key] = targ[key]
     dout["DESI_TARGET"] = desi_mask[args.desi_mask_name]
     dout["SCND_TARGET"] = scnd_mask[args.scnd_mask_name]
-    dout["SUBPRIORITY"] = np.random.uniform(size=n)
+    dout["SUBPRIORITY"] = np.random.uniform(size=ntarg)
     dout["OBSCONDITIONS"] = obsconditions[args.obsconditions]
     dout["TOO_TYPE"] = "TILE"
     dout["TOO_PRIO"] = default["TOO_PRIO"]
@@ -271,6 +268,7 @@ def main():
     tooargs = " ".join(tmparr)
     log.info("TOOARGS = {}".format(tooargs))
     dout.meta["TOOARGS"] = tooargs
+    dout.meta["TARGFN"] = targfn
     dout.write(toofn)
 
 
