@@ -111,6 +111,78 @@ def assert_tertiary_targ(targ, targhdr):
             raise IOError(msg)
 
 
+def get_numobs_priority(too, priority_dones, prognum, previous_tileids=None, fadir=None):
+
+    # AR initialize NUMOBS, NUMOBS_MORE, PRIORITY
+    numobss = np.zeros(len(too), dtype=int)
+    numobs_mores = too["NUMOBS_INIT"].copy()
+    priorities = too["PRIORITY_INIT"].copy()
+
+    # AR previous assignment?
+    # AR we proceed as follows:
+    # AR - each time a target is assigned, we do NUMOBS_MORE-=1 and NUMOBS+=1
+    # AR - when NUMOBS_MORE=0, we change PRIORITY to PRIORITY_DONE
+    if previous_tileids is None:
+        log.info("previous_tileids is None -> setting NUMOBS=0, NUMOBS_MORE=NUMOBS_INIT, PRIORITY=PRIORITY_INIT")
+    else:
+        for tileid in previous_tileids.split(","):
+            tileid = int(tileid)
+            # AR first try args.fadir (case where tiles are designed on the same day)
+            fn = os.path.join(
+                fadir,
+                "{}".format("{:06d}".format(tileid)[:3]),
+                "fiberassign-{:06d}.fits.gz".format(tileid),
+            )
+            isfn = False
+            if os.path.isfile(fn):
+                isfn = True
+            # AR then try the DESI_TARGET/fiberassign
+            else:
+                log.inf("no {}".format(fn))
+                fn = os.path.join(
+                    os.getenv("DESI_TARGET"),
+                    "fiberassign",
+                    "tiles",
+                    "trunk",
+                    "{}".format("{:06d}".format(tileid)[:3]),
+                    "fiberassign-{:06d}.fits.gz".format(tileid),
+                )
+                if os.path.isfile(fn):
+                    isfn = True
+                else:
+                    log.info("no {}".format(fn))
+            if isfn:
+                log.info("reading {}".format(fn))
+                # AR identify assigned targets
+                prev_d = Table.read(fn, "FIBERASSIGN")
+                _, prev_prognum, prev_release, _, _, _ = decode_targetid(prev_d["TARGETID"])
+                sel = np.in1d(prev_release, release) & np.in1d(prev_prognum, prognum)
+                prev_d = prev_d[sel]
+                sel = np.in1d(too["TARGETID"], prev_d["TARGETID"])
+                # AR update columns
+                numobss[sel] += 1
+                numobs_mores[sel] -= 1
+                numobs_mores = np.clip(numobs_mores, 0, None)
+                log.info(
+                    "{} targets were already assigned on TILEID={}".format(
+                        sel.sum(), tileid,
+                    )
+                )
+            else:
+                log.warning(
+                    "no fiberassign-{:06d}.fits.gz file found: skipping this tile".format(
+                        tileid
+                    )
+                )
+
+        # AR now update PRIORITY for NUMOBS_MORE = 0 targets
+        sel = numobs_mores == 0
+        priorities[sel] = priority_dones[sel]
+        log.info("PRIORITY updated to PRIORITY_DONE for {} targets".format(sel.sum()))
+
+    return numobss, numobs_mores, priorities
+
+
 def create_tertiary_too(args):
 
     # AR output file
@@ -205,70 +277,16 @@ def create_tertiary_too(args):
 
 
     # AR NUMOBS, NUMOBS_MORE, PRIORITY
-    too["NUMOBS"] = 0
-    too["NUMOBS_MORE"] = too["NUMOBS_INIT"].copy()
-    too["PRIORITY"] = too["PRIORITY_INIT"].copy()
-
-    # AR previous assignment?
-    # AR we proceed as follows:
-    # AR - each time a target is assigned, we do NUMOBS_MORE-=1 and NUMOBS+=1
-    # AR - when NUMOBS_MORE=0, we change PRIORITY to PRIORITY_DONE
-    if args.previous_tileids is not None:
-        for tileid in args.previous_tileids.split(","):
-            tileid = int(tileid)
-            # AR first try args.fadir (case where tiles are designed on the same day)
-            fn = os.path.join(
-                args.fadir,
-                "{}".format("{:06d}".format(tileid)[:3]),
-                "fiberassign-{:06d}.fits.gz".format(tileid),
-            )
-            isfn = False
-            if os.path.isfile(fn):
-                isfn = True
-            # AR then try the DESI_TARGET/fiberassign
-            else:
-                log.inf("no {}".format(fn))
-                fn = os.path.join(
-                    os.getenv("DESI_TARGET"),
-                    "fiberassign",
-                    "tiles",
-                    "trunk",
-                    "{}".format("{:06d}".format(tileid)[:3]),
-                    "fiberassign-{:06d}.fits.gz".format(tileid),
-                )
-                if os.path.isfile(fn):
-                    isfn = True
-                else:
-                    log.info("no {}".format(fn))
-            if isfn:
-                log.info("reading {}".format(fn))
-                # AR identify assigned targets
-                prev_d = Table.read(fn, "FIBERASSIGN")
-                _, prev_prognum, prev_release, _, _, _ = decode_targetid(prev_d["TARGETID"])
-                sel = np.in1d(prev_release, release) & np.in1d(prev_prognum, args.prognum)
-                prev_d = prev_d[sel]
-                sel = np.in1d(too["TARGETID"], prev_d["TARGETID"])
-                # AR update columns
-                too["NUMOBS"][sel] += 1
-                too["NUMOBS_MORE"][sel] -= 1
-                too["NUMOBS_MORE"] = np.clip(too["NUMOBS_MORE"], 0, None)
-                log.info(
-                    "{} targets were already assigned on TILEID={}".format(
-                        sel.sum(), tileid,
-                    )
-                )
-            else:
-                log.warning(
-                    "no fiberassign-{:06d}.fits.gz file found: skipping this tile".format(
-                        tileid
-                    )
-                )
-
-        # AR now update PRIORITY for NUMOBS_MORE = 0 targets
-        sel = too["NUMOBS_MORE"] == 0
-        too["PRIORITY"][sel] = targ["PRIORITY_DONE"][sel]
-        log.info("PRIORITY updated to PRIORITY_DONE for {} targets".format(sel.sum()))
-
+    numobss, numobs_mores, priorities = get_numobs_priority(
+        too,
+        targ["PRIORITY_DONE"],
+        args.prognum,
+        previous_tileids=args.previous_tileids,
+        fadir=args.fadir,
+    )
+    too["NUMOBS"] = numobss
+    too["NUMOBS_MORE"] = numobs_mores
+    too["PRIORITY"] = priorities
 
     # AR store args (we exclude any None argument)
     tmparr = []
