@@ -12,6 +12,7 @@ from desitarget.targetmask import obsconditions
 from desitarget.targets import encode_targetid, decode_targetid
 from desitarget.targetmask import desi_mask, scnd_mask
 from desitarget.mtl import get_utc_date
+from desimodel.footprint import is_point_in_desi
 from fiberassign.utils import assert_isoformat_utc
 from fiberassign.utils import Logger
 from argparse import ArgumentParser
@@ -40,14 +41,31 @@ req_keys = [
     "CHECKER",
 ]
 
+# AR reproducibility for SUBPRIORITY
+np_rand_seed = 1234
+np.random.seed(np_rand_seed)
+
 
 def get_parse():
     parser = ArgumentParser()
     parser.add_argument(
-        "-t",
         "--tileid",
         help="tileid (default=None)",
         type=int,
+        required=True,
+        default=None,
+    )
+    parser.add_argument(
+        "--tilera",
+        help="tile centre ra (default=None)",
+        type=float,
+        required=True,
+        default=None,
+    )
+    parser.add_argument(
+        "--tiledec",
+        help="tile centre dec (default=None)",
+        type=float,
         required=True,
         default=None,
     )
@@ -145,9 +163,6 @@ def main():
 
     args = get_parse()
 
-    # AR reproducibility for SUBPRIORITY
-    np.random.seed(1234)
-
     # AR output file
     toofn = get_toofn(args.targdir, args.prognum, args.tileid)
     if os.path.isfile(toofn):
@@ -174,7 +189,6 @@ def main():
         raise IOerror(msg)
     targ = Table.read(targfn)
     log.info("reading {} targets from {}".format(len(targ), targfn))
-    ntarg = len(targ)
 
     # AR check all required keys are there
     miss_keys = []
@@ -188,13 +202,54 @@ def main():
         log.error(msg)
         raise IOError(msg)
 
+    # AR restrict to targets in the tile
+    tiles = Table()
+    tiles["RA"], tiles["DEC"] = [args.tilera], [args.tiledec]
+    sel = is_point_in_desi(tiles, targ["RA"], targ["DEC"])
+    ii = np.where(sel)[0]
+    log.info(
+        "keep {}/{} targets in tile with (tilera,tiledec)={},{}".format(
+            len(ii), len(targ), args.tilera, args.tiledec,
+        )
+    )
+    targ = targ[ii]
+    ntarg = len(targ)
+
+    # AR build output file
+    too = Table()
+    for key in dref.dtype.names:
+        too[key] = np.zeros_like(dref[key], shape=(ntarg))
+    for key in req_keys:
+        too[key] = targ[key]
+    too["SCND_ORDER"] = ii # AR record the row from the tertiary-targets-{args.prognum}.fits
+    too["DESI_TARGET"] = desi_mask[args.desi_mask_name]
+    too["SCND_TARGET"] = scnd_mask[args.scnd_mask_name]
+    too["OBSCONDITIONS"] = obsconditions[args.obsconditions]
+    too["TOO_TYPE"] = "TILE"
+    too["TOO_PRIO"] = default["TOO_PRIO"]
+    too["OCLAYER"] = args.obsconditions
+    too["MJD_BEGIN"] = mjd_begin
+    too["MJD_END"] = mjd_end
+    too["TIMESTAMP"] = get_utc_date("main")
+
+
     # AR TARGETID (possibly overwrite existing one)
     # AR we use args.prognum as BRICKID
     if "TARGETID" in targ.dtype.names:
-        log.warning("overwriting the original TARGETIDs!")
-    targ["TARGETID"] = encode_targetid(
+        log.warning("not using the original TARGETIDs!")
+    too["TARGETID"] = encode_targetid(
         release=release, brickid=args.prognum, objid=np.arange(ntarg)
     )
+
+    # AR SUBPRIORITY
+    # AR creating it if not present
+    if "SUBPRIORITY" in targ.dtype.names:
+        log.info("SUBPRIORITY column present in {} -> propagating it".format(targfn))
+        too["SUBPRIORITY"] = targ["SUBPRIORITY"]
+    else:
+        log.info("SUBPRIORITY column not present in {} -> creating it".format(targfn))
+        too["SUBPRIORITY"] = np.random.uniform(size=ntarg)
+
 
     # AR previous assignment?
     if args.previous_tileids is not None:
@@ -243,33 +298,18 @@ def main():
                         tileid
                     )
                 )
-
-    # AR build output file
-    dout = Table()
-    for key in dref.dtype.names:
-        dout[key] = np.zeros_like(dref[key], shape=(ntarg))
-    for key in req_keys + ["TARGETID"]:
-        dout[key] = targ[key]
-    dout["DESI_TARGET"] = desi_mask[args.desi_mask_name]
-    dout["SCND_TARGET"] = scnd_mask[args.scnd_mask_name]
-    dout["SUBPRIORITY"] = np.random.uniform(size=ntarg)
-    dout["OBSCONDITIONS"] = obsconditions[args.obsconditions]
-    dout["TOO_TYPE"] = "TILE"
-    dout["TOO_PRIO"] = default["TOO_PRIO"]
-    dout["OCLAYER"] = args.obsconditions
-    dout["MJD_BEGIN"] = mjd_begin
-    dout["MJD_END"] = mjd_end
-    dout["TIMESTAMP"] = get_utc_date("main")
-    # store args (we exclude any None argument)
+    # AR store args (we exclude any None argument)
     tmparr = []
     for kwargs in args._get_kwargs():
         if kwargs[1] is not None:
             tmparr += ["--{} {}".format(kwargs[0], kwargs[1])]
     tooargs = " ".join(tmparr)
     log.info("TOOARGS = {}".format(tooargs))
-    dout.meta["TOOARGS"] = tooargs
-    dout.meta["TARGFN"] = targfn
-    dout.write(toofn)
+    too.meta["TOOARGS"] = tooargs
+    too.meta["TARGFN"] = targfn
+
+    # AR write
+    too.write(toofn)
 
 
 if __name__ == "__main__":
