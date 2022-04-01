@@ -313,7 +313,3 @@ def create_tertiary_too(args):
 
     # AR write
     too.write(toofn)
-
-
-if __name__ == "__main__":
-    main()
