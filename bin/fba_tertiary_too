@@ -29,6 +29,12 @@ default = {
     "TOO_PRIO": "HI", # for TOO_PRIO and SCND_TARGET
 }
 
+# AR allowed values for some of the required header keywords
+allow_hdrkeys = {
+    "OBSCONDS" : ["BRIGHT", "DARK"], # AR not allowing BACKUP
+    "SBPROF" : ["ELG", "BGS", "PSF", "FLT"],
+}
+
 # AR required columns from {args.targdir}/tertiary-targets-{args.prognum}.fits
 req_keys = [
     "RA",
@@ -40,6 +46,14 @@ req_keys = [
     "PRIORITY_INIT",
     "PRIORITY_DONE",
     "CHECKER",
+]
+
+# AR required keywords in the header
+req_hdrkeys = [
+    "FAPRGRM",
+    "OBSCONDS",
+    "SBPROF",
+    "GOALTIME",
 ]
 
 # AR reproducibility for SUBPRIORITY
@@ -107,13 +121,6 @@ def get_parse():
         default=default["TIME_MJD_END"],
     )
     parser.add_argument(
-        "--obsconditions",
-        help="observing conditions (default=None)",
-        choices=["BRIGHT", "DARK"],
-        required=True,
-        default=None,
-    )
-    parser.add_argument(
         "--desi_mask_name",
         help="name for DESI_TARGET (default=SCND_ANY)",
         type=str,
@@ -121,7 +128,7 @@ def get_parse():
     )
     parser.add_argument(
         "--scnd_mask_name",
-        help="name for SCND_TARGET (default={{args.obsconditions}}_TOO_{}P)".format(default["TOO_PRIO"]),
+        help="name for SCND_TARGET (default={{targhdr['OBSCONDS']}}_TOO_{}P)".format(default["TOO_PRIO"]),
         type=str,
         default=None,
     )
@@ -137,7 +144,7 @@ def get_parse():
         args.targdir = os.path.join(os.getenv("DESI_SURVEYOPS"), "ops", "tertiary", "{:04d}".format(args.prognum))
     # AR scnd_mask_name
     if args.scnd_mask_name is None:
-        args.scnd_mask_name = "{}_TOO_{}P".format(args.obsconditions, default["TOO_PRIO"])
+        log.info("args.scnd_mask_name is None -> will be set to {{hdr['OBSCONDS']}}_TOO_{}P)".format(default["TOO_PRIO"]))
     for kwargs in args._get_kwargs():
         print(kwargs)
     return args
@@ -183,6 +190,7 @@ def main():
         log.error(msg)
         raise IOerror(msg)
     targ = Table.read(targfn)
+    targhdr = targ.meta
     log.info("reading {} targets from {}".format(len(targ), targfn))
 
     # AR check all required keys are there
@@ -196,6 +204,33 @@ def main():
         )
         log.error(msg)
         raise IOError(msg)
+
+    # AR check all required header keywords are there
+    miss_hdrkeys = []
+    for hdrkey in req_hdrkeys:
+        if hdrkey not in targhdr:
+            miss_hdrkeys.append(hdrkey)
+    if len(miss_hdrkeys) > 0:
+        msg = "{} keys are missing from the header of {}; exiting".format(
+            ",".join(miss_hdrkeys), targfn
+        )
+        log.error(msg)
+        raise IOError(msg)
+
+    # AR check that the required header keywords are as allowed
+    for hdrkey in allow_hdrkeys:
+        if targhdr[hdrkey] not in allow_hdrkeys[hdrkey]:
+            msg = "hdr['{}']={} not in allowed values ({})".format(
+                hdrkey, targhdr[hdrkey], allow_hdrkeys[hdrkey],
+            )
+            log.error(msg)
+            raise IOError(msg)
+
+    # AR scnd_mask_name
+    if args.scnd_mask_name is None:
+        args.scnd_mask_name = "{}_TOO_{}P".format(targhdr["OBSCONDS"], default["TOO_PRIO"])
+        log.info("setting args.scnd_mask_name = '{}_TOO_{}P'".format(targhdr["OBSCONDS"], default["TOO_PRIO"]))
+
 
     # AR TARGETID (possibly overwrite existing one)
     # AR we use args.prognum as BRICKID
@@ -233,10 +268,10 @@ def main():
         too[key] = targ[key]
     too["DESI_TARGET"] = desi_mask[args.desi_mask_name]
     too["SCND_TARGET"] = scnd_mask[args.scnd_mask_name]
-    too["OBSCONDITIONS"] = obsconditions[args.obsconditions]
+    too["OBSCONDITIONS"] = obsconditions[targhdr["OBSCONDS"]]
     too["TOO_TYPE"] = "TILE"
     too["TOO_PRIO"] = default["TOO_PRIO"]
-    too["OCLAYER"] = args.obsconditions
+    too["OCLAYER"] = targhdr["OBSCONDS"]
     too["MJD_BEGIN"] = mjd_begin
     too["MJD_END"] = mjd_end
     too["TIMESTAMP"] = get_utc_date("main")
@@ -326,7 +361,10 @@ def main():
     tooargs = " ".join(tmparr)
     log.info("TOOARGS = {}".format(tooargs))
     too.meta["TOOARGS"] = tooargs
+    # AR store other infos
     too.meta["TARGFN"] = targfn
+    for hdrkey in req_hdrkeys:
+        too.meta[hdrkey] = targhdr[hdrkey]
 
     # AR write
     too.write(toofn)
