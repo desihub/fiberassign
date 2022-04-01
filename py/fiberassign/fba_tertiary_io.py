@@ -188,7 +188,7 @@ def create_tertiary_too(args):
     # AR output file
     toofn = get_toofn(args.targdir, args.prognum, args.tileid)
     if os.path.isfile(toofn):
-        msg = "{} already exists! exiting"
+        msg = "{} already exists! exiting".format(toofn)
         log.error(msg)
         raise IOError(msg)
     else:
