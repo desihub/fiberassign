@@ -197,26 +197,40 @@ def main():
         log.error(msg)
         raise IOError(msg)
 
+    # AR TARGETID (possibly overwrite existing one)
+    # AR we use args.prognum as BRICKID
+    # AR need to be done *before* cutting on the tile footprint
+    if "TARGETID" in targ.dtype.names:
+        log.warning("overwriting the original TARGETIDs!")
+    targ["TARGETID"] = encode_targetid(
+        release=release, brickid=args.prognum, objid=np.arange(len(targ))
+    )
+
+    # AR SCND_ORDER
+    # AR record the row from the tertiary-targets-{args.prognum}.fits
+    if "SCND_ORDER" in targ.dtype.names:
+        log.warning("overwriting the original SCND_ORDERs!")
+    targ["SCND_ORDER"] = np.arange(len(targ), dtype=int)
+
+
     # AR restrict to targets in the tile
     tiles = Table()
     tiles["RA"], tiles["DEC"] = [args.tilera], [args.tiledec]
     sel = is_point_in_desi(tiles, targ["RA"], targ["DEC"])
-    ii = np.where(sel)[0]
     log.info(
         "keep {}/{} targets in tile with (tilera,tiledec)={},{}".format(
-            len(ii), len(targ), args.tilera, args.tiledec,
+            sel.sum(), len(targ), args.tilera, args.tiledec,
         )
     )
-    targ = targ[ii]
+    targ = targ[sel]
     ntarg = len(targ)
 
     # AR build output file
     too = Table()
     for key in dref.dtype.names:
         too[key] = np.zeros_like(dref[key], shape=(ntarg))
-    for key in req_keys:
+    for key in req_keys + ["TARGETID", "SCND_ORDER"]:
         too[key] = targ[key]
-    too["SCND_ORDER"] = ii # AR record the row from the tertiary-targets-{args.prognum}.fits
     too["DESI_TARGET"] = desi_mask[args.desi_mask_name]
     too["SCND_TARGET"] = scnd_mask[args.scnd_mask_name]
     too["OBSCONDITIONS"] = obsconditions[args.obsconditions]
@@ -227,14 +241,6 @@ def main():
     too["MJD_END"] = mjd_end
     too["TIMESTAMP"] = get_utc_date("main")
 
-
-    # AR TARGETID (possibly overwrite existing one)
-    # AR we use args.prognum as BRICKID
-    if "TARGETID" in targ.dtype.names:
-        log.warning("not using the original TARGETIDs!")
-    too["TARGETID"] = encode_targetid(
-        release=release, brickid=args.prognum, objid=np.arange(ntarg)
-    )
 
     # AR SUBPRIORITY
     # AR creating it if not present
