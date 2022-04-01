@@ -36,8 +36,9 @@ req_keys = [
     "PMRA",
     "PMDEC",
     "REF_EPOCH",
-    "PRIORITY_INIT",
     "NUMOBS_INIT",
+    "PRIORITY_INIT",
+    "PRIORITY_DONE",
     "CHECKER",
 ]
 
@@ -126,14 +127,8 @@ def get_parse():
     )
     parser.add_argument(
         "--previous_tileids",
-        help="comma-separated list of already designed TILEIDs to set to lower priority assigned targets (default=None)",
+        help="comma-separated list of already designed TILEIDs to consider to set NUMOBS and NUMOBS_MORE (default=None)",
         type=str,
-        default=None,
-    )
-    parser.add_argument(
-        "--previous_priority",
-        help="priority to set for targets from args.previous_tileids (default=None)",
-        type=int,
         default=None,
     )
     args = parser.parse_args()
@@ -251,7 +246,15 @@ def main():
         too["SUBPRIORITY"] = np.random.uniform(size=ntarg)
 
 
+    # AR NUMOBS, NUMOBS_MORE, PRIORITY
+    too["NUMOBS"] = 0
+    too["NUMOBS_MORE"] = too["NUMOBS_INIT"].copy()
+    too["PRIORITY"] = too["PRIORITY_INIT"].copy()
+
     # AR previous assignment?
+    # AR we proceed as follows:
+    # AR - each time a target is assigned, we do NUMOBS_MORE-=1 and NUMOBS+=1
+    # AR - when NUMOBS_MORE=0, we change PRIORITY to PRIORITY_DONE
     if args.previous_tileids is not None:
         for tileid in args.previous_tileids.split(","):
             tileid = int(tileid)
@@ -281,15 +284,19 @@ def main():
                     log.info("no {}".format(fn))
             if isfn:
                 log.info("reading {}".format(fn))
+                # AR identify assigned targets
                 prev_d = Table.read(fn, "FIBERASSIGN")
                 _, prev_prognum, prev_release, _, _, _ = decode_targetid(prev_d["TARGETID"])
                 sel = np.in1d(prev_release, release) & np.in1d(prev_prognum, args.prognum)
                 prev_d = prev_d[sel]
-                sel = np.in1d(targ["TARGETID"], prev_d["TARGETID"])
-                targ["PRIORITY_INIT"][sel] = args.previous_priority
+                sel = np.in1d(too["TARGETID"], prev_d["TARGETID"])
+                # AR update columns
+                too["NUMOBS"][sel] += 1
+                too["NUMOBS_MORE"][sel] -= 1
+                too["NUMOBS_MORE"] = np.clip(too["NUMOBS_MORE"], 0, None)
                 log.info(
-                    "{} targets were already assigned on TILEID={} -> setting for those PRIORITY_INIT={}".format(
-                        sel.sum(), tileid, args.previous_priority
+                    "{} targets were already assigned on TILEID={}".format(
+                        sel.sum(), tileid,
                     )
                 )
             else:
@@ -298,6 +305,13 @@ def main():
                         tileid
                     )
                 )
+
+        # AR now update PRIORITY for NUMOBS_MORE = 0 targets
+        sel = too["NUMOBS_MORE"] == 0
+        too["PRIORITY"][sel] = targ["PRIORITY_DONE"][sel]
+        log.info("PRIORITY updated to PRIORITY_DONE for {} targets".format(sel.sum()))
+
+
     # AR store args (we exclude any None argument)
     tmparr = []
     for kwargs in args._get_kwargs():
