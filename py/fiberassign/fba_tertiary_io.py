@@ -35,6 +35,7 @@ allow_hdrkeys = {
 
 # AR required columns from {args.targdir}/tertiary-targets-{args.prognum}.fits
 req_keys = [
+    "TARGETID", # AR should be encode_targetid(release=8888, brickid=PROGNUM, objid=np.arange(len(d)))
     "RA",
     "DEC",
     "PMRA",
@@ -72,7 +73,7 @@ def get_mjd(utc_time_mjd):
     return Time(datetime.strptime(utc_time_mjd, "%Y-%m-%dT%H:%M:%S%z")).mjd
 
 
-def assert_tertiary_targ(targ, targhdr):
+def assert_tertiary_targ(prognum, targ, targhdr):
 
     # AR check all required keys are there
     miss_keys = []
@@ -106,6 +107,16 @@ def assert_tertiary_targ(targ, targhdr):
             )
             log.error(msg)
             raise IOError(msg)
+
+    # AR check TARGETID
+    targetids = encode_targetid(release=8888, brickid=prognum, objid=np.arange(len(targ)))
+    sel = targ["TARGETID"] != targetids
+    if sel.sum() > 0:
+        msg = "TARGETID is not as expected, i.e. encode_targetid(release=8888, brickid={}, objid=np.arange(len(targ)))".format(
+            prognum,
+        )
+        log.error(msg)
+        raise IOError(msg)
 
     # AR warning if some columns are present but will be overwritten
     keys = np.array(targ.dtype.names)
@@ -296,15 +307,6 @@ def create_tertiary_too(args):
                 targhdr["OBSCONDS"], default["TOO_PRIO"]
             )
         )
-
-    # AR TARGETID (possibly overwrite existing one)
-    # AR we use args.prognum as BRICKID
-    # AR need to be done *before* cutting on the tile footprint
-    if "TARGETID" in targ.dtype.names:
-        log.warning("overwriting the original TARGETIDs!")
-    targ["TARGETID"] = encode_targetid(
-        release=release, brickid=args.prognum, objid=np.arange(len(targ))
-    )
 
     # AR SCND_ORDER
     # AR record the row from the tertiary-targets-{args.prognum}.fits
