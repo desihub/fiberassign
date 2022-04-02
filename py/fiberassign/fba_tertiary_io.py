@@ -35,7 +35,7 @@ allow_hdrkeys = {
 
 # AR required columns from {args.targdir}/tertiary-targets-{args.prognum}.fits
 req_keys = [
-    "TARGETID", # AR should be encode_targetid(release=8888, brickid=PROGNUM, objid=np.arange(len(d)))
+    "TARGETID",  # AR should be encode_targetid(release=8888, brickid=PROGNUM, objid=np.arange(len(d)))
     "RA",
     "DEC",
     "PMRA",
@@ -61,8 +61,10 @@ np.random.seed(np_rand_seed)
 def get_targfn(targdir, prognum):
     return os.path.join(targdir, "tertiary-targets-{:04d}.fits".format(prognum))
 
+
 def get_priofn(targdir, prognum):
     return os.path.join(targdir, "tertiary-priorities-{:04d}.ecsv".format(prognum))
+
 
 def get_toofn(targdir, prognum, tileid):
     return os.path.join(targdir, "ToO-{:04d}-{:06d}.ecsv".format(prognum, tileid))
@@ -109,7 +111,9 @@ def assert_tertiary_targ(prognum, targ, targhdr):
             raise IOError(msg)
 
     # AR check TARGETID
-    targetids = encode_targetid(release=8888, brickid=prognum, objid=np.arange(len(targ)))
+    targetids = encode_targetid(
+        release=8888, brickid=prognum, objid=np.arange(len(targ))
+    )
     sel = targ["TARGETID"] != targetids
     if sel.sum() > 0:
         msg = "TARGETID is not as expected, i.e. encode_targetid(release=8888, brickid={}, objid=np.arange(len(targ)))".format(
@@ -120,21 +124,27 @@ def assert_tertiary_targ(prognum, targ, targhdr):
 
     # AR check RA, DEC
     sel = (targ["RA"] >= 0) & (targ["RA"] < 360)
-    sel &= (targ["DEC"] >=-90) & (targ["DEC"] <= 90)
+    sel &= (targ["DEC"] >= -90) & (targ["DEC"] <= 90)
     if sel.sum() != len(targ):
-        msg = "{} targets do not verify 0 <= RA < 360 and -90 <= DEC <= 90".format(len(targ) - sel.sum())
+        msg = "{} targets do not verify 0 <= RA < 360 and -90 <= DEC <= 90".format(
+            len(targ) - sel.sum()
+        )
         log.error(msg)
         raise IOError(msg)
 
     # AR check PMRA, PMDEC, REF_EPOCH
     sel = (np.isfinite(targ["PMRA"])) & (np.isfinite(targ["PMDEC"]))
     if sel.sum() != len(targ):
-        msg = "{} targets do have not finite PMRA or PMDEC".format(len(targ) - sel.sum())
+        msg = "{} targets do have not finite PMRA or PMDEC".format(
+            len(targ) - sel.sum()
+        )
         log.error(msg)
         raise IOError(msg)
     sel = (np.isfinite(targ["REF_EPOCH"])) & (targ["REF_EPOCH"] > 0)
     if sel.sum() != len(targ):
-        msg = "{} targets do have not finite REF_EPOCH or REF_EPOCH <= 0".format(len(targ) - sel.sum())
+        msg = "{} targets do have not finite REF_EPOCH or REF_EPOCH <= 0".format(
+            len(targ) - sel.sum()
+        )
         log.error(msg)
         raise IOError(msg)
 
@@ -142,10 +152,21 @@ def assert_tertiary_targ(prognum, targ, targhdr):
     keys = np.array(targ.dtype.names)
     sel = np.in1d(
         keys,
-        ["SCND_ORDER", "PRIORITY_INIT", "NUMOBS_INIT", "NUMOBS", "NUMOBS_MORE", "PRIORITY"]
+        [
+            "SCND_ORDER",
+            "PRIORITY_INIT",
+            "NUMOBS_INIT",
+            "NUMOBS",
+            "NUMOBS_MORE",
+            "PRIORITY",
+        ],
     )
     if sel.sum() > 0:
-        log.warning("The following columns present in the input file will be overwritten: {}".format(keys[sel]))
+        log.warning(
+            "The following columns present in the input file will be overwritten: {}".format(
+                keys[sel]
+            )
+        )
 
 
 def assert_tertiary_prio(prognum, prio, targ):
@@ -153,7 +174,12 @@ def assert_tertiary_prio(prognum, prio, targ):
     # AR check that all TERTIARY_TARGET values in targ exist in prio
     targ_tertiary_targets = np.unique(targ["TERTIARY_TARGET"])
     prio_tertiary_targets = np.unique(prio["TERTIARY_TARGET"])
-    sel = np.array([tertiary_target not in prio_tertiary_targets for tertiary_target in np.unique(targ["TERTIARY_TARGET"])])
+    sel = np.array(
+        [
+            tertiary_target not in prio_tertiary_targets
+            for tertiary_target in np.unique(targ["TERTIARY_TARGET"])
+        ]
+    )
     if sel.sum() > 0:
         msg = "TERTIARY_TARGET={} not present in prio".format(
             ",".join(targ_tertiary_targets[sel])
@@ -166,14 +192,22 @@ def assert_tertiary_prio(prognum, prio, targ):
     # AR - NUMOBS_DONE_MIN, NUMOBS_DONE_MAX consistency
     for tertiary_target in np.unique(prio["TERTIARY_TARGET"]):
         # AR check NUMOBS_DONE_MIN=0, NUMOBS_DONE_MAX=99
-        for numobs_key, numobs_val in zip(["NUMOBS_DONE_MIN", "NUMOBS_DONE_MAX"], [0, 99]):
-            sel = (prio["TERTIARY_TARGET"] == tertiary_target) & (prio["NUMOBS_DONE_MIN"] == 0)
+        for numobs_key, numobs_val in zip(
+            ["NUMOBS_DONE_MIN", "NUMOBS_DONE_MAX"], [0, 99]
+        ):
+            sel = (prio["TERTIARY_TARGET"] == tertiary_target) & (
+                prio["NUMOBS_DONE_MIN"] == 0
+            )
             if sel.sum() == 0:
-                msg = "NUMOBS_DONE_MIN=0 case not set for TERTIARY_TARGET={}".format(tertiary_target)
+                msg = "NUMOBS_DONE_MIN=0 case not set for TERTIARY_TARGET={}".format(
+                    tertiary_target
+                )
                 log.error(msg)
                 raise IOError(msg)
             if sel.sum() > 1:
-                msg = "NUMOBS_DONE_MIN=0 case appearing {} times for TERTIARY_TARGET={}".format(sel.sum(), tertiary_target)
+                msg = "NUMOBS_DONE_MIN=0 case appearing {} times for TERTIARY_TARGET={}".format(
+                    sel.sum(), tertiary_target
+                )
                 log.error(msg)
                 raise IOError(msg)
         # AR NUMOBS_DONE_MIN, NUMOBS_DONE_MAX consistency
@@ -183,18 +217,20 @@ def assert_tertiary_prio(prognum, prio, targ):
             ok = False
         if np.unique(prio["NUMOBS_DONE_MAX"][sel]).size != sel.sum():
             ok = False
-        for numobs_done_min, numobs_done_max in zip(prio["NUMOBS_DONE_MIN"][sel], prio["NUMOBS_DONE_MAX"][sel]):
+        for numobs_done_min, numobs_done_max in zip(
+            prio["NUMOBS_DONE_MIN"][sel], prio["NUMOBS_DONE_MAX"][sel]
+        ):
             if numobs_done_min > numobs_done_max:
                 ok = False
         if not ok:
-            msg = "NUMOBS_DONE_MIN, NUMOBS_DONE_MAX ill-designed for TERTIARY_TARGET={}".format(tertiary_target)
+            msg = "NUMOBS_DONE_MIN, NUMOBS_DONE_MAX ill-designed for TERTIARY_TARGET={}".format(
+                tertiary_target
+            )
             log.error(msg)
             raise IOError(msg)
 
 
-def get_numobs_priority(
-    too, prio, prognum, previous_tileids=None, fadir=None
-):
+def get_numobs_priority(too, prio, prognum, previous_tileids=None, fadir=None):
 
     # AR initialize NUMOBS, NUMOBS_MORE, PRIORITY
     numobss = np.zeros(len(too), dtype=int)
@@ -266,14 +302,18 @@ def get_numobs_priority(
         # AR now update PRIORITY
         for i in range(len(prio)):
             sel = (
-                ((too["TERTIARY_TARGET"] == prio["TERTIARY_TARGET"][i]) > 0) &
-                (numobss >= prio["NUMOBS_DONE_MIN"][i]) &
-                (numobss <= prio["NUMOBS_DONE_MAX"][i])
+                ((too["TERTIARY_TARGET"] == prio["TERTIARY_TARGET"][i]) > 0)
+                & (numobss >= prio["NUMOBS_DONE_MIN"][i])
+                & (numobss <= prio["NUMOBS_DONE_MAX"][i])
             )
             priorities[sel] = prio["PRIORITY"][i]
             log.info(
                 "setting PRIORITY={} for {} targets with TERTIARY_TARGET = {} and {} <= NUMOBS <= {}".format(
-                   prio["PRIORITY"][i], sel.sum(), prio["TERTIARY_TARGET"][i], prio["NUMOBS_DONE_MIN"][i], prio["NUMOBS_DONE_MAX"][i]
+                    prio["PRIORITY"][i],
+                    sel.sum(),
+                    prio["TERTIARY_TARGET"][i],
+                    prio["NUMOBS_DONE_MIN"][i],
+                    prio["NUMOBS_DONE_MAX"][i],
                 )
             )
     return numobss, numobs_mores, priorities
@@ -384,10 +424,14 @@ def create_tertiary_too(args):
     too["NUMOBS_INIT"], too["PRIORITY_INIT"] = 0, 0
     for tertiary_target in np.unique(prio["TERTIARY_TARGET"]):
         # AR PRIORITY_INIT
-        sel = (prio["TERTIARY_TARGET"] == tertiary_target) & (prio["NUMOBS_DONE_MIN"] == 0)
+        sel = (prio["TERTIARY_TARGET"] == tertiary_target) & (
+            prio["NUMOBS_DONE_MIN"] == 0
+        )
         priority_init = prio["PRIORITY"][sel][0]
         # AR NUMOBS_INIT
-        sel = (prio["TERTIARY_TARGET"] == tertiary_target) & (prio["NUMOBS_DONE_MAX"] == 99)
+        sel = (prio["TERTIARY_TARGET"] == tertiary_target) & (
+            prio["NUMOBS_DONE_MAX"] == 99
+        )
         numobs_init = prio["NUMOBS_DONE_MIN"][sel][0]
         #
         sel = too["TERTIARY_TARGET"] == tertiary_target
