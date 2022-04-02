@@ -399,6 +399,7 @@ def create_tertiary_too(args):
     too.meta["TOOARGS"] = tooargs
     # AR store other infos
     too.meta["TARGFN"] = targfn
+    too.meta["PRIOFN"] = priofn
     for hdrkey in req_hdrkeys:
         too.meta[hdrkey] = targhdr[hdrkey]
 
