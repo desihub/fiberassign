@@ -118,6 +118,26 @@ def assert_tertiary_targ(prognum, targ, targhdr):
         log.error(msg)
         raise IOError(msg)
 
+    # AR check RA, DEC
+    sel = (targ["RA"] >= 0) & (targ["RA"] < 360)
+    sel &= (targ["DEC"] >=-90) & (targ["DEC"] <= 90)
+    if sel.sum() != len(targ):
+        msg = "{} targets do not verify 0 <= RA < 360 and -90 <= DEC <= 90".format(len(targ) - sel.sum())
+        log.error(msg)
+        raise IOError(msg)
+
+    # AR check PMRA, PMDEC, REF_EPOCH
+    sel = (np.isfinite(targ["PMRA"])) & (np.isfinite(targ["PMDEC"]))
+    if sel.sum() != len(targ):
+        msg = "{} targets do have not finite PMRA or PMDEC".format(len(targ) - sel.sum())
+        log.error(msg)
+        raise IOError(msg)
+    sel = (np.isfinite(targ["REF_EPOCH"])) & (targ["REF_EPOCH"] > 0)
+    if sel.sum() != len(targ):
+        msg = "{} targets do have not finite REF_EPOCH or REF_EPOCH <= 0".format(len(targ) - sel.sum())
+        log.error(msg)
+        raise IOError(msg)
+
     # AR warning if some columns are present but will be overwritten
     keys = np.array(targ.dtype.names)
     sel = np.in1d(
@@ -125,7 +145,7 @@ def assert_tertiary_targ(prognum, targ, targhdr):
         ["SCND_ORDER", "PRIORITY_INIT", "NUMOBS_INIT", "NUMOBS", "NUMOBS_MORE", "PRIORITY"]
     )
     if sel.sum() > 0:
-        log.warning("The following columns present in the input file will not be used: {}".format(keys[sel]))
+        log.warning("The following columns present in the input file will be overwritten: {}".format(keys[sel]))
 
 
 def assert_tertiary_prio(prognum, prio, targ):
