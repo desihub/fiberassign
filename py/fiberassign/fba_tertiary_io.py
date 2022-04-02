@@ -314,8 +314,8 @@ def create_tertiary_too(args):
     log.info("reading {} targets from {}".format(len(targ), targfn))
 
     # AR check input target catalog and priority file
-    assert_tertiary_targ(targ, targhdr)
-    assert_tertiary_prio(prognum, prio, targ)
+    assert_tertiary_targ(args.prognum, targ, targhdr)
+    assert_tertiary_prio(args.prognum, prio, targ)
 
     # AR scnd_mask_name
     if args.scnd_mask_name is None:
@@ -368,6 +368,8 @@ def create_tertiary_too(args):
     too["MJD_BEGIN"] = mjd_begin
     too["MJD_END"] = mjd_end
     too["TIMESTAMP"] = get_utc_date("main")
+    # AR temporary adding TERTIARY_TARGET
+    too["TERTIARY_TARGET"] = targ["TERTIARY_TARGET"]
 
     # AR SUBPRIORITY
     # AR creating it if not present
@@ -408,6 +410,9 @@ def create_tertiary_too(args):
     too["NUMOBS"] = numobss
     too["NUMOBS_MORE"] = numobs_mores
     too["PRIORITY"] = priorities
+
+    # AR remove TERTIARY_TARGET
+    too.remove_column("TERTIARY_TARGET")
 
     # AR store args (we exclude any None argument)
     tmparr = []
