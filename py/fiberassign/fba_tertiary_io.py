@@ -40,9 +40,7 @@ req_keys = [
     "PMRA",
     "PMDEC",
     "REF_EPOCH",
-    "NUMOBS_INIT",
-    "PRIORITY_INIT",
-    "PRIORITY_DONE",
+    "TERTIARY_TARGET",
     "CHECKER",
 ]
 
@@ -62,6 +60,8 @@ np.random.seed(np_rand_seed)
 def get_targfn(targdir, prognum):
     return os.path.join(targdir, "tertiary-targets-{:04d}.fits".format(prognum))
 
+def get_priofn(targdir, prognum):
+    return os.path.join(targdir, "tertiary-priorities-{:04d}.ecsv".format(prognum))
 
 def get_toofn(targdir, prognum, tileid):
     return os.path.join(targdir, "ToO-{:04d}-{:06d}.ecsv".format(prognum, tileid))
@@ -107,9 +107,62 @@ def assert_tertiary_targ(targ, targhdr):
             log.error(msg)
             raise IOError(msg)
 
+    # AR warning if some columns are present but will be overwritten
+    keys = np.array(targ.dtype.names)
+    sel = np.in1d(
+        keys,
+        ["SCND_ORDER", "PRIORITY_INIT", "NUMOBS_INIT", "NUMOBS", "NUMOBS_MORE", "PRIORITY"]
+    )
+    if sel.sum() > 0:
+        log.warning("The following columns present in the input file will not be used: {}".format(keys[sel]))
+
+
+def assert_tertiary_prio(prognum, prio, targ):
+
+    # AR check that all TERTIARY_TARGET values in targ exist in prio
+    targ_tertiary_targets = np.unique(targ["TERTIARY_TARGET"])
+    prio_tertiary_targets = np.unique(prio["TERTIARY_TARGET"])
+    sel = np.array([tertiary_target not in prio_tertiary_targets for tertiary_target in np.unique(targ["TERTIARY_TARGET"])])
+    if sel.sum() > 0:
+        msg = "TERTIARY_TARGET={} not present in prio".format(
+            ",".join(targ_tertiary_targets[sel])
+        )
+        log.error(msg)
+        raise IOError(msg)
+
+    # AR check:
+    # AR - NUMOBS_DONE_MIN=0, NUMOBS_DONE_MAX=99
+    # AR - NUMOBS_DONE_MIN, NUMOBS_DONE_MAX consistency
+    for tertiary_target in np.unique(prio["TERTIARY_TARGET"]):
+        # AR check NUMOBS_DONE_MIN=0, NUMOBS_DONE_MAX=99
+        for numobs_key, numobs_val in zip(["NUMOBS_DONE_MIN", "NUMOBS_DONE_MAX"], [0, 99]):
+            sel = (prio["TERTIARY_TARGET"] == tertiary_target) & (prio["NUMOBS_DONE_MIN"] == 0)
+            if sel.sum() == 0:
+                msg = "NUMOBS_DONE_MIN=0 case not set for TERTIARY_TARGET={}".format(tertiary_target)
+                log.error(msg)
+                raise IOError(msg)
+            if sel.sum() > 1:
+                msg = "NUMOBS_DONE_MIN=0 case appearing {} times for TERTIARY_TARGET={}".format(sel.sum(), tertiary_target)
+                log.error(msg)
+                raise IOError(msg)
+        # AR NUMOBS_DONE_MIN, NUMOBS_DONE_MAX consistency
+        sel = prio["TERTIARY_TARGET"] == tertiary_target
+        ok = True
+        if np.unique(prio["NUMOBS_DONE_MIN"][sel]).size != sel.sum():
+            ok = False
+        if np.unique(prio["NUMOBS_DONE_MAX"][sel]).size != sel.sum():
+            ok = False
+        for numobs_done_min, numobs_done_max in zip(prio["NUMOBS_DONE_MIN"][sel], prio["NUMOBS_DONE_MAX"][sel]):
+            if numobs_done_min > numobs_done_max:
+                ok = False
+        if not ok:
+            msg = "NUMOBS_DONE_MIN, NUMOBS_DONE_MAX ill-designed for TERTIARY_TARGET={}".format(tertiary_target)
+            log.error(msg)
+            raise IOError(msg)
+
 
 def get_numobs_priority(
-    too, priority_dones, prognum, previous_tileids=None, fadir=None
+    too, prio, prognum, previous_tileids=None, fadir=None
 ):
 
     # AR initialize NUMOBS, NUMOBS_MORE, PRIORITY
@@ -179,11 +232,19 @@ def get_numobs_priority(
                     )
                 )
 
-        # AR now update PRIORITY for NUMOBS_MORE = 0 targets
-        sel = numobs_mores == 0
-        priorities[sel] = priority_dones[sel]
-        log.info("PRIORITY updated to PRIORITY_DONE for {} targets".format(sel.sum()))
-
+        # AR now update PRIORITY
+        for i in range(len(prio)):
+            sel = (
+                ((too["TERTIARY_TARGET"] == prio["TERTIARY_TARGET"][i]) > 0) &
+                (numobss >= prio["NUMOBS_DONE_MIN"][i]) &
+                (numobss <= prio["NUMOBS_DONE_MAX"][i])
+            )
+            priorities[sel] = prio["PRIORITY"][i]
+            log.info(
+                "setting PRIORITY={} for {} targets with TERTIARY_TARGET = {} and {} <= NUMOBS <= {}".format(
+                   prio["PRIORITY"][i], sel.sum(), prio["TERTIARY_TARGET"][i], prio["NUMOBS_DONE_MIN"][i], prio["NUMOBS_DONE_MAX"][i]
+                )
+            )
     return numobss, numobs_mores, priorities
 
 
@@ -203,6 +264,14 @@ def create_tertiary_too(args):
     mjd_end = get_mjd(args.utc_time_mjd_end)
     log.info("set MJD_BEGIN={}, MJD_END={}".format(mjd_begin, mjd_end))
 
+    # AR read priorities file
+    priofn = get_priofn(args.targdir, args.prognum)
+    if not os.path.isfile(priofn):
+        msg = "missing {}; exiting".format(priofn)
+        log.error(msg)
+        raise IOError(msg)
+    prio = Table.read(priofn)
+
     # AR read input file
     targfn = get_targfn(args.targdir, args.prognum)
     if not os.path.isfile(targfn):
@@ -213,8 +282,9 @@ def create_tertiary_too(args):
     targhdr = targ.meta
     log.info("reading {} targets from {}".format(len(targ), targfn))
 
-    # AR check input catalog
+    # AR check input target catalog and priority file
     assert_tertiary_targ(targ, targhdr)
+    assert_tertiary_prio(prognum, prio, targ)
 
     # AR scnd_mask_name
     if args.scnd_mask_name is None:
@@ -286,10 +356,29 @@ def create_tertiary_too(args):
         log.info("SUBPRIORITY column not present in {} -> creating it".format(targfn))
         too["SUBPRIORITY"] = np.random.uniform(size=ntarg)
 
+    # AR NUMOBS_INIT, PRIORITY_INIT
+    too["NUMOBS_INIT"], too["PRIORITY_INIT"] = 0, 0
+    for tertiary_target in np.unique(prio["TERTIARY_TARGET"]):
+        # AR PRIORITY_INIT
+        sel = (prio["TERTIARY_TARGET"] == tertiary_target) & (prio["NUMOBS_DONE_MIN"] == 0)
+        priority_init = prio["PRIORITY"][sel][0]
+        # AR NUMOBS_INIT
+        sel = (prio["TERTIARY_TARGET"] == tertiary_target) & (prio["NUMOBS_DONE_MAX"] == 99)
+        numobs_init = prio["NUMOBS_DONE_MIN"][sel][0]
+        #
+        sel = too["TERTIARY_TARGET"] == tertiary_target
+        too["PRIORITY_INIT"][sel] = priority_init
+        too["NUMOBS_INIT"][sel] = numobs_init
+        log.info(
+            "setting PRIORITY_INIT={} and NUMOBS_INIT={} for {} targets".format(
+                priority_init, numobs_init, sel.sum()
+            )
+        )
+
     # AR NUMOBS, NUMOBS_MORE, PRIORITY
     numobss, numobs_mores, priorities = get_numobs_priority(
         too,
-        targ["PRIORITY_DONE"],
+        prio,
         args.prognum,
         previous_tileids=args.previous_tileids,
         fadir=args.fadir,
