@@ -349,7 +349,7 @@ def create_tertiary_too(args):
         msg = "missing {}; exiting".format(targfn)
         log.error(msg)
         raise IOerror(msg)
-    targ = Table.read(targfn)
+    targ = Table.read(targfn, "TARGETS")
     targhdr = targ.meta
     log.info("reading {} targets from {}".format(len(targ), targfn))
 
