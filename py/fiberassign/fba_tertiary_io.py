@@ -75,7 +75,30 @@ def get_mjd(utc_time_mjd):
     return Time(datetime.strptime(utc_time_mjd, "%Y-%m-%dT%H:%M:%S%z")).mjd
 
 
-def assert_tertiary_targ(prognum, targ, targhdr):
+def read_targfn(targfn):
+    if not os.path.isfile(targfn):
+        msg = "missing {}; exiting".format(targfn)
+        log.error(msg)
+        raise IOerror(msg)
+    targ = Table.read(targfn, "TARGETS")
+    targhdr = targ.meta
+    log.info("reading {} targets from {}".format(len(targ), targfn))
+    return targ, targhdr
+
+
+def read_priofn(priofn):
+    if not os.path.isfile(priofn):
+        msg = "missing {}; exiting".format(priofn)
+        log.error(msg)
+        raise IOError(msg)
+    prio = Table.read(priofn)
+    return prio
+
+
+def assert_tertiary_targ(prognum, targfn):
+
+    # AR read
+    targ, targhdr = read_targfn(targfn)
 
     # AR check all required keys are there
     miss_keys = []
@@ -188,7 +211,11 @@ def assert_tertiary_targ(prognum, targ, targhdr):
         )
 
 
-def assert_tertiary_prio(prognum, prio, targ):
+def assert_tertiary_prio(prognum, priofn, targfn):
+
+    # AR read the files
+    prio = read_priofn(priofn)
+    targ, _ = read_targfn(targfn)
 
     # AR check that all TERTIARY_TARGET values in targ exist in prio
     targ_tertiary_targets = np.unique(targ["TERTIARY_TARGET"])
@@ -354,27 +381,27 @@ def create_tertiary_too(args):
     mjd_end = get_mjd(args.utc_time_mjd_end)
     log.info("set MJD_BEGIN={}, MJD_END={}".format(mjd_begin, mjd_end))
 
+    # AR check input target catalog and priority file
+    # AR (not optimal in term of processing time,
+    # AR    as we read targfn three times here,
+    # AR    in assert_tertiary_targ(),
+    # AR    in assert_tertiary_prio(),
+    # AR    and in the code after;
+    # AR    but that insures that the checks are done
+    # AR    using the exact same reading function
+    # AR    than what is done in the code;
+    # AR    but processing time here is not a limiting factor
+    # AR )
+    assert_tertiary_targ(args.prognum, targfn)
+    assert_tertiary_prio(args.prognum, priofn, targfn)
+
     # AR read priorities file
     priofn = get_priofn(args.targdir, args.prognum)
-    if not os.path.isfile(priofn):
-        msg = "missing {}; exiting".format(priofn)
-        log.error(msg)
-        raise IOError(msg)
-    prio = Table.read(priofn)
+    prio = read_priofn(priofn)
 
     # AR read input file
     targfn = get_targfn(args.targdir, args.prognum)
-    if not os.path.isfile(targfn):
-        msg = "missing {}; exiting".format(targfn)
-        log.error(msg)
-        raise IOerror(msg)
-    targ = Table.read(targfn, "TARGETS")
-    targhdr = targ.meta
-    log.info("reading {} targets from {}".format(len(targ), targfn))
-
-    # AR check input target catalog and priority file
-    assert_tertiary_targ(args.prognum, targ, targhdr)
-    assert_tertiary_prio(args.prognum, prio, targ)
+    targ, targhdr = read_targfn(targfn)
 
     # AR scnd_mask_name
     if args.scnd_mask_name is None:
