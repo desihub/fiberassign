@@ -148,6 +148,25 @@ def assert_tertiary_targ(prognum, targ, targhdr):
         log.error(msg)
         raise IOError(msg)
 
+    # AR check SUBPRIORITY
+    # AR - 0 < SUBPRIORITY < 1 (not sure 0 and 1 have to be excluded.. in doubt do so)
+    # AR - check uniqueness of values, which is expected for a random (only raises a warning)
+    if "SUBPRIORITY" in targ.dtype.names:
+        sel = (targ["SUBPRIORITY"] > 0) & (targ["SUBPRIORITY"] < 1)
+        if sel.sum() != len(targ):
+            msg = "{} targets do not have 0 < SUBPRIORITY < 1".format(
+                len(targ) - sel.sum()
+            )
+            log.error(msg)
+            raise IOError(msg)
+        tmpn = np.unique(targ["SUBPRIORITY"]).size
+        if tmpn != len(targ):
+            msg = "SUBPRIORITY does not look like a random draw ({} unique values for {} rows)".format(
+                tmpn, len(targ)
+            )
+            log.warning(msg)
+
+
     # AR warning if some columns are present but will be overwritten
     keys = np.array(targ.dtype.names)
     sel = np.in1d(
