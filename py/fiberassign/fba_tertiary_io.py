@@ -395,18 +395,21 @@ def get_numobs_priority(too, prio, prognum, previous_tileids=None, fadir=None):
     else:
         for tileid in previous_tileids.split(","):
             tileid = int(tileid)
-            # AR first try args.fadir (case where tiles are designed on the same day)
-            fn = os.path.join(
-                fadir,
-                "{}".format("{:06d}".format(tileid)[:3]),
-                "fiberassign-{:06d}.fits.gz".format(tileid),
-            )
             isfn = False
-            if os.path.isfile(fn):
-                isfn = True
-            # AR then try the DESI_TARGET/fiberassign
-            else:
-                log.inf("no {}".format(fn))
+            # AR first try fadir, if provided
+            # AR (case where tiles are designed on the same day)
+            if fadir is not None:
+                fn = os.path.join(
+                    fadir,
+                    "{}".format("{:06d}".format(tileid)[:3]),
+                    "fiberassign-{:06d}.fits.gz".format(tileid),
+                )
+                if os.path.isfile(fn):
+                    isfn = True
+                else:
+                    log.inf("no {}".format(fn))
+            # AR then try the DESI_TARGET/fiberassign if no file in fadir (or fadir not provided)
+            if not isfn:
                 fn = os.path.join(
                     os.getenv("DESI_TARGET"),
                     "fiberassign",
