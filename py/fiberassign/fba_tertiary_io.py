@@ -375,6 +375,7 @@ def get_numobs_priority(too, prio, prognum, previous_tileids=None, fadir=None):
         priorities: PRIORITY values (np.array())
 
     Notes:
+        If previous_tileids is None, we simply set NUMOBS=0, NUMOBS_MORE=NUMOBS_INIT, PRIORITY=PRIORITY_INIT.
         If fadir is provided the code will first look in fadir, then will look in $DESI_TARGET/fiberassign/tiles/trunk.
         If fadir is not provided, the code will look in $DESI_TARGET/fiberassign/tiles/trunk.
     """
