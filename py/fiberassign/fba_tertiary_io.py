@@ -12,7 +12,7 @@ from desitarget.targets import encode_targetid, decode_targetid
 from desitarget.targetmask import desi_mask, scnd_mask
 from desitarget.mtl import get_utc_date
 from desimodel.footprint import is_point_in_desi
-from fiberassign.utils import assert_isoformat_utc
+from fiberassign.utils import get_mjd
 from fiberassign.utils import Logger
 
 log = Logger.get()
@@ -118,20 +118,6 @@ def get_toofn(prognum, tileid, targdir=None):
     if targdir is None:
         targdir = get_targdir(prognum)
     return os.path.join(targdir, "ToO-{:04d}-{:06d}.ecsv".format(prognum, tileid))
-
-
-def get_mjd(utc_time_mjd):
-    """
-    Get the MJD value for an input date.
-
-    Args:
-        utc_time_mjd: date in the "YYYY-MM-DDThh:mm:ss+00:00" format (string)
-
-    Returns:
-        MJD value (float)
-    """
-    assert_isoformat_utc(utc_time_mjd)
-    return Time(datetime.strptime(utc_time_mjd, "%Y-%m-%dT%H:%M:%S%z")).mjd
 
 
 def read_targfn(targfn):

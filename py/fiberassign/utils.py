@@ -83,6 +83,20 @@ def assert_isoformat_utc(time_str):
     return time_str.endswith("+00:00")
 
 
+def get_mjd(utc_time_mjd):
+    """
+    Get the MJD value for an input date.
+
+    Args:
+        utc_time_mjd: date in the "YYYY-MM-DDThh:mm:ss+00:00" format (string)
+
+    Returns:
+        MJD value (float)
+    """
+    assert_isoformat_utc(utc_time_mjd)
+    return Time(datetime.strptime(utc_time_mjd, "%Y-%m-%dT%H:%M:%S%z")).mjd
+
+
 def get_date_cutoff(datetype, cutoff_case):
     """
     Returns the cutoff date for a particular case, from reading the data/cutoff-dates.yaml file.
