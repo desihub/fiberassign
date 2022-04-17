@@ -5,7 +5,6 @@ import numpy as np
 from astropy.table import Table
 from time import time
 from datetime import datetime, timezone
-from astropy.time import Time
 from desitarget.targetmask import desi_mask
 from desitarget.targetmask import obsconditions
 from desitarget.targets import encode_targetid, decode_targetid

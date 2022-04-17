@@ -13,6 +13,7 @@ import os
 import subprocess
 import sys
 from datetime import datetime
+from astropy.time import Time
 import yaml
 from pkg_resources import resource_filename
 
