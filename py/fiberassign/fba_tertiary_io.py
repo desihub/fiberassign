@@ -381,6 +381,10 @@ def create_tertiary_too(args):
     mjd_end = get_mjd(args.utc_time_mjd_end)
     log.info("set MJD_BEGIN={}, MJD_END={}".format(mjd_begin, mjd_end))
 
+    # AR targets and priorities files
+    targfn = get_targfn(args.targdir, args.prognum)
+    priofn = get_priofn(args.targdir, args.prognum)
+
     # AR check input target catalog and priority file
     # AR (not optimal in term of processing time,
     # AR    as we read targfn three times here,
@@ -395,13 +399,9 @@ def create_tertiary_too(args):
     assert_tertiary_targ(args.prognum, targfn)
     assert_tertiary_prio(args.prognum, priofn, targfn)
 
-    # AR read priorities file
-    priofn = get_priofn(args.targdir, args.prognum)
-    prio = read_priofn(priofn)
-
-    # AR read input file
-    targfn = get_targfn(args.targdir, args.prognum)
+    # AR read targets and priorities files
     targ, targhdr = read_targfn(targfn)
+    prio = read_priofn(priofn)
 
     # AR scnd_mask_name
     if args.scnd_mask_name is None:
