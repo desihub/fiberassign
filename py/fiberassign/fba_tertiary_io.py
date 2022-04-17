@@ -58,15 +58,25 @@ np_rand_seed = 1234
 np.random.seed(np_rand_seed)
 
 
-def get_targfn(targdir, prognum):
+def get_targdir(prognum):
+    return os.path.join(os.getenv("DESI_SURVEYOPS"), "tertiary", "{:04d}".format(prognum))
+
+
+def get_targfn(prognum, targdir=None):
+    if targdir is None:
+        targdir = get_targdir(prognum)
     return os.path.join(targdir, "tertiary-targets-{:04d}.fits".format(prognum))
 
 
-def get_priofn(targdir, prognum):
+def get_priofn(prognum, targdir=None):
+    if targdir is None:
+        targdir = get_targdir(prognum)
     return os.path.join(targdir, "tertiary-priorities-{:04d}.ecsv".format(prognum))
 
 
-def get_toofn(targdir, prognum, tileid):
+def get_toofn(prognum, tileid, targdir=None):
+    if targdir is None:
+        targdir = get_targdir(prognum)
     return os.path.join(targdir, "ToO-{:04d}-{:06d}.ecsv".format(prognum, tileid))
 
 
@@ -368,7 +378,7 @@ def get_numobs_priority(too, prio, prognum, previous_tileids=None, fadir=None):
 def create_tertiary_too(args):
 
     # AR output file
-    toofn = get_toofn(args.targdir, args.prognum, args.tileid)
+    toofn = get_toofn(args.prognum, args.tileid, targdir=args.targdir)
     if os.path.isfile(toofn):
         msg = "{} already exists! exiting".format(toofn)
         log.error(msg)
@@ -382,8 +392,8 @@ def create_tertiary_too(args):
     log.info("set MJD_BEGIN={}, MJD_END={}".format(mjd_begin, mjd_end))
 
     # AR targets and priorities files
-    targfn = get_targfn(args.targdir, args.prognum)
-    priofn = get_priofn(args.targdir, args.prognum)
+    targfn = get_targfn(args.prognum, targdir=args.targdir)
+    priofn = get_priofn(args.prognum, targdir=args.targdir)
 
     # AR check input target catalog and priority file
     # AR (not optimal in term of processing time,
