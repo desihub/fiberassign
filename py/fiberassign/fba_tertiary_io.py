@@ -59,33 +59,92 @@ np.random.seed(np_rand_seed)
 
 
 def get_targdir(prognum):
+    """
+    Get the fiducial folder name for a given tertiary PROGNUM.
+
+    Args:
+        prognum: the tertiary PROGNUM (int)
+
+    Returns:
+        os.path.join(os.getenv("DESI_SURVEYOPS"), "tertiary", "{:04d}".format(prognum)) (string)
+    """
     return os.path.join(os.getenv("DESI_SURVEYOPS"), "tertiary", "{:04d}".format(prognum))
 
 
 def get_targfn(prognum, targdir=None):
+    """
+    Get the full path to a tertiary PROGNUM input targets file.
+
+    Args:
+        prognum: the tertiary PROGNUM (int)
+        targdir (optional, defaults to get_targdir()): folder name (string)
+
+    Returns:
+        os.path.join(targdir, "tertiary-targets-{:04d}.fits".format(prognum)) (string)
+    """
     if targdir is None:
         targdir = get_targdir(prognum)
     return os.path.join(targdir, "tertiary-targets-{:04d}.fits".format(prognum))
 
 
 def get_priofn(prognum, targdir=None):
+    """
+    Get the full path to a tertiary PROGNUM input priorities file.
+
+    Args:
+        prognum: the tertiary PROGNUM (int)
+        targdir (optional, defaults to get_targdir()): folder name (string)
+
+    Returns:
+        os.path.join(targdir, "tertiary-priorities-{:04d}.ecsv".format(prognum)) (string)
+    """
     if targdir is None:
         targdir = get_targdir(prognum)
     return os.path.join(targdir, "tertiary-priorities-{:04d}.ecsv".format(prognum))
 
 
 def get_toofn(prognum, tileid, targdir=None):
+    """
+    Get the full path to a tertiary PROGNUM ToO target file for a given tile.
+
+    Args:
+        prognum: the tertiary PROGNUM (int)
+        tileid: the tile TILEID (int)
+        targdir (optional, defaults to get_targdir()): folder name (string)
+
+    Returns:
+        os.path.join(targdir, "ToO-{:04d}-{:06d}.ecsv".format(prognum, tileid)) (string)
+    """
     if targdir is None:
         targdir = get_targdir(prognum)
     return os.path.join(targdir, "ToO-{:04d}-{:06d}.ecsv".format(prognum, tileid))
 
 
 def get_mjd(utc_time_mjd):
+    """
+    Get the MJD value for an input date.
+
+    Args:
+        utc_time_mjd: date in the "YYYY-MM-DDThh:mm:ss+00:00" format (string)
+
+    Returns:
+        MJD value (float)
+    """
     assert_isoformat_utc(utc_time_mjd)
     return Time(datetime.strptime(utc_time_mjd, "%Y-%m-%dT%H:%M:%S%z")).mjd
 
 
 def read_targfn(targfn):
+    """
+    Read a tertiary PROGNUM input targets file.
+
+    Args:
+        targfn: full path to the tertiary PROGNUM input targets file (string)
+
+    Returns:
+        targ: a Table() structured array
+        targhdr: the related header
+    """
     if not os.path.isfile(targfn):
         msg = "missing {}; exiting".format(targfn)
         log.error(msg)
@@ -97,6 +156,15 @@ def read_targfn(targfn):
 
 
 def read_priofn(priofn):
+    """
+    Read a tertiary PROGNUM input priorities file.
+
+    Args:
+        priofn: full path to the tertiary PROGNUM input priorities file (string)
+
+    Returns:
+        prio:  Table() structured array
+    """
     if not os.path.isfile(priofn):
         msg = "missing {}; exiting".format(priofn)
         log.error(msg)
@@ -106,7 +174,16 @@ def read_priofn(priofn):
 
 
 def assert_tertiary_targ(prognum, targfn):
+    """
+    Verifies that a tertiary PROGNUM input targets file is correctly formatted.
 
+    Args:
+        prognum: the tertiary PROGNUM (int)
+        targfn: full path to the tertiary PROGNUM input targets file (string)
+
+    Notes:
+        Will raise an error if the file is not correctly formatted.
+    """
     # AR read
     targ, targhdr = read_targfn(targfn)
 
@@ -222,7 +299,17 @@ def assert_tertiary_targ(prognum, targfn):
 
 
 def assert_tertiary_prio(prognum, priofn, targfn):
+    """
+    Verifies that a tertiary PROGNUM input prioritiess file is correctly formatted.
 
+    Args:
+        prognum: the tertiary PROGNUM (int)
+        priofn: full path to the tertiary PROGNUM input priorities file (string)
+        targfn: full path to the tertiary PROGNUM input targets file (string)
+
+    Notes:
+        Will raise an error if the file is not correctly formatted.
+    """
     # AR read the files
     prio = read_priofn(priofn)
     targ, _ = read_targfn(targfn)
@@ -287,7 +374,25 @@ def assert_tertiary_prio(prognum, priofn, targfn):
 
 
 def get_numobs_priority(too, prio, prognum, previous_tileids=None, fadir=None):
+    """
+    Obtain the NUMOBS, NUMOBS_MORE and PRIORITY columns of a tertiary ToO catalog.
 
+    Args:
+        too: Table() structured array
+        prio: Table() structured array (output from read_priofn())
+        prognum: the tertiary PROGNUM (int)
+        previous_tileids (optional, defaults to None): comma-separated list of already designed TILEIDs to consider to set NUMOBS and NUMOBS_MORE (string)
+        fadir (optional, defaults to None): folder with the fiberassign files for the previous_tileids (string)
+
+    Returns:
+        numobss: NUMOBS values (np.array())
+        numobs_mores: NUMOBS_MORE values (np.array())
+        priorities: PRIORITY values (np.array())
+
+    Notes:
+        If fadir is provided the code will first look in fadir, then will look in $DESI_TARGET/fiberassign/tiles/trunk.
+        If fadir is not provided, the code will look in $DESI_TARGET/fiberassign/tiles/trunk.
+    """
     # AR initialize NUMOBS, NUMOBS_MORE, PRIORITY
     numobss = np.zeros(len(too), dtype=int)
     numobs_mores = too["NUMOBS_INIT"].copy()
@@ -376,7 +481,12 @@ def get_numobs_priority(too, prio, prognum, previous_tileids=None, fadir=None):
 
 
 def create_tertiary_too(args):
+    """
+    Create the ToO-args.prognum-args.tileid.ecsv file.
 
+    Args:
+        args: the argument output by get_parse() in fba_tertiary_too
+    """
     # AR output file
     toofn = get_toofn(args.prognum, args.tileid, targdir=args.targdir)
     if os.path.isfile(toofn):
