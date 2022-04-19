@@ -209,12 +209,12 @@ def assert_tertiary_targ(prognum, targfn):
 
     # AR check TARGETID
     targetids = encode_targetid(
-        release=8888, brickid=prognum, objid=np.arange(len(targ))
+        release=release, brickid=prognum, objid=np.arange(len(targ))
     )
     sel = targ["TARGETID"] != targetids
     if sel.sum() > 0:
-        msg = "TARGETID is not as expected, i.e. encode_targetid(release=8888, brickid={}, objid=np.arange(len(targ)))".format(
-            prognum,
+        msg = "TARGETID is not as expected, i.e. encode_targetid(release={}, brickid={}, objid=np.arange(len(targ)))".format(
+            release, prognum,
         )
         log.error(msg)
         raise IOError(msg)
