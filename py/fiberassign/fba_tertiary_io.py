@@ -11,8 +11,7 @@ from desitarget.targets import encode_targetid, decode_targetid
 from desitarget.targetmask import desi_mask, scnd_mask
 from desitarget.mtl import get_utc_date
 from desimodel.footprint import is_point_in_desi
-from fiberassign.utils import get_mjd
-from fiberassign.utils import Logger
+from fiberassign.utils import get_mjd, Logger, get_fa_gitversion
 from fiberassign._version import __version__
 from desiutil import depend
 
@@ -632,6 +631,7 @@ def create_tertiary_too(args):
     # AR fiberassign is in add_dependencies(), but we
     # AR redundantly add it in FA_VER for conveniency
     too.meta["FA_VER"] = __version__
+    too.meta["FA_GIT"] = get_fa_gitversion()
     depend.add_dependencies(too.meta)
 
     # AR write

@@ -198,3 +198,27 @@ def read_ecsv_keys(fn):
             break
     f.close()
     return keys
+
+
+def get_fa_gitversion():
+    """
+    Returns `git describe --tags --dirty --always`, or "unknown" if not a git repo
+
+    Notes:
+        Copied (and slightly edited) from desitarget.io.gitversion()
+    """
+    #
+    origdir = os.getcwd()
+    os.chdir(os.path.dirname(__file__))
+    try:
+        p = subprocess.Popen(["git", "describe", "--tags", "--dirty", "--always"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    except EnvironmentError:
+        return "unknown"
+    #
+    os.chdir(origdir)
+    out = p.communicate()[0]
+    if p.returncode == 0:
+        # - avoid py3 bytes and py3 unicode; get native str in both cases
+        return str(out.rstrip().decode("ascii"))
+    else:
+        return "unknown"
