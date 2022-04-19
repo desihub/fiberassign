@@ -68,20 +68,6 @@ def get_parse():
         default=default["TIME_MJD_END"],
     )
     parser.add_argument(
-        "--desi_mask_name",
-        help="name for DESI_TARGET (default=SCND_ANY)",
-        type=str,
-        default="SCND_ANY",
-    )
-    parser.add_argument(
-        "--scnd_mask_name",
-        help="name for SCND_TARGET (default={{targhdr['OBSCONDS']}}_TOO_{}P)".format(
-            default["TOO_PRIO"]
-        ),
-        type=str,
-        default=None,
-    )
-    parser.add_argument(
         "--previous_tileids",
         help="comma-separated list of already designed TILEIDs to consider to set NUMOBS and NUMOBS_MORE (default=None)",
         type=str,
@@ -91,13 +77,6 @@ def get_parse():
     # AR targdir
     if args.targdir is None:
         args.targdir = get_targdir(args.prognum)
-    # AR scnd_mask_name
-    if args.scnd_mask_name is None:
-        log.info(
-            "args.scnd_mask_name is None -> will be set to {{hdr['OBSCONDS']}}_TOO_{}P)".format(
-                default["TOO_PRIO"]
-            )
-        )
     for kwargs in args._get_kwargs():
         print(kwargs)
     return args

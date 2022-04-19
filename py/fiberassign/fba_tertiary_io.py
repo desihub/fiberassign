@@ -22,10 +22,13 @@ log = Logger.get()
 release = 8888
 
 # AR default values
+# AR scnd_mask_name: this requires targhdr["OBSCONDS"],
+# AR    so it is set further in the code
 default = {
     "TIME_MJD_BEGIN": "2020-01-01T00:00:00+00:00",
     "TIME_MJD_END": "2120-01-01T00:00:00+00:00",
     "TOO_PRIO": "HI",  # for TOO_PRIO and SCND_TARGET
+    "DESI_MASK_NAME": "SCND_ANY",
 }
 
 # AR allowed values for some of the required header keywords
@@ -514,17 +517,6 @@ def create_tertiary_too(args):
     targ, targhdr = read_targfn(targfn)
     prio = read_priofn(priofn)
 
-    # AR scnd_mask_name
-    if args.scnd_mask_name is None:
-        args.scnd_mask_name = "{}_TOO_{}P".format(
-            targhdr["OBSCONDS"], default["TOO_PRIO"]
-        )
-        log.info(
-            "setting args.scnd_mask_name = '{}_TOO_{}P'".format(
-                targhdr["OBSCONDS"], default["TOO_PRIO"]
-            )
-        )
-
     # AR SCND_ORDER
     # AR record the row from the tertiary-targets-{args.prognum}.fits
     if "SCND_ORDER" in targ.dtype.names:
@@ -556,8 +548,9 @@ def create_tertiary_too(args):
         too[key] = np.zeros_like(dref[key], shape=(ntarg))
     for key in ["TARGETID", "RA", "DEC", "PMRA", "PMDEC", "REF_EPOCH"] + ["SCND_ORDER"]:
         too[key] = targ[key]
-    too["DESI_TARGET"] = desi_mask[args.desi_mask_name]
-    too["SCND_TARGET"] = scnd_mask[args.scnd_mask_name]
+    too["DESI_TARGET"] = desi_mask[default["DESI_MASK_NAME"]]
+    scnd_mask_name = "{}_TOO_{}P".format(targhdr["OBSCONDS"], default["TOO_PRIO"])
+    too["SCND_TARGET"] = scnd_mask[scnd_mask_name]
     too["OBSCONDITIONS"] = obsconditions[targhdr["OBSCONDS"]]
     too["TOO_TYPE"] = "TILE"
     too["TOO_PRIO"] = default["TOO_PRIO"]
