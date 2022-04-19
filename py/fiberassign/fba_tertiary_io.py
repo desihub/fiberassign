@@ -546,7 +546,7 @@ def create_tertiary_too(args):
     too = Table()
     for key in dref.dtype.names:
         too[key] = np.zeros_like(dref[key], shape=(ntarg))
-    for key in ["TARGETID", "RA", "DEC", "PMRA", "PMDEC", "REF_EPOCH"] + ["SCND_ORDER"]:
+    for key in ["TARGETID", "RA", "DEC", "PMRA", "PMDEC", "REF_EPOCH", "CHECKER"] + ["SCND_ORDER"]:
         too[key] = targ[key]
     too["DESI_TARGET"] = desi_mask[default["DESI_MASK_NAME"]]
     scnd_mask_name = "{}_TOO_{}P".format(targhdr["OBSCONDS"], default["TOO_PRIO"])
