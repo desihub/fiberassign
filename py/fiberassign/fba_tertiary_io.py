@@ -5,10 +5,8 @@ import numpy as np
 from astropy.table import Table
 from time import time
 from datetime import datetime, timezone
-from desitarget.targetmask import desi_mask
-from desitarget.targetmask import obsconditions
+from desitarget.targetmask import desi_mask, scnd_mask, obsconditions
 from desitarget.targets import encode_targetid, decode_targetid
-from desitarget.targetmask import desi_mask, scnd_mask
 from desitarget.mtl import get_utc_date
 from desitarget.io import write_with_units
 from desimodel.footprint import is_point_in_desi
