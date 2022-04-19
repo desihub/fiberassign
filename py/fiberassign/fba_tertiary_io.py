@@ -13,6 +13,8 @@ from desitarget.mtl import get_utc_date
 from desimodel.footprint import is_point_in_desi
 from fiberassign.utils import get_mjd
 from fiberassign.utils import Logger
+from fiberassign._version import __version__
+from desiutil import depend
 
 log = Logger.get()
 
@@ -626,6 +628,11 @@ def create_tertiary_too(args):
     too.meta["PRIOFN"] = priofn
     for hdrkey in req_hdrkeys:
         too.meta[hdrkey] = targhdr[hdrkey]
+    # AR store dependencies
+    # AR fiberassign is in add_dependencies(), but we
+    # AR redundantly add it in FA_VER for conveniency
+    too.meta["FA_VER"] = __version__
+    depend.add_dependencies(too.meta)
 
     # AR write
     too.write(toofn)
