@@ -3,8 +3,21 @@
 fiberassign change log
 ======================
 
-5.4.1 (unreleased)
+5.5.1 (unreleased)
 ------------------
+
+5.5.0 (2022-04-19)
+------------------
+
+* Count ETC fibers as stuck fibers. (PR `#425`_)
+* Tootile (PR `#422`_)
+* Desi fa smallrun v3 (PR `#426`_)
+* sort fiberassign output hdus GFA_TARGETS and POTENTIAL_ASSIGNMENTS (PR `#421`_)
+
+.. _`#425`: https://github.com/desihub/fiberassign/pull/425
+.. _`#422`: https://github.com/desihub/fiberassign/pull/422
+.. _`#426`: https://github.com/desihub/fiberassign/pull/426
+.. _`#421`: https://github.com/desihub/fiberassign/pull/421
 
 5.4.0 (2021-11-23)
 ------------------
@@ -12,15 +25,15 @@ fiberassign change log
 This version now requires desitarget >= 2.2.1
 Various updates, in particular to handle the Main/BACKUP program (but not only).
 
-* Remove STD_WD from the per-petal STD counting (PR `# 415`_)
-* Skyhealpixs gaia (PR `# 416`_)
-* Gaia std (PR `# 417`_)
-* Fba rerun5 (PR `# 420`_)
-* Move some functions from fba_launch_io.py to utils.py (PR `# 419`_)
-* change main/backup goaltime from 30 to 60 (PR `# 418`_)
-* Populate EBV=0 rows in FIBERASSIGN with correct values (PR `# 414`_)
+* Remove STD_WD from the per-petal STD counting (PR `#415`_)
+* Skyhealpixs gaia (PR `#416`_)
+* Gaia std (PR `#417`_)
+* Fba rerun5 (PR `#420`_)
+* Move some functions from fba_launch_io.py to utils.py (PR `#419`_)
+* change main/backup goaltime from 30 to 60 (PR `#418`_)
+* Populate EBV=0 rows in FIBERASSIGN with correct values (PR `#414`_)
 
-.. _`#416`: https://github.com/desihub/fiberassign/pull/415
+.. _`#415`: https://github.com/desihub/fiberassign/pull/415
 .. _`#416`: https://github.com/desihub/fiberassign/pull/416
 .. _`#417`: https://github.com/desihub/fiberassign/pull/417
 .. _`#420`: https://github.com/desihub/fiberassign/pull/420
@@ -34,7 +47,7 @@ Various updates, in particular to handle the Main/BACKUP program (but not only).
 
 Allow several folders for inflating ledgers.
 
-* allow several folders for inflating ledgers (PR `# 408`_)
+* allow several folders for inflating ledgers (PR `#408`_)
 
 .. _`#408`: https://github.com/desihub/fiberassign/pull/408
 
