@@ -10,6 +10,7 @@ from desitarget.targetmask import obsconditions
 from desitarget.targets import encode_targetid, decode_targetid
 from desitarget.targetmask import desi_mask, scnd_mask
 from desitarget.mtl import get_utc_date
+from desitarget.io import write_with_units
 from desimodel.footprint import is_point_in_desi
 from fiberassign.utils import get_mjd, Logger, get_fa_gitversion
 from fiberassign._version import __version__
@@ -614,6 +615,8 @@ def create_tertiary_too(args):
     # AR remove TERTIARY_TARGET
     too.remove_column("TERTIARY_TARGET")
 
+    # AR header
+    hdr = {}
     # AR store args (we exclude any None argument)
     tmparr = []
     for kwargs in args._get_kwargs():
@@ -621,18 +624,19 @@ def create_tertiary_too(args):
             tmparr += ["--{} {}".format(kwargs[0], kwargs[1])]
     tooargs = " ".join(tmparr)
     log.info("TOOARGS = {}".format(tooargs))
-    too.meta["TOOARGS"] = tooargs
+    hdr["TOOARGS"] = tooargs
     # AR store other infos
-    too.meta["TARGFN"] = targfn
-    too.meta["PRIOFN"] = priofn
+    hdr["TARGFN"] = targfn
+    hdr["PRIOFN"] = priofn
     for hdrkey in req_hdrkeys:
-        too.meta[hdrkey] = targhdr[hdrkey]
+        hdr[hdrkey] = targhdr[hdrkey]
     # AR store dependencies
     # AR fiberassign is in add_dependencies(), but we
     # AR redundantly add it in FA_VER for conveniency
-    too.meta["FA_VER"] = __version__
-    too.meta["FA_GIT"] = get_fa_gitversion()
-    depend.add_dependencies(too.meta)
+    hdr["FA_VER"] = __version__
+    hdr["FA_GIT"] = get_fa_gitversion()
+    depend.add_dependencies(hdr)
 
     # AR write
-    too.write(toofn)
+    # ADM write_with_units expects an array, not a Table.
+    write_with_units(toofn, too.as_array(), extname="TOO", header=hdr, ecsv=True)
