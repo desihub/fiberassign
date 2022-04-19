@@ -448,11 +448,9 @@ def get_numobs_priority(too, prio, prognum, previous_tileids=None, fadir=None):
                     )
                 )
             else:
-                log.warning(
-                    "no fiberassign-{:06d}.fits.gz file found: skipping this tile".format(
-                        tileid
-                    )
-                )
+                msg = "no fiberassign-{:06d}.fits.gz file found".format(tileid)
+                log.error(msg)
+                raise IOError(msg)
 
         # AR now update PRIORITY
         for i in range(len(prio)):
