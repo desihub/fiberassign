@@ -1,11 +1,13 @@
 import sys
 import os
+from datetime import datetime
 import numpy as np
 
 from desitarget.skybricks import Skybricks
 from desitarget.skyhealpixs import Skyhealpixs
+from astropy.time import Time
 
-def stuck_on_sky(hw, tiles, lookup_sky_source):
+def stuck_on_sky(hw, tiles, lookup_sky_source, rundate=None):
     '''
     Will STUCK positioners land on good SKY locations for the given set of tiles?
 
@@ -17,7 +19,7 @@ def stuck_on_sky(hw, tiles, lookup_sky_source):
     Returns a nested dict:
         stuck_sky[tileid][loc] = bool_good_sky
     '''
-    from fiberassign.utils import Logger
+    from fiberassign.utils import Logger, get_date_cutoff
     from fiberassign.hardware import (FIBER_STATE_STUCK, FIBER_STATE_BROKEN,
                                       xy2radec)
 
@@ -38,6 +40,14 @@ def stuck_on_sky(hw, tiles, lookup_sky_source):
         log.info("lookup_sky_source == 'gaia', will look for $SKYHEALPIXS_DIR")
 
     stuck_sky = dict()
+    if rundate is None:
+        etc_fibers_are_stuck = False
+    else:
+        etc_cutoff = get_date_cutoff('rundate', 'etc_stuck')
+        etc_cutoff = Time(datetime.strptime(etc_cutoff, "%Y-%m-%dT%H:%M:%S%z")).mjd
+        rundate = Time(datetime.strptime(rundate,  "%Y-%m-%dT%H:%M:%S%z")).mjd
+        etc_fibers_are_stuck = rundate > etc_cutoff
+
     for tile_id, tile_ra, tile_dec, tile_obstime, tile_theta, tile_obsha in zip(
             tiles.id, tiles.ra, tiles.dec, tiles.obstime, tiles.obstheta, tiles.obshourang):
         stuck_sky[tile_id] = dict()
@@ -46,9 +56,14 @@ def stuck_on_sky(hw, tiles, lookup_sky_source):
         # (grab the hw dictionaries once -- these are python wrappers over C++ so not simple accessors)
         state = hw.state
         devtype = hw.loc_device_type
-        stuck_loc = [loc for loc in hw.locations
-                     if (((state[loc] & (FIBER_STATE_STUCK | FIBER_STATE_BROKEN)) == FIBER_STATE_STUCK) and
-                         (devtype[loc] == 'POS'))]
+        stuck_loc = []
+        for loc in hw.locations:
+            if (devtype[loc] == 'ETC') and etc_fibers_are_stuck:
+                stuck_loc.append(loc)
+            elif devtype[loc] != 'POS':
+                continue
+            if (state[loc] & (FIBER_STATE_STUCK | FIBER_STATE_BROKEN)) == FIBER_STATE_STUCK:
+                stuck_loc.append(loc)
         if len(stuck_loc) == 0:
             log.debug('Tile %i: %i positioners are stuck/broken' % (tile_id, len(stuck_loc)))
             continue
@@ -116,9 +131,13 @@ def stuck_on_sky(hw, tiles, lookup_sky_source):
                     return
             good_sky = skyhealpixs.lookup_position(loc_ra, loc_dec)
 
-        log.info('%i of %i stuck positioners land on good sky locations' % (np.sum(good_sky), len(good_sky)))
+        stuck_isetc = np.array([devtype[loc] == 'ETC' for loc in stuck_loc])
+        log.info('%i of %i stuck positioners land on good sky locations' %
+                 (np.sum(good_sky & ~stuck_isetc), np.sum(~stuck_isetc)))
+        if etc_fibers_are_stuck:
+            log.info('%i of %i ETC positioners land on good sky locations' %
+                     (np.sum(good_sky & stuck_isetc), np.sum(stuck_isetc)))
         for loc,good in zip(stuck_loc, good_sky):
             stuck_sky[tile_id][loc] = good
 
     return stuck_sky
-
