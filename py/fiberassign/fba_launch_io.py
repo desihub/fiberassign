@@ -54,6 +54,7 @@ import desimeter
 # fiberassign
 import fiberassign
 from fiberassign.utils import Logger, assert_isoformat_utc, get_svn_version, get_last_line, read_ecsv_keys, get_date_cutoff
+from fiberassign.targets import default_survey_target_masks
 
 # matplotlib
 import matplotlib.pyplot as plt
@@ -798,6 +799,7 @@ def get_desitarget_paths(
     program,
     dr="dr9",
     gaiadr="gaiadr2",
+    custom_too_file=None,
     log=Logger.get(),
     step="settings",
     start=time(),
@@ -811,6 +813,7 @@ def get_desitarget_paths(
         program: "dark", "bright", or "backup" (string)
         dr (optional, defaults to "dr9"): legacypipe dr (string)
         gaiadr (optional, defaults to "gaiadr2"): gaia dr (string)
+        custom_too_file (default=None): full path to a custom ToO file, for development work, which overrides the official one (string)
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -833,6 +836,7 @@ def get_desitarget_paths(
         or program not in ["dark", "bright", or "backup"], will return a warning only
         same warning only if the built paths/files do not exist.
         20210917 : secondary -> add all existing folders (e.g., main2/) (backward-compatible change)
+        20220318 : add custom_too_file optional argument
     """
     # AR expected survey, program?
     exp_surveys = ["sv1", "sv2", "sv3", "main"]
@@ -947,6 +951,14 @@ def get_desitarget_paths(
     )
     if scndmtl is not None:
         mydirs["scndmtl"] = scndmtl
+    # AR custom ToO file?
+    if custom_too_file is not None:
+        mydirs["too"] = custom_too_file
+        log.warning(
+            "{:.1f}s\t{}\tusing custom ToO file {} -> this is for tertiary program or development only!".format(
+                time() - start, step, custom_too_file,
+            )
+        )
 
     return mydirs
 
@@ -1216,6 +1228,7 @@ def create_mtl(
     outfn,
     tmpoutdir=tempfile.mkdtemp(),
     pmtime_utc_str=None,
+    std_only=False,
     add_plate_cols=True,
     log=Logger.get(),
     step="",
@@ -1238,6 +1251,7 @@ def create_mtl(
         pmtime_utc_str (optional, defaults to None): UTC time use to compute
                 new coordinates after applying proper motion since REF_EPOCH
                 (string formatted as "yyyy-mm-ddThh:mm:ss+00:00")
+        std_only (optional, defaults to False): only select standard stars? (e.g., for ToO-dedicated tiles); can only be used for survey='main' (boolean)
         add_plate_cols (optional, defaults to True): adds a PLATE_RA and PLATE_DEC columns (boolean)
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
@@ -1262,6 +1276,10 @@ def create_mtl(
         20210917 : add possibility of extra secondary folders, as main2/, main3/, etc (see get_desitarget_paths())
                     for that, changing targdir arguments to targdirs
         20210930 : moving some imports inside this function to avoid circular imports.
+        20211227 : add std_only:
+                    - will exclude STD_WD as no rundate used
+                    - guess the program from the mtldir
+                    - only enabled for survey="main"
     """
     log.info("")
     log.info("")
@@ -1306,6 +1324,28 @@ def create_mtl(
             time() - start, step, len(d), mtldir
         )
     )
+
+    # AR standard stars only?
+    if std_only:
+        if survey != "main":
+            log.error(
+                "{:.1f}s\t{}\tsurvey={} -> std_only option available only for survey=main; exiting".format(
+                    time() - start, step, survey,
+                )
+            )
+        _, stdmask, _, _, _, _, gaia_stdmask = default_survey_target_masks(survey)
+        program = os.path.basename(mtldir)
+        if program == "backup":
+            key, mask = "MWS_TARGET", gaia_stdmask
+        else:
+            key, mask = "DESI_TARGET", stdmask
+        sel = (d[key] & mask) > 0
+        d = d[sel]
+        log.info(
+            "{:.1f}s\t{}\tstd_only=True -> restrict to {} standards selected with '(d[{}] & {}) > 0'".format(
+                time() - start, step, sel.sum(), key, mask,
+            )
+        )
 
     # AR mtl: removing by hand BACKUP_BRIGHT for sv3/BACKUP
     # AR mtl: using an indirect way to find if program=backup,
@@ -1628,7 +1668,8 @@ def create_too(
             # AR single REF_EPOCH needed
             # AR TBD currently all targets have PMRA=PMDEC=0,
             # AR TBD so it s fine to just change all REF_EPOCH
-            d["REF_EPOCH"] = np.zeros(len(d))
+            if "REF_EPOCH" not in d.dtype.names:
+                d["REF_EPOCH"] = np.zeros(len(d))
             # AR Replaces 0 by force_ref_epoch in ref_epoch
             d = force_nonzero_refepoch(
                 d, gaia_ref_epochs[gaiadr], log=log, step=step, start=start
@@ -1905,6 +1946,7 @@ def update_fiberassign_header(
             keeping this to be sure it is not forgotten to be done for dedicated programs.
         20210917 : keywords scnd2, scnd3, etc could be automatically added (see get_desitarget_paths())
         20211119 : added lookup_sky_source keyword
+        20211227 : use newly defined args.goaltype (instead of args.program previously)
     """
     # AR sanity check on faflavor
     if faflavor != "{}{}".format(hdr_survey, hdr_faprgrm):
@@ -1914,6 +1956,14 @@ def update_fiberassign_header(
             )
         )
         sys.exit(1)
+
+    # AR check on goaltype - faprgrm
+    if args.goaltype != args.program:
+        log.warning(
+            "{:.1f}s\t{}\tgoaltype={} != program={}".format(
+                time() - start, step, args.goaltype, args.program,
+            )
+        )
 
     # AR propagating some settings into the PRIMARY header
     fd = fitsio.FITS(fiberassignfn, "rw")
@@ -1961,7 +2011,7 @@ def update_fiberassign_header(
     # AR SBPROF from https://desi.lbl.gov/trac/wiki/SurveyOps/SurveySpeed#NominalFiberfracValues
     # AR version 35
     fd["PRIMARY"].write_key("goaltime", args.goaltime)
-    fd["PRIMARY"].write_key("goaltype", args.program)
+    fd["PRIMARY"].write_key("goaltype", args.goaltype)
     fd["PRIMARY"].write_key("ebvfac", 10.0 ** (2.165 * np.median(ebv) / 2.5))
     fd["PRIMARY"].write_key("sbprof", args.sbprof)
     fd["PRIMARY"].write_key("mintfrac", args.mintfrac)

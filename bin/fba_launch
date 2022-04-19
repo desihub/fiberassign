@@ -193,6 +193,7 @@ def main():
         args.program,
         dr=args.dr,
         gaiadr=args.gaiadr,
+        custom_too_file=args.custom_too_file,
         log=log,
         step="settings",
         start=start,
@@ -267,6 +268,7 @@ def main():
             mytmpouts["targ"],
             tmpoutdir=tmpoutdir,
             pmtime_utc_str=args.pmtime_utc_str,
+            std_only=args.targ_std_only,
             log=log,
             step="targ",
             start=start,
@@ -324,6 +326,7 @@ def main():
             mtltime=args.mtltime,
             tmpoutdir=tmpoutdir,
             pmtime_utc_str=args.pmtime_utc_str,
+            too_tile=args.too_tile,
             log=log,
             step="too",
             start=start,
@@ -515,6 +518,14 @@ if __name__ == "__main__":
         choices=["DARK", "BRIGHT", "BACKUP"],
     )
     parser.add_argument(
+        "--goaltype",
+        help="goaltype (default=args.program)",
+        type=str,
+        default=None,
+        required=False,
+        choices=["DARK", "BRIGHT", "BACKUP"],
+    )
+    parser.add_argument(
         "--goaltime",
         help="goal effective time (default for main: {})".format(
             ", ".join(
@@ -691,6 +702,22 @@ if __name__ == "__main__":
         choices=["ls", "gaia"],
         default=None,
     )
+    parser.add_argument(
+        "--targ_std_only",
+        help="only select standard stars for TILEID-targ.fits (e.g., for ToO-dedicated tiles); can only be used with args.survey='main'",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--too_tile",
+        help='do not cut on TOO_TYPE, hence keeping both TOO_TYPE="FIBER" *and* TOO_TYPE="TILE" for ToO dedicated tiles,',
+        action="store_true",
+    )
+    parser.add_argument(
+        "--custom_too_file",
+        help="full path to a custom ToO file, for tertiary program or development work, which overrides the official one (default=None)",
+        type=str,
+        default=None,
+    )
 
     args = parser.parse_args()
     log = Logger.get()
@@ -716,6 +743,10 @@ if __name__ == "__main__":
 
     # AR mtltime (2021-09-01): if set to None, now setting it inside main()
     # AR          so that it is recorded in the fiberassign-TILEID.log file
+
+    # AR goaltype
+    if args.goaltype is None:
+        args.goaltype = args.program
 
     # AR goaltime
     if args.goaltime is None:
@@ -768,6 +799,10 @@ if __name__ == "__main__":
             args.lookup_sky_source = "ls"
             if os.getenv("SKYBRICKS_DIR") is None:
                 log.warning("SKYBRICKS_DIR not set: stuck positioners will not be used for skies.")
+
+    # AR custom_too_file
+    if args.custom_too_file is not None:
+        log.warning("args.custom_too_file is set ({}) -> this is for tertiary program or development only!".format(args.custom_too_file))
 
     # AR create a temporary directory for generated files
     tmpoutdir = tempfile.mkdtemp()

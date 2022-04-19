@@ -13,6 +13,7 @@ import os
 import subprocess
 import sys
 from datetime import datetime
+from astropy.time import Time
 import yaml
 from pkg_resources import resource_filename
 
@@ -81,6 +82,20 @@ def assert_isoformat_utc(time_str):
         return False
     # AR/SB it parses as an ISO string, now just check UTC timezone +00:00 and not +0000
     return time_str.endswith("+00:00")
+
+
+def get_mjd(utc_time_mjd):
+    """
+    Get the MJD value for an input date.
+
+    Args:
+        utc_time_mjd: date in the "YYYY-MM-DDThh:mm:ss+00:00" format (string)
+
+    Returns:
+        MJD value (float)
+    """
+    assert_isoformat_utc(utc_time_mjd)
+    return Time(datetime.strptime(utc_time_mjd, "%Y-%m-%dT%H:%M:%S%z")).mjd
 
 
 def get_date_cutoff(datetype, cutoff_case):
@@ -183,3 +198,27 @@ def read_ecsv_keys(fn):
             break
     f.close()
     return keys
+
+
+def get_fa_gitversion():
+    """
+    Returns `git describe --tags --dirty --always`, or "unknown" if not a git repo
+
+    Notes:
+        Copied (and slightly edited) from desitarget.io.gitversion()
+    """
+    #
+    origdir = os.getcwd()
+    os.chdir(os.path.dirname(__file__))
+    try:
+        p = subprocess.Popen(["git", "describe", "--tags", "--dirty", "--always"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    except EnvironmentError:
+        return "unknown"
+    #
+    os.chdir(origdir)
+    out = p.communicate()[0]
+    if p.returncode == 0:
+        # - avoid py3 bytes and py3 unicode; get native str in both cases
+        return str(out.rstrip().decode("ascii"))
+    else:
+        return "unknown"

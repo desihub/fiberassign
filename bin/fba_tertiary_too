@@ -1,0 +1,92 @@
+#!/usr/bin/env python
+
+import os
+from fiberassign.fba_tertiary_io import default, create_tertiary_too, get_targdir
+from fiberassign.utils import Logger
+from argparse import ArgumentParser
+
+log = Logger.get()
+
+
+def get_parse():
+    parser = ArgumentParser()
+    parser.add_argument(
+        "--tileid",
+        help="tileid (default=None)",
+        type=int,
+        required=True,
+        default=None,
+    )
+    parser.add_argument(
+        "--tilera",
+        help="tile centre ra (default=None)",
+        type=float,
+        required=True,
+        default=None,
+    )
+    parser.add_argument(
+        "--tiledec",
+        help="tile centre dec (default=None)",
+        type=float,
+        required=True,
+        default=None,
+    )
+    parser.add_argument(
+        "--targdir",
+        help="target folder (default=$DESI_SURVEYOPS/tertiary/args.prognum))",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--fadir",
+        help="fiberassign folder to look for args.previous_tileids files, in addition to $DESI_TARGET/fiberasign/tiles/trunk (default=None)",
+        type=str,
+        required=False,
+        default=None,
+    )
+    parser.add_argument(
+        "--prognum",
+        help="prognum (used as BRICKID for TARGETID), <1e5 (default=None)",
+        type=int,
+        required=True,
+        default=None,
+    )
+    parser.add_argument(
+        "--utc_time_mjd_begin",
+        help="yyyy-mm-ddThh:mm:ss+00:00 time for MJD_BEGIN UTC timezone formatting (default={})".format(
+            default["TIME_MJD_BEGIN"]
+        ),
+        type=str,
+        default=default["TIME_MJD_BEGIN"],
+    )
+    parser.add_argument(
+        "--utc_time_mjd_end",
+        help="yyyy-mm-ddThh:mm:ss+00:00 time for MJD_END UTC timezone formatting (default={})".format(
+            default["TIME_MJD_END"]
+        ),
+        type=str,
+        default=default["TIME_MJD_END"],
+    )
+    parser.add_argument(
+        "--previous_tileids",
+        help="comma-separated list of already designed TILEIDs to consider to set NUMOBS and NUMOBS_MORE (default=None)",
+        type=str,
+        default=None,
+    )
+    args = parser.parse_args()
+    # AR targdir
+    if args.targdir is None:
+        args.targdir = get_targdir(args.prognum)
+    for kwargs in args._get_kwargs():
+        print(kwargs)
+    return args
+
+
+def main():
+
+    args = get_parse()
+    create_tertiary_too(args)
+
+
+if __name__ == "__main__":
+    main()
