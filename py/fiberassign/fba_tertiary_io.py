@@ -240,9 +240,9 @@ def assert_tertiary_targ(prognum, targfn):
         )
         log.error(msg)
         raise IOError(msg)
-    sel = (np.isfinite(targ["REF_EPOCH"])) & (targ["REF_EPOCH"] > 0)
+    sel = (np.isfinite(targ["REF_EPOCH"])) & (targ["REF_EPOCH"] > 1900)
     if sel.sum() != len(targ):
-        msg = "{} targets do have not finite REF_EPOCH or REF_EPOCH <= 0".format(
+        msg = "{} targets do have not finite REF_EPOCH or REF_EPOCH <= 1900".format(
             len(targ) - sel.sum()
         )
         log.error(msg)
