@@ -102,7 +102,7 @@ def get_latest_rundate(log=Logger.get(), step="", start=time()):
 
 
 def get_program_latest_timestamp(
-    survey, program, tilera, tiledec, log=Logger.get(), step="", start=time(),
+    survey, program, tilera, tiledec, too_tile=False, log=Logger.get(), step="", start=time(),
 ):
     """
     Get the latest timestamp for a given tile, from the MTL per-tile file and the
@@ -114,6 +114,10 @@ def get_program_latest_timestamp(
                 though if different will return None
         tilera: tile center R.A. (float)
         tiledec: tile center Dec. (float)
+        too_tile (optional, defaults to False):
+                if False and survey=="main" and ToO-fiber.ecsv exists, use ToO-fiber.ecsv (fiber-override only),
+                else, use ToO.ecsv (ToO for dedicated tiles)
+                (boolean)
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -125,6 +129,7 @@ def get_program_latest_timestamp(
 
     Notes:
         20210831: remove the +1min (and added "leq=True" in the read_targets_.. routines for ledgers)
+        20220421: add too_tile optional argument
     """
     # AR check DESI_SURVEYOPS is defined
     assert_env_vars(
@@ -158,6 +163,7 @@ def get_program_latest_timestamp(
     mtldir, scndmtldir, too = get_ledger_paths(
         survey.lower(),
         program.lower(),
+        too_tile=too_tile,
         log=log,
         step=step,
         start=start,
@@ -709,6 +715,7 @@ def print_config_infos(
 def get_ledger_paths(
     survey,
     program,
+    too_tile=False,
     log=Logger.get(),
     step="settings",
     start=time(),
@@ -719,6 +726,10 @@ def get_ledger_paths(
     Args:
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         program: "dark", "bright", or "backup" (string)
+        too_tile (optional, defaults to False):
+                if False and survey=="main" and ToO-fiber.ecsv exists, use ToO-fiber.ecsv (fiber-override only),
+                else, use ToO.ecsv (ToO for dedicated tiles)
+                (boolean)
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -771,9 +782,17 @@ def get_ledger_paths(
     else:
         scndmtl = None
     # AR ToO (same for dark, bright)
-    too = os.path.join(
-        os.getenv("DESI_SURVEYOPS"), "mtl", survey.lower(), "ToO", "ToO.ecsv",
-    )
+    # AR use ToO-fiber.ecsv if main and too_tile=False and file exists
+    too_tile_fn = os.path.join(os.getenv("DESI_SURVEYOPS"), "mtl", survey.lower(), "ToO", "ToO.ecsv")
+    too_fiber_fn = os.path.join(os.getenv("DESI_SURVEYOPS"), "mtl", survey.lower(), "ToO", "ToO-fiber.ecsv")
+    if (not too_tile) & (survey == "main"):
+        if os.path.isfile(too_fiber_fn):
+            too = too_fiber_fn
+        else:
+            log.warning("no {} file, using {}".format(too_fiber_fn, too_tile_fn))
+            too = too_tile_fn
+    else:
+        too = too_tile_fn
 
     # AR log
     for name, path in zip(["mtl", "scndmtl", "too"], [mtl, scndmtl, too]):
@@ -797,6 +816,7 @@ def get_desitarget_paths(
     dtver,
     survey,
     program,
+    too_tile=False,
     dr="dr9",
     gaiadr="gaiadr2",
     custom_too_file=None,
@@ -811,6 +831,10 @@ def get_desitarget_paths(
         dtver: desitarget catalog version (string; e.g., "0.57.0")
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         program: "dark", "bright", or "backup" (string)
+        too_tile (optional, defaults to False):
+                if False and survey=="main" and ToO-fiber.ecsv exists, use ToO-fiber.ecsv (fiber-override only),
+                else, use ToO.ecsv (ToO for dedicated tiles)
+                (boolean)
         dr (optional, defaults to "dr9"): legacypipe dr (string)
         gaiadr (optional, defaults to "gaiadr2"): gaia dr (string)
         custom_too_file (default=None): full path to a custom ToO file, for development work, which overrides the official one (string)
@@ -837,6 +861,7 @@ def get_desitarget_paths(
         same warning only if the built paths/files do not exist.
         20210917 : secondary -> add all existing folders (e.g., main2/) (backward-compatible change)
         20220318 : add custom_too_file optional argument
+        20220421 : add too_tile optional argument
     """
     # AR expected survey, program?
     exp_surveys = ["sv1", "sv2", "sv3", "main"]
@@ -945,6 +970,7 @@ def get_desitarget_paths(
     mydirs["mtl"], scndmtl, mydirs["too"] = get_ledger_paths(
         survey.lower(),
         program.lower(),
+        too_tile=too_tile,
         log=log,
         step=step,
         start=start,
