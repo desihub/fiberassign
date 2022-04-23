@@ -3,8 +3,15 @@
 fiberassign change log
 ======================
 
-5.5.1 (unreleased)
+5.6.1 (unreleased)
 ------------------
+
+5.6.0 (2022-04-22)
+------------------
+
+* query ToO-fiber.ecsv for main if args.too_tile=False (PR `#428`_)
+
+.. _`#428`: query ToO-fiber.ecsv for main if args.too_tile=False
 
 5.5.0 (2022-04-19)
 ------------------
