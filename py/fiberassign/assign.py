@@ -138,7 +138,7 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
     Args:
         outroot (str):  full path of the output root file name.
         asgn (Assignment):  the assignment class instance.
-        tagalong (TargetTagalong): a data structure that carries RA,Dec, and other information for targets from the targeting files, to be written to the fiberassign outputs.  A new one can be created using `fiberassign.targets.create_tagalong`
+        tagalong (TargetTagalong): a data structure that carries RA,Dec, and other information for targets from the targeting files, to be written to the fiberassign outputs.
         fulltarget (bool):  if True, dump the target information for all
             available targets, not just the ones that are assigned.
         overwrite (bool): overwrite output files or not
@@ -583,7 +583,7 @@ def write_assignment_fits(tiles, tagalong, asgn, out_dir=".", out_prefix="fba-",
     Args:
         tiles (Tiles):  The Tiles object containing the properties of each
             tile.
-        tagalong (TargetTagalong): a data structure that carries RA,Dec, and other information for targets from the targeting files, to be written to the fiberassign outputs.  A new one can be created using `fiberassign.targets.create_tagalong`
+        tagalong (TargetTagalong): a data structure that carries RA,Dec, and other information for targets from the targeting files, to be written to the fiberassign outputs.
         asgn (Assignment):  The assignment object.
         out_dir (str):  The output directory for writing per-tile files.
         out_prefix (str):  The output file name prefix.
@@ -654,7 +654,7 @@ def write_assignment_ascii(tiles, asgn, tagalong, out_dir=".", out_prefix="fba-"
         tiles (Tiles):  The Tiles object containing the properties of each
             tile.
         asgn (Assignment):  The assignment object.
-        tagalong (TargetTagalong): a data structure that carries RA,Dec, and other information for targets from the targeting files, to be written to the fiberassign outputs.  A new one can be created using `fiberassign.targets.create_tagalong`
+        tagalong (TargetTagalong): a data structure that carries RA,Dec, and other information for targets from the targeting files, to be written to the fiberassign outputs.
         out_dir (str):  The output directory for writing per-tile files.
         out_prefix (str):  The output file name prefix.
         split_dir (bool):  Optionally split files by tile ID prefix.
