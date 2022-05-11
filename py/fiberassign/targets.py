@@ -781,6 +781,7 @@ def append_target_table(tgs, tagalong, tgdata, survey, typeforce, typecol,
 
     Args:
         tgs (Targets): The targets object to modify.
+        tagalong (TargetTagalong): a data structure that carries RA,Dec, and other information for targets from the targeting files, to be written to the fiberassign outputs.
         tgdata (Table): The table or recarray containing the input data.
         survey (str):  The survey type.
         typeforce (int): If not None, all targets are considered to be this
@@ -920,6 +921,7 @@ def load_target_table(tgs, tagalong, tgdata, survey=None, typeforce=None, typeco
 
     Args:
         tgs (Targets): The targets object on which to append this data.
+        tagalong (TargetTagalong): a data structure that carries RA,Dec, and other information for targets from the targeting files, to be written to the fiberassign outputs.
         tgdata (Table): A table or recarray with the target properties.
         survey (str):  The survey type.  If None, query from columns.
         typeforce (int): If specified, it must equal one of the TARGET_TYPE_*
@@ -1132,6 +1134,7 @@ def load_target_file(tgs, tagalong, tfile, survey=None, typeforce=None, typecol=
 
     Args:
         tgs (Targets): The targets object on which to append this data.
+        tagalong (TargetTagalong): a data structure that carries RA,Dec, and other information for targets from the targeting files, to be written to the fiberassign outputs.  A new one can be created using `fiberassign.targets.create_tagalong`.
         tfile (str): The path to the target catalog.
         survey (str):  The survey type.  If None, query from columns and
             the FITS header.
