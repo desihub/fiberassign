@@ -425,19 +425,6 @@ def plot_assignment_tile_file(petals, real_shapes, params):
 
     plot_available(ax, targetprops, avtg, linewidth=0.1)
 
-    #### mark "available" positioners that collide with the exclusion polygons
-    xdata = np.full(len(avtg), 9999.9, dtype=np.float64)
-    ydata = np.full(len(avtg), 9999.9, dtype=np.float64)
-    for idx, tgid in enumerate(avtg):
-        xdata[idx] = targetprops[tgid]["xy"][0]
-        ydata[idx] = targetprops[tgid]["xy"][1]
-    #print('tavail:', len(tavail), 'keys', tavail.keys())
-    for loc,v in tavail.items():
-        if not loc in locs:
-            continue
-        print('tavail: loc', loc, ':', v)
-
-
     # Assigned targets for our selected fibers.  We handle the special case of fibers
     # being used as sky but not formally assigned to a target.
     tassign = {
