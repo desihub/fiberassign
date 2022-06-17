@@ -38,6 +38,7 @@ def arrays_equal(a, b):
 def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fits.gz',
           desiroot = '/global/cfs/cdirs/desi',
           outfn = None,
+          save_logs = False,
           ):
     '''Repair the data corruption reported in https://github.com/desihub/fiberassign/pull/432
     for a given single fiberassign file.
@@ -57,7 +58,7 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
     If any rows are changed, then an updated file is written out,
     preserving all other HDUs.
     '''
-    log_to_string = True
+    log_to_string = save_logs
     logstr = ''
     def log(*a):
         nonlocal logstr
@@ -81,11 +82,16 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
     tilestr = '%06i'%tileid
     targdir = os.path.join(desiroot, 'survey', 'fiberassign',
                            fa_surv, tilestr[:3])
-    targfns = [os.path.join(targdir, '%s-%s.fits' % tilestr, tag)
+    targfns = [os.path.join(targdir, '%s-%s.fits' % (tilestr, tag))
                for tag in ['targ', 'sky', 'scnd', 'too']]
 
+    keepfns = []
     for fn in targfns:
-        assert(os.path.exists(fn))
+        if not os.path.exists(fn):
+            log('Does not exist:', fn)
+        else:
+            keepfns.append(fn)
+    targfns = keepfns
 
     #stats.update(scndfn=scndfn, toofn=toofn)
     #for i,t in enumerate(targdirs):
@@ -93,13 +99,14 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
 
     # Read the original FIBERASSIGN table.
     for hduname in ['FIBERASSIGN', 'TARGETS']:
+        log('Reading FA hdu', hduname)
         ff = F[hduname]
         tab = ff.read()
 
         # We're going to match based on (positive) TARGETID.
         targetid = tab['TARGETID']
-        ra = tab['TARGET_RA']
-        dec = tab['TARGET_DEC']
+        #ra = tab['TARGET_RA']
+        #dec = tab['TARGET_DEC']
         # Per https://github.com/desihub/fiberassign/issues/385,
         # Swap in unique values for negative TARGETIDs.
         # I = np.flatnonzero(targetid < 0)
@@ -127,19 +134,27 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
 
             # "targetid" are the ones from the FA file
             # "tids" are the ones from the fiberassign targets files
-            tidmap = dict([(tid,i) for i,tid in T['TARGETID'] if tid>0])
+            tidmap = dict([(tid,i) for i,tid in enumerate(T['TARGETID']) if tid>0])
             I = np.array([tidmap.get(t, -1) for t in targetid])
             J = np.flatnonzero(I >= 0)
             I = I[J]
             log('Checking', len(I), 'matched TARGETIDs')
 
+            tabcols = set(tab.dtype.names)
+            
             # This is the subset of columns we patch, based on the bug report.
-            for col in ['BRICK_OBJID', 'BRICKID', 'RELEASE', 'FLUX_G', 'FLUX_R', 'FLUX_Z',
-                        'FLUX_IVAR_G', 'FLUX_IVAR_R', 'FLUX_IVAR_Z',
-                        'REF_CAT', 'GAIA_PHOT_G_MEAN_MAG', 'GAIA_PHOT_BP_MEAN_MAG', 'GAIA_PHOT_RP_MEAN_MAG',
-                        'MASKBITS', 'REF_ID', 'MORPHTYPE']:
+            # for col in ['BRICK_OBJID', 'BRICKID', 'RELEASE', 'FLUX_G', 'FLUX_R', 'FLUX_Z',
+            #             'FLUX_IVAR_G', 'FLUX_IVAR_R', 'FLUX_IVAR_Z',
+            #             'REF_CAT', 'GAIA_PHOT_G_MEAN_MAG', 'GAIA_PHOT_BP_MEAN_MAG', 'GAIA_PHOT_RP_MEAN_MAG',
+            #             'MASKBITS', 'REF_ID', 'MORPHTYPE']:
+            #for col in T.columns:
+            for col in T.dtype.names:
+                log('Column', col)
+                if not col in tabcols:
+                    log('Not in FA table; skipping')
+                    continue
                 old = tab[col][J]
-                new = targets[col][I]
+                new = T[col][I]
                 eq = arrays_equal(old, new)
                 if not np.all(eq):
                     diff = np.flatnonzero(np.logical_not(eq))
@@ -204,13 +219,16 @@ def main():
 
     args = []
     fa_base = opt.in_base
+    save_logs = False
+    if opt.threads:
+        save_logs = True
     for infn in opt.files:
         #infn = os.path.join(fa_base, '001/fiberassign-001000.fits.gz')
         if not infn.startswith(fa_base):
             print('All input filenames must start with --in-base = ', fa_base)
             return -1
         outfn = infn.replace(fa_base, opt.outdir+'/')
-        args.append(dict(infn=infn, outfn=outfn))
+        args.append(dict(infn=infn, outfn=outfn, save_logs=save_logs))
 
     if opt.threads:
         from astrometry.util.multiproc import multiproc
