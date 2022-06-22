@@ -75,14 +75,29 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
     primhdr = F[0].read_header()
     tileid = primhdr['TILEID']
     fa_surv = primhdr['FA_SURV']
-    stats.update(infn=infn, tileid=tileid, fa_surv=fa_surv)
+    survey = primhdr.get('SURVEY')
+    fa_prog = primhdr.get('FAPRGRM')
+    stats.update(infn=infn, tileid=tileid, fa_surv=fa_surv, survey=survey, fa_prog=fa_prog)
 
     # Find targeting files
     tilestr = '%06i'%tileid
 
-    if fa_surv == 'sv3':
+    if fa_surv == 'cmx':
+        log('Skipping CMX tile')
+        if log_to_string:
+            print(logstr)
+        return stats,None
+
+    if survey == 'special':
+        if fa_prog.startswith('tertiary'):
+            targdir_pat = os.path.join(desiroot, 'survey', 'fiberassign',
+                                       survey, 'tertiary', '*', '*')
+        else:
+            targdir_pat = os.path.join(desiroot, 'survey', 'fiberassign',
+                                       survey, '*')
+    elif fa_surv in ['sv1', 'sv2', 'sv3']:
         targdir_pat = os.path.join(desiroot, 'survey', 'fiberassign',
-                                   'SV3', '*')
+                                   fa_surv.upper(), '*')
     else:
         targdir_pat = os.path.join(desiroot, 'survey', 'fiberassign',
                                    fa_surv, tilestr[:3])
@@ -203,35 +218,38 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
             stats.update({'patched_%s_%s' % (hdunamemap[hduname], col.lower()):
                           len(patched_col_rows.get(col, []))})
 
-    # Make sure output directory exists
-    outdir = os.path.dirname(outfn)
-    if not os.path.exists(outdir):
-        os.makedirs(outdir)
-    assert(outfn != infn)
-
-    # Write out output file, leaving other HDUs unchanged.
-    f,tempout = tempfile.mkstemp(dir=outdir, suffix='.fits')
-    os.close(f)
-    Fout = fitsio.FITS(tempout, 'rw', clobber=True)
-    for ext in F:
-        extname = ext.get_extname()
-        hdr = ext.read_header()
-        data = ext.read()
-        if extname == 'PRIMARY':
-            # fitsio will add its own headers about the FITS format, so trim out all COMMENT cards.
-            newhdr = fitsio.FITSHDR()
-            for r in hdr.records():
-                if r['name'] == 'COMMENT':
-                    continue
-                newhdr.add_record(r)
-            hdr = newhdr
-        if extname in patched_tables:
-            # Swap in our updated FIBERASSIGN table!
-            data = patched_tables[extname]
-        Fout.write(data, header=hdr, extname=extname)
-    Fout.close()
-    os.rename(tempout, outfn)
-    log('Wrote', outfn)
+    if len(all_patched_data) > 0:
+        # Make sure output directory exists
+        outdir = os.path.dirname(outfn)
+        if not os.path.exists(outdir):
+            os.makedirs(outdir)
+        assert(outfn != infn)
+    
+        # Write out output file, leaving other HDUs unchanged.
+        f,tempout = tempfile.mkstemp(dir=outdir, suffix='.fits')
+        os.close(f)
+        Fout = fitsio.FITS(tempout, 'rw', clobber=True)
+        for ext in F:
+            extname = ext.get_extname()
+            hdr = ext.read_header()
+            data = ext.read()
+            if extname == 'PRIMARY':
+                # fitsio will add its own headers about the FITS format, so trim out all COMMENT cards.
+                newhdr = fitsio.FITSHDR()
+                for r in hdr.records():
+                    if r['name'] == 'COMMENT':
+                        continue
+                    newhdr.add_record(r)
+                hdr = newhdr
+            if extname in patched_tables:
+                # Swap in our updated FIBERASSIGN table!
+                data = patched_tables[extname]
+            Fout.write(data, header=hdr, extname=extname)
+        Fout.close()
+        os.rename(tempout, outfn)
+        log('Wrote', outfn)
+    else:
+        log('No changes for tile', tileid, 'file', infn)
 
     if log_to_string:
         print(logstr)
@@ -276,6 +294,9 @@ def main():
             allstats.append(s)
             all_patched.append(p)
             print()
+
+    allstats = [s for s in allstats if s is not None]
+    all_patched = [p for p in all_patched if p is not None]
 
     # Collect and write out all patched data.
     infns = []
