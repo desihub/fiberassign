@@ -79,22 +79,26 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
 
     # Find targeting files
     tilestr = '%06i'%tileid
-    targdir = os.path.join(desiroot, 'survey', 'fiberassign',
-                           fa_surv, tilestr[:3])
-    targfns = [os.path.join(targdir, '%s-%s.fits' % (tilestr, tag))
-               for tag in ['targ', 'sky', 'scnd', 'too']]
 
-    keepfns = []
-    for fn in targfns:
-        if not os.path.exists(fn):
-            log('Does not exist:', fn)
+    if fa_surv == 'sv3':
+        targdir_pat = os.path.join(desiroot, 'survey', 'fiberassign',
+                                   'SV3', '*')
+    else:
+        targdir_pat = os.path.join(desiroot, 'survey', 'fiberassign',
+                                   fa_surv, tilestr[:3])
+
+    targfns = []
+    for tag in ['targ', 'sky', 'scnd', 'too']:
+        pat = os.path.join(targdir_pat, '%s-%s.fits' % (tilestr, tag))
+        fns = glob(pat)
+        assert((len(fns) == 0) or (len(fns) == 1))
+        if len(fns) == 0:
+            stats.update({'exists_'+tag: False})
+            log('Does not exist:', pat)
         else:
-            keepfns.append(fn)
-    targfns = keepfns
-
-    #stats.update(scndfn=scndfn, toofn=toofn)
-    #for i,t in enumerate(targdirs):
-    #    stats['targdir%i' % i] = t
+            stats.update({'exists_'+tag: True})
+            fn = fns[0]
+            targfns.append(fn)
 
     patched_tables = {}
     all_patched_data = []
@@ -111,6 +115,21 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
         tidset = set(targetid[targetid > 0])
 
         patched_col_rows = {}
+
+        # This is the subset of columns we patch, per Anand's suggestion
+        fixcols = {'FIBERASSIGN':
+                   ['SV3_DESI_TARGET', 'SV3_SCND_TARGET', 'MASKBITS',
+                    'GAIA_PHOT_G_MEAN_MAG', 'GAIA_PHOT_BP_MEAN_MAG', 'GAIA_PHOT_RP_MEAN_MAG',
+                    'FLUX_IVAR_G', 'FLUX_IVAR_Z', 'FLUX_IVAR_R',
+                    'REF_CAT', 'REF_ID',
+                    'RELEASE', 'BRICKID', 'BRICK_OBJID',
+                    'MORPHTYPE', 'BRICKNAME', 'HPXPIXEL',
+                    'FLUX_Z', 'FLUX_R', 'FLUX_G',
+                    'PRIORITY_INIT',
+                   ],
+                   'TARGETS':
+                   ['SV3_DESI_TARGET', 'SV3_SCND_TARGET',
+                    'BRICKID', 'BRICKNAME', 'BRICK_OBJID', 'RELEASE', 'HPXPIXEL']}
 
         # Read in the intermediate fiberassign files for targets
         for fn in targfns:
@@ -135,21 +154,6 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
 
             destcols = set(tab.dtype.names)
             srccols = set(T.dtype.names)
-
-            # This is the subset of columns we patch, per Anand's suggestion
-            fixcols = {'FIBERASSIGN':
-                       ['SV3_DESI_TARGET', 'SV3_SCND_TARGET', 'MASKBITS',
-                        'GAIA_PHOT_G_MEAN_MAG', 'GAIA_PHOT_BP_MEAN_MAG', 'GAIA_PHOT_RP_MEAN_MAG',
-                        'FLUX_IVAR_G', 'FLUX_IVAR_Z', 'FLUX_IVAR_R',
-                        'REF_CAT', 'REF_ID',
-                        'RELEASE', 'BRICKID', 'BRICK_OBJID',
-                        'MORPHTYPE', 'BRICKNAME', 'HPXPIXEL',
-                        'FLUX_Z', 'FLUX_R', 'FLUX_G',
-                        'PRIORITY_INIT',
-                       ],
-                       'TARGETS':
-                       ['SV3_DESI_TARGET', 'SV3_SCND_TARGET',
-                        'BRICKID', 'BRICKNAME', 'BRICK_OBJID', 'RELEASE', 'HPXPIXEL']}
 
             for col in fixcols[hduname]:
                 #log('Column', col)
@@ -191,17 +195,13 @@ def patch(infn = 'desi/target/fiberassign/tiles/trunk/001/fiberassign-001000.fit
                                              targetid[J[diff]], old[diff], new[diff], zeroed))
                 else:
                     log('Column', col, '- All equal!')
-                    
+
         patched_tables[hduname] = tab
-
-
-    #stats.update(patched_rows_targets=len(patched_rows))
-    # if len(patched_rows) == 0 and not patched_neg_tids:
-    #     log('No need to patch', infn)
-    #     stats.update(patched=0)
-    # else:
-    #     log('Patched', len(patched_rows), 'data rows')
-    #     stats.update(patched=1)
+        for col in fixcols[hduname]:
+            hdunamemap = {'FIBERASSIGN': 'fa',
+                          'TARGETS': 'targ'}
+            stats.update({'patched_%s_%s' % (hdunamemap[hduname], col.lower()):
+                          len(patched_col_rows.get(col, []))})
 
     # Make sure output directory exists
     outdir = os.path.dirname(outfn)
@@ -301,15 +301,8 @@ def main():
             oldvals.append(oldv.astype('U10'))
             newvals.append(newv.astype('U10'))
             zeroed.append([zero]*N)
-
-    # for x in [tileids, targetids, hdunames, infns, cols,
-    #           newvals, oldvals, zeroed]:
-    #     print('arrays', x)
-    #     print('stacked', np.hstack(x))
-
     array_list=[np.hstack(x) for x in [tileids, targetids, hdunames, fns, cols,
                                        newvals, oldvals, zeroed]]
-                                       #fasurvs,fns,
     names=['TILEID', 'TARGETID', 'EXTENSION', 'ORIGFN', 'KEY', 'ORIGVAL', 'FAVAL', 'ZEROED']
     fitsio.write(os.path.join(opt.outdir, 'all-patched-rows.fits'), array_list, names=names,
                  clobber=True)
@@ -322,30 +315,11 @@ def main():
     allcols.sort()
     print('allcols:', allcols)
     data = dict([(c,[]) for c in allcols])
-    # if not ''
-    blankvals = dict(
-        tileid=-1,
-        neg_targetids=-1,
-        pos_targetids=-1,
-        matched_targets=-1,
-        patched_rows_targets=-1,
-        matched_scnd=-1,
-        patched_rows_scnd=-1,
-        matched_too=-1,
-        patched_rows_too=-1,
-        patched=-1,
-        )
     for s in allstats:
         for c in allcols:
-            try:
-                data[c].append(s[c])
-            except KeyError:
-                data[c].append(blankvals.get(c, ''))
+            data[c].append(s.get(c, 0))
     for c in allcols:
-        #print('Column', c, 'length', len(data[c]))
         data[c] = np.array(data[c])
-        #print('Np array:', len(data[c]))
-        #print(data[c])
     fitsio.write(opt.stats, data, names=allcols, clobber=True)
 
 def _bounce_patch(x):
