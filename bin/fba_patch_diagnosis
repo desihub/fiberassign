@@ -1,0 +1,244 @@
+#!/usr/bin/env python
+
+import os
+import numpy as np
+import fitsio
+from astropy.table import Table, vstack
+from desitarget.geomask import match, pixarea2nside
+from fiberassign.utils import Logger
+from fba_patch_io import (
+    get_tileid_from_fafn,
+    get_fafns_to_check,
+    diagnose_values_fafn,
+    diagnose_columns_fafn,
+)
+from desiutil.redirect import stdouterr_redirected
+import multiprocessing
+from argparse import ArgumentParser
+
+
+log = Logger.get()
+np.random.seed(1234)
+
+
+def get_parse():
+    parser = ArgumentParser()
+    parser.add_argument(
+        "--fasource",
+        help="source for fiberassign files (default=svn)",
+        choices=["svn"],
+        type=str,
+        default="svn",
+    )
+    parser.add_argument(
+        "--outdir",
+        help="output file will be {args.outdir}/fiberassign-differences-{args.fasource}-desitarget-???.ecsv",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--diagnose",
+        help="diagnose the columns content or the values content? (default=None)",
+        type=str,
+        choices=["columns", "values"],
+        default=None,
+    )
+    parser.add_argument(
+        "--numproc",
+        help="number of parallel processes (default=1) (suggestion: cori=64, perlmutter=128)",
+        type=int,
+        default=1,
+    )
+    parser.add_argument(
+        "--skip_subdirs",
+        help="comma-separated list of subdirs (e.g., '000,001') to skip (default=None)",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--only_subdirs",
+        help="comma-separated list of subdirs (e.g., '000,001') to restrict to (default=None)",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--only_tileids",
+        help="comma-separated list of tileids to process (e.g. '82405,82406') (default=None)",
+        type=str,
+        default=None,
+    )
+    parser.add_argument("--values_debug", action="store_true", help="only pick few tiles for the --diagnose values case")
+    parser.add_argument(
+        "--log_stdout",
+        action="store_true",
+        help="log to stdout instead of redirecting to a file",
+    )
+    args = parser.parse_args()
+    for kwargs in args._get_kwargs():
+        log.info("{} = {}".format(kwargs[0], kwargs[1]))
+    return args
+
+
+def get_outroot(outdir, fasource, diagnose, subdir=None):
+    outroot = os.path.join(
+        outdir, "fiberassign-diagnosis-{}-{}".format(fasource, diagnose)
+    )
+    if subdir is not None:
+        outroot = "{}-{}".format(outroot, subdir)
+    return outroot
+
+
+def _diagnose_values_subdir(outroot, fafns, numproc):
+
+    # AR launch process
+    log.info(
+        "launch diagnose_values_fafn via pool for {} fiberassign files".format(
+            len(fafns)
+        )
+    )
+    pool = multiprocessing.Pool(processes=numproc)
+    with pool:
+        ds = pool.map(diagnose_values_fafn, fafns)
+    log.info("pool done")
+
+    # AR restrict to fafns with some differences
+    ds = [d for d in ds if len(d) > 0]
+    log.info("restrict to {} fiberassign files with differences".format(len(ds)))
+
+    if len(ds) == 0:
+        log.info(
+            "no fiberassign files with differences, no {}.ecsv written".format(outroot)
+        )
+    else:
+        # AR sort by increasing tileid
+        ii = np.argsort([d["TILEID"][0] for d in ds])
+        ds = [ds[i] for i in ii]
+        # AR stack
+        log.info("start stacking")
+        d = vstack(ds)
+        # AR write
+        d.write("{}.ecsv".format(outroot))
+        log.info("{}.ecsv written".format(outroot))
+
+
+def _diagnose_columns(outroot, fafns, numproc):
+
+    # AR launch process
+    log.info(
+        "launch diagnose_columns_fafn via pool for {} fiberassign files".format(
+            len(fafns)
+        )
+    )
+    pool = multiprocessing.Pool(processes=numproc)
+    with pool:
+        ds = pool.map(diagnose_columns_fafn, fafns)
+    log.info("pool done")
+
+    # AR sort by increasing tileid
+    ii = np.argsort([d["TILEID"][0] for d in ds])
+    ds = [ds[i] for i in ii]
+    # AR stack
+    log.info("start stacking")
+    d = vstack(ds)
+    # AR write
+    d.write("{}.ecsv".format(outroot))
+    log.info("{}.ecsv written".format(outroot))
+
+
+def main():
+
+    args = get_parse()
+
+    # AR fiberassign files
+    fafns = get_fafns_to_check(args.fasource, debug=args.values_debug)
+    # AR shuffle so that the same healpix pixels are not hit at the same time..
+    ii = np.random.choice(len(fafns), size=len(fafns), replace=False)
+    fafns = fafns[ii]
+
+    # AR splitting per subdir (000, 001, etc)
+    tileids = np.array([get_tileid_from_fafn(fafn) for fafn in fafns])
+    subdirs = np.array(["{:06d}".format(tileid)[:3] for tileid in tileids])
+    if args.skip_subdirs is not None:
+        reject = np.zeros(len(fafns), dtype=bool)
+        for subdir in args.skip_subdirs.split(","):
+            reject_i = subdirs == subdir
+            reject |= reject_i
+            log.info(
+                "{}\tremove {} fiberassign files, as per args.skip_subdirs".format(
+                    subdir, reject_i.sum()
+                )
+            )
+        fafns, tileids, subdirs = fafns[~reject], tileids[~reject], subdirs[~reject]
+    if args.only_subdirs is not None:
+        sel = np.zeros(len(fafns), dtype=bool)
+        for subdir in args.only_subdirs.split(","):
+            sel_i = subdirs == subdir
+            sel |= sel_i
+            log.info(
+                "{}\trestrict to {} fiberassign files, as per args.only_subdirs".format(
+                    subdir, sel_i.sum()
+                )
+            )
+        fafns, tileids, subdirs = fafns[sel], tileids[sel], subdirs[sel]
+    for subdir in np.unique(subdirs):
+        log.info(
+            "{}\tdiagnosing {} fiberassign files".format(
+                subdir, (subdirs == subdir).sum()
+            )
+        )
+    if args.only_tileids is not None:
+        sel = np.in1d(tileids, [int(tileid) for tileid in args.only_tileids.split(",")])
+        log.info(
+            "{}\trestrict to {} fiberassign files, as per args.only_tileids".format(
+                subdir, sel.sum()
+            )
+        )
+        fafns, tileids, subdirs = fafns[sel], tileids[sel], subdirs[sel]
+
+    # AR first check that no output files already exist
+    fns = []
+    if args.diagnose == "values":
+        for subdir in np.unique(subdirs):
+            outroot = get_outroot(
+                args.outdir, args.fasource, args.diagnose, subdir=subdir
+            )
+            for fn in ["{}.ecsv".format(outroot), "{}.log".format(outroot)]:
+                if os.path.isfile(fn):
+                    fns.append(fn)
+    if args.diagnose == "columns":
+        outroot = get_outroot(args.outdir, args.fasource, args.diagnose)
+        for fn in ["{}.ecsv".format(outroot), "{}.log".format(outroot)]:
+            if os.path.isfile(fn):
+                fns.append(fn)
+    if len(fns) > 0:
+        msg = "the following file(s) already exist(s); delete beforehand\n{}".format(
+            "\n".join(["\t{}".format(fn) for fn in fns])
+        )
+        log.error(msg)
+        raise IOError(msg)
+
+    # AR then run
+    if args.diagnose == "values":
+        for subdir in np.unique(subdirs):
+            sel = subdirs == subdir
+            outroot = get_outroot(
+                args.outdir, args.fasource, args.diagnose, subdir=subdir
+            )
+            if args.log_stdout:
+                _diagnose_values_subdir(outroot, fafns[sel], args.numproc)
+            else:
+                with stdouterr_redirected(to="{}.log".format(outroot)):
+                    _diagnose_values_subdir(outroot, fafns[sel], args.numproc)
+
+    if args.diagnose == "columns":
+        outroot = get_outroot(args.outdir, args.fasource, args.diagnose)
+        if args.log_stdout:
+            _diagnose_columns(outroot, fafns, args.numproc)
+        else:
+            with stdouterr_redirected(to="{}.log".format(outroot)):
+                _diagnose_columns(outroot, fafns, args.numproc)
+
+
+if __name__ == "__main__":
+
+    main()
