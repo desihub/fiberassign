@@ -3,12 +3,17 @@
 import sys
 import os
 from glob import glob
+import tempfile
+import yaml
+from pkg_resources import resource_filename
 from datetime import datetime
 import numpy as np
 import fitsio
 import healpy as hp
 from astropy.io import fits
-from astropy.table import Table, vstack
+from astropy.table import Table, vstack, hstack
+from astropy import units
+from astropy.coordinates import SkyCoord
 from desimodel.footprint import is_point_in_desi, tiles2pix
 from desitarget.geomask import match, pixarea2nside
 from desitarget.io import read_targets_in_tiles
@@ -17,6 +22,7 @@ from desitarget.gaiamatch import gaia_psflike
 from fiberassign.assign import merged_fiberassign_swap
 from desitarget.targets import main_cmx_or_sv
 from fiberassign.utils import Logger
+from desiutil.dust import SFDMap
 from desiutil.redirect import stdouterr_redirected
 
 
@@ -1093,3 +1099,342 @@ def diagnose_columns_fafn(fafn, ref_tileid=3001):
     d["EXTRA"][d["EXTRA"] == ""] = "-"
 
     return d
+
+
+def get_patching_params(fn="patching_202210.yaml"):
+    """
+    Obtain the patching_root, fixcols, addcols, and populate_ebv patching parameters.
+
+    Args:
+        fn (optional, defaults to "patching_202210.yaml"): path to a .yaml file with patching_root, fixcols, addcols, populate_ebv (str)
+
+    Returns:
+        params: dictionary with the patching_root, fixcols, addcols, and populate_ebv patching parameters.
+
+    Notes:
+        fn: the code will first look for:
+            - first look for: resource_filename("fiberassign", os.path.join("data", fn))
+            - then look for: fn
+        See fiberassign/data/patching_202210.yaml for the formatting.
+    """
+    myfn = resource_filename("fiberassign", os.path.join("data", fn))
+    if not os.path.isfile(myfn):
+        log.warning("no {}".format(myfn))
+        myfn = fn
+        if not os.path.isfile(myfn):
+            log.warning("no {}".format(myfn))
+            msg = "did not find {}".format(fn)
+            log.error(msg)
+            raise ValueError(msg)
+    log.info("reading {}".format(myfn))
+    with open(myfn, "r") as f:
+        params = yaml.safe_load(f)
+    f.close()
+    return params
+
+
+def arrays_equal(col, tileid, a, b):
+    """
+    Function to test for equality between arrays -- both being non-finite (eg NaN) counts as equal.
+
+    Args:
+        a: 1D np.array()
+        b: 1D np.array()
+    """
+    bothnan = False
+    try:
+        bothnan = np.logical_not(np.isfinite(a)) * np.logical_not(np.isfinite(b))
+    except:
+        pass
+    if col == "PARALLAX":
+        if tileid in [
+            80971,
+            80972,
+            80973,
+            80974,
+            80975,
+            80976,
+            82634,
+            82635,
+        ]:
+            eq = np.abs(a - b) < 1e-6
+        else:
+            eq = np.abs(a - b) < 1e-8
+    else:
+        eq = a == b
+    return np.logical_or(eq, bothnan)
+
+
+def patch(in_fafn, out_fafn, params_fn):
+    """
+    Repair data corruption in a fiberassign file.
+
+    Args:
+        in_fafn: full path to the fiberassign file to be repaired (str)
+        out_fafn: full path where the repaired fiberassign file will be written, if any (str)
+        params_fn: path to a .yaml file with fixcols, addcols, populate_ebv (str)
+
+    Notes:
+        Originally developed by D. Lang.
+        Targets are matched on TARGETID, and values updated as necessary.
+        If any rows are changed, then an updated file is written out, preserving all other HDUs.
+        params_fn:
+            - the code will first look for:
+                - first look for: resource_filename("fiberassign", os.path.join("data", fn))
+                - then look for: fn
+            - see fiberassign/data/patching_202210.yaml for the formatting.
+    """
+
+    # AR safe
+    assert(out_fafn != in_fafn)
+
+    tileid = get_tileid_from_fafn(in_fafn)
+
+    # AR default fixcols, addcols, populate_ebv
+    params = get_patching_params(fn=params_fn)
+    for key in ["patching_root", "fixcols", "addcols", "populate_ebv"]:
+        log.info("{:06d}\tPatching with: {} = {}".format(tileid, key, params[key]))
+
+    log.info("{:06d}\tin_fafn={}".format(tileid, in_fafn))
+    log.info("{:06d}\tout_fafn={}".format(tileid, out_fafn))
+
+    # AR read in_fafn
+    F = fitsio.FITS(in_fafn)
+
+    # AR read all the desitarget static catalogs
+    ds = read_fafn_static_desitarget_names(in_fafn)
+
+    patched_tables = {}
+    added_tables = {}
+
+    myd = {}
+    for key in ["EXTENSION", "NAME", "KEY", "TARGETID", "OLDVAL", "NEWVAL"]:
+        myd[key] = []
+
+    # AR extensions to parse (in the "fiducial order")
+    tmp_exts = list(params["fixcols"].keys())
+    tmp_exts += list(params["addcols"].keys())
+    tmp_exts += list(params["populate_ebv"].keys())
+    exts = [ext for ext in all_exts if ext in tmp_exts]
+
+    # AR loop on extensions
+    for ext in exts:
+
+        names = get_names_to_check(ext)
+
+        ok_cols, patched_cols, added_cols = params["fixcols"][ext].copy(), [], []
+
+        ff = F[ext]
+        tab = ff.read()
+
+        # AR adding columns?
+        if ext in params["addcols"]:
+            addtab = Table()
+            cols, dtypes = [val[0] for val in params["addcols"][ext]], [val[1] for val in params["addcols"][ext]]
+            for col, dtype in zip(cols, dtypes):
+                if col in tab.dtype.names:
+                    log.info("{:06d}\t{}\tColumn {}: already present".format(tileid, ext.ljust(11), col)) 
+                else:
+                    addtab[col] = np.zeros(len(tab), dtype=dtype)
+                    added_cols.append(col)
+                    log.info("{:06d}\t{}\tColumn {}: adding the column".format(tileid, ext.ljust(11), col)) 
+
+        # AR we restrict the matching to positive TARGETIDs
+        targetids = tab["TARGETID"]
+        unq_targetids = np.unique(targetids[targetids > 0])
+        log.info("{:06d}\t{}\tThere are {} TARGETID>0".format(tileid, ext.ljust(11), unq_targetids.size))
+
+        # AR to record what rows are matched
+        ii_match = []
+
+        for name in names:
+
+            if name not in ds:
+                log.info("{:06d}\t{}\t{}\tno catalog".format(tileid, ext.ljust(11), name))
+                continue
+            # AR desitarget data
+            T = ds[name]
+            if len(T) == 0:
+                log.info("{:06d}\t{}\t{}\tZero rows in catalog".format(tileid, ext.ljust(11), name))
+                continue
+            tids = T["TARGETID"]
+            I = np.flatnonzero([t in unq_targetids for t in tids])
+            log.info("{:06d}\t{}\t{}\tFound {}/{} matching TARGETIDs".format(tileid, ext.ljust(11), name, len(I), len(T)))
+            if len(I) == 0:
+                continue
+            T = T[I]
+            ii_match += np.where(np.in1d(unq_targetids, T["TARGETID"]))[0].tolist()
+
+            # AR "targetids" are the ones from the FA file
+            # AR "tids" are the ones from the desitarget files (always > 0)
+            tid_map = dict([(tid, i) for i, tid in enumerate(T["TARGETID"])])
+            I = np.array([tid_map.get(t, -1) for t in targetids])
+            J = np.flatnonzero(I >= 0)
+            I = I[J]
+            # log.info("Checking {} matched TARGETIDs".format(len(I)))
+
+            # AR loop on columns (the ones to be fixed or, the added ones)
+            ext_cols = params["fixcols"][ext]
+            if ext in params["addcols"]:
+                ext_cols += [val[0] for val in params["addcols"][ext]]
+            ext_cols = np.unique(ext_cols)
+            for col in ext_cols:
+                isaddcol = False
+                if col not in tab.dtype.names:
+                    if col not in addtab.dtype.names:
+                        continue
+                    else:
+                        old = addtab[col][J]
+                        isaddcol = True
+                else:
+                    old = tab[col][J]
+
+                # AR case where the column is not present in desitarget
+                if not col in T.dtype.names:
+                    new = np.zeros_like(old)
+                else:
+                    new = T[col][I]
+
+                # AR check "equality"
+                eq = arrays_equal(col, tileid, old, new)
+                if not np.all(eq):
+                    if isaddcol:
+                        log.info("{:06d}\t{}\t{}\tColumn {}: filling {} row(s)".format(tileid, ext.ljust(11), name, col, (~eq).sum()))
+                    else:
+                        if col not in patched_cols:
+                            ok_cols.remove(col)
+                            patched_cols.append(col)
+                        log.info("{:06d}\t{}\t{}\tColumn {}: patching {} row(s)".format(tileid, ext.ljust(11), name, col, (~eq).sum()))
+                    diff = np.flatnonzero(np.logical_not(eq))
+                    myd["EXTENSION"] += [ext for x in range(diff.size)]
+                    myd["NAME"] += [name for x in range(diff.size)]
+                    myd["KEY"] += [col for x in range(diff.size)]
+                    myd["TARGETID"] += tab["TARGETID"][J[diff]].tolist()
+                    myd["NEWVAL"] += new[diff].astype(str).tolist()
+                    if isaddcol:
+                        myd["OLDVAL"] += addtab[col][J[diff]].astype(str).tolist()
+                        addtab[col][J[diff]] = new[diff]
+                    else:
+                        myd["OLDVAL"] += tab[col][J[diff]].astype(str).tolist()
+                        tab[col][J[diff]] = new[diff]
+
+            # AR populate EBV for FIBERASSIGN?
+            # AR note that J is already cut on TARGETID>0, so we are safe
+            if ext in params["populate_ebv"]:
+                if params["populate_ebv"][ext]:
+                    col = "EBV"
+                    old = tab[col][J]
+                    diff = np.flatnonzero(old == 0)
+                    if diff.size > 0:
+                        if col not in patched_cols:
+                            if col in ok_cols:
+                                ok_cols.remove(col)
+                            patched_cols.append(col)
+                        ras, decs = tab["TARGET_RA"][J][diff], tab["TARGET_DEC"][J][diff]
+                        assert((~np.isfinite(ras)).sum() == 0)
+                        assert((~np.isfinite(decs)).sum() == 0)
+                        cs = SkyCoord(ra=ras * units.deg, dec=decs * units.deg, frame="icrs")
+                        ebvs = SFDMap(scaling=1).ebv(cs)
+                        log.info("{:06d}\t{}\t{}\tColumn {}: populating {} row(s)".format(tileid, ext.ljust(11), name, col, diff.size))
+                        myd["EXTENSION"] += [ext for x in range(diff.size)]
+                        myd["NAME"] += [name for x in range(diff.size)]
+                        myd["KEY"] += [col for x in range(diff.size)]
+                        myd["TARGETID"] += tab["TARGETID"][J[diff]].tolist()
+                        myd["OLDVAL"] += tab[col][J[diff]].astype(str).tolist()
+                        myd["NEWVAL"] += ebvs.astype(str).tolist()
+                        tab[col][J[diff]] = ebvs
+
+        # AR store in patched/added_tables the fixed/added table
+        patched_tables[ext] = tab
+        added_tables[ext] = addtab
+
+        # AR there should not be duplicates in ii_match
+        n_match = len(ii_match)
+        if np.unique(ii_match).size != n_match:
+            msg = "{:06d}\t{}\tmatches have duplicated {} TARGETIDs".format(
+                tileid, ext.ljust(11), n_match - np.unique(ii_match).size
+            )
+            log.error(msg)
+            raise ValueError(msg)
+
+
+        # AR verify that all rows have been matched
+        log.info(
+            "{:06d}\t{}\tall_names\t{}/{} matched rows".format(
+                tileid, ext.ljust(11), n_match, len(unq_targetids)
+            )
+        )
+        if n_match != len(unq_targetids):
+            msg = "{:06d}\t{}\tn_match={} != len(fa)={}".format(
+                tileid, ext.ljust(11), n_match, len(unq_targetids)
+            )
+
+        # AR columns summary
+        log.info("{:06d}\t{}\tColumns ok:\t{}".format(tileid, ext.ljust(11), ",".join(ok_cols)))
+        log.info("{:06d}\t{}\tColumns patched:\t{}".format(tileid, ext.ljust(11), ",".join(patched_cols)))
+        log.info("{:06d}\t{}\tColumns added:\t{}".format(tileid, ext.ljust(11), ",".join(added_cols)))
+
+
+    if len(myd["TARGETID"]) > 0:
+        # DL make sure output directory exists
+        outdir = os.path.dirname(out_fafn)
+        if not os.path.exists(outdir):
+            os.makedirs(outdir)
+
+        # DL write out output file, leaving other HDUs unchanged.
+        f, tempout = tempfile.mkstemp(dir=outdir, suffix=".fits")
+        os.close(f)
+        Fout = fitsio.FITS(tempout, "rw", clobber=True)
+        for ext in F:
+            extname = ext.get_extname()
+            hdr = ext.read_header()
+            data = ext.read()
+            if extname == "PRIMARY":
+                # fitsio will add its own headers about the FITS format, so trim out all COMMENT cards.
+                newhdr = fitsio.FITSHDR()
+                for r in hdr.records():
+                    if r["name"] == "COMMENT":
+                        continue
+                    newhdr.add_record(r)
+                hdr = newhdr
+            if extname in patched_tables:
+                # Swap in our updated FIBERASSIGN table!
+                if extname in added_tables:
+                    data = np.array(hstack([Table(patched_tables[extname]), added_tables[extname]]))
+                else:
+                    data = patched_tables[extname]
+            Fout.write(data, header=hdr, extname=extname)
+        Fout.close()
+        os.rename(tempout, out_fafn)
+        log.info("Wrote {}".format(out_fafn))
+    else:
+        log.info("No changes for tile {} file {}".format(tileid, in_fafn))
+
+    # AR store in a table all the changes
+    d = Table()
+    n = len(myd["TARGETID"])
+    log.info("{:06d}\t{}\tall_names\tndiff={}".format(tileid, "all_exts".ljust(11), n))
+    if n > 0:
+        fahdr = F["PRIMARY"].read_header()
+        d["OLDFAFN"] = [in_fafn for j in range(n)]
+        for key in ["TILEID", "FAFLAVOR", "FA_VER", "PMTIME"]:
+            if key not in fahdr:
+                d[key] = "-"  # AR PMTIME
+            else:
+                d[key] = [fahdr[key] for j in range(n)]
+        tiles = Table.read(
+            os.path.join(
+                os.getenv("DESI_ROOT"), "spectro", "redux", "daily", "tiles-daily.csv"
+            )
+        )
+        ii = np.where(tiles["TILEID"] == tileid)[0]
+        keys = ["LASTNIGHT"]
+        if ii.size == 0:
+            for key in keys:
+                d[key] = -99
+        else:
+            for key in keys:
+                d[key] = [tiles[key][ii[0]] for j in range(n)]
+        for key in myd:
+            d[key] = myd[key]
+        d.write(out_fafn.replace(".fits.gz", "-{}.ecsv".format(params["patching_root"])))
