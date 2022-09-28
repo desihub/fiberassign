@@ -151,50 +151,16 @@ def main():
     args = get_parse()
 
     # AR fiberassign files
-    fafns = get_fafns_to_check(args.fa_srcdir, debug=args.values_debug)
+    fafns, tileids, subdirs = get_fafns_to_check(
+        args.fa_srcdir,
+        skip_subdirs=args.skip_subdirs,
+        only_subdirs=args.only_subdirs,
+        only_tileids=args.only_tileids,
+        debug=args.values_debug,
+    )
     # AR shuffle so that the same healpix pixels are not hit at the same time..
     ii = np.random.choice(len(fafns), size=len(fafns), replace=False)
-    fafns = fafns[ii]
-
-    # AR splitting per subdir (000, 001, etc)
-    tileids = np.array([get_tileid_from_fafn(fafn) for fafn in fafns])
-    subdirs = np.array(["{:06d}".format(tileid)[:3] for tileid in tileids])
-    if args.skip_subdirs is not None:
-        reject = np.zeros(len(fafns), dtype=bool)
-        for subdir in args.skip_subdirs.split(","):
-            reject_i = subdirs == subdir
-            reject |= reject_i
-            log.info(
-                "{}\tremove {} fiberassign files, as per args.skip_subdirs".format(
-                    subdir, reject_i.sum()
-                )
-            )
-        fafns, tileids, subdirs = fafns[~reject], tileids[~reject], subdirs[~reject]
-    if args.only_subdirs is not None:
-        sel = np.zeros(len(fafns), dtype=bool)
-        for subdir in args.only_subdirs.split(","):
-            sel_i = subdirs == subdir
-            sel |= sel_i
-            log.info(
-                "{}\trestrict to {} fiberassign files, as per args.only_subdirs".format(
-                    subdir, sel_i.sum()
-                )
-            )
-        fafns, tileids, subdirs = fafns[sel], tileids[sel], subdirs[sel]
-    for subdir in np.unique(subdirs):
-        log.info(
-            "{}\tdiagnosing {} fiberassign files".format(
-                subdir, (subdirs == subdir).sum()
-            )
-        )
-    if args.only_tileids is not None:
-        sel = np.in1d(tileids, [int(tileid) for tileid in args.only_tileids.split(",")])
-        log.info(
-            "{}\trestrict to {} fiberassign files, as per args.only_tileids".format(
-                subdir, sel.sum()
-            )
-        )
-        fafns, tileids, subdirs = fafns[sel], tileids[sel], subdirs[sel]
+    fafns, tileids, subdirs = fafns[ii], tileids[ii], subdirs[ii]
 
     # AR first check that no output files already exist
     fns = []
@@ -203,14 +169,15 @@ def main():
             outroot = get_outroot(
                 args.outdir, args.diagnose, subdir=subdir
             )
-            for fn in ["{}.ecsv".format(outroot), "{}.log".format(outroot)]:
-                if os.path.isfile(fn):
-                    fns.append(fn)
+            fns.append("{}.ecsv".format(outroot))
+            if not args.log_stdout:
+                fns.append("{}.log".format(outroot))
     if args.diagnose == "columns":
         outroot = get_outroot(args.outdir, args.diagnose)
-        for fn in ["{}.ecsv".format(outroot), "{}.log".format(outroot)]:
-            if os.path.isfile(fn):
-                fns.append(fn)
+        fns.append("{}.ecsv".format(outroot))
+        if not args.log_stdout:
+            fns.append("{}.log".format(outroot))
+    fns = [fn for fn in fns if os.path.isfile(fn)]
     if len(fns) > 0:
         msg = "the following file(s) already exist(s); delete beforehand\n{}".format(
             "\n".join(["\t{}".format(fn) for fn in fns])

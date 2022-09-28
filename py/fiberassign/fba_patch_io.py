@@ -51,17 +51,21 @@ def get_tileid_from_fafn(fafn):
     return int(os.path.basename(fafn)[12:18])
 
 
-def get_fafns_to_check(fa_srcdir, debug=False):
+def get_fafns_to_check(fa_srcdir, skip_subdirs=None, only_subdirs=None, only_tileids=None, debug=False):
     """
     List of fiberassign files to check for patching diagnosis.
 
     Args:
         fa_srcdir: source folder for input fiberassign files (str)
-        fasource: "svn" only for now (str)
+        skip_subdirs (optional, defaults to None): comma-separated list of subdirs (e.g., '000,001') to skip (str)
+        only_subdirs (optional, defaults to None): comma-separated list of subdirs (e.g., '000,001') to restrict to (str)
+        only_tileids (optional, defaults to None): comma-separated list of tileids (e.g. '82405,82406') to restrict to (str)
         debug (optional, defaults to False): if set, picks one fiberassign file per FAFLAVOR (bool)
 
     Returns:
         fafns: list of fiberassign files to check (np.array())
+        tileids: corresponding tileids (np.array())
+        subdirs: corresponding subdirs (np.array())
 
     Notes:
         The function will look for {fa_srcdir}/???/fiberassign-??????.fits.gz files.
@@ -76,12 +80,15 @@ def get_fafns_to_check(fa_srcdir, debug=False):
             )
         )
     )
-    log.info("start with {} fiberassign-TILEID.fits* files".format(fafns.size))
     tileids = np.array([get_tileid_from_fafn(fafn) for fafn in fafns])
+    subdirs = np.array(["{:06d}".format(tileid)[:3] for tileid in tileids])
+    log.info("start with {} fiberassign-TILEID.fits* files".format(fafns.size))
+
     # AR 50000 <= TILEID < 80000
     reject = (tileids >= 50000) & (tileids < 80000)
     log.info("reject {} tiles with 50000 <= TILEID < 80000".format(reject.sum()))
-    fafns, tileids = fafns[~reject], tileids[~reject]
+    fafns, tileids, subdirs = fafns[~reject], tileids[~reject], subdirs[~reject]
+
     # AR 82248 <= TILEID < 82258
     reject = (tileids >= 82248) & (tileids < 82258)
     log.info(
@@ -89,9 +96,46 @@ def get_fafns_to_check(fa_srcdir, debug=False):
             reject.sum()
         )
     )
-    fafns, tileids = fafns[~reject], tileids[~reject]
+    fafns, tileids, subdirs = fafns[~reject], tileids[~reject], subdirs[~reject]
     # AR
     log.info("keep {} tiles".format(fafns.size))
+
+    # AR skip subdirs?
+    if skip_subdirs is not None:
+        reject = np.zeros(len(fafns), dtype=bool)
+        for subdir in skip_subdirs.split(","):
+            reject_i = subdirs == subdir
+            reject |= reject_i
+            log.info(
+                "{}\tremove {} fiberassign files, as per skip_subdirs".format(
+                    subdir, reject_i.sum()
+                )
+            )
+        fafns, tileids, subdirs = fafns[~reject], tileids[~reject], subdirs[~reject]
+
+    # AR only subdirs?
+    if only_subdirs is not None:
+        sel = np.zeros(len(fafns), dtype=bool)
+        for subdir in only_subdirs.split(","):
+            sel_i = subdirs == subdir
+            sel |= sel_i
+            log.info(
+                "{}\trestrict to {} fiberassign files, as per only_subdirs".format(
+                    subdir, sel_i.sum()
+                )
+            )
+        fafns, tileids, subdirs = fafns[sel], tileids[sel], subdirs[sel]
+
+    # AR only tileids?
+    if only_tileids is not None:
+        sel = np.in1d(tileids, [int(tileid) for tileid in only_tileids.split(",")])
+        log.info(
+            "{}\trestrict to {} fiberassign files, as per only_tileids".format(
+                subdir, sel.sum()
+            )
+        )
+        fafns, tileids, subdirs = fafns[sel], tileids[sel], subdirs[sel]
+
     # AR debug: pick one tileid per faflavor
     if debug:
         d = Table.read(
@@ -106,9 +150,18 @@ def get_fafns_to_check(fa_srcdir, debug=False):
             log.warning(
                 "debug: only {} / {} FAFLAVORs picked".format(sel.sum(), ii.size),
             )
-        fafns, tileids = fafns[sel], tileids[sel]
+        fafns, tileids, subdirs = fafns[sel], tileids[sel], subdirs[sel]
         log.warning("debug: keep {} tiles".format(fafns.size))
-    return fafns
+
+    # AR what is left
+    for subdir in np.unique(subdirs):
+        log.info(
+            "{}\tworking with {} fiberassign files".format(
+                subdir, (subdirs == subdir).sum()
+            )
+        )
+
+    return fafns, tileids, subdirs
 
 
 # AR name: targ, sky, gfa, scnd, too
