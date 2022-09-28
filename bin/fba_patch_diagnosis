@@ -2,12 +2,9 @@
 
 import os
 import numpy as np
-import fitsio
-from astropy.table import Table, vstack
-from desitarget.geomask import match, pixarea2nside
+from astropy.table import vstack
 from fiberassign.utils import Logger
 from fiberassign.fba_patch_io import (
-    get_tileid_from_fafn,
     get_fafns_to_check,
     diagnose_values_fafn,
     diagnose_columns_fafn,
