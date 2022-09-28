@@ -26,11 +26,10 @@ np.random.seed(1234)
 def get_parse():
     parser = ArgumentParser()
     parser.add_argument(
-        "--fasource",
-        help="source for fiberassign files (default=svn)",
-        choices=["svn"],
+        "--fa_srcdir",
+        help="source folder for input fiberassign files (default=$DESI_TARGET/fiberassign/tiles/trunk)",
         type=str,
-        default="svn",
+        default=None,
     )
     parser.add_argument(
         "--outdir",
@@ -83,6 +82,8 @@ def get_parse():
         help="log to stdout instead of redirecting to a file",
     )
     args = parser.parse_args()
+    if args.fa_srcdir is None:
+        args.fa_srcdir = os.path.join(os.getenv("DESI_TARGET"), "fiberassign", "tiles", "trunk")
     for kwargs in args._get_kwargs():
         log.info("{} = {}".format(kwargs[0], kwargs[1]))
     return args
@@ -124,8 +125,7 @@ def main():
         log.info("Patching with: {} = {}".format(key, params[key]))
 
     # AR fiberassign files
-    fafns = get_fafns_to_check(args.fasource, debug=args.debug)
-    fa_base = os.path.sep.join(fafns[0].split(os.path.sep)[:-2])
+    fafns = get_fafns_to_check(args.fa_srcdir, debug=args.debug)
     # AR shuffle so that the same healpix pixels are not hit at the same time..
     ii = np.random.choice(len(fafns), size=len(fafns), replace=False)
     fafns = fafns[ii]
@@ -190,9 +190,6 @@ def main():
     # AR then run
     myargs = []
     for fafn, tileid in zip(fafns, tileids):
-        if not fafn.startswith(fa_base):
-            print("All input filenames must start with fa_base = ", fa_base)
-            return -1
         outfn = os.path.join(
             args.outdir, "{:06d}".format(tileid)[:3], os.path.basename(fafn)
         )

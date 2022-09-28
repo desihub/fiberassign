@@ -51,31 +51,31 @@ def get_tileid_from_fafn(fafn):
     return int(os.path.basename(fafn)[12:18])
 
 
-def get_fafns_to_check(fasource, debug=False):
+def get_fafns_to_check(fa_srcdir, debug=False):
     """
     List of fiberassign files to check for patching diagnosis.
 
     Args:
+        fa_srcdir: source folder for input fiberassign files (str)
         fasource: "svn" only for now (str)
         debug (optional, defaults to False): if set, picks one fiberassign file per FAFLAVOR (bool)
 
     Returns:
         fafns: list of fiberassign files to check (np.array())
+
+    Notes:
+        The function will look for {fa_srcdir}/???/fiberassign-??????.fits.gz files.
     """
-    log.info("fasource = {}".format(fasource))
-    if fasource == "svn":
-        fafns = np.sort(
-            glob(
-                os.path.join(
-                    os.getenv("DESI_TARGET"),
-                    "fiberassign",
-                    "tiles",
-                    "trunk",
-                    "???",
-                    "fiberassign-??????.fits*",
-                )
+    log.info("fa_srcdir = {}".format(fa_srcdir))
+    fafns = np.sort(
+        glob(
+            os.path.join(
+                fa_srcdir,
+                "???",
+                "fiberassign-??????.fits*",
             )
         )
+    )
     log.info("start with {} fiberassign-TILEID.fits* files".format(fafns.size))
     tileids = np.array([get_tileid_from_fafn(fafn) for fafn in fafns])
     # AR 50000 <= TILEID < 80000
