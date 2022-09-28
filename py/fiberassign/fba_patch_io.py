@@ -750,6 +750,42 @@ def get_black_keys(name, fafn):
     return black_keys
 
 
+def arrays_equal(key, tileid, a, b):
+    """
+    Function to test for equality between arrays -- both being non-finite (eg NaN) counts as equal.
+
+    Args:
+        a: 1D np.array()
+        b: 1D np.array()
+    """
+    bothnan = False
+    try:
+        bothnan = np.logical_not(np.isfinite(a)) * np.logical_not(np.isfinite(b))
+    except:
+        pass
+    # AR PARALLAX,PMRA,PMDEC
+    # AR - for some 'specialm31', 'sv1dc3r2' tiles, format change in desitarget (dtype= ">f8" or ">f4")
+    # AR - else discrepancy in formatting between fiberassign and desitarget
+    # AR        (makes difference <= 5e9; we pick 1e8 for simplicity)
+    if key in ["PARALLAX", "PMRA", "PMDEC"]:
+        if tileid in [
+            80971,
+            80972,
+            80973,
+            80974,
+            80975,
+            80976,
+            82634,
+            82635,
+        ]:
+            eq = np.abs(a - b) < 1e-6
+        else:
+            eq = np.abs(a - b) < 1e-8
+    else:
+        eq = a == b
+    return np.logical_or(eq, bothnan)
+
+
 # AR shall not use Table.read() ! (it messes up things... with "masking" some columns)
 def diagnose_values_fafn(fafn):
     """
@@ -884,35 +920,19 @@ def diagnose_values_fafn(fafn):
                 )
 
                 for key in check_keys:
-                    sel = np.zeros(len(fa_name), dtype=bool)
                     # AR common key?
                     if key in d_name.dtype.names:
-                        # AR PARALLAX,PMRA,PMDEC
-                        # AR - for some 'specialm31', 'sv1dc3r2' tiles, format change in desitarget (dtype= ">f8" or ">f4")
-                        # AR - else discrepancy in formatting between fiberassign and desitarget
-                        # AR        (makes difference <= 5e9; we pick 1e8 for simplicity)
-                        if key in ["PARALLAX", "PMRA", "PMDEC"]:
-                            if tileid in [
-                                80971,
-                                80972,
-                                80973,
-                                80974,
-                                80975,
-                                80976,
-                                82634,
-                                82635,
-                            ]:
-                                sel |= np.abs(fa_name[key] - d_name[key]) > 1e-6
-                            else:
-                                sel |= np.abs(fa_name[key] - d_name[key]) > 1e-8
+                        ignore = np.zeros(len(fa_name), dtype=bool)
+                        # AR PMRA,PMDEC:
+                        # - ignore if nan in desitarget and 0 in fa
+                        if key in ["PMRA", "PMDEC"]:
+                            ignore = (~np.isfinite(d_name[key])) & (fa_name[key] == 0.0)
                         # AR RA,DEC:
                         # AR - check only for rows with:
                         # AR    - no proper-motion correction
                         # AR    - no dithering
-                        elif key in ["RA", "DEC"]:
-                            ignore = ispmcorr.copy()
-                            ignore |= isdith
-                            sel |= (fa_name[key] != d_name[key]) & (~ignore)
+                        if key in ["RA", "DEC"]:
+                            ignore = (ispmcorr) | (isdith)
                         # AR REF_EPOCH:
                         # AR - if some pmcorr, REF_EPOCH updated for all rows (except for iscmx33std)
                         # AR - ignore cases where fiberassign changed 0 to 2015.5
@@ -921,7 +941,7 @@ def diagnose_values_fafn(fafn):
                         # AR        changed to REF_EPOCH=2015.5 in fiberassign; but then the ToO.ecsv
                         # AR        got overwritten, with updated rows having REF_EPOCH=2000)
                         # AR - same story for 80980-80981 and $DESI_SURVEYOPS/mtl/main/ToO/ToO.ecsv
-                        elif key == "REF_EPOCH":
+                        if key == "REF_EPOCH":
                             if ispmcorr.sum() > 0:
                                 ignore = (~iscmx33std).copy()
                             else:
@@ -934,25 +954,15 @@ def diagnose_values_fafn(fafn):
                                     ignore |= (d_name[key] == 2000) & (
                                         fa_name[key] == 2015.5
                                     )
-                            sel |= (fa_name[key] != d_name[key]) & (~ignore)
-                        # AR other keys
-                        else:
-                            sel |= fa_name[key] != d_name[key]
-                        # AR GAIA_PHOT_{BP,RP}_MEAN_{FLUX_OVER_ERROR,MAG}:
-                        # AR - those columns can have nan...
-                        if key in [
-                            "GAIA_PHOT_BP_MEAN_FLUX_OVER_ERROR",
-                            "GAIA_PHOT_RP_MEAN_FLUX_OVER_ERROR",
-                            "GAIA_PHOT_BP_MEAN_MAG",
-                            "GAIA_PHOT_RP_MEAN_MAG",
-                        ]:
-                            sel &= np.isfinite(d_name[key])
+                        # AR
+                        iseq = arrays_equal(key, tileid, d_name[key], fa_name[key])
+                        sel = (~iseq) & (~ignore)
                     # AR if not, then it should be zero (we already excluded fba-only keys)
                     else:
                         if isinstance(fa_name[key][0], str):
-                            sel |= fa_name[key] != ""
+                            sel = fa_name[key] != ""
                         else:
-                            sel |= fa_name[key] != 0
+                            sel = fa_name[key] != 0
                     n = sel.sum()
                     extname_diffs[key] = n
                     # log.info("{:06d}\t{}\t{}\tkey = {} -> {} discrepancies".format(tileid, ext.ljust(11), name, key, n))
@@ -1184,38 +1194,6 @@ def get_patching_params(fn="patching_202210.yaml"):
         params = yaml.safe_load(f)
     f.close()
     return params
-
-
-def arrays_equal(col, tileid, a, b):
-    """
-    Function to test for equality between arrays -- both being non-finite (eg NaN) counts as equal.
-
-    Args:
-        a: 1D np.array()
-        b: 1D np.array()
-    """
-    bothnan = False
-    try:
-        bothnan = np.logical_not(np.isfinite(a)) * np.logical_not(np.isfinite(b))
-    except:
-        pass
-    if col == "PARALLAX":
-        if tileid in [
-            80971,
-            80972,
-            80973,
-            80974,
-            80975,
-            80976,
-            82634,
-            82635,
-        ]:
-            eq = np.abs(a - b) < 1e-6
-        else:
-            eq = np.abs(a - b) < 1e-8
-    else:
-        eq = a == b
-    return np.logical_or(eq, bothnan)
 
 
 def patch(in_fafn, out_fafn, params_fn):
