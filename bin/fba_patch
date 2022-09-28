@@ -91,8 +91,6 @@ def get_parse():
 
 def _patch_subdir(outdir, subdir, fafns, params_fn, numproc):
 
-    outecsv = os.path.join(outdir, "patch-{}.ecsv".format(subdir))
-
     tileids = np.array([get_tileid_from_fafn(fafn) for fafn in fafns])
     subdirs = np.array(["{:06d}".format(tileid)[:3] for tileid in tileids])
     sel = subdirs == subdir
