@@ -480,7 +480,6 @@ def get_dith_infos(ext, name, fafn, fa_name):
             fa_undith = h["EXTRA"].data
             sel = np.in1d(fa_name["TARGETID"], fa_undith["TARGETID"])
             isdith[sel] = True
-            print(name, sel.sum())
     log.info(
         "{:06d}\t{}\t{}\tdith: found {} rows".format(
             fahdr["TILEID"], ext.ljust(11), name.upper(), isdith.sum()
@@ -1377,7 +1376,8 @@ def patch(in_fafn, out_fafn, params_fn):
 
         # AR store in patched/added_tables the fixed/added table
         patched_tables[ext] = tab
-        added_tables[ext] = addtab
+        if len(added_cols) > 0:
+            added_tables[ext] = addtab
 
         # AR there should not be duplicates in ii_match
         n_match = len(ii_match)
