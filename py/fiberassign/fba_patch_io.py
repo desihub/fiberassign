@@ -131,7 +131,7 @@ def get_fafns_to_check(fa_srcdir, skip_subdirs=None, only_subdirs=None, only_til
         sel = np.in1d(tileids, [int(tileid) for tileid in only_tileids.split(",")])
         log.info(
             "{}\trestrict to {} fiberassign files, as per only_tileids".format(
-                subdir, sel.sum()
+                only_tileids, sel.sum()
             )
         )
         fafns, tileids, subdirs = fafns[sel], tileids[sel], subdirs[sel]
