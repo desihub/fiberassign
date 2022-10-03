@@ -716,7 +716,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--custom_too_file",
-        help="full path to a custom ToO file, for tertiary program or development work, which overrides the official one (default=None)",
+        help="full path to a custom ToO file, or a comma-separated list of custom ToO files, for tertiary program or development work, which overrides the official one (default=None)",
         type=str,
         default=None,
     )
