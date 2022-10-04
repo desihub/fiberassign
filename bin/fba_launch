@@ -71,6 +71,14 @@ def main():
     start = time()
     log.info("{:.1f}s\tstart\tTIMESTAMP={}".format(time() - start, Time.now().isot))
 
+    # AR if for development, print it big at the beginning
+    if args.custom_too_development:
+        log.warning("")
+        log.warning("\t\t================================================================================================")
+        log.warning("\t\t================================= THIS IS FOR DEVELOPMENT ONLY =================================")
+        log.warning("\t\t================================================================================================")
+        log.warning("")
+
     # AR rundate: if None, set to the latest time
     # AR    in the latest desi-state*ecsv file
     if args.rundate is None:
@@ -196,6 +204,7 @@ def main():
         dr=args.dr,
         gaiadr=args.gaiadr,
         custom_too_file=args.custom_too_file,
+        custom_too_development=args.custom_too_development,
         log=log,
         step="settings",
         start=start,
@@ -719,6 +728,12 @@ if __name__ == "__main__":
         help="full path to a custom ToO file, or a comma-separated list of custom ToO files, for tertiary program or development work, which overrides the official one (default=None)",
         type=str,
         default=None,
+    )
+    parser.add_argument(
+        "--custom_too_development",
+        help="is this for development? (allows args.custom_too_file to be outside of $DESI_SURVEYOPS)",
+        action="store_true",
+        default=False,
     )
 
     args = parser.parse_args()

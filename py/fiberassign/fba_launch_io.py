@@ -820,6 +820,7 @@ def get_desitarget_paths(
     dr="dr9",
     gaiadr="gaiadr2",
     custom_too_file=None,
+    custom_too_development=False,
     log=Logger.get(),
     step="settings",
     start=time(),
@@ -837,7 +838,8 @@ def get_desitarget_paths(
                 (boolean)
         dr (optional, defaults to "dr9"): legacypipe dr (string)
         gaiadr (optional, defaults to "gaiadr2"): gaia dr (string)
-        custom_too_file (default=None): full path to a custom ToO file, for development work, which overrides the official one (string)
+        custom_too_file (optional, default=None): full path to a custom ToO file, for development work, which overrides the official one (string)
+        custom_too_development (optional, defaults to False): is this for development? (allows custom_too_file to be outside of $DESI_SURVEYOPS) (bool)
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -862,6 +864,7 @@ def get_desitarget_paths(
         20210917 : secondary -> add all existing folders (e.g., main2/) (backward-compatible change)
         20220318 : add custom_too_file optional argument
         20220421 : add too_tile optional argument
+        20221004 : add custom_too_development optional argument
     """
     # AR expected survey, program?
     exp_surveys = ["sv1", "sv2", "sv3", "main"]
@@ -985,6 +988,23 @@ def get_desitarget_paths(
                 time() - start, step, custom_too_file,
             )
         )
+        # AR check custom ToO file(s) exist + are in $DESI_SURVEYOPS, if not custom_too_development
+        if custom_too_development:
+            log.info("{:.1f}s\t{}\tcustom_too_development=True, no check that custom_too_file(s) are in $DESI_SURVEYOPS".format(
+                time() - start, step,
+                )
+            )
+        for fn in custom_too_file.split(","):
+            msg = None
+            if not os.path.isfile(fn):
+                msg = "{:.1f}s\t{}\t{} does not exist".format(time() - start, step, fn)
+            if (not custom_too_development) & (not fn.startswith(os.getenv("DESI_SURVEYOPS"))):
+                msg = "{:.1f}s\t{}\t{} does not starts with {}; set custom_too_development=True if this is for development".format(
+                    time() - start, step, fn, os.getenv("DESI_SURVEYOPS"),
+                )
+            if msg is not None:
+                log.error(msg)
+                raise ValueError(msg)
 
     return mydirs
 
@@ -1748,7 +1768,7 @@ def create_too(
     d = vstack(ds)
 
     # AR number of kept ToOs
-    log.info("{:.1f}s\t{}\tkeeping {} targets from {} files".format(time() - start, step, len(d), len(ds)))
+    log.info("{:.1f}s\t{}\tkeeping {} targets from {} file(s)".format(time() - start, step, len(d), len(ds)))
 
     # AR execute this part on the stacked catalog (in case of multiple ToO files,
     # AR separate REF_EPOCH check on individual files could lead to undesired
