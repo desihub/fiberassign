@@ -1416,16 +1416,28 @@ def patch(in_fafn, out_fafn, params_fn):
         f, tempout = tempfile.mkstemp(dir=outdir, suffix=".fits")
         os.close(f)
         Fout = fitsio.FITS(tempout, "rw", clobber=True)
+        # DL/AR fitsio will add its own headers about the FITS format
+        # DL/AR     so we do not propagate those
+        # AR    note that some tiles (mostly dithers) have twice these comments
+        # AR        so we only "remove them once"...
+        # AR    also, we remove specifically those comments, as other meaningful
+        # AR    information can be stored in the COMMENT keywords (see e.g. TILEID=80611)
+        comment2trims = [
+            "  FITS (Flexible Image Transport System) format is defined in 'Astronomy",
+            "  and Astrophysics', volume 376, page 359; bibcode: 2001A&A...376..359H",
+        ]
         for ext in F:
             extname = ext.get_extname()
             hdr = ext.read_header()
             data = ext.read()
             if extname == "PRIMARY":
-                # fitsio will add its own headers about the FITS format, so trim out all COMMENT cards.
                 newhdr = fitsio.FITSHDR()
+                istrim = {comment2trim : False for comment2trim in comment2trims}
                 for r in hdr.records():
-                    if r["name"] == "COMMENT":
-                        continue
+                    if (r["name"] == "COMMENT") & (r["comment"] in comment2trims):
+                        if ~istrim[r["comment"]]:
+                            istrim[r["comment"]] = True
+                            continue
                     newhdr.add_record(r)
                 hdr = newhdr
             if extname in patched_tables:
