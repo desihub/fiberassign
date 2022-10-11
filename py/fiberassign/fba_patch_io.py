@@ -1413,7 +1413,7 @@ def patch(in_fafn, out_fafn, params_fn):
             os.makedirs(outdir)
 
         # DL write out output file, leaving other HDUs unchanged.
-        f, tempout = tempfile.mkstemp(dir=outdir, suffix=".fits")
+        f, tempout = tempfile.mkstemp(dir=outdir, suffix=".fits.gz")
         os.close(f)
         Fout = fitsio.FITS(tempout, "rw", clobber=True)
         # DL/AR fitsio will add its own headers about the FITS format
