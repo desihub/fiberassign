@@ -6,7 +6,7 @@ from glob import glob
 import tempfile
 import yaml
 from pkg_resources import resource_filename
-from datetime import datetime
+from datetime import datetime, timezone
 import numpy as np
 import fitsio
 import healpy as hp
@@ -19,6 +19,7 @@ from desitarget.geomask import match, pixarea2nside
 from desitarget.io import read_targets_in_tiles
 from desitarget.targetmask import obsconditions
 from desitarget.gaiamatch import gaia_psflike
+import fiberassign
 from fiberassign.assign import merged_fiberassign_swap
 from desitarget.targets import main_cmx_or_sv
 from fiberassign.utils import Logger
@@ -1439,6 +1440,12 @@ def patch(in_fafn, out_fafn, params_fn):
                             continue
                     newhdr.add_record(r)
                 hdr = newhdr
+                # AR add patching info for the record
+                hdr["COMMENT"] = "Patched on {} (FA_VER={}, params_fn={})".format(
+                    datetime.now(tz=timezone.utc).isoformat(timespec="seconds"),
+                    fiberassign.__version__,
+                    params_fn,
+                )
             if extname in patched_tables:
                 # Swap in our updated FIBERASSIGN table!
                 if extname in added_tables:
