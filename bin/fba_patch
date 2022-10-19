@@ -1,0 +1,177 @@
+#!/usr/bin/env python
+
+import os
+import numpy as np
+from fiberassign.utils import Logger
+from fiberassign.fba_patch_io import (
+    get_fafns_to_check,
+    get_tileid_from_fafn,
+    get_patching_params,
+    patch,
+)
+from desiutil.redirect import stdouterr_redirected
+import multiprocessing
+from argparse import ArgumentParser
+
+
+log = Logger.get()
+np.random.seed(1234)
+
+
+def get_parse():
+    parser = ArgumentParser()
+    parser.add_argument(
+        "--fa_srcdir",
+        help="source folder for input fiberassign files (default=$DESI_TARGET/fiberassign/tiles/trunk)",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--outdir",
+        help="output directory",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--patching_params_fn",
+        help="path to a .yaml file with fixcols, addcols, populate_ebv (see fiberassign/data/patching_202210) (default='patching_202210.yaml')",
+        type=str,
+        default="patching_202210.yaml",
+    )
+    parser.add_argument(
+        "--patching_root",
+        help="if any, patching infos will be stored in files like fiberassign-TILEID-PATCHING_ROOT.ecsv (default='patching_202210')",
+        type=str,
+        default="patching_202210",
+    )
+    parser.add_argument(
+        "--numproc",
+        help="number of parallel processes (default=1) (suggestion: cori=64, perlmutter=128)",
+        type=int,
+        default=1,
+    )
+    parser.add_argument(
+        "--skip_subdirs",
+        help="comma-separated list of subdirs (e.g., '000,001') to skip (default=None)",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--only_subdirs",
+        help="comma-separated list of subdirs (e.g., '000,001') to restrict to (default=None)",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--only_tileids",
+        help="comma-separated list of tileids to process (e.g. '82405,82406') (default=None)",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--debug", action="store_true", help="only pick few tiles for debugging"
+    )
+    parser.add_argument(
+        "--log_stdout",
+        action="store_true",
+        help="log to stdout instead of redirecting to a file",
+    )
+    args = parser.parse_args()
+    if args.fa_srcdir is None:
+        args.fa_srcdir = os.path.join(os.getenv("DESI_TARGET"), "fiberassign", "tiles", "trunk")
+    for kwargs in args._get_kwargs():
+        log.info("{} = {}".format(kwargs[0], kwargs[1]))
+    return args
+
+
+def _patch_subdir(outdir, subdir, fafns, params_fn, numproc):
+
+    tileids = np.array([get_tileid_from_fafn(fafn) for fafn in fafns])
+    subdirs = np.array(["{:06d}".format(tileid)[:3] for tileid in tileids])
+    sel = subdirs == subdir
+
+    log.info("launch patch() via pool for {} fiberassign files".format(sel.sum()))
+
+    myargs = []
+    for fafn, tileid in zip(fafns[sel], tileids[sel]):
+        outfn = os.path.join(
+            outdir, "{:06d}".format(tileid)[:3], os.path.basename(fafn)
+        )
+        myargs.append([fafn, outfn, params_fn])
+
+    if numproc > 1:
+        pool = multiprocessing.Pool(processes=numproc)
+        with pool:
+            _ = pool.starmap(patch, myargs)
+    else:
+        _ = [patch(*myarg) for myarg in myargs]
+    log.info("pool done")
+
+
+def main():
+
+    args = get_parse()
+
+    # AR patching params
+    params = get_patching_params(fn=args.patching_params_fn)
+    for key in ["patching_root", "fixcols", "addcols", "populate_ebv"]:
+        log.info("Patching with: {} = {}".format(key, params[key]))
+
+    # AR fiberassign files
+    fafns, tileids, subdirs = get_fafns_to_check(
+        args.fa_srcdir,
+        skip_subdirs=args.skip_subdirs,
+        only_subdirs=args.only_subdirs,
+        only_tileids=args.only_tileids,
+        debug=args.debug,
+    )
+    # AR shuffle so that the same healpix pixels are not hit at the same time..
+    ii = np.random.choice(len(fafns), size=len(fafns), replace=False)
+    fafns, tileids, subdirs = fafns[ii], tileids[ii], subdirs[ii]
+
+    # AR first check that no output files already exist
+    fns = []
+    for fafn, tileid in zip(fafns, tileids):
+        fn = os.path.join(
+            args.outdir, "{:06d}".format(tileid)[:3], os.path.basename(fafn)
+        )
+        fns.append(fn)
+        fns.append(fn.replace(".fits.gz", "-{}.ecsv".format(params["patching_root"])))
+    if not args.log_stdout:
+        for subdir in np.unique(subdirs):
+            fns.append(os.path.join(args.outdir, "patch-{}.log".format(subdir)))
+    fns = [fn for fn in fns if os.path.isfile(fn)]
+    if len(fns) > 0:
+        msg = "the following file(s) already exist(s); delete beforehand\n{}".format(
+            "\n".join(["\t{}".format(fn) for fn in fns])
+        )
+        log.error(msg)
+        raise IOError(msg)
+
+    # AR then run
+    myargs = []
+    for fafn, tileid in zip(fafns, tileids):
+        outfn = os.path.join(
+            args.outdir, "{:06d}".format(tileid)[:3], os.path.basename(fafn)
+        )
+        myargs.append([fafn, outfn])
+
+    for subdir in np.unique(subdirs):
+        outlog = os.path.join(args.outdir, "patch-{}.log".format(subdir))
+        myarg = [
+            args.outdir,
+            subdir,
+            fafns,
+            args.patching_params_fn,
+            args.numproc,
+        ]
+        if args.log_stdout:
+            _patch_subdir(*myarg)
+        else:
+            with stdouterr_redirected(to=outlog):
+                _patch_subdir(*myarg)
+
+
+if __name__ == "__main__":
+
+    main()

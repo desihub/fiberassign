@@ -1,0 +1,21 @@
+patching_root: "patching_202210"
+fixcols: {
+    "FIBERASSIGN": [
+        "BRICKID", "BRICKNAME", "BRICK_OBJID",
+        "FLUX_G", "FLUX_R", "FLUX_Z",
+        "FLUX_IVAR_G", "FLUX_IVAR_R", "FLUX_IVAR_Z",
+        "GAIA_PHOT_BP_MEAN_MAG", "GAIA_PHOT_G_MEAN_MAG",
+        "GAIA_PHOT_RP_MEAN_MAG", "HPXPIXEL", "MASKBITS", "MORPHTYPE",
+        "PARALLAX", "REF_CAT", "REF_ID", "RELEASE",
+        "SV3_DESI_TARGET", "SV3_SCND_TARGET",
+        ],
+    "TARGETS": [
+        "BRICKID", "BRICKNAME", "BRICK_OBJID", "HPXPIXEL", "RELEASE", "SV3_DESI_TARGET", "SV3_SCND_TARGET",
+    ]
+}
+addcols: {
+    "FIBERASSIGN": [["FLUX_IVAR_W1", ">f4"], ["FLUX_IVAR_W2", ">f4"]],
+}
+populate_ebv: {
+    "FIBERASSIGN": True,
+}
