@@ -1409,8 +1409,7 @@ def patch(in_fafn, out_fafn, params_fn):
     if len(myd["TARGETID"]) > 0:
         # DL make sure output directory exists
         outdir = os.path.dirname(out_fafn)
-        if not os.path.exists(outdir):
-            os.makedirs(outdir)
+        os.makedirs(outdir, exist_ok=True)
 
         # DL write out output file, leaving other HDUs unchanged.
         f, tempout = tempfile.mkstemp(dir=outdir, suffix=".fits.gz")
