@@ -9,6 +9,7 @@ Functions for loading the target list
 """
 from __future__ import absolute_import, division, print_function
 
+import sys
 import numpy as np
 
 import fitsio
@@ -243,6 +244,8 @@ def default_main_stdmask(rundate=None):
                     if rundate < 2021-10-01T19:00:00+00:00, we include STD_WD in the stdmask
                     to preserve backward-compatibility.
     """
+    log = Logger.get()
+
     stdmask = 0
     stdmask |= desi_mask["STD_FAINT"].mask
     stdmask |= desi_mask["STD_BRIGHT"].mask
@@ -253,27 +256,16 @@ def default_main_stdmask(rundate=None):
     use_wd = False
     if rundate is not None:
         if not assert_isoformat_utc(rundate):
-            print(
-                "provided rundate={} does not follow the expected formatting (yyyy-mm-ddThh:mm:ss+00:00); exiting".format(
-                    rundate,
-                )
-            )
+            log.info("provided rundate={} does not follow the expected formatting (yyyy-mm-ddThh:mm:ss+00:00); exiting".format(rundate))
             sys.exit(1)
         rundate_mjd = Time(datetime.strptime(rundate, "%Y-%m-%dT%H:%M:%S%z")).mjd
         if rundate_mjd < rundate_mjd_cutoff:
             use_wd = True
     if use_wd:
         stdmask |= desi_mask["STD_WD"].mask
-        print(
-            "rundate = {} is before rundate_cutoff_std_wd = {}, so STD_WD are counted as TARGET_TYPE_STANDARD".format(
-                rundate, rundate_cutoff,
-            )
-        )
+        log.info("rundate = {} is before rundate_cutoff_std_wd = {}, so STD_WD are counted as TARGET_TYPE_STANDARD".format(rundate, rundate_cutoff))
     else:
-        print("rundate = {} is after rundate_cutoff_std_wd = {}, so STD_WD are *not* counted as TARGET_TYPE_STANDARD".format(
-                rundate, rundate_cutoff,
-            )
-        )
+        log.info("rundate = {} is after rundate_cutoff_std_wd = {}, so STD_WD are *not* counted as TARGET_TYPE_STANDARD".format(rundate, rundate_cutoff))
     return stdmask
 
 def default_main_gaia_stdmask():
@@ -806,6 +798,9 @@ def append_target_table(tgs, tagalong, tgdata, survey, typeforce, typecol,
         None
 
     """
+
+    log = Logger.get()
+
     validtypes = [
         TARGET_TYPE_SCIENCE,
         TARGET_TYPE_SKY,
@@ -893,7 +888,7 @@ def append_target_table(tgs, tagalong, tgdata, survey, typeforce, typecol,
             'FA_TARGET': d_bits,
             'OBSCOND': d_obscond}
     if not 'PLATE_RA' in tgdata.dtype.fields:
-        print('Warning: no PLATE_RA, PLATE_DEC in target file; using RA,DEC or TARGET_RA,DEC')
+        log.info('Warning: no PLATE_RA, PLATE_DEC in target file; using RA,DEC or TARGET_RA,DEC')
         fake.update({'PLATE_RA': d_ra,
                      'PLATE_DEC': d_dec,})
     tagalong.add_data(d_targetid, tgdata, fake=fake)
@@ -1039,8 +1034,7 @@ def load_target_table(tgs, tagalong, tgdata, survey=None, typeforce=None, typeco
     if gaia_stdmask is None:
         gaia_stdmask = fgaia_stdmask
 
-    log.debug("Target table using survey '{}', column {}:".format(
-        survey, typecol))
+    log.debug("Target table using survey '{}', column {}:".format(survey, typecol))
     if survey == "main":
         log.debug("  sciencemask {}".format(
             "|".join(desi_mask.names(sciencemask))))
@@ -1104,7 +1098,7 @@ def load_target_table(tgs, tagalong, tgdata, survey=None, typeforce=None, typeco
             "|".join(sv3_mask.names(stdmask))))
         log.debug("  skymask     {}".format(
             "|".join(sv3_mask.names(skymask))))
-        log.debug("  suppskymask     {}".format(                                                                                                              
+        log.debug("  suppskymask     {}".format(
             "|".join(sv3_mask.names(suppskymask))))
         log.debug("  safemask    {}".format(
             "|".join(sv3_mask.names(safemask))))
@@ -1170,8 +1164,7 @@ def load_target_file(tgs, tagalong, tfile, survey=None, typeforce=None, typecol=
 
     # Total number of rows
     nrows = fits[1].get_nrows()
-    log.info("Target file {} has {} rows.  Reading in chunks of {}"
-             .format(tfile, nrows, rowbuffer))
+    log.info("Target file {} has {} rows.  Reading in chunks of {}".format(tfile, nrows, rowbuffer))
 
     header = fits[1].read_header()
     if survey is None:
@@ -1183,9 +1176,8 @@ def load_target_file(tgs, tagalong, tfile, survey=None, typeforce=None, typecol=
     while offset < nrows:
         if offset + n > nrows:
             n = nrows - offset
-        data = fits[1].read(rows=np.arange(offset, offset+n, dtype=np.int64))
-        log.debug("Target file {} read rows {} - {}"
-                  .format(tfile, offset, offset+n-1))
+        data = fits[1].read(rows=np.arange(offset, offset + n, dtype=np.int64))
+        log.debug("Target file {} read rows {} - {}".format(tfile, offset, offset + n - 1))
         load_target_table(tgs, tagalong, data, survey=survey,
                           typeforce=typeforce,
                           typecol=typecol,
@@ -1209,6 +1201,9 @@ def targets_in_tiles(hw, tgs, tiles, tagalong):
     Returns tile_targetids, tile_x, tile_y,
     which are maps from tileid to numpy arrays.
     '''
+
+    log = Logger.get()
+
     tile_targetids = {}
     tile_x = {}
     tile_y = {}
@@ -1225,7 +1220,7 @@ def targets_in_tiles(hw, tgs, tiles, tagalong):
             tiles.id, tiles.ra, tiles.dec, tiles.obscond, tiles.obshourang,
             tiles.obstheta, tiles.obstime):
 
-        print('Tile', tile_id, 'at RA,Dec', tile_ra, tile_dec, 'obscond:', tile_obscond, 'HA', tile_ha, 'obstime', tile_obstime)
+        log.info(f'Tile {tile_id} at RA,Dec {tile_ra},{tile_dec} obscond: {tile_obscond} HA: {tile_ha} obstime: {tile_obstime}')
 
         inds = _kd_query_radec(kd, tile_ra, tile_dec, hw.focalplane_radius_deg)
         match = np.flatnonzero(target_obscond[inds] & tile_obscond)
@@ -1235,7 +1230,7 @@ def targets_in_tiles(hw, tgs, tiles, tagalong):
         decs = target_dec[inds]
         tids = target_ids[inds]
         del inds
-        print('Found', len(tids), 'targets near tile and matching obscond')
+        log.info(f'Found {len(tids)} targets near tile and matching obscond')
 
         x, y = radec2xy(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta,
                         tile_ha, ras, decs, True)
