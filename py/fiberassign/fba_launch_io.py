@@ -492,9 +492,9 @@ def update_nowradec(
         keep = d["REF_EPOCH"] > 0
         # AR gaia_psflike arguments changed at desitarget-0.58.0
         if desitarget.__version__ < "0.58.0":
-            keep &= gaia_psflike(d[gaiag_key], d[gaiaaen_key])
+            keep &= gaia_psflike(d[gaiaaen_key], d[gaiag_key])
         else:
-            keep &= gaia_psflike(d[gaiag_key], d[gaiaaen_key], dr=gaiadr)
+            keep &= gaia_psflike(d[gaiaaen_key], d[gaiag_key], dr=gaiadr)
     # AR storing changes to report extrema in the log
     dra = nowra - d[ra_key]
     ddec = nowdec - d[dec_key]
