@@ -192,7 +192,7 @@ def main():
         args.dtver,
         args.survey,
         args.program,
-        args.too_tile,
+        too_tile=args.too_tile,
         dr=args.dr,
         gaiadr=args.gaiadr,
         custom_too_file=args.custom_too_file,
