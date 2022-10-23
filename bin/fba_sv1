@@ -1643,7 +1643,6 @@ def main():
             ag["tiles"] = [tileid]
             ag["columns"] = None
             ag["targets"] = [
-                troot + "-gfa.fits",
                 troot + "-targ.fits",
             ]
             if os.path.isfile(troot + "-std.fits"):
