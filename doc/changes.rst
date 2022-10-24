@@ -298,7 +298,7 @@ on 2021-04-22 before making tag.
 * Migrate from Travis to GitHub workflows (PR `#313`_).
 * Support sv1 tiles (PR `#314`_).
 * Support new desimodel focal plane state format (PR `#315`_).
-* Remove NUMOBS_INIT column in merged TARGETS table (PR `316`_).
+* Remove NUMOBS_INIT column in merged TARGETS table (PR `#316`_).
 * Restore NUMOBS_INIT from columns loaded from target files (PR `#317`_).
 * Support sv2 tiles (PR `#318`_).
 * new fba_launch wrapper script (PR `#319`_).
