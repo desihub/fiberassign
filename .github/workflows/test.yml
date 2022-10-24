@@ -88,3 +88,28 @@ jobs:
   #       run: CC=clang++ CXX=clang++ CFLAGS="-fPIC" LDSHARED="clang++ -shared -undefined dynamic_lookup" python3 -m pip install -vvv .
   #     - name: Run Tests
   #       run: python3 -c 'import fiberassign.test; fiberassign.test.runtests()'
+
+    docs:
+        name: Doc test
+        runs-on: ${{ matrix.os }}
+        strategy:
+            fail-fast: false
+            matrix:
+                os: [ubuntu-latest]
+                python-version: ['3.9']
+
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v2
+              with:
+                fetch-depth: 0
+            - name: Set up Python ${{ matrix.python-version }}
+              uses: actions/setup-python@v2
+              with:
+                python-version: ${{ matrix.python-version }}
+            - name: Install Python dependencies
+              run: python -m pip install --upgrade pip wheel Sphinx
+              # run: python -m pip install --upgrade pip wheel docutils\<0.18 Sphinx==3.1.2
+            - name: Test the documentation
+              run: sphinx-build -W --keep-going -b html doc doc/_build/html
