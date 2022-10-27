@@ -16,7 +16,7 @@ jobs:
         python-version: [3.7, 3.8]
     env:
       DESIUTIL_VERSION: 3.2.1
-      DESIMODEL_VERSION: master
+      DESIMODEL_VERSION: main
       DESIMETER_VERSION: 0.6.5
       DESIMODEL_DATA: trunk
       DESIMODEL: ${{ github.workspace }}/desimodel
