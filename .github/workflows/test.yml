@@ -33,7 +33,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install External Dependencies
-        run: python3 -m pip install --no-cache-dir wheel pyyaml scipy\<1.8 matplotlib numpy\<1.22 astropy\<5.1 fitsio healpy
+        run: python3 -m pip install --no-cache-dir wheel pyyaml requests scipy\<1.8 matplotlib numpy\<1.22 astropy\<5.1 fitsio healpy
       - name: Install desiutil
         run: python3 -m pip install --no-cache-dir git+https://github.com/desihub/desiutil.git@${{ env.DESIUTIL_VERSION }}#egg=desiutil
       - name: Install desimodel
