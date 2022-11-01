@@ -101,6 +101,20 @@ def main():
         ):
             mydict[key.replace("_", "-")] = val
 
+        # AR handling an unlikely case, where we ran fba_launch with --custom_too_tile
+        # AR    on one machine, and executing fba_rerun on another one
+        # AR    (note that we do not expect to execute fba_rerun on special tiles)
+        # AR    this command should correctly change $DESI_SURVEYOPS
+        elif key == "--custom_too_file":
+            orig_desiroot = hdr["DESIROOT"]
+            curr_desiroot = os.getenv("DESI_ROOT")
+            mydict[key] = ",".join(
+                [
+                    fn.replace(orig_desiroot, curr_desiroot)
+                    for fn in val.split(",")
+                ]
+            )
+
         else:
 
             # AR dtver
