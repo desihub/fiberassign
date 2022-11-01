@@ -325,9 +325,13 @@ def main():
     # AR 20210902: setting mjd_min = mjd_max = mjd_now
     # AR        so that we select: (d["MJD_BEGIN"] < mjd_now) & (d["MJD_END"] > mjd_now)
     if "too" in steps:
+        toofns = mydirs["too"]
+        for key in sorted(list(mydirs.keys())):
+            if (key[:3] == "too") & (key != "too"):
+                toofns += "," + mydirs[key]
         expected_files["too"] = create_too(
             mytmpouts["tiles"],
-            mydirs["too"],
+            toofns,
             mjd_now,
             mjd_now,
             args.survey,

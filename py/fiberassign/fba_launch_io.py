@@ -865,6 +865,7 @@ def get_desitarget_paths(
         20220318 : add custom_too_file optional argument
         20220421 : add too_tile optional argument
         20221004 : add custom_too_development optional argument
+        20221031 : if multiple files provided in custom_too_file, then several keys: too, too2, too3, etc
     """
     # AR expected survey, program?
     exp_surveys = ["sv1", "sv2", "sv3", "main"]
@@ -982,12 +983,22 @@ def get_desitarget_paths(
         mydirs["scndmtl"] = scndmtl
     # AR custom ToO file?
     if custom_too_file is not None:
-        mydirs["too"] = custom_too_file
         log.warning(
             "{:.1f}s\t{}\tusing custom ToO file {} -> this is for tertiary program or development only!".format(
                 time() - start, step, custom_too_file,
             )
         )
+        for i, fn in enumerate(custom_too_file.split(",")):
+            if i == 0:
+                key = "too"
+            else:
+                key = "too{}".format(i + 1)
+            mydirs[key] = fn
+            log.info(
+                "{:.1f}s\t{}\tdirectory for {}: {}".format(
+                    time() - start, step, key, fn,
+                )
+            )
         # AR check custom ToO file(s) exist + are in $DESI_SURVEYOPS, if not custom_too_development
         if custom_too_development:
             log.info("{:.1f}s\t{}\tcustom_too_development=True, no check that custom_too_file(s) are in $DESI_SURVEYOPS".format(
@@ -1614,6 +1625,7 @@ def create_too(
     # AR purposefully keep all the operations per file
     # AR (instead of stacking first), to have the detailed log messages
     # AR for each file
+    print("toofns = {}".format(toofns))
     for toofn in toofns.split(","):
 
         log.info(
@@ -2077,6 +2089,7 @@ def update_fiberassign_header(
         20210917 : keywords scnd2, scnd3, etc could be automatically added (see get_desitarget_paths())
         20211119 : added lookup_sky_source keyword
         20211227 : use newly defined args.goaltype (instead of args.program previously)
+        20221031 : keywords too2, too3, etc could be automatically added (see get_desitarget_paths())
     """
     # AR sanity check on faflavor
     if faflavor != "{}{}".format(hdr_survey, hdr_faprgrm):
