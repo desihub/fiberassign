@@ -69,7 +69,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install Python dependencies
-        run: python -m pip install --upgrade pip wheel Sphinx
+        run: |
+          python -m pip install --upgrade pip wheel
+          python -m pip install -r doc/rtd_requirements.txt
         # run: python -m pip install --upgrade pip wheel docutils\<0.18 Sphinx==3.1.2
+      - name: Compile the package
+        run: CC=g++ CXX=g++ CFLAGS="-fPIC" LDSHARED="g++ -shared" python3 setup.py build_ext --inplace
       - name: Test the documentation
         run: sphinx-build -W --keep-going -b html doc doc/_build/html
