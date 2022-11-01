@@ -13,12 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.7, 3.8]
+        python-version: ['3.8', '3.9']
     env:
       DESIUTIL_VERSION: 3.2.1
       DESIMODEL_VERSION: main
       DESIMETER_VERSION: 0.6.5
-      DESIMODEL_DATA: trunk
+      DESIMODEL_DATA: branches/test-0.17
       DESIMODEL: ${{ github.workspace }}/desimodel
       DESITARGET_VERSION: 2.2.1
     steps:
@@ -33,7 +33,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install External Dependencies
-        run: python3 -m pip install --no-cache-dir wheel pyyaml scipy matplotlib numpy astropy sphinx fitsio healpy
+        run: python3 -m pip install --no-cache-dir wheel pyyaml scipy\<1.8 matplotlib numpy\<1.22 astropy\<5.1 fitsio healpy
       - name: Install desiutil
         run: python3 -m pip install --no-cache-dir git+https://github.com/desihub/desiutil.git@${{ env.DESIUTIL_VERSION }}#egg=desiutil
       - name: Install desimodel
@@ -59,6 +59,8 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ['3.9']
+    env:
+      DESIUTIL_VERSION: 3.2.1
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -73,6 +75,8 @@ jobs:
           python -m pip install --upgrade pip wheel
           python -m pip install -r doc/rtd_requirements.txt
         # run: python -m pip install --upgrade pip wheel docutils\<0.18 Sphinx==3.1.2
+      - name: Install desiutil
+        run: python3 -m pip install --no-cache-dir git+https://github.com/desihub/desiutil.git@${{ env.DESIUTIL_VERSION }}#egg=desiutil
       - name: Compile the package
         run: CC=g++ CXX=g++ CFLAGS="-fPIC" LDSHARED="g++ -shared" python3 setup.py build_ext --inplace
       - name: Test the documentation
