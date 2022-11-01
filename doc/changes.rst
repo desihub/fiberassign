@@ -3,8 +3,35 @@
 fiberassign change log
 ======================
 
-5.6.1 (unreleased)
+5.7.1 (unreleased)
 ------------------
+
+* no changes yet
+
+5.7.0 (2022-11-01)
+------------------
+
+* add tagalong argument in the docstr (PR `#430`_).
+* Compile script to run when installing a branch (PR `#435`_).
+* Patch 202210 (PR `#436`_).
+* Patch 202210 v2 (PR `#438`_).
+* Change print to log (PR `#439`_).
+* bugfix: correct arguments order when calling gaia_psflike() (PR `#442`_).
+* fba_sv1 bugfix: avoid row-mixing (PR `#444`_).
+* fba_launch harmless bugfix: use of too_tile argument in get_desitarget_paths() (PR `#446`_).
+* Add old script for patching fiberassign files (from Oct 5/2021) (PR `#434`_).
+* handle multiple ToO files (PR `#437`_).
+
+.. _`#430`: https://github.com/desihub/fiberassign/pull/430
+.. _`#435`: https://github.com/desihub/fiberassign/pull/435
+.. _`#436`: https://github.com/desihub/fiberassign/pull/436
+.. _`#438`: https://github.com/desihub/fiberassign/pull/438
+.. _`#439`: https://github.com/desihub/fiberassign/pull/439
+.. _`#442`: https://github.com/desihub/fiberassign/pull/442
+.. _`#444`: https://github.com/desihub/fiberassign/pull/444
+.. _`#446`: https://github.com/desihub/fiberassign/pull/446
+.. _`#434`: https://github.com/desihub/fiberassign/pull/434
+.. _`#437`: https://github.com/desihub/fiberassign/pull/437
 
 5.6.0 (2022-04-22)
 ------------------
