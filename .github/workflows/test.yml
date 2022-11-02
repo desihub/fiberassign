@@ -17,7 +17,7 @@ jobs:
             matrix:
                 os: [ubuntu-latest]
                 python-version: ['3.8', '3.9']
-                numpy-version: ['<1.22', '<1.23']
+                numpy-version: ['<1.22']
                 astropy-version: ['<5.1']
 
         env:
