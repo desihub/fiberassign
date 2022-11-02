@@ -492,9 +492,9 @@ def update_nowradec(
         keep = d["REF_EPOCH"] > 0
         # AR gaia_psflike arguments changed at desitarget-0.58.0
         if desitarget.__version__ < "0.58.0":
-            keep &= gaia_psflike(d[gaiag_key], d[gaiaaen_key])
+            keep &= gaia_psflike(d[gaiaaen_key], d[gaiag_key])
         else:
-            keep &= gaia_psflike(d[gaiag_key], d[gaiaaen_key], dr=gaiadr)
+            keep &= gaia_psflike(d[gaiaaen_key], d[gaiag_key], dr=gaiadr)
     # AR storing changes to report extrema in the log
     dra = nowra - d[ra_key]
     ddec = nowdec - d[dec_key]
@@ -820,6 +820,7 @@ def get_desitarget_paths(
     dr="dr9",
     gaiadr="gaiadr2",
     custom_too_file=None,
+    custom_too_development=False,
     log=Logger.get(),
     step="settings",
     start=time(),
@@ -837,7 +838,8 @@ def get_desitarget_paths(
                 (boolean)
         dr (optional, defaults to "dr9"): legacypipe dr (string)
         gaiadr (optional, defaults to "gaiadr2"): gaia dr (string)
-        custom_too_file (default=None): full path to a custom ToO file, for development work, which overrides the official one (string)
+        custom_too_file (optional, default=None): full path to a custom ToO file, for development work, which overrides the official one (string)
+        custom_too_development (optional, defaults to False): is this for development? (allows custom_too_file to be outside of $DESI_SURVEYOPS) (bool)
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -862,6 +864,8 @@ def get_desitarget_paths(
         20210917 : secondary -> add all existing folders (e.g., main2/) (backward-compatible change)
         20220318 : add custom_too_file optional argument
         20220421 : add too_tile optional argument
+        20221004 : add custom_too_development optional argument
+        20221031 : if multiple files provided in custom_too_file, then several keys: too, too2, too3, etc
     """
     # AR expected survey, program?
     exp_surveys = ["sv1", "sv2", "sv3", "main"]
@@ -979,12 +983,39 @@ def get_desitarget_paths(
         mydirs["scndmtl"] = scndmtl
     # AR custom ToO file?
     if custom_too_file is not None:
-        mydirs["too"] = custom_too_file
         log.warning(
             "{:.1f}s\t{}\tusing custom ToO file {} -> this is for tertiary program or development only!".format(
                 time() - start, step, custom_too_file,
             )
         )
+        for i, fn in enumerate(custom_too_file.split(",")):
+            if i == 0:
+                key = "too"
+            else:
+                key = "too{}".format(i + 1)
+            mydirs[key] = fn
+            log.info(
+                "{:.1f}s\t{}\tdirectory for {}: {}".format(
+                    time() - start, step, key, fn,
+                )
+            )
+        # AR check custom ToO file(s) exist + are in $DESI_SURVEYOPS, if not custom_too_development
+        if custom_too_development:
+            log.info("{:.1f}s\t{}\tcustom_too_development=True, no check that custom_too_file(s) are in $DESI_SURVEYOPS".format(
+                time() - start, step,
+                )
+            )
+        for fn in custom_too_file.split(","):
+            msg = None
+            if not os.path.isfile(fn):
+                msg = "{:.1f}s\t{}\t{} does not exist".format(time() - start, step, fn)
+            if (not custom_too_development) & (not fn.startswith(os.getenv("DESI_SURVEYOPS"))):
+                msg = "{:.1f}s\t{}\t{} does not starts with {}; set custom_too_development=True if this is for development".format(
+                    time() - start, step, fn, os.getenv("DESI_SURVEYOPS"),
+                )
+            if msg is not None:
+                log.error(msg)
+                raise ValueError(msg)
 
     return mydirs
 
@@ -1519,7 +1550,7 @@ def create_mtl(
 
 def create_too(
     tilesfn,
-    toofn,
+    toofns,
     mjd_min,
     mjd_max,
     survey,
@@ -1541,7 +1572,7 @@ def create_too(
 
     Args:
         tilesfn: path to a tiles fits file (string)
-        toofn: ToO file name (string)
+        toofns: ToO file name, or a comma-separated list of multiple ToO file names (string)
         mjd_min, mjd_max (floats): we keep targets with MJD_BEGIN < mjd_max and MJD_END > mjd_min
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         gaiadr: Gaia dr ("dr2" or "edr3")
@@ -1582,94 +1613,179 @@ def create_too(
                     if pmtime_utc_str < 2021-04-30, we discard the appended rows, with identifying them
                     with MJD_END > 59340; the affected tiles are designed on 2021, Apr 19-22, so need for fine-tuning.
                    We currently use pmtime_utc_str, which is an optional argument (but always provided).
+        20220927 : switch toofn to toofns, which can contain multiple (comma-separated) files
     """
     log.info("")
     log.info("")
     log.info("{:.1f}s\t{}\tTIMESTAMP={}".format(time() - start, step, Time.now().isot))
     log.info("{:.1f}s\t{}\tstart generating {}".format(time() - start, step, outfn))
 
-    # AR too: is there a file?
-    # AR too: if no, just skip
-    if not os.path.isfile(toofn):
+    ds = []
+
+    # AR purposefully keep all the operations per file
+    # AR (instead of stacking first), to have the detailed log messages
+    # AR for each file
+    print("toofns = {}".format(toofns))
+    for toofn in toofns.split(","):
+
         log.info(
-            "{:.1f}s\t{}\tno ToO input file present: {}, not writing any {}".format(
-                time() - start, step, toofn, outfn
+            "{:.1f}s\t{}\t{}: start processing".format(
+                time() - start, step, toofn
             )
         )
-        return False
 
-    # AR too: if yes, we proceed
-    # AR too: tile file
-    tiles = fits.open(tilesfn)[1].data
-
-    # AR too: read too file
-    # AR cut on:
-    # AR - tiles
-    # AR - mjd (! TBD !)
-    d = Table.read(toofn)
-
-    # AR too: SV3 handling (see Notes)
-    if ("sv3" in toofn) & (pmtime_utc_str is not None):
-        if pmtime_utc_str < "2021-04-30T00:00:00":
-            reject = d["MJD_END"] > 59340
+        # AR too: is there a file?
+        # AR too: if no, just skip
+        if not os.path.isfile(toofn):
             log.info(
-                "{:.1f}s\t{}\twe reject {} targets with MJD_END>59340, because SV3 tile designed at {} < 2021-04-30T00:00:00".format(
-                    time() - start, step, reject.sum(), pmtime_utc_str,
+                "{:.1f}s\t{}\t{}: file not present".format(
+                    time() - start, step, toofn
                 )
             )
-            d = d[~reject]
+            continue
 
-    # AR adding PLATE_RA, PLATE_DEC, PLATE_REF_EPOCH ?
-    if add_plate_cols:
-        d["PLATE_RA"] = d["RA"]
-        d["PLATE_DEC"] = d["DEC"]
-        d["PLATE_REF_EPOCH"] = d["REF_EPOCH"]
-        log.info(
-            "{:.1f}s\t{}\tadding PLATE_RA, PLATE_DEC, REF_EPOCH columns".format(
-                time() - start, step
-            )
-        )
+        # AR too: if yes, we proceed
+        # AR too: tile file
+        tiles = fits.open(tilesfn)[1].data
 
-    # AR cutting on tile footprint
-    keep = is_point_in_desi(tiles, d["RA"], d["DEC"])
-    comments = ["in tiles"]
-    # AR cutting on MJD
-    keep &= (d["MJD_BEGIN"] < mjd_max) & (d["MJD_END"] > mjd_min)
-    comments.append("MJD_BEGIN<{} and MJD_END>{}".format(mjd_max, mjd_min))
-    # AR case too_tile = False (i.e. not dedicated tile):
-    if not too_tile:
-        # AR cut on TOO_TYPE
-        keep &= d["TOO_TYPE"] != "TILE"
-        comments.append("TOO_TYPE!=TILE")
-        # AR cut on mtltime, if requested
-        # AR use a small bit of code from desitarget.io.read_mtl_ledger() to protect against type-issue
-        if mtltime is None:
-            log.info("{:.1f}s\t{}\tno mtltime provided, no cut on TIMESTAMP".format(time() - start, step))
-        else:
-            if "TIMESTAMP" in d.dtype.names:
-                # ADM try a couple of choices to guard against byte-type versus
-                # string-type errors.
-                try:
-                    keep &= d["TIMESTAMP"] <= mtltime
-                except TypeError:
-                    keep &= d["TIMESTAMP"] <= mtltime.encode()
-                comments.append("with TIMESTAMP<={}".format(mtltime))
-            else:
+        # AR too: read too file
+        # AR cut on:
+        # AR - tiles
+        # AR - mjd (! TBD !)
+        d = Table.read(toofn)
+
+        # AR too: SV3 handling (see Notes)
+        if ("sv3" in toofn) & (pmtime_utc_str is not None):
+            if pmtime_utc_str < "2021-04-30T00:00:00":
+                reject = d["MJD_END"] > 59340
                 log.info(
-                    "{:.1f}s\t{}\tno TIMESTAMP column in {}, so not applying cut using mtltime={}".format(
-                        time() - start, step, toofn, mtltime,
+                    "{:.1f}s\t{}\twe reject {} targets with MJD_END>59340, because SV3 tile designed at {} < 2021-04-30T00:00:00".format(
+                        time() - start, step, reject.sum(), pmtime_utc_str,
                     )
                 )
-    else:
-        comments.append("TOO_TYPE=TILE,FIBER")
-    log.info(
-        "{:.1f}s\t{}\tkeeping {}/{} targets {}".format(
-            time() - start, step, keep.sum(), len(keep), ", ".join(comments)
-        )
-    )
+                d = d[~reject]
 
-    if keep.sum() > 0:
-        d = d[keep]
+        # AR adding PLATE_RA, PLATE_DEC, PLATE_REF_EPOCH ?
+        if add_plate_cols:
+            d["PLATE_RA"] = d["RA"]
+            d["PLATE_DEC"] = d["DEC"]
+            d["PLATE_REF_EPOCH"] = d["REF_EPOCH"]
+            log.info(
+                "{:.1f}s\t{}\t{}: adding PLATE_RA, PLATE_DEC, REF_EPOCH columns".format(
+                    time() - start, step, toofn
+                )
+            )
+
+        # AR cutting on tile footprint
+        keep = is_point_in_desi(tiles, d["RA"], d["DEC"])
+        comments = ["in tiles"]
+        # AR cutting on MJD
+        keep &= (d["MJD_BEGIN"] < mjd_max) & (d["MJD_END"] > mjd_min)
+        comments.append("MJD_BEGIN<{} and MJD_END>{}".format(mjd_max, mjd_min))
+        # AR case too_tile = False (i.e. not dedicated tile):
+        if not too_tile:
+            # AR cut on TOO_TYPE
+            keep &= d["TOO_TYPE"] != "TILE"
+            comments.append("TOO_TYPE!=TILE")
+            # AR cut on mtltime, if requested
+            # AR use a small bit of code from desitarget.io.read_mtl_ledger() to protect against type-issue
+            if mtltime is None:
+                log.info("{:.1f}s\t{}\t{}: no mtltime provided, no cut on TIMESTAMP".format(time() - start, step, toofn))
+            else:
+                if "TIMESTAMP" in d.dtype.names:
+                    # ADM try a couple of choices to guard against byte-type versus
+                    # string-type errors.
+                    try:
+                        keep &= d["TIMESTAMP"] <= mtltime
+                    except TypeError:
+                        keep &= d["TIMESTAMP"] <= mtltime.encode()
+                    comments.append("with TIMESTAMP<={}".format(mtltime))
+                else:
+                    log.info(
+                        "{:.1f}s\t{}\t{}: no TIMESTAMP column, so not applying cut using mtltime={}".format(
+                            time() - start, step, toofn, mtltime,
+                        )
+                    )
+        else:
+            comments.append("TOO_TYPE=TILE,FIBER")
+        log.info(
+            "{:.1f}s\t{}\t{}: keeping {}/{} targets {}".format(
+                time() - start, step, toofn, keep.sum(), len(keep), ", ".join(comments)
+            )
+        )
+
+        # AR few special operations in case of multiple files:
+        # AR - clear metadata, to avoid warnings in vstack
+        # AR - add NUMOBS,NUMOBS_MORE,PRIORITY columns if not present
+        #       (otherwise vstack() will fill with zeros; e.g. if using
+        #       the Main ToO.ecsv and a tertiary ToO-PROGNUM-TILEID.ecsv)
+        if len(toofns.split(",")) > 1:
+            d.meta.clear()
+            if "NUMOBS" not in d.dtype.names:
+                d["NUMOBS"] = 0
+                log.info(
+                    "{:.1f}s\t{}\t{}: adding NUMOBS(=0) column".format(
+                        time() - start, step, toofn
+                    )
+                )
+            if "NUMOBS_MORE" not in d.dtype.names:
+                d["NUMOBS_MORE"] = d["NUMOBS_INIT"]
+                log.info(
+                    "{:.1f}s\t{}\t{}: adding NUMOBS_MORE(=NUMOBS_INIT) column".format(
+                        time() - start, step, toofn
+                    )
+                )
+            if "PRIORITY" not in d.dtype.names:
+                d["PRIORITY"] = d["PRIORITY_INIT"]
+                log.info(
+                    "{:.1f}s\t{}\t{}: adding PRIORITY(=PRIORITY_INIT) column".format(
+                        time() - start, step, toofn
+                    )
+                )
+        ds.append(d[keep])
+
+    # AR few special operations in case of multiple files:
+    # AR - assert the column content is similar
+    # AR - assert there are no duplicated TARGETIDs
+    if len(toofns.split(",")) > 1:
+        msg = None
+        keys = ds[0].dtype.names
+        for i in range(1, len(toofns.split(","))):
+            isok = True
+            if len(ds[i].dtype.names) != len(keys):
+                isok = False
+            else:
+                if (np.sort(keys) != np.sort(ds[i].dtype.names)).sum() != 0:
+                    isok = False
+            if not isok:
+                msg = "{:.1f}s\t{}\tcolumn content of {} and {} differ".format(
+                    time() - start, step, toofns.split(",")[0], toofns.split(",")[i]
+                )
+        if msg is not None:
+            log.error(msg)
+            raise ValueError(msg)
+        tids = []
+        for d in ds:
+            tids += d["TARGETID"].tolist()
+        n_unq = np.unique(tids).size
+        if n_unq != len(tids):
+            msg = "{:.1f}s\t{}\tthere are {} duplicated TARGETIDs".format(
+                time() - start, step, len(tids) - n_unq
+            )
+        if msg is not None:
+            log.error(msg)
+            raise ValueError(msg)
+
+    # AR stack
+    d = vstack(ds)
+
+    # AR number of kept ToOs
+    log.info("{:.1f}s\t{}\tkeeping {} targets from {} file(s)".format(time() - start, step, len(d), len(ds)))
+
+    # AR execute this part on the stacked catalog (in case of multiple ToO files,
+    # AR separate REF_EPOCH check on individual files could lead to undesired
+    # AR behavior)
+    if len(d) > 0:
         # AR too: PMRA, PMDEC: convert NaN to zeros
         d = force_finite_pm(d, log=log, step=step, start=start)
 
@@ -1725,8 +1841,8 @@ def create_too(
 
     else:
         log.info(
-            "{:.1f}s\t{}\tno too kept too targets, no {} written".format(
-                time() - start, step, outfn
+            "{:.1f}s\t{}\tno too kept too targets from {}, no {} written".format(
+                time() - start, step, toofns, outfn
             )
         )
         return False
@@ -1973,6 +2089,7 @@ def update_fiberassign_header(
         20210917 : keywords scnd2, scnd3, etc could be automatically added (see get_desitarget_paths())
         20211119 : added lookup_sky_source keyword
         20211227 : use newly defined args.goaltype (instead of args.program previously)
+        20221031 : keywords too2, too3, etc could be automatically added (see get_desitarget_paths())
     """
     # AR sanity check on faflavor
     if faflavor != "{}{}".format(hdr_survey, hdr_faprgrm):
