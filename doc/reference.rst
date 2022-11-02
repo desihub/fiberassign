@@ -182,12 +182,7 @@ And then the `load_target_file` function is called one or more times to append t
 
 .. autofunction:: fiberassign.targets.load_target_file
 
-.. BAW: Temporarily remove.  TargetTree no longer exists.
-
-.. After loading all the data, we usually want to index these targets in a hierarchical triangular mesh (HTM) structure for fast querying of targets that lie within some radius of a sky location.  This is accomplished by creating a `TargetTree` object from the `Targets` instance:
-
-.. .. autoclass:: fiberassign.targets.TargetTree
-..     :members:
+After loading all the data, we build a :class:`scipy.spatial.KDTree` to index these targets spatially for fast querying of targets that lie within some radius of a sky location.
 
 Given a hardware model, our set of tiles, and this tree structure, we can now compute the target IDs available to every device location on every tile.  This is done with the `TargetsAvailable` class:
 
