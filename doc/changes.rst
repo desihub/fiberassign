@@ -6,7 +6,10 @@ fiberassign change log
 5.7.1 (unreleased)
 ------------------
 
-* no changes yet
+* Update change log and test infrastructure (PR `#440`_).
+
+.. _`#440`: https://github.com/desihub/fiberassign/pull/440
+
 
 5.7.0 (2022-11-01)
 ------------------
