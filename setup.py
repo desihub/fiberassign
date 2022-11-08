@@ -36,11 +36,11 @@ except ImportError:
     if os.getenv('READTHEDOCS') == 'True':
         import subprocess as sp
         dutil = \
-            'git+https://github.com/desihub/desiutil.git@master#egg=desiutil'
+            'git+https://github.com/desihub/desiutil.git@main#egg=desiutil'
         dmodel = \
-            'git+https://github.com/desihub/desimodel.git@master#egg=desimodel'
+            'git+https://github.com/desihub/desimodel.git@main#egg=desimodel'
         dtarget = \
-            'git+https://github.com/desihub/desitarget.git@master#egg=desitarget'
+            'git+https://github.com/desihub/desitarget.git@main#egg=desitarget'
         sp.check_call(['pip', 'install', dutil])
         sp.check_call(['pip', 'install', dmodel])
         sp.check_call(['pip', 'install', dtarget])
