@@ -6,7 +6,10 @@ fiberassign change log
 5.7.1 (unreleased)
 ------------------
 
-* no changes yet
+* Update change log and test infrastructure (PR `#440`_).
+
+.. _`#440`: https://github.com/desihub/fiberassign/pull/440
+
 
 5.7.0 (2022-11-01)
 ------------------
@@ -38,7 +41,7 @@ fiberassign change log
 
 * query ToO-fiber.ecsv for main if args.too_tile=False (PR `#428`_)
 
-.. _`#428`: query ToO-fiber.ecsv for main if args.too_tile=False
+.. _`#428`: https://github.com/desihub/fiberassign/pull/428
 
 5.5.0 (2022-04-19)
 ------------------
@@ -231,6 +234,7 @@ Major update to use desimeter for x,y <-> ra,dec transforms to include
 airmass and ADC distortions.
 Requires desimeter >= 3.6.5 and desitarget >= 1.0.0 .
 
+* Desi fa smallrun improve (PR `#333`_).
 * Simplify and improve ``bin/fba_plot`` (PR `#336`_).
 * Use Gaia-based FLUX_R for GFA_TARGETS extension to avoid DR9 saturation
   (PR `#344`_).
@@ -243,6 +247,7 @@ Requires desimeter >= 3.6.5 and desitarget >= 1.0.0 .
 * Expand default positioner polygons by 50 microns and edges by 400 microns,
   adjustable with options (PR `#350`_).
 
+.. _`#333`: https://github.com/desihub/fiberassign/pull/333
 .. _`#336`: https://github.com/desihub/fiberassign/pull/336
 .. _`#346`: https://github.com/desihub/fiberassign/pull/346
 .. _`01206c1`: https://github.com/desihub/fiberassign/commit/01206c14d397df3e7901220257b826c721a66762
@@ -272,7 +277,7 @@ Requires desimeter >= 3.6.5 and desitarget >= 1.0.0 .
 .. _`#342`: https://github.com/desihub/fiberassign/pull/342
 .. _`#343`: https://github.com/desihub/fiberassign/pull/343
 
-2.4.0 (2021-05-04)
+2.4.0 (2021-05-05)
 ------------------
 
 * ``fba_launch --isodate`` option to set timestamp for MTL ledger reading
@@ -311,6 +316,8 @@ on 2021-04-22 before making tag.
 * Migrate from Travis to GitHub workflows (PR `#313`_).
 * Support sv1 tiles (PR `#314`_).
 * Support new desimodel focal plane state format (PR `#315`_).
+* Remove NUMOBS_INIT column in merged TARGETS table (PR `#316`_).
+* Restore NUMOBS_INIT from columns loaded from target files (PR `#317`_).
 * Support sv2 tiles (PR `#318`_).
 * new fba_launch wrapper script (PR `#319`_).
 * Support matplotlib 3.3.4 (PR `#320`_).
@@ -321,6 +328,8 @@ on 2021-04-22 before making tag.
 .. _`#313`: https://github.com/desihub/fiberassign/pull/313
 .. _`#314`: https://github.com/desihub/fiberassign/pull/314
 .. _`#315`: https://github.com/desihub/fiberassign/pull/315
+.. _`#316`: https://github.com/desihub/fiberassign/pull/316
+.. _`#317`: https://github.com/desihub/fiberassign/pull/317
 .. _`#318`: https://github.com/desihub/fiberassign/pull/318
 .. _`#319`: https://github.com/desihub/fiberassign/pull/319
 .. _`#320`: https://github.com/desihub/fiberassign/pull/320
@@ -331,11 +340,13 @@ on 2021-04-22 before making tag.
 * Added bin/sv1-summary.py (PR `#301`_, `#308`_).
 * Updates for secondary target support (PR `#303`_).
 * Orion Rosette Praesepe support (PR `#306`_).
+* Fba cmx update (PR `#307`_).
 * Remove unnecessary (incorrect) -Wstrict-prototypes compile flag (PR `#309`_).
 
 .. _`#301`: https://github.com/desihub/fiberassign/pull/301
 .. _`#303`: https://github.com/desihub/fiberassign/pull/303
 .. _`#306`: https://github.com/desihub/fiberassign/pull/306
+.. _`#307`: https://github.com/desihub/fiberassign/pull/307
 .. _`#308`: https://github.com/desihub/fiberassign/pull/308
 .. _`#309`: https://github.com/desihub/fiberassign/pull/309
 
@@ -369,12 +380,14 @@ Major script and format updates for SV1 in December 2020.
 
 NOTE: New major version number due to fiberassign format changes.
 
+* Enable easier embedding of fiberassign in other codes (PR `#274`_)
 * Added fba_cmx script for commissioning
   (PR `#277`_, `#280`_, `#281`_, `#283`_, `#286`_).
 * Reduces the number of target columns propagated into the fiberassign
   file (PR `#279`_)
 * Add SUPP_SKY targets to OBJTYPE=SKY (PR `#282`_).
 
+.. _`#274`: https://github.com/desihub/fiberassign/pull/274
 .. _`#277`: https://github.com/desihub/fiberassign/pull/277
 .. _`#279`: https://github.com/desihub/fiberassign/pull/279
 .. _`#280`: https://github.com/desihub/fiberassign/pull/280
@@ -406,7 +419,7 @@ NOTE: New major version number due to fiberassign format changes.
 .. _`#267`: https://github.com/desihub/fiberassign/pull/267
 .. _`#268`: https://github.com/desihub/fiberassign/pull/268
 .. _`#269`: https://github.com/desihub/fiberassign/pull/269
-  
+
 1.4.0 (2020-03-19)
 ------------------
 
@@ -420,6 +433,10 @@ NOTE: New major version number due to fiberassign format changes.
 1.3.1 (2020-03-13)
 ------------------
 
+* Support supplemental sky targets (PR `#241`_)
+* bits4cmxnsv (PR `#245`_)
+* Travis updates (PR `#246`_)
+* Use curved focal surface internally for assignment (PR `#247`_)
 * Change targets to correctly look up desi and secondary mask (PR `#250`_).
 * Add minisv2 bits (PR `#252`_).
 * Extended QA (PR `#253`_).
@@ -427,6 +444,10 @@ NOTE: New major version number due to fiberassign format changes.
 * Increase target realism in unit tests (PR `#256`_)
 * New SV0 science target bits from desitarget/0.37.0 (PR `#257`_)
 
+.. _`#241`: https://github.com/desihub/fiberassign/pull/241
+.. _`#245`: https://github.com/desihub/fiberassign/pull/245
+.. _`#246`: https://github.com/desihub/fiberassign/pull/246
+.. _`#247`: https://github.com/desihub/fiberassign/pull/247
 .. _`#250`: https://github.com/desihub/fiberassign/pull/250
 .. _`#252`: https://github.com/desihub/fiberassign/pull/252
 .. _`#253`: https://github.com/desihub/fiberassign/pull/253
