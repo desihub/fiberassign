@@ -101,7 +101,7 @@ setup_keywords['install_requires'] = [
     'fitsio'
 ]
 setup_keywords['zip_safe'] = False
-setup_keywords['use_2to3'] = False
+# setup_keywords['use_2to3'] = False
 setup_keywords['packages'] = find_packages('py')
 setup_keywords['package_dir'] = {'': 'py'}
 setup_keywords['cmdclass'] = {'version': DesiVersion, 'test': DesiTest,

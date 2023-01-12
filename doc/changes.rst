@@ -3,10 +3,14 @@
 fiberassign change log
 ======================
 
-5.7.1 (unreleased)
+5.8.0 (unreleased)
 ------------------
 
 * Update change log and test infrastructure (PR `#440`_).
+* bugfix: correct arguments order when calling gaia_psflike (PR `#442`_).
+* bugfix: fba_sv1 avoid row mixing (PR `#444`_).
+* bugfix (mostly harmless): fba_launch use of too_tile argument in
+  get_desitarget_paths (PR `#446`_).
 
 .. _`#440`: https://github.com/desihub/fiberassign/pull/440
 
