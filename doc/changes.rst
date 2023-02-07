@@ -3,9 +3,15 @@
 fiberassign change log
 ======================
 
-5.7.1 (unreleased)
+5.7.2 (unreleased)
 ------------------
 
+* no changes yet
+
+5.7.1 (2023-02-06)
+------------------
+
+* master to main in setup.py (commit 270b4e8)
 * Update change log and test infrastructure (PR `#440`_).
 
 .. _`#440`: https://github.com/desihub/fiberassign/pull/440
