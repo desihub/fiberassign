@@ -46,6 +46,8 @@ from fiberassign.utils import assert_isoformat_utc, get_date_cutoff
 from datetime import datetime
 from astropy.time import Time
 
+import desimodel.io
+
 class TargetTagalong(object):
     '''
     This class holds data from the targeting input files that we want
@@ -1204,6 +1206,14 @@ def targets_in_tiles(hw, tgs, tiles, tagalong):
 
     log = Logger.get()
 
+    try:
+        plate_scale = desimodel.io.load_platescale() # this loads the numbers in $DESIMODEL
+        focalplane_radius_deg = plate_scale['theta'].max() 
+    except:
+        focalplane_radius_deg = hw.focalplane_radius_deg # this loads the numbers hardcoded in fiberassign
+    
+    log.info(f'Using {focalplane_radius_deg} as the focal plane radius in degrees')
+    
     tile_targetids = {}
     tile_x = {}
     tile_y = {}
@@ -1222,7 +1232,7 @@ def targets_in_tiles(hw, tgs, tiles, tagalong):
 
         log.info(f'Tile {tile_id} at RA,Dec {tile_ra},{tile_dec} obscond: {tile_obscond} HA: {tile_ha} obstime: {tile_obstime}')
 
-        inds = _kd_query_radec(kd, tile_ra, tile_dec, hw.focalplane_radius_deg)
+        inds = _kd_query_radec(kd, tile_ra, tile_dec, focalplane_radius_deg)
         match = np.flatnonzero(target_obscond[inds] & tile_obscond)
         inds = inds[match]
         del match
