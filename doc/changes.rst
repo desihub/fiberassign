@@ -6,7 +6,9 @@ fiberassign change log
 5.7.2 (unreleased)
 ------------------
 
-* no changes yet
+* uses the focalplane radius from DESIMODEL instead of the hardcoded version in fiberassign (PR `#453`_).
+
+.. _`#453`: https://github.com/desihub/fiberassign/pull/453
 
 5.7.1 (2023-02-06)
 ------------------
