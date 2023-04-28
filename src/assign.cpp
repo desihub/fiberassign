@@ -1281,10 +1281,21 @@ bool fba::Assignment::ok_to_assign (fba::Hardware const * hw, int32_t tile,
     int32_t loc, int64_t target,
     std::map <int64_t, std::pair <double, double> > const & target_xy
     ) const {
+    return (check_collisions(hw, tile, loc, target, target_xy, true) == 0);
+}
+
+
+int fba::Assignment::check_collisions (fba::Hardware const * hw, int32_t tile,
+    int32_t loc, int64_t target,
+    std::map <int64_t, std::pair <double, double> > const & target_xy,
+    bool check_assigned_neighbors
+    ) const {
 
     fba::Logger & logger = fba::Logger::get();
     std::ostringstream logmsg;
     bool extra_log = logger.extra_debug();
+
+    int rtn = 0;
 
     // Is the location stuck or broken?
     if (
@@ -1293,11 +1304,11 @@ bool fba::Assignment::ok_to_assign (fba::Hardware const * hw, int32_t tile,
     ) {
         if (extra_log) {
             logmsg.str("");
-            logmsg << "ok_to_assign: tile " << tile << ", loc "
-                << loc << " not OK";
+            logmsg << "check_collisions: tile " << tile << ", loc "
+                << loc << " STUCK or BROKEN";
             logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
         }
-        return false;
+        rtn |= COLLISION_SELF_STUCK;
     }
 
     // NOTE:  When building the TargetsAvailable instance, we already check that the
@@ -1322,19 +1333,20 @@ bool fba::Assignment::ok_to_assign (fba::Hardware const * hw, int32_t tile,
             // Include this neighbor in the list to check
             nbs.push_back(nb);
             nbtarget.push_back(-1);
-        } else if (ftile.count(nb) > 0) {
+        } else if (check_assigned_neighbors && (ftile.count(nb) > 0)) {
             // This neighbor has some assignment.
             int64_t nbtg = ftile.at(nb);
             if (nbtg == target) {
                 // Target already assigned to a neighbor.
                 if (extra_log) {
                     logmsg.str("");
-                    logmsg << "ok_to_assign: tile " << tile << ", loc "
+                    logmsg << "check_collisions: tile " << tile << ", loc "
                         << loc << ", target " << target
                         << " already assigned to neighbor loc " << nb;
                     logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
                 }
-                return false;
+                rtn |= COLLISION_WITH_NEIGHBOR;
+                continue;
             }
             nbs.push_back(nb);
             nbtarget.push_back(nbtg);
@@ -1366,22 +1378,25 @@ bool fba::Assignment::ok_to_assign (fba::Hardware const * hw, int32_t tile,
                 hw->loc_phi_offset.at(nb)   + hw->loc_phi_pos.at(nb),
                 true
             );
+            if (collide)
+                rtn |= COLLISION_WITH_STUCK;
         } else {
             // Neighbor is working, check for collisions with the neighbor in
             // its currently assigned position.
             auto npos = target_xy.at(nbt);
             collide = hw->collide_xy(loc, tpos, nb, npos);
+            if (collide)
+                rtn |= COLLISION_WITH_NEIGHBOR;
         }
         // Remove these lines if switching back to threading.
         if (collide) {
             if (extra_log) {
                 logmsg.str("");
-                logmsg << "ok_to_assign: tile " << tile << ", loc "
+                logmsg << "check_collisions: tile " << tile << ", loc "
                     << loc << ", target " << target
                     << " would collide with target " << nbt;
                 logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
             }
-            return false;
         }
     }
 
@@ -1396,16 +1411,14 @@ bool fba::Assignment::ok_to_assign (fba::Hardware const * hw, int32_t tile,
     if (collide) {
         if (extra_log) {
             logmsg.str("");
-            logmsg << "ok_to_assign: tile " << tile << ", loc "
+            logmsg << "check_collisions: tile " << tile << ", loc "
                 << loc << ", target " << target
                 << " would collide with GFA or Petal Boundary ";
             logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
         }
-        return false;
+        rtn |= COLLISION_WITH_EDGES;
     }
-
-    // All good!
-    return true;
+    return rtn;
 }
 
 

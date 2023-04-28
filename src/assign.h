@@ -15,8 +15,17 @@
 #include <tiles.h>
 #include <targets.h>
 
-
 namespace fiberassign {
+
+// bitmask values returned by check_collisions:
+// this positioner is STUCK or BROKEN
+const int COLLISION_SELF_STUCK = 1;
+// this target would cause a collision with a STUCK or BROKEN positioner
+const int COLLISION_WITH_STUCK = 2;
+// this target would cause a collision with a petal or GFA edge
+const int COLLISION_WITH_EDGES = 4;
+// this target would cause a collision with a neighboring not-stuck positioner
+const int COLLISION_WITH_NEIGHBOR = 8;
 
 // This class holds the current assignment information and methods for
 // refinement.
@@ -116,6 +125,15 @@ class Assignment : public std::enable_shared_from_this <Assignment> {
             int32_t tile,
             int32_t petal,
             int32_t slitblock
+        ) const;
+
+        int check_collisions(
+            Hardware const * hw,
+            int32_t tile,
+            int32_t loc,
+            int64_t target,
+            std::map <int64_t, std::pair <double, double> > const & target_xy,
+            bool check_assigned_neighbors = true
         ) const;
 
         bool ok_to_assign(
