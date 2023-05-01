@@ -1284,6 +1284,21 @@ bool fba::Assignment::ok_to_assign (fba::Hardware const * hw, int32_t tile,
     return (check_collisions(hw, tile, loc, target, target_xy, true) == 0);
 }
 
+std::map< std::pair< int32_t, int64_t >, int > fba::Assignment::check_avail_collisions(int32_t tile) const {
+    std::map< std::pair< int32_t, int64_t>, int > rtn;
+    std::map<int32_t, std::vector<int64_t> > avail = tgsavail_->tile_data(tile);
+    auto const& target_xy = tile_target_xy.at(tile);
+
+    for (auto it : avail) {
+        int32_t loc = it.first;
+        std::vector<int64_t> targets = it.second;
+        for (int64_t target : targets) {
+            rtn[std::make_pair(loc, target)] = check_collisions(hw_.get(), tile, loc, target, target_xy, false);
+        }
+    }
+    return rtn;
+}
+
 
 int fba::Assignment::check_collisions (fba::Hardware const * hw, int32_t tile,
     int32_t loc, int64_t target,
@@ -1295,6 +1310,7 @@ int fba::Assignment::check_collisions (fba::Hardware const * hw, int32_t tile,
     std::ostringstream logmsg;
     bool extra_log = logger.extra_debug();
 
+    // the bitmask we'll return
     int rtn = 0;
 
     // Is the location stuck or broken?
@@ -1314,10 +1330,6 @@ int fba::Assignment::check_collisions (fba::Hardware const * hw, int32_t tile,
     // NOTE:  When building the TargetsAvailable instance, we already check that the
     // positioner can physically reach every available target.  No need to check that
     // here.
-
-    // Const reference to the assignment for this tile.
-    auto const & ftile = loc_target.at(tile);
-
     std::vector <int32_t> nbs;
     std::vector <int64_t> nbtarget;
 
@@ -1333,32 +1345,33 @@ int fba::Assignment::check_collisions (fba::Hardware const * hw, int32_t tile,
             // Include this neighbor in the list to check
             nbs.push_back(nb);
             nbtarget.push_back(-1);
-        } else if (check_assigned_neighbors && (ftile.count(nb) > 0)) {
-            // This neighbor has some assignment.
-            int64_t nbtg = ftile.at(nb);
-            if (nbtg == target) {
-                // Target already assigned to a neighbor.
-                if (extra_log) {
-                    logmsg.str("");
-                    logmsg << "check_collisions: tile " << tile << ", loc "
-                        << loc << ", target " << target
-                        << " already assigned to neighbor loc " << nb;
-                    logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
+        } else if (check_assigned_neighbors) {
+            auto const & ftile = loc_target.at(tile);
+            if (ftile.count(nb) > 0) {
+                // This neighbor has some assignment.
+                int64_t nbtg = ftile.at(nb);
+                if (nbtg == target) {
+                    // Target already assigned to a neighbor.
+                    if (extra_log) {
+                        logmsg.str("");
+                        logmsg << "check_collisions: tile " << tile << ", loc "
+                               << loc << ", target " << target
+                               << " already assigned to neighbor loc " << nb;
+                        logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
+                    }
+                    rtn |= COLLISION_WITH_NEIGHBOR;
+                    continue;
                 }
-                rtn |= COLLISION_WITH_NEIGHBOR;
-                continue;
+                nbs.push_back(nb);
+                nbtarget.push_back(nbtg);
             }
-            nbs.push_back(nb);
-            nbtarget.push_back(nbtg);
         }
     }
 
     // Would assigning this target produce a collision?
 
     size_t nnb = nbs.size();
-
     bool collide = false;
-
     fbg::dpair tpos = target_xy.at(target);
 
     // On average, the number of neighbors is 2-3.  Threading overhead seems
@@ -1406,7 +1419,6 @@ int fba::Assignment::check_collisions (fba::Hardware const * hw, int32_t tile,
     // }
 
     // Would this assignment hit a GFA or petal edge?
-
     collide = hw->collide_xy_edges(loc, tpos);
     if (collide) {
         if (extra_log) {

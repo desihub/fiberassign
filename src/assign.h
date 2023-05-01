@@ -71,6 +71,8 @@ class Assignment : public std::enable_shared_from_this <Assignment> {
 
         std::map <int32_t, int64_t> const & tile_location_target(int32_t tile) const;
 
+        std::map< std::pair< int32_t, int64_t >, int > check_avail_collisions(int32_t tile) const;
+
         std::map <int32_t, std::map <int32_t, int64_t> > loc_target;
 
         std::map <int64_t, std::map <int32_t, int32_t> > target_loc;
