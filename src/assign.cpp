@@ -1284,7 +1284,7 @@ bool fba::Assignment::ok_to_assign (fba::Hardware const * hw, int32_t tile,
     return (check_collisions(hw, tile, loc, target, target_xy, true) == 0);
 }
 
-std::map< std::pair< int32_t, int64_t >, int > fba::Assignment::check_avail_collisions(int32_t tile) const {
+std::map< std::pair< int32_t, int64_t >, int > fba::Assignment::check_avail_collisions(int32_t tile, bool all_matches) const {
     std::map< std::pair< int32_t, int64_t>, int > rtn;
     std::map<int32_t, std::vector<int64_t> > avail = tgsavail_->tile_data(tile);
     auto const& target_xy = tile_target_xy.at(tile);
@@ -1293,7 +1293,9 @@ std::map< std::pair< int32_t, int64_t >, int > fba::Assignment::check_avail_coll
         int32_t loc = it.first;
         std::vector<int64_t> targets = it.second;
         for (int64_t target : targets) {
-            rtn[std::make_pair(loc, target)] = check_collisions(hw_.get(), tile, loc, target, target_xy, false);
+            int x = check_collisions(hw_.get(), tile, loc, target, target_xy, false);
+            if (x || all_matches)
+                rtn[std::make_pair(loc, target)] = x;
         }
     }
     return rtn;

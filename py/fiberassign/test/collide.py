@@ -1,3 +1,7 @@
+'''
+This is a little demo script for the Assignment.check_avail_collisions() function.
+'''
+
 import numpy as np
 
 from astropy.table import Table
@@ -79,7 +83,12 @@ def main():
     coll = asgn.check_avail_collisions(tile)
 
     #print('collisions:', coll)
+    print('N collisions:', len(coll))
     # coll: dict (loc, targetid) -> bitmask
+
+    # For plotting: collect bitmasks for all collisions (even non-collisions)
+    coll = asgn.check_avail_collisions(tile, True)
+    print('Incl non-collisions:', len(coll))
 
     # All positioner locations -> x,y
     loc_to_cs5 = hw.loc_pos_cs5_mm;

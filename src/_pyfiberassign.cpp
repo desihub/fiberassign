@@ -1605,7 +1605,7 @@ PYBIND11_MODULE(_internal, m) {
 
         )")
         .def("check_avail_collisions", &fba::Assignment::check_avail_collisions,
-             py::arg("tile"), R"(
+             py::arg("tile"), py::arg("all_matches")=false, R"(
             Return a bitmask describing the collisions for each potential assignment
             for a given tile.
 
