@@ -1616,9 +1616,11 @@ PYBIND11_MODULE(_internal, m) {
 
             Args:
                 tile (int): The tile ID.
+                all_matches (bool): If True, returns the bitmask (including zeros) for all entries;
+                    otherwise, only return non-zero entries.
 
             Returns:
-                (dict): Dictionary from TARGETID to collision bitmask
+                (dict): Dictionary from (LOCID, TARGETID) to collision bitmask.
 
         )")
         .def("assign_unused", &fba::Assignment::assign_unused,
