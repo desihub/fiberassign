@@ -1332,97 +1332,81 @@ int fba::Assignment::check_collisions (fba::Hardware const * hw, int32_t tile,
     // NOTE:  When building the TargetsAvailable instance, we already check that the
     // positioner can physically reach every available target.  No need to check that
     // here.
-    std::vector <int32_t> nbs;
-    std::vector <int64_t> nbtarget;
 
-    auto const & neighbors = hw->neighbors.at(loc);
-
-    // Check neighboring assignment.  If one of the neighboring positioners is stuck or
-    // broken, we keep it for consideration below when checking for collisions.
-    for (auto const & nb : neighbors) {
-        if (
-            (hw->state.at(nb) & FIBER_STATE_STUCK) ||
-            (hw->state.at(nb) & FIBER_STATE_BROKEN)
-        ) {
-            // Include this neighbor in the list to check
-            nbs.push_back(nb);
-            nbtarget.push_back(-1);
-        } else if (check_assigned_neighbors) {
-            auto const & ftile = loc_target.at(tile);
-            if (ftile.count(nb) > 0) {
-                // This neighbor has some assignment.
-                int64_t nbtg = ftile.at(nb);
-                if (nbtg == target) {
-                    // Target already assigned to a neighbor.
-                    if (extra_log) {
-                        logmsg.str("");
-                        logmsg << "check_collisions: tile " << tile << ", loc "
-                               << loc << ", target " << target
-                               << " already assigned to neighbor loc " << nb;
-                        logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
-                    }
-                    rtn |= COLLISION_WITH_NEIGHBOR;
-                    continue;
-                }
-                nbs.push_back(nb);
-                nbtarget.push_back(nbtg);
-            }
-        }
-    }
-
-    // Would assigning this target produce a collision?
-
-    size_t nnb = nbs.size();
     bool collide = false;
     fbg::dpair tpos = target_xy.at(target);
 
-    // On average, the number of neighbors is 2-3.  Threading overhead seems
-    // to negate the benefit here.
-    // #pragma omp parallel for reduction(||:collide) schedule(dynamic) default(none) shared(hw, nbs, nbtarget, nnb, tcenter, tpos, target_xy)
-    for (size_t b = 0; b < nnb; ++b) {
-        int32_t const & nb = nbs[b];
-        int64_t nbt = nbtarget[b];
-        if (nbt < 0) {
+    std::vector <int32_t> const & neighbors = hw->neighbors.at(loc);
+
+    // Check neighboring positioners.  If one of the neighboring
+    // positioners is stuck or broken, check against its stuck
+    // position, otherwise if a target is assigned, check against the
+    // assigned position.
+    for (int32_t const & neighbor : neighbors) {
+        if (
+            (hw->state.at(neighbor) & FIBER_STATE_STUCK) ||
+            (hw->state.at(neighbor) & FIBER_STATE_BROKEN)
+        ) {
             // This neighbor is disabled.  Check for collisions with the neighbor
             // in its fixed theta / phi location.
             collide = hw->collide_xy_thetaphi(
                 loc,
                 tpos,
-                nb,
-                hw->loc_theta_offset.at(nb) + hw->loc_theta_pos.at(nb),
-                hw->loc_phi_offset.at(nb)   + hw->loc_phi_pos.at(nb),
+                neighbor,
+                hw->loc_theta_offset.at(neighbor) + hw->loc_theta_pos.at(neighbor),
+                hw->loc_phi_offset.at(neighbor)   + hw->loc_phi_pos.at(neighbor),
                 true
             );
             if (collide)
                 rtn |= COLLISION_WITH_STUCK;
-        } else {
-            // Neighbor is working, check for collisions with the neighbor in
-            // its currently assigned position.
-            auto npos = target_xy.at(nbt);
-            collide = hw->collide_xy(loc, tpos, nb, npos);
-            if (collide)
-                rtn |= COLLISION_WITH_NEIGHBOR;
-        }
-        // Remove these lines if switching back to threading.
-        if (collide) {
             if (extra_log) {
                 logmsg.str("");
                 logmsg << "check_collisions: tile " << tile << ", loc "
-                    << loc << ", target " << target
-                    << " would collide with target " << nbt;
+                       << loc << ", target " << target
+                       << (collide ? "collides" : "does not collide")
+                       << " with STUCK|BROKEN neighbor " << neighbor;
                 logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
+            }
+
+        } else if (check_assigned_neighbors) {
+            auto const & ftile = loc_target.at(tile);
+            if (ftile.count(neighbor)) {
+                // This neighbor has as assigned target
+                int64_t neigh_target = ftile.at(neighbor);
+                if (neigh_target == target) {
+                    // Target already assigned to a neighbor.
+                    rtn |= COLLISION_WITH_NEIGHBOR;
+                    if (extra_log) {
+                        logmsg.str("");
+                        logmsg << "check_collisions: tile " << tile << ", loc "
+                               << loc << ", target " << target
+                               << " already assigned to neighbor loc " << neighbor;
+                        logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
+                    }
+                } else {
+                    // Neighbor is working, check for collisions with the neighbor in
+                    // its currently assigned position.
+                    auto npos = target_xy.at(neigh_target);
+                    collide = hw->collide_xy(loc, tpos, neighbor, npos);
+                    if (collide)
+                        rtn |= COLLISION_WITH_NEIGHBOR;
+                    if (extra_log) {
+                        logmsg.str("");
+                        logmsg << "check_collisions: tile " << tile << ", loc "
+                               << loc << ", target " << target
+                               << (collide ? " would collide" : " no collision")
+                               << " with neighbor loc " << neighbor << ", target " << neigh_target;
+                        logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
+                    }
+                }
             }
         }
     }
 
-    // Restore these lines if switching back to threading.
-    // if (collide) {
-    //     return false;
-    // }
-
     // Would this assignment hit a GFA or petal edge?
     collide = hw->collide_xy_edges(loc, tpos);
     if (collide) {
+        rtn |= COLLISION_WITH_EDGES;
         if (extra_log) {
             logmsg.str("");
             logmsg << "check_collisions: tile " << tile << ", loc "
@@ -1430,7 +1414,6 @@ int fba::Assignment::check_collisions (fba::Hardware const * hw, int32_t tile,
                 << " would collide with GFA or Petal Boundary ";
             logger.debug_tfg(tile, loc, target, logmsg.str().c_str());
         }
-        rtn |= COLLISION_WITH_EDGES;
     }
     return rtn;
 }
