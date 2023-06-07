@@ -1609,15 +1609,15 @@ PYBIND11_MODULE(_internal, m) {
             Return a bitmask describing the collisions for each potential assignment
             for a given tile.
 
-            This returns a map from TARGETID to a bitmask:
+            This returns a dict from (LOCID, TARGETID) to a bitmask:
                 1: BROKEN or STUCK positioner
                 2: collision with STUCK positioner
                 4: collision with GFA or petal edge
 
             Args:
                 tile (int): The tile ID.
-                all_matches (bool): If True, returns the bitmask (including zeros) for all entries;
-                    otherwise, only return non-zero entries.
+                all_matches (bool, default False): If True, returns the bitmask (including zeros)
+                    for all entries; otherwise, only return non-zero entries.
 
             Returns:
                 (dict): Dictionary from (LOCID, TARGETID) to collision bitmask.
