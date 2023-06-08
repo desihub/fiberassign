@@ -1604,6 +1604,25 @@ PYBIND11_MODULE(_internal, m) {
                 (dict): Dictionary of assigned target for each location.
 
         )")
+        .def("check_avail_collisions", &fba::Assignment::check_avail_collisions,
+             py::arg("tile"), py::arg("all_matches")=false, R"(
+            Return a bitmask describing the collisions for each potential assignment
+            for a given tile.
+
+            This returns a dict from (LOCID, TARGETID) to a bitmask:
+                1: BROKEN or STUCK positioner
+                2: collision with STUCK positioner
+                4: collision with GFA or petal edge
+
+            Args:
+                tile (int): The tile ID.
+                all_matches (bool, default False): If True, returns the bitmask (including zeros)
+                    for all entries; otherwise, only return non-zero entries.
+
+            Returns:
+                (dict): Dictionary from (LOCID, TARGETID) to collision bitmask.
+
+        )")
         .def("assign_unused", &fba::Assignment::assign_unused,
              py::arg("tgtype")=TARGET_TYPE_SCIENCE,
              py::arg("max_per_petal")=-1,
