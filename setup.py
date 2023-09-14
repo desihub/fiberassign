@@ -20,33 +20,6 @@ from distutils.errors import CompileError
 #
 # DESI support code.
 #
-# If this code is being run within the readthedocs environment, then we
-# need special steps.
-#
-# Longer story:  desimodel and desitarget are fiberassign build requirements
-# but these are not pip installable from a requirements file, due to the way
-# that pip handles recursive requirements files and the fact that desiutil is
-# required for obtaining even basic package info (egg_info).  Since this is
-# such a specialized case, we just check if this is running on readthedocs
-# and manually pip install things right here.
-#
-try:
-    import desiutil
-except ImportError:
-    if os.getenv('READTHEDOCS') == 'True':
-        import subprocess as sp
-        dutil = \
-            'git+https://github.com/desihub/desiutil.git@main#egg=desiutil'
-        dmodel = \
-            'git+https://github.com/desihub/desimodel.git@main#egg=desimodel'
-        dtarget = \
-            'git+https://github.com/desihub/desitarget.git@main#egg=desitarget'
-        sp.check_call(['pip', 'install', dutil])
-        sp.check_call(['pip', 'install', dmodel])
-        sp.check_call(['pip', 'install', dtarget])
-    else:
-        raise
-
 from desiutil.setup import DesiTest, DesiVersion, get_version
 #
 # Begin setup

@@ -6,6 +6,18 @@ fiberassign change log
 5.8.0 (unreleased)
 ------------------
 
+* Update ReadTheDocs configuration (PR `#459`_).
+* Add Assignment.check_avail_collisions(tile, all_matches=False) to check potential assignments for collisions (PR `#454`_).
+* uses the focalplane radius from DESIMODEL instead of the hardcoded version in fiberassign (PR `#453`_).
+
+.. _`#453`: https://github.com/desihub/fiberassign/pull/453
+.. _`#454`: https://github.com/desihub/fiberassign/pull/454
+.. _`#459`: https://github.com/desihub/fiberassign/pull/459
+
+5.7.1 (2023-02-06)
+------------------
+
+* master to main in setup.py (commit 270b4e8)
 * Update change log and test infrastructure (PR `#440`_).
 * bugfix: correct arguments order when calling gaia_psflike (PR `#442`_).
 * bugfix: fba_sv1 avoid row mixing (PR `#444`_).
