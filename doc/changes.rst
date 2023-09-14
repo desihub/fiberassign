@@ -3,7 +3,7 @@
 fiberassign change log
 ======================
 
-5.8.0 (unreleased)
+5.7.2 (unreleased)
 ------------------
 
 * Update ReadTheDocs configuration (PR `#459`_).
