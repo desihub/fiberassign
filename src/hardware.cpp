@@ -58,8 +58,6 @@ fba::Hardware::Hardware(std::string const & timestr,
                         std::map    <std::string, double> const & added_margs) :
     added_margins(added_margs) {
 
-    double t0 = timenow();
-
     nloc = location.size();
 
     fba::Logger & logger = fba::Logger::get();
@@ -237,125 +235,62 @@ fba::Hardware::Hardware(std::string const & timestr,
         loc_pos_curved_mm[lid] = std::make_pair(xcurve, ycurve);
     }
 
-    double t1 = timenow();
-
     // Compute neighboring locations
 
-    for (int32_t x = 0; x < nloc; ++x) {
-        int32_t xid = locations[x];
-        for (int32_t y = x + 1; y < nloc; ++y) {
-            int32_t yid = locations[y];
-            double dist = fbg::dist(loc_pos_curved_mm[xid],
-                                    loc_pos_curved_mm[yid]);
-            if (dist <= neighbor_radius_mm) {
-                neighbors[xid].push_back(yid);
-                neighbors[yid].push_back(xid);
-            }
-        }
-    }
+    // This is doing the equivalent of the following code, but faster, by first
+    // argsorting on the x coordinate, and then binary-searching for where to start
+    // in the array, and quitting when the x coordinate alone exceeds the search radius.
+    // This does produce the neighbors in a different order, but that's okay.
+    //
+    //   for (int32_t a = 0; a < nloc; a++) {
+    //       int32_t aid = locations[a];
+    //       for (int32_t b = a + 1; b < nloc; b++) {
+    //           int32_t bid = locations[b];
+    //           double dist = fbg::dist(loc_pos_curved_mm[aid],
+    //                                   loc_pos_curved_mm[bid]);
+    //           if (dist <= neighbor_radius_mm) {
+    //               neighbors[aid].push_back(bid);
+    //               neighbors[bid].push_back(aid);
+    //           }
+    //       }
+    //   }
 
-    double t2 = timenow();
-
-    // Compute neighboring locations
-
-    std::map <int32_t, std::vector <int32_t> > neighbors2;
-    
     // argsort by x coordinate
     std::vector<int32_t> sortbyx;
-    for (int32_t x=0; x<nloc; x++)
-        sortbyx.push_back(x);
+    for (int32_t i=0; i<nloc; i++)
+        sortbyx.push_back(i);
     std::sort(sortbyx.begin(), sortbyx.end(), [&](int32_t a, int32_t b) {
         return loc_pos_curved_mm[locations[a]].first < loc_pos_curved_mm[locations[b]].first;
     });
-    std::cout << "x range: " << loc_pos_curved_mm[locations[sortbyx[0]]].first << " to " <<
-        loc_pos_curved_mm[locations[sortbyx[sortbyx.size()-1]]].first << std::endl;
-    std::cout << "search radius: " << neighbor_radius_mm << std::endl;
-    
-    for (int32_t x = 0; x < nloc; ++x) {
-        int32_t xid = locations[x];
-
-        double xq = loc_pos_curved_mm[xid].first;
+    // Now search for matches for each "a" positioner
+    for (int32_t a = 0; a < nloc; a++) {
+        int32_t aid = locations[a];
+        // the x coordinate of positioner 'a'
+        double xq = loc_pos_curved_mm[aid].first;
+        // we'll binary search for the smallest x coordinate within the matching radius
         double xlow = xq - neighbor_radius_mm;
-        auto p_i_low = std::lower_bound(sortbyx.begin(), sortbyx.end(), xlow,
-                                        [&](const int32_t i, double xval) {
-                                            //std::cout << "lower: i=" << i << ", x=" << 
-                                            //loc_pos_curved_mm[locations[i]].first << std::endl;
-                                            return loc_pos_curved_mm[locations[i]].first < xval; });
-        //int i_low;
-        if (p_i_low == sortbyx.end()) {
-            std::cout << "lower bound not found for x=" << xlow << std::endl;
-            p_i_low = sortbyx.begin();
-        }// else
-        //i_low = *p_i_low;
-        //i_low = p_i_low - 
-
-        //int i_high;
-        //double xhigh = xq + neighbor_radius_mm;
-        //auto p_i_high = std::upper_bound(sortbyx.begin(), sortbyx.end(), xhigh,
-        //                                 [](const int32_t i, double xval) {
-        //                                     return loc_pos_curved_mm[i].first < xval; });
-        //if (p_i_high == sortbyx.end()) {
-        //    std::cout << "upper bound not found for x=" << xhigh << std::endl;
-        //    i_high = nloc;
-        //} else
-        //    i_high = *p_i_high;
-
-        std::cout << "X values: xq " << xq << ", xlow = " << xlow << ", i_low " << loc_pos_curved_mm[locations[*p_i_low]].first << std::endl;
-        if (p_i_low > sortbyx.begin())
-            std::cout << "i_low - 1 = " << loc_pos_curved_mm[locations[*(p_i_low - 1)]].first << std::endl;
-
-        std::cout << "dx for i_low = " << (xq - loc_pos_curved_mm[locations[*p_i_low]].first) << std::endl;
-        if (p_i_low > sortbyx.begin())
-            std::cout << "dx for i_low - 1 = " << (xq - loc_pos_curved_mm[locations[*(p_i_low - 1)]].first) << std::endl;
-
-        //for (int32_t i = i_low; i < nloc; i++) {
-        for (; p_i_low != sortbyx.end(); p_i_low++) {
-            //int32_t yid = locations[sortbyx[i]];
-            int32_t yid = locations[*p_i_low];
-            if (yid <= xid)
+        // binary search for the starting element in the argsorted array
+        auto p_low = std::lower_bound(sortbyx.begin(), sortbyx.end(), xlow,
+                                      [&](const int32_t i, double xval) {
+                                          return loc_pos_curved_mm[locations[i]].first < xval; });
+        assert(p_low != sortbyx.end());
+        // now iterate forward through the array, until we hit an x value greater than xq + the
+        // neighbor-matching radius.
+        for (; p_low != sortbyx.end(); p_low++) {
+            int32_t bid = locations[*p_low];
+            if (bid <= aid)
                 continue;
-            std::cout << "i = " << (p_i_low - sortbyx.begin()) << ", x = " << loc_pos_curved_mm[yid].first << std::endl;
-            if (fabs(loc_pos_curved_mm[yid].first - xq) > neighbor_radius_mm) {
-                std::cout << "found dx for i = " << (p_i_low - sortbyx.begin()) << " of " << fabs(loc_pos_curved_mm[yid].first - xq) << " greater than search radius" << std::endl;
+            // bail out of we've found an x more than the search radius past the query point
+            if (loc_pos_curved_mm[bid].first - xq > neighbor_radius_mm)
                 break;
-            }
-            double dist = fbg::dist(loc_pos_curved_mm[xid],
-                                    loc_pos_curved_mm[yid]);
+            double dist = fbg::dist(loc_pos_curved_mm[aid],
+                                    loc_pos_curved_mm[bid]);
             if (dist <= neighbor_radius_mm) {
-                neighbors2[xid].push_back(yid);
-                neighbors2[yid].push_back(xid);
+                neighbors[aid].push_back(bid);
+                neighbors[bid].push_back(aid);
             }
         }
     }
-
-    double t2b = timenow();
-
-    for (int32_t i = 0; i < nloc; i++) {
-        int32_t xid = locations[i];
-        std::set<int32_t> N1(neighbors[xid].begin(), neighbors[xid].end());
-        std::set<int32_t> N2(neighbors2[xid].begin(), neighbors2[xid].end());
-        assert(N1.size() == N2.size());
-        if (N1.size() != N2.size()) {
-            std::cout << "N1 size != N2 size" << std::endl;
-            exit(-1);
-        }
-        assert(N1 == N2);
-        if (N1 != N2) {
-            std::cout << "N1 != N2" << std::endl;
-            exit(-1);
-        }
-        int nn1 = N1.size();
-        //N1.merge(N2);
-        N1.insert(neighbors2[xid].begin(), neighbors2[xid].end());
-        assert(N1.size() == nn1);
-        if (N1.size() != nn1) {
-            std::cout << "N1.size != nn1" << std::endl;
-            exit(-1);
-        }
-        std::cout << "Checked neighbors for loc " << xid << " (" << nn1 << ")" << std::endl;
-    }
-
-    //t2 = t2b;
 
     // For each location, we rotate the petal and GFA exclusion polygons
     // to the correct petal location.
@@ -368,9 +303,6 @@ fba::Hardware::Hardware(std::string const & timestr,
         loc_gfa_excl.at(lid).rotation_origin(csang);
         loc_petal_excl.at(lid).rotation_origin(csang);
     }
-    double t3 = timenow();
-    std::cout << "Hardware constructor (C++): " << (t3-t0) << " seconds total; sections "
-              << (t1-t0) << ", " << (t2-t1) << ", " << (t3-t2) << " t2b: " << (t2b-t2) << std::endl;
 }
 
 
