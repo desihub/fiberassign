@@ -169,8 +169,9 @@ def load_hardware_args(focalplane=None, rundate=None,
     exclude = None
     state = None
     create_time = "UNKNOWN"
+    time_lo = time_hi = None
     if focalplane is None:
-        fp, exclude, state, create_time = dmio.load_focalplane(runtime)
+        fp, exclude, state, create_time, time_lo, time_hi = dmio.load_focalplane(runtime, get_time_range=True)
     else:
         fp, exclude, state = focalplane
 
@@ -337,7 +338,8 @@ def load_hardware_args(focalplane=None, rundate=None,
                 pp = 180.0
             fake_pos_p[ilid] = pp
             fake_pos_t[ilid] = pt
-        hw = Hardware(
+
+        args = (
             runtimestr,
             locations,
             fp["PETAL"][keep_rows],
@@ -368,7 +370,7 @@ def load_hardware_args(focalplane=None, rundate=None,
             [positioners[x]["petal"] for x in locations],
             add_margins
         )
-    return hw
+    return args, time_lo, time_hi
 
 def radec2xy(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
              ra, dec, use_cs5, threads=0):
