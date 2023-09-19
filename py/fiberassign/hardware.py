@@ -137,6 +137,13 @@ def load_hardware(focalplane=None, rundate=None,
         (Hardware):  The hardware object.
 
     """
+    args = load_hardware_args(focalplane=focalplane, rundate=rundate, add_margins=add_margins)
+    args, time_lo, time_hi = args
+    hw = Hardware(*args)
+    return hw
+
+def load_hardware_args(focalplane=None, rundate=None,
+                       add_margins={}):
     log = Logger.get()
 
     # The timestamp for this run.
