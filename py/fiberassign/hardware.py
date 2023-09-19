@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 import numpy as np
 
 from scipy.interpolate import interp1d
+import astropy.table
 
 import desimodel.io as dmio
 
@@ -289,10 +290,11 @@ def load_hardware_args(focalplane=None, rundate=None,
         else:
             positioners[loc]["petal"] = Shape()
 
-    hw = None
     if "MIN_P" in state.colnames:
         # This is a new-format focalplane model (after desimodel PR #143)
-        hw = Hardware(
+        Istate = np.array([loc_to_state[x] for x in locations])
+        Ifp    = np.array([loc_to_fp   [x] for x in locations])
+        args = (
             runtimestr,
             locations,
             fp["PETAL"][keep_rows],
@@ -303,23 +305,23 @@ def load_hardware_args(focalplane=None, rundate=None,
             device_type,
             fp["OFFSET_X"][keep_rows],
             fp["OFFSET_Y"][keep_rows],
-            np.array([state["STATE"][loc_to_state[x]] for x in locations]),
-            np.array([fp["OFFSET_T"][loc_to_fp[x]] for x in locations]),
-            np.array([state["MIN_T"][loc_to_state[x]] for x in locations]),
-            np.array([state["MAX_T"][loc_to_state[x]] for x in locations]),
-            np.array([state["POS_T"][loc_to_state[x]] for x in locations]),
-            np.array([fp["LENGTH_R1"][loc_to_fp[x]] for x in locations]),
-            np.array([fp["OFFSET_P"][loc_to_fp[x]] for x in locations]),
-            np.array([state["MIN_P"][loc_to_state[x]] for x in locations]),
-            np.array([state["MAX_P"][loc_to_state[x]] for x in locations]),
-            np.array([state["POS_P"][loc_to_state[x]] for x in locations]),
-            np.array([fp["LENGTH_R2"][loc_to_fp[x]] for x in locations]),
+            state['STATE'][Istate],
+            fp['OFFSET_T'][Ifp],
+            state['MIN_T'][Istate],
+            state['MAX_T'][Istate],
+            state['POS_T'][Istate],
+            fp['LENGTH_R1'][Ifp],
+            fp['OFFSET_P'][Ifp],
+            state['MIN_P'][Istate],
+            state['MAX_P'][Istate],
+            state['POS_P'][Istate],
+            fp['LENGTH_R2'][Ifp],
             fine_radius,
             fine_theta,
             fine_arc,
             [positioners[x]["theta"] for x in locations],
-            [positioners[x]["phi"] for x in locations],
-            [positioners[x]["gfa"] for x in locations],
+            [positioners[x]["phi"]   for x in locations],
+            [positioners[x]["gfa"]   for x in locations],
             [positioners[x]["petal"] for x in locations],
             add_margins
         )
@@ -370,7 +372,14 @@ def load_hardware_args(focalplane=None, rundate=None,
             [positioners[x]["petal"] for x in locations],
             add_margins
         )
-    return args, time_lo, time_hi
+
+    aa = []
+    for a in args:
+        if type(a) == astropy.table.Column:
+            a = a.data
+        aa.append(a)
+
+    return aa, time_lo, time_hi
 
 def radec2xy(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
              ra, dec, use_cs5, threads=0):
