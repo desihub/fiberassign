@@ -143,6 +143,87 @@ def load_hardware(focalplane=None, rundate=None,
     hw = Hardware(*args)
     return hw
 
+# def make_hashable(x):
+#     '''
+#     Used by get_exclusions to create keys for its cache.
+#     '''
+#     if type(x) is dict:
+#         return tuple((k, make_hashable(x[k])) for k in sorted(x.keys()))
+#     if type(x) in (list,tuple):
+#         return tuple(make_hashable(v) for v in x)
+#     return x
+
+# Global exclusions cache
+_cache_shape_to_excl = dict()
+
+def get_exclusions(exclude, exclname, margins, local_cache=None):
+    '''
+    Fetches an exclusion region from a data file, applying additional margins as required.
+
+    A "local_cache", valid for a single "exclude" file, can be passed in.
+
+    Args:
+    * exclude: the exclusions file, eg from desimodel.io.load_focalplane.
+    * exclname: the string name to look up
+    * margins: dict of additional margins to apply
+    * local_cache: dict
+    '''
+    global _cache_shape_to_excl
+
+    if local_cache is not None:
+        # check the local cache, where names are unique
+        e = local_cache.get(exclname)
+        if e is not None:
+            return e
+
+    shp = exclude[exclname]
+
+    # NOTE that different exclusions files can assign
+    # different values to the same key!  ie, code 0000fbb5303ebbc2 appears in
+    #   desi-exclusion_2021-03-17T23:20:01.json and
+    #   desi-exclusion_2021-06-25T22:38:59+00:00.json
+    # with totally different values.
+    # We therefore cannot use the "exclname" as the (global) cache key; instead
+    # we hash the value of the shape itself.
+
+    # Sadly, this level of caching actually doesn't help!  I guess
+    # computing the key is too expensive?
+
+    # cache_key = make_hashable(shp)
+    # e = _cache_shape_to_excl.get(cache_key)
+    # if e is not None:
+    #     return e
+
+    rtn = dict()
+    for obj in shp.keys():
+        cr = list()
+        for crc in shp[obj]["circles"]:
+            cr.append(Circle(crc[0], crc[1]))
+        sg = list()
+        for sgm in shp[obj]["segments"]:
+            if obj in margins:
+                # This is silly, but make_hashable is significantly more expensive
+                # because it has to go down one more layer, so do this quicker thing
+                # instead!
+                key = (obj, tuple(tuple(xy) for xy in sgm))
+                #key = make_hashable((obj,sgm))
+                cached = _cache_shape_to_excl.get(key)
+                if cached is not None:
+                    sgm = cached
+                else:
+                    sx = [x for x,y in sgm]
+                    sy = [y for x,y in sgm]
+                    ex,ey = expand_closed_curve(sx, sy, margins[obj])
+                    sgm = list(zip(ex, ey))
+                    _cache_shape_to_excl[key] = sgm
+            sg.append(Segments(sgm))
+        fshp = Shape((0.0, 0.0), cr, sg)
+        rtn[obj] = fshp
+    #cache_shape_to_excl[cache_key] = rtn
+    if local_cache is not None:
+        local_cache[exclname] = rtn
+    return rtn
+
 def load_hardware_args(focalplane=None, rundate=None,
                        add_margins={}):
     log = Logger.get()
@@ -241,44 +322,14 @@ def load_hardware_args(focalplane=None, rundate=None,
     if 'petal' in add_margins:
         margins['petal'] = -add_margins['petal']
 
-    # Convert the exclusion polygons into shapes (as required)
-    excl = dict()
-    # cache expanded polygons (because many of the polygons are actually duplicates)
-    expanded = {}
-    def get_exclusions(exclname):
-        e = excl.get(exclname)
-        if e is not None:
-            return e
-        shp = exclude[exclname]
-        excl[exclname] = dict()
-        for obj in shp.keys():
-            cr = list()
-            for crc in shp[obj]["circles"]:
-                cr.append(Circle(crc[0], crc[1]))
-            sg = list()
-            for sgm in shp[obj]["segments"]:
-                if obj in margins:
-                    key = (obj, tuple(tuple(xy) for xy in sgm))
-                    if key in expanded:
-                        sgm = expanded[key]
-                    else:
-                        sx = [x for x,y in sgm]
-                        sy = [y for x,y in sgm]
-                        ex,ey = expand_closed_curve(sx, sy, margins[obj])
-                        sgm = list(zip(ex, ey))
-                        expanded[key] = sgm
-                sg.append(Segments(sgm))
-            fshp = Shape((0.0, 0.0), cr, sg)
-            excl[exclname][obj] = fshp
-        return excl[exclname]
 
     # For each positioner, select the exclusion polynomials.
     positioners = dict()
-
+    excl_cache = dict()
     for loc in locations:
         exclname = state["EXCLUSION"][loc_to_state[loc]]
         positioners[loc] = dict()
-        posexcl = get_exclusions(exclname)
+        posexcl = get_exclusions(exclude, exclname, margins, local_cache=excl_cache)
         positioners[loc]["theta"] = Shape(posexcl["theta"])
         positioners[loc]["phi"] = Shape(posexcl["phi"])
         if "gfa" in posexcl:
@@ -289,6 +340,7 @@ def load_hardware_args(focalplane=None, rundate=None,
             positioners[loc]["petal"] = Shape(posexcl["petal"])
         else:
             positioners[loc]["petal"] = Shape()
+    del excl_cache
 
     if "MIN_P" in state.colnames:
         # This is a new-format focalplane model (after desimodel PR #143)
