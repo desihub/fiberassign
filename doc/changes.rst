@@ -19,6 +19,10 @@ fiberassign change log
 
 * master to main in setup.py (commit 270b4e8)
 * Update change log and test infrastructure (PR `#440`_).
+* bugfix: correct arguments order when calling gaia_psflike (PR `#442`_).
+* bugfix: fba_sv1 avoid row mixing (PR `#444`_).
+* bugfix (mostly harmless): fba_launch use of too_tile argument in
+  get_desitarget_paths (PR `#446`_).
 
 .. _`#440`: https://github.com/desihub/fiberassign/pull/440
 
