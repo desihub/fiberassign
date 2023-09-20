@@ -15,17 +15,7 @@ namespace fba = fiberassign;
 
 namespace fbg = fiberassign::geom;
 
-#include <set>
 #include <cassert>
-#include <sys/time.h>
-double timenow() {
-    struct timeval tv;
-    if (gettimeofday(&tv, NULL)) {
-        std::cout << "Failed to get time of day" << std::endl;
-        return -1.0;
-    }
-    return (double)(tv.tv_sec - 3600*24*365*30) + tv.tv_usec * 1e-6;
-}
 
 fba::Hardware::Hardware(std::string const & timestr,
                         std::vector <int32_t> const & location,
