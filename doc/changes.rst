@@ -6,6 +6,7 @@ fiberassign change log
 5.7.2 (unreleased)
 ------------------
 
+* fba_rerun: handle custom_too_development argument (PR `#458`_).
 * Use chmod to make sure that permissions get set to their intended values (PR `#457`_).
 * Update ReadTheDocs configuration (PR `#459`_).
 * Add Assignment.check_avail_collisions(tile, all_matches=False) to check potential assignments for collisions (PR `#454`_).
@@ -15,6 +16,7 @@ fiberassign change log
 .. _`#454`: https://github.com/desihub/fiberassign/pull/454
 .. _`#459`: https://github.com/desihub/fiberassign/pull/459
 .. _`#457`: https://github.com/desihub/fiberassign/pull/457
+.. _`#458`: https://github.com/desihub/fiberassign/pull/458
 
 5.7.1 (2023-02-06)
 ------------------
