@@ -7,11 +7,15 @@ fiberassign change log
 ------------------
 
 * fba_rerun: handle custom_too_development argument (PR `#458`_).
+* Use chmod to make sure that permissions get set to their intended values (PR `#457`_).
+* Update ReadTheDocs configuration (PR `#459`_).
 * Add Assignment.check_avail_collisions(tile, all_matches=False) to check potential assignments for collisions (PR `#454`_).
 * uses the focalplane radius from DESIMODEL instead of the hardcoded version in fiberassign (PR `#453`_).
 
 .. _`#453`: https://github.com/desihub/fiberassign/pull/453
 .. _`#454`: https://github.com/desihub/fiberassign/pull/454
+.. _`#459`: https://github.com/desihub/fiberassign/pull/459
+.. _`#457`: https://github.com/desihub/fiberassign/pull/457
 .. _`#458`: https://github.com/desihub/fiberassign/pull/458
 
 5.7.1 (2023-02-06)
@@ -19,6 +23,10 @@ fiberassign change log
 
 * master to main in setup.py (commit 270b4e8)
 * Update change log and test infrastructure (PR `#440`_).
+* bugfix: correct arguments order when calling gaia_psflike (PR `#442`_).
+* bugfix: fba_sv1 avoid row mixing (PR `#444`_).
+* bugfix (mostly harmless): fba_launch use of too_tile argument in
+  get_desitarget_paths (PR `#446`_).
 
 .. _`#440`: https://github.com/desihub/fiberassign/pull/440
 

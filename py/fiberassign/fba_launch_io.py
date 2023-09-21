@@ -3613,8 +3613,8 @@ def copy_to_svn(svntiledir, tileid, myouts,
     svntiledir = os.path.join(svntiledir, subdir)
     files = []
     files += [myouts['fiberassign'], myouts['log'], myouts['png']]
-    os.makedirs(svntiledir, exist_ok=True,
-                mode=dirmode)
+    os.makedirs(svntiledir, exist_ok=True, mode=dirmode)
+    os.chmod(svntiledir, mode=dirmode)
     for filename in files:
         # depending on specific steps that got executed, a file may not exist.
         if not os.path.exists(filename):
