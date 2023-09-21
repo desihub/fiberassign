@@ -750,8 +750,9 @@ if __name__ == "__main__":
     subdir = ('%06d' % args.tileid)[:3]
     if not os.path.isdir(os.path.join(args.outdir, subdir)):
         dirmode = 0o2775 if args.worldreadable else 0o2770
-        os.makedirs(os.path.join(args.outdir, subdir), exist_ok=True,
-                    mode=dirmode)
+        fn = os.path.join(args.outdir, subdir)
+        os.makedirs(fn, exist_ok=True, mode=dirmode)
+        os.chmod(fn, mode=dirmode)  # apparently umask can affect os.makedirs?
 
     # AR utc_time_now, rundate, pmtime
     utc_time_now = datetime.now(tz=timezone.utc)
