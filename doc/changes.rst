@@ -8,9 +8,11 @@ fiberassign change log
 
 * Add Assignment.check_avail_collisions(tile, all_matches=False) to check potential assignments for collisions (PR `#454`_).
 * uses the focalplane radius from DESIMODEL instead of the hardcoded version in fiberassign (PR `#453`_).
+* Use chmod to make sure that permissions get set to their intended values (PR `#457`)
 
 .. _`#453`: https://github.com/desihub/fiberassign/pull/453
 .. _`#454`: https://github.com/desihub/fiberassign/pull/454
+.. _`#457`: https://github.com/desihub/fiberassign/pull/457
 
 5.7.1 (2023-02-06)
 ------------------
