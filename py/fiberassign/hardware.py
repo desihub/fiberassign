@@ -143,17 +143,8 @@ def load_hardware(focalplane=None, rundate=None,
     hw = Hardware(*args)
     return hw
 
-# def make_hashable(x):
-#     '''
-#     Used by get_exclusions to create keys for its cache.
-#     '''
-#     if type(x) is dict:
-#         return tuple((k, make_hashable(x[k])) for k in sorted(x.keys()))
-#     if type(x) in (list,tuple):
-#         return tuple(make_hashable(v) for v in x)
-#     return x
-
-# Global exclusions cache
+# Global cache of exclusions.  (exclusions are geometric regions describing the keep-out
+# areas around positioners, GFAs, and petal edges)
 _cache_shape_to_excl = dict()
 
 def get_exclusions(exclude, exclname, margins, local_cache=None):
@@ -183,16 +174,14 @@ def get_exclusions(exclude, exclname, margins, local_cache=None):
     #   desi-exclusion_2021-03-17T23:20:01.json and
     #   desi-exclusion_2021-06-25T22:38:59+00:00.json
     # with totally different values.
-    # We therefore cannot use the "exclname" as the (global) cache key; instead
-    # we hash the value of the shape itself.
-
-    # Sadly, this level of caching actually doesn't help!  I guess
-    # computing the key is too expensive?
-
-    # cache_key = make_hashable(shp)
-    # e = _cache_shape_to_excl.get(cache_key)
-    # if e is not None:
-    #     return e
+    # We therefore cannot use the "exclname" as the (global) cache key.
+    #
+    # I tried caching the "expand_closed_curve" computation using a hash of the
+    # shape itself as the cache key, but that turned out not to help -- computing
+    # the key was too expensive?
+    #
+    # For further speedups, I suspect that moving expand_closed_curve to C++ would be
+    # very effective.
 
     rtn = dict()
     for obj in shp.keys():
@@ -202,11 +191,8 @@ def get_exclusions(exclude, exclname, margins, local_cache=None):
         sg = list()
         for sgm in shp[obj]["segments"]:
             if obj in margins:
-                # This is silly, but make_hashable is significantly more expensive
-                # because it has to go down one more layer, so do this quicker thing
-                # instead!
+                # Create a hashable version of the line-segment list
                 key = (obj, tuple(tuple(xy) for xy in sgm))
-                #key = make_hashable((obj,sgm))
                 cached = _cache_shape_to_excl.get(key)
                 if cached is not None:
                     sgm = cached
@@ -219,7 +205,6 @@ def get_exclusions(exclude, exclname, margins, local_cache=None):
             sg.append(Segments(sgm))
         fshp = Shape((0.0, 0.0), cr, sg)
         rtn[obj] = fshp
-    #cache_shape_to_excl[cache_key] = rtn
     if local_cache is not None:
         local_cache[exclname] = rtn
     return rtn
