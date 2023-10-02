@@ -188,7 +188,8 @@ def get_exclusions(exclude, exclname, margins, local_cache=None):
         local_cache[exclname] = rtn
     return rtn
 
-def load_hardware(focalplane=None, rundate=None, add_margins={}):
+def load_hardware(focalplane=None, rundate=None, add_margins={},
+                  get_time_range=False):
     """Create a hardware class representing properties of the telescope.
 
     Args:
@@ -200,8 +201,14 @@ def load_hardware(focalplane=None, rundate=None, add_margins={}):
         add_margins (dict): additional margins to add around positioners, GFAs,
             and petals.  Dict with keys "pos", "gfa", "petal" and values of
             millimeters.
+        get_time_range (bool): if True, return (hw, time_lo, time_hi), where
+            time_lo and time_hi are datetime objects corresponding to the first and
+            last dates when the hardware was in this state.
 
     Returns:
+        if get_time_range is True: (hardware, time_lo, time_hi)
+        else: hardware
+
         (Hardware):  The hardware object.
     """
     args = load_hardware_args(focalplane=focalplane, rundate=rundate, add_margins=add_margins)
