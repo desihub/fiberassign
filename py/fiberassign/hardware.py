@@ -122,27 +122,6 @@ def expand_closed_curve(xx, yy, margin):
 
     return ex, ey
 
-
-def load_hardware(focalplane=None, rundate=None,
-                  add_margins={}):
-    """Create a hardware class representing properties of the telescope.
-
-    Args:
-        focalplane (tuple):  Override the focalplane model.  If not None, this
-            should be a tuple of the same data types returned by
-            desimodel.io.load_focalplane()
-        rundate (str):  ISO 8601 format time stamp as a string in the
-            format YYYY-MM-DDTHH:MM:SS+-zz:zz.  If None, uses current time.
-
-    Returns:
-        (Hardware):  The hardware object.
-
-    """
-    args = load_hardware_args(focalplane=focalplane, rundate=rundate, add_margins=add_margins)
-    args, time_lo, time_hi = args
-    hw = Hardware(*args)
-    return hw
-
 # Global cache of exclusions.  (exclusions are geometric regions describing the keep-out
 # areas around positioners, GFAs, and petal edges)
 _cache_shape_to_excl = dict()
@@ -209,8 +188,47 @@ def get_exclusions(exclude, exclname, margins, local_cache=None):
         local_cache[exclname] = rtn
     return rtn
 
-def load_hardware_args(focalplane=None, rundate=None,
-                       add_margins={}):
+def load_hardware(focalplane=None, rundate=None, add_margins={}):
+    """Create a hardware class representing properties of the telescope.
+
+    Args:
+        focalplane (tuple):  Override the focalplane model.  If not None, this
+            should be a tuple of the same data types returned by
+            desimodel.io.load_focalplane()
+        rundate (str):  ISO 8601 format time stamp as a string in the
+            format YYYY-MM-DDTHH:MM:SS+-zz:zz.  If None, uses current time.
+        add_margins (dict): additional margins to add around positioners, GFAs,
+            and petals.  Dict with keys "pos", "gfa", "petal" and values of
+            millimeters.
+
+    Returns:
+        (Hardware):  The hardware object.
+    """
+    args = load_hardware_args(focalplane=focalplane, rundate=rundate, add_margins=add_margins)
+    args, time_lo, time_hi = args
+    hw = Hardware(*args)
+    return hw
+
+def load_hardware_args(focalplane=None, rundate=None, add_margins={}):
+    """Reads the arguments needed to create a Hardware object representing the
+    properties of the instrument at a given date.  Also returns the range of
+    dates when this hardware configuration is valid.
+
+    Args:
+        focalplane (tuple):  Override the focalplane model.  If not None, this
+            should be a tuple of the same data types returned by
+            desimodel.io.load_focalplane()
+        rundate (str):  ISO 8601 format time stamp as a string in the
+            format YYYY-MM-DDTHH:MM:SS+-zz:zz.  If None, uses current time.
+        add_margins (dict): additional margins to add around positioners, GFAs,
+            and petals.  Dict with keys "pos", "gfa", "petal" and values of
+            millimeters.
+
+    Returns:
+        args (tuple): The arguments to be passed to the Hardware constructor
+        time_lo (datetime): The earliest date when this hardware configuration is valid
+        time_hi (datetime): The latest date when this hardware configuration is valid
+    """
     log = Logger.get()
 
     # The timestamp for this run.
