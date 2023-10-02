@@ -226,6 +226,8 @@ def load_hardware(focalplane=None, rundate=None, add_margins={},
     args = load_hardware_args(focalplane=focalplane, rundate=rundate, add_margins=add_margins)
     args, time_lo, time_hi = args
     hw = Hardware(*args)
+    if get_time_range:
+        return hw, time_lo, time_hi
     return hw
 
 def load_hardware_args(focalplane=None, rundate=None, add_margins={}):
