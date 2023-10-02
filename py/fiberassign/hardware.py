@@ -32,6 +32,18 @@ from ._internal import (
     Shape,
 )
 
+def get_default_exclusion_margins():
+    '''
+    We add an additional margin around the exclusion zones in the hardware descriptions.
+    This function returns the defaults used by the fiberassign scripts.
+
+    Returns:
+    margins (dict): with keys "pos", "gfa" and "petal", to floating-point margins in millimeters.
+    '''
+    return dict(pos=0.05,
+                petal=0.4,
+                gfa=0.4)
+
 def expand_closed_curve(xx, yy, margin):
     '''
     For the --margin-{pos,petal,gfa} options, we can add a buffer zone
