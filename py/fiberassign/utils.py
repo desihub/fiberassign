@@ -13,12 +13,17 @@ import os
 import subprocess
 import sys
 from datetime import datetime
+from time import time, sleep
+import numpy as np
+from astropy.table import Table
 from astropy.time import Time
 import yaml
 from pkg_resources import resource_filename
-
+from desiutil.log import get_logger
 from ._internal import (Logger, Timer, GlobalTimers, Circle, Segments, Shape,
                         Environment)
+log = get_logger()
+
 
 # Multiprocessing environment setup
 
@@ -222,3 +227,103 @@ def get_fa_gitversion():
         return str(out.rstrip().decode("ascii"))
     else:
         return "unknown"
+
+
+def get_revs_dates(svndir, subdirs):
+    """
+    Returns the list of svn revisions (and dates) for a list of subfolders.
+
+    Args:
+        svndir: full path to a svn checkout (e.g. "$DESI_TARGET/fiberassign/tiles/trunk") (str)
+        subdirs: comma-separated list of subfolders in svndir (e.g. "000,001,080") (str)
+
+    Returns:
+        revs: list of revisions (np array of int)
+        dates: list of the dates of the revisions (YYYY-MM-DD) (np array of str)
+
+    Notes:
+        This function queries the server ("svn log"), so do not run in parallel!
+    """
+    revs, dates = [], []
+    for subdir in subdirs.split(","):
+        start = time()
+        ps = subprocess.Popen(
+            ["svn", "log", os.path.join(svndir, subdir)], stdout=subprocess.PIPE
+        )
+        output = subprocess.check_output(
+            ["grep", "^r[1-9]"],
+            stdin=ps.stdout,
+        )
+        output = output.strip().decode()
+        ps.stdout.close()
+        lines = output.split("\n")
+        revs += [int(line.split("|")[0][1:]) for line in lines]
+        dates += [line.split("|")[2].split()[0] for line in lines]
+        dt = time() - start
+        log.info("subdir={}\tnrev={}\t(dt={:.1f}s)".format(subdir, len(lines), dt))
+        # AR protect from overloading the server
+        sleep(0.5)
+    revs, ii = np.unique(revs, return_index=True)
+    dates = np.array(dates)[ii]
+    return revs, dates
+
+
+def get_rev_fiberassign_changes(svndir, rev, subdirs=None):
+    """
+    Returns a Table() listing the changed fiberassign files for a given svn revision.
+
+    Args:
+        svndir: full path to a svn checkout (e.g. "$DESI_TARGET/fiberassign/tiles/trunk") (str)
+        rev: the revision (int)
+        subdirs (optional, defaults to None):
+                comma-separated list of subfolders in svndir (e.g. "000,001,080") (str)
+                if provided, cuts the list of fiberassign files on subdirs
+
+    Returns:
+        d: a Table() with: TILEID, FILE, DATE, REVISION
+
+    Notes:
+        This function queries the server ("svn log"), so do not run in parallel!
+    """
+    # AR query svn log
+    start = time()
+    output = subprocess.check_output(
+        ["svn", "log", "-r", str(rev), "-v", svndir], stderr=subprocess.DEVNULL
+    )
+    output = output.strip().decode()
+    dt = time() - start
+    # AR first get date
+    line_date = [
+        line
+        for line in output.split("\n")
+        if line[:2] in ["r{}".format(i) for i in range(1, 10)]
+    ][0]
+    date = line_date.split("|")[2].split()[0]
+    # AR now cut on lines related to fiberassign changes
+    lines = [
+        line
+        for line in output.split("\n")
+        if "/tiles/trunk" in line and "/fiberassign-" in line
+    ]
+    changes = np.array([line.split()[0] for line in lines])
+    fns = np.array([line.split()[1] for line in lines])
+    #
+    myd = {key: [] for key in ["TILEID", "FILE", "DATE", "REVISION", "CHANGE"]}
+    dt = time() - start
+    # AR cut on subdirs
+    tmp_tileids = np.array([int(os.path.basename(fn)[12:18]) for fn in fns])
+    tmp_subdirs = np.array(["{:06d}".format(tileid)[:3] for tileid in tmp_tileids])
+    sel = np.in1d(tmp_subdirs, subdirs.split(","))
+    fns, changes = fns[sel], changes[sel]
+    log.info("rev={}\tdate={}\tnfile={}\t(dt={:.1f}s)".format(rev, date, len(fns), dt))
+    # AR store
+    # AR (forcing types to protect cases where len(fns)=0)
+    d = Table()
+    d.meta["SVNDIR"] = svndir
+    d.meta["SUBDIRS"] = subdirs
+    d["TILEID"] = np.array([int(os.path.basename(fn)[12:18]) for fn in fns], dtype=int)
+    d["FILE"] = np.array(fns, dtype=str)
+    d["DATE"] = np.array([date for fn in fns], dtype="<U10")
+    d["REVISION"] = np.array([rev for fn in fns], dtype=int)
+    d["CHANGE"] = np.array(changes, dtype=str)
+    return d
