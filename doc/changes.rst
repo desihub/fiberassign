@@ -3,7 +3,12 @@
 fiberassign change log
 ======================
 
-5.7.2 (unreleased)
+5.7.3 (unreleased)
+------------------
+
+* No changes yet.
+
+5.7.2 (2023-10-04)
 ------------------
 
 * fba_rerun: handle custom_too_development argument (PR `#458`_).
