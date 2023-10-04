@@ -6,11 +6,10 @@ import numpy as np
 
 from astropy.table import Table
 
-from fiberassign.hardware import load_hardware
+from fiberassign.hardware import load_hardware, get_default_exclusion_margins
 from fiberassign.tiles import load_tiles
 from fiberassign.targets import Targets, TargetsAvailable, LocationsAvailable, create_tagalong, load_target_file, targets_in_tiles
 from fiberassign.assign import Assignment
-
 from fiberassign.utils import Logger
 
 import fitsio
@@ -22,10 +21,7 @@ def main():
     # return
     log = Logger.get()
 
-    margins = dict(pos=0.05,
-                   petal=0.4,
-                   gfa=0.4)
-
+    margins = get_default_exclusion_margins()
     hw = load_hardware(rundate=None, add_margins=margins)
 
     t = Table.read('/global/cfs/cdirs/desi/survey/catalogs/Y1/LSS/tiles-DARK.fits')

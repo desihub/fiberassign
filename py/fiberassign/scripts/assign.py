@@ -16,7 +16,7 @@ import re
 
 from ..utils import GlobalTimers, Logger
 
-from ..hardware import load_hardware
+from ..hardware import load_hardware, get_default_exclusion_margins
 
 from ..tiles import load_tiles
 
@@ -52,6 +52,8 @@ def parse_assign(optlist=None):
     """
     log = Logger.get()
     parser = argparse.ArgumentParser()
+
+    margins = get_default_exclusion_margins()
 
     parser.add_argument("--targets", type=str, required=True, nargs="+",
                         help="Input file with targets of any type.  This "
@@ -127,11 +129,11 @@ def parse_assign(optlist=None):
                         default=1, help="Required number of sky targets per"
                         " fiber slitblock")
 
-    parser.add_argument("--margin-pos", "--margin_pos", type=float, required=False, default=0.05,
+    parser.add_argument("--margin-pos", "--margin_pos", type=float, required=False, default=margins['pos'],
                         help="Add margin (in mm) around positioner keep-out polygons")
-    parser.add_argument("--margin-petal", "--margin_petal", type=float, required=False, default=0.4,
+    parser.add_argument("--margin-petal", "--margin_petal", type=float, required=False, default=margins['petal'],
                         help="Add margin (in mm) around petal-boundary keep-out polygons")
-    parser.add_argument("--margin-gfa", "--margin_gfa", type=float, required=False, default=0.4,
+    parser.add_argument("--margin-gfa", "--margin_gfa", type=float, required=False, default=margins['gfa'],
                         help="Add margin (in mm) around GFA keep-out polygons")
 
     parser.add_argument("--write_all_targets", required=False, default=False,
