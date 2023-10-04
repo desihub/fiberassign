@@ -11,7 +11,9 @@ fiberassign change log
 * Update ReadTheDocs configuration (PR `#459`_).
 * Add Assignment.check_avail_collisions(tile, all_matches=False) to check potential assignments for collisions (PR `#454`_).
 * uses the focalplane radius from DESIMODEL instead of the hardcoded version in fiberassign (PR `#453`_).
+* Add etc/fba_tiles_svn_revisions.py utility script (PR `#451`_).
 
+.. _`#451`: https://github.com/desihub/fiberassign/pull/451
 .. _`#453`: https://github.com/desihub/fiberassign/pull/453
 .. _`#454`: https://github.com/desihub/fiberassign/pull/454
 .. _`#459`: https://github.com/desihub/fiberassign/pull/459
