@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 import numpy as np
 
 from scipy.interpolate import interp1d
+import astropy.table
 
 import desimodel.io as dmio
 
@@ -30,6 +31,18 @@ from ._internal import (
     Segments,
     Shape,
 )
+
+def get_default_exclusion_margins():
+    '''
+    We add an additional margin around the exclusion zones in the hardware descriptions.
+    This function returns the defaults used by the fiberassign scripts.
+
+    Returns:
+    margins (dict): with keys "pos", "gfa" and "petal", to floating-point margins in millimeters.
+    '''
+    return dict(pos=0.05,
+                petal=0.4,
+                gfa=0.4)
 
 def expand_closed_curve(xx, yy, margin):
     '''
@@ -121,9 +134,74 @@ def expand_closed_curve(xx, yy, margin):
 
     return ex, ey
 
+# Global cache of exclusions.  (exclusions are geometric regions describing the keep-out
+# areas around positioners, GFAs, and petal edges)
+_cache_shape_to_excl = dict()
 
-def load_hardware(focalplane=None, rundate=None,
-                  add_margins={}):
+def get_exclusions(exclude, exclname, margins, local_cache=None):
+    '''
+    Fetches an exclusion region from a data file, applying additional margins as required.
+
+    A "local_cache", valid for a single "exclude" file, can be passed in.
+
+    Args:
+    * exclude: the exclusions file, eg from desimodel.io.load_focalplane.
+    * exclname: the string name to look up
+    * margins: dict of additional margins to apply
+    * local_cache: dict
+    '''
+    global _cache_shape_to_excl
+
+    if local_cache is not None:
+        # check the local cache, where names are unique
+        e = local_cache.get(exclname)
+        if e is not None:
+            return e
+
+    shp = exclude[exclname]
+
+    # NOTE that different exclusions files can assign
+    # different values to the same key!  ie, code 0000fbb5303ebbc2 appears in
+    #   desi-exclusion_2021-03-17T23:20:01.json and
+    #   desi-exclusion_2021-06-25T22:38:59+00:00.json
+    # with totally different values.
+    # We therefore cannot use the "exclname" as the (global) cache key.
+    #
+    # I tried caching the "expand_closed_curve" computation using a hash of the
+    # shape itself as the cache key, but that turned out not to help -- computing
+    # the key was too expensive?
+    #
+    # For further speedups, I suspect that moving expand_closed_curve to C++ would be
+    # very effective.
+
+    rtn = dict()
+    for obj in shp.keys():
+        cr = list()
+        for crc in shp[obj]["circles"]:
+            cr.append(Circle(crc[0], crc[1]))
+        sg = list()
+        for sgm in shp[obj]["segments"]:
+            if obj in margins:
+                # Create a hashable version of the line-segment list
+                key = (obj, tuple(tuple(xy) for xy in sgm))
+                cached = _cache_shape_to_excl.get(key)
+                if cached is not None:
+                    sgm = cached
+                else:
+                    sx = [x for x,y in sgm]
+                    sy = [y for x,y in sgm]
+                    ex,ey = expand_closed_curve(sx, sy, margins[obj])
+                    sgm = list(zip(ex, ey))
+                    _cache_shape_to_excl[key] = sgm
+            sg.append(Segments(sgm))
+        fshp = Shape((0.0, 0.0), cr, sg)
+        rtn[obj] = fshp
+    if local_cache is not None:
+        local_cache[exclname] = rtn
+    return rtn
+
+def load_hardware(focalplane=None, rundate=None, add_margins={},
+                  get_time_range=False):
     """Create a hardware class representing properties of the telescope.
 
     Args:
@@ -132,10 +210,45 @@ def load_hardware(focalplane=None, rundate=None,
             desimodel.io.load_focalplane()
         rundate (str):  ISO 8601 format time stamp as a string in the
             format YYYY-MM-DDTHH:MM:SS+-zz:zz.  If None, uses current time.
+        add_margins (dict): additional margins to add around positioners, GFAs,
+            and petals.  Dict with keys "pos", "gfa", "petal" and values of
+            millimeters.
+        get_time_range (bool): if True, return (hw, time_lo, time_hi), where
+            time_lo and time_hi are datetime objects corresponding to the first and
+            last dates when the hardware was in this state.
 
     Returns:
-        (Hardware):  The hardware object.
+        if get_time_range is True: (hardware, time_lo, time_hi)
+        else: hardware
 
+        (Hardware):  The hardware object.
+    """
+    args = load_hardware_args(focalplane=focalplane, rundate=rundate, add_margins=add_margins)
+    args, time_lo, time_hi = args
+    hw = Hardware(*args)
+    if get_time_range:
+        return hw, time_lo, time_hi
+    return hw
+
+def load_hardware_args(focalplane=None, rundate=None, add_margins={}):
+    """Reads the arguments needed to create a Hardware object representing the
+    properties of the instrument at a given date.  Also returns the range of
+    dates when this hardware configuration is valid.
+
+    Args:
+        focalplane (tuple):  Override the focalplane model.  If not None, this
+            should be a tuple of the same data types returned by
+            desimodel.io.load_focalplane()
+        rundate (str):  ISO 8601 format time stamp as a string in the
+            format YYYY-MM-DDTHH:MM:SS+-zz:zz.  If None, uses current time.
+        add_margins (dict): additional margins to add around positioners, GFAs,
+            and petals.  Dict with keys "pos", "gfa", "petal" and values of
+            millimeters.
+
+    Returns:
+        args (tuple): The arguments to be passed to the Hardware constructor
+        time_lo (datetime): The earliest date when this hardware configuration is valid
+        time_hi (datetime): The latest date when this hardware configuration is valid
     """
     log = Logger.get()
 
@@ -162,8 +275,9 @@ def load_hardware(focalplane=None, rundate=None,
     exclude = None
     state = None
     create_time = "UNKNOWN"
+    time_lo = time_hi = None
     if focalplane is None:
-        fp, exclude, state, create_time = dmio.load_focalplane(runtime)
+        fp, exclude, state, create_time, time_lo, time_hi = dmio.load_focalplane(runtime, get_time_range=True)
     else:
         fp, exclude, state = focalplane
 
@@ -232,44 +346,14 @@ def load_hardware(focalplane=None, rundate=None,
     if 'petal' in add_margins:
         margins['petal'] = -add_margins['petal']
 
-    # Convert the exclusion polygons into shapes (as required)
-    excl = dict()
-    # cache expanded polygons (because many of the polygons are actually duplicates)
-    expanded = {}
-    def get_exclusions(exclname):
-        e = excl.get(exclname)
-        if e is not None:
-            return e
-        shp = exclude[exclname]
-        excl[exclname] = dict()
-        for obj in shp.keys():
-            cr = list()
-            for crc in shp[obj]["circles"]:
-                cr.append(Circle(crc[0], crc[1]))
-            sg = list()
-            for sgm in shp[obj]["segments"]:
-                if obj in margins:
-                    key = (obj, tuple(tuple(xy) for xy in sgm))
-                    if key in expanded:
-                        sgm = expanded[key]
-                    else:
-                        sx = [x for x,y in sgm]
-                        sy = [y for x,y in sgm]
-                        ex,ey = expand_closed_curve(sx, sy, margins[obj])
-                        sgm = list(zip(ex, ey))
-                        expanded[key] = sgm
-                sg.append(Segments(sgm))
-            fshp = Shape((0.0, 0.0), cr, sg)
-            excl[exclname][obj] = fshp
-        return excl[exclname]
 
     # For each positioner, select the exclusion polynomials.
     positioners = dict()
-
+    excl_cache = dict()
     for loc in locations:
         exclname = state["EXCLUSION"][loc_to_state[loc]]
         positioners[loc] = dict()
-        posexcl = get_exclusions(exclname)
+        posexcl = get_exclusions(exclude, exclname, margins, local_cache=excl_cache)
         positioners[loc]["theta"] = Shape(posexcl["theta"])
         positioners[loc]["phi"] = Shape(posexcl["phi"])
         if "gfa" in posexcl:
@@ -280,11 +364,13 @@ def load_hardware(focalplane=None, rundate=None,
             positioners[loc]["petal"] = Shape(posexcl["petal"])
         else:
             positioners[loc]["petal"] = Shape()
+    del excl_cache
 
-    hw = None
     if "MIN_P" in state.colnames:
         # This is a new-format focalplane model (after desimodel PR #143)
-        hw = Hardware(
+        Istate = np.array([loc_to_state[x] for x in locations])
+        Ifp    = np.array([loc_to_fp   [x] for x in locations])
+        args = (
             runtimestr,
             locations,
             fp["PETAL"][keep_rows],
@@ -295,23 +381,23 @@ def load_hardware(focalplane=None, rundate=None,
             device_type,
             fp["OFFSET_X"][keep_rows],
             fp["OFFSET_Y"][keep_rows],
-            np.array([state["STATE"][loc_to_state[x]] for x in locations]),
-            np.array([fp["OFFSET_T"][loc_to_fp[x]] for x in locations]),
-            np.array([state["MIN_T"][loc_to_state[x]] for x in locations]),
-            np.array([state["MAX_T"][loc_to_state[x]] for x in locations]),
-            np.array([state["POS_T"][loc_to_state[x]] for x in locations]),
-            np.array([fp["LENGTH_R1"][loc_to_fp[x]] for x in locations]),
-            np.array([fp["OFFSET_P"][loc_to_fp[x]] for x in locations]),
-            np.array([state["MIN_P"][loc_to_state[x]] for x in locations]),
-            np.array([state["MAX_P"][loc_to_state[x]] for x in locations]),
-            np.array([state["POS_P"][loc_to_state[x]] for x in locations]),
-            np.array([fp["LENGTH_R2"][loc_to_fp[x]] for x in locations]),
+            state['STATE'][Istate],
+            fp['OFFSET_T'][Ifp],
+            state['MIN_T'][Istate],
+            state['MAX_T'][Istate],
+            state['POS_T'][Istate],
+            fp['LENGTH_R1'][Ifp],
+            fp['OFFSET_P'][Ifp],
+            state['MIN_P'][Istate],
+            state['MAX_P'][Istate],
+            state['POS_P'][Istate],
+            fp['LENGTH_R2'][Ifp],
             fine_radius,
             fine_theta,
             fine_arc,
             [positioners[x]["theta"] for x in locations],
-            [positioners[x]["phi"] for x in locations],
-            [positioners[x]["gfa"] for x in locations],
+            [positioners[x]["phi"]   for x in locations],
+            [positioners[x]["gfa"]   for x in locations],
             [positioners[x]["petal"] for x in locations],
             add_margins
         )
@@ -330,7 +416,8 @@ def load_hardware(focalplane=None, rundate=None,
                 pp = 180.0
             fake_pos_p[ilid] = pp
             fake_pos_t[ilid] = pt
-        hw = Hardware(
+
+        args = (
             runtimestr,
             locations,
             fp["PETAL"][keep_rows],
@@ -361,7 +448,14 @@ def load_hardware(focalplane=None, rundate=None,
             [positioners[x]["petal"] for x in locations],
             add_margins
         )
-    return hw
+
+    aa = []
+    for a in args:
+        if type(a) == astropy.table.Column:
+            a = a.data
+        aa.append(a)
+
+    return aa, time_lo, time_hi
 
 def radec2xy(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
              ra, dec, use_cs5, threads=0):

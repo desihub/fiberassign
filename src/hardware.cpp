@@ -15,6 +15,7 @@ namespace fba = fiberassign;
 
 namespace fbg = fiberassign::geom;
 
+#include <cassert>
 
 fba::Hardware::Hardware(std::string const & timestr,
                         std::vector <int32_t> const & location,
@@ -46,6 +47,7 @@ fba::Hardware::Hardware(std::string const & timestr,
                         std::vector <fbg::shape> const & excl_petal,
                         std::map    <std::string, double> const & added_margs) :
     added_margins(added_margs) {
+
     nloc = location.size();
 
     fba::Logger & logger = fba::Logger::get();
@@ -224,15 +226,58 @@ fba::Hardware::Hardware(std::string const & timestr,
     }
 
     // Compute neighboring locations
-    for (int32_t x = 0; x < nloc; ++x) {
-        int32_t xid = locations[x];
-        for (int32_t y = x + 1; y < nloc; ++y) {
-            int32_t yid = locations[y];
-            double dist = fbg::dist(loc_pos_curved_mm[xid],
-                                    loc_pos_curved_mm[yid]);
+
+    // This is doing the equivalent of the following code, but faster, by first
+    // argsorting on the x coordinate, and then binary-searching for where to start
+    // in the array, and quitting when the x coordinate alone exceeds the search radius.
+    // This does produce the neighbors in a different order, but that's okay.
+    //
+    //   for (int32_t a = 0; a < nloc; a++) {
+    //       int32_t aid = locations[a];
+    //       for (int32_t b = a + 1; b < nloc; b++) {
+    //           int32_t bid = locations[b];
+    //           double dist = fbg::dist(loc_pos_curved_mm[aid],
+    //                                   loc_pos_curved_mm[bid]);
+    //           if (dist <= neighbor_radius_mm) {
+    //               neighbors[aid].push_back(bid);
+    //               neighbors[bid].push_back(aid);
+    //           }
+    //       }
+    //   }
+
+    // argsort by x coordinate
+    std::vector<int32_t> sortbyx;
+    for (int32_t i=0; i<nloc; i++)
+        sortbyx.push_back(i);
+    std::sort(sortbyx.begin(), sortbyx.end(), [&](int32_t a, int32_t b) {
+        return loc_pos_curved_mm[locations[a]].first < loc_pos_curved_mm[locations[b]].first;
+    });
+    // Now search for matches for each "a" positioner
+    for (int32_t a = 0; a < nloc; a++) {
+        int32_t aid = locations[a];
+        // the x coordinate of positioner 'a'
+        double xq = loc_pos_curved_mm[aid].first;
+        // we'll binary search for the smallest x coordinate within the matching radius
+        double xlow = xq - neighbor_radius_mm;
+        // binary search for the starting element in the argsorted array
+        auto p_low = std::lower_bound(sortbyx.begin(), sortbyx.end(), xlow,
+                                      [&](const int32_t i, double xval) {
+                                          return loc_pos_curved_mm[locations[i]].first < xval; });
+        assert(p_low != sortbyx.end());
+        // now iterate forward through the array, until we hit an x value greater than xq + the
+        // neighbor-matching radius.
+        for (; p_low != sortbyx.end(); p_low++) {
+            int32_t bid = locations[*p_low];
+            if (bid <= aid)
+                continue;
+            // bail out of we've found an x more than the search radius past the query point
+            if (loc_pos_curved_mm[bid].first - xq > neighbor_radius_mm)
+                break;
+            double dist = fbg::dist(loc_pos_curved_mm[aid],
+                                    loc_pos_curved_mm[bid]);
             if (dist <= neighbor_radius_mm) {
-                neighbors[xid].push_back(yid);
-                neighbors[yid].push_back(xid);
+                neighbors[aid].push_back(bid);
+                neighbors[bid].push_back(aid);
             }
         }
     }
