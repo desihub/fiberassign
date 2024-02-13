@@ -197,6 +197,10 @@ def parse_assign(optlist=None):
                         choices=["ls", "gaia"],
                         help="Source for the look-up table for sky positions for stuck fibers:"
                         " 'ls': uses $SKYBRICKS_DIR; 'gaia': uses $SKYHEALPIXS_DIR (default=ls)")
+    parser.add_argument("--write_fits_numproc", required=False, default=0,
+                        type=int,
+                        help="if >0, then runs the write_assignment_fits() in parallel with numproc jobs (default=0)")
+
 
     args = None
     if optlist is None:
@@ -444,7 +448,8 @@ def run_assign_full(args, plate_radec=True):
                           out_prefix=args.prefix, split_dir=args.split,
                           all_targets=args.write_all_targets,
                           gfa_targets=gfa_targets, overwrite=args.overwrite,
-                          stucksky=stucksky, tile_xy_cs5=tile_xy_cs5)
+                          stucksky=stucksky, tile_xy_cs5=tile_xy_cs5,
+                          numproc=args.write_fits_numproc)
 
     gt.stop("run_assign_full write output")
 
@@ -539,7 +544,8 @@ def run_assign_bytile(args):
                           out_prefix=args.prefix, split_dir=args.split,
                           all_targets=args.write_all_targets,
                           gfa_targets=gfa_targets, overwrite=args.overwrite,
-                          stucksky=stucksky, tile_xy_cs5=tile_xy_cs5)
+                          stucksky=stucksky, tile_xy_cs5=tile_xy_cs5,
+                          numproc=args.write_fits_numproc)
 
     gt.stop("run_assign_bytile write output")
 
