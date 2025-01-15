@@ -15,7 +15,7 @@ jobs:
         strategy:
             fail-fast: true
             matrix:
-                os: [ubuntu-22.04]
+                os: [ubuntu-22.04, ubuntu-24.04]
                 python-version: ['3.10']  # , '3.11', '3.12']
                 numpy-version: ['<1.23']
                 astropy-version: ['<6.1', '<7']
@@ -33,7 +33,9 @@ jobs:
               uses: styfle/cancel-workflow-action@0.12.1
               with:
                   access_token: ${{ github.token }}
-            - name: Checkout
+            - name: Install System Packages
+              run: sudo apt install libbz2-dev
+            - name: Checkout Package
               uses: actions/checkout@v4
               with:
                   fetch-depth: 0
@@ -66,7 +68,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                os: [ubuntu-22.04]
+                os: [ubuntu-latest]
                 python-version: ['3.10']
 
         env:
