@@ -6,7 +6,9 @@ fiberassign change log
 5.7.3 (unreleased)
 ------------------
 
-* No changes yet.
+* Remove ``DesiTest`` from setup.py and warn about other deprecated features (PR `#466`_).
+
+.. _`#466`: https://github.com/desihub/fiberassign/pull/466
 
 5.7.2 (2023-10-04)
 ------------------
