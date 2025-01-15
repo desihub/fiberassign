@@ -34,7 +34,7 @@ jobs:
               with:
                   access_token: ${{ github.token }}
             - name: Install System Packages
-              run: sudo apt install libbz2-dev
+              run: sudo apt install libbz2-dev subversion
             - name: Checkout Package
               uses: actions/checkout@v4
               with:
@@ -68,7 +68,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                os: [ubuntu-latest]
+                os: [ubuntu-22.04]
                 python-version: ['3.10']
 
         env:
