@@ -22,6 +22,8 @@ from desimodel.focalplane.fieldrot import field_rotation_angle
 
 import astropy.time
 
+from fiberassign.utils import get_default_static_obsdate
+
 from ._internal import Tiles
 
 
@@ -71,7 +73,7 @@ def load_tiles(tiles_file=None, select=None, obstime=None, obstheta=None,
         obsdatestr = [x.isot for x in obsdate]
     else:
         # default to middle of the survey
-        obsdate = astropy.time.Time('2022-07-01')
+        obsdate = astropy.time.Time(get_default_static_obsdate())
         obsmjd = [obsdate.mjd,] * len(keeprows)
         obsdatestr = [obsdate.isot, ] * len(keeprows)
 
