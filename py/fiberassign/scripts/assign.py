@@ -112,7 +112,8 @@ def parse_assign(optlist=None):
     parser.add_argument("--fieldrot_corr", type=bool, required=False,
                         default=None,
                         help="apply correction to computed fieldrot "
-                        "(default: False if rundate<rundate_cutoff, True else")
+                        "(default: False if args.fieldrot is provided or "
+                        "if args.rundate<rundate_cutoff, True else")
 
     parser.add_argument("--dir", type=str, required=False, default=None,
                         help="Output directory.")
@@ -280,10 +281,13 @@ def parse_assign(optlist=None):
         args.obsdate = '{}-{}-{}'.format(year, mm, dd)
 
     # Apply the field rotation correction?
-    # - True if rundate!=None and rundate>=rundate_cutoff
+    # - True if fieldrot=None, rundate!=None and rundate>=rundate_cutoff
     # - False else
     if args.fieldrot_corr is None:
-        _, args.fieldrot_corr = get_obsdate(rundate=args.rundate)
+        if args.fieldrot is None:
+            _, args.fieldrot_corr = get_obsdate(rundate=args.rundate)
+        else:
+            args.fieldrot_corr = False
 
     # Set output directory
     if args.dir is None:
