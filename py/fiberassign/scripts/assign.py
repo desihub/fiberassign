@@ -14,7 +14,7 @@ import sys
 import argparse
 import re
 
-from ..utils import GlobalTimers, Logger
+from ..utils import GlobalTimers, Logger, get_default_static_obsdate, get_obsdate
 
 from ..hardware import load_hardware, get_default_exclusion_margins
 
@@ -95,9 +95,12 @@ def parse_assign(optlist=None):
                         "Default uses the current date.  Format is "
                         "YYYY-MM-DDTHH:mm:ss+-zz:zz.")
 
-    parser.add_argument("--obsdate", type=str, required=False, default="2022-07-01",
+    parser.add_argument("--obsdate", type=str, required=False,
+                        default=None,
                         help="Plan field rotations for this date (YEARMMDD, "
-                        "or ISO 8601 YEAR-MM-DD with or without time).")
+                        "or ISO 8601 YEAR-MM-DD with or without time); "
+                        "default={} or rundate+1yr, according to rundate".
+                        format(get_default_static_obsdate()))
 
     parser.add_argument("--ha", type=float, required=False, default=0.,
                         help="Design for the given Hour Angle in degrees.")
@@ -259,6 +262,10 @@ def parse_assign(optlist=None):
             except ValueError:
                 args.excludemask = desi_mask.mask(args.excludemask.replace(",","|"))
 
+    # Set obsdate
+    if args.obsdate is None:
+        args.obsdate = get_obsdate(rundate=args.rundate)
+
     # convert YEARMMDD to YEAR-MM-DD to be ISO 8601 compatible
     if re.match('\d{8}', args.obsdate):
         year = args.obsdate[0:4]
@@ -278,7 +285,13 @@ def parse_assign(optlist=None):
     args.margins = dict(pos=args.margin_pos,
                         petal=args.margin_petal,
                         gfa=args.margin_gfa)
+
+    # Print all args
+    for kwargs in args._get_kwargs():
+        log.info("{}:\t{}".format(kwargs[0], kwargs[1]))
+
     return args
+
 
 def run_assign_init(args, plate_radec=True):
     """Initialize assignment inputs.

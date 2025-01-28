@@ -122,6 +122,52 @@ def get_date_cutoff(datetype, cutoff_case):
     date_cutoff = config[datetype][cutoff_case]
     return date_cutoff
 
+
+def get_default_static_obsdate():
+    """
+    Returns the 'historical' default obsdate value.
+
+    Args:
+        None
+
+    Returns:
+        "2022-07-01"
+    """
+    return "2022-07-01"
+
+
+def get_obsdate(rundate=None):
+    """
+    Returns the default obsdate: "2022-07-01" if rundate=None or rundate<obsdate_cutoff.
+
+    Args:
+        rundate (optional, defaults to None): rundate, in the "YYYY-MM-DDThh:mm:ss+00:00" format (string)
+
+    Returns:
+        obsdate: "YYYY-MM-DD" format (string)
+    """
+    obsdate = get_default_static_obsdate()
+    if rundate is None:
+        log.info("rundate={} -> setting obsdate={}".format(rundate, obsdate))
+    else:
+        assert_isoformat_utc(rundate)
+        rundate_mjd = Time(datetime.strptime(rundate, "%Y-%m-%dT%H:%M:%S%z")).mjd
+        rundate_cutoff = get_date_cutoff("rundate", "obsdate")
+        rundate_mjd_cutoff = Time(datetime.strptime(rundate_cutoff, "%Y-%m-%dT%H:%M:%S%z")).mjd
+        if rundate_mjd >= rundate_mjd_cutoff:
+            yyyy = int(rundate[:4])
+            obsdate = "{}{}".format(yyyy + 1, rundate[4:10])
+            log.info(
+                "rundate={} >= rundate_cutoff={} -> setting obsdate={}".format(
+                    rundate, rundate_cutoff, obsdate)
+            )
+        else:
+            log.info(
+                "rundate={} < rundate_cutoff={} -> setting obsdate={}".format(
+                    rundate, rundate_cutoff, obsdate)
+            )
+    return obsdate
+
   
 def get_svn_version(svn_dir):
     """
