@@ -22,13 +22,13 @@ from desimodel.focalplane.fieldrot import field_rotation_angle
 
 import astropy.time
 
-from fiberassign.utils import get_default_static_obsdate
+from fiberassign.utils import get_default_static_obsdate, get_obstheta_corr
 
 from ._internal import Tiles
 
 
 def load_tiles(tiles_file=None, select=None, obstime=None, obstheta=None,
-               obsha=None):
+               obsha=None, obsthetacorr=False):
     """Load tiles from a file.
 
     Load tile data either from the specified file or from the default provided
@@ -42,10 +42,16 @@ def load_tiles(tiles_file=None, select=None, obstime=None, obstheta=None,
         obstheta (float):  The angle in degrees to override the field rotation
             of all tiles.
         obsha (float): The Hour Angle in degrees to design the observation of all tiles.
+        obsthetacorr (optional, defaults to False): apply a correction on obstheta,
+            based on DocDB-8931 (bool)
 
     Returns:
         (Tiles):  A Tiles object.
 
+    Notes:
+        2025, Feb.: added the obsthetacorr optional argument; this correction
+            implemented to avoid the hexapod rotation limit error, is
+            presented/described in DocDB-8931.
     """
     # Read in the tile information
     if tiles_file is None:
@@ -98,6 +104,15 @@ def load_tiles(tiles_file=None, select=None, obstime=None, obstheta=None,
     ha_obs = np.zeros(len(keeprows), dtype=np.float64)
     if obsha is not None:
         ha_obs[:] = obsha
+
+    # AR apply correction on the obstheta?
+    # AR sign is "minus" here;
+    # AR see get_obstheta_corr() (and p.5 of DocDB-8931)
+    if obsthetacorr:
+        theta_obs -= get_obstheta_corr(
+            tiles_data["DEC"][keeprows],
+            ha_obs,
+        )
 
     tls = Tiles(tiles_data["TILEID"][keeprows], tiles_data["RA"][keeprows],
                 tiles_data["DEC"][keeprows],

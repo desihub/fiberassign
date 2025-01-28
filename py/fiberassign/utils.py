@@ -145,28 +145,35 @@ def get_obsdate(rundate=None):
 
     Returns:
         obsdate: "YYYY-MM-DD" format (string)
+        is_after_cutoff: is rundate after rundate_cutoff? (bool)
     """
     obsdate = get_default_static_obsdate()
+    is_after_cutoff = False
     if rundate is None:
-        log.info("rundate={} -> setting obsdate={}".format(rundate, obsdate))
+        log.info(
+            "rundate={} -> (obsdate, is_after_cutoff)=({}, {})".format(
+                rundate, obsdate, is_after_cutoff
+            )
+        )
     else:
         assert_isoformat_utc(rundate)
         rundate_mjd = Time(datetime.strptime(rundate, "%Y-%m-%dT%H:%M:%S%z")).mjd
         rundate_cutoff = get_date_cutoff("rundate", "obsdate")
         rundate_mjd_cutoff = Time(datetime.strptime(rundate_cutoff, "%Y-%m-%dT%H:%M:%S%z")).mjd
         if rundate_mjd >= rundate_mjd_cutoff:
+            is_after_cutoff = True
             yyyy = int(rundate[:4])
             obsdate = "{}{}".format(yyyy + 1, rundate[4:10])
             log.info(
-                "rundate={} >= rundate_cutoff={} -> setting obsdate={}".format(
-                    rundate, rundate_cutoff, obsdate)
+                "rundate={} >= rundate_cutoff={} -> (obsdate, is_after_cutoff)=({}, {})".format(
+                    rundate, rundate_cutoff, obsdate, is_after_cutoff)
             )
         else:
             log.info(
-                "rundate={} < rundate_cutoff={} -> setting obsdate={}".format(
-                    rundate, rundate_cutoff, obsdate)
+                "rundate={} < rundate_cutoff={} -> (obsdate, is_after_cutoff)=({}, {})".format(
+                    rundate, rundate_cutoff, obsdate, is_after_cutoff)
             )
-    return obsdate
+    return obsdate, is_after_cutoff
 
   
 def get_svn_version(svn_dir):
@@ -373,3 +380,53 @@ def get_rev_fiberassign_changes(svndir, rev, subdirs=None):
     d["REVISION"] = np.array([rev for fn in fns], dtype=int)
     d["CHANGE"] = np.array(changes, dtype=str)
     return d
+
+
+def get_obstheta_corr(decs, has, clip_arcsec=600.):
+    """
+    Returns the computed correction to be applied to the field rotation
+        computed in fiberassign.tiles.load_tiles().
+    The correction should be applied as: obsthetas[deg] -= obstheta_corrs[deg].
+
+    Args:
+        decs: tile declinations (float or np array of floats)
+        has: hour angles (float or np array of floats)
+        clip_arcsec (optional, defaults to 600): abs(obstheta_corrs) is
+            forced to be <obstheta_corrs (float)
+
+    Returns:
+        obstheta_corrs: correction (in deg) to be applied (float or np array of floats)
+
+    Notes:
+        See DocDB-8931 for details.
+        During observations, PlateMaker computes the required field rotation,
+            then asks the hexapod to be rotated by
+            ROTOFFST = FIELDROT - PM_REQ_FIELDROT,
+            where FIELDROT is the field rotation coming from fiberassign.tiles.load_tiles().
+        When abs(ROTOFFST)>600 arcsec, the move is denied, and the exposure aborted.
+        Correction computed here is a fit to ROTOFFST=f(DEC), plus a fit on the residuals.
+    """
+    assert clip_arcsec >= 0
+    isoneval = isinstance(decs, float)
+    if isoneval:
+        decs, has = np.atleast_1d(decs), np.atleast_1d(has)
+    # AR fitted function, ROTOFFST[arcsec] = f(DEC)
+    # AR rescale decs into [0, 1]
+    xs = (90. - decs) / 180.
+    rotoffsts = 937.60578 - 697.06513 * xs ** -0.18835
+    # AR fitted function to the residuals, residuals[arcsec] = f(HA)
+    xs = (90. + has) / 180.
+    residuals = -113.90162 + 222.18009 * xs
+    sel = xs > 0.5
+    residuals[sel] = -245.49007 + 485.35700 * xs[sel]
+    # AR total correction
+    obstheta_corrs = rotoffsts + residuals
+    # AR clip
+    obstheta_corrs = np.clip(obstheta_corrs, -clip_arcsec, clip_arcsec)
+    # AR switch to degrees
+    obstheta_corrs /= 3600
+    if isoneval:
+        decs, has = decs[0], has[0]
+        return obstheta_corrs[0]
+    else:
+        return obstheta_corrs
