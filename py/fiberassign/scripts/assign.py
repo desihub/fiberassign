@@ -109,6 +109,11 @@ def parse_assign(optlist=None):
                         help="Override obsdate and use this field rotation "
                         "for all tiles (degrees counter clockwise in CS5)")
 
+    parser.add_argument("--fieldrot_corr", type=bool, required=False,
+                        default=None,
+                        help="apply correction to computed fieldrot "
+                        "(default: False if rundate<rundate_cutoff, True else")
+
     parser.add_argument("--dir", type=str, required=False, default=None,
                         help="Output directory.")
 
@@ -264,7 +269,7 @@ def parse_assign(optlist=None):
 
     # Set obsdate
     if args.obsdate is None:
-        args.obsdate = get_obsdate(rundate=args.rundate)
+        args.obsdate, _ = get_obsdate(rundate=args.rundate)
 
     # convert YEARMMDD to YEAR-MM-DD to be ISO 8601 compatible
     if re.match('\d{8}', args.obsdate):
@@ -273,6 +278,12 @@ def parse_assign(optlist=None):
         dd = args.obsdate[6:8]
         #- Note: ISO8601 does not require time portion
         args.obsdate = '{}-{}-{}'.format(year, mm, dd)
+
+    # Apply the field rotation correction?
+    # - True if rundate!=None and rundate>=rundate_cutoff
+    # - False else
+    if args.fieldrot_corr is None:
+        _, args.fieldrot_corr = get_obsdate(rundate=args.rundate)
 
     # Set output directory
     if args.dir is None:
@@ -324,7 +335,8 @@ def run_assign_init(args, plate_radec=True):
                 except ValueError:
                     pass
     tiles = load_tiles(tiles_file=args.footprint, select=tileselect,
-        obstime=args.obsdate, obstheta=args.fieldrot, obsha=args.ha)
+        obstime=args.obsdate, obstheta=args.fieldrot, obsha=args.ha,
+        obsthetacorr=args.fieldrot_corr)
 
     # Before doing significant calculations, check for pre-existing files
     if not args.overwrite:
