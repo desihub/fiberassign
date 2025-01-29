@@ -57,10 +57,14 @@ jobs:
                 python -m pip install --no-cache-dir git+https://github.com/desihub/desimeter.git@${{ env.DESIMETER_VERSION }}#egg=desimeter
                 mkdir -p ${{ env.DESIMODEL }}
                 svn export https://desi.lbl.gov/svn/code/desimodel/${{ env.DESIMODEL_DATA }}/data ${{ env.DESIMODEL }}/data
-            - name: Install Fiberassign
-              run: CC=g++ CXX=g++ CFLAGS="-fPIC" LDSHARED="g++ -shared" python -m pip install -vvv .
+            # - name: Install Fiberassign
+            #   run: CC=g++ CXX=g++ CFLAGS="-fPIC" LDSHARED="g++ -shared" python -m pip install -vvv .
+            # - name: Run Tests
+            #   run: python -c 'import fiberassign.test; fiberassign.test.runtests()'
+            - name: Compile the package
+              run: CC=g++ CXX=g++ CFLAGS="-fPIC" LDSHARED="g++ -shared" python setup.py build_ext --inplace
             - name: Run Tests
-              run: python -c 'import fiberassign.test; fiberassign.test.runtests()'
+              run: pytest
 
     docs:
         name: Doc test
