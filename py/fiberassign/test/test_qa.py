@@ -46,7 +46,7 @@ from fiberassign.scripts.qa import parse_qa, run_qa
 from fiberassign.scripts.qa_plot import parse_plot_qa, run_plot_qa
 
 
-from .simulate import (test_subdir_create, sim_tiles, sim_targets,
+from .simulate import (sim_data_subdir_create, sim_tiles, sim_targets,
                        sim_focalplane, petal_rotation, sim_assign_date)
 
 
