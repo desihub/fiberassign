@@ -96,7 +96,7 @@ class TestQA(unittest.TestCase):
     def test_science(self):
         set_matplotlib_pdf_backend()
         import matplotlib.pyplot as plt
-        test_dir = test_subdir_create("qa_test_science")
+        test_dir = sim_data_subdir_create("qa_test_science")
         log_file = os.path.join(test_dir, "log.txt")
 
         np.random.seed(123456789)
