@@ -26,7 +26,7 @@ from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                                  Targets, TargetsAvailable,
                                  LocationsAvailable, targets_in_tiles, create_tagalong)
 
-from .simulate import (test_subdir_create, sim_tiles, sim_targets, test_assign_date)
+from .simulate import sim_data_subdir_create, sim_tiles, sim_targets
 
 
 class TestTargets(unittest.TestCase):
@@ -38,7 +38,7 @@ class TestTargets(unittest.TestCase):
         pass
 
     def test_available(self):
-        test_dir = test_subdir_create("targets_test_available")
+        test_dir = sim_data_subdir_create("targets_test_available")
         input_mtl = os.path.join(test_dir, "mtl.fits")
         input_std = os.path.join(test_dir, "standards.fits")
         input_sky = os.path.join(test_dir, "sky.fits")

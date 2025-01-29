@@ -46,8 +46,8 @@ from fiberassign.scripts.qa import parse_qa, run_qa
 from fiberassign.scripts.qa_plot import parse_plot_qa, run_plot_qa
 
 
-from .simulate import (test_subdir_create, sim_tiles, sim_targets,
-                       sim_focalplane, petal_rotation, test_assign_date)
+from .simulate import (sim_data_subdir_create, sim_tiles, sim_targets,
+                       sim_focalplane, petal_rotation, sim_assign_date)
 
 
 class TestQA(unittest.TestCase):
@@ -96,7 +96,7 @@ class TestQA(unittest.TestCase):
     def test_science(self):
         set_matplotlib_pdf_backend()
         import matplotlib.pyplot as plt
-        test_dir = test_subdir_create("qa_test_science")
+        test_dir = sim_data_subdir_create("qa_test_science")
         log_file = os.path.join(test_dir, "log.txt")
 
         np.random.seed(123456789)
@@ -122,7 +122,7 @@ class TestQA(unittest.TestCase):
         load_target_file(tgs, tagalong, input_mtl)
 
         # Read hardware properties
-        fp, exclude, state = sim_focalplane(rundate=test_assign_date)
+        fp, exclude, state = sim_focalplane(rundate=sim_assign_date)
         hw = load_hardware(focalplane=(fp, exclude, state))
         tfile = os.path.join(test_dir, "footprint.fits")
         sim_tiles(tfile)

@@ -18,7 +18,7 @@ from fiberassign.vis import (
     set_matplotlib_pdf_backend
 )
 
-from .simulate import test_subdir_create, sim_focalplane, test_assign_date
+from .simulate import sim_data_subdir_create, sim_focalplane, sim_assign_date
 
 set_matplotlib_pdf_backend()
 import matplotlib.pyplot as plt
@@ -145,8 +145,8 @@ class TestVis(unittest.TestCase):
         plt.close()
 
     def test_plotpos(self):
-        test_dir = test_subdir_create("vis_test_plotpos")
-        time = test_assign_date
+        test_dir = sim_data_subdir_create("vis_test_plotpos")
+        time = sim_assign_date
         suffix = "{}_simple".format(time)
         self._load_and_plotpos(time, test_dir, suffix, simple=True)
         suffix = "{}".format(time)
@@ -221,8 +221,8 @@ class TestVis(unittest.TestCase):
         plt.close()
 
     def test_plotfp(self):
-        test_dir = test_subdir_create("vis_test_plotfp")
-        time = test_assign_date
+        test_dir = sim_data_subdir_create("vis_test_plotfp")
+        time = sim_assign_date
         hw = load_hardware(rundate=time)
         suffix = "{}_simple".format(time)
         self._load_and_plotfp(hw, test_dir, suffix, simple=True)
@@ -237,11 +237,11 @@ class TestVis(unittest.TestCase):
         return
 
     def test_plot_fakefp(self):
-        test_dir = test_subdir_create("vis_test_fakefp")
-        time = test_assign_date
+        test_dir = sim_data_subdir_create("vis_test_fakefp")
+        time = sim_assign_date
 
         # Simulate a fake focalplane
-        fp, exclude, state = sim_focalplane(rundate=test_assign_date, fakepos=True)
+        fp, exclude, state = sim_focalplane(rundate=sim_assign_date, fakepos=True)
 
         # Load the focalplane
         hw = load_hardware(focalplane=(fp, exclude, state))

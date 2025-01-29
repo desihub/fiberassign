@@ -1,3 +1,3 @@
-Sphinx>6,<7
-sphinx-rtd-theme>1
-git+https://github.com/desihub/desiutil.git@main#egg=desiutil
+Sphinx
+sphinx-rtd-theme
+git+https://github.com/desihub/desiutil.git@3.5.0#egg=desiutil

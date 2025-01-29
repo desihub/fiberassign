@@ -20,7 +20,7 @@ from distutils.errors import CompileError
 #
 # DESI support code.
 #
-from desiutil.setup import DesiTest, DesiVersion, get_version
+from desiutil.setup import get_version
 #
 # Begin setup
 #
@@ -77,8 +77,7 @@ setup_keywords['zip_safe'] = False
 # setup_keywords['use_2to3'] = False
 setup_keywords['packages'] = find_packages('py')
 setup_keywords['package_dir'] = {'': 'py'}
-setup_keywords['cmdclass'] = {'version': DesiVersion, 'test': DesiTest,
-                              'sdist': DistutilsSdist}
+setup_keywords['cmdclass'] = {'sdist': DistutilsSdist}
 test_suite_name = \
     '{name}.test.{name}_test_suite.{name}_test_suite'.format(**setup_keywords)
 setup_keywords['test_suite'] = test_suite_name
@@ -226,11 +225,56 @@ ext_modules = [
 setup_keywords['ext_modules'] = ext_modules
 setup_keywords['cmdclass']['build_ext'] = BuildExt
 setup_keywords['cmdclass']['clean'] = RealClean
-
+#
 # Add internal data directories
 #
 setup_keywords['package_data'] = {'fiberassign': ['data/*',],}
 
+#
+# Warning about old features.
+#
+VERSION_HELP = """
+Note: Generating version strings is no longer done using 'python setup.py version'. Instead
+you will need to run:
+
+    desi_update_version [-t TAG] desiutil
+
+which is part of the desiutil package. If you don't already have desiutil installed, you can install it with:
+
+    pip install desiutil
+"""
+
+TEST_HELP = """
+Note: running tests is no longer done using 'python setup.py test'. Instead
+you will need to run:
+
+    pytest
+
+If you don't already have pytest installed, you can install it with:
+
+    pip install pytest
+"""
+
+DOCS_HELP = """
+Note: building the documentation is no longer done using
+'python setup.py {0}'. Instead you will need to run:
+
+    sphinx-build -W --keep-going -b html doc doc/_build/html
+
+If you don't already have Sphinx installed, you can install it with:
+
+    pip install Sphinx
+"""
+
+message = {'test': TEST_HELP,
+           'version': VERSION_HELP,
+           'build_docs': DOCS_HELP.format('build_docs'),
+           'build_sphinx': DOCS_HELP.format('build_sphinx'), }
+
+for m in message:
+    if m in sys.argv:
+        print(message[m])
+        sys.exit(1)
 
 #
 # Run setup command.
