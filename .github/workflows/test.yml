@@ -63,7 +63,7 @@ jobs:
             - name: Compile the package
               run: CC=g++ CXX=g++ CFLAGS="-fPIC" LDSHARED="g++ -shared" python setup.py build_ext --inplace
             - name: Run Tests
-              run: pytest --ignore=py/fiberassign/test/simulate.py
+              run: pytest
 
     docs:
         name: Doc test

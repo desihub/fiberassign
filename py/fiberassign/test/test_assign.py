@@ -50,8 +50,8 @@ from fiberassign.scripts.qa import parse_qa, run_qa
 from fiberassign.scripts.qa_plot import parse_plot_qa, run_plot_qa
 
 
-from .simulate import (test_subdir_create, sim_tiles, sim_targets,
-                       sim_focalplane, petal_rotation, test_assign_date,
+from .simulate import (sim_data_subdir_create, sim_tiles, sim_targets,
+                       sim_focalplane, petal_rotation, sim_assign_date,
                        sim_stuck_sky)
 
 
@@ -73,7 +73,7 @@ class TestAssign(unittest.TestCase):
 
     def test_io(self):
         np.random.seed(123456789)
-        test_dir = test_subdir_create("assign_test_io")
+        test_dir = sim_data_subdir_create("assign_test_io")
         input_mtl = os.path.join(test_dir, "mtl.fits")
         input_std = os.path.join(test_dir, "standards.fits")
         input_sky = os.path.join(test_dir, "sky.fits")
@@ -115,10 +115,10 @@ class TestAssign(unittest.TestCase):
         load_target_file(tgs, tagalong, input_suppsky)
 
         # Compute the targets available to each fiber for each tile.
-        fp, exclude, state = sim_focalplane(rundate=test_assign_date)
+        fp, exclude, state = sim_focalplane(rundate=sim_assign_date)
         hw = load_hardware(
             focalplane=(fp, exclude, state),
-            rundate=test_assign_date
+            rundate=sim_assign_date
         )
         tfile = os.path.join(test_dir, "footprint.fits")
         sim_tiles(tfile)
@@ -285,7 +285,7 @@ class TestAssign(unittest.TestCase):
         return self.test_full(do_stucksky=True)
 
     def test_full(self, do_stucksky=False):
-        test_dir = test_subdir_create("assign_test_full")
+        test_dir = sim_data_subdir_create("assign_test_full")
         np.random.seed(123456789)
         input_mtl = os.path.join(test_dir, "mtl.fits")
         input_std = os.path.join(test_dir, "standards.fits")
@@ -328,8 +328,8 @@ class TestAssign(unittest.TestCase):
         load_target_file(tgs, tagalong, input_suppsky)
 
         # Read hardware properties
-        fp, exclude, state = sim_focalplane(rundate=test_assign_date)
-        hw = load_hardware(focalplane=(fp, exclude, state), rundate=test_assign_date)
+        fp, exclude, state = sim_focalplane(rundate=sim_assign_date)
+        hw = load_hardware(focalplane=(fp, exclude, state), rundate=sim_assign_date)
         tfile = os.path.join(test_dir, "footprint.fits")
         sim_tiles(tfile)
         tiles = load_tiles(tiles_file=tfile)
@@ -394,7 +394,7 @@ class TestAssign(unittest.TestCase):
         return
 
     def test_cli(self):
-        test_dir = test_subdir_create("assign_test_cli")
+        test_dir = sim_data_subdir_create("assign_test_cli")
         np.random.seed(123456789)
         input_mtl = os.path.join(test_dir, "mtl.fits")
         input_std = os.path.join(test_dir, "standards.fits")
@@ -439,7 +439,7 @@ class TestAssign(unittest.TestCase):
             "standards_per_petal": 10,
             "sky_per_petal": 40,
             "overwrite": True,
-            "rundate": test_assign_date
+            "rundate": sim_assign_date
         }
         optlist = option_list(opts)
         args = parse_assign(optlist)
@@ -482,7 +482,7 @@ class TestAssign(unittest.TestCase):
         return
 
     def test_fieldrot(self):
-        test_dir = test_subdir_create("assign_test_fieldrot")
+        test_dir = sim_data_subdir_create("assign_test_fieldrot")
         np.random.seed(123456789)
         input_mtl = os.path.join(test_dir, "mtl.fits")
         input_std = os.path.join(test_dir, "standards.fits")
@@ -544,12 +544,12 @@ class TestAssign(unittest.TestCase):
                 tile_ids = list(tiles.id)
 
             # Simulate a fake focalplane
-            fp, exclude, state = sim_focalplane(rundate=test_assign_date, fakepos=True)
+            fp, exclude, state = sim_focalplane(rundate=sim_assign_date, fakepos=True)
 
             # Load the focalplane
             hw = load_hardware(
                 focalplane=(fp, exclude, state),
-                rundate=test_assign_date
+                rundate=sim_assign_date
             )
 
             # Precompute target positions

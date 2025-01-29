@@ -10,11 +10,7 @@ from fiberassign.hardware import load_hardware
 
 from fiberassign.tiles import load_tiles
 
-from .simulate import (
-    test_subdir_create,
-    sim_tiles,
-    test_assign_date
-)
+from .simulate import sim_data_subdir_create, sim_tiles
 
 from astropy.table import Table
 from astropy.time import Time
@@ -29,7 +25,7 @@ class TestTiles(unittest.TestCase):
         pass
 
     def test_read(self):
-        test_dir = test_subdir_create("tiles_test_read")
+        test_dir = sim_data_subdir_create("tiles_test_read")
         print('test_dir', test_dir)
         hw = load_hardware()
         tfile = os.path.join(test_dir, "footprint.fits")

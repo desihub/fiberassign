@@ -24,7 +24,7 @@ from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                                  TARGET_TYPE_SUPPSKY,
                                  TARGET_TYPE_SUPPSKY, TARGET_TYPE_STANDARD)
 
-test_assign_date = "2020-01-01T00:00:00+00:00"
+sim_assign_date = "2020-01-01T00:00:00+00:00"
 
 def sim_data_dir():
     dir = "test_fiberassign_output"
@@ -33,7 +33,7 @@ def sim_data_dir():
     return dir
 
 
-def test_subdir_create(name):
+def sim_data_subdir_create(name):
     test_dir = os.path.join(sim_data_dir(), name)
     if os.path.isdir(test_dir):
         shutil.rmtree(test_dir)
