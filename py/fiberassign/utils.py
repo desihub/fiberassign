@@ -156,7 +156,10 @@ def get_obsdate(rundate=None):
             )
         )
     else:
-        assert_isoformat_utc(rundate)
+        if not assert_isoformat_utc(rundate):
+            msg = "rundate={} is not yyyy-mm-ddThh:mm:ss+00:00".format(rundate)
+            log.info(msg)
+            raise ValueError(msg)
         rundate_mjd = Time(datetime.strptime(rundate, "%Y-%m-%dT%H:%M:%S%z")).mjd
         rundate_cutoff = get_date_cutoff("rundate", "obsdate")
         rundate_mjd_cutoff = Time(datetime.strptime(rundate_cutoff, "%Y-%m-%dT%H:%M:%S%z")).mjd
