@@ -45,7 +45,7 @@ goaltimes_all = {
     "sv1": {"DARK": 1000.0, "BRIGHT": 150.0, "BACKUP": 30.0},
     "sv2": {"DARK": 1000.0, "BRIGHT": 150.0, "BACKUP": 30.0},
     "sv3": {"DARK": 1200.0, "BRIGHT": 220.0, "BACKUP": 30.0},
-    "main": {"DARK": 1000.0, "BRIGHT": 180.0, "BACKUP": 60.0},
+    "main": {"DARK": 1000.0, "DARK1B": 1000.0, "BRIGHT": 180.0, "BRIGHT1B": 180.0, "BACKUP": 60.0},
 }
 
 # AR surface brightness profile to be used for computing time -> efftime relation
@@ -53,7 +53,7 @@ sbprofs_all = {
     "sv1": {"DARK": "ELG", "BRIGHT": "BGS", "BACKUP": "PSF"},
     "sv2": {"DARK": "ELG", "BRIGHT": "BGS", "BACKUP": "PSF"},
     "sv3": {"DARK": "ELG", "BRIGHT": "BGS", "BACKUP": "PSF"},
-    "main": {"DARK": "ELG", "BRIGHT": "BGS", "BACKUP": "PSF"},
+    "main": {"DARK": "ELG", "DARK1B": "ELG", "BRIGHT": "BGS", "BRIGHT1B": "BGS", "BACKUP": "PSF"},
 }
 
 # AR minimum exposure time fraction needed for this tile to be considered done
@@ -190,7 +190,7 @@ def main():
     )
 
     # AR obscon : for the tile observing conditions, permissive value
-    obscon = "DARK|GRAY|BRIGHT|BACKUP"
+    obscon = "DARK|DARK1B|GRAY|BRIGHT|BRIGHT1B|BACKUP"
     log.info("{:.1f}s\tsettings\ttile obscon={}".format(time() - start, obscon))
 
     # AR desitarget folders/files
@@ -530,7 +530,7 @@ if __name__ == "__main__":
         type=str,
         default=None,
         required=True,
-        choices=["DARK", "BRIGHT", "BACKUP"],
+        choices=["DARK", "DARK1B", "BRIGHT", "BRIGHT1B", "BACKUP"],
     )
     parser.add_argument(
         "--goaltype",
@@ -538,7 +538,7 @@ if __name__ == "__main__":
         type=str,
         default=None,
         required=False,
-        choices=["DARK", "BRIGHT", "BACKUP"],
+        choices=["DARK", "DARK1B", "BRIGHT", "BRIGHT1B", "BACKUP"],
     )
     parser.add_argument(
         "--goaltime",
@@ -546,7 +546,7 @@ if __name__ == "__main__":
             ", ".join(
                 [
                     "{}={}".format(key, goaltimes_all["main"][key])
-                    for key in ["DARK", "BRIGHT", "BACKUP"]
+                    for key in ["DARK", "DARK1B", "BRIGHT", "BRIGHT1B", "BACKUP"]
                 ]
             )
         ),
@@ -560,7 +560,7 @@ if __name__ == "__main__":
             ", ".join(
                 [
                     "{}={}".format(key, sbprofs_all["main"][key])
-                    for key in ["DARK", "BRIGHT", "BACKUP"]
+                    for key in ["DARK", "DARK1B", "BRIGHT", "BRIGHT1B", "BACKUP"]
                 ]
             )
         ),

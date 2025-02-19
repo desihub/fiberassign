@@ -110,7 +110,7 @@ def get_program_latest_timestamp(
 
     Args:
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
-        program: ideally "dark", "bright", or "backup" (string)
+        program: ideally "dark", "dark1b", "bright", "bright1b", or "backup" (string)
                 though if different will return None
         tilera: tile center R.A. (float)
         tiledec: tile center Dec. (float)
@@ -130,6 +130,7 @@ def get_program_latest_timestamp(
     Notes:
         20210831: remove the +1min (and added "leq=True" in the read_targets_.. routines for ledgers)
         20220421: add too_tile optional argument
+        20250218: handle DARK1B/BRIGHT1B
     """
     # AR check DESI_SURVEYOPS is defined
     assert_env_vars(
@@ -143,11 +144,18 @@ def get_program_latest_timestamp(
     # AR check if the per-tile file is here
     # AR no need to check the scnd-mtl-done-tiles.ecsv file,
     # AR     as we restrict to a given program ([desi-survey 2434])
+    # AR DARK1B/BRIGHT1B: need to also parse DARK/BRIGHT
     fn = os.path.join(os.getenv("DESI_SURVEYOPS"), "mtl", "mtl-done-tiles.ecsv")
     if os.path.isfile(fn):
         d = Table.read(fn)
-        keep = d["PROGRAM"] == program.upper()
+        if program.upper() in ["DARK", "DARK1B"]:
+            keep = np.in1d(d["PROGRAM"], ["DARK", "DARK1B"])
+        elif program.upper in ["BRIGHT", "BRIGHT1B"]:
+            keep = np.in1d(d["PROGRAM"], ["BRIGHT", "BRIGHT1B"])
+        else:
+            keep = d["PROGRAM"] == program.upper()
         # AR add a cut on TILEID
+        # AR TODO: read tiles-{survey}.ecsv and use np.in1d()
         if survey == "sv3":
             keep &= (d["TILEID"] < 1000)
         if survey == "main":
@@ -169,8 +177,12 @@ def get_program_latest_timestamp(
         start=start,
     )
     # AR existing folders?
+    if isinstance(mtldir, list):
+        test_hpdirnames = mtldir + [scndmtldir]
+    else:
+        test_hpdirnames = [mtldir, scndmtldir]
     hpdirnames = []
-    for hpdirname in [mtldir, scndmtldir]:
+    for hpdirname in test_hpdirnames:
         if hpdirname is not None:
             if os.path.isdir(hpdirname):
                 hpdirnames.append(hpdirname)
@@ -725,7 +737,7 @@ def get_ledger_paths(
 
     Args:
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
-        program: "dark", "bright", or "backup" (string)
+        program: "dark", "dark1b", "bright", "bright1b" or "backup" (string)
         too_tile (optional, defaults to False):
                 if False and survey=="main" and ToO-fiber.ecsv exists, use ToO-fiber.ecsv (fiber-override only),
                 else, use ToO.ecsv (ToO for dedicated tiles)
@@ -736,18 +748,19 @@ def get_ledger_paths(
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
 
     Returns:
-        - mtl: primary ledgers MTL folder (string)
+        - mtl: primary ledgers MTL folder (string, or list of strings for "main" survey)
         - scndmtl: secondary ledgers MTL folder (string)
         - too: ToO ecsv ledger file (string)
 
     Notes:
         if survey not in ["sv1", "sv2", "sv3", "main"]
-        or program not in ["dark", "bright", or "backup"], will return a warning only
+        or program not in ["dark", "dark1b", "bright", "bright1b" or "backup"], will return a warning only
         same warning only if the built paths/files do not exist.
+        20250218: handle dark1b/bright1b
     """
     # AR expected survey, program?
     exp_surveys = ["sv1", "sv2", "sv3", "main"]
-    exp_programs = ["dark", "bright", "backup"]
+    exp_programs = ["dark", "dark1b", "bright", "bright1b", "backup"]
     if survey.lower() not in exp_surveys:
         log.warning(
             "{:.1f}s\t{}\tunexpected survey={} ({}; proceeding anyway)".format(
@@ -770,6 +783,16 @@ def get_ledger_paths(
     mtl = os.path.join(
         os.getenv("DESI_SURVEYOPS"), "mtl", survey.lower(), program.lower(),
     )
+    # AR handle dark1b/bright1b
+    # AR treat backup in the same way, does not hurt
+    if survey.lower() == "main":
+        progshort = program.lower().replace("1b", "")
+        mtl = mtl.replace(program.lower(), progshort)
+        mtl2 = mtl.replace(progshort, "{}1b".format(progshort))
+        # HACK
+        mtl2 = "/pscratch/sd/a/adamyers/blub/dr9/2.8.0.dev5597/mtl/main/{}1b".format(progshort)
+        # HACK
+        mtl = [mtl, mtl2]
     # AR secondary (dark, bright; no secondary for backup)
     if program.lower() in ["dark", "bright"]:
         scndmtl = os.path.join(
@@ -801,14 +824,19 @@ def get_ledger_paths(
                 time() - start, step, name, path,
             )
         )
-        if path is not None:
-            if not os.path.exists(path):
-                log.warning(
-                    "{:.1f}s\t{}\tdirectory for {}: {} does not exist".format(
-                        time() - start, step, name, path,
+        if isinstance(path, list):
+            paths_to_check = path
+        else:
+            paths_to_check = [path]
+        for path_to_check in paths_to_check:
+            if path_to_check is not None:
+                if not os.path.exists(path_to_check):
+                    log.warning(
+                        "{:.1f}s\t{}\tdirectory for {}: {} does not exist".format(
+                            time() - start, step, name, path_to_check,
+                        )
                     )
-                )
-    #
+
     return mtl, scndmtl, too
 
 
@@ -831,7 +859,7 @@ def get_desitarget_paths(
     Args:
         dtver: desitarget catalog version (string; e.g., "0.57.0")
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
-        program: "dark", "bright", or "backup" (string)
+        program: "dark", "dark1b", "bright", "bright1b" or "backup" (string)
         too_tile (optional, defaults to False):
                 if False and survey=="main" and ToO-fiber.ecsv exists, use ToO-fiber.ecsv (fiber-override only),
                 else, use ToO.ecsv (ToO for dedicated tiles)
@@ -850,8 +878,8 @@ def get_desitarget_paths(
         - sky: sky folder
         - skysupp: skysupp folder
         - gfa: GFA folder
-        - targ: targets folder (static catalogs, with all columns)
-        - mtl: MTL folder
+        - targ, targ2: targets folder(s) (static catalogs, with all columns)
+        - mtl, mtl2: MTL folder(s)
         - scnd: secondary fits catalog (static, with all columns)
         - scndmtl: MTL folder for secondary targets
         - scnd2, scnd3, etc: any other existing secondary fits catalog (static, with all columns)
@@ -859,17 +887,18 @@ def get_desitarget_paths(
 
     Notes:
         if survey not in ["sv1", "sv2", "sv3", "main"]
-        or program not in ["dark", "bright", or "backup"], will return a warning only
+        or program not in ["dark", "dark1b", "bright", "bright1b" or "backup"], will return a warning only
         same warning only if the built paths/files do not exist.
         20210917 : secondary -> add all existing folders (e.g., main2/) (backward-compatible change)
         20220318 : add custom_too_file optional argument
         20220421 : add too_tile optional argument
         20221004 : add custom_too_development optional argument
         20221031 : if multiple files provided in custom_too_file, then several keys: too, too2, too3, etc
+        20250218 : handle dark1b/bright1b; targ2 and mtl2 keys are only present for survey=main
     """
     # AR expected survey, program?
     exp_surveys = ["sv1", "sv2", "sv3", "main"]
-    exp_programs = ["dark", "bright", "backup"]
+    exp_programs = ["dark", "dark1b", "bright", "bright1b", "backup"]
     if survey.lower() not in exp_surveys:
         log.warning(
             "{:.1f}s\t{}\tunexpected survey={} ({}; proceeding anyway)".format(
@@ -898,7 +927,7 @@ def get_desitarget_paths(
         dtcat = gaiadr
     else:
         dtcat = dr
-    mydirs["targ"] = os.path.join(
+    targ = os.path.join(
         os.getenv("DESI_TARGET"),
         "catalogs",
         dtcat,
@@ -908,6 +937,16 @@ def get_desitarget_paths(
         "resolve",
         program.lower(),
     )
+    if survey.lower() == "main":
+        progshort = program.lower().replace("1b", "")
+        targ = targ.replace(program.lower(), progshort)
+        targ2 = targ.replace(progshort, "{}1b".format(progshort))
+        # HACK
+        targ2 = "/pscratch/sd/a/adamyers/blub/dr9/2.8.0.dev5597/targets/main/resolve/{}1b".format(progshort)
+        # HACK
+        mydirs["targ"] = [targ, targ2]
+    else:
+        mydirs["targ"] = targ
     # AR secondary (dark, bright; no secondary for backup)
     if program.lower() in ["dark", "bright"]:
         if survey.lower() == "main":
@@ -963,12 +1002,17 @@ def get_desitarget_paths(
                 time() - start, step, key, mydirs[key]
             )
         )
-        if not os.path.exists(mydirs[key]):
-            log.warning(
-                "{:.1f}s\t{}\tdirectory for {}: {} does not exist".format(
-                    time() - start, step, key, mydirs[key]
+        if isinstance(mydirs[key], list):
+            paths_to_check = mydirs[key]
+        else:
+            paths_to_check = [mydirs[key]]
+        for path_to_check in paths_to_check:
+            if not os.path.exists(path_to_check):
+                log.warning(
+                    "{:.1f}s\t{}\tdirectory for {}: {} does not exist".format(
+                        time() - start, step, key, path_to_check
+                    )
                 )
-            )
 
     # AR ledgers
     mydirs["mtl"], scndmtl, mydirs["too"] = get_ledger_paths(
@@ -1026,7 +1070,7 @@ def create_tile(
     tiledec,
     outfn,
     survey,
-    obscon="DARK|GRAY|BRIGHT|BACKUP",
+    obscon="DARK|DARK1B|GRAY|BRIGHT|BRIGHT1B|BACKUP",
     log=Logger.get(),
     step="",
     start=time(),
@@ -1040,7 +1084,7 @@ def create_tile(
         tiledec: tile center Dec. (float)
         outfn: fits file name to be written
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
-        obscon (optional, defaults to "DARK|GRAY|BRIGHT|BACKUP"): tile allowed observing conditions (string)
+        obscon (optional, defaults to "DARK|DARK1B|GRAY|BRIGHT|BRIGHT1B|BACKUP"): tile allowed observing conditions (string)
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -1296,7 +1340,7 @@ def create_mtl(
 
     Args:
         tilesfn: path to a tiles fits file (string)
-        mtldir: desisurveyops MTL folder (string)
+        mtldir: desisurveyops MTL folder (string or list of two strings)
         mtltime: MTL isodate (string formatted as yyyy-mm-ddThh:mm:ss+00:00)
         targdirs: desitarget targets folder (or file name(s) if secondary) for static fits catalog(s) (string or list)
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
@@ -1337,6 +1381,7 @@ def create_mtl(
                     - will exclude STD_WD as no rundate used
                     - guess the program from the mtldir
                     - only enabled for survey="main"
+        20250218 : handle desi-extension, with dark1b/bright1b
     """
     log.info("")
     log.info("")
@@ -1351,6 +1396,29 @@ def create_mtl(
     # AR    because parse_assign as imports from targets.py,
     # AR    which have imports from fba_launch_io.py...
     from fiberassign.assign import minimal_target_columns
+
+    # AR check on mtl
+    if isinstance(mtldir, list):
+        # AR only two ledgers allowed (e.g. dark, dark1b)
+        if len(mtldir) > 2:
+            msg = "len(mtldir) = {} > 2; only up two ledger folders can be provided".format(
+                len(mtldir)
+            )
+            log.error(msg)
+            raise ValueError(msg)
+        # AR sanity check: in that case, targdirs should also be a 2-elt list
+        if not isinstance(targdirs, list):
+            msg = "two ledger paths are provided ({}) but only one static path ({})".format(
+                ",".join(mtldir), targdirs
+            )
+            log.error(msg)
+            raise ValueError(msg)
+        if len(targdirs) > 2:
+            msg = "len(targdir) = {} > 2; only up two static folders can be provided".format(
+                len(targdir)
+            )
+            log.error(msg)
+            raise ValueError(msg)
 
     # AR change targdirs to list if a string is provided
     if isinstance(targdirs, str):
@@ -1367,6 +1435,9 @@ def create_mtl(
             isodate=mtltime,
         )
     else:
+        # AR read_targets_in_tiles() handles if mtldir is a single folder
+        # AR or a list with two folders
+        # AR https://github.com/desihub/desitarget/pull/833
         d = read_targets_in_tiles(
             mtldir,
             tiles=tiles,
@@ -1375,6 +1446,7 @@ def create_mtl(
             unique=True,
             isodate=mtltime,
             leq=True,
+            maketwostyle=True, # AR add MTL_{HIGHEST,WANTED,CONTAINS} columns
         )
     log.info(
         "{:.1f}s\t{}\treading {} targets from {}".format(
@@ -1442,9 +1514,66 @@ def create_mtl(
                 d, targdirs[0], columns=columns, header=False, strictcols=False, quick=True
             )
         else:
-            targ = read_targets_in_tiles(
-                targdirs[0], tiles=tiles, quick=True, columns=columns + ["TARGETID"]
+            targ = vstack(
+                [
+                    Table(
+                        read_targets_in_tiles(
+                            targdir, tiles=tiles, quick=True, columns=columns + ["TARGETID"]
+                        )
+                    ) for targdir in targdirs
+                ]
             )
+            log.info(
+                "{:.1f}s\t{}\tread {} rows from {}".format(
+                    time() - start, step, len(targ), ",".join(targdirs)
+                )
+            )
+            if len(targdirs) == 1:
+                ok = np.unique(targ["TARGETID"]).size == len(targ)
+                if not ok:
+                    msg = "found {} duplicates, but none are expected".format(
+                        len(targ) - np.unique(targ["TARGETID"]).size
+                    )
+                    log.error(msg)
+                    raise ValueError(msg)
+            else:
+                # AR remove possible duplicates using TARGETID
+                # AR for the static catalogs, all columns should be the same
+                # AR    e.g. in dark and dark1b for a given TARGETID
+                # AR    as TARGETID encodes the catalog release, etc
+                # AR so we do not perform any sanity check that duplicates
+                # AR    have the same column values
+                _, ii = np.unique(targ["TARGETID"], return_index=True)
+                # AR sanity check: dups should have MTL_CONTAINS corresponding to
+                # AR    both ledgers
+                _ = np.arange(len(targ), dtype=int)
+                dups_ii = _[~np.in1d(_, ii)]
+                dups_tids = np.unique(targ["TARGETID"][dups_ii])
+                oc0 = os.path.normpath(targdirs[0]).split(os.path.sep)[-1].upper()
+                oc1 = os.path.normpath(targdirs[1]).split(os.path.sep)[-1].upper()
+                val = obsconditions[oc0] | obsconditions[oc1]
+                expect_dups_ii = np.where(d["MTL_CONTAINS"] == val)[0]
+                expect_dups_tids = np.unique(d["TARGETID"][expect_dups_ii])
+                if not np.all(dups_tids == expect_dups_tids):
+                    msg = "discrepancy in duplicates from the static catalogs ({}) " \
+                        "vs. what is expected from the ledgers ({}), " \
+                        "ndiff = {}".format(
+                            dups_tids.size,
+                            expect_dups_tids.size,
+                            np.max([
+                                (~np.in1d(dups_ii, expect_dups_tids)).sum(),
+                                (~np.in1d(expect_dups_ii, dups_ii)).sum()
+                            ])
+                    )
+                    log.error(msg)
+                    raise ValueError(msg)
+                log.info(
+                    "{:.1f}s\t{}\tremove {} duplicates, remain {} rows".format(
+                        time() - start, step, len(targ) - ii.size, ii.size
+                    )
+                )
+                targ = targ[ii]
+            # AR now match to ledgers
             d = match_ledger_to_targets(d, targ)
     # AR mtl: case secondary
     else:
@@ -2020,6 +2149,8 @@ def launch_onetile_fa(
         )
     )
 
+    # HACK
+    """
     # AR storing parent/assigned quantities
     parent, assign, dras, ddecs, petals, nassign = get_parent_assign_quants(
         args.survey, targfns, fiberassignfn, tilera, tiledec,
@@ -2032,6 +2163,8 @@ def launch_onetile_fa(
             time() - start, step
         )
     )
+    """
+    # HACK
 
 
 def update_fiberassign_header(
@@ -2118,14 +2251,16 @@ def update_fiberassign_header(
     desiroot = os.getenv("DESI_ROOT")
     fd["PRIMARY"].write_key("DESIROOT", desiroot)
     for key in np.sort(list(mydirs.keys())):
-        if (key == "mtl") & (isinstance(mydirs["mtl"], list)):
-            # AR header keywords: MTL, MTL2, MTL3, etc
-            # AR probably to be deprecate for sv2
-            suffixs = [""] + np.arange(2, len(mydirs["mtl"]) + 1).astype(str).tolist()
-            for mtldir, suffix in zip(mydirs["mtl"], suffixs):
-                fd["PRIMARY"].write_key(
-                    "mtl{}".format(suffix), mtldir.replace(desiroot, "DESIROOT"),
-                )
+        if key in ["mtl", "targ"]:
+            if isinstance(mydirs[key], list):
+                # AR header keywords: MTL, MTL2 (or TARG, TARG2)
+                suffixs = [""] + np.arange(2, len(mydirs[key]) + 1).astype(str).tolist()
+                for path, suffix in zip(mydirs[key], suffixs):
+                    fd["PRIMARY"].write_key(
+                        "{}{}".format(key, suffix), path.replace(desiroot, "DESIROOT"),
+                    )
+            else:
+                fd["PRIMARY"].write_key(key, mydirs[key].replace(desiroot, "DESIROOT"))
         else:
             fd["PRIMARY"].write_key(key, mydirs[key].replace(desiroot, "DESIROOT"))
     # AR storing some specific arguments
