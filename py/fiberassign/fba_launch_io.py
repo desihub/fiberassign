@@ -878,8 +878,8 @@ def get_desitarget_paths(
         - sky: sky folder
         - skysupp: skysupp folder
         - gfa: GFA folder
-        - targ, targ2: targets folder(s) (static catalogs, with all columns)
-        - mtl, mtl2: MTL folder(s)
+        - targ: targets folder(s) (static catalogs, with all columns); 2-elt list for main, str otherwise
+        - mtl: MTL folder(s); 2-elt list for main, str otherwise
         - scnd: secondary fits catalog (static, with all columns)
         - scndmtl: MTL folder for secondary targets
         - scnd2, scnd3, etc: any other existing secondary fits catalog (static, with all columns)
