@@ -2436,7 +2436,7 @@ def get_qa_tracers(
 
     Args:
         survey: survey name: "sv1", "sv2", "sv3" or "main") (string)
-        program: "DARK", "BRIGHT", or "BACKUP" (string)
+        program: "DARK", "BRIGHT", "DARK1B", "BRIGHT1B", or "BACKUP" (string)
         log (optional, defaults to None): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -2449,7 +2449,10 @@ def get_qa_tracers(
     if program == "DARK":
         trmskkeys = ["DESI_TARGET", "DESI_TARGET", "DESI_TARGET"]
         trmsks = ["LRG", "ELG", "QSO"]
-    elif program == "BRIGHT":
+    elif program == "DARK1B":
+        trmskkeys = ["DESI_TARGET", "DESI_TARGET", "DESI_TARGET", "DESI_TARGET"]
+        trmsks = ["LRG", "LGE", "ELG", "QSO"]
+    elif program in ["BRIGHT", "BRIGHT1B"]:
         trmskkeys = ["BGS_TARGET", "BGS_TARGET"]
         trmsks = ["BGS_BRIGHT", "BGS_FAINT"]
         trmskkeys += ["MWS_TARGET", "MWS_TARGET"]
@@ -2461,15 +2464,14 @@ def get_qa_tracers(
         trmskkeys = ["MWS_TARGET", "MWS_TARGET", "MWS_TARGET"]
         trmsks = ["BACKUP_BRIGHT", "BACKUP_FAINT", "BACKUP_VERY_FAINT"]
     else:
+        msg = "{:.1f}s\t{}\tprogram={} not in DARK, BRIGHT, DARK1B, BRIGHT1B, or BACKUP; exiting".format(
+            time() - start, step, program
+        )
         if log is not None:
-            log.error(
-                "{:.1f}s\t{}\tprogram={} not in DARK, BRIGHT, or BACKUP; exiting".format(
-                    time() - start, step, program
-                )
-            )
+            log.error(msg)
         else:
-            print("program={} not in DARK, BRIGHT, or BACKUP; exiting".format(program))
-        sys.exit(1)
+            print(msg)
+        raise ValueError(msg)
 
     return trmskkeys, trmsks
 
