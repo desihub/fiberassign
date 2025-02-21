@@ -756,7 +756,14 @@ def get_ledger_paths(
         if survey not in ["sv1", "sv2", "sv3", "main"]
         or program not in ["dark", "dark1b", "bright", "bright1b" or "backup"], will return a warning only
         same warning only if the built paths/files do not exist.
-        20250218: handle dark1b/bright1b
+        20250221: handle dark1b/bright1b:
+            - primary ledgers:
+                dark -> query dark only
+                dark1b -> query dark and dark1b
+            - secondary ledgers:
+                dark -> query dark only
+                dark1b -> query dark1b only
+        [same for bright, bright1b]
     """
     # AR expected survey, program?
     exp_surveys = ["sv1", "sv2", "sv3", "main"]
@@ -784,8 +791,7 @@ def get_ledger_paths(
         os.getenv("DESI_SURVEYOPS"), "mtl", survey.lower(), program.lower(),
     )
     # AR handle dark1b/bright1b
-    # AR treat backup in the same way, does not hurt
-    if survey.lower() == "main":
+    if (survey.lower() == "main") & (program.lower() in ["dark1b", "bright1b"]):
         progshort = program.lower().replace("1b", "")
         mtl = mtl.replace(program.lower(), progshort)
         mtl2 = mtl.replace(progshort, "{}1b".format(progshort))
@@ -793,8 +799,8 @@ def get_ledger_paths(
         mtl2 = "/pscratch/sd/a/adamyers/blub/dr9/2.8.0.dev5597/mtl/main/{}1b".format(progshort)
         # HACK
         mtl = [mtl, mtl2]
-    # AR secondary (dark, bright; no secondary for backup)
-    if program.lower() in ["dark", "bright"]:
+    # AR secondary (dark, dark1b, bright, bright1b; no secondary for backup)
+    if program.lower() in ["dark", "bright", "dark1b", "bright1b"]:
         scndmtl = os.path.join(
             os.getenv("DESI_SURVEYOPS"),
             "mtl",
@@ -878,8 +884,8 @@ def get_desitarget_paths(
         - sky: sky folder
         - skysupp: skysupp folder
         - gfa: GFA folder
-        - targ: targets folder(s) (static catalogs, with all columns); 2-elt list for main, str otherwise
-        - mtl: MTL folder(s); 2-elt list for main, str otherwise
+        - targ: targets folder(s) (static catalogs, with all columns); 2-elt list for main/{dark1b,bright1b}, str otherwise
+        - mtl: MTL folder(s); 2-elt list for main/{dark1b,bright1b}, str otherwise
         - scnd: secondary fits catalog (static, with all columns)
         - scndmtl: MTL folder for secondary targets
         - scnd2, scnd3, etc: any other existing secondary fits catalog (static, with all columns)
@@ -894,7 +900,15 @@ def get_desitarget_paths(
         20220421 : add too_tile optional argument
         20221004 : add custom_too_development optional argument
         20221031 : if multiple files provided in custom_too_file, then several keys: too, too2, too3, etc
-        20250218 : handle dark1b/bright1b; targ2 and mtl2 keys are only present for survey=main
+        20250221: handle dark1b/bright1b (targ2 and mtl2 keys are only present for survey=main, program=dark1b/bright1b)
+            - primary ledgers:
+                dark -> query dark only
+                dark1b -> query dark and dark1b
+            - secondary ledgers:
+                dark -> query dark only
+                dark1b -> query dark1b only
+        [same for bright, bright1b]
+
     """
     # AR expected survey, program?
     exp_surveys = ["sv1", "sv2", "sv3", "main"]
@@ -937,18 +951,19 @@ def get_desitarget_paths(
         "resolve",
         program.lower(),
     )
+    mydirs["targ"] = targ
     if survey.lower() == "main":
         progshort = program.lower().replace("1b", "")
-        targ = targ.replace(program.lower(), progshort)
-        targ2 = targ.replace(progshort, "{}1b".format(progshort))
-        # HACK
-        targ2 = "/pscratch/sd/a/adamyers/blub/dr9/2.8.0.dev5597/targets/main/resolve/{}1b".format(progshort)
-        # HACK
-        mydirs["targ"] = [targ, targ2]
-    else:
-        mydirs["targ"] = targ
+        if program.lower() == "{}1b".format(progshort):
+            targ = targ.replace(program.lower(), progshort)
+            targ2 = targ.replace(progshort, "{}1b".format(progshort))
+            # HACK
+            targ2 = "/pscratch/sd/a/adamyers/blub/dr9/2.8.0.dev5597/targets/main/resolve/{}1b".format(progshort)
+            # HACK
+            mydirs["targ"] = [targ, targ2]
     # AR secondary (dark, bright; no secondary for backup)
-    if program.lower() in ["dark", "bright"]:
+    # AR only query program (in particular, only dark1b for dark1b; same for bright1b)
+    if program.lower() in ["dark", "bright", "dark1b", "bright1b"]:
         if survey.lower() == "main":
             basename = "targets-{}-secondary.fits".format(program.lower())
         else:

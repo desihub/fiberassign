@@ -293,27 +293,38 @@ def main():
     # AR if not backup
     if ("scnd" in steps):
         if ("scnd" in list(mydirs.keys())):
-            targdirs = [mydirs["scnd"]]
-            for key in sorted(list(mydirs.keys())):
-                if (key[:4] == "scnd") & (key != "scnd") & (key != "scndmtl"):
-                    targdirs.append(mydirs[key])
-            create_mtl(
-                mytmpouts["tiles"],
-                mydirs["scndmtl"],
-                args.mtltime,
-                targdirs,
-                args.survey,
-                args.gaiadr.replace("gaia", ""),
-                args.pmcorr,
-                mytmpouts["scnd"],
-                tmpoutdir=tmpoutdir,
-                pmtime_utc_str=args.pmtime_utc_str,
-                log=log,
-                step="scnd",
-                start=start,
-            )
+            # AR handle dark1b/bright1b, where there is no secondary for now
+            # AR but could be in the future
+            # AR assume here that if there are some secondary, the ledgers should be there
+            if not os.path.isdir(mydirs["scndmtl"]):
+                expected_files["scnd"] = False
+                log.info("")
+                log.info("")
+                log.info("{:.1f}s\tscnd\tno secondary ledgers {}".format(time() - start, mydirs["scndmtl"]))
+            else:
+                targdirs = [mydirs["scnd"]]
+                for key in sorted(list(mydirs.keys())):
+                    if (key[:4] == "scnd") & (key != "scnd") & (key != "scndmtl"):
+                        targdirs.append(mydirs[key])
+                create_mtl(
+                    mytmpouts["tiles"],
+                    mydirs["scndmtl"],
+                    args.mtltime,
+                    targdirs,
+                    args.survey,
+                    args.gaiadr.replace("gaia", ""),
+                    args.pmcorr,
+                    mytmpouts["scnd"],
+                    tmpoutdir=tmpoutdir,
+                    pmtime_utc_str=args.pmtime_utc_str,
+                    log=log,
+                    step="scnd",
+                    start=start,
+                )
         else:
             expected_files["scnd"] = False
+            log.info("")
+            log.info("")
             log.info("{:.1f}s\tscnd\tno secondary here".format(time() - start))
     else:
         log.info("")
