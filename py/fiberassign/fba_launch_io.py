@@ -2164,8 +2164,6 @@ def launch_onetile_fa(
         )
     )
 
-    # HACK
-    """
     # AR storing parent/assigned quantities
     parent, assign, dras, ddecs, petals, nassign = get_parent_assign_quants(
         args.survey, targfns, fiberassignfn, tilera, tiledec,
@@ -2178,8 +2176,6 @@ def launch_onetile_fa(
             time() - start, step
         )
     )
-    """
-    # HACK
 
 
 def update_fiberassign_header(
