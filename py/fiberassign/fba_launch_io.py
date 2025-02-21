@@ -961,7 +961,7 @@ def get_desitarget_paths(
             targ2 = "/pscratch/sd/a/adamyers/blub/dr9/2.8.0.dev5597/targets/main/resolve/{}1b".format(progshort)
             # HACK
             mydirs["targ"] = [targ, targ2]
-    # AR secondary (dark, bright; no secondary for backup)
+    # AR secondary (dark, dark1b, bright, bright1b; no secondary for backup)
     # AR only query program (in particular, only dark1b for dark1b; same for bright1b)
     if program.lower() in ["dark", "bright", "dark1b", "bright1b"]:
         if survey.lower() == "main":
