@@ -220,9 +220,13 @@ def str_to_target_type(input):
 
 def default_main_sciencemask():
     """Returns default mask of bits for science targets in main survey.
+
+    Notes:
+        20250221: enable "LGE"
     """
     sciencemask = 0
     sciencemask |= desi_mask["LRG"].mask
+    sciencemask |= desi_mask["LGE"].mask
     sciencemask |= desi_mask["ELG"].mask
     sciencemask |= desi_mask["QSO"].mask
     sciencemask |= desi_mask["BGS_ANY"].mask
