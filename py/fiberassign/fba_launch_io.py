@@ -3231,6 +3231,8 @@ def plot_hist_tracer(ax, survey, parent, assign, msk, mskkey):
             band = "R"
         if "LRG" in msk:
             band = "Z"
+        if "LGE" in msk:
+            band = "Z"
         if "ELG" in msk:
             band = "G"
         if "QSO" in msk:
