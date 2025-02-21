@@ -3550,17 +3550,19 @@ def make_qa(
     Args:
         outpng: written output PNG file (string)
         survey: "sv1", "sv2", "sv3" or "main" (string)
-        program: "DARK", "BRIGHT", or "BACKUP" (string)
+        program: "DARK", "BRIGHT", "DARK1B", "BRIGHT1B", or "BACKUP" (string)
         faflavor: usually {survey}{program} in lower cases (string)
         fiberassignfn: path to the output fiberassign-TILEID.fits file (string)
         tileid: tile TILEID (int)
         tilera: tile center R.A. in degrees (float)
         tiledec: tile center Dec. in degrees (float)
-        obscon: tile allowed observing conditions (string; e.g. "DARK|GRAY|BRIGHT|BACKUP")
+        obscon: tile allowed observing conditions (string; e.g. "DARK|DARK1B|GRAY|BRIGHT|BRIGHT1B||BACKUP")
         rundate: used rundate (string)
         tmpoutdir (optional, defaults to a temporary directory): temporary directory (to download the cutout)
         width_deg (optional, defaults to 4): width of the cutout in degrees (np.array of floats)
     """
+    assert program in ["DARK", "BRIGHT", "DARK1B", "BRIGHT1B", "BACKUP"]
+
     # AR WD and STD used masks
     _, wd_mskkeys, wd_msks, std_mskkeys, std_msks = get_dt_masks(survey, rundate=rundate)
 
