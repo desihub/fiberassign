@@ -2732,7 +2732,7 @@ def qa_print_infos(
     Args:
         ax: pyplot object
         survey: "sv1", "sv2", "sv3" or "main" (string)
-        program: "DARK", "BRIGHT", or "BACKUP" (string)
+        program: "DARK", "BRIGHT", "DARK1B", "BRIGHT1B", or "BACKUP" (string)
         faflavor: usually {survey}{program} in lower cases (string)
         tileid: tile TILEID (int)
         tilera: tile center R.A. in degrees (float)
@@ -2742,6 +2742,8 @@ def qa_print_infos(
         parent: dictionary for the parent target sample (output by get_parent_assign_quants())
         assign: dictionary for the assigned target sample (output by get_parent_assign_quants())
     """
+    assert program in ["DARK", "BRIGHT", "DARK1B", "BRIGHT1B", "BACKUP"]
+
     # AR hard-setting the plotted tracers
     # AR TBD: handle secondaries
     trmskkeys, trmsks = get_qa_tracers(survey, program)
@@ -2791,9 +2793,9 @@ def qa_print_infos(
     # AR infos: brightest target and assigned object
     # AR infos: taking a default 16, in case new programs are added
     magthresh = 16.0
-    if program == "DARK":
+    if program in ["DARK", "DARK1B"]:
         magthres = 16.0
-    if program == "BRIGHT":
+    if program in ["BRIGHT", "BRIGHT1B"]:
         magthresh = 15.0
     if program == "BACKUP":
         magthresh = 15.0
