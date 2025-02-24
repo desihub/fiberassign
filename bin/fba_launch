@@ -545,11 +545,11 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--goaltype",
-        help="goaltype (default=args.program)",
+        help="goaltype (default=args.program, without '1B')",
         type=str,
         default=None,
         required=False,
-        choices=["DARK", "DARK1B", "BRIGHT", "BRIGHT1B", "BACKUP"],
+        choices=["DARK", "BRIGHT", "BACKUP"],
     )
     parser.add_argument(
         "--goaltime",
@@ -777,9 +777,9 @@ if __name__ == "__main__":
     # AR mtltime (2021-09-01): if set to None, now setting it inside main()
     # AR          so that it is recorded in the fiberassign-TILEID.log file
 
-    # AR goaltype
+    # AR goaltype (DARK1B->DARK, BRIGHT1B->BRIGHT)
     if args.goaltype is None:
-        args.goaltype = args.program
+        args.goaltype = args.program.replace("1B", "")
 
     # AR goaltime
     if args.goaltime is None:

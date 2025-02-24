@@ -2245,7 +2245,8 @@ def update_fiberassign_header(
         sys.exit(1)
 
     # AR check on goaltype - faprgrm
-    if args.goaltype != args.program:
+    # AR (DARK1B->DARK, BRIGHT1B->BRIGHT)
+    if args.goaltype != args.program.replace("1B", ""):
         log.warning(
             "{:.1f}s\t{}\tgoaltype={} != program={}".format(
                 time() - start, step, args.goaltype, args.program,
