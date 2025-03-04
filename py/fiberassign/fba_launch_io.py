@@ -796,7 +796,7 @@ def get_ledger_paths(
         mtl = mtl.replace(program.lower(), progshort)
         mtl2 = mtl.replace(progshort, "{}1b".format(progshort))
         # HACK
-        mtl2 = "/pscratch/sd/a/adamyers/blub/dr9/2.8.0.dev5597/mtl/main/{}1b".format(progshort)
+        mtl2 = "/pscratch/sd/a/adamyers/dr9/2.8.0.dev5597/mtl/main/{}1b".format(progshort)
         # HACK
         mtl = [mtl, mtl2]
     # AR secondary (dark, dark1b, bright, bright1b; no secondary for backup)
@@ -958,7 +958,7 @@ def get_desitarget_paths(
             targ = targ.replace(program.lower(), progshort)
             targ2 = targ.replace(progshort, "{}1b".format(progshort))
             # HACK
-            targ2 = "/pscratch/sd/a/adamyers/blub/dr9/2.8.0.dev5597/targets/main/resolve/{}1b".format(progshort)
+            targ2 = "/pscratch/sd/a/adamyers/dr9/2.8.0.dev5597/targets/main/resolve/{}1b".format(progshort)
             # HACK
             mydirs["targ"] = [targ, targ2]
     # AR secondary (dark, dark1b, bright, bright1b; no secondary for backup)
