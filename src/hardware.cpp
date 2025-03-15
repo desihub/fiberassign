@@ -923,7 +923,7 @@ bool fba::Hardware::position_xy_bad(int32_t loc, fbg::dpair const & xy) const {
     // Check inner keepout region.
     auto centerxy = loc_pos_curved_mm.at(loc);
     double r = ::hypot(xy.first - centerxy.first, xy.second - centerxy.second);
-    double r_min = ::abs(loc_theta_arm.at(loc) - loc_phi_arm.at(loc));
+    double r_min = ::fabs(loc_theta_arm.at(loc) - loc_phi_arm.at(loc));
     if (r < r_min + inner_keepout_buffer_mm) {
         return true;
     }
