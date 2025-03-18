@@ -18,9 +18,6 @@ namespace fbg = fiberassign::geom;
 
 #include <cassert>
 
-int fa_behavior = -1;
-const char* fa_behavior_env = getenv("FIBERASSIGN_BEHAVIOR");
-
 fba::Hardware::Hardware(std::string const & timestr,
                         std::vector <int32_t> const & location,
                         std::vector <int32_t> const & petal,
@@ -918,6 +915,8 @@ bool fba::Hardware::move_positioner_xy(
 
 
 bool fba::Hardware::position_xy_bad(int32_t loc, fbg::dpair const & xy) const {
+    int fa_behavior = -1;
+    const char* fa_behavior_env = getenv("FIBERASSIGN_BEHAVIOR");
     if (fa_behavior_env != NULL) fa_behavior = atoi(fa_behavior_env);
 
     double phi;
@@ -936,8 +935,8 @@ bool fba::Hardware::position_xy_bad(int32_t loc, fbg::dpair const & xy) const {
 	    logger.debug("FIBERASSIGN_BEHAVIOR not defined.  Using ::fabs correctly on r_min");
 	    r_min = ::fabs(r_min);
     } else if (fa_behavior == 0) {
-            logger.debug("FIBERASSIGN_BEHAVIOR = 0 -- using ::abs on r_min for old 'buggy' behavior");
-            r_min = ::abs(r_min);
+            logger.debug("FIBERASSIGN_BEHAVIOR = 0 -- using integer ::abs on r_min for old 'buggy' behavior");
+            r_min = ::abs((int)r_min);
     } else {
 	    logger.debug("FIBERASSIGN_BEHAVIOR = 1 -- using ::fabs correctly on r_min");
 	    r_min = ::fabs(r_min);
