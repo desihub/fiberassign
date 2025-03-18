@@ -6,6 +6,7 @@
 #include <iostream>
 #include <algorithm>
 #include <sstream>
+//#include <stdlib.h>
 
 #ifdef _OPENMP
 #  include <omp.h>
@@ -16,6 +17,9 @@ namespace fba = fiberassign;
 namespace fbg = fiberassign::geom;
 
 #include <cassert>
+
+int fa_behavior = -1;
+const char* fa_behavior_env = getenv("FIBERASSIGN_BEHAVIOR");
 
 fba::Hardware::Hardware(std::string const & timestr,
                         std::vector <int32_t> const & location,
@@ -914,6 +918,8 @@ bool fba::Hardware::move_positioner_xy(
 
 
 bool fba::Hardware::position_xy_bad(int32_t loc, fbg::dpair const & xy) const {
+    if (fa_behavior_env != NULL) fa_behavior = atoi(fa_behavior_env);
+
     double phi;
     double theta;
     if ((state.at(loc) & FIBER_STATE_STUCK) || (state.at(loc) & FIBER_STATE_BROKEN)) {
@@ -923,7 +929,21 @@ bool fba::Hardware::position_xy_bad(int32_t loc, fbg::dpair const & xy) const {
     // Check inner keepout region.
     auto centerxy = loc_pos_curved_mm.at(loc);
     double r = ::hypot(xy.first - centerxy.first, xy.second - centerxy.second);
-    double r_min = ::fabs(loc_theta_arm.at(loc) - loc_phi_arm.at(loc));
+    //double r_min = ::abs(loc_theta_arm.at(loc) - loc_phi_arm.at(loc));
+    double r_min = (loc_theta_arm.at(loc) - loc_phi_arm.at(loc));
+    fba::Logger & logger = fba::Logger::get();
+    if (fa_behavior == -1) {
+	    logger.debug("FIBERASSIGN_BEHAVIOR not defined.  Using ::fabs correctly on r_min");
+	    r_min = ::fabs(r_min);
+    } else if (fa_behavior == 0) {
+            logger.debug("FIBERASSIGN_BEHAVIOR = 0 -- using ::abs on r_min for old 'buggy' behavior");
+            r_min = ::abs(r_min);
+    } else {
+	    logger.debug("FIBERASSIGN_BEHAVIOR = 1 -- using ::fabs correctly on r_min");
+	    r_min = ::fabs(r_min);
+    }
+    std::cout << "R_MIN = " << r_min << std::endl;
+    //double r_min = ::fabs(loc_theta_arm.at(loc) - loc_phi_arm.at(loc));
     if (r < r_min + inner_keepout_buffer_mm) {
         return true;
     }
