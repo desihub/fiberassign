@@ -290,6 +290,80 @@ class TestHardware(unittest.TestCase):
             self.assertTrue(False)
 
         return
+    
+    def run_fba_compile_debug(self, tileid, tid, fiber):
+        import os
+        import fitsio
+        import numpy as np
+        from fiberassign.scripts.assign import parse_assign, run_assign_init
+        from fiberassign.targets import targets_in_tiles, TargetsAvailable
+
+        # tile settings
+        tileidpad = "{:06d}".format(tileid)
+        fafn = os.path.join(os.getenv("DESI_ROOT"), "target", "fiberassign", "tiles", "trunk", tileidpad[:3], "fiberassign-{}.fits.gz".format(tileidpad))
+        hdr = fitsio.read_header(fafn, 0)
+        rundate, fa_ha = hdr["RUNDATE"], hdr["FA_HA"]
+
+        # some intermediate files
+        fadir = os.path.join(os.getenv("DESI_ROOT"), "survey", "fiberassign", "main")
+        tilesfn = os.path.join(fadir, tileidpad[:3], "{}-tiles.fits".format(tileidpad))
+        targfn = os.path.join(fadir, tileidpad[:3], "{}-targ.fits".format(tileidpad))
+
+        # is this tid is indeed reachable in the kpno file
+        d = fitsio.read(fafn, "POTENTIAL_ASSIGNMENTS")
+        kpno = ((d["TARGETID"] == tid) & (d["FIBER"] == fiber)).sum() == 1
+
+        # compute the targets reachable by the fibers
+        opts = ["--targets", targfn, "--footprint", tilesfn, "--rundate", rundate, "--ha", str(fa_ha)]
+        ag = parse_assign(opts)
+        hw, tiles, tgs, tagalong = run_assign_init(ag, plate_radec=True)
+        tile_targetids, tile_x, tile_y, tile_xy_cs5 = targets_in_tiles(hw, tgs, tiles, tagalong)
+
+        # cut on our tid for speed up
+        ii = np.where(tile_targetids[tileid] == tid)[0]
+        tile_targetids[tileid] = tile_targetids[tileid][ii]
+        tile_x[tileid] = tile_x[tileid][ii]
+        tile_y[tileid] = tile_y[tileid][ii]
+
+        # compute available targets
+        tgsavail = TargetsAvailable(hw, tiles, tile_targetids, tile_x, tile_y)
+
+        # check for our tid
+        loc = [loc for loc in hw.locations if hw.loc_fiber[loc] == fiber][0]
+        nersc = tid in tgsavail.tile_data(tileid)[loc]
+        return nersc
+
+    def test_hardware_fiberassign_behavior_abs(self):
+        """Test the behavior of the bug found in issue #258 where ::abs in
+        hardware.cpp returned an int for r_min instead of a double in older
+        compiler versions.  This is fixed to use fabs instead but the old
+        buggy behavior is replicated by setting FIBERASSIGN_BEHAVIOR=0.
+        """
+
+        import os
+
+        # non-reproducible case
+        # that tid is reachable by that fiber at kpno, not for nersc rerun with compiling fiberassign with godesi/main
+        tileid, tid, fiber = 3857, 39633537837566766, 1761
+
+        # set DESIMODEL here, to avoid having to set it in the configuration
+        os.environ["DESIMODEL"] = "/global/common/software/desi/perlmutter/desiconda/current/code/desimodel/main"
+        if 'FIBERASSIGN_BEHAVIOR' in os.environ:
+            current_behavior = os.environ['FIBERASSIGN_BEHAVIOR']
+        else:
+            current_behavior = -1
+
+        os.environ['FIBERASSIGN_BEHAVIOR'] = "0"
+        assert(self.run_fba_compile_debug(tileid, tid, fiber) is True)
+
+        os.environ['FIBERASSIGN_BEHAVIOR'] = "1"
+        assert(self.run_fba_compile_debug(tileid, tid, fiber) is False)
+
+        #reset behavior
+        if (current_behavior != -1):
+            #Unset is equivalent to 1 so leave it set
+            os.environ['FIBERASSIGN_BEHAVIOR'] = current_behavior
+
 
 def test_suite():
     """Allows testing of only this module with the command::
