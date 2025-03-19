@@ -353,9 +353,11 @@ class TestHardware(unittest.TestCase):
         else:
             current_behavior = -1
 
+        print ("Testing 'buggy' behavior")
         os.environ['FIBERASSIGN_BEHAVIOR'] = "0"
         assert(self.run_fba_compile_debug(tileid, tid, fiber) is True)
 
+        print ("Testing 'correct' behavior")
         os.environ['FIBERASSIGN_BEHAVIOR'] = "1"
         assert(self.run_fba_compile_debug(tileid, tid, fiber) is False)
 
@@ -363,6 +365,8 @@ class TestHardware(unittest.TestCase):
         if (current_behavior != -1):
             #Unset is equivalent to 1 so leave it set
             os.environ['FIBERASSIGN_BEHAVIOR'] = current_behavior
+
+        return True
 
 
 def test_suite():
