@@ -458,7 +458,7 @@ def load_hardware_args(focalplane=None, rundate=None, add_margins={}):
     return aa, time_lo, time_hi
 
 def radec2xy(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
-             ra, dec, use_cs5, threads=0):
+             ra, dec, use_cs5, threads=0, use_hardcoded_polmis_rotmat=True):
     '''
     For the tile pointed at (tilera, tiledec), project the (ra, dec)
     value into X/Y mm.
@@ -493,14 +493,14 @@ def radec2xy(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
     # Don't pass adc[12]: Let desimeter use its pm-alike routines
     if use_cs5:
         x, y = fiberassign_radec2xy_cs5(ra, dec, tile_ra, tile_dec, mjd,
-                                        tile_obsha, tile_obstheta)
+                                        tile_obsha, tile_obstheta, use_hardcoded_polmis_rotmat=use_hardcoded_polmis_rotmat)
     else:
         x, y = fiberassign_radec2xy_flat(ra, dec, tile_ra, tile_dec, mjd,
-                                         tile_obsha, tile_obstheta)
+                                         tile_obsha, tile_obstheta, use_hardcoded_polmis_rotmat=use_hardcoded_polmis_rotmat)
     return x,y
 
 def xy2radec(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
-             x, y, use_cs5, threads=0):
+             x, y, use_cs5, threads=0, use_hardcoded_polmis_rotmat=True):
     '''
     For the tile pointed at (tilera, tiledec), compute the RA,Dec
     pointing of the specified X/Y location in millimeters.
@@ -530,10 +530,10 @@ def xy2radec(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
     mjd = t.mjd
     if use_cs5:
         ra,dec = fiberassign_cs5_xy2radec(x, y, tile_ra, tile_dec, mjd,
-                                          tile_obsha, tile_obstheta)
+                                          tile_obsha, tile_obstheta, use_hardcoded_polmis_rotmat=use_hardcoded_polmis_rotmat)
     else:
         ra,dec = fiberassign_flat_xy2radec(x, y, tile_ra, tile_dec, mjd,
-                                           tile_obsha, tile_obstheta)
+                                           tile_obsha, tile_obstheta, use_hardcoded_polmis_rotmat=use_hardcoded_polmis_rotmat)
     return ra,dec
 
 def xy2cs5(x, y):

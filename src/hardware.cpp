@@ -941,7 +941,7 @@ bool fba::Hardware::position_xy_bad(int32_t loc, fbg::dpair const & xy) const {
 	    logger.debug("FIBERASSIGN_BEHAVIOR = 1 -- using ::fabs correctly on r_min");
 	    r_min = ::fabs(r_min);
     }
-    std::cout << "R_MIN = " << r_min << std::endl;
+//    std::cout << "R_MIN = " << r_min << std::endl;
     //double r_min = ::fabs(loc_theta_arm.at(loc) - loc_phi_arm.at(loc));
     if (r < r_min + inner_keepout_buffer_mm) {
         return true;
