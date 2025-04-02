@@ -155,6 +155,7 @@ def stuck_on_sky_from_fafns(fafns):
         stuck_sky[tileid][loc] = bool_good_sky
     '''
 
+    from fiberassign.utils import Logger, get_date_cutoff
     from fiberassign.hardware import FIBER_STATE_STUCK, FIBER_STATE_BROKEN
     from fiberassign.targets import TARGET_TYPE_SKY
 
@@ -164,6 +165,15 @@ def stuck_on_sky_from_fafns(fafns):
 
         hdr = fitsio.read_header(fafn, 0)
         tile_id = hdr["TILEID"]
+        rundate = hdr["RUNDATE"]
+
+        if rundate is None:
+            etc_fibers_are_stuck = False
+        else:
+            etc_cutoff = get_date_cutoff('rundate', 'etc_stuck')
+            etc_cutoff = Time(datetime.strptime(etc_cutoff, "%Y-%m-%dT%H:%M:%S%z")).mjd
+            rundate = Time(datetime.strptime(rundate,  "%Y-%m-%dT%H:%M:%S%z")).mjd
+            etc_fibers_are_stuck = rundate > etc_cutoff
 
         stuck_sky[tile_id] = dict()
         # FIBERASSIGN
@@ -172,9 +182,10 @@ def stuck_on_sky_from_fafns(fafns):
         for loc, good in zip(d["LOCATION"][sel], d["OBJTYPE"][sel] == "SKY"):
             stuck_sky[tile_id][loc] = good
         # ETC
-        d = fitsio.read(fafn, "SKY_MONITOR", columns=["LOCATION", "FA_TYPE"])
-        for loc, good in zip(d["LOCATION"], (d["FA_TYPE"] & TARGET_TYPE_SKY) > 0):
-            stuck_sky[tile_id][loc] = good
+        if etc_fibers_are_stuck:
+            d = fitsio.read(fafn, "SKY_MONITOR", columns=["LOCATION", "FA_TYPE"])
+            for loc, good in zip(d["LOCATION"], (d["FA_TYPE"] & TARGET_TYPE_SKY) > 0):
+                stuck_sky[tile_id][loc] = good
         # re-order by increasing locations, to reproduce stuck_on_sky()
         stuck_sky[tile_id] = dict(sorted(stuck_sky[tile_id].items()))
 
