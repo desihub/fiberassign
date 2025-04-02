@@ -2,6 +2,7 @@ import sys
 import os
 from datetime import datetime
 import numpy as np
+import fitsio
 
 from desitarget.skybricks import Skybricks
 from desitarget.skyhealpixs import Skyhealpixs
@@ -139,5 +140,42 @@ def stuck_on_sky(hw, tiles, lookup_sky_source, rundate=None):
                      (np.sum(good_sky & stuck_isetc), np.sum(stuck_isetc)))
         for loc,good in zip(stuck_loc, good_sky):
             stuck_sky[tile_id][loc] = good
+
+    return stuck_sky
+
+
+def stuck_on_sky_from_fafns(fafns):
+    '''
+    Retrieve the information if STUCK positioners land on good SKY locations from a list of fiberassign-TILEID.fits.gz files.
+
+    Args:
+        fafns: comma-separated list of full paths to fiberassign-TILEID.fits.gz files.
+
+    Returns a nested dict:
+        stuck_sky[tileid][loc] = bool_good_sky
+    '''
+
+    from fiberassign.hardware import FIBER_STATE_STUCK, FIBER_STATE_BROKEN
+    from fiberassign.targets import TARGET_TYPE_SKY
+
+    stuck_sky = dict()
+
+    for fafn in fafns.split(","):
+
+        hdr = fitsio.read_header(fafn, 0)
+        tile_id = hdr["TILEID"]
+
+        stuck_sky[tile_id] = dict()
+        # FIBERASSIGN
+        d = fitsio.read(fafn, "FIBERASSIGN", columns=["LOCATION", "FIBER", "FIBERSTATUS", "OBJTYPE"])
+        sel = (d["FIBERSTATUS"] & (FIBER_STATE_STUCK | FIBER_STATE_BROKEN)) == FIBER_STATE_STUCK
+        for loc, good in zip(d["LOCATION"][sel], d["OBJTYPE"][sel] == "SKY"):
+            stuck_sky[tile_id][loc] = good
+        # ETC
+        d = fitsio.read(fafn, "SKY_MONITOR", columns=["LOCATION", "FA_TYPE"])
+        for loc, good in zip(d["LOCATION"], (d["FA_TYPE"] & TARGET_TYPE_SKY) > 0):
+            stuck_sky[tile_id][loc] = good
+        # re-order by increasing locations, to reproduce stuck_on_sky()
+        stuck_sky[tile_id] = dict(sorted(stuck_sky[tile_id].items()))
 
     return stuck_sky
