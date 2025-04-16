@@ -20,13 +20,9 @@ from astropy.time import Time
 import yaml
 from pkg_resources import resource_filename
 from desiutil.log import get_logger
-import desiutil.iers
 from ._internal import (Logger, Timer, GlobalTimers, Circle, Segments, Shape,
                         Environment)
 log = get_logger()
-
-#
-freeze_iers = desiutil.iers.freeze_iers
 
 
 # Multiprocessing environment setup
