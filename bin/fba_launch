@@ -31,6 +31,7 @@ from fiberassign.fba_launch_io import (
     mv_temp2final,
     copy_to_svn,
 )
+from fiberassign.utils import freeze_iers
 from argparse import ArgumentParser
 
 # AR allowed steps in fba_launch
@@ -65,6 +66,9 @@ mintfracs_all = {
     "main": 0.85,
 }
 
+
+# AR freeze_iers
+freeze_iers()
 
 def main():
     #
