@@ -24,6 +24,11 @@ import astropy.time
 
 from ._internal import Tiles
 
+from .utils import freeze_iers
+
+# AR freeze_iers
+freeze_iers()
+
 
 def load_tiles(tiles_file=None, select=None, obstime=None, obstheta=None,
                obsha=None):

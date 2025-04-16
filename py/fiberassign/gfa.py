@@ -14,7 +14,10 @@ import desimodel.focalplane.gfa
 from desitarget.gaiamatch import gaia_psflike
 
 from ._internal import Tiles
-from .utils import Logger, Timer
+from .utils import Logger, Timer, freeze_iers
+
+# AR freeze_iers
+freeze_iers()
 
 
 def isolated(ra, dec, mindist=5.0):

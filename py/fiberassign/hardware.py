@@ -18,7 +18,7 @@ import astropy.table
 
 import desimodel.io as dmio
 
-from .utils import Logger
+from .utils import Logger, freeze_iers
 
 from ._internal import (
     Hardware,
@@ -31,6 +31,9 @@ from ._internal import (
     Segments,
     Shape,
 )
+
+# AR freeze_iers
+freeze_iers()
 
 def get_default_exclusion_margins():
     '''
