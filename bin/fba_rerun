@@ -7,24 +7,25 @@ from astropy.time import Time
 from astropy.io import fits
 import numpy as np
 from fiberassign.fba_launch_io import assert_env_vars, print_config_infos
-from fiberassign.utils import Logger, freeze_iers
+from fiberassign.utils import Logger
 import desitarget
 import desimeter
 import fiberassign
+from desiutil.iers import freeze_iers
 
 from argparse import ArgumentParser, RawTextHelpFormatter
 
 # AR allowed steps in fba_launch
 steps_all = ["tiles", "sky", "gfa", "targ", "scnd", "too", "fa", "zip", "move", "qa"]
 
-# AR freeze_iers
-freeze_iers()
-
 
 def main():
     #
     start = time()
     log.info("{:.1f}s\tstart\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+
+    # AR freeze_iers
+    freeze_iers()
 
     # AR steps to execute in fba_launch
     steps = [step for step in args.steps.split(",")]
