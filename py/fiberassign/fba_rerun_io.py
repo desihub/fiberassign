@@ -26,7 +26,7 @@ from astropy.time import Time
 from desitarget.geomask import match_to
 
 # fiberassign
-from fiberassign.utils import Logger, freeze_iers
+from fiberassign.utils import Logger
 
 # fiberassign.fba_launch_io
 from fiberassign.fba_launch_io import (
@@ -38,9 +38,6 @@ from fiberassign.fba_launch_io import (
     create_too,
 )
 
-
-# AR freeze_iers
-freeze_iers()
 
 def fba_rerun_get_settings(
     fn, bugfix=True, log=Logger.get(), step="settings", start=time(),

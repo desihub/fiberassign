@@ -7,11 +7,6 @@ from desitarget.skybricks import Skybricks
 from desitarget.skyhealpixs import Skyhealpixs
 from astropy.time import Time
 
-from fiberassign.utils import freeze_iers
-
-# AR freeze_iers
-freeze_iers()
-
 def stuck_on_sky(hw, tiles, lookup_sky_source, rundate=None):
     '''
     Will STUCK positioners land on good SKY locations for the given set of tiles?

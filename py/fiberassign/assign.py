@@ -37,7 +37,7 @@ from desitarget.targetmask import desi_mask
 
 from ._version import __version__
 
-from .utils import Logger, Timer, default_mp_proc, GlobalTimers, freeze_iers
+from .utils import Logger, Timer, default_mp_proc, GlobalTimers
 
 from .targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY, TARGET_TYPE_SUPPSKY,
                       TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE, desi_target_type,
@@ -49,9 +49,6 @@ from .hardware import (FIBER_STATE_UNASSIGNED, FIBER_STATE_STUCK,
 
 from ._internal import Assignment
 
-
-# AR freeze_iers
-freeze_iers()
 
 # The columns and types that are written to FITS format.  The raw data has
 # 3 HDUs, and these are designed to efficiently contain all information used

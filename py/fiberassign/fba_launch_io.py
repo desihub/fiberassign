@@ -53,7 +53,7 @@ import desimeter
 
 # fiberassign
 import fiberassign
-from fiberassign.utils import Logger, assert_isoformat_utc, get_svn_version, get_last_line, read_ecsv_keys, get_date_cutoff, freeze_iers
+from fiberassign.utils import Logger, assert_isoformat_utc, get_svn_version, get_last_line, read_ecsv_keys, get_date_cutoff
 from fiberassign.targets import default_survey_target_masks
 
 # matplotlib
@@ -61,9 +61,6 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 import matplotlib
 import matplotlib.image as mpimg
-
-# AR freeze_iers
-freeze_iers()
 
 # AR default REF_EPOCH for PMRA=PMDEC=REF_EPOCH=0 objects
 gaia_ref_epochs = {"dr2": 2015.5}

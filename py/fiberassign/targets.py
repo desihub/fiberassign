@@ -32,7 +32,7 @@ from desitarget.sv3.sv3_targetmask import desi_mask as sv3_mask
 
 from desitarget.targets import main_cmx_or_sv
 
-from .utils import Logger, Timer, freeze_iers
+from .utils import Logger, Timer
 from .hardware import radec2xy, cs52xy
 
 from ._internal import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
@@ -47,9 +47,6 @@ from datetime import datetime
 from astropy.time import Time
 
 import desimodel.io
-
-# AR freeze_iers
-freeze_iers()
 
 class TargetTagalong(object):
     '''
