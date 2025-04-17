@@ -296,6 +296,10 @@ def run_assign_init(args, plate_radec=True):
             for default_main_stdmask().
     """
     log = Logger.get()
+
+    for env_var in ["FIBERASSIGN_BEHAVIOR"]:
+        log.info("run_assign_init(): use {}={}".format(env_var, os.getenv(env_var)))
+
     # Read hardware properties
     hw = load_hardware(rundate=args.rundate, add_margins=args.margins)
 
@@ -378,6 +382,11 @@ def run_assign_full(args, plate_radec=True):
         None
 
     """
+    log = Logger.get()
+
+    for env_var in ["FIBERASSIGN_BEHAVIOR"]:
+        log.info("run_assign_full(): use {}={}".format(env_var, os.getenv(env_var)))
+
     gt = GlobalTimers.get()
     gt.start("run_assign_full calculation")
 
@@ -467,6 +476,11 @@ def run_assign_bytile(args):
         None
 
     """
+    log = Logger.get()
+
+    for env_var in ["FIBERASSIGN_BEHAVIOR"]:
+        log.info("run_assign_bytile(): use {}={}".format(env_var, os.getenv(env_var)))
+
     gt = GlobalTimers.get()
     gt.start("run_assign_bytile calculation")
 

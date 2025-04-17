@@ -683,6 +683,7 @@ def print_config_infos(
     Notes:
         20210928 : add DUST_DIR, as assign.merge_results_tile() requires it to populate EBV=0 values.
         20211109 : add SKYHEALPIXS_DIR
+        20250414 : add FIBERASSIGN_BEHAVIOR
     """
     # AR machine
     log.info(
@@ -711,6 +712,13 @@ def print_config_infos(
                 time() - start, step, required_env_var, os.getenv(required_env_var)
             )
         )
+    for env_var in ["FIBERASSIGN_BEHAVIOR"]:
+        log.info(
+            "{:.1f}s\t{}\t{}={}".format(
+                time() - start, step, env_var, os.getenv(env_var)
+            )
+        )
+
 
 def get_ledger_paths(
     survey,
