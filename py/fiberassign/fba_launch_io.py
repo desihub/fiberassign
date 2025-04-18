@@ -795,9 +795,6 @@ def get_ledger_paths(
         progshort = program.lower().replace("1b", "")
         mtl = mtl.replace(program.lower(), progshort)
         mtl2 = mtl.replace(progshort, "{}1b".format(progshort))
-        # HACK
-        mtl2 = "/pscratch/sd/a/adamyers/dr9/2.8.0.dev5597/mtl/main/{}1b".format(progshort)
-        # HACK
         mtl = [mtl, mtl2]
     # AR secondary (dark, dark1b, bright, bright1b; no secondary for backup)
     if program.lower() in ["dark", "bright", "dark1b", "bright1b"]:
@@ -957,9 +954,6 @@ def get_desitarget_paths(
         if program.lower() == "{}1b".format(progshort):
             targ = targ.replace(program.lower(), progshort)
             targ2 = targ.replace(progshort, "{}1b".format(progshort))
-            # HACK
-            targ2 = "/pscratch/sd/a/adamyers/dr9/2.8.0.dev5597/targets/main/resolve/{}1b".format(progshort)
-            # HACK
             mydirs["targ"] = [targ, targ2]
     # AR secondary (dark, dark1b, bright, bright1b; no secondary for backup)
     # AR only query program (in particular, only dark1b for dark1b; same for bright1b)
