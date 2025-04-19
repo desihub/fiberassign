@@ -103,8 +103,8 @@ def main():
                     args.fba_use_fabs
                 )
                 log.warning("{:.1f}s\tfba_use_fabs\t{}".format(time() - start, msg))
-        os.environ["FIBERASSIGN_USE_FABS"] = str(args.fba_use_fabs)
-        log.info("{:.1f}s\tfba_use_fabs\tsetting $FIBERASSIGN_USE_FABS={}".format(time() - start, os.getenv("FIBERASSIGN_USE_FABS")))
+    os.environ["FIBERASSIGN_USE_FABS"] = str(args.fba_use_fabs)
+    log.info("{:.1f}s\tfba_use_fabs\tsetting $FIBERASSIGN_USE_FABS={}".format(time() - start, os.getenv("FIBERASSIGN_USE_FABS")))
 
     # AR mtltime
     # AR if possible: setting to the latest of:
