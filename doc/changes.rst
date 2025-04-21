@@ -6,6 +6,7 @@ fiberassign change log
 5.7.3 (unreleased)
 ------------------
 
+* Freeze downloads of the IERS leap second table in ``fba_launch`` and ``fba_rerun`` (PR `#475`_).
 * Remove ``DesiTest`` from setup.py and warn about other deprecated features (PR `#464`_).
 
 .. _`#464`: https://github.com/desihub/fiberassign/pull/464
