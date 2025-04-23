@@ -3,7 +3,7 @@
 fiberassign change log
 ======================
 
-5.7.3 (unreleased)
+5.8.0 (unreleased)
 ------------------
 
 * Field rotation updates to avoid hexapod rotation limit errors (PR `#466`_).
