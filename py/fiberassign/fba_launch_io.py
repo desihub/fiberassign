@@ -683,6 +683,7 @@ def print_config_infos(
     Notes:
         20210928 : add DUST_DIR, as assign.merge_results_tile() requires it to populate EBV=0 values.
         20211109 : add SKYHEALPIXS_DIR
+        20250418 : add FIBERASSIGN_USE_FABS
     """
     # AR machine
     log.info(
@@ -711,6 +712,13 @@ def print_config_infos(
                 time() - start, step, required_env_var, os.getenv(required_env_var)
             )
         )
+    for env_var in ["FIBERASSIGN_USE_FABS"]:
+        log.info(
+            "{:.1f}s\t{}\t{}={}".format(
+                time() - start, step, env_var, os.getenv(env_var)
+            )
+        )
+
 
 def get_ledger_paths(
     survey,
@@ -1975,6 +1983,7 @@ def launch_onetile_fa(
             gfafn,
         ]
     opts += ["--lookup_sky_source", args.lookup_sky_source,]
+    opts += ["--fba_use_fabs", str(args.fba_use_fabs)]
     log.info(
         "{:.1f}s\t{}\ttileid={:06d}: running raw fiber assignment (run_assign_full) with opts={}".format(
             time() - start, step, tileid, " ; ".join(opts)
@@ -2090,6 +2099,7 @@ def update_fiberassign_header(
         20211119 : added lookup_sky_source keyword
         20211227 : use newly defined args.goaltype (instead of args.program previously)
         20221031 : keywords too2, too3, etc could be automatically added (see get_desitarget_paths())
+        20250418 : add fba_fabs to track the FIBERASSIGN_USE_FABS quantity (--args.fba_use_fabs)
     """
     # AR sanity check on faflavor
     if faflavor != "{}{}".format(hdr_survey, hdr_faprgrm):
@@ -2169,6 +2179,8 @@ def update_fiberassign_header(
     )
     # AR lookup_sky_source
     fd["PRIMARY"].write_key("LKSKYSRC", args.lookup_sky_source)
+    # AR fba_use_fabs
+    fd["PRIMARY"].write_key("USE_FABS", str(args.fba_use_fabs))
     fd.close()
 
 

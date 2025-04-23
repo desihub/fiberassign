@@ -2,3 +2,4 @@ rundate:
     std_wd: "2021-12-01T19:00:00+00:00" # std_wd not counted in per-petal-std after that rundate
     etc_stuck: "2022-04-28T19:00:00+00:00" # etc fibers are treated as stuck fibers after this date
     obsdate: "2025-05-02T19:00:00+00:00" # obsdate set as rundate + 1yr after this date
+    fba_use_fabs: {"2019-09-16T00:00:00+00:00": 0, "2025-05-12T19:00:00+00:00": 1} # to set the env. variable for the c++ code (see PR470)
