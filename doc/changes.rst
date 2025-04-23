@@ -7,8 +7,12 @@ fiberassign change log
 ------------------
 
 * Freeze downloads of the IERS leap second table in ``fba_launch`` and ``fba_rerun`` (PR `#475`_).
+* Field rotation updates to avoid hexapod rotation limit errors (PR `#466`_).
+* Fix C++ bug with use of std::abs and improve floating point reproducibility (PR `#470`_).
 * Remove ``DesiTest`` from setup.py and warn about other deprecated features (PR `#464`_).
 
+.. _`#466`: https://github.com/desihub/fiberassign/pull/466
+.. _`#470`: https://github.com/desihub/fiberassign/pull/470
 .. _`#464`: https://github.com/desihub/fiberassign/pull/464
 
 5.7.2 (2023-10-04)

@@ -122,7 +122,107 @@ def get_date_cutoff(datetype, cutoff_case):
     date_cutoff = config[datetype][cutoff_case]
     return date_cutoff
 
-  
+
+def get_default_static_obsdate():
+    """
+    Returns the 'historical' default obsdate value.
+
+    Args:
+        None
+
+    Returns:
+        "2022-07-01"
+    """
+    return "2022-07-01"
+
+
+def get_obsdate(rundate=None):
+    """
+    Returns the default obsdate: "2022-07-01" if rundate=None or rundate<obsdate_cutoff.
+
+    Args:
+        rundate (optional, defaults to None): rundate, in the "YYYY-MM-DDThh:mm:ss+00:00" format (string)
+
+    Returns:
+        obsdate: "YYYY-MM-DD" format (string)
+        is_after_cutoff: is rundate after rundate_cutoff? (bool)
+    """
+    obsdate = get_default_static_obsdate()
+    is_after_cutoff = False
+    if rundate is None:
+        log.info(
+            "rundate={} -> (obsdate, is_after_cutoff)=({}, {})".format(
+                rundate, obsdate, is_after_cutoff
+            )
+        )
+    else:
+        if not assert_isoformat_utc(rundate):
+            msg = "rundate={} is not yyyy-mm-ddThh:mm:ss+00:00".format(rundate)
+            log.info(msg)
+            raise ValueError(msg)
+        rundate_mjd = Time(datetime.strptime(rundate, "%Y-%m-%dT%H:%M:%S%z")).mjd
+        rundate_cutoff = get_date_cutoff("rundate", "obsdate")
+        rundate_mjd_cutoff = Time(datetime.strptime(rundate_cutoff, "%Y-%m-%dT%H:%M:%S%z")).mjd
+        if rundate_mjd >= rundate_mjd_cutoff:
+            is_after_cutoff = True
+            yyyy = int(rundate[:4])
+            obsdate = "{}{}".format(yyyy + 1, rundate[4:10])
+            log.info(
+                "rundate={} >= rundate_cutoff={} -> (obsdate, is_after_cutoff)=({}, {})".format(
+                    rundate, rundate_cutoff, obsdate, is_after_cutoff)
+            )
+        else:
+            log.info(
+                "rundate={} < rundate_cutoff={} -> (obsdate, is_after_cutoff)=({}, {})".format(
+                    rundate, rundate_cutoff, obsdate, is_after_cutoff)
+            )
+    return obsdate, is_after_cutoff
+
+
+def get_fba_use_fabs(rundate):
+    """
+    Return the value to which set the $FIBERASSIGN_ALGORITHM_EPOCH environment variable,
+        which drives some way the cpp computation is done.
+
+    Args:
+        rundate: rundate, in the "YYYY-MM-DDThh:mm:ss+00:00" formatting (string)
+
+    Returns:
+        fba_use_fabs: an integer (int)
+
+    Notes:
+        See this PR https://github.com/desihub/fiberassign/pull/470.
+        In the fiberassign running function, then one will set:
+            os.environ["FIBERASSIGN_USE_FABS"] = fba_use_fabs
+        So far:
+        - fba_use_fabs=0 means we reproduce the buggy behavior;
+        - fba_use_fabs=1 means we use the expected behavior.
+    """
+    # AR get the cutoff dates, and corresponding values
+    mydict = get_date_cutoff("rundate", "fba_use_fabs")
+    cutoff_rundates = np.array([key for key in mydict])
+    cutoff_mjds = np.array([get_mjd(_) for _ in cutoff_rundates])
+    values = np.array([mydict[_] for _ in cutoff_rundates])
+    # AR safe, order by increasing mjd
+    ii = cutoff_mjds.argsort()
+    cutoff_rundates, cutoff_mjds, values = cutoff_rundates[ii], cutoff_mjds[ii], values[ii]
+    # AR now pick the earliest date after the input rundate
+    # AR as we have set the first cutoff date as 2019-09-16,
+    # AR    there will always have some index returned here
+    # AR    though still checking if someone queries with an earlier rundate...
+    input_mjd = get_mjd(rundate)
+    if input_mjd < cutoff_mjds[0]:
+        msg = "rundate={} is earlier than DESI! ({})".format(
+            rundate, cutoff_rundates[0]
+        )
+        log.error(msg)
+        raise ValueError(msg)
+
+    i = np.where(cutoff_mjds <= get_mjd(rundate))[0][-1]
+
+    return values[i]
+
+
 def get_svn_version(svn_dir):
     """
     Gets the SVN revision number of an SVN folder.
@@ -327,3 +427,53 @@ def get_rev_fiberassign_changes(svndir, rev, subdirs=None):
     d["REVISION"] = np.array([rev for fn in fns], dtype=int)
     d["CHANGE"] = np.array(changes, dtype=str)
     return d
+
+
+def get_obstheta_corr(decs, has, clip_arcsec=600.):
+    """
+    Returns the computed correction to be applied to the field rotation
+        computed in fiberassign.tiles.load_tiles().
+    The correction should be applied as: obsthetas[deg] -= obstheta_corrs[deg].
+
+    Args:
+        decs: tile declinations (float or np array of floats)
+        has: hour angles (float or np array of floats)
+        clip_arcsec (optional, defaults to 600): abs(obstheta_corrs) is
+            forced to be <obstheta_corrs (float)
+
+    Returns:
+        obstheta_corrs: correction (in deg) to be applied (float or np array of floats)
+
+    Notes:
+        See DocDB-8931 for details.
+        During observations, PlateMaker computes the required field rotation,
+            then asks the hexapod to be rotated by
+            ROTOFFST = FIELDROT - PM_REQ_FIELDROT,
+            where FIELDROT is the field rotation coming from fiberassign.tiles.load_tiles().
+        When abs(ROTOFFST)>600 arcsec, the move is denied, and the exposure aborted.
+        Correction computed here is a fit to ROTOFFST=f(DEC), plus a fit on the residuals.
+    """
+    assert clip_arcsec >= 0
+    isoneval = isinstance(decs, float)
+    if isoneval:
+        decs, has = np.atleast_1d(decs), np.atleast_1d(has)
+    # AR fitted function, ROTOFFST[arcsec] = f(DEC)
+    # AR rescale decs into [0, 1]
+    xs = (90. - decs) / 180.
+    rotoffsts = 937.60578 - 697.06513 * xs ** -0.18835
+    # AR fitted function to the residuals, residuals[arcsec] = f(HA)
+    xs = (90. + has) / 180.
+    residuals = -113.90162 + 222.18009 * xs
+    sel = xs > 0.5
+    residuals[sel] = -245.49007 + 485.35700 * xs[sel]
+    # AR total correction
+    obstheta_corrs = rotoffsts + residuals
+    # AR clip
+    obstheta_corrs = np.clip(obstheta_corrs, -clip_arcsec, clip_arcsec)
+    # AR switch to degrees
+    obstheta_corrs /= 3600
+    if isoneval:
+        decs, has = decs[0], has[0]
+        return obstheta_corrs[0]
+    else:
+        return obstheta_corrs
