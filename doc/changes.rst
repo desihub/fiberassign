@@ -6,8 +6,10 @@ fiberassign change log
 5.7.3 (unreleased)
 ------------------
 
+* Fix C++ bug with use of std::abs and improve floating point reproducibility (PR `#470`_).
 * Remove ``DesiTest`` from setup.py and warn about other deprecated features (PR `#464`_).
 
+.. _`#470`: https://github.com/desihub/fiberassign/pull/470
 .. _`#464`: https://github.com/desihub/fiberassign/pull/464
 
 5.7.2 (2023-10-04)
