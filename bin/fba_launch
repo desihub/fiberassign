@@ -31,6 +31,7 @@ from fiberassign.fba_launch_io import (
     mv_temp2final,
     copy_to_svn,
 )
+from desiutil.iers import freeze_iers
 from fiberassign.utils import get_fba_use_fabs
 from argparse import ArgumentParser
 
@@ -71,6 +72,9 @@ def main():
     #
     start = time()
     log.info("{:.1f}s\tstart\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+
+    # AR freeze_iers
+    freeze_iers()
 
     # AR if for development, print it big at the beginning
     if args.custom_too_development:

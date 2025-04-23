@@ -11,6 +11,7 @@ from fiberassign.utils import Logger
 import desitarget
 import desimeter
 import fiberassign
+from desiutil.iers import freeze_iers
 
 from argparse import ArgumentParser, RawTextHelpFormatter
 
@@ -22,6 +23,9 @@ def main():
     #
     start = time()
     log.info("{:.1f}s\tstart\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+
+    # AR freeze_iers
+    freeze_iers()
 
     # AR steps to execute in fba_launch
     steps = [step for step in args.steps.split(",")]
