@@ -14,7 +14,7 @@ import sys
 import argparse
 import re
 
-from ..utils import GlobalTimers, Logger, get_fba_use_fabs
+from ..utils import GlobalTimers, Logger, get_default_static_obsdate, get_obsdate, get_fba_use_fabs
 
 from ..hardware import load_hardware, get_default_exclusion_margins
 
@@ -95,9 +95,12 @@ def parse_assign(optlist=None):
                         "Default uses the current date.  Format is "
                         "YYYY-MM-DDTHH:mm:ss+-zz:zz.")
 
-    parser.add_argument("--obsdate", type=str, required=False, default="2022-07-01",
+    parser.add_argument("--obsdate", type=str, required=False,
+                        default=None,
                         help="Plan field rotations for this date (YEARMMDD, "
-                        "or ISO 8601 YEAR-MM-DD with or without time).")
+                        "or ISO 8601 YEAR-MM-DD with or without time); "
+                        "default={} or rundate+1yr, according to rundate".
+                        format(get_default_static_obsdate()))
 
     parser.add_argument("--ha", type=float, required=False, default=0.,
                         help="Design for the given Hour Angle in degrees.")
@@ -105,6 +108,12 @@ def parse_assign(optlist=None):
     parser.add_argument("--fieldrot", type=float, required=False, default=None,
                         help="Override obsdate and use this field rotation "
                         "for all tiles (degrees counter clockwise in CS5)")
+
+    parser.add_argument("--fieldrot_corr", type=bool, required=False,
+                        default=None,
+                        help="apply correction to computed fieldrot "
+                        "(default: False if args.fieldrot is provided or "
+                        "if args.rundate<rundate_cutoff, True else")
 
     parser.add_argument("--dir", type=str, required=False, default=None,
                         help="Output directory.")
@@ -268,6 +277,10 @@ def parse_assign(optlist=None):
             except ValueError:
                 args.excludemask = desi_mask.mask(args.excludemask.replace(",","|"))
 
+    # Set obsdate
+    if args.obsdate is None:
+        args.obsdate, _ = get_obsdate(rundate=args.rundate)
+
     # convert YEARMMDD to YEAR-MM-DD to be ISO 8601 compatible
     if re.match('\d{8}', args.obsdate):
         year = args.obsdate[0:4]
@@ -275,6 +288,15 @@ def parse_assign(optlist=None):
         dd = args.obsdate[6:8]
         #- Note: ISO8601 does not require time portion
         args.obsdate = '{}-{}-{}'.format(year, mm, dd)
+
+    # Apply the field rotation correction?
+    # - True if fieldrot=None, rundate!=None and rundate>=rundate_cutoff
+    # - False else
+    if args.fieldrot_corr is None:
+        if args.fieldrot is None:
+            _, args.fieldrot_corr = get_obsdate(rundate=args.rundate)
+        else:
+            args.fieldrot_corr = False
 
     # Set output directory
     if args.dir is None:
@@ -287,7 +309,13 @@ def parse_assign(optlist=None):
     args.margins = dict(pos=args.margin_pos,
                         petal=args.margin_petal,
                         gfa=args.margin_gfa)
+
+    # Print all args
+    for kwargs in args._get_kwargs():
+        log.info("{}:\t{}".format(kwargs[0], kwargs[1]))
+
     return args
+
 
 def run_assign_init(args, plate_radec=True):
     """Initialize assignment inputs.
@@ -335,7 +363,8 @@ def run_assign_init(args, plate_radec=True):
                 except ValueError:
                     pass
     tiles = load_tiles(tiles_file=args.footprint, select=tileselect,
-        obstime=args.obsdate, obstheta=args.fieldrot, obsha=args.ha)
+        obstime=args.obsdate, obstheta=args.fieldrot, obsha=args.ha,
+        obsthetacorr=args.fieldrot_corr)
 
     # Before doing significant calculations, check for pre-existing files
     if not args.overwrite:
