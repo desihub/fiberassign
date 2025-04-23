@@ -14,7 +14,7 @@ import sys
 import argparse
 import re
 
-from ..utils import GlobalTimers, Logger
+from ..utils import GlobalTimers, Logger, get_fba_use_fabs
 
 from ..hardware import load_hardware, get_default_exclusion_margins
 
@@ -197,6 +197,12 @@ def parse_assign(optlist=None):
                         choices=["ls", "gaia"],
                         help="Source for the look-up table for sky positions for stuck fibers:"
                         " 'ls': uses $SKYBRICKS_DIR; 'gaia': uses $SKYHEALPIXS_DIR (default=ls)")
+    parser.add_argument(
+        "--fba_use_fabs",
+        help="value to determine the cpp behavior, see PR470 (default: based on the rundate)",
+        type=str,
+        default=None
+    )
 
     args = None
     if optlist is None:
@@ -206,6 +212,9 @@ def parse_assign(optlist=None):
 
     if args.sky is None:
         args.sky = list()
+
+    if args.fba_use_fabs is None:
+        args.fba_use_fabs = get_fba_use_fabs(args.rundate)
 
     # If any of the masks are strings, determine the survey type from
     # the first target file to know which bitmask to use
@@ -296,6 +305,21 @@ def run_assign_init(args, plate_radec=True):
             for default_main_stdmask().
     """
     log = Logger.get()
+
+    # AR fba_use_fabs
+    if args.fba_use_fabs is not None:
+        if os.getenv("FIBERASSIGN_USE_FABS") is not None:
+            if os.getenv("FIBERASSIGN_USE_FABS") != str(args.fba_use_fabs):
+                msg = "already defined environment variable FIBERASSIGN_USE_FABS={} will be overwritten by args.fba_use_fabs={}".format(
+                    os.getenv("FIBERASSIGN_USE_FABS"),
+                    args.fba_use_fabs
+                )
+                log.warning(msg)
+        os.environ["FIBERASSIGN_USE_FABS"] = str(args.fba_use_fabs)
+
+    for env_var in ["FIBERASSIGN_USE_FABS"]:
+        log.info("run_assign_init(): use {}={}".format(env_var, os.getenv(env_var)))
+
     # Read hardware properties
     hw = load_hardware(rundate=args.rundate, add_margins=args.margins)
 
@@ -378,6 +402,22 @@ def run_assign_full(args, plate_radec=True):
         None
 
     """
+    log = Logger.get()
+
+    # AR fba_use_fabs
+    if args.fba_use_fabs is not None:
+        if os.getenv("FIBERASSIGN_USE_FABS") is not None:
+            if os.getenv("FIBERASSIGN_USE_FABS") != str(args.fba_use_fabs):
+                msg = "already defined environment variable FIBERASSIGN_USE_FABS={} will be overwritten by args.fba_use_fabs={}".format(
+                    os.getenv("FIBERASSIGN_USE_FABS"),
+                    args.fba_use_fabs
+                )
+                log.warning(msg)
+        os.environ["FIBERASSIGN_USE_FABS"] = str(args.fba_use_fabs)
+
+    for env_var in ["FIBERASSIGN_USE_FABS"]:
+        log.info("run_assign_full(): use {}={}".format(env_var, os.getenv(env_var)))
+
     gt = GlobalTimers.get()
     gt.start("run_assign_full calculation")
 
@@ -467,6 +507,22 @@ def run_assign_bytile(args):
         None
 
     """
+    log = Logger.get()
+
+    # AR fba_use_fabs
+    if args.fba_use_fabs is not None:
+        if os.getenv("FIBERASSIGN_USE_FABS") is not None:
+            if os.getenv("FIBERASSIGN_USE_FABS") != str(args.fba_use_fabs):
+                msg = "already defined environment variable FIBERASSIGN_USE_FABS={} will be overwritten by args.fba_use_fabs={}".format(
+                    os.getenv("FIBERASSIGN_USE_FABS"),
+                    args.fba_use_fabs
+                )
+                log.warning(msg)
+        os.environ["FIBERASSIGN_USE_FABS"] = str(args.fba_use_fabs)
+
+    for env_var in ["FIBERASSIGN_USE_FABS"]:
+        log.info("run_assign_bytile(): use {}={}".format(env_var, os.getenv(env_var)))
+
     gt = GlobalTimers.get()
     gt.start("run_assign_bytile calculation")
 

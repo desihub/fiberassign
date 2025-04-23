@@ -122,7 +122,51 @@ def get_date_cutoff(datetype, cutoff_case):
     date_cutoff = config[datetype][cutoff_case]
     return date_cutoff
 
-  
+
+def get_fba_use_fabs(rundate):
+    """
+    Return the value to which set the $FIBERASSIGN_ALGORITHM_EPOCH environment variable,
+        which drives some way the cpp computation is done.
+
+    Args:
+        rundate: rundate, in the "YYYY-MM-DDThh:mm:ss+00:00" formatting (string)
+
+    Returns:
+        fba_use_fabs: an integer (int)
+
+    Notes:
+        See this PR https://github.com/desihub/fiberassign/pull/470.
+        In the fiberassign running function, then one will set:
+            os.environ["FIBERASSIGN_USE_FABS"] = fba_use_fabs
+        So far:
+        - fba_use_fabs=0 means we reproduce the buggy behavior;
+        - fba_use_fabs=1 means we use the expected behavior.
+    """
+    # AR get the cutoff dates, and corresponding values
+    mydict = get_date_cutoff("rundate", "fba_use_fabs")
+    cutoff_rundates = np.array([key for key in mydict])
+    cutoff_mjds = np.array([get_mjd(_) for _ in cutoff_rundates])
+    values = np.array([mydict[_] for _ in cutoff_rundates])
+    # AR safe, order by increasing mjd
+    ii = cutoff_mjds.argsort()
+    cutoff_rundates, cutoff_mjds, values = cutoff_rundates[ii], cutoff_mjds[ii], values[ii]
+    # AR now pick the earliest date after the input rundate
+    # AR as we have set the first cutoff date as 2019-09-16,
+    # AR    there will always have some index returned here
+    # AR    though still checking if someone queries with an earlier rundate...
+    input_mjd = get_mjd(rundate)
+    if input_mjd < cutoff_mjds[0]:
+        msg = "rundate={} is earlier than DESI! ({})".format(
+            rundate, cutoff_rundates[0]
+        )
+        log.error(msg)
+        raise ValueError(msg)
+
+    i = np.where(cutoff_mjds <= get_mjd(rundate))[0][-1]
+
+    return values[i]
+
+
 def get_svn_version(svn_dir):
     """
     Gets the SVN revision number of an SVN folder.
