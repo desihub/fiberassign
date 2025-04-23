@@ -485,18 +485,34 @@ def radec2xy(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
     #y = np.array([y for x,y in xy])
     from astropy.time import Time
     from desimeter.fiberassign import fiberassign_radec2xy_cs5, fiberassign_radec2xy_flat
+    from inspect import getfullargspec
+
+    # Check for the precomputed polar misalignment option in desispec.
+    precomputed_matrix = 'use_hardcoded_polmis_rotmat' in getfullargspec(fiberassign_radec2xy_cs5).args
+
     # Note that MJD is only used for precession, so no need for
     # high precision.
     t = Time(tile_obstime, format='isot')
     mjd = t.mjd
 
     # Don't pass adc[12]: Let desimeter use its pm-alike routines
-    if use_cs5:
-        x, y = fiberassign_radec2xy_cs5(ra, dec, tile_ra, tile_dec, mjd,
-                                        tile_obsha, tile_obstheta, use_hardcoded_polmis_rotmat=use_hardcoded_polmis_rotmat)
+    if precomputed_matrix:
+        if use_cs5:
+            x, y = fiberassign_radec2xy_cs5(ra, dec, tile_ra, tile_dec, mjd,
+                                            tile_obsha, tile_obstheta, use_hardcoded_polmis_rotmat=use_hardcoded_polmis_rotmat)
+        else:
+            x, y = fiberassign_radec2xy_flat(ra, dec, tile_ra, tile_dec, mjd,
+                                             tile_obsha, tile_obstheta, use_hardcoded_polmis_rotmat=use_hardcoded_polmis_rotmat)
     else:
-        x, y = fiberassign_radec2xy_flat(ra, dec, tile_ra, tile_dec, mjd,
-                                         tile_obsha, tile_obstheta, use_hardcoded_polmis_rotmat=use_hardcoded_polmis_rotmat)
+        log = Logger.get()
+        log.warning('fiberassign_radec2xy_(cs5|flat) without use_hardcoded_polmis_rotmat option is deprecated')
+
+        if use_cs5:
+            x, y = fiberassign_radec2xy_cs5(ra, dec, tile_ra, tile_dec, mjd,
+                                            tile_obsha, tile_obstheta)
+        else:
+            x, y = fiberassign_radec2xy_flat(ra, dec, tile_ra, tile_dec, mjd,
+                                             tile_obsha, tile_obstheta)
     return x,y
 
 def xy2radec(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
@@ -525,15 +541,31 @@ def xy2radec(hw, tile_ra, tile_dec, tile_obstime, tile_obstheta, tile_obsha,
     # ra  = np.array([r for r,d in radec])
     # dec = np.array([d for r,d in radec])
     from desimeter.fiberassign import fiberassign_cs5_xy2radec, fiberassign_flat_xy2radec
+    from inspect import getfullargspec
     from astropy.time import Time
+
+    # Check if we can use the precomputed matrix option.
+    precomputed_matrix = 'use_hardcoded_polmis_rotmat' in getfullargspec(fiberassign_cs5_xy2radec).args
+
     t = Time(tile_obstime, format='isot')
     mjd = t.mjd
-    if use_cs5:
-        ra,dec = fiberassign_cs5_xy2radec(x, y, tile_ra, tile_dec, mjd,
-                                          tile_obsha, tile_obstheta, use_hardcoded_polmis_rotmat=use_hardcoded_polmis_rotmat)
+    if precomputed_matrix:
+        if use_cs5:
+            ra,dec = fiberassign_cs5_xy2radec(x, y, tile_ra, tile_dec, mjd,
+                                              tile_obsha, tile_obstheta, use_hardcoded_polmis_rotmat=use_hardcoded_polmis_rotmat)
+        else:
+            ra,dec = fiberassign_flat_xy2radec(x, y, tile_ra, tile_dec, mjd,
+                                               tile_obsha, tile_obstheta, use_hardcoded_polmis_rotmat=use_hardcoded_polmis_rotmat)
     else:
-        ra,dec = fiberassign_flat_xy2radec(x, y, tile_ra, tile_dec, mjd,
-                                           tile_obsha, tile_obstheta, use_hardcoded_polmis_rotmat=use_hardcoded_polmis_rotmat)
+        log = Logger.get()
+        log.warning('fiberassign_(cs5|flat)_xy2radec without use_hardcoded_polmis_rotmat option is deprecated')
+
+        if use_cs5:
+            ra,dec = fiberassign_cs5_xy2radec(x, y, tile_ra, tile_dec, mjd,
+                                              tile_obsha, tile_obstheta)
+        else:
+            ra,dec = fiberassign_flat_xy2radec(x, y, tile_ra, tile_dec, mjd,
+                                               tile_obsha, tile_obstheta)
     return ra,dec
 
 def xy2cs5(x, y):
