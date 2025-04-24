@@ -6,6 +6,7 @@ fiberassign change log
 5.8.0 (unreleased)
 ------------------
 
+* add stuck_on_sky_from_fafns() option (PR `#471`_)
 * get_fba_use_fabs(): add log infos (PR `#478`_)
 * Doc err fix (PR `#479`_)
 * include cstdint for gcc/13 support (PR `#477`_)
@@ -14,6 +15,7 @@ fiberassign change log
 * Fix C++ bug with use of std::abs and improve floating point reproducibility (PR `#470`_).
 * Remove ``DesiTest`` from setup.py and warn about other deprecated features (PR `#464`_).
 
+.. _`#471`: https://github.com/desihub/fiberassign/pull/471
 .. _`#478`: https://github.com/desihub/fiberassign/pull/478
 .. _`#479`: https://github.com/desihub/fiberassign/pull/479
 .. _`#477`: https://github.com/desihub/fiberassign/pull/477
