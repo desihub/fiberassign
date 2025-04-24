@@ -203,6 +203,11 @@ def get_fba_use_fabs(rundate):
     cutoff_rundates = np.array([key for key in mydict])
     cutoff_mjds = np.array([get_mjd(_) for _ in cutoff_rundates])
     values = np.array([mydict[_] for _ in cutoff_rundates])
+    log.info(
+        "fba_use_fabs cutoff dates: {}".format(
+            ", ".join(["{} = {}".format(rundate, value) for rundate, value in zip(cutoff_rundates, values)])
+        )
+    )
     # AR safe, order by increasing mjd
     ii = cutoff_mjds.argsort()
     cutoff_rundates, cutoff_mjds, values = cutoff_rundates[ii], cutoff_mjds[ii], values[ii]
@@ -219,6 +224,7 @@ def get_fba_use_fabs(rundate):
         raise ValueError(msg)
 
     i = np.where(cutoff_mjds <= get_mjd(rundate))[0][-1]
+    log.info("pick fba_use_fabs = {} for rundate = {}".format(values[i], rundate))
 
     return values[i]
 
