@@ -206,16 +206,15 @@ def parse_assign(optlist=None):
                         choices=["ls", "gaia"],
                         help="Source for the look-up table for sky positions for stuck fibers:"
                         " 'ls': uses $SKYBRICKS_DIR; 'gaia': uses $SKYHEALPIXS_DIR (default=ls)")
+
     parser.add_argument("--fafns_for_stucksky", required=False, default=None,
                         help="csv list of fiberassign-TILEID.fits.gz files;"
                         " if set, fiberassign will use this fiberassign file to know which"
                         " stuck fibers are usable for sky")
-    parser.add_argument(
-        "--fba_use_fabs",
-        help="value to determine the cpp behavior, see PR470 (default: based on the rundate)",
-        type=str,
-        default=None
-    )
+
+    parser.add_argument("--fba_use_fabs", required=False, default=None,
+                        help="value to determine the cpp behavior, see PR470 (default: based on the rundate)",
+                        type=str)
 
     args = None
     if optlist is None:
