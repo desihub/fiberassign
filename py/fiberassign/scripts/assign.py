@@ -33,7 +33,7 @@ from ..targets import (str_to_target_type, TARGET_TYPE_SCIENCE,
 from ..assign import (Assignment, write_assignment_fits,
                       result_path, run)
 
-from ..stucksky import stuck_on_sky
+from ..stucksky import stuck_on_sky, stuck_on_sky_from_fafns
 
 def parse_assign(optlist=None):
     """Parse assignment options.
@@ -206,12 +206,15 @@ def parse_assign(optlist=None):
                         choices=["ls", "gaia"],
                         help="Source for the look-up table for sky positions for stuck fibers:"
                         " 'ls': uses $SKYBRICKS_DIR; 'gaia': uses $SKYHEALPIXS_DIR (default=ls)")
-    parser.add_argument(
-        "--fba_use_fabs",
-        help="value to determine the cpp behavior, see PR470 (default: based on the rundate)",
-        type=str,
-        default=None
-    )
+
+    parser.add_argument("--fafns_for_stucksky", required=False, default=None,
+                        help="csv list of fiberassign-TILEID.fits.gz files;"
+                        " if set, fiberassign will use this fiberassign file to know which"
+                        " stuck fibers are usable for sky")
+
+    parser.add_argument("--fba_use_fabs", required=False, default=None,
+                        help="value to determine the cpp behavior, see PR470 (default: based on the rundate)",
+                        type=str)
 
     args = None
     if optlist is None:
@@ -475,8 +478,11 @@ def run_assign_full(args, plate_radec=True):
     # Find stuck positioners and compute whether they will land on acceptable
     # sky locations for each tile.
     gt.start("Compute Stuck locations on good sky")
-    stucksky = stuck_on_sky(hw, tiles, args.lookup_sky_source,
-                            rundate=getattr(args, 'rundate', None))
+    if args.fafns_for_stucksky is not None:
+        stucksky = stuck_on_sky_from_fafns(args.fafns_for_stucksky)
+    else:
+        stucksky = stuck_on_sky(hw, tiles, args.lookup_sky_source,
+                                rundate=getattr(args, 'rundate', None))
     if stucksky is None:
         # (the pybind code doesn't like None when a dict is expected...)
         stucksky = {}
