@@ -3,11 +3,16 @@
 Main fiber assignment entry point
 """
 
+from desiutil.iers import freeze_iers
 from fiberassign.scripts.assign import (parse_assign, run_assign_full,
                                         run_assign_bytile)
 
 
 def main():
+
+    # AR freeze_iers
+    freeze_iers()
+
     args = parse_assign()
     if args.by_tile:
         run_assign_bytile(args)

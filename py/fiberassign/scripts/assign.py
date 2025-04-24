@@ -14,7 +14,7 @@ import sys
 import argparse
 import re
 
-from ..utils import GlobalTimers, Logger
+from ..utils import GlobalTimers, Logger, get_default_static_obsdate, get_obsdate, get_fba_use_fabs
 
 from ..hardware import load_hardware, get_default_exclusion_margins
 
@@ -95,9 +95,12 @@ def parse_assign(optlist=None):
                         "Default uses the current date.  Format is "
                         "YYYY-MM-DDTHH:mm:ss+-zz:zz.")
 
-    parser.add_argument("--obsdate", type=str, required=False, default="2022-07-01",
+    parser.add_argument("--obsdate", type=str, required=False,
+                        default=None,
                         help="Plan field rotations for this date (YEARMMDD, "
-                        "or ISO 8601 YEAR-MM-DD with or without time).")
+                        "or ISO 8601 YEAR-MM-DD with or without time); "
+                        "default={} or rundate+1yr, according to rundate".
+                        format(get_default_static_obsdate()))
 
     parser.add_argument("--ha", type=float, required=False, default=0.,
                         help="Design for the given Hour Angle in degrees.")
@@ -105,6 +108,12 @@ def parse_assign(optlist=None):
     parser.add_argument("--fieldrot", type=float, required=False, default=None,
                         help="Override obsdate and use this field rotation "
                         "for all tiles (degrees counter clockwise in CS5)")
+
+    parser.add_argument("--fieldrot_corr", type=bool, required=False,
+                        default=None,
+                        help="apply correction to computed fieldrot "
+                        "(default: False if args.fieldrot is provided or "
+                        "if args.rundate<rundate_cutoff, True else")
 
     parser.add_argument("--dir", type=str, required=False, default=None,
                         help="Output directory.")
@@ -201,6 +210,12 @@ def parse_assign(optlist=None):
                         help="csv list of fiberassign-TILEID.fits.gz files;"
                         " if set, fiberassign will use this fiberassign file to know which"
                         " stuck fibers are usable for sky")
+    parser.add_argument(
+        "--fba_use_fabs",
+        help="value to determine the cpp behavior, see PR470 (default: based on the rundate)",
+        type=str,
+        default=None
+    )
 
     args = None
     if optlist is None:
@@ -210,6 +225,9 @@ def parse_assign(optlist=None):
 
     if args.sky is None:
         args.sky = list()
+
+    if args.fba_use_fabs is None:
+        args.fba_use_fabs = get_fba_use_fabs(args.rundate)
 
     # If any of the masks are strings, determine the survey type from
     # the first target file to know which bitmask to use
@@ -263,6 +281,10 @@ def parse_assign(optlist=None):
             except ValueError:
                 args.excludemask = desi_mask.mask(args.excludemask.replace(",","|"))
 
+    # Set obsdate
+    if args.obsdate is None:
+        args.obsdate, _ = get_obsdate(rundate=args.rundate)
+
     # convert YEARMMDD to YEAR-MM-DD to be ISO 8601 compatible
     if re.match('\d{8}', args.obsdate):
         year = args.obsdate[0:4]
@@ -270,6 +292,15 @@ def parse_assign(optlist=None):
         dd = args.obsdate[6:8]
         #- Note: ISO8601 does not require time portion
         args.obsdate = '{}-{}-{}'.format(year, mm, dd)
+
+    # Apply the field rotation correction?
+    # - True if fieldrot=None, rundate!=None and rundate>=rundate_cutoff
+    # - False else
+    if args.fieldrot_corr is None:
+        if args.fieldrot is None:
+            _, args.fieldrot_corr = get_obsdate(rundate=args.rundate)
+        else:
+            args.fieldrot_corr = False
 
     # Set output directory
     if args.dir is None:
@@ -282,7 +313,13 @@ def parse_assign(optlist=None):
     args.margins = dict(pos=args.margin_pos,
                         petal=args.margin_petal,
                         gfa=args.margin_gfa)
+
+    # Print all args
+    for kwargs in args._get_kwargs():
+        log.info("{}:\t{}".format(kwargs[0], kwargs[1]))
+
     return args
+
 
 def run_assign_init(args, plate_radec=True):
     """Initialize assignment inputs.
@@ -300,6 +337,21 @@ def run_assign_init(args, plate_radec=True):
             for default_main_stdmask().
     """
     log = Logger.get()
+
+    # AR fba_use_fabs
+    if args.fba_use_fabs is not None:
+        if os.getenv("FIBERASSIGN_USE_FABS") is not None:
+            if os.getenv("FIBERASSIGN_USE_FABS") != str(args.fba_use_fabs):
+                msg = "already defined environment variable FIBERASSIGN_USE_FABS={} will be overwritten by args.fba_use_fabs={}".format(
+                    os.getenv("FIBERASSIGN_USE_FABS"),
+                    args.fba_use_fabs
+                )
+                log.warning(msg)
+        os.environ["FIBERASSIGN_USE_FABS"] = str(args.fba_use_fabs)
+
+    for env_var in ["FIBERASSIGN_USE_FABS"]:
+        log.info("run_assign_init(): use {}={}".format(env_var, os.getenv(env_var)))
+
     # Read hardware properties
     hw = load_hardware(rundate=args.rundate, add_margins=args.margins)
 
@@ -315,7 +367,8 @@ def run_assign_init(args, plate_radec=True):
                 except ValueError:
                     pass
     tiles = load_tiles(tiles_file=args.footprint, select=tileselect,
-        obstime=args.obsdate, obstheta=args.fieldrot, obsha=args.ha)
+        obstime=args.obsdate, obstheta=args.fieldrot, obsha=args.ha,
+        obsthetacorr=args.fieldrot_corr)
 
     # Before doing significant calculations, check for pre-existing files
     if not args.overwrite:
@@ -382,6 +435,22 @@ def run_assign_full(args, plate_radec=True):
         None
 
     """
+    log = Logger.get()
+
+    # AR fba_use_fabs
+    if args.fba_use_fabs is not None:
+        if os.getenv("FIBERASSIGN_USE_FABS") is not None:
+            if os.getenv("FIBERASSIGN_USE_FABS") != str(args.fba_use_fabs):
+                msg = "already defined environment variable FIBERASSIGN_USE_FABS={} will be overwritten by args.fba_use_fabs={}".format(
+                    os.getenv("FIBERASSIGN_USE_FABS"),
+                    args.fba_use_fabs
+                )
+                log.warning(msg)
+        os.environ["FIBERASSIGN_USE_FABS"] = str(args.fba_use_fabs)
+
+    for env_var in ["FIBERASSIGN_USE_FABS"]:
+        log.info("run_assign_full(): use {}={}".format(env_var, os.getenv(env_var)))
+
     gt = GlobalTimers.get()
     gt.start("run_assign_full calculation")
 
@@ -474,6 +543,22 @@ def run_assign_bytile(args):
         None
 
     """
+    log = Logger.get()
+
+    # AR fba_use_fabs
+    if args.fba_use_fabs is not None:
+        if os.getenv("FIBERASSIGN_USE_FABS") is not None:
+            if os.getenv("FIBERASSIGN_USE_FABS") != str(args.fba_use_fabs):
+                msg = "already defined environment variable FIBERASSIGN_USE_FABS={} will be overwritten by args.fba_use_fabs={}".format(
+                    os.getenv("FIBERASSIGN_USE_FABS"),
+                    args.fba_use_fabs
+                )
+                log.warning(msg)
+        os.environ["FIBERASSIGN_USE_FABS"] = str(args.fba_use_fabs)
+
+    for env_var in ["FIBERASSIGN_USE_FABS"]:
+        log.info("run_assign_bytile(): use {}={}".format(env_var, os.getenv(env_var)))
+
     gt = GlobalTimers.get()
     gt.start("run_assign_bytile calculation")
 
