@@ -31,6 +31,8 @@ from fiberassign.fba_launch_io import (
     mv_temp2final,
     copy_to_svn,
 )
+from desiutil.iers import freeze_iers
+from fiberassign.utils import get_fba_use_fabs
 from argparse import ArgumentParser
 
 # AR allowed steps in fba_launch
@@ -71,6 +73,9 @@ def main():
     start = time()
     log.info("{:.1f}s\tstart\tTIMESTAMP={}".format(time() - start, Time.now().isot))
 
+    # AR freeze_iers
+    freeze_iers()
+
     # AR if for development, print it big at the beginning
     if args.custom_too_development:
         log.warning("")
@@ -87,6 +92,23 @@ def main():
         log.info("{:.1f}s\trundate\tTIMESTAMP={}".format(time() - start, Time.now().isot))
         args.rundate = get_latest_rundate(log=log, step="rundate", start=start)
         log.info("{:.1f}s\trundate\tsetting args.rundate={}".format(time() - start, args.rundate))
+
+    # AR fba_use_fabs: if None, set according to what is in the data/cutoff-dates.yaml
+    if args.fba_use_fabs is None:
+        log.info("")
+        log.info("")
+        log.info("{:.1f}s\tfba_use_fabs\tTIMESTAMP={}".format(time() - start, Time.now().isot))
+        args.fba_use_fabs = get_fba_use_fabs(args.rundate)
+        log.info("{:.1f}s\tfba_use_fabs\tsetting args.fba_use_fabs={}".format(time() - start, args.fba_use_fabs))
+        if os.getenv("FIBERASSIGN_USE_FABS") is not None:
+            if os.getenv("FIBERASSIGN_USE_FABS") != str(args.fba_use_fabs):
+                msg = "already defined environment variable FIBERASSIGN_USE_FABS={} will be overwritten by args.fba_use_fabs={}".format(
+                    os.getenv("FIBERASSIGN_USE_FABS"),
+                    args.fba_use_fabs
+                )
+                log.warning("{:.1f}s\tfba_use_fabs\t{}".format(time() - start, msg))
+    os.environ["FIBERASSIGN_USE_FABS"] = str(args.fba_use_fabs)
+    log.info("{:.1f}s\tfba_use_fabs\tsetting $FIBERASSIGN_USE_FABS={}".format(time() - start, os.getenv("FIBERASSIGN_USE_FABS")))
 
     # AR mtltime
     # AR if possible: setting to the latest of:
@@ -750,6 +772,12 @@ if __name__ == "__main__":
         action="store_true",
         default=False,
     )
+    parser.add_argument(
+        "--fba_use_fabs",
+        help="value to determine the cpp behavior, see PR470 (default: based on the rundate)",
+        type=str,
+        default=None
+    )
 
     args = parser.parse_args()
     log = Logger.get()
@@ -775,6 +803,9 @@ if __name__ == "__main__":
     #          so that it is recorded in the fiberassign-TILEID.log file
 
     # AR mtltime (2021-09-01): if set to None, now setting it inside main()
+    # AR          so that it is recorded in the fiberassign-TILEID.log file
+
+    # AR fba_use_fabs (2025-04-xx): if set to None, setting it inside main()
     # AR          so that it is recorded in the fiberassign-TILEID.log file
 
     # AR goaltype (DARK1B->DARK, BRIGHT1B->BRIGHT)
