@@ -6,11 +6,13 @@ fiberassign change log
 5.8.0 (unreleased)
 ------------------
 
+* handle dark1b/bright1b (PR `#468`_)
 * Freeze downloads of the IERS leap second table in ``fba_launch``, ``fba_run`` and ``fba_rerun`` (PR `#475`_).
 * Field rotation updates to avoid hexapod rotation limit errors (PR `#466`_).
 * Fix C++ bug with use of std::abs and improve floating point reproducibility (PR `#470`_).
 * Remove ``DesiTest`` from setup.py and warn about other deprecated features (PR `#464`_).
 
+.. _`#468`: https://github.com/desihub/fiberassign/pull/468
 .. _`#475`: https://github.com/desihub/fiberassign/pull/475
 .. _`#466`: https://github.com/desihub/fiberassign/pull/466
 .. _`#470`: https://github.com/desihub/fiberassign/pull/470
