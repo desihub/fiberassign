@@ -877,8 +877,8 @@ def get_desitarget_paths(
                 (boolean)
         dr (optional, defaults to "dr9"): legacypipe dr (string)
         gaiadr (optional, defaults to "gaiadr2"): gaia dr (string)
-        custom_too_file (optional, default=None): full path to a custom ToO file, for development work, which overrides the official one (string)
-        custom_too_development (optional, defaults to False): is this for development? (allows custom_too_file to be outside of $DESI_SURVEYOPS) (bool)
+        custom_too_file (optional, default=None): comma-separated full paths to a custom ToO files, for development work, which overrides the official one (string)
+        custom_too_development (optional, defaults to False): is this for development? (allows custom_too_file to be outside of $DESI_SURVEYOPS or $DESI_ROOT/survey/fiberassign/special/tertiary) (bool)
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -1061,6 +1061,10 @@ def get_desitarget_paths(
                 )
             )
         # AR check custom ToO file(s) exist + are in $DESI_SURVEYOPS, if not custom_too_development
+        allowed_dirs = [
+            os.getenv("DESI_SURVEYOPS"),
+            os.path.join(os.getenv("DESI_ROOT"), "survey", "fiberassign", "special", "tertiary")
+        ]
         if custom_too_development:
             log.info("{:.1f}s\t{}\tcustom_too_development=True, no check that custom_too_file(s) are in $DESI_SURVEYOPS".format(
                 time() - start, step,
@@ -1070,9 +1074,11 @@ def get_desitarget_paths(
             msg = None
             if not os.path.isfile(fn):
                 msg = "{:.1f}s\t{}\t{} does not exist".format(time() - start, step, fn)
-            if (not custom_too_development) & (not fn.startswith(os.getenv("DESI_SURVEYOPS"))):
+            if (not custom_too_development) & (
+                np.sum([fn.startswith(allowed_dir) for allowed_dir in allowed_dirs]) == 0
+            ):
                 msg = "{:.1f}s\t{}\t{} does not starts with {}; set custom_too_development=True if this is for development".format(
-                    time() - start, step, fn, os.getenv("DESI_SURVEYOPS"),
+                    time() - start, step, fn, ", ".join(allowed_dirs),
                 )
             if msg is not None:
                 log.error(msg)
