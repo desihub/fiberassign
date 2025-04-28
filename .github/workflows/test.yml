@@ -26,7 +26,7 @@ jobs:
             DESIMETER_VERSION: 0.7.1
             DESIMODEL_DATA: branches/test-0.19
             DESIMODEL: ${{ github.workspace }}/desimodel
-            DESITARGET_VERSION: 2.5.0
+            DESITARGET_VERSION: 2.9.0
 
         steps:
             - name: Cancel Previous Runs

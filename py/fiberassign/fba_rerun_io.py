@@ -72,14 +72,18 @@ def fba_rerun_get_settings(
     #
     hdr = fits.getheader(fn, 0)
     # AR SV3/Main BRIGHT/DARK?
-    faflavors = ["sv3bright", "sv3dark", "mainbright", "maindark", "mainbackup"]
+    faflavors = [
+        "sv3bright", "sv3dark",
+        "mainbright", "mainbright1b",
+        "maindark", "maindark1b",
+        "mainbackup",
+    ]
     if hdr["FAFLAVOR"] not in faflavors:
-        log.error(
-            "{:.1f}s\t{}\tFAFLAVOR={} not in {}; exiting".format(
-                time() - start, step, hdr["FAFLAVOR"], faflavors
-            )
+        msg = "{:.1f}s\t{}\tFAFLAVOR={} not in {}; exiting".format(
+            time() - start, step, hdr["FAFLAVOR"], faflavors
         )
-        sys.exit(1)
+        log.error(msg)
+        raise ValueError(msg)
 
     mydict = {}
 

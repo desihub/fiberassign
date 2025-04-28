@@ -992,7 +992,10 @@ minimal_target_columns = OrderedDict([
     ('SUBPRIORITY', '>f8'),
     ('OBSCONDITIONS', '>i8'),
     ('PRIORITY_INIT', '>i8'),
-    ('NUMOBS_INIT', '>i8')
+    ('NUMOBS_INIT', '>i8'),
+    ('MTL_HIGHEST', '>i4'),
+    ('MTL_WANTED', '>i4'),
+    ('MTL_CONTAINS', '>i4'),
 ])
 
 merged_fiberassign_swap = {
@@ -1031,6 +1034,9 @@ merged_fiberassign_req_columns = OrderedDict([
     ("PRIORITY", "i4"),
     ("SUBPRIORITY", "f8"),
     ("OBSCONDITIONS", "i4"),
+    ("MTL_HIGHEST", ">i4"),
+    ("MTL_WANTED", ">i4"),
+    ("MTL_CONTAINS", ">i4"),
 ])
 # Columns that should appear at the end of the table.
 merged_fiberassign_req_columns_at_end = OrderedDict([
@@ -1081,6 +1087,9 @@ merged_targets_columns = OrderedDict([
     ("OBSCONDITIONS", "i4"),
     #("PLATE_RA", "f8"),
     #("PLATE_DEC", "f8"),
+    ("MTL_HIGHEST", ">i4"),
+    ("MTL_WANTED", ">i4"),
+    ("MTL_CONTAINS", ">i4"),
 ])
 
 merged_potential_columns = OrderedDict([
