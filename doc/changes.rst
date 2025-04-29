@@ -3,7 +3,12 @@
 fiberassign change log
 ======================
 
-5.8.0 (unreleased)
+5.8.1 (unreleased)
+------------------
+
+* No changes yet.
+
+5.8.0 (2025-04-29)
 ------------------
 
 * handle dark1b/bright1b (PR `#468`_)
