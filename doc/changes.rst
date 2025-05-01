@@ -6,7 +6,9 @@ fiberassign change log
 5.8.1 (unreleased)
 ------------------
 
-* No changes yet.
+* Handle exceptions in copy_to_svn (PR `#481`_)
+
+.. _`#481`: https://github.com/desihub/fiberassign/pull/481
 
 5.8.0 (2025-04-29)
 ------------------
