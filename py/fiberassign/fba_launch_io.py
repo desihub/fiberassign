@@ -3781,7 +3781,10 @@ def copy_to_svn(svntiledir, tileid, myouts,
     files = []
     files += [myouts['fiberassign'], myouts['log'], myouts['png']]
     os.makedirs(svntiledir, exist_ok=True, mode=dirmode)
-    os.chmod(svntiledir, mode=dirmode)
+    try:
+        os.chmod(svntiledir, mode=dirmode)
+    except:
+        log.info("Did not update permissions; we weren't the owner.")
     for filename in files:
         # depending on specific steps that got executed, a file may not exist.
         if not os.path.exists(filename):
