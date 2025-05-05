@@ -3,7 +3,10 @@
 fiberassign change log
 ======================
 
-5.8.1 (unreleased)
+5.8.2 (unreleased)
+------------------
+
+5.8.1 (2025-05-05)
 ------------------
 
 * Handle exceptions in copy_to_svn (PR `#481`_)
