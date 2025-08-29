@@ -483,3 +483,36 @@ def get_obstheta_corr(decs, has, clip_arcsec=600.):
         return obstheta_corrs[0]
     else:
         return obstheta_corrs
+
+
+def get_main_dtver(tileid, svndir=None):
+    """
+    Retrieve the desitarget catalog version for a main tile.
+
+    Args:
+        tileid: tileid (int)
+        svndir (optional, defaults to $DESI_TARGET/fiberassign/tiles/trunk): svn folder (str)
+
+    Returns:
+        dtver: the desitarget catalog version (str)
+
+    Notes:
+        The information is obtained from the FAARGS keyword in the
+            zero-th extension of the fiberassign-TILEID.fits.gz file
+            in the svn folder.
+        As of Aug. 2025, the possible outputs are:
+            '-', '1.0.0', '1.1.1', '2.2.0', '3.0.0', '3.2.0'
+        The '-' output is returned if no such file exists.
+
+    """
+    # AR default svn folder
+    if svndir is None:
+        svndir = os.path.join(os.getenv("DESI_TARGET"), "fiberassign", "tiles", "trunk")
+
+    tileidpad = "{:06d}".format(tileid)
+    fn = os.path.join(svndir, tileidpad[:3], "fiberassign-{}.fits.gz".format(tileidpad))
+    if os.path.isfile(fn):
+        faargs = fitsio.read_header(fn, 0)["FAARGS"].split()
+        return [faargs[i+1] for i in range(len(faargs)-1) if faargs[i] == "--dtver"][0]
+    else:
+        return "-"
