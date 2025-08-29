@@ -516,3 +516,30 @@ def get_main_dtver(tileid, svndir=None):
         return [faargs[i+1] for i in range(len(faargs)-1) if faargs[i] == "--dtver"][0]
     else:
         return "-"
+
+
+def get_main_early_nonrepro_tiles():
+    """
+    Table with the 157 early main tiles, designed with DTVER=1.0.0, and non-reproducible.
+
+    Args:
+        None
+
+    Returns:
+        d: Table array with ['TILEID', 'PASS', 'RA', 'DEC', 'PROGRAM', 'IN_DESI', 'EBV_MED']
+
+    Notes:
+        The table is stored in data/tiles-main-dtver-1.0.0.ecsv.
+        It has been generated with:
+
+        d = Table.read("/global/cfs/cdirs/desi/survey/ops/surveyops/trunk/ops/tiles-main.ecsv")
+        pool = multiprocessing.Pool(processes=256)
+        with pool:
+            dtvers = np.array(pool.map(get_main_dtver, d["TILEID"]))
+        sel = dtvers == "1.0.0"
+        d = d[sel]["TILEID", "PASS", "RA", "DEC", "PROGRAM", "IN_DESI", "EBV_MED"]
+        d.write("tiles-main-dtver-1.0.0.ecsv")
+    """
+    fn = resource_filename("fiberassign", "data/tiles-main-dtver-1.0.0.ecsv")
+    d = Table.read(fn)
+    return d
