@@ -6,6 +6,12 @@ fiberassign change log
 5.8.2 (unreleased)
 ------------------
 
+* Wrappers to support rerunning fiberassign on all tiles at NERSC (PR `#482`_).
+* Update to pybind11 v3.0.1 (PR `#485`_).
+
+.. _`#482`: https://github.com/desihub/fiberassign/pull/482
+.. _`#485`: https://github.com/desihub/fiberassign/pull/485
+
 5.8.1 (2025-05-05)
 ------------------
 
