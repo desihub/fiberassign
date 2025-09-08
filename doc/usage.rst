@@ -58,7 +58,7 @@ many customized plotting options possible using the low-level tools, but there
 is also a command-line script to create a PDF format plot of each tile.  By
 default, this script plots all petals of all tiles using a "simple"
 representation of each positioner (two lines).  Running
-:ref:`script_fba_plot_results` in this way will require several minutes per
+:ref:`script_fba_plot` in this way will require several minutes per
 tile, but multiple processes will be used to plot tiles in parallel:
 
 .. include:: _static/fba_plot_results.inc
