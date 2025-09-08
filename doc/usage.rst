@@ -56,23 +56,19 @@ JSON file (by default named "qa.json" in the output directory):
 It is also frequently useful to plot the results of the assignment.  There are
 many customized plotting options possible using the low-level tools, but there
 is also a command-line script to create a PDF format plot of each tile.  By
-default, this script plots all petals of all tiles using a "simple"
-representation of each positioner (two lines).  Running
+default, this script plots all petals of all tiles in a fiber assignment run
+using a detailed representation of each positioner.  Running
 :ref:`script_fba_plot` in this way will require several minutes per
 tile, but multiple processes will be used to plot tiles in parallel:
 
-.. include:: _static/fba_plot_results.inc
+.. include:: _static/fba_plot.inc
 
-**EXAMPLE:**  In our example, let's plot only one tile and use options to plot
-the full positioner geometry.  Notice how we made a text file with just one
-tile ID to use::
+**EXAMPLE:**  In our example, let's plot the full positioner gemoetry
+for the fiber assignment we already ran::
 
-    %> cat plot_tiles.txt
-    11108
-    %> fba_plot_results \
-       --tiles plot_tiles.txt \
-       --dir out_raw \
-       --real_shapes
+    %> fba_plot \
+       out_raw/fba-11108.fits \
+       --out_dir out_raw
 
 .. image:: _static/plot_assign.png
 
