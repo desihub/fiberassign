@@ -18,7 +18,7 @@ import numpy as np
 from astropy.table import Table
 from astropy.time import Time
 import yaml
-from pkg_resources import resource_filename
+from importlib import resources
 from desiutil.log import get_logger
 from ._internal import (Logger, Timer, GlobalTimers, Circle, Segments, Shape,
                         Environment)
@@ -115,7 +115,7 @@ def get_date_cutoff(datetype, cutoff_case):
         date_cutoff: cutoff date for datetype and cutoff_case, in the "YYYY-MM-DDThh:mm:ss+00:00" formatting (string)
 
     """
-    fn = resource_filename("fiberassign", "data/cutoff-dates.yaml")
+    fn = str(resources.files("fiberassign").joinpath("data", "cutoff-dates.yaml"))
     with open(fn, "r") as f:
         config = yaml.safe_load(f)
     f.close()

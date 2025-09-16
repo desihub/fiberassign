@@ -5,7 +5,7 @@ import os
 from glob import glob
 import tempfile
 import yaml
-from pkg_resources import resource_filename
+from importlib import resources
 from datetime import datetime, timezone
 import numpy as np
 import fitsio
@@ -1176,11 +1176,11 @@ def get_patching_params(fn="patching_202210.yaml"):
 
     Notes:
         fn: the code will first look for:
-            - first look for: resource_filename("fiberassign", os.path.join("data", fn))
+            - first look for: resources.files("fiberassign").joinpath("data", fn)
             - then look for: fn
         See fiberassign/data/patching_202210.yaml for the formatting.
     """
-    myfn = resource_filename("fiberassign", os.path.join("data", fn))
+    myfn = str(resources.files("fiberassign").joinpath("data", fn))
     if not os.path.isfile(myfn):
         log.warning("no {}".format(myfn))
         myfn = fn
@@ -1210,8 +1210,8 @@ def patch(in_fafn, out_fafn, params_fn):
         Targets are matched on TARGETID, and values updated as necessary.
         If any rows are changed, then an updated file is written out, preserving all other HDUs.
         params_fn:
-            - the code will first look for:
-                - first look for: resource_filename("fiberassign", os.path.join("data", fn))
+            - the code will use get_patching_params to first look for:
+                - first look for: resources.files("fiberassign").joinpath("data", fn)
                 - then look for: fn
             - see fiberassign/data/patching_202210.yaml for the formatting.
     """
