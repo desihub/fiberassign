@@ -237,7 +237,7 @@ def get_program_latest_timestamp(
     if len(tms) > 0:
         timestamp = np.sort(tms)[-1]
         # AR does not end with +NN:MM timezone?
-        if re.search('\+\d{2}:\d{2}$', timestamp) is None:
+        if re.search(r'\+\d{2}:\d{2}$', timestamp) is None:
             timestamp = "{}+00:00".format(timestamp)
 
     log.info("{:.1f}s\t{}\tlatest timestamp : {}".format(time() - start, step, timestamp))
