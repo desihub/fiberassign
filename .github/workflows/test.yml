@@ -35,7 +35,7 @@ jobs:
 
         env:
             DESIUTIL_VERSION: 3.5.0
-            DESIMODEL_VERSION: 0.19.2
+            DESIMODEL_VERSION: 0.19.3
             DESIMETER_VERSION: 0.7.1
             DESIMODEL_DATA: branches/test-0.19
             DESIMODEL: ${{ github.workspace }}/desimodel
