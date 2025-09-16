@@ -129,7 +129,7 @@ def get_fafns_to_check(fa_srcdir, skip_subdirs=None, only_subdirs=None, only_til
 
     # AR only tileids?
     if only_tileids is not None:
-        sel = np.in1d(tileids, [int(tileid) for tileid in only_tileids.split(",")])
+        sel = np.isin(tileids, [int(tileid) for tileid in only_tileids.split(",")])
         log.info(
             "{}\trestrict to {} fiberassign files, as per only_tileids".format(
                 only_tileids, sel.sum()
@@ -144,9 +144,9 @@ def get_fafns_to_check(fa_srcdir, skip_subdirs=None, only_subdirs=None, only_til
                 os.getenv("DESI_ROOT"), "spectro", "redux", "daily", "tiles-daily.csv"
             )
         )
-        d = d[~np.in1d(d["FAFLAVOR"], ["cmxposmapping", "unknown"])]
+        d = d[~np.isin(d["FAFLAVOR"], ["cmxposmapping", "unknown"])]
         faflavors, ii = np.unique(d["FAFLAVOR"], return_index=True)
-        sel = np.in1d(tileids, d["TILEID"][ii])
+        sel = np.isin(tileids, d["TILEID"][ii])
         if sel.sum() != ii.size:
             log.warning(
                 "debug: only {} / {} FAFLAVORs picked".format(sel.sum(), ii.size),
@@ -368,7 +368,7 @@ def get_desitarget_fafn_rows(fafn, ras, decs):
     nside, nest = pixarea2nside(7.0), True
     pixlist = tiles2pix(nside, tiles=tiles)
     pixs = hp.ang2pix(nside, np.radians((90.0 - decs)), np.radians(ras), nest=nest)
-    ii = np.where(np.in1d(pixs, pixlist))[0]
+    ii = np.where(np.isin(pixs, pixlist))[0]
     jj = is_point_in_desi(tiles, ras[ii], decs[ii])
     rows = ii[jj]
     return rows
@@ -479,7 +479,7 @@ def get_dith_infos(ext, name, fafn, fa_name):
         h = fits.open(fafn)
         if "EXTRA" in [h[i].header["EXTNAME"] for i in range(1, len(h))]:
             fa_undith = h["EXTRA"].data
-            sel = np.in1d(fa_name["TARGETID"], fa_undith["TARGETID"])
+            sel = np.isin(fa_name["TARGETID"], fa_undith["TARGETID"])
             isdith[sel] = True
     log.info(
         "{:06d}\t{}\t{}\tdith: found {} rows".format(
@@ -1294,7 +1294,7 @@ def patch(in_fafn, out_fafn, params_fn):
             if len(I) == 0:
                 continue
             T = T[I]
-            ii_match += np.where(np.in1d(unq_targetids, T["TARGETID"]))[0].tolist()
+            ii_match += np.where(np.isin(unq_targetids, T["TARGETID"]))[0].tolist()
 
             # AR "targetids" are the ones from the FA file
             # AR "tids" are the ones from the desitarget files (always > 0)
