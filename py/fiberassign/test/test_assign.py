@@ -630,14 +630,3 @@ class TestAssign(unittest.TestCase):
         #                     # self.assertEqual(newtg, tg)
 
         return
-
-
-def test_suite():
-    """Allows testing of only this module with the command::
-
-        python setup.py test -m <modulename>
-    """
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)
-
-# Note that you can run a single test function with
-# python3 -m unittest fiberassign.test.test_assign.TestAssign.test_full

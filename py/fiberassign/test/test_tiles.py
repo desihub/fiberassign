@@ -63,11 +63,3 @@ class TestTiles(unittest.TestCase):
         self.assertEqual(tls.obstime[1], Time('2020-11-23').isot)
 
         return
-
-
-def test_suite():
-    """Allows testing of only this module with the command::
-
-        python setup.py test -m <modulename>
-    """
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)
