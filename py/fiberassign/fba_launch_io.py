@@ -149,13 +149,13 @@ def get_program_latest_timestamp(
     if os.path.isfile(fn):
         d = Table.read(fn)
         if program.upper() in ["DARK", "DARK1B"]:
-            keep = np.in1d(d["PROGRAM"], ["DARK", "DARK1B"])
+            keep = np.isin(d["PROGRAM"], ["DARK", "DARK1B"])
         elif program.upper in ["BRIGHT", "BRIGHT1B"]:
-            keep = np.in1d(d["PROGRAM"], ["BRIGHT", "BRIGHT1B"])
+            keep = np.isin(d["PROGRAM"], ["BRIGHT", "BRIGHT1B"])
         else:
             keep = d["PROGRAM"] == program.upper()
         # AR add a cut on TILEID
-        # AR TODO: read tiles-{survey}.ecsv and use np.in1d()
+        # AR TODO: read tiles-{survey}.ecsv and use np.isin()
         if survey == "sv3":
             keep &= (d["TILEID"] < 1000)
         if survey == "main":
@@ -237,7 +237,7 @@ def get_program_latest_timestamp(
     if len(tms) > 0:
         timestamp = np.sort(tms)[-1]
         # AR does not end with +NN:MM timezone?
-        if re.search('\+\d{2}:\d{2}$', timestamp) is None:
+        if re.search(r'\+\d{2}:\d{2}$', timestamp) is None:
             timestamp = "{}+00:00".format(timestamp)
 
     log.info("{:.1f}s\t{}\tlatest timestamp : {}".format(time() - start, step, timestamp))
@@ -1570,7 +1570,7 @@ def create_mtl(
                 # AR sanity check: dups should have MTL_CONTAINS corresponding to
                 # AR    both ledgers
                 _ = np.arange(len(targ), dtype=int)
-                dups_ii = _[~np.in1d(_, ii)]
+                dups_ii = _[~np.isin(_, ii)]
                 dups_tids = np.unique(targ["TARGETID"][dups_ii])
                 oc0 = os.path.normpath(targdirs[0]).split(os.path.sep)[-1].upper()
                 oc1 = os.path.normpath(targdirs[1]).split(os.path.sep)[-1].upper()
@@ -1584,8 +1584,8 @@ def create_mtl(
                             dups_tids.size,
                             expect_dups_tids.size,
                             np.max([
-                                (~np.in1d(dups_ii, expect_dups_tids)).sum(),
-                                (~np.in1d(expect_dups_ii, dups_ii)).sum()
+                                (~np.isin(dups_ii, expect_dups_tids)).sum(),
+                                (~np.isin(expect_dups_ii, dups_ii)).sum()
                             ])
                     )
                     log.error(msg)
@@ -1623,7 +1623,7 @@ def create_mtl(
             for targdir in targdirs:
                 radec = fitsio.read(targdir, columns=["RA", "DEC"])
                 pixs = hp.ang2pix(nside, np.radians((90. - radec["DEC"])), np.radians(radec["RA"]), nest=nest)
-                ii = np.where(np.in1d(pixs, pixlist))[0]
+                ii = np.where(np.isin(pixs, pixlist))[0]
                 jj = is_point_in_desi(tiles, radec["RA"][ii], radec["DEC"][ii])
                 rows = ii[jj]
                 targ = Table(fitsio.read(targdir, columns = columns + ["TARGETID"], rows=rows))
@@ -3510,7 +3510,7 @@ def plot_sky_fa(
         ax = axs[2]
         x = dras["parent"][mskpsel]
         y = ddecs["parent"][mskpsel]
-        C = np.in1d(parent["TARGETID"][mskpsel], assign["TARGETID"][msksel])
+        C = np.isin(parent["TARGETID"][mskpsel], assign["TARGETID"][msksel])
         hb = ax.hexbin(
             x,
             y,

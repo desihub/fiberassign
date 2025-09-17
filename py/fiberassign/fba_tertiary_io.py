@@ -267,7 +267,7 @@ def assert_tertiary_targ(prognum, targfn):
 
     # AR warning if some columns are present but will be overwritten
     keys = np.array(targ.dtype.names)
-    sel = np.in1d(
+    sel = np.isin(
         keys,
         [
             "SCND_ORDER",
@@ -432,9 +432,9 @@ def get_numobs_priority(too, prio, prognum, previous_tileids=None, fadir=None):
                 _, prev_prognum, prev_release, _, _, _ = decode_targetid(
                     prev_d["TARGETID"]
                 )
-                sel = np.in1d(prev_release, release) & np.in1d(prev_prognum, prognum)
+                sel = np.isin(prev_release, release) & np.isin(prev_prognum, prognum)
                 prev_d = prev_d[sel]
-                sel = np.in1d(too["TARGETID"], prev_d["TARGETID"])
+                sel = np.isin(too["TARGETID"], prev_d["TARGETID"])
                 # AR update columns
                 numobss[sel] += 1
                 numobs_mores[sel] -= 1

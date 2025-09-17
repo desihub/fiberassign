@@ -74,7 +74,7 @@ results_assign_columns = OrderedDict([
     ("LAMBDA_REF", "f4"),
     ("PETAL_LOC", "i2"),
     ("DEVICE_LOC", "i4"),
-    ("DEVICE_TYPE", "a3"),
+    ("DEVICE_TYPE", "S3"),
     ("TARGET_RA", "f8"),
     ("TARGET_DEC", "f8"),
     ("FA_TARGET", "i8"),
@@ -466,7 +466,7 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
         fdata["PETAL_LOC"] = np.array(
             [petal[x] for x in locs]).astype(np.int16)
         fdata["DEVICE_TYPE"] = np.array(
-            [device_type[x] for x in locs]).astype(np.dtype("a3"))
+            [device_type[x] for x in locs]).astype(np.dtype("S3"))
 
         # This hard-coded value copied from the original code...
         lambda_ref = np.ones(nloc, dtype=np.float32) * 5400.0
@@ -1027,7 +1027,7 @@ merged_fiberassign_req_columns = OrderedDict([
     ("LAMBDA_REF", "f4"),
     ("FA_TARGET", "i8"),
     ("FA_TYPE", "u1"),
-    ("OBJTYPE", "a3"),
+    ("OBJTYPE", "S3"),
     ("FIBERASSIGN_X", "f4"),
     ("FIBERASSIGN_Y", "f4"),
     #("NUMTARGET", "i2"),
@@ -1058,7 +1058,7 @@ merged_skymon_columns = OrderedDict([
     ("TARGET_DEC", "f8"),
     ("FIBERASSIGN_X", "f4"),
     ("FIBERASSIGN_Y", "f4"),
-    ("BRICKNAME", "a8"),
+    ("BRICKNAME", "S8"),
     ("FIBERSTATUS", "i4"),
     ("PETAL_LOC", "i2"),
     ("DEVICE_LOC", "i4"),

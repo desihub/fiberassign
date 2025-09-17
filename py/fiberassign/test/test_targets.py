@@ -150,11 +150,3 @@ class TestTargets(unittest.TestCase):
             default_main_skymask(), default_main_suppskymask(),
             default_main_safemask(), mask, default_main_gaia_stdmask())
         self.assertTrue(not np.any(result))
-
-
-def test_suite():
-    """Allows testing of only this module with the command::
-
-        python setup.py test -m fiberassign.test.test_targets
-    """
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)
