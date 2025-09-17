@@ -63,7 +63,7 @@ jobs:
                 python -m pip install --no-cache-dir --upgrade "numpy${{ matrix.numpy-version }}"
                 python -m pip install --no-cache-dir --upgrade "astropy${{ matrix.astropy-version }}"
                 python -m pip install --no-cache-dir fitsio
-                python -m pip install --no-cache-dir git+https://github.com/desihub/desiutil.git@${{ env.DESIUTIL_VERSION }}#egg=desiutil
+                python -m pip install desiutil==${DESIUTIL_VERSION}
                 python -m pip install --no-cache-dir git+https://github.com/desihub/desimodel.git@${{ env.DESIMODEL_VERSION }}#egg=desimodel
                 python -m pip install --no-cache-dir git+https://github.com/desihub/desitarget.git@${{ env.DESITARGET_VERSION }}#egg=desitarget
                 python -m pip install --no-cache-dir git+https://github.com/desihub/desimeter.git@${{ env.DESIMETER_VERSION }}#egg=desimeter
