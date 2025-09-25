@@ -121,7 +121,7 @@ if [[ "$SUBFOLDER" == "" ]]
 then
     ORIGFNS=`ls $KPNO_COPYDIR/???/fiberassign-??????.fits.gz`
 else
-    ORIGFNS=`ls $KPNO_COPYDIR/100/fiberassign-??????.fits.gz`
+    ORIGFNS=`ls $KPNO_COPYDIR/$SUBFOLDER/fiberassign-??????.fits.gz`
 fi
 
 # AR text file with the commands to rerun the KPNO fiberassign files
@@ -175,5 +175,5 @@ do
     COUNT=`echo $COUNT | awk '{print $1+1}'`
     cat $DIFFFN | grep -v \# >> $DIFFASC
 done
-echo "    Done at: " `date`                                                                                                                                                                    
+echo "    Done at: " `date`
 
