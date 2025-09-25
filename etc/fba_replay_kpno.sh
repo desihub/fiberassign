@@ -14,6 +14,9 @@ usage () {
     --subfolder     SUBFOLDER     optional; if set, only rerun that subfolder (e.g. 001, for 1??? tileids)
     --rerundir      RERUNDIR      the local folder where outputs will be stored
     --njob          NJOB          nb of parallel jobs running (default=8)
+    --rerun                       optional; toggles whether to do the rerun or not
+    --compare                     optional; toggles comparing rerun fiberassign output to original KPNO output
+    --concat                      optional; toggles concatenating all the diff files into one large diff file
 
     Should be run on one or multiple interactive (or debug) nodes.
     If the reproducibility is successful, then the \$RERUNDIR/fba_nersc_kpno-diff.asc
@@ -24,6 +27,10 @@ usage () {
     This script was typically used to perform NERSC vs. KPNO reproducibility
         when developing fiberassign code (one would then load the local, in development
         version of the fiberassign code before running).
+
+    If any of the toggles (--rerun, --compare and --concat) are toggled on, any toggles not explciitly
+        set on will be set to false. If none of the toggles are passed, they are all assumed to be true
+        and all three steps are run.
 
     Files from KPNO should be organized as follows:
         \$KPNO_COPYDIR/000/fiberassign-001000.fits.gz
