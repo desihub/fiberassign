@@ -28,7 +28,7 @@ usage () {
         when developing fiberassign code (one would then load the local, in development
         version of the fiberassign code before running).
 
-    If any of the toggles (--rerun, --compare and --concat) are toggled on, any toggles not explciitly
+    If any of the toggles (--rerun, --compare and --concat) are toggled on, any toggles not explicitly
         set on will be set to false. If none of the toggles are passed, they are all assumed to be true
         and all three steps are run.
 
