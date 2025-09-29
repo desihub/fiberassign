@@ -13,7 +13,7 @@ Welcome to fiberassign's documentation!
     changes.rst
     script_fba_merge_results.rst
     script_fba_plot_qa.rst
-    script_fba_plot_results.rst
+    script_fba_plot.rst
     script_fba_run_qa.rst
     script_fba_run.rst
 
