@@ -1,6 +1,6 @@
-
+===========
 fiberassign
-==============
+===========
 
 |Actions Status| |Documentation Status|
 
@@ -16,4 +16,4 @@ This repository contains code to plan the location of DESI fiber positioners.  G
 
 For full documentation, please visit  `fiberassign on Read the Docs`_
 
-.. _`fiberassign on Read the Docs`: http://fiberassign.readthedocs.org/en/latest/
+.. _`fiberassign on Read the Docs`: https://fiberassign.readthedocs.io/en/latest/
