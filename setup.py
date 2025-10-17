@@ -156,8 +156,7 @@ ext_modules = [
 ]
 
 setup_keywords['ext_modules'] = ext_modules
-setup_keywords['cmdclass']['build_ext'] = BuildExt
-setup_keywords['cmdclass']['clean'] = RealClean
+setup_keywords['cmdclass'] = {'build_ext': BuildExt, 'clean': RealClean}
 #
 # Warning about old features.
 #
