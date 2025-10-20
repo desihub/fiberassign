@@ -11,18 +11,6 @@ from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 from distutils.command.clean import clean
 from distutils.errors import CompileError
-#
-# Set keywords for the setup function. Most metadata is in setup.cfg.
-# The keywords set below need some amount of automation, & should
-# be left alone unless you are an expert.
-#
-# Treat everything in bin/ except *.rst as a script to be installed.
-#
-setup_keywords = dict()
-if os.path.isdir('bin'):
-    setup_keywords['scripts'] = [fname for fname in
-                                 glob.glob(os.path.join('bin', '*'))
-                                 if not os.path.basename(fname).endswith('.rst')]
 
 # Add a custom clean command that removes in-tree files like the
 # compiled extension.
@@ -58,7 +46,6 @@ class RealClean(clean):
 
 # As of Python 3.6, CCompiler has a `has_flag` method.
 # cf http://bugs.python.org/issue26689
-
 
 def has_flag(compiler, flagname):
     """Return a boolean indicating whether a flag name is supported on
@@ -154,9 +141,6 @@ ext_modules = [
         language='c++'
     ),
 ]
-
-setup_keywords['ext_modules'] = ext_modules
-setup_keywords['cmdclass'] = {'build_ext': BuildExt, 'clean': RealClean}
 #
 # Warning about old features.
 #
@@ -203,6 +187,21 @@ for m in message:
         print(message[m])
         sys.exit(1)
 
+#
+# Set keywords for the setup function. Most metadata is in setup.cfg.
+# The keywords set below need some amount of automation, & should
+# be left alone unless you are an expert.
+#
+# Treat everything in bin/ except *.rst as a script to be installed.
+#
+setup_keywords = dict()
+if os.path.isdir('bin'):
+    setup_keywords['scripts'] = [fname for fname in
+                                 glob.glob(os.path.join('bin', '*'))
+                                 if os.access(fname, os.X_OK)]
+
+setup_keywords['ext_modules'] = ext_modules
+setup_keywords['cmdclass'] = {'build_ext': BuildExt, 'clean': RealClean}
 #
 # Copy the version string into the C++ code.
 #
