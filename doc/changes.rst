@@ -8,9 +8,15 @@ fiberassign change log
 
 * Wrappers to support rerunning fiberassign on all tiles at NERSC (PR `#482`_).
 * Update to pybind11 v3.0.1 (PR `#485`_).
+* Expand unit test matrix coverage; replace ``pkg_resources`` (PR `#490`_).
+* Minor enhancements and bug fixes to ``fba_replay`` (PR `#491`_).
+* Add ``pyproject.toml`` file and update top-level package infrastructure files (PR `#492`_).
 
 .. _`#482`: https://github.com/desihub/fiberassign/pull/482
 .. _`#485`: https://github.com/desihub/fiberassign/pull/485
+.. _`#490`: https://github.com/desihub/fiberassign/pull/490
+.. _`#491`: https://github.com/desihub/fiberassign/pull/491
+.. _`#492`: https://github.com/desihub/fiberassign/pull/492
 
 5.8.1 (2025-05-05)
 ------------------
