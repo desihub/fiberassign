@@ -1,0 +1,250 @@
+#!/bin/bash
+
+NJOB=128
+FRAC=1
+DVSRO=y
+
+usage () {
+    cat <<HELP_USAGE
+
+    Rerun fiberassign for all main PROGRAM tiles.
+    We exclude the 157 early tiles designed with DTCATVER<1.1.1, as those are not reproducible anyway.
+
+    `basename $0` --rerundir RERUNDIR --program PROGRAM [--cap CAP] [--njob NJOB] [--frac FRAC] --dvsro [DVSRO]
+
+    --rerundir RERUNDIR  output folder
+    --program  PROGRAM   BACKUP, BRIGHT, BRIGHT1B, DARK, DARK1B
+    --cap      CAP       ALL, NGC or SGC (default=ALL)
+    --njob     NJOB      nb of parallel jobs running (default=128)
+    --frac     FRAC      fraction of the tiles to rerun (default=1)
+    --dvsro    DVSRO     in DESI_TARGET, SKYBRICKS_DIR, SKYHEALPIXS_DIR, replace /global/cfs/cdirs/desi/ by /dvs_ro/cfs/cdirs/desi/ (y or n; default=y)
+
+    The overall environment must be loaded.
+    For instance, run:
+
+=====
+source /global/cfs/cdirs/desi/software/desi_environment.sh main
+export DESIMODEL=/global/common/software/desi/perlmutter/desiconda/current/code/desimodel/main
+export SKYHEALPIXS_DIR=\$DESI_ROOT/target/skyhealpixs/v1
+====
+
+
+HELP_USAGE
+}
+
+[ -z "$1" ] && { usage; exit;}
+
+# ======== STEP 0 : READ ARGUMENTS ==============================
+# read the provided arguments
+# https://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash
+POSITIONAL=()
+while [[ $# -gt 0 ]]
+do
+    key="$1"
+    for i in "$@"
+    do
+        case $i in
+            --rerundir)
+            RERUNDIR=$2
+            shift
+            shift
+            ;;
+            --program)
+            PROGRAM=$2
+            shift
+            shift
+            ;;
+            --cap)
+            CAP=$2
+            shift
+            shift
+            ;;
+            --njob)
+            NJOB=$2
+            shift
+            shift
+            ;;
+            --frac)
+            FRAC=$2
+            shift
+            shift
+            ;;
+            --dvsro)
+            DVSRO=$2
+            shift
+            shift
+            ;;
+            *)
+                  # unknown option
+            ;;
+        esac
+    done
+    set -- "${POSITIONAL[@]}" # restore positional parameters
+done
+
+for NAME in RERUNDIR PROGRAM CAP FBADIR NJOB FRAC DVSRO
+do
+    echo $NAME "=" ${!NAME}
+done
+# ===============================================================
+
+
+SURVEY=main
+WRAP_PARALLEL_FN="`which fba_launch | xargs dirname`/../etc/wrap_parallel.sh"
+
+# AR output root
+OUTROOT=$RERUNDIR/fba_rerun-$SURVEY-$PROGRAM-$CAP
+
+# AR temporary file
+TMPFN=`mktemp`
+
+echo $PYTHONPATH                                                                                                                                                                            
+echo $PATH
+
+
+# AR dtver, ie catalog version for desitarget
+if [[ "$PROGRAM" == "BACKUP" ]]
+then
+    DTCATVER=2.2.0
+elif [[ "$PROGRAM" == "DARK1B" ]]
+then
+    DTCATVER=3.0.0
+elif [[ "$PROGRAM" == "BRIGHT1B" ]]
+then
+    DTCATVER=3.2.0
+else
+    DTCATVER=1.1.1
+fi
+
+# AR files with commands to be executed + log
+CMDSH=$OUTROOT-cmds.sh
+CMDLOG=$OUTROOT-cmds.log
+DIFFSH=$OUTROOT-diff.sh
+DIFFLOG=$OUTROOT-diff.log
+DIFFASC=$OUTROOT-diff.asc
+for FN in $CMDSH $CMDLOG $DIFFSH $DIFFLOG $DIFFASC
+do
+    if [[ -f "$FN" ]]
+    then
+        echo Remove $FN
+        rm $FN
+    fi
+done
+
+
+function get_fns {
+SURVEY="$1" PROGRAM="$2" CAP="$3" FRAC="$4" OUTFN="$5" python - <<END
+import os
+import numpy as np
+from astropy.table import Table
+from astropy.coordinates import SkyCoord
+from astropy import units as u
+from fiberassign.utils import get_main_early_nonrepro_tiles
+
+# 157 tiles designed with DTCATVER=1.0.0
+d = get_main_early_nonrepro_tiles()
+black_tileids = d["TILEID"]
+
+# all PROGRAM tiles
+fn = os.path.join(os.getenv("DESI_SURVEYOPS"), "ops", "tiles-{}.ecsv".format(os.environ["SURVEY"]))
+d = Table.read(fn)
+cs = SkyCoord(ra = d["RA"] * u.deg, dec = d["DEC"] * u.deg, frame="icrs")
+bs = cs.galactic.b.value
+
+# tiles selection
+assert os.environ["PROGRAM"] in np.unique(d["PROGRAM"])
+assert os.environ["CAP"] in ["ALL", "NGC", "SGC"]
+sel = (d["PROGRAM"] == os.environ["PROGRAM"]) & (~np.in1d(d["TILEID"], black_tileids))
+if os.environ["CAP"] == "SGC":
+    sel &= bs < 0
+if os.environ["CAP"] == "NGC":
+    sel &= bs > 0
+d = d[sel]
+
+# fiberassign paths 
+# + selection on existing files
+d["FAFN"], d["ISFAFN"] = np.zeros(len(d), dtype=object), False
+fadir = os.path.join(os.getenv("DESI_TARGET"), "fiberassign", "tiles", "trunk")
+for i, tileid in enumerate(d["TILEID"]):
+    tileidpad = "{:06d}".format(tileid)
+    fn = os.path.join(fadir, tileidpad[:3], "fiberassign-{}.fits.gz".format(tileidpad))
+    d["FAFN"][i] = fn
+    d["ISFAFN"][i] = os.path.isfile(fn)
+d["FAFN"] = d["FAFN"].astype(str)
+d = d[d["ISFAFN"]]
+
+# subsample + randomize
+np.random.seed(1234)
+ii = np.random.choice(len(d), size=int(float(os.environ["FRAC"]) * len(d)), replace=False)
+d = d[ii]
+
+# write
+f = open(os.environ["OUTFN"], "w")
+for fafn in d["FAFN"]:
+    f.write("{}\n".format(fafn))
+f.close()
+
+END
+}
+
+
+# AR get tiles to rerun
+CMD="get_fns $SURVEY $PROGRAM $CAP $FRAC $TMPFN"
+date
+echo $CMD
+eval $CMD
+ORIGFNS=`cat $TMPFN`
+echo "Rerunning `wc -l $TMPFN` files"
+
+
+# AR rerun fiberassign-TILEID.fits.gz
+echo "rerun fiberassign-TILEID.fits.gz"
+echo "  Start at: " `date`
+for ORIGFN in $ORIGFNS
+do
+    CMD="fba_rerun --infiberassign $ORIGFN --outdir $RERUNDIR --dtver $DTCATVER --nosteps qa"
+    if [[ "$DVSRO" == "n" ]]; then
+        CMD="$CMD --no_dvsro"
+    fi
+    echo $CMD >> $CMDSH
+done
+CMD="srun --ntasks $SLURM_NNODES --ntasks-per-node 1 --wait=0 $WRAP_PARALLEL_FN --input_fn $CMDSH --njob $NJOB > $CMDLOG 2>&1"
+echo $CMD
+eval $CMD
+echo "  Done at: " `date`
+
+
+# AR run_check()
+echo "run_check()"
+echo "  Start at: " `date`
+for ORIGFN in $ORIGFNS
+do
+    SUBDIR=`basename $ORIGFN | awk '{print substr($1, 13, 3)}'`
+    RERUNFN=$RERUNDIR/$SUBDIR/`basename $ORIGFN`
+    DIFFFN=`echo $RERUNFN | sed -e 's/.fits.gz/.diff/'`
+    echo 'python -c '\''from fiberassign.fba_rerun_io import fba_rerun_check; fba_rerun_check("'$ORIGFN'", "'$RERUNFN'", "'$DIFFFN'")'\''' >> $DIFFSH
+done
+CMD="srun --ntasks $SLURM_NNODES --ntasks-per-node 1 --wait=0 $WRAP_PARALLEL_FN --input_fn $DIFFSH --njob $NJOB > $DIFFLOG 2>&1"
+echo $CMD
+eval $CMD
+echo "  Done at: " `date`
+
+
+# AR make a single diff file
+echo "single diff file"
+echo "  Start at: " `date`
+COUNT=0
+for ORIGFN in $ORIGFNS
+do
+    SUBDIR=`basename $ORIGFN | awk '{print substr($1, 13, 3)}'`
+    RERUNFN=$RERUNDIR/$SUBDIR/`basename $ORIGFN`
+    DIFFFN=`echo $RERUNFN | sed -e 's/.fits.gz/.diff/'`
+    if [[ $COUNT == 0 ]]
+    then
+        head -n 1 $DIFFFN > $DIFFASC
+    fi
+    COUNT=`echo $COUNT | awk '{print $1+1}'`
+    cat $DIFFFN | grep -v \# >> $DIFFASC
+done
+echo "  Done at: " `date`
+
