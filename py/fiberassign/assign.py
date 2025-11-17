@@ -20,6 +20,7 @@ from astropy.coordinates import SkyCoord
 
 import multiprocessing as mp
 from multiprocessing.sharedctypes import RawArray
+from multiprocessing.pool import ThreadPool
 
 from functools import partial
 
@@ -573,7 +574,7 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
 def write_assignment_fits(tiles, tagalong, asgn, out_dir=".", out_prefix="fba-",
                           split_dir=False, all_targets=False,
                           gfa_targets=None, overwrite=False, stucksky=None,
-                          tile_xy_cs5=None):
+                          tile_xy_cs5=None, numproc=0):
     """Write out assignment results in FITS format.
 
     For each tile, all available targets (not only the assigned targets) and
@@ -593,6 +594,7 @@ def write_assignment_fits(tiles, tagalong, asgn, out_dir=".", out_prefix="fba-",
             properties of assigned targets.
         gfa_targets (list of numpy arrays): Include these as GFA_TARGETS HDUs
         overwrite (bool): overwrite pre-existing output files
+        numproc (int): if >0, runs with numproc parallel jobs (with pool.starmap()); default: 0
 
     Returns:
         None
@@ -610,8 +612,12 @@ def write_assignment_fits(tiles, tagalong, asgn, out_dir=".", out_prefix="fba-",
     tiletime = tiles.obstime
     tileha = tiles.obshourang
 
+
     write_tile = partial(write_assignment_fits_tile,
                          asgn, tagalong, all_targets, overwrite)
+
+    if numproc > 0:
+        all_params = []
 
     for i, tid in enumerate(tileids):
         tra = tilera[tileorder[tid]]
@@ -635,7 +641,16 @@ def write_assignment_fits(tiles, tagalong, asgn, out_dir=".", out_prefix="fba-",
             txy = tile_xy_cs5.get(tid, None)
 
         params = (tid, tra, tdec, ttheta, ttime, tha, outfile, gfa, stuck, txy)
-        write_tile(params)
+
+        if numproc == 0:
+            write_tile(params)
+        else:
+            all_params.append((asgn, tagalong, all_targets, overwrite, params))
+
+    if numproc > 0:
+        pool = ThreadPool(numproc)
+        with pool:
+            _ = pool.starmap(write_assignment_fits_tile, all_params)
 
     tm.stop()
     tm.report("Write output files")
