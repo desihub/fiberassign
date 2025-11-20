@@ -64,8 +64,8 @@ jobs:
                 python -m pip install --no-cache-dir --upgrade "astropy${{ matrix.astropy-version }}"
                 python -m pip install --no-cache-dir fitsio
                 python -m pip install desiutil==${DESIUTIL_VERSION}
-                python -m pip install --no-cache-dir git+https://github.com/desihub/desimodel.git@${{ env.DESIMODEL_VERSION }}#egg=desimodel
-                python -m pip install --no-cache-dir git+https://github.com/desihub/desitarget.git@${{ env.DESITARGET_VERSION }}#egg=desitarget
+                python -m pip install --no-build-isolation --no-cache-dir git+https://github.com/desihub/desimodel.git@${{ env.DESIMODEL_VERSION }}#egg=desimodel
+                python -m pip install --no-build-isolation --no-cache-dir git+https://github.com/desihub/desitarget.git@${{ env.DESITARGET_VERSION }}#egg=desitarget
                 python -m pip install --no-cache-dir git+https://github.com/desihub/desimeter.git@${{ env.DESIMETER_VERSION }}#egg=desimeter
                 mkdir -p ${{ env.DESIMODEL }}
                 svn export https://desi.lbl.gov/svn/code/desimodel/${{ env.DESIMODEL_DATA }}/data ${{ env.DESIMODEL }}/data
@@ -93,11 +93,11 @@ jobs:
 
         env:
             DESIUTIL_VERSION: 3.5.0
-            DESIMODEL_VERSION: main
+            DESIMODEL_VERSION: 0.19.3
             DESIMETER_VERSION: 0.7.1
             DESIMODEL_DATA: branches/test-0.19
             DESIMODEL: ${{ github.workspace }}/desimodel
-            DESITARGET_VERSION: main
+            DESITARGET_VERSION: 2.9.0
             CXXFLAGS: -Wno-unused-result -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall --coverage -fPIC
             # The ubuntu environment for the github action invokes $GXX $GXXFLGAS when building fiberassign
             # so the --coverage needs to be set in $CXXFLAGs. Building fiberassign locally
@@ -127,8 +127,8 @@ jobs:
                 python -m pip install --no-cache-dir --upgrade "astropy${{ matrix.astropy-version }}"
                 python -m pip install --no-cache-dir fitsio
                 python -m pip install desiutil==${DESIUTIL_VERSION}
-                python -m pip install --no-cache-dir git+https://github.com/desihub/desimodel.git@${{ env.DESIMODEL_VERSION }}#egg=desimodel
-                python -m pip install --no-cache-dir git+https://github.com/desihub/desitarget.git@${{ env.DESITARGET_VERSION }}#egg=desitarget
+                python -m pip install --no-build-isolation --no-cache-dir git+https://github.com/desihub/desimodel.git@${{ env.DESIMODEL_VERSION }}#egg=desimodel
+                python -m pip install --no-build-isolation --no-cache-dir git+https://github.com/desihub/desitarget.git@${{ env.DESITARGET_VERSION }}#egg=desitarget
                 python -m pip install --no-cache-dir git+https://github.com/desihub/desimeter.git@${{ env.DESIMETER_VERSION }}#egg=desimeter
                 mkdir -p ${{ env.DESIMODEL }}
                 svn export https://desi.lbl.gov/svn/code/desimodel/${{ env.DESIMODEL_DATA }}/data ${{ env.DESIMODEL }}/data
