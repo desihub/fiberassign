@@ -140,7 +140,9 @@ jobs:
             # Need to ignore mismatch errors for some unknown reason. gcoy and g++ versions match, so it's not clear why those errors occur.
             # Ignoring them is the recommended workaround in the case where the versions match, at lesat for the time being.
             # This can be revisited in the future.
-              run: lcov --capture --directory build/temp*/src/ --output-file coverage_cpp.info --ignore-errors mismatch
+              run: |
+                lcov --capture --directory build/temp*/src/ --output-file coverage.info --ignore-errors mismatch
+                lcov --remove coverage.info '/usr/include/*' 'src/pybind11/*' -o coverage_cpp.info
             - name: Upload coverage
               uses: coverallsapp/github-action@v2
               with:
