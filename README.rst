@@ -2,7 +2,7 @@
 fiberassign
 ===========
 
-|Actions Status| |Documentation Status|
+|Actions Status| |Documentation Status| |Coverage|
 
 .. |Actions Status| image:: https://github.com/desihub/fiberassign/workflows/CI/badge.svg
     :target: https://github.com/desihub/fiberassign/actions
@@ -12,8 +12,8 @@ fiberassign
     :target: https://fiberassign.readthedocs.io/en/latest/
     :alt: Documentation Status
 
-.. image:: https://coveralls.io/repos/github/desihub/fiberassign/badge.svg
-:target: https://coveralls.io/github/desihub/fiberassign
+.. |Coverage| image:: https://coveralls.io/repos/github/desihub/fiberassign/badge.svg
+    :target: https://coveralls.io/github/desihub/fiberassign
 
 
 This repository contains code to plan the location of DESI fiber positioners.  Given information about the instrument, a list of pointings (tiles), and catalogs of prioritized targets, fiber assignment computes the best positioner locations for each tile.
