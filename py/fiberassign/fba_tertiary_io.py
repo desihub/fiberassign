@@ -410,7 +410,7 @@ def get_numobs_priority(too, prio, prognum, previous_tileids=None, fadir=None):
                 if os.path.isfile(fn):
                     isfn = True
                 else:
-                    log.inf("no {}".format(fn))
+                    log.info("no {}".format(fn))
             # AR then try the DESI_TARGET/fiberassign if no file in fadir (or fadir not provided)
             if not isfn:
                 fn = os.path.join(
