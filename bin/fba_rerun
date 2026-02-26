@@ -86,7 +86,16 @@ def main():
         # AR handling of the "action_store=True" arguments..
         # AR - if True, we keep the argument name
         # AR - if False, we remove
-        if key in ["--log_stdout", "--worldreadable", "--targ_std_only", "--too_tile", "--custom_too_development", "--try_too_all"]:
+        if key in ["--log_stdout", "--worldreadable", "--targ_std_only", "--too_tile", "--custom_too_development"]:
+            if val == "False":
+                continue
+            else:
+                mydict[key] = ""
+
+        if args.force_try_too_all:  # Keep try_too_all no matter what
+            mydict["--try_too_all"] = ""
+        elif key == "--try_too_all":
+            # Same logic as above, if false, don't include, if true, include.
             if val == "False":
                 continue
             else:
@@ -229,6 +238,12 @@ if __name__ == "__main__":
         type=str,
         default=None,
         required=False,
+    )
+    parser.add_argument(
+        "--force_try_too_all",
+        help="Override the value of try_too_all in the infiberassign header and use try_too_all regardless.",
+        action="store_true",
+        required=False
     )
 
     args = parser.parse_args()
