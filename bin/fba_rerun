@@ -27,6 +27,19 @@ def main():
     # AR freeze_iers
     freeze_iers()
 
+    # AR use dvs_ro in DESI_TARGET, SKYBRICKS_DIR, SKYHEALPIXS_DIR?
+    # AR (for speed up when reading catalogs / files)
+    if not args.no_dvsro:
+        for name in ["DESI_TARGET", "SKYBRICKS_DIR", "SKYHEALPIXS_DIR"]:
+            old_var = os.getenv(name, None)
+            if old_var is not None:
+                new_var = old_var.replace("/global/cfs/cdirs/desi/", "/dvs_ro/cfs/cdirs/desi/")
+                log.info("{:.1f}s\tsettings\treplace {}={} with {}".format(
+                        time() - start, name, old_var, new_var,
+                    )
+                )
+                os.environ[name] = new_var
+
     # AR steps to execute in fba_launch
     steps = [step for step in args.steps.split(",")]
     if args.nosteps is not None:
@@ -230,6 +243,12 @@ if __name__ == "__main__":
         default=None,
         required=False,
     )
+    parser.add_argument(
+        "--no_dvsro",
+        help="do not replace '/global/cfs/desi/' by '/dvs_ro/cfs/desi/' in $DESI_TARGET, $SKYBRICKS_DIR, $SKYHEALPIXS_DIR",
+        action="store_true",
+   )
+
 
     args = parser.parse_args()
     log = Logger.get()
