@@ -230,6 +230,7 @@ def main():
         log=log,
         step="settings",
         start=start,
+        try_too_all=args.try_too_all
     )
 
     # AR tiles
@@ -777,6 +778,12 @@ if __name__ == "__main__":
         help="value to determine the cpp behavior, see PR470 (default: based on the rundate)",
         type=str,
         default=None
+    )
+    parser.add_argument(
+        "--try_too_all",
+        help="if true, look for a file named ToO-fiber-all.ecsv rather than the default ToO-fiber.ecsv. If not found, fallback to ToO-fiber.ecsv. Defaults to False.",
+        action="store_true",
+        required=False
     )
 
     args = parser.parse_args()
