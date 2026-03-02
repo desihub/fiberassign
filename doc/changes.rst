@@ -11,12 +11,14 @@ fiberassign change log
 * Expand unit test matrix coverage; replace ``pkg_resources`` (PR `#490`_).
 * Minor enhancements and bug fixes to ``fba_replay`` (PR `#491`_).
 * Add ``pyproject.toml`` file and update top-level package infrastructure files (PR `#492`_).
+* Add ``--try_too_all`` to fba_launch and ``--force_try_too_all`` in fba_rerun (PR `#500`_).
 
 .. _`#482`: https://github.com/desihub/fiberassign/pull/482
 .. _`#485`: https://github.com/desihub/fiberassign/pull/485
 .. _`#490`: https://github.com/desihub/fiberassign/pull/490
 .. _`#491`: https://github.com/desihub/fiberassign/pull/491
 .. _`#492`: https://github.com/desihub/fiberassign/pull/492
+.. _`#500`: https://github.com/desihub/fiberassign/pull/500
 
 5.8.1 (2025-05-05)
 ------------------

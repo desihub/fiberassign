@@ -825,7 +825,7 @@ def get_ledger_paths(
 
     # IF we want to try use the too-all file, check if it is actually a file
     # and if so propagate that as too_fiber_fn instead.
-    if try_too_all :
+    if try_too_all:
         if os.path.isfile(too_fiber_all_fn):
             too_fiber_fn = too_fiber_all_fn
             log.info(f"{(time() - start):.1f}\t{step}\ttry_too_all = True, found and will use {too_fiber_all_fn}")
