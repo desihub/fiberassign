@@ -228,7 +228,7 @@ def get_program_latest_timestamp(
                 i = ii[0]
                 line = get_last_line(fn)
                 tm = line.split()[i]
-                log.info("{:.1f}s\t{}\t{} last-line TIMESTAMP : {}".format(time() - start, step, fn, tm)) 
+                log.info("{:.1f}s\t{}\t{} last-line TIMESTAMP : {}".format(time() - start, step, fn, tm))
                 tms.append(tm)
         else:
             log.warning("{:.1f}s\t{}\t{}: no file, passing".format(time() - start, step, fn))
@@ -739,6 +739,7 @@ def get_ledger_paths(
     log=Logger.get(),
     step="settings",
     start=time(),
+    try_too_all=False,
 ):
     """
     Obtain the folder/file full paths for the primary/secondary/ToO ledgers.
@@ -754,6 +755,7 @@ def get_ledger_paths(
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+        try_too_all (optional, defaults to False): look for ToO-fiber-all.ecsv as the ToO, but fallback to ToO-fiber.ecsv if not found. If False, only look for ToO-fiber.ecsv.
 
     Returns:
         - mtl: primary ledgers MTL folder (string, or list of strings for "main" survey)
@@ -819,6 +821,17 @@ def get_ledger_paths(
     # AR use ToO-fiber.ecsv if main and too_tile=False and file exists
     too_tile_fn = os.path.join(os.getenv("DESI_SURVEYOPS"), "mtl", survey.lower(), "ToO", "ToO.ecsv")
     too_fiber_fn = os.path.join(os.getenv("DESI_SURVEYOPS"), "mtl", survey.lower(), "ToO", "ToO-fiber.ecsv")
+    too_fiber_all_fn = os.path.join(os.getenv("DESI_SURVEYOPS"), "mtl", survey.lower(), "ToO", "ToO-fiber-all.ecsv")
+
+    # IF we want to try use the too-all file, check if it is actually a file
+    # and if so propagate that as too_fiber_fn instead.
+    if try_too_all:
+        if os.path.isfile(too_fiber_all_fn):
+            too_fiber_fn = too_fiber_all_fn
+            log.info(f"{(time() - start):.1f}\t{step}\ttry_too_all = True, found and will use {too_fiber_all_fn}")
+        else:
+            log.warning(f"{(time() - start):.1f}\t{step}\ttry_too_all = True, but {too_fiber_all_fn} not found. Falling back to {too_fiber_fn}")
+
     if (not too_tile) & (survey == "main"):
         if os.path.isfile(too_fiber_fn):
             too = too_fiber_fn
@@ -863,6 +876,7 @@ def get_desitarget_paths(
     log=Logger.get(),
     step="settings",
     start=time(),
+    try_too_all=False
 ):
     """
     Obtain the folder/file full paths for desitarget products
@@ -883,6 +897,7 @@ def get_desitarget_paths(
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start (optional, defaults to time()): start time for log (in seconds; output of time.time())
+        try_too_all (optional, defaults to False): look for ToO-fiber-all.ecsv as the ToO, but fallback to ToO-fiber.ecsv if not found. If False, only look for ToO-fiber.ecsv.
 
     Returns:
         Dictionary with the following keys:
@@ -1039,6 +1054,7 @@ def get_desitarget_paths(
         log=log,
         step=step,
         start=start,
+        try_too_all=try_too_all
     )
     if scndmtl is not None:
         mydirs["scndmtl"] = scndmtl
@@ -3748,7 +3764,7 @@ def mv_temp2final(mytmpouts, myouts, expected_keys, log=Logger.get(), step="", s
     # AR
     for key in expected_keys:
         if os.path.isfile(mytmpouts[key]):
-            # Try to remove file before overwriting; somehow this avoids some permissions 
+            # Try to remove file before overwriting; somehow this avoids some permissions
             # issues at KPNO.
             try:
                 os.remove(myouts[key])
