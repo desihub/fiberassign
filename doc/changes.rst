@@ -3,7 +3,12 @@
 fiberassign change log
 ======================
 
-5.8.2 (unreleased)
+5.9.1 (unreleased)
+------------------
+
+* No changes yet.
+
+5.9.0 (2026-03-17)
 ------------------
 
 * Wrappers to support rerunning fiberassign on all tiles at NERSC (PR `#482`_).
