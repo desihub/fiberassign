@@ -812,7 +812,7 @@ def read_assignment_fits_tile(tile_file):
         # MTL_HIGHEST, MTL_CONTAINS, and MTL_WANTED. So we check the
         # desitarget version, and if it's below 2.9.0, when those columns
         # were added, we don't try and load those columns.
-        keys_to_check = [s for s in header.keys() if "DEPNAM" in s]
+        keys_to_check = [s for s in header if "DEPNAM" in s]
         version = "0.0.0"
         for k in keys_to_check:
             if header[k] == "desitarget":
