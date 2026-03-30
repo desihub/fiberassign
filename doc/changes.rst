@@ -6,7 +6,9 @@ fiberassign change log
 5.9.1 (unreleased)
 ------------------
 
-* No changes yet.
+* Don't load MTL* columns for pre-1B tiles in fba_plot. (PR `#502`_).
+
+.. _`#482`: https://github.com/desihub/fiberassign/pull/502
 
 5.9.0 (2026-03-17)
 ------------------
