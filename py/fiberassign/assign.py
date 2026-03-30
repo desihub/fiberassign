@@ -808,9 +808,25 @@ def read_assignment_fits_tile(tile_file):
                 if col in fbsky.dtype.names:
                     fiber_data[col][npos:] = fbsky[col]
 
-        full_targets_columns = [(x, y) for x, y in
-                                merged_targets_columns.items()]
-        full_names = [x for x, y in merged_targets_columns.items()]
+        # DG Tiles assigned before the 1b program don't have the columns
+        # MTL_HIGHEST, MTL_CONTAINS, and MTL_WANTED. So we check the
+        # desitarget version, and if it's below 2.9.0, when those columns
+        # were added, we don't try and load those columns.
+        keys_to_check = [s for s in header if "DEPNAM" in s]
+        version = "0.0.0"
+        for k in keys_to_check:
+            if header[k] == "desitarget":
+                version = header[k.replace("NAM", "VER")]
+
+        if version < "2.9.0":
+            full_targets_columns = [(x, y) for x, y in
+                                    merged_targets_columns.items() if "MTL" not in x]
+            full_names = [x for x, _ in merged_targets_columns.items() if "MTL" not in x]
+        else:
+            full_targets_columns = [(x, y) for x, y in
+                                    merged_targets_columns.items()]
+            full_names = [x for x, _ in merged_targets_columns.items()]
+
         fbtargets = fd["TARGETS"].read()
         nrawtarget = fd["TARGETS"].get_nrows()
 
