@@ -1010,7 +1010,15 @@ def get_desitarget_paths(
                 if os.path.basename(fn) != survey
             ]
         )
-        count = 2
+
+        # DG - If the originally found main secondary target file does not exist then
+        # we will take the next found file to be the primary secondary file.
+        # This is for 1B programs, where the secondary targets files live in main4/
+        # not in main, so fiberassign will crash looking for it in main.
+        if not os.path.isfile(mydirs["scnd"]):
+            count = 1
+        else:
+            count = 2
         for extradir in extradirs:
             fn = os.path.join(
                 os.getenv("DESI_TARGET"),
@@ -1024,7 +1032,10 @@ def get_desitarget_paths(
                 "{}{}".format(extradir, basename),
             )
             if os.path.isfile(fn):
-                mydirs["scnd{}".format(count)] = fn
+                if count == 1:
+                    mydirs["scnd"] = fn
+                else:
+                    mydirs["scnd{}".format(count)] = fn
                 count += 1
 
     # AR log
