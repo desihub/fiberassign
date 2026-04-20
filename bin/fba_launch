@@ -329,7 +329,7 @@ def main():
                 for key in sorted(list(mydirs.keys())):
                     if (key[:4] == "scnd") & (key != "scnd") & (key != "scndmtl"):
                         targdirs.append(mydirs[key])
-                create_mtl(
+                status = create_mtl(
                     mytmpouts["tiles"],
                     mydirs["scndmtl"],
                     args.mtltime,
@@ -344,6 +344,10 @@ def main():
                     step="scnd",
                     start=start,
                 )
+                # DG - We exited early for some reason, most likely because
+                # there were no targets in the secondary MTL.
+                if status == 1:
+                    expected_files["scnd"] = False
         else:
             expected_files["scnd"] = False
             log.info("")
