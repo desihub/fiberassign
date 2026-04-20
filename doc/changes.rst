@@ -7,8 +7,10 @@ fiberassign change log
 ------------------
 
 * Don't load MTL* columns for pre-1B tiles in fba_plot. (PR `#502`_).
+* Enable running fiberassign with secondary ledgers for 1B programs. (PR `#504`_).
 
 .. _`#502`: https://github.com/desihub/fiberassign/pull/502
+.. _`#504`: https://github.com/desihub/fiberassign/pull/504
 
 5.9.0 (2026-03-17)
 ------------------
