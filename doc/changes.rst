@@ -3,7 +3,10 @@
 fiberassign change log
 ======================
 
-5.9.1 (unreleased)
+5.9.2 (unreleased)
+------------------
+
+5.9.1 (2026-04-20)
 ------------------
 
 * Don't load MTL* columns for pre-1B tiles in fba_plot. (PR `#502`_).
