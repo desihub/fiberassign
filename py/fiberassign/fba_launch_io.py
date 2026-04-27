@@ -807,7 +807,7 @@ def get_ledger_paths(
         mtl2 = mtl.replace(progshort, "{}1b".format(progshort))
         mtl = [mtl, mtl2]
     # AR secondary (dark, dark1b, bright, bright1b; no secondary for backup)
-    if program.lower() in ["dark", "bright", "dark1b", "bright1b"]:
+    if program.lower() in ["dark", "bright", "dark1b", "bright1b", "backup"]:
         scndmtl = os.path.join(
             os.getenv("DESI_SURVEYOPS"),
             "mtl",
@@ -978,9 +978,9 @@ def get_desitarget_paths(
             targ = targ.replace(program.lower(), progshort)
             targ2 = targ.replace(progshort, "{}1b".format(progshort))
             mydirs["targ"] = [targ, targ2]
-    # AR secondary (dark, dark1b, bright, bright1b; no secondary for backup)
+    # AR secondary (dark, dark1b, bright, bright1b, backup)
     # AR only query program (in particular, only dark1b for dark1b; same for bright1b)
-    if program.lower() in ["dark", "bright", "dark1b", "bright1b"]:
+    if program.lower() in ["dark", "bright", "dark1b", "bright1b", "backup"]:
         if survey.lower() == "main":
             basename = "targets-{}-secondary.fits".format(program.lower())
         else:
@@ -1633,7 +1633,7 @@ def create_mtl(
     # AR mtl: case secondary
     else:
         # AR mtl: secondary for backup should never happen, but safe approach still
-        if ("backup" not in mtldir) & (desitarget.__version__ >= "1.2.2"):
+        if (desitarget.__version__ >= "1.2.2"):
             # AR mtl: hard-coding the columns, to speed up code
             columns = ["FLUX_G", "FLUX_R", "FLUX_Z", "GAIA_PHOT_G_MEAN_MAG", "GAIA_PHOT_BP_MEAN_MAG", "GAIA_PHOT_RP_MEAN_MAG"]
             # AR mtl: also add GAIA_ASTROMETRIC_EXCESS_NOISE, in case args.pmcorr == "y"
@@ -1661,12 +1661,12 @@ def create_mtl(
                 targ = Table(fitsio.read(targdir, columns = columns + ["TARGETID"], rows=rows))
                 targs.append(targ)
             d = match_ledger_to_targets(d, vstack(targs))
-        elif "backup" in mtldir:
-            log.info(
-                "{:.1f}s\t{}\tno secondary targets for BACKUP program".format(
-                    time() - start, step,
-                )
-            )
+        # elif "backup" in mtldir:
+        #     log.info(
+        #         "{:.1f}s\t{}\tno secondary targets for BACKUP program".format(
+        #             time() - start, step,
+        #         )
+        #     )
         else:
             log.info(
                 "{:.1f}s\t{}\tas desitarget.__version__={} < 1.2.2, we do not add columns from {}".format(
