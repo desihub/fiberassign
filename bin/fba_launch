@@ -316,15 +316,26 @@ def main():
     # AR if not backup
     if ("scnd" in steps):
         if ("scnd" in list(mydirs.keys())):
-            # AR handle dark1b/bright1b, where there is no secondary for now
-            # AR but could be in the future
-            # AR assume here that if there are some secondary, the ledgers should be there
-            if not os.path.isdir(mydirs["scndmtl"]):
+            # DG - For 1A targets we know load the 1b secondary mtls, so we
+            # need to check both scnd mtls, and then we only keep the ones that exist
+            # (in case the 1b ledgers aren't in place for some reason)
+            to_check = mydirs["scndmtl"]
+
+            if not isinstance(to_check, list):
+                to_check = [mydirs["scndmtl"]]
+
+            scnd_exists = []
+            for fname in to_check:
+                if os.path.isdir(fname):
+                    scnd_exists.append(fname)
+
+            if len(scnd_exists) == 0:
                 expected_files["scnd"] = False
                 log.info("")
                 log.info("")
                 log.info("{:.1f}s\tscnd\tno secondary ledgers {}".format(time() - start, mydirs["scndmtl"]))
             else:
+                mydirs["scndmtl"] = scnd_exists
                 targdirs = [mydirs["scnd"]]
                 for key in sorted(list(mydirs.keys())):
                     if (key[:4] == "scnd") & (key != "scnd") & (key != "scndmtl"):

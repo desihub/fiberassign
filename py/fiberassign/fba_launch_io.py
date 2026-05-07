@@ -815,6 +815,28 @@ def get_ledger_paths(
             "secondary",
             program.lower(),
         )
+
+        # DG - Load the secondary ledgers from the 1B program in the 1A tiles.
+        if program.lower() in ["dark", "bright"]:
+            progshort = program.lower()
+
+            scnd1a = os.path.join(
+            os.getenv("DESI_SURVEYOPS"),
+            "mtl",
+            survey.lower(),
+            "secondary",
+            progshort,
+            )
+
+            scnd1b = os.path.join(
+            os.getenv("DESI_SURVEYOPS"),
+            "mtl",
+            survey.lower(),
+            "secondary",
+            f"{progshort}1b",
+            )
+
+            scndmtl = [scnd1a, scnd1b]
     else:
         scndmtl = None
     # AR ToO (same for dark, bright)
@@ -1015,28 +1037,33 @@ def get_desitarget_paths(
         # we will take the next found file to be the primary secondary file.
         # This is for 1B programs, where the secondary targets files live in main4/
         # not in main, so fiberassign will crash looking for it in main.
+        # DG - Check for 1b secondary targeting files for 1a tiles.
+        bases_to_test = [basename]
+        if program.lower() in ["dark", "bright"]:
+            bases_to_test += f"{program.lower()}1b"
         if not os.path.isfile(mydirs["scnd"]):
             count = 1
         else:
             count = 2
         for extradir in extradirs:
-            fn = os.path.join(
-                os.getenv("DESI_TARGET"),
-                "catalogs",
-                dr,
-                dtver,
-                "targets",
-                extradir,
-                "secondary",
-                program.lower(),
-                "{}{}".format(extradir, basename),
-            )
-            if os.path.isfile(fn):
-                if count == 1:
-                    mydirs["scnd"] = fn
-                else:
-                    mydirs["scnd{}".format(count)] = fn
-                count += 1
+            for base in bases_to_test:
+                fn = os.path.join(
+                    os.getenv("DESI_TARGET"),
+                    "catalogs",
+                    dr,
+                    dtver,
+                    "targets",
+                    extradir,
+                    "secondary",
+                    program.lower(),
+                    "{}{}".format(extradir, base),
+                )
+                if os.path.isfile(fn):
+                    if count == 1:
+                        mydirs["scnd"] = fn
+                    else:
+                        mydirs["scnd{}".format(count)] = fn
+                    count += 1
 
     # AR log
     for key in list(mydirs.keys()):
@@ -1447,6 +1474,13 @@ def create_mtl(
     # AR    which have imports from fba_launch_io.py...
     from fiberassign.assign import minimal_target_columns
 
+    # DG - "secondary" in mtldir will always fail if mtldir is a list of 2 dirs.
+    # So instead determine this ahead of time and account correctly.
+    is_secondary = "secondary" in mtldir
+    if isinstance(mtldir, list):
+        for mtl in mtldir:
+            is_secondary = is_secondary or ("secondary" in mtl)
+
     # AR check on mtl
     if isinstance(mtldir, list):
         # AR only two ledgers allowed (e.g. dark, dark1b)
@@ -1463,10 +1497,9 @@ def create_mtl(
             )
             log.error(msg)
             raise ValueError(msg)
-        if len(targdirs) > 2:
-            msg = "len(targdir) = {} > 2; only up two static folders can be provided".format(
-                len(targdir)
-            )
+        # DG - We only want to limit to 2 targ dirs if this is a primary mtl not a secondary.
+        if (len(targdirs) > 2) and not is_secondary:
+            msg = f"len(targdir) = {len(targdirs)} > 2; only up two static folders can be provided"
             log.error(msg)
             raise ValueError(msg)
 
@@ -1503,7 +1536,7 @@ def create_mtl(
             time() - start, step, len(d), mtldir
         )
     )
-    # Might happen if you load a secondadry 1B program leder before the ledgers
+    # Might happen if you load a secondadry 1B program ledger before the ledgers
     # were "turned on"
     if len(d) == 0:
         log.warning(f"No targets loaded from {mtldir}. Aborting MTL creation.")
@@ -1553,7 +1586,7 @@ def create_mtl(
     # AR mtl:    if backup or desitarget.__version__ < 1.2.2, no columns addition
     #
     # AR mtl: case not secondary
-    if "secondary" not in mtldir:
+    if not is_secondary:
         columns = [key for key in minimal_target_columns if key not in d.dtype.names]
         # AR mtl: also add GAIA_ASTROMETRIC_EXCESS_NOISE, in case args.pmcorr == "y"
         if pmcorr == "y":
@@ -1632,7 +1665,6 @@ def create_mtl(
             d = match_ledger_to_targets(d, targ)
     # AR mtl: case secondary
     else:
-        # AR mtl: secondary for backup should never happen, but safe approach still
         if (desitarget.__version__ >= "1.2.2"):
             # AR mtl: hard-coding the columns, to speed up code
             columns = ["FLUX_G", "FLUX_R", "FLUX_Z", "GAIA_PHOT_G_MEAN_MAG", "GAIA_PHOT_BP_MEAN_MAG", "GAIA_PHOT_RP_MEAN_MAG"]
@@ -1661,12 +1693,6 @@ def create_mtl(
                 targ = Table(fitsio.read(targdir, columns = columns + ["TARGETID"], rows=rows))
                 targs.append(targ)
             d = match_ledger_to_targets(d, vstack(targs))
-        # elif "backup" in mtldir:
-        #     log.info(
-        #         "{:.1f}s\t{}\tno secondary targets for BACKUP program".format(
-        #             time() - start, step,
-        #         )
-        #     )
         else:
             log.info(
                 "{:.1f}s\t{}\tas desitarget.__version__={} < 1.2.2, we do not add columns from {}".format(
