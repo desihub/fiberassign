@@ -2332,7 +2332,7 @@ def update_fiberassign_header(
     desiroot = os.getenv("DESI_ROOT")
     fd["PRIMARY"].write_key("DESIROOT", desiroot)
     for key in np.sort(list(mydirs.keys())):
-        if key in ["mtl", "targ"]:
+        if key in ["mtl", "targ", "scndmtl"]:
             if isinstance(mydirs[key], list):
                 # AR header keywords: MTL, MTL2 (or TARG, TARG2)
                 suffixs = [""] + np.arange(2, len(mydirs[key]) + 1).astype(str).tolist()
