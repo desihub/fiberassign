@@ -1040,13 +1040,22 @@ def get_desitarget_paths(
         # DG - Check for 1b secondary targeting files for 1a tiles.
         bases_to_test = [basename]
         if program.lower() in ["dark", "bright"]:
-            bases_to_test += f"{program.lower()}1b"
+            if survey.lower() == "main":
+                extra_base = "targets-{}1b-secondary.fits".format(program.lower())
+            else:
+                extra_base = "{}targets-{}1b-secondary.fits".format(survey.lower(), program.lower())
+            bases_to_test += [extra_base]
         if not os.path.isfile(mydirs["scnd"]):
             count = 1
         else:
             count = 2
         for extradir in extradirs:
             for base in bases_to_test:
+                prog = program.lower()
+
+                # DG - Correct the program for when searching for 1b secondaries on 1a tiles.
+                if ("1b" in base) and ("1b" not in prog):
+                    prog += "1b"
                 fn = os.path.join(
                     os.getenv("DESI_TARGET"),
                     "catalogs",
@@ -1055,9 +1064,10 @@ def get_desitarget_paths(
                     "targets",
                     extradir,
                     "secondary",
-                    program.lower(),
+                    prog,
                     "{}{}".format(extradir, base),
                 )
+
                 if os.path.isfile(fn):
                     if count == 1:
                         mydirs["scnd"] = fn
