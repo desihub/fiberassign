@@ -2347,10 +2347,13 @@ def update_fiberassign_header(
     # AR     we exclude from FAARGS outdir, forcetiled, and any None argument
     tmparr = []
     for kwargs in args._get_kwargs():
-        if (kwargs[0].lower() not in ["outdir", "forcetileid"]) & (
+        if (kwargs[0].lower() not in ["outdir", "forcetileid", "dr"]) & (
             kwargs[1] is not None
         ):
             tmparr += ["--{} {}".format(kwargs[0], kwargs[1])]
+        # DG - Turn the list back into a comma separated string
+        elif kwargs[0].lower() == "dr" and kwargs[1] is not None:
+            tmparr += ["--{} {}".format(kwargs[0], ",".join(kwargs[1]))]
     fd["PRIMARY"].write_key(
         "faargs", " ".join(tmparr),
     )

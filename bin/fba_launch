@@ -659,12 +659,10 @@ if __name__ == "__main__":
                         help="Add margin (in mm) around GFA keep-out polygons (default: 0.4)")
     parser.add_argument(
         "--dr",
-        help="legacypipe dr (default=dr9). Accepts multiple arguments, if multiple data releases are passed the FIRST argument is used for sky/gfa targets.",
+        help="comma-separated list of legacypipe dr (default=dr9). If multiple data releases are passed the FIRST argument is used for sky/gfa targets.",
         type=str,
-        default=["dr9"], # DG - make this a list because with nargs even with one argument args.dr is a list.
+        default="dr9", # DG - make this a list because with nargs even with one argument args.dr is a list.
         required=False,
-        choices=["dr9", "dr11"],
-        nargs="*"
     )
     parser.add_argument(
         "--gaiadr",
@@ -794,6 +792,15 @@ if __name__ == "__main__":
     args = parser.parse_args()
     log = Logger.get()
     start = time()
+
+    # DG - Turn comma separated data release into list of strings.
+    allowed_dr = ["dr9", "dr11"]
+    args.dr = args.dr.split(",")
+    for dr in args.dr:
+        if dr not in allowed_dr:
+            msg = f"{dr} not in allowed legacypipe data releases: {allowed_dr}"
+            log.error(msg)
+            raise ValueError(msg)
 
     # AR safe: outdir
     if args.outdir[-1] != "/":
