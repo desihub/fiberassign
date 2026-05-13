@@ -1376,7 +1376,7 @@ def create_mtl(
         tilesfn: path to a tiles fits file (string)
         mtldir: desisurveyops MTL folder (string or list of two strings)
         mtltime: MTL isodate (string formatted as yyyy-mm-ddThh:mm:ss+00:00)
-        targdirs: desitarget targets folder (or file name(s) if secondary) for static fits catalog(s) (string or list)
+        targdirs: desitarget targets folder (or file name(s)) for static fits catalog(s) (string or list)
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         gaiadr: Gaia dr ("dr2" or "edr3")
         pmcorr: apply proper-motion correction? ("y" or "n")
@@ -1447,12 +1447,12 @@ def create_mtl(
             )
             log.error(msg)
             raise ValueError(msg)
-        if len(targdirs) > 2:
-            msg = "len(targdir) = {} > 2; only up two static folders can be provided".format(
-                len(targdir)
-            )
-            log.error(msg)
-            raise ValueError(msg)
+        # if len(targdirs) > 2:
+        #     msg = "len(targdir) = {} > 2; only up two static folders can be provided".format(
+        #         len(targdir)
+        #     )
+        #     log.error(msg)
+        #     raise ValueError(msg)
 
     # AR change targdirs to list if a string is provided
     if isinstance(targdirs, str):
