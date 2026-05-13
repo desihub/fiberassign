@@ -869,7 +869,7 @@ def get_desitarget_paths(
     survey,
     program,
     too_tile=False,
-    dr="dr9",
+    dr=["dr9"],
     gaiadr="gaiadr2",
     custom_too_file=None,
     custom_too_development=False,
@@ -889,7 +889,7 @@ def get_desitarget_paths(
                 if False and survey=="main" and ToO-fiber.ecsv exists, use ToO-fiber.ecsv (fiber-override only),
                 else, use ToO.ecsv (ToO for dedicated tiles)
                 (boolean)
-        dr (optional, defaults to "dr9"): legacypipe dr (string)
+        dr (optional, defaults to ["dr9"]): legacypipe dr (list of strings)
         gaiadr (optional, defaults to "gaiadr2"): gaia dr (string)
         custom_too_file (optional, default=None): comma-separated full paths to a custom ToO files, for development work, which overrides the official one (string)
         custom_too_development (optional, defaults to False): is this for development? (allows custom_too_file to be outside of $DESI_SURVEYOPS or $DESI_ROOT/survey/fiberassign/special/tertiary) (bool)
@@ -946,38 +946,58 @@ def get_desitarget_paths(
             )
         )
 
+    if (not isinstance(dr, list)) or (len(dr) < 1):
+        curr_time = time() - start
+        msg = f"{curr_time:.1f}s\t{step}\tdr must be a list of length at least 1"
+        log.error(msg)
+        raise ValueError(msg)
+
     # AR folder architecture is now the same at NERSC/KPNO (https://github.com/desihub/fiberassign/issues/302)
     mydirs = {}
     mydirs["sky"] = os.path.join(
-        os.getenv("DESI_TARGET"), "catalogs", dr, dtver, "skies"
+        os.getenv("DESI_TARGET"), "catalogs", dr[0], dtver, "skies"
     )
     mydirs["skysupp"] = os.path.join(
         os.getenv("DESI_TARGET"), "catalogs", gaiadr, dtver, "skies-supp"
     )
     mydirs["gfa"] = os.path.join(
-        os.getenv("DESI_TARGET"), "catalogs", dr, dtver, "gfas"
+        os.getenv("DESI_TARGET"), "catalogs", dr[0], dtver, "gfas"
     )
+
     if program.lower() == "backup":
-        dtcat = gaiadr
+        dtcats = [gaiadr]
     else:
-        dtcat = dr
-    targ = os.path.join(
-        os.getenv("DESI_TARGET"),
-        "catalogs",
-        dtcat,
-        dtver,
-        "targets",
-        survey.lower(),
-        "resolve",
-        program.lower(),
-    )
-    mydirs["targ"] = targ
-    if survey.lower() == "main":
-        progshort = program.lower().replace("1b", "")
-        if program.lower() == "{}1b".format(progshort):
-            targ = targ.replace(program.lower(), progshort)
-            targ2 = targ.replace(progshort, "{}1b".format(progshort))
-            mydirs["targ"] = [targ, targ2]
+        dtcats = dr
+
+    all_targ_files = []
+    for i, dtcat in enumerate(dtcats):
+        prog = program.lower()
+        targ = os.path.join(
+            os.getenv("DESI_TARGET"),
+            "catalogs",
+            dtcat,
+            dtver,
+            "targets",
+            survey.lower(),
+            "resolve",
+            prog,
+        )
+        if (survey.lower() == "main") and (prog[-2:] == "1b"):
+            # Append the 1A target directory first before the 1B.
+            all_targ_files.append(targ.replace(prog, prog[-2:]))
+        all_targ_files.append(targ)
+
+    mydirs[f"targ"] = all_targ_files
+
+
+    # if survey.lower() == "main":
+    #     progshort = program.lower().replace("1b", "")
+    #     if program.lower() == "{}1b".format(progshort):
+    #         targ = targ.replace(program.lower(), progshort)
+    #         targ2 = targ.replace(progshort, "{}1b".format(progshort))
+    #         mydirs["targ"] = [targ, targ2]
+
+
     # AR secondary (dark, dark1b, bright, bright1b; no secondary for backup)
     # AR only query program (in particular, only dark1b for dark1b; same for bright1b)
     if program.lower() in ["dark", "bright", "dark1b", "bright1b"]:
@@ -988,7 +1008,7 @@ def get_desitarget_paths(
         mydirs["scnd"] = os.path.join(
             os.getenv("DESI_TARGET"),
             "catalogs",
-            dr,
+            dr[0], # DG - Base secondary target file will be the first data release. We check the rest as later files.
             dtver,
             "targets",
             survey.lower(),
@@ -996,6 +1016,10 @@ def get_desitarget_paths(
             program.lower(),
             basename,
         )
+
+        # TODO: DG - This entire extra dirs section needs a total refactor. It's a disaster.
+
+
         # AR check possible extra folders, like main2/, main3/, etc
         # AR and store the file path in keys like scnd2, scnd3, etc
         # AR note: the index in the key name is not related to the extra folder name,
@@ -1004,7 +1028,7 @@ def get_desitarget_paths(
             [os.path.basename(fn)
                 for fn in glob(
                     os.path.join(
-                        os.getenv("DESI_TARGET"), "catalogs", dr, dtver, "targets", "{}*".format(survey.lower())
+                        os.getenv("DESI_TARGET"), "catalogs", dr[0], dtver, "targets", "{}*".format(survey.lower())
                     )
                 )
                 if os.path.basename(fn) != survey
@@ -1023,7 +1047,7 @@ def get_desitarget_paths(
             fn = os.path.join(
                 os.getenv("DESI_TARGET"),
                 "catalogs",
-                dr,
+                dr[0],
                 dtver,
                 "targets",
                 extradir,

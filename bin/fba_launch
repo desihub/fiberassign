@@ -659,11 +659,12 @@ if __name__ == "__main__":
                         help="Add margin (in mm) around GFA keep-out polygons (default: 0.4)")
     parser.add_argument(
         "--dr",
-        help="legacypipe dr (default=dr9)",
+        help="legacypipe dr (default=dr9). Accepts multiple arguments, if multiple data releases are passed the FIRST argument is used for sky/gfa targets.",
         type=str,
-        default="dr9",
+        default=["dr9"], # DG - make this a list because with nargs even with one argument args.dr is a list.
         required=False,
-        choices=["dr9"],
+        choices=["dr9", "dr11"],
+        nargs="*"
     )
     parser.add_argument(
         "--gaiadr",
