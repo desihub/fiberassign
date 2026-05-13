@@ -985,8 +985,12 @@ def get_desitarget_paths(
         )
         if (survey.lower() == "main") and (prog[-2:] == "1b"):
             # Append the 1A target directory first before the 1B.
-            all_targ_files.append(targ.replace(prog, prog[:-2]))
-        all_targ_files.append(targ)
+            temp_targ = targ.replace(prog, prog[:-2])
+            if os.path.exists(temp_targ):
+                all_targ_files.append(temp_targ)
+
+        if os.path.exists(targ):
+            all_targ_files.append(targ)
 
     mydirs[f"targ"] = all_targ_files
 
