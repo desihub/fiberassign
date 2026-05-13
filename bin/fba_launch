@@ -316,8 +316,6 @@ def main():
     # AR if not backup
     if ("scnd" in steps):
         if ("scnd" in list(mydirs.keys())):
-            # AR handle dark1b/bright1b, where there is no secondary for now
-            # AR but could be in the future
             # AR assume here that if there are some secondary, the ledgers should be there
             if not os.path.isdir(mydirs["scndmtl"]):
                 expected_files["scnd"] = False
@@ -325,15 +323,11 @@ def main():
                 log.info("")
                 log.info("{:.1f}s\tscnd\tno secondary ledgers {}".format(time() - start, mydirs["scndmtl"]))
             else:
-                targdirs = [mydirs["scnd"]]
-                for key in sorted(list(mydirs.keys())):
-                    if (key[:4] == "scnd") & (key != "scnd") & (key != "scndmtl"):
-                        targdirs.append(mydirs[key])
                 status = create_mtl(
                     mytmpouts["tiles"],
                     mydirs["scndmtl"],
                     args.mtltime,
-                    targdirs,
+                    mydirs["scnd"],
                     args.survey,
                     args.gaiadr.replace("gaia", ""),
                     args.pmcorr,

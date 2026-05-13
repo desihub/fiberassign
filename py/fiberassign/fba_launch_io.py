@@ -1020,12 +1020,7 @@ def get_desitarget_paths(
                 if full_path.exists():
                     all_secondaries.append(str(full_path))
 
-        # DG - Unwrap all_secondaries into the dictionary in the form expected
-        # by the rest of the code.
-        # TODO change the rest of the code to accept mydirs["scnd"] as a list instead of multie entries, like mydirs["targ"] does.
-        mydirs["scnd"] = all_secondaries[0]
-        for i in range(1, len(all_secondaries)):
-            mydirs[f"scnd{i + 1}"] = all_secondaries[i]
+        mydirs["scnd"] = all_secondaries
 
     # AR log
     for key in list(mydirs.keys()):
@@ -2295,7 +2290,7 @@ def update_fiberassign_header(
     desiroot = os.getenv("DESI_ROOT")
     fd["PRIMARY"].write_key("DESIROOT", desiroot)
     for key in np.sort(list(mydirs.keys())):
-        if key in ["mtl", "targ"]:
+        if key in ["mtl", "targ", "scnd"]:
             if isinstance(mydirs[key], list):
                 # AR header keywords: MTL, MTL2 (or TARG, TARG2)
                 suffixs = [""] + np.arange(2, len(mydirs[key]) + 1).astype(str).tolist()
