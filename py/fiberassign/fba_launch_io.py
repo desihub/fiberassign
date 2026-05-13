@@ -13,6 +13,7 @@ import tempfile
 import shutil
 import re
 from glob import glob
+from pathlib import Path
 
 # time
 from time import time
@@ -970,7 +971,7 @@ def get_desitarget_paths(
         dtcats = dr
 
     all_targ_files = []
-    for i, dtcat in enumerate(dtcats):
+    for dtcat in dtcats:
         prog = program.lower()
         targ = os.path.join(
             os.getenv("DESI_TARGET"),
@@ -989,78 +990,99 @@ def get_desitarget_paths(
 
     mydirs[f"targ"] = all_targ_files
 
-
-    # if survey.lower() == "main":
-    #     progshort = program.lower().replace("1b", "")
-    #     if program.lower() == "{}1b".format(progshort):
-    #         targ = targ.replace(program.lower(), progshort)
-    #         targ2 = targ.replace(progshort, "{}1b".format(progshort))
-    #         mydirs["targ"] = [targ, targ2]
-
-
     # AR secondary (dark, dark1b, bright, bright1b; no secondary for backup)
     # AR only query program (in particular, only dark1b for dark1b; same for bright1b)
     if program.lower() in ["dark", "bright", "dark1b", "bright1b"]:
-        if survey.lower() == "main":
-            basename = "targets-{}-secondary.fits".format(program.lower())
-        else:
-            basename = "{}targets-{}-secondary.fits".format(survey.lower(), program.lower())
-        mydirs["scnd"] = os.path.join(
-            os.getenv("DESI_TARGET"),
-            "catalogs",
-            dr[0], # DG - Base secondary target file will be the first data release. We check the rest as later files.
-            dtver,
-            "targets",
-            survey.lower(),
-            "secondary",
-            program.lower(),
-            basename,
-        )
+        # if survey.lower() == "main":
+        basename = "targets-{}-secondary.fits".format(program.lower())
+        # else:
+        #     basename = "{}targets-{}-secondary.fits".format(survey.lower(), program.lower())
 
-        # TODO: DG - This entire extra dirs section needs a total refactor. It's a disaster.
+        all_secondaries = []
+
+        for release in dr:
+            base_path = Path(os.getenv("DESI_TARGET"),
+                            "catalogs",
+                            release,
+                            dtver,
+                            "targets",
+                            )
+
+            # DG - Loop over all sub directories found that match this survey
+            # Then check if the associated secondary file exists. If it does
+            # store it. associated secondary file needs to be in the right form.
+            paths_to_check = base_path.glob(f"{survey.lower()}*")
+            for p in paths_to_check:
+                curr_survey = p.name # DG - "main" or "main2" etc.
+                curr_name = basename if curr_survey == "main" else curr_survey + basename
+                full_path = (p / "secondary" / program.lower() / curr_name)
+
+                if full_path.exists():
+                    all_secondaries.append(str(full_path))
+
+        # DG - Unwrap all_secondaries into the dictionary in the form expected
+        # by the rest of the code.
+        # TODO change the rest of the code to accept mydirs["scnd"] as a list instead of multie entries, like mydirs["targ"] does.
+        mydirs["scnd"] = all_secondaries[0]
+        for i in range(1, len(all_secondaries)):
+            mydirs[f"scnd{i + 1}"] = all_secondaries[i]
+
+        # mydirs["scnd"] = os.path.join(
+        #     os.getenv("DESI_TARGET"),
+        #     "catalogs",
+        #     dr[0], # DG - Base secondary target file will be the first data release. We check the rest as later files.
+        #     dtver,
+        #     "targets",
+        #     survey.lower(),
+        #     "secondary",
+        #     program.lower(),
+        #     basename,
+        # )
+
+        # # TODO: DG - This entire extra dirs section needs a total refactor. It's a disaster.
 
 
-        # AR check possible extra folders, like main2/, main3/, etc
-        # AR and store the file path in keys like scnd2, scnd3, etc
-        # AR note: the index in the key name is not related to the extra folder name,
-        # AR        it is just the order of appearance
-        extradirs = sorted(
-            [os.path.basename(fn)
-                for fn in glob(
-                    os.path.join(
-                        os.getenv("DESI_TARGET"), "catalogs", dr[0], dtver, "targets", "{}*".format(survey.lower())
-                    )
-                )
-                if os.path.basename(fn) != survey
-            ]
-        )
+        # # AR check possible extra folders, like main2/, main3/, etc
+        # # AR and store the file path in keys like scnd2, scnd3, etc
+        # # AR note: the index in the key name is not related to the extra folder name,
+        # # AR        it is just the order of appearance
+        # extradirs = sorted(
+        #     [os.path.basename(fn)
+        #         for fn in glob(
+        #             os.path.join(
+        #                 os.getenv("DESI_TARGET"), "catalogs", dr[0], dtver, "targets", "{}*".format(survey.lower())
+        #             )
+        #         )
+        #         if os.path.basename(fn) != survey
+        #     ]
+        # )
 
-        # DG - If the originally found main secondary target file does not exist then
-        # we will take the next found file to be the primary secondary file.
-        # This is for 1B programs, where the secondary targets files live in main4/
-        # not in main, so fiberassign will crash looking for it in main.
-        if not os.path.isfile(mydirs["scnd"]):
-            count = 1
-        else:
-            count = 2
-        for extradir in extradirs:
-            fn = os.path.join(
-                os.getenv("DESI_TARGET"),
-                "catalogs",
-                dr[0],
-                dtver,
-                "targets",
-                extradir,
-                "secondary",
-                program.lower(),
-                "{}{}".format(extradir, basename),
-            )
-            if os.path.isfile(fn):
-                if count == 1:
-                    mydirs["scnd"] = fn
-                else:
-                    mydirs["scnd{}".format(count)] = fn
-                count += 1
+        # # DG - If the originally found main secondary target file does not exist then
+        # # we will take the next found file to be the primary secondary file.
+        # # This is for 1B programs, where the secondary targets files live in main4/
+        # # not in main, so fiberassign will crash looking for it in main.
+        # if not os.path.isfile(mydirs["scnd"]):
+        #     count = 1
+        # else:
+        #     count = 2
+        # for extradir in extradirs:
+        #     fn = os.path.join(
+        #         os.getenv("DESI_TARGET"),
+        #         "catalogs",
+        #         dr[0],
+        #         dtver,
+        #         "targets",
+        #         extradir,
+        #         "secondary",
+        #         program.lower(),
+        #         "{}{}".format(extradir, basename),
+        #     )
+        #     if os.path.isfile(fn):
+        #         if count == 1:
+        #             mydirs["scnd"] = fn
+        #         else:
+        #             mydirs["scnd{}".format(count)] = fn
+        #         count += 1
 
     # AR log
     for key in list(mydirs.keys()):
