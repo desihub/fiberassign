@@ -883,7 +883,7 @@ def get_desitarget_paths(
     Obtain the folder/file full paths for desitarget products
 
     Args:
-        dtver: desitarget catalog version (string; e.g., "0.57.0")
+        dtver: desitarget catalog version (string or list of strings; e.g., ["0.57.0"])
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         program: "dark", "dark1b", "bright", "bright1b" or "backup" (string)
         too_tile (optional, defaults to False):
@@ -953,6 +953,11 @@ def get_desitarget_paths(
         log.error(msg)
         raise ValueError(msg)
 
+    # Listify for iteration code later.
+    if isinstance(dtver, str):
+        dtver = [dtver]
+
+
     # AR folder architecture is now the same at NERSC/KPNO (https://github.com/desihub/fiberassign/issues/302)
     mydirs = {}
     mydirs["sky"] = os.path.join(
@@ -966,18 +971,19 @@ def get_desitarget_paths(
     )
 
     if program.lower() == "backup":
-        dtcats = [gaiadr]
+        dr_vals = [gaiadr]
     else:
-        dtcats = dr
+        dr_vals = dr
 
     all_targ_files = []
-    for dtcat in dtcats:
+    for i, release in enumerate(dr_vals):
+        dt = dtver[0] if (len(dtver) == 1) else dtver[i]
         prog = program.lower()
         targ = os.path.join(
             os.getenv("DESI_TARGET"),
             "catalogs",
-            dtcat,
-            dtver,
+            release,
+            dt,
             "targets",
             survey.lower(),
             "resolve",
@@ -1004,11 +1010,12 @@ def get_desitarget_paths(
 
         all_secondaries = []
 
-        for release in dr:
+        for i, release in enumerate(dr):
+            dt = dtver[0] if (len(dtver) == 1) else dtver[i]
             base_path = Path(os.getenv("DESI_TARGET"),
                             "catalogs",
                             release,
-                            dtver,
+                            dt,
                             "targets",
                             )
 
@@ -2309,12 +2316,12 @@ def update_fiberassign_header(
     # AR     we exclude from FAARGS outdir, forcetiled, and any None argument
     tmparr = []
     for kwargs in args._get_kwargs():
-        if (kwargs[0].lower() not in ["outdir", "forcetileid", "dr"]) & (
+        if (kwargs[0].lower() not in ["outdir", "forcetileid", "dr", "dtver"]) & (
             kwargs[1] is not None
         ):
             tmparr += ["--{} {}".format(kwargs[0], kwargs[1])]
         # DG - Turn the list back into a comma separated string
-        elif kwargs[0].lower() == "dr" and kwargs[1] is not None:
+        elif kwargs[0].lower() in ["dr", "dtver"] and kwargs[1] is not None:
             tmparr += ["--{} {}".format(kwargs[0], ",".join(kwargs[1]))]
     fd["PRIMARY"].write_key(
         "faargs", " ".join(tmparr),

@@ -655,7 +655,7 @@ if __name__ == "__main__":
         "--dr",
         help="comma-separated list of legacypipe dr (default=dr9). If multiple data releases are passed the FIRST argument is used for sky/gfa targets.",
         type=str,
-        default="dr9", # DG - make this a list because with nargs even with one argument args.dr is a list.
+        default="dr9",
         required=False,
     )
     parser.add_argument(
@@ -668,7 +668,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--dtver",
-        help="desitarget catalogue version",
+        help="comma-separated list of desitarget catalogue version. If a single value is passed, it is used for ALL legacypipe data releases. If multiple are passed, exactly ONE must be passed for EACH legacypipe dr.",
         type=str,
         default=None,
         required=True,
@@ -795,6 +795,13 @@ if __name__ == "__main__":
             msg = f"{dr} not in allowed legacypipe data releases: {allowed_dr}"
             log.error(msg)
             raise ValueError(msg)
+
+    # DG - Turn comma separated dtver into list of strings.
+    args.dtver = args.dtver.split(",")
+    if (len(args.dtver) != 1) and (len(args.dtver) != len(args.dr)):
+        msg = f"If passing multiple dtver ({args.dtver}), must pass exactly one for each dr ({args.dr})."
+        log.error(msg)
+        raise ValueError(msg)
 
     # AR safe: outdir
     if args.outdir[-1] != "/":
