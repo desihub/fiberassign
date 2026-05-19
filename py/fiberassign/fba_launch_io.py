@@ -961,13 +961,13 @@ def get_desitarget_paths(
     # AR folder architecture is now the same at NERSC/KPNO (https://github.com/desihub/fiberassign/issues/302)
     mydirs = {}
     mydirs["sky"] = os.path.join(
-        os.getenv("DESI_TARGET"), "catalogs", dr[0], dtver, "skies"
+        os.getenv("DESI_TARGET"), "catalogs", dr[0], dtver[0], "skies"
     )
     mydirs["skysupp"] = os.path.join(
-        os.getenv("DESI_TARGET"), "catalogs", gaiadr, dtver, "skies-supp"
+        os.getenv("DESI_TARGET"), "catalogs", gaiadr, dtver[0], "skies-supp"
     )
     mydirs["gfa"] = os.path.join(
-        os.getenv("DESI_TARGET"), "catalogs", dr[0], dtver, "gfas"
+        os.getenv("DESI_TARGET"), "catalogs", dr[0], dtver[0], "gfas"
     )
 
     if program.lower() == "backup":
