@@ -904,7 +904,7 @@ def get_desitarget_paths(
         Dictionary with the following keys:
         - sky: sky folder(s)
         - skysupp: skysupp folder(s)
-        - gfa: GFA folder
+        - gfa: GFA folder(s)
         - targ: targets folder(s) (static catalogs, with all columns); 2-elt list for main/{dark1b,bright1b}, str otherwise
         - mtl: MTL folder(s); 2-elt list for main/{dark1b,bright1b}, str otherwise
         - scnd: secondary fits catalog(s) (static, with all columns)
@@ -940,6 +940,11 @@ def get_desitarget_paths(
     # Listify for iteration code later.
     if isinstance(dtver, str):
         dtver = [dtver]
+    elif isinstance(dtver, list) and (len(dtver) != len(dr)):
+        curr_time = time() - start
+        msg = f"{curr_time:.1f}s\t{step}\tif dtver is a list, it must be the same length as dr (there must be ONE dtver for EACH dr)"
+        log.error(msg)
+        raise ValueError(msg)
 
     # AR expected survey, program?
     exp_surveys = ["sv1", "sv2", "sv3", "main"]
@@ -961,17 +966,11 @@ def get_desitarget_paths(
     mydirs = {}
     mydirs["sky"] = []
     mydirs["skysupp"] = []
-    mydirs["gfa"] = os.path.join(
-        os.getenv("DESI_TARGET"), "catalogs", dr[0], dtver[0], "gfas"
-    )
+    mydirs["gfa"] = []
 
-    if program.lower() == "backup":
-        dr_vals = [gaiadr]
-    else:
-        dr_vals = dr
-
+    # DG - Iterating over dr + dtversions for target directories
     all_targ_files = []
-    for i, release in enumerate(dr_vals):
+    for i, release in enumerate(dr):
         dt = dtver[0] if (len(dtver) == 1) else dtver[i]
 
         sky = os.path.join(os.getenv("DESI_TARGET"), "catalogs", release, dt, "skies")
@@ -979,6 +978,13 @@ def get_desitarget_paths(
 
         skysupp = os.path.join(os.getenv("DESI_TARGET"), "catalogs", gaiadr, dt, "skies-supp")
         if os.path.exists(skysupp): mydirs["skysupp"].append(skysupp)
+
+        gfa = os.path.join(os.getenv("DESI_TARGET"), "catalogs", release, dt, "gfas")
+        if os.path.exists(gfa): mydirs["gfa"].append(gfa)
+
+        # DG - Correct release for backup tiles.
+        if program.lower() == "backup":
+            release = gaiadr
 
         prog = program.lower()
         targ = os.path.join(
@@ -1276,7 +1282,7 @@ def create_targ_nomtl(
 
     Args:
         tilesfn: path to a tiles fits file (string)
-        targdir: desitarget target folder (string)
+        targdir: desitarget target folder (string or list of strings)
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         gaiadr: Gaia dr ("dr2" or "edr3")
         pmcorr: apply proper-motion correction? ("y" or "n")
@@ -1311,7 +1317,18 @@ def create_targ_nomtl(
     log.info("{:.1f}s\t{}\tstart generating {}".format(time() - start, step, outfn))
     # AR targ_nomtl: read targets
     tiles = fits.open(tilesfn)[1].data
-    d = read_targets_in_tiles(targdir, tiles=tiles, quick=quick)
+
+    if isinstance(targdir, str):
+        targdirs = [targdir]
+    else:
+        targdirs = [t for t in targdir]
+
+    # DG - Code from create_sky
+    ds = [read_targets_in_tiles(targdir, tiles=tiles, quick=quick) for targdir in targdirs]
+    for targdir, d in zip(targdirs, ds):
+        log.info("{:.1f}s\t{}\treading {} targets from {}".format(time() - start, step, len(d), targdir))
+    d = np.concatenate(ds)
+
     log.info(
         "{:.1f}s\t{}\tkeeping {} targets to {}".format(
             time() - start, step, len(d), outfn
@@ -2309,16 +2326,13 @@ def update_fiberassign_header(
     desiroot = os.getenv("DESI_ROOT")
     fd["PRIMARY"].write_key("DESIROOT", desiroot)
     for key in np.sort(list(mydirs.keys())):
-        if key in ["mtl", "targ", "scnd", "sky", "skysupp"]:
-            if isinstance(mydirs[key], list):
-                # AR header keywords: MTL, MTL2 (or TARG, TARG2)
-                suffixs = [""] + np.arange(2, len(mydirs[key]) + 1).astype(str).tolist()
-                for path, suffix in zip(mydirs[key], suffixs):
-                    fd["PRIMARY"].write_key(
-                        "{}{}".format(key, suffix), path.replace(desiroot, "DESIROOT"),
-                    )
-            else:
-                fd["PRIMARY"].write_key(key, mydirs[key].replace(desiroot, "DESIROOT"))
+        if isinstance(mydirs[key], list):
+            # AR header keywords: MTL, MTL2 (or TARG, TARG2)
+            suffixs = [""] + np.arange(2, len(mydirs[key]) + 1).astype(str).tolist()
+            for path, suffix in zip(mydirs[key], suffixs):
+                fd["PRIMARY"].write_key(
+                    "{}{}".format(key, suffix), path.replace(desiroot, "DESIROOT"),
+                )
         else:
             fd["PRIMARY"].write_key(key, mydirs[key].replace(desiroot, "DESIROOT"))
     # AR storing some specific arguments
