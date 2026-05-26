@@ -902,14 +902,13 @@ def get_desitarget_paths(
 
     Returns:
         Dictionary with the following keys:
-        - sky: sky folder
-        - skysupp: skysupp folder
+        - sky: sky folder(s)
+        - skysupp: skysupp folder(s)
         - gfa: GFA folder
         - targ: targets folder(s) (static catalogs, with all columns); 2-elt list for main/{dark1b,bright1b}, str otherwise
         - mtl: MTL folder(s); 2-elt list for main/{dark1b,bright1b}, str otherwise
-        - scnd: secondary fits catalog (static, with all columns)
+        - scnd: secondary fits catalog(s) (static, with all columns)
         - scndmtl: MTL folder for secondary targets
-        - scnd2, scnd3, etc: any other existing secondary fits catalog (static, with all columns)
         - too: ToO ecsv catalog
 
     Notes:
