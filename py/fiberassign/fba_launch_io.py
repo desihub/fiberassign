@@ -931,6 +931,17 @@ def get_desitarget_paths(
         [same for bright, bright1b]
 
     """
+
+    if (not isinstance(dr, list)) or (len(dr) < 1):
+        curr_time = time() - start
+        msg = f"{curr_time:.1f}s\t{step}\tdr must be a list of length at least 1"
+        log.error(msg)
+        raise ValueError(msg)
+
+    # Listify for iteration code later.
+    if isinstance(dtver, str):
+        dtver = [dtver]
+
     # AR expected survey, program?
     exp_surveys = ["sv1", "sv2", "sv3", "main"]
     exp_programs = ["dark", "dark1b", "bright", "bright1b", "backup"]
@@ -947,25 +958,10 @@ def get_desitarget_paths(
             )
         )
 
-    if (not isinstance(dr, list)) or (len(dr) < 1):
-        curr_time = time() - start
-        msg = f"{curr_time:.1f}s\t{step}\tdr must be a list of length at least 1"
-        log.error(msg)
-        raise ValueError(msg)
-
-    # Listify for iteration code later.
-    if isinstance(dtver, str):
-        dtver = [dtver]
-
-
     # AR folder architecture is now the same at NERSC/KPNO (https://github.com/desihub/fiberassign/issues/302)
     mydirs = {}
-    mydirs["sky"] = os.path.join(
-        os.getenv("DESI_TARGET"), "catalogs", dr[0], dtver[0], "skies"
-    )
-    mydirs["skysupp"] = os.path.join(
-        os.getenv("DESI_TARGET"), "catalogs", gaiadr, dtver[0], "skies-supp"
-    )
+    mydirs["sky"] = []
+    mydirs["skysupp"] = []
     mydirs["gfa"] = os.path.join(
         os.getenv("DESI_TARGET"), "catalogs", dr[0], dtver[0], "gfas"
     )
@@ -978,6 +974,13 @@ def get_desitarget_paths(
     all_targ_files = []
     for i, release in enumerate(dr_vals):
         dt = dtver[0] if (len(dtver) == 1) else dtver[i]
+
+        sky = os.path.join(os.getenv("DESI_TARGET"), "catalogs", release, dt, "skies")
+        if os.path.exists(sky): mydirs["sky"].append(sky)
+
+        skysupp = os.path.join(os.getenv("DESI_TARGET"), "catalogs", gaiadr, dt, "skies-supp")
+        if os.path.exists(skysupp): mydirs["skysupp"].append(skysupp)
+
         prog = program.lower()
         targ = os.path.join(
             os.getenv("DESI_TARGET"),
@@ -1188,9 +1191,9 @@ def create_sky(
 
     Args:
         tilesfn: path to a tiles fits file (string)
-        skydir: desitarget sky folder (string)
+        skydir: desitarget sky folder (list of string or string)
         outfn: fits file name to be written (string)
-        suppskydir (optional, defaults to None): desitarget suppsky folder (string)
+        suppskydir (optional, defaults to None): desitarget suppsky folder (list of string or string)
         tmpoutdir (optional, defaults to a temporary directory): temporary directory where
                 write_skies will write (creating some sub-directories)
         add_plate_cols (optional, defaults to True): adds a PLATE_RA, PLATE_DEC columns (boolean)
@@ -1213,9 +1216,17 @@ def create_sky(
     log.info("{:.1f}s\t{}\tstart generating {}".format(time() - start, step, outfn))
     # AR sky: read targets
     tiles = fits.open(tilesfn)[1].data
-    skydirs = [skydir]
+    if isinstance(skydir, str):
+        skydirs = [skydir]
+    else:
+        # DG - Copy, lists are pass by reference and we don't want suppsky written to FA header under skies
+        skydirs = [s for s in skydir]
+
     if suppskydir is not None:
-        skydirs.append(suppskydir)
+        if isinstance(suppskydir, str):
+            skydirs.append(suppskydir)
+        else:
+            skydirs += suppskydir
     ds = [read_targets_in_tiles(skydir, tiles=tiles, quick=True) for skydir in skydirs]
     for skydir, d in zip(skydirs, ds):
         log.info("{:.1f}s\t{}\treading {} targets from {}".format(time() - start, step, len(d), skydir))
@@ -2299,7 +2310,7 @@ def update_fiberassign_header(
     desiroot = os.getenv("DESI_ROOT")
     fd["PRIMARY"].write_key("DESIROOT", desiroot)
     for key in np.sort(list(mydirs.keys())):
-        if key in ["mtl", "targ", "scnd"]:
+        if key in ["mtl", "targ", "scnd", "sky", "skysupp"]:
             if isinstance(mydirs[key], list):
                 # AR header keywords: MTL, MTL2 (or TARG, TARG2)
                 suffixs = [""] + np.arange(2, len(mydirs[key]) + 1).astype(str).tolist()
