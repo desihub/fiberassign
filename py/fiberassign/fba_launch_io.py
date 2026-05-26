@@ -13,6 +13,7 @@ import tempfile
 import shutil
 import re
 from glob import glob
+from pathlib import Path
 
 # time
 from time import time
@@ -869,7 +870,7 @@ def get_desitarget_paths(
     survey,
     program,
     too_tile=False,
-    dr="dr9",
+    dr=["dr9"],
     gaiadr="gaiadr2",
     custom_too_file=None,
     custom_too_development=False,
@@ -882,14 +883,14 @@ def get_desitarget_paths(
     Obtain the folder/file full paths for desitarget products
 
     Args:
-        dtver: desitarget catalog version (string; e.g., "0.57.0")
+        dtver: desitarget catalog version (string or list of strings; e.g., ["0.57.0"])
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         program: "dark", "dark1b", "bright", "bright1b" or "backup" (string)
         too_tile (optional, defaults to False):
                 if False and survey=="main" and ToO-fiber.ecsv exists, use ToO-fiber.ecsv (fiber-override only),
                 else, use ToO.ecsv (ToO for dedicated tiles)
                 (boolean)
-        dr (optional, defaults to "dr9"): legacypipe dr (string)
+        dr (optional, defaults to ["dr9"]): legacypipe dr (list of strings)
         gaiadr (optional, defaults to "gaiadr2"): gaia dr (string)
         custom_too_file (optional, default=None): comma-separated full paths to a custom ToO files, for development work, which overrides the official one (string)
         custom_too_development (optional, defaults to False): is this for development? (allows custom_too_file to be outside of $DESI_SURVEYOPS or $DESI_ROOT/survey/fiberassign/special/tertiary) (bool)
@@ -901,14 +902,13 @@ def get_desitarget_paths(
 
     Returns:
         Dictionary with the following keys:
-        - sky: sky folder
-        - skysupp: skysupp folder
-        - gfa: GFA folder
+        - sky: sky folder(s)
+        - skysupp: skysupp folder(s)
+        - gfa: GFA folder(s)
         - targ: targets folder(s) (static catalogs, with all columns); 2-elt list for main/{dark1b,bright1b}, str otherwise
         - mtl: MTL folder(s); 2-elt list for main/{dark1b,bright1b}, str otherwise
-        - scnd: secondary fits catalog (static, with all columns)
+        - scnd: secondary fits catalog(s) (static, with all columns)
         - scndmtl: MTL folder for secondary targets
-        - scnd2, scnd3, etc: any other existing secondary fits catalog (static, with all columns)
         - too: ToO ecsv catalog
 
     Notes:
@@ -930,6 +930,22 @@ def get_desitarget_paths(
         [same for bright, bright1b]
 
     """
+
+    if (not isinstance(dr, list)) or (len(dr) < 1):
+        curr_time = time() - start
+        msg = f"{curr_time:.1f}s\t{step}\tdr must be a list of length at least 1"
+        log.error(msg)
+        raise ValueError(msg)
+
+    # Listify for iteration code later.
+    if isinstance(dtver, str):
+        dtver = [dtver]
+    elif isinstance(dtver, list) and (len(dtver) != len(dr)):
+        curr_time = time() - start
+        msg = f"{curr_time:.1f}s\t{step}\tif dtver is a list, it must be the same length as dr (there must be ONE dtver for EACH dr)"
+        log.error(msg)
+        raise ValueError(msg)
+
     # AR expected survey, program?
     exp_surveys = ["sv1", "sv2", "sv3", "main"]
     exp_programs = ["dark", "dark1b", "bright", "bright1b", "backup"]
@@ -948,95 +964,82 @@ def get_desitarget_paths(
 
     # AR folder architecture is now the same at NERSC/KPNO (https://github.com/desihub/fiberassign/issues/302)
     mydirs = {}
-    mydirs["sky"] = os.path.join(
-        os.getenv("DESI_TARGET"), "catalogs", dr, dtver, "skies"
-    )
-    mydirs["skysupp"] = os.path.join(
-        os.getenv("DESI_TARGET"), "catalogs", gaiadr, dtver, "skies-supp"
-    )
-    mydirs["gfa"] = os.path.join(
-        os.getenv("DESI_TARGET"), "catalogs", dr, dtver, "gfas"
-    )
-    if program.lower() == "backup":
-        dtcat = gaiadr
-    else:
-        dtcat = dr
-    targ = os.path.join(
-        os.getenv("DESI_TARGET"),
-        "catalogs",
-        dtcat,
-        dtver,
-        "targets",
-        survey.lower(),
-        "resolve",
-        program.lower(),
-    )
-    mydirs["targ"] = targ
-    if survey.lower() == "main":
-        progshort = program.lower().replace("1b", "")
-        if program.lower() == "{}1b".format(progshort):
-            targ = targ.replace(program.lower(), progshort)
-            targ2 = targ.replace(progshort, "{}1b".format(progshort))
-            mydirs["targ"] = [targ, targ2]
+    mydirs["sky"] = []
+    mydirs["skysupp"] = []
+    mydirs["gfa"] = []
+
+    # DG - Iterating over dr + dtversions for target directories
+    all_targ_files = []
+    for i, release in enumerate(dr):
+        dt = dtver[0] if (len(dtver) == 1) else dtver[i]
+
+        sky = os.path.join(os.getenv("DESI_TARGET"), "catalogs", release, dt, "skies")
+        if os.path.exists(sky): mydirs["sky"].append(sky)
+
+        skysupp = os.path.join(os.getenv("DESI_TARGET"), "catalogs", gaiadr, dt, "skies-supp")
+        if os.path.exists(skysupp): mydirs["skysupp"].append(skysupp)
+
+        gfa = os.path.join(os.getenv("DESI_TARGET"), "catalogs", release, dt, "gfas")
+        if os.path.exists(gfa): mydirs["gfa"].append(gfa)
+
+        # DG - Correct release for backup tiles.
+        if program.lower() == "backup":
+            release = gaiadr
+
+        prog = program.lower()
+        targ = os.path.join(
+            os.getenv("DESI_TARGET"),
+            "catalogs",
+            release,
+            dt,
+            "targets",
+            survey.lower(),
+            "resolve",
+            prog,
+        )
+        if (survey.lower() == "main") and (prog[-2:] == "1b"):
+            # Append the 1A target directory first before the 1B.
+            temp_targ = targ.replace(prog, prog[:-2])
+            if os.path.exists(temp_targ):
+                all_targ_files.append(temp_targ)
+
+        if os.path.exists(targ):
+            all_targ_files.append(targ)
+
+    mydirs[f"targ"] = all_targ_files
+
     # AR secondary (dark, dark1b, bright, bright1b; no secondary for backup)
     # AR only query program (in particular, only dark1b for dark1b; same for bright1b)
     if program.lower() in ["dark", "bright", "dark1b", "bright1b"]:
-        if survey.lower() == "main":
-            basename = "targets-{}-secondary.fits".format(program.lower())
-        else:
-            basename = "{}targets-{}-secondary.fits".format(survey.lower(), program.lower())
-        mydirs["scnd"] = os.path.join(
-            os.getenv("DESI_TARGET"),
-            "catalogs",
-            dr,
-            dtver,
-            "targets",
-            survey.lower(),
-            "secondary",
-            program.lower(),
-            basename,
-        )
-        # AR check possible extra folders, like main2/, main3/, etc
-        # AR and store the file path in keys like scnd2, scnd3, etc
-        # AR note: the index in the key name is not related to the extra folder name,
-        # AR        it is just the order of appearance
-        extradirs = sorted(
-            [os.path.basename(fn)
-                for fn in glob(
-                    os.path.join(
-                        os.getenv("DESI_TARGET"), "catalogs", dr, dtver, "targets", "{}*".format(survey.lower())
-                    )
-                )
-                if os.path.basename(fn) != survey
-            ]
-        )
+        # if survey.lower() == "main":
+        basename = "targets-{}-secondary.fits".format(program.lower())
+        # else:
+        #     basename = "{}targets-{}-secondary.fits".format(survey.lower(), program.lower())
 
-        # DG - If the originally found main secondary target file does not exist then
-        # we will take the next found file to be the primary secondary file.
-        # This is for 1B programs, where the secondary targets files live in main4/
-        # not in main, so fiberassign will crash looking for it in main.
-        if not os.path.isfile(mydirs["scnd"]):
-            count = 1
-        else:
-            count = 2
-        for extradir in extradirs:
-            fn = os.path.join(
-                os.getenv("DESI_TARGET"),
-                "catalogs",
-                dr,
-                dtver,
-                "targets",
-                extradir,
-                "secondary",
-                program.lower(),
-                "{}{}".format(extradir, basename),
-            )
-            if os.path.isfile(fn):
-                if count == 1:
-                    mydirs["scnd"] = fn
-                else:
-                    mydirs["scnd{}".format(count)] = fn
-                count += 1
+        all_secondaries = []
+
+        for i, release in enumerate(dr):
+            dt = dtver[0] if (len(dtver) == 1) else dtver[i]
+            base_path = Path(os.getenv("DESI_TARGET"),
+                            "catalogs",
+                            release,
+                            dt,
+                            "targets",
+                            )
+
+            # DG - Loop over all sub directories found that match this survey
+            # Then check if the associated secondary file exists. If it does
+            # store it. associated secondary file needs to be in the right form.
+            paths_to_check = base_path.glob(f"{survey.lower()}*")
+            for p in paths_to_check:
+                curr_survey = p.name # DG - "main" or "main2" etc.
+                curr_name = basename if curr_survey == "main" else curr_survey + basename
+                full_path = (p / "secondary" / program.lower() / curr_name)
+
+                if full_path.exists():
+                    all_secondaries.append(str(full_path))
+
+        mydirs["scnd"] = all_secondaries
 
     # AR log
     for key in list(mydirs.keys()):
@@ -1193,9 +1196,9 @@ def create_sky(
 
     Args:
         tilesfn: path to a tiles fits file (string)
-        skydir: desitarget sky folder (string)
+        skydir: desitarget sky folder (list of string or string)
         outfn: fits file name to be written (string)
-        suppskydir (optional, defaults to None): desitarget suppsky folder (string)
+        suppskydir (optional, defaults to None): desitarget suppsky folder (list of string or string)
         tmpoutdir (optional, defaults to a temporary directory): temporary directory where
                 write_skies will write (creating some sub-directories)
         add_plate_cols (optional, defaults to True): adds a PLATE_RA, PLATE_DEC columns (boolean)
@@ -1218,9 +1221,17 @@ def create_sky(
     log.info("{:.1f}s\t{}\tstart generating {}".format(time() - start, step, outfn))
     # AR sky: read targets
     tiles = fits.open(tilesfn)[1].data
-    skydirs = [skydir]
+    if isinstance(skydir, str):
+        skydirs = [skydir]
+    else:
+        # DG - Copy, lists are pass by reference and we don't want suppsky written to FA header under skies
+        skydirs = [s for s in skydir]
+
     if suppskydir is not None:
-        skydirs.append(suppskydir)
+        if isinstance(suppskydir, str):
+            skydirs.append(suppskydir)
+        else:
+            skydirs += suppskydir
     ds = [read_targets_in_tiles(skydir, tiles=tiles, quick=True) for skydir in skydirs]
     for skydir, d in zip(skydirs, ds):
         log.info("{:.1f}s\t{}\treading {} targets from {}".format(time() - start, step, len(d), skydir))
@@ -1271,7 +1282,7 @@ def create_targ_nomtl(
 
     Args:
         tilesfn: path to a tiles fits file (string)
-        targdir: desitarget target folder (string)
+        targdir: desitarget target folder (string or list of strings)
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         gaiadr: Gaia dr ("dr2" or "edr3")
         pmcorr: apply proper-motion correction? ("y" or "n")
@@ -1306,7 +1317,18 @@ def create_targ_nomtl(
     log.info("{:.1f}s\t{}\tstart generating {}".format(time() - start, step, outfn))
     # AR targ_nomtl: read targets
     tiles = fits.open(tilesfn)[1].data
-    d = read_targets_in_tiles(targdir, tiles=tiles, quick=quick)
+
+    if isinstance(targdir, str):
+        targdirs = [targdir]
+    else:
+        targdirs = [t for t in targdir]
+
+    # DG - Code from create_sky
+    ds = [read_targets_in_tiles(targdir, tiles=tiles, quick=quick) for targdir in targdirs]
+    for targdir, d in zip(targdirs, ds):
+        log.info("{:.1f}s\t{}\treading {} targets from {}".format(time() - start, step, len(d), targdir))
+    d = np.concatenate(ds)
+
     log.info(
         "{:.1f}s\t{}\tkeeping {} targets to {}".format(
             time() - start, step, len(d), outfn
@@ -1392,7 +1414,7 @@ def create_mtl(
         tilesfn: path to a tiles fits file (string)
         mtldir: desisurveyops MTL folder (string or list of two strings)
         mtltime: MTL isodate (string formatted as yyyy-mm-ddThh:mm:ss+00:00)
-        targdirs: desitarget targets folder (or file name(s) if secondary) for static fits catalog(s) (string or list)
+        targdirs: desitarget targets folder (or file name(s)) for static fits catalog(s) (string or list)
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         gaiadr: Gaia dr ("dr2" or "edr3")
         pmcorr: apply proper-motion correction? ("y" or "n")
@@ -1463,12 +1485,12 @@ def create_mtl(
             )
             log.error(msg)
             raise ValueError(msg)
-        if len(targdirs) > 2:
-            msg = "len(targdir) = {} > 2; only up two static folders can be provided".format(
-                len(targdir)
-            )
-            log.error(msg)
-            raise ValueError(msg)
+        # if len(targdirs) > 2:
+        #     msg = "len(targdir) = {} > 2; only up two static folders can be provided".format(
+        #         len(targdir)
+        #     )
+        #     log.error(msg)
+        #     raise ValueError(msg)
 
     # AR change targdirs to list if a string is provided
     if isinstance(targdirs, str):
@@ -2141,8 +2163,6 @@ def launch_onetile_fa(
         "--ha",
         str(args.ha),
     ]
-    if args.ha != 0:
-        opts += ["--ha", str(args.ha)]
     if args.margin_pos != 0:
         opts += ["--margin-pos", str(args.margin_pos)]
     if args.margin_gfa != 0:
@@ -2306,16 +2326,13 @@ def update_fiberassign_header(
     desiroot = os.getenv("DESI_ROOT")
     fd["PRIMARY"].write_key("DESIROOT", desiroot)
     for key in np.sort(list(mydirs.keys())):
-        if key in ["mtl", "targ"]:
-            if isinstance(mydirs[key], list):
-                # AR header keywords: MTL, MTL2 (or TARG, TARG2)
-                suffixs = [""] + np.arange(2, len(mydirs[key]) + 1).astype(str).tolist()
-                for path, suffix in zip(mydirs[key], suffixs):
-                    fd["PRIMARY"].write_key(
-                        "{}{}".format(key, suffix), path.replace(desiroot, "DESIROOT"),
-                    )
-            else:
-                fd["PRIMARY"].write_key(key, mydirs[key].replace(desiroot, "DESIROOT"))
+        if isinstance(mydirs[key], list):
+            # AR header keywords: MTL, MTL2 (or TARG, TARG2)
+            suffixs = [""] + np.arange(2, len(mydirs[key]) + 1).astype(str).tolist()
+            for path, suffix in zip(mydirs[key], suffixs):
+                fd["PRIMARY"].write_key(
+                    "{}{}".format(key, suffix), path.replace(desiroot, "DESIROOT"),
+                )
         else:
             fd["PRIMARY"].write_key(key, mydirs[key].replace(desiroot, "DESIROOT"))
     # AR storing some specific arguments
@@ -2323,10 +2340,13 @@ def update_fiberassign_header(
     # AR     we exclude from FAARGS outdir, forcetiled, and any None argument
     tmparr = []
     for kwargs in args._get_kwargs():
-        if (kwargs[0].lower() not in ["outdir", "forcetileid"]) & (
+        if (kwargs[0].lower() not in ["outdir", "forcetileid", "dr", "dtver"]) & (
             kwargs[1] is not None
         ):
             tmparr += ["--{} {}".format(kwargs[0], kwargs[1])]
+        # DG - Turn the list back into a comma separated string
+        elif kwargs[0].lower() in ["dr", "dtver"] and kwargs[1] is not None:
+            tmparr += ["--{} {}".format(kwargs[0], ",".join(kwargs[1]))]
     fd["PRIMARY"].write_key(
         "faargs", " ".join(tmparr),
     )
