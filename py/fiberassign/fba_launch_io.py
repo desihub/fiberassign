@@ -807,8 +807,8 @@ def get_ledger_paths(
         mtl = mtl.replace(program.lower(), progshort)
         mtl2 = mtl.replace(progshort, "{}1b".format(progshort))
         mtl = [mtl, mtl2]
-    # AR secondary (dark, dark1b, bright, bright1b; no secondary for backup)
-    if program.lower() in ["dark", "bright", "dark1b", "bright1b"]:
+    # AR secondary
+    if program.lower() in ["dark", "bright", "dark1b", "bright1b", "backup"]:
         scndmtl = os.path.join(
             os.getenv("DESI_SURVEYOPS"),
             "mtl",
@@ -816,6 +816,28 @@ def get_ledger_paths(
             "secondary",
             program.lower(),
         )
+
+        # DG - Load the secondary ledgers from the 1B program in the 1A tiles.
+        if program.lower() in ["dark", "bright"]:
+            progshort = program.lower()
+
+            scnd1a = os.path.join(
+            os.getenv("DESI_SURVEYOPS"),
+            "mtl",
+            survey.lower(),
+            "secondary",
+            progshort,
+            )
+
+            scnd1b = os.path.join(
+            os.getenv("DESI_SURVEYOPS"),
+            "mtl",
+            survey.lower(),
+            "secondary",
+            f"{progshort}1b",
+            )
+
+            scndmtl = [scnd1a, scnd1b]
     else:
         scndmtl = None
     # AR ToO (same for dark, bright)
@@ -1010,11 +1032,12 @@ def get_desitarget_paths(
 
     # AR secondary (dark, dark1b, bright, bright1b; no secondary for backup)
     # AR only query program (in particular, only dark1b for dark1b; same for bright1b)
-    if program.lower() in ["dark", "bright", "dark1b", "bright1b"]:
-        # if survey.lower() == "main":
+    if program.lower() in ["dark", "bright", "dark1b", "bright1b", "backup"]:
         basename = "targets-{}-secondary.fits".format(program.lower())
-        # else:
-        #     basename = "{}targets-{}-secondary.fits".format(survey.lower(), program.lower())
+        bases = [basename]
+        # CDG - heck for the 1b targeting files in 1a tiles.
+        if "1b" not in program.lower():
+            bases.append("targets-{}1b-secondary.fits".format(program.lower()))
 
         all_secondaries = []
 
@@ -1033,11 +1056,12 @@ def get_desitarget_paths(
             paths_to_check = base_path.glob(f"{survey.lower()}*")
             for p in paths_to_check:
                 curr_survey = p.name # DG - "main" or "main2" etc.
-                curr_name = basename if curr_survey == "main" else curr_survey + basename
-                full_path = (p / "secondary" / program.lower() / curr_name)
+                for base in bases:
+                    curr_name = base if curr_survey == "main" else curr_survey + base
+                    full_path = (p / "secondary" / program.lower() / curr_name)
 
-                if full_path.exists():
-                    all_secondaries.append(str(full_path))
+                    if full_path.exists():
+                        all_secondaries.append(str(full_path))
 
         mydirs["scnd"] = all_secondaries
 
@@ -1469,6 +1493,13 @@ def create_mtl(
     # AR    which have imports from fba_launch_io.py...
     from fiberassign.assign import minimal_target_columns
 
+    # DG - "secondary" in mtldir will always fail if mtldir is a list of 2 dirs.
+    # So instead determine this ahead of time and account correctly.
+    is_secondary = "secondary" in mtldir
+    if isinstance(mtldir, list):
+        for mtl in mtldir:
+            is_secondary = is_secondary or ("secondary" in mtl)
+
     # AR check on mtl
     if isinstance(mtldir, list):
         # AR only two ledgers allowed (e.g. dark, dark1b)
@@ -1525,7 +1556,7 @@ def create_mtl(
             time() - start, step, len(d), mtldir
         )
     )
-    # Might happen if you load a secondadry 1B program leder before the ledgers
+    # Might happen if you load a secondadry 1B program ledger before the ledgers
     # were "turned on"
     if len(d) == 0:
         log.warning(f"No targets loaded from {mtldir}. Aborting MTL creation.")
@@ -1575,7 +1606,7 @@ def create_mtl(
     # AR mtl:    if backup or desitarget.__version__ < 1.2.2, no columns addition
     #
     # AR mtl: case not secondary
-    if "secondary" not in mtldir:
+    if not is_secondary:
         columns = [key for key in minimal_target_columns if key not in d.dtype.names]
         # AR mtl: also add GAIA_ASTROMETRIC_EXCESS_NOISE, in case args.pmcorr == "y"
         if pmcorr == "y":
@@ -1654,8 +1685,7 @@ def create_mtl(
             d = match_ledger_to_targets(d, targ)
     # AR mtl: case secondary
     else:
-        # AR mtl: secondary for backup should never happen, but safe approach still
-        if ("backup" not in mtldir) & (desitarget.__version__ >= "1.2.2"):
+        if (desitarget.__version__ >= "1.2.2"):
             # AR mtl: hard-coding the columns, to speed up code
             columns = ["FLUX_G", "FLUX_R", "FLUX_Z", "GAIA_PHOT_G_MEAN_MAG", "GAIA_PHOT_BP_MEAN_MAG", "GAIA_PHOT_RP_MEAN_MAG"]
             # AR mtl: also add GAIA_ASTROMETRIC_EXCESS_NOISE, in case args.pmcorr == "y"
@@ -1683,12 +1713,6 @@ def create_mtl(
                 targ = Table(fitsio.read(targdir, columns = columns + ["TARGETID"], rows=rows))
                 targs.append(targ)
             d = match_ledger_to_targets(d, vstack(targs))
-        elif "backup" in mtldir:
-            log.info(
-                "{:.1f}s\t{}\tno secondary targets for BACKUP program".format(
-                    time() - start, step,
-                )
-            )
         else:
             log.info(
                 "{:.1f}s\t{}\tas desitarget.__version__={} < 1.2.2, we do not add columns from {}".format(
