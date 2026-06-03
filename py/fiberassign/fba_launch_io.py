@@ -1608,7 +1608,7 @@ def create_mtl(
             if len(targdirs) == 1:
                 ok = np.unique(targ["TARGETID"]).size == len(targ)
                 if not ok:
-                    msg = "found {} duplicates, but none are expected".format(
+                    msg = "found {} duplicates, but expected none".format(
                         len(targ) - np.unique(targ["TARGETID"]).size
                     )
                     log.error(msg)
