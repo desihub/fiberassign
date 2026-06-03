@@ -1627,34 +1627,44 @@ def create_mtl(
                 # AR so we do not perform any sanity check that duplicates
                 # AR    have the same column values
                 _, ii = np.unique(targ["TARGETID"], return_index=True)
-                # AR sanity check: dups should have MTL_CONTAINS corresponding to
-                # AR    both ledgers
-                idcs = np.arange(len(targ), dtype=int)
-                dups_ii = idcs[~np.isin(idcs, ii)]
-                dups_tids = np.unique(targ["TARGETID"][dups_ii])
 
-                # DG - targdirs may not be just two items anymore, this loops
-                # over all targdirs to get the obsconds.
-                val = 0
-                for targdir in targdirs:
-                    oc = os.path.normpath(targdir).split(os.path.sep)[-1].upper()
-                    val = val | obsconditions[oc]
+                # DG - ADM and I do not believe this sanity check is strictly
+                # necessary, and so I'm commenting it out, but leaving it in case
+                # it needs to be restored in the future. We removed it because
+                # It was breaking on loading dr11 targeting files before the dr11
+                # targets are on in the MTLs.
 
-                expect_dups_ii = np.where(d["MTL_CONTAINS"] == val)[0]
-                expect_dups_tids = np.unique(d["TARGETID"][expect_dups_ii])
-                if (len(dups_tids) != len(expect_dups_tids)) or not np.all(dups_tids == expect_dups_tids):
-                    msg = "discrepancy in duplicates from the static catalogs ({}) " \
-                        "vs. what is expected from the ledgers ({}), " \
-                        "ndiff = {}".format(
-                            dups_tids.size,
-                            expect_dups_tids.size,
-                            np.max([
-                                (~np.isin(dups_ii, expect_dups_tids)).sum(),
-                                (~np.isin(expect_dups_ii, dups_ii)).sum()
-                            ])
-                    )
-                    log.error(msg)
-                    raise ValueError(msg)
+
+                # # AR sanity check: dups should have MTL_CONTAINS corresponding to
+                # # AR    both ledgers
+                # idcs = np.arange(len(targ), dtype=int)
+                # dups_ii = idcs[~np.isin(idcs, ii)]
+                # dups_tids = np.unique(targ["TARGETID"][dups_ii])
+
+                # # DG - targdirs may not be just two items anymore, this loops
+                # # over all targdirs to get the obsconds.
+                # val = 0
+                # for targdir in targdirs:
+                #     oc = os.path.normpath(targdir).split(os.path.sep)[-1].upper()
+                #     val = val | obsconditions[oc]
+
+                # expect_dups_ii = np.where(d["MTL_CONTAINS"] == val)[0]
+                # expect_dups_tids = np.unique(d["TARGETID"][expect_dups_ii])
+                # if (len(dups_tids) != len(expect_dups_tids)) or not np.all(dups_tids == expect_dups_tids):
+                #     msg = "discrepancy in duplicates from the static catalogs ({}) " \
+                #         "vs. what is expected from the ledgers ({}), " \
+                #         "ndiff = {}".format(
+                #             dups_tids.size,
+                #             expect_dups_tids.size,
+                #             np.max([
+                #                 (~np.isin(dups_ii, expect_dups_tids)).sum(),
+                #                 (~np.isin(expect_dups_ii, dups_ii)).sum()
+                #             ])
+                #     )
+                #     log.error(msg)
+                #     raise ValueError(msg)
+
+
                 log.info(
                     "{:.1f}s\t{}\tremove {} duplicates, remain {} rows".format(
                         time() - start, step, len(targ) - ii.size, ii.size
