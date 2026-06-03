@@ -1626,12 +1626,17 @@ def create_mtl(
                 _ = np.arange(len(targ), dtype=int)
                 dups_ii = _[~np.isin(_, ii)]
                 dups_tids = np.unique(targ["TARGETID"][dups_ii])
-                oc0 = os.path.normpath(targdirs[0]).split(os.path.sep)[-1].upper()
-                oc1 = os.path.normpath(targdirs[1]).split(os.path.sep)[-1].upper()
-                val = obsconditions[oc0] | obsconditions[oc1]
+
+                # DG - targdirs may not be just two items anymore, this loops
+                # over all targdirs to get the obsconds.
+                val = 0
+                for targdir in targdirs:
+                    oc = os.path.normpath(targdir).split(os.path.sep)[-1].upper()
+                    val = val | obsconditions[oc]
+
                 expect_dups_ii = np.where(d["MTL_CONTAINS"] == val)[0]
                 expect_dups_tids = np.unique(d["TARGETID"][expect_dups_ii])
-                if not np.all(dups_tids == expect_dups_tids):
+                if (len(dups_tids) != len(expect_dups_tids)) or not np.all(dups_tids == expect_dups_tids):
                     msg = "discrepancy in duplicates from the static catalogs ({}) " \
                         "vs. what is expected from the ledgers ({}), " \
                         "ndiff = {}".format(
