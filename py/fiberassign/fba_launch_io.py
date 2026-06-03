@@ -871,7 +871,7 @@ def get_desitarget_paths(
     program,
     too_tile=False,
     dr=["dr9"],
-    gaiadr="gaiadr2",
+    gaiadr=["gaiadr2"],
     custom_too_file=None,
     custom_too_development=False,
     log=Logger.get(),
@@ -891,7 +891,7 @@ def get_desitarget_paths(
                 else, use ToO.ecsv (ToO for dedicated tiles)
                 (boolean)
         dr (optional, defaults to ["dr9"]): legacypipe dr (list of strings)
-        gaiadr (optional, defaults to "gaiadr2"): gaia dr (string)
+        gaiadr (optional, defaults to ["gaiadr2"]): gaia dr (list of strings)
         custom_too_file (optional, default=None): comma-separated full paths to a custom ToO files, for development work, which overrides the official one (string)
         custom_too_development (optional, defaults to False): is this for development? (allows custom_too_file to be outside of $DESI_SURVEYOPS or $DESI_ROOT/survey/fiberassign/special/tertiary) (bool)
         log (optional, defaults to Logger.get()): Logger object
@@ -937,6 +937,12 @@ def get_desitarget_paths(
         log.error(msg)
         raise ValueError(msg)
 
+    if (not isinstance(gaiadr, list)) or (len(gaiadr) < 1):
+        curr_time = time() - start
+        msg = f"{curr_time:.1f}s\t{step}\tdr must be a list of length at least 1"
+        log.error(msg)
+        raise ValueError(msg)
+
     # Listify for iteration code later.
     if isinstance(dtver, str):
         dtver = [dtver]
@@ -976,7 +982,7 @@ def get_desitarget_paths(
         sky = os.path.join(os.getenv("DESI_TARGET"), "catalogs", release, dt, "skies")
         if os.path.exists(sky): mydirs["sky"].append(sky)
 
-        skysupp = os.path.join(os.getenv("DESI_TARGET"), "catalogs", gaiadr, dt, "skies-supp")
+        skysupp = os.path.join(os.getenv("DESI_TARGET"), "catalogs", gaiadr[i], dt, "skies-supp")
         if os.path.exists(skysupp): mydirs["skysupp"].append(skysupp)
 
         gfa = os.path.join(os.getenv("DESI_TARGET"), "catalogs", release, dt, "gfas")
@@ -1623,8 +1629,8 @@ def create_mtl(
                 _, ii = np.unique(targ["TARGETID"], return_index=True)
                 # AR sanity check: dups should have MTL_CONTAINS corresponding to
                 # AR    both ledgers
-                _ = np.arange(len(targ), dtype=int)
-                dups_ii = _[~np.isin(_, ii)]
+                idcs = np.arange(len(targ), dtype=int)
+                dups_ii = idcs[~np.isin(idcs, ii)]
                 dups_tids = np.unique(targ["TARGETID"][dups_ii])
 
                 # DG - targdirs may not be just two items anymore, this loops

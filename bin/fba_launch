@@ -233,6 +233,10 @@ def main():
         try_too_all=args.try_too_all
     )
 
+    # DG - gaiadr for `gaia_psflike` check, hardcoded as now args.gaiadr ONLY
+    # enumerates sky supplemental locations rather than pulling double duty.
+    gaia_ref_dr = "dr2"
+
     # AR tiles
     if "tiles" in steps:
         create_tile(
@@ -274,7 +278,7 @@ def main():
             mytmpouts["tiles"],
             mydirs["gfa"],
             args.survey,
-            args.gaiadr.replace("gaia", ""),
+            gaia_ref_dr,
             args.pmcorr,
             mytmpouts["gfa"],
             tmpoutdir=tmpoutdir,
@@ -297,7 +301,7 @@ def main():
             args.mtltime,
             mydirs["targ"],
             args.survey,
-            args.gaiadr.replace("gaia", ""),
+            gaia_ref_dr,
             args.pmcorr,
             mytmpouts["targ"],
             tmpoutdir=tmpoutdir,
@@ -329,7 +333,7 @@ def main():
                     args.mtltime,
                     mydirs["scnd"],
                     args.survey,
-                    args.gaiadr.replace("gaia", ""),
+                    gaia_ref_dr,
                     args.pmcorr,
                     mytmpouts["scnd"],
                     tmpoutdir=tmpoutdir,
@@ -367,7 +371,7 @@ def main():
             mjd_now,
             mjd_now,
             args.survey,
-            args.gaiadr.replace("gaia", ""),
+            gaia_ref_dr,
             args.pmcorr,
             mytmpouts["too"],
             mtltime=args.mtltime,
@@ -653,22 +657,21 @@ if __name__ == "__main__":
                         help="Add margin (in mm) around GFA keep-out polygons (default: 0.4)")
     parser.add_argument(
         "--dr",
-        help="comma-separated list of legacypipe dr (default=dr9). If multiple data releases are passed the FIRST argument is used for sky/gfa targets.",
+        help="comma-separated list of legacypipe dr (default=dr9). If multiple are passed, it must be the same length as `--gaiadr`.",
         type=str,
         default="dr9",
         required=False,
     )
     parser.add_argument(
         "--gaiadr",
-        help="gaia dr (default=gaiadr2)",
+        help="comma-separated list of gaia dr (default=gaiadr2). If multiple are passed, it must be the same length as `--dr`. The FIRST value is used for gaia ref epochs for GFAs.",
         type=str,
         default="gaiadr2",
         required=False,
-        choices=["gaiadr2"],
     )
     parser.add_argument(
         "--dtver",
-        help="comma-separated list of desitarget catalogue version. If a single value is passed, it is used for ALL legacypipe data releases. If multiple are passed, exactly ONE must be passed for EACH legacypipe dr.",
+        help="comma-separated list of desitarget catalogue version. If a single value is passed, it is used for ALL data releases. If multiple are passed, exactly ONE must be passed for EACH legacypipe dr.",
         type=str,
         default=None,
         required=True,
@@ -789,12 +792,25 @@ if __name__ == "__main__":
 
     # DG - Turn comma separated data release into list of strings.
     allowed_dr = ["dr9", "dr11"]
+    allowed_gaia = ["gaiadr2", "gaiadr3"]
     args.dr = args.dr.split(",")
     for dr in args.dr:
         if dr not in allowed_dr:
             msg = f"{dr} not in allowed legacypipe data releases: {allowed_dr}"
             log.error(msg)
             raise ValueError(msg)
+
+    args.gaiadr = args.gaiadr.split(",")
+    for dr in args.gaiadr:
+        if dr not in allowed_gaia:
+            msg = f"{dr} not in allowed legacypipe data releases: {allowed_gaia}"
+            log.error(msg)
+            raise ValueError(msg)
+
+    if len(args.gaiadr) != len(args.dr):
+        msg = f"The number of gaiadr ({args.gaiadr}) and legagy pipe dr ({args.dr}) must be the same!"
+        log.error(msg)
+        raise ValueError(msg)
 
     # DG - Turn comma separated dtver into list of strings.
     args.dtver = args.dtver.split(",")
