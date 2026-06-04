@@ -990,7 +990,7 @@ def get_desitarget_paths(
 
         # DG - Correct release for backup tiles.
         if program.lower() == "backup":
-            release = gaiadr
+            release = gaiadr[i]
 
         prog = program.lower()
         targ = os.path.join(
