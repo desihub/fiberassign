@@ -175,7 +175,7 @@ def main():
         tmparr += [key, mydict[key]]
         log.info(
             "{:.1f}s\tsettings\t{}\t= {}".format(
-                time() - start, repr(key), repr(mydict[key])
+                time() - start, str(key).ljust(20), repr(mydict[key])
             )
         )
     tmpstr = " ".join(tmparr)

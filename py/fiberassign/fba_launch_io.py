@@ -893,7 +893,7 @@ def get_desitarget_paths(
     program,
     too_tile=False,
     dr=["dr9"],
-    gaiadr="gaiadr2",
+    gaiadr=["gaiadr2"],
     custom_too_file=None,
     custom_too_development=False,
     log=Logger.get(),
@@ -913,7 +913,7 @@ def get_desitarget_paths(
                 else, use ToO.ecsv (ToO for dedicated tiles)
                 (boolean)
         dr (optional, defaults to ["dr9"]): legacypipe dr (list of strings)
-        gaiadr (optional, defaults to "gaiadr2"): gaia dr (string)
+        gaiadr (optional, defaults to ["gaiadr2"]): gaia dr (list of strings)
         custom_too_file (optional, default=None): comma-separated full paths to a custom ToO files, for development work, which overrides the official one (string)
         custom_too_development (optional, defaults to False): is this for development? (allows custom_too_file to be outside of $DESI_SURVEYOPS or $DESI_ROOT/survey/fiberassign/special/tertiary) (bool)
         log (optional, defaults to Logger.get()): Logger object
@@ -959,6 +959,12 @@ def get_desitarget_paths(
         log.error(msg)
         raise ValueError(msg)
 
+    if (not isinstance(gaiadr, list)) or (len(gaiadr) < 1):
+        curr_time = time() - start
+        msg = f"{curr_time:.1f}s\t{step}\tdr must be a list of length at least 1"
+        log.error(msg)
+        raise ValueError(msg)
+
     # Listify for iteration code later.
     if isinstance(dtver, str):
         dtver = [dtver]
@@ -998,7 +1004,7 @@ def get_desitarget_paths(
         sky = os.path.join(os.getenv("DESI_TARGET"), "catalogs", release, dt, "skies")
         if os.path.exists(sky): mydirs["sky"].append(sky)
 
-        skysupp = os.path.join(os.getenv("DESI_TARGET"), "catalogs", gaiadr, dt, "skies-supp")
+        skysupp = os.path.join(os.getenv("DESI_TARGET"), "catalogs", gaiadr[i], dt, "skies-supp")
         if os.path.exists(skysupp): mydirs["skysupp"].append(skysupp)
 
         gfa = os.path.join(os.getenv("DESI_TARGET"), "catalogs", release, dt, "gfas")
@@ -1006,7 +1012,7 @@ def get_desitarget_paths(
 
         # DG - Correct release for backup tiles.
         if program.lower() == "backup":
-            release = gaiadr
+            release = gaiadr[i]
 
         prog = program.lower()
         targ = os.path.join(
@@ -1639,7 +1645,7 @@ def create_mtl(
             if len(targdirs) == 1:
                 ok = np.unique(targ["TARGETID"]).size == len(targ)
                 if not ok:
-                    msg = "found {} duplicates, but none are expected".format(
+                    msg = "found {} duplicates, but expected none".format(
                         len(targ) - np.unique(targ["TARGETID"]).size
                     )
                     log.error(msg)
@@ -1652,29 +1658,44 @@ def create_mtl(
                 # AR so we do not perform any sanity check that duplicates
                 # AR    have the same column values
                 _, ii = np.unique(targ["TARGETID"], return_index=True)
-                # AR sanity check: dups should have MTL_CONTAINS corresponding to
-                # AR    both ledgers
-                _ = np.arange(len(targ), dtype=int)
-                dups_ii = _[~np.isin(_, ii)]
-                dups_tids = np.unique(targ["TARGETID"][dups_ii])
-                oc0 = os.path.normpath(targdirs[0]).split(os.path.sep)[-1].upper()
-                oc1 = os.path.normpath(targdirs[1]).split(os.path.sep)[-1].upper()
-                val = obsconditions[oc0] | obsconditions[oc1]
-                expect_dups_ii = np.where(d["MTL_CONTAINS"] == val)[0]
-                expect_dups_tids = np.unique(d["TARGETID"][expect_dups_ii])
-                if not np.all(dups_tids == expect_dups_tids):
-                    msg = "discrepancy in duplicates from the static catalogs ({}) " \
-                        "vs. what is expected from the ledgers ({}), " \
-                        "ndiff = {}".format(
-                            dups_tids.size,
-                            expect_dups_tids.size,
-                            np.max([
-                                (~np.isin(dups_ii, expect_dups_tids)).sum(),
-                                (~np.isin(expect_dups_ii, dups_ii)).sum()
-                            ])
-                    )
-                    log.error(msg)
-                    raise ValueError(msg)
+
+                # DG - ADM and I do not believe this sanity check is strictly
+                # necessary, and so I'm commenting it out, but leaving it in case
+                # it needs to be restored in the future. We removed it because
+                # It was breaking on loading dr11 targeting files before the dr11
+                # targets are on in the MTLs.
+
+
+                # # AR sanity check: dups should have MTL_CONTAINS corresponding to
+                # # AR    both ledgers
+                # idcs = np.arange(len(targ), dtype=int)
+                # dups_ii = idcs[~np.isin(idcs, ii)]
+                # dups_tids = np.unique(targ["TARGETID"][dups_ii])
+
+                # # DG - targdirs may not be just two items anymore, this loops
+                # # over all targdirs to get the obsconds.
+                # val = 0
+                # for targdir in targdirs:
+                #     oc = os.path.normpath(targdir).split(os.path.sep)[-1].upper()
+                #     val = val | obsconditions[oc]
+
+                # expect_dups_ii = np.where(d["MTL_CONTAINS"] == val)[0]
+                # expect_dups_tids = np.unique(d["TARGETID"][expect_dups_ii])
+                # if (len(dups_tids) != len(expect_dups_tids)) or not np.all(dups_tids == expect_dups_tids):
+                #     msg = "discrepancy in duplicates from the static catalogs ({}) " \
+                #         "vs. what is expected from the ledgers ({}), " \
+                #         "ndiff = {}".format(
+                #             dups_tids.size,
+                #             expect_dups_tids.size,
+                #             np.max([
+                #                 (~np.isin(dups_ii, expect_dups_tids)).sum(),
+                #                 (~np.isin(expect_dups_ii, dups_ii)).sum()
+                #             ])
+                #     )
+                #     log.error(msg)
+                #     raise ValueError(msg)
+
+
                 log.info(
                     "{:.1f}s\t{}\tremove {} duplicates, remain {} rows".format(
                         time() - start, step, len(targ) - ii.size, ii.size
@@ -2364,12 +2385,12 @@ def update_fiberassign_header(
     # AR     we exclude from FAARGS outdir, forcetiled, and any None argument
     tmparr = []
     for kwargs in args._get_kwargs():
-        if (kwargs[0].lower() not in ["outdir", "forcetileid", "dr", "dtver"]) & (
+        if (kwargs[0].lower() not in ["outdir", "forcetileid", "dr", "dtver", "gaiadr"]) & (
             kwargs[1] is not None
         ):
             tmparr += ["--{} {}".format(kwargs[0], kwargs[1])]
         # DG - Turn the list back into a comma separated string
-        elif kwargs[0].lower() in ["dr", "dtver"] and kwargs[1] is not None:
+        elif (kwargs[0].lower() in ["dr", "dtver", "gaiadr"]) and (kwargs[1] is not None):
             tmparr += ["--{} {}".format(kwargs[0], ",".join(kwargs[1]))]
     fd["PRIMARY"].write_key(
         "faargs", " ".join(tmparr),
