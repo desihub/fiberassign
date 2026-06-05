@@ -1039,11 +1039,11 @@ def get_desitarget_paths(
     # AR secondary (dark, dark1b, bright, bright1b; no secondary for backup)
     # AR only query program (in particular, only dark1b for dark1b; same for bright1b)
     if program.lower() in ["dark", "bright", "dark1b", "bright1b", "backup"]:
-        basename = "targets-{}-secondary.fits".format(program.lower())
-        bases = [basename]
-        # CDG - heck for the 1b targeting files in 1a tiles.
+        basename = "targets-{}-secondary.fits"
+        progs = [program.lower()]
+        # DG - check for the 1b targeting files in 1a tiles.
         if "1b" not in program.lower():
-            bases.append("targets-{}1b-secondary.fits".format(program.lower()))
+            progs.append(program.lower() + "1b")
 
         all_secondaries = []
 
@@ -1062,10 +1062,10 @@ def get_desitarget_paths(
             paths_to_check = base_path.glob(f"{survey.lower()}*")
             for p in paths_to_check:
                 curr_survey = p.name # DG - "main" or "main2" etc.
-                for base in bases:
-                    curr_name = base if curr_survey == "main" else curr_survey + base
-                    full_path = (p / "secondary" / program.lower() / curr_name)
-
+                for prog in progs:
+                    curr_name = basename.format(prog)
+                    curr_name = curr_name if curr_survey == "main" else curr_survey + curr_name
+                    full_path = (p / "secondary" / prog / curr_name)
                     if full_path.exists():
                         all_secondaries.append(str(full_path))
 
