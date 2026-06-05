@@ -5,9 +5,10 @@ fiberassign change log
 
 5.9.2 (unreleased)
 ------------------
-* Enable running fiberassign with secondary ledgers for BACKUP tiles. (PR `#505`_).
+* Enable running fiberassign with secondary ledgers for BACKUP tiles. (PR `#509`_).
+* Enable running fiberassign with secondary targets from 1B tiles on 1A tiles. (PR `#509`_).
 
-.. _`#505`: https://github.com/desihub/fiberassign/pull/505
+.. _`#509`: https://github.com/desihub/fiberassign/pull/509
 
 5.9.1 (2026-04-20)
 ------------------
