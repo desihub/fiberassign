@@ -670,16 +670,16 @@ if __name__ == "__main__":
                         help="Add margin (in mm) around GFA keep-out polygons (default: 0.4)")
     parser.add_argument(
         "--dr",
-        help="comma-separated list of legacypipe dr (default=dr9). If multiple are passed, it must be the same length as `--gaiadr`.",
+        help="comma-separated list of legacypipe dr (default=dr9,dr11). If multiple are passed, it must be the same length as `--gaiadr`.",
         type=str,
-        default="dr9",
+        default="dr9,dr11",
         required=False,
     )
     parser.add_argument(
         "--gaiadr",
-        help="comma-separated list of gaia dr (default=gaiadr2). If multiple are passed, it must be the same length as `--dr`. The FIRST value is used for gaia ref epochs for GFAs.",
+        help="comma-separated list of gaia dr (default=gaiadr2,gaiadr3). If multiple are passed, it must be the same length as `--dr`. The FIRST value is used for gaia ref epochs for GFAs.",
         type=str,
-        default="gaiadr2",
+        default="gaiadr2,gaiadr3",
         required=False,
     )
     parser.add_argument(
