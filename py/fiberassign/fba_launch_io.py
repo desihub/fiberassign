@@ -968,7 +968,7 @@ def get_desitarget_paths(
     # Listify for iteration code later.
     if isinstance(dtver, str):
         dtver = [dtver]
-    elif isinstance(dtver, list) and (len(dtver) != len(dr)):
+    elif isinstance(dtver, list) and (len(dtver) != len(dr)) and (len(dtver) != 1):
         curr_time = time() - start
         msg = f"{curr_time:.1f}s\t{step}\tif dtver is a list, it must be the same length as dr (there must be ONE dtver for EACH dr)"
         log.error(msg)
