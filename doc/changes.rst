@@ -3,7 +3,11 @@
 fiberassign change log
 ======================
 
-6.0.0 (unreleased)
+6.0.1 (unreleased)
+------------------
+
+
+6.0.0 (2026-06-08)
 ------------------
 * Enable running fiberassign with secondary ledgers for BACKUP tiles. (PR `#509`_).
 * Enable running fiberassign with secondary targets from 1B tiles on 1A tiles. (PR `#509`_).
