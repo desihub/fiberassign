@@ -3,12 +3,14 @@
 fiberassign change log
 ======================
 
-5.9.2 (unreleased)
+6.0.0 (unreleased)
 ------------------
 * Enable running fiberassign with secondary ledgers for BACKUP tiles. (PR `#509`_).
 * Enable running fiberassign with secondary targets from 1B tiles on 1A tiles. (PR `#509`_).
+* Add ability to search multiple data releases for legacy targets and gaia targets (PR `#508`_).
 
 .. _`#509`: https://github.com/desihub/fiberassign/pull/509
+.. _`#508`: https://github.com/desihub/fiberassign/pull/508
 
 5.9.1 (2026-04-20)
 ------------------
