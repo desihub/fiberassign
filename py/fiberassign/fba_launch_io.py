@@ -970,7 +970,7 @@ def get_desitarget_paths(
         dtver = [dtver]
     elif isinstance(dtver, list) and (len(dtver) != len(dr)) and (len(dtver) != 1):
         curr_time = time() - start
-        msg = f"{curr_time:.1f}s\t{step}\tif dtver is a list, it must be the same length as dr (there must be ONE dtver for EACH dr)"
+        msg = f"{curr_time:.1f}s\t{step}\tif dtver is a list, it must be the same length as dr (there must be ONE dtver for EACH dr) or len 1 (search that dtver for all dr)"
         log.error(msg)
         raise ValueError(msg)
 
