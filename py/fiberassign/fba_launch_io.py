@@ -1562,10 +1562,15 @@ def create_mtl(
             time() - start, step, len(d), mtldir
         )
     )
-    # Might happen if you load a secondadry 1B program ledger before the ledgers
+    # DG - Might happen if you load a secondadryprogram ledger before the ledgers
     # were "turned on"
     if len(d) == 0:
         log.warning(f"No targets loaded from {mtldir}. Aborting MTL creation.")
+        return 1
+    # DG - if you don't have any targeting files to load but did have an MTL.
+    # This check works whether targdirs is a string or a list.
+    if len(targdirs) == 0:
+        log.warning(f"No targets directory! Aborting MTL creation.")
         return 1
 
     # AR standard stars only?
