@@ -178,10 +178,18 @@ def get_program_latest_timestamp(
         start=start,
     )
     # AR existing folders?
-    if isinstance(mtldir, list):
-        test_hpdirnames = mtldir + [scndmtldir]
-    else:
-        test_hpdirnames = [mtldir, scndmtldir]
+    # DG - I've moved all secondary mtls into the scndmtldir return, so it's a list
+    # This doesn't really matter most of the time except now that we have 1b secondaries
+    # on 1a tiles, calling `get_ledger_paths` even with a 1a program name means that
+    # this is always a list!
+    if not isinstance(mtldir, list):
+        mtldir = [mtldir]
+
+    if not isinstance(scndmtldir, list):
+        scndmtldir = [scndmtldir]
+
+    test_hpdirnames = mtldir + scndmtldir
+
     hpdirnames = []
     for hpdirname in test_hpdirnames:
         if hpdirname is not None:
