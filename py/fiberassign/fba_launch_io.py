@@ -182,11 +182,10 @@ def get_program_latest_timestamp(
     # This doesn't really matter most of the time except now that we have 1b secondaries
     # on 1a tiles, calling `get_ledger_paths` even with a 1a program name means that
     # this is always a list!
-
-    if isinstance(mtldir, str):
+    if not isinstance(mtldir, list):
         mtldir = [mtldir]
 
-    if isinstance(scndmtldir, str):
+    if not isinstance(scndmtldir, list):
         scndmtldir = [scndmtldir]
 
     test_hpdirnames = mtldir + scndmtldir
