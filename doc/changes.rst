@@ -7,7 +7,7 @@ fiberassign change log
 ------------------
 * Hotfix for scndmtl always being a list on 1A tiles. (PR `#511`_).
 
-.. _`#508`: https://github.com/desihub/fiberassign/pull/511
+.. _`#511`: https://github.com/desihub/fiberassign/pull/511
 
 6.0.0 (2026-06-08)
 ------------------
