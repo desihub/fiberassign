@@ -14,10 +14,11 @@ import numpy as np
 # DESI
 from desimodel.io import load_tiles
 from fiberassign.utils import get_main_early_nonrepro_tiles
+from fiberassign.fba_rerun_io import fba_rerun_check
 
-def rerun_tile(in_fa, out_dir):
+def rerun_tile(in_fa, out_dir, out_fa, diff_fa):
     subprocess.run(["fba_rerun", "--infiberassign", in_fa, "--outdir", out_dir, "--nosteps", "qa"])
-
+    fba_rerun_check(in_fa, out_fa, diff_fa)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -28,6 +29,7 @@ def main():
     parser.add_argument("--program", choices=["ALL", "BRIGHT", "DARK", "BACKUP"], default="ALL", help="which survey tiles to rerun")
     args = parser.parse_args()
 
+    out_dir = Path(args.outdir)
     tiles = load_tiles()
     keep_tiles = tiles["STATUS"] != "unobs"
     # If we want to run only a specific program we just cut on that.
@@ -42,21 +44,26 @@ def main():
 
     fadir = Path(os.getenv("DESI_TARGET")) / "fiberassign" / "tiles" / "trunk"
     in_fiberassign = []
+    out_fiberassign = []
+    diff_names = []
 
-    for tileid in tiles_to_run[:200]:
+    for tileid in tiles_to_run:
         tileidpad = str(tileid).zfill(6)
         in_fa = fadir / tileidpad[:3] / f"fiberassign-{tileidpad}.fits.gz"
-        if in_fa.exists():
+        out_fa = out_dir / tileidpad[:3] / f"fiberassign-{tileidpad}.fits.gz"
+        if in_fa.exists() and not out_fa.exists(): # Don't rerun tiles.
             in_fiberassign.append(in_fa)
+            out_fiberassign.append()
+            diff_names.append(out_dir / tileidpad[:3] / f"fiberassign-{tileidpad}.diff")
 
     if args.shuffle:
         idcs = np.arange(len(in_fiberassign))
         rng.shuffle(idcs)
         in_fiberassign = np.asarray(in_fiberassign)[idcs]
+        out_fiberassign = np.asarray(out_fiberassign)[idcs]
 
-    out_fiberassign = [args.outdir] * len(in_fiberassign)
     with multiprocessing.Pool(args.nproc) as pool:
-        pool.starmap(rerun_tile, zip(in_fiberassign, out_fiberassign))
+        pool.starmap(rerun_tile, zip(in_fiberassign, [args.outdir] * len(in_fiberassign), out_fiberassign, diff_names))
 
 
 if __name__ == "__main__":
