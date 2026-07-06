@@ -99,7 +99,9 @@ def main():
         # AR handling of the "action_store=True" arguments..
         # AR - if True, we keep the argument name
         # AR - if False, we remove
-        if key in ["--log_stdout", "--worldreadable", "--targ_std_only", "--too_tile", "--custom_too_development"]:
+        if key in ["--log_stdout", "--worldreadable", "--targ_std_only", "--too_tile", "--custom_too_development", "--try_too_all"]:
+            # If forcing try_too_all, will handle that later.
+            if key == "--try_too_all" and args.force_try_too_all: continue
             if val == "False":
                 continue
             else:
@@ -140,6 +142,9 @@ def main():
             # AR
             else:
                 mydict[key] = val
+
+    if args.force_try_too_all:  # Keep try_too_all no matter what
+        mydict["--try_too_all"] = ""
 
     # AR safe: DESI environment variables defined?
     assert_env_vars(log=log, step="settings", start=start)
@@ -183,7 +188,7 @@ def main():
         tmparr += [key, mydict[key]]
         log.info(
             "{:.1f}s\tsettings\t{}\t= {}".format(
-                time() - start, repr(key), repr(mydict[key])
+                time() - start, str(key).ljust(20), repr(mydict[key])
             )
         )
     tmpstr = " ".join(tmparr)
@@ -248,7 +253,12 @@ if __name__ == "__main__":
         help="do not replace '/global/cfs/desi/' by '/dvs_ro/cfs/desi/' in $DESI_TARGET, $SKYBRICKS_DIR, $SKYHEALPIXS_DIR",
         action="store_true",
    )
-
+    parser.add_argument(
+        "--force_try_too_all",
+        help="Override the value of try_too_all in the infiberassign header and use try_too_all regardless.",
+        action="store_true",
+        required=False
+    )
 
     args = parser.parse_args()
     log = Logger.get()

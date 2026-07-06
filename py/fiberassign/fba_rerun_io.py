@@ -968,7 +968,7 @@ def fba_rerun_check(
             ]
         )
         # AR missed in rerun
-        ii = np.where(~np.in1d(orig_ids, rerun_ids))[0]
+        ii = np.where(~np.isin(orig_ids, rerun_ids))[0]
         for i in ii:
             f.write(
                 "{:06}\t{}\tmiss\t{}\n".format(
@@ -978,7 +978,7 @@ def fba_rerun_check(
                 )
             )
         # AR added in rerun
-        ii = np.where(~np.in1d(rerun_ids, orig_ids))[0]
+        ii = np.where(~np.isin(rerun_ids, orig_ids))[0]
         for i in ii:
             f.write(
                 "{:06}\t{}\tadd\t{}\n".format(

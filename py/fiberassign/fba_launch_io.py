@@ -13,6 +13,7 @@ import tempfile
 import shutil
 import re
 from glob import glob
+from pathlib import Path
 
 # time
 from time import time
@@ -149,13 +150,13 @@ def get_program_latest_timestamp(
     if os.path.isfile(fn):
         d = Table.read(fn)
         if program.upper() in ["DARK", "DARK1B"]:
-            keep = np.in1d(d["PROGRAM"], ["DARK", "DARK1B"])
+            keep = np.isin(d["PROGRAM"], ["DARK", "DARK1B"])
         elif program.upper in ["BRIGHT", "BRIGHT1B"]:
-            keep = np.in1d(d["PROGRAM"], ["BRIGHT", "BRIGHT1B"])
+            keep = np.isin(d["PROGRAM"], ["BRIGHT", "BRIGHT1B"])
         else:
             keep = d["PROGRAM"] == program.upper()
         # AR add a cut on TILEID
-        # AR TODO: read tiles-{survey}.ecsv and use np.in1d()
+        # AR TODO: read tiles-{survey}.ecsv and use np.isin()
         if survey == "sv3":
             keep &= (d["TILEID"] < 1000)
         if survey == "main":
@@ -177,10 +178,18 @@ def get_program_latest_timestamp(
         start=start,
     )
     # AR existing folders?
-    if isinstance(mtldir, list):
-        test_hpdirnames = mtldir + [scndmtldir]
-    else:
-        test_hpdirnames = [mtldir, scndmtldir]
+    # DG - I've moved all secondary mtls into the scndmtldir return, so it's a list
+    # This doesn't really matter most of the time except now that we have 1b secondaries
+    # on 1a tiles, calling `get_ledger_paths` even with a 1a program name means that
+    # this is always a list!
+    if not isinstance(mtldir, list):
+        mtldir = [mtldir]
+
+    if not isinstance(scndmtldir, list):
+        scndmtldir = [scndmtldir]
+
+    test_hpdirnames = mtldir + scndmtldir
+
     hpdirnames = []
     for hpdirname in test_hpdirnames:
         if hpdirname is not None:
@@ -228,7 +237,7 @@ def get_program_latest_timestamp(
                 i = ii[0]
                 line = get_last_line(fn)
                 tm = line.split()[i]
-                log.info("{:.1f}s\t{}\t{} last-line TIMESTAMP : {}".format(time() - start, step, fn, tm)) 
+                log.info("{:.1f}s\t{}\t{} last-line TIMESTAMP : {}".format(time() - start, step, fn, tm))
                 tms.append(tm)
         else:
             log.warning("{:.1f}s\t{}\t{}: no file, passing".format(time() - start, step, fn))
@@ -237,7 +246,7 @@ def get_program_latest_timestamp(
     if len(tms) > 0:
         timestamp = np.sort(tms)[-1]
         # AR does not end with +NN:MM timezone?
-        if re.search('\+\d{2}:\d{2}$', timestamp) is None:
+        if re.search(r'\+\d{2}:\d{2}$', timestamp) is None:
             timestamp = "{}+00:00".format(timestamp)
 
     log.info("{:.1f}s\t{}\tlatest timestamp : {}".format(time() - start, step, timestamp))
@@ -739,6 +748,7 @@ def get_ledger_paths(
     log=Logger.get(),
     step="settings",
     start=time(),
+    try_too_all=False,
 ):
     """
     Obtain the folder/file full paths for the primary/secondary/ToO ledgers.
@@ -754,6 +764,7 @@ def get_ledger_paths(
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+        try_too_all (optional, defaults to False): look for ToO-fiber-all.ecsv as the ToO, but fallback to ToO-fiber.ecsv if not found. If False, only look for ToO-fiber.ecsv.
 
     Returns:
         - mtl: primary ledgers MTL folder (string, or list of strings for "main" survey)
@@ -804,8 +815,8 @@ def get_ledger_paths(
         mtl = mtl.replace(program.lower(), progshort)
         mtl2 = mtl.replace(progshort, "{}1b".format(progshort))
         mtl = [mtl, mtl2]
-    # AR secondary (dark, dark1b, bright, bright1b; no secondary for backup)
-    if program.lower() in ["dark", "bright", "dark1b", "bright1b"]:
+    # AR secondary
+    if program.lower() in ["dark", "bright", "dark1b", "bright1b", "backup"]:
         scndmtl = os.path.join(
             os.getenv("DESI_SURVEYOPS"),
             "mtl",
@@ -813,12 +824,45 @@ def get_ledger_paths(
             "secondary",
             program.lower(),
         )
+
+        # DG - Load the secondary ledgers from the 1B program in the 1A tiles.
+        if program.lower() in ["dark", "bright"]:
+            progshort = program.lower()
+
+            scnd1a = os.path.join(
+            os.getenv("DESI_SURVEYOPS"),
+            "mtl",
+            survey.lower(),
+            "secondary",
+            progshort,
+            )
+
+            scnd1b = os.path.join(
+            os.getenv("DESI_SURVEYOPS"),
+            "mtl",
+            survey.lower(),
+            "secondary",
+            f"{progshort}1b",
+            )
+
+            scndmtl = [scnd1a, scnd1b]
     else:
         scndmtl = None
     # AR ToO (same for dark, bright)
     # AR use ToO-fiber.ecsv if main and too_tile=False and file exists
     too_tile_fn = os.path.join(os.getenv("DESI_SURVEYOPS"), "mtl", survey.lower(), "ToO", "ToO.ecsv")
     too_fiber_fn = os.path.join(os.getenv("DESI_SURVEYOPS"), "mtl", survey.lower(), "ToO", "ToO-fiber.ecsv")
+    too_fiber_all_fn = os.path.join(os.getenv("DESI_SURVEYOPS"), "mtl", survey.lower(), "ToO", "ToO-fiber-all.ecsv")
+
+    # IF we want to try use the too-all file, check if it is actually a file
+    # and if so propagate that as too_fiber_fn instead.
+    if try_too_all:
+        if os.path.isfile(too_fiber_all_fn):
+            too_fiber_fn = too_fiber_all_fn
+            log.info(f"{(time() - start):.1f}\t{step}\ttry_too_all = True, found and will use {too_fiber_all_fn}")
+        else:
+            log.warning(f"{(time() - start):.1f}\t{step}\ttry_too_all = True, but {too_fiber_all_fn} not found. Falling back to {too_fiber_fn}")
+
     if (not too_tile) & (survey == "main"):
         if os.path.isfile(too_fiber_fn):
             too = too_fiber_fn
@@ -856,44 +900,45 @@ def get_desitarget_paths(
     survey,
     program,
     too_tile=False,
-    dr="dr9",
-    gaiadr="gaiadr2",
+    dr=["dr9"],
+    gaiadr=["gaiadr2"],
     custom_too_file=None,
     custom_too_development=False,
     log=Logger.get(),
     step="settings",
     start=time(),
+    try_too_all=False
 ):
     """
     Obtain the folder/file full paths for desitarget products
 
     Args:
-        dtver: desitarget catalog version (string; e.g., "0.57.0")
+        dtver: desitarget catalog version (string or list of strings; e.g., ["0.57.0"])
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         program: "dark", "dark1b", "bright", "bright1b" or "backup" (string)
         too_tile (optional, defaults to False):
                 if False and survey=="main" and ToO-fiber.ecsv exists, use ToO-fiber.ecsv (fiber-override only),
                 else, use ToO.ecsv (ToO for dedicated tiles)
                 (boolean)
-        dr (optional, defaults to "dr9"): legacypipe dr (string)
-        gaiadr (optional, defaults to "gaiadr2"): gaia dr (string)
+        dr (optional, defaults to ["dr9"]): legacypipe dr (list of strings)
+        gaiadr (optional, defaults to ["gaiadr2"]): gaia dr (list of strings)
         custom_too_file (optional, default=None): comma-separated full paths to a custom ToO files, for development work, which overrides the official one (string)
         custom_too_development (optional, defaults to False): is this for development? (allows custom_too_file to be outside of $DESI_SURVEYOPS or $DESI_ROOT/survey/fiberassign/special/tertiary) (bool)
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start (optional, defaults to time()): start time for log (in seconds; output of time.time())
+        try_too_all (optional, defaults to False): look for ToO-fiber-all.ecsv as the ToO, but fallback to ToO-fiber.ecsv if not found. If False, only look for ToO-fiber.ecsv.
 
     Returns:
         Dictionary with the following keys:
-        - sky: sky folder
-        - skysupp: skysupp folder
-        - gfa: GFA folder
+        - sky: sky folder(s)
+        - skysupp: skysupp folder(s)
+        - gfa: GFA folder(s)
         - targ: targets folder(s) (static catalogs, with all columns); 2-elt list for main/{dark1b,bright1b}, str otherwise
         - mtl: MTL folder(s); 2-elt list for main/{dark1b,bright1b}, str otherwise
-        - scnd: secondary fits catalog (static, with all columns)
+        - scnd: secondary fits catalog(s) (static, with all columns)
         - scndmtl: MTL folder for secondary targets
-        - scnd2, scnd3, etc: any other existing secondary fits catalog (static, with all columns)
         - too: ToO ecsv catalog
 
     Notes:
@@ -915,6 +960,28 @@ def get_desitarget_paths(
         [same for bright, bright1b]
 
     """
+
+    if (not isinstance(dr, list)) or (len(dr) < 1):
+        curr_time = time() - start
+        msg = f"{curr_time:.1f}s\t{step}\tdr must be a list of length at least 1"
+        log.error(msg)
+        raise ValueError(msg)
+
+    if (not isinstance(gaiadr, list)) or (len(gaiadr) < 1):
+        curr_time = time() - start
+        msg = f"{curr_time:.1f}s\t{step}\tdr must be a list of length at least 1"
+        log.error(msg)
+        raise ValueError(msg)
+
+    # Listify for iteration code later.
+    if isinstance(dtver, str):
+        dtver = [dtver]
+    elif isinstance(dtver, list) and (len(dtver) != len(dr)) and (len(dtver) != 1):
+        curr_time = time() - start
+        msg = f"{curr_time:.1f}s\t{step}\tif dtver is a list, it must be the same length as dr (there must be ONE dtver for EACH dr) or len 1 (search that dtver for all dr)"
+        log.error(msg)
+        raise ValueError(msg)
+
     # AR expected survey, program?
     exp_surveys = ["sv1", "sv2", "sv3", "main"]
     exp_programs = ["dark", "dark1b", "bright", "bright1b", "backup"]
@@ -933,84 +1000,84 @@ def get_desitarget_paths(
 
     # AR folder architecture is now the same at NERSC/KPNO (https://github.com/desihub/fiberassign/issues/302)
     mydirs = {}
-    mydirs["sky"] = os.path.join(
-        os.getenv("DESI_TARGET"), "catalogs", dr, dtver, "skies"
-    )
-    mydirs["skysupp"] = os.path.join(
-        os.getenv("DESI_TARGET"), "catalogs", gaiadr, dtver, "skies-supp"
-    )
-    mydirs["gfa"] = os.path.join(
-        os.getenv("DESI_TARGET"), "catalogs", dr, dtver, "gfas"
-    )
-    if program.lower() == "backup":
-        dtcat = gaiadr
-    else:
-        dtcat = dr
-    targ = os.path.join(
-        os.getenv("DESI_TARGET"),
-        "catalogs",
-        dtcat,
-        dtver,
-        "targets",
-        survey.lower(),
-        "resolve",
-        program.lower(),
-    )
-    mydirs["targ"] = targ
-    if survey.lower() == "main":
-        progshort = program.lower().replace("1b", "")
-        if program.lower() == "{}1b".format(progshort):
-            targ = targ.replace(program.lower(), progshort)
-            targ2 = targ.replace(progshort, "{}1b".format(progshort))
-            mydirs["targ"] = [targ, targ2]
-    # AR secondary (dark, dark1b, bright, bright1b; no secondary for backup)
-    # AR only query program (in particular, only dark1b for dark1b; same for bright1b)
-    if program.lower() in ["dark", "bright", "dark1b", "bright1b"]:
-        if survey.lower() == "main":
-            basename = "targets-{}-secondary.fits".format(program.lower())
-        else:
-            basename = "{}targets-{}-secondary.fits".format(survey.lower(), program.lower())
-        mydirs["scnd"] = os.path.join(
+    mydirs["sky"] = []
+    mydirs["skysupp"] = []
+    mydirs["gfa"] = []
+
+    # DG - Iterating over dr + dtversions for target directories
+    all_targ_files = []
+    for i, release in enumerate(dr):
+        dt = dtver[0] if (len(dtver) == 1) else dtver[i]
+
+        sky = os.path.join(os.getenv("DESI_TARGET"), "catalogs", release, dt, "skies")
+        if os.path.exists(sky): mydirs["sky"].append(sky)
+
+        skysupp = os.path.join(os.getenv("DESI_TARGET"), "catalogs", gaiadr[i], dt, "skies-supp")
+        if os.path.exists(skysupp): mydirs["skysupp"].append(skysupp)
+
+        gfa = os.path.join(os.getenv("DESI_TARGET"), "catalogs", release, dt, "gfas")
+        if os.path.exists(gfa): mydirs["gfa"].append(gfa)
+
+        # DG - Correct release for backup tiles.
+        if program.lower() == "backup":
+            release = gaiadr[i]
+
+        prog = program.lower()
+        targ = os.path.join(
             os.getenv("DESI_TARGET"),
             "catalogs",
-            dr,
-            dtver,
+            release,
+            dt,
             "targets",
             survey.lower(),
-            "secondary",
-            program.lower(),
-            basename,
+            "resolve",
+            prog,
         )
-        # AR check possible extra folders, like main2/, main3/, etc
-        # AR and store the file path in keys like scnd2, scnd3, etc
-        # AR note: the index in the key name is not related to the extra folder name,
-        # AR        it is just the order of appearance
-        extradirs = sorted(
-            [os.path.basename(fn)
-                for fn in glob(
-                    os.path.join(
-                        os.getenv("DESI_TARGET"), "catalogs", dr, dtver, "targets", "{}*".format(survey.lower())
-                    )
-                )
-                if os.path.basename(fn) != survey
-            ]
-        )
-        count = 2
-        for extradir in extradirs:
-            fn = os.path.join(
-                os.getenv("DESI_TARGET"),
-                "catalogs",
-                dr,
-                dtver,
-                "targets",
-                extradir,
-                "secondary",
-                program.lower(),
-                "{}{}".format(extradir, basename),
-            )
-            if os.path.isfile(fn):
-                mydirs["scnd{}".format(count)] = fn
-                count += 1
+        if (survey.lower() == "main") and (prog[-2:] == "1b"):
+            # Append the 1A target directory first before the 1B.
+            temp_targ = targ.replace(prog, prog[:-2])
+            if os.path.exists(temp_targ):
+                all_targ_files.append(temp_targ)
+
+        if os.path.exists(targ):
+            all_targ_files.append(targ)
+
+    mydirs[f"targ"] = all_targ_files
+
+    # AR secondary (dark, dark1b, bright, bright1b; no secondary for backup)
+    # AR only query program (in particular, only dark1b for dark1b; same for bright1b)
+    if program.lower() in ["dark", "bright", "dark1b", "bright1b", "backup"]:
+        basename = "targets-{}-secondary.fits"
+        progs = [program.lower()]
+        # DG - check for the 1b targeting files in 1a tiles.
+        if "1b" not in program.lower():
+            progs.append(program.lower() + "1b")
+
+        all_secondaries = []
+
+        for i, release in enumerate(dr):
+            dt = dtver[0] if (len(dtver) == 1) else dtver[i]
+            base_path = Path(os.getenv("DESI_TARGET"),
+                            "catalogs",
+                            release,
+                            dt,
+                            "targets",
+                            )
+
+            # DG - Loop over all sub directories found that match this survey
+            # Then check if the associated secondary file exists. If it does
+            # store it. associated secondary file needs to be in the right form.
+            paths_to_check = base_path.glob(f"{survey.lower()}*")
+            for p in paths_to_check:
+                curr_survey = p.name # DG - "main" or "main2" etc.
+                for prog in progs:
+                    curr_name = basename.format(prog)
+                    curr_name = curr_name if curr_survey == "main" else curr_survey + curr_name
+                    full_path = (p / "secondary" / prog / curr_name)
+                    if full_path.exists():
+                        all_secondaries.append(str(full_path))
+
+        mydirs["scnd"] = all_secondaries
 
     # AR log
     for key in list(mydirs.keys()):
@@ -1039,6 +1106,7 @@ def get_desitarget_paths(
         log=log,
         step=step,
         start=start,
+        try_too_all=try_too_all
     )
     if scndmtl is not None:
         mydirs["scndmtl"] = scndmtl
@@ -1166,9 +1234,9 @@ def create_sky(
 
     Args:
         tilesfn: path to a tiles fits file (string)
-        skydir: desitarget sky folder (string)
+        skydir: desitarget sky folder (list of string or string)
         outfn: fits file name to be written (string)
-        suppskydir (optional, defaults to None): desitarget suppsky folder (string)
+        suppskydir (optional, defaults to None): desitarget suppsky folder (list of string or string)
         tmpoutdir (optional, defaults to a temporary directory): temporary directory where
                 write_skies will write (creating some sub-directories)
         add_plate_cols (optional, defaults to True): adds a PLATE_RA, PLATE_DEC columns (boolean)
@@ -1191,9 +1259,17 @@ def create_sky(
     log.info("{:.1f}s\t{}\tstart generating {}".format(time() - start, step, outfn))
     # AR sky: read targets
     tiles = fits.open(tilesfn)[1].data
-    skydirs = [skydir]
+    if isinstance(skydir, str):
+        skydirs = [skydir]
+    else:
+        # DG - Copy, lists are pass by reference and we don't want suppsky written to FA header under skies
+        skydirs = [s for s in skydir]
+
     if suppskydir is not None:
-        skydirs.append(suppskydir)
+        if isinstance(suppskydir, str):
+            skydirs.append(suppskydir)
+        else:
+            skydirs += suppskydir
     ds = [read_targets_in_tiles(skydir, tiles=tiles, quick=True) for skydir in skydirs]
     for skydir, d in zip(skydirs, ds):
         log.info("{:.1f}s\t{}\treading {} targets from {}".format(time() - start, step, len(d), skydir))
@@ -1244,7 +1320,7 @@ def create_targ_nomtl(
 
     Args:
         tilesfn: path to a tiles fits file (string)
-        targdir: desitarget target folder (string)
+        targdir: desitarget target folder (string or list of strings)
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         gaiadr: Gaia dr ("dr2" or "edr3")
         pmcorr: apply proper-motion correction? ("y" or "n")
@@ -1279,7 +1355,18 @@ def create_targ_nomtl(
     log.info("{:.1f}s\t{}\tstart generating {}".format(time() - start, step, outfn))
     # AR targ_nomtl: read targets
     tiles = fits.open(tilesfn)[1].data
-    d = read_targets_in_tiles(targdir, tiles=tiles, quick=quick)
+
+    if isinstance(targdir, str):
+        targdirs = [targdir]
+    else:
+        targdirs = [t for t in targdir]
+
+    # DG - Code from create_sky
+    ds = [read_targets_in_tiles(targdir, tiles=tiles, quick=quick) for targdir in targdirs]
+    for targdir, d in zip(targdirs, ds):
+        log.info("{:.1f}s\t{}\treading {} targets from {}".format(time() - start, step, len(d), targdir))
+    d = np.concatenate(ds)
+
     log.info(
         "{:.1f}s\t{}\tkeeping {} targets to {}".format(
             time() - start, step, len(d), outfn
@@ -1365,7 +1452,7 @@ def create_mtl(
         tilesfn: path to a tiles fits file (string)
         mtldir: desisurveyops MTL folder (string or list of two strings)
         mtltime: MTL isodate (string formatted as yyyy-mm-ddThh:mm:ss+00:00)
-        targdirs: desitarget targets folder (or file name(s) if secondary) for static fits catalog(s) (string or list)
+        targdirs: desitarget targets folder (or file name(s)) for static fits catalog(s) (string or list)
         survey: survey (string; e.g. "sv1", "sv2", "sv3", "main")
         gaiadr: Gaia dr ("dr2" or "edr3")
         pmcorr: apply proper-motion correction? ("y" or "n")
@@ -1420,6 +1507,13 @@ def create_mtl(
     # AR    which have imports from fba_launch_io.py...
     from fiberassign.assign import minimal_target_columns
 
+    # DG - "secondary" in mtldir will always fail if mtldir is a list of 2 dirs.
+    # So instead determine this ahead of time and account correctly.
+    is_secondary = "secondary" in mtldir
+    if isinstance(mtldir, list):
+        for mtl in mtldir:
+            is_secondary = is_secondary or ("secondary" in mtl)
+
     # AR check on mtl
     if isinstance(mtldir, list):
         # AR only two ledgers allowed (e.g. dark, dark1b)
@@ -1436,12 +1530,12 @@ def create_mtl(
             )
             log.error(msg)
             raise ValueError(msg)
-        if len(targdirs) > 2:
-            msg = "len(targdir) = {} > 2; only up two static folders can be provided".format(
-                len(targdir)
-            )
-            log.error(msg)
-            raise ValueError(msg)
+        # if len(targdirs) > 2:
+        #     msg = "len(targdir) = {} > 2; only up two static folders can be provided".format(
+        #         len(targdir)
+        #     )
+        #     log.error(msg)
+        #     raise ValueError(msg)
 
     # AR change targdirs to list if a string is provided
     if isinstance(targdirs, str):
@@ -1476,6 +1570,16 @@ def create_mtl(
             time() - start, step, len(d), mtldir
         )
     )
+    # DG - Might happen if you load a secondadryprogram ledger before the ledgers
+    # were "turned on"
+    if len(d) == 0:
+        log.warning(f"No targets loaded from {mtldir}. Aborting MTL creation.")
+        return 1
+    # DG - if you don't have any targeting files to load but did have an MTL.
+    # This check works whether targdirs is a string or a list.
+    if len(targdirs) == 0:
+        log.warning(f"No targets directory! Aborting MTL creation.")
+        return 1
 
     # AR standard stars only?
     if std_only:
@@ -1521,7 +1625,7 @@ def create_mtl(
     # AR mtl:    if backup or desitarget.__version__ < 1.2.2, no columns addition
     #
     # AR mtl: case not secondary
-    if "secondary" not in mtldir:
+    if not is_secondary:
         columns = [key for key in minimal_target_columns if key not in d.dtype.names]
         # AR mtl: also add GAIA_ASTROMETRIC_EXCESS_NOISE, in case args.pmcorr == "y"
         if pmcorr == "y":
@@ -1554,7 +1658,7 @@ def create_mtl(
             if len(targdirs) == 1:
                 ok = np.unique(targ["TARGETID"]).size == len(targ)
                 if not ok:
-                    msg = "found {} duplicates, but none are expected".format(
+                    msg = "found {} duplicates, but expected none".format(
                         len(targ) - np.unique(targ["TARGETID"]).size
                     )
                     log.error(msg)
@@ -1567,29 +1671,44 @@ def create_mtl(
                 # AR so we do not perform any sanity check that duplicates
                 # AR    have the same column values
                 _, ii = np.unique(targ["TARGETID"], return_index=True)
-                # AR sanity check: dups should have MTL_CONTAINS corresponding to
-                # AR    both ledgers
-                _ = np.arange(len(targ), dtype=int)
-                dups_ii = _[~np.in1d(_, ii)]
-                dups_tids = np.unique(targ["TARGETID"][dups_ii])
-                oc0 = os.path.normpath(targdirs[0]).split(os.path.sep)[-1].upper()
-                oc1 = os.path.normpath(targdirs[1]).split(os.path.sep)[-1].upper()
-                val = obsconditions[oc0] | obsconditions[oc1]
-                expect_dups_ii = np.where(d["MTL_CONTAINS"] == val)[0]
-                expect_dups_tids = np.unique(d["TARGETID"][expect_dups_ii])
-                if not np.all(dups_tids == expect_dups_tids):
-                    msg = "discrepancy in duplicates from the static catalogs ({}) " \
-                        "vs. what is expected from the ledgers ({}), " \
-                        "ndiff = {}".format(
-                            dups_tids.size,
-                            expect_dups_tids.size,
-                            np.max([
-                                (~np.in1d(dups_ii, expect_dups_tids)).sum(),
-                                (~np.in1d(expect_dups_ii, dups_ii)).sum()
-                            ])
-                    )
-                    log.error(msg)
-                    raise ValueError(msg)
+
+                # DG - ADM and I do not believe this sanity check is strictly
+                # necessary, and so I'm commenting it out, but leaving it in case
+                # it needs to be restored in the future. We removed it because
+                # It was breaking on loading dr11 targeting files before the dr11
+                # targets are on in the MTLs.
+
+
+                # # AR sanity check: dups should have MTL_CONTAINS corresponding to
+                # # AR    both ledgers
+                # idcs = np.arange(len(targ), dtype=int)
+                # dups_ii = idcs[~np.isin(idcs, ii)]
+                # dups_tids = np.unique(targ["TARGETID"][dups_ii])
+
+                # # DG - targdirs may not be just two items anymore, this loops
+                # # over all targdirs to get the obsconds.
+                # val = 0
+                # for targdir in targdirs:
+                #     oc = os.path.normpath(targdir).split(os.path.sep)[-1].upper()
+                #     val = val | obsconditions[oc]
+
+                # expect_dups_ii = np.where(d["MTL_CONTAINS"] == val)[0]
+                # expect_dups_tids = np.unique(d["TARGETID"][expect_dups_ii])
+                # if (len(dups_tids) != len(expect_dups_tids)) or not np.all(dups_tids == expect_dups_tids):
+                #     msg = "discrepancy in duplicates from the static catalogs ({}) " \
+                #         "vs. what is expected from the ledgers ({}), " \
+                #         "ndiff = {}".format(
+                #             dups_tids.size,
+                #             expect_dups_tids.size,
+                #             np.max([
+                #                 (~np.isin(dups_ii, expect_dups_tids)).sum(),
+                #                 (~np.isin(expect_dups_ii, dups_ii)).sum()
+                #             ])
+                #     )
+                #     log.error(msg)
+                #     raise ValueError(msg)
+
+
                 log.info(
                     "{:.1f}s\t{}\tremove {} duplicates, remain {} rows".format(
                         time() - start, step, len(targ) - ii.size, ii.size
@@ -1600,8 +1719,7 @@ def create_mtl(
             d = match_ledger_to_targets(d, targ)
     # AR mtl: case secondary
     else:
-        # AR mtl: secondary for backup should never happen, but safe approach still
-        if ("backup" not in mtldir) & (desitarget.__version__ >= "1.2.2"):
+        if (desitarget.__version__ >= "1.2.2"):
             # AR mtl: hard-coding the columns, to speed up code
             columns = ["FLUX_G", "FLUX_R", "FLUX_Z", "GAIA_PHOT_G_MEAN_MAG", "GAIA_PHOT_BP_MEAN_MAG", "GAIA_PHOT_RP_MEAN_MAG"]
             # AR mtl: also add GAIA_ASTROMETRIC_EXCESS_NOISE, in case args.pmcorr == "y"
@@ -1623,18 +1741,12 @@ def create_mtl(
             for targdir in targdirs:
                 radec = fitsio.read(targdir, columns=["RA", "DEC"])
                 pixs = hp.ang2pix(nside, np.radians((90. - radec["DEC"])), np.radians(radec["RA"]), nest=nest)
-                ii = np.where(np.in1d(pixs, pixlist))[0]
+                ii = np.where(np.isin(pixs, pixlist))[0]
                 jj = is_point_in_desi(tiles, radec["RA"][ii], radec["DEC"][ii])
                 rows = ii[jj]
                 targ = Table(fitsio.read(targdir, columns = columns + ["TARGETID"], rows=rows))
                 targs.append(targ)
             d = match_ledger_to_targets(d, vstack(targs))
-        elif "backup" in mtldir:
-            log.info(
-                "{:.1f}s\t{}\tno secondary targets for BACKUP program".format(
-                    time() - start, step,
-                )
-            )
         else:
             log.info(
                 "{:.1f}s\t{}\tas desitarget.__version__={} < 1.2.2, we do not add columns from {}".format(
@@ -1689,6 +1801,7 @@ def create_mtl(
         n, tmpfn = write_targets(
             tmpoutdir, d, indir=mtldir, indir2=targdirs[0], survey=survey, subpriority=False
         )
+
     _ = mv_write_targets_out(tmpfn, tmpoutdir, outfn, log=log, step=step, start=start,)
 
     # AR mtl: update header if pmcorr = "y"
@@ -2108,8 +2221,6 @@ def launch_onetile_fa(
         "--ha",
         str(args.ha),
     ]
-    if args.ha != 0:
-        opts += ["--ha", str(args.ha)]
     if args.margin_pos != 0:
         opts += ["--margin-pos", str(args.margin_pos)]
     if args.margin_gfa != 0:
@@ -2273,16 +2384,13 @@ def update_fiberassign_header(
     desiroot = os.getenv("DESI_ROOT")
     fd["PRIMARY"].write_key("DESIROOT", desiroot)
     for key in np.sort(list(mydirs.keys())):
-        if key in ["mtl", "targ"]:
-            if isinstance(mydirs[key], list):
-                # AR header keywords: MTL, MTL2 (or TARG, TARG2)
-                suffixs = [""] + np.arange(2, len(mydirs[key]) + 1).astype(str).tolist()
-                for path, suffix in zip(mydirs[key], suffixs):
-                    fd["PRIMARY"].write_key(
-                        "{}{}".format(key, suffix), path.replace(desiroot, "DESIROOT"),
-                    )
-            else:
-                fd["PRIMARY"].write_key(key, mydirs[key].replace(desiroot, "DESIROOT"))
+        if isinstance(mydirs[key], list):
+            # AR header keywords: MTL, MTL2 (or TARG, TARG2)
+            suffixs = [""] + np.arange(2, len(mydirs[key]) + 1).astype(str).tolist()
+            for path, suffix in zip(mydirs[key], suffixs):
+                fd["PRIMARY"].write_key(
+                    "{}{}".format(key, suffix), path.replace(desiroot, "DESIROOT"),
+                )
         else:
             fd["PRIMARY"].write_key(key, mydirs[key].replace(desiroot, "DESIROOT"))
     # AR storing some specific arguments
@@ -2290,10 +2398,13 @@ def update_fiberassign_header(
     # AR     we exclude from FAARGS outdir, forcetiled, and any None argument
     tmparr = []
     for kwargs in args._get_kwargs():
-        if (kwargs[0].lower() not in ["outdir", "forcetileid"]) & (
+        if (kwargs[0].lower() not in ["outdir", "forcetileid", "dr", "dtver", "gaiadr"]) & (
             kwargs[1] is not None
         ):
             tmparr += ["--{} {}".format(kwargs[0], kwargs[1])]
+        # DG - Turn the list back into a comma separated string
+        elif (kwargs[0].lower() in ["dr", "dtver", "gaiadr"]) and (kwargs[1] is not None):
+            tmparr += ["--{} {}".format(kwargs[0], ",".join(kwargs[1]))]
     fd["PRIMARY"].write_key(
         "faargs", " ".join(tmparr),
     )
@@ -3510,7 +3621,7 @@ def plot_sky_fa(
         ax = axs[2]
         x = dras["parent"][mskpsel]
         y = ddecs["parent"][mskpsel]
-        C = np.in1d(parent["TARGETID"][mskpsel], assign["TARGETID"][msksel])
+        C = np.isin(parent["TARGETID"][mskpsel], assign["TARGETID"][msksel])
         hb = ax.hexbin(
             x,
             y,
@@ -3748,7 +3859,7 @@ def mv_temp2final(mytmpouts, myouts, expected_keys, log=Logger.get(), step="", s
     # AR
     for key in expected_keys:
         if os.path.isfile(mytmpouts[key]):
-            # Try to remove file before overwriting; somehow this avoids some permissions 
+            # Try to remove file before overwriting; somehow this avoids some permissions
             # issues at KPNO.
             try:
                 os.remove(myouts[key])

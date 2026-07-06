@@ -74,7 +74,7 @@ results_assign_columns = OrderedDict([
     ("LAMBDA_REF", "f4"),
     ("PETAL_LOC", "i2"),
     ("DEVICE_LOC", "i4"),
-    ("DEVICE_TYPE", "a3"),
+    ("DEVICE_TYPE", "S3"),
     ("TARGET_RA", "f8"),
     ("TARGET_DEC", "f8"),
     ("FA_TARGET", "i8"),
@@ -466,7 +466,7 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
         fdata["PETAL_LOC"] = np.array(
             [petal[x] for x in locs]).astype(np.int16)
         fdata["DEVICE_TYPE"] = np.array(
-            [device_type[x] for x in locs]).astype(np.dtype("a3"))
+            [device_type[x] for x in locs]).astype(np.dtype("S3"))
 
         # This hard-coded value copied from the original code...
         lambda_ref = np.ones(nloc, dtype=np.float32) * 5400.0
@@ -808,9 +808,25 @@ def read_assignment_fits_tile(tile_file):
                 if col in fbsky.dtype.names:
                     fiber_data[col][npos:] = fbsky[col]
 
-        full_targets_columns = [(x, y) for x, y in
-                                merged_targets_columns.items()]
-        full_names = [x for x, y in merged_targets_columns.items()]
+        # DG Tiles assigned before the 1b program don't have the columns
+        # MTL_HIGHEST, MTL_CONTAINS, and MTL_WANTED. So we check the
+        # desitarget version, and if it's below 2.9.0, when those columns
+        # were added, we don't try and load those columns.
+        keys_to_check = [s for s in header if "DEPNAM" in s]
+        version = "0.0.0"
+        for k in keys_to_check:
+            if header[k] == "desitarget":
+                version = header[k.replace("NAM", "VER")]
+
+        if version < "2.9.0":
+            full_targets_columns = [(x, y) for x, y in
+                                    merged_targets_columns.items() if "MTL" not in x]
+            full_names = [x for x, _ in merged_targets_columns.items() if "MTL" not in x]
+        else:
+            full_targets_columns = [(x, y) for x, y in
+                                    merged_targets_columns.items()]
+            full_names = [x for x, _ in merged_targets_columns.items()]
+
         fbtargets = fd["TARGETS"].read()
         nrawtarget = fd["TARGETS"].get_nrows()
 
@@ -1027,7 +1043,7 @@ merged_fiberassign_req_columns = OrderedDict([
     ("LAMBDA_REF", "f4"),
     ("FA_TARGET", "i8"),
     ("FA_TYPE", "u1"),
-    ("OBJTYPE", "a3"),
+    ("OBJTYPE", "S3"),
     ("FIBERASSIGN_X", "f4"),
     ("FIBERASSIGN_Y", "f4"),
     #("NUMTARGET", "i2"),
@@ -1058,7 +1074,7 @@ merged_skymon_columns = OrderedDict([
     ("TARGET_DEC", "f8"),
     ("FIBERASSIGN_X", "f4"),
     ("FIBERASSIGN_Y", "f4"),
-    ("BRICKNAME", "a8"),
+    ("BRICKNAME", "S8"),
     ("FIBERSTATUS", "i4"),
     ("PETAL_LOC", "i2"),
     ("DEVICE_LOC", "i4"),

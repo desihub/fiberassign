@@ -3,8 +3,57 @@
 fiberassign change log
 ======================
 
-5.8.2 (unreleased)
+6.0.2 (unreleased)
 ------------------
+
+
+6.0.1 (2026-06-09)
+------------------
+* Hotfix for scndmtl always being a list on 1A tiles. (PR `#511`_).
+
+.. _`#511`: https://github.com/desihub/fiberassign/pull/511
+
+6.0.0 (2026-06-08)
+------------------
+* Enable running fiberassign with secondary ledgers for BACKUP tiles. (PR `#509`_).
+* Enable running fiberassign with secondary targets from 1B tiles on 1A tiles. (PR `#509`_).
+* Add ability to search multiple data releases for legacy targets and gaia targets (PR `#508`_).
+
+.. _`#509`: https://github.com/desihub/fiberassign/pull/509
+.. _`#508`: https://github.com/desihub/fiberassign/pull/508
+
+5.9.1 (2026-04-20)
+------------------
+
+* Don't load MTL* columns for pre-1B tiles in fba_plot. (PR `#502`_).
+* Enable running fiberassign with secondary ledgers for 1B programs. (PR `#504`_).
+
+.. _`#502`: https://github.com/desihub/fiberassign/pull/502
+.. _`#504`: https://github.com/desihub/fiberassign/pull/504
+
+5.9.0 (2026-03-17)
+------------------
+
+* Wrappers to support rerunning fiberassign on all tiles at NERSC (PR `#482`_).
+* Update to pybind11 v3.0.1 (PR `#485`_).
+* Expand unit test matrix coverage; replace ``pkg_resources`` (PR `#490`_).
+* Minor enhancements and bug fixes to ``fba_replay`` (PR `#491`_).
+* Add ``pyproject.toml`` file and update top-level package infrastructure files (PR `#492`_).
+* Add ``--try_too_all`` to fba_launch and ``--force_try_too_all`` in fba_rerun (PR `#500`_).
+* Tests: Add coverage analysis to github action (PR `#494`_).
+* 20260220 Patching of "NaN" TARGET_RA, TARGET_DEC, FIBERASSIGN_X, FIBERASSIGN_Y (PR `#497`_).
+* Tests: move desimeter pin to main. (PR `#499`_).
+
+
+.. _`#482`: https://github.com/desihub/fiberassign/pull/482
+.. _`#485`: https://github.com/desihub/fiberassign/pull/485
+.. _`#490`: https://github.com/desihub/fiberassign/pull/490
+.. _`#491`: https://github.com/desihub/fiberassign/pull/491
+.. _`#492`: https://github.com/desihub/fiberassign/pull/492
+.. _`#494`: https://github.com/desihub/fiberassign/pull/494
+.. _`#497`: https://github.com/desihub/fiberassign/pull/497
+.. _`#499`: https://github.com/desihub/fiberassign/pull/499
+.. _`#500`: https://github.com/desihub/fiberassign/pull/500
 
 5.8.1 (2025-05-05)
 ------------------
@@ -617,9 +666,10 @@ NOTE: New major version number due to fiberassign format changes.
 * Python functions for I/O, visualization, QA.
 * New commandline scripts for running assignment, merging input catalogs
   with output, making plots of outputs, etc.
-* Overhaul of documentation.
+* Overhaul of documentation (PR `#185`_).
 
 .. _`#153`: https://github.com/desihub/fiberassign/pull/153
+.. _`#185`: https://github.com/desihub/fiberassign/pull/185
 
 0.11.1 (2019-01-25)
 -------------------

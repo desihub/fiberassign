@@ -211,7 +211,7 @@ def sim_targets(path, tgtype, tgoffset, density=5000.0, science_frac=None):
         ("DESI_TARGET", "i8"),
         ("BRICKID", "i4"),
         ("BRICK_OBJID", "i4"),
-        ("BRICKNAME", "a8"),
+        ("BRICKNAME", "S8"),
         ("PRIORITY", "i4"),
         ("SUBPRIORITY", "f8"),
         ("OBSCONDITIONS", "i4"),

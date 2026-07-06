@@ -285,7 +285,7 @@ def parse_assign(optlist=None):
         args.obsdate, _ = get_obsdate(rundate=args.rundate)
 
     # convert YEARMMDD to YEAR-MM-DD to be ISO 8601 compatible
-    if re.match('\d{8}', args.obsdate):
+    if re.match(r'\d{8}', args.obsdate):
         year = args.obsdate[0:4]
         mm = args.obsdate[4:6]
         dd = args.obsdate[6:8]

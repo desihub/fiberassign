@@ -230,7 +230,12 @@ def main():
         log=log,
         step="settings",
         start=start,
+        try_too_all=args.try_too_all
     )
+
+    # DG - gaiadr for `gaia_psflike` check, hardcoded as now args.gaiadr ONLY
+    # enumerates sky supplemental locations rather than pulling double duty.
+    gaia_ref_dr = "dr2"
 
     # AR tiles
     if "tiles" in steps:
@@ -273,7 +278,7 @@ def main():
             mytmpouts["tiles"],
             mydirs["gfa"],
             args.survey,
-            args.gaiadr.replace("gaia", ""),
+            gaia_ref_dr,
             args.pmcorr,
             mytmpouts["gfa"],
             tmpoutdir=tmpoutdir,
@@ -296,7 +301,7 @@ def main():
             args.mtltime,
             mydirs["targ"],
             args.survey,
-            args.gaiadr.replace("gaia", ""),
+            gaia_ref_dr,
             args.pmcorr,
             mytmpouts["targ"],
             tmpoutdir=tmpoutdir,
@@ -315,26 +320,33 @@ def main():
     # AR if not backup
     if ("scnd" in steps):
         if ("scnd" in list(mydirs.keys())):
-            # AR handle dark1b/bright1b, where there is no secondary for now
-            # AR but could be in the future
-            # AR assume here that if there are some secondary, the ledgers should be there
-            if not os.path.isdir(mydirs["scndmtl"]):
+            # DG - For 1A targets we know load the 1b secondary mtls, so we
+            # need to check both scnd mtls, and then we only keep the ones that exist
+            # (in case the 1b ledgers aren't in place for some reason)
+            to_check = mydirs["scndmtl"]
+
+            if not isinstance(to_check, list):
+                to_check = [mydirs["scndmtl"]]
+
+            scnd_exists = []
+            for fname in to_check:
+                if os.path.isdir(fname):
+                    scnd_exists.append(fname)
+
+            if len(scnd_exists) == 0:
                 expected_files["scnd"] = False
                 log.info("")
                 log.info("")
                 log.info("{:.1f}s\tscnd\tno secondary ledgers {}".format(time() - start, mydirs["scndmtl"]))
             else:
-                targdirs = [mydirs["scnd"]]
-                for key in sorted(list(mydirs.keys())):
-                    if (key[:4] == "scnd") & (key != "scnd") & (key != "scndmtl"):
-                        targdirs.append(mydirs[key])
-                create_mtl(
+                mydirs["scndmtl"] = scnd_exists
+                status = create_mtl(
                     mytmpouts["tiles"],
                     mydirs["scndmtl"],
                     args.mtltime,
-                    targdirs,
+                    mydirs["scnd"],
                     args.survey,
-                    args.gaiadr.replace("gaia", ""),
+                    gaia_ref_dr,
                     args.pmcorr,
                     mytmpouts["scnd"],
                     tmpoutdir=tmpoutdir,
@@ -343,6 +355,10 @@ def main():
                     step="scnd",
                     start=start,
                 )
+                # DG - We exited early for some reason, most likely because
+                # there were no targets in the secondary MTL.
+                if status == 1:
+                    expected_files["scnd"] = False
         else:
             expected_files["scnd"] = False
             log.info("")
@@ -368,7 +384,7 @@ def main():
             mjd_now,
             mjd_now,
             args.survey,
-            args.gaiadr.replace("gaia", ""),
+            gaia_ref_dr,
             args.pmcorr,
             mytmpouts["too"],
             mtltime=args.mtltime,
@@ -654,23 +670,21 @@ if __name__ == "__main__":
                         help="Add margin (in mm) around GFA keep-out polygons (default: 0.4)")
     parser.add_argument(
         "--dr",
-        help="legacypipe dr (default=dr9)",
+        help="comma-separated list of legacypipe dr (default=dr9,dr11). If multiple are passed, it must be the same length as `--gaiadr`.",
         type=str,
-        default="dr9",
+        default="dr9,dr11",
         required=False,
-        choices=["dr9"],
     )
     parser.add_argument(
         "--gaiadr",
-        help="gaia dr (default=gaiadr2)",
+        help="comma-separated list of gaia dr (default=gaiadr2,gaiadr3). If multiple are passed, it must be the same length as `--dr`. The FIRST value is used for gaia ref epochs for GFAs.",
         type=str,
-        default="gaiadr2",
+        default="gaiadr2,gaiadr3",
         required=False,
-        choices=["gaiadr2"],
     )
     parser.add_argument(
         "--dtver",
-        help="desitarget catalogue version",
+        help="comma-separated list of desitarget catalogue version. If a single value is passed, it is used for ALL data releases. If multiple are passed, exactly ONE must be passed for EACH legacypipe dr.",
         type=str,
         default=None,
         required=True,
@@ -778,10 +792,45 @@ if __name__ == "__main__":
         type=str,
         default=None
     )
+    parser.add_argument(
+        "--try_too_all",
+        help="if true, look for a file named ToO-fiber-all.ecsv rather than the default ToO-fiber.ecsv. If not found, fallback to ToO-fiber.ecsv. Defaults to False.",
+        action="store_true",
+        required=False
+    )
 
     args = parser.parse_args()
     log = Logger.get()
     start = time()
+
+    # DG - Turn comma separated data release into list of strings.
+    allowed_dr = ["dr9", "dr11"]
+    allowed_gaia = ["gaiadr2", "gaiadr3"]
+    args.dr = args.dr.split(",")
+    for dr in args.dr:
+        if dr not in allowed_dr:
+            msg = f"{dr} not in allowed legacypipe data releases: {allowed_dr}"
+            log.error(msg)
+            raise ValueError(msg)
+
+    args.gaiadr = args.gaiadr.split(",")
+    for dr in args.gaiadr:
+        if dr not in allowed_gaia:
+            msg = f"{dr} not in allowed legacypipe data releases: {allowed_gaia}"
+            log.error(msg)
+            raise ValueError(msg)
+
+    if len(args.gaiadr) != len(args.dr):
+        msg = f"The number of gaiadr ({args.gaiadr}) and legagy pipe dr ({args.dr}) must be the same!"
+        log.error(msg)
+        raise ValueError(msg)
+
+    # DG - Turn comma separated dtver into list of strings.
+    args.dtver = args.dtver.split(",")
+    if (len(args.dtver) != 1) and (len(args.dtver) != len(args.dr)):
+        msg = f"If passing multiple dtver ({args.dtver}), must pass exactly one for each dr ({args.dr})."
+        log.error(msg)
+        raise ValueError(msg)
 
     # AR safe: outdir
     if args.outdir[-1] != "/":
