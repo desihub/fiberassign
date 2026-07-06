@@ -9,17 +9,24 @@ Utility functions.
 """
 from __future__ import absolute_import, division, print_function
 
+# stdlib
+from datetime import datetime
+from importlib import resources
 import os
 import subprocess
-import sys
-from datetime import datetime
 from time import time, sleep
-import numpy as np
+
+# external
 from astropy.table import Table
 from astropy.time import Time
+import fitsio
+import numpy as np
 import yaml
-from importlib import resources
+
+# DESI etc.
 from desiutil.log import get_logger
+# DG - The linter will claimi the following are unused, but they are here so you can
+# import them later through `from fiberassign.utils import Logger`
 from ._internal import (Logger, Timer, GlobalTimers, Circle, Segments, Shape,
                         Environment)
 log = get_logger()
