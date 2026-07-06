@@ -26,6 +26,15 @@ def rerun_tile(in_fa, out_dir, out_fa, diff_fa):
             return int(in_fa[0].name.split("-")[-1].split(".")[0])
     return
 
+def check_need_to_rerun(out_dir, tileid):
+    fadir = Path(os.getenv("DESI_TARGET")) / "fiberassign" / "tiles" / "trunk"
+    tileidpad = str(tileid).zfill(6)
+    in_fa = fadir / tileidpad[:3] / f"fiberassign-{tileidpad}.fits.gz"
+    out_fa = out_dir / tileidpad[:3] / f"fiberassign-{tileidpad}.fits.gz"
+    diff_fa = out_dir / tileidpad[:3] / f"fiberassign-{tileidpad}.diff"
+    if in_fa.exists() and not out_fa.exists(): # Don't rerun tiles.
+        return(in_fa, out_fa, diff_fa)
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--outdir", type=str, required=True, help="where to save the rerun fiberassign files.")
@@ -45,23 +54,13 @@ def main():
     tiles_to_run = np.asarray(tiles[keep_tiles]["TILEID"])
     fails_rerun = get_main_early_nonrepro_tiles()
     tiles_to_run = tiles_to_run[~np.isin(tiles_to_run, fails_rerun["TILEID"])]
-
     rng = np.random.default_rng()
 
-    fadir = Path(os.getenv("DESI_TARGET")) / "fiberassign" / "tiles" / "trunk"
-    in_fiberassign = []
-    out_fiberassign = []
-    diff_names = []
+    with multiprocessing.Pool(args.nproc) as pool:
+        res = pool.starmap(check_need_to_rerun, zip([out_dir] * len(tiles_to_run), tiles_to_run))
 
-    for tileid in tiles_to_run[:15]:
-        tileidpad = str(tileid).zfill(6)
-        in_fa = fadir / tileidpad[:3] / f"fiberassign-{tileidpad}.fits.gz"
-        out_fa = out_dir / tileidpad[:3] / f"fiberassign-{tileidpad}.fits.gz"
-        if in_fa.exists() and not out_fa.exists(): # Don't rerun tiles.
-            in_fiberassign.append(in_fa)
-            out_fiberassign.append(out_fa)
-            diff_names.append(out_dir / tileidpad[:3] / f"fiberassign-{tileidpad}.diff")
-
+    res = [x for x in res if x is not None]
+    in_fiberassign, out_fiberassign, diff_names = zip(*res)
     if args.shuffle:
         idcs = np.arange(len(in_fiberassign))
         rng.shuffle(idcs)
