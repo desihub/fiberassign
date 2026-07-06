@@ -20,6 +20,12 @@ def rerun_tile(in_fa, out_dir, out_fa, diff_fa):
     subprocess.run(["fba_rerun", "--infiberassign", in_fa, "--outdir", out_dir, "--nosteps", "qa"])
     fba_rerun_check(in_fa, out_fa, diff_fa)
 
+    with open(diff_fa) as f:
+        if len(f.readlines()) > 1:
+            # Gets the tileid from the name. Silly but saves us passing the TILEID around AS WELL.
+            return int(in_fa[0].name.split("-")[-1].split(".")[0])
+    return
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--outdir", type=str, required=True, help="where to save the rerun fiberassign files.")
@@ -47,13 +53,13 @@ def main():
     out_fiberassign = []
     diff_names = []
 
-    for tileid in tiles_to_run:
+    for tileid in tiles_to_run[:15]:
         tileidpad = str(tileid).zfill(6)
         in_fa = fadir / tileidpad[:3] / f"fiberassign-{tileidpad}.fits.gz"
         out_fa = out_dir / tileidpad[:3] / f"fiberassign-{tileidpad}.fits.gz"
         if in_fa.exists() and not out_fa.exists(): # Don't rerun tiles.
             in_fiberassign.append(in_fa)
-            out_fiberassign.append()
+            out_fiberassign.append(out_fa)
             diff_names.append(out_dir / tileidpad[:3] / f"fiberassign-{tileidpad}.diff")
 
     if args.shuffle:
@@ -61,10 +67,13 @@ def main():
         rng.shuffle(idcs)
         in_fiberassign = np.asarray(in_fiberassign)[idcs]
         out_fiberassign = np.asarray(out_fiberassign)[idcs]
+        diff_names = np.asarray(diff_names)[idcs]
 
     with multiprocessing.Pool(args.nproc) as pool:
-        pool.starmap(rerun_tile, zip(in_fiberassign, [args.outdir] * len(in_fiberassign), out_fiberassign, diff_names))
+        res = pool.starmap(rerun_tile, zip(in_fiberassign, [args.outdir] * len(in_fiberassign), out_fiberassign, diff_names))
 
+    with open(out_dir / "tiles_to_check.txt", "w") as f:
+        f.writelines([str(t) + "\n" for t in res if t is not None])
 
 if __name__ == "__main__":
     main()
