@@ -12,13 +12,13 @@ from __future__ import absolute_import, division, print_function
 import os
 import subprocess
 import sys
+import importlib.resources
 from datetime import datetime
 from time import time, sleep
 import numpy as np
 from astropy.table import Table
 from astropy.time import Time
 import yaml
-from pkg_resources import resource_filename
 from desiutil.log import get_logger
 from ._internal import (Logger, Timer, GlobalTimers, Circle, Segments, Shape,
                         Environment)
@@ -540,6 +540,6 @@ def get_main_early_nonrepro_tiles():
         d = d[sel]["TILEID", "PASS", "RA", "DEC", "PROGRAM", "IN_DESI", "EBV_MED"]
         d.write("tiles-main-dtver-1.0.0.ecsv")
     """
-    fn = resource_filename("fiberassign", "data/tiles-main-dtver-1.0.0.ecsv")
+    fn = importlib.resources.files("fiberassign") / "data" / "tiles-main-dtver-1.0.0.ecsv"
     d = Table.read(fn)
     return d
