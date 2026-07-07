@@ -16,24 +16,29 @@ from desimodel.io import load_tiles
 from fiberassign.utils import get_main_early_nonrepro_tiles
 from fiberassign.fba_rerun_io import fba_rerun_check
 
-def rerun_tile(in_fa, out_dir, out_fa, diff_fa):
-    subprocess.run(["fba_rerun", "--infiberassign", in_fa, "--outdir", out_dir, "--nosteps", "qa"])
-    fba_rerun_check(in_fa, out_fa, diff_fa)
-
-    with open(diff_fa) as f:
-        if len(f.readlines()) > 1:
-            # Gets the tileid from the name. Silly but saves us passing the TILEID around AS WELL.
-            return int(in_fa[0].name.split("-")[-1].split(".")[0])
-    return
-
-def check_need_to_rerun(out_dir, tileid):
+def rerun_tile(out_dir, tileid):
     fadir = Path(os.getenv("DESI_TARGET")) / "fiberassign" / "tiles" / "trunk"
     tileidpad = str(tileid).zfill(6)
     in_fa = fadir / tileidpad[:3] / f"fiberassign-{tileidpad}.fits.gz"
     out_fa = out_dir / tileidpad[:3] / f"fiberassign-{tileidpad}.fits.gz"
     diff_fa = out_dir / tileidpad[:3] / f"fiberassign-{tileidpad}.diff"
-    if in_fa.exists() and not out_fa.exists(): # Don't rerun tiles.
-        return(in_fa, out_fa, diff_fa)
+    # If theres no input file, skip and carry on
+    if not in_fa.exists():
+        return
+
+    # If we didn't already run this (we might have if we got checkpointed)
+    # rerun the fiberassign
+    if not out_fa.exists():
+        subprocess.run(["fba_rerun", "--infiberassign", in_fa, "--outdir", out_dir, "--nosteps", "qa"])
+
+    # Same logic as above, do the check if necessary.
+    if not diff_fa.exists():
+        fba_rerun_check(in_fa, out_fa, diff_fa)
+
+    with open(diff_fa) as f:
+        if len(f.readlines()) > 1:
+            return tileid
+    return
 
 def main():
     parser = argparse.ArgumentParser()
@@ -48,7 +53,7 @@ def main():
     tiles = load_tiles()
     keep_tiles = tiles["STATUS"] != "unobs"
     # If we want to run only a specific program we just cut on that.
-    if args.program != "ALL":
+    if args.program.upper() != "ALL":
         keep_tiles &= tiles["PROGRAM"] == args.program
 
     tiles_to_run = np.asarray(tiles[keep_tiles]["TILEID"])
@@ -56,22 +61,21 @@ def main():
     tiles_to_run = tiles_to_run[~np.isin(tiles_to_run, fails_rerun["TILEID"])]
     rng = np.random.default_rng()
 
-    with multiprocessing.Pool(args.nproc) as pool:
-        res = pool.starmap(check_need_to_rerun, zip([out_dir] * len(tiles_to_run), tiles_to_run))
-
-    res = [x for x in res if x is not None]
-    in_fiberassign, out_fiberassign, diff_names = zip(*res)
     if args.shuffle:
-        idcs = np.arange(len(in_fiberassign))
+        idcs = np.arange(len(tiles_to_run))
         rng.shuffle(idcs)
-        in_fiberassign = np.asarray(in_fiberassign)[idcs]
-        out_fiberassign = np.asarray(out_fiberassign)[idcs]
-        diff_names = np.asarray(diff_names)[idcs]
+        tiles_to_run = np.asarray(tiles_to_run)[idcs]
 
+    print(f"Estimating {len(tiles_to_run)} tiles to run.")
     with multiprocessing.Pool(args.nproc) as pool:
-        res = pool.starmap(rerun_tile, zip(in_fiberassign, [args.outdir] * len(in_fiberassign), out_fiberassign, diff_names))
+        res = pool.starmap(rerun_tile, zip([out_dir] * len(tiles_to_run), tiles_to_run))
 
-    with open(out_dir / "tiles_to_check.txt", "w") as f:
+    check_name = "tiles_to_check"
+    if args.program.upper() != "ALL":
+        check_name += f"_{args.program.lower()}"
+    check_name += ".txt"
+
+    with open(out_dir / check_name, "w") as f:
         f.writelines([str(t) + "\n" for t in res if t is not None])
 
 if __name__ == "__main__":
