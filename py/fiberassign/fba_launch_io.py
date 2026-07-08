@@ -1563,7 +1563,7 @@ def create_mtl(
         # DG - Date switches to reproduce buggy two MTL loading behaviour
         extra_args = {}
         if desitarget.__version__ > "5.3.0":
-            # extra_args["reorder"] = reorder_mtl
+            extra_args["reorder"] = reorder_mtl
             extra_args["use_concatenate"] = use_np_concatenate
 
         d = read_targets_in_tiles(
