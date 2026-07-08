@@ -359,7 +359,7 @@ def main():
                     log=log,
                     step="scnd",
                     start=start,
-                    reorder=reorder_mtl,
+                    reorder_mtl=reorder_mtl,
                     use_np_concatenate=use_np_concatenate,
                 )
                 # DG - We exited early for some reason, most likely because
