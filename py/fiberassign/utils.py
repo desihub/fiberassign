@@ -245,7 +245,7 @@ def get_whether_to_reorder_mtl(rundate):
     cutoff = get_mjd(get_date_cutoff("rundate", "reorder_mtl"))
     input_mjd = get_mjd(rundate)
     if input_mjd < cutoff:
-        log.info(f"REORDER_MTL: As rundate={rundate} < cutoff={cutoff}, setting reorder_mtl=True")
+        log.info(f"REORDER_MTL: As rundate={input_mjd} < cutoff={cutoff}, setting reorder_mtl=False")
         return False
     return True
 
@@ -267,7 +267,7 @@ def get_whether_to_use_np_concatenate(rundate):
     cutoff = get_mjd(get_date_cutoff("rundate", "use_np_concatenate"))
     input_mjd = get_mjd(rundate)
     if input_mjd < cutoff:
-        log.info(f"USE_NP_CONCATENATE: As rundate={rundate} < cutoff={cutoff}, setting use_np_concatenate=True")
+        log.info(f"USE_NP_CONCATENATE: As rundate={input_mjd} < cutoff={cutoff}, setting use_np_concatenate=True")
         return True
     return False
 
