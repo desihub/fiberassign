@@ -1,3 +1,12 @@
+#!/usr/bin/env python
+
+# Script that patches mistaken TARGETIDs in calibration tile 83063.
+# Example call:
+# python patch_83063.py /path/to/fiberassign-083063.fits.gz $DESI_SURVEYOPS/tertiary/
+# This will patch whatever `fiberassign-083063.fits.gz` file you have with the tertiary
+# program details in $DESI_SURVEYOPS/tertiary/.
+
+
 import numpy as np
 from astropy.table import Table, join
 from astropy.io import fits
