@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 # Script that patches mistaken TARGETIDs in calibration tile 83063.
+# This is necessary due to an issue where the input targets for that tile
+# was accidentally regenerated, see https://github.com/desihub/desitarget/issues/892
 # Example call:
 # python patch_83063.py /path/to/fiberassign-083063.fits.gz $DESI_SURVEYOPS/tertiary/
 # This will patch whatever `fiberassign-083063.fits.gz` file you have with the tertiary
