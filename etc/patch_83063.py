@@ -1,0 +1,43 @@
+import numpy as np
+from astropy.table import Table, join
+from astropy.io import fits
+
+from desitarget.targets import decode_targetid
+
+from pathlib import Path
+
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("tile_file", type=str, help="Broken tile file to patch.")
+parser.add_argument("tertiary", type=str, help="where the tertiary data is stored")
+args = parser.parse_args()
+
+tile_loc = Path(args.tile_file)
+tertiary_dir = Path(args.tertiary)
+# fa_saved = tile_dir / "fiberassign-083063.fits.gz"
+
+old_targ = Table.read(tertiary_dir / "0008" / "tertiary-targets-0008.fits")
+wrong_targ = Table.read(tertiary_dir / "0008" / "tertiary-targets-0008-83063.fits")
+
+# Sanity check
+assert np.all(np.isin(wrong_targ["ORIG_TARGETID"], old_targ["ORIG_TARGETID"])), "Some wrong targetids don't have a match in the correct file!"
+
+cols = ["TARGETID", "ORIG_TARGETID"]
+mapping = join(old_targ[cols], wrong_targ[cols], keys="ORIG_TARGETID", table_names=["CORRECT", "WRONG"])
+
+with fits.open(tile_loc, mode="update") as h:
+    for i, hdu in enumerate(h):
+        print(f"Patching {hdu.name}...")
+        tbl = hdu.data
+        header = hdu.header
+
+        if tbl is not None:
+            for i, row in enumerate(tbl):
+                tid = row["TARGETID"]
+                if tid < 0: continue # Skip the stucks.
+
+                rs = decode_targetid(tid)[2]
+                if rs == 8888: # These are the ones that got new targetids in the fba_calibration pipeline.
+                    idx = np.where(mapping["TARGETID_WRONG"] == tid)[0][0]
+                    row["TARGETID"] = mapping[idx]["TARGETID_CORRECT"]
