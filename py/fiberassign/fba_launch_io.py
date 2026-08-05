@@ -1444,6 +1444,8 @@ def create_mtl(
     log=Logger.get(),
     step="",
     start=time(),
+    reorder_mtl=True,
+    use_np_concatenate=False,
 ):
     """
     Create a (primary or secondary) target fits file, based on MTL ledgers (and complementary columns from desitarget targets files).
@@ -1468,6 +1470,8 @@ def create_mtl(
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
+        reorder(optional, defaults to True): whether to reorder on loading two MTL ledgers to fix an ordering bug
+        use_np_concatenate(optional, defaults to False): whether to use np.concatenate when loading MTL ledgers to reproduce an ordering bug
 
     Notes:
         if pmcorr="y", then pmtime_utc_str needs to be set; will trigger an error otherwise.
@@ -1555,6 +1559,13 @@ def create_mtl(
         # AR read_targets_in_tiles() handles if mtldir is a single folder
         # AR or a list with two folders
         # AR https://github.com/desihub/desitarget/pull/833
+
+        # DG - Date switches to reproduce buggy two MTL loading behaviour
+        extra_args = {}
+        if desitarget.__version__ > "5.3.0":
+            extra_args["reorder"] = reorder_mtl
+            extra_args["use_concatenate"] = use_np_concatenate
+
         d = read_targets_in_tiles(
             mtldir,
             tiles=tiles,
@@ -1564,6 +1575,7 @@ def create_mtl(
             isodate=mtltime,
             leq=True,
             maketwostyle=True, # AR add MTL_{HIGHEST,WANTED,CONTAINS} columns
+            **extra_args
         )
     log.info(
         "{:.1f}s\t{}\treading {} targets from {}".format(

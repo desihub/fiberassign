@@ -235,6 +235,49 @@ def get_fba_use_fabs(rundate):
 
     return values[i]
 
+def get_whether_to_reorder_mtl(rundate):
+    """
+    Return whether or not we need to reorder the MTLs when loading two ledgers at once.
+
+    Args:
+        rundate: rundate, in the "YYYY-MM-DDThh:mm:ss+00:00" formatting (string)
+
+    Returns:
+        reorder_mtls: bool, True if we should reorder (fixing the bug), False otherwise
+
+    Notes:
+        See the issue https://github.com/desihub/desitarget/issues/855
+        for a description of this bug.
+    """
+    cutoff = get_mjd(get_date_cutoff("rundate", "reorder_mtl"))
+    input_mjd = get_mjd(rundate)
+    if input_mjd < cutoff:
+        log.info(f"REORDER_MTL: As rundate={input_mjd} < cutoff={cutoff}, setting reorder_mtl=False")
+        return False
+    return True
+
+def get_whether_to_use_np_concatenate(rundate):
+    """
+    Return whether or not we need to use np.concatenate on the MTLs when loading
+    tiles that have some 1A only and some 1A+1B ledgers.
+
+    Args:
+        rundate: rundate, in the "YYYY-MM-DDThh:mm:ss+00:00" formatting (string)
+
+    Returns:
+        reorder_mtls: bool, True if we should reorder (fixing the bug), False otherwise
+
+    Notes:
+        See the PR https://github.com/desihub/desitarget/pull/884
+        for a description of this bug.
+    """
+    cutoff = get_mjd(get_date_cutoff("rundate", "use_np_concatenate"))
+    input_mjd = get_mjd(rundate)
+    if input_mjd < cutoff:
+        log.info(f"USE_NP_CONCATENATE: As rundate={input_mjd} < cutoff={cutoff}, setting use_np_concatenate=True")
+        return True
+    return False
+
 
 def get_svn_version(svn_dir):
     """

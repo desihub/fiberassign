@@ -32,7 +32,7 @@ from fiberassign.fba_launch_io import (
     copy_to_svn,
 )
 from desiutil.iers import freeze_iers
-from fiberassign.utils import get_fba_use_fabs
+from fiberassign.utils import get_fba_use_fabs,get_whether_to_reorder_mtl, get_whether_to_use_np_concatenate
 from argparse import ArgumentParser
 
 # AR allowed steps in fba_launch
@@ -237,6 +237,9 @@ def main():
     # enumerates sky supplemental locations rather than pulling double duty.
     gaia_ref_dr = "dr2"
 
+    reorder_mtl = get_whether_to_reorder_mtl(args.rundate)
+    use_np_concatenate = get_whether_to_use_np_concatenate(args.rundate)
+
     # AR tiles
     if "tiles" in steps:
         create_tile(
@@ -310,6 +313,8 @@ def main():
             log=log,
             step="targ",
             start=start,
+            reorder_mtl=reorder_mtl,
+            use_np_concatenate=use_np_concatenate,
         )
     else:
         log.info("")
@@ -354,6 +359,8 @@ def main():
                     log=log,
                     step="scnd",
                     start=start,
+                    reorder_mtl=reorder_mtl,
+                    use_np_concatenate=use_np_concatenate,
                 )
                 # DG - We exited early for some reason, most likely because
                 # there were no targets in the secondary MTL.
