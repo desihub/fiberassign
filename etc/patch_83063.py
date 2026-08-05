@@ -15,9 +15,9 @@ from astropy.io import fits
 
 from desitarget.targets import decode_targetid
 
-from pathlib import Path
-
 import argparse
+from datetime import datetime, timezone
+from pathlib import Path
 
 parser = argparse.ArgumentParser()
 parser.add_argument("tile_file", type=str, help="Broken tile file to patch.")
@@ -38,10 +38,18 @@ cols = ["TARGETID", "ORIG_TARGETID"]
 mapping = join(old_targ[cols], wrong_targ[cols], keys="ORIG_TARGETID", table_names=["CORRECT", "WRONG"])
 
 with fits.open(tile_loc, mode="update") as h:
+    # header = h[0].header
+    time_string = datetime.isoformat(datetime.now(timezone.utc), timespec="seconds")
     for i, hdu in enumerate(h):
         print(f"Patching {hdu.name}...")
         tbl = hdu.data
         header = hdu.header
+
+        if i == 0:
+            if "TARGETIDs Patched" in header["COMMENT"][-1]:
+                print("This file has already been patched! Aborting!")
+                break
+            header.add_comment(f"TARGETIDs Patched on {time_string}")
 
         if tbl is not None:
             for i, row in enumerate(tbl):
@@ -52,3 +60,4 @@ with fits.open(tile_loc, mode="update") as h:
                 if rs == 8888: # These are the ones that got new targetids in the fba_calibration pipeline.
                     idx = np.where(mapping["TARGETID_WRONG"] == tid)[0][0]
                     row["TARGETID"] = mapping[idx]["TARGETID_CORRECT"]
+
