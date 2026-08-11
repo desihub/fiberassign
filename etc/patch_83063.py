@@ -50,6 +50,7 @@ with fits.open(tile_loc, mode="update") as h:
                 print("This file has already been patched! Aborting!")
                 break
             header.add_comment(f"TARGETIDs Patched on {time_string}")
+            header.add_comment("See https://github.com/desihub/desitarget/issues/892")
 
         if tbl is not None:
             for i, row in enumerate(tbl):
