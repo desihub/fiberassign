@@ -265,7 +265,7 @@ def get_whether_to_use_np_concatenate(rundate):
         rundate: rundate, in the "YYYY-MM-DDThh:mm:ss+00:00" formatting (string)
 
     Returns:
-        reorder_mtls: bool, True if we should reorder (fixing the bug), False otherwise
+        use_np_concatenate: bool, True if we should use np.concatenate, False otherwise
 
     Notes:
         See the PR https://github.com/desihub/desitarget/pull/884
