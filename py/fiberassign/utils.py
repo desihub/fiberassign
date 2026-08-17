@@ -243,7 +243,7 @@ def get_whether_to_reorder_mtl(rundate):
         rundate: rundate, in the "YYYY-MM-DDThh:mm:ss+00:00" formatting (string)
 
     Returns:
-        reorder_mtls: bool, True if we should reorder (fixing the bug), False otherwise
+        reorder_mtl: bool, True if we should reorder (fixing the bug), False otherwise
 
     Notes:
         See the issue https://github.com/desihub/desitarget/issues/855
