@@ -252,7 +252,7 @@ def get_whether_to_reorder_mtl(rundate):
     cutoff = get_mjd(get_date_cutoff("rundate", "reorder_mtl"))
     input_mjd = get_mjd(rundate)
     if input_mjd < cutoff:
-        log.info(f"REORDER_MTL: As rundate={input_mjd} < cutoff={cutoff}, setting reorder_mtl=False")
+        log.info(f"REORDER_MTL: rundate={rundate} (mjd={input_mjd}) < cutoff_mjd={cutoff}; setting reorder_mtl=False")
         return False
     return True
 
