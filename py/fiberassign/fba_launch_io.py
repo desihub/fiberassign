@@ -1469,9 +1469,9 @@ def create_mtl(
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
-        start(optional, defaults to time()): start time for log (in seconds; output of time.time()
-        reorder(optional, defaults to True): whether to reorder on loading two MTL ledgers to fix an ordering bug
-        use_np_concatenate(optional, defaults to False): whether to use np.concatenate when loading MTL ledgers to reproduce an ordering bug
+        start (optional, defaults to time()): start time for log (in seconds; output of time.time())
+        reorder_mtl (optional, defaults to True): whether to reorder on loading two MTL ledgers to fix an ordering bug
+        use_np_concatenate (optional, defaults to False): whether to use np.concatenate when loading MTL ledgers to reproduce an ordering bug
 
     Notes:
         if pmcorr="y", then pmtime_utc_str needs to be set; will trigger an error otherwise.
