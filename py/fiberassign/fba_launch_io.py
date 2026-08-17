@@ -1470,8 +1470,8 @@ def create_mtl(
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
         start (optional, defaults to time()): start time for log (in seconds; output of time.time())
-        reorder_mtl (optional, defaults to True): whether to reorder on loading two MTL ledgers to fix an ordering bug
-        use_np_concatenate (optional, defaults to False): whether to use np.concatenate when loading MTL ledgers to reproduce an ordering bug
+        reorder_mtl (optional, defaults to True): whether to reorder on loading two MTL ledgers to fix an ordering bug (See https://github.com/desihub/desitarget/issues/855)
+        use_np_concatenate (optional, defaults to False): whether to use np.concatenate when loading MTL ledgers to reproduce an ordering bug (See https://github.com/desihub/desitarget/pull/884)
 
     Notes:
         if pmcorr="y", then pmtime_utc_str needs to be set; will trigger an error otherwise.
