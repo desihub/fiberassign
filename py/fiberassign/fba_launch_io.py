@@ -34,9 +34,16 @@ from astropy.time import Time
 
 # desitarget
 import desitarget
+
+# DG - Some convenient desitarget versions abstracted for use.
+from packaging.version import Version
+sv3_desitarget_version = Version("1.1.0")
+desitarget_version = Version(desitarget.__version__)
+ms_desitarget_version = Version("1.2.2")
+
 from desitarget.gaiamatch import gaia_psflike
 from desitarget.io import read_targets_in_tiles, write_targets, write_skies, read_keyword_from_mtl_header, find_mtl_file_format_from_header
-if desitarget.__version__ < "1.2.2":
+if desitarg_version < ms_desitarget_version:
     from desitarget.mtl import inflate_ledger
 else:
     from desitarget.mtl import match_ledger_to_targets
@@ -70,6 +77,8 @@ gaia_ref_epochs = {"dr2": 2015.5}
 tile_radius_deg = 1.628
 # AR approx. tile area in degrees
 tile_area = np.pi * tile_radius_deg ** 2
+
+
 
 
 def get_latest_rundate(log=Logger.get(), step="", start=time()):
@@ -512,7 +521,7 @@ def update_nowradec(
         # AR targets with REF_EPOCH>0 and passing the AEN criterion
         keep = d["REF_EPOCH"] > 0
         # AR gaia_psflike arguments changed at desitarget-0.58.0
-        if desitarget.__version__ < "0.58.0":
+        if desitarget_version < Version("0.58.0"):
             keep &= gaia_psflike(d[gaiaaen_key], d[gaiag_key])
         else:
             keep &= gaia_psflike(d[gaiaaen_key], d[gaiag_key], dr=gaiadr)
@@ -1289,7 +1298,7 @@ def create_sky(
 
     # AR possibility to use the desitarget versions used for SV3
     # AR where the SUBPRIORITY was overwritten
-    if desitarget.__version__ < "1.1.0":
+    if desitarget_version < sv3_desitarget_version:
         n, tmpfn = write_skies(tmpoutdir, d, indir=skydir, indir2=suppskydir)
     else:
         n, tmpfn = write_skies(
@@ -1412,7 +1421,7 @@ def create_targ_nomtl(
     # AR targ_nomtl: write fits
     # AR possibility to use the desitarget versions used for SV3
     # AR where the SUBPRIORITY was overwritten
-    if desitarget.__version__ < "1.1.0":
+    if desitarget_version < sv3_desitarget_version:
         n, tmpfn = write_targets(tmpoutdir, d, indir=targdir, survey=survey)
     else:
         n, tmpfn = write_targets(
@@ -1546,7 +1555,7 @@ def create_mtl(
         targdirs = [targdirs]
 
     # AR mtl: read mtl
-    if desitarget.__version__ < "1.1.0":
+    if desitarget_version < sv3_desitarget_version:
         d = read_targets_in_tiles(
             mtldir,
             tiles=tiles,
@@ -1562,7 +1571,7 @@ def create_mtl(
 
         # DG - Date switches to reproduce buggy two MTL loading behaviour
         extra_args = {}
-        if desitarget.__version__ > "5.3.0":
+        if desitarget_version > Version("5.3.0"):
             extra_args["reorder"] = reorder_mtl
             extra_args["use_concatenate"] = use_np_concatenate
 
@@ -1648,7 +1657,7 @@ def create_mtl(
             )
         )
         # AR backwards-compatibility to rerun SV3
-        if desitarget.__version__ < "1.2.2":
+        if desitarget_version < ms_desitarget_version:
             d = inflate_ledger(
                 d, targdirs[0], columns=columns, header=False, strictcols=False, quick=True
             )
@@ -1731,7 +1740,7 @@ def create_mtl(
             d = match_ledger_to_targets(d, targ)
     # AR mtl: case secondary
     else:
-        if (desitarget.__version__ >= "1.2.2"):
+        if (desitarget_version >= ms_desitarget_version):
             # AR mtl: hard-coding the columns, to speed up code
             columns = ["FLUX_G", "FLUX_R", "FLUX_Z", "GAIA_PHOT_G_MEAN_MAG", "GAIA_PHOT_BP_MEAN_MAG", "GAIA_PHOT_RP_MEAN_MAG"]
             # AR mtl: also add GAIA_ASTROMETRIC_EXCESS_NOISE, in case args.pmcorr == "y"
@@ -1805,7 +1814,7 @@ def create_mtl(
     # AR possibility to use the desitarget versions used for SV3
     # AR where the SUBPRIORITY was overwritten
     # AR indir2: just take the first targdirs folder... (only one folder possible)
-    if desitarget.__version__ < "1.1.0":
+    if desitarget_version < sv3_desitarget_version:
         n, tmpfn = write_targets(
             tmpoutdir, d, indir=mtldir, indir2=targdirs[0], survey=survey
         )
@@ -2097,7 +2106,7 @@ def create_too(
         # AR mtl: write fits
         # AR possibility to use the desitarget versions used for SV3
         # AR where the SUBPRIORITY was overwritten
-        if desitarget.__version__ < "1.1.0":
+        if desitarget_version < sv3_desitarget_version:
             n, tmpfn = write_targets(
                 tmpoutdir, d.as_array(), indir=toofn, survey=survey
             )
