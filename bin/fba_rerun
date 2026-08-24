@@ -13,7 +13,7 @@ import desimeter
 import fiberassign
 from desiutil.iers import freeze_iers
 
-from packaging import Version
+from packaging.version import Version
 
 from argparse import ArgumentParser, RawTextHelpFormatter
 
