@@ -43,7 +43,7 @@ ms_desitarget_version = Version("1.2.2")
 
 from desitarget.gaiamatch import gaia_psflike
 from desitarget.io import read_targets_in_tiles, write_targets, write_skies, read_keyword_from_mtl_header, find_mtl_file_format_from_header
-if desitarg_version < ms_desitarget_version:
+if desitarget_version < ms_desitarget_version:
     from desitarget.mtl import inflate_ledger
 else:
     from desitarget.mtl import match_ledger_to_targets
