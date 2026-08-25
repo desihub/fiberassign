@@ -5,13 +5,15 @@ build-backend = 'setuptools.build_meta'
 
 [project]
 name = "fiberassign"
-description = "DESI Fiber Assignment Tools"
-readme = {file = "README.rst", content-type = "text/x-rst"}
-license = {text = "BSD-3-Clause"}
-requires-python = ">=3.10"
+dynamic = ["version"]
 authors = [
     {name = "DESI Collaboration", email = "desi-data@desi.lbl.gov"},
 ]
+license = "BSD-3-Clause"
+license-files = ["LICENSE.rst"]
+description = "DESI Fiber Assignment Tools"
+readme = "README.rst"
+requires-python = ">=3.10"
 dependencies = [
     "numpy",
     "pyyaml",
@@ -22,29 +24,25 @@ dependencies = [
     "desiutil",
     # "desitarget",
 ]
-dynamic = ["version"]
 
 [project.urls]
-Homepage = "https://github.com/desihub/fiberassign"
+Repository = "https://github.com/desihub/fiberassign"
 
 [tool.setuptools]
+package-dir = {"" = "py"}
 zip-safe = false
 include-package-data = true
-license-files = ["LICENSE.rst"]
-
-[tool.setuptools.dynamic]
-version = {attr = "fiberassign.__version__"}
-
-[tool.setuptools.package-dir]
-"" = "py"
-
-[tool.setuptools.packages.find]
-where = ["py"]
-namespaces = true
-exclude = [".github/*"]
 
 [tool.setuptools.package-data]
 fiberassign = ["data/*"]
+
+[tool.setuptools.packages.find]
+where = ["py"]
+exclude = [".github/*"]
+namespaces = true
+
+[tool.setuptools.dynamic]
+version = {attr = "fiberassign.__version__"}
 
 [tool.pytest.ini_options]
 norecursedirs = ["bin", "doc", "etc", "old", "src"]
