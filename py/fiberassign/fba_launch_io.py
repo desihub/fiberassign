@@ -37,13 +37,17 @@ import desitarget
 
 # DG - Some convenient desitarget versions abstracted for use.
 from packaging.version import Version
-sv3_desitarget_version = Version("1.1.0")
 desitarget_version = Version(desitarget.__version__)
-ms_desitarget_version = Version("1.2.2")
+# DG - Some abstracted "key" desitarget versions. The first is
+# the version roughly used for most of SV3, the latter was
+# the version that finalized the main survey MTL loop, with speedups
+# on loading ledgers
+desitarget_1_1_0 = Version("1.1.0")
+desitarget_1_2_2 = Version("1.2.2")
 
 from desitarget.gaiamatch import gaia_psflike
 from desitarget.io import read_targets_in_tiles, write_targets, write_skies, read_keyword_from_mtl_header, find_mtl_file_format_from_header
-if desitarget_version < ms_desitarget_version:
+if desitarget_version < desitarget_1_2_2:
     from desitarget.mtl import inflate_ledger
 else:
     from desitarget.mtl import match_ledger_to_targets
@@ -1298,7 +1302,7 @@ def create_sky(
 
     # AR possibility to use the desitarget versions used for SV3
     # AR where the SUBPRIORITY was overwritten
-    if desitarget_version < sv3_desitarget_version:
+    if desitarget_version < desitarget_1_1_0:
         n, tmpfn = write_skies(tmpoutdir, d, indir=skydir, indir2=suppskydir)
     else:
         n, tmpfn = write_skies(
@@ -1421,7 +1425,7 @@ def create_targ_nomtl(
     # AR targ_nomtl: write fits
     # AR possibility to use the desitarget versions used for SV3
     # AR where the SUBPRIORITY was overwritten
-    if desitarget_version < sv3_desitarget_version:
+    if desitarget_version < desitarget_1_1_0:
         n, tmpfn = write_targets(tmpoutdir, d, indir=targdir, survey=survey)
     else:
         n, tmpfn = write_targets(
@@ -1555,7 +1559,7 @@ def create_mtl(
         targdirs = [targdirs]
 
     # AR mtl: read mtl
-    if desitarget_version < sv3_desitarget_version:
+    if desitarget_version < desitarget_1_1_0:
         d = read_targets_in_tiles(
             mtldir,
             tiles=tiles,
@@ -1657,7 +1661,7 @@ def create_mtl(
             )
         )
         # AR backwards-compatibility to rerun SV3
-        if desitarget_version < ms_desitarget_version:
+        if desitarget_version < desitarget_1_2_2:
             d = inflate_ledger(
                 d, targdirs[0], columns=columns, header=False, strictcols=False, quick=True
             )
@@ -1740,7 +1744,7 @@ def create_mtl(
             d = match_ledger_to_targets(d, targ)
     # AR mtl: case secondary
     else:
-        if (desitarget_version >= ms_desitarget_version):
+        if (desitarget_version >= desitarget_1_2_2):
             # AR mtl: hard-coding the columns, to speed up code
             columns = ["FLUX_G", "FLUX_R", "FLUX_Z", "GAIA_PHOT_G_MEAN_MAG", "GAIA_PHOT_BP_MEAN_MAG", "GAIA_PHOT_RP_MEAN_MAG"]
             # AR mtl: also add GAIA_ASTROMETRIC_EXCESS_NOISE, in case args.pmcorr == "y"
@@ -1814,7 +1818,7 @@ def create_mtl(
     # AR possibility to use the desitarget versions used for SV3
     # AR where the SUBPRIORITY was overwritten
     # AR indir2: just take the first targdirs folder... (only one folder possible)
-    if desitarget_version < sv3_desitarget_version:
+    if desitarget_version < desitarget_1_1_0:
         n, tmpfn = write_targets(
             tmpoutdir, d, indir=mtldir, indir2=targdirs[0], survey=survey
         )
@@ -2106,7 +2110,7 @@ def create_too(
         # AR mtl: write fits
         # AR possibility to use the desitarget versions used for SV3
         # AR where the SUBPRIORITY was overwritten
-        if desitarget_version < sv3_desitarget_version:
+        if desitarget_version < desitarget_1_1_0:
             n, tmpfn = write_targets(
                 tmpoutdir, d.as_array(), indir=toofn, survey=survey
             )
