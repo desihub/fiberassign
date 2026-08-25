@@ -12,7 +12,7 @@ fiberassign change log
 
 .. _`#513`: https://github.com/desihub/fiberassign/pull/513
 .. _`#512`: https://github.com/desihub/fiberassign/pull/512
-.. _`#512`: https://github.com/desihub/fiberassign/pull/512
+.. _`#516`: https://github.com/desihub/fiberassign/pull/516
 
 6.0.1 (2026-06-09)
 ------------------
