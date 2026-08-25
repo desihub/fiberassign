@@ -7,8 +7,10 @@ fiberassign change log
 ------------------
 
 * Script to patch wrong TARGETIDs in tile 83063 (PR `#513`_).
+* Add time based switches for reproducing buggy desitarget behaviour (PR `#512`_).
 
 .. _`#513`: https://github.com/desihub/fiberassign/pull/513
+.. _`#512`: https://github.com/desihub/fiberassign/pull/512
 
 6.0.1 (2026-06-09)
 ------------------
