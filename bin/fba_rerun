@@ -13,6 +13,8 @@ import desimeter
 import fiberassign
 from desiutil.iers import freeze_iers
 
+from packaging.version import Version
+
 from argparse import ArgumentParser, RawTextHelpFormatter
 
 # AR allowed steps in fba_launch
@@ -83,7 +85,7 @@ def main():
     # - did not exist for fba_launch before 5.0.0
     # - if fba_rerun run with tag < 5.0.0, we do not add this argument
     # - else, we add it; this will overwrite what s in faargs
-    if fiberassign.__version__ >= "5.0.0":
+    if Version(fiberassign.__version__) >= Version("5.0.0"):
         mydict["--steps"] = ",".join(steps)
     else:
         log.info(
@@ -116,7 +118,7 @@ def main():
         # AR before 5.0.0, some arguments accepted with hyphen only, no underscore
         # AR    though hyphens have been automatically converted to underscores
         # AR    in the faargs...
-        elif (fiberassign.__version__ < "5.0.0") & (
+        elif (Version(fiberassign.__version__) < Version("5.0.0")) & (
             key in ["--log_stdout", "--margin_gfa", "--margin_petal", "--margin_pos"]
         ):
             mydict[key.replace("_", "-")] = val
