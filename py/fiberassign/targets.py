@@ -31,6 +31,7 @@ from desitarget.sv2.sv2_targetmask import desi_mask as sv2_mask
 from desitarget.sv3.sv3_targetmask import desi_mask as sv3_mask
 
 from desitarget.targets import main_cmx_or_sv
+from desitarget.geomask import match
 
 from .utils import Logger, Timer
 from .hardware import radec2xy, cs52xy
@@ -54,7 +55,7 @@ class TargetTagalong(object):
     to propagate to the output fiberassign files, and that are not
     needed by the C++ layer.
     '''
-    def __init__(self, columns, outnames={}, aliases={}):
+    def __init__(self, columns, outnames={}, aliases={}, fast_match=False):
         '''
         Create a new tag-along object.
 
@@ -64,10 +65,14 @@ class TargetTagalong(object):
                     the column will be given in the output file; None to omit
                     from the output file.
         *aliases*: dict, string to string: for get_for_ids(), column aliases.
+        *fast_match*: bool (default to False): use a fast method to match TARGETIDs
+                    assumes there are no duplicates in TARGETIDs
+                    [added in Feb. 2024]
         '''
         self.columns = columns
         self.outnames = outnames
         self.aliases = aliases
+        self.fast_match = fast_match
         # Internally, we store one tuple for each targeting file read
         # (to avoid manipulating/reformatting the arrays too much),
         # where each tuple starts with the TARGETID of the targets, followed
@@ -129,16 +134,20 @@ class TargetTagalong(object):
                     outarr[:] = defval
                 outarrs.append(outarr)
         # Build output targetid-to-index map
-        outmap = dict([(tid,i) for i,tid in enumerate(targetids)])
+        if not self.fast_match:
+            outmap = dict([(tid,i) for i,tid in enumerate(targetids)])
         # Go through my many data arrays
         for thedata in self.data:
             # TARGETIDs are the first element in the tuple
             tids = thedata[0]
             # Search for output array indices for these targetids
-            outinds = np.array([outmap.get(tid, -1) for tid in tids])
-            # Keep only the indices of targetids that were found
-            ininds = np.flatnonzero(outinds >= 0)
-            outinds = outinds[ininds]
+            if self.fast_match:
+                outinds, ininds = match(targetids, tids)
+            else:
+                outinds = np.array([outmap.get(tid, -1) for tid in tids])
+                # Keep only the indices of targetids that were found
+                ininds = np.flatnonzero(outinds >= 0)
+                outinds = outinds[ininds]
             for outarr,inarr in zip(outarrs, thedata[1:]):
                 if outarr is None:
                     continue
@@ -160,19 +169,23 @@ class TargetTagalong(object):
             outarrs.append(np.zeros(len(targetids), dtype))
             colinds.append(ic+1)
         # Build output targetid-to-index map
-        outmap = dict([(tid,i) for i,tid in enumerate(targetids)])
+        if not self.fast_match:
+            outmap = dict([(tid,i) for i,tid in enumerate(targetids)])
         # Go through my many data arrays
         for thedata in self.data:
             tids = thedata[0]
             # Search for output array indices for these targetids
-            outinds = np.array([outmap.get(tid, -1) for tid in tids])
-            ininds = np.flatnonzero(outinds >= 0)
-            outinds = outinds[ininds]
+            if self.fast_match:
+                outinds, ininds = match(targetids, tids)
+            else:
+                outinds = np.array([outmap.get(tid, -1) for tid in tids])
+                ininds = np.flatnonzero(outinds >= 0)
+                outinds = outinds[ininds]
             for outarr,ic in zip(outarrs, colinds):
                 outarr[outinds] = thedata[ic][ininds]
         return outarrs
 
-def create_tagalong(plate_radec=True):
+def create_tagalong(plate_radec=True, fast_match=False):
     cols = [
         'TARGET_RA',
         'TARGET_DEC',
@@ -200,7 +213,7 @@ def create_tagalong(plate_radec=True):
 
     # (OBSCOND doesn't appear in all the fiberassign output HDUs,
     # so we handle it specially)
-    return TargetTagalong(cols, outnames={'OBSCOND':None}, aliases=aliases)
+    return TargetTagalong(cols, outnames={'OBSCOND':None}, aliases=aliases, fast_match=fast_match)
 
 def str_to_target_type(input):
     if input == "science":
