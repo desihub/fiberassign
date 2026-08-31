@@ -188,7 +188,7 @@ for m in message:
         sys.exit(1)
 
 #
-# Set keywords for the setup function. Most metadata is in setup.cfg.
+# Set keywords for the setup function. Most metadata is in pyproject.toml.
 # The keywords set below need some amount of automation, & should
 # be left alone unless you are an expert.
 #
