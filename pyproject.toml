@@ -31,8 +31,9 @@ Repository = "https://github.com/desihub/fiberassign"
 [tool.setuptools]
 package-dir = {"" = "py"}
 zip-safe = false
-include-package-data = true
 
+# Note that scripts are dynamically found in setup.py, because fiberassign
+# has a large amount and writing them all out would be tedious.
 [tool.setuptools.package-data]
 fiberassign = ["data/*"]
 
