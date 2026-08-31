@@ -6,6 +6,9 @@ fiberassign change log
 6.0.2 (unreleased)
 ------------------
 
+* Script to patch wrong TARGETIDs in tile 83063 (PR `#513`_).
+
+.. _`#513`: https://github.com/desihub/fiberassign/pull/513
 
 6.0.1 (2026-06-09)
 ------------------

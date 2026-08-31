@@ -9,17 +9,24 @@ Utility functions.
 """
 from __future__ import absolute_import, division, print_function
 
+# stdlib
+from datetime import datetime
+from importlib import resources
 import os
 import subprocess
-import sys
-from datetime import datetime
 from time import time, sleep
-import numpy as np
+
+# external
 from astropy.table import Table
 from astropy.time import Time
+import fitsio
+import numpy as np
 import yaml
-from importlib import resources
+
+# DESI etc.
 from desiutil.log import get_logger
+# DG - The linter will claimi the following are unused, but they are here so you can
+# import them later through `from fiberassign.utils import Logger`
 from ._internal import (Logger, Timer, GlobalTimers, Circle, Segments, Shape,
                         Environment)
 log = get_logger()
@@ -227,6 +234,49 @@ def get_fba_use_fabs(rundate):
     log.info("pick fba_use_fabs = {} for rundate = {}".format(values[i], rundate))
 
     return values[i]
+
+def get_whether_to_reorder_mtl(rundate):
+    """
+    Return whether or not we need to reorder the MTLs when loading two ledgers at once.
+
+    Args:
+        rundate: rundate, in the "YYYY-MM-DDThh:mm:ss+00:00" formatting (string)
+
+    Returns:
+        reorder_mtl: bool, True if we should reorder (fixing the bug), False otherwise
+
+    Notes:
+        See the issue https://github.com/desihub/desitarget/issues/855
+        for a description of this bug.
+    """
+    cutoff = get_mjd(get_date_cutoff("rundate", "reorder_mtl"))
+    input_mjd = get_mjd(rundate)
+    if input_mjd < cutoff:
+        log.info(f"REORDER_MTL: rundate={rundate} (mjd={input_mjd}) < cutoff_mjd={cutoff}; setting reorder_mtl=False")
+        return False
+    return True
+
+def get_whether_to_use_np_concatenate(rundate):
+    """
+    Return whether or not we need to use np.concatenate on the MTLs when loading
+    tiles that have some 1A only and some 1A+1B ledgers.
+
+    Args:
+        rundate: rundate, in the "YYYY-MM-DDThh:mm:ss+00:00" formatting (string)
+
+    Returns:
+        use_np_concatenate: bool, True if we should use np.concatenate, False otherwise
+
+    Notes:
+        See the PR https://github.com/desihub/desitarget/pull/884
+        for a description of this bug.
+    """
+    cutoff = get_mjd(get_date_cutoff("rundate", "use_np_concatenate"))
+    input_mjd = get_mjd(rundate)
+    if input_mjd < cutoff:
+        log.info(f"USE_NP_CONCATENATE: As rundate={input_mjd} < cutoff={cutoff}, setting use_np_concatenate=True")
+        return True
+    return False
 
 
 def get_svn_version(svn_dir):
@@ -483,3 +533,63 @@ def get_obstheta_corr(decs, has, clip_arcsec=600.):
         return obstheta_corrs[0]
     else:
         return obstheta_corrs
+
+
+def get_main_dtver(tileid, svndir=None):
+    """
+    Retrieve the desitarget catalog version for a main tile.
+
+    Args:
+        tileid: tileid (int)
+        svndir (optional, defaults to $DESI_TARGET/fiberassign/tiles/trunk): svn folder (str)
+
+    Returns:
+        dtver: the desitarget catalog version (str)
+
+    Notes:
+        The information is obtained from the FAARGS keyword in the
+            zero-th extension of the fiberassign-TILEID.fits.gz file
+            in the svn folder.
+        As of Aug. 2025, the possible outputs are:
+            '-', '1.0.0', '1.1.1', '2.2.0', '3.0.0', '3.2.0'
+        The '-' output is returned if no such file exists.
+
+    """
+    # AR default svn folder
+    if svndir is None:
+        svndir = os.path.join(os.getenv("DESI_TARGET"), "fiberassign", "tiles", "trunk")
+
+    tileidpad = "{:06d}".format(tileid)
+    fn = os.path.join(svndir, tileidpad[:3], "fiberassign-{}.fits.gz".format(tileidpad))
+    if os.path.isfile(fn):
+        faargs = fitsio.read_header(fn, 0)["FAARGS"].split()
+        return [faargs[i+1] for i in range(len(faargs)-1) if faargs[i] == "--dtver"][0]
+    else:
+        return "-"
+
+
+def get_main_early_nonrepro_tiles():
+    """
+    Table with the 157 early main tiles, designed with DTVER=1.0.0, and non-reproducible.
+
+    Args:
+        None
+
+    Returns:
+        d: Table array with ['TILEID', 'PASS', 'RA', 'DEC', 'PROGRAM', 'IN_DESI', 'EBV_MED']
+
+    Notes:
+        The table is stored in data/tiles-main-dtver-1.0.0.ecsv.
+        It has been generated with:
+
+        d = Table.read("/global/cfs/cdirs/desi/survey/ops/surveyops/trunk/ops/tiles-main.ecsv")
+        pool = multiprocessing.Pool(processes=256)
+        with pool:
+            dtvers = np.array(pool.map(get_main_dtver, d["TILEID"]))
+        sel = dtvers == "1.0.0"
+        d = d[sel]["TILEID", "PASS", "RA", "DEC", "PROGRAM", "IN_DESI", "EBV_MED"]
+        d.write("tiles-main-dtver-1.0.0.ecsv")
+    """
+    fn = resources.files("fiberassign") / "data" / "tiles-main-dtver-1.0.0.ecsv"
+    d = Table.read(fn)
+    return d

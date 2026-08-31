@@ -27,6 +27,20 @@ def main():
     # AR freeze_iers
     freeze_iers()
 
+    # AR use dvs_ro in DESI_TARGET, SKYBRICKS_DIR, SKYHEALPIXS_DIR?
+    # AR (for speed up when reading catalogs / files)
+    # DG - I added DESI_SURVEYOPS here since the MTLs get read from there so we should see some speedup as well.
+    if not args.no_dvsro:
+        for name in ["DESI_TARGET", "SKYBRICKS_DIR", "SKYHEALPIXS_DIR", "DESI_SURVEYOPS"]:
+            old_var = os.getenv(name, None)
+            if old_var is not None:
+                new_var = old_var.replace("/global/cfs/cdirs/desi/", "/dvs_ro/cfs/cdirs/desi/")
+                log.info("{:.1f}s\tsettings\treplace {}={} with {}".format(
+                        time() - start, name, old_var, new_var,
+                    )
+                )
+                os.environ[name] = new_var
+
     # AR steps to execute in fba_launch
     steps = [step for step in args.steps.split(",")]
     if args.nosteps is not None:
@@ -235,6 +249,11 @@ if __name__ == "__main__":
         default=None,
         required=False,
     )
+    parser.add_argument(
+        "--no_dvsro",
+        help="do not replace '/global/cfs/desi/' by '/dvs_ro/cfs/desi/' in $DESI_TARGET, $SKYBRICKS_DIR, $SKYHEALPIXS_DIR",
+        action="store_true",
+   )
     parser.add_argument(
         "--force_try_too_all",
         help="Override the value of try_too_all in the infiberassign header and use try_too_all regardless.",
