@@ -46,6 +46,8 @@ jobs:
               uses: styfle/cancel-workflow-action@0.12.1
               with:
                   access_token: ${{ github.token }}
+            - name: Refresh system packager mirrors and packages
+              run: sudo apt-get -y update
             - name: Install System Packages
               run: sudo apt install libbz2-dev subversion
             - name: Checkout Package
@@ -106,6 +108,8 @@ jobs:
               uses: styfle/cancel-workflow-action@0.12.1
               with:
                   access_token: ${{ github.token }}
+            - name: Refresh system packager mirrors and packages
+              run: sudo apt-get -y update
             - name: Install System Packages
               run: sudo apt install libbz2-dev subversion lcov
             - name: Checkout Package
