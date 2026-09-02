@@ -46,6 +46,8 @@ jobs:
               uses: styfle/cancel-workflow-action@0.12.1
               with:
                   access_token: ${{ github.token }}
+            - name: Refresh system packager mirrors and packages
+              run: sudo apt-get -y update
             - name: Install System Packages
               run: sudo apt install libbz2-dev subversion
             - name: Checkout Package
@@ -82,11 +84,11 @@ jobs:
             fail-fast: true
             matrix:
               include:
-                # Python 3.10 environment from above
+                # Python 3.12 environment from above
                 - os: ubuntu-latest
-                  python-version: '3.10'
-                  numpy-version: '<2.0'
-                  astropy-version: '<6.1'
+                  python-version: '3.12'
+                  numpy-version: '<2.2'
+                  astropy-version: '<7.0'
 
         env:
             DESIUTIL_VERSION: 3.5.0
@@ -106,6 +108,8 @@ jobs:
               uses: styfle/cancel-workflow-action@0.12.1
               with:
                   access_token: ${{ github.token }}
+            - name: Refresh system packager mirrors and packages
+              run: sudo apt-get -y update
             - name: Install System Packages
               run: sudo apt install libbz2-dev subversion lcov
             - name: Checkout Package
