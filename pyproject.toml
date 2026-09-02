@@ -1,7 +1,51 @@
 [build-system]
-requires = ["setuptools",
-            "wheel"]
+requires = ["setuptools"]
 build-backend = 'setuptools.build_meta'
+
+[project]
+name = "fiberassign"
+dynamic = ["version"]
+authors = [
+    {name = "DESI Collaboration", email = "desi-data@desi.lbl.gov"},
+]
+license = "BSD-3-Clause"
+license-files = ["LICENSE.rst"]
+description = "DESI Fiber Assignment Tools"
+readme = "README.rst"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "pyyaml",
+    "scipy",
+    "matplotlib",
+    "astropy",
+    "fitsio",
+    "desiutil",
+    # "desitarget",
+]
+
+[project.urls]
+Repository = "https://github.com/desihub/fiberassign"
+
+[tool.setuptools]
+package-dir = {"" = "py"}
+zip-safe = false
+
+# Note that scripts are dynamically found in setup.py, because fiberassign
+# has a large amount and writing them all out would be tedious.
+[tool.setuptools.package-data]
+fiberassign = ["data/*"]
+
+[tool.setuptools.packages.find]
+where = ["py"]
+exclude = [".github/*"]
+namespaces = true
+
+[tool.setuptools.dynamic]
+version = {attr = "fiberassign.__version__"}
+
+[tool.pytest.ini_options]
+norecursedirs = ["bin", "doc", "etc", "old", "src"]
 
 [tool.coverage.report]
 omit = ["py/fiberassign/test/*"]
