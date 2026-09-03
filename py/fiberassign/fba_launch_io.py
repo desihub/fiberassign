@@ -172,8 +172,10 @@ def get_program_latest_timestamp(
         # AR TODO: read tiles-{survey}.ecsv and use np.isin()
         if survey == "sv3":
             keep &= (d["TILEID"] < 1000)
-        if survey == "main":
-            keep &= (d["TILEID"] >= 1000) & (d["TILEID"] < 59000)
+        # DG - This is an outdated cut, now that we have the program specific
+        # cuts above. This cuts out all 1b tiles which is incorrect.
+        # if survey == "main":
+        #     keep &= (d["TILEID"] >= 1000) & (d["TILEID"] < 59000)
         if keep.sum() > 0:
             d = d[keep]
             # AR taking the latest timestamp
