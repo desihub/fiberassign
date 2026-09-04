@@ -4,6 +4,10 @@ Test fiberassign target operations.
 
 import os
 
+import shutil
+
+import tempfile
+
 import unittest
 
 import numpy as np
@@ -26,19 +30,20 @@ from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                                  Targets, TargetsAvailable,
                                  LocationsAvailable, targets_in_tiles, create_tagalong)
 
-from .simulate import sim_data_subdir_create, sim_tiles, sim_targets
+from .simulate import sim_tiles, sim_targets
 
 
 class TestTargets(unittest.TestCase):
 
     def setUp(self):
-        pass
+        self.test_dir = tempfile.mkdtemp(
+            prefix="fiberassign_{}_".format(self._testMethodName))
 
     def tearDown(self):
-        pass
+        shutil.rmtree(self.test_dir, ignore_errors=True)
 
     def test_available(self):
-        test_dir = sim_data_subdir_create("targets_test_available")
+        test_dir = self.test_dir
         input_mtl = os.path.join(test_dir, "mtl.fits")
         input_std = os.path.join(test_dir, "standards.fits")
         input_sky = os.path.join(test_dir, "sky.fits")

@@ -3,6 +3,10 @@ Test fiberassign tile operations.
 """
 import os
 
+import shutil
+
+import tempfile
+
 import unittest
 
 from datetime import datetime
@@ -18,7 +22,7 @@ from fiberassign.vis import (
     set_matplotlib_pdf_backend
 )
 
-from .simulate import sim_data_subdir_create, sim_focalplane, sim_assign_date
+from .simulate import sim_focalplane, sim_assign_date
 
 set_matplotlib_pdf_backend()
 import matplotlib.pyplot as plt
@@ -27,10 +31,11 @@ import matplotlib.pyplot as plt
 class TestVis(unittest.TestCase):
 
     def setUp(self):
-        pass
+        self.test_dir = tempfile.mkdtemp(
+            prefix="fiberassign_{}_".format(self._testMethodName))
 
     def tearDown(self):
-        pass
+        shutil.rmtree(self.test_dir, ignore_errors=True)
 
     def _load_and_plotpos(self, time, dir, suffix, simple=False):
         hw = load_hardware(rundate=time)
@@ -145,7 +150,7 @@ class TestVis(unittest.TestCase):
         plt.close()
 
     def test_plotpos(self):
-        test_dir = sim_data_subdir_create("vis_test_plotpos")
+        test_dir = self.test_dir
         time = sim_assign_date
         suffix = "{}_simple".format(time)
         self._load_and_plotpos(time, test_dir, suffix, simple=True)
@@ -221,7 +226,7 @@ class TestVis(unittest.TestCase):
         plt.close()
 
     def test_plotfp(self):
-        test_dir = sim_data_subdir_create("vis_test_plotfp")
+        test_dir = self.test_dir
         time = sim_assign_date
         hw = load_hardware(rundate=time)
         suffix = "{}_simple".format(time)
@@ -237,7 +242,7 @@ class TestVis(unittest.TestCase):
         return
 
     def test_plot_fakefp(self):
-        test_dir = sim_data_subdir_create("vis_test_fakefp")
+        test_dir = self.test_dir
         time = sim_assign_date
 
         # Simulate a fake focalplane

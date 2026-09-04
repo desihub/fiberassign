@@ -5,6 +5,8 @@ import os
 
 import shutil
 
+import tempfile
+
 import unittest
 
 import glob
@@ -50,14 +52,15 @@ from fiberassign.scripts.qa import parse_qa, run_qa
 from fiberassign.scripts.qa_plot import parse_plot_qa, run_plot_qa
 
 
-from .simulate import (sim_data_subdir_create, sim_tiles, sim_targets,
-                       sim_focalplane, petal_rotation, sim_assign_date,
-                       sim_stuck_sky)
+from .simulate import (sim_tiles, sim_targets, sim_focalplane,
+                       petal_rotation, sim_assign_date, sim_stuck_sky)
 
 
 class TestAssign(unittest.TestCase):
 
     def setUp(self):
+        self.test_dir = tempfile.mkdtemp(
+            prefix="fiberassign_{}_".format(self._testMethodName))
         self.saved_skybricks = os.environ.get('STUCKSKY_DIR')
         if self.saved_skybricks is not None:
             del os.environ['SKYBRICKS_DIR']
@@ -68,12 +71,13 @@ class TestAssign(unittest.TestCase):
         pass
 
     def tearDown(self):
+        shutil.rmtree(self.test_dir, ignore_errors=True)
         if self.saved_skybricks is not None:
             os.environ['STUCKSKY_DIR'] = self.saved_skybricks
 
     def test_io(self):
         np.random.seed(123456789)
-        test_dir = sim_data_subdir_create("assign_test_io")
+        test_dir = self.test_dir
         input_mtl = os.path.join(test_dir, "mtl.fits")
         input_std = os.path.join(test_dir, "standards.fits")
         input_sky = os.path.join(test_dir, "sky.fits")
@@ -285,7 +289,7 @@ class TestAssign(unittest.TestCase):
         return self.test_full(do_stucksky=True)
 
     def test_full(self, do_stucksky=False):
-        test_dir = sim_data_subdir_create("assign_test_full")
+        test_dir = self.test_dir
         np.random.seed(123456789)
         input_mtl = os.path.join(test_dir, "mtl.fits")
         input_std = os.path.join(test_dir, "standards.fits")
@@ -394,7 +398,7 @@ class TestAssign(unittest.TestCase):
         return
 
     def test_cli(self):
-        test_dir = sim_data_subdir_create("assign_test_cli")
+        test_dir = self.test_dir
         np.random.seed(123456789)
         input_mtl = os.path.join(test_dir, "mtl.fits")
         input_std = os.path.join(test_dir, "standards.fits")
@@ -482,7 +486,7 @@ class TestAssign(unittest.TestCase):
         return
 
     def test_fieldrot(self):
-        test_dir = sim_data_subdir_create("assign_test_fieldrot")
+        test_dir = self.test_dir
         np.random.seed(123456789)
         input_mtl = os.path.join(test_dir, "mtl.fits")
         input_std = os.path.join(test_dir, "standards.fits")
