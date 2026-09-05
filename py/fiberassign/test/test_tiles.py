@@ -4,13 +4,17 @@ Test fiberassign tile operations.
 
 import os
 
+import shutil
+
+import tempfile
+
 import unittest
 
 from fiberassign.hardware import load_hardware
 
 from fiberassign.tiles import load_tiles
 
-from .simulate import sim_data_subdir_create, sim_tiles
+from .simulate import sim_tiles
 
 from astropy.table import Table
 from astropy.time import Time
@@ -19,13 +23,13 @@ from astropy.time import Time
 class TestTiles(unittest.TestCase):
 
     def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
+        self.test_dir = tempfile.mkdtemp(
+            prefix="fiberassign_{}_".format(self._testMethodName))
+        # addCleanup runs even if setUp fails partway through, unlike tearDown
+        self.addCleanup(shutil.rmtree, self.test_dir, ignore_errors=True)
 
     def test_read(self):
-        test_dir = sim_data_subdir_create("tiles_test_read")
+        test_dir = self.test_dir
         print('test_dir', test_dir)
         hw = load_hardware()
         tfile = os.path.join(test_dir, "footprint.fits")
