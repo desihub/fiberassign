@@ -61,7 +61,9 @@ class TestAssign(unittest.TestCase):
     def setUp(self):
         self.test_dir = tempfile.mkdtemp(
             prefix="fiberassign_{}_".format(self._testMethodName))
-        self.saved_skybricks = os.environ.get('STUCKSKY_DIR')
+        # addCleanup runs even if setUp fails partway through, unlike tearDown
+        self.addCleanup(shutil.rmtree, self.test_dir, ignore_errors=True)
+        self.saved_skybricks = os.environ.get('SKYBRICKS_DIR')
         if self.saved_skybricks is not None:
             del os.environ['SKYBRICKS_DIR']
         self.density_science = 5000
@@ -71,9 +73,8 @@ class TestAssign(unittest.TestCase):
         pass
 
     def tearDown(self):
-        shutil.rmtree(self.test_dir, ignore_errors=True)
         if self.saved_skybricks is not None:
-            os.environ['STUCKSKY_DIR'] = self.saved_skybricks
+            os.environ['SKYBRICKS_DIR'] = self.saved_skybricks
 
     def test_io(self):
         np.random.seed(123456789)

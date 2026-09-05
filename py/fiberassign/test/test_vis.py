@@ -33,9 +33,8 @@ class TestVis(unittest.TestCase):
     def setUp(self):
         self.test_dir = tempfile.mkdtemp(
             prefix="fiberassign_{}_".format(self._testMethodName))
-
-    def tearDown(self):
-        shutil.rmtree(self.test_dir, ignore_errors=True)
+        # addCleanup runs even if setUp fails partway through, unlike tearDown
+        self.addCleanup(shutil.rmtree, self.test_dir, ignore_errors=True)
 
     def _load_and_plotpos(self, time, dir, suffix, simple=False):
         hw = load_hardware(rundate=time)

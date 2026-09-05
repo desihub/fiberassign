@@ -87,14 +87,13 @@ class TestQA(unittest.TestCase):
     def setUp(self):
         self.test_dir = tempfile.mkdtemp(
             prefix="fiberassign_{}_".format(self._testMethodName))
+        # addCleanup runs even if setUp fails partway through, unlike tearDown
+        self.addCleanup(shutil.rmtree, self.test_dir, ignore_errors=True)
         self.density_science = 5000
         self.density_standards = 5000
         self.density_sky = 10
         self.density_suppsky = 5000
         pass
-
-    def tearDown(self):
-        shutil.rmtree(self.test_dir, ignore_errors=True)
 
     def test_science(self):
         set_matplotlib_pdf_backend()

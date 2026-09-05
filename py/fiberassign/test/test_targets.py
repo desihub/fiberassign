@@ -38,9 +38,8 @@ class TestTargets(unittest.TestCase):
     def setUp(self):
         self.test_dir = tempfile.mkdtemp(
             prefix="fiberassign_{}_".format(self._testMethodName))
-
-    def tearDown(self):
-        shutil.rmtree(self.test_dir, ignore_errors=True)
+        # addCleanup runs even if setUp fails partway through, unlike tearDown
+        self.addCleanup(shutil.rmtree, self.test_dir, ignore_errors=True)
 
     def test_available(self):
         test_dir = self.test_dir
