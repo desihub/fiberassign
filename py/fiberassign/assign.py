@@ -1115,7 +1115,7 @@ merged_potential_columns = OrderedDict([
 ])
 
 
-def merge_results_tile(out_dtype, copy_fba, params):
+def merge_results_tile(out_dtype, targets_columns, copy_fba, params):
     """Merge results for one tile.
 
     This uses target catalog data which has been pre-staged to shared memory.
@@ -1125,6 +1125,13 @@ def merge_results_tile(out_dtype, copy_fba, params):
     Args:
         out_dtype (np.dtype):  The output recarray dtype for the merged target
             HDU.  This is the union of columns chosen from the input catalogs.
+        targets_columns (OrderedDict):  Mapping of column name to dtype for
+            the columns to write into the output TARGETS HDU (the base
+            merged_targets_columns plus any *_TARGET columns discovered for
+            this particular merge_results() call).  This is passed explicitly
+            (rather than read from the module-level merged_targets_columns
+            global) so that it is correctly propagated to worker processes
+            regardless of the multiprocessing start method in use.
         copy_fba (bool):  If True, copy the original raw fiberassign HDUs onto
             the end of the output file.
         params (tuple):  The tile ID and input / output files.  Set by
@@ -1447,7 +1454,7 @@ def merge_results_tile(out_dtype, copy_fba, params):
             newnames.append(nm)
     tile_targets.dtype.names = newnames
     # AR hard-cutting on merged_targets_columns + *_TARGET columns
-    tile_targets = tile_targets[list(merged_targets_columns.keys())]
+    tile_targets = tile_targets[list(targets_columns.keys())]
 
     fd.write(tile_targets, header=inhead, extname="TARGETS")
     del tile_targets
@@ -1679,7 +1686,15 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
     out_dtype = np.dtype(dcols)
 
     # AR adding any *_TARGET columns to the TARGETS columns
-    merged_targets_columns.update(
+    # NOTE: this is passed explicitly to merge_results_tile below (rather than
+    # mutating the module-level merged_targets_columns dict and relying on
+    # worker processes to see that mutation) because worker processes started
+    # with the "spawn" or "forkserver" multiprocessing start methods do not
+    # inherit updates made to the parent process's globals after the workers
+    # were created / the module was (re-)imported (e.g. Python 3.14 changed
+    # the default start method on Linux from "fork" to "forkserver").
+    targets_columns = merged_targets_columns.copy()
+    targets_columns.update(
             OrderedDict([
                 (name,out_dtype[name]) for name in out_dtype.names
                 if name[-7:]=="_TARGET"]))
@@ -1687,7 +1702,7 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
     # For each tile, find the target IDs used.  Construct the output recarray
     # and copy data into place.
 
-    merge_tile = partial(merge_results_tile, out_dtype, copy_fba)
+    merge_tile = partial(merge_results_tile, out_dtype, targets_columns, copy_fba)
 
     if out_dir is None:
         out_dir = result_dir

@@ -5,6 +5,7 @@ import os
 import subprocess
 import re
 import shutil
+import tempfile
 import unittest
 from datetime import datetime
 import json
@@ -46,8 +47,8 @@ from fiberassign.scripts.qa import parse_qa, run_qa
 from fiberassign.scripts.qa_plot import parse_plot_qa, run_plot_qa
 
 
-from .simulate import (sim_data_subdir_create, sim_tiles, sim_targets,
-                       sim_focalplane, petal_rotation, sim_assign_date)
+from .simulate import (sim_tiles, sim_targets, sim_focalplane,
+                       petal_rotation, sim_assign_date)
 
 
 class TestQA(unittest.TestCase):
@@ -84,19 +85,20 @@ class TestQA(unittest.TestCase):
             cls.binDir = os.path.join(cls.topDir, "bin")
 
     def setUp(self):
+        self.test_dir = tempfile.mkdtemp(
+            prefix="fiberassign_{}_".format(self._testMethodName))
+        # addCleanup runs even if setUp fails partway through, unlike tearDown
+        self.addCleanup(shutil.rmtree, self.test_dir, ignore_errors=True)
         self.density_science = 5000
         self.density_standards = 5000
         self.density_sky = 10
         self.density_suppsky = 5000
         pass
 
-    def tearDown(self):
-        pass
-
     def test_science(self):
         set_matplotlib_pdf_backend()
         import matplotlib.pyplot as plt
-        test_dir = sim_data_subdir_create("qa_test_science")
+        test_dir = self.test_dir
         log_file = os.path.join(test_dir, "log.txt")
 
         np.random.seed(123456789)
