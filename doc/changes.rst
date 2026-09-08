@@ -8,13 +8,16 @@ fiberassign change log
 
 * Script to patch wrong TARGETIDs in tile 83063. (PR `#513`_).
 * Add time based switches for reproducing buggy desitarget behaviour. (PR `#512`_).
-* Use packiging.Version for version comparisons. (PR `#516`_).
+* Use packaging.Version for version comparisons. (PR `#516`_).
 * Remove setup.cfg and port to pyproject.toml. (PR `#518`_).
+* Fix multiprocessing forkserver usage for py3.14 (PR `#523`_).
+* Fix test tempdir race condition (PR `#523`_).
 
 .. _`#513`: https://github.com/desihub/fiberassign/pull/513
 .. _`#512`: https://github.com/desihub/fiberassign/pull/512
 .. _`#516`: https://github.com/desihub/fiberassign/pull/516
 .. _`#518`: https://github.com/desihub/fiberassign/pull/518
+.. _`#523`: https://github.com/desihub/fiberassign/pull/523
 
 6.0.1 (2026-06-09)
 ------------------
