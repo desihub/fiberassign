@@ -12,12 +12,18 @@ fiberassign change log
 * Remove setup.cfg and port to pyproject.toml. (PR `#518`_).
 * Fix multiprocessing forkserver usage for py3.14 (PR `#523`_).
 * Fix test tempdir race condition (PR `#523`_).
+* Rerun main tiles and use of dvs_ro in fba_rerun (PR `#486`_).
+* attempt workaround for test package version incompatibilities (PR `#515`_).
+* Update package list in CI. (PR `#521`_).
 
 .. _`#513`: https://github.com/desihub/fiberassign/pull/513
 .. _`#512`: https://github.com/desihub/fiberassign/pull/512
 .. _`#516`: https://github.com/desihub/fiberassign/pull/516
 .. _`#518`: https://github.com/desihub/fiberassign/pull/518
 .. _`#523`: https://github.com/desihub/fiberassign/pull/523
+.. _`#486`: https://github.com/desihub/fiberassign/pull/486
+.. _`#515`: https://github.com/desihub/fiberassign/pull/515
+.. _`#521`: https://github.com/desihub/fiberassign/pull/521
 
 6.0.1 (2026-06-09)
 ------------------
