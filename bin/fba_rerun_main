@@ -29,7 +29,7 @@ def rerun_tile(out_dir, tileid):
     # If we didn't already run this (we might have if we got checkpointed)
     # rerun the fiberassign
     if not out_fa.exists():
-        subprocess.run(["fba_rerun", "--infiberassign", in_fa, "--outdir", out_dir, "--nosteps", "qa"])
+        subprocess.run(["fba_rerun", "--infiberassign", in_fa, "--outdir", out_dir, "--nosteps", "qa", "--force_try_too_all"])
 
     # Same logic as above, do the check if necessary.
     if not diff_fa.exists():
