@@ -3491,12 +3491,15 @@ def plot_colcol_tracer(
                 tmpdict[sample_name][axis_name] = mag0 - mag1
 
         # AR first getting the hexbin outputs
+        xmin, xmax = sorted(xlim)
+        ymin, ymax = sorted(ylim)
+
         hbp = ax.hexbin(
             tmpdict["parent"]["x"],
             tmpdict["parent"]["y"],
             C=None,
             gridsize=gridsize,
-            extent=(xlim[1], xlim[0], ylim[0], ylim[1]),
+            extent=(xmin, xmax, ymin, ymax),
             mincnt=0,
             visible=False,
         )
@@ -3505,7 +3508,7 @@ def plot_colcol_tracer(
             tmpdict["assign"]["y"],
             C=None,
             gridsize=gridsize,
-            extent=(xlim[1], xlim[0], ylim[0], ylim[1]),
+            extent=(xmin, xmax, ymin, ymax),
             mincnt=0,
             visible=False,
         )
