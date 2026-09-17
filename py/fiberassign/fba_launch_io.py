@@ -3100,7 +3100,7 @@ def mycmap(name, n, cmin=0, cmax=1):
     Defines a quantised color scheme.
 
     Args:
-        name: matplotlib colormap name (used through: matplotlib.cm.get_cmap(name)) (string)
+        name: matplotlib colormap name (used through: matplotlib.colormaps.get_cmap(name)) (string)
         n: number of different colors to be in the color scheme (int)
         cmin (optional, defaults to 0): flooring "color-value" (float)
         cmax (optional, defaults to 1): ceiling "color-value" (float)
@@ -3111,7 +3111,7 @@ def mycmap(name, n, cmin=0, cmax=1):
     Notes:
         https://matplotlib.org/examples/api/colorbar_only.html
     """
-    cmaporig = matplotlib.cm.get_cmap(name)
+    cmaporig = matplotlib.colormaps.get_cmap(name)
     mycol = cmaporig(np.linspace(cmin, cmax, n))
     cmap = matplotlib.colors.ListedColormap(mycol)
     cmap.set_under(mycol[0])
