@@ -3,7 +3,7 @@
 fiberassign change log
 ======================
 
-6.0.2 (unreleased)
+6.0.2 (2026-09-17)
 ------------------
 
 * Script to patch wrong TARGETIDs in tile 83063. (PR `#513`_).
@@ -13,7 +13,7 @@ fiberassign change log
 * Fix multiprocessing forkserver usage for py3.14 (PR `#523`_).
 * Fix test tempdir race condition (PR `#523`_).
 * Rerun main tiles and use of dvs_ro in fba_rerun (PR `#486`_).
-* attempt workaround for test package version incompatibilities (PR `#515`_).
+* Workaround for test package version incompatibilities (PR `#515`_).
 * Update package list in CI. (PR `#521`_).
 
 .. _`#513`: https://github.com/desihub/fiberassign/pull/513
