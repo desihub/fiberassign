@@ -3,8 +3,15 @@
 fiberassign change log
 ======================
 
-6.0.3 (Unreleased)
+6.0.4 (Unreleased)
 ------------------
+
+6.0.3 (2026-09-21)
+------------------
+
+* Patch obsolete calls to get_cmap and hexbin for matplotlib 3.11 (PR `#525`_).
+
+.. _`#525`: https://github.com/desihub/fiberassign/pull/525
 
 
 6.0.2 (2026-09-17)
