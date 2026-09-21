@@ -583,7 +583,7 @@ def unq_searchsorted(A, B):
 
 
 def mycmap(name, n, cmin, cmax):
-    cmaporig = matplotlib.cm.get_cmap(name)
+    cmaporig = matplotlib.colormaps.get_cmap(name)
     mycol = cmaporig(np.linspace(cmin, cmax, n))
     cmap = matplotlib.colors.ListedColormap(mycol)
     cmap.set_under(mycol[0])
