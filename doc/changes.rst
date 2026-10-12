@@ -5,6 +5,9 @@ fiberassign change log
 
 6.0.4 (Unreleased)
 ------------------
+* Update `fba_rerun` to include some additional versions for debugging (PR `#528`_).
+
+.. _`#528`: https://github.com/desihub/fiberassign/pull/528
 
 6.0.3 (2026-09-21)
 ------------------
