@@ -482,7 +482,8 @@ def run_assign_full(args, plate_radec=True):
         stucksky = stuck_on_sky_from_fafns(args.fafns_for_stucksky)
     else:
         stucksky = stuck_on_sky(hw, tiles, args.lookup_sky_source,
-                                rundate=getattr(args, 'rundate', None))
+                                rundate=getattr(args, 'rundate', None),
+                                skybricks_dir=args.skybricks_dir)
     if stucksky is None:
         # (the pybind code doesn't like None when a dict is expected...)
         stucksky = {}
