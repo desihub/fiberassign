@@ -197,6 +197,7 @@ def main():
     log_versions("SVNDM", hdr["SVNDM"], curr_svndm)
     curr_svnmtl = get_svn_version(os.path.join(os.getenv("DESI_SURVEYOPS"), "mtl"))
     log_versions("SVNMTL", hdr["SVNMTL"], curr_svnmtl)
+    log.info(f"{curr_time:.1f}s\tsettings \tFor SVN Settings, check that Rerun >= Orig.")
 
     # AR command line to execute
     tmparr = ["fba_launch"]
