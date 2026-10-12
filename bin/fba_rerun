@@ -5,12 +5,14 @@ import sys
 from time import time
 from astropy.time import Time
 from astropy.io import fits
+from astropy import __version__ as astropy_version
 import numpy as np
 from fiberassign.fba_launch_io import assert_env_vars, print_config_infos
 from fiberassign.utils import Logger, get_svn_version
 import desitarget
 import desimeter
 import fiberassign
+import desimodel
 from desiutil.iers import freeze_iers
 
 from packaging.version import Version
@@ -170,15 +172,24 @@ def main():
 
     curr_time = time() - start
     log.info(f"{curr_time:.1f}s\tsettings \tOriginal vs Rerun Settings")
-    log.info(f"{curr_time:.1f}s\tsettings \t{" "*13}\tORIG\tRERUN")
+    log.info(f"{curr_time:.1f}s\tsettings \t{" "*13}\t{"ORIG".ljust(10)}\t\tRERUN")
     def log_versions(name, orig_ver, rerun_ver):
         curr_time = time() - start
-        log.info(f"{curr_time:.1f}s\tsettings \t{name.rjust(13)}\t{orig_ver}\t{rerun_ver}")
+        log.info(f"{curr_time:.1f}s\tsettings \t{name.rjust(13)}\t{orig_ver.ljust(10)}\t\t{rerun_ver}")
 
-    dt_ver = get_dep_ver("desitarget")
-    log_versions("desitarget", dt_ver, desitarget.__version__)
-    dm_ver = get_dep_ver("desimeter")
-    log_versions("desimeter", dm_ver, desimeter.__version__)
+    ver = get_dep_ver("desitarget")
+    log_versions("desitarget", ver, desitarget.__version__)
+    ver = get_dep_ver("desimeter")
+    log_versions("desimeter", ver, desimeter.__version__)
+    ver = get_dep_ver("desimodel")
+    log_versions("desimodel", ver, desimodel.__version__)
+    ver = get_dep_ver("astropy")
+    log_versions("astropy", ver, astropy_version)
+    ver = get_dep_ver("numpy")
+    log_versions("numpy", ver, np.__version__)
+    ver = get_dep_ver("python")
+    py_version = ".".join([str(x) for x in sys.version_info[0:3]])
+    log_versions("python", ver, py_version)
     log_versions("fiberassign", hdr["FA_VER"], fiberassign.__version__)
 
     # DG - print the SVNDM version to help catch if the scron did not run at NERSC
