@@ -5,12 +5,14 @@ import sys
 from time import time
 from astropy.time import Time
 from astropy.io import fits
+from astropy import __version__ as astropy_version
 import numpy as np
 from fiberassign.fba_launch_io import assert_env_vars, print_config_infos
-from fiberassign.utils import Logger
+from fiberassign.utils import Logger, get_svn_version
 import desitarget
 import desimeter
 import fiberassign
+import desimodel
 from desiutil.iers import freeze_iers
 
 from packaging.version import Version
@@ -157,33 +159,45 @@ def main():
 
     # AR for information, compare desitarget, desimeter, fiberassign
     # AR    code version with what was used in args.infiberassign
-    tmpname = [cards[0] for cards in hdr.cards if cards[1] == "desitarget"]
-    if len(tmpname) > 0:
-        inver = hdr[tmpname[0].replace("DEPNAM", "DEPVER")]
-    else:
-        inver = "-"
-    log.info(
-        "{:.1f}s\tsettings\tdesitarget: input={} , current={}".format(
-            time() - start, inver, desitarget.__version__
-        )
-    )
-    #
-    tmpname = [cards[0] for cards in hdr.cards if cards[1] == "desimeter"]
-    if len(tmpname) > 0:
-        inver = hdr[tmpname[0].replace("DEPNAM", "DEPVER")]
-    else:
-        inver = "-"
-    log.info(
-        "{:.1f}s\tsettings\tdesimeter: input={} , current={}".format(
-            time() - start, inver, desimeter.__version__
-        )
-    )
-    #
-    log.info(
-        "{:.1f}s\tsettings\tfiberassign: input={} , current={}".format(
-            time() - start, hdr["FA_VER"], fiberassign.__version__
-        )
-    )
+    # DG - 20261012 refactored these strings so the print is more easily readable.
+    def get_dep_ver(pkg_name):
+        # DG - Abstraction of code that searches the header for a given
+        # package then takes the version from the corresponding card.
+        tmpname = [cards[0] for cards in hdr.cards if cards[1] == pkg_name]
+        if len(tmpname) > 0:
+            ver = hdr[tmpname[0].replace("DEPNAM", "DEPVER")]
+        else:
+            ver = "-"
+        return ver
+
+    curr_time = time() - start
+    log.info(f"{curr_time:.1f}s\tsettings \tOriginal vs Rerun Settings")
+    log.info(f"{curr_time:.1f}s\tsettings \t{" "*13}\t{"ORIG".ljust(10)}\t\tRERUN")
+    def log_versions(name, orig_ver, rerun_ver):
+        curr_time = time() - start
+        log.info(f"{curr_time:.1f}s\tsettings \t{name.rjust(13)}\t{orig_ver.ljust(10)}\t\t{rerun_ver}")
+
+    ver = get_dep_ver("desitarget")
+    log_versions("desitarget", ver, desitarget.__version__)
+    ver = get_dep_ver("desimeter")
+    log_versions("desimeter", ver, desimeter.__version__)
+    ver = get_dep_ver("desimodel")
+    log_versions("desimodel", ver, desimodel.__version__)
+    ver = get_dep_ver("astropy")
+    log_versions("astropy", ver, astropy_version)
+    ver = get_dep_ver("numpy")
+    log_versions("numpy", ver, np.__version__)
+    ver = get_dep_ver("python")
+    py_version = ".".join([str(x) for x in sys.version_info[0:3]])
+    log_versions("python", ver, py_version)
+    log_versions("fiberassign", hdr["FA_VER"], fiberassign.__version__)
+
+    # DG - print the SVNDM version to help catch if the scron did not run at NERSC
+    curr_svndm = get_svn_version(os.path.join(os.getenv("DESIMODEL"), "data"))
+    log_versions("SVNDM", hdr["SVNDM"], curr_svndm)
+    curr_svnmtl = get_svn_version(os.path.join(os.getenv("DESI_SURVEYOPS"), "mtl"))
+    log_versions("SVNMTL", hdr["SVNMTL"], curr_svnmtl)
+    log.info(f"{curr_time:.1f}s\tsettings \tFor SVN Settings, check that Rerun >= Orig.")
 
     # AR command line to execute
     tmparr = ["fba_launch"]
