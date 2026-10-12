@@ -195,6 +195,8 @@ def main():
     # DG - print the SVNDM version to help catch if the scron did not run at NERSC
     curr_svndm = get_svn_version(os.path.join(os.getenv("DESIMODEL"), "data"))
     log_versions("SVNDM", hdr["SVNDM"], curr_svndm)
+    curr_svnmtl = get_svn_version(os.path.join(os.getenv("DESI_SURVEYOPS"), "mtl"))
+    log_versions("SVNMTL", hdr["SVNMTL"], curr_svnmtl)
 
     # AR command line to execute
     tmparr = ["fba_launch"]
