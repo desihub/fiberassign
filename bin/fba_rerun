@@ -177,19 +177,13 @@ def main():
         curr_time = time() - start
         log.info(f"{curr_time:.1f}s\tsettings \t{name.rjust(13)}\t{orig_ver.ljust(10)}\t\t{rerun_ver}")
 
-    ver = get_dep_ver("desitarget")
-    log_versions("desitarget", ver, desitarget.__version__)
-    ver = get_dep_ver("desimeter")
-    log_versions("desimeter", ver, desimeter.__version__)
-    ver = get_dep_ver("desimodel")
-    log_versions("desimodel", ver, desimodel.__version__)
-    ver = get_dep_ver("astropy")
-    log_versions("astropy", ver, astropy_version)
-    ver = get_dep_ver("numpy")
-    log_versions("numpy", ver, np.__version__)
-    ver = get_dep_ver("python")
+    log_versions("desitarget", get_dep_ver("desitarget"), desitarget.__version__)
+    log_versions("desimeter", get_dep_ver("desimeter"), desimeter.__version__)
+    log_versions("desimodel", get_dep_ver("desimodel"), desimodel.__version__)
+    log_versions("astropy", get_dep_ver("astropy"), astropy_version)
+    log_versions("numpy", get_dep_ver("numpy"), np.__version__)
     py_version = ".".join([str(x) for x in sys.version_info[0:3]])
-    log_versions("python", ver, py_version)
+    log_versions("python", get_dep_ver("python"), py_version)
     log_versions("fiberassign", hdr["FA_VER"], fiberassign.__version__)
 
     # DG - print the SVNDM version to help catch if the scron did not run at NERSC
