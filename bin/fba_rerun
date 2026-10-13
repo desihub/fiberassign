@@ -96,6 +96,10 @@ def main():
             )
         )
 
+    # DG - abstracted these so they can be used elsewhere.
+    orig_desiroot = hdr["DESIROOT"]
+    curr_desiroot = os.getenv("DESI_ROOT")
+
     # AR loop on the used arguments in the fba_launch run
     for i in range(len(faargs) // 2):
         key = faargs[2 * i]
@@ -130,8 +134,6 @@ def main():
         # AR    (note that we do not expect to execute fba_rerun on special tiles)
         # AR    this command should correctly change $DESI_SURVEYOPS
         elif key == "--custom_too_file":
-            orig_desiroot = hdr["DESIROOT"]
-            curr_desiroot = os.getenv("DESI_ROOT")
             mydict[key] = ",".join(
                 [
                     fn.replace(orig_desiroot, curr_desiroot)
@@ -192,6 +194,12 @@ def main():
     curr_svnmtl = get_svn_version(os.path.join(os.getenv("DESI_SURVEYOPS"), "mtl"))
     log_versions("SVNMTL", hdr["SVNMTL"], curr_svnmtl)
     log.info(f"{curr_time:.1f}s\tsettings \tFor SVN Settings, check that Rerun >= Orig.")
+
+    # DG - We can reuse the above get_dep_ver function to get the SKYBRICKS_DIR
+    # which we then pass to fba_launch to override the environment variable.
+    sb_dir = get_dep_ver("SKYBRICKS_DIR")
+    if sb_dir != "-":
+        mydict["--skybricks_dir"] = sb_dir.replace("$DESI_ROOT", curr_desiroot)
 
     # AR command line to execute
     tmparr = ["fba_launch"]
