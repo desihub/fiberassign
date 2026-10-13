@@ -198,7 +198,7 @@ def main():
     # DG - We can reuse the above get_dep_ver function to get the SKYBRICKS_DIR
     # which we then pass to fba_launch to override the environment variable.
     sb_dir = get_dep_ver("SKYBRICKS_DIR")
-    if sb_dir != "-":
+    if (sb_dir != "-") and not args.dont_override_skybricks:
         mydict["--skybricks_dir"] = sb_dir.replace("$DESI_ROOT", curr_desiroot)
 
     # AR command line to execute
@@ -275,6 +275,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--force_try_too_all",
         help="Override the value of try_too_all in the infiberassign header and use try_too_all regardless.",
+        action="store_true",
+        required=False
+    )
+
+    parser.add_argument(
+        "--dont_override_skybricks",
+        help="If passed, do not automatically override the $SKYBRICKS_DIR environment variable. Otherwise, try override with the value in the fiberassign header.",
         action="store_true",
         required=False
     )
