@@ -216,6 +216,10 @@ def parse_assign(optlist=None):
                         help="value to determine the cpp behavior, see PR470 (default: based on the rundate)",
                         type=str)
 
+    parser.add_argument("--skybricks_dir", required=False, default=None,
+                        help="if passed, this will override the environment variable $SKYBRICKS_DIR, which is the location used for skybricks lookup for stuk fibers. Implicitly also override --lookup_sky_source.",
+                        type=str,)
+
     args = None
     if optlist is None:
         args = parser.parse_args()

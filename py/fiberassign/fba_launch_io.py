@@ -2264,6 +2264,12 @@ def launch_onetile_fa(
         ]
     opts += ["--lookup_sky_source", args.lookup_sky_source,]
     opts += ["--fba_use_fabs", str(args.fba_use_fabs)]
+    if args.skybricks_dir is not None:
+        opts += [
+            "--skybricks_dir",
+            args.skybricks_dir,
+        ]
+
     log.info(
         "{:.1f}s\t{}\ttileid={:06d}: running raw fiber assignment (run_assign_full) with opts={}".format(
             time() - start, step, tileid, " ; ".join(opts)
