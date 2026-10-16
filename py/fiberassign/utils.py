@@ -635,6 +635,6 @@ def substitute_desiroot(path, forward=True, dvs_ro=False):
         if new_path.startswith("$DESI_ROOT"):
             new_path = new_path.replace("$DESI_ROOT", desiroot, 1)
         if dvs_ro:
-            new_path = new_path.replace("/global/", "/dvs_ro/")
+            new_path = new_path.replace("/global/", "/dvs_ro/", 1)
     return new_path
 
