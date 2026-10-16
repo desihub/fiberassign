@@ -595,7 +595,28 @@ def get_main_early_nonrepro_tiles():
     return d
 
 def substitute_desiroot(path, forward=True, dvs_ro=False):
+    """
+    Given a file path, insert $DESI_ROOT in place of the actual string stored
+        in the environment variable $DESI_ROOT, or vice versa.
 
+    Args:
+        path: the file path to replace in (string)
+        forward (optional, defaults to True): direction of the substitution
+            (bool): if True, replace the value of $DESI_ROOT with the
+            "$DESI_ROOT" string; if False, replace the "$DESI_ROOT" string
+            with the value of $DESI_ROOT
+        dvs_ro (optional, defaults to False): if forward=False, also replace
+            "/global/" with "/dvs_ro/" (bool)
+
+    Returns:
+        new_path: the updated path (string)
+
+    Notes:
+        In the forward direction, "/dvs_ro/" is first replaced by "/global/".
+        Only a leading occurrence of $DESI_ROOT (or of its value) is
+            substituted.
+        If $DESI_ROOT is not set, path is returned unchanged.
+    """
     if ("DESI_ROOT" not in os.environ):
         # DG - If it's nt in the environment then there's nothing we can replace with.
         return path
