@@ -593,3 +593,27 @@ def get_main_early_nonrepro_tiles():
     fn = resources.files("fiberassign") / "data" / "tiles-main-dtver-1.0.0.ecsv"
     d = Table.read(fn)
     return d
+
+def substitute_desiroot(path, forward=True, dvs_ro=False):
+
+    if ("DESI_ROOT" not in os.environ):
+        # DG - If it's nt in the environment then there's nothing we can replace with.
+        return path
+    desiroot = os.environ["DESI_ROOT"]
+
+    # DG - Forward goes from path -> $DESI_ROOT
+    if forward:
+        new_path = path.replace("/dvs_ro/", "/global/") # If dvs_ro is there, swap it to global, otherwise nothing happens
+
+        # DG - Check for starting first, for safety in case it appears in the middle for some reason.
+        if new_path.startswith(desiroot):
+            new_path = new_path.replace(desiroot, "$DESI_ROOT", 1)
+    # DG - Backward goes $DESI_ROOT -> path
+    else:
+        new_path = path
+        if new_path.startswith("$DESI_ROOT"):
+            new_path = new_path.replace("$DESI_ROOT", desiroot, 1)
+        if dvs_ro:
+            new_path = new_path.replace("/global/", "/dvs_ro/")
+    return new_path
+
