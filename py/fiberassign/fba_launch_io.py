@@ -2264,6 +2264,12 @@ def launch_onetile_fa(
         ]
     opts += ["--lookup_sky_source", args.lookup_sky_source,]
     opts += ["--fba_use_fabs", str(args.fba_use_fabs)]
+    if args.skybricks_dir is not None:
+        opts += [
+            "--skybricks_dir",
+            args.skybricks_dir,
+        ]
+
     log.info(
         "{:.1f}s\t{}\ttileid={:06d}: running raw fiber assignment (run_assign_full) with opts={}".format(
             time() - start, step, tileid, " ; ".join(opts)
@@ -2464,6 +2470,20 @@ def update_fiberassign_header(
     fd["PRIMARY"].write_key("LKSKYSRC", args.lookup_sky_source)
     # AR fba_use_fabs
     fd["PRIMARY"].write_key("USE_FABS", str(args.fba_use_fabs))
+
+    # DG - If skybricks_dir is included, we need to overwrite the dependency
+    # to accurately reflect which directory was used. We need this first
+    # for loop to determine which DEPVER it was written into.
+    if args.skybricks_dir is not None:
+        hd = fd["PRIMARY"].read_header()
+        for k in hd.keys():
+            if hd[k] == "SKYBRICKS_DIR":
+                replace = k.replace("NAM", "VER")
+        # FIXME update this to refer to DESI_ROOT.
+        # Update this value in all headers.
+        for hdu in fd:
+            hdu.write_key(replace, args.skybricks_dir)
+
     fd.close()
 
 
