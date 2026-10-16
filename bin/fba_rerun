@@ -199,7 +199,11 @@ def main():
     # which we then pass to fba_launch to override the environment variable.
     sb_dir = get_dep_ver("SKYBRICKS_DIR")
     if (sb_dir != "-") and not args.dont_override_skybricks:
-        mydict["--skybricks_dir"] = sb_dir.replace("$DESI_ROOT", curr_desiroot)
+        sb_dir = sb_dir.replace("$DESI_ROOT", curr_desiroot)
+        # TODO: consider using pathlib, which has built in functinoality to change
+        # the root path a path is relative to. This would be more robust than a string replace.
+        sb_dir = sb_dir.replace("/global/cfs/", "/dvs_ro/cfs/")
+        mydict["--skybricks_dir"] = sb_dir
 
     # AR command line to execute
     tmparr = ["fba_launch"]
