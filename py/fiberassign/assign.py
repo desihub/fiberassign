@@ -304,6 +304,8 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
         for skyname in ["SKYBRICKS_DIR", "SKYHEALPIXS_DIR"]:
             if skyname in os.environ:
                 skydir = substitute_desiroot(os.getenv(skyname))
+            else:
+                skydir = None
             setdep(header, skyname, skydir)
 
         fd.write(None, header=header, extname="PRIMARY")
