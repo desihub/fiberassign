@@ -37,7 +37,7 @@ from desitarget.targetmask import desi_mask
 
 from ._version import __version__
 
-from .utils import Logger, Timer, default_mp_proc, GlobalTimers
+from .utils import Logger, Timer, default_mp_proc, GlobalTimers, substitute_desiroot
 
 from .targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY, TARGET_TYPE_SUPPSKY,
                       TARGET_TYPE_STANDARD, TARGET_TYPE_SAFE, desi_target_type,
@@ -302,11 +302,10 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
         #- shortening full path if possible
         # AR add SKYHEALPIX_DIR similarly, now looping over the variable names
         for skyname in ["SKYBRICKS_DIR", "SKYHEALPIXS_DIR"]:
-            skydir = os.getenv(skyname, None)
-            if (skydir is not None) and ("DESI_ROOT" in os.environ):
-                if skydir.startswith(os.environ["DESI_ROOT"]):
-                    skydir = skydir.replace(
-                            os.environ["DESI_ROOT"], "$DESI_ROOT", 1)
+            if skyname in os.environ:
+                skydir = substitute_desiroot(os.getenv(skyname))
+            else:
+                skydir = None
             setdep(header, skyname, skydir)
 
         fd.write(None, header=header, extname="PRIMARY")

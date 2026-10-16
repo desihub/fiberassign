@@ -216,6 +216,10 @@ def parse_assign(optlist=None):
                         help="value to determine the cpp behavior, see PR470 (default: based on the rundate)",
                         type=str)
 
+    parser.add_argument("--skybricks_dir", required=False, default=None,
+                        help="if passed, this will override the environment variable $SKYBRICKS_DIR, which is the location used for skybricks lookup for stuk fibers. Implicitly also override --lookup_sky_source.",
+                        type=str,)
+
     args = None
     if optlist is None:
         args = parser.parse_args()
@@ -482,7 +486,8 @@ def run_assign_full(args, plate_radec=True):
         stucksky = stuck_on_sky_from_fafns(args.fafns_for_stucksky)
     else:
         stucksky = stuck_on_sky(hw, tiles, args.lookup_sky_source,
-                                rundate=getattr(args, 'rundate', None))
+                                rundate=getattr(args, 'rundate', None),
+                                skybricks_dir=args.skybricks_dir)
     if stucksky is None:
         # (the pybind code doesn't like None when a dict is expected...)
         stucksky = {}

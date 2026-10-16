@@ -65,7 +65,7 @@ import desimeter
 
 # fiberassign
 import fiberassign
-from fiberassign.utils import Logger, assert_isoformat_utc, get_svn_version, get_last_line, read_ecsv_keys, get_date_cutoff
+from fiberassign.utils import Logger, assert_isoformat_utc, get_svn_version, get_last_line, read_ecsv_keys, get_date_cutoff, substitute_desiroot
 from fiberassign.targets import default_survey_target_masks
 
 # matplotlib
@@ -2264,6 +2264,12 @@ def launch_onetile_fa(
         ]
     opts += ["--lookup_sky_source", args.lookup_sky_source,]
     opts += ["--fba_use_fabs", str(args.fba_use_fabs)]
+    if args.skybricks_dir is not None:
+        opts += [
+            "--skybricks_dir",
+            args.skybricks_dir,
+        ]
+
     log.info(
         "{:.1f}s\t{}\ttileid={:06d}: running raw fiber assignment (run_assign_full) with opts={}".format(
             time() - start, step, tileid, " ; ".join(opts)
@@ -2413,11 +2419,9 @@ def update_fiberassign_header(
             # AR header keywords: MTL, MTL2 (or TARG, TARG2)
             suffixs = [""] + np.arange(2, len(mydirs[key]) + 1).astype(str).tolist()
             for path, suffix in zip(mydirs[key], suffixs):
-                fd["PRIMARY"].write_key(
-                    "{}{}".format(key, suffix), path.replace(desiroot, "DESIROOT"),
-                )
+                fd["PRIMARY"].write_key("{key}{suffix}", substitute_desiroot(path))
         else:
-            fd["PRIMARY"].write_key(key, mydirs[key].replace(desiroot, "DESIROOT"))
+            fd["PRIMARY"].write_key(key, substitute_desiroot(mydirs[key]))
     # AR storing some specific arguments
     # AR plus a (long) FAARGS keyword with storing arguments to re-run the fiber assignment
     # AR     we exclude from FAARGS outdir, forcetiled, and any None argument
@@ -2464,6 +2468,19 @@ def update_fiberassign_header(
     fd["PRIMARY"].write_key("LKSKYSRC", args.lookup_sky_source)
     # AR fba_use_fabs
     fd["PRIMARY"].write_key("USE_FABS", str(args.fba_use_fabs))
+
+    # DG - If skybricks_dir is included, we need to overwrite the dependency
+    # to accurately reflect which directory was used. We need this first
+    # for loop to determine which DEPVER it was written into.
+    if args.skybricks_dir is not None:
+        hd = fd["PRIMARY"].read_header()
+        for k in hd.keys():
+            if hd[k] == "SKYBRICKS_DIR":
+                replace = k.replace("NAM", "VER")
+        # Update this value in all headers.
+        for hdu in fd:
+            hdu.write_key(replace, substitute_desiroot(args.skybricks_dir))
+
     fd.close()
 
 

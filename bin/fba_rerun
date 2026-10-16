@@ -8,7 +8,7 @@ from astropy.io import fits
 from astropy import __version__ as astropy_version
 import numpy as np
 from fiberassign.fba_launch_io import assert_env_vars, print_config_infos
-from fiberassign.utils import Logger, get_svn_version
+from fiberassign.utils import Logger, get_svn_version, substitute_desiroot
 import desitarget
 import desimeter
 import fiberassign
@@ -96,6 +96,10 @@ def main():
             )
         )
 
+    # DG - abstracted these so they can be used elsewhere.
+    orig_desiroot = hdr["DESIROOT"]
+    curr_desiroot = os.getenv("DESI_ROOT")
+
     # AR loop on the used arguments in the fba_launch run
     for i in range(len(faargs) // 2):
         key = faargs[2 * i]
@@ -130,8 +134,6 @@ def main():
         # AR    (note that we do not expect to execute fba_rerun on special tiles)
         # AR    this command should correctly change $DESI_SURVEYOPS
         elif key == "--custom_too_file":
-            orig_desiroot = hdr["DESIROOT"]
-            curr_desiroot = os.getenv("DESI_ROOT")
             mydict[key] = ",".join(
                 [
                     fn.replace(orig_desiroot, curr_desiroot)
@@ -177,19 +179,13 @@ def main():
         curr_time = time() - start
         log.info(f"{curr_time:.1f}s\tsettings \t{name.rjust(13)}\t{orig_ver.ljust(10)}\t\t{rerun_ver}")
 
-    ver = get_dep_ver("desitarget")
-    log_versions("desitarget", ver, desitarget.__version__)
-    ver = get_dep_ver("desimeter")
-    log_versions("desimeter", ver, desimeter.__version__)
-    ver = get_dep_ver("desimodel")
-    log_versions("desimodel", ver, desimodel.__version__)
-    ver = get_dep_ver("astropy")
-    log_versions("astropy", ver, astropy_version)
-    ver = get_dep_ver("numpy")
-    log_versions("numpy", ver, np.__version__)
-    ver = get_dep_ver("python")
+    log_versions("desitarget", get_dep_ver("desitarget"), desitarget.__version__)
+    log_versions("desimeter", get_dep_ver("desimeter"), desimeter.__version__)
+    log_versions("desimodel", get_dep_ver("desimodel"), desimodel.__version__)
+    log_versions("astropy", get_dep_ver("astropy"), astropy_version)
+    log_versions("numpy", get_dep_ver("numpy"), np.__version__)
     py_version = ".".join([str(x) for x in sys.version_info[0:3]])
-    log_versions("python", ver, py_version)
+    log_versions("python", get_dep_ver("python"), py_version)
     log_versions("fiberassign", hdr["FA_VER"], fiberassign.__version__)
 
     # DG - print the SVNDM version to help catch if the scron did not run at NERSC
@@ -198,6 +194,13 @@ def main():
     curr_svnmtl = get_svn_version(os.path.join(os.getenv("DESI_SURVEYOPS"), "mtl"))
     log_versions("SVNMTL", hdr["SVNMTL"], curr_svnmtl)
     log.info(f"{curr_time:.1f}s\tsettings \tFor SVN Settings, check that Rerun >= Orig.")
+
+    # DG - We can reuse the above get_dep_ver function to get the SKYBRICKS_DIR
+    # which we then pass to fba_launch to override the environment variable.
+    sb_dir = get_dep_ver("SKYBRICKS_DIR")
+    if (sb_dir != "-") and not args.dont_override_skybricks:
+        sb_dir = substitute_desiroot(sb_dir, forward=False, dvs_ro=(not args.no_dvsro))
+        mydict["--skybricks_dir"] = sb_dir
 
     # AR command line to execute
     tmparr = ["fba_launch"]
@@ -273,6 +276,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--force_try_too_all",
         help="Override the value of try_too_all in the infiberassign header and use try_too_all regardless.",
+        action="store_true",
+        required=False
+    )
+
+    parser.add_argument(
+        "--dont_override_skybricks",
+        help="If passed, do not automatically override the $SKYBRICKS_DIR environment variable. Otherwise, try override with the value in the fiberassign header.",
         action="store_true",
         required=False
     )
