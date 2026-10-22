@@ -807,7 +807,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--skybricks_dir",
-        help="if passed, this will override the environment variable $SKYBRICKS_DIR, which is the location used for skybricks lookup for stuk fibers. Implicitly also override --lookup_sky_source.",
+        help="if passed, this will override the environment variable $SKYBRICKS_DIR, which is the location used for skybricks lookup for stuk fibers.",
         type=str,
         default=None
     )
