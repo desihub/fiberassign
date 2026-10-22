@@ -197,10 +197,10 @@ def main():
 
     # DG - We can reuse the above get_dep_ver function to get the SKYBRICKS_DIR
     # which we then pass to fba_launch to override the environment variable.
-    sb_dir = get_dep_ver("SKYBRICKS_DIR")
-    if (sb_dir != "-") and not args.dont_override_skybricks:
-        sb_dir = substitute_desiroot(sb_dir, forward=False, dvs_ro=(not args.no_dvsro))
-        mydict["--skybricks_dir"] = sb_dir
+    skybricksdir = get_dep_ver("SKYBRICKS_DIR")
+    if (skybricksdir != "-") and not args.dont_override_skybricks:
+        skybricksdir = substitute_desiroot(skybricksdir, forward=False, dvs_ro=(not args.no_dvsro))
+        mydict["--skybricks_dir"] = skybricksdir
 
     # AR command line to execute
     tmparr = ["fba_launch"]
