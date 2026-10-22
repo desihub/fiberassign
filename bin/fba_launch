@@ -927,7 +927,7 @@ if __name__ == "__main__":
                 log.warning("SKYHEALPIXS_DIR not set: stuck positioners will not be used for skies.")
         else:
             args.lookup_sky_source = "ls"
-            if skybricksdir is None:
+            if (skybricksdir is None) and (args.skybricks_dir is None):
                 log.warning("SKYBRICKS_DIR not set: stuck positioners will not be used for skies.")
 
 
