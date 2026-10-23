@@ -632,8 +632,10 @@ def substitute_desiroot(path, forward=True, dvs_ro=False):
     # DG - Backward goes $DESI_ROOT -> path
     else:
         new_path = path
-        if new_path.startswith("$DESI_ROOT"):
-            new_path = new_path.replace("$DESI_ROOT", desiroot, 1)
+        for token in ("$DESI_ROOT", "DESIROOT"):
+            if new_path.startswith(token):
+                new_path = new_path.replace(token, desiroot, 1)
+                break
         if dvs_ro:
             new_path = new_path.replace("/global/", "/dvs_ro/", 1)
     return new_path
