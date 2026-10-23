@@ -231,6 +231,8 @@ def default_main_sciencemask():
     sciencemask |= desi_mask["QSO"].mask
     sciencemask |= desi_mask["BGS_ANY"].mask
     sciencemask |= desi_mask["MWS_ANY"].mask
+    sciencemask |= desi_mask["BACKUP_TOO_HIP"].mask
+    sciencemask |= desi_mask["BACKUP_TOO_LOP"].mask
     if "SCND_ANY" in desi_mask.names():
         sciencemask |= desi_mask["SCND_ANY"].mask
     else:
