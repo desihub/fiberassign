@@ -32,7 +32,9 @@ from fiberassign.fba_launch_io import (
     copy_to_svn,
 )
 from desiutil.iers import freeze_iers
-from fiberassign.utils import get_fba_use_fabs,get_whether_to_reorder_mtl, get_whether_to_use_np_concatenate
+from fiberassign.utils import (get_fba_use_fabs,get_whether_to_reorder_mtl,
+                               get_whether_to_use_np_concatenate,
+                               get_obsconditions_cut)
 from argparse import ArgumentParser
 
 # AR allowed steps in fba_launch
@@ -211,8 +213,17 @@ def main():
         )
     )
 
-    # AR obscon : for the tile observing conditions, permissive value
-    obscon = "DARK|DARK1B|GRAY|BRIGHT|BRIGHT1B|BACKUP"
+    # DG - Before this date (when we decided BACKUP only ToOs were "on"), the obsconditions are
+    # permissive, once they're on we cut targets on obscon. We need to do this this way
+    # to ensure reproducibility of BACKUP tiles before that date but also BRIGHT1B tiles
+    # that were affected by the read two mtl bug.
+    if get_obsconditions_cut(args.rundate):
+        obscon = "DARK|DARK1B|GRAY|BRIGHT|BRIGHT1B|BACKUP"
+    else:
+        obscon = args.program
+        if "1B" in obscon:
+            obscon = f"{obscon.replace("1B", "")}|{obscon}"
+
     log.info("{:.1f}s\tsettings\ttile obscon={}".format(time() - start, obscon))
 
     # AR desitarget folders/files
