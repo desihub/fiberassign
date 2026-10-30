@@ -278,6 +278,28 @@ def get_whether_to_use_np_concatenate(rundate):
         return True
     return False
 
+def get_obsconditions_cut(rundate):
+    """
+    Return whether or not we should use a permissive obsconditions on this tile
+    or if we should cut targets based on the tiles conditions.
+
+    Args:
+        rundate: rundate, in the "YYYY-MM-DDThh:mm:ss+00:00" formatting (string)
+
+    Returns:
+        use_permissive_obsconditions: bool, True if we should use the permissive obsconditions
+
+    Notes:
+        See the PR [url tbd]
+        for a description of why this is necessary.
+    """
+    cutoff = get_mjd(get_date_cutoff("rundate", "permissive_obsconditions"))
+    input_mjd = get_mjd(rundate)
+    if input_mjd < cutoff:
+        log.info(f"USE_PERMISSIVE_OBSCON: As rundate={input_mjd} < cutoff={cutoff}, this tile will use permissive obscon")
+        return True
+    return False
+
 
 def get_svn_version(svn_dir):
     """
