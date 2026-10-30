@@ -222,7 +222,8 @@ def main():
     else:
         obscon = args.program
         if "1B" in obscon:
-            obscon = f"{obscon.replace("1B", "")}|{obscon}"
+            obscon_1a = obscon.replace("1B", "")
+            obscon = f"{obscon_1a}|{obscon}"
 
     log.info("{:.1f}s\tsettings\ttile obscon={}".format(time() - start, obscon))
 
