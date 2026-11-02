@@ -790,7 +790,7 @@ def arrays_equal(key, tileid, a, b):
 def diagnose_values_fafn(fafn):
     """
     Execute diagnostic of discrepant values between the fiberassign file
-        and the input static desitarget catalogs.
+    and the input static desitarget catalogs.
 
     Args:
         fafn: path to the fiberassign file (fiberassign-TILEID.fits.gz) (str)
@@ -801,18 +801,19 @@ def diagnose_values_fafn(fafn):
     Notes:
         The comparison ignores some expected/understood discrepancies.
         The column content of the output is:
-            "FAFN": fiberassign file name
-            "TILEID": tileid
-            "FAFLAVOR": faflavor
-            "FA_VER": fiberassign version
-            "PMTIME": time when the tile was designed
-            "LASTNIGHT": last night of observation for that tile (-99 if not observed)
-            "EXTENSION": fiberassign extension
-            "TARGETID": targetid
-            "ORIGFN": path to the static desitarget catalog
-            "KEY": column name
-            "ORIGVAL": value in the desitarget catalog, converted to string ("none" if the column is not present)
-            "FAVAL": value in the fiberassign file
+
+        - FAFN: fiberassign file name
+        - TILEID: tileid
+        - FAFLAVOR: faflavor
+        - FA_VER: fiberassign version
+        - PMTIME: time when the tile was designed
+        - LASTNIGHT: last night of observation for that tile (-99 if not observed)
+        - EXTENSION: fiberassign extension
+        - TARGETID: targetid
+        - ORIGFN: path to the static desitarget catalog
+        - KEY: column name
+        - ORIGVAL: value in the desitarget catalog, converted to string ("none" if the column is not present)
+        - FAVAL: value in the fiberassign file
     """
 
     # AR tileid
@@ -1178,6 +1179,7 @@ def get_patching_params(fn="patching_202210.yaml"):
         fn: the code will first look for:
             - first look for: resources.files("fiberassign").joinpath("data", fn)
             - then look for: fn
+
         See fiberassign/data/patching_202210.yaml for the formatting.
     """
     myfn = str(resources.files("fiberassign").joinpath("data", fn))
@@ -1209,11 +1211,10 @@ def patch(in_fafn, out_fafn, params_fn):
         Originally developed by D. Lang.
         Targets are matched on TARGETID, and values updated as necessary.
         If any rows are changed, then an updated file is written out, preserving all other HDUs.
-        params_fn:
-            - the code will use get_patching_params to first look for:
-                - first look for: resources.files("fiberassign").joinpath("data", fn)
-                - then look for: fn
-            - see fiberassign/data/patching_202210.yaml for the formatting.
+        params_fn: the code will use get_patching_params, which will first look for
+        the .yaml file in the fiberassign data directory
+        (resources.files("fiberassign").joinpath("data", fn)), then fall back to fn;
+        see fiberassign/data/patching_202210.yaml for the formatting.
     """
 
     # AR safe

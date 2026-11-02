@@ -1,7 +1,7 @@
 """
-fiberassign.fba_launch_io
-=============
-Utility functions for fba_launch
+fiberassign.fba_rerun_io
+========================
+Utility functions for fba_rerun
 """
 from __future__ import absolute_import, division
 
@@ -502,7 +502,7 @@ def fba_rerun_intermediate(
 
 def get_fba_rerun_scriptname(infiberassignfn, outdir, rerun="fa"):
     """
-    Get the fba_rerun_script() *sh scripts filenames.
+    Get the fba_rerun_script() ``*sh`` scripts filenames.
 
     Args:
         infiberassignfn: full path to the fiberassign-TILEID.fits.gz file to be rerun (string)
@@ -510,7 +510,7 @@ def get_fba_rerun_scriptname(infiberassignfn, outdir, rerun="fa"):
         rerun (optional, defaults to "fa"): type of rerun, "fa" or "intermediate" (string)
 
     Returns:
-        *sh script filename (string)
+        ``*sh`` script filename (string)
     """
     if rerun not in ["intermediate", "fa"]:
         sys.exit("rerun={} not in ['intermediate', 'rerun']; exiting".format(rerun))
@@ -541,7 +541,7 @@ def fba_rerun_fbascript(
     """
     Write a bash script (outdir/ABC/rerun-fa-TILEID.sh) to rerun fiber assignment of a fiberassign-TILEID.fits.gz file.
     If run_intermediate=True, also write a bash script (outdir/ABC/rerun-intermediate-TILEID.sh) to rerun the intermediate
-        products (TILEID-{tiles,sky,targ,scnd,too}.fits).
+    products (TILEID-{tiles,sky,targ,scnd,too}.fits).
 
     Args:
         infiberassignfn: full path to the fiberassign-TILEID.fits.gz file to be rerun (string)
@@ -553,22 +553,25 @@ def fba_rerun_fbascript(
         outfiberassign_type (optional, defaults to "zip"): "none"->no fiberassign-TILEID.fits, "unzip"->fiberassign-TILEID.fits, "zip"->fiberassign-TILEID.fits.gz (string)
         faver_noswap (optional, defaults to False): if True, does not "module swap fiberassign/xxx" to the original fiberassign code version  (boolean)
         run_check (optional, defaults to True): run fba_rerun_check()? (boolean)
-        intermediate_dir_final (optional, defaults to "-"): folder to move all intermediate products (*sh, *fits, *log) (string)
+        intermediate_dir_final (optional, defaults to "-"): folder to move all intermediate products (``*sh``, ``*fits``, ``*log``) (string)
         overwrite (optional, defaults to False): overwrite any existing file? (boolean)
         log (optional, defaults to Logger.get()): Logger object
         start (optional, defaults to time()): start time for log (in seconds; output of time.time())
 
     Notes:
         The bash script requires that the desi (master) environment is already loaded,
-            i.e. the following has been executed: "source /global/cfs/cdirs/desi/software/desi_environment.sh master".
+        i.e. the following has been executed: "source /global/cfs/cdirs/desi/software/desi_environment.sh master".
         The code will use all the intermediate products present in outdir/ABC, and only those.
         The code will create the sub-folders ABC/ if they do not exist.
         If any of the following (according to arguments) files already exist:
-            - outdir/ABC/rerun-fa-TILEID.{sh, log, diff} , outdir/ABC/{fba,fiberassign}-TILEID.fits{.gz},
-            - intermediate_dir_final/ABC/rerun-intermediate-TILEID.{sh,log} , TILEID-{tiles,sky,targ,scnd,too}.fits
+
+        - outdir/ABC/rerun-fa-TILEID.{sh, log, diff} , outdir/ABC/{fba,fiberassign}-TILEID.fits{.gz},
+        - intermediate_dir_final/ABC/rerun-intermediate-TILEID.{sh,log} , TILEID-{tiles,sky,targ,scnd,too}.fits
+
         the code will:
-            - exit with an error if overwrite=False;
-            - beforehand delete those if overwrite=True.
+
+        - exit with an error if overwrite=False;
+        - beforehand delete those if overwrite=True.
     """
     # AR assess arguments
     if not os.path.isfile(infiberassignfn):

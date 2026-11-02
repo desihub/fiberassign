@@ -1127,7 +1127,7 @@ def merge_results_tile(out_dtype, targets_columns, copy_fba, params):
             HDU.  This is the union of columns chosen from the input catalogs.
         targets_columns (OrderedDict):  Mapping of column name to dtype for
             the columns to write into the output TARGETS HDU (the base
-            merged_targets_columns plus any *_TARGET columns discovered for
+            merged_targets_columns plus any ``*_TARGET`` columns discovered for
             this particular merge_results() call).  This is passed explicitly
             (rather than read from the module-level merged_targets_columns
             global) so that it is correctly propagated to worker processes
