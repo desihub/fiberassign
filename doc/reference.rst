@@ -276,3 +276,20 @@ Timing
 
 .. autoclass:: fiberassign.utils.GlobalTimers
     :members:
+
+
+Rundate Helpers
+~~~~~~~~~~~~~~~~~~~~~~~
+
+These compare the rundate against the cutoff dates in
+``py/fiberassign/data/cutoff-dates.yaml`` (see :ref:`usage`):
+
+.. autofunction:: fiberassign.utils.get_date_cutoff
+
+.. autofunction:: fiberassign.utils.get_obsdate
+
+.. autofunction:: fiberassign.utils.get_fba_use_fabs
+
+.. autofunction:: fiberassign.utils.get_whether_to_reorder_mtl
+
+.. autofunction:: fiberassign.utils.get_whether_to_use_np_concatenate

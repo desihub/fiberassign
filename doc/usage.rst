@@ -114,6 +114,19 @@ fiber, or target specified will have all possible info logged.
     performance.  Do not use in large production runs.
 
 
+Rundate and Reproducibility
+--------------------------------
+
+The ``--rundate`` option (an ISO UTC string, e.g. ``2025-05-02T19:00:00+00:00``)
+selects the focalplane and fiber-status state from desimodel for that date,
+and also switches several era-dependent behaviors.  The cutoff dates are
+defined in ``py/fiberassign/data/cutoff-dates.yaml`` and applied by helper
+functions in :mod:`fiberassign.utils` (see :ref:`reference`).  Rerunning with
+an old rundate intentionally reproduces historical behavior, bug-for-bug.
+When adding a new behavior switch, add a key to that YAML file instead of
+hardcoding a date.
+
+
 Data File Testing
 ---------------------
 

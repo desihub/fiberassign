@@ -57,7 +57,7 @@ intersphinx_mapping = {
     'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
     'matplotlib': ('https://matplotlib.org/stable/', None),
     'astropy': ('https://docs.astropy.org/en/stable/', None),
-    'h5py': ('https://docs.scipy.org/doc/scipy/', None)
+    'h5py': ('https://docs.h5py.org/en/latest/', None)
     }
 
 # Add any paths that contain templates here, relative to this directory.

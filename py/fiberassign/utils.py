@@ -199,9 +199,12 @@ def get_fba_use_fabs(rundate):
 
     Notes:
         See this PR https://github.com/desihub/fiberassign/pull/470.
-        In the fiberassign running function, then one will set:
+        In the fiberassign running function, then one will set::
+
             os.environ["FIBERASSIGN_USE_FABS"] = fba_use_fabs
+
         So far:
+
         - fba_use_fabs=0 means we reproduce the buggy behavior;
         - fba_use_fabs=1 means we use the expected behavior.
     """
