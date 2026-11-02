@@ -74,7 +74,7 @@ results_assign_columns = OrderedDict([
     ("LAMBDA_REF", "f4"),
     ("PETAL_LOC", "i2"),
     ("DEVICE_LOC", "i4"),
-    ("DEVICE_TYPE", "a3"),
+    ("DEVICE_TYPE", "S3"),
     ("TARGET_RA", "f8"),
     ("TARGET_DEC", "f8"),
     ("FA_TARGET", "i8"),
@@ -466,7 +466,7 @@ def write_assignment_fits_tile(asgn, tagalong, fulltarget, overwrite, params):
         fdata["PETAL_LOC"] = np.array(
             [petal[x] for x in locs]).astype(np.int16)
         fdata["DEVICE_TYPE"] = np.array(
-            [device_type[x] for x in locs]).astype(np.dtype("a3"))
+            [device_type[x] for x in locs]).astype(np.dtype("S3"))
 
         # This hard-coded value copied from the original code...
         lambda_ref = np.ones(nloc, dtype=np.float32) * 5400.0
@@ -808,9 +808,25 @@ def read_assignment_fits_tile(tile_file):
                 if col in fbsky.dtype.names:
                     fiber_data[col][npos:] = fbsky[col]
 
-        full_targets_columns = [(x, y) for x, y in
-                                merged_targets_columns.items()]
-        full_names = [x for x, y in merged_targets_columns.items()]
+        # DG Tiles assigned before the 1b program don't have the columns
+        # MTL_HIGHEST, MTL_CONTAINS, and MTL_WANTED. So we check the
+        # desitarget version, and if it's below 2.9.0, when those columns
+        # were added, we don't try and load those columns.
+        keys_to_check = [s for s in header if "DEPNAM" in s]
+        version = "0.0.0"
+        for k in keys_to_check:
+            if header[k] == "desitarget":
+                version = header[k.replace("NAM", "VER")]
+
+        if version < "2.9.0":
+            full_targets_columns = [(x, y) for x, y in
+                                    merged_targets_columns.items() if "MTL" not in x]
+            full_names = [x for x, _ in merged_targets_columns.items() if "MTL" not in x]
+        else:
+            full_targets_columns = [(x, y) for x, y in
+                                    merged_targets_columns.items()]
+            full_names = [x for x, _ in merged_targets_columns.items()]
+
         fbtargets = fd["TARGETS"].read()
         nrawtarget = fd["TARGETS"].get_nrows()
 
@@ -1027,7 +1043,7 @@ merged_fiberassign_req_columns = OrderedDict([
     ("LAMBDA_REF", "f4"),
     ("FA_TARGET", "i8"),
     ("FA_TYPE", "u1"),
-    ("OBJTYPE", "a3"),
+    ("OBJTYPE", "S3"),
     ("FIBERASSIGN_X", "f4"),
     ("FIBERASSIGN_Y", "f4"),
     #("NUMTARGET", "i2"),
@@ -1058,7 +1074,7 @@ merged_skymon_columns = OrderedDict([
     ("TARGET_DEC", "f8"),
     ("FIBERASSIGN_X", "f4"),
     ("FIBERASSIGN_Y", "f4"),
-    ("BRICKNAME", "a8"),
+    ("BRICKNAME", "S8"),
     ("FIBERSTATUS", "i4"),
     ("PETAL_LOC", "i2"),
     ("DEVICE_LOC", "i4"),
@@ -1099,7 +1115,7 @@ merged_potential_columns = OrderedDict([
 ])
 
 
-def merge_results_tile(out_dtype, copy_fba, params):
+def merge_results_tile(out_dtype, targets_columns, copy_fba, params):
     """Merge results for one tile.
 
     This uses target catalog data which has been pre-staged to shared memory.
@@ -1109,6 +1125,13 @@ def merge_results_tile(out_dtype, copy_fba, params):
     Args:
         out_dtype (np.dtype):  The output recarray dtype for the merged target
             HDU.  This is the union of columns chosen from the input catalogs.
+        targets_columns (OrderedDict):  Mapping of column name to dtype for
+            the columns to write into the output TARGETS HDU (the base
+            merged_targets_columns plus any *_TARGET columns discovered for
+            this particular merge_results() call).  This is passed explicitly
+            (rather than read from the module-level merged_targets_columns
+            global) so that it is correctly propagated to worker processes
+            regardless of the multiprocessing start method in use.
         copy_fba (bool):  If True, copy the original raw fiberassign HDUs onto
             the end of the output file.
         params (tuple):  The tile ID and input / output files.  Set by
@@ -1431,7 +1454,7 @@ def merge_results_tile(out_dtype, copy_fba, params):
             newnames.append(nm)
     tile_targets.dtype.names = newnames
     # AR hard-cutting on merged_targets_columns + *_TARGET columns
-    tile_targets = tile_targets[list(merged_targets_columns.keys())]
+    tile_targets = tile_targets[list(targets_columns.keys())]
 
     fd.write(tile_targets, header=inhead, extname="TARGETS")
     del tile_targets
@@ -1663,7 +1686,15 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
     out_dtype = np.dtype(dcols)
 
     # AR adding any *_TARGET columns to the TARGETS columns
-    merged_targets_columns.update(
+    # NOTE: this is passed explicitly to merge_results_tile below (rather than
+    # mutating the module-level merged_targets_columns dict and relying on
+    # worker processes to see that mutation) because worker processes started
+    # with the "spawn" or "forkserver" multiprocessing start methods do not
+    # inherit updates made to the parent process's globals after the workers
+    # were created / the module was (re-)imported (e.g. Python 3.14 changed
+    # the default start method on Linux from "fork" to "forkserver").
+    targets_columns = merged_targets_columns.copy()
+    targets_columns.update(
             OrderedDict([
                 (name,out_dtype[name]) for name in out_dtype.names
                 if name[-7:]=="_TARGET"]))
@@ -1671,7 +1702,7 @@ def merge_results(targetfiles, skyfiles, tiles, result_dir=".",
     # For each tile, find the target IDs used.  Construct the output recarray
     # and copy data into place.
 
-    merge_tile = partial(merge_results_tile, out_dtype, copy_fba)
+    merge_tile = partial(merge_results_tile, out_dtype, targets_columns, copy_fba)
 
     if out_dir is None:
         out_dir = result_dir

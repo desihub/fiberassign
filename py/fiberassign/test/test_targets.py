@@ -4,6 +4,10 @@ Test fiberassign target operations.
 
 import os
 
+import shutil
+
+import tempfile
+
 import unittest
 
 import numpy as np
@@ -26,19 +30,19 @@ from fiberassign.targets import (TARGET_TYPE_SCIENCE, TARGET_TYPE_SKY,
                                  Targets, TargetsAvailable,
                                  LocationsAvailable, targets_in_tiles, create_tagalong)
 
-from .simulate import sim_data_subdir_create, sim_tiles, sim_targets
+from .simulate import sim_tiles, sim_targets
 
 
 class TestTargets(unittest.TestCase):
 
     def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
+        self.test_dir = tempfile.mkdtemp(
+            prefix="fiberassign_{}_".format(self._testMethodName))
+        # addCleanup runs even if setUp fails partway through, unlike tearDown
+        self.addCleanup(shutil.rmtree, self.test_dir, ignore_errors=True)
 
     def test_available(self):
-        test_dir = sim_data_subdir_create("targets_test_available")
+        test_dir = self.test_dir
         input_mtl = os.path.join(test_dir, "mtl.fits")
         input_std = os.path.join(test_dir, "standards.fits")
         input_sky = os.path.join(test_dir, "sky.fits")
@@ -150,11 +154,3 @@ class TestTargets(unittest.TestCase):
             default_main_skymask(), default_main_suppskymask(),
             default_main_safemask(), mask, default_main_gaia_stdmask())
         self.assertTrue(not np.any(result))
-
-
-def test_suite():
-    """Allows testing of only this module with the command::
-
-        python setup.py test -m fiberassign.test.test_targets
-    """
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)

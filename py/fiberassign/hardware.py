@@ -309,7 +309,7 @@ def load_hardware_args(focalplane=None, rundate=None, add_margins={}):
     nloc = len(keep_rows)
     log.debug("  focalplane table keeping {} rows for POS and ETC devices".format(nloc))
 
-    device_type = np.full(nloc, "OOPSBUG", dtype="a8")
+    device_type = np.full(nloc, "OOPSBUG", dtype="S8")
     device_type[:] = fp["DEVICE_TYPE"][keep_rows]
 
     locations = np.copy(fp["LOCATION"][keep_rows])

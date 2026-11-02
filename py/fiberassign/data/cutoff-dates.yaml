@@ -3,3 +3,5 @@ rundate:
     etc_stuck: "2022-04-28T19:00:00+00:00" # etc fibers are treated as stuck fibers after this date
     obsdate: "2025-05-02T19:00:00+00:00" # obsdate set as rundate + 1yr after this date
     fba_use_fabs: {"2019-09-16T00:00:00+00:00": 0, "2025-05-12T19:00:00+00:00": 1} # to set the env. variable for the c++ code (see PR470)
+    reorder_mtl: "2025-09-19T19:00:00+00:00" # perform reordering or not on loading two MTL ledgers
+    use_np_concatenate: "2026-06-02T19:00:00+00:00" # use np.concatenate when concatenating MTL ledgers.

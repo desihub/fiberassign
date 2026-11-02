@@ -5,13 +5,17 @@ import sys
 from time import time
 from astropy.time import Time
 from astropy.io import fits
+from astropy import __version__ as astropy_version
 import numpy as np
 from fiberassign.fba_launch_io import assert_env_vars, print_config_infos
-from fiberassign.utils import Logger
+from fiberassign.utils import Logger, get_svn_version
 import desitarget
 import desimeter
 import fiberassign
+import desimodel
 from desiutil.iers import freeze_iers
+
+from packaging.version import Version
 
 from argparse import ArgumentParser, RawTextHelpFormatter
 
@@ -26,6 +30,20 @@ def main():
 
     # AR freeze_iers
     freeze_iers()
+
+    # AR use dvs_ro in DESI_TARGET, SKYBRICKS_DIR, SKYHEALPIXS_DIR?
+    # AR (for speed up when reading catalogs / files)
+    # DG - I added DESI_SURVEYOPS here since the MTLs get read from there so we should see some speedup as well.
+    if not args.no_dvsro:
+        for name in ["DESI_TARGET", "SKYBRICKS_DIR", "SKYHEALPIXS_DIR", "DESI_SURVEYOPS"]:
+            old_var = os.getenv(name, None)
+            if old_var is not None:
+                new_var = old_var.replace("/global/cfs/cdirs/desi/", "/dvs_ro/cfs/cdirs/desi/")
+                log.info("{:.1f}s\tsettings\treplace {}={} with {}".format(
+                        time() - start, name, old_var, new_var,
+                    )
+                )
+                os.environ[name] = new_var
 
     # AR steps to execute in fba_launch
     steps = [step for step in args.steps.split(",")]
@@ -69,7 +87,7 @@ def main():
     # - did not exist for fba_launch before 5.0.0
     # - if fba_rerun run with tag < 5.0.0, we do not add this argument
     # - else, we add it; this will overwrite what s in faargs
-    if fiberassign.__version__ >= "5.0.0":
+    if Version(fiberassign.__version__) >= Version("5.0.0"):
         mydict["--steps"] = ",".join(steps)
     else:
         log.info(
@@ -77,6 +95,10 @@ def main():
                 time() - start
             )
         )
+
+    # DG - abstracted these so they can be used elsewhere.
+    orig_desiroot = hdr["DESIROOT"]
+    curr_desiroot = os.getenv("DESI_ROOT")
 
     # AR loop on the used arguments in the fba_launch run
     for i in range(len(faargs) // 2):
@@ -86,7 +108,9 @@ def main():
         # AR handling of the "action_store=True" arguments..
         # AR - if True, we keep the argument name
         # AR - if False, we remove
-        if key in ["--log_stdout", "--worldreadable", "--targ_std_only", "--too_tile", "--custom_too_development"]:
+        if key in ["--log_stdout", "--worldreadable", "--targ_std_only", "--too_tile", "--custom_too_development", "--try_too_all"]:
+            # If forcing try_too_all, will handle that later.
+            if key == "--try_too_all" and args.force_try_too_all: continue
             if val == "False":
                 continue
             else:
@@ -100,7 +124,7 @@ def main():
         # AR before 5.0.0, some arguments accepted with hyphen only, no underscore
         # AR    though hyphens have been automatically converted to underscores
         # AR    in the faargs...
-        elif (fiberassign.__version__ < "5.0.0") & (
+        elif (Version(fiberassign.__version__) < Version("5.0.0")) & (
             key in ["--log_stdout", "--margin_gfa", "--margin_petal", "--margin_pos"]
         ):
             mydict[key.replace("_", "-")] = val
@@ -110,8 +134,6 @@ def main():
         # AR    (note that we do not expect to execute fba_rerun on special tiles)
         # AR    this command should correctly change $DESI_SURVEYOPS
         elif key == "--custom_too_file":
-            orig_desiroot = hdr["DESIROOT"]
-            curr_desiroot = os.getenv("DESI_ROOT")
             mydict[key] = ",".join(
                 [
                     fn.replace(orig_desiroot, curr_desiroot)
@@ -128,6 +150,9 @@ def main():
             else:
                 mydict[key] = val
 
+    if args.force_try_too_all:  # Keep try_too_all no matter what
+        mydict["--try_too_all"] = ""
+
     # AR safe: DESI environment variables defined?
     assert_env_vars(log=log, step="settings", start=start)
 
@@ -136,33 +161,49 @@ def main():
 
     # AR for information, compare desitarget, desimeter, fiberassign
     # AR    code version with what was used in args.infiberassign
-    tmpname = [cards[0] for cards in hdr.cards if cards[1] == "desitarget"]
-    if len(tmpname) > 0:
-        inver = hdr[tmpname[0].replace("DEPNAM", "DEPVER")]
-    else:
-        inver = "-"
-    log.info(
-        "{:.1f}s\tsettings\tdesitarget: input={} , current={}".format(
-            time() - start, inver, desitarget.__version__
-        )
-    )
-    #
-    tmpname = [cards[0] for cards in hdr.cards if cards[1] == "desimeter"]
-    if len(tmpname) > 0:
-        inver = hdr[tmpname[0].replace("DEPNAM", "DEPVER")]
-    else:
-        inver = "-"
-    log.info(
-        "{:.1f}s\tsettings\tdesimeter: input={} , current={}".format(
-            time() - start, inver, desimeter.__version__
-        )
-    )
-    #
-    log.info(
-        "{:.1f}s\tsettings\tfiberassign: input={} , current={}".format(
-            time() - start, hdr["FA_VER"], fiberassign.__version__
-        )
-    )
+    # DG - 20261012 refactored these strings so the print is more easily readable.
+    def get_dep_ver(pkg_name):
+        # DG - Abstraction of code that searches the header for a given
+        # package then takes the version from the corresponding card.
+        tmpname = [cards[0] for cards in hdr.cards if cards[1] == pkg_name]
+        if len(tmpname) > 0:
+            ver = hdr[tmpname[0].replace("DEPNAM", "DEPVER")]
+        else:
+            ver = "-"
+        return ver
+
+    curr_time = time() - start
+    log.info(f"{curr_time:.1f}s\tsettings \tOriginal vs Rerun Settings")
+    log.info(f"{curr_time:.1f}s\tsettings \t{" "*13}\t{"ORIG".ljust(10)}\t\tRERUN")
+    def log_versions(name, orig_ver, rerun_ver):
+        curr_time = time() - start
+        log.info(f"{curr_time:.1f}s\tsettings \t{name.rjust(13)}\t{orig_ver.ljust(10)}\t\t{rerun_ver}")
+
+    log_versions("desitarget", get_dep_ver("desitarget"), desitarget.__version__)
+    log_versions("desimeter", get_dep_ver("desimeter"), desimeter.__version__)
+    log_versions("desimodel", get_dep_ver("desimodel"), desimodel.__version__)
+    log_versions("astropy", get_dep_ver("astropy"), astropy_version)
+    log_versions("numpy", get_dep_ver("numpy"), np.__version__)
+    py_version = ".".join([str(x) for x in sys.version_info[0:3]])
+    log_versions("python", get_dep_ver("python"), py_version)
+    log_versions("fiberassign", hdr["FA_VER"], fiberassign.__version__)
+
+    # DG - print the SVNDM version to help catch if the scron did not run at NERSC
+    curr_svndm = get_svn_version(os.path.join(os.getenv("DESIMODEL"), "data"))
+    log_versions("SVNDM", hdr["SVNDM"], curr_svndm)
+    curr_svnmtl = get_svn_version(os.path.join(os.getenv("DESI_SURVEYOPS"), "mtl"))
+    log_versions("SVNMTL", hdr["SVNMTL"], curr_svnmtl)
+    log.info(f"{curr_time:.1f}s\tsettings \tFor SVN Settings, check that Rerun >= Orig.")
+
+    # DG - We can reuse the above get_dep_ver function to get the SKYBRICKS_DIR
+    # which we then pass to fba_launch to override the environment variable.
+    skybricksdir = get_dep_ver("SKYBRICKS_DIR")
+    if (skybricksdir != "-") and not args.dont_override_skybricks:
+        skybricksdir = skybricksdir.replace("$DESI_ROOT", curr_desiroot)
+        # TODO: consider using pathlib, which has built in functinoality to change
+        # the root path a path is relative to. This would be more robust than a string replace.
+        skybricksdir = skybricksdir.replace("/global/cfs/", "/dvs_ro/cfs/")
+        mydict["--skybricks_dir"] = skybricksdir
 
     # AR command line to execute
     tmparr = ["fba_launch"]
@@ -170,7 +211,7 @@ def main():
         tmparr += [key, mydict[key]]
         log.info(
             "{:.1f}s\tsettings\t{}\t= {}".format(
-                time() - start, repr(key), repr(mydict[key])
+                time() - start, str(key).ljust(20), repr(mydict[key])
             )
         )
     tmpstr = " ".join(tmparr)
@@ -229,6 +270,24 @@ if __name__ == "__main__":
         type=str,
         default=None,
         required=False,
+    )
+    parser.add_argument(
+        "--no_dvsro",
+        help="do not replace '/global/cfs/desi/' by '/dvs_ro/cfs/desi/' in $DESI_TARGET, $SKYBRICKS_DIR, $SKYHEALPIXS_DIR",
+        action="store_true",
+   )
+    parser.add_argument(
+        "--force_try_too_all",
+        help="Override the value of try_too_all in the infiberassign header and use try_too_all regardless.",
+        action="store_true",
+        required=False
+    )
+
+    parser.add_argument(
+        "--dont_override_skybricks",
+        help="If passed, do not automatically override the $SKYBRICKS_DIR environment variable. Otherwise, try override with the value in the fiberassign header.",
+        action="store_true",
+        required=False
     )
 
     args = parser.parse_args()

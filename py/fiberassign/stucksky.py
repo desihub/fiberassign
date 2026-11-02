@@ -8,7 +8,7 @@ from desitarget.skybricks import Skybricks
 from desitarget.skyhealpixs import Skyhealpixs
 from astropy.time import Time
 
-def stuck_on_sky(hw, tiles, lookup_sky_source, rundate=None):
+def stuck_on_sky(hw, tiles, lookup_sky_source, rundate=None, skybricks_dir=None):
     '''
     Will STUCK positioners land on good SKY locations for the given set of tiles?
 
@@ -16,6 +16,7 @@ def stuck_on_sky(hw, tiles, lookup_sky_source, rundate=None):
         hw: hardware properties loaded by fiberassign.hardware.load_hardware()
         tiles: tiles loaded by fiberassign.tiles.load_tiles()
         lookup_sky_source: "ls" or "gaia"
+        skybricks_dir: optional, override the SKYBRICKS_DIR environment variable if using legacy survey lookup sky source.
 
     Returns a nested dict:
         stuck_sky[tileid][loc] = bool_good_sky
@@ -113,9 +114,9 @@ def stuck_on_sky(hw, tiles, lookup_sky_source, rundate=None):
         if lookup_sky_source == "ls":
             if skybricks is None:
                 try:
-                    skybricks = Skybricks()
+                    skybricks = Skybricks(skybricks_dir=skybricks_dir)
                 except:
-                    log.warning('Environment variable SKYBRICKS_DIR is not set; not looking '
+                    log.warning('SKYBRICKS_DIR not found (either not set or invalid location passed); not looking '
                                 'up whether stuck positioners land on good sky')
                     return
             good_sky = skybricks.lookup_tile(tile_ra, tile_dec, hw.focalplane_radius_deg,
