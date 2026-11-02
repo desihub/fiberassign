@@ -11,10 +11,9 @@ Welcome to fiberassign's documentation!
     examples.rst
     reference.rst
     changes.rst
-    script_fba_merge_results.rst
-    script_fba_plot_qa.rst
+    script_fba_launch.rst
     script_fba_plot.rst
-    script_fba_run_qa.rst
+    script_fba_rerun.rst
     script_fba_run.rst
 
 

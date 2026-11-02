@@ -13,7 +13,7 @@ cd "$(dirname "$0")"
 export PYTHONPATH="$(cd ../py && pwd)${PYTHONPATH:+:$PYTHONPATH}"
 export COLUMNS=80  # keep argparse line wrapping stable
 
-scripts="fba_run fba_fulltest fba_merge_results fba_run_qa fba_plot fba_plot_qa fiberassign"
+scripts="fba_run fba_launch fba_rerun fba_fulltest fba_merge_results fba_run_qa fba_plot fba_plot_qa fiberassign"
 
 for s in $scripts; do
     out="_static/${s}.inc"

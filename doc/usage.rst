@@ -31,7 +31,7 @@ For now, this "raw" output format is slightly different than the one used
 historically, and does not contain all the information that was in the original
 target catalog.  This will be changed in the future.  For now, files with this
 extra info can be created by post-processing the output with the
-:ref:`script_fba_merge_results` script:
+``fba_merge_results`` script:
 
 .. include:: _static/fba_merge_results.inc
 
@@ -43,7 +43,7 @@ extra info can be created by post-processing the output with the
        --out out_merged
 
 There are several built-in tools for doing quality assurance of the resulting
-assignment.  One of these is the :ref:`script_fba_run_qa` script.  This will
+assignment.  One of these is the ``fba_run_qa`` script.  This will
 compute the per-tile counts for the different target types and write these to
 JSON file (by default named "qa.json" in the output directory):
 
@@ -75,7 +75,7 @@ for the fiber assignment we already ran::
 In the plot above, science targets are red, sky is blue, standards are orange, and dual science / standard targets are green.
 
 We can also make a crude visualization of the QA for the entire footprint using
-the :ref:`script_fba_plot_qa` script.  Note that when plotting only a few tiles
+the ``fba_plot_qa`` script.  Note that when plotting only a few tiles
 the resulting plot is not as useful (but in that case you can get the numbers
 directly out of the JSON):
 
