@@ -74,8 +74,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'fiberassign'
-copyright = '2014-2025, DESI Collaboration'
-author = 'Robert Cahn, Jaime E. Forero-Romero, Ted Kisner'
+copyright = '2014-2026, DESI Collaboration'
+author = 'Robert Cahn, Jaime E. Forero-Romero, Ted Kisner, Anand Raichoor'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
