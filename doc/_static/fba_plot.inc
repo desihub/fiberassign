@@ -1,7 +1,8 @@
 .. code-block:: console
 
     usage: fba_plot [-h] [--out_dir OUT_DIR] [--petals PETALS] [--simple]
-                    [--serial] files [files ...]
+                    [--serial]
+                    files [files ...]
 
     positional arguments:
       files
@@ -13,5 +14,5 @@
                          petals)
       --simple           Plot simple lines for the positioner arms and no
                          exclusion zones. This is less informative, but faster.
-      --serial           Disable the use of multiprocessing. Needed by some
-                         unit tests to avoid issues with matplotlib.
+      --serial           Disable the use of multiprocessing. Needed by some unit
+                         tests to avoid issues with matplotlib.

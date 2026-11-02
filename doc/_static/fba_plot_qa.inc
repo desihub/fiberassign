@@ -2,7 +2,7 @@
 
     usage: fba_plot_qa [-h] --qafile QAFILE [--outroot OUTROOT] [--labels]
 
-    optional arguments:
+    options:
       -h, --help         show this help message and exit
       --qafile QAFILE    Input QA file.
       --outroot OUTROOT  Output root file name. Default uses input.

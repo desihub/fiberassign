@@ -136,49 +136,9 @@ translates the command line options into arguments to pass to the newer
 scripts.
 
 Running ``fiberassign --help`` gives the full set of command line
-options::
+options:
 
-  usage: fiberassign [-h] --mtl MTL --sky SKY --stdstar STDSTAR
-                   --fibstatusfile FIBSTATUSFILE
-                   [--footprint FOOTPRINT]
-                   [--positioners POSITIONERS] [--surveytiles SURVEYTILES]
-                   [--telra TELRA] [--teldec TELDEC] [--tileid TILEID]
-                   [--tileobsconditions TILEOBSCONDITIONS] [--outdir OUTDIR]
-                   [--starmask STARMASK] [--rundate RUNDATE]
-                   [--gfafile GFAFILE] [--nstarpetal NSTARPETAL]
-                   [--nskypetal NSKYPETAL] [--nocleanup]
-
-  optional arguments:
-  -h, --help            show this help message and exit
-  --mtl MTL             input targets (FITS file)
-  --sky SKY             input sky positions (FITS file)
-  --stdstar STDSTAR     input std stars (FITS file)
-  --fibstatusfile FIBSTATUSFILE
-                        list of positioners and its status (ECSV file)
-  --footprint FOOTPRINT
-                        list of tiles defining the footprint (FITS file)
-  --positioners POSITIONERS
-                        list of positioners on the focal plane (FITS file)
-  --surveytiles SURVEYTILES
-                        set of tiles to run fiberassign on (text file)
-  --telra TELRA         Right Ascension of arbitrary pointing - overrides
-                        --surveytiles
-  --teldec TELDEC       Declination of arbitrary pointing - overrides
-                        --surveytiles
-  --tileid TILEID       Integer ID of arbitrary pointing - overrides
-                        --surveytiles
-  --tileobsconditions TILEOBSCONDITIONS
-                        Mask describing observing program (DARK:1, GRAY:2,
-                        BRIGHT:4) - overrides --surveytiles
-  --outdir OUTDIR       output directory (default = ./)
-  --starmask STARMASK   integer mask defining standard stars
-  --rundate RUNDATE     run date [YYYY-MM-DD]
-  --gfafile GFAFILE     GFA file (FITS tile)
-  --nstarpetal NSTARPETAL
-                        number of standard stars per petal (default=10)
-  --nskypetal NSKYPETAL
-                        number of sky fibers per petal (default=40)
-  --nocleanup
+.. include:: _static/fiberassign.inc
 
 
 An example that provides the minimal set of required arguments would be::
