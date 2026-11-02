@@ -126,6 +126,44 @@ an old rundate intentionally reproduces historical behavior, bug-for-bug.
 When adding a new behavior switch, add a key to that YAML file instead of
 hardcoding a date.
 
+The currently defined cutoffs are:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 18 34 48
+
+   * - Key
+     - Cutoff (UTC)
+     - Description (from ``cutoff-dates.yaml``)
+   * - ``std_wd``
+     - 2021-12-01T19:00:00+00:00
+     - std_wd not counted in per-petal-std after that rundate
+   * - ``etc_stuck``
+     - 2022-04-28T19:00:00+00:00
+     - etc fibers are treated as stuck fibers after this date
+   * - ``obsdate``
+     - 2025-05-02T19:00:00+00:00
+     - obsdate set as rundate + 1yr after this date
+   * - ``fba_use_fabs``
+     - 2019-09-16T00:00:00+00:00 -> 0, 2025-05-12T19:00:00+00:00 -> 1
+     - value of the env. variable for the C++ code (see PR #470)
+   * - ``reorder_mtl``
+     - 2025-09-19T19:00:00+00:00
+     - perform reordering or not on loading two MTL ledgers
+   * - ``use_np_concatenate``
+     - 2026-06-02T19:00:00+00:00
+     - use np.concatenate when concatenating MTL ledgers
+
+Two of these deserve a note.  ``obsdate`` defaults to ``2022-07-01`` for
+rundates before its cutoff; afterwards it is set to the rundate plus one
+year.  ``fba_use_fabs`` reproduces a historical bug: before version 5.8.0 the
+C++ code used ``::abs`` to compute each positioner's minimum reachable
+distance, which under GCC 11 truncated the value to an integer and changed
+some assignments (91.1% of main bright/dark tiles designed on or before
+2025-04-26 were affected).  For rundates before the cutoff ``fba_use_fabs``
+is 0 and the buggy behavior is reproduced; from the cutoff on it is 1 and the
+fixed ``::fabs`` computation is used.
+
 
 Data File Testing
 ---------------------

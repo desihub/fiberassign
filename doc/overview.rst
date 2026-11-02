@@ -15,10 +15,9 @@ Constraints
 The focal plane has 5000 robotically controlled positioners with
 a patrol radius of 6 mm and a positioning precision close to a few microns.
 The positioners are arrayed in 10 petals shaped like pie slices.
-With about 10000 pointings (also called tiles) during the life of the survey, the system can
-reach about 50 million targets.
+The survey covers 17,000 square degrees with about 26,700 pointings (also
+called tiles), reaching more than 60 million targets.
 The instrumented area of the focal plane is 7.5 square degrees.
-The anticipated density of targets is 25000 objects per squared degree.
 
 Algorithm
 --------------------
