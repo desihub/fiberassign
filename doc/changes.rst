@@ -9,7 +9,7 @@ fiberassign change log
 * `fba_launch` can now override $SKYBRICKS_DIR with the `--skybricks_dir` command line option. (PR `#529`_).
 
 .. _`#528`: https://github.com/desihub/fiberassign/pull/528
-.. _`#528`: https://github.com/desihub/fiberassign/pull/529
+.. _`#529`: https://github.com/desihub/fiberassign/pull/529
 
 6.0.3 (2026-09-21)
 ------------------

@@ -1,170 +1,123 @@
 .. _install:
 
-
-Use at NERSC
-==============================
-
-At NERSC, you can use the pre-installed version of all DESI tools.  There is a
-nightly snapshot of the master branch accessible with (assuming you use bash)::
-
-    %> . /project/projectdirs/desi/software/desi_environment.sh master
-
-All tools (including fiberassign) should then be in your executable and python
-search paths.  After loading this, you can separately checkout and install your
-own fiberassign version if desired.
-
-
 Installation
-===============
+============
 
-The DESI fiber assignment code is a hybrid code written in C++ and Python.
-Installation requires support for at least the C++11 standard.  Compilation of
-the internal fiberassign extension should "just work" using whatever compiler
-is the default for the Python you install.  The compilation has been tested on
-Linux with gcc 4.9 through 8.0 and on OS X with both the system clang and the
-gcc wrapper.
+Requirements
+------------
 
-
-External Dependencies
-------------------------
-
-In addition to the usual numpy / scipy software stack, the "fitsio" package is
-also required.  There are multiple ways of installing a working python3 stack
-on both Linux and OS X.  The solution you choose likely depends on what other
-things you are using Python for- not just fiberassign.  In these examples,
-we'll be creating a python stack in ${HOME}/software/desi, however if you
-already have a python stack for use with DESI tools, just skip this section.
-
-Use Anaconda...
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The officially supported DESI python environment is Anaconda.  After installing
-the main Anaconda distribution, the "conda" command should be available.
-Create a new conda environment::
-
-  %> conda create --copy -m -p ${HOME}/software/desi
-  %> conda activate ~/software/desi
-  %> conda install numpy scipy astropy matplotlib
-  %> pip install --no-binary :all: fitsio
-
-... Or Use Virtualenv and Pip
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Install Python3 and the virtualenv package with your OS package manager (Linux)
-or using macports / homebrew (OS X).  Next create a virtualenv and activate
-it::
-
-  %> virtualenv -p python3 ${HOME}/software/desi
-  %> source ${HOME}/software/desi/bin/activate
-
-Now use pip to install the dependencies we need::
-
-  %> pip install numpy scipy astropy matplotlib
-  %> pip install --no-binary :all: fitsio
+- Python >= 3.10 (see ``requires-python`` in ``pyproject.toml``).
+- A C++ compiler with C++14 support.  ``setup.py`` probes for ``-std=c++14``
+  and falls back to ``-std=c++11``.
+- The usual scientific python stack: numpy, scipy, astropy, matplotlib,
+  fitsio, pyyaml, healpy.
+- The DESI packages desiutil, desimodel, desitarget and desimeter.  Note that
+  some of these are imported directly by the fiberassign code even though they
+  are not all listed in ``pyproject.toml`` dependencies.
 
 
-DESI Affiliated Dependencies
----------------------------------
+DESI dependencies
+-----------------
 
-Activate / load your python stack from the previous section.  Since you created
-a conda environment or virtualenv directory specifically for DESI tools (or
-perhaps even just for fiber assignment), you can always delete that directory
-and make a new one as needed.
+Install the DESI packages from github (the default branch is ``main``)::
 
-Fiberassign requires some additional DESI packages in order to function.
-Currently these include desiutil, desimodel and desitarget.  The best way to
-install and use these DESI packages depends on your use case.  Here we outline
-some different scenarios.
+    %> pip install git+https://github.com/desihub/desiutil.git@main
+    %> pip install git+https://github.com/desihub/desimodel.git@main
+    %> pip install git+https://github.com/desihub/desitarget.git@main
+    %> pip install git+https://github.com/desihub/desimeter.git@main
 
-DESI "User"
-~~~~~~~~~~~~~~~~~~~~~
+fiberassign needs the desimodel data, pointed to by the ``$DESIMODEL``
+environment variable.  For real survey work, export the full data::
 
-If you are using these DESI packages but have no intention of hacking on that
-code, then you may not want or need a persistent git checkout of any code.  In
-that case, you can pip install everything directly from github.::
+    %> export DESIMODEL=${HOME}/software/desimodel
+    %> svn export https://desi.lbl.gov/svn/code/desimodel/trunk/data ${DESIMODEL}/data
 
-    %> pip install git+https://github.com/desihub/desiutil.git@master#egg=desiutil
-    %> pip install git+https://github.com/desihub/desimodel.git@master#egg=desimodel
-    %> pip install git+https://github.com/desihub/desitarget.git@master#egg=desitarget
+For running the test suite, the small test branch used by CI is sufficient::
 
-You also need to install the desimodel data::
-
-    %> export DESIMODEL=${HOME}/software/desi
-    %> svn export https://desi.lbl.gov/svn/code/desimodel/trunk/data \
-     ${DESIMODEL}/data
-
-You will need to ensure that $DESIMODEL is set in your environment before
-running fiberassign.  I suggest making a shell function / alias that activates
-your python stack and sets this environment variable.
-
-DESI "Developer"
-~~~~~~~~~~~~~~~~~~~~~
-
-If you are routinely working on DESI code you likely already have git checkouts
-of these core packages.  Make sure your git checkouts are up to date and
-install each of the packages into your conda env / virtualenv with::
-
-    %> python setup.py clean
-    %> python setup.py install
-
-And of course we still need a copy of the desimodel data.  If you already have
-a local copy of that, then just make sure that the DESIMODEL environment
-variable is set appropriately or export a copy into your conda env / virtualenv
-as in the last section.
+    %> svn export https://desi.lbl.gov/svn/code/desimodel/branches/test-0.19/data ${DESIMODEL}/data
 
 
 Installing fiberassign
------------------------------
+----------------------
 
-Here again we have a choice of how to install fiberassign depending on our use
-case.
+User
+~~~~
 
-Fiberassign User
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Install a fixed version directly from github::
 
-If you are using fiberassign, but are not going to be working on the code or
-submitting pull requests, etc, then you can just pip install directly from
-github::
+    %> pip install git+https://github.com/desihub/fiberassign.git@main
 
-    %> pip install git+https://github.com/desihub/fiberassign.git@master#egg=fiberassign
+Developer / contributor
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Clone the repository and compile the C++ extension in place::
+
+    %> git clone https://github.com/desihub/fiberassign.git
+    %> cd fiberassign
+    %> CC=g++ CXX=g++ CFLAGS="-fPIC" LDSHARED="g++ -shared" python setup.py build_ext --inplace
+
+Then use it from the source tree by adding the package and scripts to your
+search paths::
+
+    %> export PYTHONPATH=${PWD}/py
+    %> export PATH=${PWD}/bin:$PATH
+
+Alternatively install it into your environment with ``pip install .`` (or
+``pip install -e .`` for an editable install).  The ``CC`` / ``CXX`` /
+``CFLAGS`` / ``LDSHARED`` variables above are needed on some platforms and are
+what CI uses; on others the default compiler invocation just works.
+
+Note that ``python setup.py`` only supports the ``build_ext`` and ``clean``
+commands.  Running ``test``, ``version``, ``build_docs`` or ``build_sphinx``
+prints a message explaining the modern replacement and exits.
 
 
-Fiberassign Developer / Contributor
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Verifying the installation
+--------------------------
 
-If there is any chance you might want to work on the fiberassign codebase, even
-just to contribute small bug reports, it is useful to have a persistent git
-checkout of the code.  Git clone the repository.  You can then install it into
-your conda env / virtualenv with::
+With ``$DESIMODEL`` set, run the test suite::
 
-    %> python setup.py clean
-    %> python setup.py install
+    %> pytest
 
-Alternatively, you can install it to some other location::
+and check that the package imports::
 
-    %> python setup.py clean
-    %> python setup.py install --prefix <somewhere>
+    %> python -c "import fiberassign; print(fiberassign.__version__)"
 
-Or compile fiberassign and use it from the source tree::
 
-    %> python setup.py clean; python setup.py build_ext --inplace
+Building the documentation
+--------------------------
 
-In the last two cases, you will need to modify your PATH and PYTHONPATH
-variables to point to the copy you wish to use.
+The documentation is built with Sphinx::
 
-Something Went Wrong!
----------------------------
+    %> pip install -r doc/rtd_requirements.txt
+    %> cd doc && make html
 
-If something gets messed up, it's ok.  You are using a separate conda / virtualenv environment so you can just do::
+or equivalently ``sphinx-build -W --keep-going -b html doc doc/_build/html``.
+The build imports fiberassign, so the C++ extension must be compiled first
+(see above).
 
-    %> rm -rf ${HOME}/software/desi
 
-and start over from the beginning.  If you encounter an installation problem, please open a github ticket and provide the following details:
+Use at NERSC
+------------
 
-- OS and version.
+At NERSC, you can use the pre-installed version of all DESI tools.  There is a
+nightly snapshot of the main branch accessible with::
 
-- Where you got your python (Anaconda, OS packages, homebrew, etc).
+    %> source /global/common/software/desi/desi_environment.sh main
 
-- Python version (:code:`python --version`).
+All tools (including fiberassign) should then be in your executable and python
+search paths.  After loading this, you can separately check out and install
+your own fiberassign version if desired.
 
-- Any compiler error / output.
+
+Troubleshooting
+---------------
+
+- ``ModuleNotFoundError`` for a DESI package or for ``fiberassign._internal``:
+  check that the DESI dependencies are installed, and that the C++ extension
+  was built (``py/fiberassign/_internal*.so`` should exist after ``build_ext
+  --inplace``) or that fiberassign was pip-installed.
+- Tests failing with desimodel errors: make sure ``$DESIMODEL`` is set and
+  points at a directory containing ``data/``.
+- If a local build gets messed up, ``python setup.py clean`` removes the build
+  artifacts and the compiled extension.

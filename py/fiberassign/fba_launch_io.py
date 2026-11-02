@@ -1,6 +1,6 @@
 """
 fiberassign.fba_launch_io
-=============
+=========================
 Utility functions for fba_launch
 """
 from __future__ import absolute_import, division
@@ -576,13 +576,9 @@ def assert_env_vars(
     Assert the environment variables required by fba_launch
 
     Args:
-        required_env_vars (optional, defaults to ["DESI_ROOT",
-        "DESI_TARGET",
-        "DESIMODEL",
-        "DESI_SURVEYOPS",
-        "SKYBRICKS_DIR",
-        "DUST_DIR",
-        "SKYHEALPIXS_DIR",]): list of environment variables required by fba_launch
+        required_env_vars (optional): list of environment variables required by fba_launch;
+            defaults to ["DESI_ROOT", "DESI_TARGET", "DESIMODEL", "DESI_SURVEYOPS",
+            "SKYBRICKS_DIR", "DUST_DIR", "SKYHEALPIXS_DIR"]
         log (optional, defaults to Logger.get()): Logger object
         step (optional, defaults to ""): corresponding step, for fba_launch log recording
             (e.g. dotiles, dosky, dogfa, domtl, doscnd, dotoo)
@@ -590,8 +586,8 @@ def assert_env_vars(
 
     Notes:
         Will exit with error if some assertions are not verified.
-        20210928 : add DUST_DIR, as assign.merge_results_tile() requires it to populate EBV=0 values.
-        20211109 : add SKYHEALPIXS_DIR
+        20210928: add DUST_DIR, as assign.merge_results_tile() requires it to populate EBV=0 values.
+        20211109: add SKYHEALPIXS_DIR
     """
     # AR safe: DESI environment variables
     for required_env_var in required_env_vars:
@@ -1259,12 +1255,14 @@ def create_sky(
         start(optional, defaults to time()): start time for log (in seconds; output of time.time()
 
     Notes:
-        add_plate_cols: not adding PLATE_REF_EPOCH;
-        20210526 : implementation of using subpriority=False in write_skies
-                    to avoid an over-writting of the SUBPRIORITY
-        20210903 : introducing a condition on the desitarget version,
-                    to be able to reproduce SV3 pre-20210526 intermediate files,
-                    with desitarget version < 1.1.0
+        add_plate_cols: not adding PLATE_REF_EPOCH.
+
+        20210526: implementation of using subpriority=False in write_skies
+            to avoid an over-writting of the SUBPRIORITY
+
+        20210903: introducing a condition on the desitarget version,
+            to be able to reproduce SV3 pre-20210526 intermediate files,
+            with desitarget version < 1.1.0
     """
     log.info("")
     log.info("")
@@ -1490,25 +1488,22 @@ def create_mtl(
         if pmcorr="y", then pmtime_utc_str needs to be set; will trigger an error otherwise.
         for sv3-backup, we remove BACKUP_BRIGHT targets.
 
-        TBD: the PLATE_{RA,DEC,REF_EPOCH} columns currently simply are copy of RA,DEC,REF_EPOCH
-        TBD:    but it prepares e.g. to add chromatic offsets.
+        TBD: the PLATE_{RA,DEC,REF_EPOCH} columns currently simply are copy of RA,DEC,REF_EPOCH,
+        but it prepares e.g. to add chromatic offsets.
 
-        20210526 : implementation of using subpriority=False in write_targets
-                    to avoid an over-writting of the SUBPRIORITY
-        20210831 : add "leq=True" in read_targets_in_tiles()
-        20210903 : introducing a condition on the desitarget version,
-                    to be able to reproduce SV3 pre-20210526 intermediate files,
-                    with desitarget version < 1.1.0
-        20210903 : condition in read_targets_in_tiles() for desitarget < 1.1.0 compatibility
-        20210914 : add equivalent of match_ledger_to_targets() for secondary (except for backup)
-        20210917 : add possibility of extra secondary folders, as main2/, main3/, etc (see get_desitarget_paths())
-                    for that, changing targdir arguments to targdirs
-        20210930 : moving some imports inside this function to avoid circular imports.
-        20211227 : add std_only:
-                    - will exclude STD_WD as no rundate used
-                    - guess the program from the mtldir
-                    - only enabled for survey="main"
-        20250218 : handle desi-extension, with dark1b/bright1b
+        - 20210526: implementation of using subpriority=False in write_targets
+          to avoid an over-writting of the SUBPRIORITY
+        - 20210831: add "leq=True" in read_targets_in_tiles()
+        - 20210903: introducing a condition on the desitarget version, to be able to
+          reproduce SV3 pre-20210526 intermediate files, with desitarget version < 1.1.0
+        - 20210903: condition in read_targets_in_tiles() for desitarget < 1.1.0 compatibility
+        - 20210914: add equivalent of match_ledger_to_targets() for secondary (except for backup)
+        - 20210917: add possibility of extra secondary folders, as main2/, main3/, etc
+          (see get_desitarget_paths()); for that, changing targdir arguments to targdirs
+        - 20210930: moving some imports inside this function to avoid circular imports.
+        - 20211227: add std_only; will exclude STD_WD as no rundate used, guess the
+          program from the mtldir, only enabled for survey="main"
+        - 20250218: handle desi-extension, with dark1b/bright1b
     """
     log.info("")
     log.info("")
@@ -1885,25 +1880,27 @@ def create_too(
 
     Notes:
         if pmcorr="y", then pmtime_utc_str needs to be set; will trigger an error otherwise.
-        TBD : the MJD window to accept targets; currently in fba_launch, we set a month
-                from the tile design date;
-                it surely needs to be updated/refined once operations are more clear.
+
+        TBD: the MJD window to accept targets; currently in fba_launch, we set a month
+        from the tile design date; it surely needs to be updated/refined once operations
+        are more clear.
+
         some steps in common with create_mtl().
 
-        TBD: the PLATE_{RA,DEC,REF_EPOCH} columns currently simply are copy of RA,DEC,REF_EPOCH
-        TBD:    but it prepares e.g. to add chromatic offsets.
+        TBD: the PLATE_{RA,DEC,REF_EPOCH} columns currently simply are copy of RA,DEC,REF_EPOCH,
+        but it prepares e.g. to add chromatic offsets.
 
-        20210526 : implementation of using subpriority=False in write_targets
-                    to avoid an over-writting of the SUBPRIORITY
-        20210901 : add a mtltime argument
-        20210903 : introducing a condition on the desitarget version,
-                    to be able to reproduce SV3 pre-20210526 intermediate files,
-                    with desitarget version < 1.1.0
-        20210903 : SV3-hack for reproducibility: ToO.ecsv has been updated on 2021, Apr 30, with new rows appended.
-                    if pmtime_utc_str < 2021-04-30, we discard the appended rows, with identifying them
-                    with MJD_END > 59340; the affected tiles are designed on 2021, Apr 19-22, so need for fine-tuning.
-                   We currently use pmtime_utc_str, which is an optional argument (but always provided).
-        20220927 : switch toofn to toofns, which can contain multiple (comma-separated) files
+        - 20210526: implementation of using subpriority=False in write_targets
+          to avoid an over-writting of the SUBPRIORITY
+        - 20210901: add a mtltime argument
+        - 20210903: introducing a condition on the desitarget version, to be able to
+          reproduce SV3 pre-20210526 intermediate files, with desitarget version < 1.1.0
+        - 20210903: SV3-hack for reproducibility: ToO.ecsv has been updated on 2021, Apr 30,
+          with new rows appended. If pmtime_utc_str < 2021-04-30, we discard the appended
+          rows, with identifying them with MJD_END > 59340; the affected tiles are designed
+          on 2021, Apr 19-22, so need for fine-tuning. We currently use pmtime_utc_str,
+          which is an optional argument (but always provided).
+        - 20220927: switch toofn to toofns, which can contain multiple (comma-separated) files
     """
     log.info("")
     log.info("")
@@ -2158,15 +2155,10 @@ def launch_onetile_fa(
         and prints the assignment stats for each mask.
 
     Args:
-        args: fba_launch-like parser.parse_args() output
-            should contain at least:
-                - survey
-                - program
-                - rundate
-                - sky_per_petal
-                - standards_per_petal
-                - sky_per_slitblock
-                - lookup_sky_source
+        args: fba_launch-like parser.parse_args() output; should contain at least
+            survey, program, rundate, sky_per_petal, standards_per_petal,
+            sky_per_slitblock, lookup_sky_source
+
         tilesfn: path to the input tiles fits file (string)
         targfns: paths to the input targets fits files, e.g. targ, scnd, too (either a string if only one file, or a list of strings)
         fbafn: path to the output fba-TILEID.fits file (string)
@@ -2182,7 +2174,8 @@ def launch_onetile_fa(
         no sanity checks done on inputs; assumed to be done elsewhere
         assumes the output directory is the same for fbafn and fiberassignfn
         we keep a generic "args" input, so that any later added argument in fba_launch does not
-            requires a change in the launch_fa() call format.
+        requires a change in the launch_fa() call format.
+
         fba_launch-like adding information in the header is done in another function, update_fiberassign_header
         TBD: be careful if working in the SVN-directory; maybe add additional safety lines?
         20210930 : moving some imports inside this function to avoid circular imports.
@@ -2349,20 +2342,22 @@ def update_fiberassign_header(
 
     Args:
         fiberassignfn: path to fiberassign-TILEID.fits file (string)
-        args: fba_launch-like parser.parse_args() output
-            should contain at least (see fba_launch arguments):
-                - outdir, survey, program, rundate, pmcorr, pmtime_utc_str
-                - faprgrm, mtltime, goaltime, goaltype, sbprof, mintfrac
+        args: fba_launch-like parser.parse_args() output; should contain at least (see fba_launch arguments):
+            outdir, survey, program, rundate, pmcorr, pmtime_utc_str, faprgrm, mtltime,
+            goaltime, goaltype, sbprof, mintfrac
             will also be used to store in FAARGS the list of input arguments of the fba_launch call.
+
         mydirs: dictionary with the desitarget paths; ideally:
-                - sky: sky folder
-                - skysupp: skysupp folder
-                - gfa: GFA folder
-                - targ: targets folder (static catalogs, with all columns)
-                - mtl: MTL folder
-                - scnd: secondary fits catalog (static)
-                - scndmtl: MTL folder for secondary targets
-                - too: ToO ecsv catalog
+
+            - sky: sky folder
+            - skysupp: skysupp folder
+            - gfa: GFA folder
+            - targ: targets folder (static catalogs, with all columns)
+            - mtl: MTL folder
+            - scnd: secondary fits catalog (static)
+            - scndmtl: MTL folder for secondary targets
+            - too: ToO ecsv catalog
+
         hdr_survey: value for the SURVEY keyword (string)
         hdr_faprgrm: value for the FAPRGRM keyword (string)
         faflavor: usually {survey}{program} in lower cases (string)
@@ -2377,10 +2372,13 @@ def update_fiberassign_header(
 
     Notes:
         no check is done on mydirs.
+
         hdr_survey, hdr_faprgrm: for the "regular" surveys (e.g., sv3, main), those will be args.survey, args.program
             but for dedicated survey, they will (have to) be different.
+
         faflavor has to be {hdr_survey}{hdr_faprgrm}; will exit with an error if not;
             keeping this to be sure it is not forgotten to be done for dedicated programs.
+
         20210917 : keywords scnd2, scnd3, etc could be automatically added (see get_desitarget_paths())
         20211119 : added lookup_sky_source keyword
         20211227 : use newly defined args.goaltype (instead of args.program previously)

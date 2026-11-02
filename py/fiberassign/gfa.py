@@ -35,8 +35,7 @@ def is_gaia_variable(tab):
     '''
     Decide whether each star is flux variable based on Gaia variability proxy
     Args:
-        tab: table with columns GAIA_PHOT_G_MEAN_MAG, GAIA_PHOT_G_N_OBS,
-             GAIA_PHOT_G_MEAN_FLUX_OVER_ERROR
+        tab: table with columns GAIA_PHOT_G_MEAN_MAG, GAIA_PHOT_G_N_OBS, and GAIA_PHOT_G_MEAN_FLUX_OVER_ERROR
     Returns:
         boolean array listing whether each star is variable (True) or
         not (False)
@@ -50,9 +49,8 @@ def is_gaia_variable(tab):
     If any of the columns needed to compute the variability flag are not
     present, then all stars will be labeled as not variable.
 
-    One reference for the variability metric and cut adopted here is:
-        https://arxiv.org/pdf/2009.07746.pdf
-    Specifically Equation 2.
+    One reference for the variability metric and cut adopted here is
+    https://arxiv.org/pdf/2009.07746.pdf, specifically Equation 2.
     '''
 
     colnames = tab.colnames
@@ -74,8 +72,7 @@ def gaia_synth_r_flux(tab):
     '''
     Generate synthetic r band flux based on Gaia photometry
     Args:
-        tab: table with columns GAIA_PHOT_G_MEAN_MAG, GAIA_PHOT_BP_MEAN_MAG,
-             GAIA_PHOT_RP_MEAN_MAG, REF_CAT
+        tab: table with columns GAIA_PHOT_G_MEAN_MAG, GAIA_PHOT_BP_MEAN_MAG, GAIA_PHOT_RP_MEAN_MAG, REF_CAT
 
     Returns:
         array of synthetic Gaia-based r-band fluxes

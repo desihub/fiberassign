@@ -8,7 +8,7 @@
                         [--standards_per_petal STANDARDS_PER_PETAL]
                         [--sky_per_petal SKY_PER_PETAL]
 
-    optional arguments:
+    options:
       -h, --help            show this help message and exit
       --targets TARGETS [TARGETS ...]
                             Input file with targets of any type. This argument can

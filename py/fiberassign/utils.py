@@ -199,9 +199,12 @@ def get_fba_use_fabs(rundate):
 
     Notes:
         See this PR https://github.com/desihub/fiberassign/pull/470.
-        In the fiberassign running function, then one will set:
+        In the fiberassign running function, then one will set::
+
             os.environ["FIBERASSIGN_USE_FABS"] = fba_use_fabs
+
         So far:
+
         - fba_use_fabs=0 means we reproduce the buggy behavior;
         - fba_use_fabs=1 means we use the expected behavior.
     """
@@ -322,8 +325,9 @@ def get_last_line(fn):
     Notes:
         Fails if fn has one line only; we do not protect for that case,
             as this function is intended to be used in get_program_latest_timestamp()
-            to read *ecsv ledgers, which will always have more than one line,
+            to read ``*ecsv`` ledgers, which will always have more than one line,
             and we want the fastest function possible, to use in fiberassign on-the-fly.
+
         Copied from https://stackoverflow.com/questions/46258499/how-to-read-the-last-line-of-a-file-in-python.
     """
     with open(fn, "rb") as f:
@@ -488,7 +492,7 @@ def get_rev_fiberassign_changes(svndir, rev, subdirs=None):
 def get_obstheta_corr(decs, has, clip_arcsec=600.):
     """
     Returns the computed correction to be applied to the field rotation
-        computed in fiberassign.tiles.load_tiles().
+    computed in fiberassign.tiles.load_tiles().
     The correction should be applied as: obsthetas[deg] -= obstheta_corrs[deg].
 
     Args:
@@ -503,9 +507,10 @@ def get_obstheta_corr(decs, has, clip_arcsec=600.):
     Notes:
         See DocDB-8931 for details.
         During observations, PlateMaker computes the required field rotation,
-            then asks the hexapod to be rotated by
-            ROTOFFST = FIELDROT - PM_REQ_FIELDROT,
-            where FIELDROT is the field rotation coming from fiberassign.tiles.load_tiles().
+        then asks the hexapod to be rotated by
+        ROTOFFST = FIELDROT - PM_REQ_FIELDROT,
+        where FIELDROT is the field rotation coming from fiberassign.tiles.load_tiles().
+
         When abs(ROTOFFST)>600 arcsec, the move is denied, and the exposure aborted.
         Correction computed here is a fit to ROTOFFST=f(DEC), plus a fit on the residuals.
     """

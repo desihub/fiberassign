@@ -31,7 +31,7 @@ For now, this "raw" output format is slightly different than the one used
 historically, and does not contain all the information that was in the original
 target catalog.  This will be changed in the future.  For now, files with this
 extra info can be created by post-processing the output with the
-:ref:`script_fba_merge_results` script:
+``fba_merge_results`` script:
 
 .. include:: _static/fba_merge_results.inc
 
@@ -43,7 +43,7 @@ extra info can be created by post-processing the output with the
        --out out_merged
 
 There are several built-in tools for doing quality assurance of the resulting
-assignment.  One of these is the :ref:`script_fba_run_qa` script.  This will
+assignment.  One of these is the ``fba_run_qa`` script.  This will
 compute the per-tile counts for the different target types and write these to
 JSON file (by default named "qa.json" in the output directory):
 
@@ -56,30 +56,26 @@ JSON file (by default named "qa.json" in the output directory):
 It is also frequently useful to plot the results of the assignment.  There are
 many customized plotting options possible using the low-level tools, but there
 is also a command-line script to create a PDF format plot of each tile.  By
-default, this script plots all petals of all tiles using a "simple"
-representation of each positioner (two lines).  Running
-:ref:`script_fba_plot_results` in this way will require several minutes per
+default, this script plots all petals of all tiles in a fiber assignment run
+using a detailed representation of each positioner.  Running
+:ref:`script_fba_plot` in this way will require several minutes per
 tile, but multiple processes will be used to plot tiles in parallel:
 
-.. include:: _static/fba_plot_results.inc
+.. include:: _static/fba_plot.inc
 
-**EXAMPLE:**  In our example, let's plot only one tile and use options to plot
-the full positioner geometry.  Notice how we made a text file with just one
-tile ID to use::
+**EXAMPLE:**  In our example, let's plot the full positioner gemoetry
+for the fiber assignment we already ran::
 
-    %> cat plot_tiles.txt
-    11108
-    %> fba_plot_results \
-       --tiles plot_tiles.txt \
-       --dir out_raw \
-       --real_shapes
+    %> fba_plot \
+       out_raw/fba-11108.fits \
+       --out_dir out_raw
 
 .. image:: _static/plot_assign.png
 
 In the plot above, science targets are red, sky is blue, standards are orange, and dual science / standard targets are green.
 
 We can also make a crude visualization of the QA for the entire footprint using
-the :ref:`script_fba_plot_qa` script.  Note that when plotting only a few tiles
+the ``fba_plot_qa`` script.  Note that when plotting only a few tiles
 the resulting plot is not as useful (but in that case you can get the numbers
 directly out of the JSON):
 
@@ -118,6 +114,57 @@ fiber, or target specified will have all possible info logged.
     performance.  Do not use in large production runs.
 
 
+Rundate and Reproducibility
+--------------------------------
+
+The ``--rundate`` option (an ISO UTC string, e.g. ``2025-05-02T19:00:00+00:00``)
+selects the focalplane and fiber-status state from desimodel for that date,
+and also switches several era-dependent behaviors.  The cutoff dates are
+defined in ``py/fiberassign/data/cutoff-dates.yaml`` and applied by helper
+functions in :mod:`fiberassign.utils` (see :ref:`reference`).  Rerunning with
+an old rundate intentionally reproduces historical behavior, bug-for-bug.
+When adding a new behavior switch, add a key to that YAML file instead of
+hardcoding a date.
+
+The currently defined cutoffs are:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 18 34 48
+
+   * - Key
+     - Cutoff (UTC)
+     - Description (from ``cutoff-dates.yaml``)
+   * - ``std_wd``
+     - 2021-12-01T19:00:00+00:00
+     - std_wd not counted in per-petal-std after that rundate
+   * - ``etc_stuck``
+     - 2022-04-28T19:00:00+00:00
+     - etc fibers are treated as stuck fibers after this date
+   * - ``obsdate``
+     - 2025-05-02T19:00:00+00:00
+     - obsdate set as rundate + 1yr after this date
+   * - ``fba_use_fabs``
+     - 2019-09-16T00:00:00+00:00 -> 0, 2025-05-12T19:00:00+00:00 -> 1
+     - value of the env. variable for the C++ code (see PR #470)
+   * - ``reorder_mtl``
+     - 2025-09-19T19:00:00+00:00
+     - perform reordering or not on loading two MTL ledgers
+   * - ``use_np_concatenate``
+     - 2026-06-02T19:00:00+00:00
+     - use np.concatenate when concatenating MTL ledgers
+
+Two of these deserve a note.  ``obsdate`` defaults to ``2022-07-01`` for
+rundates before its cutoff; afterwards it is set to the rundate plus one
+year.  ``fba_use_fabs`` reproduces a historical bug: before version 5.8.0 the
+C++ code used ``::abs`` to compute each positioner's minimum reachable
+distance, which under GCC 11 truncated the value to an integer and changed
+some assignments (91.1% of main bright/dark tiles designed on or before
+2025-04-26 were affected).  For rundates before the cutoff ``fba_use_fabs``
+is 0 and the buggy behavior is reproduced; from the cutoff on it is 1 and the
+fixed ``::fabs`` computation is used.
+
+
 Data File Testing
 ---------------------
 
@@ -140,49 +187,9 @@ translates the command line options into arguments to pass to the newer
 scripts.
 
 Running ``fiberassign --help`` gives the full set of command line
-options::
+options:
 
-  usage: fiberassign [-h] --mtl MTL --sky SKY --stdstar STDSTAR
-                   --fibstatusfile FIBSTATUSFILE
-                   [--footprint FOOTPRINT]
-                   [--positioners POSITIONERS] [--surveytiles SURVEYTILES]
-                   [--telra TELRA] [--teldec TELDEC] [--tileid TILEID]
-                   [--tileobsconditions TILEOBSCONDITIONS] [--outdir OUTDIR]
-                   [--starmask STARMASK] [--rundate RUNDATE]
-                   [--gfafile GFAFILE] [--nstarpetal NSTARPETAL]
-                   [--nskypetal NSKYPETAL] [--nocleanup]
-
-  optional arguments:
-  -h, --help            show this help message and exit
-  --mtl MTL             input targets (FITS file)
-  --sky SKY             input sky positions (FITS file)
-  --stdstar STDSTAR     input std stars (FITS file)
-  --fibstatusfile FIBSTATUSFILE
-                        list of positioners and its status (ECSV file)
-  --footprint FOOTPRINT
-                        list of tiles defining the footprint (FITS file)
-  --positioners POSITIONERS
-                        list of positioners on the focal plane (FITS file)
-  --surveytiles SURVEYTILES
-                        set of tiles to run fiberassign on (text file)
-  --telra TELRA         Right Ascension of arbitrary pointing - overrides
-                        --surveytiles
-  --teldec TELDEC       Declination of arbitrary pointing - overrides
-                        --surveytiles
-  --tileid TILEID       Integer ID of arbitrary pointing - overrides
-                        --surveytiles
-  --tileobsconditions TILEOBSCONDITIONS
-                        Mask describing observing program (DARK:1, GRAY:2,
-                        BRIGHT:4) - overrides --surveytiles
-  --outdir OUTDIR       output directory (default = ./)
-  --starmask STARMASK   integer mask defining standard stars
-  --rundate RUNDATE     run date [YYYY-MM-DD]
-  --gfafile GFAFILE     GFA file (FITS tile)
-  --nstarpetal NSTARPETAL
-                        number of standard stars per petal (default=10)
-  --nskypetal NSKYPETAL
-                        number of sky fibers per petal (default=40)
-  --nocleanup
+.. include:: _static/fiberassign.inc
 
 
 An example that provides the minimal set of required arguments would be::

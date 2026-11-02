@@ -128,9 +128,12 @@ And similarly when plotting the QA output:
 Hardware Properties
 -----------------------
 
-All of the physical properties of the DESI instrument are contained in the `Hardware` class.  Data from various files / sources must be read when constructing an instance of the Hardware class, so a helper function (`load_hardware`) is provided to make this easier.  In the future, there will likely be even more instrument details contained in the Hardware class and we may need to move to using a config file or some other mechanism to pass all this information.  Creating a hardware instance from Python should be done with this function:
+All of the physical properties of the DESI instrument are contained in the `Hardware` class.  Data from various files / sources must be read when constructing an instance of the Hardware class, so a helper function (`load_hardware`) is provided to make this easier.  In the future, there will likely be even more instrument details contained in the Hardware class and we may need to move to using a config file or some other mechanism to pass all this information.  Creating a hardware instance from Python should be done with the
+``load_hardware`` function.  The full module API (exclusion zones, and the
+CS5 / RA-DEC coordinate transforms) is documented below:
 
-.. autofunction:: fiberassign.hardware.load_hardware
+.. automodule:: fiberassign.hardware
+    :members:
 
 Once loaded, there are a variety of public methods available in the Hardware class:
 
@@ -180,9 +183,7 @@ Before reading data, and empty `Targets` instance is created:
 
 And then the `load_target_file` function is called one or more times to append target catalogs to the class instance.
 
-.. autofunction:: fiberassign.targets.load_target_file
-
-After loading all the data, we build a :class:`scipy.spatial.KDTree` to index these targets spatially for fast querying of targets that lie within some radius of a sky location.
+After loading all the data, targets are indexed spatially with the C++ KD-tree (`src/kdTree.h`) for fast nearest-neighbor queries; a `scipy.spatial.KDTree` is only used for sky-source lookups (see `targets.py`).
 
 Given a hardware model, our set of tiles, and this tree structure, we can now compute the target IDs available to every device location on every tile.  This is done with the `TargetsAvailable` class:
 
@@ -192,6 +193,13 @@ Given a hardware model, our set of tiles, and this tree structure, we can now co
 We can also compute the inverse quantity:  the tile-location combinations that can reach each target ID.  This is done with the `LocationsAvailable` class:
 
 .. autoclass:: fiberassign.targets.LocationsAvailable
+    :members:
+
+The full target-catalog module API (classification from DESI targeting
+columns, the per-survey default bitmasks for main / SV1 / SV2 / SV3 / CMX,
+and catalog loading) is:
+
+.. automodule:: fiberassign.targets
     :members:
 
 
@@ -240,6 +248,18 @@ For each petal, we do the following pseudocode::
 Visualization and I/O
 ----------------------------
 
+Output files are written, read and merged by the functions in
+:mod:`fiberassign.assign` (including the top-level
+:func:`fiberassign.assign.run` entry point), and plotting is done by
+:mod:`fiberassign.vis` (used by the ``fba_plot`` and ``fba_plot_qa``
+scripts):
+
+.. automodule:: fiberassign.assign
+    :members:
+
+.. automodule:: fiberassign.vis
+    :members:
+
 
 Utilities
 ---------------
@@ -276,3 +296,121 @@ Timing
 
 .. autoclass:: fiberassign.utils.GlobalTimers
     :members:
+
+
+Rundate Helpers
+~~~~~~~~~~~~~~~~~~~~~~~
+
+These compare the rundate against the cutoff dates in
+``py/fiberassign/data/cutoff-dates.yaml`` (see :ref:`usage`):
+
+.. autofunction:: fiberassign.utils.get_date_cutoff
+
+.. autofunction:: fiberassign.utils.get_obsdate
+
+.. autofunction:: fiberassign.utils.get_fba_use_fabs
+
+.. autofunction:: fiberassign.utils.get_whether_to_reorder_mtl
+
+.. autofunction:: fiberassign.utils.get_whether_to_use_np_concatenate
+
+.. autofunction:: fiberassign.utils.get_mjd
+
+.. autofunction:: fiberassign.utils.get_default_static_obsdate
+
+.. autofunction:: fiberassign.utils.assert_isoformat_utc
+
+.. autofunction:: fiberassign.utils.get_obstheta_corr
+
+.. autofunction:: fiberassign.utils.get_svn_version
+
+.. autofunction:: fiberassign.utils.get_fa_gitversion
+
+.. autofunction:: fiberassign.utils.get_last_line
+
+.. autofunction:: fiberassign.utils.read_ecsv_keys
+
+.. autofunction:: fiberassign.utils.get_revs_dates
+
+.. autofunction:: fiberassign.utils.get_rev_fiberassign_changes
+
+
+QA Metrics
+----------
+
+The per-tile and per-target metrics behind ``fba_run_qa``:
+
+.. automodule:: fiberassign.qa
+    :members:
+
+
+GFA Targets
+-----------
+
+GFA / ETC target selection and flagging (the ``GUIDE_FLAG``, ``FOCUS_FLAG``
+and ``ETC_FLAG`` bitmasks):
+
+.. automodule:: fiberassign.gfa
+    :members:
+
+
+Stuck-Sky Handling
+------------------
+
+On-the-fly sky targets for stuck positioners (these count toward the
+per-petal SKY requirement):
+
+.. automodule:: fiberassign.stucksky
+    :members:
+
+
+Survey Launch, Patching, Reruns and Tertiary Targets
+----------------------------------------------------
+
+These modules back the ``fba_launch``, ``fba_patch``, ``fba_rerun`` and
+``fba_tertiary_too`` entry points.  The module docstrings give an overview;
+the key entry points are:
+
+.. automodule:: fiberassign.fba_launch_io
+
+.. autofunction:: fiberassign.fba_launch_io.launch_onetile_fa
+
+.. autofunction:: fiberassign.fba_launch_io.assert_env_vars
+
+.. autofunction:: fiberassign.fba_launch_io.create_tile
+
+.. autofunction:: fiberassign.fba_launch_io.create_sky
+
+.. autofunction:: fiberassign.fba_launch_io.create_mtl
+
+.. autofunction:: fiberassign.fba_launch_io.create_too
+
+.. autofunction:: fiberassign.fba_launch_io.update_fiberassign_header
+
+.. automodule:: fiberassign.fba_patch_io
+
+.. autofunction:: fiberassign.fba_patch_io.patch
+
+.. autofunction:: fiberassign.fba_patch_io.diagnose_values_fafn
+
+.. autofunction:: fiberassign.fba_patch_io.diagnose_columns_fafn
+
+.. autofunction:: fiberassign.fba_patch_io.get_patching_params
+
+.. automodule:: fiberassign.fba_rerun_io
+
+.. autofunction:: fiberassign.fba_rerun_io.fba_rerun_fbascript
+
+.. autofunction:: fiberassign.fba_rerun_io.fba_rerun_check
+
+.. autofunction:: fiberassign.fba_rerun_io.get_fba_rerun_scriptname
+
+.. automodule:: fiberassign.fba_tertiary_io
+
+.. autofunction:: fiberassign.fba_tertiary_io.create_tertiary_too
+
+.. autofunction:: fiberassign.fba_tertiary_io.get_targdir
+
+.. autofunction:: fiberassign.fba_tertiary_io.read_targfn
+
+.. autofunction:: fiberassign.fba_tertiary_io.read_priofn

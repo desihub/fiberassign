@@ -93,6 +93,7 @@ class TargetTagalong(object):
         Stores data from an input (targeting file) table.
 
         Arguments:
+
         *targetids*: numpy array of TARGETID values that must be in the same
                      order as the data arrays in *tabledata*.
         *tabledata*: numpy record-array / table from which this tagalong's

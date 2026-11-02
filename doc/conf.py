@@ -57,11 +57,8 @@ intersphinx_mapping = {
     'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
     'matplotlib': ('https://matplotlib.org/stable/', None),
     'astropy': ('https://docs.astropy.org/en/stable/', None),
-    'h5py': ('https://docs.scipy.org/doc/scipy/', None)
+    'h5py': ('https://docs.h5py.org/en/latest/', None)
     }
-
-# Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
 
 # The suffix of source filenames.
 source_suffix = '.rst'
@@ -74,8 +71,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'fiberassign'
-copyright = '2014-2025, DESI Collaboration'
-author = 'Robert Cahn, Jaime E. Forero-Romero, Ted Kisner'
+copyright = '2014-2026, DESI Collaboration'
+author = 'Robert Cahn, Jaime E. Forero-Romero, Ted Kisner, Anand Raichoor'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -138,12 +135,25 @@ napoleon_include_private_with_doc = True
 # building process.
 autodoc_mock_imports = []
 for missing in ('astropy', 'numpy', 'fitsio', 'healpy', 'yaml', 'scipy',
-                'desimodel', 'desitarget', 'desiutil',
+                'desimodel', 'desitarget', 'desimeter', 'desiutil',
                 'fiberassign._internal'):
     try:
         foo = import_module(missing)
     except ImportError:
         autodoc_mock_imports.append(missing)
+
+# autodoc's mock turns desitarget.__version__ into a mock object, which breaks
+# the module-level Version(desitarget.__version__) in fba_launch_io.  Seed
+# sys.modules with a stub top-level module that has a parseable version string;
+# sys.modules is consulted before the mock meta-path finder, so only the
+# top-level name uses the stub while desitarget submodule imports (io, mtl,
+# targetmask, ...) are still mocked via autodoc_mock_imports.
+if 'desitarget' in autodoc_mock_imports:
+    import types
+    _desitarget_stub = types.ModuleType('desitarget')
+    _desitarget_stub.__version__ = '0.0.0'
+    _desitarget_stub.__path__ = []
+    sys.modules['desitarget'] = _desitarget_stub
 
 # -- Options for HTML output ----------------------------------------------
 

@@ -113,7 +113,7 @@ def parse_assign(optlist=None):
                         default=None,
                         help="apply correction to computed fieldrot "
                         "(default: False if args.fieldrot is provided or "
-                        "if args.rundate<rundate_cutoff, True else")
+                        "if args.rundate<rundate_cutoff, True else)")
 
     parser.add_argument("--dir", type=str, required=False, default=None,
                         help="Output directory.")
