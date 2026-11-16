@@ -135,11 +135,11 @@ jobs:
             - name: Run Tests
               run: pytest --cov
             - name: Collate C++ coverage
-            # Need to ignore mismatch errors for some unknown reason. gcoy and g++ versions match, so it's not clear why those errors occur.
-            # Ignoring them is the recommended workaround in the case where the versions match, at lesat for the time being.
+            # Need to ignore inconsistent records for some unknown reason. gcc and g++ versions match, so it's not clear why those errors occur.
+            # Ignoring them is the recommended workaround in the case where the versions match, at least for the time being.
             # This can be revisited in the future.
               run: |
-                lcov --capture --directory build/temp*/src/ --output-file coverage.info --ignore-errors mismatch
+                lcov --capture --directory build/temp*/src/ --output-file coverage.info --ignore-errors mismatch,inconsistent
                 lcov --remove coverage.info '/usr/include/*' 'src/pybind11/*' -o coverage_cpp.info
             - name: Upload coverage
               uses: coverallsapp/github-action@v2
