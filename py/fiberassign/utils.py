@@ -593,3 +593,50 @@ def get_main_early_nonrepro_tiles():
     fn = resources.files("fiberassign") / "data" / "tiles-main-dtver-1.0.0.ecsv"
     d = Table.read(fn)
     return d
+
+def substitute_desiroot(path, forward=True, dvs_ro=False):
+    """
+    Given a file path, insert $DESI_ROOT in place of the actual string stored
+        in the environment variable $DESI_ROOT, or vice versa.
+
+    Args:
+        path: the file path to replace in (string)
+        forward (optional, defaults to True): direction of the substitution
+            (bool): if True, replace the value of $DESI_ROOT with the
+            "$DESI_ROOT" string; if False, replace the "$DESI_ROOT" string
+            with the value of $DESI_ROOT
+        dvs_ro (optional, defaults to False): if forward=False, also replace
+            "/global/" with "/dvs_ro/" (bool)
+
+    Returns:
+        new_path: the updated path (string)
+
+    Notes:
+        In the forward direction, "/dvs_ro/" is first replaced by "/global/".
+        Only a leading occurrence of $DESI_ROOT (or of its value) is
+            substituted.
+        If $DESI_ROOT is not set, path is returned unchanged.
+    """
+    if ("DESI_ROOT" not in os.environ):
+        # DG - If it's nt in the environment then there's nothing we can replace with.
+        return path
+    desiroot = os.environ["DESI_ROOT"]
+
+    # DG - Forward goes from path -> $DESI_ROOT
+    if forward:
+        new_path = path.replace("/dvs_ro/", "/global/") # If dvs_ro is there, swap it to global, otherwise nothing happens
+
+        # DG - Check for starting first, for safety in case it appears in the middle for some reason.
+        if new_path.startswith(desiroot):
+            new_path = new_path.replace(desiroot, "$DESI_ROOT", 1)
+    # DG - Backward goes $DESI_ROOT -> path
+    else:
+        new_path = path
+        for token in ("$DESI_ROOT", "DESIROOT"):
+            if new_path.startswith(token):
+                new_path = new_path.replace(token, desiroot, 1)
+                break
+        if dvs_ro:
+            new_path = new_path.replace("/global/", "/dvs_ro/", 1)
+    return new_path
+

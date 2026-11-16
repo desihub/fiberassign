@@ -8,7 +8,7 @@ from astropy.io import fits
 from astropy import __version__ as astropy_version
 import numpy as np
 from fiberassign.fba_launch_io import assert_env_vars, print_config_infos
-from fiberassign.utils import Logger, get_svn_version
+from fiberassign.utils import Logger, get_svn_version, substitute_desiroot
 import desitarget
 import desimeter
 import fiberassign
@@ -199,10 +199,7 @@ def main():
     # which we then pass to fba_launch to override the environment variable.
     skybricksdir = get_dep_ver("SKYBRICKS_DIR")
     if (skybricksdir != "-") and not args.dont_override_skybricks:
-        skybricksdir = skybricksdir.replace("$DESI_ROOT", curr_desiroot)
-        # TODO: consider using pathlib, which has built in functinoality to change
-        # the root path a path is relative to. This would be more robust than a string replace.
-        skybricksdir = skybricksdir.replace("/global/cfs/", "/dvs_ro/cfs/")
+        skybricksdir = substitute_desiroot(skybricksdir, forward=False, dvs_ro=(not args.no_dvsro))
         mydict["--skybricks_dir"] = skybricksdir
 
     # AR command line to execute
