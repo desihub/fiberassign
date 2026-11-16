@@ -2419,7 +2419,7 @@ def update_fiberassign_header(
             # AR header keywords: MTL, MTL2 (or TARG, TARG2)
             suffixs = [""] + np.arange(2, len(mydirs[key]) + 1).astype(str).tolist()
             for path, suffix in zip(mydirs[key], suffixs):
-                fd["PRIMARY"].write_key("{key}{suffix}", substitute_desiroot(path))
+                fd["PRIMARY"].write_key("{}{}".format(key, suffix), substitute_desiroot(path))
         else:
             fd["PRIMARY"].write_key(key, substitute_desiroot(mydirs[key]))
     # AR storing some specific arguments
